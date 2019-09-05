@@ -62,6 +62,7 @@ sub get_turnover_incrby_combinations {
         sprintf($turnover_format, '+',          $underlying, '+'),
     ];
 }
+use Carp;
 
 sub _get_attr_groups {
     my ($contract)      = @_;
@@ -70,6 +71,7 @@ sub _get_attr_groups {
 
     my ($contract_group, $underlying_group);
     my $redis = get_redis($landing_company, 'limit_setting');
+    confess "what contamination happeneth in $landing_company" unless $redis;
     $redis->hget(
         'contractgroups',
         $bet_data->{bet_type},

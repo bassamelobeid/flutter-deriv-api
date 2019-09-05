@@ -26,19 +26,19 @@ sub get_redis {
             turnover       => $redis,
             limit_setting  => $redis,
         },
-        mlt => {
+        malta => {
             potential_loss => $redis,
             realized_loss  => $redis,
             turnover       => $redis,
             limit_setting  => $redis,
         },
-        mf => {
+        maltainvest => {
             potential_loss => $redis,
             realized_loss  => $redis,
             turnover       => $redis,
             limit_setting  => $redis,
         },
-        mx => {
+        iom => {
             potential_loss => $redis,
             realized_loss  => $redis,
             turnover       => $redis,
@@ -46,7 +46,10 @@ sub get_redis {
         },
     };
 
-    return $limits_redis_map->{$landing_company}->{$purpose};
+    my $redis_instance = $limits_redis_map->{$landing_company}->{$purpose};
+    die "Unable to locate redis instance for $landing_company:$purpose" unless $redis_instance;
+
+    return $redis_instance;
 }
 
 1;

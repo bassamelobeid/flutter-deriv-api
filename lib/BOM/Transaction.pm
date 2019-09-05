@@ -546,17 +546,25 @@ sub prepare_buy {
     return $self->prepare_bet_data_for_buy;
 }
 
+# to accomodate batch buy, we allow buy method to take in client,
+# clientdb and bet_data as parameters
 sub buy {
     my ($self, %options) = @_;
 
-    my $stats_data = $self->stats_start('buy');
+    my $stats_data;
+    $stats_data = $self->stats_start('buy') unless $options{is_batch_buy};
 
-    my $client = $self->client;
+    my $client = $options{client} || $self->client;
 
-    my ($error_status, $bet_data) = $self->prepare_buy($options{skip_validation});
-    return $self->stats_stop($stats_data, $error_status) if $error_status;
+    my ($error_status, $bet_data);
+    if (defined $options{bet_data}) {
+        $bet_data = $options{bet_data};
+    } else {
+        ($error_status, $bet_data) = $self->prepare_buy($options{skip_validation});
+        return $self->stats_stop($stats_data, $error_status) if $error_status;
+    }
 
-    $self->stats_validation_done($stats_data);
+    $self->stats_validation_done($stats_data) unless $options{is_batch_buy};
 
     my $account_data = {
         client_loginid  => $client->loginid,
@@ -573,8 +581,8 @@ sub buy {
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
         account_data => $account_data,
-        limits       => $self->limits,
-        db           => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+        limits       => $options{limits} || $self->limits,
+        db           => $options{db} || BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
     );
 
     my $error = 1;
@@ -592,19 +600,21 @@ sub buy {
         # otherwise the function re-throws the exception
         stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
         BOM::CompanyLimits::reverse_buy_contract($contract_data, $_);
-        $error_status = $self->_recover($_);
+        $error_status = $self->_recover($_, $client);
     };
-    return $self->stats_stop($stats_data, $error_status) if $error_status;
 
-    return $self->stats_stop(
-        $stats_data,
-        Error::Base->cuss(
+    if (not $error_status and $error) {
+        $error_status = Error::Base->cuss(
             -type              => 'GeneralError',
             -mesg              => 'Cannot perform database action',
             -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
-        )) if $error;
+        );
+    }
 
-    $self->stats_stop($stats_data);
+    return $error_status if $error_status and $options{is_batch_buy};
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
+
+    $self->stats_stop($stats_data) unless $options{is_batch_buy};
 
     $self->balance_after($txn->{balance_after});
     $self->transaction_id($txn->{id});
@@ -615,7 +625,10 @@ sub buy {
             num_contract => 1
         }) if $client->landing_company->social_responsibility_check_required;
 
-    enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
+    enqueue_new_transaction(_get_params_for_expiryqueue($self)) unless $options{is_batch_buy};    # For soft realtime expiration notification.
+
+    $self->{success_buy_fmb} = $fmb;
+    $self->{success_buy_txn} = $txn;
 
     return;
 }
@@ -687,66 +700,41 @@ sub batch_buy {
         # with hash key caching introduced in recent perl versions
         # the "map sort map" pattern does not make sense anymore.
 
-        # this sorting is to prevent deadlocks in the database
+        # this sorting is used to prevent deadlocks in the database,
+        # when buys were batched up in the database. It is kept sorted
+        # for unit tests to pass
         @$list = sort { $a->{loginid} cmp $b->{loginid} } @$list;
 
-        my @general_error = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'));
+        my $db = BOM::Database::ClientDB->new({broker_code => $broker})->db;
+        my $success = 0;
+        for my $el (@$list) {
+            # client objects are instantiated in prepare buy when there is $self->multiple
+            my $client = $el->{client};
+            try {
+                my ($error) = $self->buy(
+                    bet_data     => $bet_data,
+                    client       => $client,
+                    db           => $db,
+                    limits       => $el->{limits},
+                    is_batch_buy => 1,
+                );
 
-        try {
-            my $currency = $self->contract->currency;
-            # TODO: do batch buy check for trade limits here, but you cannot throw errors; needs to returned, and
-            #       passed to known_errors. Buys that passed the trade limits check must be able to continue into
-            #       database; one fail does not cancel all buys. In other words, trade limits acts as a filter to
-            #       incoming batch buys.
-            #
-            #       Upon batch_buy_bet, check database errors. If there is, the buys need to be reverted. Batch sells
-            #       do not need this; we do not revert sells.
-            #
-            #       This solution is not ideal; batch buys causes locks in database because although all buys need
-            #       not succeed, all buys need to complete within a single transaction. We should instead consider
-            #       to execute separate buys as its own transaction, and execute them in parallel.
-            my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
-                %$bet_data,
-                # great readablility provided by our tidy rules
-                account_data => [map                                      { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
-                limits       => [map                                      { $_->{limits} } @$list],
-                db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
-            );
-
-            my $success = 0;
-            my $result  = $fmb_helper->batch_buy_bet;
-            for my $el (@$list) {
-                my $res = shift @$result;
-                if (my $ecode = $res->{e_code}) {
-                    # map DB errors to client messages
-                    if (my $ref = $known_errors{$ecode}) {
-                        my $error = (
-                            ref $ref eq 'CODE'
-                            ? $ref->($self, $el->{client}, $res->{e_description})
-                            : $ref
-                        );
-                        $el->{code}              = $error->{-type};
-                        $el->{error}             = $error->{-message_to_client};
-                        $el->{message_to_client} = $error->{-message_to_client};
-                    } else {
-                        @{$el}{qw/code message_to_client/} = @general_error;
-                    }
+                if ($error) {
+                    $el->{code}              = $error->{-type};
+                    $el->{error}             = $error->{-message_to_client};
+                    $el->{message_to_client} = $error->{-message_to_client};
                 } else {
-                    $el->{fmb} = $res->{fmb};
-                    $el->{txn} = $res->{txn};
+                    $el->{fmb} = $self->{success_buy_fmb};
+                    $el->{txn} = $self->{success_buy_txn};
                     $success++;
                 }
             }
-            $stat{$broker}->{success} = $success;
-            enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
+            catch {
+                warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
+            };
         }
-        catch {
-            warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
-
-            for my $el (@$list) {
-                @{$el}{qw/code error/} = @general_error unless $el->{code} or $el->{fmb};
-            }
-        };
+        $stat{$broker}->{success} = $success;
+        enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
     }
 
     $self->stats_stop($stats_data, undef, \%stat);

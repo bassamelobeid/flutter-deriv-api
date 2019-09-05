@@ -26,6 +26,28 @@ use BOM::Test::Helper::QuantsConfig qw(create_config delete_all_config);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
+# Mocking currency conversion becomes needed because of the method close_all_open_contracts
+# which sells all contracts in the unit test database. Because CompanyLimits converts all
+# currencies to USD this method is called. This is a temporary change; we may replace the
+# database implementation which the code in this file tests.
+my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
+$mocked_CurrencyConverter->mock(
+    'in_usd',
+    sub {
+        my $price         = shift;
+        my $from_currency = shift;
+
+        $from_currency eq 'AUD' and return 0.90 * $price;
+        $from_currency eq 'BCH' and return 1200 * $price;
+        $from_currency eq 'ETH' and return 500 * $price;
+        $from_currency eq 'LTC' and return 120 * $price;
+        $from_currency eq 'EUR' and return 1.18 * $price;
+        $from_currency eq 'GBP' and return 1.3333 * $price;
+        $from_currency eq 'JPY' and return 0.0089 * $price;
+        $from_currency eq 'BTC' and return 5500 * $price;
+        $from_currency eq 'USD' and return 1 * $price;
+        return 0;
+    });
 my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 
 $mock_validation->mock(
