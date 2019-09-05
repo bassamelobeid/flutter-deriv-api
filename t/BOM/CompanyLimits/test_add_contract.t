@@ -88,6 +88,9 @@ subtest 'Limits test base case', sub {
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 0, 'If contract failed to buy, it should be reverted';
 
+    # CUT OFF POINT
+    # Ignore tests below (email will be moved away)
+
     # Check email to see if email is published
     my $trade_suspended_email = mailbox_search(email => 'x-quants@binary.com');
 
