@@ -66,7 +66,7 @@ sub group_for_user {
                         # We avoid the MT5 call if it's suspended, but also pause for
                         # a bit - no need to burn through the queue
                         # too quickly if it's only down temporarily
-                        return $loop->delay_future(after => 59) if is_mt5_suspended();
+                        return $loop->delay_future(after => 60) if is_mt5_suspended();
 
                         group_for_user($id)->else(
                             sub {
