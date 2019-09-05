@@ -97,7 +97,8 @@ sub _should_reverse_buy_contract {
 
     if (ref $error eq 'ARRAY') {
         my $error_code = $error->[0];
-        return 0 if ($error_code eq 'BI054');    # no underlying group mapping
+        return 0 if $error_code eq 'BI054'    # no underlying group mapping
+            or $error_code eq 'BI053';        # no contract group mapping
 
         return 1;
     }
