@@ -353,16 +353,6 @@ sub create_fmb_with_ticks {
 sub setup_db_underlying_mapping {
     my $table = shift;
 
-    # TODO: this is a bit of a hack. Not sure if we would figure out a better way to do this
-    if ($table eq 'limits_market_mapper') {
-        BOM::CompanyLimits::Groups::load_underlyings_yml_to_db();
-        BOM::CompanyLimits::Groups::load_contracts_yml_to_db();
-
-        # TODO: sync contract groups and underlying group here? Odd
-        BOM::CompanyLimits::Groups::sync_underlying_groups();
-        BOM::CompanyLimits::Groups::sync_contract_groups();
-    }
-
     my $connection_builder = BOM::Database::ClientDB->new({
         broker_code => 'CR',      # since there's only one clientdb in test environment
         operation   => 'write',
@@ -398,6 +388,12 @@ sub import {
             setup_db_underlying_mapping('market');
             setup_db_underlying_mapping('limits_market_mapper');
         }
+
+        # Unit test databases and redis instance needs to be
+        # repopulated with default groups with each rerun since
+        # it starts with a blank slate
+        BOM::CompanyLimits::Groups::load_group_yml_to_db();
+        BOM::CompanyLimits::Groups::sync_group_to_redis();
     }
 
     return;
