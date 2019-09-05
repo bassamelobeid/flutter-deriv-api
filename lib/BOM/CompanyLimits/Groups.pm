@@ -108,9 +108,9 @@ sub get_insert_group_sql {
 
     my $sql_query;
     if ($group_name eq 'underlying') {
-        $sql_query = get_insert_underlying_group_sql();
+        $sql_query = _get_insert_underlying_group_sql();
     } elsif ($group_name eq 'contract') {
-        $sql_query = get_insert_contract_group_sql();
+        $sql_query = _get_insert_contract_group_sql();
     } else {
         die "invalid group. Choose between 'underlying' and 'contract'";
     }
@@ -118,7 +118,7 @@ sub get_insert_group_sql {
     return $sql_query;
 }
 
-sub get_insert_underlying_group_sql {
+sub _get_insert_underlying_group_sql {
     my $sql = <<'EOF';
 CREATE TEMP TABLE tt(LIKE limits.underlying_group_mapping) ON COMMIT DROP;
 INSERT INTO tt(underlying, underlying_group) VALUES
@@ -144,7 +144,7 @@ EOF
     return $sql;
 }
 
-sub get_insert_contract_group_sql {
+sub _get_insert_contract_group_sql {
     my $sql = <<'EOF';
 CREATE TEMP TABLE tt(LIKE limits.contract_group_mapping) ON COMMIT DROP;
 INSERT INTO tt(bet_type, contract_group) VALUES
