@@ -16,7 +16,6 @@ use Math::Util::CalculatedValue::Validatable;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
-use BOM::Config::RedisReplicated;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init :exclude_bet_market_setup);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -24,25 +23,6 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Helper::QuantsConfig qw(create_config delete_all_config);
-
-my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
-$mocked_CurrencyConverter->mock(
-    'in_usd',
-    sub {
-        my $price         = shift;
-        my $from_currency = shift;
-
-        $from_currency eq 'AUD' and return 0.90 * $price;
-        $from_currency eq 'BCH' and return 1200 * $price;
-        $from_currency eq 'ETH' and return 500 * $price;
-        $from_currency eq 'LTC' and return 120 * $price;
-        $from_currency eq 'EUR' and return 1.18 * $price;
-        $from_currency eq 'GBP' and return 1.3333 * $price;
-        $from_currency eq 'JPY' and return 0.0089 * $price;
-        $from_currency eq 'BTC' and return 5500 * $price;
-        $from_currency eq 'USD' and return 1 * $price;
-        return 0;
-    });
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -83,10 +63,6 @@ BOM::Config::Runtime->instance->app_config->quants->enable_global_potential_loss
 BOM::Config::Runtime->instance->app_config->quants->enable_global_realized_loss(1);
 my $cl = create_client('CR');
 top_up $cl, 'USD', 5000;
-
-# Mimic symbol missing by deleting the underlyinggroups redis key
-my $redis = BOM::Config::RedisReplicated::redis_write();
-$redis->del('underlyinggroups');
 
 subtest 'symbol not defined' => sub {
     my $contract = produce_contract({
