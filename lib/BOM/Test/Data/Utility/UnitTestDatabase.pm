@@ -9,16 +9,14 @@ use MooseX::Singleton;
 use Postgres::FeedDB;
 use Finance::Underlying;
 use BOM::User::Utility;
-use List::MoreUtils qw(uniq);
 
 use BOM::Database::ClientDB;
-use BOM::Database::UserDB;
-use BOM::CompanyLimits::Groups;
 use BOM::Database::Model::FinancialMarketBet::HigherLowerBet;
 use BOM::Database::Model::FinancialMarketBet::SpreadBet;
 use BOM::Database::Model::FinancialMarketBet::TouchBet;
 use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Helper::FinancialMarketBet;
+use BOM::CompanyLimits::Groups;
 
 use BOM::Test;
 
@@ -351,8 +349,7 @@ sub create_fmb_with_ticks {
 # since this will populate the bet.limits_market_mapper table from underlyings.yml,
 # we only have to do this once when every test database is rebuilt.
 sub setup_db_underlying_mapping {
-    my $table = shift;
-
+    my $table              = shift;
     my $connection_builder = BOM::Database::ClientDB->new({
         broker_code => 'CR',      # since there's only one clientdb in test environment
         operation   => 'write',
@@ -381,13 +378,13 @@ sub import {
 
     if (exists $options{':init'}) {
         __PACKAGE__->instance->prepare_unit_test_database;
-        require BOM::Test::Data::Utility::UserTestDatabase;
-
-        BOM::Test::Data::Utility::UserTestDatabase->import(':init');
         unless (exists $options{':exclude_bet_market_setup'}) {
             setup_db_underlying_mapping('market');
             setup_db_underlying_mapping('limits_market_mapper');
         }
+        require BOM::Test::Data::Utility::UserTestDatabase;
+
+        BOM::Test::Data::Utility::UserTestDatabase->import(':init');
 
         # Unit test databases and redis instance needs to be
         # repopulated with default groups with each rerun since
