@@ -93,9 +93,9 @@ sub group_for_user {
                                     'rights' => $rights,
                                 };
 
-                                $redis->hmset("MT5_USER_GROUP::$id", %$mt5_details)->then(
+                                $redis->hmset($cache_key, %$mt5_details)->then(
                                     sub {
-                                        $redis->expire("MT5_USER_GROUP::$id", $ttl);
+                                        $redis->expire($cache_key, $ttl);
                                     }
                                     )->on_done(
                                     sub {
