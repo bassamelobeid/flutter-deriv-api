@@ -563,13 +563,11 @@ sub prepare_buy {
 
 # to accomodate batch buy, we allow buy method to take in client,
 # clientdb and bet_data as parameters.
-# TODO: the accomodation thing is a bit of a mess; will need to
-#       rethink this later.
 sub buy {
     my ($self, %options) = @_;
 
     my $stats_data;
-    $stats_data = $self->stats_start('buy') unless $options{is_batch_buy};
+    $stats_data = $self->stats_start('buy') unless $options{skip_stats};
 
     my $client = $options{client} || $self->client;
 
@@ -578,10 +576,13 @@ sub buy {
         $bet_data = $options{bet_data};
     } else {
         ($error_status, $bet_data) = $self->prepare_buy($options{skip_validation});
-        return $self->stats_stop($stats_data, $error_status) if $error_status;
+        if ($error_status) {
+            return $error_status if $options{skip_stats};
+            return $self->stats_stop($stats_data, $error_status);
+        }
     }
 
-    $self->stats_validation_done($stats_data) unless $options{is_batch_buy};
+    $self->stats_validation_done($stats_data) unless $options{skip_stats};
 
     my $account_data = {
         client_loginid  => $client->loginid,
@@ -628,10 +629,12 @@ sub buy {
         );
     }
 
-    return $error_status if $error_status and $options{is_batch_buy};
-    return $self->stats_stop($stats_data, $error_status) if $error_status;
+    if ($error_status) {
+        return $error_status if $options{skip_stats};
+        return $self->stats_stop($stats_data, $error_status);
+    }
 
-    $self->stats_stop($stats_data) unless $options{is_batch_buy};
+    $self->stats_stop($stats_data) unless $options{skip_stats};
 
     $self->balance_after($txn->{balance_after});
     $self->transaction_id($txn->{id});
@@ -642,10 +645,10 @@ sub buy {
             num_contract => 1
         }) if $client->landing_company->social_responsibility_check_required;
 
-    enqueue_new_transaction(_get_params_for_expiryqueue($self)) unless $options{is_batch_buy};    # For soft realtime expiration notification.
+    enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
 
-    # TODO: this is a bit of a hack; it's just to do get
-    #       batch_buys to reuse buy method
+    # TODO: this is a bit of hack so that batch_buy can retrieve fmb and txn
+    #       on successful buys. I am not sure of any better way atm
     $self->{success_buy_fmb} = $fmb;
     $self->{success_buy_txn} = $txn;
 
@@ -731,11 +734,11 @@ sub batch_buy {
             my $client = $el->{client};
             try {
                 my ($error) = $self->buy(
-                    bet_data     => $bet_data,
-                    client       => $client,
-                    db           => $db,
-                    limits       => $el->{limits},
-                    is_batch_buy => 1,
+                    bet_data   => $bet_data,
+                    client     => $client,
+                    db         => $db,
+                    limits     => $el->{limits},
+                    skip_stats => 1,
                 );
 
                 if ($error) {
@@ -753,7 +756,6 @@ sub batch_buy {
             };
         }
         $stat{$broker}->{success} = $success;
-        enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
     }
 
     $self->stats_stop($stats_data, undef, \%stat);
