@@ -15,7 +15,12 @@ use warnings;
 
 use YAML::XS;
 
-my $config = YAML::XS::LoadFile($ENV{RPC_JOB_TIMEOUT} // '/etc/rmg/rpc_queue_timeout.yml');
+my $config = {};
+
+sub _get_config {
+    $config //= YAML::XS::LoadFile($ENV{RPC_JOB_TIMEOUT} // '/etc/rmg/rpc_queue_timeout.yml');
+    return $config;
+}
 
 =head2 get_timeout
 
@@ -29,7 +34,7 @@ sub get_timeout {
 
     my $category = $args{category} // 'default';
 
-    return $config->{$category}{timeout};
+    return _get_config()->{$category}{timeout};
 }
 
 1;
