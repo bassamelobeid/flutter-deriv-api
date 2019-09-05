@@ -29,79 +29,93 @@ use BOM::Config::Runtime;
 #       single transaction, we need to use a lua script.
 #
 
-sub sync_underlying_groups {
+my $all_groups = ['underlying', 'contract'];
+
+sub sync_group_to_redis {
+    my @groups = @_;
+    @groups = @$all_groups unless @groups;
+
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
-    my $sql = q{
-	SELECT underlying, underlying_group FROM limits.underlying_group_mapping;
-    };
-    my $bet_market = $dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef) });
+    foreach my $group_name (@groups) {
+        my $sql = "SELECT * FROM limits.${group_name}_group_mapping;";
+        my $query_result = $dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef) });
 
-    my @symbol_underlying;
-    push @symbol_underlying, @$_ foreach (@$bet_market);
+        my @group_pairs;
+        push @group_pairs, @$_ foreach (@$query_result);
 
-    # TODO: we are hard coding the landing company when setting limits
-    get_redis('svg', 'limit_setting')->hmset('underlyinggroups', @symbol_underlying);
+        die "no $group_name in database" unless @group_pairs;
+
+        # TODO: we are hard coding the landing company when setting limits
+        my $redis = get_redis('svg', 'limit_setting');
+
+        my $hash_name = "${group_name}groups";
+        $redis->del($hash_name);
+        $redis->hmset($hash_name, @group_pairs);
+    }
 
     return;
 }
 
-sub sync_contract_groups {
+# Pass in group names as variadic parameters - used for unit tests.
+# In production/QA provisioning we use psql to load the groups via
+# extract-limit-groups-to-db.pl
+sub load_group_yml_to_db {
+    my @groups = @_;
+    @groups = @$all_groups unless @groups;
+
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
-    my $sql = q{
-	SELECT bet_type, contract_group FROM limits.contract_group_mapping;
-    };
-    my $bet_grp = $dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef) });
+    foreach my $group_name (@groups) {
+        my $sql = get_insert_group_sql($group_name);
 
-    my @contract_grp;
-    push @contract_grp, @$_ foreach (@$bet_grp);
-
-    # TODO: we are hard coding the landing company when setting limits
-    get_redis('svg', 'limit_setting')->hmset('contractgroups', @contract_grp);
+        $dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref($sql);
+            });
+    }
 
     return;
-}
-
-sub load_underlyings_yml_to_db {
-    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
-    my $sql  = get_insert_underlying_group_sql();
-
-    my $output = $dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref($sql);
-        });
-
-    return $output;
-}
-
-sub load_contracts_yml_to_db {
-    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
-    my $sql  = get_insert_contract_group_sql();
-
-    my $output = $dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref($sql);
-        });
-
-    return $output;
 }
 
 sub get_default_underlying_group_mappings {
-    my @uls = Finance::Underlying::all_underlyings();
-
+    my @uls                          = Finance::Underlying::all_underlyings();
     my %supported_underlying_symbols = _get_active_offerings('underlying_symbol');
-    my %default_underlying_group;
 
-    if (%supported_underlying_symbols) {
-        $default_underlying_group{$_->{symbol}} = $_->{market} for (sort grep { $supported_underlying_symbols{$_->{symbol}} } @uls);
-    } else {
-        # Supported underlying symbols cannot be empty; so do not filter if none exists
-        warn 'Unable to filter out unused underlyings';
-        $default_underlying_group{$_->{symbol}} = $_->{market} for (@uls);
-    }
+    die 'Unable to filter out unused underlyings. Check app config redis instance.' unless %supported_underlying_symbols;
+
+    my %default_underlying_group;
+    $default_underlying_group{$_->{symbol}} = $_->{market} for (sort grep { $supported_underlying_symbols{$_->{symbol}} } @uls);
 
     return %default_underlying_group;
+}
+
+sub get_default_contract_group_mappings {
+    my $contract_types           = Finance::Contract::Category::get_all_contract_types();
+    my %supported_contract_types = _get_active_offerings('contract_type');
+
+    die 'Unable to filter out unused contracts. Check app config redis instance.' unless %supported_contract_types;
+
+    my %default_contract_group;
+    $default_contract_group{$_} = $contract_types->{$_}->{category} for (sort grep { $supported_contract_types{$_} } keys %$contract_types);
+
+    return %default_contract_group;
+}
+
+# Works kinda like a factory
+sub get_insert_group_sql {
+    my ($group_name) = @_;
+
+    my $sql_query;
+    if ($group_name eq 'underlying') {
+        $sql_query = get_insert_underlying_group_sql();
+    } elsif ($group_name eq 'contract') {
+        $sql_query = get_insert_contract_group_sql();
+    } else {
+        die "invalid group. Choose between 'underlying' and 'contract'";
+    }
+
+    return $sql_query;
 }
 
 sub get_insert_underlying_group_sql {
@@ -154,22 +168,6 @@ RETURNING *;
 EOF
 
     return $sql;
-}
-
-sub get_default_contract_group_mappings {
-    my $contract_types           = Finance::Contract::Category::get_all_contract_types();
-    my %supported_contract_types = _get_active_offerings('contract_type');
-    my %default_contract_group;
-
-    if (%supported_contract_types) {
-        $default_contract_group{$_} = $contract_types->{$_}->{category} for (sort grep { $supported_contract_types{$_} } keys %$contract_types);
-    } else {
-        # Supported contract groups cannot be empty; so do not filter if none exists
-        warn 'Unable to filter out unused contracts';
-        $default_contract_group{$_} = $contract_types->{$_}->{category} for (keys %$contract_types);
-    }
-
-    return %default_contract_group;
 }
 
 my $offerings_cache;
