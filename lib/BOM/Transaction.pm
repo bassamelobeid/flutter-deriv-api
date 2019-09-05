@@ -562,7 +562,9 @@ sub prepare_buy {
 }
 
 # to accomodate batch buy, we allow buy method to take in client,
-# clientdb and bet_data as parameters
+# clientdb and bet_data as parameters.
+# TODO: the accomodation thing is a bit of a mess; will need to
+#       rethink this later.
 sub buy {
     my ($self, %options) = @_;
 
@@ -642,6 +644,8 @@ sub buy {
 
     enqueue_new_transaction(_get_params_for_expiryqueue($self)) unless $options{is_batch_buy};    # For soft realtime expiration notification.
 
+    # TODO: this is a bit of a hack; it's just to do get
+    #       batch_buys to reuse buy method
     $self->{success_buy_fmb} = $fmb;
     $self->{success_buy_txn} = $txn;
 
@@ -976,6 +980,17 @@ sub sell_by_shortcode {
                     $r->{tnx}       = $res_row->{txn};
                     $r->{fmb}       = $res_row->{fmb};
                     $r->{buy_tr_id} = $res_row->{buy_tr_id};
+
+                    my $client = $r->{client};
+                    BOM::CompanyLimits::add_sell_contract({
+                            bet_data     => $res_row->{fmb},
+                            account_data => {
+                                client_loginid  => $client->loginid,
+                                currency_code   => $self->contract->currency,
+                                landing_company => $client->landing_company->short,
+                                binary_user_id  => $client->binary_user_id,
+                            },
+                        });
 
                     $success++;
                 }
@@ -1605,6 +1620,16 @@ sub sell_expired_contracts {
         if ($sr_check_required) {
             $total_losses += $fmb->{sell_price} + 0 ? 0 : $fmb->{buy_price};
         }
+
+        BOM::CompanyLimits::add_sell_contract({
+                bet_data     => $fmb,
+                account_data => {
+                    client_loginid  => $client->loginid,
+                    currency_code   => $currency,
+                    landing_company => $client->landing_company->short,
+                    binary_user_id  => $client->binary_user_id,
+                },
+            });
     }
 
     $client->increment_social_responsibility_values({
