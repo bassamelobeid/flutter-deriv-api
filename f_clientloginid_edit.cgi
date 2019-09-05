@@ -12,7 +12,7 @@ use Digest::MD5;
 use Media::Type::Simple;
 use Date::Utility;
 use List::UtilsBy qw(rev_sort_by);
-
+use List::Util qw(sum0);
 use LandingCompany::Registry;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 
@@ -918,7 +918,6 @@ foreach my $mt_ac (@mt_logins) {
         $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
 
         if (sum0(@rights{qw(enabled api)}) == 2 and not $rights{trade_disabled}) {
-
             print " ( Enabled )";
         } else {
             print " ( Disabled )";
