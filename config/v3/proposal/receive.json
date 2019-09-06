@@ -55,19 +55,19 @@
                "type" : "number",
                "description" : "Example: 10"
             },
-            "limit_order" : {
+            "barriers" : {
                "type": "array",
-               "description": "contains limit order information. (Only application for MULTUP and MULTDOWN).",
+               "description": "Contains barrier information. (Only applicable for contract with internally calculated barrier(s).).",
                "item": {
                  "type": "object",
                  "properties": {
                    "display_name": {
                      "type": "Str",
-                     "description": "The translated name for the limit order placed"
+                     "description": "The description of the barrier."
                    },
                    "barrier_value": {
                      "type": "Str",
-                     "description": "The pip-sized barrier value for the limit order placed"
+                     "description": "The pip-sized barrier value."
                    }
                  }
                }
