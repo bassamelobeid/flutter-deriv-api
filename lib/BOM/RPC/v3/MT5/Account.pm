@@ -1210,8 +1210,8 @@ async_rpc mt5_withdrawal => sub {
     my $params = shift;
 
     my ($client, $args, $source) = @{$params}{qw/client args source/};
-    my ($fm_mt5, $to_loginid, $amount) =
-        @{$args}{qw/from_mt5 to_binary amount/};
+    my ($fm_mt5, $to_loginid, $amount, $currency_check) =
+        @{$args}{qw/from_mt5 to_binary amount currency_check/};
 
     my $error_code = 'MT5WithdrawalError';
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -1225,7 +1225,7 @@ async_rpc mt5_withdrawal => sub {
 
     return _make_error($error_code, localize('MT5 account is locked'), 'MT5 account is locked') if $client->status->mt5_withdrawal_locked;
 
-    return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code)->then(
+    return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code, $currency_check)->then(
         sub {
             my ($response) = @_;
             return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
@@ -1459,7 +1459,7 @@ sub _get_mt5_account_from_affiliate_token {
 }
 
 sub _mt5_validate_and_get_amount {
-    my ($authorized_client, $loginid, $mt5_loginid, $amount, $error_code) = @_;
+    my ($authorized_client, $loginid, $mt5_loginid, $amount, $error_code, $currency_check) = @_;
 
     my $mt5_suspended = _is_mt5_suspended();
     return Future->done($mt5_suspended) if $mt5_suspended;
@@ -1490,6 +1490,9 @@ sub _mt5_validate_and_get_amount {
             my $mt5_group    = $setting->{group};
             my $mt5_lc       = _fetch_mt5_lc($setting);
             my $mt5_currency = $setting->{currency};
+
+            return _make_error($error_code, localize('Currency provided is different from account currency.'))
+                if $currency_check && $currency_check ne $mt5_currency;
 
             # Check if id is a demo account
             # If yes, then no need to validate client
