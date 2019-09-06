@@ -63,7 +63,7 @@ has _usd_rates => (
 );
 
 sub _build__usd_rates {
-    return {map { $_ => in_usd(1, $_) } grep { $_ ne 'ETC' } LandingCompany::Registry->new()->all_currencies};
+    return {map { $_ => in_usd(1, $_) } LandingCompany::Registry->new()->all_currencies({exclude_experimental => 1})};
 }
 
 sub amount_in_usd {
