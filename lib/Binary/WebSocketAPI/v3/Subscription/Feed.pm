@@ -142,8 +142,8 @@ sub handle_message {
         return;
     }
 
-    unless ($pip_size) {    # Don't proceed if no pip_size so it does not get cached.
-        $log->warnf('No pip_size in handle_message ' . __PACKAGE__ . '  unsubscribing and returning');
+    if (!$pip_size && !$cache_only) {    # Don't proceed if no pip_size and sending to client
+        $log->warnf('No pip_size and not being cached  in handle_message ' . __PACKAGE__ . '  unsubscribing and returning');
         $self->unregister;
         return;
     }
