@@ -182,9 +182,10 @@ subtest 'invalid amount_type' => sub {
     }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->error_code, 'WrongAmountTypeOne', 'correct error code';
-        is $_->message_to_client->[0], 'Basis must be [_1] for this contract.';
-        is $_->message_to_client->[1], 'multiplier';
+        is $_->error_code, 'InvalidInput', 'correct error code';
+        is $_->message_to_client->[0], '[_1] is not a valid input for contract type [_2].';
+        is $_->message_to_client->[1], 'basis';
+        is $_->message_to_client->[2], 'LBHIGHLOW';
     };
 };
 
