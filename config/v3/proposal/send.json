@@ -153,7 +153,7 @@
       },
       "limit_order": {
         "type": "array",
-        "description": "add a order to close the contract once the order condition is met (only for MULTUP and MULTDOWN)",
+        "description": "add an order to close the contract once the order condition is met (only for MULTUP and MULTDOWN)",
         "itme": {
           "type": "object",
           "properties": {

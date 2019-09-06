@@ -54,6 +54,23 @@
             "payout" : {
                "type" : "number",
                "description" : "Example: 10"
+            },
+            "limit_order" : {
+               "type": "array",
+               "description": "contains limit order information. (Only application for MULTUP and MULTDOWN).",
+               "item": {
+                 "type": "object",
+                 "properties": {
+                   "display_name": {
+                     "type": "Str",
+                     "description": "The translated name for the limit order placed"
+                   },
+                   "barrier_value": {
+                     "type": "Str",
+                     "description": "The pip-sized barrier value for the limit order placed"
+                   }
+                 }
+               }
             }
          },
          "required" : [
