@@ -221,7 +221,7 @@ sub _get_ask {
             }
 
             $response->{multiplier} = $contract->multiplier unless $contract->is_binary;
-
+            $response->{barriers} = $contract->barriers_for_display if $contract->can('barriers_for_display');
         }
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
