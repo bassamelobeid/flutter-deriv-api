@@ -6,25 +6,19 @@
         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
             <tr>
                 <td bgcolor="#ffffff" align="left" valign="top" style="padding: 40px 30px 24px 30px; border-top: 2px solid #ff444f;">
-                    <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">[% l('New Device Login') %]</h2>
-                    <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">[% l('Your Deriv account was used to login on the following device.') %]</p>
+                    <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">[% l('New device login') %]</h2>
+                    <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">[% l('A new device accessed your Deriv account.') %]</p>
                     <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 16px 0px;">[% l('Please review the details to confirm it was you.') %]</p>
                     <table border="0" cellpadding="0" cellspacing="0" width="100%">
                         <tr>
                             <td bgcolor="#f3f3f3" align="left" valign="top" style="padding: 16px 24px 16px 24px;">
-                                <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('Login country:') %] <strong>[% country %]</strong></p>
-                                <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('Type of device:') %] <strong>[% l( device ) %]</strong></p>
+                                <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('Device:') %] <strong>[% l( device ) %]</strong></p>
+                                <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('Location:') %] <strong>[% country %]</strong></p>
                                 <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('IP address:') %] <strong>[% ip %]</strong></p>
                             </td>
                         </tr>
                     </table>
-                    <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">[% l('If this was you, no action is required.') %]</p>
-                </td>
-            </tr>
-            <tr>
-                <td bgcolor="#ffffff" align="left" valign="top" style="padding: 0px 30px 40px 30px; border-radius: 0px 0px 2px 2px;">
-                    <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">[% l('If you have any questions or concerns, we’re here to help.') %]</p>
-                    <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[% l('Contact us via our [_1]Help Centre','<a href="https://www.deriv.com/help-centre" style="text-decoration: underline;">') %]</a>.</p>
+                    <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">[% l('If this was you, great! You don\'t need to do anything.') %]</p>
                 </td>
             </tr>
         </table>

@@ -413,8 +413,9 @@ sub _compare_signin_activity {
 
         my $brand = $c->stash('brand');
 
-        my $bd = HTTP::BrowserDetect->new($c->req->headers->header('User-Agent'));
+        my $bd           = HTTP::BrowserDetect->new($c->req->headers->header('User-Agent'));
         my $country_code = uc($c->stash('request')->country_code // '');
+        my $ip_address   = $c->stash('request')->client_ip // '';
 
         # Relevant data required
         my $data = {
@@ -423,11 +424,15 @@ sub _compare_signin_activity {
             device  => $bd->device                                                             // $bd->os_string,
             browser => $bd->browser_string,
             app     => $app,
+            ip      => $ip_address,
             l       => \&localize
         };
 
-        my $tt = Template->new(ABSOLUTE => 1);
-        $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/new_signin.html.tt', $data, \my $message);
+        my $tt = Template->new(
+            ABSOLUTE => 1,
+            ENCODING => 'utf8'
+        );
+        $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/new_signin_' . $brand->name . '.html.tt', $data, \my $message);
 
         if ($tt->error) {
             warn "Template error: " . $tt->error;
