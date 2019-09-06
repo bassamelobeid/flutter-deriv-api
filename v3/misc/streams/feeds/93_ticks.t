@@ -2,6 +2,8 @@ use strict;
 use warnings;
 use Test::More;
 use Test::MockTime qw/:all/;
+use Test::MockModule;
+use Test::Warnings qw/ warning /;
 use Encode;
 use JSON::MaybeXS;
 use FindBin qw/$Bin/;
@@ -146,6 +148,48 @@ subtest 'ticks_forget_one_sub' => sub {
     is $res->{tick}->{id},         $id2, 'The same tick id';
 
 };
+
+subtest 'ticks_history_fail_rpc' => sub {
+
+    my $res = $t->await::forget_all({forget_all => 'ticks'});
+    {
+    my $mock_rpc = Test::MockModule->new('MojoX::JSON::RPC::Client');
+    $mock_rpc->mock ('call', sub { my ($a, $b, $c, $d) = @_; use Data::Dumper::Concise;
+    &$d($a,undef );
+});
+    my $req2 = {
+        "ticks_history" => "R_50",
+        "style"         => "ticks",
+        "count"         => 1,
+        "end"           => "latest",
+        "req_id"        => 100,
+        "subscribe"     => 1,
+    };
+my $warning = warning{  #callback throws a warning on bad rpc response
+    $res = $t->await::ticks_history($req2);
+};
+
+like  ($warning, qr\^WrongResponse\, "warning thrown on bad RPC result");
+cmp_ok $res->{error}->{message}, 'eq', 'Sorry, an error occurred while processing your request.', "Recived tick history error when RPC failed";
+}
+
+# If the RPC response fails any subscription created in the call should be canceled and we should be able to try again with out needing to forget.
+
+    my $req3 = {
+        "ticks_history" => "R_50",
+        "style"         => "ticks",
+        "count"         => 1,
+        "end"           => "latest",
+        "req_id"        => 100,
+        "subscribe"     => 1,
+    };
+    $res = $t->await::history($req3);
+
+cmp_ok $res->{msg_type}, 'eq', 'history', "Received tick history error when RPC failed";
+
+
+};
+
 
 $t->finish_ok;
 
