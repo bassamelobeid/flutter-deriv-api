@@ -1676,9 +1676,22 @@ sub _mt5_validate_and_get_amount {
 
 sub _fetch_mt5_lc {
     my $settings = shift;
-    # somewhere in the user settings, the landing company name is set with a double space!
-    $settings->{landing_company} =~ s/\s+/ /g;
-    return LandingCompany::Registry::get_loaded_landing_companies()->{$settings->{landing_company}}->{short};
+
+    my $lc_short;
+
+    # This extracts the landing company name from the mt5 group name
+    # E.g. real\labuan -> labuan , real\vanuatu_standard -> vanuatu
+    if ($settings->{group} =~ m/[a-zA-Z]+\\([a-zA-Z]+)($|_.+)/) {
+        $lc_short = $1;
+    }
+
+    # check if lc exists
+    return create_error_future({
+            code              => 'InvalidMT5Group',
+            message_to_client => 'This MT5 account has an invalid Landing Company.'
+        }) unless $lc_short and LandingCompany::Registry::get($lc_short);
+
+    return $lc_short;
 }
 
 sub _mt5_has_open_positions {
