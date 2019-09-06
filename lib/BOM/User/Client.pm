@@ -1107,10 +1107,11 @@ sub increment_social_responsibility_values {
     }
 
     # This is only set once; there is no point to queue again and again
-    # Moreover: if thresholds have been breached before, there is no need to check
-    # for 30 days
+    # We only queue if the client is at low-risk only
+    my $sr_status = $redis->hget($hash_key, $loginid . '_sr_risk_status');
+
     BOM::Platform::Event::Emitter::emit('social_responsibility_check', {loginid => $loginid})
-        if ($redis->hsetnx($hash_name, $event_name, 1) && !$redis->get($loginid . '_sr_period_evaluation'));
+        if ($sr_status eq 'low' && $redis->hsetnx($hash_name, $event_name, 1));
 
     return undef;
 }
