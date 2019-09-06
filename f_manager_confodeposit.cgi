@@ -28,6 +28,35 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 
+=head2 _incr_misc_checks
+
+Function to handle external client transactions, that are related to different
+compliance checks. This only applies for bank wire transfers and doughflow (external
+cashier).
+
+=cut
+
+sub _incr_misc_checks {
+    my ($args) = @_;
+
+    my $client      = $args->{client};
+    my $amount      = $args->{amount};
+    my $transaction = $args->{transfer_type} eq 'CREDIT' ? 'deposit' : 'withdrawal';
+
+    $client->increment_social_responsibility_values({
+            deposit_amount => $amount,
+            deposit_count  => 1
+        })
+        if ($client->landing_company->social_responsibility_check_required
+        && $transaction eq 'deposit');
+
+    $client->increment_qualifying_payments({
+            action => $transaction,
+            amount => abs($amount)}) if $client->landing_company->qualifying_payment_check_required;
+
+    return undef;
+}
+
 print qq[<style>p {margin: 12px}</style>];
 
 my %params = %{request()->params};
@@ -45,19 +74,24 @@ if (BOM::Config::Runtime->instance->app_config->system->suspend->payments) {
 
 # Why all the delete-params?  Because any remaining form params just get passed directly
 # to the new-style database payment-handlers.  There's no need to mention those in this module.
+my $loginID   = uc((delete $params{account}    || ''));
+my $toLoginID = uc((delete $params{to_account} || ''));
+my $informclient     = delete $params{informclientbyemail};
+my $ttype            = delete $params{ttype};
+my $DCcode           = delete $params{DCcode};
+my $range            = delete $params{range};
+my $transaction_date = delete $params{date_received};
+my $reference_id     = delete $params{reference_id};
 
-my $curr              = $params{currency};
-my $loginID           = uc((delete $params{account} || ''));
-my $toLoginID         = uc((delete $params{to_account} || ''));
-my $amount            = delete $params{amount};
-my $informclient      = delete $params{informclientbyemail};
-my $ttype             = delete $params{ttype};
-my $DCcode            = delete $params{DCcode};
-my $range             = delete $params{range};
-my $transaction_date  = delete $params{date_received};
-my $reference_id      = delete $params{reference_id};
+my $curr         = $params{currency};
+my $amount       = $params{amount};
+my $payment_type = $params{payment_type};
+my $remark       = $params{remark};
+
 my $encoded_loginID   = encode_entities($loginID);
 my $encoded_toLoginID = encode_entities($toLoginID);
+
+my $is_internal_payment = any { $payment_type eq $_ } qw( bank_money_transfer external_cashier );
 
 my $clerk = BOM::Backoffice::Auth0::get_staffname();
 
@@ -152,7 +186,7 @@ my $payment_mapper = BOM::Database::DataMapper::Payment->new({
 
 if (
     $payment_mapper->is_duplicate_manual_payment({
-            remark => ($params{remark} || ''),
+            remark => ($remark || ''),
             date   => Date::Utility->new,
             amount => $signed_amount
         }))
@@ -233,21 +267,23 @@ if ($ttype eq 'TRANSFER') {
 my ($leave, $client_pa_exp);
 try {
     BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication if $client->is_first_deposit_pending;
-    if ($params{payment_type} eq 'external_cashier') {
-        code_exit_BO("Remarks is mandatory for doughflow payments.") unless $params{remark};
+
+    if ($payment_type eq 'external_cashier') {
+        code_exit_BO("Remarks is mandatory for doughflow payments.") unless $remark;
         if ($ttype eq 'CREDIT') {
             # check if its withdrawal reversal
             # transaction_id is not required in that case
-            if ($params{remark} =~ 'DoughFlow withdrawal_reversal') {
+            if ($remark =~ 'DoughFlow withdrawal_reversal') {
                 delete $params{transaction_id};
             } else {
                 code_exit_BO("Transaction id is mandatory for doughflow credit.") if not $params{transaction_id};
                 code_exit_BO(
                     "Transaction id provided does not match with one provided in remark (it should be in format like: transaction_id=33232).")
-                    if $params{remark} !~ /transaction_id=$params{transaction_id}/;
+                    if $remark !~ /transaction_id=$params{transaction_id}/;
             }
         }
     }
+
     if ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
         $client->smart_payment(
             %params,    # these are payment-type-specific params from the html form.
@@ -255,13 +291,13 @@ try {
             staff  => $clerk,
         );
 
-        $client->increment_social_responsibility_values({
-                deposit_amount => $signed_amount,
-                deposit_count  => 1
-            })
-            if ($client->landing_company->social_responsibility_check_required
-            && $ttype eq 'CREDIT'
-            && $params{payment_type} eq 'bank_money_transfer');
+        # Handle deposits for doughflow and bank money transfers (internal)
+        # Exclude reversal transactions
+        _incr_misc_checks({
+                client        => $client,
+                amount        => $signed_amount,
+                transfer_type => $ttype
+            }) if $is_internal_payment && $remark !~ /reversal/;
 
         $client_pa_exp = $client;
     } elsif ($ttype eq 'TRANSFER') {
@@ -284,7 +320,7 @@ catch {
 
 code_exit_BO() if $leave;
 my $today = Date::Utility->today;
-if ($ttype eq 'CREDIT' and $params{payment_type} =~ /^bank_money_transfer|external_cashier$/) {
+if ($ttype eq 'CREDIT' and $is_internal_payment) {
     # unset pa_withdrawal_explicitly_allowed for bank_wire and doughflow mannual deposit
     try {
         $client->status->clear_pa_withdrawal_explicitly_allowed;
