@@ -68,7 +68,7 @@ subtest 'test everything' => sub {
             };
             if (List::Util::any { $ref->{contract_type} eq $_ } qw(LBFLOATCALL LBFLOATPUT LBHIGHLOW)) {
                 $contract_args->{multiplier}  = 5;
-                $contract_args->{amount_type} = 'multiplier';
+                delete $contract_args->{payout};
             } elsif (
                 List::Util::any {
                     $ref->{contract_type} eq $_

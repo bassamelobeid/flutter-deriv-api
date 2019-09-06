@@ -449,8 +449,10 @@ sub _initialize_other_parameters {
     }
 
     # only do this conversion here.
-    $params->{amount_type} = 'ask_price' if $params->{amount_type} eq 'stake';
-    $params->{$params->{amount_type}} = $params->{amount};
+    if ($params->{amount_type}) {
+        $params->{amount_type} = 'ask_price' if $params->{amount_type} eq 'stake';
+        $params->{$params->{amount_type}} = $params->{amount};
+    }
     delete $params->{$_} for qw(amount amount_type);
 
     return;
