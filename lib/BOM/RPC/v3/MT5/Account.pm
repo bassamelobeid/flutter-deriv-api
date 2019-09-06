@@ -1178,8 +1178,12 @@ async_rpc mt5_deposit => sub {
                     amount_in_USD => convert_currency($amount, $fm_client->currency, 'USD'),
                 }) if ($response->{mt5_data}->{group} eq 'real\vanuatu_standard');
 
+            my $txn_id = $txn->transaction_id;
+            # 31 character limit for MT5 comments
+            my $mt5_comment = "${fm_loginid}_${to_mt5}#$txn_id";
+
             # deposit to MT5 a/c
-            return do_mt5_deposit($to_mt5, $response->{mt5_amount}, $comment)->then(
+            return do_mt5_deposit($to_mt5, $response->{mt5_amount}, $mt5_comment, $txn_id)->then(
                 sub {
                     my ($status) = @_;
 
@@ -1196,7 +1200,7 @@ async_rpc mt5_deposit => sub {
 
                     return Future->done({
                             status                => 1,
-                            binary_transaction_id => $txn->transaction_id,
+                            binary_transaction_id => $txn_id,
                             $return_mt5_details ? (mt5_data => $response->{mt5_data}) : ()});
                 });
         });
@@ -1257,10 +1261,13 @@ async_rpc mt5_withdrawal => sub {
 
             $comment = "$comment $additional_comment" if $additional_comment;
 
+            # 31 character limit for MT5 comments
+            my $mt5_comment = "${fm_mt5}_${to_loginid}";
+
             my $mt5_group = $response->{mt5_data}->{group};
             #MT5 expect this value to be negative.
             # withdraw from MT5 a/c
-            return do_mt5_withdrawl($fm_mt5, (($amount > 0) ? $amount * -1 : $amount), $comment)->then(
+            return do_mt5_withdrawl($fm_mt5, (($amount > 0) ? $amount * -1 : $amount), $mt5_comment)->then(
                 sub {
                     my ($response) = @_;
                     return _make_error($error_code, $response->{error}) if (ref $response eq 'HASH' and $response->{error});
@@ -1827,7 +1834,7 @@ sub _is_account_demo {
 }
 
 sub do_mt5_deposit {
-    my ($login, $amount, $comment) = @_;
+    my ($login, $amount, $comment, $txn_id) = @_;
     my $deposit_sub = \&BOM::MT5::User::Async::deposit;
     if (!_is_mt5_suspended('manager_api')) {
         $deposit_sub = \&BOM::MT5::User::Async::manager_api_deposit;
@@ -1836,7 +1843,8 @@ sub do_mt5_deposit {
     return $deposit_sub->({
         login   => $login,
         amount  => $amount,
-        comment => $comment
+        comment => $comment,
+        txn_id  => $txn_id,
     });
 }
 
@@ -1850,7 +1858,7 @@ sub do_mt5_withdrawl {
     return $withdrawal_sub->({
         login   => $login,
         amount  => $amount,
-        comment => $comment
+        comment => $comment,
     });
 }
 
