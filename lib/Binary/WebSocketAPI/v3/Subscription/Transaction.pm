@@ -11,6 +11,7 @@ use Log::Any qw($log);
 use Moo;
 use Carp qw(croak);
 use List::Util qw(any);
+use Scalar::Util qw(blessed);
 with 'Binary::WebSocketAPI::v3::Subscription';
 
 use namespace::clean;
@@ -36,7 +37,6 @@ Please refer to L<Binary::WebSocketAPI::v3::Subscription>
         type        => $type,
         contract_id => $contract_id,
         args        => $args,
-        uuid        => $uuid,
     );
 
     $worker->unsubscribe;
@@ -56,7 +56,7 @@ has type => (
     is       => 'ro',
     required => 1,
     isa      => sub {
-        state $allowed_types = {map { $_ => 1 } qw(buy balance transaction sell)};
+        state $allowed_types = {map { $_ => 1 } qw(buy balance balance_all transaction sell)};
         die "type can only be buy, balance, transaction, sell" unless $allowed_types->{$_[0]};
     });
 
@@ -87,6 +87,43 @@ has account_id => (
     required => 1,
 );
 
+=head2 loginid
+
+used for balance type
+
+=cut
+
+has loginid => (
+    is => 'ro',
+);
+
+=head2 currency
+
+used for balance type
+
+=cut
+
+has currency => (
+    is => 'ro',
+);
+
+=head2 balance_all_proxy
+
+The balance_all object that used to process message and emit results.
+
+=cut
+
+has balance_all_proxy => (
+    is  => 'ro',
+    isa => sub {
+        die "balance_all_proxy need a Binary::WebSocketAPI::v3::Subscription::BalanceAll"
+            unless blessed($_[0]) eq 'Binary::WebSocketAPI::v3::Subscription::BalanceAll';
+    },
+    weak_ref => 1,
+);
+
+has currency_rate_in_total_currency => (is => 'ro');
+
 sub subscription_manager {
     return Binary::WebSocketAPI::v3::SubscriptionManager->redis_transaction_manager();
 }
@@ -108,6 +145,9 @@ sub BUILD {
 # This method is used to find a subscription. Class name + _unique_key will be a unique index of the subscription objects.
 sub _unique_key {
     my $self = shift;
+    if ($self->type eq 'balance') {
+        return $self->type . ':' . $self->account_id;
+    }
     return $self->type . ':' . $self->poc_uuid;
 }
 
@@ -267,13 +307,16 @@ sub _update_balance {
     my $args = $self->args;
     my $id   = $self->uuid;
 
+    if ($self->balance_all_proxy) {
+        return $self->balance_all_proxy->update_balance($self, $payload);
+    }
     my $details = {
         msg_type => 'balance',
         $args ? (echo_req => $args) : (),
         balance => {
             ($id ? (id => $id) : ()),
-            loginid  => $c->stash('loginid'),
-            currency => $c->stash('currency'),
+            loginid  => $self->loginid,
+            currency => $self->currency,
             balance  => formatnumber('amount', $c->stash('currency'), $payload->{balance_after}),
         },
         $id ? (subscription => {id => $id}) : (),

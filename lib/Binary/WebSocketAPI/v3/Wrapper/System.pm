@@ -140,7 +140,11 @@ sub server_time {
 
 sub _forget_transaction_subscription {
     my ($c, $type) = @_;
-    my $removed_ids   = [];
+    my $removed_ids = [];
+    if ($type eq 'balance') {
+        my @subscriptions = Binary::WebSocketAPI::v3::Subscription::BalanceAll->get_by_class($c);
+        map { push @$removed_ids, $_->uuid; $_->unregister } @subscriptions;
+    }
     my @subscriptions = Binary::WebSocketAPI::v3::Subscription::Transaction->get_by_class($c);
     for my $subscription (@subscriptions) {
         # $subscription->type never could be 'proposal_open_contract', so we will not return any uuids related to proposal_open_contract subscriptions
