@@ -97,7 +97,7 @@ subtest 'transfer_between_accounts_lower_bounds' => sub {
         UST => 1,
         AUD => 0.8,
         USB => 1,
-	IDK => 1,
+        IDK => 1,
     };
     my $mock_rates = Test::MockModule->new('ExchangeRates::CurrencyConverter', no_auto => 1);
     $mock_rates->mock(
@@ -118,7 +118,7 @@ subtest 'transfer_between_accounts_lower_bounds' => sub {
         'UST' => '0.04',
         'LTC' => '0.00032259',
         'USB' => '0.04',
-	'IDK' => '0.04',
+        'IDK' => '0.04',
     };
 
     is_deeply(BOM::Config::CurrencyConfig::transfer_between_accounts_lower_bounds(), $lower_bounds, 'Lower bounds are correct');
@@ -155,7 +155,7 @@ subtest 'transfer_between_accounts_lower_bounds' => sub {
         'UST' => '1.00',
         'LTC' => '0.00100000',
         'USB' => '1.00',
-	'IDK' => '1.00',
+        'IDK' => '1.00',
     };
     $app_config->set({
         'payments.transfer_between_accounts.minimum.by_currency'    => JSON::MaybeUTF8::encode_json_utf8($min_by_cyrrency),
