@@ -128,4 +128,49 @@ sub on_development {
     return env() =~ /^development/;
 }
 
+sub redis_replicated_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-replicated.yml');
+    return $config;
+}
+
+sub redis_pricer_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml');
+    return $config;
+}
+
+sub redis_exchangerates_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-exchangerates.yml');
+    return $config;
+}
+
+sub redis_feed_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_FEED} // '/etc/rmg/redis-feed.yml');
+    return $config;
+}
+
+sub redis_mt5_user_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_MT5_USER} // '/etc/rmg/redis-mt5user.yml');
+    return $config;
+}
+
+sub redis_events_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_EVENTS} // '/etc/rmg/redis-events.yml');
+    return $config;
+}
+
+sub redis_transaction_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_TRANSACTION} // '/etc/rmg/redis-transaction.yml');
+    return $config;
+}
+
+sub redis_auth_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_AUTH} // '/etc/rmg/redis-auth.yml');
+    return $config;
+}
+
+sub redis_queue_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_QUEUE} // '/etc/rmg/redis-queue.yml');
+    return $config;
+}
+
 1;
