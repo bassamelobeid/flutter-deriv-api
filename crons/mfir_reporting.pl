@@ -27,20 +27,20 @@ my $failure_recipients = join(',', map { $brand->emails($_) } qw(compliance bill
 # Yesterday is default
 my $rd = Date::Utility->new($specified_rptDate);
 
+my $rptDate  = $specified_rptDate ? $rd->date_yyyymmdd            : $rd->minus_time_interval('1d')->date_yyyymmdd;
+my $fileDate = $specified_rptDate ? $rd->plus_time_interval('1d') : $rd;
+
 # our files will be written out for reference
-my $FN = sprintf('BNRY_%04d%02d%02d%02d%02d%02d.csv', $rd->year, $rd->month, $rd->day_of_month, $rd->hour, $rd->minute, $rd->second);
+my $FN = sprintf('BNRY_%04d%02d%02d%02d%02d%02d.csv',
+    $fileDate->year, $fileDate->month, $fileDate->day_of_month, $fileDate->hour, $fileDate->minute, $fileDate->second);
 # that gives us something like this: BNRY_20180307270320.csv , which is the prescribed format
 
-my $rd2 = $rd->plus_time_interval('1s');
+my $rd2 = $fileDate->plus_time_interval('1s');
 my $FN_mt5 = sprintf('BNRY_%04d%02d%02d%02d%02d%02d.csv', $rd2->year, $rd2->month, $rd2->day_of_month, $rd2->hour, $rd2->minute, $rd2->second);
 
 # where will they go under reports/ and create that if it doesn't yet exist
-my $reports_path = "/reports/MiFIR/@{[ $rd->year ]}";
+my $reports_path = "/reports/MiFIR/@{[ $fileDate->year ]}";
 path($reports_path)->mkpath;
-
-# now adjust our actual reporting date if we have not specified the same
-$rd = $rd->minus_time_interval('1d') unless $specified_rptDate;
-my $rptDate = $rd->date_yyyymmdd;
 
 # let psql do our CSV formatting
 my $rz = qx(/usr/bin/psql service=report -qX -v ON_ERROR_STOP=1 2>&1 <<SQL
