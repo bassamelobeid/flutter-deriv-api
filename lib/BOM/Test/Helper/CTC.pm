@@ -47,7 +47,8 @@ sub deploy_test_contract {
     $bytecode =~ s/[\x0D\x0A]+//g;
 
     # 0 here means that we will unlock this account until geth be restarted
-    $currency->rpc_client->personal_unlockAccount($currency->account_config->{account}->{address}, $currency->account_config->{account}->{passphrase}, 0);
+    $currency->rpc_client->personal_unlockAccount($currency->account_config->{account}->{address},
+        $currency->account_config->{account}->{passphrase}, 0);
 
     my $total_supply = Math::BigFloat->new(1000)->bmul(Math::BigInt->new(10)->bpow(18))->numify;
     $currency->_contract->gas(4_000_000);
@@ -65,6 +66,5 @@ sub deploy_test_contract {
 
     return $currency->_contract->contract_address;
 }
-
 
 1;
