@@ -873,17 +873,15 @@ rpc "reset_password",
     my $client = $clients[0];
 
     unless ($client->is_virtual) {
-        unless ($args->{date_of_birth}) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => "DateOfBirthMissing",
-                    message_to_client => localize("Date of birth is required.")});
-        }
-        my $user_dob = $args->{date_of_birth} =~ s/-0/-/gr;    # / (dummy ST3)
-        my $db_dob   = $client->date_of_birth =~ s/-0/-/gr;    # /
+        if ($args->{date_of_birth}) {
 
-        return BOM::RPC::v3::Utility::create_error({
-                code              => "DateOfBirthMismatch",
-                message_to_client => localize("The email address and date of birth do not match.")}) if ($user_dob ne $db_dob);
+            (my $user_dob = $args->{date_of_birth}) =~ s/-0/-/g;
+            (my $db_dob   = $client->date_of_birth) =~ s/-0/-/g;
+
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => "DateOfBirthMismatch",
+                    message_to_client => localize("The email address and date of birth do not match.")}) if ($user_dob ne $db_dob);
+        }
     }
 
     if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $args->{new_password}})) {
