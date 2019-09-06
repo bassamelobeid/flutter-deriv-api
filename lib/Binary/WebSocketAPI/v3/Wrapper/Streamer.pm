@@ -20,6 +20,7 @@ use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Instance::Redis qw(ws_redis_master);
 use Binary::WebSocketAPI::v3::Subscription::Feed;
 
+use DataDog::DogStatsd::Helper qw(stats_inc);
 my $json = JSON::MaybeXS->new;
 
 sub get_status_msg {
@@ -241,20 +242,27 @@ sub ticks_history {
         # but until we have a failing test case which demonstrates that, I don't think it's worth spending too much time on.
         return if (!$c || !$c->tx);
         $c->call_rpc({
-                args            => $args,
-                origin_args     => $req_storage->{origin_args},
-                method          => 'ticks_history',
+                args           => $args,
+                origin_args    => $req_storage->{origin_args},
+                method         => 'ticks_history',
+                rpc_failure_cb => sub {
+                    if ($worker) {
+                        stats_inc('bom_websocket_api.v_3.ticks_history.rpc_failure.kill_sub');
+                        $worker->unregister;
+                    }
+                },
                 rpc_response_cb => sub {
                     my ($c, $rpc_response, $req_storage) = @_;
                     return if (!$c || !$c->tx);
                     my $args = $req_storage->{args};
-                    $c->stash->{pip_size}->{$args->{ticks_history}} = $rpc_response->{data}->{pip_size};
+
                     if (exists $rpc_response->{error}) {
                         # cancel subscription if response has error
                         $worker->unregister if $worker;
                         return $c->new_error('ticks_history', $rpc_response->{error}->{code}, $c->l($rpc_response->{error}->{message_to_client}));
                     }
 
+                    $c->stash->{pip_size}->{$args->{ticks_history}} = $rpc_response->{data}->{pip_size};
                     my $real_worker = $worker || Binary::WebSocketAPI::v3::Subscription::Feed->new(
                         c          => $c,
                         type       => $publish,

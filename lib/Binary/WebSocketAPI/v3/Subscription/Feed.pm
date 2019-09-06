@@ -136,7 +136,14 @@ sub handle_message {
     my $arguments  = $self->args;
     my $cache_only = $self->cache_only;
     my $pip_size   = $c->stash->{pip_size}->{$symbol};
+
     unless ($c->tx) {
+        $self->unregister;
+        return;
+    }
+
+    unless ($pip_size) {    # Don't proceed if no pip_size so it does not get cached.
+        $log->warnf('No pip_size in handle_message ' . __PACKAGE__ . '  unsubscribing and returning');
         $self->unregister;
         return;
     }
