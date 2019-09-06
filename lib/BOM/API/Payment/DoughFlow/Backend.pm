@@ -15,7 +15,7 @@ use Format::Util::Numbers qw/financialrounding/;
 use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Payment::DoughFlow;
-use BOM::Platform::Client::IDAuthentication;
+use BOM::Platform::Event::Emitter;
 
 # one of deposit, withdrawal
 has 'type' => (
@@ -216,6 +216,13 @@ sub write_transaction_line {
         $fdp = $client->is_first_deposit_pending;
         $trx = $client->payment_doughflow(%payment_args);
 
+        BOM::Platform::Event::Emitter::emit(
+            'payment_deposit',
+            {
+                loginid          => $client->loginid,
+                is_first_deposit => $fdp
+            }) if $trx;
+
         # Social responsibility checks for MLT/MX clients
         $client->increment_social_responsibility_values({
                 deposit_amount => $amount,
@@ -244,8 +251,6 @@ sub write_transaction_line {
         }
         $trx = $client->payment_doughflow(%payment_args);
     }
-
-    BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication if $fdp;
 
     if ($fee) {
         $log->debug($c->type . " fee transaction complete, trx id " . $trx->fee_transaction_id);
