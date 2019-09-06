@@ -28,13 +28,16 @@ use Future::AsyncAwait;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 use Date::Utility;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
+use Encode qw(decode_utf8 encode_utf8);
+use Time::HiRes;
 use Format::Util::Numbers qw(financialrounding);
-use BOM::Config::Runtime;
 
 use BOM::Config;
+use BOM::Config::Runtime;
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email qw(send_email);
 use Email::Stuffer;
+use BOM::Platform::Client::IDAuthentication;
 use BOM::User;
 use BOM::User::Client;
 use BOM::Database::ClientDB;
@@ -43,8 +46,6 @@ use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
 use BOM::Config::RedisReplicated;
 use BOM::Event::Services;
-use Encode qw(decode_utf8 encode_utf8);
-use Time::HiRes;
 
 # For smartystreets datadog stats_timing
 $Future::TIMES = 1;
@@ -219,21 +220,6 @@ async sub document_upload {
             or die 'Could not instantiate client for login ID ' . $loginid;
 
         my $uploaded_manually_by_staff = $args->{uploaded_manually_by_staff} // 0;
-
-        my $redis_events_write = _redis_events_write();
-
-        await $redis_events_write->connect;
-
-        # trigger address verification if not already address_verified
-        try {
-            await _address_verification(client => $client)
-                if (not $client->status->address_verified
-                and (await $redis_events_write->hsetnx('ADDRESS_VERIFICATION_TRIGGER', $client->binary_user_id, 1)));
-        }
-        catch {
-            my $e = $@;
-            $log->errorf('Failed to verify applicants address: %s', $e);
-        }
 
         $log->debugf('Applying Onfido verification process for client %s', $loginid);
         my $file_data = $args->{content};
@@ -561,7 +547,7 @@ async sub client_verification {
                                 $db_doc->expiration_date($expiration_date);
                                 $db_doc->document_id($doc_numbers->[0]->{value});
                                 if ($db_doc->save) {
-                                    $log->infof('Expiration_date and document_id of document %s for client %s have been updated',
+                                    $log->debugf('Expiration_date and document_id of document %s for client %s have been updated',
                                         $db_doc->id, $loginid);
                                 }
                             }
@@ -656,10 +642,21 @@ async sub verify_address {
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die 'Could not instantiate client for login ID ' . $loginid;
 
-    # clear existing status
-    $client->status->clear_address_verified();
+    # verify address only if client has made any deposits
+    # or client is fully authenticated
+    do {
+        # clear existing status
+        $client->status->clear_address_verified();
+        try {
+            return await _address_verification(client => $client);
+        }
+        catch {
+            my $e = $@;
+            $log->errorf('Failed to verify applicants address: %s', $e);
+        };
+    } if ($client->has_deposits({exclude => ['free_gift']}) or $client->fully_authenticated());
 
-    return await _address_verification(client => $client);
+    return;
 }
 
 async sub _address_verification {
@@ -1815,6 +1812,42 @@ sub qualifying_payment_check {
     }
 
     return undef;
+}
+
+=head2 payment_deposit
+
+Event to handle deposit payment type.
+
+Currently, it only handles first deposit
+but in future, it can be extended to handle
+post deposit events
+
+=cut
+
+async sub payment_deposit {
+    my ($args) = @_;
+
+    my $loginid = $args->{loginid}
+        or die 'No client login ID supplied?';
+
+    my $client = BOM::User::Client->new({loginid => $loginid})
+        or die 'Could not instantiate client for login ID ' . $loginid;
+
+    my $is_first_deposit = $args->{is_first_deposit};
+
+    if ($is_first_deposit) {
+        try {
+            await _address_verification(client => $client);
+        }
+        catch {
+            my $e = $@;
+            $log->errorf('Failed to verify applicants address: %s', $e);
+        }
+
+        BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication;
+    }
+
+    return;
 }
 
 1;
