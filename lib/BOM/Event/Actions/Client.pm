@@ -28,6 +28,7 @@ use Future::AsyncAwait;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 use Date::Utility;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
+use Format::Util::Numbers qw(financialrounding);
 use BOM::Config::Runtime;
 
 use BOM::Config;
@@ -1733,17 +1734,18 @@ sub qualifying_payment_check {
 
     my $payment_check_limits = BOM::Config::payment_limits()->{qualifying_payment_check_limits}->{$client->landing_company->short};
 
-    my $limit_val = $payment_check_limits->{limit_for_days};
-    my $limit_cur = $payment_check_limits->{currency};
+    my $limit_val       = $payment_check_limits->{limit_for_days};
+    my $limit_cur       = $payment_check_limits->{currency};
+    my $client_currency = $client->currency;
 
-    my $threshold_val = convert_currency($limit_val, $limit_cur, $client->currency);
+    my $threshold_val = financialrounding('amount', $client_currency, convert_currency($limit_val, $limit_cur, $client_currency));
 
     my @breached_info;
 
     foreach my $action_key (qw/deposit withdrawal/) {
         my $key = $loginid . '_' . $action_key . '_qualifying_payment_check';
 
-        my $value = $redis->get($key) // 0;
+        my $value = financialrounding('amount', $client_currency, $redis->get($key) // 0);
 
         if ($value >= $threshold_val) {
             push @breached_info,
@@ -1775,7 +1777,7 @@ sub qualifying_payment_check {
             age_verified => $status->age_verification ? 'Yes' : 'No',
             authentication_status => $auth_status eq 'no' ? 'Not authenticated' : $auth_status,
             account_opening_reason => $client->account_opening_reason,
-            currency               => $client->currency,
+            currency               => $client_currency,
             balance                => $account->balance,
             total_deposits         => $total_deposits,
             total_withdrawals      => $total_withdrawals
