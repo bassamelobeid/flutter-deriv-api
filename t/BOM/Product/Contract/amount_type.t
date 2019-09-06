@@ -23,22 +23,23 @@ subtest 'amount_type - generic' => sub {
         is $_->message_to_client->[0], 'Please specify either [_1] or [_2].', 'no payout or stake specify';
     };
 
+    $args->{payout}     = 1;
     $args->{multiplier} = 1;
 
     try { produce_contract($args) }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Basis can either be [_1] or [_2] for this contract.', 'specify multiplier for CALL';
-        is $_->message_to_client->[1], 'payout';
-        is $_->message_to_client->[2], 'stake';
+        is $_->message_to_client->[0], '[_1] is not a valid input for contract type [_2].', 'specify multiplier for CALL';
+        is $_->message_to_client->[1], 'multiplier';
+        is $_->message_to_client->[2], 'CALL';
     };
 
+    delete $args->{payout};
     $args->{bet_type} = 'CALLSPREAD';
     $args->{stake}    = 100;
     delete $args->{barrier};
     $args->{high_barrier} = 'S10P';
     $args->{low_barrier}  = 'S-10P';
-
     try { produce_contract($args) }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
@@ -53,8 +54,9 @@ subtest 'amount_type - generic' => sub {
     try { produce_contract($args) }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Basis must be [_1] for this contract.', 'specify stake for LBFLOATCALL';
-        is $_->message_to_client->[1], 'multiplier';
+        is $_->message_to_client->[0], '[_1] is not a valid input for contract type [_2].', 'specify stake for LBFLOATCALL';
+        is $_->message_to_client->[1], 'basis';
+        is $_->message_to_client->[2], 'LBFLOATCALL';
     };
 
     $args->{bet_type} = 'CALL';
