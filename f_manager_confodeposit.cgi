@@ -24,6 +24,7 @@ use BOM::ContractInfo;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config::Runtime;
+use BOM::Platform::Event::Emitter;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -266,7 +267,7 @@ if ($ttype eq 'TRANSFER') {
 
 my ($leave, $client_pa_exp);
 try {
-    BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication if $client->is_first_deposit_pending;
+    my $fdp = $client->is_first_deposit_pending;
 
     if ($payment_type eq 'external_cashier') {
         code_exit_BO("Remarks is mandatory for doughflow payments.") unless $remark;
@@ -290,6 +291,13 @@ try {
             amount => $signed_amount,
             staff  => $clerk,
         );
+
+        BOM::Platform::Event::Emitter::emit(
+            'payment_deposit',
+            {
+                loginid          => $client->loginid,
+                is_first_deposit => $fdp
+            }) if $ttype eq 'CREDIT';
 
         # Handle deposits for doughflow and bank money transfers (internal)
         # Exclude reversal transactions
