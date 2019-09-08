@@ -1370,12 +1370,12 @@ subtest 'MT5' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for real account_from');
 
-    # This test & check is to be put back when MT5 api speed is improved
-    # $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
-    # $params->{args}{account_to}   = $test_client->loginid;
-    # $params->{args}{curency}      = 'EUR';
-    # $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-    #     ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for MT5 account_from');
+    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+    $params->{args}{account_to}   = $test_client->loginid;
+    $params->{args}{curency}      = 'EUR';
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+        ->error_message_is('There was an error processing the request. Currency provided is different from account currency.',
+        'Correct message for wrong currency for MT5 account_from');
 
     # restore config
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->manager_api;
