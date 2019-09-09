@@ -60,7 +60,9 @@ sub get_db_turnover {
 }
 
 sub sync_potential_loss_to_redis {
-# TODO
+    my ($broker_code, $landing_company) = @_;
+
+    return _sync_loss_to_redis($broker_code, $landing_company, 'potential_loss', \&get_db_potential_loss, {del_hash => 1});
 }
 
 sub update_ultrashort_duration {
@@ -68,6 +70,32 @@ sub update_ultrashort_duration {
 #       All expiry_type that is ultrashort and intraday has to be updated in Redis
 #       to be in sync with the database. This could potentially update tens of thousands
 #       of keys, so we do not expect ultrashort duration to change too often
+}
+
+# options = {
+#     del_hash => 1 # delete the hash table before setting key values
+# }
+sub _sync_loss_to_redis {
+    my ($broker_code, $landing_company, $loss_type, $get_db_loss_func, $options) = @_;
+
+    my $updated_loss = $get_db_loss_func->($broker_code);
+    return 'NOTHING TO UPDATE' unless %$updated_loss;
+
+    my $redis = get_redis($landing_company, $loss_type);
+    my $hash_name = "$landing_company:$loss_type";
+
+    my $response;
+    if ($options->{del_hash}) {
+        $redis->multi(sub { });
+        $redis->del($hash_name, sub { });
+        $redis->hmset($hash_name, %$updated_loss, sub { });
+        $redis->exec(sub { $response = $_[1]; });
+        $redis->mainloop;
+    } else {
+        $response = $redis->hmset($hash_name, %$updated_loss);
+    }
+
+    return $response;
 }
 
 sub _get_db_loss {
