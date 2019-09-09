@@ -2,8 +2,6 @@ package BOM::CompanyLimits;
 use strict;
 use warnings;
 
-use BOM::Database::ClientDB;
-use Date::Utility;
 use BOM::CompanyLimits::Helpers qw(get_redis);
 use BOM::CompanyLimits::Combinations;
 use BOM::CompanyLimits::Limits;

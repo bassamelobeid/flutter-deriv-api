@@ -30,7 +30,8 @@ sub sync_group_to_redis {
 
         die "no $group_name in database" unless @group_pairs;
 
-        # TODO: we are hard coding the landing company when setting limits
+        # It does not matter which landing_company is used; it will be mapped to
+        # the same Redis instance
         my $redis = get_redis('svg', 'limit_setting');
 
         my $hash_name = "${group_name}groups";

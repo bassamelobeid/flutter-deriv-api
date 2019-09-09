@@ -18,6 +18,8 @@ sub get_redis {
     }
 
     # Should we enable sharding for limits, this is the place to set
+    # NOTE: limit_setting should be the same server for all landing companies.
+    #       This is where we store underlying and contract groups as well
     state $redis            = BOM::Config::RedisReplicated::redis_limits_write;
     state $limits_redis_map = {
         svg => {
