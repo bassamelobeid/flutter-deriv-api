@@ -427,15 +427,14 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     # TODO: Remove this once the transition is done from redis to client object
     if (my $sr_risk_val = $input{client_social_responsibility_check}) {
 
-        my $hash_name = 'social_responsibility';
-        my $key_name  = $loginid . '_sr_risk_status';
-        my $redis     = BOM::Config::RedisReplicated::redis_events_write();
+        my $key_name = $loginid . '_sr_risk_status';
+        my $redis    = BOM::Config::RedisReplicated::redis_events_write();
 
         # There is no need to store clients with low risk in redis, as it is default
         if ($sr_risk_val eq 'low') {
-            $redis->hdel($hash_name, $key_name);
+            $redis->del($key_name);
         } else {
-            $redis->hset($hash_name, $key_name, $sr_risk_val);
+            $redis->set($key_name, $sr_risk_val);
         }
     }
 
