@@ -21,18 +21,9 @@ use YAML::XS;
 use RedisDB;
 use Try::Tiny;
 
-my $config = {
-    replicated    => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED}  // '/etc/rmg/redis-replicated.yml'),
-    pricer        => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED}  // '/etc/rmg/redis-pricer.yml'),
-    exchangerates => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED}  // '/etc/rmg/redis-exchangerates.yml'),
-    feed          => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_FEED}        // '/etc/rmg/redis-feed.yml'),
-    mt5_user      => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_MT5_USER}    // '/etc/rmg/redis-mt5user.yml'),
-    events        => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_EVENTS}      // '/etc/rmg/redis-events.yml'),
-    transaction   => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_TRANSACTION} // '/etc/rmg/redis-transaction.yml'),
-    companylimits => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED}  // '/etc/rmg/redis-exchangerates.yml'),
-    auth          => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_AUTH}        // '/etc/rmg/redis-auth.yml'),
-    queue         => YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_QUEUE}       // '/etc/rmg/redis-queue.yml'),
-};
+use BOM::Config;
+
+my $config      = {};
 my $connections = {};
 
 # Initialize connection to redis, and store it in hash
@@ -63,6 +54,9 @@ sub _redis {
 
 sub redis_config {
     my ($redis_type, $access_type) = @_;
+
+    $config->{$redis_type} //= BOM::Config->can("redis_${redis_type}_config")->();
+
     my $redis = $config->{$redis_type}->{$access_type};
     return {
         uri  => "redis://$redis->{host}:$redis->{port}",
@@ -72,88 +66,109 @@ sub redis_config {
 }
 
 sub redis_write {
+    $config->{replicated} //= BOM::Config::redis_replicated_config();
     return _redis('replicated', 'write', 10);
 }
 
 sub redis_read {
+    $config->{replicated} //= BOM::Config::redis_replicated_config();
     return _redis('replicated', 'read', 10);
 }
 
 sub redis_pricer {
+    $config->{pricer} //= BOM::Config::redis_pricer_config();
     my %args = @_;
     return _redis('pricer', 'write', $args{timeout} // 3600);
 }
 
 sub redis_exchangerates {
+    $config->{exchangerates} //= BOM::Config::redis_exchangerates_config();
     return _redis('exchangerates', 'read', 10);
 }
 
 sub redis_exchangerates_write {
+    $config->{exchangerates} //= BOM::Config::redis_exchangerates_config();
     return _redis('exchangerates', 'write', 10);
 }
 
 sub redis_feed_master {
+    $config->{feed} //= BOM::Config::redis_feed_config();
     return _redis('feed', 'master-read');
 }
 
 sub redis_feed_master_write {
+    $config->{feed} //= BOM::Config::redis_feed_config();
     return _redis('feed', 'master-write', 10);
 }
 
 sub redis_feed {
+    $config->{feed} //= BOM::Config::redis_feed_config();
     # No timeout here as we are expecting not recieving anything when market is closed.
     return _redis('feed', 'read');
 }
 
 sub redis_feed_write {
+    $config->{feed} //= BOM::Config::redis_feed_config();
     return _redis('feed', 'write', 10);
 }
 
 sub redis_mt5_user_write {
+    $config->{mt5_user} //= BOM::Config::redis_mt5_user_config();
     return _redis('mt5_user', 'write', 10);
 }
 
 sub redis_mt5_user {
+    $config->{mt5_user} //= BOM::Config::redis_mt5_user_config();
     return _redis('mt5_user', 'read', 10);
 }
 
 sub redis_events_write {
+    $config->{events} //= BOM::Config::redis_events_config();
     return _redis('events', 'write', 10);
 }
 
 sub redis_events {
+    $config->{events} //= BOM::Config::redis_events_config();
     return _redis('events', 'read', 10);
 }
 
 sub redis_limits_write {
+    $config->{companylimits} //= BOM::Config::redis_events_config();
     return _redis('companylimits', 'write', 10);
 }
 
 sub redis_limits {
+    $config->{companylimits} //= BOM::Config::redis_events_config();
     return _redis('companylimits', 'read', 10);
 }
 
 sub redis_transaction_write {
+    $config->{transaction} //= BOM::Config::redis_transaction_config();
     return _redis('transaction', 'write', 10);
 }
 
 sub redis_transaction {
+    $config->{transaction} //= BOM::Config::redis_transaction_config();
     return _redis('transaction', 'read', 10);
 }
 
 sub redis_auth_write {
+    $config->{auth} //= BOM::Config::redis_auth_config();
     return _redis('auth', 'write', 10);
 }
 
 sub redis_auth {
+    $config->{auth} //= BOM::Config::redis_auth_config();
     return _redis('auth', 'read', 10);
 }
 
 sub redis_queue_write {
+    $config->{queue} //= BOM::Config::redis_queue_config();
     return _redis('queue', 'write', 10);
 }
 
 sub redis_queue {
+    $config->{queue} //= BOM::Config::redis_queue_config();
     return _redis('queue', 'read', 10);
 }
 
