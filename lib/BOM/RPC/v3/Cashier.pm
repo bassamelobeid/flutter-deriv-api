@@ -1766,8 +1766,7 @@ sub _email_content {
     my ($type, $brand, $website_name, $client, $pa_client, $amount, $currency, $further_instruction) = @_;
 
     my $client_name = $client->first_name . ' ' . $client->last_name;
-
-    $further_instruction = localize('Further instructions: ') . ($further_instruction // localize('none'));
+    $further_instruction = localize('Further instructions: ') . ($further_instruction || localize('none'));
 
     my %mapping = (
 
