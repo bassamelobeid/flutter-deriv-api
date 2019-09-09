@@ -14,6 +14,7 @@ use warnings;
 
 use Date::Utility;
 use BOM::Database::ClientDB;
+use BOM::CompanyLimits;
 use BOM::CompanyLimits::Helpers qw(get_redis);
 
 # Certain loss types reset at the start of a new day. We use a cron
@@ -26,9 +27,10 @@ sub reset_daily_loss_hashes {
     my %output;
 
     foreach my $loss_type (qw/realized_loss turnover/) {
-        foreach my $landing_company (qw/svg malta maltainvest iom/) {
-            my $redis = get_redis($landing_company, $loss_type);
-            my $hash_name = "$landing_company:$loss_type";
+        foreach my $lc (BOM::CompanyLimits::get_supported_landing_companies()) {
+            my $landing_company = $lc->{short};
+            my $redis           = get_redis($landing_company, $loss_type);
+            my $hash_name       = "$landing_company:$loss_type";
 
             if ($params{force_reset}) {
                 $output{$hash_name} = $redis->expireat($hash_name, $new_day_start_epoch);

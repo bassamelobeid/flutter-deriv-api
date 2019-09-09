@@ -6,6 +6,7 @@ use BOM::CompanyLimits::Helpers qw(get_redis);
 use BOM::CompanyLimits::Combinations;
 use BOM::CompanyLimits::Limits;
 use BOM::CompanyLimits::LossTypes;
+use LandingCompany::Registry;
 
 =head1 NAME
 
@@ -24,7 +25,7 @@ sub add_buy_contract {
     my ($bet_data, $account_data) = @$contract{qw/bet_data account_data/};
 
     my $landing_company = $account_data->{landing_company};
-    return if not $landing_company or $landing_company eq 'virtual';
+    return unless is_landing_company_supported($landing_company);
 
     my $attributes            = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
     my $company_limits        = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
@@ -66,7 +67,7 @@ sub reverse_buy_contract {
     my ($contract, $error) = @_;
 
     my $landing_company = $contract->{account_data}->{landing_company};
-    return if not $landing_company or $landing_company eq 'virtual';
+    return unless is_landing_company_supported($landing_company);
 
     # Should be very careful here; we do not want to revert a buy we have not incremented in Redis!
     return unless (_should_reverse_buy_contract($error));
@@ -291,7 +292,7 @@ sub add_sell_contract {
     my ($contract) = @_;
 
     my $landing_company = $contract->{account_data}->{landing_company};
-    return if not $landing_company or $landing_company eq 'virtual';
+    return unless is_landing_company_supported($landing_company);
 
     my $attributes     = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
     my $company_limits = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
@@ -324,6 +325,18 @@ sub incr_loss_hash {
     $redis->mainloop;
 
     return $response;
+}
+
+my @supported_landing_companies = (qw/svg malta maltainvest iom virtual /);
+my %is_landing_company_supported = map { $_ => 1 } @supported_landing_companies;
+@supported_landing_companies = map { LandingCompany::Registry::get($_) } @supported_landing_companies;
+
+sub get_supported_landing_companies {
+    return @supported_landing_companies;
+}
+
+sub is_landing_company_supported {
+    return defined $is_landing_company_supported{+shift};
 }
 
 1;

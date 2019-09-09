@@ -46,6 +46,12 @@ sub get_redis {
             turnover       => $redis,
             limit_setting  => $redis,
         },
+        virtual => {
+            potential_loss => $redis,
+            realized_loss  => $redis,
+            turnover       => $redis,
+            limit_setting  => $redis,
+        },
     };
 
     my $redis_instance = $limits_redis_map->{$landing_company}->{$purpose};
