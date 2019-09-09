@@ -81,6 +81,8 @@ sub _get_db_loss {
 
     my %loss_hash;
     foreach my $rec (@$db_records) {
+        next if not defined $rec->[5];
+
         my $key = $get_key_func->($rec);
         $loss_hash{$key} = $rec->[5];
     }
