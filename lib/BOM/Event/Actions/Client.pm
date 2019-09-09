@@ -1294,7 +1294,7 @@ sub social_responsibility_check {
             if ($client_attribute_val >= $threshold_val) {
 
                 # For losses, turnover, and amount: standardize to 2 decimal places
-                if ($attribute !~ '_count$|^num_contract$') {
+                unless (any { $_ eq $attribute } qw/deposit_count num_contract/) {
                     $client_attribute_val = sprintf("%.2f", $client_attribute_val);
                     $threshold_val        = sprintf("%.2f", $threshold_val);
                 }
