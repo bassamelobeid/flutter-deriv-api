@@ -1767,6 +1767,7 @@ sub _email_content {
     $further_instruction = localize('Further instructions: '). ( $further_instruction // localize('none') );
     
     my %mapping = (
+
         pa_withdraw_binary =>
             localize( q (
                     Dear [_1] [_2] [_3],
@@ -1790,7 +1791,25 @@ sub _email_content {
                 $website_name,
                 $further_instruction
             ),
-        pa_transfer_binary => '',
+
+        pa_transfer_binary => localize ( q (
+                    Dear [_1] [_2] [_3],
+                    
+                    We would like to inform you that the transfer of [_4] [_5] via [_6] has been processed. The funds have been credited into your account.
+                    
+                    Kind Regards,
+                    
+                    The [_7] team.', 
+                ),
+                encode_entities($client->salutation),
+                encode_entities($client->first_name), 
+                encode_entities($client->last_name),
+                $currency,
+                $amount,
+                encode_entities($pa_client->payment_agent->payment_agent_name),
+                $website_name
+            ),
+
         pa_withdraw_deriv => localize( q(
                 <tr>
                     <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
