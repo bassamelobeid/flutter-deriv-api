@@ -31,9 +31,10 @@ rpc_request balance => sub {
 
 rpc_response balance => sub {
     return {
-        loginid  => $_->client->loginid,
-        balance  => $_->client->balance,
-        currency => $_->client->currency
+        loginid    => $_->client->loginid,
+        balance    => $_->client->balance,
+        currency   => $_->client->currency,
+        account_id => $_->client->account_id,
     };
 };
 
