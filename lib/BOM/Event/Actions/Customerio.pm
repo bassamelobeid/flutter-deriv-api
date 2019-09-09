@@ -129,7 +129,7 @@ sub _log_and_handle_error {
     if (my $err = $tx->error) {
         my $error = ($err->{code}) ? "$err->{code}" : 'Connection error';
         DataDog::DogStatsd::Helper::stats_inc("event.customerio.failure", {tags => [$method_tag, "error:$error", "message:$err->{message}"]});
-        die "Error: $error Message: $err->{message}";
+        warn "Error: $error Message: $err->{message}";
 
     } elsif (not $tx->success) {
         DataDog::DogStatsd::Helper::stats_inc("event.customerio.failure", {tags => [$method_tag]});

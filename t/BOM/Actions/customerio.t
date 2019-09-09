@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More;
 use Test::Fatal;
+use Test::Warnings qw(warning);
 use Test::MockModule;
 use DataDog::DogStatsd::Helper;
 
@@ -47,8 +48,11 @@ subtest 'register_details Argument Validations' => sub {
     is scalar(@datadog_calls), 0, 'No datadog calls yet';
 
     $user->update_email_fields(email_consent => 1);
-    like exception { BOM::Event::Actions::Customerio::register_details({loginid => $test_client->loginid}) }, qr/Connection error/,
-        'The expected excption is raised';
+    like(
+        warning { BOM::Event::Actions::Customerio::register_details({loginid => $test_client->loginid}) },
+        qr/Connection error/,
+        'The expected warning is raised'
+    );
 
     my @expected_datadog = (
         ['event.customerio.all', {tags => ['method:register_details']}],
@@ -80,8 +84,11 @@ subtest 'email_consent Argument Validations' => sub {
     $user->add_client($test_client);
     is scalar(@datadog_calls), 0, 'No datadog calls yet';
 
-    like exception { BOM::Event::Actions::Customerio::email_consent({loginid => $test_client->loginid}) }, qr/Connection error/,
-        'The expected excption is raised';
+    like(
+        warning { BOM::Event::Actions::Customerio::email_consent({loginid => $test_client->loginid}) },
+        qr/Connection error/,
+        'The expected warning is raised'
+    );
 
     my @expected_datadog = (
         ['event.customerio.all', {tags => ['method:email_consent_delete']}],
@@ -95,8 +102,11 @@ subtest 'email_consent Argument Validations' => sub {
     @datadog_calls = ();
 
     $test_client->status->set('disabled', 1, 'test disabled');
-    like exception { BOM::Event::Actions::Customerio::email_consent({loginid => $test_client->loginid}) }, qr/Connection error/,
-        'The expected excption is raised';
+    like(
+        warning { BOM::Event::Actions::Customerio::email_consent({loginid => $test_client->loginid}) },
+        qr/Connection error/,
+        'The expected warning is raised'
+    );
     is scalar(@datadog_calls), 2, 'DataDog called for disabled account';
     is_deeply \@datadog_calls, \@expected_datadog, 'Correct datadog tags - disabled account';
     @datadog_calls = ();
