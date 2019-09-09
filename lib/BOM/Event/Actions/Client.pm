@@ -1248,11 +1248,22 @@ async sub _send_email_onfido_unsupported_country_cs {
 
 This check is to verify whether clients are at-risk in trading, and this check is done on an on-going basis.
 The checks to be done are in the social_responsibility_check.yml file in bom-config.
-If a client has breached certain thresholds, then an email will be sent to the
-social responsibility team for further action.
+If a client has breached certain thresholds, then their social responsibility (SR) status will
+be set at high-risk and an email will be sent to the SR team for further action.
 After the email has been sent, the monitoring starts again.
 
-This is required as per the following document: https://www.gamblingcommission.gov.uk/PDF/Customer-interaction-%E2%80%93-guidance-for-remote-gambling-operators.pdf
+The updated SR status is set to expire within 30 days (this is assuming that the client has not breached 
+any thresholds again) and will be placed back to their default status of low; if the SR team were to 
+re-adjust the status from BO, then the expiry time is no longer required. However, if the client has
+breached thresholds again within the 30 day period, then:
+
+- No email notification will be sent to the SR team, as they are already monitoring the client in their vCards for
+3o-day period
+
+- The next deposit/trade from the client will trigger the notification, since the thresholds have already
+been breached.
+
+This SR check is required as per the following document: https://www.gamblingcommission.gov.uk/PDF/Customer-interaction-%E2%80%93-guidance-for-remote-gambling-operators.pdf
 (Read pages 2,4,6)
 
 NOTE: This is for MX-MLT clients only (Last updated: 1st May, 2019)
