@@ -28,20 +28,23 @@ my $failure_recipients = join(',', 'compliance-alerts@binary.com', 'sysadmin@bin
 # so we won't specify a strict seed for the default, otherwise we'll always have '000000' for the time component
 my $rd = Date::Utility->new($specified_rptDate);
 
+my $rptDate  = $specified_rptDate ? $rd->date_yyyymmdd            : $rd->minus_time_interval('1d')->date_yyyymmdd;
+my $fileDate = $specified_rptDate ? $rd->plus_time_interval('1d') : $rd;
+
 # our files will be written out for reference
-my $fileTail     = join('', $rd->year, sprintf('%02d', $rd->month), sprintf('%02d', $rd->day_of_month), '_', $rd->hour, $rd->minute, $rd->second);
+my $fileTail = join('',
+    $fileDate->year,
+    sprintf('%02d', $fileDate->month),
+    sprintf('%02d', $fileDate->day_of_month),
+    '_', $fileDate->hour, $fileDate->minute, $fileDate->second);
 my $tradesFN     = 'BIE001_trades_' . $fileTail . '.csv';
 my $usersFN      = 'BIE001_users_' . $fileTail . '.csv';
 my $mt5_tradesFN = 'BIE001_MT5_trades_' . $fileTail . '.csv';
 my $mt5_usersFN  = 'BIE001_MT5_users_' . $fileTail . '.csv';
 
 # where will they go
-my $reports_path = '/reports/Emir/' . $rd->year;
+my $reports_path = '/reports/Emir/' . $fileDate->year;
 path($reports_path)->mkpath;
-
-# now adjust our actual reporting date if we have not specified the same
-$rd = $rd->minus_time_interval('1d') unless $specified_rptDate;
-my $rptDate = $rd->date_yyyymmdd;
 
 # just let PG/psql create the files directly
 my $rz = qx(/usr/bin/psql service=report -v ON_ERROR_STOP=1 -X <<SQL

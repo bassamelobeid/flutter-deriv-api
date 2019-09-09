@@ -25,6 +25,7 @@ use BOM::Config::RedisReplicated;
 use BOM::Backoffice::Request qw(request);
 use BOM::User;
 use BOM::User::FinancialAssessment;
+use BOM::User::Password;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::User::Utility;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -570,7 +571,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             postcode
             place_of_birth
             restricted_ip_address
-            cashier_setting_password
             salutation
             /;
         exists $input{$_} && $cli->$_($input{$_}) for @simple_updates;
@@ -585,6 +585,16 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         if ($input{date_of_birth}) {
             $cli->date_of_birth($input{date_of_birth});
+        }
+
+        if ($input{save_cashier_password}) {
+            if (my $pw = $input{cashier_setting_password}) {
+                code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR! Cashier password must be 6-25 characters</p>")
+                    unless $pw =~ /^[ -~]{6,25}$/;
+                $cli->cashier_setting_password(BOM::User::Password::hashpw($pw));
+            } else {
+                $cli->cashier_setting_password('');
+            }
         }
 
         CLIENT_KEY:
