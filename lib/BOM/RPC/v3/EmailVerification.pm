@@ -305,10 +305,10 @@ sub email_verification {
             
             if ($brand->name eq 'deriv') {
                 $subject = localize('Verify your withdrawal request - [_1]', $website_name);
-                $message = localize($deriv_content{payment_withdraw}, _build_verification_url('payment_withdraw', $args), $code);                
+                $type_call = 'payment_agent_withdraw' if $type_call eq 'paymentagent_withdraw'; # yuk
+                $message = localize($deriv_content{payment_withdraw}, _build_verification_url($type_call, $args), $code);                
             }
             else {
-
                 my $payment_withdraw =
                     $verification_uri
                     ? localize(
