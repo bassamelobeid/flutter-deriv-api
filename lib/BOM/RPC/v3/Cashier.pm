@@ -823,7 +823,7 @@ rpc paymentagent_withdraw => sub {
         if ($err) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => $err->{code},
-                    message_to_client => $err->{message_to_client};
+                    message_to_client => $err->{message_to_client} });
         }
     }
 
