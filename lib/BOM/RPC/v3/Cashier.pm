@@ -721,20 +721,6 @@ rpc paymentagent_transfer => sub {
         payment_agent => 0,
     );
 
-    # sent email notification to client
-#     my $emailcontent = localize(
-#         'Dear [_1] [_2] [_3],',                  encode_entities($client_to->salutation),
-#         encode_entities($client_to->first_name), encode_entities($client_to->last_name))
-#         . "\n\n"
-#         . localize(
-#         'We would like to inform you that the transfer of [_1] [_2] via [_3] has been processed.
-# The funds have been credited into your account.
-
-# Kind Regards,
-
-# The [_4] team.', $currency, $amount, encode_entities($payment_agent->payment_agent_name), $website_name
-#         );
-
     my $brand = request()->brand;
 
     send_email({
@@ -1077,32 +1063,6 @@ rpc paymentagent_withdraw => sub {
         amount        => $amount,
         payment_agent => 0,
     );
-
-    # my $client_name = $client->first_name . ' ' . $client->last_name;
-    # # sent email notification to Payment Agent
-
-    # my $emailcontent = [
-    #     localize(
-    #         'Dear [_1] [_2] [_3],',                  encode_entities($pa_client->salutation),
-    #         encode_entities($pa_client->first_name), encode_entities($pa_client->last_name)
-    #     ),
-    #     '',
-    #     localize(
-    #         'We would like to inform you that the withdrawal request of [_1][_2] by [_3] [_4] has been processed. The funds have been credited into your account [_5] at [_6].',
-    #         $currency,
-    #         $amount,
-    #         encode_entities($client_name),
-    #         $client_loginid,
-    #         $paymentagent_loginid,
-    #         $website_name
-    #     ),
-    #     '',
-    #     $further_instruction,
-    #     '',
-    #     localize('Kind Regards,'),
-    #     '',
-    #     localize('The [_1] team.', $website_name),
-    # ];
 
     my $brand = request()->brand;
 
