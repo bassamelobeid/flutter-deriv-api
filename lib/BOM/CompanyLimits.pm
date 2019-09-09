@@ -27,7 +27,7 @@ sub add_buy_contract {
     return if not $landing_company or $landing_company eq 'virtual';
 
     my $attributes            = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
-    my ($company_limits)      = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
+    my $company_limits        = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
     my $turnover_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($attributes);
 
     my $limit_settings = BOM::CompanyLimits::Limits::query_limits($landing_company, $company_limits);
@@ -293,8 +293,8 @@ sub add_sell_contract {
     my $landing_company = $contract->{account_data}->{landing_company};
     return if not $landing_company or $landing_company eq 'virtual';
 
-    my $attributes = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
-    my ($company_limits) = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
+    my $attributes     = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
+    my $company_limits = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
 
     # For sell, we increment totals but do not check if they exceed limits;
     # we only block buys, not sells.
