@@ -5,15 +5,12 @@ use warnings;
 use BOM::Database::ClientDB;
 use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
-use Future::AsyncAwait;
-use Future::Utils;
 use Date::Utility;
 use Data::Dumper;
 use BOM::CompanyLimits::Helpers qw(get_redis);
 use BOM::CompanyLimits::Combinations;
 use BOM::CompanyLimits::Limits;
 use BOM::CompanyLimits::LossTypes;
-use BOM::Platform::Script::TradeWarnings;
 
 =head1 NAME
 
@@ -38,18 +35,19 @@ sub add_buy_contract {
     my ($company_limits)      = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
     my $turnover_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($attributes);
 
-    my $limits_future  = BOM::CompanyLimits::Limits::query_limits($landing_company, $company_limits);
+    my $limit_settings = BOM::CompanyLimits::Limits::query_limits($landing_company, $company_limits);
     my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
     my $turnover       = BOM::CompanyLimits::LossTypes::calc_turnover($contract);
-    my @breaches       = Future->needs_all(
-        check_realized_loss($landing_company, $limits_future, $company_limits),
-        check_potential_loss($landing_company, $limits_future, $company_limits, $potential_loss),
-        check_turnover($landing_company, $limits_future, $turnover_combinations, $turnover),
-    )->get();
+
+    my @breaches;
+    push @breaches, check_realized_loss($landing_company, $limit_settings, $company_limits);
+    push @breaches, check_potential_loss($landing_company, $limit_settings, $company_limits, $potential_loss);
+    push @breaches, check_turnover($landing_company, $limit_settings, $turnover_combinations, $turnover);
 
     if (@breaches) {
         foreach my $breach (@breaches) {
-            publish_breach($breach, $contract);
+            # TODO: publish breach should be an event. Do not block buys while sending emails
+            # publish_breach($breach, $contract);
 
             # Only block trades for actual breaches; ignore threshold warnings
             if ($breach->[3] > $breach->[2]) {
@@ -84,10 +82,8 @@ sub reverse_buy_contract {
     my $turnover              = BOM::CompanyLimits::LossTypes::calc_turnover($contract);
     my $turnover_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($attributes);
 
-    Future->needs_all(
-        incr_loss_hash($landing_company, 'potential_loss', $company_limits,        -$potential_loss),
-        incr_loss_hash($landing_company, 'turnover',       $turnover_combinations, -$turnover),
-    )->get();
+    incr_loss_hash($landing_company, 'potential_loss', $company_limits,        -$potential_loss);
+    incr_loss_hash($landing_company, 'turnover',       $turnover_combinations, -$turnover);
 
     return;
 }
@@ -106,21 +102,21 @@ sub _should_reverse_buy_contract {
     return 0;
 }
 
-async sub check_realized_loss {
-    my ($landing_company, $limits_future, $combinations) = @_;
+sub check_realized_loss {
+    my ($landing_company, $limit_settings, $combinations) = @_;
 
     my $redis = get_redis($landing_company, 'realized_loss');
     my $response = $redis->hmget("$landing_company:realized_loss", @$combinations);
 
-    return _check_breaches($response, $limits_future, $combinations, 'realized_loss');
+    return _check_breaches($response, $limit_settings, $combinations, 'realized_loss');
 }
 
-async sub check_potential_loss {
-    my ($landing_company, $limits_future, $combinations, $potential_loss) = @_;
+sub check_potential_loss {
+    my ($landing_company, $limit_settings, $combinations, $potential_loss) = @_;
 
-    my $response = await incr_loss_hash($landing_company, 'potential_loss', $combinations, $potential_loss);
+    my $response = incr_loss_hash($landing_company, 'potential_loss', $combinations, $potential_loss);
 
-    return _check_breaches($response, $limits_future, $combinations, 'potential_loss');
+    return _check_breaches($response, $limit_settings, $combinations, 'potential_loss');
 }
 
 # For turnover, because it is only underlying specific, these are the only increments
@@ -171,19 +167,19 @@ async sub check_potential_loss {
 #   25 |  e  |         |  +  |          |    1    |
 #   26 |  +  |         |  g  |          |    3    |
 #   27 |  +  |         |  +  |          |    3    |
-async sub check_turnover {
-    my ($landing_company, $limits_future, $combinations, $turnover) = @_;
+sub check_turnover {
+    my ($landing_company, $limit_settings, $combinations, $turnover) = @_;
 
-    my $turnover_response = await incr_loss_hash($landing_company, 'turnover', $combinations, $turnover);
+    my $turnover_response = incr_loss_hash($landing_company, 'turnover', $combinations, $turnover);
 
     my @response;
     @response[6, 7, 18, 19, 24 .. 27] = @{$turnover_response}[0 .. 3, 1, 1, 3, 3];
 
-    return _check_breaches(\@response, $limits_future, $combinations, 'turnover');
+    return _check_breaches(\@response, $limit_settings, $combinations, 'turnover');
 }
 
 sub _check_breaches {
-    my ($response, $limits_future, $combinations, $loss_type) = @_;
+    my ($response, $limit_settings, $combinations, $loss_type) = @_;
 
     # TODO: Do we want this warning threshold for turnover limits?
     my $is_global_loss_enabled = 1;
@@ -204,7 +200,6 @@ sub _check_breaches {
     }
 
     my @breaches;
-    my $limits = $limits_future->get();
 
     my $get_limit_check_attributes = sub {
         my ($i) = @_;
@@ -212,7 +207,7 @@ sub _check_breaches {
         my $comb = $combinations->[$i];
         return () unless $comb;
 
-        my $limit = $limits->{$comb};
+        my $limit = $limit_settings->{$comb};
         return () unless $limit;
 
         my $loss_type_limit = $limit->[$loss_map_to_idx->{$loss_type}];
@@ -332,15 +327,13 @@ sub add_sell_contract {
 
     # On sells, we increment realized loss and deduct potential loss
     # Since no checks are done, we simply increment and discard the response
-    Future->needs_all(
-        incr_loss_hash($landing_company, 'realized_loss',  $company_limits, $realized_loss),
-        incr_loss_hash($landing_company, 'potential_loss', $company_limits, -$potential_loss),
-    );
+    incr_loss_hash($landing_company, 'realized_loss',  $company_limits, $realized_loss);
+    incr_loss_hash($landing_company, 'potential_loss', $company_limits, -$potential_loss);
 
     return;
 }
 
-async sub incr_loss_hash {
+sub incr_loss_hash {
     my ($landing_company, $loss_type, $combinations, $incrby) = @_;
 
     my $redis = get_redis($landing_company, $loss_type);

@@ -96,52 +96,53 @@ subtest 'Limits test base case', sub {
 
     # CUT OFF POINT
     # Ignore tests below (email will be moved away)
+    # TODO: we will transfer email to bom-events. Commented email code here is kept for reference
 
     # Check email to see if email is published
-    my $trade_suspended_email = mailbox_search(email => 'x-quants@binary.com');
+    # my $trade_suspended_email = mailbox_search(email => 'x-quants@binary.com');
 
-    ok $trade_suspended_email, 'some email is received (should be trade suspended)!';
-    my $expected_email = {
-        'from'    => 'system@binary.com',
-        'body'    => '{"is_market_default":0,"contract_group":"callput","market_or_symbol":"R_50","expiry_type":"tick","barrier_type":null}',
-        'to'      => ['x-quants@binary.com', 'x-marketing@binary.com', 'compliance@binary.com', 'x-cs@binary.com'],
-        'subject' => 'TRADING SUSPENDED! global_potential_loss LIMIT is crossed for landing company svg. Limit set: 100. Current amount: 400'
-    };
-    my $expected_body        = $json->decode(delete $expected_email->{body});
-    my $trade_suspended_body = $json->decode(delete $trade_suspended_email->{body});
+    # ok $trade_suspended_email, 'some email is received (should be trade suspended)!';
+    # my $expected_email = {
+    #     'from'    => 'system@binary.com',
+    #     'body'    => '{"is_market_default":0,"contract_group":"callput","market_or_symbol":"R_50","expiry_type":"tick","barrier_type":null}',
+    #     'to'      => ['x-quants@binary.com', 'x-marketing@binary.com', 'compliance@binary.com', 'x-cs@binary.com'],
+    #     'subject' => 'TRADING SUSPENDED! global_potential_loss LIMIT is crossed for landing company svg. Limit set: 100. Current amount: 400'
+    # };
+    # my $expected_body        = $json->decode(delete $expected_email->{body});
+    # my $trade_suspended_body = $json->decode(delete $trade_suspended_email->{body});
 
-    is_deeply $trade_suspended_body,  $expected_body,  'In suspended email, Json body matches expected output';
-    is_deeply $trade_suspended_email, $expected_email, 'In suspended email, Email matches very specific format';
+    # is_deeply $trade_suspended_body,  $expected_body,  'In suspended email, Json body matches expected output';
+    # is_deeply $trade_suspended_email, $expected_email, 'In suspended email, Email matches very specific format';
 
-    BOM::Config::Runtime->instance->app_config->quants->global_potential_loss_alert_threshold(0.5);
+    # BOM::Config::Runtime->instance->app_config->quants->global_potential_loss_alert_threshold(0.5);
 
-    $contract = create_contract(
-        payout     => 90,
-        underlying => 'R_50',
-    );
-    lives_ok {
-        buy_contract(
-            client    => $cl,
-            buy_price => 20,
-            contract  => $contract,
-        );
-    }
-    'Should still be able to buy contract; warning threshold breach not actual limit breach';
+    # $contract = create_contract(
+    #     payout     => 90,
+    #     underlying => 'R_50',
+    # );
+    # lives_ok {
+    #     buy_contract(
+    #         client    => $cl,
+    #         buy_price => 20,
+    #         contract  => $contract,
+    #     );
+    # }
+    # 'Should still be able to buy contract; warning threshold breach not actual limit breach';
 
-    my $threshold_warning_email = mailbox_search(email => 'x-quants@binary.com');
+    # my $threshold_warning_email = mailbox_search(email => 'x-quants@binary.com');
 
-    ok $threshold_warning_email, 'some email is received (should be warning threshold)!';
-    $expected_email = {
-        'body'    => '{"market_or_symbol":"R_50","is_market_default":0,"barrier_type":null,"expiry_type":"tick","contract_group":"callput"}',
-        'to'      => ['x-quants@binary.com'],
-        'subject' => 'global_potential_loss THRESHOLD is crossed for landing company svg. Limit set: 100. Current amount: 70',
-        'from'    => 'system@binary.com'
-    };
-    $expected_body = $json->decode(delete $expected_email->{body});
-    my $threshold_warning_body = $json->decode(delete $threshold_warning_email->{body});
+    # ok $threshold_warning_email, 'some email is received (should be warning threshold)!';
+    # $expected_email = {
+    #     'body'    => '{"market_or_symbol":"R_50","is_market_default":0,"barrier_type":null,"expiry_type":"tick","contract_group":"callput"}',
+    #     'to'      => ['x-quants@binary.com'],
+    #     'subject' => 'global_potential_loss THRESHOLD is crossed for landing company svg. Limit set: 100. Current amount: 70',
+    #     'from'    => 'system@binary.com'
+    # };
+    # $expected_body = $json->decode(delete $expected_email->{body});
+    # my $threshold_warning_body = $json->decode(delete $threshold_warning_email->{body});
 
-    is_deeply $threshold_warning_body,  $expected_body,  'In threshold email, Json body matches expected output';
-    is_deeply $threshold_warning_email, $expected_email, 'In threshold email, Email matches very specific format';
+    # is_deeply $threshold_warning_body,  $expected_body,  'In threshold email, Json body matches expected output';
+    # is_deeply $threshold_warning_email, $expected_email, 'In threshold email, Email matches very specific format';
 
 };
 

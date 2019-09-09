@@ -7,7 +7,6 @@ use Error::Base;
 use List::Util qw(min);
 
 use BOM::Database::QuantsConfig;
-use Future::AsyncAwait;
 use BOM::CompanyLimits::Helpers qw(get_redis);
 
 use BOM::Database::UserDB;
@@ -26,7 +25,7 @@ use BOM::Database::UserDB;
 # To reuse the same limit settings, eventhough for turnover the behaviour when
 # underlying group is not defined is '* *' (per underlying for all underlying),
 # it is set as '+' and needs to be inferred.
-async sub query_limits {
+sub query_limits {
     my ($landing_company, $combinations) = @_;
     my $redis = get_redis($landing_company, 'limit_setting');
     my $limits_response = $redis->hmget("$landing_company:limits", @$combinations);
