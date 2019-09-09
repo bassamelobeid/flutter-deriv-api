@@ -1326,9 +1326,13 @@ sub social_responsibility_check {
             # Remove keys from redis
             $redis->hdel($hash_key, $loginid . '_' . $_) for keys %$client_sr_values;
 
-            # Set the client's SR risk status as at-risk
+            # Set the client's SR risk status as at-risk and keep it like that for 30 days
             # TODO: Remove this when we move from redis to database
-            $redis->hset($hash_key, $loginid . '_sr_risk_status', 'high');
+            my $sr_status_key = $loginid . '_sr_risk_status';
+            $redis->set(
+                $sr_status_key => 'high',
+                EX             => 86400 * 30
+            );
 
             try {
                 $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/social_responsibiliy.html.tt', $data, \my $html);
