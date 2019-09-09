@@ -23,7 +23,6 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
-BOM::Config::Runtime->instance->app_config->quants->enable_global_potential_loss(1);
 
 subtest 'Limits test base case', sub {
     my $cl = create_client;

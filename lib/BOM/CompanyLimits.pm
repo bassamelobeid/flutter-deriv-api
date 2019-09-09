@@ -3,10 +3,7 @@ use strict;
 use warnings;
 
 use BOM::Database::ClientDB;
-use BOM::Config::RedisReplicated;
-use BOM::Config::Runtime;
 use Date::Utility;
-use Data::Dumper;
 use BOM::CompanyLimits::Helpers qw(get_redis);
 use BOM::CompanyLimits::Combinations;
 use BOM::CompanyLimits::Limits;
@@ -178,26 +175,11 @@ sub check_turnover {
     return _check_breaches(\@response, $limit_settings, $combinations, 'turnover');
 }
 
+# TODO: Threshold is currently hardcoded, but we will store as a Redis key later
+my $threshold = 0.5;
+
 sub _check_breaches {
     my ($response, $limit_settings, $combinations, $loss_type) = @_;
-
-    # TODO: Do we want this warning threshold for turnover limits?
-    my $is_global_loss_enabled = 1;
-    my $is_user_loss_enabled   = 1;
-    my $threshold              = undef;
-    # TODO: Pretty hackish to just hard code this if statement. Need to find a cleaner way to do
-    #       this later
-    if ($loss_type eq 'realized_loss' or $loss_type eq 'potential_loss') {
-        my $app_config        = BOM::Config::Runtime->instance->app_config;
-        my $global_check_name = "enable_global_$loss_type";
-        my $user_check_name   = "enable_user_$loss_type";
-        $is_global_loss_enabled = $app_config->quants->$global_check_name;
-        $is_user_loss_enabled   = $app_config->quants->$user_check_name;
-        if ($is_global_loss_enabled) {
-            my $threshold_name = "global_${loss_type}_alert_threshold";
-            $threshold = $app_config->quants->$threshold_name;
-        }
-    }
 
     my @breaches;
 
@@ -220,32 +202,28 @@ sub _check_breaches {
     };
 
     # Global limits
-    if ($is_global_loss_enabled) {
-        foreach my $i (0 .. 23) {
-            my @attr = $get_limit_check_attributes->($i);
-            next unless @attr;
-            my ($comb, $limit, $loss_type_limit, $curr_amount) = @attr;
+    foreach my $i (0 .. 23) {
+        my @attr = $get_limit_check_attributes->($i);
+        next unless @attr;
+        my ($comb, $limit, $loss_type_limit, $curr_amount) = @attr;
 
-            my $diff = $curr_amount - $loss_type_limit;
-            if ($diff > 0
-                or ($threshold and $curr_amount > ($loss_type_limit * $threshold)))
-            {
-                push(@breaches, [$loss_type, $comb, $loss_type_limit, $curr_amount]);
-            }
+        my $diff = $curr_amount - $loss_type_limit;
+        if ($diff > 0
+            or ($threshold and $curr_amount > ($loss_type_limit * $threshold)))
+        {
+            push(@breaches, [$loss_type, $comb, $loss_type_limit, $curr_amount]);
         }
     }
 
     # User specific limits
-    if ($is_user_loss_enabled) {
-        # Alert threshold not available for user specific limits; it is never used
-        foreach my $i (24 .. 27) {
-            my @attr = $get_limit_check_attributes->($i);
-            next unless @attr;
-            my ($comb, $limit, $loss_type_limit, $curr_amount) = @attr;
+    # Alert threshold not available for user specific limits; it is never used
+    foreach my $i (24 .. 27) {
+        my @attr = $get_limit_check_attributes->($i);
+        next unless @attr;
+        my ($comb, $limit, $loss_type_limit, $curr_amount) = @attr;
 
-            if ($curr_amount > $loss_type_limit) {
-                push(@breaches, [$loss_type, $comb, $loss_type_limit, $curr_amount]);
-            }
+        if ($curr_amount > $loss_type_limit) {
+            push(@breaches, [$loss_type, $comb, $loss_type_limit, $curr_amount]);
         }
     }
 
