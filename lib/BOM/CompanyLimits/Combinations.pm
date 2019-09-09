@@ -54,12 +54,12 @@ sub get_turnover_incrby_combinations {
     # NOTE: underlying_group is never used here
     my ($binary_user_id, undef, $underlying, $contract_group, $expiry_type) = @{+shift};
 
-    my $turnover_format = "%s,%s,%s,$binary_user_id";
+    my $turnover_format = "%s,$underlying,%s,$binary_user_id";
     return [
-        sprintf($turnover_format, $expiry_type, $underlying, $contract_group),
-        sprintf($turnover_format, $expiry_type, $underlying, '+'),
-        sprintf($turnover_format, '+',          $underlying, $contract_group),
-        sprintf($turnover_format, '+',          $underlying, '+'),
+        sprintf($turnover_format, $expiry_type, $contract_group),
+        sprintf($turnover_format, $expiry_type, '+'),
+        sprintf($turnover_format, '+',          $contract_group),
+        sprintf($turnover_format, '+',          '+'),
     ];
 }
 use Carp;
