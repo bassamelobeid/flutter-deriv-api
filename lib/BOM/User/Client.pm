@@ -1109,7 +1109,7 @@ sub increment_social_responsibility_values {
     # This is only set once; there is no point to queue again and again
     # We only queue if the client is at low-risk only (low-risk means it is not in the hash)
     BOM::Platform::Event::Emitter::emit('social_responsibility_check', {loginid => $loginid})
-        if (!$redis->hget($hash_name, $loginid . '_sr_risk_status') && $redis->hsetnx($hash_name, $event_name, 1));
+        if (!$redis->get($loginid . '_sr_risk_status') && $redis->hsetnx($hash_name, $event_name, 1));
 
     return undef;
 }
