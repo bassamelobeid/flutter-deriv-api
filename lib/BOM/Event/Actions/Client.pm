@@ -1292,6 +1292,13 @@ sub social_responsibility_check {
             my $threshold_val        = $threshold_list->{$attribute};
 
             if ($client_attribute_val >= $threshold_val) {
+
+                # For losses, turnover, and amount: standardize to 2 decimal places
+                if ($attribute !~ '_count$|^num_contract$') {
+                    $client_attribute_val = sprintf("%.2f", $client_attribute_val);
+                    $threshold_val        = sprintf("%.2f", $threshold_val);
+                }
+
                 push @breached_info,
                     {
                     attribute     => $attribute,
