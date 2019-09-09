@@ -94,7 +94,78 @@ my %deriv_content = (
                 <!~[endif~]-->
             </td>
         </tr>
-    )
+    ),
+    payment_withdraw => q(
+        <tr>
+            <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
+                <!--~[if (gte mso 9)|(IE)~]>
+                <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
+                <!~[endif~]-->
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                    <tr>
+                        <td bgcolor="#ffffff" align="center" valign="top" style="padding: 50px 30px 40px 30px; border-top: 2px solid #ff444f;">
+                            <a href="https://www.deriv.com">
+                                <img src="https://binary-com.github.io/deriv-email-templates/html/images/icon-verify-withdrawal.png" width="180" height="180" border="0" style="display: block; max-width: 100%;" alt="Deriv.com">
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td bgcolor="#ffffff" align="center" valign="top" style="padding: 0px 30px 20px 30px;">
+                            <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">Please verify your</h2>
+                            <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">withdrawal request</h2>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td bgcolor="#ffffff" align="left" valign="top" style="padding: 12px 30px 20px 30px;">
+                            <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Before we can proceed with the withdrawal process, we first need to check that it was you who made the request.</p>
+                        </td>
+                    </tr>
+                    <!-- button -->
+                    <tr>
+                        <td bgcolor="#ffffff" align="center" style="padding: 12px 30px 32px 30px; color: #333333; font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 25px;">
+                            <!--~[if (gte mso 9)|(IE)~]>
+                                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="[_1]" style="height:50px;v-text-anchor:middle;width:180px;" arcsize="10%" strokecolor="#ff444f" fillcolor="#ffffff">
+                                <w:anchorlock/>
+                                <center style="color:#ff444f;font-family:sans-serif;font-size:16px;font-weight:bold;">Yes, it's me!</center>
+                                </v:roundrect>
+                            <!~[endif~]-->
+                            <a class="button" href="[_1]" style="mso-hide:all;"><span>Yes, it's me!</span></a>
+                        </td>
+                    </tr>
+                </table>
+                <!--~[if (gte mso 9)|(IE)~]></td></tr></table>
+                <!~[endif~]-->
+            </td>
+        </tr>
+        <tr>
+            <td bgcolor="#f3f3f3" align="center" style="padding: 2px 10px 0px 10px; border-radius: 2px 2px 0px 0px;">
+                <!--~[if (gte mso 9)|(IE)~]>
+                    <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
+                <!~[endif~]-->
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                    <tr>
+                        <td bgcolor="#ffffff" align="left" valign="top" style="padding: 32px 30px 16px 30px; border-radius: 0px 0px 2px 2px;">
+                            <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">If the button doesn't work, please copy and paste this code into the verification form.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td bgcolor="#ffffff" align="center" valign="top" style="padding: 0px 30px 40px 30px; border-radius: 0px 0px 2px 2px;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 100%;">
+                                <tr>
+                                    <td bgcolor="#f3f3f3" align="center" valign="top" style="padding: 16px 16px 16px 16px; border-radius: 0px 0px 2px 2px;">
+                                        <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #ff444f; font-size: 16px; font-weight: bold; line-height: 24px; margin: 0px 0px 0px 0px;">[_2]</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+                <!--~[if (gte mso 9)|(IE)~]>
+                    </td></tr></table>
+                <!~[endif~]-->
+            </td>
+        </tr>      
+    )    
 );
 
 =head2 email_verification
@@ -230,34 +301,45 @@ sub email_verification {
         },
         payment_withdraw => sub {
             my $type_call = shift;
+            my ($message, $subject);
+            
+            if ($brand->name eq 'deriv') {
+                $subject = localize('Verify your withdrawal request - [_1]', $website_name);
+                $message = localize($deriv_content{payment_withdraw}, _build_verification_url('payment_withdraw', $args), $code);                
+            }
+            else {
 
-            my $payment_withdraw =
-                $verification_uri
-                ? localize(
-                '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the link below:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                _build_verification_url('payment_withdraw', $args),
-                $website_name
-                )
-                : localize(
-                '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                $code, $website_name
-                );
-
-            my $payment_withdraw_agent =
-                $verification_uri
-                ? localize(
-                '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the link below:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                _build_verification_url('payment_agent_withdraw', $args),
-                $website_name
-                )
-                : localize(
-                '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                $code, $website_name
-                );
-
+                my $payment_withdraw =
+                    $verification_uri
+                    ? localize(
+                    '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the link below:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                    _build_verification_url('payment_withdraw', $args),
+                    $website_name
+                    )
+                    : localize(
+                    '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                    $code, $website_name
+                    );
+    
+                my $payment_withdraw_agent =
+                    $verification_uri
+                    ? localize(
+                    '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the link below:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                    _build_verification_url('payment_agent_withdraw', $args),
+                    $website_name
+                    )
+                    : localize(
+                    '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                    $code, $website_name
+                    );
+                    
+                $subject = localize('Verify your withdrawal request - [_1]', $website_name);
+                $message = $type_call eq 'payment_withdraw' ? $payment_withdraw : $payment_withdraw_agent;
+            }
+            
             return {
-                subject => localize('Verify your withdrawal request - [_1]', $website_name),
-                message => $type_call eq 'payment_withdraw' ? $payment_withdraw : $payment_withdraw_agent,
+                subject => $subject,
+                message => $message
             };
         },
         reset_password => sub {
