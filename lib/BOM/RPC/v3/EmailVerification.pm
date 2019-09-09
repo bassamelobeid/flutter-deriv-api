@@ -165,7 +165,7 @@ my %deriv_content = (
                 <!~[endif~]-->
             </td>
         </tr>      
-    )    
+    )
 );
 
 =head2 email_verification
@@ -302,13 +302,12 @@ sub email_verification {
         payment_withdraw => sub {
             my $type_call = shift;
             my ($message, $subject);
-            
+
             if ($brand->name eq 'deriv') {
                 $subject = localize('Verify your withdrawal request - [_1]', $website_name);
-                $type_call = 'payment_agent_withdraw' if $type_call eq 'paymentagent_withdraw'; # yuk
-                $message = localize($deriv_content{payment_withdraw}, _build_verification_url($type_call, $args), $code);                
-            }
-            else {
+                $type_call = 'payment_agent_withdraw' if $type_call eq 'paymentagent_withdraw';    # yuk
+                $message = localize($deriv_content{payment_withdraw}, _build_verification_url($type_call, $args), $code);
+            } else {
                 my $payment_withdraw =
                     $verification_uri
                     ? localize(
@@ -320,7 +319,7 @@ sub email_verification {
                     '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
                     $code, $website_name
                     );
-    
+
                 my $payment_withdraw_agent =
                     $verification_uri
                     ? localize(
@@ -332,11 +331,11 @@ sub email_verification {
                     '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
                     $code, $website_name
                     );
-                    
+
                 $subject = localize('Verify your withdrawal request - [_1]', $website_name);
                 $message = $type_call eq 'payment_withdraw' ? $payment_withdraw : $payment_withdraw_agent;
             }
-            
+
             return {
                 subject => $subject,
                 message => $message

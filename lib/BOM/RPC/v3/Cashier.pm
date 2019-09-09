@@ -722,24 +722,27 @@ rpc paymentagent_transfer => sub {
     );
 
     # sent email notification to client
-    my $emailcontent = localize(
-        'Dear [_1] [_2] [_3],',                  encode_entities($client_to->salutation),
-        encode_entities($client_to->first_name), encode_entities($client_to->last_name))
-        . "\n\n"
-        . localize(
-        'We would like to inform you that the transfer of [_1] [_2] via [_3] has been processed.
-The funds have been credited into your account.
+#     my $emailcontent = localize(
+#         'Dear [_1] [_2] [_3],',                  encode_entities($client_to->salutation),
+#         encode_entities($client_to->first_name), encode_entities($client_to->last_name))
+#         . "\n\n"
+#         . localize(
+#         'We would like to inform you that the transfer of [_1] [_2] via [_3] has been processed.
+# The funds have been credited into your account.
 
-Kind Regards,
+# Kind Regards,
 
-The [_4] team.', $currency, $amount, encode_entities($payment_agent->payment_agent_name), $website_name
-        );
+# The [_4] team.', $currency, $amount, encode_entities($payment_agent->payment_agent_name), $website_name
+#         );
+
+    my $brand = request()->brand;
 
     send_email({
-        'from'                  => request()->brand->emails('support'),
-        'to'                    => $client_to->email,
-        'subject'               => localize('Acknowledgement of Money Transfer'),
-        'message'               => [$emailcontent],
+        'from'    => $brand->emails('support'),
+        'to'      => $client_to->email,
+        'subject' => localize('Acknowledgement of Money Transfer'),
+        'message' => _email_content('pa_transfer', $brand, $website_name, $client_to, $client_fm, $amount, $currency),
+        ,
         'use_email_template'    => 1,
         'email_content_is_html' => 1,
         'template_loginid'      => $loginid_to
@@ -834,7 +837,7 @@ rpc paymentagent_withdraw => sub {
         if ($err) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => $err->{code},
-                    message_to_client => $err->{message_to_client}.$args->{verification_code}});
+                    message_to_client => $err->{message_to_client} . $args->{verification_code}});
         }
     }
 
@@ -1077,7 +1080,7 @@ rpc paymentagent_withdraw => sub {
 
     # my $client_name = $client->first_name . ' ' . $client->last_name;
     # # sent email notification to Payment Agent
-    
+
     # my $emailcontent = [
     #     localize(
     #         'Dear [_1] [_2] [_3],',                  encode_entities($pa_client->salutation),
@@ -1104,11 +1107,11 @@ rpc paymentagent_withdraw => sub {
     my $brand = request()->brand;
 
     send_email({
-        from                  => $brand->emails('support'),
-        to                    => $paymentagent->email,
-        subject               => localize('Acknowledgement of Withdrawal Request'),
-        message               => _email_content('pa_withdraw', $brand, $website_name, $client, $pa_client, $amount, $currency, $further_instruction),
-        use_email_template    => 1,
+        from               => $brand->emails('support'),
+        to                 => $paymentagent->email,
+        subject            => localize('Acknowledgement of Withdrawal Request'),
+        message            => _email_content('pa_withdraw', $brand, $website_name, $client, $pa_client, $amount, $currency, $further_instruction),
+        use_email_template => 1,
         email_content_is_html => 1,
         template_loginid      => $pa_client->loginid,
     });
@@ -1761,15 +1764,15 @@ sub _check_facility_availability {
 
 sub _email_content {
     my ($type, $brand, $website_name, $client, $pa_client, $amount, $currency, $further_instruction) = @_;
-    
+
     my $client_name = $client->first_name . ' ' . $client->last_name;
-    
-    $further_instruction = localize('Further instructions: '). ( $further_instruction // localize('none') );
-    
+
+    $further_instruction = localize('Further instructions: ') . ($further_instruction // localize('none'));
+
     my %mapping = (
 
-        pa_withdraw_binary =>
-            localize( q (
+        pa_withdraw_binary => localize(
+            q (
                     Dear [_1] [_2] [_3],
                     
                     We would like to inform you that the withdrawal request of [_4][_5] by [_6] [_7] has been processed. The funds have been credited into your account [_8] at [_9].
@@ -1780,37 +1783,39 @@ sub _email_content {
                     
                     The [_9] team.
                 ),
-                encode_entities($pa_client->salutation),
-                encode_entities($pa_client->first_name), 
-                encode_entities($pa_client->last_name),
-                $currency,
-                $amount,
-                encode_entities($client_name),
-                $client->loginid,
-                $pa_client->loginid,
-                $website_name,
-                $further_instruction
-            ),
+            encode_entities($pa_client->salutation),
+            encode_entities($pa_client->first_name),
+            encode_entities($pa_client->last_name),
+            $currency,
+            $amount,
+            encode_entities($client_name),
+            $client->loginid,
+            $pa_client->loginid,
+            $website_name,
+            $further_instruction
+        ),
 
-        pa_transfer_binary => localize ( q (
+        pa_transfer_binary => localize(
+            q (
                     Dear [_1] [_2] [_3],
                     
                     We would like to inform you that the transfer of [_4] [_5] via [_6] has been processed. The funds have been credited into your account.
                     
                     Kind Regards,
                     
-                    The [_7] team.', 
+                    The [_7] team. 
                 ),
-                encode_entities($client->salutation),
-                encode_entities($client->first_name), 
-                encode_entities($client->last_name),
-                $currency,
-                $amount,
-                encode_entities($pa_client->payment_agent->payment_agent_name),
-                $website_name
-            ),
+            encode_entities($client->salutation),
+            encode_entities($client->first_name),
+            encode_entities($client->last_name),
+            $currency,
+            $amount,
+            encode_entities($pa_client->payment_agent->payment_agent_name),
+            $website_name
+        ),
 
-        pa_withdraw_deriv => localize( q(
+        pa_withdraw_deriv => localize(
+            q(
                 <tr>
                     <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
                         <!--~[if (gte mso 9)|(IE)~]>
@@ -1865,11 +1870,64 @@ sub _email_content {
             $pa_client->loginid,
             $website_name,
             $further_instruction
-        )
+        ),
+
+        pa_transfer_deriv => localize(
+            q(
+                <tr>
+                    <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
+                        <!--~[if (gte mso 9)|(IE)~]>
+                        <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
+                        <!~[endif~]-->
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                            <tr>
+                                <td bgcolor="#ffffff" align="center" valign="top" style="padding: 40px 30px 30px 30px; border-top: 2px solid #ff444f;">
+                                        <a href="https://www.deriv.com">
+                                            <img src="https://binary-com.github.io/deriv-email-templates/html/images/icon-deposit-successful.png" width="224" height="224" border="0" style="display: block; max-width: 100%;" alt="Deriv.com">
+                                        </a>
+                                </td>
+                            </tr>
+                        </table>
+                        <!--~[if (gte mso 9)|(IE)~]></td></tr></table>
+                        <!~[endif~]-->
+                    </td>
+                </tr>
+                <!-- COPY BLOCK -->
+                <tr>
+                    <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
+                        <!--~[if (gte mso 9)|(IE)~]>
+                        <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
+                        <!~[endif~]-->
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                            <!-- COPY -->
+                            <tr>
+                                <td bgcolor="#ffffff" align="center" style="padding: 0px 30px 8px 30px;">
+                                    <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">Successful transfer</h2>
+                                </td>
+                            </tr>
+                            <!-- COPY -->
+                            <tr>
+                                <td bgcolor="#ffffff" align="left" style="padding: 8px 30px 40px 30px;">
+                                    <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;"><strong>Hi [_1],</strong></p>
+                                    <p style="color: #333333; font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 16px 0px;">We would like to inform you that the transfer of <strong>[_2] [_3]</strong> via [_4] has been processed. The funds have been credited into your account.</p>
+                                </td>
+                             </tr>
+                        </table>
+                        <!--~[if (gte mso 9)|(IE)~]>
+                            </td></tr></table>
+                        <!~[endif~]-->
+                    </td>
+                </tr>            
+            ),
+            encode_entities($client->first_name),
+            $currency,
+            $amount,
+            encode_entities($pa_client->payment_agent->payment_agent_name))
 
     );
-    
-    return [ $mapping{$type.'_'.$brand->name} ];
+
+    # send_email requires arrayref
+    return [$mapping{$type . '_' . $brand->name}];
 }
 
 1;
