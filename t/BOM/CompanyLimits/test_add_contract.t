@@ -107,12 +107,6 @@ subtest 'Limits test base case', sub {
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 0, 'If contract failed to buy, it should be reverted';
 
-    # 1. Get the correct combinations
-
-    # 2. Ensure that the right keys are affected
-
-    # 3. Ensure that everything else remains the same
-
     # CUT OFF POINT
     # Ignore tests below (email will be moved away)
     # TODO: we will transfer email to bom-events. Commented email code here is kept for reference
