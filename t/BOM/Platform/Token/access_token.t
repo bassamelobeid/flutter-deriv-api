@@ -74,7 +74,7 @@ subtest 'error in create token' => sub {
     $token = $obj->create_token('CR123', 'taken');
     ok !ref $token, 'token created';
     $token = $obj->create_token('CR123', 'taken');
-    is $token, $token 'token created with same name';
+    is $token, $token, 'token created with same name';
 };
 
 done_testing();

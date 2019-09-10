@@ -219,6 +219,18 @@ sub generate_token {
     )->string_from(join('', @chars), $length);
 }
 
+=head2 token_exists
+
+Check if token exists in auth redis. Returns a boolean.
+
+=cut
+
+sub token_exists {
+    my ($self, $token) = @_;
+
+    return $self->_redis_read->exists($self->_make_key($token));
+}
+
 ### PRIVATE ###
 sub _cleanup {
     my $token = shift;
