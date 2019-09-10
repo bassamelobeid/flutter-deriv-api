@@ -382,9 +382,6 @@ sub _initialize_other_parameters {
     if (exists $params->{stake}) {
         $params->{amount}      = delete $params->{stake};
         $params->{amount_type} = 'stake';
-    } elsif (exists $params->{multiplier}) {
-        $params->{amount}      = delete $params->{multiplier};
-        $params->{amount_type} = 'multiplier';
     } elsif (exists $params->{payout}) {
         $params->{amount}      = delete $params->{payout};
         $params->{amount_type} = 'payout';
