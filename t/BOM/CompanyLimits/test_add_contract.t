@@ -24,6 +24,26 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
 
+# Test for the correct key combinations
+
+# Test with different underlying
+
+# Test with different landing companies
+
+# Test with different barrier
+
+# Test with different currencies
+
+# Test with different contract groups
+
+# Test with daily loss and daily turnover
+
+# Test when limits have breached
+
+# Test if database and redis are synced properly
+
+# Test for potential loss reconciliation
+
 subtest 'Limits test base case', sub {
     my $cl = create_client;
     top_up $cl, 'USD', 5000;
