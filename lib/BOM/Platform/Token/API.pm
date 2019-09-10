@@ -47,7 +47,6 @@ sub create_token {
     die $self->_log->fatal("display_name is required") unless $display_name;
 
     return {error => localize('alphanumeric with space and dash, 2-32 characters')} if $display_name !~ /^[\w\s\-]{2,32}$/;
-    return {error => localize('The name is taken.')}                                if $self->is_name_taken($loginid, $display_name);
     return {error => localize('Max 30 tokens are allowed.')}                        if $self->get_token_count_by_loginid($loginid) > 30;
 
     $scopes = [grep { $supported_scopes{$_} } @$scopes];
@@ -135,25 +134,11 @@ sub get_token_count_by_loginid {
     return $self->_redis_read->hlen($self->_make_key_by_id($loginid));
 }
 
-=head2 is_name_taken
-
-Do we have the same API token display name for this loginid
-
-=cut
-
-sub is_name_taken {
-    my ($self, $loginid, $display_name) = @_;
-
-    return $self->_redis_read->hexists($self->_make_key_by_id($loginid), $display_name);
-}
-
 sub save_token_details_to_redis {
     my ($self, $data) = @_;
 
     my $token  = $data->{token};
     my $writer = $self->_redis_write;
-
-    return 0 if $self->is_name_taken($data->{loginid}, $data->{display_name});
 
     $data->{scopes}        = encode_json_utf8($data->{scopes})                 if $data->{scopes} and ref $data->{scopes} eq 'ARRAY';
     $data->{creation_time} = Date::Utility->new($data->{creation_time})->epoch if $data->{creation_time};
