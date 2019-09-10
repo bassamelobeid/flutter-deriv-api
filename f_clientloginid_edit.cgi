@@ -424,7 +424,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         print $result if $result;
     }
 
-    # Social responsibility checks are only for MX-MLT clients
     # TODO: Remove this once the transition is done from redis to client object
     if ((my $sr_risk_val = $input{client_social_responsibility_check})
         && $client->landing_company->social_responsibility_check_required)
