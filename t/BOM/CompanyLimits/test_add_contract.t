@@ -25,10 +25,83 @@ my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
 
 # Test for the correct key combinations
+#subtest 'Combinations matching test', sub {
+#    my $cl = create_client;
+#    top_up $cl, 'USD', 5000;
+#    
+#};
 
 # Test with different underlying
 
-# Test with different landing companies
+subtest 'Different landing companies test', sub {
+    
+    my $cr_cl = create_client('CR');
+    my $mx_cl = create_client('MX');
+    
+    top_up $cr_cl, 'USD', 5000;
+    top_up $mx_cl, 'USD', 5000;
+    
+    BOM::CompanyLimits::Limits::update_company_limits({
+        landing_company => 'svg',
+        underlying      => 'R_50',
+        expiry_type     => 'tick',
+        contract_group  => 'callput',
+        barrier_type    => 'non_atm',
+        limit_type      => 'potential_loss',
+        limit_amount    => 100,
+    });
+    
+    BOM::CompanyLimits::Limits::update_company_limits({
+        landing_company => 'iom',
+        underlying      => 'R_50',
+        expiry_type     => 'tick',
+        contract_group  => 'callput',
+        barrier_type    => 'non_atm',
+        limit_type      => 'potential_loss',
+        limit_amount    => 100,
+    });
+    
+    my ($svg_contract, $svg_trx, $svg_fmb, $mx_contract, $mx_trx, $mx_fmb);
+
+    $svg_contract = create_contract(
+        payout     => 6,
+        underlying => 'R_50',
+    );
+
+    ($svg_trx, $svg_fmb) = buy_contract(
+        client    => $cr_cl,
+        buy_price => 2,
+        contract  => $svg_contract,
+    );
+    
+    my $key = 'tn,R_50,callput';
+    
+    my $svg_total = $redis->hget('svg:potential_loss', $key);
+    my $mx_total = $redis->hget('iom:potential_loss', $key) // 0;
+    
+    cmp_ok $svg_total, '==', 4, 'buying contract with CR client adds potential loss to svg';
+    cmp_ok $mx_total, '==', 0, 'buying contract with CR client does not affect mx potential_loss';
+    
+    $mx_contract = create_contract(
+        payout     => 6,
+        underlying => 'R_50',
+    );
+
+    ($mx_trx, $mx_fmb) = buy_contract(
+        client    => $mx_cl,
+        buy_price => 2,
+        contract  => $mx_contract,
+    );
+    
+    $svg_total = $redis->hget('svg:potential_loss', $key);
+    $mx_total = $redis->hget('iom:potential_loss', $key);
+
+    cmp_ok $svg_total, '==', 4, 'buying contract with MX client does not add potential loss to svg';
+    cmp_ok $mx_total, '==', 4, 'buying contract with MX client affects mx potential_loss';
+    
+    $redis->hdel('svg:potential_loss', $key);
+    $redis->hdel('iom:potential_loss', $key);
+};
 
 # Test with different barrier
 
@@ -51,7 +124,7 @@ subtest 'Limits test base case', sub {
     # Apply a potential loss limit on a single underlying, then buy 2 contracts;
     # second one will trigger limit breach.
 
-    my $limit_added = BOM::CompanyLimits::Limits::update_company_limits({
+    BOM::CompanyLimits::Limits::update_company_limits({
         landing_company => 'svg',
         underlying      => 'R_50',
         expiry_type     => 'tick',
