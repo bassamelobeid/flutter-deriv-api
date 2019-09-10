@@ -30,7 +30,9 @@ Defaults to 'default' if not provided.
 =cut
 
 sub get_timeout {
-    my (%args) = @_;
+    my %args = @_;
+
+    my $category = $args{category};
 
     my $config = _get_config();
     return $config->{$category}{timeout} // $config->{default}{timeout};
