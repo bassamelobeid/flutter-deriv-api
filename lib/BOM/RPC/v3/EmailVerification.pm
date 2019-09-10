@@ -94,8 +94,7 @@ sub email_verification {
             if ($brand->name eq 'deriv') {
                 $subject = localize('Verify your account for Deriv');
                 $message = localize(
-                    q( 
-                    <tr>
+                    '<tr>
                         <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
                             <!--~[if (gte mso 9)|(IE)~]>
                             <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
@@ -103,13 +102,13 @@ sub email_verification {
                             <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
                                 <tr>
                                     <td bgcolor="#ffffff" align="left" valign="top" style="padding: 40px 30px 20px 30px; border-top: 2px solid #ff444f;">
-                                        <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">Verify your account</h2>
-                                        <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">Thanks for signing up. To start trading,<br />please verify your email address by clicking the button below.</p>
+                                        <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">Verify your account</h2>
+                                        <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">Thanks for signing up. To start trading,<br />please verify your email address by clicking the button below.</p>
                                     </td>
                                 </tr>
                                 <!-- button -->
                                 <tr>
-                                    <td bgcolor="#ffffff" align="left" style="padding: 12px 30px 20px 30px; color: #333333; font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 25px;">
+                                    <td bgcolor="#ffffff" align="left" style="padding: 12px 30px 20px 30px; color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 25px;">
                                         <!--~[if (gte mso 9)|(IE)~]>
                                             <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://www.deriv.com" style="height:50px;v-text-anchor:middle;width:200px;" arcsize="8%" stroke="f" fillcolor="#ff444f">
                                             <w:anchorlock/>
@@ -121,16 +120,15 @@ sub email_verification {
                                 </tr>
                                 <tr>
                                     <td bgcolor="#ffffff" align="left" valign="top" style="padding: 0px 30px 40px 30px;">
-                                        <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">Having trouble with the button?<br />Copy and paste this link into your browser to verify.<br /><a href="[_1]">[_1]</a></p>
+                                        <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">Having trouble with the button?<br />Copy and paste this link into your browser to verify.<br /><a href="[_1]">[_1]</a></p>
                                     </td>
                                 </tr>
                             </table>
                             <!--~[if (gte mso 9)|(IE)~]></td></tr></table>
                             <!~[endif~]-->
                         </td>
-                    </tr>
-                )
-                    , _build_verification_url('signup', $args));
+                    </tr>',
+                    _build_verification_url('signup', $args));
             } else {
                 $subject = localize('Verify your email address - [_1]', $website_name);
                 $message =
@@ -157,8 +155,7 @@ sub email_verification {
             if ($brand->name eq 'deriv') {
                 $subject = localize('This email is taken');
                 $message = localize(
-                    q(
-                    <tr>
+                    '<tr>
                         <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
                             <!--~[if (gte mso 9)|(IE)~]>
                             <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
@@ -186,13 +183,13 @@ sub email_verification {
                                 <!-- COPY -->
                                 <tr>
                                     <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 8px 30px;">
-                                        <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">This email is already in use</h2>
+                                        <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">This email is already in use</h2>
                                     </td>
                                 </tr>
                                 <!-- COPY -->
                                 <tr>
-                                    <td bgcolor="#ffffff" align="left" style="padding: 8px 30px 40px 30px; color: #333333; font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px;">
-                                        <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">The email address you provided <strong>(<a href="[_1]" style="color: #333333 !important;">[_1]</a>)</strong> is already taken. Only one Deriv account can be created with one email address.</p>
+                                    <td bgcolor="#ffffff" align="left" style="padding: 8px 30px 40px 30px; color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px;">
+                                        <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">The email address you provided <strong>(<a href="[_1]" style="color: #333333 !important;">[_1]</a>)</strong> is already taken. Only one Deriv account can be created with one email address.</p>
                                         <p style="margin: 16px 0px 0px 0px;"><a href="https://www.deriv.com">Log in</a></p>
                                     </td>
                                  </tr>
@@ -201,8 +198,8 @@ sub email_verification {
                                 </td></tr></table>
                             <!~[endif~]-->
                         </td>
-                    </tr>
-                ), $email
+                    </tr>',
+                    $email
                 );
             } elsif ($source == 1) {
                 $subject = localize('Duplicate email address submitted - [_1]', $website_name);
@@ -233,8 +230,7 @@ sub email_verification {
                 $subject = localize('Verify your withdrawal request - [_1]', $website_name);
                 $type_call = 'payment_agent_withdraw' if $type_call eq 'paymentagent_withdraw';    # yuk
                 $message = localize(
-                    q(
-                    <tr>
+                    '<tr>
                         <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
                             <!--~[if (gte mso 9)|(IE)~]>
                             <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
@@ -249,25 +245,25 @@ sub email_verification {
                                 </tr>
                                 <tr>
                                     <td bgcolor="#ffffff" align="center" valign="top" style="padding: 0px 30px 20px 30px;">
-                                        <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">Please verify your</h2>
-                                        <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">withdrawal request</h2>
+                                        <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">Please verify your</h2>
+                                        <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">withdrawal request</h2>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td bgcolor="#ffffff" align="left" valign="top" style="padding: 12px 30px 20px 30px;">
-                                        <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Before we can proceed with the withdrawal process, we first need to check that it was you who made the request.</p>
+                                        <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Before we can proceed with the withdrawal process, we first need to check that it was you who made the request.</p>
                                     </td>
                                 </tr>
                                 <!-- button -->
                                 <tr>
-                                    <td bgcolor="#ffffff" align="center" style="padding: 12px 30px 32px 30px; color: #333333; font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 25px;">
+                                    <td bgcolor="#ffffff" align="center" style="padding: 12px 30px 32px 30px; color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 25px;">
                                         <!--~[if (gte mso 9)|(IE)~]>
                                             <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="[_1]" style="height:50px;v-text-anchor:middle;width:180px;" arcsize="10%" strokecolor="#ff444f" fillcolor="#ffffff">
                                             <w:anchorlock/>
-                                            <center style="color:#ff444f;font-family:sans-serif;font-size:16px;font-weight:bold;">Yes, it's me!</center>
+                                            <center style="color:#ff444f;font-family:sans-serif;font-size:16px;font-weight:bold;">Yes, it\'s me!</center>
                                             </v:roundrect>
                                         <!~[endif~]-->
-                                        <a class="button" href="[_1]" style="mso-hide:all;"><span>Yes, it's me!</span></a>
+                                        <a class="button" href="[_1]" style="mso-hide:all;"><span>Yes, it\'s me!</span></a>
                                     </td>
                                 </tr>
                             </table>
@@ -283,7 +279,7 @@ sub email_verification {
                             <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
                                 <tr>
                                     <td bgcolor="#ffffff" align="left" valign="top" style="padding: 32px 30px 16px 30px; border-radius: 0px 0px 2px 2px;">
-                                        <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">If the button doesn't work, please copy and paste this code into the verification form.</p>
+                                        <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">If the button doesn\'t work, please copy and paste this code into the verification form.</p>
                                     </td>
                                 </tr>
                                 <tr>
@@ -291,7 +287,7 @@ sub email_verification {
                                         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 100%;">
                                             <tr>
                                                 <td bgcolor="#f3f3f3" align="center" valign="top" style="padding: 16px 16px 16px 16px; border-radius: 0px 0px 2px 2px;">
-                                                    <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #ff444f; font-size: 16px; font-weight: bold; line-height: 24px; margin: 0px 0px 0px 0px;">[_2]</p>
+                                                    <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #ff444f; font-size: 16px; font-weight: bold; line-height: 24px; margin: 0px 0px 0px 0px;">[_2]</p>
                                                 </td>
                                             </tr>
                                         </table>
@@ -302,8 +298,8 @@ sub email_verification {
                                 </td></tr></table>
                             <!~[endif~]-->
                         </td>
-                    </tr>      
-                ), _build_verification_url($type_call, $args), $code
+                    </tr>'
+                    , _build_verification_url($type_call, $args), $code
                 );
             } else {
                 my $payment_withdraw =
