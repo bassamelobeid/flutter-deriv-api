@@ -47,7 +47,7 @@ sub create_token {
     die $self->_log->fatal("display_name is required") unless $display_name;
 
     return {error => localize('alphanumeric with space and dash, 2-32 characters')} if $display_name !~ /^[\w\s\-]{2,32}$/;
-    return {error => localize('Max 30 tokens are allowed.')}                        if $self->get_token_count_by_loginid($loginid) > 30;
+    return {error => localize('Max 30 tokens are allowed.')} if $self->get_token_count_by_loginid($loginid) > 30;
 
     $scopes = [grep { $supported_scopes{$_} } @$scopes];
     my $token = $self->generate_token(TOKEN_LENGTH);
@@ -68,8 +68,6 @@ sub create_token {
     # it might be token get deleted in redis somehow since it exists in the database already.
     # Still save it if it is not saved as a new token in database.
     $self->save_token_details_to_redis($data);
-
-    return {error => localize('The name is taken.')} unless $success;
 
     return $success->{token};
 }
@@ -146,7 +144,7 @@ sub save_token_details_to_redis {
 
     $writer->multi;
     $writer->hmset($self->_make_key($token), %$data);
-    $writer->hset($self->_make_key_by_id($data->{loginid}), $data->{display_name}, $token);
+    $writer->hset($self->_make_key_by_id($data->{loginid}), $token, 1);
     $writer->exec;
 
     return 1;
@@ -165,14 +163,13 @@ sub remove_by_loginid {
     my %all       = @{$self->_redis_read->hgetall($key_by_id)};
     my $redis     = $self->_redis_write;
 
-    foreach my $name (keys %all) {
-        my $token_details = $self->get_token_details($all{$name});
+    foreach my $token (keys %all) {
         #remove token from database first before removing it from redis
-        $self->_db_model->remove_by_token($token_details->{token}, $loginid);
+        $self->_db_model->remove_by_token($token, $loginid);
 
         $redis->multi;
-        $redis->del($self->_make_key($all{$name}));
-        $redis->hdel($key_by_id, $name);
+        $redis->del($self->_make_key($token));
+        $redis->hdel($key_by_id, $token);
         $redis->exec;
     }
 
@@ -190,8 +187,6 @@ sub remove_by_token {
 
     my $key_by_id = $self->_make_key_by_id($loginid);
 
-    my %all = reverse @{$self->_redis_read->hgetall($key_by_id)};
-
     my $redis = $self->_redis_write;
 
     #remove token from database first before removing it from redis
@@ -199,7 +194,7 @@ sub remove_by_token {
 
     $redis->multi;
     $redis->del($self->_make_key($token));
-    $redis->hdel($key_by_id, $all{$token});
+    $redis->hdel($key_by_id, $token);
     $redis->exec;
 
     return 1;
