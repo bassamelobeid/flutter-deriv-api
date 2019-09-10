@@ -1897,13 +1897,13 @@ sub _email_content {
                         <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">We would like to inform you that the transfer of [_4] [_5] via [_6] has been processed. The funds have been credited into your account <strong>[_1]</strong> at <strong>[_7]</strong>.</p>
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">We would like to inform you that the transfer of <strong>[_5] [_6]</strong> via <strong>[_7]</strong> has been processed. The funds have been credited into your account <strong>[_1]</strong> at <strong>[_7]</strong>.</p>
                             </td>
                         </tr>
                         <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 40px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Kind regards<br />The [_7] team.</p>
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Kind regards<br />The [_8] team.</p>
                             </td>
                         </tr>
                     </table>
