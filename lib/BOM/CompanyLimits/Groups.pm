@@ -180,21 +180,16 @@ EOF
     return $sql;
 }
 
-my $offerings_cache;
-
 sub _get_active_offerings {
     my ($key) = @_;
 
-    $offerings_cache //= do {
-        my $lc        = LandingCompany::Registry::get('virtual');                                     # get everything in offerings list.
-        my $o_config  = BOM::Config::Runtime->instance->get_offerings_config();
-        my @offerings = ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config));
-        \@offerings;
-    };
+    my $lc        = LandingCompany::Registry::get('virtual');                                     # get everything in offerings list.
+    my $o_config  = BOM::Config::Runtime->instance->get_offerings_config();
+    my @offerings = ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config));
 
     my %supported_offerings =
         map { $_ => 1 }
-        map { $_->values_for_key($key) } @$offerings_cache;
+        map { $_->values_for_key($key) } @offerings;
 
     return %supported_offerings;
 }
