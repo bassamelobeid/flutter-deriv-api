@@ -169,7 +169,7 @@ is(
     'copiers filtered by stake'
 );
 
-$token_db->remove_by_token($trader_token, 'CR0027');
+$token_db->remove_by_token($trader_token, Date::Utility->new->db_timestamp);
 # For extra certainty, create a new trader token; it should not be used by the copiers
 $token_db->save_token({
         loginid      => 'CR0027',

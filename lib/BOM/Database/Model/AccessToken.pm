@@ -30,8 +30,6 @@ sub save_token {
             my $sth = $_->prepare(
                 "INSERT INTO auth.access_token(token, display_name, client_loginid, scopes, valid_for_ip, creation_time)
                 VALUES (?,?,?,?,?,?)
-                ON CONFLICT (client_loginid, display_name)
-                DO NOTHING
                 RETURNING *"
             );
             $sth->execute(@{$args}{'token', 'display_name', 'loginid', 'scopes', 'valid_for_ip', 'creation_time'});
@@ -61,7 +59,7 @@ sub _update_token_last_used {
 
     return $self->dbic->run(
         fixup => sub {
-            my $sth = $_->prepare("UPDATE auth.access_token SET last_used=$1 WHERE token=$2 AND last_used IS DISTINCT FROM $1");
+            my $sth = $_->prepare(q{UPDATE auth.access_token SET last_used=$1 WHERE token=$2 AND last_used IS DISTINCT FROM $1});
             $sth->bind_param(1, $last_used);
             $sth->bind_param(2, $token);
             $sth->execute();
