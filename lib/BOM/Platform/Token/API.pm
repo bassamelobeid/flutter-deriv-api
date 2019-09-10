@@ -115,7 +115,7 @@ This could be slow if loginid has a lot of tokens. Use with caution!
 sub get_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
-    my $tokens = $self->_redis_read->hvals($self->_make_key_by_id($loginid));
+    my $tokens = $self->_redis_read->hkeys($self->_make_key_by_id($loginid));
 
     return [sort { $a->{display_name} cmp $b->{display_name} } map { _cleanup($self->get_token_details($_)) } @$tokens];
 }
