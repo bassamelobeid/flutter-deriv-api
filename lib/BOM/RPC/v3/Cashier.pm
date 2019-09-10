@@ -1770,17 +1770,17 @@ sub _email_content {
         ),
 
         pa_withdraw_deriv => localize('
-             <tr>
+            <tr>
                 <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
                     <!--~[if (gte mso 9)|(IE)~]>
                     <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
                     <!~[endif~]-->
                     <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
                         <tr>
-                            <td bgcolor="#ffffff" align="center" valign="top" style="padding: 40px 30px 30px 30px; border-top: 2px solid #ff444f;">
-                                    <a href="https://www.deriv.com">
-                                        <img src="https://binary-com.github.io/deriv-email-templates/html/images/icon-deposit-successful.png" width="224" height="224" border="0" style="display: block; max-width: 100%;" alt="Deriv.com">
-                                    </a>
+                            <td bgcolor="#ffffff" align="center" valign="top" style="padding: 60px 30px 0px 30px; border-top: 2px solid #ff444f;">
+                                <a href="https://www.deriv.com">
+                                    <img src="https://binary-com.github.io/deriv-email-templates/html/images/withdrawal-successful.png" width="162" height="162" border="0" style="display: block; max-width: 100%;" alt="Deriv.com">
+                                </a>
                             </td>
                         </tr>
                     </table>
@@ -1797,30 +1797,55 @@ sub _email_content {
                     <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
                         <!-- COPY -->
                         <tr>
-                            <td bgcolor="#ffffff" align="center" style="padding: 0px 30px 8px 30px;">
-                                <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">Successful withdraw request</h2>
+                            <td bgcolor="#ffffff" align="center" style="padding: 40px 50px 8px 50px;">
+                                <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">We\'ve completed</h2>
+                                <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">a withdrawal request</h2>
+                            </td>
+                        </tr>
+                         <!-- COPY -->
+                        <tr>
+                            <td bgcolor="#ffffff" align="center" style="padding: 20px 30px 20px 30px;">
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; font-weight: bold; margin: 0px 0px 0px 0px;">Your Login ID: [_1]</p>
                             </td>
                         </tr>
                         <!-- COPY -->
                         <tr>
-                            <td bgcolor="#ffffff" align="left" style="padding: 8px 30px 40px 30px;">
-                                <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;"><strong>Hi [_1],</strong></p>
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 16px 0px;">We would like to inform you that the withdrawal request of <strong>[_2] [_3]</strong> by <strong>[_4] [_5]</strong> has been processed. The funds have been credited into your account [_6] at [_7].</p>
-                                <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[_8]</p>
+                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Dear Mr. [_2] [_3] [_4]</p>
                             </td>
-                         </tr>
+                        </tr>
+                        <!-- COPY -->
+                        <tr>
+                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">We would like to inform you that the withdrawal request of <strong>[_5] [_6]</strong> by <strong>[_7] [_8]</strong> has been processed. The funds have been credited into your account <strong>[_1]</strong> at <strong>[_9]</strong>.</p>
+                            </td>
+                        </tr>
+                        <!-- COPY -->
+                        <tr>
+                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[_10]</p>
+                            </td>
+                        </tr>
+                        <!-- COPY -->
+                        <tr>
+                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 40px 30px;">
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Kind regards<br />The [_9] team.</p>
+                            </td>
+                        </tr>
                     </table>
                     <!--~[if (gte mso 9)|(IE)~]>
                         </td></tr></table>
                     <!~[endif~]-->
                 </td>
             </tr>',
+            $pa_client->loginid,
+            encode_entities($pa_client->salutation),
             encode_entities($pa_client->first_name),
+            encode_entities($pa_client->last_name),
             $currency,
             $amount,
             encode_entities($client_name),
             $client->loginid,
-            $pa_client->loginid,
             $website_name,
             $further_instruction),
 
@@ -1832,10 +1857,10 @@ sub _email_content {
                     <!~[endif~]-->
                     <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
                         <tr>
-                            <td bgcolor="#ffffff" align="center" valign="top" style="padding: 40px 30px 30px 30px; border-top: 2px solid #ff444f;">
-                                    <a href="https://www.deriv.com">
-                                        <img src="https://binary-com.github.io/deriv-email-templates/html/images/icon-deposit-successful.png" width="224" height="224" border="0" style="display: block; max-width: 100%;" alt="Deriv.com">
-                                    </a>
+                            <td bgcolor="#ffffff" align="center" valign="top" style="padding: 60px 30px 0px 30px; border-top: 2px solid #ff444f;">
+                                <a href="https://www.deriv.com">
+                                    <img src="https://binary-com.github.io/deriv-email-templates/html/images/withdrawal-successful.png" width="162" height="162" border="0" style="display: block; max-width: 100%;" alt="Deriv.com">
+                                </a>
                             </td>
                         </tr>
                     </table>
@@ -1852,27 +1877,50 @@ sub _email_content {
                     <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
                         <!-- COPY -->
                         <tr>
-                            <td bgcolor="#ffffff" align="center" style="padding: 0px 30px 8px 30px;">
-                                <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">Successful transfer</h2>
+                            <td bgcolor="#ffffff" align="center" style="padding: 40px 50px 8px 50px;">
+                                <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">We\'ve completed</h2>
+                                <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">a transfer</h2>
+                            </td>
+                        </tr>
+                         <!-- COPY -->
+                        <tr>
+                            <td bgcolor="#ffffff" align="center" style="padding: 20px 30px 20px 30px;">
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; font-weight: bold; margin: 0px 0px 0px 0px;">Your Login ID: [_1]</p>
                             </td>
                         </tr>
                         <!-- COPY -->
                         <tr>
-                            <td bgcolor="#ffffff" align="left" style="padding: 8px 30px 40px 30px;">
-                                <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;"><strong>Hi [_1],</strong></p>
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 16px 0px;">We would like to inform you that the transfer of <strong>[_2] [_3]</strong> via [_4] has been processed. The funds have been credited into your account.</p>
+                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Dear Mr. [_2] [_3] [_4]</p>
                             </td>
-                         </tr>
+                        </tr>
+                        <!-- COPY -->
+                        <tr>
+                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">We would like to inform you that the transfer of [_4] [_5] via [_6] has been processed. The funds have been credited into your account <strong>[_1]</strong> at <strong>[_7]</strong>.</p>
+                            </td>
+                        </tr>
+                        <!-- COPY -->
+                        <tr>
+                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 40px 30px;">
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Kind regards<br />The [_7] team.</p>
+                            </td>
+                        </tr>
                     </table>
                     <!--~[if (gte mso 9)|(IE)~]>
                         </td></tr></table>
                     <!~[endif~]-->
                 </td>
             </tr>',
+            $client->loginid,
+            encode_entities($client->salutation),
             encode_entities($client->first_name),
+            encode_entities($client->last_name),
             $currency,
             $amount,
-            encode_entities($pa_client->payment_agent->payment_agent_name)));
+            encode_entities($pa_client->payment_agent->payment_agent_name),
+            $website_name),
+    );
 
     # send_email requires arrayref
     return [$mapping{$type . '_' . $brand->name}];

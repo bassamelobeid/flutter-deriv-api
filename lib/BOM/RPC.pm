@@ -51,6 +51,7 @@ sub set_current_context {
     $args->{country_code} = $params->{country}  if exists $params->{country};
     $args->{language}     = $params->{language} if $params->{language};
     $args->{brand_name}   = $params->{brand}    if $params->{brand};
+    $args->{brand_name}   = 'deriv';
 
     my $token_details = $params->{token_details};
     if ($token_details and exists $token_details->{loginid} and $token_details->{loginid} =~ /^(\D+)\d+$/) {
