@@ -170,7 +170,7 @@ sub remove_by_loginid {
         $redis->hdel($key_by_id, $token);
         $redis->exec;
         #remove token from database happens after redis since it is the source of truth
-        $self->_db_model->remove_by_token($token, $token_details->{last_used});
+        $self->_db_model->remove_by_token($token, ($token_details->{last_used} ? Date::Utility->new($token_details->{last_used})->db_timestamp : ''));
 
     }
 
@@ -197,7 +197,7 @@ sub remove_by_token {
     $redis->exec;
 
     #remove token from database happens after redis since it is the source of truth
-    $self->_db_model->remove_by_token($token, $token_details->{last_used});
+    $self->_db_model->remove_by_token($token, ($token_details->{last_used} ? Date::Utility->new($token_details->{last_used})->db_timestamp : ''));
 
     return 1;
 }
