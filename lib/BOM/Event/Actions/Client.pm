@@ -1249,7 +1249,7 @@ async sub _send_email_onfido_unsupported_country_cs {
 This check is to verify whether clients are at-risk in trading, and this check is done on an on-going basis.
 The checks to be done are in the social_responsibility_check.yml file in bom-config.
 If a client has breached certain thresholds, then their social responsibility (SR) status will
-be set at high-risk and an email will be sent to the SR team for further action.
+be set at high-risk value "high" and an email will be sent to the SR team for further action.
 After the email has been sent, the monitoring starts again.
 
 The updated SR status is set to expire within 30 days (this is assuming that the client has not breached 
@@ -1305,6 +1305,7 @@ sub social_responsibility_check {
             if ($client_attribute_val >= $threshold_val) {
 
                 # For losses, turnover, and amount: standardize to 2 decimal places
+                # TODO: Use currency conversion instead of sprintf
                 unless (any { $_ eq $attribute } qw/deposit_count num_contract/) {
                     $client_attribute_val = sprintf("%.2f", $client_attribute_val);
                     $threshold_val        = sprintf("%.2f", $threshold_val);
