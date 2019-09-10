@@ -63,11 +63,11 @@ sub create_token {
         last_used     => '',
     };
 
-    # save in database for persistence
+    # save in database for persistence.
+    # tokens will be saved in the database first before saving it in redis because
+    # database will still be the source of truth for the API token
     my $success = $self->_db_model->save_token($data);
-    # it might be token get deleted in redis somehow since it exists in the database already.
-    # Still save it if it is not saved as a new token in database.
-    $self->save_token_details_to_redis($data);
+    $self->save_token_details_to_redis($data) if $success->{token};
 
     return $success->{token};
 }
