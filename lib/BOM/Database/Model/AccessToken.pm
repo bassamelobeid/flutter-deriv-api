@@ -42,7 +42,9 @@ sub save_token {
 }
 
 sub remove_by_token {
-    my ($self, $token) = @_;
+    my ($self, $token, $last_used) = @_;
+
+    $self->_update_token_last_used($token, $last_used);
 
     return $self->dbic->run(
         fixup => sub {
@@ -50,7 +52,7 @@ sub remove_by_token {
         });
 }
 
-sub update_token_last_used {
+sub _update_token_last_used {
     my ($self, $token, $last_used) = @_;
 
     unless ($token and $last_used) {

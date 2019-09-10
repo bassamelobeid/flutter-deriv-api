@@ -42,7 +42,7 @@ subtest 'save_token' => sub {
     $args->{token} = _token();
     $res = $db_model->save_token($args);
     ok $res, 'saved successfully';
-    ok $db_model->update_token_last_used($res->{token}, Date::Utility->new->db_timestamp), 'last_used timestamp updated';
+    ok $db_model->_update_token_last_used($res->{token}, Date::Utility->new->db_timestamp), 'last_used timestamp updated';
 };
 
 my $tokens;
