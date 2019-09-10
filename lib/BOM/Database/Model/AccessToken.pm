@@ -61,8 +61,10 @@ sub _update_token_last_used {
 
     return $self->dbic->run(
         fixup => sub {
-            my $sth = $_->prepare("UPDATE auth.access_token SET last_used=? WHERE token=?");
-            $sth->execute($last_used, $token);
+            my $sth = $_->prepare("UPDATE auth.access_token SET last_used=$1 WHERE token=$2 AND last_used IS DISTINCT FROM $1");
+            $sth->bind_param(1, $last_used);
+            $sth->bind_param(2, $token);
+            $sth->execute();
         });
 }
 
