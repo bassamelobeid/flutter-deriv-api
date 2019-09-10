@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Exporter qw( import );
+use Path::Tiny;
 use BOM::CTC::Helper;
 use BOM::CTC::Currency;
 use BOM::Platform::Client::CashierValidation;
@@ -40,13 +41,15 @@ sub wait_miner {
 }
 
 sub deploy_test_contract {
-    my ($currency_code, $bytecode, $abi) = @_;
+    my ($currency_code) = @_;
 
     my $currency = BOM::CTC::Currency->new(currency_code => $currency_code);
+
+    my $bytecode = path(sprintf("/home/git/regentmarkets/bom-test/resources/%s_bytecode", lc $currency->currency_code))->slurp;
     $bytecode =~ s/[\x0D\x0A]+//g;
 
     my $contract = $currency->rpc_client->contract({
-        contract_abi => $abi,
+        contract_abi => $currency->_minimal_erc20_abi,
         from         => $currency->account_config->{account}->{address},
         # The default contract gas is lower that what we need to deploy this contract
         # so we need manually specify the maximum amount of gas needed to deploy the
@@ -64,7 +67,7 @@ sub deploy_test_contract {
     # the number 35 here is the time in seconds that we will wait to the contract be
     # deployed, for the tests since we are using a private node this works fine, this
     # will be removed on the future when we make the ethereum client async.
-    my $response = $contract->invoke_deploy($bytecode, "Binary.com", "USB", $total_supply, $currency->account_config->{account}->{address})
+    my $response = $contract->invoke_deploy($bytecode, $currency_code, $currency_code, $total_supply, $currency->account_config->{account}->{address})
         ->get_contract_address(35);
 
     $contract->contract_address($response->get->response);
