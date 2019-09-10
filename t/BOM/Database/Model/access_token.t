@@ -30,12 +30,7 @@ subtest 'save_token' => sub {
     is $res->{token}, $args->{token}, 'token matched';
     $args->{token} = _token();
     $res = $db_model->save_token($args);
-    ok !$res, 'not saved when display_name is the same';
-
-    $args->{display_name} = 'test1';
-    $args->{token} = _token();
-    $res = $db_model->save_token($args);
-    ok $res, 'successfully saved token with different display_name';
+    ok $res, 'saved when display_name is the same';
     is $res->{token}, $args->{token}, 'token matched';
 
     $args->{loginid} = 'CR1234';
