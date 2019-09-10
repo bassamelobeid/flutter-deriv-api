@@ -54,7 +54,7 @@ subtest 'get_all_tokens_by_loginid' => sub {
 };
 
 subtest 'remove_by_token' => sub {
-    ok $db_model->remove_by_token($tokens->[0]->{token}), 'removed token';
+    ok $db_model->remove_by_token($tokens->[0]->{token}, Date::Utility->new->db_timestamp), 'removed token';
     $tokens = $db_model->get_all_tokens_by_loginid('CR1234');
     is scalar(@$tokens), 0, 'no token for CR1234';
 };
