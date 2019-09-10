@@ -23,10 +23,8 @@ BOM::Database::Model::AccessToken->new->dbic->dbh->do("DELETE FROM auth.access_t
 my $test_loginid = 'CR10002';
 my $m            = BOM::Platform::Token::API->new;
 
-ok not $m->is_name_taken($test_loginid, 'Test Token');
 my $token = $m->create_token($test_loginid, 'Test Token', ['read', 'admin', 'payments']);
 is length($token), 15;
-ok $m->is_name_taken($test_loginid, 'Test Token'), 'name is taken after create';
 my @scopes = $m->get_scopes_by_access_token($token);
 is_deeply([sort @scopes], ['admin', 'payments', 'read'], 'token has right scope');
 
