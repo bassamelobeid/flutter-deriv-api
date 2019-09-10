@@ -133,12 +133,12 @@ sub redis_events {
 }
 
 sub redis_limits_write {
-    $config->{companylimits} //= BOM::Config::redis_events_config();
+    $config->{companylimits} //= BOM::Config::redis_limits_config();
     return _redis('companylimits', 'write', 10);
 }
 
 sub redis_limits {
-    $config->{companylimits} //= BOM::Config::redis_events_config();
+    $config->{companylimits} //= BOM::Config::redis_limits_config();
     return _redis('companylimits', 'read', 10);
 }
 
