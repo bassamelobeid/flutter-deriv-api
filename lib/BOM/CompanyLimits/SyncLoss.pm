@@ -16,6 +16,7 @@ use Date::Utility;
 use BOM::Database::ClientDB;
 use BOM::CompanyLimits;
 use BOM::CompanyLimits::Helpers qw(get_redis);
+use LandingCompany::Registry;
 
 # Certain loss types reset at the start of a new day. We use a cron
 # to periodically set expiryat in redis. For unit tests, we pass a
@@ -26,16 +27,17 @@ sub reset_daily_loss_hashes {
     my $new_day_start_epoch = Date::Utility::today()->epoch + 86400;
     my %output;
 
+    my @landing_companies_with_broker_codes = grep { $#{$_->broker_codes} > -1 } LandingCompany::Registry::all();
     foreach my $loss_type (qw/realized_loss turnover/) {
-        foreach my $lc (BOM::CompanyLimits::get_supported_landing_companies()) {
+        foreach my $lc (@landing_companies_with_broker_codes) {
             my $landing_company = $lc->{short};
             my $redis           = get_redis($landing_company, $loss_type);
             my $hash_name       = "$landing_company:$loss_type";
 
             if ($params{force_reset}) {
-                $output{$hash_name} = $redis->expireat($hash_name, $new_day_start_epoch);
-            } else {
                 $output{$hash_name} = $redis->del($hash_name);
+            } else {
+                $output{$hash_name} = $redis->expireat($hash_name, $new_day_start_epoch);
             }
         }
     }
@@ -106,7 +108,7 @@ sub _get_db_loss {
 
     my $db_records = $dbic->run(
         fixup => sub {
-            return $_->selectall_arrayref("SELECT * FROM bet.get_${loss_type}_combinations()");
+            return $_->selectall_arrayref("SELECT * FROM bet.get_${loss_type}_combinations('$broker_code')");
         });
 
     my %loss_hash;
