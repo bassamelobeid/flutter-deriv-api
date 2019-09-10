@@ -163,11 +163,6 @@ sub redis_transaction_config {
     return $config;
 }
 
-sub redis_auth_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_AUTH} // '/etc/rmg/redis-auth.yml');
-    return $config;
-}
-
 sub redis_queue_config {
     state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_QUEUE} // '/etc/rmg/redis-queue.yml');
     return $config;
