@@ -3,7 +3,6 @@ package BOM::Test::Data::Utility::AuthTestDatabase;
 use MooseX::Singleton;
 
 use BOM::Test;
-use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 
 BEGIN {
     die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
@@ -44,14 +43,10 @@ __PACKAGE__->meta->make_immutable;
 
 ## no critic (Variables::RequireLocalizedPunctuationVars)
 sub import {
-    my (undef, $init, $disable_cleanup) = @_;
-
-    $disable_cleanup //= 0;
+    my (undef, $init) = @_;
 
     if ($init && $init eq ':init') {
         __PACKAGE__->instance->prepare_unit_test_database;
-        #cleans up redis while you're here
-        cleanup_redis_tokens() unless $disable_cleanup;
     }
     return;
 }
