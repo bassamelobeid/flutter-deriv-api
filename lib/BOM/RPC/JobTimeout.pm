@@ -18,7 +18,7 @@ use YAML::XS;
 my $config = {};
 
 sub _get_config {
-    $config //= YAML::XS::LoadFile($ENV{RPC_JOB_TIMEOUT} // '/etc/rmg/rpc_queue_timeout.yml');
+    $config = keys %$config ? $config : YAML::XS::LoadFile($ENV{RPC_JOB_TIMEOUT} // '/etc/rmg/rpc_queue_timeout.yml');
     return $config;
 }
 
@@ -32,9 +32,8 @@ Defaults to 'default' if not provided.
 sub get_timeout {
     my (%args) = @_;
 
-    my $category = $args{category} // 'default';
-
-    return _get_config()->{$category}{timeout};
+    my $config = _get_config();
+    return $config->{$category}{timeout} // $config->{default}{timeout};
 }
 
 1;

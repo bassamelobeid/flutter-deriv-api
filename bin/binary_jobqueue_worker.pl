@@ -224,7 +224,7 @@ sub add_worker_process {
 }
 
 sub process_job {
-    my (%args) = @_;
+    my %args = @_;
 
     my $job  = $args{job};
     my $tags = $args{tags};
