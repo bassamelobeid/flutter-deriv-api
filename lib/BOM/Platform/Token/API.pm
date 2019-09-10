@@ -164,13 +164,14 @@ sub remove_by_loginid {
     my $redis     = $self->_redis_write;
 
     foreach my $token (keys %all) {
-        #remove token from database first before removing it from redis
-        $self->_db_model->remove_by_token($token, $loginid);
-
+        my $token_details = $self->get_token_details($token);
         $redis->multi;
         $redis->del($self->_make_key($token));
         $redis->hdel($key_by_id, $token);
         $redis->exec;
+        #remove token from database happens after redis since it is the source of truth
+        $self->_db_model->remove_by_token($token, $token_details->{last_used});
+
     }
 
     return 1;
@@ -185,17 +186,18 @@ removes token for loginid
 sub remove_by_token {
     my ($self, $token, $loginid) = @_;
 
-    my $key_by_id = $self->_make_key_by_id($loginid);
+    my $key_by_id     = $self->_make_key_by_id($loginid);
+    my $token_details = $self->get_token_details($token);
 
     my $redis = $self->_redis_write;
-
-    #remove token from database first before removing it from redis
-    $self->_db_model->remove_by_token($token);
 
     $redis->multi;
     $redis->del($self->_make_key($token));
     $redis->hdel($key_by_id, $token);
     $redis->exec;
+
+    #remove token from database happens after redis since it is the source of truth
+    $self->_db_model->remove_by_token($token, $token_details->{last_used});
 
     return 1;
 }
