@@ -78,6 +78,8 @@ returns a hash reference containing details of a token
 
 =cut
 
+my %last_updated_epoch = ();
+
 sub get_token_details {
     my ($self, $token, $update_last_used) = @_;
 
@@ -87,7 +89,14 @@ sub get_token_details {
 
     $details{scopes} = decode_json_utf8($details{scopes}) if $details{scopes};
 
-    $self->_redis_write->hset($key, 'last_used', time) if $update_last_used;
+    my $now = time;
+    my $last_updated = $last_updated_epoch{$key} // 0;
+
+    # only update once per second
+    if ($update_last_used and $last_updated < $now) {
+        $self->_redis_write->hset($key, 'last_used', $now);
+        $last_updated_epoch{$key} = $now;
+    }
 
     # last_used is expected as string in the API schema
     $details{last_used} = Date::Utility->new($details{last_used})->datetime if $details{last_used};
