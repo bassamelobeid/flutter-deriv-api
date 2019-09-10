@@ -206,14 +206,22 @@ sub new_mt5_signup {
     # documents for financial accounts
     my $ttl       = 11 * 86400;
     my $cache_key = 'MT5_USER_GROUP::' . $data->{mt5_login_id};
+    my $rights    = BOM::MT5::User::Async::get_user($data->{mt5_login_id})->then(
+        sub {
+            my $mt_user = shift;
+            return Future->done($mt_user->{rights});
+        })->get();
+
+    my $mt5_details = {
+        'group'  => $data->{mt5_group},
+        'rights' => $rights,
+    };
 
     my $redis = _redis_mt5user_write();
     $redis->connect->then(
         sub {
-            $redis->set(
-                $cache_key => $data->{mt5_group},
-                EX         => $ttl
-            );
+            $redis->hmset($cache_key, %$mt5_details);
+            $redis->expire($cache_key, $ttl);
         }
         )->then(
         sub {
