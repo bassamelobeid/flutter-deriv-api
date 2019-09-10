@@ -64,8 +64,9 @@ sub get_redis {
         },
     };
 
+    use Carp;
     my $redis_instance = $limits_redis_map->{$landing_company}->{$purpose};
-    die "Unable to locate redis instance for $landing_company:$purpose" unless $redis_instance;
+    confess "Unable to locate redis instance for $landing_company:$purpose" unless $redis_instance;
 
     if (BOM::Config->env() =~ /(^development$)|(^qa)/) {
         state $redis = BOM::Config::RedisReplicated::redis_limits_write;

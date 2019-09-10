@@ -7,6 +7,7 @@ use List::Util qw(min);
 
 use BOM::Database::QuantsConfig;
 use BOM::CompanyLimits::Helpers qw(get_redis);
+use LandingCompany::Registry;
 
 use BOM::Database::UserDB;
 
@@ -116,13 +117,13 @@ sub sync_limits_to_redis {
 #     svg => {
 #          tn,R_50,callput => [100, undef, undef, 50]
 #     },
-#     mf  => { ... }
+#     maltainvest  => { ... }
 # }
 sub _get_landing_company_limits_map {
     my ($db_records) = @_;
 
     my $all_limits;
-    foreach my $landing_company (qw/svg mlt mf mx/) {
+    foreach my $landing_company (map { $_->{short} } grep { $#{$_->broker_codes} > -1 } LandingCompany::Registry::all()) {
         my $landing_company_limits;
         foreach my $limit (@$db_records) {
             if (   $limit->{landing_company} eq '*'
