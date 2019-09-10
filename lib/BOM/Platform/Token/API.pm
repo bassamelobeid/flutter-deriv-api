@@ -166,8 +166,9 @@ removes all API tokens for loginid
 =cut
 
 sub remove_by_loginid {
-    my ($self, $loginid) = @_;
+    my ($self, $loginid, $rechecked) = @_;
 
+    $rechecked //= 0;
     my $key_by_id = $self->_make_key_by_id($loginid);
     my %all       = @{$self->_redis_read->hgetall($key_by_id)};
     my $redis     = $self->_redis_write;
@@ -180,8 +181,11 @@ sub remove_by_loginid {
         $redis->exec;
         #remove token from database happens after redis since it is the source of truth
         $self->_db_model->remove_by_token($token, ($token_details->{last_used} ? Date::Utility->new($token_details->{last_used})->db_timestamp : ''));
-
     }
+
+    # there's potentially a race condition where a token is added while we're in the foreach
+    # loop, so check it again here.
+    $self->remove_by_loginid($loginid, 1) if @{$self->_redis_read->hgetall($key_by_id)} and not $rechecked;
 
     return 1;
 }
