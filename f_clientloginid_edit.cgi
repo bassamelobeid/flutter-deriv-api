@@ -426,12 +426,15 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
     # Social responsibility checks are only for MX-MLT clients
     # TODO: Remove this once the transition is done from redis to client object
-    if (my $sr_risk_val = $input{client_social_responsibility_check}) {
+    if ((my $sr_risk_val = $input{client_social_responsibility_check})
+        && $client->landing_company->social_responsibility_check_required)
+    {
 
         my $key_name = $loginid . '_sr_risk_status';
         my $redis    = BOM::Config::RedisReplicated::redis_events_write();
 
         # There is no need to store clients with low risk in redis, as it is default
+        # and also: if the status is changed from high, we don't need the expiry time
         if ($sr_risk_val eq 'low') {
             $redis->del($key_name);
         } else {
