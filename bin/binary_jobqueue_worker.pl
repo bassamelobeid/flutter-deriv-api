@@ -265,8 +265,11 @@ sub process_job {
         $job->done(
             encode_json_utf8({
                     success => 0,
-                    error   => "Unknown RPC name '$name'"
-                }));
+                    result  => {
+                        error => {
+                            code              => 'InternalServerError',
+                            message_to_client => 'Sorry, an error occurred while processing your request.',
+                        }}}));
     }
 
     stats_gauge("rpc_queue.worker.jobs.latency", $current_time->delta_milliseconds(Time::Moment->now), $tags);
@@ -349,8 +352,11 @@ sub run_worker_process {
                         $job->done(
                             encode_json_utf8({
                                     success => 0,
-                                    error   => "Request timeout"
-                                }));
+                                    result  => {
+                                        error => {
+                                            code              => 'RequestTimeout',
+                                            message_to_client => "Request timed out",
+                                        }}}));
                     }
                 ),
                 process_job(

@@ -32,10 +32,9 @@ Defaults to 'default' if not provided.
 sub get_timeout {
     my %args = @_;
 
-    my $category = $args{category};
+    my $category = $args{category} // 'default';
 
-    my $config = _get_config();
-    return $config->{$category}{timeout} // $config->{default}{timeout};
+    return _get_config()->{$category};
 }
 
 1;
