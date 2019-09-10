@@ -42,7 +42,8 @@ sub save_token {
 sub remove_by_token {
     my ($self, $token, $last_used) = @_;
 
-    $self->_update_token_last_used($token, $last_used);
+    # we might be deleting token that was never used
+    $self->_update_token_last_used($token, $last_used) if $last_used;
 
     return $self->dbic->run(
         fixup => sub {
