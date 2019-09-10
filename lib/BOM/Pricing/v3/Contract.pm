@@ -143,7 +143,7 @@ sub _get_ask {
         return $batch_response;
     }
 
-    $response = _validate_offerings($contract, $args_copy);
+    #$response = _validate_offerings($contract, $args_copy);
 
     return $response if $response;
 
@@ -209,7 +209,7 @@ sub _get_ask {
                 $response->{theo_probability} = $contract->theo_probability->amount;
             }
 
-            unless ($contract->is_binary) {
+            if (not $contract->is_binary and $contract->require_results_adjustment) {
                 $response->{contract_parameters}->{non_binary_results_adjustment} = 1;
                 $response->{contract_parameters}->{theo_price}                    = $contract->theo_price;
                 $response->{contract_parameters}->{multiplier}                    = $contract->multiplier if not $contract->user_defined_multiplier;
