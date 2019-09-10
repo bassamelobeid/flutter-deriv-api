@@ -87,6 +87,19 @@ sub token_deletion_history {
     return $tokens;
 }
 
+sub get_all_tokens {
+    my $self = shift;
+
+    my $res  = $self->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare("SELECT * FROM auth.access_token");
+            $sth->execute();
+            $sth->fetchall_hashref('token');
+        });
+
+    return $res;
+}
+
 sub get_all_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
