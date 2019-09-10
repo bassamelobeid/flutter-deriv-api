@@ -3,7 +3,6 @@ package BOM::CompanyLimits::Limits;
 use strict;
 use warnings;
 
-use Error::Base;
 use List::Util qw(min);
 
 use BOM::Database::QuantsConfig;

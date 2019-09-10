@@ -35,8 +35,11 @@ sub sync_group_to_redis {
         my $redis = get_redis('svg', 'limit_setting');
 
         my $hash_name = "${group_name}groups";
-        $redis->del($hash_name);
-        $redis->hmset($hash_name, @group_pairs);
+        $redis->multi(sub { });
+        $redis->del($hash_name, sub { });
+        $redis->hmset($hash_name, @group_pairs, sub { });
+        $redis->exec(sub { });
+        $redis->mainloop;
     }
 
     return;
