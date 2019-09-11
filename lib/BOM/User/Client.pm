@@ -292,13 +292,29 @@ sub set_authentication {
         }
 }
 
-sub aml_risk_level {
-    my $self = shift;
+=head2 risk_level
 
-    my $risk = $self->aml_risk_classification // '';
+Get the risk level of clients, based on:
+
+- SR (Social Responsibility): Always high for clients that have breached thresholds
+and have no financial assessment
+
+- AML (Anti-Money Laundering): Applies for clients under all landing companies
+
+=cut
+
+sub risk_level {
+    my $client = shift;
+
+    my $risk = $client->aml_risk_classification // '';
 
     # use `low`, `standard`, `high` as prepending `manual override` string is for internal purpose
     $risk =~ s/manual override - //;
+
+    if ($client->landing_company->social_responsibility_check_required && !$client->financial_assessment) {
+        $risk = 'high'
+            if BOM::Config::RedisReplicated::redis_events()->get($client->loginid . '_sr_risk_status');
+    }
 
     return $risk;
 }
@@ -307,8 +323,8 @@ sub aml_risk_level {
 
 Check if the client has filled out the financial assessment information:
 
-- For non-MF, only the the financial information (FI) is required
-- For MF, both the FI and trading experience is required.
+- For non-MF, only the the financial information (FI) is required and risk level is high.
+- For MF, both the FI and trading experience is required, regardless of rish level.
     
 =cut
 
@@ -321,7 +337,7 @@ sub is_financial_assessment_complete {
     my $is_FI = is_section_complete($financial_assessment, 'financial_information');
 
     if ($sc ne 'maltainvest') {
-        return 0 if ($self->aml_risk_level() eq 'high' and not $is_FI);
+        return 0 if ($self->risk_level() eq 'high' and not $is_FI);
         return 1;
     }
 

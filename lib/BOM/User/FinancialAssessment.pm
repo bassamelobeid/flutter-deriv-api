@@ -46,11 +46,13 @@ sub update_financial_assessment {
     foreach my $key (keys %$filtered_args) {
         $data_to_be_saved->{$key} = $filtered_args->{$key};
     }
+
     # We need to update Financial Assessment data for each client.
     foreach my $cli (@all_clients) {
         $cli->financial_assessment({data => encode_json_utf8($data_to_be_saved)});
         $cli->save;
     }
+
     # Emails are sent for:
     # - Non-CR clients
     # - High risk CR with MT5 accounts
@@ -58,12 +60,10 @@ sub update_financial_assessment {
     if (my @cr_clients = $user->clients_for_landing_company('svg')) {
 
         return _email_diffs_to_compliance($previous, $args, \@client_ids, $is_new_mf_client)
-            if ((any { $_ =~ /^MT/ } @client_ids) && (any { $_->aml_risk_level eq 'high' } @cr_clients));
+            if ((any { $_ =~ /^MT/ } @client_ids) && (any { $_->risk_level() eq 'high' } @cr_clients));
     } else {
         return _email_diffs_to_compliance($previous, $args, \@client_ids, $is_new_mf_client);
     }
-
-    return undef;
 }
 
 # Email to compliance, based on updates on financial assessment
