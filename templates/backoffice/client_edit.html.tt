@@ -395,7 +395,10 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">Cashier lock password</td>
-        <td>: <input type="text" name="cashier_setting_password" value="[% client.cashier_setting_password %]" size="50" /></td>
+        <td>: <input type="text" [% IF client.cashier_setting_password %]style="display:none"[% END %]name="cashier_setting_password" id="cashierPW" value="" size="50" /> 
+        [% IF client.cashier_setting_password %]<button type="button" id="clearCashierBtn" onclick="clearCashierPW()">Password is set - click to clear</button>[% END %]
+        </td>
+        <input id="saveCashierPW" type="hidden" name="save_cashier_password"[% UNLESS client.cashier_setting_password %] value="1"[% END %]>
     </tr>
     <tr>
         <td class="small_header" colspan="2">#Promotional Code</td>
@@ -576,4 +579,12 @@ function update_age_verification(auth_status) {
         age_verification_element.classList.remove('data-changed');
     }
 }
+
+function clearCashierPW() {
+    document.getElementById("clearCashierBtn").style.display = "none";
+    document.getElementById("cashierPW").style.display = "inline-block";
+    document.getElementById("cashierPW").classList.add("data-changed");
+    document.getElementById("saveCashierPW").value = "1";
+}
+
 </script>
