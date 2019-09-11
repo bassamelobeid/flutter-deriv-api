@@ -23,7 +23,7 @@ use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(is_section_complete update_financial_assessment decode_fa build_financial_assessment);
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
-use ExchangeRates::CurrencyConverter qw(in_usd);
+use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
 
 use BOM::RPC::Registry '-dsl';
 
@@ -32,7 +32,6 @@ use BOM::RPC::v3::PortfolioManagement;
 use BOM::Transaction::History qw(get_transaction_history);
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client::CashierValidation;
-use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale qw/get_state_by_id/;
@@ -585,22 +584,106 @@ Returns a hashref with following items
 
 =cut
 
-rpc balance => sub {
-    my $params = shift;
-
-    my $client         = $params->{client};
-    my $client_loginid = $client->loginid;
+sub single_balance {
+    my ($params, $loginid) = @_;
+    my $client = $loginid eq $params->{client}->loginid ? $params->{client} : BOM::User::Client->new({
+        loginid      => $loginid,
+        db_operation => 'replica'
+    });
 
     return {
-        currency => '',
-        loginid  => $client_loginid,
-        balance  => "0.00"
+        currency   => '',
+        loginid    => $client->loginid,
+        balance    => '0.00',
+        account_id => '',
     } unless ($client->default_account);
 
     return {
-        loginid  => $client_loginid,
-        currency => $client->default_account->currency_code(),
-        balance  => formatnumber('amount', $client->default_account->currency_code(), $client->default_account->balance)};
+        loginid    => $client->loginid,
+        currency   => $client->default_account->currency_code(),
+        balance    => formatnumber('amount', $client->default_account->currency_code(), $client->default_account->balance),
+        account_id => $client->default_account->id,
+    };
+}
+
+rpc balance => sub {
+    my $params = shift;
+    my $arg_account = $params->{args}{account} // 'current';
+
+    my $user = $params->{client}->user;
+    unless ($arg_account eq 'all') {
+        my $loginid = $arg_account eq 'current' ? $params->{client}->loginid : $arg_account;
+        unless (any { $loginid eq $_ } $user->loginids) {
+            return BOM::RPC::v3::Utility::permission_error();
+        }
+
+        return single_balance($params, $loginid);
+    }
+
+    # now is all
+
+    # work on real bom accounts
+    my @results;
+    #if (client has real account with USD OR doesn’t have fiat account) {
+    #    use ‘USD’;
+    #} elsif (there is more than one fiat account) {
+    #    use currency of financial account;
+    #} else {
+    #    use currency of fiat account;
+    #}
+    #// there is only one fiat account
+
+    my ($has_usd, $financial_currency, $fiat_currency);
+    for my $loginid (sort $user->bom_real_loginids) {
+        my $result = single_balance($params, $loginid);
+        $has_usd            = 1                   if $result->{currency} eq 'USD';
+        $financial_currency = $result->{currency} if $loginid =~ /^(MF|CR)/;
+        $fiat_currency      = $result->{currency}
+            if (LandingCompany::Registry::get_currency_type($result->{currency}) // '') eq 'fiat';
+        push @results, $result;
+    }
+
+    my $total_currency;
+
+    if ($has_usd || !$fiat_currency) {
+        $total_currency = 'USD';
+    } elsif ($financial_currency) {
+        $total_currency = $financial_currency;
+    } else {
+        $total_currency = $fiat_currency;
+    }
+
+    my $real_total = {
+        amount   => 0,
+        currency => $total_currency,
+    };
+
+    my $mt5_total = {
+        amount   => 0,
+        currency => $total_currency,
+    };
+
+    for my $result (@results) {
+        if ($result->{account_id}) {
+            $real_total->{amount} += convert_currency($result->{balance}, $result->{currency}, $total_currency);
+            $result->{currency_rate_in_total_currency} =
+                convert_currency(1, $result->{currency}, $total_currency);    # This rate is used for the future stream
+        }
+        $result->{total} = {
+            real => $real_total,
+            mt5  => $mt5_total,
+        };
+    }
+    $real_total->{amount} = formatnumber('amount', $total_currency, $real_total->{amount});
+
+    my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->get;
+    for my $result (grep { $_->{group} !~ /^demo/ } @mt5_accounts) {
+        $mt5_total->{amount} += convert_currency($result->{balance}, $result->{currency}, $total_currency);
+    }
+    $mt5_total->{amount} = formatnumber('amount', $total_currency, $mt5_total->{amount});
+    return {
+        all => \@results,
+    };
 };
 
 rpc get_account_status => sub {
@@ -873,17 +956,15 @@ rpc "reset_password",
     my $client = $clients[0];
 
     unless ($client->is_virtual) {
-        unless ($args->{date_of_birth}) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => "DateOfBirthMissing",
-                    message_to_client => localize("Date of birth is required.")});
-        }
-        my $user_dob = $args->{date_of_birth} =~ s/-0/-/gr;    # / (dummy ST3)
-        my $db_dob   = $client->date_of_birth =~ s/-0/-/gr;    # /
+        if ($args->{date_of_birth}) {
 
-        return BOM::RPC::v3::Utility::create_error({
-                code              => "DateOfBirthMismatch",
-                message_to_client => localize("The email address and date of birth do not match.")}) if ($user_dob ne $db_dob);
+            (my $user_dob = $args->{date_of_birth}) =~ s/-0/-/g;
+            (my $db_dob   = $client->date_of_birth) =~ s/-0/-/g;
+
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => "DateOfBirthMismatch",
+                    message_to_client => localize("The email address and date of birth do not match.")}) if ($user_dob ne $db_dob);
+        }
     }
 
     if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $args->{new_password}})) {
@@ -1865,7 +1946,7 @@ rpc api_token => sub {
                 token     => $token
             });
 
-        BOM::Platform::Token::API->new->remove_by_token($token, $client->loginid);
+        $m->remove_by_token($token, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
@@ -1902,9 +1983,9 @@ rpc api_token => sub {
         ## for old API calls (we'll make it required on v4)
         my $scopes = $args->{new_token_scopes} || ['read', 'trade', 'payments', 'admin'];
         if ($args->{valid_for_current_ip_only}) {
-            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes, $client_ip);
+            $m->create_token($client->loginid, $display_name, $scopes, $client_ip);
         } else {
-            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes);
+            $m->create_token($client->loginid, $display_name, $scopes);
         }
         $rtn->{new_token} = 1;
     }
