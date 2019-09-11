@@ -233,22 +233,6 @@ async_rpc mt5_new_account => sub {
             code              => 'MT5NotAllowed',
             message_to_client => localize('This account type is not available in your country.')});
 
-    # TODO:this should be removed after all MX clients closed their open positions and mt_gaming_company set to none in countries.yml
-    # The UK FCA considers CFDs/spread bets on virtual markets to be under their jurisdiction.
-    # MX -> only can have demo gaming account.
-    # MF upgraded from MX -> financial standard and demo standard account.
-    # Valued mt5_account_type + demo account type will create demo financial
-    # Empty mt5_account_type + demo account type will create demo gaming
-    return $mt5_not_allowed
-        if (
-        ($client->landing_company->short eq 'iom' and (grep { $_ eq $account_type } qw/gaming financial/))
-        or (    (grep { $_ eq $client->landing_company->short } qw/maltainvest virtual/)
-            and ($client->user->clients_for_landing_company('iom'))
-            and ($account_type eq 'gaming'))
-        or ($client->landing_company->short eq 'maltainvest' and $account_type eq 'demo' and $mt5_account_type eq '')
-        or ($client->landing_company->short eq 'iom' and $account_type eq 'demo' and $mt5_account_type ne '')
-        or ($client->residence eq 'im'));
-
     # input validation
     return create_error_future({
             code              => 'SetExistingAccountCurrency',
@@ -1178,8 +1162,12 @@ async_rpc mt5_deposit => sub {
                     amount_in_USD => convert_currency($amount, $fm_client->currency, 'USD'),
                 }) if ($response->{mt5_data}->{group} eq 'real\vanuatu_standard');
 
+            my $txn_id = $txn->transaction_id;
+            # 31 character limit for MT5 comments
+            my $mt5_comment = "${fm_loginid}_${to_mt5}#$txn_id";
+
             # deposit to MT5 a/c
-            return do_mt5_deposit($to_mt5, $response->{mt5_amount}, $comment)->then(
+            return do_mt5_deposit($to_mt5, $response->{mt5_amount}, $mt5_comment, $txn_id)->then(
                 sub {
                     my ($status) = @_;
 
@@ -1196,7 +1184,7 @@ async_rpc mt5_deposit => sub {
 
                     return Future->done({
                             status                => 1,
-                            binary_transaction_id => $txn->transaction_id,
+                            binary_transaction_id => $txn_id,
                             $return_mt5_details ? (mt5_data => $response->{mt5_data}) : ()});
                 });
         });
@@ -1206,8 +1194,8 @@ async_rpc mt5_withdrawal => sub {
     my $params = shift;
 
     my ($client, $args, $source) = @{$params}{qw/client args source/};
-    my ($fm_mt5, $to_loginid, $amount) =
-        @{$args}{qw/from_mt5 to_binary amount/};
+    my ($fm_mt5, $to_loginid, $amount, $currency_check) =
+        @{$args}{qw/from_mt5 to_binary amount currency_check/};
 
     my $error_code = 'MT5WithdrawalError';
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -1221,7 +1209,7 @@ async_rpc mt5_withdrawal => sub {
 
     return _make_error($error_code, localize('MT5 account is locked'), 'MT5 account is locked') if $client->status->mt5_withdrawal_locked;
 
-    return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code)->then(
+    return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code, $currency_check)->then(
         sub {
             my ($response) = @_;
             return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
@@ -1257,10 +1245,13 @@ async_rpc mt5_withdrawal => sub {
 
             $comment = "$comment $additional_comment" if $additional_comment;
 
+            # 31 character limit for MT5 comments
+            my $mt5_comment = "${fm_mt5}_${to_loginid}";
+
             my $mt5_group = $response->{mt5_data}->{group};
             #MT5 expect this value to be negative.
             # withdraw from MT5 a/c
-            return do_mt5_withdrawl($fm_mt5, (($amount > 0) ? $amount * -1 : $amount), $comment)->then(
+            return do_mt5_withdrawl($fm_mt5, (($amount > 0) ? $amount * -1 : $amount), $mt5_comment)->then(
                 sub {
                     my ($response) = @_;
                     return _make_error($error_code, $response->{error}) if (ref $response eq 'HASH' and $response->{error});
@@ -1452,7 +1443,7 @@ sub _get_mt5_account_from_affiliate_token {
 }
 
 sub _mt5_validate_and_get_amount {
-    my ($authorized_client, $loginid, $mt5_loginid, $amount, $error_code) = @_;
+    my ($authorized_client, $loginid, $mt5_loginid, $amount, $error_code, $currency_check) = @_;
 
     my $mt5_suspended = _is_mt5_suspended();
     return Future->done($mt5_suspended) if $mt5_suspended;
@@ -1483,6 +1474,9 @@ sub _mt5_validate_and_get_amount {
             my $mt5_group    = $setting->{group};
             my $mt5_lc       = _fetch_mt5_lc($setting);
             my $mt5_currency = $setting->{currency};
+
+            return _make_error($error_code, localize('Currency provided is different from account currency.'))
+                if $currency_check && $currency_check ne $mt5_currency;
 
             # Check if id is a demo account
             # If yes, then no need to validate client
@@ -1676,9 +1670,22 @@ sub _mt5_validate_and_get_amount {
 
 sub _fetch_mt5_lc {
     my $settings = shift;
-    # somewhere in the user settings, the landing company name is set with a double space!
-    $settings->{landing_company} =~ s/\s+/ /g;
-    return LandingCompany::Registry::get_loaded_landing_companies()->{$settings->{landing_company}}->{short};
+
+    my $lc_short;
+
+    # This extracts the landing company name from the mt5 group name
+    # E.g. real\labuan -> labuan , real\vanuatu_standard -> vanuatu
+    if ($settings->{group} =~ m/[a-zA-Z]+\\([a-zA-Z]+)($|_.+)/) {
+        $lc_short = $1;
+    }
+
+    # check if lc exists
+    return create_error_future({
+            code              => 'InvalidMT5Group',
+            message_to_client => 'This MT5 account has an invalid Landing Company.'
+        }) unless $lc_short and LandingCompany::Registry::get($lc_short);
+
+    return $lc_short;
 }
 
 sub _mt5_has_open_positions {
@@ -1814,7 +1821,7 @@ sub _is_account_demo {
 }
 
 sub do_mt5_deposit {
-    my ($login, $amount, $comment) = @_;
+    my ($login, $amount, $comment, $txn_id) = @_;
     my $deposit_sub = \&BOM::MT5::User::Async::deposit;
     if (!_is_mt5_suspended('manager_api')) {
         $deposit_sub = \&BOM::MT5::User::Async::manager_api_deposit;
@@ -1823,7 +1830,8 @@ sub do_mt5_deposit {
     return $deposit_sub->({
         login   => $login,
         amount  => $amount,
-        comment => $comment
+        comment => $comment,
+        txn_id  => $txn_id,
     });
 }
 
@@ -1837,7 +1845,7 @@ sub do_mt5_withdrawl {
     return $withdrawal_sub->({
         login   => $login,
         amount  => $amount,
-        comment => $comment
+        comment => $comment,
     });
 }
 

@@ -452,8 +452,8 @@ rpc "paymentagent_list",
         push @{$payment_agent_table_row},
             {
             'paymentagent_loginid'  => $loginid,
-            'name'                  => encode_entities($payment_agent->{payment_agent_name}),
-            'summary'               => encode_entities($payment_agent->{summary}),
+            'name'                  => $payment_agent->{payment_agent_name},
+            'summary'               => $payment_agent->{summary},
             'url'                   => $payment_agent->{url},
             'email'                 => $payment_agent->{email},
             'telephone'             => $payment_agent->{phone},
@@ -1317,6 +1317,7 @@ rpc transfer_between_accounts => sub {
             $method = \&BOM::RPC::v3::MT5::Account::mt5_withdrawal;
             $params->{args}{to_binary} = $binary_login = $loginid_to;
             $params->{args}{from_mt5}  = $mt5_login    = $loginid_from =~ s/^MT//r;
+            $params->{args}{currency_check} = $currency;    # this makes mt5_withdrawal() check that MT5 account currency matches $currency
         }
 
         return $method->($params)->then(
