@@ -18,7 +18,7 @@ use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
-
+use Binary::WebSocketAPI::v3::Subscription::Transaction;
 my $t = build_wsapi_test({language => 'EN'});
 
 # UK Client testing (Start)
@@ -167,13 +167,170 @@ $res = $t->await::get_self_exclusion({get_self_exclusion => 1});
 ok(ref $res->{get_self_exclusion});
 is $call_params->{token}, $token;
 
+my $old_rpc_response = $rpc_response;
+$rpc_response = {
+    "balance"    => 1018.86,
+    "currency"   => "USD",
+    "loginid"    => "CR90000000",
+    "account_id" => $client->default_account->id
+};
 $res = $t->await::balance({
-    balance   => 1,
-    subscribe => 1,
+    balance => 1,
+    #subscribe => 1,
 });
 ok(ref $res->{balance});
-ok($res->{balance}->{id});
+#ok($res->{balance}->{id});
 is $call_params->{token}, $token;
+
+$rpc_response = {
+    'all' => [{
+            'account_id'                      => $client->default_account->id,
+            'balance'                         => '1000.00',
+            'currency'                        => 'EUR',
+            'currency_rate_in_total_currency' => '1.5',
+            'loginid'                         => $client->loginid,
+            'total'                           => {
+                'mt5' => {
+                    'amount'   => '0.00',
+                    'currency' => 'USD'
+                },
+                'real' => {
+                    'amount'   => '2500.00',
+                    'currency' => 'USD'
+                }}
+        },
+        {
+            'account_id'                      => '12345678',
+            'balance'                         => '1000.00',
+            'currency'                        => 'USD',
+            'currency_rate_in_total_currency' => 1,
+            'loginid'                         => 'CR12345678',
+            'total'                           => {
+                'mt5' => {
+                    'amount'   => '0.00',
+                    'currency' => 'USD'
+                },
+                'real' => {
+                    'amount'   => '2500.00',
+                    'currency' => 'USD'
+                }}}]};
+
+$res = $t->await::balance({
+    balance   => 1,
+    account   => 'all',
+    subscribe => 1,
+});
+
+ok($res->{balance}->{id});
+my $expected_res = {
+    'balance' => {
+        'balance'  => '1000',
+        'currency' => 'EUR',
+        'loginid'  => 'CR10000',
+        'total'    => {
+            'mt5' => {
+                'amount'   => '0',
+                'currency' => 'USD'
+            },
+            'real' => {
+                'amount'   => '2500',
+                'currency' => 'USD'
+            }}
+    },
+    'echo_req' => {
+        'account'   => 'all',
+        'balance'   => 1,
+        'req_id'    => 1000013,
+        'subscribe' => 1
+    },
+    'msg_type'    => 'balance',
+    'passthrough' => undef,
+    'req_id'      => 1000013
+};
+$expected_res->{balance}{id}      = $res->{balance}{id};
+$expected_res->{subscription}{id} = $res->{balance}{id};
+is_deeply(
+    $res,
+    $expected_res,
+    "result is ok"
+
+);
+
+$res = $t->await::balance();
+ok($res->{balance}->{id});
+$expected_res = {
+    'balance' => {
+        'balance'  => '1000',
+        'currency' => 'USD',
+        'loginid'  => 'CR12345678',
+        'total'    => {
+            'mt5' => {
+                'amount'   => '0',
+                'currency' => 'USD'
+            },
+            'real' => {
+                'amount'   => '2500',
+                'currency' => 'USD'
+            }}
+    },
+    'echo_req' => {
+        'account'   => 'all',
+        'balance'   => 1,
+        'req_id'    => 1000013,
+        'subscribe' => 1,
+    },
+    'msg_type'    => 'balance',
+    'passthrough' => undef,
+    'req_id'      => 1000013
+};
+
+$expected_res->{balance}{id}      = $res->{balance}{id};
+$expected_res->{subscription}{id} = $res->{balance}{id};
+
+is_deeply($res, $expected_res, "the second result ok");
+
+use BOM::Config::RedisReplicated;
+use JSON::MaybeUTF8 qw(:v1);
+my $msg = {
+    account_id    => $client->default_account->id,
+    amount        => 200,
+    balance_after => 1200
+};
+$msg = encode_json_utf8($msg);
+# I tried to publish message by redis directly ,but the system cannot receive the message. I don't know why
+Binary::WebSocketAPI::v3::Subscription::Transaction->subscription_manager()
+    ->on_message(undef, $msg, 'TXNUPDATE::transaction_' . $client->default_account->id);
+$res = $t->await::balance();
+my $expected_res2 = {
+    'balance' => {
+        'balance'  => '1200',
+        'currency' => 'EUR',
+        'id'       => $expected_res->{balance}{id},
+        'loginid'  => $client->loginid,
+        'total'    => {
+            'real' => {
+                'amount'   => '2800',
+                'currency' => 'USD'
+            }}
+    },
+    'echo_req' => {
+        'account'   => 'all',
+        'balance'   => 1,
+        'req_id'    => 1000013,
+        'subscribe' => 1
+    },
+    'msg_type'     => 'balance',
+    'req_id'       => 1000013,
+    'subscription' => {
+        'id' => $expected_res->{balance}{id},
+    }};
+is_deeply($res, $expected_res2, "update balance ok");
+#diag(explain($res));
+
+$res = $t->await::forget_all({forget_all => 'balance'});
+is($res->{forget_all}[0], $expected_res->{subscription}{id}, 'forget subscription ok');
+
+$rpc_response = $old_rpc_response;
 
 $res = $t->await::api_token({api_token => 1});
 ok(ref $res->{api_token});
