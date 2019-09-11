@@ -22,7 +22,17 @@ sub sync_group_to_redis {
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
     foreach my $group_name (@groups) {
-        my $sql = "SELECT * FROM limits.${group_name}_group_mapping;";
+        my $sql;
+        # This seemingly verbose code in retrieving the sql is to prevent
+        # the possibility of sql injection (though unlikely now)
+        if ($group_name eq 'underlying') {
+            $sql = "SELECT * FROM limits.underlying_group_mapping;";
+        } elsif ($group_name eq 'contract') {
+            $sql = "SELECT * FROM limits.contract_group_mapping;";
+        } else {
+            die "Unsupported limit group $group_name";
+        }
+
         my $query_result = $dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef) });
 
         my @group_pairs;
@@ -156,19 +166,21 @@ EOF
 
 sub _get_insert_contract_group_sql {
     my $sql = <<'EOF';
-CREATE TEMP TABLE tt(LIKE limits.contract_group_mapping) ON COMMIT DROP;
-INSERT INTO tt(bet_type, contract_group) VALUES
+WITH tt(bet_type, contract_group) AS (
+  VALUES
 EOF
 
     my %contracts = get_default_contract_group_mappings();
     $sql .= "('$_','$contracts{$_}'),\n" for (keys %contracts);
-    $sql =~ s/,\n$/;\n/;    # substitute last comma with ;
+    $sql =~ s/,\n$/\n/;    # substitute last comma with ;
 
     $sql .= <<'EOF';
+),
+contract_groups AS (
 INSERT INTO limits.contract_group
 SELECT DISTINCT contract_group FROM tt
-    ON CONFLICT(contract_group) DO NOTHING;
-
+    ON CONFLICT(contract_group) DO NOTHING
+)
 INSERT INTO limits.contract_group_mapping AS m
 SELECT bet_type, contract_group FROM tt
     ON CONFLICT(bet_type) DO UPDATE
