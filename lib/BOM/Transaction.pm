@@ -491,6 +491,18 @@ sub prepare_bet_data_for_buy {
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_RUNS) {
         $bet_params->{selected_tick}    = $contract->selected_tick;
         $bet_params->{relative_barrier} = $contract->supplied_barrier;
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_MULTIPLIER) {
+        $bet_params->{multiplier}          = $contract->multiplier;
+        $bet_params->{stop_out_order_date} = $contract->stop_out->order_date->db_timestamp;
+        $bet_params->{stop_out_amount}     = $contract->stop_out->order_amount;
+        $bet_params->{stop_out_basis_spot} = $contract->stop_out->basis_spot;
+
+        # take profit is optional. Same goes to stop loss.
+        if ($contract->take_profit) {
+            $bet_params->{take_profit_order_date} = $contract->take_profit->order_date->db_timestamp;
+            $bet_params->{take_profit_amount}     = $contract->take_profit->order_amount;
+            $bet_params->{take_profit_basis_spot} = $contract->take_profit->basis_spot;
+        }
     } else {
         return Error::Base->cuss(
             -type              => 'UnsupportedBetClass',
