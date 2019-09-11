@@ -286,10 +286,9 @@ subtest 'buy a bet with zero price', sub {
             underlying   => $underlying_R50,
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
-            amount       => 5.0,
+            multiplier   => 5.0,
             duration     => '30m',
             current_tick => $tick,
-            amount_type  => 'multiplier',
         });
 
         my $txn = BOM::Transaction->new({
@@ -317,10 +316,9 @@ subtest 'buy a bet', sub {
             underlying   => $underlying_R50,
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
-            amount       => 5.0,
+            multiplier   => 5.0,
             duration     => '30m',
             current_tick => $tick,
-            amount_type  => 'multiplier',
         });
 
         my $txn = BOM::Transaction->new({
@@ -434,8 +432,7 @@ subtest 'sell a bet', sub {
             underlying   => $underlying_R50,
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
-            amount       => 5,
-            amount_type  => 'multiplier',
+            multiplier   => 5,
             duration     => '30m',
             current_tick => $tick,
             entry_tick   => $tick,
@@ -557,8 +554,7 @@ subtest 'sell_expired_contracts', sub {
             underlying   => $underlying_R50,
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
-            amount       => 5,
-            amount_type  => 'multiplier',
+            multiplier   => 5,
             date_start   => ($now->epoch - 50) - (30 * 60),
             date_expiry  => $now->epoch - 50,
             date_pricing => $now,
