@@ -492,7 +492,7 @@ sub prepare_bet_data_for_buy {
         $bet_params->{selected_tick}    = $contract->selected_tick;
         $bet_params->{relative_barrier} = $contract->supplied_barrier;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_MULTIPLIER) {
-        $bet_params->{multiplier}          = $contract->multiplier;
+        $bet_params->{multiplier}          = $contract->multiplier + 0;
         $bet_params->{stop_out_order_date} = $contract->stop_out->order_date->db_timestamp;
         $bet_params->{stop_out_amount}     = $contract->stop_out->order_amount;
         $bet_params->{stop_out_basis_spot} = $contract->stop_out->basis_spot;
@@ -1662,13 +1662,25 @@ sub _get_params_for_expiryqueue {
                 $hash->{relative_up_level}   = $contract->supplied_high_barrier;
                 $hash->{relative_down_level} = $contract->supplied_low_barrier;
             }
-        } elsif ($contract->barrier and $contract->barrier->barrier_type eq 'absolute') {
-            my $which_level = ($contract->barrier->as_difference > 0) ? 'up_level' : 'down_level';
-            $hash->{$which_level} = $contract->barrier->as_absolute;
-        } elsif ($contract->barrier) {
-            $hash->{entry_tick_epoch} = $contract->date_start->epoch + 1;
-            my $which_level = ($contract->barrier->pip_difference > 0) ? 'relative_up_level' : 'relative_down_level';
-            $hash->{$which_level} = $contract->supplied_barrier;
+        } elsif ($contract->can('barrier')) {
+            if ($contract->barrier and $contract->barrier->barrier_type eq 'absolute') {
+                my $which_level = ($contract->barrier->as_difference > 0) ? 'up_level' : 'down_level';
+                $hash->{$which_level} = $contract->barrier->as_absolute;
+            } elsif ($contract->barrier) {
+                $hash->{entry_tick_epoch} = $contract->date_start->epoch + 1;
+                my $which_level = ($contract->barrier->pip_difference > 0) ? 'relative_up_level' : 'relative_down_level';
+                $hash->{$which_level} = $contract->supplied_barrier;
+            }
+        }
+
+        if ($contract->can('stop_out') and $contract->stop_out) {
+            my $which_level = $contract->stop_out_side eq 'lower' ? 'down_level' : 'up_level';
+            $hash->{$which_level} = $contract->underlying->pipsized_value($contract->stop_out->barrier_value);
+        }
+
+        if ($contract->can('take_profit') and $contract->take_profit) {
+            my $which_level = $contract->take_profit_side eq 'lower' ? 'down_level' : 'up_level';
+            $hash->{$which_level} = $contract->underlying->pipsized_value($contract->take_profit->barrier_value);
         }
     }
 
