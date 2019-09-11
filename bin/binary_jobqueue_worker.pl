@@ -23,6 +23,82 @@ use Log::Any qw($log);
 
 use BOM::Config::RedisReplicated;
 
+
+=head1 NAME binary_jobqueue_worker.pl
+
+RPC queue worker script. It can load multiple number of workers with the requested settings and manages their lifetime.
+
+=head1 SYNOPSIS
+
+    perl binary_jobqueue_worker.pl [--queue-prefix QA12] [--workers n] [--log=warn] [--socket /path/to/socket/file] [--redis redis://...]  [--testing] [--pid-file=/path/to/pid/file] [--foreground] 
+    
+=head1 DESCRIPTION
+
+This script loads a number of queue worker processes and make them ready to accept ne requests.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--queue-prefix> or B<--q>
+
+Sets a prefix to the redis keys processed by the queue. The default value is the runtime envirnoment name (QAxx, production, qa, ...). 
+This way, a single redis instance can be configured to exchange messages for multiple rpc queues (each with it's own prefixe).
+
+=item B<--workers> or B<--w>
+
+The number of queue workers to be created with this script (default = 4). Workers will normally run in parallel as background processes.
+
+=item B<--log> or B<--l>
+
+The log level of the RPC queue which accepts one of the following values: info (default), warn, error, trace.
+
+=item B<--socket> or B<--s>
+
+The socket file for interacting with RPC queue service at runtime. It supports the fillowing commands:
+
+=over 8
+
+=item I<DEC_WORKERS>
+
+Kills one of the existing queue workers and returns the number of remaining workers.
+
+=item I<ADD_WORKERS>
+
+Adds a new queue worker and returns resulting number of workers.
+
+=item I<PING>
+
+A command for testing if serice is up and running. Return B<PING> in response.
+
+=item I<EXIT>
+
+Exits the queue worker process immediately, befure terminating the exsting workers.
+
+=back
+
+=item B<--redis> or B<--r>
+
+The connection string of the redis server prepared for the queue.
+
+
+=item  B<--testing> or B<--t>
+
+A value-less arg for telling that the rpc workers are suppposed to be loaded for automatic tests or not.
+
+=item B<pid-file> or B<s>
+
+Path to file that should contain RPC queue process id after it is started up. It makes RPC queue compatible with L<BOM::Test::Script>, thus easier test development.
+
+=item  B<--foreground> or B<--f>
+
+This value-less arg tells queue script to load a single worker in foreground, mostly used for testing and easier log monitoring.
+
+
+=back
+
+=cut
+
 use constant RESTART_COOLDOWN => 1;
 
 my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
