@@ -156,6 +156,21 @@ subtest $method => sub {
         subject => qr/\Q$subject\E/
     );
     ok($msg, "email received");
+
+    # Should reset password if DOB is not provided
+    $code = BOM::Platform::Token->new({
+            email       => $email_cr,
+            expires_in  => 3600,
+            created_for => 'reset_password'
+        })->token;
+    $params->{args}->{verification_code} = $code;
+    $params->{args}->{new_password}      = $new_password;
+    delete $params->{args}->{date_of_birth};
+
+    mailbox_clear();
+    $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result);
+    ok($msg, "email received");
+
 };
 
 # refetch cr user

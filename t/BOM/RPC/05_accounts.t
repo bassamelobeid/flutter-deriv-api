@@ -675,55 +675,6 @@ subtest $method => sub {
     );
 };
 
-$method = 'balance';
-subtest $method => sub {
-    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
-    is(
-        $c->tcall(
-            $method,
-            {
-                token => undef,
-            }
-            )->{error}{message_to_client},
-        'The token is invalid.',
-        'invalid token error'
-    );
-    isnt(
-        $c->tcall(
-            $method,
-            {
-                token => $token1,
-            }
-            )->{error}{message_to_client},
-        'The token is invalid.',
-        'no token error if token is valid'
-    );
-
-    is(
-        $c->tcall(
-            $method,
-            {
-                token => $token_disabled,
-            }
-            )->{error}{message_to_client},
-        'This account is unavailable.',
-        'check authorization'
-    );
-
-    is($c->tcall($method, {token => $token1})->{balance},  '0.00', 'have 0 balance if no default account');
-    is($c->tcall($method, {token => $token1})->{currency}, '',     'have no currency if no default account');
-    my $result = $c->tcall($method, {token => $token_21});
-    is_deeply(
-        $result,
-        {
-            'currency' => 'USD',
-            'balance'  => '0.00',
-            'loginid'  => $test_client_cr->loginid
-        },
-        'result is correct'
-    );
-};
-
 # placing this test here as need to test the calling of financial_assessment
 # before a financial assessment record has been created
 $method = 'get_financial_assessment';
@@ -2287,6 +2238,210 @@ subtest 'get and set self_exclusion' => sub {
     ok($msg, 'Email for MLT client limits with MT5 accounts');
     is_deeply($msg->{to}, ['compliance@binary.com', 'marketing@binary.com', 'x-acc@binary.com'], 'email to address ok');
     like($msg->{body}, qr/MT$mt5_loginid/, 'email content is ok');
+};
+
+$method = 'balance';
+subtest $method => sub {
+    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
+    is(
+        $c->tcall(
+            $method,
+            {
+                token => undef,
+            }
+            )->{error}{message_to_client},
+        'The token is invalid.',
+        'invalid token error'
+    );
+    isnt(
+        $c->tcall(
+            $method,
+            {
+                token => $token1,
+            }
+            )->{error}{message_to_client},
+        'The token is invalid.',
+        'no token error if token is valid'
+    );
+
+    is(
+        $c->tcall(
+            $method,
+            {
+                token => $token_disabled,
+            }
+            )->{error}{message_to_client},
+        'This account is unavailable.',
+        'check authorization'
+    );
+
+    is($c->tcall($method, {token => $token1})->{balance},    '0.00', 'have 0 balance if no default account');
+    is($c->tcall($method, {token => $token1})->{currency},   '',     'have no currency if no default account');
+    is($c->tcall($method, {token => $token1})->{account_id}, '',     'have no account id if no default account');
+
+    my $bal_email = 'balance@binary.com';
+    my $bal_user  = BOM::User->create(
+        email    => $bal_email,
+        password => $hash_pwd,
+    );
+
+    my $bal_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+
+    my $bal_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+    });
+    my $bal_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+
+    for my $c ($bal_mf, $bal_mlt, $bal_vr) {
+        $c->email($bal_email);
+        $c->save;
+        $bal_user->add_client($c);
+    }
+
+    $bal_mf->set_default_account('EUR');
+    $bal_mf->save;
+
+    $bal_mf->payment_free_gift(
+        currency => 'EUR',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+
+    $bal_mlt->set_default_account('USD');
+    $bal_mlt->save;
+    $bal_mlt->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+
+    my $bal_token = $m->create_token($bal_mlt->loginid, 'mlt token');
+
+    my $expected_result = {
+        'account_id' => $bal_mlt->default_account->id,
+        'balance'    => '1000.00',
+        'currency'   => 'USD',
+        'loginid'    => $bal_mlt->loginid,
+    };
+
+    my $result = $c->tcall($method, {token => $bal_token});
+    diag(explain($result));
+    is_deeply($result, $expected_result, 'result is correct');
+    my $args = {
+        balance => 1,
+        account => 'current'
+    };
+
+    for my $account ('current', $bal_mlt->loginid) {
+        $args->{account} = $account;
+        $result = $c->tcall(
+            $method,
+            {
+                token => $bal_token,
+                args  => $args
+            });
+        is_deeply($result, $expected_result, "account type '$account' ok",);
+    }
+
+    $args->{account} = 'all';
+    my $t_mock = Test::MockModule->new('BOM::RPC::v3::Accounts');
+    $t_mock->mock(
+        'convert_currency',
+        sub {
+            my ($n, $from, $to) = @_;
+            my $t = $from eq $to ? 1 : 1.5;
+            return $n * $t;
+        });
+    $result = $c->tcall(
+        $method,
+        {
+            token => $bal_token,
+            args  => $args
+        });
+
+    is_deeply(
+        $result,
+        {
+            'all' => [{
+                    'account_id'                      => $bal_mf->default_account->id,
+                    'balance'                         => '1000.00',
+                    'currency'                        => 'EUR',
+                    'currency_rate_in_total_currency' => '1.5',
+                    'loginid'                         => $bal_mf->loginid,
+                    'total'                           => {
+                        'mt5' => {
+                            'amount'   => '0.00',
+                            'currency' => 'USD'
+                        },
+                        'real' => {
+                            'amount'   => '2500.00',
+                            'currency' => 'USD'
+                        }}
+                },
+                {
+                    'account_id'                      => $bal_mlt->default_account->id,
+                    'balance'                         => '1000.00',
+                    'currency'                        => 'USD',
+                    'currency_rate_in_total_currency' => 1,
+                    'loginid'                         => $bal_mlt->loginid,
+                    'total'                           => {
+                        'mt5' => {
+                            'amount'   => '0.00',
+                            'currency' => 'USD'
+                        },
+                        'real' => {
+                            'amount'   => '2500.00',
+                            'currency' => 'USD'
+                        }}}]
+        },
+
+        'result is correct'
+    );
+
+    $result = $c->tcall(
+        $method,
+        {
+            token => $token_mlt,
+            args  => $args
+        });
+
+    $expected_result = {
+        'all' => [{
+                'account_id' => '',
+                'balance'    => '0.00',
+                'currency'   => '',
+                'loginid'    => 'MF90000003',
+                'total'      => {
+                    'mt5' => {
+                        'amount'   => '1851.00',
+                        'currency' => 'EUR'
+                    },
+                    'real' => {
+                        'amount'   => '0.00',
+                        'currency' => 'EUR'
+                    }}
+            },
+            {
+                'account_id'                      => '201159',
+                'balance'                         => '0.00',
+                'currency'                        => 'EUR',
+                'currency_rate_in_total_currency' => 1,
+                'loginid'                         => 'MLT20',
+                'total'                           => {
+                    'mt5' => {
+                        'amount'   => '1851.00',
+                        'currency' => 'EUR'
+                    },
+                    'real' => {
+                        'amount'   => '0.00',
+                        'currency' => 'EUR'
+                    }}}]};
+
+    is_deeply($result, $expected_result, 'mt5 result is ok');
 };
 
 # Recursively get values from nested hashes
