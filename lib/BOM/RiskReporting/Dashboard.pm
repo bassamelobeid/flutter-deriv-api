@@ -40,6 +40,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Contract::PredefinedParameters;
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use BOM::MarketData qw(create_underlying);
+use LandingCompany::Registry;
 my $json = JSON::MaybeXS->new;
 
 =head1 ATTRIBUTES
@@ -327,6 +328,9 @@ sub _payment_and_profit_report {
         end_time   => $self->end
     });
 
+    # do not include if the currency is experimental
+    @movers = grep { $_ if not LandingCompany::Registry::get_currency_definition($_->{currency})->{experimental} } @movers;
+
     my @deposits = sort { $b->{usd_payments} <=> $a->{usd_payments} } @movers;
     my @withdrawals = reverse @deposits;
     my (@big_deposits, @big_withdrawals);
@@ -343,6 +347,12 @@ sub _payment_and_profit_report {
     my @non_financial_winners = sort { $b->{usd_non_financial_profit} <=> $a->{usd_non_financial_profit} } @movers;
     my @non_financial_losers  = reverse @non_financial_winners;
     my (@big_financial_winners, @big_non_financial_winners, @big_financial_losers, @big_non_financial_losers, @watched);
+
+    # use Data::Dumper;
+    # warn "FW: ".Dumper(\@financial_winners);
+    # warn "FL: ".Dumper(\@financial_losers);
+    # warn "NFW: ".Dumper(\@non_financial_winners);
+    # warn "NFL: ".Dumper(\@non_financial_losers);
 
     for my $i (0 .. 9) {
         push @big_financial_winners, $financial_winners[$i]
