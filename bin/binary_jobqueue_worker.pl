@@ -274,7 +274,7 @@ sub process_job {
 
     stats_gauge("rpc_queue.worker.jobs.latency", $current_time->delta_milliseconds(Time::Moment->now), $tags);
 
-    return Future->done;
+    return;
 }
 
 sub run_worker_process {
@@ -342,28 +342,36 @@ sub run_worker_process {
             $log->tracef('Timeout for %s is %d', $name, $job_timeout);
 
             my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
-            return Future->wait_any(
-                $loop->timeout_future(after => $job_timeout)->on_fail(
-                    sub {
-                        stats_inc("rpc_queue.worker.jobs.timeout", $tags);
-                        $log->errorf('rpc_queue: Timeout error - Not able to get response for %s job, job timeout is configured at %s seconds',
-                            $name, $job_timeout);
 
-                        $job->done(
-                            encode_json_utf8({
-                                    success => 0,
-                                    result  => {
-                                        error => {
-                                            code              => 'RequestTimeout',
-                                            message_to_client => "Request timed out",
-                                        }}}));
-                    }
-                ),
+            try {
+                local $SIG{ALRM} = sub {
+                    stats_inc("rpc_queue.worker.jobs.timeout", $tags);
+                    $log->errorf('rpc_queue: Timeout error - Not able to get response for %s job, job timeout is configured at %s seconds',
+                        $name, $job_timeout);
+                    $job->done(
+                        encode_json_utf8({
+                                success => 0,
+                                result  => {
+                                    error => {
+                                        code              => 'RequestTimeout',
+                                        message_to_client => "Request timed out",
+                                    }}}));
+                };
+                alarm $job_timeout;
                 process_job(
                     job  => $job,
                     code => $services{$name}{code},
                     tags => $tags
-                ));
+                );
+                alarm 0;
+            }
+            catch {
+                $log->errorf('An error occurred while processing job for %s, ERROR: %s', $name, $@);
+            }
+            finally {
+                alarm 0;
+            }
+
         });
 
     $worker->trigger->retain;
