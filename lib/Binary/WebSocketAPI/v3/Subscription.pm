@@ -238,7 +238,8 @@ unsubscribe the channel
 
 sub unsubscribe {
     my $self = shift;
-    return $self->subscription_manager->unsubscribe($self);
+    return $self->subscription_manager->unsubscribe($self) if $self->status;
+    return undef;
 }
 
 =head2 already_registered
