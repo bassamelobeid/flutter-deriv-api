@@ -12,17 +12,18 @@ use IO::Socket::UNIX;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use Path::Tiny qw(path);
-use Data::Dump 'pp';
 use Syntax::Keyword::Try;
 use Time::Moment;
 use Text::Trim;
-use File::Slurp;
+use Path::Tiny;
 use Try::Tiny;
 
 use Getopt::Long;
 use Log::Any qw($log);
 
 use BOM::Config::RedisReplicated;
+
+use constant RESTART_COOLDOWN => 1;
 
 my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
 
@@ -33,8 +34,8 @@ GetOptions(
     'socket|S=s'       => \(my $SOCKETPATH = "/var/run/bom-rpc/binary_jobqueue_worker.sock"),
     'redis|R=s'        => \(my $REDIS = $redis_config->{uri}),
     'log|l=s'          => \(my $log_level = "info"),
-    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // read_file('/etc/rmg/environment')),
-    'pid-file=s'       => \(my $PID_FILE),                                                                     #for BOM::Test::Script compatilibity
+    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // path('/etc/rmg/environment')->slurp_utf8),
+    'pid-file=s' => \(my $PID_FILE),    #for BOM::Test::Script compatilibity
 ) or exit 1;
 
 require Log::Any::Adapter;
@@ -42,8 +43,6 @@ Log::Any::Adapter->import(qw(Stderr), log_level => $log_level);
 
 exit run_worker_process($REDIS) if $FOREGROUND;
 
-# TODO: This probably depends on a queue name which will come in as an a
-#   commandline argument sometime
 # TODO: Should it live in /var/run/bom-daemon? That exists but I don't know
 #   what it is
 my $loop = IO::Async::Loop->new();
@@ -213,7 +212,7 @@ sub add_worker_process {
 
             $log->debug("Restarting");
 
-            $loop->delay_future(after => 1)->on_done(sub { add_worker_process($redis) })->retain;
+            $loop->delay_future(after => RESTART_COOLDOWN)->on_done(sub { add_worker_process($redis) })->retain;
         },
     );
 
@@ -241,10 +240,7 @@ sub run_worker_process {
         no warnings 'once';
         @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
-        if ($PID_FILE) {
-            my $pid_file = Path::Tiny->new($PID_FILE);
-            $pid_file->spew("$$");
-        }
+        Path::Tiny->new($PID_FILE)->spew("$$") if $PID_FILE;
     }
 
     $loop->add(
@@ -297,11 +293,11 @@ sub run_worker_process {
                     return;
                 }
 
-                $log->tracef("Running RPC <%s> for: %s", $name, pp($params));
+                $log->tracef("Running RPC <%s> for: %s", $name, $params);
 
                 if (my $code = $services{$name}) {
                     my $result = $code->($params);
-                    $log->tracef("Results:\n%s", join("\n", map { " | $_" } split m/\n/, pp($result)));
+                    $log->tracef("Results:\n %s", $result);
 
                     $_->done(
                         encode_json_utf8({
@@ -309,7 +305,7 @@ sub run_worker_process {
                                 result  => $result
                             }));
                 } else {
-                    $log->trace("  UNKNOWN");
+                    $log->tracef("Unknown RPC name: '%s'", $name);
                     # Transport mechanism itself succeeded, so ->done is fine here
                     $_->done(
                         encode_json_utf8({
@@ -322,13 +318,14 @@ sub run_worker_process {
                 stats_gauge("rpc_queue.worker.jobs.latency", $current_time->delta_milliseconds(Time::Moment->now), $tags);
             }
             catch {
-                $log->errorf("failed to process job: $_");
+                my $error = $_;
+                $log->errorf("failed to process job: $error");
                 $_->done(
                     encode_json_utf8({
                             success => 0,
-                            error   => "Error processing recieved job: $_"
+                            error   => "Error processing received job: $error"
                         }));
-                stats_inc("rpc_queue.worker.jobs.failed", {tags => ["failure:$_"]});
+                stats_inc("rpc_queue.worker.jobs.failed", {tags => ["failure:$error"]});
             };
         });
 
