@@ -4,10 +4,8 @@ use warnings;
 
 use BOM::CompanyLimits::Helpers qw(get_redis);
 use BOM::CompanyLimits::Combinations;
-use BOM::CompanyLimits::Limits;
 use BOM::CompanyLimits::LossTypes;
 use BOM::CompanyLimits::Stats;
-use BOM::CompanyLimits::Check;
 use LandingCompany::Registry;
 
 # Everything in this file is in buy path
@@ -25,18 +23,8 @@ sub add_buy_contract {
     my $limits_combinations   = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
     my $turnover_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($attributes);
 
-    my $limit_settings = BOM::CompanyLimits::Limits::query_limits($landing_company, $limits_combinations);
-
-    my @breaches;
-    push @breaches, BOM::CompanyLimits::Check::check_realized_loss($landing_company, $limit_settings, $limits_combinations);
-
-    my $potential_loss_incr_response = incr_potential_loss($contract, $landing_company, $limits_combinations);
-    push @breaches, BOM::CompanyLimits::Check::check_potential_loss($limit_settings, $limits_combinations, $potential_loss_incr_response);
-
-    my $turnover_incr_response = incr_turnover($contract, $landing_company, $turnover_combinations);
-    push @breaches, BOM::CompanyLimits::Check::check_turnover($limit_settings, $limits_combinations, $turnover_incr_response);
-
-    BOM::CompanyLimits::Check::process_breaches(\@breaches, $contract);
+    incr_potential_loss($contract, $landing_company, $limits_combinations);
+    incr_turnover($contract, $landing_company, $turnover_combinations);
 
     BOM::CompanyLimits::Stats::stats_stop($stats_dat);
     return;
@@ -103,7 +91,7 @@ sub incr_realized_loss {
     my ($contract, $landing_company, $limits_combinations) = @_;
     my $realized_loss = BOM::CompanyLimits::LossTypes::calc_realized_loss($contract);
 
-    _incr_loss_hash($landing_company, 'realized_loss', $limits_combinations, $realized_loss);
+    return _incr_loss_hash($landing_company, 'realized_loss', $limits_combinations, $realized_loss);
 }
 
 sub incr_potential_loss {
@@ -111,7 +99,7 @@ sub incr_potential_loss {
     my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
     $potential_loss = -$potential_loss if $options->{reverse};
 
-    _incr_loss_hash($landing_company, 'potential_loss', $limits_combinations, $potential_loss);
+    return _incr_loss_hash($landing_company, 'potential_loss', $limits_combinations, $potential_loss);
 }
 
 sub incr_turnover {
@@ -119,7 +107,7 @@ sub incr_turnover {
     my $turnover = BOM::CompanyLimits::LossTypes::calc_turnover($contract);
     $turnover = -$turnover if $options->{reverse};
 
-    _incr_loss_hash($landing_company, 'turnover', $turnover_combinations, -$turnover);
+    return _incr_loss_hash($landing_company, 'turnover', $turnover_combinations, -$turnover);
 }
 
 sub _incr_loss_hash {
