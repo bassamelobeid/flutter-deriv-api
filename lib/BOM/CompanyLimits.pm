@@ -6,6 +6,7 @@ use BOM::CompanyLimits::Helpers qw(get_redis);
 use BOM::CompanyLimits::Combinations;
 use BOM::CompanyLimits::Limits;
 use BOM::CompanyLimits::LossTypes;
+use BOM::CompanyLimits::Stats;
 use LandingCompany::Registry;
 
 =head1 NAME
@@ -26,6 +27,8 @@ sub add_buy_contract {
 
     my $landing_company = $account_data->{landing_company};
     return unless LandingCompany::Registry::get($landing_company);
+
+    my $stats_dat = BOM::CompanyLimits::Stats::stats_start($contract, 'buy');
 
     my $attributes            = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
     my $company_limits        = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
@@ -60,6 +63,7 @@ sub add_buy_contract {
         }
     }
 
+    BOM::CompanyLimits::Stats::stats_stop($stats_dat);
     return;
 }
 
@@ -72,6 +76,7 @@ sub reverse_buy_contract {
     # Should be very careful here; we do not want to revert a buy we have not incremented in Redis!
     return unless (_should_reverse_buy_contract($error));
 
+    my $stats_dat             = BOM::CompanyLimits::Stats::stats_start($contract, 'reverse_buy');
     my $attributes            = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
     my $company_limits        = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
     my $potential_loss        = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
@@ -81,6 +86,7 @@ sub reverse_buy_contract {
     incr_loss_hash($landing_company, 'potential_loss', $company_limits,        -$potential_loss);
     incr_loss_hash($landing_company, 'turnover',       $turnover_combinations, -$turnover);
 
+    BOM::CompanyLimits::Stats::stats_stop($stats_dat);
     return;
 }
 
@@ -294,6 +300,7 @@ sub add_sell_contract {
     my $landing_company = $contract->{account_data}->{landing_company};
     return unless LandingCompany::Registry::get($landing_company);
 
+    my $stats_dat      = BOM::CompanyLimits::Stats::stats_start($contract, 'sell');
     my $attributes     = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
     my $company_limits = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
 
@@ -307,6 +314,7 @@ sub add_sell_contract {
     incr_loss_hash($landing_company, 'realized_loss',  $company_limits, $realized_loss);
     incr_loss_hash($landing_company, 'potential_loss', $company_limits, -$potential_loss);
 
+    BOM::CompanyLimits::Stats::stats_stop($stats_dat);
     return;
 }
 
