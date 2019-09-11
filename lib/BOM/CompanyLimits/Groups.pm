@@ -116,28 +116,6 @@ sub get_insert_group_sql {
     return $sql_query;
 }
 
-sub change_underlying_group_mapping {
-# TODO: Changing underlying groups should be done within the Redis instance itself;
-#       to sync with database would invite descrepancies with the data within Redis.
-#       We could rebuild all underlying group values using underlying values, but a
-#       more optimal way is to only update underlying groups that are affected by
-#       the change.
-#
-#       We can break down the change of underlying group to individual operations
-#       where one underlying u is moved from group g_from to g_to. Each operation
-#       can execute as an independent transaction; we do not need to block operations
-#       until all underlyings have been transferred.
-#
-#       To transfer an underlying, we take all values from key combinations with *,u,*
-#       via HSCAN and decrement from g_from and increment g_to. To execute within a
-#       single transaction, we need to use a lua script.
-#
-}
-
-sub change_contract_group_mapping {
-# TODO
-}
-
 sub _get_insert_underlying_group_sql {
     my $sql = <<'EOF';
 CREATE TEMP TABLE tt(LIKE limits.underlying_group_mapping) ON COMMIT DROP;
