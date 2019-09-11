@@ -34,7 +34,7 @@ $pa_client->set_default_account('USD');
 
 # make him a payment agent
 $pa_client->payment_agent({
-    payment_agent_name    => 'Joe',
+    payment_agent_name    => "Joe",
     url                   => 'http://www.example.com/',
     email                 => 'joe@example.com',
     phone                 => '+12345678',
@@ -70,6 +70,29 @@ $pa_client->payment_agent({
     target_country        => 'id',
 });
 $pa_client->save;
+my $second_pa_loginid = $pa_client->loginid;
+
+$pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$pa_client->set_default_account('ETH');
+
+# make him a payment agent
+$pa_client->payment_agent({
+    payment_agent_name    => "Test Перевод encoding<>!@#$%^&*'`\"",
+    url                   => 'http://www.sample2.com/',
+    email                 => 'test@sample.com',
+    phone                 => '+12345678',
+    information           => 'Test Information2',
+    summary               => "Test ~!@#$%^&*()_+,.<>/?;:'\"[]{}",
+    commission_deposit    => 0,
+    commission_withdrawal => 0,
+    is_authenticated      => 't',
+    currency_code         => 'ETH',
+    target_country        => 'id',
+});
+$pa_client->save;
+my $third_pa_loginid = $pa_client->loginid;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
@@ -101,14 +124,14 @@ subtest 'paymentagent_list RPC call' => sub {
                 'email'                 => 'hoe@sample.com',
                 'summary'               => 'Test Summary Another',
                 'url'                   => 'http://www.sample.com/',
-                'paymentagent_loginid'  => $pa_client->loginid,
+                'paymentagent_loginid'  => $second_pa_loginid,
                 'max_withdrawal'        => 5,
                 'min_withdrawal'        => 0.002,
             },
             {
                 'telephone'             => '+12345678',
                 'supported_banks'       => undef,
-                'name'                  => 'Joe',
+                'name'                  => "Joe",
                 'further_information'   => 'Test Info',
                 'deposit_commission'    => '0',
                 'withdrawal_commission' => '0',
@@ -119,6 +142,21 @@ subtest 'paymentagent_list RPC call' => sub {
                 'paymentagent_loginid'  => $first_pa_loginid,
                 'max_withdrawal'        => 2000,
                 'min_withdrawal'        => 10,
+            },
+            {
+                'telephone'             => '+12345678',
+                'supported_banks'       => undef,
+                'name'                  => "Test Перевод encoding<>!@#$%^&*'`\"",
+                'further_information'   => 'Test Information2',
+                'deposit_commission'    => '0',
+                'withdrawal_commission' => '0',
+                'currencies'            => 'ETH',
+                'email'                 => 'test@sample.com',
+                'summary'               => "Test ~!@#$%^&*()_+,.<>/?;:'\"[]{}",
+                'url'                   => 'http://www.sample2.com/',
+                'paymentagent_loginid'  => $third_pa_loginid,
+                'max_withdrawal'        => 5,
+                'min_withdrawal'        => 0.002,
             }]};
 
     $c->call_ok($method, $params)
@@ -145,7 +183,7 @@ subtest 'paymentagent_list RPC call' => sub {
                 'email'                 => 'hoe@sample.com',
                 'summary'               => 'Test Summary Another',
                 'url'                   => 'http://www.sample.com/',
-                'paymentagent_loginid'  => $pa_client->loginid,
+                'paymentagent_loginid'  => $second_pa_loginid,
                 'max_withdrawal'        => 5,
                 'min_withdrawal'        => 0.002,
             }]};
@@ -154,6 +192,7 @@ subtest 'paymentagent_list RPC call' => sub {
         paymentagent_list => 'id',
         "currency"        => "BTC"
     };
+
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, "If currency is passed then it returns for that currency only");
 };
 
