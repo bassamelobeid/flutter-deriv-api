@@ -1326,9 +1326,16 @@ sub social_responsibility_check {
 
         if ($hits >= $hits_required) {
 
+            my $client = BOM::User::Client->new({loginid => $loginid});
+
             my $system_email  = $BRANDS->emails('system');
             my $sr_email      = $BRANDS->emails('social_responsibility');
             my $email_subject = 'Social Responsibility Check required - ' . $loginid;
+
+            # Client cannot trade or deposit without a financial assessment check
+            # Hence, they will be put under unwelcome
+            $client->status->set('unwelcome', 'system', 'Social responsibility thresholds breached - Pending fill of financial assessment')
+                unless $client->financial_assessment();
 
             my $tt = Template::AutoFilter->new({
                 ABSOLUTE => 1,
