@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Warnings;
 use Test::Exception;
 use JSON::MaybeXS;
@@ -18,6 +18,29 @@ use BOM::Config::Runtime;
 use BOM::Test::Email qw(mailbox_search);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
+
+# Mocking currency conversion becomes needed because of the method close_all_open_contracts
+# which sells all contracts in the unit test database. Because CompanyLimits converts all
+# currencies to USD this method is called. This is a temporary change; we may replace the
+# database implementation which the code in this file tests.
+my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
+$mocked_CurrencyConverter->mock(
+    'in_usd',
+    sub {
+        my $price         = shift;
+        my $from_currency = shift;
+
+        $from_currency eq 'AUD' and return 0.90 * $price;
+        $from_currency eq 'BCH' and return 1200 * $price;
+        $from_currency eq 'ETH' and return 500 * $price;
+        $from_currency eq 'LTC' and return 120 * $price;
+        $from_currency eq 'EUR' and return 1.18 * $price;
+        $from_currency eq 'GBP' and return 1.3333 * $price;
+        $from_currency eq 'JPY' and return 0.0089 * $price;
+        $from_currency eq 'BTC' and return 5500 * $price;
+        $from_currency eq 'USD' and return 1 * $price;
+        return 0;
+    });
 
 my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
@@ -78,7 +101,7 @@ subtest 'Different landing companies test', sub {
 # Test with different currencies
 subtest 'Different currencies', sub {
     top_up my $cr_usd = create_client('CR'), 'USD', 5000;
-    top_up my $cr_eur = create_client('MX'), 'EUR', 5000;
+    top_up my $cr_eur = create_client('CR'), 'EUR', 5000;
 
     my ($error, $contract_info_usd, $contract_info_eur, $usd_contract, $eur_contract);
     my $key = 'tn,R_50,callput';
@@ -100,19 +123,21 @@ subtest 'Different currencies', sub {
         buy_price => 2,
         contract  => $usd_contract,
     );
-    
+
     my $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 4, 'buying contract with CR client adds potential loss to svg';
+    cmp_ok $total, '==', 4, 'buying contract with CR (USD) client adds potential loss to svg';
 
     ($error, $contract_info_eur) = buy_contract(
         client    => $cr_eur,
         buy_price => 2,
         contract  => $eur_contract,
     );
-    
+
     $total = $redis->hget('svg:potential_loss', $key);
-    use Data::Dumper;
-    warn Dumper($total);
+
+    cmp_ok $total, '!=', 8, 'buying contract with CR (EUR) client adds potential loss to svg';
+    
+    $redis->hdel('svg:potential_loss', $key);
 };
 
 # Test with different contract groups
