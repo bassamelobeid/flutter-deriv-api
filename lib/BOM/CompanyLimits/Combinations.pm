@@ -2,6 +2,8 @@ package BOM::CompanyLimits::Combinations;
 
 use strict;
 use warnings;
+
+use BOM::CompanyLimits::Groups;
 use BOM::CompanyLimits::Helpers qw(get_redis);
 
 sub get_limit_settings_combinations {
@@ -63,35 +65,10 @@ sub get_turnover_incrby_combinations {
     ];
 }
 
-sub _get_attr_groups {
-    my ($contract)      = @_;
-    my $bet_data        = $contract->{bet_data};
-    my $landing_company = $contract->{account_data}->{landing_company};
-
-    my ($contract_group, $underlying_group);
-    my $redis = get_redis($landing_company, 'limit_setting');
-
-    $redis->hget(
-        'contractgroups',
-        $bet_data->{bet_type},
-        sub {
-            $contract_group = $_[1];
-        });
-    $redis->hget(
-        'underlyinggroups',
-        $bet_data->{underlying_symbol},
-        sub {
-            $underlying_group = $_[1];
-        });
-    $redis->mainloop;
-
-    return ($contract_group, $underlying_group);
-}
-
 sub get_attributes_from_contract {
     my ($contract) = @_;
 
-    my ($contract_group, $underlying_group) = _get_attr_groups($contract);
+    my ($contract_group, $underlying_group) = BOM::CompanyLimits::Groups::get_limit_groups($contract);
 
     if (not $underlying_group) {
         die ['BI054'];    # mimic database error
