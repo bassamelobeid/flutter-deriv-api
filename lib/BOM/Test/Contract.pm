@@ -138,25 +138,33 @@ SQL
     BAIL_OUT "DB structure does not match Rose classes"
         unless 2 * @txn_col + @fmb_col + @chld_col + 2 * @qv_col == @$res;
 
+    my $contract_info;
+
     my %txn;
     @txn{@txn_col} = splice @$res, 0, 0 + @txn_col;
+    $contract_info->{txn} = \%txn;
 
     my %fmb;
     @fmb{@fmb_col} = splice @$res, 0, 0 + @fmb_col;
+    $contract_info->{fmb} = \%fmb;
 
     my %chld;
     @chld{@chld_col} = splice @$res, 0, 0 + @chld_col;
+    $contract_info->{chld} = \%chld;
 
     my %qv1;
     @qv1{@qv_col} = splice @$res, 0, 0 + @qv_col;
+    $contract_info->{qv1} = \%qv1;
 
     my %qv2;
     @qv2{@qv_col} = splice @$res, 0, 0 + @qv_col;
+    $contract_info->{qv2} = \%qv2;
 
     my %t2;
     @t2{@txn_col} = splice @$res, 0, 0 + @txn_col;
+    $contract_info->{t2} = \%t2;
 
-    return \%txn, \%fmb, \%chld, \%qv1, \%qv2, \%t2;
+    return $contract_info;
 }
 
 sub get_tick {
@@ -239,9 +247,10 @@ sub buy_contract {
     });
 
     my $error = $txn->buy(skip_validation => 1);
-    return $error if $error;
 
-    return get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+    my $buy_ref = get_transaction_from_db(higher_lower_bet => $txn->transaction_id) unless $error;
+
+    return $error, $buy_ref;
 }
 
 sub sell_contract {
