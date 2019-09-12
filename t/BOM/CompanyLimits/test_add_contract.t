@@ -76,6 +76,44 @@ subtest 'Different landing companies test', sub {
 # Test with different barrier
 
 # Test with different currencies
+subtest 'Different currencies', sub {
+    top_up my $cr_usd = create_client('CR'), 'USD', 5000;
+    top_up my $cr_eur = create_client('MX'), 'EUR', 5000;
+
+    my ($error, $contract_info_usd, $contract_info_eur, $usd_contract, $eur_contract);
+    my $key = 'tn,R_50,callput';
+
+    $usd_contract = create_contract(
+        payout     => 6,
+        underlying => 'R_50',
+        currency   => 'USD'
+    );
+
+    $eur_contract = create_contract(
+        payout     => 6,
+        underlying => 'R_50',
+        currency   => 'EUR'
+    );
+
+    ($error, $contract_info_usd) = buy_contract(
+        client    => $cr_usd,
+        buy_price => 2,
+        contract  => $usd_contract,
+    );
+    
+    my $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 4, 'buying contract with CR client adds potential loss to svg';
+
+    ($error, $contract_info_eur) = buy_contract(
+        client    => $cr_eur,
+        buy_price => 2,
+        contract  => $eur_contract,
+    );
+    
+    $total = $redis->hget('svg:potential_loss', $key);
+    use Data::Dumper;
+    warn Dumper($total);
+};
 
 # Test with different contract groups
 
