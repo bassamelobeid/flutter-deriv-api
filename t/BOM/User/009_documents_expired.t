@@ -6,13 +6,21 @@ use warnings;
 use Data::Dumper;
 use Test::More;
 use Test::Deep;
+use Test::MockModule;
+use BOM::User;
 
 use Date::Utility;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
 
-my $client = create_client('CR', undef, {binary_user_id => 1});
+my $user_client = BOM::User->create(
+    email          => 'abc@binary.com',
+    password       => BOM::User::Password::hashpw('jskjd8292922'),
+    email_verified => 1,
+);
+my $client = create_client('CR');
+$user_client->add_client($client);
 $client->set_default_account('USD');
 $client->save();
 my $dbh = $client->db->dbic->dbh;
@@ -113,5 +121,149 @@ is($client->documents_expired(), 0, $test);
 $test = q{BOM::User::Client->documents_expired returns 1 if documents within future date limit};
 my $test_date = Date::Utility->new()->plus_time_interval('2d');
 is($client->documents_expired($test_date), 1, $test);
+
+$SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+$sth_doc_new = $dbh->prepare($SQL);
+$sth_doc_new->execute($client->loginid, 'bankstatement', 'PNG', 'yesterday', 65555, '75bada1e034d13b417083507db47ee4b', 'none', 'front');
+$id1            = $sth_doc_new->fetch()->[0];
+$SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?)';
+$sth_doc_finish = $dbh->prepare($SQL);
+$sth_doc_finish->execute($id1);
+
+my $documents = $client->documents_uploaded();
+cmp_deeply(
+    $documents,
+    {
+        proof_of_identity => {
+            documents => {
+                "CR10000.passport.270744401_front.PNG" => {
+                    expiry_date => $documents->{proof_of_identity}{documents}{'CR10000.passport.270744401_front.PNG'}{expiry_date},
+                    format      => "PNG",
+                    id          => 55555,
+                    status      => "uploaded",
+                    type        => "passport",
+                },
+                "CR10000.passport.270744421_front.PNG" => {
+                    expiry_date => $documents->{proof_of_identity}{documents}{'CR10000.passport.270744421_front.PNG'}{expiry_date},
+                    format      => "PNG",
+                    id          => 66666,
+                    status      => "uploaded",
+                    type        => "passport",
+                },
+            },
+            is_pending          => 1,
+            is_expired          => 0,
+            minimum_expiry_date => $documents->{proof_of_identity}{documents}{'CR10000.passport.270744421_front.PNG'}{expiry_date},
+        },
+        proof_of_address => {
+            documents => {
+                "CR10000.bankstatement.270744441_front.PNG" => {
+                    expiry_date => $documents->{proof_of_address}{documents}{'CR10000.bankstatement.270744441_front.PNG'}{expiry_date},
+                    format      => "PNG",
+                    id          => 65555,
+                    status      => "uploaded",
+                    type        => "bankstatement",
+                },
+            },
+            is_pending          => 1,
+            is_expired          => 1,
+            minimum_expiry_date => $documents->{proof_of_address}{documents}{'CR10000.bankstatement.270744441_front.PNG'}{expiry_date},
+        },
+    },
+    'correct structure for client documents'
+);
+
+my $module = Test::MockModule->new('BOM::User::Client');
+$module->mock('authentication_status', sub { 'needs_action' });
+
+$documents = $client->documents_uploaded();
+cmp_deeply(
+    $documents,
+    {
+        proof_of_identity => {
+            documents => {
+                "CR10000.passport.270744401_front.PNG" => {
+                    expiry_date => $documents->{proof_of_identity}{documents}{'CR10000.passport.270744401_front.PNG'}{expiry_date},
+                    format      => "PNG",
+                    id          => 55555,
+                    status      => "uploaded",
+                    type        => "passport",
+                },
+                "CR10000.passport.270744421_front.PNG" => {
+                    expiry_date => $documents->{proof_of_identity}{documents}{'CR10000.passport.270744421_front.PNG'}{expiry_date},
+                    format      => "PNG",
+                    id          => 66666,
+                    status      => "uploaded",
+                    type        => "passport",
+                },
+            },
+            is_pending          => 1,
+            is_expired          => 0,
+            minimum_expiry_date => $documents->{proof_of_identity}{documents}{'CR10000.passport.270744421_front.PNG'}{expiry_date},
+        },
+        proof_of_address => {
+            documents => {
+                "CR10000.bankstatement.270744441_front.PNG" => {
+                    expiry_date => $documents->{proof_of_address}{documents}{'CR10000.bankstatement.270744441_front.PNG'}{expiry_date},
+                    format      => "PNG",
+                    id          => 65555,
+                    status      => "uploaded",
+                    type        => "bankstatement",
+                },
+            },
+            is_expired          => 1,
+            minimum_expiry_date => $documents->{proof_of_address}{documents}{'CR10000.bankstatement.270744441_front.PNG'}{expiry_date},
+            is_rejected         => 1,
+        },
+    },
+    'correct structure for client documents with authentication status as needs_action'
+);
+
+$module->mock('authentication_status', sub { 'under_review' });
+
+$documents = $client->documents_uploaded();
+cmp_deeply(
+    $documents,
+    {
+        proof_of_identity => {
+            documents => {
+                "CR10000.passport.270744401_front.PNG" => {
+                    expiry_date => $documents->{proof_of_identity}{documents}{'CR10000.passport.270744401_front.PNG'}{expiry_date},
+                    format      => "PNG",
+                    id          => 55555,
+                    status      => "uploaded",
+                    type        => "passport",
+                },
+                "CR10000.passport.270744421_front.PNG" => {
+                    expiry_date => $documents->{proof_of_identity}{documents}{'CR10000.passport.270744421_front.PNG'}{expiry_date},
+                    format      => "PNG",
+                    id          => 66666,
+                    status      => "uploaded",
+                    type        => "passport",
+                },
+            },
+            is_pending          => 1,
+            is_expired          => 0,
+            minimum_expiry_date => $documents->{proof_of_identity}{documents}{'CR10000.passport.270744421_front.PNG'}{expiry_date},
+        },
+        proof_of_address => {
+            documents => {
+                "CR10000.bankstatement.270744441_front.PNG" => {
+                    expiry_date => $documents->{proof_of_address}{documents}{'CR10000.bankstatement.270744441_front.PNG'}{expiry_date},
+                    format      => "PNG",
+                    id          => 65555,
+                    status      => "uploaded",
+                    type        => "bankstatement",
+                },
+            },
+            is_expired          => 1,
+            minimum_expiry_date => $documents->{proof_of_address}{documents}{'CR10000.bankstatement.270744441_front.PNG'}{expiry_date},
+            is_pending          => 1,
+        },
+    },
+    'correct structure for client documents with authentication status as under_review'
+);
+
+$module->unmock_all();
 
 done_testing();
