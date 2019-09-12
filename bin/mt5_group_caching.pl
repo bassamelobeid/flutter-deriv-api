@@ -38,12 +38,6 @@ sub is_mt5_suspended {
     return 0;
 }
 
-sub group_for_user {
-    my ($id) = @_;
-    return BOM::MT5::User::Async::get_user($id);
-
-}
-
 (
     try_repeat {
         $redis->brpop('MT5_USER_GROUP_PENDING', 60000)->then(
@@ -68,7 +62,7 @@ sub group_for_user {
                         # too quickly if it's only down temporarily
                         return $loop->delay_future(after => 60) if is_mt5_suspended();
 
-                        group_for_user($id)->else(
+                        return BOM::MT5::User::Async::get_user($id)->else(
                             sub {
                                 $log->errorf('Failure when retrieving group for [%s] - %s', $id, [@_]);
                                 stats_inc('mt5.group_populator.item_failed', 1);
