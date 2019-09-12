@@ -84,6 +84,7 @@ sub _build_contract {
     if ($param->{shortcode}) {
         $param = shortcode_to_parameters($param->{shortcode}, $param->{currency});
         $param->{landing_company} = $self->contract_parameters->{landing_company};
+        $param->{limit_order} = $self->contract_parameters->{limit_order} if $self->contract_parameters->{limit_order};
     }
     return produce_contract($param);
 }
