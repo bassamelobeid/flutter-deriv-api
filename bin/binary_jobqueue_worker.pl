@@ -84,7 +84,7 @@ The connection string of the redis server prepared for the queue.
 
 =item  B<--testing> or B<--t>
 
-A value-less arg for telling that the rpc workers are suppposed to be loaded for automatic tests or not.
+A value-less arg for telling that the rpc workers are being loaded from L<BOM::Test>.
 
 =item B<pid-file> or B<s>
 
