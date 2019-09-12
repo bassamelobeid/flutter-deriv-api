@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 2;
+use Test::More tests => 3;
 use Test::Warnings;
 use Test::Exception;
 use JSON::MaybeXS;
@@ -33,23 +33,20 @@ my $json  = JSON::MaybeXS->new;
 
 subtest 'Different landing companies test', sub {
 
-    my $cr_cl = create_client('CR');
-    my $mx_cl = create_client('MX');
+    top_up my $cr_cl = create_client('CR'), 'USD', 5000;
+    top_up my $mx_cl = create_client('MX'), 'USD', 5000;
 
-    top_up $cr_cl, 'USD', 5000;
-    top_up $mx_cl, 'USD', 5000;
+    my ($error, $contract_info_svg, $contract_info_mx, $contract);
 
-    my ($svg_contract, $svg_trx, $svg_fmb, $mx_contract, $mx_trx, $mx_fmb);
-
-    $svg_contract = create_contract(
+    $contract = create_contract(
         payout     => 6,
         underlying => 'R_50',
     );
 
-    ($svg_trx, $svg_fmb) = buy_contract(
+    ($error, $contract_info_svg) = buy_contract(
         client    => $cr_cl,
         buy_price => 2,
-        contract  => $svg_contract,
+        contract  => $contract,
     );
 
     my $key = 'tn,R_50,callput';
@@ -60,15 +57,10 @@ subtest 'Different landing companies test', sub {
     cmp_ok $svg_total, '==', 4, 'buying contract with CR client adds potential loss to svg';
     cmp_ok $mx_total,  '==', 0, 'buying contract with CR client does not affect mx potential_loss';
 
-    $mx_contract = create_contract(
-        payout     => 6,
-        underlying => 'R_50',
-    );
-
-    ($mx_trx, $mx_fmb) = buy_contract(
+    ($error, $contract_info_mx) = buy_contract(
         client    => $mx_cl,
         buy_price => 2,
-        contract  => $mx_contract,
+        contract  => $contract,
     );
 
     $svg_total = $redis->hget('svg:potential_loss', $key);
@@ -99,14 +91,14 @@ subtest 'Limits test base case', sub {
     my $cl = create_client;
     top_up $cl, 'USD', 5000;
 
-    my ($contract, $trx, $fmb, $total);
+    my ($contract, $error, $contract_info, $total);
 
     $contract = create_contract(
         payout     => 6,
         underlying => 'R_50',
     );
 
-    ($trx, $fmb) = buy_contract(
+    ($error, $contract_info) = buy_contract(
         client    => $cl,
         buy_price => 2,
         contract  => $contract,
@@ -115,6 +107,8 @@ subtest 'Limits test base case', sub {
     my $key = 'tn,R_50,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 4, 'buying contract adds correct potential loss';
+
+    my $fmb = $contract_info->{fmb};
 
     sell_contract(
         client       => $cl,
@@ -131,7 +125,7 @@ subtest 'Limits test base case', sub {
         underlying => 'R_50',
     );
 
-    my $error = buy_contract(
+    $error = buy_contract(
         client    => $cl,
         buy_price => 200,
         contract  => $contract,
