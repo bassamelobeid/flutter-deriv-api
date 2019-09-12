@@ -102,6 +102,14 @@ sub onfido_service_token {
                             return Future->done({token => $response->{token}});
                         });
                 });
+        }
+        )->else(
+        sub {
+            return Future->done({
+                    error => BOM::RPC::v3::Utility::create_error({
+                            code              => 'ApplicantError',
+                            message_to_client => localize('Cannot create applicant for [_1].', $loginid),
+                        })});
         });
 }
 
@@ -158,24 +166,31 @@ Gets the existing applicant otherwise creates a new one on Onfido.
 sub _get_onfido_applicant {
     my ($client, $onfido) = @_;
 
-    my $applicant_id = BOM::Config::RedisReplicated::redis_events()->get(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id);
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+    # accessing applicant_data from onfido_applicant table
+    my $applicant_data = $dbic->run(
+        fixup => sub {
+            my $sth = $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $client->user_id);
+        });
+    my $applicant_id = $applicant_data->{id};
 
     if ($applicant_id) {
         return $onfido->applicant_get(applicant_id => $applicant_id);
     }
 
-    my $start = Time::HiRes::time();
     return $onfido->applicant_create(%{_client_onfido_details($client)})->then(
         sub {
             my $applicant = shift;
-            my $elapsed   = Time::HiRes::time() - $start;
 
-            if ($applicant) {
-                stats_timing("bom_rpc.v_3.onfido.applicant_create.done.elapsed", $elapsed);
-                BOM::Config::RedisReplicated::redis_events_write()->set(ONFIDO_APPLICANT_KEY_PREFIX . $client->binary_user_id, $applicant->id);
-            } else {
-                stats_timing("bom_rpc.v_3.onfido.applicant_create.failed.elapsed", $elapsed);
-            }
+            # saving data into onfido_applicant table
+            $dbic->run(
+                fixup => sub {
+                    $_->do(
+                        'select users.add_onfido_applicant(?::TEXT,?::TIMESTAMP,?::TEXT,?::BIGINT)',
+                        undef, $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
+                        $applicant->href, $client->user_id
+                    );
+                });
 
             return Future->done($applicant);
         });
