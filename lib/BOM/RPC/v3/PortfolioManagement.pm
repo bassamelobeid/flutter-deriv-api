@@ -168,6 +168,27 @@ sub populate_response_proposal_contract {
             account_id            => $fmb->{account_id},
             country_code          => $client->residence,
         };
+
+        my @orders = ();
+        if ($fmb->{stop_out_order_date}) {
+            push @orders,
+                +{
+                order_type   => 'stop_out',
+                order_date   => $fmb->{stop_out_order_date},
+                order_amount => $fmb->{stop_out_amount},
+                basis_spot   => $fmb->{stop_out_basis_spot}};
+        }
+
+        if ($fmb->{take_profit_order_date}) {
+            push @orders,
+                +{
+                order_type   => 'take_profit',
+                order_date   => $fmb->{take_profit_order_date},
+                order_amount => $fmb->{take_profit_amount},
+                basis_spot   => $fmb->{take_profit_basis_spot}};
+        }
+
+        $contract->{limit_order} = \@orders if @orders;
         $contract->{sell_time} //= $sell_time;
 
         $contract = BOM::Pricing::v3::Contract::get_bid($contract);
