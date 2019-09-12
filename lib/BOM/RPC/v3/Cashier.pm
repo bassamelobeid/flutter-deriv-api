@@ -362,22 +362,9 @@ rpc get_limits => sub {
         $lifetimelimit = 99999999;
     }
 
-    $limit->{num_of_days} = $numdays;
-    warn "ehhhhh ?";
-    warn "AHAHA : ".LandingCompany::Registry::get_currency_definition($currency)->{experimental};
-    if (LandingCompany::Registry::get_currency_definition($currency)->{experimental}){
-        $limit->{num_of_days_limit} = formatnumber('price', $currency, $numdayslimit);
-        $limit->{lifetime_limit}    = formatnumber('price', $currency, $lifetimelimit);
-    }
-    else{
-        $limit->{num_of_days_limit} = formatnumber('price', $currency, convert_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
-        $limit->{lifetime_limit}    = formatnumber('price', $currency, convert_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
-    }
-    warn "wtf ?";
-    
-    use Data::Dumper;
-    warn "NUM_DAYS_LIMIT :".Dumper($limit->{num_of_days_limit});
-    warn "NUM_FOREVER_LIMIT :".Dumper($limit->{lifetime_limit});
+    $limit->{num_of_days}       = $numdays;
+    $limit->{num_of_days_limit} = formatnumber('price', $currency, convert_currency($numdayslimit, $withdrawal_limit_curr, $currency));
+    $limit->{lifetime_limit}    = formatnumber('price', $currency, convert_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
 
     # Withdrawal since $numdays
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});

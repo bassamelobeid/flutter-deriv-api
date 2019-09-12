@@ -26,7 +26,8 @@ test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_malta.json',       'malta';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_maltainvest.json', 'maltainvest';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_error.json',       'unknown';
-test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', '', '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)', 10;
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', '', '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)',
+    10;
 test_sendrecv_params 'residence_list/test_send.json', 'residence_list/test_receive.json';
 test_sendrecv_params 'states_list/test_send.json',    'states_list/test_receive.json';
 
