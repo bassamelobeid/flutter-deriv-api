@@ -543,9 +543,9 @@ sub _pricing_channel_for_proposal {
 
     my $price_daemon_cmd = 'price';
 
-    my %args_hash = %{$args};
-
-    if ($args_hash{basis} and defined $args_hash{amount}) {
+    my %args_hash           = %{$args};
+    my $skip_basis_override = _skip_basis_override($args);
+    if (not $skip_basis_override and $args_hash{basis} and defined $args_hash{amount}) {
         $args_hash{amount} = 1000;
         $args_hash{basis}  = 'payout';
     }
@@ -737,6 +737,18 @@ sub _skip_streaming {
 
     return 1 if ($skip_atm_callput or $skip_contract_type);
     return;
+}
+
+sub _skip_basis_override {
+    my $args = shift;
+
+    # to override multiplier contract just does not make any sense because
+    # the ask_price is defined by the user and the output of limit order (take profit or stop out),
+    # is dependent of the stake and multiplier provided by the client.
+    #
+    # There is no probability calculation involved. Hence, not optimising anything.
+    return 1 if $args->{contract_type} =~ /^(MULTUP|MULTDOWN)$/;
+    return 0;
 }
 
 1;
