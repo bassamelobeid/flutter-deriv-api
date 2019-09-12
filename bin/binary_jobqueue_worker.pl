@@ -112,7 +112,7 @@ sub takeover_coordinator {
         add_worker_process($REDIS) if %workers < $WORKERS;
 
         $conn->write("DEC-WORKERS\n");
-        my $result = $conn->read_until("\n")->get;
+        my $result = $conn->read_until("\n")->retain;
         last if $result eq "WORKERS 0\n";
     }
 
@@ -129,7 +129,7 @@ sub run_coordinator {
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
         $log->info("Terminating workers...");
-        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->get;
+        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->retain;
 
         unlink $SOCKETPATH;
         exit 0;
@@ -164,7 +164,7 @@ sub handle_ctrl_command_DEC_WORKERS {
         # Arbitrarily pick a victim
         warn 'DELETING WORKERS';
         my $worker_to_die = delete $workers{(keys %workers)[0]};
-        $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })->get;
+        $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })->retain;
     }
 }
 
@@ -257,7 +257,7 @@ sub process_job {
             encode_json_utf8({
                     success => 1,
                     result  => $result
-                }));
+                })) unless $job->is_ready;
     } else {
         $log->trace("  UNKNOWN");
         stats_inc("rpc_queue.worker.jobs.failed", $tags);
@@ -269,7 +269,7 @@ sub process_job {
                         error => {
                             code              => 'InternalServerError',
                             message_to_client => 'Sorry, an error occurred while processing your request.',
-                        }}}));
+                        }}})) unless $job->is_ready;
     }
 
     stats_gauge("rpc_queue.worker.jobs.latency", $current_time->delta_milliseconds(Time::Moment->now), $tags);
