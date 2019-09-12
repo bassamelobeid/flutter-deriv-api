@@ -71,6 +71,8 @@ sub update_financial_assessment {
     } else {
         return _email_diffs_to_compliance($previous, $args, \@client_ids, $is_new_mf_client);
     }
+
+    return undef;
 }
 
 # Email to compliance, based on updates on financial assessment
