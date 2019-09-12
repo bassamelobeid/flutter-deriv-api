@@ -29,8 +29,8 @@ sub generate_form {
         'backoffice/price_preview_form.html.tt',
         +{
             upload_url => $url,
-            headers    => $json->encode($input->{headers}),
-            prices     => $json->encode($input->{prices}),
+            headers    => $json->encode($input->{headers} // {}),
+            prices     => $json->encode($input->{prices} // {}),
         },
     ) || die BOM::Backoffice::Request::template()->error;
 }
@@ -106,7 +106,7 @@ sub calculate_prices {
         my $underlying = create_underlying($symbol, $pricing_from);
         my $volsurface = Quant::Framework::VolSurface::Delta->new({
             underlying       => $underlying,
-            chronicle_reader => $cr,
+            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($underlying->for_date),
         });
         my $current_spot = $underlying->spot_tick ? $underlying->spot_tick->quote : undef;
         next unless $current_spot;
