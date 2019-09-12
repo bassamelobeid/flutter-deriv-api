@@ -8,7 +8,8 @@
       "status",
       "stash",
       "risk_classification",
-      "prompt_client_to_authenticate"
+      "prompt_client_to_authenticate",
+      "authentication"
    ],
    "properties" : {
       "stash" : {
@@ -30,6 +31,55 @@
       },
       "status" : {
          "type" : "array"
+      },
+      "authentication" : {
+         "type" : "object",
+         "required": [
+             "needs_verification",
+             "document",
+             "identity"
+         ],
+         "properties" : {
+             "needs_verification" : {
+                 "type" : "array"
+             },
+             "document" : {
+                 "type" : "object",
+                 "properties" : {
+                     "status" : {
+                         "type" : "string",
+                         "enum": [
+                            "none",
+                            "pending",
+                            "rejected",
+                            "verified",
+                            "expired"
+                        ]
+                     },
+                     "expiry_date" : {
+                         "type" : "integer"
+                     }
+                 }
+             },
+             "identity" : {
+                 "type" : "object",
+                 "properties" : {
+                     "status" : {
+                         "type" : "string",
+                         "enum": [
+                            "none",
+                            "pending",
+                            "rejected",
+                            "verified",
+                            "expired"
+                        ]
+                     },
+                     "expiry_date" : {
+                         "type" : "integer"
+                     }
+                 }
+             }
+         }
       }
    }
 }
