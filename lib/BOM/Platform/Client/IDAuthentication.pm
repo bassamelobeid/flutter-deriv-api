@@ -267,17 +267,19 @@ sub _request_id_authentication {
     # Since this is an HTML email, plain text content will be mangled badly. Instead, we use
     # Markdown syntax, since there are various converters and the plain text to HTML options
     # in Perl are somewhat limited and/or opinionated.
-    my $body = localize(<<'EOM', $client_name, $brand->website_name, $support_email);
+    my $body = localize(<<'EOM', $client_name, $brand->website_name, "https://www.binary.com/en/user/authenticate.html");
 Dear [_1],
 
 Thank you for creating your [_2] account!
 
-As the next step, we'll need to authenticate your account with proof of your identity and address. To help us with this, please forward scanned copies of the following to [_3]:
+To enable trading, deposits, and withdrawals on your account, we'll need to authenticate your identity and address.
 
-- Valid passport, driving licence, or national ID card
-- Bank statement or utility bill (phone bills are not accepted)
+Please get ready:
 
-After authentication is complete, your account will be enabled for trading, deposits, and withdrawals.
+- Your valid passport, driving licence, or national ID card; and
+- Your bank statement or utility bill showing your name and address (not more than 6 months' old)
+
+You can <a href="[_3]">authenticate your account</a> now if you have those documents ready.
 
 Thank you for choosing [_2]!
 
