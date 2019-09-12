@@ -116,6 +116,44 @@ sub get_insert_group_sql {
     return $sql_query;
 }
 
+my (%underlying_groups_cache, %contract_groups_cache, $cache_date);
+
+sub get_limit_groups {
+    my ($contract) = @_;
+
+    # Limit groups are cached to the next minute interval
+    my $current_minute = int(time / 60);
+
+    return _get_limit_groups($contract)
+        if %underlying_groups_cache and $cache_date == $current_minute;
+
+    # Limit setting currently all points to same redis server
+    my $redis = get_redis('svg', 'limit_setting');
+
+    $redis->hgetall(
+        'contractgroups',
+        sub {
+            %contract_groups_cache = @{$_[1]};
+        });
+    $redis->hgetall(
+        'underlyinggroups',
+        sub {
+            %underlying_groups_cache = @{$_[1]};
+        });
+    $redis->mainloop;
+
+    $cache_date = $current_minute;
+
+    return _get_limit_groups($contract);
+}
+
+sub _get_limit_groups {
+    my ($contract) = @_;
+    my $bet_data = $contract->{bet_data};
+
+    return ($contract_groups_cache{$bet_data->{bet_type}}, $underlying_groups_cache{$bet_data->{underlying_symbol}});
+}
+
 sub _get_insert_underlying_group_sql {
     my $sql = <<'EOF';
 CREATE TEMP TABLE tt(LIKE limits.underlying_group_mapping) ON COMMIT DROP;
