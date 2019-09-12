@@ -25,7 +25,7 @@
 [% END %]
 </table>
 <br/>
-[% l( 'If this wasn\'t you, please <a href="https://www.binary.com/en/contact.html">let us know</a> right away.') %]
+[% l( 'If this was you, you can ignore this email.') %]
 <br/><br/>
 Thank you.<br/>
 Team Binary.com
