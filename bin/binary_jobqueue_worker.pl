@@ -349,7 +349,7 @@ sub run_worker_process {
     # Result: JSON-encoded result
     $worker->jobs->each(
         sub {
-            my $job = shift;
+            my $job = $_;
             try {
                 my $current_time = Time::Moment->now;
                 my $name         = $job->data('name');
@@ -361,7 +361,7 @@ sub run_worker_process {
 
                 # Handle a 'ping' request immediately here
                 if ($name eq "ping") {
-                    $_->done(
+                    $job->done(
                         encode_json_utf8({
                                 success => 1,
                                 result  => 'pong'
@@ -375,7 +375,7 @@ sub run_worker_process {
                     my $result = $code->($params);
                     $log->tracef("Results:\n %s", $result);
 
-                    $_->done(
+                    $job->done(
                         encode_json_utf8({
                                 success => 1,
                                 result  => $result
@@ -383,7 +383,7 @@ sub run_worker_process {
                 } else {
                     $log->tracef("Unknown RPC name: '%s'", $name);
                     # Transport mechanism itself succeeded, so ->done is fine here
-                    $_->done(
+                    $job->done(
                         encode_json_utf8({
                                 success => 0,
                                 error   => "Unknown RPC name '$name'"
@@ -394,9 +394,9 @@ sub run_worker_process {
                 stats_gauge("rpc_queue.worker.jobs.latency", $current_time->delta_milliseconds(Time::Moment->now), $tags);
             }
             catch {
-                my $error = $_;
+                my $error = $@;
                 $log->errorf("failed to process job: $error");
-                $_->done(
+                $job->done(
                     encode_json_utf8({
                             success => 0,
                             error   => "Error processing received job: $error"
