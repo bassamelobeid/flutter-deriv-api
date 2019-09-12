@@ -561,28 +561,17 @@ sub prepare_buy {
     return $self->prepare_bet_data_for_buy;
 }
 
-# to accomodate batch buy, we allow buy method to take in client,
-# clientdb and bet_data as parameters.
 sub buy {
     my ($self, %options) = @_;
 
-    my $stats_data;
-    $stats_data = $self->stats_start('buy') unless $options{skip_stats};
+    my $stats_data = $self->stats_start('buy');
 
-    my $client = $options{client} || $self->client;
+    my $client = $self->client;
 
-    my ($error_status, $bet_data);
-    if (defined $options{bet_data}) {
-        $bet_data = $options{bet_data};
-    } else {
-        ($error_status, $bet_data) = $self->prepare_buy($options{skip_validation});
-        if ($error_status) {
-            return $error_status if $options{skip_stats};
-            return $self->stats_stop($stats_data, $error_status);
-        }
-    }
+    my ($error_status, $bet_data) = $self->prepare_buy($options{skip_validation});
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
 
-    $self->stats_validation_done($stats_data) unless $options{skip_stats};
+    $self->stats_validation_done($stats_data);
 
     my $account_data = {
         client_loginid  => $client->loginid,
@@ -599,8 +588,8 @@ sub buy {
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
         account_data => $account_data,
-        limits       => $options{limits} || $self->limits,
-        db           => $options{db} || BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+        limits       => $self->limits,
+        db           => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
     );
 
     my $error = 1;
@@ -618,23 +607,19 @@ sub buy {
         # otherwise the function re-throws the exception
         stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
         BOM::CompanyLimits::reverse_buy_contract($contract_data, $_);
-        $error_status = $self->_recover($_, $client);
+        $error_status = $self->_recover($_);
     };
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
 
-    if (not $error_status and $error) {
-        $error_status = Error::Base->cuss(
+    return $self->stats_stop(
+        $stats_data,
+        Error::Base->cuss(
             -type              => 'GeneralError',
             -mesg              => 'Cannot perform database action',
             -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
-        );
-    }
+        )) if $error;
 
-    if ($error_status) {
-        return $error_status if $options{skip_stats};
-        return $self->stats_stop($stats_data, $error_status);
-    }
-
-    $self->stats_stop($stats_data) unless $options{skip_stats};
+    $self->stats_stop($stats_data);
 
     $self->balance_after($txn->{balance_after});
     $self->transaction_id($txn->{id});
@@ -646,11 +631,6 @@ sub buy {
         }) if $client->landing_company->social_responsibility_check_required;
 
     enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
-
-    # TODO: this is a bit of hack so that batch_buy can retrieve fmb and txn
-    #       on successful buys. I am not sure of any better way atm
-    $self->{success_buy_fmb} = $fmb;
-    $self->{success_buy_txn} = $txn;
 
     return;
 }
@@ -722,40 +702,55 @@ sub batch_buy {
         # with hash key caching introduced in recent perl versions
         # the "map sort map" pattern does not make sense anymore.
 
-        # this sorting is used to prevent deadlocks in the database,
-        # when buys were batched up in the database. It is kept sorted
-        # for unit tests to pass
+        # this sorting is to prevent deadlocks in the database
         @$list = sort { $a->{loginid} cmp $b->{loginid} } @$list;
 
-        my $db = BOM::Database::ClientDB->new({broker_code => $broker})->db;
-        my $success = 0;
-        for my $el (@$list) {
-            # client objects are instantiated in prepare buy when there is $self->multiple
-            my $client = $el->{client};
-            try {
-                my ($error) = $self->buy(
-                    bet_data   => $bet_data,
-                    client     => $client,
-                    db         => $db,
-                    limits     => $el->{limits},
-                    skip_stats => 1,
-                );
+        my @general_error = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'));
 
-                if ($error) {
-                    $el->{code}              = $error->{-type};
-                    $el->{error}             = $error->{-message_to_client};
-                    $el->{message_to_client} = $error->{-message_to_client};
+        try {
+            my $currency   = $self->contract->currency;
+            my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
+                %$bet_data,
+                # great readablility provided by our tidy rules
+                account_data => [map                                      { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
+                limits       => [map                                      { $_->{limits} } @$list],
+                db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
+            );
+
+            my $success = 0;
+            my $result  = $fmb_helper->batch_buy_bet;
+            for my $el (@$list) {
+                my $res = shift @$result;
+                if (my $ecode = $res->{e_code}) {
+                    # map DB errors to client messages
+                    if (my $ref = $known_errors{$ecode}) {
+                        my $error = (
+                            ref $ref eq 'CODE'
+                            ? $ref->($self, $el->{client}, $res->{e_description})
+                            : $ref
+                        );
+                        $el->{code}              = $error->{-type};
+                        $el->{error}             = $error->{-message_to_client};
+                        $el->{message_to_client} = $error->{-message_to_client};
+                    } else {
+                        @{$el}{qw/code message_to_client/} = @general_error;
+                    }
                 } else {
-                    $el->{fmb} = $self->{success_buy_fmb};
-                    $el->{txn} = $self->{success_buy_txn};
+                    $el->{fmb} = $res->{fmb};
+                    $el->{txn} = $res->{txn};
                     $success++;
                 }
             }
-            catch {
-                warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
-            };
+            $stat{$broker}->{success} = $success;
+            enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
         }
-        $stat{$broker}->{success} = $success;
+        catch {
+            warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
+
+            for my $el (@$list) {
+                @{$el}{qw/code error/} = @general_error unless $el->{code} or $el->{fmb};
+            }
+        };
     }
 
     $self->stats_stop($stats_data, undef, \%stat);
@@ -879,7 +874,6 @@ sub sell {
         # otherwise the function re-throws the exception
         $error_status = $self->_recover($_);
     };
-
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     return $self->stats_stop(
