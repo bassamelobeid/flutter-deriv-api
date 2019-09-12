@@ -733,7 +733,7 @@ rpc get_account_status => sub {
 
     return {
         status                        => $status,
-        risk_classification           => $client->risk_level()};
+        risk_classification           => $client->risk_level(),
         prompt_client_to_authenticate => $client->is_verification_required(check_authentication_status => 1),
         authentication                => _get_authentication($client),
     };
