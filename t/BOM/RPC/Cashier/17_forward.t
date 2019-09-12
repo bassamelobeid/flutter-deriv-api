@@ -10,7 +10,7 @@ use BOM::Test::RPC::Client;
 
 use MojoX::JSON::RPC::Client;
 
-use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::RPC::v3::Cashier;
@@ -19,6 +19,7 @@ use BOM::User::Password;
 use BOM::Platform::Token;
 use BOM::User;
 use BOM::User::Client;
+use BOM::User::Password;
 use Email::Stuffer::TestLinks;
 
 my ($t, $rpc_ct);
@@ -58,31 +59,73 @@ my $params = {
 
 my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
 my $email               = 'dummy' . rand(999) . '@binary.com';
-my $client_vr           = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+
+my $user_client_vr = BOM::User->create(
+    email          => 'vr@binary.com',
+    password       => BOM::User::Password::hashpw('jskjd8292922'),
+    email_verified => 1,
+);
+my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
     email       => $email
 });
+$user_client_vr->add_client($client_vr);
+
+my $user_client_cr = BOM::User->create(
+    email          => 'cr@binary.com',
+    password       => BOM::User::Password::hashpw('jskjd8292922'),
+    email_verified => 1,
+);
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code    => 'CR',
     email          => $email,
     place_of_birth => 'id',
 });
+$user_client_cr->add_client($client_cr);
+
+my $user_client_cr1 = BOM::User->create(
+    email          => 'cr1@binary.com',
+    password       => BOM::User::Password::hashpw('jskjd8292922'),
+    email_verified => 1,
+);
 my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
     email       => $email
 });
+$user_client_cr1->add_client($client_cr1);
+
+my $user_client_mf = BOM::User->create(
+    email          => 'mf@binary.com',
+    password       => BOM::User::Password::hashpw('jskjd8292922'),
+    email_verified => 1,
+);
 my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
     email       => $email
 });
+$user_client_mf->add_client($client_mf);
+
+my $user_client_mlt = BOM::User->create(
+    email          => 'mlt@binary.com',
+    password       => BOM::User::Password::hashpw('jskjd8292922'),
+    email_verified => 1,
+);
 my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MLT',
     email       => $email
 });
+$user_client_mlt->add_client($client_mlt);
+
+my $user_client_mx = BOM::User->create(
+    email          => 'mx@binary.com',
+    password       => BOM::User::Password::hashpw('jskjd8292922'),
+    email_verified => 1,
+);
 my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
     email       => $email
 });
+$user_client_mx->add_client($client_mx);
 $client_mx->status->set('max_turnover_limit_not_set', 'tests', 'Newly created GB clients have this status until they set 30Day turnover');
 
 my $method = 'cashier';
