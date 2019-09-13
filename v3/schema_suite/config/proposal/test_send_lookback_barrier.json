@@ -1,7 +1,6 @@
 {
   "proposal": 1,
-  "basis": "multiplier",
-  "amount": "10",
+  "multiplier": "10",
   "currency": "USD",
   "contract_type": "[_1]",
   "symbol": "[_2]",
