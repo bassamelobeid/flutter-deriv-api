@@ -25,7 +25,7 @@
         },
         "referrer": {
             "type": "string",
-            "pattern": "^https?://[0-9a-zA-Z\\.-]+\\/[\\%\\/\\w \\.-]*$",
+            "pattern": "^https?://(?:[0-9a-zA-Z\\.-]+|\\*)\\/[\\%\\/\\w \\.-]*[\\*]?$",
             "description": "The URL of the web page where the Web SDK will be used."
         },
         "req_id": {

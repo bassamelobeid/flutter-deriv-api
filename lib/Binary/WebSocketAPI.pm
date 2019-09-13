@@ -420,6 +420,7 @@ sub startup {
                 require_auth => 'payments',
                 error        => \&Binary::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('transfer_between_accounts'),
+                stash_params => [qw/ token_type /],
             }
         ],
         [
