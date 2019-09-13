@@ -1332,11 +1332,22 @@ async sub _send_email_onfido_unsupported_country_cs {
 
 This check is to verify whether clients are at-risk in trading, and this check is done on an on-going basis.
 The checks to be done are in the social_responsibility_check.yml file in bom-config.
-If a client has breached certain thresholds, then an email will be sent to the
-social responsibility team for further action.
+If a client has breached certain thresholds, then their social responsibility (SR) status will
+be set at high-risk value "high" and an email will be sent to the SR team for further action.
 After the email has been sent, the monitoring starts again.
 
-This is required as per the following document: https://www.gamblingcommission.gov.uk/PDF/Customer-interaction-%E2%80%93-guidance-for-remote-gambling-operators.pdf
+The updated SR status is set to expire within 30 days (this is assuming that the client has not breached 
+any thresholds again) and will be placed back to their default status of low; if the SR team were to 
+re-adjust the status from BO, then the expiry time is no longer required. However, if the client has
+breached thresholds again within the 30 day period, then:
+
+- No email notification will be sent to the SR team, as they are already monitoring the client in their vCards for
+3o-day period
+
+- The next deposit/trade from the client will trigger the notification, since the thresholds have already
+been breached.
+
+This SR check is required as per the following document: https://www.gamblingcommission.gov.uk/PDF/Customer-interaction-%E2%80%93-guidance-for-remote-gambling-operators.pdf
 (Read pages 2,4,6)
 
 NOTE: This is for MX-MLT clients only (Last updated: 1st May, 2019)
@@ -1376,6 +1387,14 @@ sub social_responsibility_check {
             my $threshold_val        = $threshold_list->{$attribute};
 
             if ($client_attribute_val >= $threshold_val) {
+
+                # For losses, turnover, and amount: standardize to 2 decimal places
+                # TODO: Use currency conversion instead of sprintf
+                unless (any { $_ eq $attribute } qw/deposit_count num_contract/) {
+                    $client_attribute_val = sprintf("%.2f", $client_attribute_val);
+                    $threshold_val        = sprintf("%.2f", $threshold_val);
+                }
+
                 push @breached_info,
                     {
                     attribute     => $attribute,
@@ -1391,9 +1410,16 @@ sub social_responsibility_check {
 
         if ($hits >= $hits_required) {
 
+            my $client = BOM::User::Client->new({loginid => $loginid});
+
             my $system_email  = $BRANDS->emails('system');
             my $sr_email      = $BRANDS->emails('social_responsibility');
             my $email_subject = 'Social Responsibility Check required - ' . $loginid;
+
+            # Client cannot trade or deposit without a financial assessment check
+            # Hence, they will be put under unwelcome
+            $client->status->set('unwelcome', 'system', 'Social responsibility thresholds breached - Pending fill of financial assessment')
+                unless $client->financial_assessment();
 
             my $tt = Template::AutoFilter->new({
                 ABSOLUTE => 1,
@@ -1407,6 +1433,14 @@ sub social_responsibility_check {
 
             # Remove keys from redis
             $redis->hdel($hash_key, $loginid . '_' . $_) for keys %$client_sr_values;
+
+            # Set the client's SR risk status as at-risk and keep it like that for 30 days
+            # TODO: Remove this when we move from redis to database
+            my $sr_status_key = $loginid . '_sr_risk_status';
+            $redis->set(
+                $sr_status_key => 'high',
+                EX             => 86400 * 30
+            );
 
             try {
                 $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/social_responsibiliy.html.tt', $data, \my $html);
