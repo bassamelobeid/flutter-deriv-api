@@ -1,0 +1,42 @@
+<table id="ultra_short_form">
+    <tr>
+        <td>Current ultra short duration is </td>
+        <th class="old_duration">[% data.duration %]</td>
+    </tr>
+    <tr>
+        <td>Update duration:</td>
+        <td><input type="integer" name="new_duration"></input></td>
+        <td>(accepts any of the following values: 1m, 5m, 10m, 1m 30s etc.)</td>
+    </tr>
+    <tr>
+        <td><button onClick="Save()" type="button">Save</button></td>
+        <td class="result"></td>
+    </tr>
+</table>
+
+<script>
+    function Save() {
+        var el = \$('table#ultra_short_form');
+        var old_duration = el.find('th.old_duration');
+        var new_duration = el.find('input[name="new_duration"]');
+        var result = el.find('td.result');
+        result.text('Processing ...');
+
+        \$.ajax({
+            url: upload_url,
+            data: {
+                save_ultra_short: 1,
+                duration: new_duration.val(),
+            },
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'red');
+                } else {
+                    old_duration.text(config.result);
+                    result.text('saved').css('color', 'green');
+                }
+            }
+        });
+    }
+</script>

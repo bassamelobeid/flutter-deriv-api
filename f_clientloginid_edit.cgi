@@ -40,6 +40,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::Backoffice::Config;
 use BOM::Database::DataMapper::Copier;
 use BOM::Platform::S3Client;
+use BOM::Config::RedisReplicated;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -78,6 +79,15 @@ code_exit_BO(
                 Try Again: <input type="text" name="loginID" value="$encoded_loginid"></input>
             </form>]
 ) unless $client;
+
+# Disabled for now
+# to enable, replace condition with 'defined $input{allow_onfido_resubmission}'
+if (0) {
+    my $redis = BOM::Config::RedisReplicated::redis_write();
+    $input{allow_onfido_resubmission}
+        ? $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1)
+        : $redis->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+}
 
 my $user = $client->user;
 
@@ -423,6 +433,24 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         # Print clients that were not updated
         print $result if $result;
     }
+
+    # TODO: Remove this once the transition is done from redis to client object
+    if ((my $sr_risk_val = $input{client_social_responsibility_check})
+        && $client->landing_company->social_responsibility_check_required)
+    {
+
+        my $key_name = $loginid . '_sr_risk_status';
+        my $redis    = BOM::Config::RedisReplicated::redis_events_write();
+
+        # There is no need to store clients with low risk in redis, as it is default
+        # and also: if the status is changed from high, we don't need the expiry time
+        if ($sr_risk_val eq 'low') {
+            $redis->del($key_name);
+        } else {
+            $redis->set($key_name, $sr_risk_val);
+        }
+    }
+
     # client promo_code related fields
     if (exists $input{promo_code}) {
         if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {

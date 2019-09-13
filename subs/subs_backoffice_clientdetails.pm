@@ -27,7 +27,8 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Database::Model::HandoffToken;
 use BOM::Config::RedisReplicated;
 
-use constant ONFIDO_REPORT_KEY_PREFIX => 'ONFIDO::REPORT::ID::';
+use constant ONFIDO_REPORT_KEY_PREFIX             => 'ONFIDO::REPORT::ID::';
+use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
 
 sub get_currency_options {
     my $currency_options;
@@ -246,14 +247,8 @@ sub print_client_details {
 
     my $onfido_check = get_onfido_check_latest($client);
 
-    my $check_status = {
-        clear        => 'pass',
-        rejected     => 'fail',
-        suspected    => 'fail',
-        consider     => 'maybe',
-        caution      => 'maybe',
-        unidentified => 'maybe',
-    };
+    my $redis                          = BOM::Config::RedisReplicated::redis_write();
+    my $onfido_allow_resubmission_flag = $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
     my $template_param = {
         client                => $client,
@@ -273,14 +268,16 @@ sub print_client_details {
         promo_code_access     => $promo_code_access,
         currency_type => (LandingCompany::Registry::get_currency_type($client->currency) // ''),
         proveID => $proveID,
-        client_for_prove               => $client_for_prove,
-        salutation_options             => \@salutation_options,
-        secret_answer                  => $secret_answer,
-        can_decode_secret_answer       => $can_decode_secret_answer,
-        self_exclusion_enabled         => $self_exclusion_enabled,
-        show_allow_professional_client => $client->landing_company->support_professional_client,
-        professional_status            => get_professional_status($client),
-        show_funds_message             => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
+        client_for_prove                  => $client_for_prove,
+        salutation_options                => \@salutation_options,
+        secret_answer                     => $secret_answer,
+        can_decode_secret_answer          => $can_decode_secret_answer,
+        self_exclusion_enabled            => $self_exclusion_enabled,
+        show_allow_professional_client    => $client->landing_company->support_professional_client,
+        show_social_responsibility_client => $client->landing_company->social_responsibility_check_required,
+        social_responsibility_risk_status => BOM::Config::RedisReplicated::redis_events_write()->get($client->loginid . '_sr_risk_status') // 'low',
+        professional_status               => get_professional_status($client),
+        show_funds_message                => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         show_risk_approval => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
         show_tnc_status => ($client->is_virtual) ? 0 : 1,
         show_uploaded_documents            => $show_uploaded_documents,
@@ -292,8 +289,9 @@ sub print_client_details {
         tax_residences_countries_name      => $tax_residences_countries_name,
         cashier_allow_payment_agent_status => $client->status->pa_withdrawal_explicitly_allowed,
         address_verification_status        => $client->status->address_verified,
-        onfido_check_result                => $check_status->{$onfido_check->{result} // ''},
+        onfido_check_result                => $onfido_check->{result},
         onfido_check_url                   => $onfido_check->{results_uri} // '',
+        onfido_resubmission                => $onfido_allow_resubmission_flag,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
