@@ -133,7 +133,7 @@ subtest 'buy' => sub {
     like($result->{shortcode}, qr/CALL_R_50_100_\d{10}_\d{10}_S0P_0/, 'shortcode is correct');
     is(
         $result->{longcode},
-        'Win payout if Volatility 50 0.5Hz is strictly higher than entry spot at 2 minutes after contract start time.',
+        'Win payout if Volatility 50 Index is strictly higher than entry spot at 2 minutes after contract start time.',
         'longcode is correct'
     );
 

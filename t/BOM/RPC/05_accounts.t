@@ -387,7 +387,7 @@ subtest $method => sub {
 
     is(
         $result->{transactions}[0]{longcode},
-        'Win payout if Volatility 50 0.5Hz is strictly higher than entry spot at 50 seconds after contract start time.',
+        'Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.',
         "if have short code, we get more details"
     );
     is($result->{transactions}[2]{longcode}, 'free gift', "if no short code, then longcode is the remark");
@@ -438,7 +438,7 @@ subtest $method => sub {
             args  => {description => 1}});
     is(
         $result->{transactions}[0]{longcode},
-        'Win payout if Volatility 100 0.5Hz is strictly higher than entry spot at 4 hours after contract start time.',
+        'Win payout if Volatility 100 Index is strictly higher than entry spot at 4 hours after contract start time.',
         "if have short code, then we get more details"
     );
 
@@ -643,7 +643,7 @@ subtest $method => sub {
         'app_id'         => undef
     };
     is_deeply($result->{transactions}[1], $expect0, 'result is correct');
-    $expect0->{longcode}  = 'Win payout if Volatility 50 0.5Hz is strictly higher than entry spot at 50 seconds after contract start time.';
+    $expect0->{longcode}  = 'Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.';
     $expect0->{shortcode} = $data->[1]{short_code};
     $result               = $c->tcall(
         $method,

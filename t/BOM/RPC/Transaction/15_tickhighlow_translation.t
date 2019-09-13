@@ -77,14 +77,14 @@ subtest 'audit_details tick names translations' => sub {
 
     check_results(
         $contract_high,
-        '<LOC>Win payout if tick 5 of <LOC>Volatility 50 0.5Hz</LOC> is the highest among all <LOC>5</LOC> ticks.</LOC>',
+        '<LOC>Win payout if tick 5 of <LOC>Volatility 50 Index</LOC> is the highest among all <LOC>5</LOC> ticks.</LOC>',
         '<LOC>Start Time</LOC>',
         '<LOC>Entry Spot</LOC>',
         '<LOC><LOC><LOC>End Time</LOC> and <LOC>Exit Spot</LOC></LOC> and <LOC>Highest Spot</LOC></LOC>'
     );
     check_results(
         $contract_low,
-        '<LOC>Win payout if tick 1 of <LOC>Volatility 50 0.5Hz</LOC> is the lowest among all <LOC>5</LOC> ticks.</LOC>',
+        '<LOC>Win payout if tick 1 of <LOC>Volatility 50 Index</LOC> is the lowest among all <LOC>5</LOC> ticks.</LOC>',
         '<LOC>Start Time</LOC>',
         '<LOC><LOC>Entry Spot</LOC> and <LOC>Lowest Spot</LOC></LOC>',
         '<LOC><LOC>End Time</LOC> and <LOC>Exit Spot</LOC></LOC>'
