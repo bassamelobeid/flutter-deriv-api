@@ -159,6 +159,9 @@ sub _build_amount_type {
     if ($param->{shortcode}) {
         return shortcode_to_parameters($param->{shortcode}, $param->{currency})->{amount_type};
     }
+
+    return 'multiplier' if defined $param->{multiplier};
+
     die 'amount type is required';
 }
 
