@@ -47,13 +47,14 @@ my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
 
 # Test for the correct key combinations
-#subtest 'Combinations matching test', sub {
-#    my $cl = create_client;
-#    top_up $cl, 'USD', 5000;
-#
-#};
+subtest 'Key Combinations matching test', sub {
+
+};
 
 # Test with different underlying
+subtest 'Different underlying tests', sub {
+
+};
 
 subtest 'Different landing companies test', sub {
 
@@ -105,7 +106,6 @@ subtest 'Different currencies', sub {
     top_up my $cr_eur = create_client('CR'), 'EUR', 5000;
 
     my ($error, $contract_info_usd, $contract_info_eur, $usd_contract, $eur_contract);
-    my $key = 'tn,R_50,callput';
 
     $usd_contract = create_contract(
         payout     => 6,
@@ -125,8 +125,12 @@ subtest 'Different currencies', sub {
         contract  => $usd_contract,
     );
 
-    my $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 4, 'buying contract with CR (USD) client adds potential loss to svg';
+    my $key                  = 'tn,R_50,callput';
+    my $potential_loss_total = $redis->hget('svg:potential_loss', $key);
+    my $turnover_total       = $redis->hget('svg:turnover', $key);
+
+    cmp_ok $potential_loss_total, '==', 4, 'buying contract with CR (USD) client adds potential loss to svg';
+    cmp_ok $turnover_total,       '==', 4, 'buying contract with CR (USD) client adds potential loss to svg';
 
     ($error, $contract_info_eur) = buy_contract(
         client    => $cr_eur,
@@ -134,9 +138,10 @@ subtest 'Different currencies', sub {
         contract  => $eur_contract,
     );
 
-    $total = $redis->hget('svg:potential_loss', $key);
+    $potential_loss_total = $redis->hget('svg:potential_loss', $key);
 
-    cmp_ok $total, '>=', 8, 'buying contract with CR (EUR) client adds potential loss to svg';
+    cmp_ok $potential_loss_total, '==', 8.72, 'buying contract with CR (EUR) client adds potential loss to svg';
+    cmp_ok $turnover_total,       '==', 8.72, 'Total turnover comes from both the EUR and USD contract purchase';
 
     my $fmb = $contract_info_usd->{fmb};
 
@@ -147,8 +152,8 @@ subtest 'Different currencies', sub {
         sell_outcome => 1,
     );
 
-    $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 4.72, 'selling contract with win (CR - USD) deducts potential loss to svg';
+    $potential_loss_total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $potential_loss_total, '==', 4.72, 'selling contract with win (CR - USD) deducts potential loss to svg';
 
     $fmb = $contract_info_eur->{fmb};
 
@@ -159,19 +164,34 @@ subtest 'Different currencies', sub {
         sell_outcome => 0,
     );
 
-    $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 0, 'selling contract with loss (CR - EUR) reduces potential loss to 0';
+    my $realized_loss_total = $redis->hget('svg:realized_loss', $key);
+
+    $potential_loss_total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $potential_loss_total, '==', 0,    'selling contract with loss (CR - EUR) reduces potential loss to 0';
+    cmp_ok $realized_loss_total,  '==', 4.72, 'Realized loss comes from EUR contract loss';
 
     $redis->hdel('svg:potential_loss', $key);
 };
 
-# Test with different contract groups
+# Test with different combinations of contracts
+subtest 'Different combinations of contracts', sub {
+
+};
 
 # Test with daily loss and daily turnover
+subtest 'Loss and turnover are on daily basis', sub {
+
+};
 
 # Test when limits have breached
+subtest 'Limits breached tests', sub {
+
+};
 
 # Test if database and redis are synced properly
+subtest 'Sync between database and redis', sub {
+
+};
 
 # Test for potential loss reconciliation
 
