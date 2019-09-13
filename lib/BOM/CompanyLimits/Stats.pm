@@ -10,8 +10,8 @@ use BOM::Config;
 # contracts that is coming in this system, and shipping that info to datadog.
 
 sub stats_start {
-    my ($contract, $what) = @_;
-    my $landing_company = $contract->{account_data}->{landing_company};
+    my ($company_limits, $what) = @_;
+    my $landing_company = $company_limits->{landing_company};
 
     my $virtual = $landing_company eq 'virtual' ? 'yes' : 'no';
     my $rmgenv  = BOM::Config::env;
