@@ -351,6 +351,10 @@ table#client_edit td{
         </td>
     </tr>
     <tr>
+        <td class="label">Allow Resubmission: </td>
+        <td> <input type="checkbox" name="allow_onfido_resubmission" value="1" [% IF onfido_resubmission %] checked="checked" [% END %]> <b>[DISABLED]</b> </td>
+    </tr>
+    <tr>
         <td class="label">Age Verified</td>
         <td>:
             <select name="age_verification" id="age_verification">
