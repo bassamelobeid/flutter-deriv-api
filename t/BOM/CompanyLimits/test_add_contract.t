@@ -24,6 +24,7 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 # currencies to USD this method is called. This is a temporary change; we may replace the
 # database implementation which the code in this file tests.
 my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
+
 $mocked_CurrencyConverter->mock(
     'in_usd',
     sub {
@@ -135,8 +136,32 @@ subtest 'Different currencies', sub {
 
     $total = $redis->hget('svg:potential_loss', $key);
 
-    cmp_ok $total, '!=', 8, 'buying contract with CR (EUR) client adds potential loss to svg';
-    
+    cmp_ok $total, '>=', 8, 'buying contract with CR (EUR) client adds potential loss to svg';
+
+    my $fmb = $contract_info_usd->{fmb};
+
+    sell_contract(
+        client       => $cr_usd,
+        contract_id  => $fmb->{id},
+        contract     => $usd_contract,
+        sell_outcome => 1,
+    );
+
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 4.72, 'selling contract with win (CR - USD) deducts potential loss to svg';
+
+    $fmb = $contract_info_eur->{fmb};
+
+    sell_contract(
+        client       => $cr_eur,
+        contract_id  => $fmb->{id},
+        contract     => $eur_contract,
+        sell_outcome => 0,
+    );
+
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 0, 'selling contract with loss (CR - EUR) reduces potential loss to 0';
+
     $redis->hdel('svg:potential_loss', $key);
 };
 
