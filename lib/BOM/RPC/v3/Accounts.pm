@@ -16,7 +16,7 @@ use Try::Tiny;
 use WWW::OneAll;
 use Date::Utility;
 use HTML::Entities qw(encode_entities);
-use List::Util qw(any sum0 first);
+use List::Util qw(any sum0 first min uniq);
 use Digest::SHA qw(hmac_sha256_hex);
 
 use BOM::User::Client;
@@ -40,12 +40,14 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Token;
+use BOM::Platform::Token::API;
 use BOM::Transaction;
 use BOM::MT5::User::Async;
 use BOM::Config;
 use BOM::User::Password;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
+use BOM::Database::UserDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
@@ -53,8 +55,18 @@ use BOM::Database::Model::UserConnect;
 use BOM::Config::Runtime;
 use BOM::Config::ContractPricingLimits qw(market_pricing_limits);
 use BOM::RPC::v3::Services;
+use BOM::Config::RedisReplicated;
 
-use constant DEFAULT_STATEMENT_LIMIT => 100;
+use constant DEFAULT_STATEMENT_LIMIT              => 100;
+use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
+
+use constant POA_DOCUMENTS_TYPE => qw(
+    proofaddress payslip bankstatement cardstatement
+);
+
+use constant POI_DOCUMENTS_TYPE => qw(
+    proofid driverslicense passport
+);
 
 my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers/;
 my $email_field_labels         = {
@@ -703,18 +715,18 @@ rpc get_account_status => sub {
 
     push @$status, 'authenticated' if ($client->fully_authenticated);
 
-    my $aml_level = $client->aml_risk_level();
-
     my $user = $client->user;
 
     # differentiate between social and password based accounts
     push @$status, 'social_signup' if $user->{has_social_signup};
 
     # check whether the user need to perform financial assessment
-    push(@$status, 'financial_information_not_complete')
-        unless is_section_complete(decode_fa($client->financial_assessment()), "financial_information");
-    push(@$status, 'trading_experience_not_complete')
-        unless is_section_complete(decode_fa($client->financial_assessment()), "trading_experience");
+    my $client_fa = decode_fa($client->financial_assessment());
+
+    push(@$status, 'financial_information_not_complete') unless is_section_complete($client_fa, "financial_information");
+
+    push(@$status, 'trading_experience_not_complete') unless is_section_complete($client_fa, "trading_experience");
+
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
     # check if the user's documents are expired or expiring soon
@@ -724,37 +736,180 @@ rpc get_account_status => sub {
         push(@$status, 'document_expiring_soon');
     }
 
-    my $shortcode                     = $client->landing_company->short;
-    my $prompt_client_to_authenticate = 0;
-    if ($client->fully_authenticated) {
-        $prompt_client_to_authenticate = 1 if BOM::Transaction::Validation->new({clients => [$client]})->check_authentication_required($client);
-    } elsif ($authentication_in_progress) {
-        $prompt_client_to_authenticate = 1;
-    } else {
-        if ($shortcode eq 'svg' or $shortcode eq 'champion') {
-            # Our threshold is 4000 USD, but we want to include total across all the user's currencies
-            my $total = sum0(
-                map { in_usd($_->default_account->balance, $_->currency) }
-                grep { $_->default_account && $_->landing_company->short eq $shortcode } $user->clients
-            );
-            if ($total > 4000) {
-                $prompt_client_to_authenticate = 1;
-            }
-        } elsif ($shortcode eq 'virtual') {
-            # No authentication for virtual accounts - set this explicitly in case we change the default above
-            $prompt_client_to_authenticate = 0;
-        } else {
-            # Authentication required for all regulated companies - we'll handle this on the frontend
-            $prompt_client_to_authenticate = 1;
-        }
-    }
-
     return {
         status                        => $status,
-        prompt_client_to_authenticate => $prompt_client_to_authenticate,
-        risk_classification           => $aml_level
+        risk_classification           => $client->risk_level(),
+        prompt_client_to_authenticate => $client->is_verification_required(check_authentication_status => 1),
+        authentication                => _get_authentication($client),
     };
 };
+
+=begin comment
+
+  {
+    # this will act as flag on which part of authentication
+    # flow to show, if its empty it means we don't need to prompt client
+    "needs_verification": ["identity", "document"],
+    # these individual sections are for information purpose only
+    # if needs_verification is non-empty then these should be validated
+    # to represent or request details from client accordingly
+    "identity": {
+      "status": "verified", # [none, pending, rejected, verified, expired]
+      "expiry_date": 12423423
+    },
+    "document":{
+      "status": "rejected", # [none, pending, rejected, verified, expired]
+      "expiry_date": 12423423
+    }
+  }
+
+=end comment
+=cut
+
+sub _get_authentication {
+    my $client = shift;
+
+    my $authentication_object = {
+        needs_verification => [],
+        identity           => {
+            status                        => "none",
+            further_resubmissions_allowed => 0
+        },
+        document => {status => "none"}};
+
+    return $authentication_object if $client->is_virtual;
+
+    my $redis = BOM::Config::RedisReplicated::redis_write();
+    $authentication_object->{identity}{further_resubmissions_allowed} =
+        $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id) // 0;
+
+    my $documents = $client->documents_uploaded();
+
+    my ($poi_documents, $poi_minimum_expiry_date, $is_poi_already_expired, $is_poi_pending) =
+        @{$documents->{proof_of_identity}}{qw/documents minimum_expiry_date is_expired is_pending/};
+    my ($poa_documents, $poa_minimum_expiry_date, $is_poa_already_expired, $is_poa_pending, $is_rejected) =
+        @{$documents->{proof_of_address}}{qw/documents minimum_expiry_date is_expired is_pending is_rejected/};
+
+    my %needs_verification_hash = ();
+
+    my $poi_structure = sub {
+        $authentication_object->{identity}{expiry_date} = $poi_minimum_expiry_date if $poi_minimum_expiry_date;
+
+        $authentication_object->{identity}{status} = 'pending' if $is_poi_pending;
+        # check for expiry
+        if ($is_poi_already_expired) {
+            $authentication_object->{identity}{status} = 'expired';
+            $needs_verification_hash{identity} = 'identity';
+        }
+
+        return undef;
+    };
+
+    my $poa_structure = sub {
+        $authentication_object->{document}{expiry_date} = $poa_minimum_expiry_date if $poa_minimum_expiry_date;
+
+        # check for expiry
+        if ($is_poa_already_expired) {
+            $authentication_object->{document}{status} = 'expired';
+            $needs_verification_hash{document} = 'document';
+        }
+
+        $authentication_object->{document}{status} = 'pending' if $is_poa_pending;
+        if ($is_rejected) {
+            $authentication_object->{document}{status} = 'rejected';
+            $needs_verification_hash{document} = 'document';
+        }
+
+        return undef;
+    };
+
+    # fully authenticated
+    return do {
+        $authentication_object->{identity}{status} = 'verified';
+        $authentication_object->{document}{status} = 'verified';
+
+        $poi_structure->();
+        $poa_structure->();
+
+        $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
+        $authentication_object;
+    } if $client->fully_authenticated;
+
+    # proof of identity provided
+    return do {
+        # proof of identity
+        $authentication_object->{identity}{status} = "verified";
+        $poi_structure->();
+
+        # proof of address
+        if (not $poa_documents) {
+            $needs_verification_hash{document} = 'document' if $client->is_verification_required(check_authentication_status => 1);
+        } else {
+            $poa_structure->();
+        }
+
+        $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
+        $authentication_object;
+    } if $client->status->age_verification;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    my $user_applicant = $dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM users.get_onfido_applicant(?::BIGINT)', undef, $client->binary_user_id);
+        });
+    # if documents are there and we have onfido applicant then
+    # check for onfido check status and inform accordingly
+    if ($user_applicant) {
+
+        my $user_check = $dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT * FROM users.get_onfido_checks(?::BIGINT)', undef, $client->binary_user_id);
+            });
+
+        unless ($user_check) {
+            $needs_verification_hash{identity} = 'identity' if $client->is_verification_required();
+        } else {
+            if (my $check_id = $user_check->{id}) {
+                if ($user_check->{status} =~ /^in_progress|awaiting_applicant$/) {
+                    $authentication_object->{identity}->{status} = 'pending';
+                } elsif ($user_check->{result} eq 'consider') {
+                    my $user_reports = $dbic->run(
+                        fixup => sub {
+                            $_->selectall_hashref('SELECT * FROM users.get_onfido_reports(?::BIGINT, ?::TEXT)',
+                                'id', undef, ($client->binary_user_id, $check_id));
+                        });
+
+                    # check for document result as we have accepted documents
+                    # manually so facial similarity is not accurate as client
+                    # use to provide selfie while holding identity card
+                    my $report_document = first { ($_->{api_name} // '') eq 'document' }
+                    sort { Date::Utility->new($a->{created_at})->is_before(Date::Utility->new($b->{created_at})) ? 1 : 0 } values %$user_reports;
+
+                    my $report_document_sub_result = $report_document->{sub_result} // '';
+                    $needs_verification_hash{identity} = 1 if $report_document_sub_result =~ /^rejected|suspected|caution/;
+                    $authentication_object->{identity}->{status} = $report_document_sub_result
+                        if $report_document_sub_result =~ /^rejected|suspected/;
+                    $authentication_object->{identity}->{status} = 'rejected' if $report_document_sub_result eq 'caution';
+                }
+            }
+        }
+    } elsif (not $poi_documents) {
+        $needs_verification_hash{identity} = 'identity' if $client->is_verification_required();
+    } else {
+        $poi_structure->();
+    }
+
+    # proof of address
+    if (not $poa_documents) {
+        $needs_verification_hash{document} = 'document' if $client->is_verification_required(check_authentication_status => 1);
+    } else {
+        $poa_structure->();
+    }
+
+    $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
+    return $authentication_object;
+}
 
 rpc change_password => sub {
     my $params = shift;
@@ -1950,7 +2105,7 @@ rpc api_token => sub {
                 token     => $token
             });
 
-        $m->remove_by_token($token, $client->loginid);
+        BOM::Platform::Token::API->new->remove_by_token($token, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
@@ -1987,9 +2142,9 @@ rpc api_token => sub {
         ## for old API calls (we'll make it required on v4)
         my $scopes = $args->{new_token_scopes} || ['read', 'trade', 'payments', 'admin'];
         if ($args->{valid_for_current_ip_only}) {
-            $m->create_token($client->loginid, $display_name, $scopes, $client_ip);
+            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes, $client_ip);
         } else {
-            $m->create_token($client->loginid, $display_name, $scopes);
+            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes);
         }
         $rtn->{new_token} = 1;
     }
@@ -2003,7 +2158,10 @@ async_rpc service_token => sub {
     my $params = shift;
 
     my ($client, $args) = @{$params}{qw/client args/};
-    $args->{referrer} //= $params->{referrer} =~ s/(\/|)$/\//r;    # Onfido requires an slash at the end
+    $args->{referrer} //= $params->{referrer};
+    # The requirement for the format of <referrer> is https://*.<DOMAIN>/*
+    # as stated in https://documentation.onfido.com/#generate-web-sdk-token
+    $args->{referrer} =~ s/(\/\/).*?(\..*?)(\/|$).*/$1\*$2\/\*/g;
 
     return BOM::RPC::v3::Services::service_token($client, $args)->then(
         sub {
@@ -2231,6 +2389,11 @@ rpc set_financial_assessment => sub {
     ) unless ($client->landing_company->short eq "maltainvest" ? $is_TE_complete && $is_FI_complete : $is_FI_complete);
 
     update_financial_assessment($client->user, $params->{args});
+
+    # Clear unwelcome status for clients without financial assessment and have breached
+    # social responsibility thresholds
+    $client->status->clear_unwelcome if ($client->landing_company->social_responsibility_check_required
+        && $client->status->unwelcome);
 
     # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
     my $response = build_financial_assessment($params->{args})->{scores};
