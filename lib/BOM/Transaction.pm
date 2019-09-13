@@ -595,7 +595,11 @@ sub buy {
     my $error = 1;
     my ($fmb, $txn);
     try {
-        BOM::CompanyLimits::add_buy_contract($contract_data);
+        BOM::CompanyLimits::add_buy_contract({
+            bet_data => $bet_data->{bet_data},
+            currency => $self->contract->currency,
+            clients  => [$client],
+        });
 
         ($fmb, $txn) = $fmb_helper->buy_bet;
         $self->contract_details($fmb);
@@ -606,7 +610,12 @@ sub buy {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
         stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
-        BOM::CompanyLimits::reverse_buy_contract($contract_data, $_);
+        BOM::CompanyLimits::reverse_buy_contract({
+            bet_data => $bet_data->{bet_data},
+            currency => $self->contract->currency,
+            errors   => [$_],
+            clients  => [$client],
+        });
         $error_status = $self->_recover($_);
     };
     return $self->stats_stop($stats_data, $error_status) if $error_status;
@@ -717,6 +726,12 @@ sub batch_buy {
                 db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
             );
 
+            my @clients = map { $_->{client} } @$list;
+            BOM::CompanyLimits::add_buy_contract({
+                bet_data => $bet_data->{bet_data},
+                currency => $currency,
+                clients  => \@clients,
+            });
             my $success = 0;
             my $result  = $fmb_helper->batch_buy_bet;
             for my $el (@$list) {
@@ -907,8 +922,9 @@ sub sell {
     }
 
     BOM::CompanyLimits::add_sell_contract({
-        bet_data     => $fmb,
-        account_data => $bet_data->{account_data},
+        bet_data => $fmb,
+        currency => $self->contract->currency,
+        clients  => [$client],
     });
 
     return;
@@ -979,14 +995,10 @@ sub sell_by_shortcode {
 
                     my $client = $r->{client};
                     BOM::CompanyLimits::add_sell_contract({
-                            bet_data     => $res_row->{fmb},
-                            account_data => {
-                                client_loginid  => $client->loginid,
-                                currency_code   => $self->contract->currency,
-                                landing_company => $client->landing_company->short,
-                                binary_user_id  => $client->binary_user_id,
-                            },
-                        });
+                        bet_data => $res_row->{fmb},
+                        currency => $self->contract->currency,
+                        clients  => [$client],
+                    });
 
                     $success++;
                 }
@@ -1626,6 +1638,11 @@ sub sell_expired_contracts {
                     binary_user_id  => $client->binary_user_id,
                 },
             });
+        BOM::CompanyLimits::add_sell_contract({
+            bet_data => $fmb,
+            currency => $currency,
+            clients  => [$client],
+        });
     }
 
     $client->increment_social_responsibility_values({

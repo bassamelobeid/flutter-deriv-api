@@ -6,23 +6,21 @@ use warnings;
 use ExchangeRates::CurrencyConverter;
 
 sub calc_realized_loss {
-    my ($contract) = @_;
-    my $bet_data = $contract->{bet_data};
+    my ($bet_data, $currency) = @_;
 
-    return ExchangeRates::CurrencyConverter::in_usd($bet_data->{sell_price} - $bet_data->{buy_price}, $contract->{account_data}->{currency_code});
+    return ExchangeRates::CurrencyConverter::in_usd($bet_data->{sell_price} - $bet_data->{buy_price}, $currency);
 }
 
 sub calc_potential_loss {
-    my ($contract) = @_;
-    my $bet_data = $contract->{bet_data};
+    my ($bet_data, $currency) = @_;
 
-    return ExchangeRates::CurrencyConverter::in_usd($bet_data->{payout_price} - $bet_data->{buy_price}, $contract->{account_data}->{currency_code});
+    return ExchangeRates::CurrencyConverter::in_usd($bet_data->{payout_price} - $bet_data->{buy_price}, $currency);
 }
 
 sub calc_turnover {
-    my ($contract) = @_;
+    my ($bet_data, $currency) = @_;
 
-    return ExchangeRates::CurrencyConverter::in_usd($contract->{bet_data}->{buy_price}, $contract->{account_data}->{currency_code});
+    return ExchangeRates::CurrencyConverter::in_usd($bet_data->{buy_price}, $currency);
 }
 
 1;

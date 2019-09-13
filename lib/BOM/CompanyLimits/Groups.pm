@@ -119,12 +119,12 @@ sub get_insert_group_sql {
 my (%underlying_groups_cache, %contract_groups_cache, $cache_date);
 
 sub get_limit_groups {
-    my ($contract) = @_;
+    my ($bet_data) = @_;
 
     # Limit groups are cached to the next minute interval
     my $current_minute = int(time / 60);
 
-    return _get_limit_groups($contract)
+    return _get_limit_groups($bet_data)
         if %underlying_groups_cache and $cache_date == $current_minute;
 
     # Limit setting currently all points to same redis server
@@ -144,12 +144,11 @@ sub get_limit_groups {
 
     $cache_date = $current_minute;
 
-    return _get_limit_groups($contract);
+    return _get_limit_groups($bet_data);
 }
 
 sub _get_limit_groups {
-    my ($contract) = @_;
-    my $bet_data = $contract->{bet_data};
+    my ($bet_data) = @_;
 
     return ($contract_groups_cache{$bet_data->{bet_type}}, $underlying_groups_cache{$bet_data->{underlying_symbol}});
 }

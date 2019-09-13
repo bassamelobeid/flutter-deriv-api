@@ -10,45 +10,123 @@ use LandingCompany::Registry;
 
 # Everything in this file is in buy path
 
+# add_buy_contract returns the same list of check results: undef
+# if passed, an error otherwise. Same method is used for both buys and
+# batch buys.
+#
+# For global limits, the increments are accumulated across each client,
+# and its breaches will revert all buys within the batch buys before
+# it could enter the database. The rationale here is that if it is going
+# to breach global limits (presumably large), a difference of a few contracts
+# is not going to make much difference.
+#
+# For breaches in user specific limits however, we filter these clients
+# out before entering the database.
 sub add_buy_contract {
-    my ($contract) = @_;
-    my ($bet_data, $account_data) = @$contract{qw/bet_data account_data/};
+    my ($params) = @_;
+    my ($bet_data, $currency, $clients) = @$params{qw/bet_data currency clients/};
 
-    my $landing_company = $account_data->{landing_company};
+    # For batch operations, all clients will have the same broker code, and thus have
+    # the same landing company
+    my $landing_company = $clients->[0]->landing_company->short;
     return unless LandingCompany::Registry::get($landing_company);
 
-    my $stats_dat = BOM::CompanyLimits::Stats::stats_start($contract, 'buy');
+    my $attributes          = BOM::CompanyLimits::Combinations::get_attributes_from_contract($bet_data);
+    my $global_combinations = BOM::CompanyLimits::Combinations::get_global_limit_combinations($attributes);
+    my $user_combinations;
+    my $turnover_combinations;
 
-    my $attributes            = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
-    my $limits_combinations   = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
-    my $turnover_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($attributes);
+    foreach my $client (@$clients) {
+        my $combinations = BOM::CompanyLimits::Combinations::get_user_limit_combinations($client->binary_user_id, $attributes);
+        my $t_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($client->binary_user_id, $attributes);
+        push(@$user_combinations,     @$combinations);
+        push(@$turnover_combinations, @$t_combinations);
+    }
 
-    incr_potential_loss($contract, $landing_company, $limits_combinations);
-    incr_turnover($contract, $landing_company, $turnover_combinations);
+    my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($bet_data, $currency);
+    _incr_loss_hash($landing_company, 'potential_loss', $global_combinations, scalar @$clients * $potential_loss, $user_combinations,
+        $potential_loss);
+    my $turnover = BOM::CompanyLimits::LossTypes::calc_turnover($bet_data, $currency);
+    _incr_loss_hash($landing_company, 'turnover', $turnover_combinations, $turnover);
+}
+# TODO: reintroduce stats object
+sub reverse_buy_contract {
+    my ($params) = @_;
+    my ($bet_data, $currency, $clients, $errors) = @$params{qw/bet_data currency clients errors/};
 
-    BOM::CompanyLimits::Stats::stats_stop($stats_dat);
+    # TODO: reverse buys for batch buys...?
+    return unless _should_reverse_buy_contract($errors->[0]);
+
+    # For batch operations, all clients will have the same broker code, and thus have
+    # the same landing company
+    my $landing_company = $clients->[0]->landing_company->short;
+    return unless LandingCompany::Registry::get($landing_company);
+
+    my $attributes          = BOM::CompanyLimits::Combinations::get_attributes_from_contract($bet_data);
+    my $global_combinations = BOM::CompanyLimits::Combinations::get_global_limit_combinations($attributes);
+    my $user_combinations;
+    my $turnover_combinations;
+
+    foreach my $client (@$clients) {
+        my $combinations = BOM::CompanyLimits::Combinations::get_user_limit_combinations($client->binary_user_id, $attributes);
+        my $t_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($client->binary_user_id, $attributes);
+        push(@$user_combinations,     @$combinations);
+        push(@$turnover_combinations, @$t_combinations);
+    }
+
+    my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($bet_data, $currency);
+    _incr_loss_hash($landing_company, 'potential_loss', $global_combinations, scalar @$clients * -$potential_loss,
+        $user_combinations, -$potential_loss);
+    my $turnover = BOM::CompanyLimits::LossTypes::calc_turnover($bet_data, $currency);
+    _incr_loss_hash($landing_company, 'turnover', $turnover_combinations, -$turnover);
+}
+
+sub add_sell_contract {
+    my ($params) = @_;
+    my ($bet_data, $currency, $clients) = @$params{qw/bet_data currency clients/};
+
+    my $landing_company = $clients->[0]->landing_company->short;
+    return unless LandingCompany::Registry::get($landing_company);
+
+    my $attributes          = BOM::CompanyLimits::Combinations::get_attributes_from_contract($bet_data);
+    my $global_combinations = BOM::CompanyLimits::Combinations::get_global_limit_combinations($attributes);
+    my $user_combinations;
+    my $turnover_combinations;
+
+    foreach my $client (@$clients) {
+        my $combinations = BOM::CompanyLimits::Combinations::get_user_limit_combinations($client->binary_user_id, $attributes);
+        my $t_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($client->binary_user_id, $attributes);
+        push(@$user_combinations,     @$combinations);
+        push(@$turnover_combinations, @$t_combinations);
+    }
+
+    my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($bet_data, $currency);
+    _incr_loss_hash($landing_company, 'potential_loss', $global_combinations, scalar @$clients * -$potential_loss,
+        $user_combinations, -$potential_loss);
+    my $realized_loss = BOM::CompanyLimits::LossTypes::calc_realized_loss($bet_data, $currency);
+    _incr_loss_hash($landing_company, 'realized_loss', $global_combinations, $realized_loss, $user_combinations, $realized_loss);
+
     return;
 }
 
-sub reverse_buy_contract {
-    my ($contract, $error) = @_;
+# 3rd param is a list combination-incrby pair
+sub _incr_loss_hash {
+    my ($landing_company, $loss_type, @incr_pair) = @_;
 
-    my $landing_company = $contract->{account_data}->{landing_company};
-    return unless LandingCompany::Registry::get($landing_company);
+    my $redis = get_redis($landing_company, $loss_type);
+    my $hash_name = "$landing_company:$loss_type";
+    my $response;
+    $redis->multi(sub { });
+    for (my $i = 0; $i < @incr_pair; $i += 2) {
+        my ($combinations, $incrby) = @incr_pair[$i, $i + 1];
+        foreach my $p (@$combinations) {
+            $redis->hincrbyfloat($hash_name, $p, $incrby, sub { });
+        }
+    }
+    $redis->exec(sub { $response = $_[1]; });
+    $redis->mainloop;
 
-    # Should be very careful here; we do not want to revert a buy we have not incremented in Redis!
-    return unless (_should_reverse_buy_contract($error));
-
-    my $stats_dat             = BOM::CompanyLimits::Stats::stats_start($contract, 'reverse_buy');
-    my $attributes            = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
-    my $limits_combinations   = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
-    my $turnover_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($attributes);
-
-    incr_potential_loss($contract, $landing_company, $limits_combinations, {reverse => 1});
-    incr_turnover($contract, $landing_company, $turnover_combinations, {reverse => 1});
-
-    BOM::CompanyLimits::Stats::stats_stop($stats_dat);
-    return;
+    return $response;
 }
 
 sub _should_reverse_buy_contract {
@@ -63,68 +141,6 @@ sub _should_reverse_buy_contract {
     }
 
     return 0;
-}
-
-sub add_sell_contract {
-    my ($contract) = @_;
-
-    my $landing_company = $contract->{account_data}->{landing_company};
-    return unless LandingCompany::Registry::get($landing_company);
-
-    my $stats_dat           = BOM::CompanyLimits::Stats::stats_start($contract, 'sell');
-    my $attributes          = BOM::CompanyLimits::Combinations::get_attributes_from_contract($contract);
-    my $limits_combinations = BOM::CompanyLimits::Combinations::get_limit_settings_combinations($attributes);
-
-    # For sell, we increment totals but do not check if they exceed limits;
-    # we only block buys, not sells.
-
-    # On sells, we increment realized loss and deduct potential loss
-    # Since no checks are done, we simply increment and discard the response
-    incr_realized_loss($contract, $landing_company, $limits_combinations);
-    incr_potential_loss($contract, $landing_company, $limits_combinations, {reverse => 1});
-
-    BOM::CompanyLimits::Stats::stats_stop($stats_dat);
-    return;
-}
-
-sub incr_realized_loss {
-    my ($contract, $landing_company, $limits_combinations) = @_;
-    my $realized_loss = BOM::CompanyLimits::LossTypes::calc_realized_loss($contract);
-
-    return _incr_loss_hash($landing_company, 'realized_loss', $limits_combinations, $realized_loss);
-}
-
-sub incr_potential_loss {
-    my ($contract, $landing_company, $limits_combinations, $options) = @_;
-    my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($contract);
-    $potential_loss = -$potential_loss if $options->{reverse};
-
-    return _incr_loss_hash($landing_company, 'potential_loss', $limits_combinations, $potential_loss);
-}
-
-sub incr_turnover {
-    my ($contract, $landing_company, $turnover_combinations, $options) = @_;
-    my $turnover = BOM::CompanyLimits::LossTypes::calc_turnover($contract);
-    $turnover = -$turnover if $options->{reverse};
-
-    return _incr_loss_hash($landing_company, 'turnover', $turnover_combinations, -$turnover);
-}
-
-sub _incr_loss_hash {
-    my ($landing_company, $loss_type, $combinations, $incrby) = @_;
-
-    my $redis = get_redis($landing_company, $loss_type);
-    my $hash_name = "$landing_company:$loss_type";
-    $redis->multi(sub { });
-    foreach my $p (@$combinations) {
-        $redis->hincrbyfloat($hash_name, $p, $incrby, sub { });
-    }
-
-    my $response;
-    $redis->exec(sub { $response = $_[1]; });
-    $redis->mainloop;
-
-    return $response;
 }
 
 1;

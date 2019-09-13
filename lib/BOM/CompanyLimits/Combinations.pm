@@ -6,11 +6,11 @@ use warnings;
 use BOM::CompanyLimits::Groups;
 use BOM::CompanyLimits::Helpers qw(get_redis);
 
-sub get_limit_settings_combinations {
-    my ($binary_user_id, $underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type) = @{+shift};
+sub get_global_limit_combinations {
+    my ($attributes) = @_;
+    my ($underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type) = @$attributes;
 
     my $g = '%s%s,%s,%s';
-    my $u = "%s,%s,$binary_user_id";
     return [
         # Global limits
         sprintf($g, $expiry_type, $barrier_type, $underlying,       $contract_group),
@@ -37,12 +37,17 @@ sub get_limit_settings_combinations {
         sprintf($g, '+',          '+',           $underlying_group, '+'),
         sprintf($g, '+',          '+',           '+',               $contract_group),
         sprintf($g, '+',          '+',           '+',               '+'),
-        # User specific limits
-        sprintf($u, $expiry_type, $underlying_group),
-        sprintf($u, $expiry_type, '+'),
-        sprintf($u, '+',          $underlying_group),
-        sprintf($u, '+',          '+'),
     ];
+}
+
+sub get_user_limit_combinations {
+    my ($binary_user_id, $attributes) = @_;
+    my ($underlying_group, $expiry_type) = @{$attributes}[0, 3];
+
+    my $u = "%s,%s,$binary_user_id";
+
+    return [sprintf($u, $expiry_type, $underlying_group), sprintf($u, $expiry_type, '+'), sprintf($u, '+', $underlying_group),
+        sprintf($u, '+', '+'),];
 }
 
 # turnover limits require special handling; though we use the same keys to query
@@ -53,8 +58,8 @@ sub get_limit_settings_combinations {
 # specific limits is set per underlying group, we infer that it is applied per
 # underlying (underlying group specific, underlying = '*').
 sub get_turnover_incrby_combinations {
-    # NOTE: underlying_group is never used here
-    my ($binary_user_id, undef, $underlying, $contract_group, $expiry_type) = @{+shift};
+    my ($binary_user_id, $attributes) = @_;
+    my ($underlying, $contract_group, $expiry_type) = @{$attributes}[1 .. 3];
 
     my $turnover_format = "%s,$underlying,%s,$binary_user_id";
     return [
@@ -66,9 +71,9 @@ sub get_turnover_incrby_combinations {
 }
 
 sub get_attributes_from_contract {
-    my ($contract) = @_;
+    my ($bet_data) = @_;
 
-    my ($contract_group, $underlying_group) = BOM::CompanyLimits::Groups::get_limit_groups($contract);
+    my ($contract_group, $underlying_group) = BOM::CompanyLimits::Groups::get_limit_groups($bet_data);
 
     if (not $underlying_group) {
         die ['BI054'];    # mimic database error
@@ -80,9 +85,7 @@ sub get_attributes_from_contract {
         die ['BI053'];    # Error: 'bet_type %s not found in bet.contract_group table'
     }
 
-    my $bet_data       = $contract->{bet_data};
-    my $underlying     = $bet_data->{underlying_symbol};
-    my $binary_user_id = $contract->{account_data}->{binary_user_id};
+    my $underlying = $bet_data->{underlying_symbol};
 
     # a for atm, n for non-atm
     my $barrier_type = ($bet_data->{short_code} =~ /_SOP_/) ? 'a' : 'n';
@@ -99,7 +102,7 @@ sub get_attributes_from_contract {
         $expiry_type = 'u' if ($duration <= 300);    # ultra_short; 5 minutes
     }
 
-    return [$binary_user_id, $underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type];
+    return [$underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type];
 }
 
 1;
