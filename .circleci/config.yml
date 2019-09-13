@@ -56,6 +56,8 @@ jobs:
     steps:
     - *1
     - *2
+    - *3
+    - *4
     - run:
         <<: *5
         command: |
