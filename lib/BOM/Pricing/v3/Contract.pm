@@ -866,7 +866,7 @@ sub _build_bid_response {
             $response->{high_barrier} = $contract->high_barrier->as_absolute;
             $response->{low_barrier}  = $contract->low_barrier->as_absolute;
         }
-    } else {
+    } elsif ($contract->barrier) {
         if ($contract->barrier->supplied_type eq 'absolute' or $contract->barrier->supplied_type eq 'digit') {
             $response->{barrier} = $contract->barrier->as_absolute;
         } elsif ($contract->entry_spot) {
