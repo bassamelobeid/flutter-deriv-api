@@ -47,7 +47,7 @@ How long (in seconds) to allow for a single async call is allowed.
 
 =cut
 
-use constant MAXIMUM_JOB_TIME => 30;
+use constant MAXIMUM_JOB_TIME => 10;
 
 =head2 configure
 
