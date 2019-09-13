@@ -152,4 +152,13 @@ sub redis_queue {
     return _redis('queue', 'read', 10);
 }
 
+sub redis_auth_write {
+    $config->{auth} //= BOM::Config::redis_auth_config();
+    return _redis('auth', 'write', 10);
+}
+
+sub redis_auth {
+    $config->{auth} //= BOM::Config::redis_auth_config();
+    return _redis('auth', 'read', 10);
+}
 1;
