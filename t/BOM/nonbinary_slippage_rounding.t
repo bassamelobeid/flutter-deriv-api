@@ -279,10 +279,9 @@ subtest 'test slippage', sub {
             underlying   => $underlying_R10,
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
-            amount       => 1.499,
+            multiplier   => 1.499,
             duration     => '30m',
             current_tick => $tick,
-            amount_type  => 'multiplier',
         });
 
         my $txn = BOM::Transaction->new({

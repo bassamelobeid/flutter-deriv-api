@@ -280,10 +280,9 @@ subtest 'test slippage', sub {
             underlying   => $underlying_R50,
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
-            amount       => 100,
+            multiplier   => 100,
             duration     => '30m',
             current_tick => $tick,
-            amount_type  => 'multiplier',
         });
 
 #Case 1 , recomputed price 50 requested price 50.01
