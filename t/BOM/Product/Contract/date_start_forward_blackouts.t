@@ -77,11 +77,11 @@ subtest 'volatility index forward' => sub {
     };
     my $c = produce_contract($args);
     ok $c->is_forward_starting, 'forward starting';
-    ok $c->is_valid_to_buy, 'is valid to buy';
+    ok $c->is_valid_to_buy,     'is valid to buy';
     $args->{date_start} = $now->plus_time_interval('1h');
     $c = produce_contract($args);
     ok $c->is_forward_starting, 'forward starting';
-    ok $c->is_valid_to_buy, 'is valid to buy';
+    ok $c->is_valid_to_buy,     'is valid to buy';
 };
 
 done_testing();
