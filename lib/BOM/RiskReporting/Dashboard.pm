@@ -348,12 +348,6 @@ sub _payment_and_profit_report {
     my @non_financial_losers  = reverse @non_financial_winners;
     my (@big_financial_winners, @big_non_financial_winners, @big_financial_losers, @big_non_financial_losers, @watched);
 
-    # use Data::Dumper;
-    # warn "FW: ".Dumper(\@financial_winners);
-    # warn "FL: ".Dumper(\@financial_losers);
-    # warn "NFW: ".Dumper(\@non_financial_winners);
-    # warn "NFL: ".Dumper(\@non_financial_losers);
-
     for my $i (0 .. 9) {
         push @big_financial_winners, $financial_winners[$i]
             if ($financial_winners[$i] and $financial_winners[$i]->{usd_financial_profit} > 0);
