@@ -35,7 +35,6 @@ BOM::CompanyLimits
 
 =cut
 
-# TODO: reintroduce stats object
 sub new {
     my ($class, %params) = @_;
     my $self = bless {}, $class;
@@ -56,9 +55,14 @@ sub _init {
     $self->{currency}        = $params{currency};
     $self->{bet_data}        = $params{bet_data};
 
+    # Init gets limit groups from Redis, but is cached so for most cases should be near instant
+    my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'init');
+
     my $attributes = BOM::CompanyLimits::Combinations::get_attributes_from_contract($params{bet_data});
     $self->{global_combinations} = BOM::CompanyLimits::Combinations::get_global_limit_combinations($attributes);
     $self->{attributes}          = $attributes;
+
+    BOM::CompanyLimits::Stats::stats_stop($stat_dat);
 }
 
 # add_buy_contract returns the same list of check results: undef
@@ -76,9 +80,11 @@ sub _init {
 sub add_buys {
     my ($self, @clients) = @_;
 
+    my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'buys');
     $self->_incr_for_buys(undef, @clients);
 
     $self->{has_add_buys} = 1;
+    BOM::CompanyLimits::Stats::stats_stop($stat_dat);
     return;
 }
 
@@ -89,15 +95,20 @@ sub reverse_buys {
     # because of company limits, it should not end up here.
     die "Cannot reverse buys unless add_buys is first called" unless $self->{has_add_buys};
 
+    my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'reverse_buys');
+
     # TODO: Check if we should reverse buys?
 
     $self->_incr_for_buys({reverse => 1}, @clients);
+    BOM::CompanyLimits::Stats::stats_stop($stat_dat);
 
     return;
 }
 
 sub add_sells {
     my ($self, @clients) = @_;
+
+    my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'sells');
 
     my $attributes          = $self->{attributes};
     my $global_combinations = $self->{global_combinations};
@@ -119,6 +130,7 @@ sub add_sells {
     my $realized_loss = $self->calc_loss('realized_loss');
     $self->_incrby_loss_hash('realized_loss', $self->{global_combinations}, scalar @clients * $realized_loss, $user_combinations, $realized_loss);
 
+    BOM::CompanyLimits::Stats::stats_stop($stat_dat);
     return;
 }
 
