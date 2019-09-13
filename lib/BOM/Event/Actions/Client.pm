@@ -73,6 +73,7 @@ use constant ONFIDO_REQUEST_COUNT_KEY               => 'ONFIDO_REQUEST_COUNT';
 use constant ONFIDO_CHECK_EXCEEDED_KEY              => 'ONFIDO_CHECK_EXCEEDED';
 use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
 use constant ONFIDO_DOCUMENT_ID_PREFIX              => 'ONFIDO::DOCUMENT::ID::';
+use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX   => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
 
 use constant ONFIDO_SUPPORTED_COUNTRIES_KEY                    => 'ONFIDO_SUPPORTED_COUNTRIES';
 use constant ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT                => $ENV{ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT} // 7 * 86400;                     # 1 week
@@ -308,6 +309,11 @@ async sub ready_for_authentication {
         my $client = BOM::User::Client->new({loginid => $loginid})
             or die 'Could not instantiate client for login ID ' . $loginid;
 
+        # remove "ONFIDO::ALLOW_RESUBMISSION::ID::" upon check triggered, if there's any
+        my $redis_replicated_write = _redis_replicated_write();
+        await $redis_replicated_write->connect;
+        await $redis_replicated_write->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+
         if ($client->status->age_verification) {
             $log->debugf("Onfido request aborted because %s is already age-verified.", $loginid);
             return "Onfido request aborted because $loginid is already age-verified.";
@@ -411,20 +417,8 @@ async sub client_verification {
 
             $dbic->run(
                 fixup => sub {
-                    $_->do(
-                        'select users.add_onfido_check(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT[])',
-                        undef,
-                        $check->id,
-                        $applicant_id,
-                        Date::Utility->new($check->created_at)->datetime_yyyymmdd_hhmmss,
-                        $check->href,
-                        $check->type,
-                        $check->status,
-                        $check->result,
-                        $check->results_uri,
-                        $check->download_uri,
-                        $check->tags
-                    );
+                    $_->do('select * from users.update_onfido_check_status(?::TEXT, ?::TEXT, ?::TEXT)',
+                        undef, $check->id, $check->status, $check->result,);
                 });
 
             my @all_report = await $check->reports->as_list;
@@ -447,6 +441,8 @@ async sub client_verification {
                             encode_json_utf8($each_report->properties));
                     });
             }
+
+            await _store_applicant_documents($applicant_id, $client);
 
             my $redis_events_write = _redis_events_write();
 
@@ -572,6 +568,94 @@ async sub client_verification {
         my $e = $@;
         $log->errorf('Exception while handling client verification result: %s', $e);
     };
+
+    return;
+}
+
+=head2 _store_applicant_documents
+
+Gets the client's documents from Onfido and store in DB
+
+=cut
+
+async sub _store_applicant_documents {
+    my ($applicant_id, $client) = @_;
+    my $loop   = IO::Async::Loop->new;
+    my $onfido = _onfido();
+
+    my @documents = await $onfido->document_list(applicant_id => $applicant_id)->as_list;
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    my $existing_onfido_docs = $dbic->run(
+        fixup => sub {
+            my $result = $_->prepare('select * from users.get_onfido_documents(?::BIGINT, ?::TEXT)');
+            $result->execute($client->binary_user_id, $applicant_id);
+            return $result->fetchall_hashref('id');
+        });
+
+    foreach my $doc (@documents) {
+
+        my (undef, $type, $side, $file_type) = split /\./, $doc->file_name;
+        $type = $doc->type;
+        $side = $doc->side;
+        $type = 'live_photo' if $side eq 'photo';
+
+        unless ($existing_onfido_docs && $existing_onfido_docs->{$doc->id}) {
+            $log->debugf('Insert document data for user %s and document id %s', $client->binary_user_id, $doc->id);
+            try {
+                $dbic->run(
+                    fixup => sub {
+                        $_->do(
+                            'select users.add_onfido_document(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::INTEGER)',
+                            undef,
+                            $doc->id,
+                            $applicant_id,
+                            Date::Utility->new($doc->created_at)->datetime_yyyymmdd_hhmmss,
+                            $doc->href,
+                            $doc->download_href,
+                            $type,
+                            $side,
+                            uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3')),
+                            $doc->file_name,
+                            $doc->file_type,
+                            $doc->file_size
+                        );
+                    });
+            }
+            catch {
+                my $e = $@;
+                warn "Error in storing document data: $e";
+            }
+        }
+    }
+
+    my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
+    my $existing_onfido_photos = $dbic->run(
+        fixup => sub {
+            my $result = $_->prepare('select * from users.get_onfido_live_photos(?::BIGINT, ?::TEXT)');
+            $result->execute($client->binary_user_id, $applicant_id);
+            return $result->fetchall_hashref('id');
+        });
+
+    foreach my $photo (@live_photos) {
+        unless ($existing_onfido_photos && $existing_onfido_photos->{$photo->id}) {
+            $log->debugf('Insert live photo data for user %s and document id %s', $client->binary_user_id, $photo->id);
+            try {
+                $dbic->run(
+                    fixup => sub {
+                        $_->do(
+                            'select users.add_onfido_live_photo(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::INTEGER)',
+                            undef, $photo->id, $applicant_id, Date::Utility->new($photo->created_at)->datetime_yyyymmdd_hhmmss,
+                            $photo->href, $photo->download_href, $photo->file_name, $photo->file_type, $photo->file_size
+                        );
+                    });
+            }
+            catch {
+                my $e = $@;
+                warn "Error in storing live photo: $e";
+            }
+        }
+    }
 
     return;
 }
@@ -1248,11 +1332,22 @@ async sub _send_email_onfido_unsupported_country_cs {
 
 This check is to verify whether clients are at-risk in trading, and this check is done on an on-going basis.
 The checks to be done are in the social_responsibility_check.yml file in bom-config.
-If a client has breached certain thresholds, then an email will be sent to the
-social responsibility team for further action.
+If a client has breached certain thresholds, then their social responsibility (SR) status will
+be set at high-risk value "high" and an email will be sent to the SR team for further action.
 After the email has been sent, the monitoring starts again.
 
-This is required as per the following document: https://www.gamblingcommission.gov.uk/PDF/Customer-interaction-%E2%80%93-guidance-for-remote-gambling-operators.pdf
+The updated SR status is set to expire within 30 days (this is assuming that the client has not breached 
+any thresholds again) and will be placed back to their default status of low; if the SR team were to 
+re-adjust the status from BO, then the expiry time is no longer required. However, if the client has
+breached thresholds again within the 30 day period, then:
+
+- No email notification will be sent to the SR team, as they are already monitoring the client in their vCards for
+3o-day period
+
+- The next deposit/trade from the client will trigger the notification, since the thresholds have already
+been breached.
+
+This SR check is required as per the following document: https://www.gamblingcommission.gov.uk/PDF/Customer-interaction-%E2%80%93-guidance-for-remote-gambling-operators.pdf
 (Read pages 2,4,6)
 
 NOTE: This is for MX-MLT clients only (Last updated: 1st May, 2019)
@@ -1292,6 +1387,14 @@ sub social_responsibility_check {
             my $threshold_val        = $threshold_list->{$attribute};
 
             if ($client_attribute_val >= $threshold_val) {
+
+                # For losses, turnover, and amount: standardize to 2 decimal places
+                # TODO: Use currency conversion instead of sprintf
+                unless (any { $_ eq $attribute } qw/deposit_count num_contract/) {
+                    $client_attribute_val = sprintf("%.2f", $client_attribute_val);
+                    $threshold_val        = sprintf("%.2f", $threshold_val);
+                }
+
                 push @breached_info,
                     {
                     attribute     => $attribute,
@@ -1307,9 +1410,16 @@ sub social_responsibility_check {
 
         if ($hits >= $hits_required) {
 
+            my $client = BOM::User::Client->new({loginid => $loginid});
+
             my $system_email  = $BRANDS->emails('system');
             my $sr_email      = $BRANDS->emails('social_responsibility');
             my $email_subject = 'Social Responsibility Check required - ' . $loginid;
+
+            # Client cannot trade or deposit without a financial assessment check
+            # Hence, they will be put under unwelcome
+            $client->status->set('unwelcome', 'system', 'Social responsibility thresholds breached - Pending fill of financial assessment')
+                unless $client->financial_assessment();
 
             my $tt = Template::AutoFilter->new({
                 ABSOLUTE => 1,
@@ -1323,6 +1433,14 @@ sub social_responsibility_check {
 
             # Remove keys from redis
             $redis->hdel($hash_key, $loginid . '_' . $_) for keys %$client_sr_values;
+
+            # Set the client's SR risk status as at-risk and keep it like that for 30 days
+            # TODO: Remove this when we move from redis to database
+            my $sr_status_key = $loginid . '_sr_risk_status';
+            $redis->set(
+                $sr_status_key => 'high',
+                EX             => 86400 * 30
+            );
 
             try {
                 $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/social_responsibiliy.html.tt', $data, \my $html);
@@ -1525,43 +1643,6 @@ async sub _upload_documents {
 
         $log->debugf('Document %s created for applicant %s', $doc->id, $applicant->id,);
 
-        # At this point, we may have enough information to start verification.
-        # Since this could vary by landing company, the logic ideally belongs there,
-        # but for now we're using the Onfido rules and assuming that we need 3 things
-        # in all cases:
-        # - proof of identity
-        # - proof of address
-        # - "live" photo showing the client holding one of the documents
-        # We start by pulling a full list of documents and photos for this applicant.
-        # Note that we *cannot* just use the database for this, because there's
-        # a race condition: if 2 documents are uploaded simultaneously, then we'll
-        # assume that we've also processed and sent to Onfido, but one of those may
-        # still be stuck in the queue.
-        $start_time = Time::HiRes::time();
-
-        my ($documents, $photos) = await Future->needs_all($onfido->document_list(applicant_id => $applicant->id)->as_arrayref,
-            $onfido->photo_list(applicant_id => $applicant->id)->as_arrayref);
-
-        $log->debugf('Have %d documents for applicant %s', 0 + @$documents, $applicant->id);
-        $log->debugf('Have %d photos for applicant %s',    0 + @$photos,    $applicant->id);
-
-        # Since the list of types may change, and we don't really have a good
-        # way of mapping the Onfido data to our document types at the moment,
-        # we use a basic heuristic of "if we sent it, this is one of the documents
-        # that we need for verification, and we should be able to verify when
-        # we have 2 or more including a live photo".
-        return 1 if @$documents < 2 or not grep { $_->isa('WebService::Async::Onfido::Photo') } @$photos;
-
-        $log->debugf('Emitting ready_for_authentication event for %s (applicant ID %s)', $loginid, $applicant->id);
-
-        BOM::Platform::Event::Emitter::emit(
-            ready_for_authentication => {
-                loginid      => $loginid,
-                applicant_id => $applicant->id,
-            });
-
-        DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.list_documents.triggered.elapse ", Time::HiRes::time() - $start_time);
-
         return 1;
 
     }
@@ -1630,6 +1711,31 @@ async sub _check_applicant {
                 } else {
                     $log->errorf('An error occurred while processing Onfido verification: %s', join(' ', @_));
                 }
+            }
+            )->on_done(
+            sub {
+                my ($check) = @_;
+
+                my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+                $dbic->run(
+                    fixup => sub {
+                        $_->do(
+                            'select users.add_onfido_check(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT[])',
+                            undef,
+                            $check->id,
+                            $applicant_id,
+                            Date::Utility->new($check->created_at)->datetime_yyyymmdd_hhmmss,
+                            $check->href,
+                            $check->type,
+                            $check->status,
+                            $check->result,
+                            $check->results_uri,
+                            $check->download_uri,
+                            $check->tags
+                        );
+                    });
+
             });
 
         my $start_time = Time::HiRes::time();
