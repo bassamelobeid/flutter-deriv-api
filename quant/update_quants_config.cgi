@@ -15,10 +15,13 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::QuantsConfigHelper;
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
+use Brands;
+use Time::Duration::Concise;
 
 BOM::Backoffice::Sysinit::init();
-my $json  = JSON::MaybeXS->new;
-my $staff = BOM::Backoffice::Auth0::get_staffname();
+my $json       = JSON::MaybeXS->new;
+my $staff      = BOM::Backoffice::Auth0::get_staffname();
+my $app_config = BOM::Config::Runtime->instance->app_config;
 
 if (request()->param('save_limit')) {
     my %args = map { $_ => request()->param($_) }
@@ -75,9 +78,27 @@ if (request()->param('save_threshold')) {
     print $json->encode($output);
 
     if (!$output->{error}) {
-        my %email = _format_email_for_user_limit_threshold(
+        my %email = _format_email_for_config_value_change(
             prev_value => $prev_value,
             cur_value  => $args{threshold_amount},
+            limit_type => $args{limit_type},
+        );
+        _send_compliance_email(%email);
+    }
+}
+
+if (request()->param('save_ultra_short')) {
+    my %args = map { $_ => request()->param($_) } qw(duration);
+    $args{limit_type} = 'ultra_short_duration';
+
+    my $prev_value = Time::Duration::Concise->new(interval => $app_config->quants->ultra_short_duration);
+    my $output = BOM::Backoffice::QuantsConfigHelper::update_ultra_short(\%args, $staff);
+    print $json->encode($output);
+
+    if (!$output->{error}) {
+        my %email = _format_email_for_config_value_change(
+            prev_value => $prev_value->as_string(),
+            cur_value  => $output->{result},
             limit_type => $args{limit_type},
         );
         _send_compliance_email(%email);
@@ -96,7 +117,7 @@ if (request()->param('update_config_switch')) {
     }
 }
 
-sub _format_email_for_user_limit_threshold {
+sub _format_email_for_config_value_change {
     my %args       = @_;
     my $limit_type = $args{limit_type} =~ s/_/ /gr =~ s/\b(\w)/\U$1/gr;
 

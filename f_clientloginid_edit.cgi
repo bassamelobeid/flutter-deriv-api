@@ -40,6 +40,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::Backoffice::Config;
 use BOM::Database::DataMapper::Copier;
 use BOM::Platform::S3Client;
+use BOM::Config::RedisReplicated;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -78,6 +79,15 @@ code_exit_BO(
                 Try Again: <input type="text" name="loginID" value="$encoded_loginid"></input>
             </form>]
 ) unless $client;
+
+# Disabled for now
+# to enable, replace condition with 'defined $input{allow_onfido_resubmission}'
+if (0) {
+    my $redis = BOM::Config::RedisReplicated::redis_write();
+    $input{allow_onfido_resubmission}
+        ? $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1)
+        : $redis->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+}
 
 my $user = $client->user;
 
