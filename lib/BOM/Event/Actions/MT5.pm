@@ -29,6 +29,8 @@ use Future;
 use IO::Async::Loop;
 use Net::Async::Redis;
 
+use Future::AsyncAwait;
+
 use constant DAYS_TO_EXPIRE => 14;
 use constant SECONDS_IN_DAY => 86400;
 
@@ -193,9 +195,8 @@ have not
 
 =cut
 
-sub new_mt5_signup {
+async sub new_mt5_signup {
     my $data = shift;
-
     my $client = BOM::User::Client->new({loginid => $data->{loginid}});
 
     return unless $client;
@@ -206,11 +207,10 @@ sub new_mt5_signup {
     # documents for financial accounts
     my $ttl       = 11 * 86400;
     my $cache_key = 'MT5_USER_GROUP::' . $data->{mt5_login_id};
-    my $rights    = BOM::MT5::User::Async::get_user($data->{mt5_login_id})->then(
-        sub {
-            my $mt_user = shift;
-            return Future->done($mt_user->{rights});
-        })->get();
+
+    my $mt_user = await BOM::MT5::User::Async::get_user($data->{mt5_login_id});
+
+    my $rights = $mt_user->{rights};
 
     my $mt5_details = {
         'group'  => $data->{mt5_group},
@@ -218,15 +218,9 @@ sub new_mt5_signup {
     };
 
     my $redis = _redis_mt5user_write();
-    $redis->connect->then(
-        sub {
-            $redis->hmset($cache_key, %$mt5_details);
-            $redis->expire($cache_key, $ttl);
-        }
-        )->then(
-        sub {
-            return Future->done;
-        })->retain;
+    await $redis->connect;
+    $redis->hmset($cache_key, %$mt5_details);
+    $redis->expire($cache_key, $ttl);
 
     # send email to client to ask for authentication documents
     if ($data->{account_type} eq 'financial' and not $client->fully_authenticated) {
