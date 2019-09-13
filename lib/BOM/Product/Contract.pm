@@ -55,6 +55,7 @@ use Quant::Framework::EconomicEventCalendar;
 use Postgres::FeedDB::Spot::Tick;
 
 use BOM::Config::Chronicle;
+use BOM::Config::Runtime;
 use BOM::MarketData::Types;
 use BOM::Market::RedisTickAccessor;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -216,6 +217,11 @@ has risk_profile => (
     is         => 'ro',
     lazy_build => 1,
     init_arg   => undef,
+);
+
+has app_config => (
+    is         => 'ro',
+    lazy_build => 1,
 );
 
 # pricing_spot - The spot used in pricing.
@@ -870,7 +876,7 @@ sub _build_risk_profile {
 
     # keep the ultra_short expiry type to risk profile.
     my $expiry_type = $self->expiry_type;
-    if ($expiry_type eq 'intraday' and $self->remaining_time->minutes <= 5) {
+    if ($expiry_type eq 'intraday' and $self->remaining_time->seconds <= $self->app_config->quants->ultra_short_duration) {
         $expiry_type = 'ultra_short';
     }
 
@@ -887,6 +893,10 @@ sub _build_risk_profile {
         underlying_risk_profile_setter => $self->underlying->risk_profile_setter,
         $self->landing_company ? (landing_company => $self->landing_company) : (),
     );
+}
+
+sub _build_app_config {
+    return BOM::Config::Runtime->instance->app_config;
 }
 
 =head2 extra_info

@@ -86,7 +86,7 @@ frxAUDJPY: &active_fx
       spot:
         euro_atm:
           max: 5h
-          min: 3m
+          min: 1m
         euro_non_atm:
           max: 5h
           min: 15m
@@ -105,7 +105,22 @@ frxEURJPY: *active_fx
 frxEURUSD: *active_fx
 frxGBPAUD: *active_fx
 frxGBPJPY: *active_fx
-frxGBPUSD: *active_fx
+frxGBPUSD:
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 3m
+        euro_non_atm:
+          max: 5h
+          min: 15m
+  callputequal:
+    intraday:
+      spot:
+        euro_atm:
+          max: 5h
+          min: 3m
 frxUSDCAD: *active_fx
 frxUSDCHF: *active_fx
 frxUSDJPY: *active_fx
