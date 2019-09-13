@@ -3,3 +3,4 @@
 - postgres-client
 - postgres-feed
 - postgres-user
+- redis-replicated
