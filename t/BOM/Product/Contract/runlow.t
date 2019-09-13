@@ -108,7 +108,7 @@ subtest 'RUNLOW - shortcode & longcode' => sub {
         $c->longcode,
         [
             'Win payout if [_1] falls successively for [plural,_3,%d tick, %d ticks] after the entry spot.',
-            ['Volatility 100 0.5Hz'], ['first tick'], [5], ['entry spot']
+            ['Volatility 100 Index'], ['first tick'], [5], ['entry spot']
         ],
         'longcode matches'
     );
