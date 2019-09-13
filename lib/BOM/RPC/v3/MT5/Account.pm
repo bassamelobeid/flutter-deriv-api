@@ -1541,7 +1541,7 @@ sub _mt5_validate_and_get_amount {
             return _make_error($error_code, localize('Please authenticate your account.'))
                 if ($action eq 'withdrawal'
                 and ($mt5_group // '') !~ /^real\\svg/
-                and not $authorized_client->fully_authenticated);
+                and not $client->fully_authenticated);
 
             return _make_error(
                 $error_code,
