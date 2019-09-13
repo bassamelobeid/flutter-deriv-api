@@ -40,6 +40,7 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Token;
+use BOM::Platform::Token::API;
 use BOM::Transaction;
 use BOM::MT5::User::Async;
 use BOM::Config;
@@ -710,18 +711,18 @@ rpc get_account_status => sub {
 
     push @$status, 'authenticated' if ($client->fully_authenticated);
 
-    my $aml_level = $client->aml_risk_level();
-
     my $user = $client->user;
 
     # differentiate between social and password based accounts
     push @$status, 'social_signup' if $user->{has_social_signup};
 
     # check whether the user need to perform financial assessment
-    push(@$status, 'financial_information_not_complete')
-        unless is_section_complete(decode_fa($client->financial_assessment()), "financial_information");
-    push(@$status, 'trading_experience_not_complete')
-        unless is_section_complete(decode_fa($client->financial_assessment()), "trading_experience");
+    my $client_fa = decode_fa($client->financial_assessment());
+
+    push(@$status, 'financial_information_not_complete') unless is_section_complete($client_fa, "financial_information");
+
+    push(@$status, 'trading_experience_not_complete') unless is_section_complete($client_fa, "trading_experience");
+
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
     # check if the user's documents are expired or expiring soon
@@ -733,8 +734,8 @@ rpc get_account_status => sub {
 
     return {
         status                        => $status,
+        risk_classification           => $client->risk_level(),
         prompt_client_to_authenticate => $client->is_verification_required(check_authentication_status => 1),
-        risk_classification           => $aml_level,
         authentication                => _get_authentication($client),
     };
 };
@@ -2100,7 +2101,7 @@ rpc api_token => sub {
                 token     => $token
             });
 
-        $m->remove_by_token($token, $client->loginid);
+        BOM::Platform::Token::API->new->remove_by_token($token, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
@@ -2137,9 +2138,9 @@ rpc api_token => sub {
         ## for old API calls (we'll make it required on v4)
         my $scopes = $args->{new_token_scopes} || ['read', 'trade', 'payments', 'admin'];
         if ($args->{valid_for_current_ip_only}) {
-            $m->create_token($client->loginid, $display_name, $scopes, $client_ip);
+            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes, $client_ip);
         } else {
-            $m->create_token($client->loginid, $display_name, $scopes);
+            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes);
         }
         $rtn->{new_token} = 1;
     }
@@ -2384,6 +2385,11 @@ rpc set_financial_assessment => sub {
     ) unless ($client->landing_company->short eq "maltainvest" ? $is_TE_complete && $is_FI_complete : $is_FI_complete);
 
     update_financial_assessment($client->user, $params->{args});
+
+    # Clear unwelcome status for clients without financial assessment and have breached
+    # social responsibility thresholds
+    $client->status->clear_unwelcome if ($client->landing_company->social_responsibility_check_required
+        && $client->status->unwelcome);
 
     # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
     my $response = build_financial_assessment($params->{args})->{scores};
