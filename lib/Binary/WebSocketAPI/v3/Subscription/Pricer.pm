@@ -121,31 +121,35 @@ sub handle_message {
 
 requires 'do_handle_message';
 
-sub _price_stream_results_adjustment {
-    my ($self, $c, $cache, $results, $resp_theo_probability) = @_;
+sub _non_binary_price_adjustment {
+    my ($self, $c, $contract_parameters, $results) = @_;
 
-    my $contract_parameters = $cache->{contract_parameters};
+    my $t = [gettimeofday];
+    #do app markup adjustment here
+    my $app_markup_percentage = $contract_parameters->{app_markup_percentage} // 0;
+    my $theo_price            = $contract_parameters->{theo_price}            // 0;
+    my $multiplier            = $contract_parameters->{multiplier}            // 0;
 
-    if ($contract_parameters->{non_binary_results_adjustment}) {
-        #do app markup adjustment here
-        my $app_markup_percentage = $contract_parameters->{app_markup_percentage} // 0;
-        my $theo_price            = $contract_parameters->{theo_price}            // 0;
-        my $multiplier            = $contract_parameters->{multiplier}            // 0;
+    my $app_markup_per_unit = $theo_price * $app_markup_percentage / 100;
+    my $app_markup          = $multiplier * $app_markup_per_unit;
 
-        my $app_markup_per_unit = $theo_price * $app_markup_percentage / 100;
-        my $app_markup          = $multiplier * $app_markup_per_unit;
+    #Currently we only have 2 non binary contracts, lookback and callput spread
+    #Callput spread has maximum ask price
+    my $adjusted_ask_price = $results->{ask_price} + $app_markup;
+    $adjusted_ask_price = min($contract_parameters->{maximum_ask_price}, $adjusted_ask_price)
+        if exists $contract_parameters->{maximum_ask_price};
 
-        #Currently we only have 2 non binary contracts, lookback and callput spread
-        #Callput spread has maximum ask price
-        my $adjusted_ask_price = $results->{ask_price} + $app_markup;
-        $adjusted_ask_price = min($contract_parameters->{maximum_ask_price}, $adjusted_ask_price)
-            if exists $contract_parameters->{maximum_ask_price};
+    $results->{ask_price} = $results->{display_value} =
+        financialrounding('price', $contract_parameters->{currency}, $adjusted_ask_price);
+    stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
 
-        $results->{ask_price} = $results->{display_value} =
-            financialrounding('price', $contract_parameters->{currency}, $adjusted_ask_price);
+    return $results;
+}
 
-        return $results;
-    }
+sub _binary_price_adjustment {
+    my ($self, $c, $contract_parameters, $results) = @_;
+
+    my $resp_theo_probability = $contract_parameters->{theo_probability};
 
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
@@ -213,6 +217,25 @@ sub _price_stream_results_adjustment {
     $results->{payout} = $price_calculator->payout;
     $results->{$_} .= '' for qw(ask_price display_value payout);
     stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
+
+    return $results;
+}
+
+sub _price_stream_results_adjustment {
+    my ($self, $c, $cache, $results) = @_;
+
+    my $contract_parameters = $cache->{contract_parameters};
+
+    return $results unless $contract_parameters->{require_price_adjustment};
+
+    if ($contract_parameters->{non_binary_price_adjustment}) {
+        return $self->_non_binary_price_adjustment($c, $contract_parameters, $results);
+    }
+
+    if ($contract_parameters->{binary_price_adjustment}) {
+        return $self->_binary_price_adjustment($c, $contract_parameters, $results);
+    }
+
     return $results;
 }
 
