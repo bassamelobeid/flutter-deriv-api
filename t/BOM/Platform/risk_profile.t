@@ -204,7 +204,7 @@ subtest 'get_current_profile_definitions' => sub {
             'synthetic_index' => [{
                     'turnover_limit' => "500000.00",
                     'payout_limit'   => "50000.00",
-                    'name'           => 'Volatility Indices',
+                    'name'           => 'Synthetic Indices',
                     'profile_name'   => 'low_risk'
                 }
             ],
