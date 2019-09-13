@@ -24,6 +24,7 @@ use Test::Warnings;
 use Test::Exception;
 use Guard;
 use Crypt::NamedKeys;
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::User::Client;
 use BOM::User::Password;
 use BOM::Config::Runtime;
@@ -46,7 +47,7 @@ use BOM::MarketData::Types;
 use Exporter qw( import );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-our @EXPORT_OK = qw(create_contract buy_contract sell_contract batch_buy_contract);
+our @EXPORT_OK = qw(create_contract buy_contract sell_contract batch_buy_contract sell_by_shortcode);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -248,7 +249,8 @@ sub buy_contract {
 
     my $error = $txn->buy(skip_validation => 1);
 
-    my $buy_ref = get_transaction_from_db(higher_lower_bet => $txn->transaction_id) unless $error;
+    my $buy_ref;
+    $buy_ref = get_transaction_from_db(higher_lower_bet => $txn->transaction_id) unless $error;
 
     return $error, $buy_ref;
 }
@@ -257,7 +259,7 @@ sub batch_buy_contract {
     my (%params) = @_;
 
     my $contract = $params{contract};
-    my @multiple = map { {loginid => $_->loginid} } @{$params{client_list}};
+    my @multiple = map { {loginid => $_->loginid} } @{$params{clients}};
 
     my $txn = BOM::Transaction->new({
         client        => $params{manager_client},
@@ -270,6 +272,44 @@ sub batch_buy_contract {
     });
 
     my $error = $txn->batch_buy(skip_validation => 1);
+
+    return ($error, $txn->multiple);
+}
+
+sub sell_by_shortcode {
+    my (%params) = @_;
+
+    # Unlike batch_buy, buy and sell, sell_by_shortcode does not have a param to skip_validation,
+    # so we need to mock the validations away.
+    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+    $mock_contract->mock(is_valid_to_sell => sub { note "mocked Contract->is_valid_to_sell returning true"; 1 });
+    my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+    $mock_validation->mock(
+        _validate_sell_pricing_adjustment => sub { note "mocked Transaction::Validation->_validate_sell_pricing_adjustment returning nothing"; () });
+    $mock_validation->mock(_validate_offerings => sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
+
+    my $manager_client = $params{manager_client};
+
+    my $contract_parameters = shortcode_to_parameters($params{shortcode}, $manager_client->currency);
+    $contract_parameters->{landing_company} = $manager_client->landing_company->short;
+    my $contract = produce_contract($contract_parameters);
+
+    my $new_c = make_similar_contract($contract, {date_pricing => ($params{sell_time} ? $params{sell_time} : $contract->date_start->epoch + 1)});
+
+    my @multiple = map { {loginid => $_->loginid} } @{$params{clients}};
+
+    my $txn = BOM::Transaction->new({
+        client   => $manager_client,
+        contract => $new_c,
+        # sell_outcome is a value from from 0 to 1;
+        # 0 for loss, 1 for win, and anything in between is
+        # a premature sell
+        price         => $new_c->payout * $params{sell_outcome},
+        multiple      => \@multiple,
+        purchase_date => $new_c->date_start,
+        source        => 1,
+    });
+    my $error = $txn->sell_by_shortcode();
 
     return ($error, $txn->multiple);
 }
