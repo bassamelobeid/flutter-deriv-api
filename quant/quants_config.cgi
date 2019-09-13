@@ -22,7 +22,10 @@ use List::MoreUtils qw(uniq);
 use Scalar::Util qw(looks_like_number);
 use BOM::Config::Runtime;
 use BOM::Backoffice::QuantsAuditLog;
+use Time::Duration::Concise;
+
 BOM::Backoffice::Sysinit::init();
+
 my $json = JSON::MaybeXS->new;
 my $args_content;
 PrintContentType();
@@ -96,6 +99,25 @@ BOM::Backoffice::Request::template()->process(
         },
     }) || die BOM::Backoffice::Request::template()->error;
 
+my $available_user_limits = $quants_config->supported_config_type->{per_user};
+my %current_user_limits   = map {
+    my $limit_name = $_ . '_alert_threshold';
+    $_ => {
+        display_key   => $available_user_limits->{$_},
+        display_value => $app_config->quants->$limit_name
+        }
+} keys %$available_user_limits;
+
+Bar('Update ultra short duration');
+BOM::Backoffice::Request::template()->process(
+    'backoffice/quants_update_ultra_short_form.html.tt',
+    {
+        upload_url => request()->url_for('backoffice/quant/update_quants_config.cgi'),
+        data       => {
+            duration => Time::Duration::Concise->new(interval => $app_config->quants->ultra_short_duration)->as_string(),
+        },
+    }) || die BOM::Backoffice::Request::template()->error;
+
 Bar('Update Contract Group');
 BOM::Backoffice::Request::template()->process(
     'backoffice/quants_contract_group_form.html.tt',
@@ -147,15 +169,6 @@ sub _format_output {
 
     return \%groups;
 }
-
-my $available_user_limits = $quants_config->supported_config_type->{per_user};
-my %current_user_limits   = map {
-    my $limit_name = $_ . '_alert_threshold';
-    $_ => {
-        display_key   => $available_user_limits->{$_},
-        display_value => $app_config->quants->$limit_name
-        }
-} keys %$available_user_limits;
 
 Bar('Update User Limit Alert Threshold');
 BOM::Backoffice::Request::template()->process(
