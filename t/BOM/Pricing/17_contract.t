@@ -243,8 +243,8 @@ subtest $method => sub {
     $params->{currency}   = 'USD';
     $c->call_ok($method, $params)->has_no_error->result_is_deeply({
             'symbol'       => 'R_50',
-            'longcode'     => "Win USD 100 times Volatility 50 0.5Hz's close minus low over the next 50 seconds.",
-            'display_name' => 'Volatility 50 0.5Hz',
+            'longcode'     => "Win USD 100 times Volatility 50 Index's close minus low over the next 50 seconds.",
+            'display_name' => 'Volatility 50 Index',
             'date_expiry'  => $now->epoch - 50,
             'barrier'      => '76.8996',
             stash          => {
@@ -284,7 +284,7 @@ subtest 'get_ask' => sub {
     my $expected = {
         'display_value'       => '203.00',
         'ask_price'           => '203.00',
-        'longcode'            => "Win USD 100 times Volatility 50 0.5Hz's close minus low over the next 15 minutes.",
+        'longcode'            => "Win USD 100 times Volatility 50 Index's close minus low over the next 15 minutes.",
         'spot'                => '963.3054',
         multiplier            => 100,
         'payout'              => '0',
@@ -329,7 +329,7 @@ subtest 'send_ask' => sub {
         [sort { $a cmp $b }
             (qw(longcode spot display_value multiplier ask_price spot_time date_start rpc_time payout contract_parameters stash auth_time))];
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
-    is($result->{longcode}, 'Win USD 100 times Volatility 50 0.5Hz\'s close minus low over the next 15 minutes.', 'long code  is correct');
+    is($result->{longcode}, 'Win USD 100 times Volatility 50 Index\'s close minus low over the next 15 minutes.', 'long code  is correct');
 };
 
 done_testing();
