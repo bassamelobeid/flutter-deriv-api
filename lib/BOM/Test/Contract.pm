@@ -46,7 +46,7 @@ use BOM::MarketData::Types;
 use Exporter qw( import );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-our @EXPORT_OK = qw(create_contract buy_contract sell_contract);
+our @EXPORT_OK = qw(create_contract buy_contract sell_contract batch_buy_contract);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -251,6 +251,27 @@ sub buy_contract {
     my $buy_ref = get_transaction_from_db(higher_lower_bet => $txn->transaction_id) unless $error;
 
     return $error, $buy_ref;
+}
+
+sub batch_buy_contract {
+    my (%params) = @_;
+
+    my $contract = $params{contract};
+    my @multiple = map { {loginid => $_->loginid} } @{$params{client_list}};
+
+    my $txn = BOM::Transaction->new({
+        client        => $params{manager_client},
+        contract      => $contract,
+        price         => $params{buy_price},
+        payout        => $contract->payout,
+        amount_type   => 'payout',
+        multiple      => \@multiple,
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $txn->batch_buy(skip_validation => 1);
+
+    return ($error, $txn->multiple);
 }
 
 sub sell_contract {
