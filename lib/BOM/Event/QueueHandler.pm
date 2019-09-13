@@ -39,7 +39,7 @@ call to wait for L</process_event>.
 
 =cut
 
-use constant MAXIMUM_PROCESSING_TIME => 30;
+use constant MAXIMUM_PROCESSING_TIME => 10;
 
 =head2 MAXIMUM_JOB_TIME
 
