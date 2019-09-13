@@ -63,6 +63,8 @@ sub _init {
     $self->{attributes}          = $attributes;
 
     BOM::CompanyLimits::Stats::stats_stop($stat_dat);
+
+    return;
 }
 
 # add_buy_contract returns the same list of check results: undef
@@ -110,8 +112,7 @@ sub add_sells {
 
     my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'sells');
 
-    my $attributes          = $self->{attributes};
-    my $global_combinations = $self->{global_combinations};
+    my $attributes = $self->{attributes};
     my $user_combinations;
     my $turnover_combinations;
 

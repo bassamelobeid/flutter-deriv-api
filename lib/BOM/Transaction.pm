@@ -572,24 +572,14 @@ sub buy {
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
-
-    my $account_data = {
-        client_loginid  => $client->loginid,
-        currency_code   => $self->contract->currency,
-        landing_company => $client->landing_company->short,
-        binary_user_id  => $client->binary_user_id,
-    };
-
-    my $contract_data = {
-        bet_data     => $bet_data->{bet_data},
-        account_data => $account_data,
-    };
-
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
-        account_data => $account_data,
-        limits       => $self->limits,
-        db           => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+        account_data => {
+            client_loginid => $client->loginid,
+            currency_code  => $self->contract->currency,
+        },
+        limits => $self->limits,
+        db     => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
     );
 
     my $error = 1;
@@ -864,10 +854,8 @@ sub sell {
     my $client = $self->client;
 
     $bet_data->{account_data} = {
-        client_loginid  => $client->loginid,
-        currency_code   => $self->contract->currency,
-        landing_company => $client->landing_company->short,
-        binary_user_id  => $client->binary_user_id,
+        client_loginid => $client->loginid,
+        currency_code  => $self->contract->currency,
     };
 
     $bet_data->{bet_data}{is_expired} = $self->contract->is_expired;
