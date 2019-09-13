@@ -304,7 +304,6 @@ sub run_worker_process {
         my $worker = Job::Async::Worker::Redis->new(
             uri                 => $redis,
             max_concurrent_jobs => 1,
-            use_multi           => 1,
             timeout             => 300,
             $queue_prefix ? (prefix => $queue_prefix) : (),
         ));
