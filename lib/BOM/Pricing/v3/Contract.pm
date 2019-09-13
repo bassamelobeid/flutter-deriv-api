@@ -850,11 +850,22 @@ sub _build_bid_response {
         $response->{entry_tick}      = $entry_spot;
         $response->{entry_spot}      = $entry_spot;
         $response->{entry_tick_time} = 0 + $contract->entry_spot_epoch;
+    }
 
-        if ($contract->two_barriers) {
+    if ($contract->two_barriers) {
+        if ($contract->high_barrier->supplied_type eq 'absolute') {
             $response->{high_barrier} = $contract->high_barrier->as_absolute;
             $response->{low_barrier}  = $contract->low_barrier->as_absolute;
-        } elsif ($contract->barrier && $contract->uses_barrier) {
+        } elsif ($contract->entry_spot) {
+            # supplied_type 'difference' and 'relative' will need entry spot
+            # to calculate absolute barrier value
+            $response->{high_barrier} = $contract->high_barrier->as_absolute;
+            $response->{low_barrier}  = $contract->low_barrier->as_absolute;
+        }
+    } elsif ($contract->barrier) {
+        if ($contract->barrier->supplied_type eq 'absolute' or $contract->barrier->supplied_type eq 'digit') {
+            $response->{barrier} = $contract->barrier->as_absolute;
+        } elsif ($contract->entry_spot) {
             $response->{barrier} = $contract->barrier->as_absolute;
         }
     }
