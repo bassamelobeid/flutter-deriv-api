@@ -40,6 +40,7 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Token;
+use BOM::Platform::Token::API;
 use BOM::Transaction;
 use BOM::MT5::User::Async;
 use BOM::Config;
@@ -2100,7 +2101,7 @@ rpc api_token => sub {
                 token     => $token
             });
 
-        $m->remove_by_token($token, $client->loginid);
+        BOM::Platform::Token::API->new->remove_by_token($token, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
@@ -2137,9 +2138,9 @@ rpc api_token => sub {
         ## for old API calls (we'll make it required on v4)
         my $scopes = $args->{new_token_scopes} || ['read', 'trade', 'payments', 'admin'];
         if ($args->{valid_for_current_ip_only}) {
-            $m->create_token($client->loginid, $display_name, $scopes, $client_ip);
+            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes, $client_ip);
         } else {
-            $m->create_token($client->loginid, $display_name, $scopes);
+            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes);
         }
         $rtn->{new_token} = 1;
     }
