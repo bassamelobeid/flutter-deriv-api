@@ -8,7 +8,58 @@ use BOM::CompanyLimits::LossTypes;
 use BOM::CompanyLimits::Stats;
 use LandingCompany::Registry;
 
-# Everything in this file is in buy path
+# TODO: breach implementation to come in 2nd phase...
+
+=head1 NAME
+
+BOM::CompanyLimits
+
+=head1 SYNOPSIS
+
+    my $company_limits = BOM::CompanyLimits->new(
+	bet_data => $bet_data,
+	currency => $currency,
+	landing_company => $landing_company,
+    );
+
+    # @clients is list of client objects
+    my $result = $company_limits->add_buys(@clients)
+    my $result = $company_limits->add_sells(@clients)
+
+
+    $company_limits->reverse_buys(@clients)
+
+=head1 DESCRIPTION
+
+#TODO: ...
+
+=cut
+
+# TODO: reintroduce stats object
+sub new {
+    my ($class, %params) = @_;
+    my $self = bless {}, $class;
+
+    $self->_init(%params);
+
+    return $self;
+}
+
+sub _init {
+    my ($self, %params) = @_;
+
+    my $landing_company = $params{landing_company};
+
+    die "Unsupported landing company $landing_company" unless LandingCompany::Registry::get($landing_company);
+
+    $self->{landing_company} = $landing_company;
+    $self->{currency}        = $params{currency};
+    $self->{bet_data}        = $params{bet_data};
+
+    my $attributes = BOM::CompanyLimits::Combinations::get_attributes_from_contract($params{bet_data});
+    $self->{global_combinations} = BOM::CompanyLimits::Combinations::get_global_limit_combinations($attributes);
+    $self->{attributes}          = $attributes;
+}
 
 # add_buy_contract returns the same list of check results: undef
 # if passed, an error otherwise. Same method is used for both buys and
@@ -22,99 +73,67 @@ use LandingCompany::Registry;
 #
 # For breaches in user specific limits however, we filter these clients
 # out before entering the database.
-sub add_buy_contract {
-    my ($params) = @_;
-    my ($bet_data, $currency, $clients) = @$params{qw/bet_data currency clients/};
+sub add_buys {
+    my ($self, @clients) = @_;
 
-    # For batch operations, all clients will have the same broker code, and thus have
-    # the same landing company
-    my $landing_company = $clients->[0]->landing_company->short;
-    return unless LandingCompany::Registry::get($landing_company);
+    $self->_incr_for_buys(undef, @clients);
 
-    my $attributes          = BOM::CompanyLimits::Combinations::get_attributes_from_contract($bet_data);
-    my $global_combinations = BOM::CompanyLimits::Combinations::get_global_limit_combinations($attributes);
-    my $user_combinations;
-    my $turnover_combinations;
-
-    foreach my $client (@$clients) {
-        my $combinations = BOM::CompanyLimits::Combinations::get_user_limit_combinations($client->binary_user_id, $attributes);
-        my $t_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($client->binary_user_id, $attributes);
-        push(@$user_combinations,     @$combinations);
-        push(@$turnover_combinations, @$t_combinations);
-    }
-
-    my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($bet_data, $currency);
-    _incr_loss_hash($landing_company, 'potential_loss', $global_combinations, scalar @$clients * $potential_loss, $user_combinations,
-        $potential_loss);
-    my $turnover = BOM::CompanyLimits::LossTypes::calc_turnover($bet_data, $currency);
-    _incr_loss_hash($landing_company, 'turnover', $turnover_combinations, $turnover);
-}
-# TODO: reintroduce stats object
-sub reverse_buy_contract {
-    my ($params) = @_;
-    my ($bet_data, $currency, $clients, $errors) = @$params{qw/bet_data currency clients errors/};
-
-    # TODO: reverse buys for batch buys...?
-    return unless _should_reverse_buy_contract($errors->[0]);
-
-    # For batch operations, all clients will have the same broker code, and thus have
-    # the same landing company
-    my $landing_company = $clients->[0]->landing_company->short;
-    return unless LandingCompany::Registry::get($landing_company);
-
-    my $attributes          = BOM::CompanyLimits::Combinations::get_attributes_from_contract($bet_data);
-    my $global_combinations = BOM::CompanyLimits::Combinations::get_global_limit_combinations($attributes);
-    my $user_combinations;
-    my $turnover_combinations;
-
-    foreach my $client (@$clients) {
-        my $combinations = BOM::CompanyLimits::Combinations::get_user_limit_combinations($client->binary_user_id, $attributes);
-        my $t_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($client->binary_user_id, $attributes);
-        push(@$user_combinations,     @$combinations);
-        push(@$turnover_combinations, @$t_combinations);
-    }
-
-    my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($bet_data, $currency);
-    _incr_loss_hash($landing_company, 'potential_loss', $global_combinations, scalar @$clients * -$potential_loss,
-        $user_combinations, -$potential_loss);
-    my $turnover = BOM::CompanyLimits::LossTypes::calc_turnover($bet_data, $currency);
-    _incr_loss_hash($landing_company, 'turnover', $turnover_combinations, -$turnover);
+    $self->{has_add_buys} = 1;
+    return;
 }
 
-sub add_sell_contract {
-    my ($params) = @_;
-    my ($bet_data, $currency, $clients) = @$params{qw/bet_data currency clients/};
+sub reverse_buys {
+    my ($self, @clients) = @_;
 
-    my $landing_company = $clients->[0]->landing_company->short;
-    return unless LandingCompany::Registry::get($landing_company);
+    # We only reverse buys for which errors come from database. If buys are blocked
+    # because of company limits, it should not end up here.
+    die "Cannot reverse buys unless add_buys is first called" unless $self->{has_add_buys};
 
-    my $attributes          = BOM::CompanyLimits::Combinations::get_attributes_from_contract($bet_data);
-    my $global_combinations = BOM::CompanyLimits::Combinations::get_global_limit_combinations($attributes);
-    my $user_combinations;
-    my $turnover_combinations;
+    # TODO: Check if we should reverse buys?
 
-    foreach my $client (@$clients) {
-        my $combinations = BOM::CompanyLimits::Combinations::get_user_limit_combinations($client->binary_user_id, $attributes);
-        my $t_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($client->binary_user_id, $attributes);
-        push(@$user_combinations,     @$combinations);
-        push(@$turnover_combinations, @$t_combinations);
-    }
-
-    my $potential_loss = BOM::CompanyLimits::LossTypes::calc_potential_loss($bet_data, $currency);
-    _incr_loss_hash($landing_company, 'potential_loss', $global_combinations, scalar @$clients * -$potential_loss,
-        $user_combinations, -$potential_loss);
-    my $realized_loss = BOM::CompanyLimits::LossTypes::calc_realized_loss($bet_data, $currency);
-    _incr_loss_hash($landing_company, 'realized_loss', $global_combinations, $realized_loss, $user_combinations, $realized_loss);
+    $self->_incr_for_buys({reverse => 1}, @clients);
 
     return;
 }
 
-# 3rd param is a list combination-incrby pair
-sub _incr_loss_hash {
-    my ($landing_company, $loss_type, @incr_pair) = @_;
+sub add_sells {
+    my ($self, @clients) = @_;
 
-    my $redis = get_redis($landing_company, $loss_type);
-    my $hash_name = "$landing_company:$loss_type";
+    my $attributes          = $self->{attributes};
+    my $global_combinations = $self->{global_combinations};
+    my $user_combinations;
+    my $turnover_combinations;
+
+    foreach my $client (@clients) {
+        my $combinations = BOM::CompanyLimits::Combinations::get_user_limit_combinations($client->binary_user_id, $attributes);
+        my $t_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($client->binary_user_id, $attributes);
+        push(@$user_combinations,     @$combinations);
+        push(@$turnover_combinations, @$t_combinations);
+    }
+
+    # On sells, potential loss is deducted from open bets
+    my $potential_loss = $self->calc_loss('potential_loss');
+    $self->_incrby_loss_hash('potential_loss', $self->{global_combinations}, scalar @clients * -$potential_loss,
+        $user_combinations, -$potential_loss);
+
+    my $realized_loss = $self->calc_loss('realized_loss');
+    $self->_incrby_loss_hash('realized_loss', $self->{global_combinations}, scalar @clients * $realized_loss, $user_combinations, $realized_loss);
+
+    return;
+}
+
+sub calc_loss {
+    my ($self, $loss_type) = @_;
+    my $calc_func = BOM::CompanyLimits::LossTypes::get_calc_loss_func($loss_type);
+    return $calc_func->($self->{bet_data}, $self->{currency});
+}
+
+sub _incrby_loss_hash {
+    my ($self, $loss_type, @incr_pair) = @_;
+
+    my $landing_company = $self->{landing_company};
+    my $redis           = get_redis($landing_company, $loss_type);
+    my $hash_name       = "$landing_company:$loss_type";
     my $response;
     $redis->multi(sub { });
     for (my $i = 0; $i < @incr_pair; $i += 2) {
@@ -129,18 +148,39 @@ sub _incr_loss_hash {
     return $response;
 }
 
-sub _should_reverse_buy_contract {
-    my ($error) = @_;
+# Reused for both buys and reverse buys
+sub _incr_for_buys {
+    my ($self, $options, @clients) = @_;
+    my $is_reverse = $options->{reverse};
 
-    if (ref $error eq 'ARRAY') {
-        my $error_code = $error->[0];
-        return 0 if $error_code eq 'BI054'    # no underlying group mapping
-            or $error_code eq 'BI053';        # no contract group mapping
+    my $user_combinations;
+    my $turnover_combinations;
+    my $attributes = $self->{attributes};
 
-        return 1;
+    foreach my $client (@clients) {
+        my $combinations = BOM::CompanyLimits::Combinations::get_user_limit_combinations($client->binary_user_id, $attributes);
+        my $t_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($client->binary_user_id, $attributes);
+        push(@$user_combinations,     @$combinations);
+        push(@$turnover_combinations, @$t_combinations);
     }
 
-    return 0;
+    my @responses;
+
+    my $potential_loss = $self->calc_loss('potential_loss');
+    $potential_loss = -$potential_loss if $is_reverse;
+    push @responses,
+        $self->_incrby_loss_hash(
+        'potential_loss',
+        $self->{global_combinations},
+        scalar @clients * $potential_loss,
+        $user_combinations, $potential_loss
+        );
+
+    my $turnover = $self->calc_loss('turnover');
+    $turnover = -$turnover if $is_reverse;
+    push @responses, $self->_incrby_loss_hash('turnover', $turnover_combinations, $turnover);
+
+    return @responses;
 }
 
 1;

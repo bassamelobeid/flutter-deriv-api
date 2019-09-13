@@ -594,12 +594,15 @@ sub buy {
 
     my $error = 1;
     my ($fmb, $txn);
+
+    my $company_limits = BOM::CompanyLimits->new(
+        bet_data        => $bet_data->{bet_data},
+        landing_company => $client->landing_company->short,
+        currency        => $self->contract->currency,
+    );
+
     try {
-        BOM::CompanyLimits::add_buy_contract({
-            bet_data => $bet_data->{bet_data},
-            currency => $self->contract->currency,
-            clients  => [$client],
-        });
+        $company_limits->add_buys($client);
 
         ($fmb, $txn) = $fmb_helper->buy_bet;
         $self->contract_details($fmb);
@@ -610,12 +613,7 @@ sub buy {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
         stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
-        BOM::CompanyLimits::reverse_buy_contract({
-            bet_data => $bet_data->{bet_data},
-            currency => $self->contract->currency,
-            errors   => [$_],
-            clients  => [$client],
-        });
+        $company_limits->reverse_buys($client);
         $error_status = $self->_recover($_);
     };
     return $self->stats_stop($stats_data, $error_status) if $error_status;
@@ -727,11 +725,13 @@ sub batch_buy {
             );
 
             my @clients = map { $_->{client} } @$list;
-            BOM::CompanyLimits::add_buy_contract({
-                bet_data => $bet_data->{bet_data},
-                currency => $currency,
-                clients  => \@clients,
-            });
+            my $company_limits = BOM::CompanyLimits->new(
+                bet_data        => $bet_data->{bet_data},
+                landing_company => $clients[0]->landing_company->short,
+                currency        => $self->contract->currency,
+            );
+            $company_limits->add_buys(@clients);
+
             my $success = 0;
             my $result  = $fmb_helper->batch_buy_bet;
             for my $el (@$list) {
@@ -921,11 +921,11 @@ sub sell {
         });
     }
 
-    BOM::CompanyLimits::add_sell_contract({
-        bet_data => $fmb,
-        currency => $self->contract->currency,
-        clients  => [$client],
-    });
+    BOM::CompanyLimits::->new(
+        bet_data        => $fmb,
+        currency        => $self->contract->currency,
+        landing_company => $client->landing_company->short,
+    )->add_sells($client);
 
     return;
 }
@@ -994,11 +994,12 @@ sub sell_by_shortcode {
                     $r->{buy_tr_id} = $res_row->{buy_tr_id};
 
                     my $client = $r->{client};
-                    BOM::CompanyLimits::add_sell_contract({
-                        bet_data => $res_row->{fmb},
-                        currency => $self->contract->currency,
-                        clients  => [$client],
-                    });
+
+                    BOM::CompanyLimits::->new(
+                        bet_data        => $res_row->{fmb},
+                        currency        => $self->contract->currency,
+                        landing_company => $client->landing_company->short,
+                    )->add_sells($client);
 
                     $success++;
                 }
@@ -1629,20 +1630,11 @@ sub sell_expired_contracts {
             $total_losses += $fmb->{sell_price} + 0 ? 0 : $fmb->{buy_price};
         }
 
-        BOM::CompanyLimits::add_sell_contract({
-                bet_data     => $fmb,
-                account_data => {
-                    client_loginid  => $client->loginid,
-                    currency_code   => $currency,
-                    landing_company => $client->landing_company->short,
-                    binary_user_id  => $client->binary_user_id,
-                },
-            });
-        BOM::CompanyLimits::add_sell_contract({
-            bet_data => $fmb,
-            currency => $currency,
-            clients  => [$client],
-        });
+        BOM::CompanyLimits::->new(
+            bet_data        => $fmb,
+            currency        => $currency,
+            landing_company => $client->landing_company->short,
+        )->add_sells($client);
     }
 
     $client->increment_social_responsibility_values({
