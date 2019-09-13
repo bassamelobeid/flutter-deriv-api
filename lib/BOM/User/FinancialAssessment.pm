@@ -35,7 +35,9 @@ sub update_financial_assessment {
     # Doesn't matter which client we get as they all share the same financial assessment details
     my @all_clients = $user->clients();
 
-    my $previous = $all_clients[0]->financial_assessment();
+    my $client = $all_clients[0];
+
+    my $previous = $client->financial_assessment();
     $previous = decode_fa($previous) if $previous;
 
     my $filtered_args = +{map { $_ => $args->{$_} } grep { $args->{$_} } @{_financial_assessment_keys()}};
@@ -46,11 +48,18 @@ sub update_financial_assessment {
     foreach my $key (keys %$filtered_args) {
         $data_to_be_saved->{$key} = $filtered_args->{$key};
     }
+
     # We need to update Financial Assessment data for each client.
     foreach my $cli (@all_clients) {
         $cli->financial_assessment({data => encode_json_utf8($data_to_be_saved)});
         $cli->save;
     }
+
+    # Clear unwelcome status for clients without financial assessment and have breached
+    # social responsibility thresholds
+    $client->status->clear_unwelcome if ($client->landing_company->social_responsibility_check_required
+        && $client->status->unwelcome);
+
     # Emails are sent for:
     # - Non-CR clients
     # - High risk CR with MT5 accounts
@@ -58,7 +67,7 @@ sub update_financial_assessment {
     if (my @cr_clients = $user->clients_for_landing_company('svg')) {
 
         return _email_diffs_to_compliance($previous, $args, \@client_ids, $is_new_mf_client)
-            if ((any { $_ =~ /^MT/ } @client_ids) && (any { $_->aml_risk_level eq 'high' } @cr_clients));
+            if ((any { $_ =~ /^MT/ } @client_ids) && (any { $_->risk_level() eq 'high' } @cr_clients));
     } else {
         return _email_diffs_to_compliance($previous, $args, \@client_ids, $is_new_mf_client);
     }
