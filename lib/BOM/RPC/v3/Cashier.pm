@@ -648,7 +648,7 @@ rpc paymentagent_transfer => sub {
         } elsif ($error_code eq 'BI208') {
             return $error_sub->(localize('You cannot transfer to account [_1], as their cashier is locked.', $loginid_to));
         } elsif ($error_code eq 'BI209') {
-            return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.'));
+            return $error_sub->(localize('Your account cashier is locked. Please contact us for more information.'));
         } elsif ($error_code eq 'BI210') {
             return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.'));
         } elsif ($error_code eq 'BI211') {
@@ -910,7 +910,7 @@ rpc paymentagent_withdraw => sub {
         if (length($further_instruction) > MAX_DESCRIPTION_LENGTH);
 
     # check that both the client payment agent cashier is not locked
-    return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.')) if $client->status->cashier_locked;
+    return $error_sub->(localize('Your account cashier is locked. Please contact us for more information.')) if $client->status->cashier_locked;
 
     return $error_sub->(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if $client->status->withdrawal_locked;
@@ -1220,7 +1220,7 @@ rpc transfer_between_accounts => sub {
 
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is currently disabled.'))
         if $status->disabled;
-    return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is cashier locked.'))
+    return _transfer_between_accounts_error(localize('Your account cashier is locked. Please contact us for more information.'))
         if $status->cashier_locked;
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if ($status->withdrawal_locked || $status->no_withdrawal_or_trading);
@@ -1683,7 +1683,7 @@ sub _validate_transfer_between_accounts {
         and ($from_currency_type eq 'fiat')
         and ($currency ne $to_currency));
 
-    return _transfer_between_accounts_error(localize('Transfers between fiat and crypto accounts are currently disabled.'))
+    return _transfer_between_accounts_error(localize('Transfers between fiat and crypto accounts are currently unavailable. Please try again later.'))
         if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
         and (($from_currency_type // '') ne ($to_currency_type // ''));
 
@@ -1695,7 +1695,8 @@ sub _validate_transfer_between_accounts {
     # check for internal transactions number limits
     my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
     my $client_today_transfer = $current_client->get_today_transfer_summary();
-    return _transfer_between_accounts_error(localize("Maximum of [_1] transfers allowed per day.", $daily_transfer_limit))
+    return _transfer_between_accounts_error(
+        localize("You can only perform up to [_1] transfers a day. Please try again tomorrow.", $daily_transfer_limit))
         unless $client_today_transfer->{count} < $daily_transfer_limit;
 
     my $min_allowed_amount = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{min};

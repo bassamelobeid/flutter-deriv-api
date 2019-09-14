@@ -22,6 +22,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use BOM::RPC::Registry '-dsl';
 
+use BOM::RPC::v3::MT5::Errors;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
@@ -52,35 +53,15 @@ use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
     483 1503 2527 3555
 );
 
-# TODO(leonerd):
-#   These helpers exist mostly to coördinate the idea of error management in
-#   Future-chained async RPC methods. This logic would probably be a lot neater
-#   if Future failure was used to indicate RPC-level errors as well, as its
-#   shortcircuiting behaviour would be useful here.
-
-sub permission_error_future {
-    return Future->done(BOM::RPC::v3::Utility::permission_error());
-}
+my $error_registry = BOM::RPC::v3::MT5::Errors->new();
 
 sub create_error_future {
-    my ($details) = @_;
-    return Future->done(BOM::RPC::v3::Utility::create_error($details));
-}
+    my ($error_code, $details, @extra) = @_;
+    if (ref $details eq 'HASH' and ref $details->{message} eq 'HASH') {
+        return Future->done({error => $details->{message}});
+    }
+    return Future->done($error_registry->format_error($error_code, $details, @extra));
 
-# TODO(leonerd):
-#   Try to neaten up the dual use of this + create_error_future(); having two
-#   different functions for minor different calling styles seems silly.
-sub _make_error {
-    my ($error_code, $msg_client, $msg) = @_;
-
-    my $generic_message = localize('There was an error processing the request.');
-    return create_error_future({
-        code              => $error_code,
-        message_to_client => $msg_client
-        ? $generic_message . ' ' . $msg_client
-        : $generic_message,
-        ($msg) ? (message => $msg) : (),
-    });
 }
 
 =head2 mt5_login_list
@@ -130,8 +111,7 @@ async_rpc mt5_login_list => sub {
 
     my $client = $params->{client};
 
-    my $mt5_suspended = _is_mt5_suspended();
-    return Future->done($mt5_suspended) if $mt5_suspended;
+    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
 
     return get_mt5_logins($client)->then(
         sub {
@@ -218,9 +198,10 @@ sub _mt5_group {
 }
 
 async_rpc mt5_new_account => sub {
-    my $params        = shift;
-    my $mt5_suspended = _is_mt5_suspended();
-    return Future->done($mt5_suspended) if $mt5_suspended;
+    my $params = shift;
+    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
+
+    my $error_code = 'MT5CreateUserError';
 
     my ($client, $args) = @{$params}{qw/client args/};
 
@@ -229,46 +210,27 @@ async_rpc mt5_new_account => sub {
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
     my $manager_id       = delete $args->{manager_id};
 
-    my $mt5_not_allowed = create_error_future({
-            code              => 'MT5NotAllowed',
-            message_to_client => localize('This account type is not available in your country.')});
-
     # input validation
-    return create_error_future({
-            code              => 'SetExistingAccountCurrency',
-            message_to_client => localize('Please set the currency for your existing account')}) unless $client->default_account;
+    return create_error_future('SetExistingAccountCurrency') unless $client->default_account;
 
-    my $invalid_account_type_error = create_error_future({
-            code              => 'InvalidAccountType',
-            message_to_client => localize('Invalid account type.')});
+    my $invalid_account_type_error = create_error_future('InvalidAccountType');
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
     if (($account_type ne "demo") && (my @arr = $client->missing_requirements("mt5_signup"))) {
-        return create_error_future({
-                code              => 'MissingBasicDetails',
-                message_to_client => localize('Please fill in your account details'),
-                details           => {missing => [@arr]}});
+        return create_error_future('MissingBasicDetails', {details => {missing => [@arr]}});
     }
-    return create_error_future({
-            code              => 'NoCitizen',
-            message_to_client => localize('Please set citizenship for your account.')})
+    return create_error_future('NoCitizen')
         if not $client->is_virtual()
         and $account_type ne "demo"
         and not $client->citizen();
 
     $mt5_account_type = '' if $account_type eq 'gaming';
 
-    return create_error_future({
-            code              => 'MT5SamePassword',
-            message_to_client => localize('Investor password cannot be same as main password.')}
-    ) if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
+    return create_error_future('MT5SamePassword') if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
 
-    my $invalid_sub_type_error = BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidSubAccountType',
-            message_to_client => localize('Invalid sub account type.')});
-
-    return Future->done($invalid_sub_type_error) if ($mt5_account_type and $mt5_account_type !~ /^standard|advanced$/);
-    return Future->done($invalid_sub_type_error) if $account_type eq 'financial' and $mt5_account_type eq '';
+    return create_error_future('InvalidSubAccountType')
+        if ($mt5_account_type and $mt5_account_type !~ /^standard|advanced$/)
+        or ($account_type eq 'financial' and $mt5_account_type eq '');
 
     # legal validation
     my $residence = $client->residence;
@@ -277,7 +239,7 @@ async_rpc mt5_new_account => sub {
     my $countries_instance = $brand->countries_instance;
     my $countries_list     = $countries_instance->countries_list;
 
-    return permission_error_future() unless $countries_list->{$residence};
+    return create_error_future('permission') unless $countries_list->{$residence};
 
     # demo account is not allowed for mamm account
     return $invalid_account_type_error if $manager_id and $account_type eq 'demo';
@@ -293,7 +255,7 @@ async_rpc mt5_new_account => sub {
     );
 
     # MT5 is not allowed in client country
-    return $mt5_not_allowed if $company_name eq 'none';
+    return create_error_future('MT5NotAllowed', {params => $company_type}) if $company_name eq 'none';
 
     my $binary_company_name = $countries_list->{$residence}->{"${company_type}_company"};
 
@@ -308,58 +270,41 @@ async_rpc mt5_new_account => sub {
 
     unless ($client) {
         if (scalar($user->clients) == 1 and $source_client->is_virtual() and $account_type ne 'demo') {
-            return create_error_future({
-                    code              => 'RealAccountMissing',
-                    message_to_client => localize('To perform this action, please upgrade to Binary.com real account.')});
+            return create_error_future('RealAccountMissing');
         } elsif ($account_type eq 'financial') {
-            return create_error_future({
-                    code              => 'FinancialAccountMissing',
-                    message_to_client => localize('Upgrade to Binary.com Financial account')});
+            return create_error_future('FinancialAccountMissing');
         } elsif ($account_type eq 'gaming') {
-            return create_error_future({
-                    code              => 'GamingAccountMissing',
-                    message_to_client => localize('Upgrade to Binary.com Gaming account')});
+            return create_error_future('GamingAccountMissing');
         }
 
-        return permission_error_future();
+        return create_error_future('permission');
     }
 
-    return permission_error_future() if ($client->is_virtual() and $account_type ne 'demo');
+    return create_error_future('permission') if ($client->is_virtual() and $account_type ne 'demo');
 
     my $group = _mt5_group($company_name, $account_type, $mt5_account_type, $manager_id, $client->currency);
-    return permission_error_future() if $group eq '';
+    return create_error_future('permission') if $group eq '';
 
     if ($client->residence eq 'gb' and not $client->status->age_verification) {
         return ($client->is_virtual() and $user->clients == 1)
-            ? create_error_future({
-                code              => 'RealAccountMissing',
-                message_to_client => localize('To perform this action, please upgrade to Binary.com real account.')})
-            : create_error_future({
-                code              => 'NoAgeVerification',
-                message_to_client => localize('Account needs age verification.')});
+            ? create_error_future('RealAccountMissing')
+            : create_error_future('NoAgeVerification');
     }
 
-    return create_error_future({
-            code              => 'FinancialAssessmentMandatory',
-            message_to_client => localize('Please complete financial assessment.')}) unless (_is_financial_assessment_complete($client, $group));
+    return create_error_future('FinancialAssessmentMandatory') unless (_is_financial_assessment_complete($client, $group));
 
     if ($account_type eq 'financial') {
         # As per the following document: Automatic Exchange of Information,
         # Guide for Reporting Financial Institutions by the Vanuatu Competent Authority
         # we need to ask for tax details for selected countries
         # if client wants to open financial account
-        return create_error_future({
-                code              => 'TINDetailsMandatory',
-                message_to_client => localize(
-                    'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'),
-            }) if ($countries_instance->is_tax_detail_mandatory($residence) and not $client->status->crs_tin_information);
+        return create_error_future('TINDetailsMandatory')
+            if ($countries_instance->is_tax_detail_mandatory($residence) and not $client->status->crs_tin_information);
     }
 
     # Check if client is throttled before sending MT5 request
     if (_throttle($client->loginid)) {
-        return create_error_future({
-                code              => 'MT5CreateUserError',
-                message_to_client => localize('Request too frequent. Please try again later.')});
+        return create_error_future('Throttle', {override_code => $error_code});
     }
 
     return get_mt5_logins($client, $user)->then(
@@ -370,9 +315,11 @@ async_rpc mt5_new_account => sub {
                 if (($_->{group} // '') eq $group) {
                     my $login = $_->{login};
 
-                    return create_error_future({
-                            code              => 'MT5CreateUserError',
-                            message_to_client => localize('You already have a [_1] account [_2].', $account_type, $login)});
+                    return create_error_future(
+                        'MT5Duplicate',
+                        {
+                            override_code => $error_code,
+                            params        => [$account_type, $login]});
                 }
             }
 
@@ -384,15 +331,9 @@ async_rpc mt5_new_account => sub {
                     my ($group_details) = @_;
                     if (ref $group_details eq 'HASH' and my $error = $group_details->{error}) {
                         if ($error =~ /Not enough permissions/ && defined $manager_id) {
-                            return create_error_future({
-                                code              => 'MT5CreateUserError',
-                                message_to_client => 'There was an error while creating your account, please check your manager account login'
-                            });
+                            return create_error_future($error_code);
                         } else {
-                            return create_error_future({
-                                code              => 'MT5CreateUserError',
-                                message_to_client => $error
-                            });
+                            return create_error_future($error_code, {message => $error});
                         }
                     }
                     # some MT5 groups should have leverage as 30
@@ -429,10 +370,8 @@ async_rpc mt5_new_account => sub {
                     my ($status) = @_;
 
                     if ($status->{error}) {
-                        return permission_error_future() if $status->{error} =~ /Not enough permissions/;
-                        return create_error_future({
-                                code              => 'MT5CreateUserError',
-                                message_to_client => $status->{error}});
+                        return create_error_future('permission') if $status->{error} =~ /Not enough permissions/;
+                        return create_error_future($error_code, {message => $status->{error}});
                     }
                     my $mt5_login = $status->{login};
 
@@ -493,9 +432,8 @@ async_rpc mt5_new_account => sub {
                         )->then(
                         sub {
                             my ($group_details) = @_;
-                            return create_error_future({
-                                    code              => 'MT5CreateUserError',
-                                    message_to_client => $group_details->{error}}) if ref $group_details eq 'HASH' and $group_details->{error};
+                            return create_error_future('MT5CreateUserError', {message => $group_details->{error}})
+                                if ref $group_details eq 'HASH' and $group_details->{error};
 
                             return Future->done({
                                     login           => $mt5_login,
@@ -622,20 +560,19 @@ Returns any of the following:
 async_rpc mt5_get_settings => sub {
     my $params = shift;
 
-    my $mt5_suspended = _is_mt5_suspended();
-    return Future->done($mt5_suspended) if $mt5_suspended;
+    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
 
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return permission_error_future() unless _check_logins($client, ['MT' . $login]);
+    return create_error_future('permission') unless _check_logins($client, ['MT' . $login]);
 
     return BOM::MT5::User::Async::get_user($login)->then(
         sub {
             my ($settings) = @_;
-            return Future->fail('MT5GetUserError', $settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
+            return create_error_future('MT5GetUserError', {message => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
             if (my $country = $settings->{country}) {
                 my $country_code = Locale::Country::Extra->new()->code_from_country($country);
                 if ($country_code) {
@@ -652,7 +589,7 @@ async_rpc mt5_get_settings => sub {
             return BOM::MT5::User::Async::get_group($settings->{group})->then(
                 sub {
                     my ($group_details) = @_;
-                    return Future->fail('MT5GetGroupError', $group_details->{error})
+                    return create_error_future('MT5GetGroupError', {message => $group_details->{error}})
                         if (ref $group_details eq 'HASH' and $group_details->{error});
                     $settings->{currency}        = $group_details->{currency};
                     $settings->{landing_company} = $group_details->{company};
@@ -742,15 +679,14 @@ Returns any of the following:
 async_rpc mt5_password_check => sub {
     my $params = shift;
 
-    my $mt5_suspended = _is_mt5_suspended();
-    return Future->done($mt5_suspended) if $mt5_suspended;
+    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
 
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return permission_error_future() unless _check_logins($client, ['MT' . $login]);
+    return create_error_future('permission') unless _check_logins($client, ['MT' . $login]);
 
     return BOM::MT5::User::Async::password_check({
             login    => $args->{login},
@@ -762,9 +698,7 @@ async_rpc mt5_password_check => sub {
             my ($status) = @_;
 
             if ($status->{error}) {
-                return create_error_future({
-                        code              => 'MT5PasswordCheckError',
-                        message_to_client => $status->{error}});
+                return create_error_future('MT5PasswordCheckError', {message => $status->{error}});
             }
             return Future->done(1);
         });
@@ -849,25 +783,19 @@ Returns any of the following:
 async_rpc mt5_password_change => sub {
     my $params = shift;
 
-    my $mt5_suspended = _is_mt5_suspended();
-    return Future->done($mt5_suspended) if $mt5_suspended;
+    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
 
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
 
-    return create_error_future({
-            code              => 'MT5PasswordChangeError',
-            message_to_client => localize('Current password and New password cannot be the same.')}
-    ) if ($args->{new_password} eq $args->{old_password});
+    return create_error_future('MT5PasswordChangeError') if ($args->{new_password} eq $args->{old_password});
 
     # MT5 login not belongs to user
-    return permission_error_future() unless _check_logins($client, ['MT' . $login]);
+    return create_error_future('permission') unless _check_logins($client, ['MT' . $login]);
 
     if (_throttle($client->loginid)) {
-        return create_error_future({
-                code              => 'MT5PasswordChangeError',
-                message_to_client => localize('Request too frequent. Please try again later.')});
+        return create_error_future('Throttle', {override_code => 'MT5PasswordChangeError'});
     }
 
     return BOM::MT5::User::Async::password_check({
@@ -880,9 +808,7 @@ async_rpc mt5_password_change => sub {
             my ($status) = @_;
 
             if ($status->{error}) {
-                return create_error_future({
-                        code              => 'MT5PasswordChangeError',
-                        message_to_client => $status->{error}});
+                return create_error_future($status->{code}, {override_code => 'MT5PasswordChangeError'});
             }
 
             return BOM::MT5::User::Async::password_change({
@@ -970,8 +896,7 @@ Returns any of the following:
 async_rpc mt5_password_reset => sub {
     my $params = shift;
 
-    my $mt5_suspended = _is_mt5_suspended();
-    return Future->done($mt5_suspended) if $mt5_suspended;
+    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
 
     my $client = $params->{client};
     my $args   = $params->{args};
@@ -980,13 +905,11 @@ async_rpc mt5_password_reset => sub {
     my $email = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
 
     if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'mt5_password_reset')->{error}) {
-        return create_error_future({
-                code              => $err->{code},
-                message_to_client => $err->{message_to_client}});
+        return create_error_future($err);
     }
 
     # MT5 login not belongs to user
-    return permission_error_future()
+    return create_error_future('permission')
         unless _check_logins($client, ['MT' . $login]);
 
     return BOM::MT5::User::Async::password_change({
@@ -999,9 +922,7 @@ async_rpc mt5_password_reset => sub {
             my ($status) = @_;
 
             if ($status->{error}) {
-                return create_error_future({
-                        code              => 'MT5PasswordChangeError',
-                        message_to_client => $status->{error}});
+                return create_error_future($status->{code}, {override_code => 'MT5PasswordChangeError'});
             }
 
             send_email({
@@ -1053,10 +974,9 @@ async_rpc mt5_deposit => sub {
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
     # no need to throttle this call only limited numbers of transfers are allowed
+
     if (_is_mt5_suspended('deposits')) {
-        return create_error_future({
-                code              => $error_code,
-                message_to_client => localize('MT5 deposits are suspended.')});
+        return create_error_future('MT5DepositSuspended', {override_code => $error_code});
     }
 
     return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code)->then(
@@ -1073,7 +993,7 @@ async_rpc mt5_deposit => sub {
                         my ($status) = @_;
 
                         if ($status->{error}) {
-                            return _make_error($error_code, $status->{error});
+                            return create_error_future($status->{code});
                         }
 
                         reset_throttler($to_mt5);
@@ -1086,9 +1006,12 @@ async_rpc mt5_deposit => sub {
             my $fm_client_db = BOM::Database::ClientDB->new({
                 client_loginid => $fm_loginid,
             });
-
-            return _make_error($error_code, localize('Please try again after one minute.'), "Account stuck in previous transaction $fm_loginid")
-                if (not $fm_client_db->freeze);
+            return create_error_future(
+                'ClientFrozen',
+                {
+                    override_code => $error_code,
+                    params        => $fm_loginid
+                }) if (not $fm_client_db->freeze);
 
             scope_guard {
                 $fm_client_db->unfreeze;
@@ -1110,13 +1033,14 @@ async_rpc mt5_deposit => sub {
             };
 
             if ($withdraw_error) {
-                return _make_error(
+                return create_error_future(
                     $error_code,
-                    BOM::RPC::v3::Cashier::__client_withdrawal_notes({
-                            client => $fm_client,
-                            amount => $amount,
-                            error  => $withdraw_error
-                        }));
+                    {
+                        message => BOM::RPC::v3::Cashier::__client_withdrawal_notes({
+                                client => $fm_client,
+                                amount => $amount,
+                                error  => $withdraw_error
+                            })});
             }
 
             my $fees              = $response->{fees};
@@ -1153,7 +1077,7 @@ async_rpc mt5_deposit => sub {
                 $error = BOM::Transaction->format_error(err => $_);
             };
 
-            return _make_error($error_code, $error->{-message_to_client}) if $error;
+            return create_error_future($error_code, {message => $error->{-message_to_client}}) if $error;
 
             _store_transaction_redis({
                     loginid       => $fm_loginid,
@@ -1179,7 +1103,7 @@ async_rpc mt5_deposit => sub {
                             action  => 'deposit',
                             error   => $status->{error},
                         );
-                        return _make_error($error_code, $status->{error});
+                        return create_error_future($status->{code});
                     }
 
                     return Future->done({
@@ -1201,13 +1125,12 @@ async_rpc mt5_withdrawal => sub {
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
     # no need to throttle this call only limited numbers of transfers are allowed
+
     if (_is_mt5_suspended('withdrawals')) {
-        return create_error_future({
-                code              => $error_code,
-                message_to_client => localize('MT5 withdrawals are suspended.')});
+        return create_error_future('MT5WithdrawalSuspended', {override_code => $error_code});
     }
 
-    return _make_error($error_code, localize('MT5 account is locked'), 'MT5 account is locked') if $client->status->mt5_withdrawal_locked;
+    return create_error_future('WithdrawalLocked', {override_code => $error_code}) if $client->status->mt5_withdrawal_locked;
 
     return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code, $currency_check)->then(
         sub {
@@ -1218,8 +1141,12 @@ async_rpc mt5_withdrawal => sub {
                 client_loginid => $to_loginid,
             });
 
-            return _make_error($error_code, localize('Please try again after one minute.'), "Account stuck in previous transaction $to_loginid")
-                if (not $to_client_db->freeze);
+            return create_error_future(
+                'ClientFrozen',
+                {
+                    override_code => $error_code,
+                    params        => $to_loginid
+                }) if (not $to_client_db->freeze);
 
             scope_guard {
                 $to_client_db->unfreeze;
@@ -1251,10 +1178,10 @@ async_rpc mt5_withdrawal => sub {
             my $mt5_group = $response->{mt5_data}->{group};
             #MT5 expect this value to be negative.
             # withdraw from MT5 a/c
-            return do_mt5_withdrawl($fm_mt5, (($amount > 0) ? $amount * -1 : $amount), $mt5_comment)->then(
+            return do_mt5_withdrawal($fm_mt5, (($amount > 0) ? $amount * -1 : $amount), $mt5_comment)->then(
                 sub {
-                    my ($response) = @_;
-                    return _make_error($error_code, $response->{error}) if (ref $response eq 'HASH' and $response->{error});
+                    my ($status) = @_;
+                    return create_error_future($status->{code}) if (ref $status eq 'HASH' and $status->{error});
 
                     my $to_client = BOM::User::Client->new({loginid => $to_loginid});
 
@@ -1294,7 +1221,7 @@ async_rpc mt5_withdrawal => sub {
                             action  => 'withdraw',
                             error   => $error->get_mesg,
                         );
-                        return _make_error($error_code, $error->{-message_to_client});
+                        return create_error_future($error_code, {message => $error->{-message_to_client}});
                     };
                 });
         });
@@ -1303,27 +1230,22 @@ async_rpc mt5_withdrawal => sub {
 async_rpc mt5_mamm => sub {
     my $params = shift;
 
-    my $mt5_suspended = _is_mt5_suspended();
-    return Future->done($mt5_suspended) if $mt5_suspended;
+    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
 
     my ($client, $args)   = @{$params}{qw/client args/};
     my ($login,  $action) = @{$args}{qw/login action/};
-
+    my $error_code = 'PermissionDenied';
     # MT5 login not belongs to client
-    return permission_error_future()
+    return create_error_future('permission')
         unless _check_logins($client, ['MT' . $login]);
 
     return BOM::MT5::User::Async::get_user($login)->then(
         sub {
             my ($settings) = @_;
 
-            return Future->fail('MT5Error', $settings->{error}) if (ref $settings eq 'HASH' and $settings->{error});
-
-            return Future->fail(
-                'PermissionDenied',
-                localize(
-                    "You need to ensure that you don't have open positions and withdraw your MT5 account balance before revoking the manager associated with your account."
-                )) if ($action and $action eq 'revoke' and ($settings->{balance} // 0) > 0);
+            return create_error_future($error_code, {message => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
+            return create_error_future('HaveOpenPositions', {override_code => $error_code})
+                if ($action and $action eq 'revoke' and ($settings->{balance} // 0) > 0);
 
             # to revoke manager we just disable trading for mt5 account
             # we cannot change group else accounting team will have problem during
@@ -1359,20 +1281,16 @@ async_rpc mt5_mamm => sub {
             return _mt5_has_open_positions($login)->then(
                 sub {
                     my ($open_positions) = @_;
-                    return Future->fail('MT5Error', $open_positions->{error})
+                    return create_error_future($error_code, {message => $open_positions->{error}})
                         if (ref $open_positions eq 'HASH' and $open_positions->{error});
 
-                    return Future->fail(
-                        'PermissionDenied',
-                        localize(
-                            "You need to ensure that you don't have open positions and withdraw your MT5 account balance before revoking the manager associated with your account."
-                        )) if $open_positions;
+                    return create_error_future('HaveOpenPositions', {override_code => $error_code}) if $open_positions;
 
                     $settings->{rights} += 4;
                     return BOM::MT5::User::Async::update_mamm_user($settings)->then(
                         sub {
                             my ($user_updated) = @_;
-                            return Future->fail('MT5Error', $user_updated->{error})
+                            return create_error_future($error_code, {message => $open_positions->{error}})
                                 if (ref $user_updated eq 'HASH' and $user_updated->{error});
 
                             return Future->done({
@@ -1385,7 +1303,7 @@ async_rpc mt5_mamm => sub {
         )->else(
         sub {
             my ($code, $error) = @_;
-            return _make_error($code, $error);
+            return create_error_future($code, {message => $error});
         });
 };
 
@@ -1395,11 +1313,10 @@ sub _is_mt5_suspended {
 
     # always check if all calls are suspended.
     if (($feature_name and $app_config->$feature_name) or $app_config->all) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'MT5APISuspendedError',
-                message_to_client => localize('MT5 API calls are suspended.')});
+        return 1;
+    } else {
+        return 0;
     }
-    return undef;
 }
 
 sub _get_mt5_account_from_affiliate_token {
@@ -1445,18 +1362,15 @@ sub _get_mt5_account_from_affiliate_token {
 sub _mt5_validate_and_get_amount {
     my ($authorized_client, $loginid, $mt5_loginid, $amount, $error_code, $currency_check) = @_;
 
-    my $mt5_suspended = _is_mt5_suspended();
-    return Future->done($mt5_suspended) if $mt5_suspended;
-
     my $app_config = BOM::Config::Runtime->instance->app_config;
-    return _make_error($error_code, localize('Payments are suspended.'))
+    return create_error_future('PaymentsSuspended', {override_code => $error_code})
         if ($app_config->system->suspend->payments);
 
     # MT5 login or binary loginid not belongs to user
     my @loginids_list = ('MT' . $mt5_loginid);
     push @loginids_list, $loginid if $loginid;
 
-    return permission_error_future() unless _check_logins($authorized_client, \@loginids_list);
+    return create_error_future('permission') unless _check_logins($authorized_client, \@loginids_list);
 
     return mt5_get_settings({
             client => $authorized_client,
@@ -1466,8 +1380,12 @@ sub _mt5_validate_and_get_amount {
 
             my ($setting) = @_;
 
-            return _make_error($error_code, localize('Unable to get account details for your MT5 account [_1].', $mt5_loginid))
-                if (ref $setting eq 'HASH' && $setting->{error});
+            return create_error_future(
+                'NoAccountDetails',
+                {
+                    override_code => $error_code,
+                    params        => $mt5_loginid
+                }) if (ref $setting eq 'HASH' && $setting->{error});
 
             my $action = ($error_code =~ /Withdrawal/) ? 'withdrawal' : 'deposit';
 
@@ -1475,38 +1393,40 @@ sub _mt5_validate_and_get_amount {
             my $mt5_lc       = _fetch_mt5_lc($setting);
             my $mt5_currency = $setting->{currency};
 
-            return _make_error($error_code, localize('Currency provided is different from account currency.'))
+            return create_error_future('CurrencyConflict', {override_code => $error_code})
                 if $currency_check && $currency_check ne $mt5_currency;
 
             # Check if id is a demo account
             # If yes, then no need to validate client
             if (_is_account_demo($mt5_group)) {
-
-                return _make_error($error_code, localize('Withdrawals are not allowed for demo accounts.'))
+                return create_error_future('NoDemoWithdrawals', {override_code => $error_code})
                     if $action eq 'withdrawal';
+
+                return create_error_future('TransferBetweenAccountsError', {override_code => $error_code})
+                    if $action eq 'deposit' and $loginid;
 
                 my $max_balance_before_topup = BOM::Config::payment_agent()->{minimum_topup_balance}->{DEFAULT};
 
-                return _make_error(
-                    $error_code,
-                    localize(
-                        'You can only request additional funds if your demo account balance falls below [_1] [_2].',
-                        , $mt5_currency, formatnumber('amount', $mt5_currency, $max_balance_before_topup))
+                return create_error_future(
+                    'DemoTopupBalance',
+                    {
+                        override_code => $error_code,
+                        params        => [$mt5_currency, formatnumber('amount', $mt5_currency, $max_balance_before_topup)]}
                 ) if ($setting->{balance} > $max_balance_before_topup);
 
                 if (_throttle($mt5_loginid)) {
-                    return _make_error($error_code, localize('We are currently processing your top-up request.'));
+                    return create_error_future('DemoTopupThrottle', {override_code => $error_code});
                 }
 
                 return Future->done({top_up_virtual => 1});
 
             }
 
-            return _make_error($error_code, localize('Your login ID is missing.')) unless $loginid;
+            return create_error_future('MissingID', {override_code => $error_code}) unless $loginid;
 
-            return _make_error($error_code, localize('Please enter the amount you wish to transfer.')) unless $amount;
+            return create_error_future('MissingAmount', {override_code => $error_code}) unless $amount;
 
-            return _make_error($error_code, localize("Amount must be greater than zero.")) if ($amount <= 0);
+            return create_error_future('WrongAmount', {override_code => $error_code}) if ($amount <= 0);
 
             my $client;
             try {
@@ -1517,37 +1437,48 @@ sub _mt5_validate_and_get_amount {
             }
             catch {
 
-            } or return _make_error($error_code, localize('Invalid loginid - [_1].', $loginid));
+                }
+                or return create_error_future(
+                'InvalidLoginid',
+                {
+                    override_code => $error_code,
+                    params        => $loginid
+                });
 
             # Validate the binary client
-            my $err = _validate_client($client, $mt5_lc);
-            return _make_error($error_code, $err) if $err;
+            my ($err, $params) = _validate_client($client, $mt5_lc);
+            return create_error_future(
+                $err,
+                {
+                    override_code => $error_code,
+                    params        => $params
+                }) if $err;
 
             my $client_currency = $client->account ? $client->account->currency_code() : undef;
             my $brand = Brands->new(name => request()->brand);
 
             $err = BOM::RPC::v3::Cashier::validate_amount($amount, $client_currency);
-            return _make_error($error_code, $err) if $err;
+            return create_error_future($error_code, {message => $err}) if $err;
 
             # master groups are real\svg_mamm_master and
             # real\vanuatu_mamm_advanced_master
-            return _make_error($error_code,
-                localize('Permission error. MT5 manager accounts are not allowed to withdraw as payments are processed manually.'))
+            return create_error_future('NoManagerAccountWithdraw', {override_code => $error_code})
+
                 if ($action eq 'withdrawal' and ($mt5_group // '') =~ /^real\\[a-z]*_mamm(?:_[a-z]*)?_master$/);
 
             # check for fully authenticated only if it's not gaming account
             # as of now we only support gaming for binary brand, in future if we
             # support for champion please revisit this
-            return _make_error($error_code, localize('Please authenticate your account.'))
+            return create_error_future('AuthenticateAccount', {override_code => $error_code})
                 if ($action eq 'withdrawal'
                 and ($mt5_group // '') !~ /^real\\svg/
                 and not $client->fully_authenticated);
 
-            return _make_error(
-                $error_code,
-                localize(
-                    'You cannot perform this action because your account has been locked for MT5 transfers. Please contact us at [_1]',
-                    $brand->emails('support')))
+            return create_error_future(
+                'WithdrawalLocked',
+                {
+                    override_code => $error_code,
+                    params        => $brand->emails('support')})
                 if ($action eq 'deposit'
                 and ($client->status->no_withdrawal_or_trading or $client->status->withdrawal_locked));
 
@@ -1561,7 +1492,7 @@ sub _mt5_validate_and_get_amount {
             my $mt5_currency_type    = LandingCompany::Registry::get_currency_type($mt5_currency);
             my $source_currency_type = LandingCompany::Registry::get_currency_type($source_currency);
 
-            return _make_error($error_code, localize('Transfers between fiat and crypto accounts are currently disabled.'))
+            return create_error_future('TransferSuspended', {override_code => $error_code})
                 if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
                 and (($source_currency_type // '') ne ($mt5_currency_type // ''));
 
@@ -1577,9 +1508,12 @@ sub _mt5_validate_and_get_amount {
                 # we don't allow transfer between these two currencies
                 my $disabled_for_transfer_currencies = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
 
-                return _make_error($error_code,
-                    localize('Account transfers are not available between [_1] and [_2].', $source_currency, $mt5_currency))
-                    if first { $_ eq $source_currency or $_ eq $mt5_currency } @$disabled_for_transfer_currencies;
+                return create_error_future(
+                    'CurrencySuspended',
+                    {
+                        override_code => $error_code,
+                        params        => [$source_currency, $mt5_currency]}
+                ) if first { $_ eq $source_currency or $_ eq $mt5_currency } @$disabled_for_transfer_currencies;
 
                 if ($action eq 'deposit') {
 
@@ -1626,33 +1560,41 @@ sub _mt5_validate_and_get_amount {
             }
 
             if ($err) {
-                return _make_error($error_code, localize('Sorry, transfers are currently unavailable. Please try again later.'))
+                return create_error_future('NoExchangeRates', {override_code => $error_code})
                     if ($err =~ /No rate available to convert/);
 
-                return _make_error($error_code, localize('Account transfers are not possible between [_1] and [_2]', $client_currency, $mt5_currency))
-                    if ($err =~ /No transfer fee/);
+                return create_error_future(
+                    'NoTransferFee',
+                    {
+                        override_code => $error_code,
+                        params        => [$client_currency, $mt5_currency]}) if ($err =~ /No transfer fee/);
 
                 # Lower than min_unit in the receiving currency. The lower-bounds are not uptodate, otherwise we should not accept the amount in sending currency.
                 # To update them, transfer_between_accounts_fees is called again with force_refresh on.
-                return _make_error(
-                    $error_code,
-                    localize(
-                        "This amount is too low. Please enter a minimum of [_1] [_2].",
-                        BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{$source_currency}->{min},
-                        $source_currency
-                    )) if ($err =~ /The amount .* is below the minimum allowed amount/);
+                return create_error_future(
+                    'AmountNotAllowed',
+                    {
+                        override_code => $error_code,
+                        params => [BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{$source_currency}->{min}, $source_currency]}
+                ) if ($err =~ /The amount .* is below the minimum allowed amount/);
 
                 #default error:
-                return _make_error($error_code);
+                return create_error_future($error_code);
             }
 
-            return _make_error($error_code,
-                localize("Amount must be greater than [_1] [_2].", $source_currency, formatnumber('amount', $source_currency, $min)))
-                if $amount < financialrounding('amount', $source_currency, $min);
+            return create_error_future(
+                'InvalidMinAmount',
+                {
+                    override_code => $error_code,
+                    params        => [$source_currency, formatnumber('amount', $source_currency, $min)]}
+            ) if $amount < financialrounding('amount', $source_currency, $min);
 
-            return _make_error($error_code,
-                localize("Amount must be less than [_1] [_2].", $source_currency, formatnumber('amount', $source_currency, $max)))
-                if $amount > financialrounding('amount', $source_currency, $max);
+            return create_error_future(
+                'InvalidMaxAmount',
+                {
+                    override_code => $error_code,
+                    params        => [$source_currency, formatnumber('amount', $source_currency, $max)]}
+            ) if $amount > financialrounding('amount', $source_currency, $max);
 
             return Future->done({
                 mt5_amount              => $mt5_amount,
@@ -1680,10 +1622,7 @@ sub _fetch_mt5_lc {
     }
 
     # check if lc exists
-    return create_error_future({
-            code              => 'InvalidMT5Group',
-            message_to_client => 'This MT5 account has an invalid Landing Company.'
-        }) unless $lc_short and LandingCompany::Registry::get($lc_short);
+    return create_error_future('InvalidMT5Group') unless $lc_short and LandingCompany::Registry::get($lc_short);
 
     return $lc_short;
 }
@@ -1694,8 +1633,7 @@ sub _mt5_has_open_positions {
     return BOM::MT5::User::Async::get_open_positions_count($login)->then(
         sub {
             my ($response) = @_;
-
-            return Future->done({error => localize('We cannot get open positions for this account.')})
+            return create_error_future('CannotGetOpenPositions')
                 if (ref $response eq 'HASH' and $response->{error});
 
             return Future->done($response->{total} ? 1 : 0);
@@ -1775,7 +1713,7 @@ sub _validate_client {
     my $loginid = $client_obj->loginid;
 
     # only for real money account
-    return localize('Permission denied.') if ($client_obj->is_virtual);
+    return 'permission' if ($client_obj->is_virtual);
 
     my $lc = $client_obj->landing_company->short;
 
@@ -1791,25 +1729,25 @@ sub _validate_client {
         or $mt5_lc eq $lc)
     {
         # Otherwise, Financial accounts should not be able to deposit to, or withdraw from, gaming MT5
-        return localize('Please switch your account to access MT5.');
+        return 'SwitchAccount';
     }
 
     # Deposits and withdrawals are blocked for non-authenticated MF clients
-    return localize('Please authenticate your account.')
+    return 'AuthenticateAccount'
         if ($lc eq 'maltainvest' and not $client_obj->fully_authenticated);
 
-    return localize('Your account [_1] is disabled.', $loginid) if ($client_obj->status->disabled);
+    return ('AccountDisabled', $loginid) if ($client_obj->status->disabled);
 
-    return localize('Your account [_1] cashier section is locked.', $loginid)
+    return ('CashierLocked', $loginid)
         if ($client_obj->status->cashier_locked || $client_obj->documents_expired);
 
     my $client_currency = $client_obj->account ? $client_obj->account->currency_code() : undef;
-    return localize('Please set currency for existing account [_1].', $loginid) unless $client_currency;
+    return ('SetExistingAccountCurrency', $loginid) unless $client_currency;
 
     my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
     my $client_today_transfer = $client_obj->get_today_transfer_summary('mt5_transfer');
 
-    return localize("Maximum of [_1] MT5 account transfers allowed per day.", $daily_transfer_limit)
+    return ('MaximumTransfers', $daily_transfer_limit)
         unless $client_today_transfer->{count} < $daily_transfer_limit;
 
     return undef;
@@ -1835,7 +1773,7 @@ sub do_mt5_deposit {
     });
 }
 
-sub do_mt5_withdrawl {
+sub do_mt5_withdrawal {
     my ($login, $amount, $comment) = @_;
     my $withdrawal_sub = \&BOM::MT5::User::Async::withdrawal;
     if (!_is_mt5_suspended('manager_api')) {
