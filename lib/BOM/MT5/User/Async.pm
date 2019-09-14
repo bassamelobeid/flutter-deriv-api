@@ -30,6 +30,24 @@ my @common_fields = qw(
     phonePassword
 );
 
+# the mapping from MT5 doc (need login)
+# https://support.metaquotes.net/en/docs/mt5/api/reference_retcodes
+my $error_category_mapping = {
+    3     => 'InvalidParameters',
+    7     => 'NetworkError',
+    8     => 'Permissions',
+    12    => 'TooManyRequests',
+    13    => 'NotFound',
+    1002  => 'AccountDisabled',
+    3006  => 'InvalidPassword',
+    10019 => 'NoMoney'
+};
+
+sub _get_error_mapping {
+    my $error_code = shift;
+    return $error_category_mapping->{$error_code} // 'unknown';
+}
+
 sub _get_create_user_fields {
     return (@common_fields, qw/mainPassword investPassword agent group/);
 }
@@ -105,13 +123,10 @@ sub create_user {
 
     return _invoke_mt5('UserAdd', $param)->then(
         sub {
-            my ($hash) = @_;
+            my ($response) = @_;
 
-            if ($hash->{error}) {
-                return Future->done({error => $hash->{error}});
-            }
-
-            return Future->done({login => $hash->{login}});
+            return _future_error($response) if $response->{error};
+            return Future->done({login => $response->{login}});
         });
 }
 
@@ -121,13 +136,10 @@ sub get_user {
 
     return _invoke_mt5('UserGet', $param)->then(
         sub {
-            my ($hash) = @_;
+            my ($response) = @_;
 
-            if ($hash->{error}) {
-                return Future->done({error => $hash->{error}});
-            }
-
-            my $ret    = $hash->{user};
+            return _future_error($response) if $response->{error};
+            my $ret    = $response->{user};
             my @fields = _get_user_fields();
 
             my $mt_user;
@@ -145,12 +157,10 @@ sub update_user {
 
     return _invoke_mt5('UserUpdate', $param)->then(
         sub {
-            my ($hash) = @_;
-            if ($hash->{error}) {
-                return Future->done({error => $hash->{error}});
-            }
+            my ($response) = @_;
+            return _future_error($response) if $response->{error};
 
-            my $ret = $hash->{user};
+            my $ret = $response->{user};
             @fields = _get_user_fields();
 
             my $mt_user;
@@ -168,12 +178,10 @@ sub update_mamm_user {
 
     return _invoke_mt5('UserUpdate', $param)->then(
         sub {
-            my ($hash) = @_;
-            if ($hash->{error}) {
-                return Future->done({error => $hash->{error}});
-            }
+            my ($response) = @_;
+            return _future_error($response) if $response->{error};
 
-            my $ret = $hash->{user};
+            my $ret = $response->{user};
             @fields = _get_user_fields();
 
             my $mt_user;
@@ -192,11 +200,9 @@ sub password_check {
 
     return _invoke_mt5('UserPasswordCheck', $param)->then(
         sub {
-            my ($hash) = @_;
+            my ($response) = @_;
 
-            if ($hash->{error}) {
-                return Future->done({error => $hash->{error}});
-            }
+            return _future_error($response) if $response->{error};
             return Future->done({status => 1});
         });
 }
@@ -211,11 +217,9 @@ sub password_change {
 
     return _invoke_mt5('UserPasswordChange', $param)->then(
         sub {
-            my ($hash) = @_;
+            my ($response) = @_;
 
-            if ($hash->{error}) {
-                return Future->done({error => $hash->{error}});
-            }
+            return _future_error($response) if $response->{error};
             return Future->done({status => 1});
         });
 }
@@ -231,12 +235,9 @@ sub deposit {
 
     return _invoke_mt5('UserDepositChange', $param)->then(
         sub {
-            my ($hash) = @_;
+            my ($response) = @_;
 
-            if ($hash->{error}) {
-                return Future->done({error => $hash->{error}});
-            }
-
+            return _future_error($response) if $response->{error};
             return Future->done({status => 1});
         });
 }
@@ -255,11 +256,8 @@ sub withdrawal {
 
     return _invoke_mt5('UserDepositChange', $param)->then(
         sub {
-            my ($hash) = @_;
-
-            if ($hash->{error}) {
-                return Future->done({error => $hash->{error}});
-            }
+            my ($response) = @_;
+            return _future_error($response) if $response->{error};
             return Future->done({status => 1});
         });
 }
@@ -268,18 +266,18 @@ sub manager_api_deposit {
     my $args = shift;
     return _mt5_manager->adjust_balance($args->{login}, $args->{amount}, $args->{comment})->then(
         sub {
-            my ($hash) = @_;
-            if ($hash->{success}) {
+            my ($response) = @_;
+
+            if ($response->{success}) {
                 return Future->done({status => 1});
             }
 
-            return Future->done($hash);
+            return Future->done($response);
         }
         )->catch(
         sub {
-            my $error = shift;
             return Future->done({    # usually it should be fail but since RPC interface right now work like this...
-                error      => $error,
+                error      => 'timeout',
                 error_code => 1,
             });
         });
@@ -294,13 +292,13 @@ sub manager_api_withdrawal {
     }
     return _mt5_manager->adjust_balance($args->{login}, $amount, $args->{comment}, $args->{request_UUID})->then(
         sub {
-            my ($hash) = @_;
+            my ($response) = @_;
 
-            if ($hash->{success}) {
+            if ($response->{success}) {
                 return Future->done({status => 1});
             }
 
-            return Future->done($hash);
+            return Future->done($response);
         }
         )->catch(
         sub {
@@ -316,12 +314,10 @@ sub get_open_positions_count {
 
     return _invoke_mt5('PositionGetTotal', {login => $login})->then(
         sub {
-            my ($hash) = @_;
-            if ($hash->{error}) {
-                return Future->done({error => $hash->{error}});
-            }
+            my ($response) = @_;
+            return _future_error($response) if $response->{error};
 
-            return Future->done({total => $hash->{total}});
+            return Future->done({total => $response->{total}});
         });
 }
 
@@ -330,12 +326,10 @@ sub get_group {
 
     return _invoke_mt5('GroupGet', {group => $group_name})->then(
         sub {
-            my ($hash) = @_;
-            if ($hash->{error}) {
-                return Future->done({error => $hash->{error}});
-            }
+            my ($response) = @_;
+            return _future_error($response) if $response->{error};
 
-            my $ret = $hash->{group};
+            my $ret = $response->{group};
             return Future->done($ret);
         });
 }
@@ -345,14 +339,19 @@ sub get_users_logins {
 
     return _invoke_mt5('UserLogins', {group => $group_name})->then(
         sub {
-            my ($hash) = @_;
-            if ($hash->{error}) {
-                return Future->done({error => $hash->{error}});
-            }
+            my ($response) = @_;
+            return _future_error($response) if $response->{error};
 
-            my $ret = $hash->{logins};
+            my $ret = $response->{logins};
             return Future->done($ret);
         });
+}
+
+sub _future_error {
+    my ($response) = @_;
+    return Future->done({
+            code  => _get_error_mapping($response->{ret_code}),
+            error => $response->{error}});
 }
 
 1;
