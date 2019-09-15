@@ -124,14 +124,14 @@ subtest 'new account' => sub {
     $params->{token} = $token;
 
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(1);
-    $c->call_ok($method, $params)->has_error->error_message_is('MT5 API calls are suspended.', 'MT5 calls are suspended error message');
+    $c->call_ok($method, $params)->has_error->error_code_is('MT5APISuspendedError', 'MT5 calls are suspended error message');
 
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(0);
 
     $params->{args}->{account_type} = undef;
-    $c->call_ok($method, $params)->has_error->error_message_is('Invalid account type.', 'Correct error message for undef account type');
+    $c->call_ok($method, $params)->has_error->error_code_is('InvalidAccountType', 'Correct error message for undef account type');
     $params->{args}->{account_type} = 'dummy';
-    $c->call_ok($method, $params)->has_error->error_message_is('Invalid account type.', 'Correct error message for invalid account type');
+    $c->call_ok($method, $params)->has_error->error_code_is('InvalidAccountType', 'Correct error message for invalid account type');
     $params->{args}->{account_type} = 'demo';
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
@@ -143,7 +143,7 @@ subtest 'new account' => sub {
 
     $c->call_ok($method, $params)->has_no_error('Citizenship is not required for creating demo accounts');
     $params->{args}->{account_type} = 'gaming';
-    $c->call_ok($method, $params)->has_error->error_message_is('Please set citizenship for your account.', 'Citizen not set');
+    $c->call_ok($method, $params)->has_error->error_message_is('Please indicate your citizenship.', 'Citizen not set');
 
     $test_client->citizen($citizen);
     $test_client->save;
@@ -152,11 +152,11 @@ subtest 'new account' => sub {
     $params->{args}->{mainPassword}   = 'Abc123';
     $params->{args}->{investPassword} = 'Abc123';
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('Investor password cannot be same as main password.', 'Correct error message for same password');
+        ->has_error->error_message_is('Please use different passwords for your investor and main accounts.', 'Correct error message for same password');
 
     $params->{args}->{investPassword}   = 'Abc1234';
     $params->{args}->{mt5_account_type} = 'dummy';
-    $c->call_ok($method, $params)->has_error->error_message_is('Invalid sub account type.', 'Invalid sub account type error message');
+    $c->call_ok($method, $params)->has_error->error_code_is('InvalidSubAccountType', 'Invalid sub account type error message');
 
     $params->{args}->{account_type} = 'financial';
 
@@ -165,20 +165,19 @@ subtest 'new account' => sub {
     $test_client->place_of_birth('');
     $test_client->save();
 
-    $c->call_ok($method, $params)->has_error->error_code_is("MissingBasicDetails")->error_message_is("Please fill in your account details")
-        ->error_details_is({missing => ["place_of_birth"]});
+    $c->call_ok($method, $params)->has_error->error_code_is("MissingBasicDetails")->error_details_is({missing => ["place_of_birth"]});
 
     $test_client->place_of_birth($pob);
     $test_client->save();
 
     delete $params->{args}->{mt5_account_type};
-    $c->call_ok($method, $params)->has_error->error_message_is('Invalid sub account type.', 'Sub account mandatory for financial');
+    $c->call_ok($method, $params)->has_error->error_code_is('InvalidSubAccountType', 'Sub account mandatory for financial');
 
     $params->{args}->{mt5_account_type} = 'advanced';
     $test_client->aml_risk_classification('high');
     $test_client->save();
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('Please complete financial assessment.', 'Financial assessment mandatory for financial account');
+        ->has_error->error_message_is('Please complete our financial assessment.', 'Financial assessment mandatory for financial account');
 
     # Non-MLT/CR client
     $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -196,7 +195,7 @@ subtest 'new account' => sub {
     $token           = $m->create_token($test_client->loginid, 'test token 2');
     $params->{token} = $token;
 
-    $c->call_ok($method, $params)->has_error->error_message_is('This account type is not available in your country.',
+    $c->call_ok($method, $params)->has_error->error_code_is('MT5NotAllowed',
         'Only svg, malta, maltainvest and champion fx clients allowed.');
 
     SKIP: {

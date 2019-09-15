@@ -648,7 +648,7 @@ rpc paymentagent_transfer => sub {
         } elsif ($error_code eq 'BI208') {
             return $error_sub->(localize('You cannot transfer to account [_1], as their cashier is locked.', $loginid_to));
         } elsif ($error_code eq 'BI209') {
-            return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.'));
+            return $error_sub->(localize('Your account cashier is locked. Please contact us for more information.'));
         } elsif ($error_code eq 'BI210') {
             return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.'));
         } elsif ($error_code eq 'BI211') {
@@ -899,7 +899,7 @@ rpc paymentagent_withdraw => sub {
         if (length($further_instruction) > MAX_DESCRIPTION_LENGTH);
 
     # check that both the client payment agent cashier is not locked
-    return $error_sub->(localize('You cannot perform this action, as your account is cashier locked.')) if $client->status->cashier_locked;
+    return $error_sub->(localize('Your account cashier is locked. Please contact us for more information.')) if $client->status->cashier_locked;
 
     return $error_sub->(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if $client->status->withdrawal_locked;
@@ -1173,7 +1173,8 @@ rpc transfer_between_accounts => sub {
     my $params = shift;
     my $err;
 
-    my ($client, $source) = @{$params}{qw/client source/};
+    my ($client, $source, $token) = @{$params}{qw/client source token/};
+    my $token_type = $params->{token_type} // '';
 
     if (BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
@@ -1185,7 +1186,7 @@ rpc transfer_between_accounts => sub {
 
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is currently disabled.'))
         if $status->disabled;
-    return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is cashier locked.'))
+    return _transfer_between_accounts_error(localize('Your account cashier is locked. Please contact us for more information.'))
         if $status->cashier_locked;
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if ($status->withdrawal_locked || $status->no_withdrawal_or_trading);
@@ -1243,8 +1244,8 @@ rpc transfer_between_accounts => sub {
 
     # Both $loginid_from and $loginid_to must be either a real or a MT5 account
     # Unfortunately demo MT5 accounts will slip through this check, but they will
-    # be caught in BOM::RPC::v3::MT5::Account::*
-    return _transfer_between_accounts_error()
+    # be caught in one of the BOM::RPC::v3::MT5::Account functions
+    return BOM::RPC::v3::Utility::permission_error()
         unless ((
             exists $siblings->{$loginid_from}
             or $is_mt5_loginid_from
@@ -1264,10 +1265,11 @@ rpc transfer_between_accounts => sub {
         if ($is_mt5_loginid_to) {
 
             return _transfer_between_accounts_error(localize('From account provided should be same as current authorized client.'))
-                unless ($client->loginid eq $loginid_from);
+                unless ($client->loginid eq $loginid_from)
+                or $token_type eq 'oauth_token';
 
             return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
-                if ($client->currency ne $currency);
+                if ($siblings->{$loginid_from}->{currency} ne $currency);
 
             $method = \&BOM::RPC::v3::MT5::Account::mt5_deposit;
             $params->{args}{from_binary} = $binary_login = $loginid_from;
@@ -1278,7 +1280,8 @@ rpc transfer_between_accounts => sub {
         if ($is_mt5_loginid_from) {
 
             return _transfer_between_accounts_error(localize('To account provided should be same as current authorized client.'))
-                unless ($client->loginid eq $loginid_to);
+                unless ($client->loginid eq $loginid_to)
+                or $token_type eq 'oauth_token';
 
             $method = \&BOM::RPC::v3::MT5::Account::mt5_withdrawal;
             $params->{args}{to_binary} = $binary_login = $loginid_to;
@@ -1345,7 +1348,9 @@ rpc transfer_between_accounts => sub {
             amount        => $amount,
             from_currency => $from_currency,
             to_currency   => $to_currency,
-        });
+        },
+        $token_type
+    );
     return $res if $res;
 
     BOM::User::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
@@ -1567,7 +1572,7 @@ sub _transfer_between_accounts_error {
 }
 
 sub _validate_transfer_between_accounts {
-    my ($current_client, $client_from, $client_to, $args) = @_;
+    my ($current_client, $client_from, $client_to, $args, $token_type) = @_;
     # error out if one of the client is not defined, i.e.
     # loginid provided is wrong or not in siblings
     return _transfer_between_accounts_error() if (not $client_from or not $client_to);
@@ -1580,7 +1585,8 @@ sub _validate_transfer_between_accounts {
 
     # error out if current logged in client and loginid from passed are not same
     return _transfer_between_accounts_error(localize('From account provided should be same as current authorized client.'))
-        unless ($current_client->loginid eq $client_from->loginid);
+        unless ($current_client->loginid eq $client_from->loginid)
+        or $token_type eq 'oauth_token';
 
     my ($currency, $amount, $from_currency, $to_currency) = @{$args}{qw/currency amount from_currency to_currency/};
 
@@ -1643,7 +1649,7 @@ sub _validate_transfer_between_accounts {
         and ($from_currency_type eq 'fiat')
         and ($currency ne $to_currency));
 
-    return _transfer_between_accounts_error(localize('Transfers between fiat and crypto accounts are currently disabled.'))
+    return _transfer_between_accounts_error(localize('Transfers between fiat and crypto accounts are currently unavailable. Please try again later.'))
         if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
         and (($from_currency_type // '') ne ($to_currency_type // ''));
 
@@ -1655,7 +1661,8 @@ sub _validate_transfer_between_accounts {
     # check for internal transactions number limits
     my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
     my $client_today_transfer = $current_client->get_today_transfer_summary();
-    return _transfer_between_accounts_error(localize("Maximum of [_1] transfers allowed per day.", $daily_transfer_limit))
+    return _transfer_between_accounts_error(
+        localize("You can only perform up to [_1] transfers a day. Please try again tomorrow.", $daily_transfer_limit))
         unless $client_today_transfer->{count} < $daily_transfer_limit;
 
     my $min_allowed_amount = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{min};
