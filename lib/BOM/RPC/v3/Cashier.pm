@@ -1818,7 +1818,7 @@ sub _email_content {
                         <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Dear Mr. [_2] [_3] [_4]</p>
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Dear Mr. [_2] [_3] [_4],</p>
                             </td>
                         </tr>
                         <!-- COPY -->
@@ -1836,7 +1836,7 @@ sub _email_content {
                         <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 40px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Kind regards<br />The [_9] team.</p>
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Kind regards,<br />The [_9] team.</p>
                             </td>
                         </tr>
                     </table>
@@ -1898,7 +1898,7 @@ sub _email_content {
                         <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Dear Mr. [_2] [_3] [_4]</p>
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Dear Mr. [_2] [_3] [_4],</p>
                             </td>
                         </tr>
                         <!-- COPY -->
@@ -1910,7 +1910,7 @@ sub _email_content {
                         <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 40px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Kind regards<br />The [_8] team.</p>
+                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Kind regards,<br />The [_8] team.</p>
                             </td>
                         </tr>
                     </table>
