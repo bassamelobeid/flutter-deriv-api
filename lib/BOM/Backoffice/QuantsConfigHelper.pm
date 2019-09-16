@@ -403,12 +403,12 @@ sub get_config_input {
 
     if ($key eq 'contract_group' or $key eq 'market') {
         my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
-        my $output = $db->dbic->run(
-            fixup => sub {
-                $_->selectall_arrayref("SELECT * from bet.$key");
-            });
 
         if ($key eq 'contract_group') {
+            my $output = $db->dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT * from bet.contract_group");
+                });
             my %supported_contract_types =
                 map { $_ => 1 }
                 map { $_->values_for_key('contract_type') } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config));
@@ -416,6 +416,10 @@ sub get_config_input {
         }
 
         if ($key eq 'market') {
+            my $output = $db->dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT * from bet.limits_market_mapper");
+                });
             my %supported_underlying_symbols =
                 map { $_ => 1 }
                 map { $_->values_for_key('underlying_symbol') } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config));
