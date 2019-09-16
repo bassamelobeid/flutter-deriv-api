@@ -21,7 +21,7 @@ subtest $method => sub {
         {
             'symbol' => 'frxAUDJPY',
             'events' => [{
-                    'descrip' => 'Closes early (at 21:00)',
+                    'descrip' => 'Closes early (at 20:55)',
                     'dates'   => 'Fridays'
                 }
             ],
