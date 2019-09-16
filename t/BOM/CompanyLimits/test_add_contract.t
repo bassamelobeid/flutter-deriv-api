@@ -58,7 +58,7 @@ subtest 'Different landing companies test', sub {
         contract  => $contract,
     );
 
-    my $key = 'tn,R_50,callput';
+    my $key = 'ta,R_50,callput';
 
     my $svg_total = $redis->hget('svg:potential_loss', $key);
     my $mx_total = $redis->hget('iom:potential_loss', $key) // 0;
@@ -109,7 +109,7 @@ subtest 'Different currencies', sub {
         contract  => $usd_contract,
     );
 
-    my $key          = 'tn,R_50,callput';
+    my $key          = 'ta,R_50,callput';
     my $turnover_key = 't,R_50,callput,';
 
     my $potential_loss_total = $redis->hget('svg:potential_loss', $key);
@@ -203,7 +203,7 @@ subtest 'Limits test base case', sub {
         contract  => $contract,
     );
 
-    my $key = 'tn,R_50,callput';
+    my $key = 'ta,R_50,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 4, 'buying contract adds correct potential loss';
 
