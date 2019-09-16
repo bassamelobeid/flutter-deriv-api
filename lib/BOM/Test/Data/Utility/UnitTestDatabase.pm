@@ -16,7 +16,6 @@ use BOM::Database::Model::FinancialMarketBet::SpreadBet;
 use BOM::Database::Model::FinancialMarketBet::TouchBet;
 use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::CompanyLimits::Groups;
 
 use BOM::Test;
 
@@ -385,12 +384,6 @@ sub import {
         require BOM::Test::Data::Utility::UserTestDatabase;
 
         BOM::Test::Data::Utility::UserTestDatabase->import(':init');
-
-        # Unit test databases and redis instance needs to be
-        # repopulated with default groups with each rerun since
-        # it starts with a blank slate
-        BOM::CompanyLimits::Groups::load_group_yml_to_db('-p 6432 -U write userdb_test');
-        BOM::CompanyLimits::Groups::sync_group_to_redis();
     }
 
     return;
