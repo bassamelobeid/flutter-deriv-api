@@ -389,7 +389,7 @@ sub import {
         # Unit test databases and redis instance needs to be
         # repopulated with default groups with each rerun since
         # it starts with a blank slate
-        BOM::CompanyLimits::Groups::load_group_yml_to_db();
+        BOM::CompanyLimits::Groups::load_group_yml_to_db('-p 6432 -U write userdb_test');
         BOM::CompanyLimits::Groups::sync_group_to_redis();
     }
 
