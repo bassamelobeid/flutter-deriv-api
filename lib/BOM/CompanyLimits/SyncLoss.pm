@@ -124,7 +124,7 @@ sub _get_db_loss {
 
 sub _get_key_from_record_turnover {
     my ($rec) = @_;
-    my $expiry_type = (defined $rec->[3]) ? $rec->[3] : '+';
+    my $expiry_type    = (defined $rec->[3]) ? $rec->[3] : '+';
     my $contract_group = (defined $rec->[2]) ? $rec->[2] : '+';
 
     # expiry_type,underlying,contract_group,binary_user_id
@@ -133,7 +133,7 @@ sub _get_key_from_record_turnover {
 
 sub _get_key_from_record_with_underlying_group {
     my ($rec) = @_;
-    my $expiry_type = (defined $rec->[3]) ? $rec->[3] : '+';
+    my $expiry_type         = (defined $rec->[3]) ? $rec->[3] : '+';
     my $underlying_or_group = (defined $rec->[1]) ? $rec->[1] : '+';
 
     # NOTE: $rec->[0] is binary_user_id
@@ -142,7 +142,7 @@ sub _get_key_from_record_with_underlying_group {
         return "$expiry_type,$underlying_or_group,$rec->[0]";
     }
     # global recs
-    my $barrier_type = (defined $rec->[4]) ? $rec->[4] : '+';
+    my $barrier_type   = (defined $rec->[4]) ? $rec->[4] : '+';
     my $contract_group = (defined $rec->[2]) ? $rec->[2] : '+';
 
     return "$expiry_type$barrier_type,$underlying_or_group,$contract_group";
