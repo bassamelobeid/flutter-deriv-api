@@ -141,7 +141,7 @@ my $config = {
         uptosevendays  => 'Duration up to 7 days',
         abovesevendays => 'Duration above 7 days',
         # trading times page
-        closeatnine => 'Closes early (at 21:00)',
+        closeatnine => 'Closes early (at 20:55)',
         closeatsix  => 'Closes early (at 18:00)',
         newyear     => 'New Year\'s Day',
         christmas   => 'Christmas Day',
