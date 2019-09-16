@@ -173,4 +173,9 @@ sub redis_limits_config {
     return $config;
 }
 
+sub redis_auth_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_AUTH} // '/etc/rmg/redis-auth.yml');
+    return $config;
+}
+
 1;

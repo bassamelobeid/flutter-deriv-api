@@ -329,6 +329,11 @@ quants:
       isa: Bool
       global: 1
       default: 0
+    ultra_short_duration:
+      description: "An ultra short expiry duration in seconds."
+      isa: Num
+      global: 1
+      default: 300
 system:
   description: "Various parameters determining core application functionality"
   isa: section
