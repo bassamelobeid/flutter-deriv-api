@@ -114,8 +114,7 @@ subtest 'trying to buy multiple lookback contracts', sub {
         source              => 1,
         contract_parameters => {
             proposal      => 1,
-            amount        => "5",
-            basis         => "multiplier",
+            multiplier    => "5",
             contract_type => "LBFLOATCALL",
             currency      => "USD",
             duration      => "120",
