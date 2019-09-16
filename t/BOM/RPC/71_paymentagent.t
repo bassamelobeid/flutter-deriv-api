@@ -330,12 +330,13 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         is($res->{error}{message_to_client}, "Invalid amount. Minimum is $min_amount, maximum is $max.", $test);
         $Alice->payment_agent->min_withdrawal(undef);
 
-        $test = 'Transfer fails if missing required details (place_of_birth)';
-        $Alice->place_of_birth('');
+        # this test assume address_city is a withdrawal requirement for SVG in landing_companies.yml
+        $test = 'Transfer fails if missing required details (address_city)';
+        $Alice->address_city('');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         like($res->{error}{message_to_client}, qr/Your profile appears to be incomplete. Please update your personal details to continue./, $test);
-        $Alice->place_of_birth('id');
+        $Alice->address_city('Beverly Hills');
         $Alice->save;
 
         $test = "Withdraw fails if description is over $MAX_DESCRIPTION_LENGTH characters";
@@ -959,7 +960,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $test = q{Withdraw fails if payment agent facility not allowed in client's country};
         $Alice->residence('Walla Walla');
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/Your profile appears to be incomplete. Please update your personal details to continue./, $test);
+        like($res->{error}{message_to_client}, qr/You cannot withdraw from a payment agent in a different country of residence./, $test);
         $Alice->residence($old_residence);
 
         $test = 'Withdraw fails if client status = disabled';
@@ -1035,12 +1036,13 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->status->clear_withdrawal_locked;
         $Alice->save;
 
-        $Alice->place_of_birth('');
+        # this test assume address_city is a withdrawal requirement for SVG in landing_companies.yml
+        $Alice->address_city('');
         $Alice->save;
-        $test = 'Withdraw fails if missing place of birth';
+        $test = 'Withdraw fails if missing address_city';
         $res  = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/Your profile appears to be incomplete. Please update your personal details to continue./, $test);
-        $Alice->place_of_birth('id');
+        $Alice->address_city('Beverly Hills');
         $Alice->save;
 
         $test = 'Withdraw fails if client authentication documents are expired';
