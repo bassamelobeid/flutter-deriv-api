@@ -218,6 +218,16 @@ unless ($params{skip_validation}) {
         code_exit_BO();
     };
 
+    if ($ttype eq 'CREDIT') {
+        if (my @dup_account =
+            BOM::Database::ClientDB->new({broker_code => $cli->broker_code})
+            ->get_duplicate_client({(map { $_ => $cli->$_ } qw( first_name last_name email date_of_birth phone ))}))
+        {
+            print qq( <p style="color:#F00">Duplicated Account suspected: ${dup_account[0]} (${dup_account[4]})</p> );
+            code_exit_BO();
+        }
+    }
+
     printf qq[<p style="color:#070">Done. %s will be ok.</p>], encode_entities($ttype);
     $params{skip_validation} = 1;
 }
