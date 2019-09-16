@@ -28,6 +28,63 @@
                   "string",
                   "null"
                ]
+            },
+            "authentication" : {
+               "type" : "object",
+               "required": [
+                   "needs_verification",
+                   "document",
+                   "identity"
+               ],
+               "properties" : {
+                   "needs_verification" : {
+                       "type" : "array"
+                   },
+                   "document" : {
+                       "type" : "object",
+                       "properties" : {
+                           "status" : {
+                               "type" : "string",
+                               "enum": [
+                                  "none",
+                                  "pending",
+                                  "rejected",
+                                  "verified",
+                                  "expired",
+                                  "suspected"
+                              ]
+                           },
+                           "expiry_date" : {
+                               "type" : "integer"
+                           },
+                           "further_submissions_allowed": {
+                               "type": "integer"
+                           }
+                       }
+                   },
+                   "identity" : {
+                       "type" : "object",
+                       "properties" : {
+                           "status" : {
+                               "type" : "string",
+                               "enum": [
+                                  "none",
+                                  "pending",
+                                  "rejected",
+                                  "verified",
+                                  "expired",
+                                  "suspected"
+                              ]
+                           },
+                           "expiry_date" : {
+                               "type" : "integer"
+                           },
+                           "further_submissions_allowed": {
+                               "type": "integer"
+                           }
+                       }
+                   }
+               }
             }
          },
          "type" : "object"
