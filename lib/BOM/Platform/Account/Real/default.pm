@@ -64,14 +64,6 @@ sub validate {
         {
             return {error => 'invalid PO Box'};
         }
-        # we don't need to check for duplicate client on adding multiple currencies
-        # in that case, $from_client and $details will handle same data.
-        # when it's first registration - $from_client->first_name will be empty, as VRTC does not have it.
-        if ($details->{first_name} ne $from_client->first_name
-            && BOM::Database::ClientDB->new({broker_code => $broker})->get_duplicate_client($details))
-        {
-            return {error => 'duplicate name DOB'};
-        }
 
         my $dob_error = validate_dob($details->{date_of_birth}, $residence);
         return $dob_error if $dob_error;

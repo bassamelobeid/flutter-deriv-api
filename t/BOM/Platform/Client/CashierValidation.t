@@ -6,6 +6,7 @@ use Test::More;
 use Test::Exception;
 use Test::MockModule;
 use Test::Warnings;
+use Test::Deep;
 
 use ExchangeRates::CurrencyConverter;
 use Format::Util::Numbers qw/get_min_unit roundcommon/;
@@ -31,6 +32,7 @@ subtest prepare => sub {
         email          => $new_email,
         binary_user_id => 1,
     });
+    $new_email   = 'test' . rand . '@binary.com';
     $cr_client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $new_email,
@@ -140,6 +142,35 @@ subtest 'Cashier validation common' => sub {
     my $new_expiration_date = Date::Utility->new()->plus_time_interval('1d')->date;
     $cr_client->client_authentication_document->[0]->expiration_date($new_expiration_date);
     $cr_client->save;
+
+    # Note: following test assume address_city is a withdrawal requirement for SVG in landing_companies.yml
+    my $address_city = $cr_client->address_city;
+    $cr_client->address_city('');
+    $cr_client->save;
+
+    my $expected = {
+        'error' => {
+            'code'              => 'ASK_FIX_DETAILS',
+            'details'           => {'fields' => ['address_city']},
+            'message_to_client' => 'Your profile appears to be incomplete. Please update your personal details to continue.'
+        }};
+
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
+    is_deeply($res, $expected, 'lc withdrawal requirements validated');
+
+    $cr_client->address_city($address_city);
+    $cr_client->save;
+
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+    is $res->{error}->{code}, $generic_err_code, 'Correct error code';
+    is $res->{error}->{message_to_client},
+        'It looks like you have more than one account with us. Please contact customer support for assistance.',
+        'Correct error for duplicate client';
+
+    $cr_client_2->status->set('duplicate_account', 'system', 'pending investigations');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+    is $res, undef, 'all clear';
+    $cr_client_2->status->clear_duplicate_account;
 };
 
 subtest 'Cashier validation deposit' => sub {
@@ -168,6 +199,7 @@ subtest 'Cashier validation withdraw' => sub {
     is $res->{error}->{message_to_client}, 'Your account is locked for withdrawals.', 'Correct error message for withdrawal locked';
 
     $cr_client->status->clear_withdrawal_locked;
+
 };
 
 subtest 'Cashier validation landing company and country specific' => sub {
