@@ -101,8 +101,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         date_pricing => $now,
                         duration     => $duration . 's',
                         currency     => $payout_currency,
-                        amount       => $ul->symbol eq 'R_50' ? 5 : 1,
-                        amount_type  => 'multiplier',
+                        multiplier       => $ul->symbol eq 'R_50' ? 5 : 1,
                     };
 
                     my $c = produce_contract($args);

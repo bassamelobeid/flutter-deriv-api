@@ -386,57 +386,74 @@ sub _initialize_other_parameters {
     if (exists $params->{stake}) {
         $params->{amount}      = delete $params->{stake};
         $params->{amount_type} = 'stake';
-    } elsif (exists $params->{multiplier}) {
-        $params->{amount}      = delete $params->{multiplier};
-        $params->{amount_type} = 'multiplier';
     } elsif (exists $params->{payout}) {
         $params->{amount}      = delete $params->{payout};
         $params->{amount_type} = 'payout';
     }
 
-    unless (exists $params->{amount_type} and exists $params->{amount}) {
-        my $is_lookback = $params->{category}->code eq 'lookback';
-        my $error_code  = $is_lookback ? 'MissingRequiredContractParams' : 'MissingEither';
-        my $error_args  = $is_lookback ? ['multiplier'] : ['payout', 'stake'];
+    if ($params->{category}->require_basis) {
         BOM::Product::Exception->throw(
-            error_code => $error_code,
-            error_args => $error_args,
+            error_code => 'MissingEither',
+            error_args => ['payout', 'stake'],
             details    => {field => 'amount'},
-        );
-    }
+        ) if (not(exists $params->{amount_type} and exists $params->{amount}));
 
-    my @allowed = @{$params->{category}->supported_amount_type};
-    if (not any { $params->{amount_type} eq $_ } @allowed) {
-        my $error_code = scalar(@allowed) > 1 ? 'WrongAmountTypeTwo' : 'WrongAmountTypeOne';
-        BOM::Product::Exception->throw(
-            error_code => $error_code,
-            error_args => \@allowed,
-            details    => {field => 'basis'},
-        );
-    }
-
-    my $minimum_multiplier;
-    $minimum_multiplier = $minimum_multiplier_config->{$params->{underlying}->symbol} / $minimum_multiplier_config->{$params->{payout_currency_type}}
-        if $params->{category}->has_minimum_multiplier;
-
-    if (defined $minimum_multiplier) {
-        # multiplier has non-zero minimum
-        if ($params->{amount} < $minimum_multiplier) {
-            BOM::Product::Exception->throw(
-                error_code => 'MinimumMultiplier',
-                error_args => [$minimum_multiplier],
-                details    => {field => 'amount'},
-            );
-        }
-    } elsif ($params->{amount} <= 0) {
         BOM::Product::Exception->throw(
             error_code => 'InvalidStake',
-            details    => {field => 'amount'});
+            details    => {field => 'amount'}) if $params->{amount} and $params->{amount} < 0;
+
+        my @allowed = @{$params->{category}->supported_amount_type};
+        if (not any { $params->{amount_type} eq $_ } @allowed) {
+            my $error_code = scalar(@allowed) > 1 ? 'WrongAmountTypeTwo' : 'WrongAmountTypeOne';
+            BOM::Product::Exception->throw(
+                error_code => $error_code,
+                error_args => \@allowed,
+                details    => {field => 'basis'},
+            );
+        }
+    } else {
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidInput',
+            error_args => ['basis', $params->{bet_type}],
+            details    => {},
+        ) if (defined $params->{amount_type} and $params->{amount});
+    }
+
+    if ($params->{category}->require_multiplier) {
+        BOM::Product::Exception->throw(
+            error_code => 'MissingRequiredContractParams',
+            error_args => ['multiplier'],
+            details    => {field => 'amount'},
+        ) if not defined $params->{multiplier};
+
+        my $minimum_multiplier;
+        $minimum_multiplier =
+            $minimum_multiplier_config->{$params->{underlying}->symbol} / $minimum_multiplier_config->{$params->{payout_currency_type}}
+            if $params->{category}->has_minimum_multiplier;
+
+        if (defined $minimum_multiplier) {
+            # multiplier has non-zero minimum
+            if ($params->{multiplier} < $minimum_multiplier) {
+                BOM::Product::Exception->throw(
+                    error_code => 'MinimumMultiplier',
+                    error_args => [$minimum_multiplier],
+                    details    => {field => 'amount'},
+                );
+            }
+        }
+    } else {
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidInput',
+            error_args => ['multiplier', $params->{bet_type}],
+            details    => {},
+        ) if (defined $params->{multiplier});
     }
 
     # only do this conversion here.
-    $params->{amount_type} = 'ask_price' if $params->{amount_type} eq 'stake';
-    $params->{$params->{amount_type}} = $params->{amount};
+    if ($params->{amount_type}) {
+        $params->{amount_type} = 'ask_price' if $params->{amount_type} eq 'stake';
+        $params->{$params->{amount_type}} = $params->{amount};
+    }
     delete $params->{$_} for qw(amount amount_type);
 
     return;
