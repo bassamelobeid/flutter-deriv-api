@@ -2383,35 +2383,6 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
     'survived';
 };
 
-sub close_all_open_contracts {
-    my $broker_code = shift;
-    my $fullpayout  = shift // 0;
-    my $clientdb    = BOM::Database::ClientDB->new({broker_code => $broker_code});
-
-    my $dbh = $clientdb->db->dbh;
-    my $sql = q{select client_loginid,currency_code from transaction.account};
-    my $sth = $dbh->prepare($sql);
-    $sth->execute;
-    my $output = $sth->fetchall_arrayref();
-
-    foreach my $client_data (@$output) {
-        foreach my $fmbo (
-            @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client_data->[0], $client_data->[1], 'false']) // []})
-        {
-            my $contract = produce_contract($fmbo->{short_code}, $client_data->[1]);
-            my $txn = BOM::Transaction->new({
-                client   => BOM::User::Client->new({loginid => $client_data->[0]}),
-                contract => $contract,
-                source   => 23,
-                price => ($fullpayout ? $fmbo->{payout_price} : $fmbo->{buy_price}),
-                contract_id   => $fmbo->{id},
-                purchase_date => $contract->date_start,
-            });
-            $txn->sell(skip_validation => 1);
-        }
-    }
-    return;
-}
 # see further transaction2.t: special turnover limits
 #             transaction3.t: intraday fx action
 $mocked_underlying->unmock_all;
