@@ -47,7 +47,7 @@ use BOM::MarketData::Types;
 use Exporter qw( import );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-our @EXPORT_OK = qw(create_contract buy_contract sell_contract batch_buy_contract sell_by_shortcode);
+our @EXPORT_OK = qw(create_contract buy_contract sell_contract batch_buy_contract sell_by_shortcode close_all_open_contracts);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
