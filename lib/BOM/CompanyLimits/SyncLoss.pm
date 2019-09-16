@@ -83,7 +83,7 @@ sub _sync_loss_to_redis {
     my ($broker_code, $landing_company, $loss_type, $get_db_loss_func, $options) = @_;
 
     my $updated_loss = $get_db_loss_func->($broker_code);
-    return 'NOTHING TO UPDATE' unless %$updated_loss;
+    return undef unless %$updated_loss;
 
     my $redis = get_redis($landing_company, $loss_type);
     my $hash_name = "$landing_company:$loss_type";
@@ -93,7 +93,7 @@ sub _sync_loss_to_redis {
         $redis->multi(sub { });
         $redis->del($hash_name, sub { });
         $redis->hmset($hash_name, %$updated_loss, sub { });
-        $redis->exec(sub { $response = $_[1]; });
+        $redis->exec(sub { $response = $_[1]->[1]; });
         $redis->mainloop;
     } else {
         $response = $redis->hmset($hash_name, %$updated_loss);

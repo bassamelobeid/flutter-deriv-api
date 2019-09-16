@@ -20,10 +20,6 @@ use BOM::Test::Email qw(mailbox_search);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
-# Mocking currency conversion becomes needed because of the method close_all_open_contracts
-# which sells all contracts in the unit test database. Because CompanyLimits converts all
-# currencies to USD this method is called. This is a temporary change; we may replace the
-# database implementation which the code in this file tests.
 my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
 $mocked_CurrencyConverter->mock('in_usd', \&fake_in_usd);
 
