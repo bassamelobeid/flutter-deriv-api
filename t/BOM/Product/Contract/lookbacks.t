@@ -58,8 +58,7 @@ my $args = {
     date_pricing => $now,
     duration     => '1h',
     currency     => 'USD',
-    amount       => 1,
-    amount_type  => 'multiplier',
+    multiplier  => '1',
 };
 
 subtest 'lbfloatcall' => sub {
@@ -183,9 +182,10 @@ subtest 'invalid amount_type' => sub {
     }
     catch {
         isa_ok $_, 'BOM::Product::Exception';
-        is $_->error_code, 'WrongAmountTypeOne', 'correct error code';
-        is $_->message_to_client->[0], 'Basis must be [_1] for this contract.';
-        is $_->message_to_client->[1], 'multiplier';
+        is $_->error_code, 'InvalidInput', 'correct error code';
+        is $_->message_to_client->[0], '[_1] is not a valid input for contract type [_2].';
+        is $_->message_to_client->[1], 'basis';
+        is $_->message_to_client->[2], 'LBHIGHLOW';
     };
 };
 
@@ -199,8 +199,7 @@ subtest 'spot_min and spot_max checks' => sub {
         date_pricing => $now,
         duration     => '1h',
         currency     => 'USD',
-        amount       => 1,
-        amount_type  => 'multiplier',
+        multiplier       => 1,
     };
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
@@ -244,8 +243,7 @@ subtest 'lookback expiry conditions' => sub {
             date_pricing => $expiry->epoch + 1,
             date_expiry  => $expiry,
             currency     => 'USD',
-            amount       => 1,
-            amount_type  => 'multiplier',
+            multiplier       => 1,
         };
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                 underlying => 'R_100',
@@ -298,8 +296,7 @@ subtest 'do not floor ask price on bid' => sub {
         date_pricing => $now,
         date_expiry  => $now->plus_time_interval('1m'),
         currency     => 'USD',
-        amount       => 1,
-        amount_type  => 'multiplier',
+        multiplier       => 1,
     });
 
     is $c->ask_price, 0.5,  'ask price is floored at 50 cents';
