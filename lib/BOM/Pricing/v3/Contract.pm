@@ -472,10 +472,6 @@ sub send_ask {
     $params->{args}->{landing_company} = $params->{landing_company}
         if $params->{landing_company};
 
-    # Here we have to do something like this because we are re-using
-    # amout in the API for specifiying no of contracts.
-    $params->{args}->{multiplier} //= $params->{args}->{amount} if (exists $params->{args}->{basis} and $params->{args}->{basis} eq 'multiplier');
-
     # copy country_code when it is available.
     $params->{args}->{country_code} = $params->{country_code} if $params->{country_code};
 
@@ -501,20 +497,6 @@ sub send_ask {
                 code              => 'pricing error',
                 message_to_client => localize('Unable to price the contract.')});
     };
-
-    #price_stream_results_adjustment is based on theo_probability and is very binary-option specifics.
-    #We do no have the concept of probabilty for the non binary options.
-    $params->{args}->{non_binary_results_adjustment} = $response->{contract_parameters}->{non_binary_results_adjustment}
-        if exists $response->{contract_parameters}->{non_binary_results_adjustment};
-
-    $params->{args}->{theo_price} = $response->{contract_parameters}->{theo_price}
-        if exists $response->{contract_parameters}->{theo_price};
-
-    $params->{args}->{multiplier} = $response->{contract_parameters}->{multiplier}
-        if exists $response->{contract_parameters}->{multiplier};
-
-    $params->{args}->{maximum_ask_price} = $response->{contract_parameters}->{maximum_ask_price}
-        if exists $response->{contract_parameters}->{maximum_ask_price};
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
 
@@ -854,11 +836,22 @@ sub _build_bid_response {
         $response->{entry_tick}      = $entry_spot;
         $response->{entry_spot}      = $entry_spot;
         $response->{entry_tick_time} = 0 + $contract->entry_spot_epoch;
+    }
 
-        if ($contract->two_barriers) {
+    if ($contract->two_barriers) {
+        if ($contract->high_barrier->supplied_type eq 'absolute') {
             $response->{high_barrier} = $contract->high_barrier->as_absolute;
             $response->{low_barrier}  = $contract->low_barrier->as_absolute;
-        } elsif ($contract->barrier && $contract->uses_barrier) {
+        } elsif ($contract->entry_spot) {
+            # supplied_type 'difference' and 'relative' will need entry spot
+            # to calculate absolute barrier value
+            $response->{high_barrier} = $contract->high_barrier->as_absolute;
+            $response->{low_barrier}  = $contract->low_barrier->as_absolute;
+        }
+    } elsif ($contract->barrier) {
+        if ($contract->barrier->supplied_type eq 'absolute' or $contract->barrier->supplied_type eq 'digit') {
+            $response->{barrier} = $contract->barrier->as_absolute;
+        } elsif ($contract->entry_spot) {
             $response->{barrier} = $contract->barrier->as_absolute;
         }
     }
