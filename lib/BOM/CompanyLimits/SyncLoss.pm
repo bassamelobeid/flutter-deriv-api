@@ -142,7 +142,7 @@ sub _get_key_from_record_with_underlying_group {
         return "$expiry_type,$underlying_or_group,$rec->[0]";
     }
     # global recs
-    my $barrier_type = (defined $rec->[4]) ? ($rec->[4] ? 'a' : 'n') : '+';
+    my $barrier_type = (defined $rec->[4]) ? substr($rec->[4], 0, 1) : '+';
     my $contract_group = (defined $rec->[2]) ? $rec->[2] : '+';
 
     return "$expiry_type$barrier_type,$underlying_or_group,$contract_group";
