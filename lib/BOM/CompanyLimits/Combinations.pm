@@ -88,7 +88,7 @@ sub get_attributes_from_contract {
     my $underlying = $bet_data->{underlying_symbol};
 
     # a for atm, n for non-atm
-    my $barrier_type = ($bet_data->{short_code} =~ /_SOP_/) ? 'a' : 'n';
+    my $barrier_type = ($bet_data->{short_code} =~ /_S0P_/) ? 'a' : 'n';
 
     my $expiry_type = 'i';    # intraday
     if ($bet_data->{tick_count} and $bet_data->{tick_count} > 0) {
