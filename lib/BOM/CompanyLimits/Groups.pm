@@ -55,25 +55,21 @@ sub sync_group_to_redis {
     return;
 }
 
-# Pass in group names as variadic parameters - used for unit tests.
+# Pass in psql arguments, followed by group names as variadic parameters.
 # In production/QA provisioning we use psql to load the groups via
 # extract-limit-groups-to-db.pl
 sub load_group_yml_to_db {
-    my @groups = @_;
+    my ($psql_args, @groups) = @_;
     @groups = @$all_groups unless @groups;
 
-    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+    die "psql args is required" unless $psql_args;
 
+    my $output = '';
     foreach my $group_name (@groups) {
-        my $sql = get_insert_group_sql($group_name);
-
-        $dbic->run(
-            fixup => sub {
-                $_->selectall_arrayref($sql);
-            });
+        $output .= _insert_limit_group($psql_args, $group_name);
     }
 
-    return;
+    return $output;
 }
 
 sub get_default_underlying_group_mappings {
@@ -100,20 +96,19 @@ sub get_default_contract_group_mappings {
     return %default_contract_group;
 }
 
-# Works kinda like a factory
-sub get_insert_group_sql {
-    my ($group_name) = @_;
+sub _insert_limit_group {
+    my ($psql_params, $group_name) = @_;
 
-    my $sql_query;
+    my $output;
     if ($group_name eq 'underlying') {
-        $sql_query = _get_insert_underlying_group_sql();
+        $output = _insert_default_underlying_groups($psql_params);
     } elsif ($group_name eq 'contract') {
-        $sql_query = _get_insert_contract_group_sql();
+        $output = _insert_default_contract_groups($psql_params);
     } else {
-        die "invalid group. Choose between 'underlying' and 'contract'";
+        die "invalid group '$group_name'. Choose between 'underlying' and 'contract'";
     }
 
-    return $sql_query;
+    return $output;
 }
 
 my (%underlying_groups_cache, %contract_groups_cache, $cache_date);
@@ -153,58 +148,62 @@ sub _get_limit_groups {
     return ($contract_groups_cache{$bet_data->{bet_type}}, $underlying_groups_cache{$bet_data->{underlying_symbol}});
 }
 
-sub _get_insert_underlying_group_sql {
+sub _insert_default_underlying_groups {
+    my ($psql_args) = @_;
+
     my $sql = <<'EOF';
-CREATE TEMP TABLE tt(LIKE limits.underlying_group_mapping) ON COMMIT DROP;
-INSERT INTO tt(underlying, underlying_group) VALUES
-EOF
+CREATE TEMP TABLE tt(LIKE limits.underlying_group_mapping)
+               ON COMMIT DROP;
 
-    my %underlying_groups = get_default_underlying_group_mappings();
-    $sql .= "('$_','$underlying_groups{$_}'),\n" for (keys %underlying_groups);
-    $sql =~ s/,\n$/;\n/;    # substitute last comma with ;
+COPY tt FROM STDIN;
 
-    $sql .= <<'EOF';
 INSERT INTO limits.underlying_group
 SELECT DISTINCT underlying_group FROM tt
-    ON CONFLICT(underlying_group) DO NOTHING;
+    ON CONFLICT DO NOTHING;
 
 INSERT INTO limits.underlying_group_mapping AS m
-SELECT underlying, underlying_group FROM tt
+SELECT * FROM tt
     ON CONFLICT(underlying) DO UPDATE
    SET underlying_group=EXCLUDED.underlying_group
  WHERE m.underlying_group IS DISTINCT FROM EXCLUDED.underlying_group
 RETURNING *;
 EOF
 
-    return $sql;
+    my %underlying_groups = get_default_underlying_group_mappings();
+    my $input             = '';
+    $input .= "$_\t$underlying_groups{$_}\n" for (keys %underlying_groups);
+    $input .= "\\\.";
+
+    return qx/echo -e "$input" | psql $psql_args -c "$sql"/;
 }
 
-sub _get_insert_contract_group_sql {
+sub _insert_default_contract_groups {
+    my ($psql_args) = @_;
+
     my $sql = <<'EOF';
-WITH tt(bet_type, contract_group) AS (
-  VALUES
-EOF
+CREATE TEMP TABLE tt(LIKE limits.contract_group_mapping)
+               ON COMMIT DROP;
 
-    my %contracts = get_default_contract_group_mappings();
-    $sql .= "('$_','$contracts{$_}'),\n" for (keys %contracts);
-    $sql =~ s/,\n$/\n/;    # substitute last comma with ;
+COPY tt FROM STDIN;
 
-    $sql .= <<'EOF';
-),
-contract_groups AS (
 INSERT INTO limits.contract_group
 SELECT DISTINCT contract_group FROM tt
-    ON CONFLICT(contract_group) DO NOTHING
-)
+    ON CONFLICT DO NOTHING;
+
 INSERT INTO limits.contract_group_mapping AS m
-SELECT bet_type, contract_group FROM tt
+SELECT * FROM tt
     ON CONFLICT(bet_type) DO UPDATE
    SET contract_group=EXCLUDED.contract_group
  WHERE m.contract_group IS DISTINCT FROM EXCLUDED.contract_group
 RETURNING *;
 EOF
 
-    return $sql;
+    my %contracts = get_default_contract_group_mappings();
+    my $input     = '';
+    $input .= "$_\t$contracts{$_}\n" for (keys %contracts);
+    $input .= "\\\.";
+
+    return qx/echo -e "$input" | psql $psql_args -c "$sql"/;
 }
 
 sub _get_active_offerings {
