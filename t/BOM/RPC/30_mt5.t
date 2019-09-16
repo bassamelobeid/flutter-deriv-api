@@ -140,29 +140,37 @@ my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 # consecutive tests to fail without a reset.
 BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
-subtest 'new account without basic details' => sub {
+subtest 'new account with missing signup fields' => sub {
+    # only Labuan has the signup (phone) requirement
+
+    $test_client->status->set('crs_tin_information', 'system', 'testing something');
+    $test_client->phone('');
+    $test_client->save;
+
     my $method = 'mt5_new_account';
     my $params = {
         language => 'EN',
         token    => $token,
         args     => {
-            account_type   => 'gaming',
-            country        => 'mt',
-            email          => $DETAILS{email},
-            name           => $DETAILS{name},
-            investPassword => 'Abcd1234',
-            mainPassword   => $DETAILS{password},
-            leverage       => 100,
+            account_type     => 'financial',
+            mt5_account_type => 'advanced',
+            country          => 'mt',
+            email            => $DETAILS{email},
+            name             => $DETAILS{name},
+            investPassword   => 'Abcd1234',
+            mainPassword     => $DETAILS{password},
+            leverage         => 100,
         },
     };
 
-    $c->call_ok($method, $params)->has_error('error from missing basic details')
-        ->error_code_is('MissingBasicDetails', 'error code for missing basic details')->error_details_is({missing => ['place_of_birth']});
+    $c->call_ok($method, $params)->has_error('error from missing signup details')
+        ->error_code_is('ASK_FIX_DETAILS', 'error code for missing basic details')
+        ->error_details_is({missing => ['phone']}, 'missing field in response details');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
-    # Set field
-    $test_client->place_of_birth("id");
+    $test_client->status->clear_crs_tin_information;
+    $test_client->phone('12345678');
     $test_client->save;
 };
 
@@ -261,10 +269,12 @@ subtest 'MF to MLT account switching' => sub {
     my $mf_switch_client = create_client('MF');
     $mf_switch_client->set_default_account('EUR');
     $mf_switch_client->residence('at');
+    $mf_switch_client->account_opening_reason('speculative');
 
     my $mlt_switch_client = create_client('MLT');
     $mlt_switch_client->set_default_account('EUR');
     $mlt_switch_client->residence('at');
+    $mlt_switch_client->account_opening_reason('speculative');
 
     $mf_switch_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
     $mf_switch_client->$_($basic_details{$_}) for keys %basic_details;
@@ -323,6 +333,9 @@ subtest 'MLT to MF account switching' => sub {
     my $mf_switch_client = create_client('MF');
     $mf_switch_client->set_default_account('EUR');
     $mf_switch_client->residence('at');
+    $mf_switch_client->tax_residence('at');
+    $mf_switch_client->tax_identification_number('1234');
+    $mf_switch_client->account_opening_reason('speculative');
 
     my $mlt_switch_client = create_client('MLT');
     $mlt_switch_client->set_default_account('EUR');
@@ -386,6 +399,9 @@ subtest 'VRTC to MLT and MF account switching' => sub {
     my $mf_switch_client = create_client('MF');
     $mf_switch_client->set_default_account('GBP');
     $mf_switch_client->residence('at');
+    $mf_switch_client->tax_residence('at');
+    $mf_switch_client->tax_identification_number('1234');
+    $mf_switch_client->account_opening_reason('speculative');
 
     my $mlt_switch_client = create_client('MLT');
     $mlt_switch_client->set_default_account('EUR');

@@ -100,9 +100,7 @@ rpc "cashier", sub {
 
     my $client_loginid = $client->loginid;
     my $validation = BOM::Platform::Client::CashierValidation::validate($client_loginid, $action);
-    return BOM::RPC::v3::Utility::create_error({
-            code              => $validation->{error}->{code},
-            message_to_client => $validation->{error}->{message_to_client}}) if exists $validation->{error};
+    return BOM::RPC::v3::Utility::create_error($validation->{error}) if exists $validation->{error};
 
     my ($brand, $currency) = (request()->brand, $client->default_account->currency_code());
 

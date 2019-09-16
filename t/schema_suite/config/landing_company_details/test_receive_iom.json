@@ -113,10 +113,10 @@
          ],
          "properties" : {
             "signup" : {
+               "type" : "array",
                "items" : {
                   "type" : "string"
-               },
-               "type" : "array"
+               }
             }
          },
          "type" : "object",

@@ -216,9 +216,6 @@ async_rpc mt5_new_account => sub {
     my $invalid_account_type_error = create_error_future('InvalidAccountType');
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
-    if (($account_type ne "demo") && (my @arr = $client->missing_requirements("mt5_signup"))) {
-        return create_error_future('MissingBasicDetails', {details => {missing => [@arr]}});
-    }
     return create_error_future('NoCitizen')
         if not $client->is_virtual()
         and $account_type ne "demo"
@@ -281,6 +278,15 @@ async_rpc mt5_new_account => sub {
     }
 
     return create_error_future('permission') if ($client->is_virtual() and $account_type ne 'demo');
+
+    my $requirements = LandingCompany::Registry->new->get($company_name)->requirements->{signup};
+    my @missing_fields = grep { !$client->$_ } @$requirements;
+
+    return create_error_future(
+        'MissingSignupDetails',
+        {
+            override_code => 'ASK_FIX_DETAILS',
+            details       => {missing => [@missing_fields]}}) if ($account_type ne "demo" and @missing_fields);
 
     my $group = _mt5_group($company_name, $account_type, $mt5_account_type, $manager_id, $client->currency);
     return create_error_future('permission') if $group eq '';

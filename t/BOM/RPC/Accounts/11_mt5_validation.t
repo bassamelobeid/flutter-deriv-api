@@ -162,14 +162,6 @@ subtest 'new account' => sub {
 
     my $pob = $test_client->place_of_birth;
 
-    $test_client->place_of_birth('');
-    $test_client->save();
-
-    $c->call_ok($method, $params)->has_error->error_code_is("MissingBasicDetails")->error_details_is({missing => ["place_of_birth"]});
-
-    $test_client->place_of_birth($pob);
-    $test_client->save();
-
     delete $params->{args}->{mt5_account_type};
     $c->call_ok($method, $params)->has_error->error_code_is('InvalidSubAccountType', 'Sub account mandatory for financial');
 
@@ -403,6 +395,7 @@ subtest 'MLT account types - low risk' => sub {
     $client->set_default_account('EUR');
     $client->residence('at');
     $client->aml_risk_classification('low');
+    $client->account_opening_reason('speculative');
     $client->save();
 
     my $user = BOM::User->create(
@@ -466,6 +459,7 @@ subtest 'MLT account types - high risk' => sub {
     $client->set_default_account('EUR');
     $client->residence('at');
     $client->aml_risk_classification('high');
+    $client->account_opening_reason('speculative');
     $client->save();
 
     my $user = BOM::User->create(
@@ -537,6 +531,9 @@ subtest 'MF accout types' => sub {
     my $client = create_client('MF');
     $client->set_default_account('EUR');
     $client->residence('at');
+    $client->tax_residence('at');
+    $client->tax_identification_number('1234');
+    $client->account_opening_reason('speculative');
     $client->aml_risk_classification('low');
     $client->save();
 
@@ -689,7 +686,12 @@ subtest 'MX account types' => sub {
 
     my $mf_client = create_client('MF');
     $mf_client->set_default_account('EUR');
-    $mf_client->residence('gb');
+
+    $mf_client->residence('de');
+    $mf_client->tax_residence('de');
+    $mf_client->tax_identification_number('1234');
+    $mf_client->account_opening_reason('speculative');
+    $client->aml_risk_classification('low');
     financial_assessment($mf_client, 'full');
     $mf_client->save();
 
@@ -855,6 +857,9 @@ subtest 'Virtual account types - EU residences' => sub {
     my $mf_client = create_client('MF');
     $mf_client->set_default_account('GBP');
     $mf_client->residence('de');
+    $mf_client->tax_residence('de');
+    $mf_client->tax_identification_number('1234');
+    $mf_client->account_opening_reason('speculative');
     financial_assessment($mf_client, 'full');
     $mf_client->save();
 
