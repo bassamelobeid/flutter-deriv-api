@@ -989,9 +989,7 @@ sub sell_by_shortcode {
 
                     my $client = $r->{client};
 
-                    # TODO: If we can ascertain that buy price will be the same for all
-                    # sells in this function, we can batch this up and save on
-                    # redis increments
+                    # We cannot batch add sells; buy price may vary even with the same short code
                     BOM::CompanyLimits::->new(
                         bet_data        => $res_row->{fmb},
                         currency        => $self->contract->currency,
