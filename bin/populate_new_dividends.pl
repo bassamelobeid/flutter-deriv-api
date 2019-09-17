@@ -6,6 +6,7 @@ use warnings;
 
 use Date::Utility;
 use BOM::Config::Chronicle;
+use Quant::Framework::Asset;
 
 for my $symbol (qw(1HZ100V 1HZ10V)) {
     my $otc_dividend = Quant::Framework::Asset->new(
