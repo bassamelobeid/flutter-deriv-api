@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 2;
+use Test::More tests => 3;
 use Test::Warnings;
 use Test::Exception;
 use JSON::MaybeXS;
@@ -34,7 +34,7 @@ $redis->del('svg:potential_loss');
 $redis->hmset('contractgroups',   ('CALL', 'callput'));
 $redis->hmset('underlyinggroups', ('R_50', 'volidx'));
 
-subtest 'Batch buy', sub {
+subtest 'Batch buy sell', sub {
     my $manager_client;
     my @client_list = map { create_client('CR', undef, {binary_user_id => $_}) } (1 .. 4);
     top_up($_, 'USD', 1000) foreach (@client_list);
@@ -71,6 +71,12 @@ subtest 'Batch buy', sub {
         sell_outcome   => 0.5,                        # Premature sell! Only win 50% of payout (3)
     );
 
+    cmp_ok $redis->hget($loss_hash, '++,R_50,+'), '==', 0, 'On sell, potential loss should be reverted';
+    foreach my $b_id (2 .. 4) {
+        cmp_ok $redis->hget($loss_hash,     "+,+,$b_id"),      '==', 0, "binary_user_id $b_id potential loss reverted";
+        cmp_ok $redis->hget('svg:turnover', "+,R_50,+,$b_id"), '==', 2, "binary_user_id $b_id should have same turnover as before after sell";
+    }
+
     is $error, undef, 'Premature sell of 50% succeeded with no errors';
     $loss_hash = 'svg:realized_loss';
     cmp_ok $redis->hget($loss_hash, '++,R_50,+'), '==', 3,
@@ -80,3 +86,58 @@ subtest 'Batch buy', sub {
     }
 };
 
+subtest 'Batch buy on error must revert', sub {
+    my $manager_client;
+    my @client_list = map { create_client('CR', undef, {binary_user_id => $_}) } (5 .. 8);
+
+    my $b_id7 = $client_list[2];
+    # For binary_user_id 2 and 4, give only 3 USD, so second buy of contract
+    # will throw insufficient balance error
+    top_up($_, 'USD', 4) foreach (@client_list);
+    top_up($b_id7, 'USD', 3);
+
+    # Set manager_client as binary_user_id = 1
+    ($manager_client, @client_list) = @client_list;
+
+    my ($svg_contract, $error, $multiple, $svg_fmb, $mx_contract, $mx_trx, $mx_fmb);
+
+    $svg_contract = create_contract(
+        payout     => 10,
+        underlying => 'R_50',
+    );
+
+    ($error, $multiple) = batch_buy_contract(
+        manager_client => $manager_client,
+        clients        => \@client_list,
+        contract       => $svg_contract,
+        buy_price      => 3,
+    );
+
+    is $error, undef, 'no errors during batch buy';
+    my $loss_hash = 'svg:potential_loss';
+    cmp_ok $redis->hget($loss_hash, '++,R_50,+'), '==', 21,
+        'Batch buy 3 contracts of potential loss 7 each, global potential loss for symbol should be 7 * 3 = 21';
+    foreach my $b_id (6 .. 8) {
+        cmp_ok $redis->hget($loss_hash,     "+,+,$b_id"),      '==', 7, "binary_user_id $b_id should have correct potential loss";
+        cmp_ok $redis->hget('svg:turnover', "+,R_50,+,$b_id"), '==', 3, "binary_user_id $b_id have correct turnover";
+    }
+
+    ($error, $multiple) = batch_buy_contract(
+        manager_client => $manager_client,
+        clients        => \@client_list,
+        contract       => $svg_contract,
+        buy_price      => 3,
+    );
+
+    is $error, undef, 'no errors during batch buy';
+    is scalar(grep { defined $_->{error} } @$multiple), 2, 'There should be 2 failed buys';
+
+    cmp_ok $redis->hget($loss_hash, '++,R_50,+'), '==', 28, 'Batch buy 3 same contracts again, but now only one passes. Should only increment by 7.';
+    foreach my $b_id (6, 8) {
+        cmp_ok $redis->hget($loss_hash,     "+,+,$b_id"),      '==', 7, "binary_user_id $b_id should have the same potential loss";
+        cmp_ok $redis->hget('svg:turnover', "+,R_50,+,$b_id"), '==', 3, "binary_user_id $b_id should have the same turnover";
+    }
+
+    cmp_ok $redis->hget($loss_hash,     "+,+,7"),      '==', 14, "binary_user_id 7 potential loss should increase by 7";
+    cmp_ok $redis->hget('svg:turnover', "+,R_50,+,7"), '==', 6,  "binary_user_id 7 should increase by 3";
+};
