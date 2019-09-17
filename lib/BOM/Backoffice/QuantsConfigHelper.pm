@@ -16,6 +16,10 @@ use YAML::XS qw(LoadFile);
 use List::Util qw(uniq);
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::QuantsAuditLog;
+use Time::Duration::Concise;
+
+my $app_config = BOM::Config::Runtime->instance->app_config;
+$app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 
 sub save_limit {
     my $args  = shift;
@@ -119,6 +123,7 @@ sub update_contract_group {
     $args->{contract_type} =~ s/\s+//g;
     my $contract_types = $args->{contract_type};
     my $contract_group = $args->{contract_group};
+    my $duration       = $app_config->quants->ultra_short_duration;
 
     my $output = try {
         my $dbs = BOM::Database::QuantsConfig->new->_db_list('default');
@@ -129,8 +134,8 @@ sub update_contract_group {
                     $contract_group = Finance::Contract::Category::get_all_contract_types()->{$contract_type}{category};
                 }
                 $dbic->run(
-                    fixup => sub {
-                        $_->do(qq{SELECT bet.update_contract_group(?,?)}, undef, $contract_type, $contract_group);
+                    ping => sub {
+                        $_->do(qq{SELECT bet.update_contract_group(?,?,?)}, undef, $contract_type, $contract_group, $duration);
                     },
                 );
             }
@@ -148,14 +153,16 @@ sub update_contract_group {
 
 sub rebuild_aggregate_tables {
 
+    my $duration = shift // $app_config->quants->ultra_short_duration;
+
     my $output = try {
         foreach my $method (qw(rebuild_open_contract_aggregates rebuild_global_aggregates)) {
             my $dbs = BOM::Database::QuantsConfig->new->_db_list('default');
             foreach my $db (@$dbs) {
                 my $dbic = $db->dbic;
                 $dbic->run(
-                    fixup => sub {
-                        $_->do(qq{SELECT bet.$method()});
+                    ping => sub {
+                        $_->do(qq{SELECT bet.$method(?)}, undef, $duration);
                     },
                 );
             }
@@ -285,6 +292,40 @@ sub decorate_for_pending_market_group {
     };
 }
 
+sub update_ultra_short {
+    my $args     = shift;
+    my $staff    = shift;
+    my $duration = $args->{duration};
+
+    unless (defined $duration) {
+        return {error => 'Ultra short duration is not specified'};
+    }
+
+    $duration = Time::Duration::Concise->new(interval => $duration);
+    my $err = try {
+        +{error => 'Ultra short span should not be greater than 30 minutes.'} if ($duration->minutes() > 30)
+    }
+    catch {
+        +{error => 'Invalid format.'}
+    };
+    return $err if $err;
+
+    my $key_name = 'quants.' . $args->{limit_type};
+    my $output   = try {
+        $app_config->set({$key_name => $duration->seconds()});
+        rebuild_aggregate_tables($duration->seconds());
+        +{result => $duration->as_string()};
+    }
+    catch {
+        warn $_;
+        +{error => 'Failed to set the duration. Please check log.'}
+    };
+
+    BOM::Backoffice::QuantsAuditLog::log($staff, "updateultrashortduration", "$key_name new duration[$duration->as_string]");
+
+    return $output;
+}
+
 sub save_threshold {
     my $args   = shift;
     my $staff  = shift;
@@ -362,12 +403,12 @@ sub get_config_input {
 
     if ($key eq 'contract_group' or $key eq 'market') {
         my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
-        my $output = $db->dbic->run(
-            fixup => sub {
-                $_->selectall_arrayref("SELECT * from bet.$key");
-            });
 
         if ($key eq 'contract_group') {
+            my $output = $db->dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT * from bet.contract_group");
+                });
             my %supported_contract_types =
                 map { $_ => 1 }
                 map { $_->values_for_key('contract_type') } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config));
@@ -375,6 +416,10 @@ sub get_config_input {
         }
 
         if ($key eq 'market') {
+            my $output = $db->dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref("SELECT * from bet.limits_market_mapper");
+                });
             my %supported_underlying_symbols =
                 map { $_ => 1 }
                 map { $_->values_for_key('underlying_symbol') } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config));

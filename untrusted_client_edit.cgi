@@ -7,6 +7,7 @@ use warnings;
 use BOM::User::Client;
 use HTML::Entities;
 
+use BOM::Platform::Token::API;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -130,7 +131,7 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         if ($action eq 'insert_data') {
             $printline = try {
                 $client->status->set('duplicate_account', $clerk, $reason);
-                my $m = BOM::Database::Model::AccessToken->new;
+                my $m = BOM::Platform::Token::API->new;
                 $m->remove_by_loginid($client->loginid);
                 $insert_success_msg;
             }

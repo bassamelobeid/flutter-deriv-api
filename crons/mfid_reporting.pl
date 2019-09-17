@@ -11,7 +11,7 @@ use Path::Tiny 'path';
 =head2
 
  This script:
- - creates our two daily MFID reporting files for Binaries and two for MT5
+ - creates our two daily MFID reporting files for MT5
 
 =cut
 
@@ -37,8 +37,6 @@ my $fileTail = join('',
     sprintf('%02d', $fileDate->month),
     sprintf('%02d', $fileDate->day_of_month),
     '_', $fileDate->hour, $fileDate->minute, $fileDate->second);
-my $tradesFN     = 'BIE001_trades_' . $fileTail . '.csv';
-my $usersFN      = 'BIE001_users_' . $fileTail . '.csv';
 my $mt5_tradesFN = 'BIE001_MT5_trades_' . $fileTail . '.csv';
 my $mt5_usersFN  = 'BIE001_MT5_users_' . $fileTail . '.csv';
 
@@ -49,8 +47,6 @@ path($reports_path)->mkpath;
 # just let PG/psql create the files directly
 my $rz = qx(/usr/bin/psql service=report -v ON_ERROR_STOP=1 -X <<SQL
     SET SESSION CHARACTERISTICS as TRANSACTION READ ONLY;
-    \\COPY (SELECT * FROM mfid_trades_rpt('$rptDate')) TO '$reports_path/$tradesFN' WITH (FORMAT 'csv', DELIMITER ',', FORCE_QUOTE *, HEADER);
-    \\COPY (SELECT * FROM mfid_users_rpt('$rptDate')) TO '$reports_path/$usersFN' WITH (FORMAT 'csv', DELIMITER ',', FORCE_QUOTE *, HEADER);
     \\COPY (SELECT * FROM mt5.mfid_trades_rpt_mt5('$rptDate')) TO '$reports_path/$mt5_tradesFN' WITH (FORMAT 'csv', DELIMITER ',', FORCE_QUOTE *, HEADER);
     \\COPY (SELECT * FROM mt5.mfid_users_rpt_mt5('$rptDate')) TO '$reports_path/$mt5_usersFN' WITH (FORMAT 'csv', DELIMITER ',', FORCE_QUOTE *, HEADER);
 SQL
@@ -64,7 +60,7 @@ SQL
 # For errors resulting from the SQL it will be similar to this> ERROR:  column "fob" does not exist
 if ($rz !~ /psql:|ERROR:/s) {
 
-    my $upload_status = BOM::MapFintech::upload("$reports_path", [$tradesFN, $usersFN, $mt5_tradesFN, $mt5_usersFN]);
+    my $upload_status = BOM::MapFintech::upload("$reports_path", [$mt5_tradesFN, $mt5_usersFN]);
     my $message = $upload_status ? "There was a problem uploading files: $upload_status" : 'Files uploaded successfully';
     $message .= "\n\nSee attached.";
 
@@ -74,7 +70,7 @@ if ($rz !~ /psql:|ERROR:/s) {
             to         => $report_recipients,
             subject    => "Emir reporting - $rptDate",
             message    => [$message],
-            attachment => ["$reports_path/$tradesFN", "$reports_path/$usersFN", "$reports_path/$mt5_tradesFN", "$reports_path/$mt5_usersFN"]});
+            attachment => ["$reports_path/$mt5_tradesFN", "$reports_path/$mt5_usersFN"]});
 } else {
     send_email({
             from    => 'sysadmin@binary.com',

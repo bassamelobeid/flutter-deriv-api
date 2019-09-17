@@ -35,6 +35,7 @@
             url: upload_url,
             data: {
                 save_threshold: 1,
+                save_ultra_short_duration: 1,
                 limit_type: el.find('select[name="user_limits"]').val(),
                 threshold_amount: el.find('input[name="user_threshold_amount"]').val(),
             },
