@@ -29,10 +29,6 @@ BOM::CompanyLimits
 
     $company_limits->reverse_buys(@clients)
 
-=head1 DESCRIPTION
-
-#TODO: ...
-
 =cut
 
 sub new {
@@ -98,8 +94,6 @@ sub reverse_buys {
     die "Cannot reverse buys unless add_buys is first called" unless $self->{has_add_buys};
 
     my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'reverse_buys');
-
-    # TODO: Check if we should reverse buys?
 
     $self->_incr_for_buys(-1, @clients);
     BOM::CompanyLimits::Stats::stats_stop($stat_dat);
