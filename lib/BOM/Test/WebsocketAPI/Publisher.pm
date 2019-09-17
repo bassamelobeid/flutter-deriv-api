@@ -141,10 +141,20 @@ sub is_paused {
 
 Defines a publish handler for a type of value to be published to Redis. The
 publish handler will receive a request to be published every second.
-The request is specified in the client side, where L<publish> is called.
 
-Note that this is different from the function that makes those requests to
-publish.
+The handler then decides to which Redis instance it should publish the message.
+
+Each handler receives a set of arguments:
+
+=over 4
+
+=item * key  - The redis channel to publish data (String)
+
+=item * type - The message type used to keep track of the published values
+
+=item * payload - The actual message payload to publish to redis
+
+=back
 
 =cut
 
