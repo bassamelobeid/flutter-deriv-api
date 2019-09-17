@@ -749,6 +749,10 @@ sub batch_buy {
                     $success++;
                 }
             }
+
+            my @clients_to_reverse = grep { defined $_->{error} } @$list;
+            $company_limits->reverse_buys(@clients_to_reverse);
+
             $stat{$broker}->{success} = $success;
             enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
         }
