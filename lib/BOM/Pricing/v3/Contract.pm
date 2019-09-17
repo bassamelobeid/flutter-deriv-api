@@ -215,7 +215,7 @@ sub _get_ask {
                     $response->{contract_parameters}->{maximum_ask_price} = $contract->maximum_ask_price if $contract->can('maximum_ask_price');
                 } elsif ($streaming_params->{add_theo_probability}) {
                     $response->{contract_parameters}->{binary_price_adjustment} = 1;
-                    $response->{contract_parameters}->{theo_probability}        = $contract->theo_probablity->amount;
+                    $response->{contract_parameters}->{theo_probability}        = $contract->theo_probability->amount;
                 }
             }
 
