@@ -10,93 +10,6 @@ use BOM::Config;
 use Exporter qw(import export_to_level);
 our @EXPORT_OK = qw(email_verification);
 
-# Hacky deriv way - to be refactored in a future card
-# note: square brackets must be escaped with ~
-my %deriv_content = (
-    account_opening_new => q( 
-        <tr>
-            <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
-                <!--~[if (gte mso 9)|(IE)~]>
-                <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
-                <!~[endif~]-->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                    <tr>
-                        <td bgcolor="#ffffff" align="left" valign="top" style="padding: 40px 30px 20px 30px; border-top: 2px solid #ff444f;">
-                            <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">Verify your account</h2>
-                            <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">Thanks for signing up. To start trading,<br />please verify your email address by clicking the button below.</p>
-                        </td>
-                    </tr>
-                    <!-- button -->
-                    <tr>
-                        <td bgcolor="#ffffff" align="left" style="padding: 12px 30px 20px 30px; color: #333333; font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 25px;">
-                            <!--~[if (gte mso 9)|(IE)~]>
-                                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://www.deriv.com" style="height:50px;v-text-anchor:middle;width:200px;" arcsize="8%" stroke="f" fillcolor="#ff444f">
-                                <w:anchorlock/>
-                                <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:bold;">Verify and start trading</center>
-                                </v:roundrect>
-                            <!~[endif~]-->
-                            <a class="button" href="[_1]" style="mso-hide:all;"><span>Verify and start trading</span></a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td bgcolor="#ffffff" align="left" valign="top" style="padding: 0px 30px 40px 30px;">
-                            <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">Having trouble with the button?<br />Copy and paste this link into your browser to verify.<br /><a href="[_1]">[_1]</a></p>
-                        </td>
-                    </tr>
-                </table>
-                <!--~[if (gte mso 9)|(IE)~]></td></tr></table>
-                <!~[endif~]-->
-            </td>
-        </tr>
-    ),
-    account_opening_existing => q(
-        <tr>
-            <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
-                <!--~[if (gte mso 9)|(IE)~]>
-                <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
-                <!~[endif~]-->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                    <tr>
-                        <td bgcolor="#ffffff" align="center" valign="top" style="padding: 40px 30px 40px 30px; border-top: 2px solid #ff444f;">
-                                <a href="https://www.deriv.com">
-                                    <img src="https://binary-com.github.io/deriv-email-templates/html/images/open-email.png" width="268" height="180" border="0" style="display: block; max-width: 100%;" alt="Deriv.com">
-                                </a>
-                        </td>
-                    </tr>
-                </table>
-                <!--~[if (gte mso 9)|(IE)~]></td></tr></table>
-                <!~[endif~]-->
-            </td>
-        </tr>
-        <!-- COPY BLOCK -->
-        <tr>
-            <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
-                <!--~[if (gte mso 9)|(IE)~]>
-                <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
-                <!~[endif~]-->
-                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                    <!-- COPY -->
-                    <tr>
-                        <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 8px 30px;">
-                            <h2 style="font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">This email is already in use</h2>
-                        </td>
-                    </tr>
-                    <!-- COPY -->
-                    <tr>
-                        <td bgcolor="#ffffff" align="left" style="padding: 8px 30px 40px 30px; color: #333333; font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px;">
-                            <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">The email address you provided <strong>(<a href="[_1]" style="color: #333333 !important;">[_1]</a>)</strong> is already taken. Only one Deriv account can be created with one email address.</p>
-                            <p style="margin: 16px 0px 0px 0px;"><a href="https://www.deriv.com">Log in</a></p>
-                        </td>
-                     </tr>
-                </table>
-                <!--~[if (gte mso 9)|(IE)~]>
-                    </td></tr></table>
-                <!~[endif~]-->
-            </td>
-        </tr>
-    )
-);
-
 =head2 email_verification
 
 Description: Creates verification email messages  for the different verification types that are called using the verify_email api call. 
@@ -180,7 +93,42 @@ sub email_verification {
 
             if ($brand->name eq 'deriv') {
                 $subject = localize('Verify your account for Deriv');
-                $message = localize($deriv_content{account_opening_new}, _build_verification_url('signup', $args));
+                $message = localize(
+                    '<tr>
+                        <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
+                            <!--~[if (gte mso 9)|(IE)~]>
+                            <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
+                            <!~[endif~]-->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                                <tr>
+                                    <td bgcolor="#ffffff" align="left" valign="top" style="padding: 40px 30px 20px 30px; border-top: 2px solid #ff444f;">
+                                        <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">Verify your account</h2>
+                                        <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">Thanks for signing up. To start trading,<br />please verify your email address by clicking the button below.</p>
+                                    </td>
+                                </tr>
+                                <!-- button -->
+                                <tr>
+                                    <td bgcolor="#ffffff" align="left" style="padding: 12px 30px 20px 30px; color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 25px;">
+                                        <!--~[if (gte mso 9)|(IE)~]>
+                                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://www.deriv.com" style="height:50px;v-text-anchor:middle;width:200px;" arcsize="8%" stroke="f" fillcolor="#ff444f">
+                                            <w:anchorlock/>
+                                            <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:bold;">Verify and start trading</center>
+                                            </v:roundrect>
+                                        <!~[endif~]-->
+                                        <a class="button" href="[_1]" style="mso-hide:all;"><span>Verify and start trading</span></a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td bgcolor="#ffffff" align="left" valign="top" style="padding: 0px 30px 40px 30px;">
+                                        <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">Having trouble with the button?<br />Copy and paste this link into your browser to verify.<br /><a href="[_1]">[_1]</a></p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!--~[if (gte mso 9)|(IE)~]></td></tr></table>
+                            <!~[endif~]-->
+                        </td>
+                    </tr>',
+                    _build_verification_url('signup', $args));
             } else {
                 $subject = localize('Verify your email address - [_1]', $website_name);
                 $message =
@@ -206,7 +154,53 @@ sub email_verification {
 
             if ($brand->name eq 'deriv') {
                 $subject = localize('This email is taken');
-                $message = localize($deriv_content{account_opening_existing}, $email);
+                $message = localize(
+                    '<tr>
+                        <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
+                            <!--~[if (gte mso 9)|(IE)~]>
+                            <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
+                            <!~[endif~]-->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                                <tr>
+                                    <td bgcolor="#ffffff" align="center" valign="top" style="padding: 40px 30px 40px 30px; border-top: 2px solid #ff444f;">
+                                            <a href="https://www.deriv.com">
+                                                <img src="https://binary-com.github.io/deriv-email-templates/html/images/open-email.png" width="268" height="180" border="0" style="display: block; max-width: 100%;" alt="Deriv.com">
+                                            </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!--~[if (gte mso 9)|(IE)~]></td></tr></table>
+                            <!~[endif~]-->
+                        </td>
+                    </tr>
+                    <!-- COPY BLOCK -->
+                    <tr>
+                        <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
+                            <!--~[if (gte mso 9)|(IE)~]>
+                            <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
+                            <!~[endif~]-->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                                <!-- COPY -->
+                                <tr>
+                                    <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 8px 30px;">
+                                        <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">This email is already in use</h2>
+                                    </td>
+                                </tr>
+                                <!-- COPY -->
+                                <tr>
+                                    <td bgcolor="#ffffff" align="left" style="padding: 8px 30px 40px 30px; color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px;">
+                                        <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">The email address you provided <strong>(<a href="[_1]" style="color: #333333 !important;">[_1]</a>)</strong> is already taken. Only one Deriv account can be created with one email address.</p>
+                                        <p style="margin: 16px 0px 0px 0px;"><a href="https://www.deriv.com">Log in</a></p>
+                                    </td>
+                                 </tr>
+                            </table>
+                            <!--~[if (gte mso 9)|(IE)~]>
+                                </td></tr></table>
+                            <!~[endif~]-->
+                        </td>
+                    </tr>',
+                    $email
+                );
             } elsif ($source == 1) {
                 $subject = localize('Duplicate email address submitted - [_1]', $website_name);
                 $message = '<div style="line-height:200%;color:#333333;font-size:15px;">'
@@ -230,34 +224,115 @@ sub email_verification {
         },
         payment_withdraw => sub {
             my $type_call = shift;
+            my ($message, $subject);
 
-            my $payment_withdraw =
-                $verification_uri
-                ? localize(
-                '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the link below:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                _build_verification_url('payment_withdraw', $args),
-                $website_name
-                )
-                : localize(
-                '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                $code, $website_name
+            if ($brand->name eq 'deriv') {
+                $subject = localize('Verify your withdrawal request - [_1]', $website_name);
+                $type_call = 'payment_agent_withdraw' if $type_call eq 'paymentagent_withdraw';    # yuk
+                $message = localize(
+                    '<tr>
+                        <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
+                            <!--~[if (gte mso 9)|(IE)~]>
+                            <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
+                            <!~[endif~]-->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                                <tr>
+                                    <td bgcolor="#ffffff" align="center" valign="top" style="padding: 50px 30px 40px 30px; border-top: 2px solid #ff444f;">
+                                        <a href="https://www.deriv.com">
+                                            <img src="https://binary-com.github.io/deriv-email-templates/html/images/icon-verify-withdrawal.png" width="180" height="180" border="0" style="display: block; max-width: 100%;" alt="Deriv.com">
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td bgcolor="#ffffff" align="center" valign="top" style="padding: 0px 30px 20px 30px;">
+                                        <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">Please verify your</h2>
+                                        <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">withdrawal request</h2>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td bgcolor="#ffffff" align="left" valign="top" style="padding: 12px 30px 20px 30px;">
+                                        <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Before we can proceed with the withdrawal process, we first need to check that it was you who made the request.</p>
+                                    </td>
+                                </tr>
+                                <!-- button -->
+                                <tr>
+                                    <td bgcolor="#ffffff" align="center" style="padding: 12px 30px 32px 30px; color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 25px;">
+                                        <!--~[if (gte mso 9)|(IE)~]>
+                                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="[_1]" style="height:50px;v-text-anchor:middle;width:180px;" arcsize="10%" strokecolor="#ff444f" fillcolor="#ffffff">
+                                            <w:anchorlock/>
+                                            <center style="color:#ff444f;font-family:sans-serif;font-size:16px;font-weight:bold;">Yes, it\'s me!</center>
+                                            </v:roundrect>
+                                        <!~[endif~]-->
+                                        <a class="button" href="[_1]" style="mso-hide:all;"><span>Yes, it\'s me!</span></a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!--~[if (gte mso 9)|(IE)~]></td></tr></table>
+                            <!~[endif~]-->
+                        </td>
+                    </tr>
+                    <tr>
+                        <td bgcolor="#f3f3f3" align="center" style="padding: 2px 10px 0px 10px; border-radius: 2px 2px 0px 0px;">
+                            <!--~[if (gte mso 9)|(IE)~]>
+                                <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
+                            <!~[endif~]-->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
+                                <tr>
+                                    <td bgcolor="#ffffff" align="left" valign="top" style="padding: 32px 30px 16px 30px; border-radius: 0px 0px 2px 2px;">
+                                        <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">If the button doesn\'t work, please copy and paste this code into the verification form.</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td bgcolor="#ffffff" align="center" valign="top" style="padding: 0px 30px 40px 30px; border-radius: 0px 0px 2px 2px;">
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 100%;">
+                                            <tr>
+                                                <td bgcolor="#f3f3f3" align="center" valign="top" style="padding: 16px 16px 16px 16px; border-radius: 0px 0px 2px 2px;">
+                                                    <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #ff444f; font-size: 16px; font-weight: bold; line-height: 24px; margin: 0px 0px 0px 0px;">[_2]</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!--~[if (gte mso 9)|(IE)~]>
+                                </td></tr></table>
+                            <!~[endif~]-->
+                        </td>
+                    </tr>'
+                    , _build_verification_url($type_call, $args), $code
                 );
+            } else {
+                my $payment_withdraw =
+                    $verification_uri
+                    ? localize(
+                    '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the link below:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                    _build_verification_url('payment_withdraw', $args),
+                    $website_name
+                    )
+                    : localize(
+                    '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                    $code, $website_name
+                    );
 
-            my $payment_withdraw_agent =
-                $verification_uri
-                ? localize(
-                '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the link below:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                _build_verification_url('payment_agent_withdraw', $args),
-                $website_name
-                )
-                : localize(
-                '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
-                $code, $website_name
-                );
+                my $payment_withdraw_agent =
+                    $verification_uri
+                    ? localize(
+                    '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by clicking the link below:</p><p><a href="[_1]">[_1]</a></p><p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                    _build_verification_url('payment_agent_withdraw', $args),
+                    $website_name
+                    )
+                    : localize(
+                    '<p style="line-height:200%;color:#333333;font-size:15px;">Dear Valued Customer,</p><p>Please help us to verify your identity by entering the following verification token into the payment agent withdrawal form:<p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p></p><p style="color:#333333;font-size:15px;">With regards,<br/>[_2]</p>',
+                    $code, $website_name
+                    );
+
+                $subject = localize('Verify your withdrawal request - [_1]', $website_name);
+                $message = $type_call eq 'payment_withdraw' ? $payment_withdraw : $payment_withdraw_agent;
+            }
 
             return {
-                subject => localize('Verify your withdrawal request - [_1]', $website_name),
-                message => $type_call eq 'payment_withdraw' ? $payment_withdraw : $payment_withdraw_agent,
+                subject => $subject,
+                message => $message
             };
         },
         reset_password => sub {
