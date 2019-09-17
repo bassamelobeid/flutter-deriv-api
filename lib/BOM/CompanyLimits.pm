@@ -2,9 +2,9 @@ package BOM::CompanyLimits;
 use strict;
 use warnings;
 
+use ExchangeRates::CurrencyConverter;
 use BOM::CompanyLimits::Helpers qw(get_redis);
 use BOM::CompanyLimits::Combinations;
-use BOM::CompanyLimits::LossTypes;
 use BOM::CompanyLimits::Stats;
 use LandingCompany::Registry;
 
@@ -115,11 +115,12 @@ sub add_sells {
     }
 
     # On sells, potential loss is deducted from open bets
-    my $potential_loss = $self->calc_loss('potential_loss');
+    my $bet_data = $self->{bet_data};
+    my $potential_loss = ExchangeRates::CurrencyConverter::in_usd($bet_data->{payout_price} - $bet_data->{buy_price}, $self->{currency});
     $self->_incrby_loss_hash('potential_loss', $self->{global_combinations}, scalar @clients * -$potential_loss,
         $user_combinations, -$potential_loss);
 
-    my $realized_loss = $self->calc_loss('realized_loss');
+    my $realized_loss = ExchangeRates::CurrencyConverter::in_usd($bet_data->{sell_price} - $bet_data->{buy_price}, $self->{currency});
     $self->_incrby_loss_hash('realized_loss', $self->{global_combinations}, scalar @clients * $realized_loss, $user_combinations, $realized_loss);
 
     BOM::CompanyLimits::Stats::stats_stop($stat_dat);
@@ -169,7 +170,9 @@ sub _incr_for_buys {
 
     my @responses;
 
-    my $potential_loss = $self->calc_loss('potential_loss') * $multiplier;
+    my $bet_data = $self->{bet_data};
+    my $potential_loss =
+        ExchangeRates::CurrencyConverter::in_usd($bet_data->{payout_price} - $bet_data->{buy_price}, $self->{currency}) * $multiplier;
     push @responses,
         $self->_incrby_loss_hash(
         'potential_loss',
@@ -178,7 +181,7 @@ sub _incr_for_buys {
         $user_combinations, $potential_loss
         );
 
-    my $turnover = $self->calc_loss('turnover') * $multiplier;
+    my $turnover = ExchangeRates::CurrencyConverter::in_usd($self->{bet_data}->{buy_price}, $self->{currency}) * $multiplier;
     push @responses, $self->_incrby_loss_hash('turnover', $turnover_combinations, $turnover);
 
     return @responses;
