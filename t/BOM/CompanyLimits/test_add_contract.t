@@ -41,11 +41,78 @@ $redis->hmset('underlyinggroups', ('R_50', 'volidx'));
 #};
 
 # Test with different underlying
-#subtest 'Different underlying tests', sub {
+subtest 'Different underlying tests', sub {
+    top_up my $cr_cl = create_client('CR'), 'USD', 5000;
 
-#};
+    my ($error, $contract_info_svg, $contract, $key);
+
+    $contract = create_contract(
+        payout     => 6,
+        underlying => 'R_50'
+    );
+    
+    ($error, $contract_info_svg) = buy_contract(
+        client    => $cr_cl,
+        buy_price => 2,
+        contract  => $contract,
+    );
+
+    key = 'ta,R_50,callput';
+
+    $contract = create_contract(
+        payout     => 7,
+        underlying => 'R_50'
+    );
+    
+    ($error, $contract_info_svg) = buy_contract(
+        client    => $cr_cl,
+        buy_price => 2,
+        contract  => $contract,
+    );
+
+    $contract = create_contract(
+        payout     => 8,
+        underlying => 'frxUSDJPY'
+    );
+    
+    ($error, $contract_info_svg) = buy_contract(
+        client    => $cr_cl,
+        buy_price => 2,
+        contract  => $contract,
+    );
+
+    key = 'ta,frxUSDJPY,callput';
+
+    $contract = create_contract(
+        payout     => 9,
+        underlying => 'R_100'
+    );
+    
+    ($error, $contract_info_svg) = buy_contract(
+        client    => $cr_cl,
+        buy_price => 2,
+        contract  => $contract,
+    );
+
+    key = 'ta,R_50,callput';
+    key = 'ta,frxUSDJPY,callput';
+    key = 'ta,R_100,callput';
+};
 
 # Test with different barrier
+# subtest 'Different barrier', sub {
+# S0P
+
+#
+#};
+
+# Test with daily loss and daily turnover
+#subtest 'Loss and turnover are on daily basis', sub {
+
+# Loss and turnover still same on current day
+
+# Loss and turnover different on new day
+#};
 
 subtest 'Different landing companies test', sub {
 
@@ -169,15 +236,7 @@ subtest 'Different currencies', sub {
     $redis->hdel('svg:potential_loss', $key);
 };
 
-# Test with daily loss and daily turnover
-#subtest 'Loss and turnover are on daily basis', sub {
-
-# Loss and turnover still same on current day
-
-# Loss and turnover different on new day
-#};
-
-# Test when limits have breached
+# Test when limits have breached (LATER in v2)
 #subtest 'Limits breached tests', sub {
 
 # CR (USD) shows no breach
@@ -189,7 +248,7 @@ subtest 'Different currencies', sub {
 # MX (USD) shows no breach for SVG
 #};
 
-# Test if database and redis are synced properly
+# Test if database and redis are synced properly (LATER in v2)
 #subtest 'Sync between database and redis', sub {
 
 # New contract purchase should sync with database
@@ -200,50 +259,4 @@ subtest 'Different currencies', sub {
 # 1. should not be impacted,
 # 2. redis synced on new day data
 #};
-
-subtest 'Limits test base case', sub {
-    my $cl = create_client;
-    top_up $cl, 'USD', 5000;
-
-    my ($contract, $error, $contract_info, $total);
-
-    $contract = create_contract(
-        payout     => 6,
-        underlying => 'R_50',
-    );
-
-    ($error, $contract_info) = buy_contract(
-        client    => $cl,
-        buy_price => 2,
-        contract  => $contract,
-    );
-
-    my $key = 'ta,R_50,callput';
-    $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 4, 'buying contract adds correct potential loss';
-
-    my $fmb = $contract_info->{fmb};
-
-    sell_contract(
-        client       => $cl,
-        contract_id  => $fmb->{id},
-        contract     => $contract,
-        sell_outcome => 1,
-    );
-
-    $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 0, 'selling contract with win, deducts potential loss from before';
-
-    $contract = create_contract(
-        payout     => 600,
-        underlying => 'R_50',
-    );
-
-    $error = buy_contract(
-        client    => $cl,
-        buy_price => 200,
-        contract  => $contract,
-    );
-
-};
 
