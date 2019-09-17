@@ -74,12 +74,12 @@ sub is_mt5_suspended {
                                 my $group  = $data->{'group'};
                                 my $rights = $data->{'rights'};
 
-                                # Keep things around for a day,
+                                # Keep things around for an hour,
                                 # long enough to be useful but
                                 # try not to keep bad data too long...
                                 # but 5 minutes is good enough for
                                 # a negative cache.
-                                my $ttl = $group ? 86400 : 300;
+                                my $ttl = $group ? 3600 : 300;
                                 $group //= 'unknown';
                                 stats_inc('mt5.group_populator.item_processed', 1);
                                 my $mt5_details = {
