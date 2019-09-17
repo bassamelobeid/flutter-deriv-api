@@ -90,7 +90,7 @@ sub token_deletion_history {
 sub get_all_tokens {
     my $self = shift;
 
-    my $res  = $self->dbic->run(
+    my $res = $self->dbic->run(
         fixup => sub {
             my $sth = $_->prepare("SELECT * FROM auth.access_token");
             $sth->execute();

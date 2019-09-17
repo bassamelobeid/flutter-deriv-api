@@ -17,11 +17,11 @@ my $db_model = BOM::Database::Model::AccessToken->new;
 
 subtest 'save_token' => sub {
     my $args = {
-        token => _token(),
-        display_name => 'test',
-        loginid => 'CR123',
-        scopes => ['read'],
-        valid_for_ip => '',
+        token         => _token(),
+        display_name  => 'test',
+        loginid       => 'CR123',
+        scopes        => ['read'],
+        valid_for_ip  => '',
         creation_time => Date::Utility->new->db_timestamp,
     };
     my $res = $db_model->save_token($args);
@@ -34,8 +34,8 @@ subtest 'save_token' => sub {
     is $res->{token}, $args->{token}, 'token matched';
 
     $args->{loginid} = 'CR1234';
-    $args->{token} = _token();
-    $res = $db_model->save_token($args);
+    $args->{token}   = _token();
+    $res             = $db_model->save_token($args);
     ok $res, 'saved successfully';
     ok $db_model->_update_token_last_used($res->{token}, Date::Utility->new->db_timestamp), 'last_used timestamp updated';
 };
@@ -57,6 +57,6 @@ subtest 'remove_by_token' => sub {
 done_testing();
 
 sub _token {
-    my @a = ('A'..'Z');
-    return join '', map {$a[int(rand($#a))]} (1..5);
+    my @a = ('A' .. 'Z');
+    return join '', map { $a[int(rand($#a))] } (1 .. 5);
 }
