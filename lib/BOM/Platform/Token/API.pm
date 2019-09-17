@@ -87,6 +87,8 @@ sub get_token_details {
     my $key = $self->_make_key($token);
     my %details = @{$self->_redis_read->hgetall($key) // []};
 
+    return %details unless keys %details;
+
     $details{scopes} = decode_json_utf8($details{scopes}) if $details{scopes};
 
     my $now = time;
