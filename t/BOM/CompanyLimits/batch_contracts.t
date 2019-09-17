@@ -14,7 +14,7 @@ use Data::Dumper;
 use BOM::Test;
 use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Contract qw(create_contract buy_contract sell_contract batch_buy_contract sell_by_shortcode);
-use BOM::Test::ContractTestHelper qw(close_all_open_contracts);
+use BOM::Test::ContractTestHelper qw(close_all_open_contracts reset_all_loss_hashes);
 use BOM::CompanyLimits::SyncLoss;
 use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
@@ -27,8 +27,7 @@ my $json  = JSON::MaybeXS->new;
 
 # Discard unit test bets as it affects limits redis sync with db
 close_all_open_contracts();
-BOM::CompanyLimits::SyncLoss::reset_daily_loss_hashes(force_reset => 1);
-$redis->del('svg:potential_loss');
+reset_all_loss_hashes();
 
 # Setup groups:
 $redis->hmset('contractgroups',   ('CALL', 'callput'));
@@ -56,12 +55,11 @@ subtest 'Batch buy sell', sub {
     );
 
     is $error, undef, 'no errors during batch buy';
-    my $loss_hash = 'svg:potential_loss';
-    cmp_ok $redis->hget($loss_hash, '++,R_50,+'), '==', 12,
+    cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+'), '==', 12,
         'Batch buy 3 contracts of potential loss 4 each, global potential loss for symbol should be 4 * 3 = 12';
     foreach my $b_id (2 .. 4) {
-        cmp_ok $redis->hget($loss_hash,     "+,+,$b_id"),      '==', 4, "binary_user_id $b_id should have correct potential loss";
-        cmp_ok $redis->hget('svg:turnover', "+,R_50,+,$b_id"), '==', 2, "binary_user_id $b_id have correct turnover";
+        cmp_ok $redis->hget('svg:potential_loss', "+,+,$b_id"),      '==', 4, "binary_user_id $b_id should have correct potential loss";
+        cmp_ok $redis->hget('svg:turnover',       "+,R_50,+,$b_id"), '==', 2, "binary_user_id $b_id have correct turnover";
     }
 
     ($error, $multiple) = sell_by_shortcode(
@@ -71,18 +69,17 @@ subtest 'Batch buy sell', sub {
         sell_outcome   => 0.5,                        # Premature sell! Only win 50% of payout (3)
     );
 
-    cmp_ok $redis->hget($loss_hash, '++,R_50,+'), '==', 0, 'On sell, potential loss should be reverted';
+    cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+'), '==', 0, 'On sell, potential loss should be reverted';
     foreach my $b_id (2 .. 4) {
-        cmp_ok $redis->hget($loss_hash,     "+,+,$b_id"),      '==', 0, "binary_user_id $b_id potential loss reverted";
-        cmp_ok $redis->hget('svg:turnover', "+,R_50,+,$b_id"), '==', 2, "binary_user_id $b_id should have same turnover as before after sell";
+        cmp_ok $redis->hget('svg:potential_loss', "+,+,$b_id"),      '==', 0, "binary_user_id $b_id potential loss reverted";
+        cmp_ok $redis->hget('svg:turnover',       "+,R_50,+,$b_id"), '==', 2, "binary_user_id $b_id should have same turnover as before after sell";
     }
 
     is $error, undef, 'Premature sell of 50% succeeded with no errors';
-    $loss_hash = 'svg:realized_loss';
-    cmp_ok $redis->hget($loss_hash, '++,R_50,+'), '==', 3,
+    cmp_ok $redis->hget('svg:realized_loss', '++,R_50,+'), '==', 3,
         'Batch sell 3 contracts of realized loss 2 each, global realized loss for symbol is correct ((sell_price - buy_price) * 3 = (3 - 2) * 3 = 3)';
     foreach my $b_id (2 .. 4) {
-        cmp_ok $redis->hget($loss_hash, "+,+,$b_id"), '==', 1, "binary_user_id $b_id should have correct realized_loss";
+        cmp_ok $redis->hget('svg:realized_loss', "+,+,$b_id"), '==', 1, "binary_user_id $b_id should have correct realized_loss";
     }
 };
 
@@ -114,12 +111,11 @@ subtest 'Batch buy on error must revert', sub {
     );
 
     is $error, undef, 'no errors during batch buy';
-    my $loss_hash = 'svg:potential_loss';
-    cmp_ok $redis->hget($loss_hash, '++,R_50,+'), '==', 21,
+    cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+'), '==', 21,
         'Batch buy 3 contracts of potential loss 7 each, global potential loss for symbol should be 7 * 3 = 21';
     foreach my $b_id (6 .. 8) {
-        cmp_ok $redis->hget($loss_hash,     "+,+,$b_id"),      '==', 7, "binary_user_id $b_id should have correct potential loss";
-        cmp_ok $redis->hget('svg:turnover', "+,R_50,+,$b_id"), '==', 3, "binary_user_id $b_id have correct turnover";
+        cmp_ok $redis->hget('svg:potential_loss', "+,+,$b_id"),      '==', 7, "binary_user_id $b_id should have correct potential loss";
+        cmp_ok $redis->hget('svg:turnover',       "+,R_50,+,$b_id"), '==', 3, "binary_user_id $b_id have correct turnover";
     }
 
     ($error, $multiple) = batch_buy_contract(
@@ -132,12 +128,13 @@ subtest 'Batch buy on error must revert', sub {
     is $error, undef, 'no errors during batch buy';
     is scalar(grep { defined $_->{error} } @$multiple), 2, 'There should be 2 failed buys';
 
-    cmp_ok $redis->hget($loss_hash, '++,R_50,+'), '==', 28, 'Batch buy 3 same contracts again, but now only one passes. Should only increment by 7.';
+    cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+'), '==', 28,
+        'Batch buy 3 same contracts again, but now only one passes. Should only increment by 7.';
     foreach my $b_id (6, 8) {
-        cmp_ok $redis->hget($loss_hash,     "+,+,$b_id"),      '==', 7, "binary_user_id $b_id should have the same potential loss";
-        cmp_ok $redis->hget('svg:turnover', "+,R_50,+,$b_id"), '==', 3, "binary_user_id $b_id should have the same turnover";
+        cmp_ok $redis->hget('svg:potential_loss', "+,+,$b_id"),      '==', 7, "binary_user_id $b_id should have the same potential loss";
+        cmp_ok $redis->hget('svg:turnover',       "+,R_50,+,$b_id"), '==', 3, "binary_user_id $b_id should have the same turnover";
     }
 
-    cmp_ok $redis->hget($loss_hash,     "+,+,7"),      '==', 14, "binary_user_id 7 potential loss should increase by 7";
-    cmp_ok $redis->hget('svg:turnover', "+,R_50,+,7"), '==', 6,  "binary_user_id 7 should increase by 3";
+    cmp_ok $redis->hget('svg:potential_loss', "+,+,7"),      '==', 14, "binary_user_id 7 potential loss should increase by 7";
+    cmp_ok $redis->hget('svg:turnover',       "+,R_50,+,7"), '==', 6,  "binary_user_id 7 should increase by 3";
 };
