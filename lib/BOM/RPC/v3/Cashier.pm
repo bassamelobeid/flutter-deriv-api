@@ -1800,38 +1800,27 @@ sub _email_content {
                     <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
                     <!~[endif~]-->
                     <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                        <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="center" style="padding: 40px 50px 8px 50px;">
                                 <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">We\'ve completed</h2>
                                 <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">a withdrawal request</h2>
                             </td>
                         </tr>
-                         <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="center" style="padding: 20px 30px 20px 30px;">
                                 <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; font-weight: bold; margin: 0px 0px 0px 0px;">Your Login ID: [_1]</p>
                             </td>
                         </tr>
-                        <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
                                 <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Dear Mr. [_2] [_3] [_4],</p>
                             </td>
                         </tr>
-                        <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
                                 <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">We would like to inform you that the withdrawal request of <strong>[_5] [_6]</strong> by <strong>[_7] [_8]</strong> has been processed. The funds have been credited into your account <strong>[_1]</strong> at <strong>[_9]</strong>.</p>
                             </td>
                         </tr>
-                        <!-- COPY -->
-                        <tr>
-                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">[_10]</p>
-                            </td>
-                        </tr>
-                        <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 40px 30px;">
                                 <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Kind regards,<br />The [_9] team.</p>
@@ -1851,8 +1840,7 @@ sub _email_content {
             $amount,
             encode_entities($client_name),
             $client->loginid,
-            $website_name,
-            $further_instruction),
+            $website_name),
 
         pa_transfer_deriv => localize('
             <tr>
@@ -1880,14 +1868,12 @@ sub _email_content {
                     <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
                     <!~[endif~]-->
                     <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                        <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="center" style="padding: 40px 50px 8px 50px;">
                                 <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">We\'ve completed</h2>
                                 <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">a transfer</h2>
                             </td>
                         </tr>
-                         <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="center" style="padding: 20px 30px 20px 30px;">
                                 <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; font-weight: bold; margin: 0px 0px 0px 0px;">Your Login ID: [_1]</p>
@@ -1905,7 +1891,6 @@ sub _email_content {
                                 <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">We would like to inform you that the transfer of <strong>[_5] [_6]</strong> via <strong>[_7]</strong> has been processed. The funds have been credited into your account <strong>[_1]</strong> at <strong>[_7]</strong>.</p>
                             </td>
                         </tr>
-                        <!-- COPY -->
                         <tr>
                             <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 40px 30px;">
                                 <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Kind regards,<br />The [_8] team.</p>
