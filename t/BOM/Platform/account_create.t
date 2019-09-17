@@ -222,15 +222,6 @@ subtest 'create account' => sub {
     $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client, $broker, 1);
     is $details->{error}, undef, 'no error for empty place of birth';
 
-    $real_acc = BOM::Platform::Account::Real::default::create_account({
-        from_client => $vr_client,
-        user        => $user,
-        details     => \%t_details,
-        country     => $vr_client->residence,
-    });
-
-    ok $real_acc->{error}, 'check duplicated phone';
-
     $t_details{phone} = '+8201111' . int(rand(999));
     # real acc
     lives_ok {

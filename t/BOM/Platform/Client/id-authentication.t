@@ -7,6 +7,7 @@ use Test::FailWarnings;
 use File::Spec;
 use Test::MockModule;
 use Test::Exception;
+use BOM::User;
 
 use BOM::Platform::Email;
 
@@ -46,7 +47,14 @@ subtest 'Constructor' => sub {
 };
 
 subtest 'Virtual accounts' => sub {
+    my $user_client_vr = BOM::User->create(
+        email          => 'vr@binary.com',
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
+
     my $c = create_client('VRTC');
+    $user_client_vr->add_client($c);
 
     my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
     ok !$v->client->is_first_deposit_pending, 'No tracking of first deposit for virtual accounts';
@@ -54,7 +62,14 @@ subtest 'Virtual accounts' => sub {
 
 };
 subtest "CR accounts" => sub {
-    my $c = create_client("CR");
+    my $user_client_cr = BOM::User->create(
+        email          => 'cr@binary.com',
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
+
+    my $c = create_client('CR');
+    $user_client_cr->add_client($c);
 
     my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
     ok $v->client->is_first_deposit_pending, 'First deposit tracking for CR account';
@@ -67,7 +82,15 @@ subtest "CR accounts" => sub {
 
 subtest 'MLT accounts' => sub {
     subtest 'Not age verified prior to run_authentication' => sub {
+        my $user_client_mlt = BOM::User->create(
+            email          => 'mlt@binary.com',
+            password       => BOM::User::Password::hashpw('jskjd8292922'),
+            email_verified => 1,
+        );
+
         my $c = create_client('MLT');
+        $user_client_mlt->add_client($c);
+
         $c->status->clear_age_verification;
 
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
@@ -81,7 +104,14 @@ subtest 'MLT accounts' => sub {
         ok $v->client->status->cashier_locked, 'Cashier_locked';
     };
     subtest 'Age verified prior to run_authentication' => sub {
+        my $user_client_mlt = BOM::User->create(
+            email          => 'mlt2@binary.com',
+            password       => BOM::User::Password::hashpw('jskjd8292922'),
+            email_verified => 1,
+        );
+
         my $c = create_client('MLT');
+        $user_client_mlt->add_client($c);
 
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
         ok $v->client->is_first_deposit_pending, 'First deposit tracking for MLT account';
@@ -98,7 +128,14 @@ subtest 'MLT accounts' => sub {
 
 subtest 'MF accounts' => sub {
     subtest "Not authenticated prior to run_authentication" => sub {
+        my $user_client_mf = BOM::User->create(
+            email          => 'mf@binary.com',
+            password       => BOM::User::Password::hashpw('jskjd8292922'),
+            email_verified => 1,
+        );
+
         my $c = create_client('MF');
+        $user_client_mf->add_client($c);
 
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
         ok $v->client->is_first_deposit_pending, 'First deposit tracking for MF account';
@@ -111,7 +148,14 @@ subtest 'MF accounts' => sub {
         ok $v->client->status->unwelcome, "Unwelcome";
     };
     subtest "Authenticated prior to run_authentication" => sub {
+        my $user_client_mf = BOM::User->create(
+            email          => 'mf2@binary.com',
+            password       => BOM::User::Password::hashpw('jskjd8292922'),
+            email_verified => 1,
+        );
+
         my $c = create_client('MF');
+        $user_client_mf->add_client($c);
 
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
         ok $v->client->is_first_deposit_pending, 'First deposit tracking for MF account';
@@ -149,8 +193,14 @@ subtest 'MX accounts' => sub {
             });
         });
     subtest 'Non-gb residence' => sub {
+        my $user_client_mx = BOM::User->create(
+            email          => 'mx@binary.com',
+            password       => BOM::User::Password::hashpw('jskjd8292922'),
+            email_verified => 1,
+        );
 
         my $c = create_client('MX', undef, {residence => 'de'});
+        $user_client_mx->add_client($c);
 
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $c)->proveid;
         is($v, undef, "run_authentication for Non-gb residence ok");

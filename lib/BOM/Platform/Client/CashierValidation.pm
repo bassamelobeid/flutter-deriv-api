@@ -111,8 +111,19 @@ sub validate {
     return _create_error(localize('Your account is locked for withdrawals.'))
         if ($action eq 'withdraw' and $client->status->withdrawal_locked);
 
-    return _create_error(localize('Your profile appears to be incomplete. Please update your personal details to continue.'))
-        if ($action eq 'withdraw' and $client->missing_requirements('withdrawal'));
+    my @missing_fields;
+    @missing_fields = $client->missing_requirements('deposit')    if $action eq 'deposit';
+    @missing_fields = $client->missing_requirements('withdrawal') if $action eq 'withdraw';
+
+    return _create_error(localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
+        'ASK_FIX_DETAILS', {fields => \@missing_fields})
+        if @missing_fields;
+
+    return _create_error(
+        localize('It looks like you have more than one account with us. Please contact customer support for assistance.'))
+        if ($action eq 'deposit'
+        and BOM::Database::ClientDB->new({broker_code => $client->broker_code})
+        ->get_duplicate_client({(map { $_ => $client->$_ } qw( first_name last_name email date_of_birth phone ))}));
 
     return;
 }
@@ -323,12 +334,13 @@ sub _withdrawal_validation {
 }
 
 sub _create_error {
-    my ($message, $code) = @_;
+    my ($message, $code, $details) = @_;
 
     return {
         error => {
             code => $code // 'CashierForwardError',
-            message_to_client => $message
+            message_to_client => $message,
+            $details ? (details => $details) : (),
         }};
 }
 

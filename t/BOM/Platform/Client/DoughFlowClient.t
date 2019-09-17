@@ -4,9 +4,16 @@ use warnings;
 use Test::More qw(no_plan);
 use Test::MockObject::Extends;
 use Date::Utility;
+use BOM::User;
 
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+
+my $user_client_cr = BOM::User->create(
+    email          => 'cr@binary.com',
+    password       => BOM::User::Password::hashpw('jskjd8292922'),
+    email_verified => 1,
+);
 
 my $client_details1 = {
     'loginid'         => 'CR5089',
@@ -80,6 +87,7 @@ my $df_client;
 
 subtest 'creating a DF client' => sub {
     $df_client = BOM::Platform::Client::DoughFlowClient->register_and_return_new_client($client_details1);
+    $user_client_cr->add_client($df_client);
 
     is($df_client->CustName, 'Felix The cat',           'CustName correct');
     is($df_client->Street,   '11 Bligh St',             'Street correct');
@@ -97,6 +105,7 @@ subtest 'creating a DF client' => sub {
 
 subtest 'Profile mapped correctly to DF levels' => sub {
     $df_client = BOM::Platform::Client::DoughFlowClient->register_and_return_new_client($client_details2);
+    $user_client_cr->add_client($df_client);
 
     my $mock_client = Test::MockObject::Extends->new($df_client);
     my $mock_status = Test::MockObject::Extends->new($df_client->status);
@@ -131,6 +140,7 @@ subtest 'handling client data that require munging' => sub {
     $client_details1->{'address_postcode'} = 'T5T-0M2';
 
     $df_client = BOM::Platform::Client::DoughFlowClient->register_and_return_new_client($client_details1);
+    $user_client_cr->add_client($df_client);
 
     is($df_client->CustName, 'a aX',                    'munged CustName correct');
     is($df_client->Street,   '',                        'munged Street correct');
