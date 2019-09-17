@@ -114,13 +114,10 @@ sub add_sells {
 
     my $attributes = $self->{attributes};
     my $user_combinations;
-    my $turnover_combinations;
 
     foreach my $client (@clients) {
         my $combinations = BOM::CompanyLimits::Combinations::get_user_limit_combinations($client->binary_user_id, $attributes);
-        my $t_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($client->binary_user_id, $attributes);
-        push(@$user_combinations,     @$combinations);
-        push(@$turnover_combinations, @$t_combinations);
+        push(@$user_combinations, @$combinations);
     }
 
     # On sells, potential loss is deducted from open bets
