@@ -186,9 +186,8 @@ subtest 'validation' => sub {
     $params->{token} = $token;
     $params->{args}->{account_from} = 'CR123';
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for loginid that does not exists';
-    is $result->{error}->{message_to_client}, 'Transfers between accounts are not available for your account.',
-        'Correct error message for loginid that does not exists';
+    is $result->{error}->{code},              'PermissionDenied',   'Correct error code for loginid that does not exists';
+    is $result->{error}->{message_to_client}, 'Permission denied.', 'Correct error message for loginid that does not exists';
 
     $cr_dummy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -199,9 +198,8 @@ subtest 'validation' => sub {
     $params->{args}->{account_from} = $cr_dummy->loginid;
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for loginid not in siblings';
-    is $result->{error}->{message_to_client}, 'Transfers between accounts are not available for your account.',
-        'Correct error message for loginid not in siblings';
+    is $result->{error}->{code},              'PermissionDenied',   'Correct error code for loginid not in siblings';
+    is $result->{error}->{message_to_client}, 'Permission denied.', 'Correct error message for loginid not in siblings';
 
     $params->{args}->{account_from} = $client_mlt->loginid;
     $params->{args}->{account_to}   = $client_mlt->loginid;
@@ -222,11 +220,6 @@ subtest 'validation' => sub {
         'Correct error message for different landing companies';
 
     $params->{args}->{account_from} = $client_mf->loginid;
-
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for no default currency';
-    is $result->{error}->{message_to_client}, 'From account provided should be same as current authorized client.',
-        'Correct error message if from is not same as authorized client';
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, _get_unique_display_name());
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
@@ -338,7 +331,61 @@ subtest 'validation' => sub {
     like $result->{error}->{message_to_client},
         qr/Provided amount is not within permissible limits. Maximum transfer amount for USD currency is/,
         'Correct error message for invalid maximum amount';
+};
 
+subtest 'Basic transfers' => sub {
+    $email = 'new_email' . rand(999) . '@binary.com';
+    my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'ID',
+    });
+
+    my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'ID',
+    });
+
+    $user = BOM::User->create(
+        email          => $email,
+        password       => BOM::User::Password::hashpw('hello'),
+        email_verified => 1,
+    );
+
+    for ($client_cr1, $client_cr2) {
+        $user->add_client($_);
+        $_->set_default_account('USD');
+    }
+
+    $client_cr1->payment_free_gift(
+        currency => 'EUR',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+
+    $params->{token}      = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
+    $params->{token_type} = 'oauth_token';
+    $params->{args}       = {
+        account_from => $client_cr1->loginid,
+        account_to   => $client_cr2->loginid,
+        currency     => 'USD',
+        amount       => 10
+    };
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts');
+
+    $params->{args}{account_from} = $client_cr2->loginid;
+    $params->{args}{account_to}   = $client_cr1->loginid;
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_no_error('can transfer using oauth token when account_from is not authorized client');
+
+    $params->{token_type}         = 'api_token';
+    $params->{args}{account_from} = $client_cr2->loginid;
+    $params->{args}{account_to}   = $client_cr1->loginid;
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is(
+        'From account provided should be same as current authorized client.',
+        'Cannot transfer using api token when account_from is not authorized client'
+    );
 };
 
 subtest $method => sub {
@@ -386,10 +433,8 @@ subtest $method => sub {
 
         # some random clients
         $params->{args}->{account_to} = 'MLT999999';
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as wrong to client')
-            ->error_message_is('Transfers between accounts are not available for your account.',
-            'Correct error message for transfering to random client');
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Transfer error as wrong to client')
+            ->error_message_is('Permission denied.', 'Correct error message for transfering to random client');
 
         $params->{args}->{account_to} = $client_mf->loginid;
         $rpc_ct->call_ok($method, $params)
@@ -953,7 +998,6 @@ subtest 'transfer with no fee' => sub {
     cmp_ok $client_cr_usd->default_account->balance, '==', $previous_fm_amt - $amount, 'correct balance after transfer excluding fees';
     cmp_ok $client_cr_pa_btc->default_account->balance, '==', $previous_to_amt + $transfer_amount,
         'non pa to authorised pa transfer (USD to BTC), no fees will be charged';
-
 };
 
 subtest 'multi currency transfers' => sub {
@@ -1179,14 +1223,12 @@ subtest 'MT5' => sub {
         email          => $email,
         place_of_birth => 'id'
     });
-
     $test_client->set_default_account('USD');
     $test_client->payment_free_gift(
         currency => 'USD',
         amount   => 1000,
         remark   => 'free gift',
     );
-
     $test_client->status->set('crs_tin_information', 'system', 'testing something');
 
     my $test_client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -1194,14 +1236,12 @@ subtest 'MT5' => sub {
         email          => $email,
         place_of_birth => 'id'
     });
-
     $test_client_btc->set_default_account('BTC');
     $test_client_btc->payment_free_gift(
-        currency => 'USD',
+        currency => 'BTC',
         amount   => 10,
         remark   => 'free gift',
     );
-
     $test_client_btc->status->set('crs_tin_information', 'system', 'testing something');
 
     $user->add_client($test_client);
@@ -1242,7 +1282,7 @@ subtest 'MT5' => sub {
                 loginid  => $test_client_btc->loginid,
                 balance  => num(10),
                 currency => 'BTC'
-            }
+            },
         ],
         "all real binary accounts by empty $method call"
     );
@@ -1347,22 +1387,11 @@ subtest 'MT5' => sub {
 
     cmp_ok $test_client->default_account->balance, '==', 970, 'real money account balance increased';
 
-    {
-        $mock_client->mock(fully_authenticated => sub { return 0 });
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-            ->error_message_is('There was an error processing the request. Please authenticate your account.',
-            'Error message returned from inner MT5 sub');
-    }
-
-    $params->{args}{account_from} = $test_client_btc->loginid;
-    $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+    $mock_client->mock(fully_authenticated => sub { return 0 });
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_is('From account provided should be same as current authorized client.', 'Account from must be authenticated account');
-
-    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
-    $params->{args}{account_to}   = $test_client_btc->loginid;
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_is('To account provided should be same as current authorized client.', 'To from must be authenticated account');
+        ->error_message_is('There was an error processing the request. Please authenticate your account.',
+        'Error message returned from inner MT5 sub');
+    $mock_client->mock(fully_authenticated => sub { return 1 });
 
     $params->{args}{account_from} = $test_client->loginid;
     $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
@@ -1370,12 +1399,40 @@ subtest 'MT5' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for real account_from');
 
-    # This test & check is to be put back when MT5 api speed is improved
-    # $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
-    # $params->{args}{account_to}   = $test_client->loginid;
-    # $params->{args}{curency}      = 'EUR';
-    # $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-    #     ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for MT5 account_from');
+    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+    $params->{args}{account_to}   = $test_client->loginid;
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+        ->error_message_is('There was an error processing the request. Currency provided is different from account currency.',
+        'Correct message for wrong currency for MT5 account_from');
+
+    subtest 'transfers using an account other than authenticated client' => sub {
+        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($test_client_btc->loginid, 'test token');
+        $params->{args}{currency} = 'USD';
+
+        $params->{args}{amount}       = 180;
+        $params->{args}{account_from} = $test_client->loginid;
+        $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+
+        $params->{token_type} = 'oauth_token';
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('with oauth token, ok if account_from is not the authenticated client');
+        $params->{token_type} = 'api_token';
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is(
+            'From account provided should be same as current authorized client.',
+            'with api token, NOT ok if account_from is not the authenticated client'
+        );
+
+        $params->{args}{amount}       = 150;
+        $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+        $params->{args}{account_to}   = $test_client->loginid;
+
+        $params->{token_type} = 'oauth_token';
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('with oauth token, ok if account_to is not the authenticated client');
+        $params->{token_type} = 'api_token';
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is(
+            'To account provided should be same as current authorized client.',
+            'with api token, NOT ok if account_to is not the authenticated client'
+        );
+    };
 
     # restore config
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->manager_api;

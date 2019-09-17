@@ -5,6 +5,7 @@ use Test::More;
 use Test::Mojo;
 use Test::MockModule;
 use Email::Address::UseXS;
+use BOM::User;
 
 use BOM::Test::Email qw( mailbox_search mailbox_clear );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -26,14 +27,21 @@ subtest 'Initialization' => sub {
     'Initial RPC server and client connection';
 };
 
-my $method    = 'cashier';
-my $email     = 'dummy' . rand(999) . '@binary.com';
+my $method         = 'cashier';
+my $email          = 'dummy' . rand(999) . '@binary.com';
+my $user_client_cr = BOM::User->create(
+    email          => 'cr@binary.com',
+    password       => BOM::User::Password::hashpw('jskjd8292922'),
+    email_verified => 1,
+);
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code    => 'CR',
     email          => $email,
     place_of_birth => 'id',
 });
 $client_cr->set_default_account('USD');
+
+$user_client_cr->add_client($client_cr);
 
 subtest 'Doughflow' => sub {
     my $params = {};

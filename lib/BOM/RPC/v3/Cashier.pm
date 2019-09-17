@@ -452,8 +452,8 @@ rpc "paymentagent_list",
         push @{$payment_agent_table_row},
             {
             'paymentagent_loginid'  => $loginid,
-            'name'                  => encode_entities($payment_agent->{payment_agent_name}),
-            'summary'               => encode_entities($payment_agent->{summary}),
+            'name'                  => $payment_agent->{payment_agent_name},
+            'summary'               => $payment_agent->{summary},
             'url'                   => $payment_agent->{url},
             'email'                 => $payment_agent->{email},
             'telephone'             => $payment_agent->{phone},
@@ -1207,7 +1207,8 @@ rpc transfer_between_accounts => sub {
     my $params = shift;
     my $err;
 
-    my ($client, $source) = @{$params}{qw/client source/};
+    my ($client, $source, $token) = @{$params}{qw/client source token/};
+    my $token_type = $params->{token_type} // '';
 
     if (BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
@@ -1277,8 +1278,8 @@ rpc transfer_between_accounts => sub {
 
     # Both $loginid_from and $loginid_to must be either a real or a MT5 account
     # Unfortunately demo MT5 accounts will slip through this check, but they will
-    # be caught in BOM::RPC::v3::MT5::Account::*
-    return _transfer_between_accounts_error()
+    # be caught in one of the BOM::RPC::v3::MT5::Account functions
+    return BOM::RPC::v3::Utility::permission_error()
         unless ((
             exists $siblings->{$loginid_from}
             or $is_mt5_loginid_from
@@ -1298,10 +1299,11 @@ rpc transfer_between_accounts => sub {
         if ($is_mt5_loginid_to) {
 
             return _transfer_between_accounts_error(localize('From account provided should be same as current authorized client.'))
-                unless ($client->loginid eq $loginid_from);
+                unless ($client->loginid eq $loginid_from)
+                or $token_type eq 'oauth_token';
 
             return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
-                if ($client->currency ne $currency);
+                if ($siblings->{$loginid_from}->{currency} ne $currency);
 
             $method = \&BOM::RPC::v3::MT5::Account::mt5_deposit;
             $params->{args}{from_binary} = $binary_login = $loginid_from;
@@ -1312,11 +1314,13 @@ rpc transfer_between_accounts => sub {
         if ($is_mt5_loginid_from) {
 
             return _transfer_between_accounts_error(localize('To account provided should be same as current authorized client.'))
-                unless ($client->loginid eq $loginid_to);
+                unless ($client->loginid eq $loginid_to)
+                or $token_type eq 'oauth_token';
 
             $method = \&BOM::RPC::v3::MT5::Account::mt5_withdrawal;
             $params->{args}{to_binary} = $binary_login = $loginid_to;
             $params->{args}{from_mt5}  = $mt5_login    = $loginid_from =~ s/^MT//r;
+            $params->{args}{currency_check} = $currency;    # this makes mt5_withdrawal() check that MT5 account currency matches $currency
         }
 
         return $method->($params)->then(
@@ -1378,7 +1382,9 @@ rpc transfer_between_accounts => sub {
             amount        => $amount,
             from_currency => $from_currency,
             to_currency   => $to_currency,
-        });
+        },
+        $token_type
+    );
     return $res if $res;
 
     BOM::User::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
@@ -1600,7 +1606,7 @@ sub _transfer_between_accounts_error {
 }
 
 sub _validate_transfer_between_accounts {
-    my ($current_client, $client_from, $client_to, $args) = @_;
+    my ($current_client, $client_from, $client_to, $args, $token_type) = @_;
     # error out if one of the client is not defined, i.e.
     # loginid provided is wrong or not in siblings
     return _transfer_between_accounts_error() if (not $client_from or not $client_to);
@@ -1613,7 +1619,8 @@ sub _validate_transfer_between_accounts {
 
     # error out if current logged in client and loginid from passed are not same
     return _transfer_between_accounts_error(localize('From account provided should be same as current authorized client.'))
-        unless ($current_client->loginid eq $client_from->loginid);
+        unless ($current_client->loginid eq $client_from->loginid)
+        or $token_type eq 'oauth_token';
 
     my ($currency, $amount, $from_currency, $to_currency) = @{$args}{qw/currency amount from_currency to_currency/};
 
