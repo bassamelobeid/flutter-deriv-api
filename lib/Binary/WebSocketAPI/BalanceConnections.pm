@@ -131,7 +131,11 @@ my $my_accept = sub {
         $self->reactor->timer(
             0.02 + rand(0.08),
             sub {
-                $tm->() if $self->{active} and $acc->();
+                # Keep going until we run out of things to accept...
+                return $tm->() if $self->{active} and $acc->();
+                # then make sure we clean up the parent `$tm` coderef so we
+                # don't gradually leak memory over time
+                weaken $tm;
             });
     };
     $tm->();
