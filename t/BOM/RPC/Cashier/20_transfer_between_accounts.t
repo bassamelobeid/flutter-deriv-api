@@ -161,10 +161,9 @@ subtest 'call params validation' => sub {
 
     $client_cr->status->set('cashier_locked', 'system', 'testing something');
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for cashier locked';
-    is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is cashier locked.',
-        'Correct error message for cashier locked';
+    $rpc_ct->call_ok($method, $params)->has_no_system_error
+        ->error_code_is('TransferBetweenAccountsError', 'Correct error code for cashier locked')
+        ->error_message_like(qr/cashier is locked/, 'Correct error message for cashier locked');
 
     $client_cr->status->clear_cashier_locked;
     $client_cr->status->set('withdrawal_locked', 'system', 'testing something');
@@ -650,7 +649,7 @@ subtest 'transfer with fees' => sub {
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(1);
     $rpc_ct->call_ok($method, $params)->has_error('error as all transfer_between_accounts are suspended in system config')
         ->error_code_is('TransferBetweenAccountsError', 'error code is TransferBetweenAccountsError')
-        ->error_message_is('Transfers between fiat and crypto accounts are currently disabled.')->result;
+        ->error_message_like(qr/Transfers between fiat and crypto accounts/)->result;
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(0);
 
     my ($usd_btc_fee, $btc_usd_fee, $usd_ust_fee, $ust_usd_fee, $ust_eur_fee) = (2, 3, 4, 5, 6);
@@ -1071,7 +1070,7 @@ subtest 'multi currency transfers' => sub {
     $result =
         $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Daily Transfer limit - correct error code")
-        ->error_message_is('Maximum of 2 transfers allowed per day.', 'Daily Transfer Limit - correct error message');
+        ->error_message_like(qr/2 transfers a day/, 'Daily Transfer Limit - correct error message');
 };
 
 subtest 'suspended currency transfers' => sub {
@@ -1328,7 +1327,7 @@ subtest 'MT5' => sub {
     $params->{args}{account_to}   = $test_client->loginid;
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5 demo -> real account transfer error code')
-        ->error_message_is('There was an error processing the request. Withdrawals are not allowed for demo accounts.',
+        ->error_message_like(qr/demo accounts/,
         'MT5 demo -> real account transfer error message');
 
     # real -> MT5
@@ -1389,8 +1388,7 @@ subtest 'MT5' => sub {
 
     $mock_client->mock(fully_authenticated => sub { return 0 });
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_is('There was an error processing the request. Please authenticate your account.',
-        'Error message returned from inner MT5 sub');
+        ->error_message_like(qr/authenticate/, 'Error message returned from inner MT5 sub');
     $mock_client->mock(fully_authenticated => sub { return 1 });
 
     $params->{args}{account_from} = $test_client->loginid;
@@ -1402,7 +1400,7 @@ subtest 'MT5' => sub {
     $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
     $params->{args}{account_to}   = $test_client->loginid;
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_is('There was an error processing the request. Currency provided is different from account currency.',
+        ->error_message_is('Currency provided is different from account currency.',
         'Correct message for wrong currency for MT5 account_from');
 
     subtest 'transfers using an account other than authenticated client' => sub {

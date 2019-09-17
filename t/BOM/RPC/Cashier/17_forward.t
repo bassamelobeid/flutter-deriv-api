@@ -79,6 +79,8 @@ my $user_client_cr = BOM::User->create(
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code    => 'CR',
     email          => $email,
+    first_name     => 'John',
+    phone          => '6060842',
     place_of_birth => 'id',
 });
 $user_client_cr->add_client($client_cr);
@@ -112,7 +114,9 @@ my $user_client_mlt = BOM::User->create(
 );
 my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MLT',
-    email       => $email
+    email       => $email,
+    first_name  => 'John',
+    phone       => '6060842'
 });
 $user_client_mlt->add_client($client_mlt);
 
