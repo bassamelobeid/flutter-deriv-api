@@ -31,7 +31,7 @@ BOM::CompanyLimits::SyncLoss::reset_daily_loss_hashes(force_reset => 1);
 $redis->del('svg:potential_loss');
 
 # Setup groups:
-$redis->hmset('contractgroups', ('CALL', 'callput'));
+$redis->hmset('contractgroups',   ('CALL', 'callput'));
 $redis->hmset('underlyinggroups', ('R_50', 'volidx'));
 
 subtest 'Batch buy', sub {

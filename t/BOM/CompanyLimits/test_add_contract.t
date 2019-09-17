@@ -27,7 +27,7 @@ my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
 
 # Setup groups:
-$redis->hmset('contractgroups', ('CALL', 'callput'));
+$redis->hmset('contractgroups',   ('CALL', 'callput'));
 $redis->hmset('underlyinggroups', ('R_50', 'volidx'));
 
 # Test for the correct key combinations
@@ -35,10 +35,17 @@ $redis->hmset('underlyinggroups', ('R_50', 'volidx'));
 
 #};
 
+# Test with different combinations of contracts
+#subtest 'Different combinations of contracts', sub {
+
+#};
+
 # Test with different underlying
 #subtest 'Different underlying tests', sub {
 
 #};
+
+# Test with different barrier
 
 subtest 'Different landing companies test', sub {
 
@@ -81,8 +88,6 @@ subtest 'Different landing companies test', sub {
     $redis->hdel('svg:potential_loss', $key);
     $redis->hdel('iom:potential_loss', $key);
 };
-
-# Test with different barrier
 
 # Test with different currencies
 subtest 'Different currencies', sub {
@@ -164,27 +169,37 @@ subtest 'Different currencies', sub {
     $redis->hdel('svg:potential_loss', $key);
 };
 
-# Test with different combinations of contracts
-#subtest 'Different combinations of contracts', sub {
-
-#};
-
 # Test with daily loss and daily turnover
 #subtest 'Loss and turnover are on daily basis', sub {
 
+# Loss and turnover still same on current day
+
+# Loss and turnover different on new day
 #};
 
 # Test when limits have breached
 #subtest 'Limits breached tests', sub {
 
+# CR (USD) shows no breach
+
+# CR (USD) shows breach
+
+# CR (EUR) shows breach
+
+# MX (USD) shows no breach for SVG
 #};
 
 # Test if database and redis are synced properly
 #subtest 'Sync between database and redis', sub {
 
-#};
+# New contract purchase should sync with database
 
-# Test for potential loss reconciliation
+# Updates should be synced
+
+# On a new day, the previous data:
+# 1. should not be impacted,
+# 2. redis synced on new day data
+#};
 
 subtest 'Limits test base case', sub {
     my $cl = create_client;
