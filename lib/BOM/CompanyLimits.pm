@@ -83,7 +83,7 @@ sub add_buys {
     my ($self, @clients) = @_;
 
     my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'buys');
-    $self->_incr_for_buys(undef, @clients);
+    $self->_incr_for_buys(1, @clients);
 
     $self->{has_add_buys} = 1;
     BOM::CompanyLimits::Stats::stats_stop($stat_dat);
@@ -101,7 +101,7 @@ sub reverse_buys {
 
     # TODO: Check if we should reverse buys?
 
-    $self->_incr_for_buys({reverse => 1}, @clients);
+    $self->_incr_for_buys(-1, @clients);
     BOM::CompanyLimits::Stats::stats_stop($stat_dat);
 
     return;
@@ -160,8 +160,7 @@ sub _incrby_loss_hash {
 
 # Reused for both buys and reverse buys
 sub _incr_for_buys {
-    my ($self, $options, @clients) = @_;
-    my $is_reverse = $options->{reverse};
+    my ($self, $multiplier, @clients) = @_;
 
     my $user_combinations;
     my $turnover_combinations;
@@ -176,8 +175,7 @@ sub _incr_for_buys {
 
     my @responses;
 
-    my $potential_loss = $self->calc_loss('potential_loss');
-    $potential_loss = -$potential_loss if $is_reverse;
+    my $potential_loss = $self->calc_loss('potential_loss') * $multiplier;
     push @responses,
         $self->_incrby_loss_hash(
         'potential_loss',
@@ -186,8 +184,7 @@ sub _incr_for_buys {
         $user_combinations, $potential_loss
         );
 
-    my $turnover = $self->calc_loss('turnover');
-    $turnover = -$turnover if $is_reverse;
+    my $turnover = $self->calc_loss('turnover') * $multiplier;
     push @responses, $self->_incrby_loss_hash('turnover', $turnover_combinations, $turnover);
 
     return @responses;

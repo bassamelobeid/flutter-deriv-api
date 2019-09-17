@@ -15,25 +15,19 @@ use BOM::Config::Runtime;
 my $all_groups = ['underlying', 'contract'];
 
 sub get_default_underlying_group_mappings {
-    my @uls                          = Finance::Underlying::all_underlyings();
-    my %supported_underlying_symbols = _get_active_offerings('underlying_symbol');
-
-    die 'Unable to filter out unused underlyings. Check app config redis instance.' unless %supported_underlying_symbols;
+    my @uls = Finance::Underlying::all_underlyings();
 
     my %default_underlying_group;
-    $default_underlying_group{$_->{symbol}} = $_->{market} for (sort grep { $supported_underlying_symbols{$_->{symbol}} } @uls);
+    $default_underlying_group{$_->{symbol}} = $_->{market} for @uls;
 
     return %default_underlying_group;
 }
 
 sub get_default_contract_group_mappings {
-    my $contract_types           = Finance::Contract::Category::get_all_contract_types();
-    my %supported_contract_types = _get_active_offerings('contract_type');
-
-    die 'Unable to filter out unused contracts. Check app config redis instance.' unless %supported_contract_types;
+    my $contract_types = Finance::Contract::Category::get_all_contract_types();
 
     my %default_contract_group;
-    $default_contract_group{$_} = $contract_types->{$_}->{category} for (sort grep { $supported_contract_types{$_} } keys %$contract_types);
+    $default_contract_group{$_} = $contract_types->{$_}->{category} for (keys %$contract_types);
 
     return %default_contract_group;
 }
@@ -73,20 +67,6 @@ sub _get_limit_groups {
     my ($bet_data) = @_;
 
     return ($contract_groups_cache{$bet_data->{bet_type}}, $underlying_groups_cache{$bet_data->{underlying_symbol}});
-}
-
-sub _get_active_offerings {
-    my ($key) = @_;
-
-    my $lc        = LandingCompany::Registry::get('virtual');                                     # get everything in offerings list.
-    my $o_config  = BOM::Config::Runtime->instance->get_offerings_config();
-    my @offerings = ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config));
-
-    my %supported_offerings =
-        map { $_ => 1 }
-        map { $_->values_for_key($key) } @offerings;
-
-    return %supported_offerings;
 }
 
 1;
