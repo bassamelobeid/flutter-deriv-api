@@ -363,7 +363,7 @@ subtest 'Basic transfers' => sub {
         remark   => 'free gift',
     );
 
-    $params->{token}      = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
+    $params->{token}      = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
     $params->{token_type} = 'oauth_token';
     $params->{args}       = {
         account_from => $client_cr1->loginid,
@@ -1404,7 +1404,7 @@ subtest 'MT5' => sub {
         'Correct message for wrong currency for MT5 account_from');
 
     subtest 'transfers using an account other than authenticated client' => sub {
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($test_client_btc->loginid, 'test token');
+        $params->{token} = BOM::Platform::Token::API->new->create_token($test_client_btc->loginid, 'test token');
         $params->{args}{currency} = 'USD';
 
         $params->{args}{amount}       = 180;
