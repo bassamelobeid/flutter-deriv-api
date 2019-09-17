@@ -38,7 +38,6 @@ use Quant::Framework::Asset;
 
 use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods generate_barriers_for_window update_predefined_highlow);
 use BOM::Product::ContractFinder;
-use BOM::CompanyLimits::Groups;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
@@ -69,12 +68,6 @@ sub _init {
     my $writer = BOM::Config::Chronicle::get_chronicle_writer();
     #delete chronicle data too (Redis and Pg)
     $writer->cache_writer->flushall;
-
-    # Set default limit groups in Redis only. In production both userdb and redis is populated,
-    # but it suffice to pass most tests to just have the Redis instance populated. This also
-    # reduces intermitent database connection failures for whatever reason I could not figure out.
-    $writer->cache_writer->hmset('contractgroups',   BOM::CompanyLimits::Groups::get_default_contract_group_mappings());
-    $writer->cache_writer->hmset('underlyinggroups', BOM::CompanyLimits::Groups::get_default_underlying_group_mappings());
 
     BOM::Config::Chronicle::dbic()->run(fixup => sub { $_->do('delete from chronicle;') }) if BOM::Config::Chronicle::dbic();
     $writer->set(
