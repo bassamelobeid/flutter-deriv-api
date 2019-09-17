@@ -76,13 +76,13 @@ sub get_attributes_from_contract {
     my ($contract_group, $underlying_group) = BOM::CompanyLimits::Groups::get_limit_groups($bet_data);
 
     if (not $underlying_group) {
-        die ['BI054'];    # mimic database error
+        # TODO: Eventually this will die ['BI054'];
+        $underlying_group = 'default';
     }
 
-    # TODO: This error code is not mapped to any error object in Transaction.pm
-    #       nor unit tested. Might want to look into that.
     if (not $contract_group) {
-        die ['BI053'];    # Error: 'bet_type %s not found in bet.contract_group table'
+        # TODO: Eventually this will die ['BI053'];
+        $contract_group = 'default';
     }
 
     my $underlying = $bet_data->{underlying_symbol};

@@ -26,6 +26,10 @@ $mocked_CurrencyConverter->mock('in_usd', \&fake_in_usd);
 my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
 
+# Setup groups:
+$redis->hmset('contractgroups', ('CALL', 'callput'));
+$redis->hmset('underlyinggroups', ('R_50', 'volidx'));
+
 # Test for the correct key combinations
 #subtest 'Key Combinations matching test', sub {
 
