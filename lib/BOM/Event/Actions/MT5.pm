@@ -329,7 +329,7 @@ sub send_mt5_disable_csv {
 
             $mt5_loginid =~ s/\D//g;
 
-            my $group = $redis->get("MT5_USER_GROUP::$mt5_loginid");
+            my $group = $redis->hmget("MT5_USER_GROUP::$mt5_loginid", 'group');
 
             # Only real financial (labuan and vanuatu) are to be disabled
             push @csv_rows, [$client_loginid_info, $mt5_loginid, $group] if ($group && $group !~ '^demo|svg$');
