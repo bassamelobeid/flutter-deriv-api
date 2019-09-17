@@ -68,7 +68,6 @@ sub _init {
     my $writer = BOM::Config::Chronicle::get_chronicle_writer();
     #delete chronicle data too (Redis and Pg)
     $writer->cache_writer->flushall;
-
     BOM::Config::Chronicle::dbic()->run(fixup => sub { $_->do('delete from chronicle;') }) if BOM::Config::Chronicle::dbic();
     $writer->set(
         'app_settings',
