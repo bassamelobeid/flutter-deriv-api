@@ -8,7 +8,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use LandingCompany::Registry;
 use Exporter qw( import );
 
-our @EXPORT_OK = qw(close_all_open_contracts);
+our @EXPORT_OK = qw(close_all_open_contracts reset_all_loss_hashes);
 
 # As an alternative to deleting bets from unit test data, we can sell bets
 # and set the sell_time to contract start date
@@ -42,6 +42,18 @@ sub close_all_open_contracts {
             $txn->sell(skip_validation => 1);
         }
     }
+    return;
+}
+
+my $redis = BOM::Config::RedisReplicated::redis_limits_write;
+
+sub reset_all_loss_hashes {
+    foreach my $landing_company (map { $_->{short} } grep { $#{$_->broker_codes} > -1 } LandingCompany::Registry::all()) {
+        foreach my $loss_type (qw/turnover realized_loss potential_loss/) {
+            $redis->del("$landing_company:$loss_type");
+        }
+    }
+
     return;
 }
 
