@@ -44,59 +44,85 @@ $redis->hmset('underlyinggroups', ('R_50', 'volidx'));
 subtest 'Different underlying tests', sub {
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
 
-    my ($error, $contract_info_svg, $contract, $key);
+    use Data::Dumper;
+
+    my ($error, $contract_info_svg, $contract, $key, $total);
 
     $contract = create_contract(
         payout     => 6,
         underlying => 'R_50'
     );
-    
+
     ($error, $contract_info_svg) = buy_contract(
         client    => $cr_cl,
         buy_price => 2,
         contract  => $contract,
     );
 
-    key = 'ta,R_50,callput';
+    $key = 'ta,R_50,callput';
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 4, 'buying contract (R_50) increments count (R_50) from 0 to 4';
 
     $contract = create_contract(
         payout     => 7,
         underlying => 'R_50'
     );
-    
+
     ($error, $contract_info_svg) = buy_contract(
         client    => $cr_cl,
-        buy_price => 2,
+        buy_price => 4,
         contract  => $contract,
     );
+
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 7, 'buying contract (R_50) increments count (R_50) from 4 to 7';
 
     $contract = create_contract(
         payout     => 8,
         underlying => 'frxUSDJPY'
     );
-    
+
     ($error, $contract_info_svg) = buy_contract(
         client    => $cr_cl,
-        buy_price => 2,
+        buy_price => 5,
         contract  => $contract,
     );
 
-    key = 'ta,frxUSDJPY,callput';
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 7, 'buying contract (frxUSDJPY) keeps count (R_50) at 7';
+
+    $key = 'ta,frxUSDJPY,callput';
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 3, 'buying contract (frxUSDJPY) increases count (frxUSDJPY) from 0 to 3';
 
     $contract = create_contract(
         payout     => 9,
         underlying => 'R_100'
     );
-    
+
     ($error, $contract_info_svg) = buy_contract(
         client    => $cr_cl,
         buy_price => 2,
         contract  => $contract,
     );
 
-    key = 'ta,R_50,callput';
-    key = 'ta,frxUSDJPY,callput';
-    key = 'ta,R_100,callput';
+    $key = 'ta,R_50,callput';
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 7, 'buying contract (R_100) keeps count (R_50) from 0 to 3';
+
+    $redis->hdel('svg:potential_loss', $key);
+
+    $key = 'ta,frxUSDJPY,callput';
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 3, 'buying contract (R_100) keeps count (frxUSDJPY) from 0 to 3';
+
+    $redis->hdel('svg:potential_loss', $key);
+
+    $key = 'ta,R_100,callput';
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 7, 'buying contract (R_100) increases count (R_100) from 0 to 7';
+
+    $redis->hdel('svg:potential_loss', $key);
 };
 
 # Test with different barrier
