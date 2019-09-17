@@ -64,21 +64,6 @@ subtest 'Batch buy', sub {
         cmp_ok $redis->hget('svg:turnover', "+,R_50,+,$b_id"), '==', 2, "binary_user_id $b_id have correct turnover";
     }
 
-    # my %redis_result = @{$redis->hgetall('svg:potential_loss')};
-    # my $db_result    = BOM::CompanyLimits::SyncLoss::get_db_potential_loss('CR');
-    # $redis_result{$_} = $redis_result{$_} + 0 foreach (keys %redis_result);
-
-    # is_deeply \%redis_result, $db_result, 'Potential loss is same as database';
-
-    # is $redis->del('svg:potential_loss'), '1', 'Now delete potential loss hash table';
-    # %redis_result = @{$redis->hgetall('svg:potential_loss')};
-    # is_deeply \%redis_result, {}, 'Successfully deleted loss hash table';
-    # my $sync_response = BOM::CompanyLimits::SyncLoss::sync_potential_loss_to_redis('CR', 'svg');
-
-    # is $sync_response, 'OK', 'Sync from db to potential loss hash successful';
-    # %redis_result = @{$redis->hgetall('svg:potential_loss')};
-    # is_deeply \%redis_result, $db_result, 'Potential loss is still same as database after syncing with database (cause nothing changed)';
-
     ($error, $multiple) = sell_by_shortcode(
         manager_client => $manager_client,
         clients        => \@client_list,
