@@ -143,7 +143,7 @@ sub _get_ask {
         return $batch_response;
     }
 
-    #$response = _validate_offerings($contract, $args_copy);
+    $response = _validate_offerings($contract, $args_copy);
 
     return $response if $response;
 

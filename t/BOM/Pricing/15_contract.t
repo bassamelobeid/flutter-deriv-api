@@ -155,22 +155,24 @@ subtest 'get_ask' => sub {
         'longcode'            => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
         'spot'                => '963.3054',
         'payout'              => '100',
-        'theo_probability'    => 0.499862430427529,
         'contract_parameters' => {
-            'deep_otm_threshold'    => '0.025',
-            'barrier'               => 'S0P',
-            'duration'              => '60s',
-            'bet_type'              => 'CALL',
-            'amount_type'           => 'payout',
-            'underlying'            => 'R_50',
-            'currency'              => 'USD',
-            'base_commission'       => '0.015',
-            'min_commission_amount' => 0.02,
-            'amount'                => '100',
-            'app_markup_percentage' => 0,
-            'proposal'              => 1,
-            'date_start'            => ignore(),
-            'staking_limits'        => {
+            'theo_probability'         => 0.499862430427529,
+            'deep_otm_threshold'       => '0.025',
+            'barrier'                  => 'S0P',
+            'duration'                 => '60s',
+            'bet_type'                 => 'CALL',
+            'amount_type'              => 'payout',
+            'underlying'               => 'R_50',
+            'currency'                 => 'USD',
+            'base_commission'          => '0.015',
+            'min_commission_amount'    => 0.02,
+            'amount'                   => '100',
+            'app_markup_percentage'    => 0,
+            'proposal'                 => 1,
+            'binary_price_adjustment'  => 1,
+            'require_price_adjustment' => 1,
+            'date_start'               => ignore(),
+            'staking_limits'           => {
                 'min' => '0.35',
                 'max' => 50000
             }}};
@@ -307,7 +309,7 @@ subtest 'send_ask' => sub {
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
     my $expected_keys =
         [sort { $a cmp $b }
-            (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout theo_probability contract_parameters stash auth_time))];
+            (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout contract_parameters stash auth_time))];
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},
