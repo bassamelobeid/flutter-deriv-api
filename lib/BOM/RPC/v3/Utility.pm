@@ -571,13 +571,15 @@ sub _is_currency_allowed {
     }
 
     # if currency is experimental and client is not allowed to use such currencies we don't allow
-    my $allowed_emails = BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed;
-    my $client_email   = $client->email;
-    $result->{message} = localize('Please note that the selected currency is allowed for limited accounts only');
+    if (LandingCompany::Registry::get_currency_definition($currency)->{experimental}) {
+        my $allowed_emails = BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed;
+        my $client_email   = $client->email;
+        $result->{message} = localize('Please note that the selected currency is allowed for limited accounts only');
 
-    return $result
-        if (LandingCompany::Registry::get_currency_definition($currency)->{experimental}
-        and not any { $_ eq $client_email } @$allowed_emails);
+        return $result
+            if (LandingCompany::Registry::get_currency_definition($currency)->{experimental}
+            and not any { $_ eq $client_email } @$allowed_emails);
+    }
 
     #that's enough for virtual accounts or empty siblings
     return {allowed => 1} if ($client->is_virtual or scalar(keys %$siblings) == 0);
