@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Warnings;
 use Test::Exception;
 use JSON::MaybeXS;
@@ -44,8 +44,6 @@ $redis->hmset('underlyinggroups', ('R_50', 'volidx'));
 subtest 'Different underlying tests', sub {
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
 
-    use Data::Dumper;
-
     my ($error, $contract_info_svg, $contract, $key, $total);
 
     $contract = create_contract(
@@ -53,7 +51,7 @@ subtest 'Different underlying tests', sub {
         underlying => 'R_50'
     );
 
-    ($error, $contract_info_svg) = buy_contract(
+    buy_contract(
         client    => $cr_cl,
         buy_price => 2,
         contract  => $contract,
@@ -68,7 +66,7 @@ subtest 'Different underlying tests', sub {
         underlying => 'R_50'
     );
 
-    ($error, $contract_info_svg) = buy_contract(
+    buy_contract(
         client    => $cr_cl,
         buy_price => 4,
         contract  => $contract,
@@ -82,7 +80,7 @@ subtest 'Different underlying tests', sub {
         underlying => 'frxUSDJPY'
     );
 
-    ($error, $contract_info_svg) = buy_contract(
+    buy_contract(
         client    => $cr_cl,
         buy_price => 5,
         contract  => $contract,
@@ -100,7 +98,7 @@ subtest 'Different underlying tests', sub {
         underlying => 'R_100'
     );
 
-    ($error, $contract_info_svg) = buy_contract(
+    buy_contract(
         client    => $cr_cl,
         buy_price => 2,
         contract  => $contract,
@@ -126,11 +124,68 @@ subtest 'Different underlying tests', sub {
 };
 
 # Test with different barrier
-# subtest 'Different barrier', sub {
-# S0P
+subtest 'Different barrier tests', sub {
+    top_up my $cr_cl = create_client('CR'), 'USD', 5000;
 
-#
-#};
+    my ($error, $contract_info_svg, $contract, $key, $total);
+    use Data::Dumper;
+
+    # S0P
+    $contract = create_contract(
+        payout     => 10,
+        underlying => 'R_50',
+        barrier    => 'S0P'
+    );
+
+    buy_contract(
+        client    => $cr_cl,
+        buy_price => 5,
+        contract  => $contract,
+    );
+
+    $key = 'ta,R_50,callput';
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 5, 'buying contract with barrier (R_100) increases count (a) from 0 to 5';
+
+    # S29P
+    $contract = create_contract(
+        payout     => 6,
+        underlying => 'R_50',
+        barrier    => 'S29P'
+    );
+
+    buy_contract(
+        client    => $cr_cl,
+        buy_price => 5,
+        contract  => $contract,
+    );
+
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 5, 'buying contract with barrier (R_100) keeps count (a) at 5';
+
+    $redis->hdel('svg:potential_loss', $key);
+
+    $key = 'tn,R_50,callput';
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 1, 'buying contract with barrier (R_100) increases count (n) from 0 to 1';
+
+    # Random
+    $contract = create_contract(
+        payout     => 7,
+        underlying => 'R_50',
+        barrier    => 'S1234P'
+    );
+
+    buy_contract(
+        client    => $cr_cl,
+        buy_price => 5,
+        contract  => $contract,
+    );
+
+    $key = 'tn,R_50,callput';
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 3, 'buying contract with barrier (R_100) increases count (n) from 1 to 3';
+};
 
 # Test with daily loss and daily turnover
 #subtest 'Loss and turnover are on daily basis', sub {
