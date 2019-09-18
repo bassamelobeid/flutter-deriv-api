@@ -862,7 +862,7 @@ sub _build_bid_response {
     if ($contract->category_code eq 'multiplier') {
         foreach my $order_name (qw(stop_out take_profit)) {
             if ($contract->can($order_name) and my $order = $contract->$order_name) {
-                $response->{orders}{$order->type} = {
+                $response->{orders}{$order->order_type} = {
                     value         => $order->barrier_value,
                     display_value => $order->order_amount,
                     order_type    => $order->order_type,
