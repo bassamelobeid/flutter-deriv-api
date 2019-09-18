@@ -1567,27 +1567,33 @@ rpc set_settings => sub {
                 . join(' ', $address1, $address2, $addressTown, $addressState, $addressPostcode) . ']';
         }
     }
+    my @realclient_loginids = $user->bom_real_loginids;
 
-    # if professional status is not set or requested
-    my $update_professional_status = sub {
-        my ($client_obj) = @_;
-        if (    $args->{request_professional_status}
-            and $client_obj->landing_company->support_professional_client
-            and not($client_obj->status->professional or $client_obj->status->professional_requested))
-        {
-            $client_obj->status->multi_set_clear({
+    # set professional status for applicable countries
+    if ($args->{request_professional_status}) {
+        if ($current_client->landing_company->support_professional_client) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'PermissionDenied',
+                    message_to_client => localize("You already requested professional status.")}
+            ) if ($current_client->status->professional or $current_client->status->professional_requested);
+            $current_client->status->multi_set_clear({
                 set        => ['professional_requested'],
                 clear      => ['professional_rejected'],
                 staff_name => 'SYSTEM',
                 reason     => 'Professional account requested'
             });
-
-            return 1;
+            BOM::RPC::v3::Utility::send_professional_requested_email(
+                $current_client->loginid,
+                $current_client->residence,
+                $current_client->landing_company->short
+            );
+        } else {
+            # Return error if there is no applicable client because of landing company restriction
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'PermissionDenied',
+                    message_to_client => localize("Professional status is not applicable to your account.")});
         }
-        return undef;
-    };
-
-    my @realclient_loginids = $user->bom_real_loginids;
+    }
 
     foreach my $loginid (@realclient_loginids) {
         my $client = $loginid eq $current_client->loginid ? $current_client : BOM::User::Client->new({loginid => $loginid});
@@ -1625,16 +1631,10 @@ rpc set_settings => sub {
             $client->tax_identification_number($tax_identification_number) if $tax_identification_number;
         }
 
-        my $set_status = $update_professional_status->($client);
-
         if (not $client->save()) {
             return BOM::RPC::v3::Utility::client_error();
         }
-
-        BOM::RPC::v3::Utility::send_professional_requested_email($client->loginid, $client->residence, $client->landing_company->short)
-            if ($set_status);
     }
-
     # When a trader stop being a trader, need to delete from clientdb betonmarkets.copiers
     if (defined $allow_copiers and $allow_copiers == 0) {
         my $copier = BOM::Database::DataMapper::Copier->new(
