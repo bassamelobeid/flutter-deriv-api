@@ -356,7 +356,7 @@ sub get_bid {
     my ($response, $contract, $bet_params);
     try {
         $bet_params = shortcode_to_parameters($short_code, $currency);
-        $bet_params->{limit_order} if $params->{limit_order};
+        $bet_params->{limit_order} = $params->{limit_order} if $params->{limit_order};
     }
     catch {
         warn __PACKAGE__ . " get_bid shortcode_to_parameters failed: $short_code, currency: $currency";
