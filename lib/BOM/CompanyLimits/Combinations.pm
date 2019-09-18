@@ -44,10 +44,14 @@ sub get_user_limit_combinations {
     my ($binary_user_id, $attributes) = @_;
     my ($underlying_group, $expiry_type) = @{$attributes}[0, 3];
 
-    my $u = "%s,%s,$binary_user_id";
+    my $user_format = "%s,%s,$binary_user_id";
 
-    return [sprintf($u, $expiry_type, $underlying_group), sprintf($u, $expiry_type, '+'), sprintf($u, '+', $underlying_group),
-        sprintf($u, '+', '+'),];
+    return [
+        sprintf($user_format, $expiry_type, $underlying_group),
+        sprintf($user_format, $expiry_type, '+'),
+        sprintf($user_format, '+',          $underlying_group),
+        sprintf($user_format, '+',          '+'),
+    ];
 }
 
 sub get_turnover_incrby_combinations {
