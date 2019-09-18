@@ -418,19 +418,33 @@
                 "orders" : {
                     "description" : "Orders are applicable to MULTUP and MULTDOWN only.",
                     "type": "object",
-                    "patternProperties": {
-                        "^(stop_out|take_profit)$": {
+                    "properties": {
+                        "stop_out": {
                             "order_type" : {
                                 "type": "string",
                                 "description": "type of order"
                             },
                             "value" : {
                                 "type": "number",
-                                "description": "order value"
+                                "description": "stop out order value"
                             },
                             "display_value" : {
                                 "type": "string",
-                                "description": "order display value"
+                                "description": "stop our order display value"
+                            }
+                        },
+                        "take_profit": {
+                            "order_type" : {
+                                "type": "string",
+                                "description": "type of order"
+                            },
+                            "value" : {
+                                "type": "number",
+                                "description": "take profit order value"
+                            },
+                            "display_value" : {
+                                "type": "string",
+                                "description": "take profit order display value"
                             }
                         }
                     }
