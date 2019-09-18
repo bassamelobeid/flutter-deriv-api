@@ -23,6 +23,8 @@ use Log::Any qw($log);
 use BOM::Config::RedisReplicated;
 use BOM::RPC::JobTimeout;
 
+use constant QUEUE_WORKER_TIMEOUT => 300;
+
 my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
 
 GetOptions(
@@ -226,9 +228,9 @@ sub add_worker_process {
 sub process_job {
     my %args = @_;
 
-    my $job  = $args{job};
-    my $tags = $args{tags};
-    my $code = $args{code};
+    my $job      = $args{job};
+    my $tags     = $args{tags};
+    my $code_sub = $args{code_sub};
 
     my $name = $job->data('name');
 
@@ -249,8 +251,8 @@ sub process_job {
 
     $log->tracef("Running RPC <%s> for: %s", $name, pp($params));
 
-    if (my $code = $code) {
-        my $result = $code->($params);
+    if (my $method = $code_sub) {
+        my $result = $method->($params);
         $log->tracef("Results:\n%s", join("\n", map { " | $_" } split m/\n/, pp($result)));
 
         $job->done(
@@ -304,7 +306,7 @@ sub run_worker_process {
         my $worker = Job::Async::Worker::Redis->new(
             uri                 => $redis,
             max_concurrent_jobs => 1,
-            timeout             => 300,
+            timeout             => QUEUE_WORKER_TIMEOUT,
             $queue_prefix ? (prefix => $queue_prefix) : (),
         ));
 
@@ -320,7 +322,7 @@ sub run_worker_process {
     my %services = map {
         my $method = $_->name;
         $method => {
-            code     => BOM::RPC::wrap_rpc_sub($_),
+            code_sub => BOM::RPC::wrap_rpc_sub($_),
             category => $_->category,
             }
     } BOM::RPC::Registry::get_service_defs();
@@ -358,9 +360,9 @@ sub run_worker_process {
                 };
                 alarm $job_timeout;
                 process_job(
-                    job  => $job,
-                    code => $services{$name}{code},
-                    tags => $tags
+                    job      => $job,
+                    code_sub => $services{$name}{code_sub},
+                    tags     => $tags
                 );
                 alarm 0;
             }
