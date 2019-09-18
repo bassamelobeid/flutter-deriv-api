@@ -1064,11 +1064,11 @@ rpc paymentagent_withdraw => sub {
     my $brand = request()->brand;
 
     send_email({
-        from               => $brand->emails('support'),
-        to                 => $paymentagent->email,
-        subject            => localize('Acknowledgement of Withdrawal Request'),
-        message            => _email_content('pa_withdraw', $brand, $website_name, $client, $pa_client, $amount, $currency, $further_instruction),
-        use_email_template => 1,
+        from                  => $brand->emails('support'),
+        to                    => $paymentagent->email,
+        subject               => localize('Acknowledgement of Withdrawal Request'),
+        message               => _email_content('pa_withdraw', $brand, $website_name, $client, $pa_client, $amount, $currency),
+        use_email_template    => 1,
         email_content_is_html => 1,
         template_loginid      => $pa_client->loginid,
     });
@@ -1727,10 +1727,9 @@ sub _check_facility_availability {
 }
 
 sub _email_content {
-    my ($type, $brand, $website_name, $client, $pa_client, $amount, $currency, $further_instruction) = @_;
+    my ($type, $brand, $website_name, $client, $pa_client, $amount, $currency) = @_;
 
     my $client_name = $client->first_name . ' ' . $client->last_name;
-    $further_instruction = localize('Further instructions: ') . ($further_instruction || localize('none'));
 
     my %mapping = (
 
@@ -1738,8 +1737,6 @@ sub _email_content {
             'Dear [_1] [_2] [_3],
                     
                 We would like to inform you that the withdrawal request of [_4][_5] by [_6] [_7] has been processed. The funds have been credited into your account [_8] at [_9].
-                
-                [_10] 
                 
                 Kind Regards,
                 
@@ -1752,8 +1749,7 @@ sub _email_content {
             encode_entities($client_name),
             $client->loginid,
             $pa_client->loginid,
-            $website_name,
-            $further_instruction
+            $website_name
         ),
 
         pa_transfer_binary => localize(
@@ -1773,8 +1769,8 @@ sub _email_content {
             $website_name
         ),
 
-        pa_withdraw_deriv => localize('
-            <tr>
+        pa_withdraw_deriv => localize(
+            '<tr>
                 <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
                     <!--~[if (gte mso 9)|(IE)~]>
                     <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
@@ -1839,10 +1835,11 @@ sub _email_content {
             $amount,
             encode_entities($client_name),
             $client->loginid,
-            $website_name),
+            $website_name
+        ),
 
-        pa_transfer_deriv => localize('
-            <tr>
+        pa_transfer_deriv => localize(
+            '<tr>
                 <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
                     <!--~[if (gte mso 9)|(IE)~]>
                     <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
@@ -1908,7 +1905,8 @@ sub _email_content {
             $currency,
             $amount,
             encode_entities($pa_client->payment_agent->payment_agent_name),
-            $website_name),
+            $website_name
+        ),
     );
 
     # send_email requires arrayref
