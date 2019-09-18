@@ -175,7 +175,7 @@ sub _incr_for_buys {
         $user_combinations, $potential_loss
         );
 
-    my $turnover = ExchangeRates::CurrencyConverter::in_usd($self->{bet_data}->{buy_price}, $self->{currency}) * $multiplier;
+    my $turnover = ExchangeRates::CurrencyConverter::in_usd($bet_data->{buy_price}, $self->{currency}) * $multiplier;
     push @responses, $self->_incrby_loss_hash('turnover', $turnover_combinations, $turnover);
 
     return @responses;

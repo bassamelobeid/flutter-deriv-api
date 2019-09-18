@@ -50,13 +50,6 @@ sub get_user_limit_combinations {
         sprintf($u, '+', '+'),];
 }
 
-# turnover limits require special handling; though we use the same keys to query
-# its limits settings, we infer that turnover limits only apply per user per
-# underlying and exclude barrier type; this meant that the same increments applied
-# globally can also be reused for user specific turnover limits. This is done by
-# checking with turnover increments in which contract group is '+'. Although user
-# specific limits is set per underlying group, we infer that it is applied per
-# underlying (underlying group specific, underlying = '*').
 sub get_turnover_incrby_combinations {
     my ($binary_user_id, $attributes) = @_;
     my ($underlying, $contract_group, $expiry_type) = @{$attributes}[1 .. 3];
