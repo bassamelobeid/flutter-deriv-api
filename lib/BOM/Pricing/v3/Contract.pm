@@ -850,11 +850,24 @@ sub _build_bid_response {
             $response->{high_barrier} = $contract->high_barrier->as_absolute;
             $response->{low_barrier}  = $contract->low_barrier->as_absolute;
         }
-    } elsif ($contract->barrier) {
+    } elsif ($contract->can('barrier') and $contract->barrier) {
         if ($contract->barrier->supplied_type eq 'absolute' or $contract->barrier->supplied_type eq 'digit') {
             $response->{barrier} = $contract->barrier->as_absolute;
         } elsif ($contract->entry_spot) {
             $response->{barrier} = $contract->barrier->as_absolute;
+        }
+    }
+
+    # for multiplier, we want to return the orders and insurance details.
+    if ($contract->category_code eq 'multiplier') {
+        foreach my $order_name (qw(stop_out take_profit)) {
+            if ($contract->can($order_name) and my $order = $contract->$order_name) {
+                $response->{orders}{$order->type} = {
+                    value         => $order->barrier_value,
+                    display_value => $order->order_amount,
+                    order_type    => $order->order_type,
+                };
+            }
         }
     }
 
