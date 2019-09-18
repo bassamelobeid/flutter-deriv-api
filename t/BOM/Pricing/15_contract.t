@@ -170,7 +170,6 @@ subtest 'get_ask' => sub {
             'app_markup_percentage'    => 0,
             'proposal'                 => 1,
             'binary_price_adjustment'  => 1,
-            'require_price_adjustment' => 1,
             'date_start'               => ignore(),
             'staking_limits'           => {
                 'min' => '0.35',
