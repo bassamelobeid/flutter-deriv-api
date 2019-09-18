@@ -127,12 +127,6 @@ sub add_sells {
     return;
 }
 
-sub calc_loss {
-    my ($self, $loss_type) = @_;
-    my $calc_func = BOM::CompanyLimits::LossTypes::get_calc_loss_func($loss_type);
-    return $calc_func->($self->{bet_data}, $self->{currency});
-}
-
 sub _incrby_loss_hash {
     my ($self, $loss_type, @incr_pair) = @_;
 
