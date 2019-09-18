@@ -40,6 +40,7 @@ sub is_mt5_suspended {
 
 (
     try_repeat {
+        warn 'warn: I am running 1';
         $redis->brpop('MT5_USER_GROUP_PENDING', 60000)->then(
             sub {
                 my ($queue, $job) = @{$_[0]};
@@ -50,30 +51,32 @@ sub is_mt5_suspended {
                     sub {
                         my ($data) = @_;
                         my $group = $data->[0];
-
+                        warn 'warn: I am running 2';  
                         if ($group) {
                             $log->debugf('Existing group found for ID [%s] - %s', $id, $group);
+                            warn 'warn: I am running 3';  
                             stats_inc('mt5.group_populator.item_cached', 1);
                             return Future->done;
                         }
-
+                        warn 'warn: I am running 4';  
                         # We avoid the MT5 call if it's suspended, but also pause for
                         # a bit - no need to burn through the queue
                         # too quickly if it's only down temporarily
                         return $loop->delay_future(after => 60) if is_mt5_suspended();
-
+                        warn 'warn: I am running 5';  
                         return BOM::MT5::User::Async::get_user($id)->else(
                             sub {
                                 $log->errorf('Failure when retrieving group for [%s] - %s', $id, [@_]);
                                 stats_inc('mt5.group_populator.item_failed', 1);
                                 Future->done('failed to get group');
+                                warn 'warn: I am running 6';  
                             }
                             )->then(
                             sub {
                                 my ($data) = @_;
                                 my $group  = $data->{'group'};
                                 my $rights = $data->{'rights'};
-
+                                warn 'warn: I am running 7';  
                                 # Keep things around for an hour,
                                 # long enough to be useful but
                                 # try not to keep bad data too long...
@@ -86,13 +89,15 @@ sub is_mt5_suspended {
                                     'group'  => $group,
                                     'rights' => $rights,
                                 };
-
+                                warn 'warn: I am running 8';  
                                 $redis->hmset($cache_key, %$mt5_details)->then(
                                     sub {
+                                        warn 'warn: I am running 9';  
                                         $redis->expire($cache_key, $ttl);
                                     }
                                     )->on_done(
                                     sub {
+                                        warn 'warn: I am running 10';  
                                         $log->debugf('Cached ID [%s] group [%s]', $id, $group);
                                     });
                             });
