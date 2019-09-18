@@ -209,14 +209,11 @@ sub new_mt5_signup {
     foreach my $mt_ac (@mt_logins) {
 
         my ($id) = $mt_ac =~ /^MT(\d+)$/;
-        print "<li>" . encode_entities($mt_ac);
         # If we have group information, display it
         my $cache_key = "MT5_USER_GROUP::$id";
         my $group = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
 
         if ($group->[0]) {
-            print " (" . encode_entities($group->[0]) . ")";
-
             my $status = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'rights');
 
             # Currently known MT5 mappings from https://support.metaquotes.net/en/docs/mt5/api/reference_user/imtuser/imtuser_enum#enusersrights
@@ -252,9 +249,7 @@ sub new_mt5_signup {
             # in the queue - that's fine, we check each one to see if it's already
             # been processed.
             BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
-            print ' (<span title="Try refreshing in a minute or so">no group info yet</span>)';
         }
-        print "</li>";
     }
 
     # send email to client to ask for authentication documents
