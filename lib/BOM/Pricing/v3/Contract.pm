@@ -205,9 +205,7 @@ sub _get_ask {
                 contract_parameters => $contract_parameters,
             };
 
-            $response->{contract_parameters}->{require_price_adjustment} = $contract->require_price_adjustment;
-
-            if ($response->{contract_parameters}->{require_price_adjustment}) {
+            if ($contract->require_price_adjustment) {
                 if (not $contract->is_binary) {
                     $response->{contract_parameters}->{non_binary_price_adjustment} = 1;
                     $response->{contract_parameters}->{theo_price}                  = $contract->theo_price;
