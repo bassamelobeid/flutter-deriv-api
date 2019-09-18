@@ -225,7 +225,7 @@ subtest 'new account with switching' => sub {
     # Expect error because we opened an account in the previous test.
     $c->call_ok($method, $params)->has_error('error from duplicate mt5_new_account')
         ->error_code_is('MT5CreateUserError', 'error code for duplicate mt5_new_account')
-    ->error_message_like(qr/account already exists/, 'error message for duplicate mt5_new_account');
+        ->error_message_like(qr/account already exists/, 'error message for duplicate mt5_new_account');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
@@ -563,7 +563,11 @@ subtest 'password change' => sub {
     is($c->result, 1, 'result');
 
     $c->call_ok($method, $params)->has_error('error for mt5_password_change wrong login');
-    is($c->result->{error}->{message_to_client}, 'It looks like you have already made the request. Please try again later.', 'change password hits rate limit');
+    is(
+        $c->result->{error}->{message_to_client},
+        'It looks like you have already made the request. Please try again later.',
+        'change password hits rate limit'
+    );
 };
 
 subtest 'password reset' => sub {
@@ -686,16 +690,15 @@ subtest 'deposit' => sub {
 
     $runtime_system->mt5->suspend->deposits(1);
     $c->call_ok($method, $params)->has_error('error as mt5_deposits are suspended in system config')
-        ->error_code_is('MT5DepositError', 'error code is MT5DepositError')->error_message_is('Deposits are currently unavailable. Please try again later.');
+        ->error_code_is('MT5DepositError', 'error code is MT5DepositError')
+        ->error_message_is('Deposits are currently unavailable. Please try again later.');
     $runtime_system->mt5->suspend->deposits(0);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
     $test_client->status->set('no_withdrawal_or_trading', 'system', 'pending investigations');
     $c->call_ok($method, $params)->has_error('client is blocked from withdrawal')->error_code_is('MT5DepositError', 'error code is MT5DepositError')
-        ->error_message_is(
-        'You cannot perform this action, as your account is withdrawal locked.'
-        );
+        ->error_message_is('You cannot perform this action, as your account is withdrawal locked.');
     $test_client->status->clear_no_withdrawal_or_trading;
 
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
@@ -774,7 +777,7 @@ subtest 'virtual_deposit' => sub {
     };
 
     $c->call_ok($method, $deposit_demo_params)->has_error('Cannot Deposit')->error_code_is('MT5DepositError')
-     ->error_message_like(qr/balance falls below USD 1000.00/, 'Balance is higher');
+        ->error_message_like(qr/balance falls below USD 1000.00/, 'Balance is higher');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $demo_account_mock->unmock;
@@ -809,8 +812,7 @@ subtest 'mx_deposit' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_mx_client->loginid);
 
     $c->call_ok($method, $params_mx)->has_error('Cannot access MT5 as MX')
-        ->error_code_is('MT5DepositError', 'Transfers to MT5 not allowed error_code')
-        ->error_message_like(qr/not allow MT5 trading/);
+        ->error_code_is('MT5DepositError', 'Transfers to MT5 not allowed error_code')->error_message_like(qr/not allow MT5 trading/);
     $demo_account_mock->unmock;
 };
 
@@ -842,7 +844,7 @@ subtest 'mx_withdrawal' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_mx_client->loginid);
 
     $c->call_ok($method, $params_mx)->has_error('Cannot access MT5 as MX')->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
-->error_message_like(qr/not allow MT5 trading/);
+        ->error_message_like(qr/not allow MT5 trading/);
     $demo_account_mock->unmock;
 };
 
@@ -880,7 +882,8 @@ subtest 'withdrawal' => sub {
 
     $runtime_system->mt5->suspend->withdrawals(1);
     $c->call_ok($method, $params)->has_error('error as mt5_withdrawals are suspended in system config')
-        ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')->error_message_is('Withdrawals are currently unavailable. Please try again later.');
+        ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
+        ->error_message_is('Withdrawals are currently unavailable. Please try again later.');
     $runtime_system->mt5->suspend->withdrawals(0);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
@@ -925,8 +928,7 @@ subtest 'mf_withdrawal' => sub {
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'maltainvest' });
 
     $c->call_ok($method, $params_mf)->has_error('Withdrawal request failed.')
-        ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
-        ->error_message_like(qr/authenticate/);
+        ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')->error_message_like(qr/authenticate/);
 
     $test_mf_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_mf_client->save();
@@ -1285,8 +1287,7 @@ subtest 'Transfers Limits' => sub {
 
     $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
         ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
-        ->error_message_like(qr/0 transfers a day/,
-        'Transfers limit - correct error message');
+        ->error_message_like(qr/0 transfers a day/, 'Transfers limit - correct error message');
 
     # unlimit the transfers again
     BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5(999);
@@ -1300,8 +1301,7 @@ subtest 'Transfers Limits' => sub {
     $deposit_params->{args}->{amount} = 0.6;
     $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
         ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
-        ->error_message_like(qr/minimum amount for transfers is EUR 0.83/,
-        'Transfers minimum - correct error message');
+        ->error_message_like(qr/minimum amount for transfers is EUR 0.83/, 'Transfers minimum - correct error message');
 
     $redis->hmset(
         'exchange_rates::EUR_USD',
@@ -1348,8 +1348,7 @@ subtest 'Suspended Transfers Currencies' => sub {
 
         $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
             ->error_code_is('MT5DepositError', 'Transfer from suspended currency not allowed - correct error code')
-            ->error_message_like(qr/BTC and USD are currently unavilable/,
-            'Transfer from suspended currency not allowed - correct error message');
+            ->error_message_like(qr/BTC and USD are currently unavilable/, 'Transfer from suspended currency not allowed - correct error message');
 
     };
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies([]);

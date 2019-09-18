@@ -278,19 +278,24 @@ sub email_verification {
                             <!~[endif~]-->
                             <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
                                 <tr>
-                                    <td bgcolor="#ffffff" align="left" valign="top" style="padding: 32px 30px 16px 30px; border-radius: 0px 0px 2px 2px;">
-                                        <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">If the button doesn\'t work, please copy and paste this code into the verification form.</p>
+                                    <td bgcolor="#ffffff" align="left" valign="top" style="padding: 31px 30px 16px 30px;">
+                                        <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">If you\'re having trouble with the button, copy and paste this link into your browser:</p>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td bgcolor="#ffffff" align="center" valign="top" style="padding: 0px 30px 40px 30px; border-radius: 0px 0px 2px 2px;">
-                                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 100%;">
+                                    <td bgcolor="#ffffff" align="left" valign="top" style="padding: 0px 30px 0px 30px;">
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
                                             <tr>
-                                                <td bgcolor="#f3f3f3" align="center" valign="top" style="padding: 16px 16px 16px 16px; border-radius: 0px 0px 2px 2px;">
-                                                    <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #ff444f; font-size: 16px; font-weight: bold; line-height: 24px; margin: 0px 0px 0px 0px;">[_2]</p>
+                                                <td bgcolor="#f3f3f3" align="center" valign="top" style="padding: 16px 24px 16px 24px;">
+                                                    <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;"><a href="[_1]">[_1]</a></p>
                                                 </td>
                                             </tr>
                                         </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td bgcolor="#ffffff" align="left" valign="top" style="padding: 0px 30px 40px 30px; border-radius: 0px 0px 2px 2px;">
+                                        <p style="font-family: \'IBM Plex Sans\', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">If you don\'t want to withdraw funds from your account, you can ignore this email.</p>
                                     </td>
                                 </tr>
                             </table>
@@ -299,8 +304,7 @@ sub email_verification {
                             <!~[endif~]-->
                         </td>
                     </tr>'
-                    , _build_verification_url($type_call, $args), $code
-                );
+                    , _build_verification_url($type_call, $args));
             } else {
                 my $payment_withdraw =
                     $verification_uri
