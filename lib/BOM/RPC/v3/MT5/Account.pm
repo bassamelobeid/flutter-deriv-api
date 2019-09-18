@@ -202,7 +202,7 @@ sub _mt5_group {
 async_rpc "mt5_new_account",
     category => 'mt5',
     sub {
-    my $params        = shift;
+    my $params = shift;
     return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
 
     my $error_code = 'MT5CreateUserError';

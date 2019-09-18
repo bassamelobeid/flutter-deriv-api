@@ -151,8 +151,8 @@ subtest 'new account' => sub {
     $params->{args}->{account_type}   = 'demo';
     $params->{args}->{mainPassword}   = 'Abc123';
     $params->{args}->{investPassword} = 'Abc123';
-    $c->call_ok($method, $params)
-        ->has_error->error_message_is('Please use different passwords for your investor and main accounts.', 'Correct error message for same password');
+    $c->call_ok($method, $params)->has_error->error_message_is('Please use different passwords for your investor and main accounts.',
+        'Correct error message for same password');
 
     $params->{args}->{investPassword}   = 'Abc1234';
     $params->{args}->{mt5_account_type} = 'dummy';
@@ -187,8 +187,7 @@ subtest 'new account' => sub {
     $token           = $m->create_token($test_client->loginid, 'test token 2');
     $params->{token} = $token;
 
-    $c->call_ok($method, $params)->has_error->error_code_is('MT5NotAllowed',
-        'Only svg, malta, maltainvest and champion fx clients allowed.');
+    $c->call_ok($method, $params)->has_error->error_code_is('MT5NotAllowed', 'Only svg, malta, maltainvest and champion fx clients allowed.');
 
     SKIP: {
         skip "Unable to Retrieve files from PHP MT5 Server Yet";
