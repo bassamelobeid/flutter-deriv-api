@@ -355,7 +355,7 @@ sub run_worker_process {
                                 result  => {
                                     error => {
                                         code              => 'RequestTimeout',
-                                        message_to_client => "Request timed out",
+                                        message_to_client => "Request timed out.",
                                     }}}));
                 };
                 alarm $job_timeout;
