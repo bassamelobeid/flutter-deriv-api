@@ -32,9 +32,26 @@ use Net::Async::Redis;
 use List::Util qw(sum0);
 use HTML::Entities;
 use BOM::Config::RedisReplicated;
+use Const::Fast qw(const);
 
 use constant DAYS_TO_EXPIRE => 14;
 use constant SECONDS_IN_DAY => 86400;
+
+# Currently known MT5 mappings from https://support.metaquotes.net/en/docs/mt5/api/reference_user/imtuser/imtuser_enum#enusersrights
+const my %known_rights => (
+    enabled        => 0x0001,
+    password       => 0x0002,
+    trade_disabled => 0x0004,
+    investor       => 0x0008,
+    confirmed      => 0x0010,
+    trailing       => 0x0020,
+    expert         => 0x0040,
+    api            => 0x0080,
+    reports        => 0x0100,
+    readonly       => 0x0200,
+    reset_pass     => 0x0400,
+    otp_enabled    => 0x0800,
+);
 
 {
     my $redis_mt5user;
@@ -216,21 +233,6 @@ sub new_mt5_signup {
         if ($group->[0]) {
             my $status = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'rights');
 
-            # Currently known MT5 mappings from https://support.metaquotes.net/en/docs/mt5/api/reference_user/imtuser/imtuser_enum#enusersrights
-            my %known_rights = (
-                enabled        => 0x0001,
-                password       => 0x0002,
-                trade_disabled => 0x0004,
-                investor       => 0x0008,
-                confirmed      => 0x0010,
-                trailing       => 0x0020,
-                expert         => 0x0040,
-                api            => 0x0080,
-                reports        => 0x0100,
-                readonly       => 0x0200,
-                reset_pass     => 0x0400,
-                otp_enabled    => 0x0800,
-            );
             my %rights;
 
             # This should now have the following keys set:
