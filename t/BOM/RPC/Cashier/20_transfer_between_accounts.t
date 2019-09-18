@@ -161,8 +161,7 @@ subtest 'call params validation' => sub {
 
     $client_cr->status->set('cashier_locked', 'system', 'testing something');
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error
-        ->error_code_is('TransferBetweenAccountsError', 'Correct error code for cashier locked')
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError', 'Correct error code for cashier locked')
         ->error_message_like(qr/cashier is locked/, 'Correct error message for cashier locked');
 
     $client_cr->status->clear_cashier_locked;
@@ -1327,8 +1326,7 @@ subtest 'MT5' => sub {
     $params->{args}{account_to}   = $test_client->loginid;
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5 demo -> real account transfer error code')
-        ->error_message_like(qr/demo accounts/,
-        'MT5 demo -> real account transfer error message');
+        ->error_message_like(qr/demo accounts/, 'MT5 demo -> real account transfer error message');
 
     # real -> MT5
     $params->{args}{account_from} = $test_client->loginid;
@@ -1400,8 +1398,7 @@ subtest 'MT5' => sub {
     $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
     $params->{args}{account_to}   = $test_client->loginid;
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_is('Currency provided is different from account currency.',
-        'Correct message for wrong currency for MT5 account_from');
+        ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for MT5 account_from');
 
     subtest 'transfers using an account other than authenticated client' => sub {
         $params->{token} = BOM::Platform::Token::API->new->create_token($test_client_btc->loginid, 'test token');
