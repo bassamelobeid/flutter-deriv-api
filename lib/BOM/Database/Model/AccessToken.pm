@@ -97,7 +97,18 @@ sub get_all_tokens {
             $sth->fetchall_hashref('token');
         });
 
+    foreach my $key (keys %$res) {
+        $res->{$key}{scopes} = _parse_array($res->{$key}{scopes});
+    }
+
     return $res;
+}
+
+sub _parse_array {
+    my ($array_string) = @_;
+    return $array_string if ref($array_string) eq 'ARRAY';
+    return [] unless $array_string;
+    return BOM::Database::AuthDB::rose_db()->parse_array($array_string);
 }
 
 sub get_all_tokens_by_loginid {
