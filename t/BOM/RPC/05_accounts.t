@@ -2334,6 +2334,14 @@ subtest $method => sub {
 
     $params->{args}->{request_professional_status} = 1;
 
+    $params->{token} = $token_21;
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Professional status is not applicable to your account.',
+        'professional status is not applicable for all countries'
+    );
+
+    $params->{token} = $token1;
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     $subject = $test_loginid . ' requested for professional status';
     $msg     = mailbox_search(
@@ -2343,6 +2351,12 @@ subtest $method => sub {
     ok($msg, 'send a email to client');
     is_deeply($msg->{to}, ['compliance@binary.com', 'support@binary.com'], 'email to address is ok');
     mailbox_clear();
+
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'You already requested professional status.',
+        'professional status is already requested'
+    );
 
     $res = $c->tcall('get_settings', {token => $token1});
     is($res->{request_professional_status}, 1, "Was able to request professional status");
