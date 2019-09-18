@@ -226,8 +226,6 @@ sub _price_stream_results_adjustment {
 
     my $contract_parameters = $cache->{contract_parameters};
 
-    return $results unless $contract_parameters->{require_price_adjustment};
-
     if ($contract_parameters->{non_binary_price_adjustment}) {
         return $self->_non_binary_price_adjustment($c, $contract_parameters, $results);
     }
