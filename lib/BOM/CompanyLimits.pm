@@ -54,18 +54,6 @@ sub new {
     return $self;
 }
 
-# add_buys returns the same list of check results: undef
-# if passed, an error otherwise. Same method is used for both buys and
-# batch buys.
-#
-# For global limits, the increments are accumulated across each client,
-# and its breaches will revert all buys within the batch buys before
-# it could enter the database. The rationale here is that if it is going
-# to breach global limits (presumably large), a difference of a few contracts
-# is not going to make much difference.
-#
-# For breaches in user specific limits however, we filter these clients
-# out before entering the database.
 sub add_buys {
     my ($self, @clients) = @_;
 
