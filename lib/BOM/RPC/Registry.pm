@@ -12,7 +12,7 @@ use Scalar::Util qw(blessed);
 use Struct::Dumb qw(readonly_struct);
 
 readonly_struct
-    ServiceDef        => [qw(name code is_auth is_async)],
+    ServiceDef        => [qw(name code category is_auth is_async)],
     named_constructor => 1;
 
 =head1 DOMAIN-SPECIFIC-LANGUAGE
@@ -158,6 +158,7 @@ sub register {
         ServiceDef(
         name     => $name,
         code     => $code,
+        category => $args{category},
         is_auth  => !!$args{auth},
         is_async => !!$args{async},
         );

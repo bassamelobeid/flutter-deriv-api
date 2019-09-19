@@ -106,7 +106,9 @@ Returns any of the following:
 
 =cut
 
-async_rpc mt5_login_list => sub {
+async_rpc "mt5_login_list",
+    category => 'mt5',
+    sub {
     my $params = shift;
 
     my $client = $params->{client};
@@ -118,7 +120,7 @@ async_rpc mt5_login_list => sub {
             my (@logins) = @_;
             return Future->done(\@logins);
         });
-};
+    };
 
 sub get_mt5_logins {
     my ($client, $user) = @_;
@@ -197,7 +199,9 @@ sub _mt5_group {
     }
 }
 
-async_rpc mt5_new_account => sub {
+async_rpc "mt5_new_account",
+    category => 'mt5',
+    sub {
     my $params = shift;
     return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
 
@@ -452,7 +456,7 @@ async_rpc mt5_new_account => sub {
                         });
                 });
         });
-};
+    };
 
 =head2 _is_financial_assessment_complete
 
@@ -563,7 +567,9 @@ Returns any of the following:
 
 =cut
 
-async_rpc mt5_get_settings => sub {
+async_rpc "mt5_get_settings",
+    category => 'mt5',
+    sub {
     my $params = shift;
 
     return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
@@ -606,7 +612,7 @@ async_rpc mt5_get_settings => sub {
                     return Future->done($settings);
                 });
         });
-};
+    };
 
 sub _filter_settings {
     my ($settings, @allowed_keys) = @_;
@@ -682,7 +688,9 @@ Returns any of the following:
 
 =cut
 
-async_rpc mt5_password_check => sub {
+async_rpc "mt5_password_check",
+    category => 'mt5',
+    sub {
     my $params = shift;
 
     return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
@@ -708,7 +716,7 @@ async_rpc mt5_password_check => sub {
             }
             return Future->done(1);
         });
-};
+    };
 
 =head2 mt5_password_change
 
@@ -786,7 +794,9 @@ Returns any of the following:
 
 =cut
 
-async_rpc mt5_password_change => sub {
+async_rpc "mt5_password_change",
+    category => 'mt5',
+    sub {
     my $params = shift;
 
     return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
@@ -823,7 +833,7 @@ async_rpc mt5_password_change => sub {
                     type         => $args->{password_type} // 'main',
                 })->then_done(1);
         });
-};
+    };
 
 =head2 mt5_password_reset
 
@@ -899,7 +909,9 @@ Returns any of the following:
 
 =cut
 
-async_rpc mt5_password_reset => sub {
+async_rpc "mt5_password_reset",
+    category => 'mt5',
+    sub {
     my $params = shift;
 
     return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
@@ -948,7 +960,7 @@ async_rpc mt5_password_reset => sub {
 
             return Future->done(1);
         });
-};
+    };
 
 sub _send_email {
     my %args = @_;
@@ -969,7 +981,9 @@ sub _send_email {
     });
 }
 
-async_rpc mt5_deposit => sub {
+async_rpc "mt5_deposit",
+    category => 'mt5',
+    sub {
     my $params = shift;
 
     my ($client, $args, $source) = @{$params}{qw/client args source/};
@@ -1118,9 +1132,11 @@ async_rpc mt5_deposit => sub {
                             $return_mt5_details ? (mt5_data => $response->{mt5_data}) : ()});
                 });
         });
-};
+    };
 
-async_rpc mt5_withdrawal => sub {
+async_rpc "mt5_withdrawal",
+    category => 'mt5',
+    sub {
     my $params = shift;
 
     my ($client, $args, $source) = @{$params}{qw/client args source/};
@@ -1231,9 +1247,11 @@ async_rpc mt5_withdrawal => sub {
                     };
                 });
         });
-};
+    };
 
-async_rpc mt5_mamm => sub {
+async_rpc "mt5_mamm",
+    category => 'mt5',
+    sub {
     my $params = shift;
 
     return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
@@ -1311,7 +1329,7 @@ async_rpc mt5_mamm => sub {
             my ($code, $error) = @_;
             return create_error_future($code, {message => $error});
         });
-};
+    };
 
 sub _is_mt5_suspended {
     my ($feature_name) = @_;
