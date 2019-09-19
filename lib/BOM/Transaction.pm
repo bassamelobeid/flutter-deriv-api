@@ -1425,7 +1425,35 @@ sub sell_expired_contracts {
         my $contract;
         my $error;
         my $failure = {fmb_id => $bet->{id}};
-        try { $contract = produce_contract($bet->{short_code}, $currency); } catch { $error = 1; };
+        try {
+            my $bet_params = shortcode_to_parameters($bet->{short_code}, $currency);
+
+            # for multiplier, we need to combine information on the child table to complete a contract
+            if ($bet->can('multiplier') and $child = $bet->multiplier) {
+                if ($child->stop_out_order_date) {
+                    push @{$bet_params->{limit_order}},
+                        +{
+                        order_type   => 'stop_out',
+                        order_date   => $child->stop_out_order_date->epoch,
+                        basis_spot   => $child->stop_out_basis_spot,
+                        order_amount => $child->stop_out_amount,
+                        };
+                }
+
+                if ($child->take_profit_order_date) {
+                    push @{$bet_params->{limit_order}},
+                        +{
+                        order_type   => 'take_profit',
+                        order_date   => $child->take_profit_order_date->epoch,
+                        basis_spot   => $child->take_profit_basis_spot,
+                        order_amount => $child->take_profit_amount,
+                        };
+                }
+            }
+
+            $contract = produce_contract($bet_params);
+        }
+        catch { $error = 1; };
         if ($error) {
             $failure->{reason} = 'Could not instantiate contract object';
             push @{$result->{failures}}, $failure;
