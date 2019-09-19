@@ -204,32 +204,21 @@ sub get_underlying {
 sub create_contract {
     my (%params) = @_;
 
-    my $tick = get_tick(
-        underlying => $params{underlying},
+    my $underlying = delete $params{underlying};
+    my $tick       = get_tick(
+        underlying => $underlying,
     );
 
-    my $purchase_date;
-    if ($params{purchase_date}) {
-        $purchase_date = $params{purchase_date};
-    } elsif ($params{forward_starting}) {
-        $purchase_date = Date::Utility->new()->plus_time_interval('1d');
-    } else {
-        $purchase_date = Date::Utility->new();
-    }
+    $params{date_start} = delete $params{purchase_date} || Date::Utility->new();
 
-    my $contract = produce_contract({
-        underlying => get_underlying($params{underlying}),
-        bet_type   => $params{bet_type} || 'CALL',
-        currency   => $params{currency} || 'USD',
-        payout     => $params{payout},
-        duration   => $params{duration} || '5t',
-        # date_expiry => Date::Utility->new('2020-01-01')
+    my %contract_params = (
+        currency     => 'USD',
+        underlying   => get_underlying($underlying),
         current_tick => $tick,
-        barrier      => $params{barrier},
-        date_start   => $purchase_date,
-    });
+        %params,
+    );
 
-    return $contract;
+    return produce_contract(\%contract_params);
 }
 
 sub buy_contract {

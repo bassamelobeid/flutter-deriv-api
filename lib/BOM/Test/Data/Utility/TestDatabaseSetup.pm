@@ -266,9 +266,9 @@ sub _kill_all_pg_connections {
 
         # kill everything else besides pglogical
         $dbh->do(
-            q{SELECT pid, pg_terminate_backend(pid) terminated
-            FROM pg_stat_get_activity(NULL::integer) s(datid, pid)
-            WHERE pid <> pg_backend_pid() AND application_name NOT LIKE '%pglogical%'}
+            "SELECT pid, pg_terminate_backend(pid) terminated
+            FROM pg_stat_activity
+            WHERE pid <> pg_backend_pid() AND datname = '" . $self->_db_name . "' AND application_name NOT LIKE '%pglogical%'"
         );
     }
 
