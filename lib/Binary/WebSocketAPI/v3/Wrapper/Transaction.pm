@@ -63,6 +63,8 @@ sub _subscribe_to_contract {
     my $contract = {map { $_ => $contract_details->{$_} }
             qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
 
+    $contract->{limit_order} = $contract_details->{limit_order} if $contract_details->{limit_order};
+
     my $account_id  = $contract->{account_id};
     my $contract_id = $contract->{contract_id};
     my $args        = {

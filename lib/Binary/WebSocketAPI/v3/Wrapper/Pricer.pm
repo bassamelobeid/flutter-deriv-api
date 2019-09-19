@@ -580,8 +580,8 @@ sub pricing_channel_for_proposal_open_contract {
     $hash{landing_company}  = $c->landing_company_name;
     # use residence when available, fall back to IP country
     $hash{country_code} = $c->stash('residence') || $c->stash('country_code');
+    $hash{limit_order} = $cache->{limit_order} if $cache->{limit_order};
     my $redis_channel = _serialized_args(\%hash);
-
     %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
     $hash{account_id}     = delete $cache->{account_id};
     $hash{transaction_id} = $cache->{transaction_ids}->{buy};    # transaction is going to be stored
