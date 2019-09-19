@@ -36,23 +36,22 @@ my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
 my $client_dup_list = $report_mapper->check_clients_duplication(Date::Utility->new($check_date)->truncate_to_day);
 
 my @client_data;
-my $dup_unique;
+my %dup_unique;
 foreach my $client_hash (@{$client_dup_list}) {
 
     # skip if client_hash is completely empty
     next if (not $client_hash->{first_name} and not $client_hash->{last_name} and not $client_hash->{date_of_birth});
 
-    # avoid sending multiple emails for same client with multiple duplicate loginids
-    my $client_str = join(',', $client_hash->{first_name} // '', $client_hash->{last_name} // '', $client_hash->{date_of_birth} // '');
-    next if (defined $dup_unique and exists $dup_unique->{$client_str});
-    $dup_unique->{$client_str} = 1;
-
     my $loginid = $client_hash->{new_loginid};
+    my $reason  = $client_hash->{reason};
+
+    # this ensures we only show the first account, which is the oldest one
+    next if exists $dup_unique{$loginid . $reason};
+    $dup_unique{$_ . $reason} = 1 for @{$client_hash->{loginids}}, $loginid;
+
     my $client = BOM::User::Client::get_instance({loginid => $loginid});
 
-    my $user = $client->user;
-
-    my $siblings = {map { $_->loginid => 1 } $user->clients};
+    my $siblings = {map { $_->loginid => 1 } $client->user->clients};
 
     my @duplicate_clients = grep { !($_ eq $loginid || exists $siblings->{$_}) } @{$client_hash->{loginids}};
 
@@ -61,8 +60,10 @@ foreach my $client_hash (@{$client_dup_list}) {
     push @client_data,
         {
         loginid            => $loginid,
+        reason             => $reason,
         first_name         => $client_hash->{first_name},
         last_name          => $client_hash->{last_name},
+        phone              => $client->phone,
         duplicated_loginid => join(', ', @duplicate_clients)};
 
 }
