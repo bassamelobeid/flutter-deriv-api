@@ -34,7 +34,7 @@ sub get_timeout {
 
     my $category = $args{category} // 'default';
 
-    return _get_config()->{$category};
+    return _get_config()->{$category}->{timeout};
 }
 
 1;

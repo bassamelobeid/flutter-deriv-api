@@ -17,6 +17,7 @@ use Time::Moment;
 use Text::Trim;
 use Path::Tiny;
 use Try::Tiny;
+use Time::HiRes qw(alarm);
 
 use Getopt::Long;
 use Log::Any qw($log);
@@ -330,7 +331,7 @@ sub process_job {
 
     if (my $method = $code_sub) {
         my $result = $method->($params);
-        $log->tracef("Results:\n%s", join("\n", map { " | $_" } split m/\n/, pp($result)));
+        $log->tracef("Results:\n%s", $result);
 
         $job->done(
             encode_json_utf8({
@@ -338,7 +339,7 @@ sub process_job {
                     result  => $result
                 })) unless $job->is_ready;
     } else {
-        $log->trace("  UNKNOWN");
+        $log->errorf("Unknown rpc method: %s", $name);
         stats_inc("rpc_queue.worker.jobs.failed", $tags);
         # Transport mechanism itself succeeded, so ->done is fine here
         $job->done(
@@ -411,11 +412,24 @@ sub run_worker_process {
             my $job = $_;
             my $name = $job->data('name');
             my ($queue) = $worker->pending_queues;
+            my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
 
             my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
-            $log->tracef('Timeout for %s is %d', $name, $job_timeout);
+            if (my $expire = $job->data('_expires')){
+                my $expire_timeout = $expire - Time::HiRes::time();
+                if ($expire_timeout > 0 && $expire_timeout < $job_timeout){
+                    $job_timeout = $expire_timeout;
+                    $log->tracef('Switched timeout to the queue client expire time %d', $job_timeout);
+                }
+                else {
+                    $log->errorf('Job is aleardy expired at %d',$expire);
+                    stats_inc("rpc_queue.worker.jobs.expire", $tags);
+                    $job->fail('Job is expired');
+                    return;
+                }
+            }
 
-            my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
+            $log->tracef('Timeout for %s is %d', $name, $job_timeout);
 
             try {
                 local $SIG{ALRM} = sub {
