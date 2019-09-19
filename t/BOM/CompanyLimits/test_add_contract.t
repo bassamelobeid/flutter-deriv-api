@@ -59,7 +59,7 @@ subtest 'Different combinations of contracts', sub {
 
     $key = 'tn,R_50,digits';
     $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 5, 'buying contract (R_50) increments count (R_50) from 0 to 4';
+    cmp_ok $total, '==', 5, 'buying digit contract increments correct key';
 
     sell_contract(
         client       => $cr_cl,
@@ -85,7 +85,7 @@ subtest 'Different combinations of contracts', sub {
 
     $key = 'ta,frxUSDJPY,callput';
     $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 7, 'buying contract with barrier (a) increases count from 0 to 5';
+    cmp_ok $total, '==', 7, 'buying forex contract increments correct key';
 
     sell_contract(
         client       => $cr_cl,
@@ -110,7 +110,7 @@ subtest 'Different combinations of contracts', sub {
 
     $key = 'tn,R_25,digits';
     $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 6, 'buying contract with barrier (a) increases count from 0 to 5';
+    cmp_ok $total, '==', 6, 'buying digit contract with different underlying increments correct key';
 
     sell_contract(
         client       => $cr_cl,
@@ -136,7 +136,7 @@ subtest 'Different combinations of contracts', sub {
 
     $key = 'ta,R_100,callput';
     $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 3, 'buying contract with barrier (a) increases count from 0 to 5';
+    cmp_ok $total, '==', 3, 'buying volatility contract increments correct key';
 
     sell_contract(
         client       => $cr_cl,
@@ -183,8 +183,8 @@ subtest 'Realized loss and total turnover are on daily basis', sub {
     $realized_loss_total = $redis->hget('svg:realized_loss', $key);
     $turnover_total      = $redis->hget('svg:turnover',      $client_key);
 
-    cmp_ok $realized_loss_total, '==', 1, 'buying contract (R_50) increments count (R_50) from 0 to 4';
-    cmp_ok $turnover_total,      '==', 5, 'buying contract (R_50) increments count (R_50) from 0 to 4';
+    cmp_ok $realized_loss_total, '==', 1, 'buying contract increments realized loss (before reset)';
+    cmp_ok $turnover_total,      '==', 5, 'buying contract increments total turnover (before reset)';
 
     # Reset the loss and turnover by using force_reset
     BOM::CompanyLimits::SyncLoss::reset_daily_loss_hashes(force_reset => 1);
@@ -192,8 +192,8 @@ subtest 'Realized loss and total turnover are on daily basis', sub {
     $realized_loss_total = $redis->hget('svg:realized_loss', $key)        // 0;
     $turnover_total      = $redis->hget('svg:turnover',      $client_key) // 0;
 
-    cmp_ok $realized_loss_total, '==', 0, 'buying contract (R_50) increments count (R_50) from 0 to 4';
-    cmp_ok $turnover_total,      '==', 0, 'buying contract (R_50) increments count (R_50) from 0 to 4';
+    cmp_ok $realized_loss_total, '==', 0, 'realized loss is reset to 0 (after reset)';
+    cmp_ok $turnover_total,      '==', 0, 'total turnover is reset to 0 (after reset)';
 
     # Loss and turnover different on new day
     $contract = create_contract(
@@ -220,8 +220,8 @@ subtest 'Realized loss and total turnover are on daily basis', sub {
     $realized_loss_total = $redis->hget('svg:realized_loss', $key);
     $turnover_total      = $redis->hget('svg:turnover',      $client_key);
 
-    cmp_ok $realized_loss_total, '==', 5, 'buying contract (R_50) increments count (R_50) from 0 to 4';
-    cmp_ok $turnover_total,      '==', 6, 'buying contract (R_50) increments count (R_50) from 0 to 4';
+    cmp_ok $realized_loss_total, '==', 5, 'buying contract increments realized loss (after reset)';
+    cmp_ok $turnover_total,      '==', 6, 'buying contract increments total turnover (after reset)';
 
     $redis->del('svg:potential_loss');
     $redis->del('svg:turnover');
