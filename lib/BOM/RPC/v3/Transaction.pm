@@ -233,6 +233,11 @@ rpc buy => sub {
         longcode        => localize(shortcode_to_longcode($contract_details->{short_code})),
     };
 
+    # multiplier requires additional parameters to define a contract
+    if ($contract->category_code eq 'multiplier') {
+        $contract_proposal_details->{limit_order} = $contract->available_orders;
+    }
+
     return {
         transaction_id   => $trx->transaction_id,
         contract_id      => $trx->contract_id,
