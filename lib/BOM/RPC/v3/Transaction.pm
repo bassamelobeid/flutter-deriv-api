@@ -23,6 +23,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
 use BOM::Pricing::v3::Contract;
+use BOM::Pricing::v3::Utility;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
 
 my $json = JSON::MaybeXS->new;
@@ -233,6 +234,10 @@ rpc buy => sub {
         longcode        => localize(shortcode_to_longcode($contract_details->{short_code})),
     };
 
+    my $tv_interval = 1000 * Time::HiRes::tv_interval($tv);
+
+    BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, $tv_interval);
+
     return {
         transaction_id   => $trx->transaction_id,
         contract_id      => $trx->contract_id,
@@ -245,7 +250,7 @@ rpc buy => sub {
         shortcode        => $contract->shortcode,
         payout           => $trx->payout,
         stash    => {market => $contract->market->name},
-        rpc_time => 1000 * Time::HiRes::tv_interval($tv),
+        rpc_time => $tv_interval,
     };
 };
 
@@ -484,6 +489,8 @@ rpc sell => sub {
 
     my $client = $params->{client} // die "client should be authed when get here";
 
+    my $tv = [Time::HiRes::gettimeofday];
+
     my ($source, $args) = ($params->{source}, $params->{args});
     my $id = $args->{sell};
 
@@ -521,12 +528,15 @@ rpc sell => sub {
         });
     }
 
+    my $contract = $trx->contract;
+    BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, 1000 * Time::HiRes::tv_interval($tv));
+
     try {
         trade_copiers({
                 action              => 'sell',
                 client              => $client,
                 contract_parameters => $contract_parameters,
-                contract            => $trx->contract,
+                contract            => $contract,
                 price               => $args->{price},
                 source              => $source,
                 purchase_date       => $purchase_date,
