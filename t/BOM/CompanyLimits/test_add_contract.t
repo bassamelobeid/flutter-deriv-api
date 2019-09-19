@@ -145,7 +145,7 @@ subtest 'Different barrier tests', sub {
 
     $key = 'ta,R_50,callput';
     $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 5, 'buying contract with barrier (R_100) increases count (a) from 0 to 5';
+    cmp_ok $total, '==', 5, 'buying contract with barrier (a) increases count from 0 to 5';
 
     # S29P
     $contract = create_contract(
@@ -161,13 +161,13 @@ subtest 'Different barrier tests', sub {
     );
 
     $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 5, 'buying contract with barrier (R_100) keeps count (a) at 5';
+    cmp_ok $total, '==', 5, 'buying contract with barrier (a) keeps count at 5';
 
     $redis->hdel('svg:potential_loss', $key);
 
     $key = 'tn,R_50,callput';
     $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 1, 'buying contract with barrier (R_100) increases count (n) from 0 to 1';
+    cmp_ok $total, '==', 1, 'buying contract with barrier (n) increases count from 0 to 1';
 
     # Random
     $contract = create_contract(
@@ -184,7 +184,7 @@ subtest 'Different barrier tests', sub {
 
     $key = 'tn,R_50,callput';
     $total = $redis->hget('svg:potential_loss', $key);
-    cmp_ok $total, '==', 3, 'buying contract with barrier (R_100) increases count (n) from 1 to 3';
+    cmp_ok $total, '==', 3, 'buying contract with barrier (n) increases count from 1 to 3';
 };
 
 # Test with daily loss and daily turnover
