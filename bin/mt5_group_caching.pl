@@ -41,6 +41,7 @@ sub is_mt5_suspended {
 (
     try_repeat {
         warn 'warn: I am running 1';
+        $redis->lpush('MT5_TEST ');
         $redis->brpop('MT5_USER_GROUP_PENDING', 60000)->then(
             sub {
                 my ($queue, $job) = @{$_[0]};
