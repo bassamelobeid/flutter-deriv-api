@@ -225,7 +225,7 @@ sub create_contract {
         duration   => $params{duration} || '5t',
         # date_expiry => Date::Utility->new('2020-01-01')
         current_tick => $tick,
-        barrier      => $params{barrier} || 'S0P',
+        barrier      => $params{barrier},
         date_start   => $purchase_date,
     });
 
