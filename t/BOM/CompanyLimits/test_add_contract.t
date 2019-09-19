@@ -48,7 +48,8 @@ subtest 'Different combinations of contracts', sub {
     $contract = create_contract(
         payout     => 9,
         underlying => 'R_50',
-        bet_type   => 'DIGITEVEN'
+        bet_type   => 'DIGITEVEN',
+        duration   => '5t',
     );
 
     ($error, $contract_info) = buy_contract(
@@ -73,7 +74,8 @@ subtest 'Different combinations of contracts', sub {
         payout     => 12,
         underlying => 'frxUSDJPY',
         barrier    => 'S0P',
-        bet_type   => 'CALL'
+        bet_type   => 'CALL',
+        duration   => '5t',
     );
 
     ($error, $contract_info) = buy_contract(
@@ -97,7 +99,8 @@ subtest 'Different combinations of contracts', sub {
     $contract = create_contract(
         payout     => 11,
         underlying => 'R_25',
-        bet_type   => 'DIGITEVEN'
+        bet_type   => 'DIGITEVEN',
+        duration   => '5t',
     );
 
     ($error, $contract_info) = buy_contract(
@@ -122,6 +125,7 @@ subtest 'Different combinations of contracts', sub {
         payout     => 8,
         underlying => 'R_100',
         barrier    => 'S0P',
+        duration   => '5t',
         bet_type   => 'CALL'
     );
 
@@ -179,7 +183,9 @@ subtest 'Different underlying tests', sub {
     $contract = create_contract(
         payout     => 6,
         underlying => 'R_50',
-        barrier    => 'S0P'
+        bet_type   => 'CALL',
+        duration   => '5t',
+        barrier    => 'S0P',
     );
 
     buy_contract(
@@ -195,6 +201,8 @@ subtest 'Different underlying tests', sub {
     $contract = create_contract(
         payout     => 7,
         underlying => 'R_50',
+        bet_type   => 'CALL',
+        duration   => '5t',
         barrier    => 'S0P'
     );
 
@@ -210,6 +218,8 @@ subtest 'Different underlying tests', sub {
     $contract = create_contract(
         payout     => 8,
         underlying => 'frxUSDJPY',
+        bet_type   => 'CALL',
+        duration   => '5t',
         barrier    => 'S0P'
     );
 
@@ -229,6 +239,8 @@ subtest 'Different underlying tests', sub {
     $contract = create_contract(
         payout     => 9,
         underlying => 'R_100',
+        bet_type   => 'CALL',
+        duration   => '5t',
         barrier    => 'S0P'
     );
 
@@ -265,6 +277,8 @@ subtest 'Different barrier tests', sub {
     $contract = create_contract(
         payout     => 10,
         underlying => 'R_50',
+        bet_type   => 'CALL',
+        duration   => '5t',
         barrier    => 'S0P'
     );
 
@@ -282,6 +296,8 @@ subtest 'Different barrier tests', sub {
     $contract = create_contract(
         payout     => 6,
         underlying => 'R_50',
+        bet_type   => 'CALL',
+        duration   => '5t',
         barrier    => 'S29P'
     );
 
@@ -304,6 +320,8 @@ subtest 'Different barrier tests', sub {
     $contract = create_contract(
         payout     => 7,
         underlying => 'R_50',
+        bet_type   => 'CALL',
+        duration   => '5t',
         barrier    => 'S1234P'
     );
 
@@ -332,6 +350,8 @@ subtest 'Different landing companies test', sub {
     $contract = create_contract(
         payout     => 6,
         underlying => 'R_50',
+        bet_type   => 'CALL',
+        duration   => '5t',
         barrier    => 'S0P'
     );
 
@@ -377,6 +397,8 @@ subtest 'Different currencies', sub {
         payout     => 6,
         underlying => 'R_50',
         currency   => 'USD',
+        bet_type   => 'CALL',
+        duration   => '5t',
         barrier    => 'S0P'
     );
 
@@ -384,6 +406,8 @@ subtest 'Different currencies', sub {
         payout     => 6,
         underlying => 'R_50',
         currency   => 'EUR',
+        bet_type   => 'CALL',
+        duration   => '5t',
         barrier    => 'S0P'
     );
 
