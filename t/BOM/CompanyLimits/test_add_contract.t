@@ -28,8 +28,8 @@ my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
 
 # Setup groups:
-$redis->hmset('contractgroups', ('CALL', 'callput', 'DIGITEVEN', 'digits', 'LBFLOATCALL', 'lookbacks'));
-$redis->hmset('underlyinggroups', ('R_50', 'volidx', 'frxUSDJPY', 'forex'));
+$redis->hmset('groups:contract', ('CALL', 'callput', 'DIGITEVEN', 'digits', 'LBFLOATCALL', 'lookbacks'));
+$redis->hmset('groups:underlying', ('R_50', 'volidx', 'frxUSDJPY', 'forex'));
 
 # Test for the correct key combinations
 #subtest 'Key Combinations matching test', sub {

@@ -47,12 +47,12 @@ sub get_limit_groups {
     my $redis = get_redis('svg', 'limit_setting');
 
     $redis->hgetall(
-        'contractgroups',
+        'groups:contract',
         sub {
             %contract_groups_cache = @{$_[1]};
         });
     $redis->hgetall(
-        'underlyinggroups',
+        'groups:underlying',
         sub {
             %underlying_groups_cache = @{$_[1]};
         });
