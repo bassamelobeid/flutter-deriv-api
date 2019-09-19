@@ -217,29 +217,29 @@ have not
 sub new_mt5_signup {
     my $data = shift;
     my $client = BOM::User::Client->new({loginid => $data->{loginid}});
-
+    warn 'in bom-events 1';
     return unless $client;
 
     my $user = $client->user;
     my @mt_logins = sort grep { /^MT\d+$/ } $user->loginids;
-
+    warn 'in bom-events 2';
     foreach my $mt_ac (@mt_logins) {
-
+        warn 'in bom-events 3';
         my ($id) = $mt_ac =~ /^MT(\d+)$/;
         # If we have group information, display it
         my $cache_key = "MT5_USER_GROUP::$id";
         my $group = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
-
+        warn 'in bom-events 4';
         if ($group->[0]) {
             my $status = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'rights');
-
+            warn 'in bom-events 5';
             my %rights;
 
             # This should now have the following keys set:
             # api,enabled,expert,password,reports,trailing
             # Example: status (483 => 1E3)
             $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
-
+            warn 'in bom-events 6';
             if (sum0(@rights{qw(enabled api)}) == 2 and not $rights{trade_disabled}) {
                 print " ( Enabled )";
             } else {
@@ -250,6 +250,7 @@ sub new_mt5_signup {
             # ... and if we don't, queue up the request. This may lead to a few duplicates
             # in the queue - that's fine, we check each one to see if it's already
             # been processed.
+            warn 'in bom-events 7';
             BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
         }
     }
