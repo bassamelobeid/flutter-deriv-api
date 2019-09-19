@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Test::Warnings;
 use Test::Exception;
 use JSON::MaybeXS;
@@ -36,7 +36,6 @@ $redis->hmset('underlyinggroups', ('R_50', 'volidx',  'frxUSDJPY', 'forex'));
 
 #};
 
-# Test with different combinations of contracts
 subtest 'Different combinations of contracts', sub {
 
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
@@ -151,30 +150,84 @@ subtest 'Different combinations of contracts', sub {
     $redis->del('svg:realized_loss');
 };
 
-# Test with daily loss and daily turnover
-#subtest 'Loss and turnover are on daily basis', sub {
+subtest 'Realized loss and total turnover are on daily basis', sub {
 
-my ($contract);
+    top_up my $cr_cl = create_client('CR'), 'USD', 5000;
 
-# Loss and turnover still same on current day
-#    $contract = create_contract(
-#        payout     => 6,
-#        underlying => 'R_50',
-#        barrier    => 'S0P'
-#    );
+    my ($contract, $error, $contract_info, $key, $realized_loss_total, $turnover_total);
+    my $client_key = 't,R_50,callput,' . $cr_cl->binary_user_id;
+    $key = 'ta,R_50,callput';
 
-# Reset the loss and turnover by using force_reset
-#    BOM::CompanyLimits::SyncLoss::reset_daily_loss_hashes(force_reset => 1);
+    # Loss and turnover still same on current day
+    $contract = create_contract(
+        payout     => 6,
+        underlying => 'R_50',
+        barrier    => 'S0P',
+        duration   => '5t',
+        bet_type   => 'CALL'
+    );
 
-# Loss and turnover different on new day
-#    $contract = create_contract(
-#        payout     => 6,
-#        underlying => 'R_50',
-#        barrier    => 'S0P'
-#    );
-#};
+    ($error, $contract_info) = buy_contract(
+        client    => $cr_cl,
+        buy_price => 5,
+        contract  => $contract,
+    );
 
-# Test with different underlying
+    sell_contract(
+        client       => $cr_cl,
+        contract_id  => $contract_info->{fmb}->{id},
+        contract     => $contract,
+        sell_outcome => 1,
+    );
+
+    $realized_loss_total = $redis->hget('svg:realized_loss', $key);
+    $turnover_total      = $redis->hget('svg:turnover',      $client_key);
+
+    cmp_ok $realized_loss_total, '==', 1, 'buying contract (R_50) increments count (R_50) from 0 to 4';
+    cmp_ok $turnover_total,      '==', 5, 'buying contract (R_50) increments count (R_50) from 0 to 4';
+
+    # Reset the loss and turnover by using force_reset
+    BOM::CompanyLimits::SyncLoss::reset_daily_loss_hashes(force_reset => 1);
+
+    $realized_loss_total = $redis->hget('svg:realized_loss', $key)        // 0;
+    $turnover_total      = $redis->hget('svg:turnover',      $client_key) // 0;
+
+    cmp_ok $realized_loss_total, '==', 0, 'buying contract (R_50) increments count (R_50) from 0 to 4';
+    cmp_ok $turnover_total,      '==', 0, 'buying contract (R_50) increments count (R_50) from 0 to 4';
+
+    # Loss and turnover different on new day
+    $contract = create_contract(
+        payout     => 11,
+        underlying => 'R_50',
+        barrier    => 'S0P',
+        duration   => '5t',
+        bet_type   => 'CALL'
+    );
+
+    ($error, $contract_info) = buy_contract(
+        client    => $cr_cl,
+        buy_price => 6,
+        contract  => $contract,
+    );
+
+    sell_contract(
+        client       => $cr_cl,
+        contract_id  => $contract_info->{fmb}->{id},
+        contract     => $contract,
+        sell_outcome => 1,
+    );
+
+    $realized_loss_total = $redis->hget('svg:realized_loss', $key);
+    $turnover_total      = $redis->hget('svg:turnover',      $client_key);
+
+    cmp_ok $realized_loss_total, '==', 5, 'buying contract (R_50) increments count (R_50) from 0 to 4';
+    cmp_ok $turnover_total,      '==', 6, 'buying contract (R_50) increments count (R_50) from 0 to 4';
+
+    $redis->del('svg:potential_loss');
+    $redis->del('svg:turnover');
+    $redis->del('svg:realized_loss');
+};
+
 subtest 'Different underlying tests', sub {
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
 
@@ -267,7 +320,6 @@ subtest 'Different underlying tests', sub {
     $redis->del('svg:realized_loss');
 };
 
-# Test with different barrier
 subtest 'Different barrier tests', sub {
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
 
@@ -386,7 +438,6 @@ subtest 'Different landing companies test', sub {
     $redis->del('svg:realized_loss');
 };
 
-# Test with different currencies
 subtest 'Different currencies', sub {
     top_up my $cr_usd = create_client('CR'), 'USD', 5000;
     top_up my $cr_eur = create_client('CR'), 'EUR', 5000;
