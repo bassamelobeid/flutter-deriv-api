@@ -226,15 +226,27 @@ sub buy_contract {
 
     my $contract = $params{contract};
 
-    my $txn = BOM::Transaction->new({
+    my %transaction_params = (
         client        => $params{client},
         contract      => $contract,
         price         => $params{buy_price},
-        payout        => $contract->payout,
-        amount_type   => 'payout',
         source        => 19,
         purchase_date => $contract->date_start,
-    });
+    );
+
+    # I'm not sure if there's a better way to do this...
+    my $build_parameters = $contract->build_parameters;
+    if (exists $build_parameters->{payout}) {
+        $transaction_params{amount_type} = 'payout';
+    } elsif (exists $build_parameters->{multiplier}) {
+        $transaction_params{amount_type} = 'multiplier';
+    } elsif (exists $build_parameters->{stake}) {
+        $transaction_params{amount_type} = 'stake';
+    } else {
+        die 'I do not know the amount type to this contract';
+    }
+
+    my $txn = BOM::Transaction->new(\%transaction_params);
 
     my $error = $txn->buy(skip_validation => 1);
 
@@ -317,6 +329,9 @@ sub sell_contract {
         # sell_outcome is a value from from 0 to 1;
         # 0 for loss, 1 for win, and anything in between is
         # a premature sell
+        # TODO: currently this class is under the assumption that every contract
+        #       has a payout. This is not always the case and for such contracts the
+        #       sell is always a fail regardless of what sell_outcome is set
         price  => $new_c->payout * $params{sell_outcome},
         source => 23,
     });
