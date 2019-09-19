@@ -38,6 +38,13 @@ $redis->hmset('underlyinggroups', ('R_50', 'volidx'));
 # Test with different combinations of contracts
 #subtest 'Different combinations of contracts', sub {
 
+# Contract #1
+
+# Contract #2
+
+# Contract #3
+
+# Contract #4
 #};
 
 # Test with different underlying
@@ -191,6 +198,8 @@ subtest 'Different barrier tests', sub {
 #subtest 'Loss and turnover are on daily basis', sub {
 
 # Loss and turnover still same on current day
+
+# Reset the loss and turnover by using force_reset
 
 # Loss and turnover different on new day
 #};
