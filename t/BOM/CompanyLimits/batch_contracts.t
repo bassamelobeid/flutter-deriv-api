@@ -45,6 +45,7 @@ subtest 'Batch buy sell', sub {
     $svg_contract = create_contract(
         payout     => 6,
         underlying => 'R_50',
+        barrier    => 'S0P'
     );
 
     ($error, $multiple) = batch_buy_contract(
@@ -101,6 +102,7 @@ subtest 'Batch buy on error must revert', sub {
     $svg_contract = create_contract(
         payout     => 10,
         underlying => 'R_50',
+        barrier    => 'S0P'
     );
 
     ($error, $multiple) = batch_buy_contract(

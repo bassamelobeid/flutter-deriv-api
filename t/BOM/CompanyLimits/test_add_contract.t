@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Warnings;
 use Test::Exception;
 use JSON::MaybeXS;
@@ -17,6 +17,7 @@ use BOM::Test::Contract qw(create_contract buy_contract sell_contract);
 use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
 use BOM::Test::Email qw(mailbox_search);
+use BOM::CompanyLimits::SyncLoss;
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -27,8 +28,8 @@ my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
 
 # Setup groups:
-$redis->hmset('contractgroups',   ('CALL', 'callput'));
-$redis->hmset('underlyinggroups', ('R_50', 'volidx'));
+$redis->hmset('contractgroups',   ('CALL', 'callput', 'DIGITEVEN', 'digits'));
+$redis->hmset('underlyinggroups', ('R_50', 'volidx',  'frxUSDJPY', 'forex'));
 
 # Test for the correct key combinations
 #subtest 'Key Combinations matching test', sub {
@@ -36,15 +37,137 @@ $redis->hmset('underlyinggroups', ('R_50', 'volidx'));
 #};
 
 # Test with different combinations of contracts
-#subtest 'Different combinations of contracts', sub {
+subtest 'Different combinations of contracts', sub {
 
-# Contract #1
+    top_up my $cr_cl = create_client('CR'), 'USD', 5000;
+    my ($contract, $error, $contract_info, $key, $total);
 
-# Contract #2
+    use Data::Dumper;
 
-# Contract #3
+    # Contract #1
+    $contract = create_contract(
+        payout     => 9,
+        underlying => 'R_50',
+        bet_type   => 'DIGITEVEN'
+    );
 
-# Contract #4
+    ($error, $contract_info) = buy_contract(
+        client    => $cr_cl,
+        buy_price => 4,
+        contract  => $contract,
+    );
+
+    $key = 'tn,R_50,digits';
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 5, 'buying contract (R_50) increments count (R_50) from 0 to 4';
+
+    sell_contract(
+        client       => $cr_cl,
+        contract_id  => $contract_info->{fmb}->{id},
+        contract     => $contract,
+        sell_outcome => 0,
+    );
+
+    # Contract #2
+    $contract = create_contract(
+        payout     => 12,
+        underlying => 'frxUSDJPY',
+        barrier    => 'S0P',
+        bet_type   => 'CALL'
+    );
+
+    ($error, $contract_info) = buy_contract(
+        client    => $cr_cl,
+        buy_price => 5,
+        contract  => $contract,
+    );
+
+    $key = 'ta,frxUSDJPY,callput';
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 7, 'buying contract with barrier (a) increases count from 0 to 5';
+
+    sell_contract(
+        client       => $cr_cl,
+        contract_id  => $contract_info->{fmb}->{id},
+        contract     => $contract,
+        sell_outcome => 1,
+    );
+
+    # Contract #3
+    $contract = create_contract(
+        payout     => 11,
+        underlying => 'R_25',
+        bet_type   => 'DIGITEVEN'
+    );
+
+    ($error, $contract_info) = buy_contract(
+        client    => $cr_cl,
+        buy_price => 5,
+        contract  => $contract,
+    );
+
+    $key = 'tn,R_25,digits';
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 6, 'buying contract with barrier (a) increases count from 0 to 5';
+
+    sell_contract(
+        client       => $cr_cl,
+        contract_id  => $contract_info->{fmb}->{id},
+        contract     => $contract,
+        sell_outcome => 0,
+    );
+
+    # Contract #4
+    $contract = create_contract(
+        payout     => 8,
+        underlying => 'R_100',
+        barrier    => 'S0P',
+        bet_type   => 'CALL'
+    );
+
+    ($error, $contract_info) = buy_contract(
+        client    => $cr_cl,
+        buy_price => 5,
+        contract  => $contract,
+    );
+
+    $key = 'ta,R_100,callput';
+    $total = $redis->hget('svg:potential_loss', $key);
+    cmp_ok $total, '==', 3, 'buying contract with barrier (a) increases count from 0 to 5';
+
+    sell_contract(
+        client       => $cr_cl,
+        contract_id  => $contract_info->{fmb}->{id},
+        contract     => $contract,
+        sell_outcome => 1,
+    );
+
+    $redis->del('svg:potential_loss');
+    $redis->del('svg:turnover');
+    $redis->del('svg:realized_loss');
+};
+
+# Test with daily loss and daily turnover
+#subtest 'Loss and turnover are on daily basis', sub {
+
+my ($contract);
+
+# Loss and turnover still same on current day
+#    $contract = create_contract(
+#        payout     => 6,
+#        underlying => 'R_50',
+#        barrier    => 'S0P'
+#    );
+
+# Reset the loss and turnover by using force_reset
+#    BOM::CompanyLimits::SyncLoss::reset_daily_loss_hashes(force_reset => 1);
+
+# Loss and turnover different on new day
+#    $contract = create_contract(
+#        payout     => 6,
+#        underlying => 'R_50',
+#        barrier    => 'S0P'
+#    );
 #};
 
 # Test with different underlying
@@ -55,7 +178,8 @@ subtest 'Different underlying tests', sub {
 
     $contract = create_contract(
         payout     => 6,
-        underlying => 'R_50'
+        underlying => 'R_50',
+        barrier    => 'S0P'
     );
 
     buy_contract(
@@ -70,7 +194,8 @@ subtest 'Different underlying tests', sub {
 
     $contract = create_contract(
         payout     => 7,
-        underlying => 'R_50'
+        underlying => 'R_50',
+        barrier    => 'S0P'
     );
 
     buy_contract(
@@ -84,7 +209,8 @@ subtest 'Different underlying tests', sub {
 
     $contract = create_contract(
         payout     => 8,
-        underlying => 'frxUSDJPY'
+        underlying => 'frxUSDJPY',
+        barrier    => 'S0P'
     );
 
     buy_contract(
@@ -102,7 +228,8 @@ subtest 'Different underlying tests', sub {
 
     $contract = create_contract(
         payout     => 9,
-        underlying => 'R_100'
+        underlying => 'R_100',
+        barrier    => 'S0P'
     );
 
     buy_contract(
@@ -115,19 +242,17 @@ subtest 'Different underlying tests', sub {
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 7, 'buying contract (R_100) keeps count (R_50) from 0 to 3';
 
-    $redis->hdel('svg:potential_loss', $key);
-
     $key = 'ta,frxUSDJPY,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 3, 'buying contract (R_100) keeps count (frxUSDJPY) from 0 to 3';
-
-    $redis->hdel('svg:potential_loss', $key);
 
     $key = 'ta,R_100,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 7, 'buying contract (R_100) increases count (R_100) from 0 to 7';
 
-    $redis->hdel('svg:potential_loss', $key);
+    $redis->del('svg:potential_loss');
+    $redis->del('svg:turnover');
+    $redis->del('svg:realized_loss');
 };
 
 # Test with different barrier
@@ -135,7 +260,6 @@ subtest 'Different barrier tests', sub {
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
 
     my ($error, $contract_info_svg, $contract, $key, $total);
-    use Data::Dumper;
 
     # S0P
     $contract = create_contract(
@@ -192,17 +316,11 @@ subtest 'Different barrier tests', sub {
     $key = 'tn,R_50,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 3, 'buying contract with barrier (n) increases count from 1 to 3';
+
+    $redis->del('svg:potential_loss');
+    $redis->del('svg:turnover');
+    $redis->del('svg:realized_loss');
 };
-
-# Test with daily loss and daily turnover
-#subtest 'Loss and turnover are on daily basis', sub {
-
-# Loss and turnover still same on current day
-
-# Reset the loss and turnover by using force_reset
-
-# Loss and turnover different on new day
-#};
 
 subtest 'Different landing companies test', sub {
 
@@ -214,6 +332,7 @@ subtest 'Different landing companies test', sub {
     $contract = create_contract(
         payout     => 6,
         underlying => 'R_50',
+        barrier    => 'S0P'
     );
 
     ($error, $contract_info_svg) = buy_contract(
@@ -242,8 +361,9 @@ subtest 'Different landing companies test', sub {
     cmp_ok $svg_total, '==', 4, 'buying contract with MX client does not add potential loss to svg';
     cmp_ok $mx_total,  '==', 4, 'buying contract with MX client affects mx potential_loss';
 
-    $redis->hdel('svg:potential_loss', $key);
-    $redis->hdel('iom:potential_loss', $key);
+    $redis->del('svg:potential_loss');
+    $redis->del('svg:turnover');
+    $redis->del('svg:realized_loss');
 };
 
 # Test with different currencies
@@ -256,13 +376,15 @@ subtest 'Different currencies', sub {
     $usd_contract = create_contract(
         payout     => 6,
         underlying => 'R_50',
-        currency   => 'USD'
+        currency   => 'USD',
+        barrier    => 'S0P'
     );
 
     $eur_contract = create_contract(
         payout     => 6,
         underlying => 'R_50',
-        currency   => 'EUR'
+        currency   => 'EUR',
+        barrier    => 'S0P'
     );
 
     ($error, $contract_info_usd) = buy_contract(
@@ -323,7 +445,9 @@ subtest 'Different currencies', sub {
     cmp_ok $potential_loss_total, '==', 0,    'selling contract with loss (CR - EUR) reduces potential loss to 0';
     cmp_ok $realized_loss_total,  '==', 1.64, 'Realized loss comes from EUR contract loss';
 
-    $redis->hdel('svg:potential_loss', $key);
+    $redis->del('svg:potential_loss');
+    $redis->del('svg:turnover');
+    $redis->del('svg:realized_loss');
 };
 
 # Test when limits have breached (LATER in v2)
