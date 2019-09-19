@@ -56,6 +56,7 @@ use Postgres::FeedDB::Spot::Tick;
 
 use BOM::Config::Chronicle;
 use BOM::Config::Runtime;
+use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Market::RedisTickAccessor;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -65,7 +66,7 @@ use BOM::Product::ContractValidator;
 use BOM::Product::ContractPricer;
 use BOM::Product::Static;
 use BOM::Product::Exception;
-use Finance::Contract::Longcode qw(shortcode_to_longcode);
+use Finance::Contract::Longcode qw(shortcode_to_longcode shortcode_to_parameters);
 
 use BOM::Product::Pricing::Engine::Intraday::Forex;
 use BOM::Product::Pricing::Engine::Intraday::Index;
@@ -175,11 +176,11 @@ has trading_calendar => (
 
 =head2 uses_barrier
 
- Indicates if the contract uses barriers or not.  Used to send undef as the barrier via the api if false. 
+ Indicates if the contract uses barriers or not.  Used to send undef as the barrier via the api if false.
 
- Overridden in the contract classes for those that do not use barriers. 
+ Overridden in the contract classes for those that do not use barriers.
 
-=cut 
+=cut
 
 has uses_barrier => (
     is      => 'ro',
@@ -1419,7 +1420,99 @@ sub _dummy_tick {
     );
 }
 
-# Don't mind me, I just need to make sure my attibutes are available.
+=head2 get_relative_shortcode
+
+Maps the shortcode to a relative one, removing stake/payout, making start/end
+relative to the current time, and absolute barriers to relative format.
+
+    shortcode:
+        PUT_FRXAUDCAD_8.52_1542808932_1542809700F_S0P_0
+    get converted to:
+        PUT_FRXAUDCAD_0_768F_S0P_0
+
+=over 4
+
+=item * C<shortcode> - Optional, the original shortcode to be converted
+
+If missing, the current shortcode will be used.
+
+=back
+
+Returns the relative shortcode.
+
+=cut
+
+sub get_relative_shortcode {
+    my ($self, $shortcode) = @_;
+
+    $shortcode //= $self->shortcode;
+
+    my $params = shortcode_to_parameters($shortcode);
+
+    if (exists $params->{duration} and $params->{duration} =~ /t$/) {
+        $params->{date_expiry} = uc $params->{duration};
+    } else {
+        $params->{date_expiry} -= $params->{date_start} || time;
+        $params->{date_expiry} .= 'F' if $params->{fixed_expiry};
+    }
+
+    $params->{date_start} = $params->{starts_as_forward_starting} ? '0F' : '0';
+
+    $params->{high_barrier} //= $params->{barrier};
+    $params->{low_barrier}  //= '0';
+
+    my $current_spot = $self ? $self->current_spot : $params->{current_spot};
+    my $underlying   = $self ? $self->underlying   : $params->{underlying};
+    $params->{$_} = to_relative_barrier($params->{$_}, $current_spot, $underlying) for qw(high_barrier low_barrier);
+
+    return uc join '_', map { $params->{$_} } qw(bet_type underlying date_start date_expiry high_barrier low_barrier);
+}
+
+=head2 to_relative_barrier
+
+Converts a barrier to spot relative pip format. e.g. 'S1234P'
+
+NOTE: Don't use this for barrier of C<DIGIT> contract types.
+
+=over 4
+
+=item * C<barrier> - The original barrier
+
+=item * C<spot> - The current spot of the underlying
+
+=item * C<symbol> - The underlying symbol used to calculate pip-sized value
+
+=back
+
+Returns the relative barrier.
+
+=cut
+
+sub to_relative_barrier {
+    my ($barrier, $spot, $symbol) = @_;
+
+    return ($barrier // '') =~ s/\.//r if (!$barrier || $barrier =~ /^S/);
+
+    my $underlying = $symbol->can('spot') ? $symbol : _get_underlying_instance($symbol);
+
+    $barrier -= ($spot // $underlying->spot()) if ($barrier !~ /^[+-]/);
+
+    $barrier = $underlying->pipsized_value($barrier) =~ s/[+.]//gr;
+
+    return "S${barrier}P";
+}
+
+my $underlyings;
+
+sub _get_underlying_instance {
+    my ($symbol) = @_;
+
+    $underlyings->{$symbol} //= create_underlying($symbol);
+
+    return $underlyings->{$symbol};
+}
+
+# Don't mind me, I just need to make sure my attributes are available.
 with 'BOM::Product::Role::Reportable';
 
 no Moose;
