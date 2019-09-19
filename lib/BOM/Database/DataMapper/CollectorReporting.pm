@@ -136,11 +136,10 @@ sub check_clients_duplication {
     my $self      = shift;
     my $from_date = shift;
     my $dbic      = $self->db->dbic;
-
-    my $sql = q{
-        SELECT new_loginid, first_name, last_name, date_of_birth, loginids FROM check_client_duplication($1)
+    my $sql       = q{
+        SELECT new_loginid, first_name, last_name, date_of_birth, loginids, 'name+dob' as reason FROM check_client_duplication($1)
         UNION
-        SELECT new_loginid, first_name, last_name, date_of_birth, loginids FROM check_phone_duplication($1)
+        SELECT new_loginid, first_name, last_name, date_of_birth, loginids, 'phone' as reason FROM check_phone_duplication($1)
     };
     return $dbic->run(
         fixup => sub {
