@@ -73,12 +73,10 @@ sub get_attributes_from_contract {
     my ($contract_group, $underlying_group) = BOM::CompanyLimits::Groups::get_limit_groups($bet_data);
 
     if (not $underlying_group) {
-        # TODO: Eventually this will die ['BI054'];
         $underlying_group = 'default';
     }
 
     if (not $contract_group) {
-        # TODO: Eventually this will die ['BI053'];
         $contract_group = 'default';
     }
 
