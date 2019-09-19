@@ -28,8 +28,8 @@ my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
 
 # Setup groups:
-$redis->hmset('contractgroups',   ('CALL', 'callput', 'DIGITEVEN', 'digits'));
-$redis->hmset('underlyinggroups', ('R_50', 'volidx',  'frxUSDJPY', 'forex'));
+$redis->hmset('contractgroups', ('CALL', 'callput', 'DIGITEVEN', 'digits', 'LBFLOATCALL', 'lookbacks'));
+$redis->hmset('underlyinggroups', ('R_50', 'volidx', 'frxUSDJPY', 'forex'));
 
 # Test for the correct key combinations
 #subtest 'Key Combinations matching test', sub {
@@ -548,4 +548,48 @@ subtest 'Different currencies', sub {
 # 1. should not be impacted,
 # 2. redis synced on new day data
 #};
+
+subtest 'Contracts with no payout', sub {
+    top_up my $cr = create_client('CR'), 'USD', 3;
+
+    my ($contract, $contract_info, $error);
+    $contract = create_contract(
+        underlying => 'R_50',
+        bet_type   => 'LBFLOATCALL',
+        multiplier => '5',
+        duration   => '1h',
+        currency   => 'USD'
+    );
+
+    ($error, $contract_info) = buy_contract(
+        client    => $cr,
+        buy_price => 2,
+        contract  => $contract,
+    );
+
+    is $error, undef, 'no errors during buy';
+    TODO: {
+        cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+') || 0, '==', 0, 'Lookbacks do not have potential loss';
+    }
+
+    cmp_ok $redis->hget('svg:turnover', "+,R_50,+," . $cr->binary_user_id()), '==', 2, 'Turnover increments works as usual';
+
+    sell_contract(
+        client       => $cr,
+        contract_id  => $contract_info->{fmb}->{id},
+        contract     => $contract,
+        sell_outcome => 1,
+    );
+
+    cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+') || 0, '==', 0, 'On sell potential loss is deducted as before';
+
+    ($error, $contract_info) = buy_contract(
+        client    => $cr,
+        buy_price => 2,
+        contract  => $contract,
+    );
+
+    is defined($error), 1, 'Error thrown due to insufficient';
+    cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+') || 0, '==', 0, 'On reverse buy potential loss does not change';
+};
 
