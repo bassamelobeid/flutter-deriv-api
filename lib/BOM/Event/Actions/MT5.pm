@@ -252,6 +252,7 @@ sub new_mt5_signup {
             # been processed.
             warn 'in bom-events 7';
             BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
+            warn 'in bom-events 8';
         }
     }
 
