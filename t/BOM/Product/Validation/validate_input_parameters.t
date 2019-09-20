@@ -115,7 +115,7 @@ subtest 'invalid start and expiry time' => sub {
     like($c->primary_validation_error->{message}, qr/daily expiry must expire at close/, 'daily contract closed at end');
     $bet_params->{for_sale} = 1;
     $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, ' valid to buy';
+    ok $c->is_valid_to_sale, ' valid to sale';
 
 };
 
