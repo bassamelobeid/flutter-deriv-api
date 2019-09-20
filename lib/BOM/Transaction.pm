@@ -1429,7 +1429,7 @@ sub sell_expired_contracts {
             my $bet_params = shortcode_to_parameters($bet->{short_code}, $currency);
 
             # for multiplier, we need to combine information on the child table to complete a contract
-            if ($bet->can('multiplier') and $child = $bet->multiplier) {
+            if ($bet->can('multiplier') and my $child = $bet->multiplier) {
                 if ($child->stop_out_order_date) {
                     push @{$bet_params->{limit_order}},
                         +{
