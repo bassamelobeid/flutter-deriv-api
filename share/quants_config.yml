@@ -19,7 +19,7 @@ default_stake:
   ETC: 2
   UST: 10
   USB: 10
-  IDK: 10
+  IDK: 50000
 
 bet_limits:
   holiday_blackout_start: 345
@@ -38,7 +38,7 @@ bet_limits:
       DAI: 1000
       UST: 1000
       USB: 1000
-      IDK: 1000
+      IDK: 50000000
     digits:
       USD: 30000
       EUR: 30000
@@ -52,7 +52,7 @@ bet_limits:
       DAI: 5000
       UST: 5000
       USB: 5000
-      IDK: 5000
+      IDK: 50000000
   inefficient_period_payout_max:
     USD: 200
     EUR: 200
@@ -80,7 +80,7 @@ bet_limits:
         ETC: 50
         UST: 5000
         USB: 5000
-        IDK: 5000
+        IDK: 50000000
   min_stake:
     default_landing_company:
       default_market:
@@ -95,7 +95,7 @@ bet_limits:
         ETC: 0.05
         UST: 0.5
         USB: 0.5
-        IDK: 0.5
+        IDK: 5000
       volidx:
         USD: 0.35
         EUR: 0.35
@@ -108,7 +108,7 @@ bet_limits:
         ETC: 0.05
         UST: 0.5
         USB: 0.5
-        IDK: 0.5
+        IDK: 5000
     maltainvest:
       default_market:
         USD: 5
@@ -122,7 +122,7 @@ bet_limits:
         ETC: 1
         UST: 5
         USB: 5
-        IDK: 5
+        IDK: 50000
   min_commission_amount:
     USD: 0.02 # 0.02 dollar
     EUR: 0.02
@@ -135,7 +135,7 @@ bet_limits:
     ETC: 0.0015
     UST: 0.02
     USB: 0.02
-    IDK: 0.02
+    IDK: 200
 
 #Lookback option limits – the Value-at-risk approach
 #
