@@ -85,6 +85,10 @@ sub add_buys {
 
     $redis->multi(sub { });
 
+    # TODO: Though we do not use realized loss for limits now, we query anyway to gauge performance for the first phase
+    $hash_name = $self->{landing_company} . ':realized_loss';
+    $redis->hmget($hash_name, @{$self->{global_combinations}}, @{$user_combinations}, sub { });
+
     $hash_name = $self->{landing_company} . ':potential_loss';
     $redis->hincrbyfloat($hash_name, $_, scalar @clients * $potential_loss, sub { }) foreach @{$self->{global_combinations}};
     $redis->hincrbyfloat($hash_name, $_, $potential_loss, sub { }) foreach @{$user_combinations};
