@@ -217,7 +217,7 @@ risk_profile:
           ETC: 10
           UST: 1000
           USB: 1000
-          IDK: 1000
+          IDK: 5000000
       payout:
           USD: 100
           EUR: 100
@@ -230,7 +230,7 @@ risk_profile:
           ETC: 1
           UST: 100
           USB: 100
-          IDK: 100
+          IDK: 500000
   moderate_risk:
       turnover:
           USD: 5000
@@ -244,7 +244,7 @@ risk_profile:
           ETC: 50
           UST: 5000
           USB: 5000
-          IDK: 5000
+          IDK: 1000000
       payout:
           USD: 1000
           EUR: 1000
@@ -257,7 +257,7 @@ risk_profile:
           ETC: 10
           UST: 1000
           USB: 1000
-          IDK: 1000
+          IDK: 500000
   high_risk:
       turnover:
           USD: 50000
@@ -271,7 +271,7 @@ risk_profile:
           ETC: 250
           UST: 50000
           USB: 50000
-          IDK: 50000
+          IDK: 500000
       payout:
           USD: 5000
           EUR: 5000
@@ -284,7 +284,7 @@ risk_profile:
           ETC: 50
           UST: 5000
           USB: 5000
-          IDK: 5000
+          IDK: 50000
   medium_risk:
       turnover:
           USD: 100000
@@ -311,7 +311,7 @@ risk_profile:
           ETC: 50
           UST: 20000
           USB: 20000
-          IDK: 20000
+          IDK: 10000
   low_risk:
       turnover:
           USD: 500000
@@ -325,7 +325,7 @@ risk_profile:
           ETC: 500
           UST: 500000
           USB: 500000
-          IDK: 500000
+          IDK: 50000
       payout:
           USD: 50000
           EUR: 50000
@@ -338,4 +338,4 @@ risk_profile:
           ETC: 50
           UST: 50000
           USB: 50000
-          IDK: 50000
+          IDK: 5000
