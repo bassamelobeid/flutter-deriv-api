@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::Warnings;
 use Test::Exception;
 use JSON::MaybeXS;
@@ -568,9 +568,7 @@ subtest 'Contracts with no payout', sub {
     );
 
     is $error, undef, 'no errors during buy';
-    TODO: {
-        cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+') || 0, '==', 0, 'Lookbacks do not have potential loss';
-    }
+    cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+') || 0, '==', 0, 'Lookbacks do not have potential loss';
 
     cmp_ok $redis->hget('svg:turnover', "+,R_50,+," . $cr->binary_user_id()), '==', 2, 'Turnover increments works as usual';
 

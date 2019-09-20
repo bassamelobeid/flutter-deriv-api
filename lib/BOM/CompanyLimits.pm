@@ -75,10 +75,7 @@ sub add_buys {
     # we increment during buys to be different when we reverse them - in the time we wait for the
     # database to reply, the exchange rate may have changed. To workaround this,  we cache the
     # potential loss and turnover so that the same increments are used in both buys and reverse buys.
-    my $contract_data  = $self->{contract_data};
-    my $potential_loss = $self->{potential_loss} =
-        ExchangeRates::CurrencyConverter::in_usd($contract_data->{payout_price} - $contract_data->{buy_price}, $self->{currency});
-    my $turnover = $self->{turnover} = ExchangeRates::CurrencyConverter::in_usd($contract_data->{buy_price}, $self->{currency});
+    my $contract_data = $self->{contract_data};
 
     my ($response, $hash_name);
     my $redis = $self->{redis};
@@ -89,10 +86,15 @@ sub add_buys {
     $hash_name = $self->{landing_company} . ':realized_loss';
     $redis->hmget($hash_name, @{$self->{global_combinations}}, @{$user_combinations}, sub { });
 
-    $hash_name = $self->{landing_company} . ':potential_loss';
-    $redis->hincrbyfloat($hash_name, $_, scalar @clients * $potential_loss, sub { }) foreach @{$self->{global_combinations}};
-    $redis->hincrbyfloat($hash_name, $_, $potential_loss, sub { }) foreach @{$user_combinations};
+    unless ($self->_has_no_payout) {
+        my $potential_loss = $self->{potential_loss} =
+            ExchangeRates::CurrencyConverter::in_usd($contract_data->{payout_price} - $contract_data->{buy_price}, $self->{currency});
+        $hash_name = $self->{landing_company} . ':potential_loss';
+        $redis->hincrbyfloat($hash_name, $_, scalar @clients * $potential_loss, sub { }) foreach @{$self->{global_combinations}};
+        $redis->hincrbyfloat($hash_name, $_, $potential_loss, sub { }) foreach @{$user_combinations};
+    }
 
+    my $turnover = $self->{turnover} = ExchangeRates::CurrencyConverter::in_usd($contract_data->{buy_price}, $self->{currency});
     $hash_name = $self->{landing_company} . ':turnover';
     $redis->hincrbyfloat($hash_name, $_, $turnover, sub { }) foreach @{$turnover_combinations};
 
@@ -119,17 +121,18 @@ sub reverse_buys {
     my $turnover_combinations =
         $self->_get_combinations_with_clients(\&BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations, \@clients);
 
-    my $potential_loss = -$self->{potential_loss};
-    my $turnover       = -$self->{turnover};
-
     my $hash_name;
     my $redis = $self->{redis};
     $redis->multi(sub { });
 
-    $hash_name = $self->{landing_company} . ':potential_loss';
-    $redis->hincrbyfloat($hash_name, $_, scalar @clients * $potential_loss, sub { }) foreach @{$self->{global_combinations}};
-    $redis->hincrbyfloat($hash_name, $_, $potential_loss, sub { }) foreach @{$user_combinations};
+    unless ($self->_has_no_payout) {
+        my $potential_loss = -$self->{potential_loss};
+        $hash_name = $self->{landing_company} . ':potential_loss';
+        $redis->hincrbyfloat($hash_name, $_, scalar @clients * $potential_loss, sub { }) foreach @{$self->{global_combinations}};
+        $redis->hincrbyfloat($hash_name, $_, $potential_loss, sub { }) foreach @{$user_combinations};
+    }
 
+    my $turnover = -$self->{turnover};
     $hash_name = $self->{landing_company} . ':turnover';
     $redis->hincrbyfloat($hash_name, $_, $turnover, sub { }) foreach @{$turnover_combinations};
 
@@ -148,8 +151,6 @@ sub add_sells {
 
     my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'sells');
 
-    my $attributes = $self->{attributes};
-
     my $user_combinations = $self->_get_combinations_with_clients(\&BOM::CompanyLimits::Combinations::get_user_limit_combinations, \@clients);
 
     # On sells, potential loss is deducted from open bets. Since exchange rates can vary in different points of time,
@@ -157,21 +158,24 @@ sub add_sells {
     # need to live with. To mitigate this, we sync the potential loss hash table in Redis with the database in a daily
     # basis.
     # NOTE: potential loss sync to be added later.
-    my $contract_data  = $self->{contract_data};
-    my $potential_loss = ExchangeRates::CurrencyConverter::in_usd($contract_data->{payout_price} - $contract_data->{buy_price}, $self->{currency});
-    my $realized_loss  = ExchangeRates::CurrencyConverter::in_usd($contract_data->{sell_price} - $contract_data->{buy_price}, $self->{currency});
+    my $contract_data = $self->{contract_data};
 
     my ($hash_name);
     my $redis = $self->{redis};
     $redis->multi(sub { });
 
+    my $realized_loss = ExchangeRates::CurrencyConverter::in_usd($contract_data->{sell_price} - $contract_data->{buy_price}, $self->{currency});
     $hash_name = $self->{landing_company} . ':realized_loss';
     $redis->hincrbyfloat($hash_name, $_, scalar @clients * $realized_loss, sub { }) foreach @{$self->{global_combinations}};
     $redis->hincrbyfloat($hash_name, $_, $realized_loss, sub { }) foreach @{$user_combinations};
 
-    $hash_name = $self->{landing_company} . ':potential_loss';
-    $redis->hincrbyfloat($hash_name, $_, scalar @clients * -$potential_loss, sub { }) foreach @{$self->{global_combinations}};
-    $redis->hincrbyfloat($hash_name, $_, -$potential_loss, sub { }) foreach @{$user_combinations};
+    unless ($self->_has_no_payout) {
+        my $potential_loss =
+            ExchangeRates::CurrencyConverter::in_usd($contract_data->{payout_price} - $contract_data->{buy_price}, $self->{currency});
+        $hash_name = $self->{landing_company} . ':potential_loss';
+        $redis->hincrbyfloat($hash_name, $_, scalar @clients * -$potential_loss, sub { }) foreach @{$self->{global_combinations}};
+        $redis->hincrbyfloat($hash_name, $_, -$potential_loss, sub { }) foreach @{$user_combinations};
+    }
 
     $redis->exec(sub { });
     # It is possible to remove mainloop here; we do not use the response for sells,
@@ -180,6 +184,13 @@ sub add_sells {
 
     BOM::CompanyLimits::Stats::stats_stop($stat_dat);
     return;
+}
+
+sub _has_no_payout {
+    my ($self) = @_;
+    # TODO: This is not ideal; we should have a 'has_payout' attribute in contract_categories.yml,
+    #       shared by here and also the database table bet.bet_class_without_payout_price
+    return $self->{contract_data}->{bet_class} eq 'lookback_option';
 }
 
 sub _get_combinations_with_clients {
