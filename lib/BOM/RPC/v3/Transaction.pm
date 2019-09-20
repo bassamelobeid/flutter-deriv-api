@@ -117,7 +117,9 @@ sub _validate_stake {
     return undef;
 }
 
-rpc buy => sub {
+rpc "buy",
+    category => 'transaction',
+    sub {
     my $params = shift;
 
     my $tv = [Time::HiRes::gettimeofday];
@@ -252,7 +254,7 @@ rpc buy => sub {
         stash    => {market => $contract->market->name},
         rpc_time => $tv_interval,
     };
-};
+    };
 
 rpc buy_contract_for_multiple_accounts => sub {
     my $params = shift;
@@ -484,7 +486,9 @@ rpc sell_contract_for_multiple_accounts => sub {
     return +{result => $data_to_return};
 };
 
-rpc sell => sub {
+rpc "sell",
+    category => 'transaction',
+    sub {
     my $params = shift;
 
     my $client = $params->{client} // die "client should be authed when get here";
@@ -555,6 +559,6 @@ rpc sell => sub {
         balance_after  => formatnumber('amount', $client->currency, $trx_rec->balance_after),
         sold_for       => formatnumber('price', $client->currency, $trx_rec->amount),
     };
-};
+    };
 
 1;
