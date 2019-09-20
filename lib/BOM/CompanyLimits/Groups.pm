@@ -57,6 +57,12 @@ sub get_limit_groups {
         });
     $redis->mainloop;
 
+    # TODO: Eventually we should throw an error in the event the limit groups does
+    #       not exist, but for this phase it suffices to simply return 'default' as
+    #       the group name. The code below simply allows the cache to be valid regardless.
+    $underlying_groups_cache{"\0"} = 1;
+    $contract_groups_cache{"\0"}   = 1;
+
     $cache_date = $current_minute;
 
     return _get_limit_groups($bet_data);
