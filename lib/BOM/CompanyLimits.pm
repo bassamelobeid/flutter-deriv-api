@@ -90,8 +90,8 @@ sub add_buys {
         my $potential_loss = $self->{potential_loss} =
             ExchangeRates::CurrencyConverter::in_usd($contract_data->{payout_price} - $contract_data->{buy_price}, $self->{currency});
         $hash_name = $self->{landing_company} . ':potential_loss';
-        $redis->hincrbyfloat($hash_name, $_, scalar @clients * $potential_loss, sub { }) foreach @{$self->{global_combinations}};
-        $redis->hincrbyfloat($hash_name, $_, $potential_loss, sub { }) foreach @{$user_combinations};
+        $redis->hincrbyfloat($hash_name, $_, $potential_loss * @clients, sub { }) foreach @{$self->{global_combinations}};
+        $redis->hincrbyfloat($hash_name, $_, $potential_loss,            sub { }) foreach @{$user_combinations};
     }
 
     my $turnover = $self->{turnover} = ExchangeRates::CurrencyConverter::in_usd($contract_data->{buy_price}, $self->{currency});
@@ -128,8 +128,8 @@ sub reverse_buys {
     unless ($self->_has_no_payout) {
         my $potential_loss = -$self->{potential_loss};
         $hash_name = $self->{landing_company} . ':potential_loss';
-        $redis->hincrbyfloat($hash_name, $_, scalar @clients * $potential_loss, sub { }) foreach @{$self->{global_combinations}};
-        $redis->hincrbyfloat($hash_name, $_, $potential_loss, sub { }) foreach @{$user_combinations};
+        $redis->hincrbyfloat($hash_name, $_, $potential_loss * @clients, sub { }) foreach @{$self->{global_combinations}};
+        $redis->hincrbyfloat($hash_name, $_, $potential_loss,            sub { }) foreach @{$user_combinations};
     }
 
     my $turnover = -$self->{turnover};
@@ -166,15 +166,15 @@ sub add_sells {
 
     my $realized_loss = ExchangeRates::CurrencyConverter::in_usd($contract_data->{sell_price} - $contract_data->{buy_price}, $self->{currency});
     $hash_name = $self->{landing_company} . ':realized_loss';
-    $redis->hincrbyfloat($hash_name, $_, scalar @clients * $realized_loss, sub { }) foreach @{$self->{global_combinations}};
-    $redis->hincrbyfloat($hash_name, $_, $realized_loss, sub { }) foreach @{$user_combinations};
+    $redis->hincrbyfloat($hash_name, $_, $realized_loss * @clients, sub { }) foreach @{$self->{global_combinations}};
+    $redis->hincrbyfloat($hash_name, $_, $realized_loss,            sub { }) foreach @{$user_combinations};
 
     unless ($self->_has_no_payout) {
         my $potential_loss =
             ExchangeRates::CurrencyConverter::in_usd($contract_data->{payout_price} - $contract_data->{buy_price}, $self->{currency});
         $hash_name = $self->{landing_company} . ':potential_loss';
-        $redis->hincrbyfloat($hash_name, $_, scalar @clients * -$potential_loss, sub { }) foreach @{$self->{global_combinations}};
-        $redis->hincrbyfloat($hash_name, $_, -$potential_loss, sub { }) foreach @{$user_combinations};
+        $redis->hincrbyfloat($hash_name, $_, -$potential_loss * @clients, sub { }) foreach @{$self->{global_combinations}};
+        $redis->hincrbyfloat($hash_name, $_, -$potential_loss,            sub { }) foreach @{$user_combinations};
     }
 
     $redis->exec(sub { });
