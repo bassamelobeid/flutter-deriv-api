@@ -8,8 +8,6 @@ use BOM::CompanyLimits::Combinations;
 use BOM::CompanyLimits::Stats;
 use LandingCompany::Registry;
 
-# TODO: breach implementation to come in 2nd phase...
-
 =head1 NAME
 
 BOM::CompanyLimits
@@ -84,27 +82,39 @@ sub add_buys {
 
     # TODO: Though we do not use realized loss for limits now, we query anyway to gauge performance for the first phase
     $hash_name = $self->{landing_company} . ':realized_loss';
-    $redis->hmget($hash_name, @{$self->{global_combinations}}, @{$user_combinations}, sub { });
+    $redis->hmget($hash_name, my @real_loss_keys = (@{$self->{global_combinations}}, @{$user_combinations}), sub { });
 
+    my @pot_loss_keys;
     unless ($self->_has_no_payout) {
         my $potential_loss = $self->{potential_loss} =
             ExchangeRates::CurrencyConverter::in_usd($contract_data->{payout_price} - $contract_data->{buy_price}, $self->{currency});
         $hash_name = $self->{landing_company} . ':potential_loss';
         $redis->hincrbyfloat($hash_name, $_, $potential_loss * @clients, sub { }) foreach @{$self->{global_combinations}};
         $redis->hincrbyfloat($hash_name, $_, $potential_loss,            sub { }) foreach @{$user_combinations};
+
+        push @pot_loss_keys, @{$self->{global_combinations}}, @{$user_combinations};
     }
 
     my $turnover = $self->{turnover} = ExchangeRates::CurrencyConverter::in_usd($contract_data->{buy_price}, $self->{currency});
     $hash_name = $self->{landing_company} . ':turnover';
     $redis->hincrbyfloat($hash_name, $_, $turnover, sub { }) foreach @{$turnover_combinations};
 
-    $redis->exec(sub { $response = $_[1]; });
+    $redis->exec(
+        sub {
+            $response = $_[1];
+            # Flatten out the array response from realized_loss hmget
+            splice @$response, 0, 1, @{$response->[0]};
+        });
     $redis->mainloop;
 
     $self->{has_add_buys} = 1;
     BOM::CompanyLimits::Stats::stats_stop($stat_dat);
 
-    return;
+    # TODO: breach check implementation to come in 2nd phase...
+    return $response,
+        realized_loss_keys  => \@real_loss_keys,
+        potential_loss_keys => \@pot_loss_keys,
+        turnover_keys       => $turnover_combinations;
 }
 
 sub reverse_buys {
