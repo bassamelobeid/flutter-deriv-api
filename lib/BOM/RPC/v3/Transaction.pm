@@ -277,6 +277,11 @@ rpc buy_contract_for_multiple_accounts => sub {
 
     my ($source, $contract_parameters, $payout) = @{$params}{qw/source contract_parameters payout/};
 
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'MultiplierNotAllowed',
+            message_to_client => localize('MULTUP and MULTDOWN are not supported.')}
+    ) if $contract_parameters->{contract_type} =~ /^(?:MULTUP|MULTDOWN)$/;
+
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::Pricing::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $client->landing_company->short;
@@ -428,12 +433,15 @@ rpc sell_contract_for_multiple_accounts => sub {
     my ($source, $args) = ($params->{source}, $params->{args});
 
     my $shortcode = $args->{shortcode};
-
     my $tokens = $args->{tokens} // [];
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'TooManyTokens',
             message_to_client => localize('Up to 100 tokens are allowed.')}) if scalar @$tokens > 100;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'MultiplierNotAllowed',
+            message_to_client => localize('MULTUP and MULTDOWN are not supported.')}) if $shortcofe =~ /^(?:MULTUP|MULTDOWN)$/;
 
     my $token_list_res = _check_token_list($tokens);
 
