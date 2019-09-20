@@ -106,6 +106,17 @@ subtest 'invalid start and expiry time' => sub {
     $bet_params->{date_start} = $now->epoch + 5 * 60;
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
+
+    $bet_params->{date_start}   = $now->epoch;
+    $bet_params->{date_pricing} = $now->epoch;
+    $bet_params->{date_expiry}  = $now->epoch + 78 * 60 * 60;
+    $c                          = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'not valid to buy';
+    like($c->primary_validation_error->{message}, qr/daily expiry must expire at close/, 'daily contract closed at end');
+    $bet_params->{for_sale} = 1;
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, ' valid to buy';
+
 };
 
 $fake_tick = Postgres::FeedDB::Spot::Tick->new({
