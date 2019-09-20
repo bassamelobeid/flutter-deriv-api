@@ -73,7 +73,7 @@ sub is_mt5_suspended {
                                 my ($data) = @_;
                                 my $group  = $data->{'group'};
                                 my $rights = $data->{'rights'};
-                           
+
                                 # Keep things around for an hour,
                                 # long enough to be useful but
                                 # try not to keep bad data too long...
@@ -86,10 +86,10 @@ sub is_mt5_suspended {
                                     'group'  => $group,
                                     'rights' => $rights,
                                 };
-                         
+
                                 $redis->hmset($cache_key, %$mt5_details)->then(
                                     sub {
-                       
+
                                         $redis->expire($cache_key, $ttl);
                                     }
                                     )->on_done(
