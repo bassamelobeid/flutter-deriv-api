@@ -31,7 +31,6 @@ use Net::Async::Redis;
 
 use List::Util qw(sum0);
 use HTML::Entities;
-use BOM::Config::RedisReplicated;
 
 use constant DAYS_TO_EXPIRE => 14;
 use constant SECONDS_IN_DAY => 86400;
@@ -211,8 +210,8 @@ sub new_mt5_signup {
         my $group = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
         my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};              
 	my %known_rights = %$hex_rights;                                                                                                                                                                                                                     
-    	while (my ($key, $value) = each %know_rights){                                    
-        $know_rights{$key} = hex $value;                                              
+    	while (my ($key, $value) = each %known_rights){                                    
+        $known_rights{$key} = hex $value;                                              
 	}                              
 
         if ($group->[0]) {
@@ -223,7 +222,7 @@ sub new_mt5_signup {
             # This should now have the following keys set:
             # api,enabled,expert,password,reports,trailing
             # Example: status (483 => 1E3)
-            $rights{$_} = 1 for grep { $status->[0] & $know_rights{$_} } keys %known_rights;
+            $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
     
             if (sum0(@rights{qw(enabled api)}) == 2 and not $rights{trade_disabled}) {
                 print " ( Enabled )";
