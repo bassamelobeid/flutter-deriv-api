@@ -161,7 +161,7 @@ sub add_sells {
     my $potential_loss = ExchangeRates::CurrencyConverter::in_usd($contract_data->{payout_price} - $contract_data->{buy_price}, $self->{currency});
     my $realized_loss  = ExchangeRates::CurrencyConverter::in_usd($contract_data->{sell_price} - $contract_data->{buy_price}, $self->{currency});
 
-    my ($response, $hash_name);
+    my ($hash_name);
     my $redis = $self->{redis};
     $redis->multi(sub { });
 
@@ -173,7 +173,9 @@ sub add_sells {
     $redis->hincrbyfloat($hash_name, $_, scalar @clients * -$potential_loss, sub { }) foreach @{$self->{global_combinations}};
     $redis->hincrbyfloat($hash_name, $_, -$potential_loss, sub { }) foreach @{$user_combinations};
 
-    $redis->exec(sub { $response = $_[1]; });
+    $redis->exec(sub { });
+    # It is possible to remove mainloop here; we do not use the response for sells,
+    # but it is kept here to avoid complications with pending Redis calls
     $redis->mainloop;
 
     BOM::CompanyLimits::Stats::stats_stop($stat_dat);
