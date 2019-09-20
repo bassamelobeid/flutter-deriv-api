@@ -928,10 +928,10 @@ foreach my $mt_ac (@mt_logins) {
     my $cache_key = "MT5_USER_GROUP::$id";
     my $group = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
     my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
-    my %know_rights = %$hex_rights;
+    my %known_rights = %$hex_rights;
 
-    while (my ($key, $value) = each %know_rights){
-        $know_rights{$key} = hex $value;
+    while (my ($key, $value) = each %known_rights){
+        $known_rights{$key} = hex $value;
     }
 
     if ($group->[0]) {
@@ -944,7 +944,7 @@ foreach my $mt_ac (@mt_logins) {
         # This should now have the following keys set:
         # api,enabled,expert,password,reports,trailing
         # Example: status (483 => 1E3)
-        $rights{$_} = 1 for grep { $status->[0] & $know_rights{$_} } keys %know_rights;
+        $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
       
         if (sum0(@rights{qw(enabled api)}) == 2 and not $rights{trade_disabled}) {
             print " ( Enabled )";
