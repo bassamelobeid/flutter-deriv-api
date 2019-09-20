@@ -43,13 +43,9 @@ sub new {
     $self->{currency}        = $params{currency};
     $self->{contract_data}   = $params{contract_data};
 
-    my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'init');
-
     my $attributes = BOM::CompanyLimits::Combinations::get_attributes_from_contract($params{contract_data});
     $self->{global_combinations} = BOM::CompanyLimits::Combinations::get_global_limit_combinations($attributes);
     $self->{attributes}          = $attributes;
-
-    BOM::CompanyLimits::Stats::stats_stop($stat_dat);
 
     return $self;
 }
