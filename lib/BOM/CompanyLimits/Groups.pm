@@ -5,7 +5,7 @@ use warnings;
 use Finance::Underlying;
 use Finance::Contract::Category;
 use LandingCompany::Registry;
-use BOM::CompanyLimits::Helpers qw(get_redis);
+use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
 
 # All code related to setting groups, changing groups, syncing
@@ -43,8 +43,7 @@ sub get_limit_groups {
     return _get_limit_groups($bet_data)
         if %underlying_groups_cache and $cache_date == $current_minute;
 
-    # Limit setting currently all points to same redis server
-    my $redis = get_redis('svg', 'limit_setting');
+    my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 
     $redis->hgetall(
         'groups:contract',

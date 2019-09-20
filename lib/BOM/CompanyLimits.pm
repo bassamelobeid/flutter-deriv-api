@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use ExchangeRates::CurrencyConverter;
-use BOM::CompanyLimits::Helpers qw(get_redis);
+use BOM::Config::RedisReplicated;
 use BOM::CompanyLimits::Combinations;
 use BOM::CompanyLimits::Stats;
 use LandingCompany::Registry;
@@ -42,6 +42,7 @@ sub new {
     $self->{landing_company} = $landing_company;
     $self->{currency}        = $params{currency};
     $self->{contract_data}   = $params{contract_data};
+    $self->{redis}           = BOM::Config::RedisReplicated::redis_limits_write;
 
     my $attributes = BOM::CompanyLimits::Combinations::get_attributes_from_contract($params{contract_data});
     $self->{global_combinations} = BOM::CompanyLimits::Combinations::get_global_limit_combinations($attributes);
@@ -50,14 +51,53 @@ sub new {
     return $self;
 }
 
+# A note about the precision of values in Redis: The most accurate calculation of the loss for
+# currencies not in USD is always the current exchange rate. However, the exchange rate we use to
+# increment the loss is always the exchange rate at the time we calculate the increment. A solution
+# to this would probably to place the currency as a dimension, but performance would take a hit.
+# So as of now our current solution is to live with this discrepacy. Since realized loss and turnover
+# resets daily and potential loss is synced daily, the errors are accumulated for at most a day.
+#
+# Most currencies are rather stable, save for cryptos (i.e. bitcoin) that can fluctuate rather
+# unpredictably. However, we would expect that its growth would be gradual across a few weeks, but
+# its crash can happen within a day. What this means is that we always overestimate the loss, which
+# is fine since these are our own limits.
 sub add_buys {
     my ($self, @clients) = @_;
 
     my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'buys');
-    $self->_incr_for_buys(1, @clients);
+
+    my $user_combinations = $self->_get_combinations_with_clients(\&BOM::CompanyLimits::Combinations::get_user_limit_combinations, \@clients);
+    my $turnover_combinations =
+        $self->_get_combinations_with_clients(\&BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations, \@clients);
+
+    # Exchange rates may change if queried at different times. This could cause the loss values
+    # we increment during buys to be different when we reverse them - in the time we wait for the
+    # database to reply, the exchange rate may have changed. To workaround this,  we cache the
+    # potential loss and turnover so that the same increments are used in both buys and reverse buys.
+    my $contract_data  = $self->{contract_data};
+    my $potential_loss = $self->{potential_loss} =
+        ExchangeRates::CurrencyConverter::in_usd($contract_data->{payout_price} - $contract_data->{buy_price}, $self->{currency});
+    my $turnover = $self->{turnover} = ExchangeRates::CurrencyConverter::in_usd($contract_data->{buy_price}, $self->{currency});
+
+    my ($response, $hash_name);
+    my $redis = $self->{redis};
+
+    $redis->multi(sub { });
+
+    $hash_name = $self->{landing_company} . ':potential_loss';
+    $redis->hincrbyfloat($hash_name, $_, scalar @clients * $potential_loss, sub { }) foreach @{$self->{global_combinations}};
+    $redis->hincrbyfloat($hash_name, $_, $potential_loss, sub { }) foreach @{$user_combinations};
+
+    $hash_name = $self->{landing_company} . ':turnover';
+    $redis->hincrbyfloat($hash_name, $_, $turnover, sub { }) foreach @{$turnover_combinations};
+
+    $redis->exec(sub { $response = $_[1]; });
+    $redis->mainloop;
 
     $self->{has_add_buys} = 1;
     BOM::CompanyLimits::Stats::stats_stop($stat_dat);
+
     return;
 }
 
@@ -70,7 +110,30 @@ sub reverse_buys {
 
     my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'reverse_buys');
 
-    $self->_incr_for_buys(-1, @clients);
+    # These combinations cannot be cached; we cannot assume that in reversing buys the exact same client list will be passed in
+    my $user_combinations = $self->_get_combinations_with_clients(\&BOM::CompanyLimits::Combinations::get_user_limit_combinations, \@clients);
+    my $turnover_combinations =
+        $self->_get_combinations_with_clients(\&BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations, \@clients);
+
+    my $potential_loss = -$self->{potential_loss};
+    my $turnover       = -$self->{turnover};
+
+    my $hash_name;
+    my $redis = $self->{redis};
+    $redis->multi(sub { });
+
+    $hash_name = $self->{landing_company} . ':potential_loss';
+    $redis->hincrbyfloat($hash_name, $_, scalar @clients * $potential_loss, sub { }) foreach @{$self->{global_combinations}};
+    $redis->hincrbyfloat($hash_name, $_, $potential_loss, sub { }) foreach @{$user_combinations};
+
+    $hash_name = $self->{landing_company} . ':turnover';
+    $redis->hincrbyfloat($hash_name, $_, $turnover, sub { }) foreach @{$turnover_combinations};
+
+    $redis->exec(sub { });
+    # It is possible to remove mainloop here; we do not use the response when discarding
+    # buys, but it is kept here to avoid complications with pending Redis calls
+    $redis->mainloop;
+
     BOM::CompanyLimits::Stats::stats_stop($stat_dat);
 
     return;
@@ -82,100 +145,42 @@ sub add_sells {
     my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'sells');
 
     my $attributes = $self->{attributes};
-    my $user_combinations;
 
-    foreach my $client (@clients) {
-        my $combinations = BOM::CompanyLimits::Combinations::get_user_limit_combinations($client->binary_user_id, $attributes);
-        push(@$user_combinations, @$combinations);
-    }
+    my $user_combinations = $self->_get_combinations_with_clients(\&BOM::CompanyLimits::Combinations::get_user_limit_combinations, \@clients);
 
     # On sells, potential loss is deducted from open bets. Since exchange rates can vary in different points of time,
     # the potential loss we deduct here may not be the same value that we add during buys. This is something we would
     # need to live with. To mitigate this, we sync the potential loss hash table in Redis with the database in a daily
     # basis.
     # NOTE: potential loss sync to be added later.
-    my $contract_data = $self->{contract_data};
+    my $contract_data  = $self->{contract_data};
     my $potential_loss = ExchangeRates::CurrencyConverter::in_usd($contract_data->{payout_price} - $contract_data->{buy_price}, $self->{currency});
-    $self->_incrby_loss_hash('potential_loss', $self->{global_combinations}, scalar @clients * -$potential_loss,
-        $user_combinations, -$potential_loss);
+    my $realized_loss  = ExchangeRates::CurrencyConverter::in_usd($contract_data->{sell_price} - $contract_data->{buy_price}, $self->{currency});
 
-    my $realized_loss = ExchangeRates::CurrencyConverter::in_usd($contract_data->{sell_price} - $contract_data->{buy_price}, $self->{currency});
-    $self->_incrby_loss_hash('realized_loss', $self->{global_combinations}, scalar @clients * $realized_loss, $user_combinations, $realized_loss);
+    my ($response, $hash_name);
+    my $redis = $self->{redis};
+    $redis->multi(sub { });
+
+    $hash_name = $self->{landing_company} . ':realized_loss';
+    $redis->hincrbyfloat($hash_name, $_, scalar @clients * $realized_loss, sub { }) foreach @{$self->{global_combinations}};
+    $redis->hincrbyfloat($hash_name, $_, $realized_loss, sub { }) foreach @{$user_combinations};
+
+    $hash_name = $self->{landing_company} . ':potential_loss';
+    $redis->hincrbyfloat($hash_name, $_, scalar @clients * -$potential_loss, sub { }) foreach @{$self->{global_combinations}};
+    $redis->hincrbyfloat($hash_name, $_, -$potential_loss, sub { }) foreach @{$user_combinations};
+
+    $redis->exec(sub { $response = $_[1]; });
+    $redis->mainloop;
 
     BOM::CompanyLimits::Stats::stats_stop($stat_dat);
     return;
 }
 
-sub _incrby_loss_hash {
-    my ($self, $loss_type, @incr_pair) = @_;
+sub _get_combinations_with_clients {
+    my ($self, $combination_func, $clients) = @_;
 
-    # A note about the precision of values in Redis: The most accurate calculation of the loss for
-    # currencies not in USD is always the current exchange rate. However, the exchange rate we use to
-    # increment the loss is always the exchange rate at the time we calculate the increment. A solution
-    # to this would probably to place the currency as a dimension, but performance would take a hit.
-    # So as of now our current solution is to live with this discrepacy. Since realized loss and turnover
-    # resets daily and potential loss is synced daily, the errors are accumulated for at most a day.
-    #
-    # Most currencies are rather stable, save for cryptos (i.e. bitcoin) that can fluctuate rather
-    # unpredictably. However, we would expect that its growth would be gradual across a few weeks, but
-    # its crash can happen within a day. What this means is that we always overestimate the loss, which
-    # is fine since these are our own limits.
-    my $landing_company = $self->{landing_company};
-    my $redis           = get_redis($landing_company, $loss_type);
-    my $hash_name       = "$landing_company:$loss_type";
-    my $response;
-    $redis->multi(sub { });
-    for (my $i = 0; $i < @incr_pair; $i += 2) {
-        my ($combinations, $incrby) = @incr_pair[$i, $i + 1];
-        foreach my $p (@$combinations) {
-            $redis->hincrbyfloat($hash_name, $p, $incrby, sub { });
-        }
-    }
-    $redis->exec(sub { $response = $_[1]; });
-    $redis->mainloop;
-
-    return $response;
-}
-
-# Reused for both buys and reverse buys
-sub _incr_for_buys {
-    my ($self, $multiplier, @clients) = @_;
-
-    my $user_combinations;
-    my $turnover_combinations;
-    my $attributes = $self->{attributes};
-
-    foreach my $client (@clients) {
-        my $combinations = BOM::CompanyLimits::Combinations::get_user_limit_combinations($client->binary_user_id, $attributes);
-        my $t_combinations = BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations($client->binary_user_id, $attributes);
-        push(@$user_combinations,     @$combinations);
-        push(@$turnover_combinations, @$t_combinations);
-    }
-
-    my @responses;
-    my $contract_data = $self->{contract_data};
-
-    # Exchange rates may change if queried at different times. This could cause the loss values
-    # we increment during buys to be different when we reverse them - in the time we wait for the
-    # database to reply, the exchange rate may have changed. To workaround this,  we cache the
-    # potential loss and turnover so that the same increments are used in both buys and reverse buys.
-    my $potential_loss =
-        ($self->{potential_loss} //=
-            ExchangeRates::CurrencyConverter::in_usd($contract_data->{payout_price} - $contract_data->{buy_price}, $self->{currency})) * $multiplier;
-
-    push @responses,
-        $self->_incrby_loss_hash(
-        'potential_loss',
-        $self->{global_combinations},
-        scalar @clients * $potential_loss,
-        $user_combinations, $potential_loss
-        );
-
-    my $turnover = ($self->{turnover} //= ExchangeRates::CurrencyConverter::in_usd($contract_data->{buy_price}, $self->{currency})) * $multiplier;
-
-    push @responses, $self->_incrby_loss_hash('turnover', $turnover_combinations, $turnover);
-
-    return @responses;
+    my @combinations = map { @{$combination_func->($_->binary_user_id, $self->{attributes})} } @$clients;
+    return \@combinations;
 }
 
 1;

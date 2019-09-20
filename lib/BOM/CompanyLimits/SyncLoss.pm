@@ -13,7 +13,7 @@ use warnings;
 # crap can cause values in loss type hashes to be out of sync.
 
 use Date::Utility;
-use BOM::CompanyLimits::Helpers qw(get_redis);
+use BOM::Config::RedisReplicated;
 use LandingCompany::Registry;
 
 # Certain loss types reset at the start of a new day. We use a cron
@@ -25,11 +25,11 @@ sub reset_daily_loss_hashes {
     my $new_day_start_epoch = Date::Utility::today()->epoch + 86400;
     my %output;
 
+    my $redis = BOM::Config::RedisReplicated::redis_limits_write;
     my @landing_companies_with_broker_codes = grep { $#{$_->broker_codes} > -1 } LandingCompany::Registry::all();
     foreach my $loss_type (qw/realized_loss turnover/) {
         foreach my $lc (@landing_companies_with_broker_codes) {
             my $landing_company = $lc->{short};
-            my $redis           = get_redis($landing_company, $loss_type);
             my $hash_name       = "$landing_company:$loss_type";
 
             if ($params{force_reset}) {

@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use BOM::CompanyLimits::Groups;
-use BOM::CompanyLimits::Helpers qw(get_redis);
 
 sub get_global_limit_combinations {
     my ($attributes) = @_;
