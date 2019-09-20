@@ -173,4 +173,9 @@ sub redis_auth_config {
     return $config;
 }
 
+sub mt5_user_rights {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/mt5_user_rights.yml');
+    return $config;
+}
+
 1;
