@@ -32,26 +32,9 @@ use Net::Async::Redis;
 use List::Util qw(sum0);
 use HTML::Entities;
 use BOM::Config::RedisReplicated;
-use Const::Fast qw(const);
 
 use constant DAYS_TO_EXPIRE => 14;
 use constant SECONDS_IN_DAY => 86400;
-
-# Currently known MT5 mappings from https://support.metaquotes.net/en/docs/mt5/api/reference_user/imtuser/imtuser_enum#enusersrights
-const my %known_rights => (
-    enabled        => 0x0001,
-    password       => 0x0002,
-    trade_disabled => 0x0004,
-    investor       => 0x0008,
-    confirmed      => 0x0010,
-    trailing       => 0x0020,
-    expert         => 0x0040,
-    api            => 0x0080,
-    reports        => 0x0100,
-    readonly       => 0x0200,
-    reset_pass     => 0x0400,
-    otp_enabled    => 0x0800,
-);
 
 {
     my $redis_mt5user;
@@ -217,29 +200,31 @@ have not
 sub new_mt5_signup {
     my $data = shift;
     my $client = BOM::User::Client->new({loginid => $data->{loginid}});
-    warn 'in bom-events 1';
     return unless $client;
 
     my $user = $client->user;
     my @mt_logins = sort grep { /^MT\d+$/ } $user->loginids;
-    warn 'in bom-events 2';
     foreach my $mt_ac (@mt_logins) {
-        warn 'in bom-events 3';
         my ($id) = $mt_ac =~ /^MT(\d+)$/;
         # If we have group information, display it
         my $cache_key = "MT5_USER_GROUP::$id";
         my $group = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
-        warn 'in bom-events 4';
+        my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};              
+	my %known_rights = %$hex_rights;                                                                                                                                                                                                                     
+    	while (my ($key, $value) = each %know_rights){                                    
+        $know_rights{$key} = hex $value;                                              
+	}                              
+
         if ($group->[0]) {
             my $status = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'rights');
-            warn 'in bom-events 5';
+      
             my %rights;
 
             # This should now have the following keys set:
             # api,enabled,expert,password,reports,trailing
             # Example: status (483 => 1E3)
-            $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
-            warn 'in bom-events 6';
+            $rights{$_} = 1 for grep { $status->[0] & $know_rights{$_} } keys %known_rights;
+    
             if (sum0(@rights{qw(enabled api)}) == 2 and not $rights{trade_disabled}) {
                 print " ( Enabled )";
             } else {
@@ -250,9 +235,7 @@ sub new_mt5_signup {
             # ... and if we don't, queue up the request. This may lead to a few duplicates
             # in the queue - that's fine, we check each one to see if it's already
             # been processed.
-            warn 'in bom-events 7';
             BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
-            warn 'in bom-events 8';
         }
     }
 
