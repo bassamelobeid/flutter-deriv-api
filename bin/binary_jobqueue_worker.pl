@@ -21,6 +21,9 @@ use Getopt::Long;
 use Log::Any qw($log);
 
 use BOM::Config::RedisReplicated;
+use BOM::RPC::JobTimeout;
+
+use constant QUEUE_WORKER_TIMEOUT => 300;
 
 my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
 
@@ -111,7 +114,7 @@ sub takeover_coordinator {
         add_worker_process($REDIS) if %workers < $WORKERS;
 
         $conn->write("DEC-WORKERS\n");
-        my $result = $conn->read_until("\n")->get;
+        my $result = $conn->read_until("\n")->retain;
         last if $result eq "WORKERS 0\n";
     }
 
@@ -128,7 +131,7 @@ sub run_coordinator {
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
         $log->info("Terminating workers...");
-        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->get;
+        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->retain;
 
         unlink $SOCKETPATH;
         exit 0;
@@ -163,7 +166,7 @@ sub handle_ctrl_command_DEC_WORKERS {
         # Arbitrarily pick a victim
         warn 'DELETING WORKERS';
         my $worker_to_die = delete $workers{(keys %workers)[0]};
-        $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })->get;
+        $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })->retain;
     }
 }
 
@@ -222,6 +225,60 @@ sub add_worker_process {
     return $worker;
 }
 
+sub process_job {
+    my %args = @_;
+
+    my $job      = $args{job};
+    my $tags     = $args{tags};
+    my $code_sub = $args{code_sub};
+
+    my $name = $job->data('name');
+
+    my $current_time = Time::Moment->now;
+    my $params       = decode_json_utf8($job->data('params'));
+
+    stats_inc("rpc_queue.worker.jobs", $tags);
+
+    # Handle a 'ping' request immediately here
+    if ($name eq "ping") {
+        $job->done(
+            encode_json_utf8({
+                    success => 1,
+                    result  => 'pong'
+                }));
+        return;
+    }
+
+    $log->tracef("Running RPC <%s> for: %s", $name, pp($params));
+
+    if (my $method = $code_sub) {
+        my $result = $method->($params);
+        $log->tracef("Results:\n%s", join("\n", map { " | $_" } split m/\n/, pp($result)));
+
+        $job->done(
+            encode_json_utf8({
+                    success => 1,
+                    result  => $result
+                })) unless $job->is_ready;
+    } else {
+        $log->trace("  UNKNOWN");
+        stats_inc("rpc_queue.worker.jobs.failed", $tags);
+        # Transport mechanism itself succeeded, so ->done is fine here
+        $job->done(
+            encode_json_utf8({
+                    success => 0,
+                    result  => {
+                        error => {
+                            code              => 'InternalServerError',
+                            message_to_client => 'Sorry, an error occurred while processing your request.',
+                        }}})) unless $job->is_ready;
+    }
+
+    stats_gauge("rpc_queue.worker.jobs.latency", $current_time->delta_milliseconds(Time::Moment->now), $tags);
+
+    return;
+}
+
 sub run_worker_process {
     my $redis = shift;
     my $loop  = IO::Async::Loop->new;
@@ -249,8 +306,7 @@ sub run_worker_process {
         my $worker = Job::Async::Worker::Redis->new(
             uri                 => $redis,
             max_concurrent_jobs => 1,
-            use_multi           => 1,
-            timeout             => 5,
+            timeout             => QUEUE_WORKER_TIMEOUT,
             $queue_prefix ? (prefix => $queue_prefix) : (),
         ));
 
@@ -265,7 +321,10 @@ sub run_worker_process {
 
     my %services = map {
         my $method = $_->name;
-        $method => BOM::RPC::wrap_rpc_sub($_)
+        $method => {
+            code_sub => BOM::RPC::wrap_rpc_sub($_),
+            category => $_->category,
+            }
     } BOM::RPC::Registry::get_service_defs();
 
     # Format:
@@ -275,48 +334,45 @@ sub run_worker_process {
     # Result: JSON-encoded result
     $worker->jobs->each(
         sub {
-            my $job          = $_;
-            my $current_time = Time::Moment->now;
-            my $name         = $job->data('name');
-            my $params       = decode_json_utf8($job->data('params'));
+            my $job = $_;
 
+            my $name = $job->data('name');
             my ($queue) = $worker->pending_queues;
+
+            my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
+            $log->tracef('Timeout for %s is %d', $name, $job_timeout);
+
             my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
-            stats_inc("rpc_queue.worker.jobs", $tags);
 
-            # Handle a 'ping' request immediately here
-            if ($name eq "ping") {
-                $_->done(
-                    encode_json_utf8({
-                            success => 1,
-                            result  => 'pong'
-                        }));
-                return;
+            try {
+                local $SIG{ALRM} = sub {
+                    stats_inc("rpc_queue.worker.jobs.timeout", $tags);
+                    $log->errorf('rpc_queue: Timeout error - Not able to get response for %s job, job timeout is configured at %s seconds',
+                        $name, $job_timeout);
+                    $job->done(
+                        encode_json_utf8({
+                                success => 0,
+                                result  => {
+                                    error => {
+                                        code              => 'RequestTimeout',
+                                        message_to_client => "Request timed out.",
+                                    }}}));
+                };
+                alarm $job_timeout;
+                process_job(
+                    job      => $job,
+                    code_sub => $services{$name}{code_sub},
+                    tags     => $tags
+                );
+                alarm 0;
+            }
+            catch {
+                $log->errorf('An error occurred while processing job for %s, ERROR: %s', $name, $@);
+            }
+            finally {
+                alarm 0;
             }
 
-            $log->tracef("Running RPC <%s> for: %s", $name, pp($params));
-
-            if (my $code = $services{$name}) {
-                my $result = $code->($params);
-                $log->tracef("Results:\n%s", join("\n", map { " | $_" } split m/\n/, pp($result)));
-
-                $_->done(
-                    encode_json_utf8({
-                            success => 1,
-                            result  => $result
-                        }));
-            } else {
-                $log->trace("  UNKNOWN");
-                # Transport mechanism itself succeeded, so ->done is fine here
-                $_->done(
-                    encode_json_utf8({
-                            success => 0,
-                            error   => "Unknown RPC name '$name'"
-                        }));
-                stats_inc("rpc_queue.worker.jobs.failed", $tags);
-            }
-
-            stats_gauge("rpc_queue.worker.jobs.latency", $current_time->delta_milliseconds(Time::Moment->now), $tags);
         });
 
     $worker->trigger->retain;
