@@ -6,13 +6,15 @@
 =========================================================================================<br>
 
 <hr>
-Login ID&nbsp;&nbsp;First Name&nbsp;&nbsp;Last Name&nbsp;&nbsp;Duplicated Login IDs<br>
+Login ID&nbsp;&nbsp;Reason&nbsp;&nbsp;First Name&nbsp;&nbsp;Last Name&nbsp;&nbsp;Phone&nbsp;&nbsp;Duplicated Login IDs<br>
 
 [% FOREACH client IN clients_data -%]
 <br>
 [% client.loginid %]&nbsp;
+[% client.reason %]&nbsp;
 [% client.first_name %]&nbsp;
 [% client.last_name %]&nbsp;
+[% client.phone %]&nbsp;
 [% client.duplicated_loginid %]&nbsp;
 [% END -%]
 <br>
