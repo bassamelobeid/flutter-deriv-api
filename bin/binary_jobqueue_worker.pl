@@ -417,7 +417,6 @@ sub run_worker_process {
 
             my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
 
-            my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
             if (my $expire = $job->data('_expires')) {
                 my $expire_timeout = $expire - Time::HiRes::time();
                 if ($expire_timeout > 0 && $expire_timeout < $job_timeout) {
