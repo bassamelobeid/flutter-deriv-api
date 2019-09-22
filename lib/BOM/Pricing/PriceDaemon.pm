@@ -18,6 +18,7 @@ use BOM::Platform::Context;
 use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
 use BOM::Pricing::v3::Contract;
+use BOM::Pricing::v3::Utility;
 use Volatility::LinearCache;
 
 use constant {
@@ -207,6 +208,12 @@ sub run {
             time             => time,
             fork_index       => $args{fork_index});
         $redis->set("PRICER_STATUS::$args{ip}-$args{fork_index}", encode_json_utf8(\@stat_redis));
+
+        # Should be after publishing the response to avoid causing additional delays
+        unless (exists $response->{error}) {
+            my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode({$params->%*}, $response->{spot});
+            BOM::Pricing::v3::Utility::update_price_metrics($relative_shortcode, $response->{rpc_time});
+        }
 
         if ($current_pricing_epoch != time) {
 

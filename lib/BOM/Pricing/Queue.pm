@@ -16,6 +16,7 @@ use YAML::XS;
 use RedisDB;
 
 use BOM::Config::RedisReplicated;
+use BOM::Pricing::v3::Utility;
 
 =head1 NAME
 
@@ -28,7 +29,7 @@ There are 2 modes:
 =over 8
 
 B<Normal:> every second will read up to 20k pricer keys and
-add them to the pricer queue if the queue is empty. Otherwise 
+add them to the pricer queue if the queue is empty. Otherwise
 wait until the next second and try again.
 
 B<Priority:> subscribes to the high priority price channel and adds
@@ -70,7 +71,7 @@ has internal_ip => (
 
 Priority mode, boolean
 
-=cut    
+=cut
 
 has priority => (
     is       => 'ro',
@@ -127,7 +128,7 @@ sub process {
 
 Used to sleep until the next clock second is reached
 
-=cut 
+=cut
 
 sub _sleep_to_next_second {
     my $t = Time::HiRes::time();
@@ -191,6 +192,18 @@ sub _process_price_queue {
                 updated       => Time::HiRes::time(),
             }));
     $log->debug('pricer_daemon_queue_stats updated.');
+
+    # There might be multiple occurrences of the same 'relative shortcode'
+    # to achieve higher performance, we count them first, then update the redis
+    my %queued;
+    for my $key (@keys) {
+        my $params = {decode_json_utf8($key =~ s/^PRICER_KEYS:://r)->@*};
+        unless (exists $params->{barriers}) {    # exclude proposal_array
+            my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode($params);
+            $queued{$relative_shortcode}++;
+        }
+    }
+    $self->redis->hincrby('PRICE_METRICS::QUEUED', $_, $queued{$_}) for keys %queued;
 
     return undef;
 }
