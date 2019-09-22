@@ -27,7 +27,6 @@ use BOM::RPC::JobTimeout;
 
 use constant QUEUE_WORKER_TIMEOUT => 300;
 
-
 =head1 NAME binary_jobqueue_worker.pl
 
 RPC queue worker script. It can load multiple number of workers with the requested settings and manages their lifetime.
@@ -209,7 +208,7 @@ sub run_coordinator {
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
         $log->info("Terminating workers...");
-        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->retain;
+        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->get;
 
         unlink $SOCKETPATH;
         exit 0;
@@ -409,8 +408,8 @@ sub run_worker_process {
     # Result: JSON-encoded result
     $worker->jobs->each(
         sub {
-            my $job = $_;
-            my $name = $job->data('name');
+            my $job     = $_;
+            my $name    = $job->data('name');
             my ($queue) = $worker->pending_queues;
 
             my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
@@ -419,16 +418,15 @@ sub run_worker_process {
             my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
 
             my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
-            if (my $expire = $job->data('_expires')){
+            if (my $expire = $job->data('_expires')) {
                 my $expire_timeout = $expire - Time::HiRes::time();
-                if ($expire_timeout > 0 && $expire_timeout < $job_timeout){
+                if ($expire_timeout > 0 && $expire_timeout < $job_timeout) {
                     $job_timeout = $expire_timeout;
-                    $log->tracef('Switched timeout to the queue client expire time %d', $job_timeout);
-                }
-                else {
-                    $log->errorf('Job is aleardy expired at %d',$expire);
+                    $log->tracef('Switched timeout to the expire time sent by queue client %d', $job_timeout);
+                } elsif ($expire_timeout <= 0) {
+                    $log->errorf('Job is aleardy expired at %d', $expire);
                     stats_inc("rpc_queue.worker.jobs.expire", $tags);
-                    $job->fail('Job is expired');
+                    $job->future->cancel();
                     return;
                 }
             }
