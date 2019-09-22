@@ -1206,9 +1206,10 @@ rpc transfer_between_accounts => sub {
     foreach my $cl (values %$siblings) {
         push @accounts,
             {
-            loginid  => $cl->{loginid},
-            balance  => $cl->{balance},
-            currency => $cl->{currency},
+            loginid      => $cl->{loginid},
+            balance      => $cl->{balance},
+            currency     => $cl->{currency},
+            account_type => 'binary',
             };
     }
 
@@ -1219,9 +1220,11 @@ rpc transfer_between_accounts => sub {
             my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->get;
             push @accounts,
                 {
-                loginid  => 'MT' . $_->{login},
-                balance  => $_->{display_balance},
-                currency => $_->{currency}}
+                loginid      => 'MT' . $_->{login},
+                balance      => $_->{display_balance},
+                account_type => 'mt5',
+                mt5_group    => $_->{group},
+                currency     => $_->{currency}}
                 for grep { $_->{group} !~ /^demo/ } @mt5_accounts;
         }
 
@@ -1299,9 +1302,10 @@ rpc transfer_between_accounts => sub {
                 my $binary_account = BOM::User::Client->new({loginid => $binary_login})->default_account;
                 push @{$resp->{accounts}},
                     {
-                    loginid  => $binary_login,
-                    balance  => $binary_account->balance,
-                    currency => $binary_account->currency_code
+                    loginid      => $binary_login,
+                    balance      => $binary_account->balance,
+                    currency     => $binary_account->currency_code,
+                    account_type => 'binary',
                     };
 
                 BOM::RPC::v3::MT5::Account::mt5_get_settings({
@@ -1312,9 +1316,12 @@ rpc transfer_between_accounts => sub {
                         my ($setting) = @_;
                         push @{$resp->{accounts}},
                             {
-                            loginid  => 'MT' . $mt5_login,
-                            balance  => $setting->{display_balance},
-                            currency => $setting->{currency}}
+                            loginid      => 'MT' . $mt5_login,
+                            balance      => $setting->{display_balance},
+                            currency     => $setting->{currency},
+                            account_type => 'mt5',
+                            mt5_group    => $setting->{group},
+                            }
                             unless $setting->{error};
                         return Future->done($resp);
                     });
@@ -1499,14 +1506,16 @@ rpc transfer_between_accounts => sub {
         client_to_full_name => $client_to->full_name,
         client_to_loginid   => $loginid_to,
         accounts            => [{
-                loginid  => $client_from->loginid,
-                balance  => $client_from->default_account->balance,
-                currency => $client_from->default_account->currency_code
+                loginid      => $client_from->loginid,
+                balance      => $client_from->default_account->balance,
+                currency     => $client_from->default_account->currency_code,
+                account_type => 'binary',
             },
             {
-                loginid  => $client_to->loginid,
-                balance  => $client_to->default_account->balance,
-                currency => $client_to->default_account->currency_code
+                loginid      => $client_to->loginid,
+                balance      => $client_to->default_account->balance,
+                currency     => $client_to->default_account->currency_code,
+                account_type => 'binary',
             }]};
 };
 
