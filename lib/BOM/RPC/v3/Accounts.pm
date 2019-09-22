@@ -338,7 +338,9 @@ sub __build_landing_company {
     };
 }
 
-rpc statement => sub {
+rpc "statement",
+    category => 'account',
+    sub {
     my $params = shift;
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -412,7 +414,7 @@ rpc statement => sub {
         transactions => [@txns],
         count        => scalar @txns
     };
-};
+    };
 
 rpc request_report => sub {
     my $params = shift;
@@ -490,7 +492,9 @@ rpc account_statistics => sub {
     };
 };
 
-rpc profit_table => sub {
+rpc "profit_table",
+    category => 'account',
+    sub {
     my $params = shift;
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -565,7 +569,7 @@ rpc profit_table => sub {
     return {
         transactions => \@transactions,
         count        => scalar(@transactions)};
-};
+    };
 
 =head2 balance
 
