@@ -515,9 +515,8 @@ sub startup {
         queue_backend => {
             type  => "job_async",
             redis => {
-                uri       => 'redis://' . $backend_redis->url->host . ':' . $backend_redis->url->port,
-                use_multi => 1,
-                timeout   => 5,
+                uri     => 'redis://' . $backend_redis->url->host . ':' . $backend_redis->url->port,
+                timeout => 5,
                 $queue_prefix ? (prefix => $queue_prefix) : (),
             }
         },
