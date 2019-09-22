@@ -472,7 +472,6 @@ sub _process_proposal_open_contract_response {
 
             if (    exists $args->{subscribe}
                 and $args->{subscribe} eq '1'
-                and not $contract->{is_expired}
                 and not $contract->{is_sold}
                 and not delete $contract->{dont_stream})
             {
