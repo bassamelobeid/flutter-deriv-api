@@ -412,6 +412,10 @@ sub run_worker_process {
             my $job = $_;
             my $name = $job->data('name');
             my ($queue) = $worker->pending_queues;
+
+            my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
+            $log->tracef('Timeout for %s is %d', $name, $job_timeout);
+
             my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
 
             my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});

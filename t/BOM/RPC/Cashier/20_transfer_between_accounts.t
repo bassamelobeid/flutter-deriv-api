@@ -487,14 +487,16 @@ subtest $method => sub {
         cmp_deeply(
             $rpc_ct->result->{accounts},
             bag({
-                    loginid  => $client_mf->loginid,
-                    balance  => $client_mf->default_account->balance,
-                    currency => $client_mf->default_account->currency_code
+                    loginid      => $client_mf->loginid,
+                    balance      => $client_mf->default_account->balance,
+                    currency     => $client_mf->default_account->currency_code,
+                    account_type => 'binary'
                 },
                 {
-                    loginid  => $client_mlt->loginid,
-                    balance  => $client_mlt->default_account->balance,
-                    currency => $client_mf->default_account->currency_code
+                    loginid      => $client_mlt->loginid,
+                    balance      => $client_mlt->default_account->balance,
+                    currency     => $client_mf->default_account->currency_code,
+                    account_type => 'binary'
                 }
             ),
             'affected accounts returned in result'
@@ -1271,14 +1273,17 @@ subtest 'MT5' => sub {
     cmp_bag(
         $rpc_ct->result->{accounts},
         [{
-                loginid  => $test_client->loginid,
-                balance  => num(1000),
-                currency => 'USD'
+                loginid      => $test_client->loginid,
+                balance      => num(1000),
+                currency     => 'USD',
+                account_type => 'binary',
+
             },
             {
-                loginid  => $test_client_btc->loginid,
-                balance  => num(10),
-                currency => 'BTC'
+                loginid      => $test_client_btc->loginid,
+                balance      => num(10),
+                currency     => 'BTC',
+                account_type => 'binary'
             },
         ],
         "all real binary accounts by empty $method call"
@@ -1289,24 +1294,30 @@ subtest 'MT5' => sub {
     cmp_bag(
         $rpc_ct->result->{accounts},
         [{
-                loginid  => $test_client->loginid,
-                balance  => num(1000),
-                currency => 'USD'
+                loginid      => $test_client->loginid,
+                balance      => num(1000),
+                currency     => 'USD',
+                account_type => 'binary'
             },
             {
-                loginid  => $test_client_btc->loginid,
-                balance  => num(10),
-                currency => 'BTC'
+                loginid      => $test_client_btc->loginid,
+                balance      => num(10),
+                currency     => 'BTC',
+                account_type => 'binary'
             },
             {
-                loginid  => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
-                balance  => num($DETAILS{balance}),
-                currency => 'USD'
+                loginid      => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
+                balance      => num($DETAILS{balance}),
+                currency     => 'USD',
+                account_type => 'mt5',
+                mt5_group    => 'real\\vanuatu_standard'
             },
             {
-                loginid  => 'MT' . $ACCOUNTS{'real\labuan_advanced'},
-                balance  => num($DETAILS{balance}),
-                currency => 'USD'
+                loginid      => 'MT' . $ACCOUNTS{'real\labuan_advanced'},
+                balance      => num($DETAILS{balance}),
+                currency     => 'USD',
+                account_type => 'mt5',
+                mt5_group    => 'real\\labuan_advanced'
             },
         ],
         "accounts=all returns all binary + MT5 accounts"
@@ -1340,14 +1351,17 @@ subtest 'MT5' => sub {
             client_to_loginid   => $params->{args}{account_to},
             stash               => ignore(),
             accounts            => bag({
-                    loginid  => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
-                    balance  => num($DETAILS{balance}),
-                    currency => 'USD'
+                    loginid      => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
+                    balance      => num($DETAILS{balance}),
+                    currency     => 'USD',
+                    account_type => 'mt5',
+                    'mt5_group'  => 'real\\vanuatu_standard'
                 },
                 {
-                    loginid  => $test_client->loginid,
-                    balance  => num(1000 - 180),
-                    currency => 'USD'
+                    loginid      => $test_client->loginid,
+                    balance      => num(1000 - 180),
+                    currency     => 'USD',
+                    account_type => 'binary'
                 })
         },
         'expected data in result'
@@ -1368,14 +1382,17 @@ subtest 'MT5' => sub {
             client_to_loginid   => $params->{args}{account_to},
             stash               => ignore(),
             accounts            => bag({
-                    loginid  => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
-                    balance  => num($DETAILS{balance}),
-                    currency => 'USD'
+                    loginid      => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
+                    balance      => num($DETAILS{balance}),
+                    currency     => 'USD',
+                    account_type => 'mt5',
+                    'mt5_group'  => 'real\\vanuatu_standard'
                 },
                 {
-                    loginid  => $test_client->loginid,
-                    balance  => num(1000 - 30),
-                    currency => 'USD'
+                    loginid      => $test_client->loginid,
+                    balance      => num(1000 - 30),
+                    currency     => 'USD',
+                    account_type => 'binary'
                 })
         },
         'expected data in result'
