@@ -26,7 +26,6 @@ use BOM::Config::Runtime;
 use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
 use BOM::Product::ContractFinder;
 use Finance::Contract::Longcode qw( shortcode_to_parameters);
-use BOM::Product::ContractFinder;
 use LandingCompany::Registry;
 use BOM::Pricing::v3::Utility;
 use Scalar::Util qw(looks_like_number);
@@ -504,6 +503,7 @@ sub send_ask {
 
     # Stringify all returned numeric values
     $response->{$_} .= '' for grep { exists $response->{$_} } qw(ask_price barrier date_start display_value payout spot spot_time);
+
     return $response;
 }
 
