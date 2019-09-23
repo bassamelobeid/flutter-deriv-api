@@ -174,7 +174,7 @@ sub redis_queue_config {
 }
 
 sub redis_limit_settings {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-limit-settings.yml');
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-transaction-limit-settings.yml');
     return $config;
 }
 
