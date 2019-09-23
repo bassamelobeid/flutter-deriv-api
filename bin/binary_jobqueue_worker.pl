@@ -411,21 +411,26 @@ sub run_worker_process {
             my $job     = $_;
             my $name    = $job->data('name');
             my ($queue) = $worker->pending_queues;
+            my $tags    = {tags => ["rpc:$name", 'queue:' . $queue]};
 
             my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
-            $log->tracef('Timeout for %s is %d', $name, $job_timeout);
-
-            my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
 
             if (my $expire = $job->data('_expires')) {
                 my $expire_timeout = $expire - Time::HiRes::time();
-                if ($expire_timeout > 0 && $expire_timeout < $job_timeout) {
+                if ($expire_timeout > 0 and $expire_timeout < $job_timeout) {
                     $job_timeout = $expire_timeout;
                     $log->tracef('Switched timeout to the expire time sent by queue client %d', $job_timeout);
                 } elsif ($expire_timeout <= 0) {
                     $log->errorf('Job is aleardy expired at %d', $expire);
                     stats_inc("rpc_queue.worker.jobs.expire", $tags);
-                    $job->future->cancel();
+                    $job->done(
+                        encode_json_utf8({
+                                success => 0,
+                                result  => {
+                                    error => {
+                                        code              => 'RequestExpired',
+                                        message_to_client => "Request is expired.",
+                                    }}}));
                     return;
                 }
             }
