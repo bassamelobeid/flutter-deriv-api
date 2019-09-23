@@ -925,14 +925,11 @@ foreach my $mt_ac (@mt_logins) {
     my ($id) = $mt_ac =~ /^MT(\d+)$/;
     print "<li>" . encode_entities($mt_ac);
     # If we have group information, display it
-    my $cache_key    = "MT5_USER_GROUP::$id";
-    my $group        = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
-    my $hex_rights   = BOM::Config::mt5_user_rights()->{'rights'};
-    my %known_rights = %$hex_rights;
+    my $cache_key  = "MT5_USER_GROUP::$id";
+    my $group      = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
+    my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
 
-    while (my ($key, $value) = each %known_rights) {
-        $known_rights{$key} = hex $value;
-    }
+    my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
 
     if ($group->[0]) {
         print " (" . encode_entities($group->[0]) . ")";
