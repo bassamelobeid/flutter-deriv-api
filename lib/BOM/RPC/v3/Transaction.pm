@@ -511,11 +511,17 @@ rpc sell => sub {
             code              => 'InvalidSellContractProposal',
             message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless @fmbs;
 
+    my $fmb = $fmbs[0];
+
     my $contract_parameters = {
-        shortcode => $fmbs[0]->{short_code},
-        currency  => $client->currency
+        shortcode       => $fmb->{short_code},
+        currency        => $client->currency,
+        landing_company => $client->landing_company->short,
     };
-    $contract_parameters->{landing_company} = $client->landing_company->short;
+
+    my $orders = BOM::Transaction::extract_limit_orders($fmb);
+    $contract_parameters->{limit_order} = $orders if @$orders;
+
     my $purchase_date = time;
     my $trx           = BOM::Transaction->new({
         purchase_date       => $purchase_date,
