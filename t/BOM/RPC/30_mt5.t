@@ -184,12 +184,11 @@ subtest 'new account' => sub {
             country        => 'mt',
             email          => $DETAILS{email},
             name           => $DETAILS{name},
-            investPassword => 'Abcd1234',
             mainPassword   => $DETAILS{password},
             leverage       => 100,
         },
     };
-    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword');
     is($c->result->{login},           $ACCOUNTS{'real\svg'}, 'result->{login}');
     is($c->result->{balance},         0,                     'Balance is 0 upon creation');
     is($c->result->{display_balance}, '0.00',                'Display balance is "0.00" upon creation');

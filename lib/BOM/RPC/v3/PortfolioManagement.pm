@@ -20,7 +20,9 @@ use BOM::Pricing::v3::Contract;
 
 requires_auth();
 
-rpc portfolio => sub {
+rpc "portfolio",
+    category => 'account',
+    sub {
     my $params = shift;
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -77,7 +79,7 @@ rpc portfolio => sub {
     }
 
     return $portfolio;
-};
+    };
 
 sub __get_open_contracts {
     my $client = shift;

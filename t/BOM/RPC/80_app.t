@@ -169,17 +169,6 @@ $get_apps = $c->call_ok(
 $get_apps = [grep { $_->{app_id} ne '1' } @$get_apps];
 is_deeply($get_apps, [$app1], 'delete ok');
 
-# delete again will return 0
-$delete_st = $c->call_ok(
-    'app_delete',
-    {
-        token => $token,
-        args  => {
-            app_delete => $app2->{app_id},
-        },
-    })->has_no_system_error->result;
-ok !$delete_st, 'was deleted';
-
 ## for used and revoke
 my $test_appid = $app1->{app_id};
 $oauth = BOM::Database::Model::OAuth->new;    # re-connect db

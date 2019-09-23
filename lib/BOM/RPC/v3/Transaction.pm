@@ -23,6 +23,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Copier;
 use BOM::Pricing::v3::Contract;
+use BOM::Pricing::v3::Utility;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
 
 my $json = JSON::MaybeXS->new;
@@ -116,7 +117,9 @@ sub _validate_stake {
     return undef;
 }
 
-rpc buy => sub {
+rpc "buy",
+    category => 'transaction',
+    sub {
     my $params = shift;
 
     my $tv = [Time::HiRes::gettimeofday];
@@ -238,6 +241,10 @@ rpc buy => sub {
         $contract_proposal_details->{limit_order} = $contract->available_orders;
     }
 
+    my $tv_interval = 1000 * Time::HiRes::tv_interval($tv);
+
+    BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, $tv_interval);
+
     return {
         transaction_id   => $trx->transaction_id,
         contract_id      => $trx->contract_id,
@@ -250,9 +257,9 @@ rpc buy => sub {
         shortcode        => $contract->shortcode,
         payout           => $trx->payout,
         stash    => {market => $contract->market->name},
-        rpc_time => 1000 * Time::HiRes::tv_interval($tv),
+        rpc_time => $tv_interval,
     };
-};
+    };
 
 rpc buy_contract_for_multiple_accounts => sub {
     my $params = shift;
@@ -492,10 +499,14 @@ rpc sell_contract_for_multiple_accounts => sub {
     return +{result => $data_to_return};
 };
 
-rpc sell => sub {
+rpc "sell",
+    category => 'transaction',
+    sub {
     my $params = shift;
 
     my $client = $params->{client} // die "client should be authed when get here";
+
+    my $tv = [Time::HiRes::gettimeofday];
 
     my ($source, $args) = ($params->{source}, $params->{args});
     my $id = $args->{sell};
@@ -540,12 +551,15 @@ rpc sell => sub {
         });
     }
 
+    my $contract = $trx->contract;
+    BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, 1000 * Time::HiRes::tv_interval($tv));
+
     try {
         trade_copiers({
                 action              => 'sell',
                 client              => $client,
                 contract_parameters => $contract_parameters,
-                contract            => $trx->contract,
+                contract            => $contract,
                 price               => $args->{price},
                 source              => $source,
                 purchase_date       => $purchase_date,
@@ -564,6 +578,6 @@ rpc sell => sub {
         balance_after  => formatnumber('amount', $client->currency, $trx_rec->balance_after),
         sold_for       => formatnumber('price', $client->currency, $trx_rec->amount),
     };
-};
+    };
 
 1;
