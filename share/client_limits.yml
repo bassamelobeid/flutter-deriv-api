@@ -7,7 +7,6 @@ maximum_daily_turnover:
   BCH: 100
   ETH: 100
   LTC: 500
-  ETC: 500
   UST: 500000
   USB: 500000
   IDK: 50000000
@@ -21,7 +20,6 @@ max_balance:
     BCH: 50
     ETH: 200
     LTC: 1000
-    ETC: 1000
     UST: 1000000
     USB: 1000000
     IDK: 1000000
@@ -34,7 +32,6 @@ max_balance:
     BCH: 100
     ETH: 100
     LTC: 500
-    ETC: 500
     UST: 300000
     USB: 300000
     IDK: 150000000
@@ -47,7 +44,6 @@ max_payout_open_positions:
     BCH: 10
     ETH: 10
     LTC: 50
-    ETC: 50
     UST: 50000
     USB: 50000
     IDK: 50000000
