@@ -539,9 +539,8 @@ sub _build_domqqq {
     my $result = {};
 
     if ($self->priced_with eq 'quanto') {
-        my $prefix = $self->payout_currency_type eq 'crypto' ? 'cry' : 'frx';
         $result->{underlying} = create_underlying({
-            symbol   => $prefix . $self->underlying->quoted_currency_symbol . $self->currency,
+            symbol   => 'frx' . $self->underlying->quoted_currency_symbol . $self->currency,
             for_date => $self->underlying->for_date
         });
         $result->{volsurface} = $self->_volsurface_fetcher->fetch_surface({
@@ -560,9 +559,8 @@ sub _build_forqqq {
     my $result = {};
 
     if ($self->priced_with eq 'quanto' and ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities')) {
-        my $prefix = $self->payout_currency_type eq 'crypto' ? 'cry' : 'frx';
         $result->{underlying} = create_underlying({
-            symbol   => $prefix . $self->underlying->asset_symbol . $self->currency,
+            symbol   => 'frx' . $self->underlying->asset_symbol . $self->currency,
             for_date => $self->underlying->for_date
         });
 
@@ -738,6 +736,11 @@ sub _build_priced_with {
 
     my $underlying = $self->underlying;
 
+    # price with numeraire if payout currency is crypto or submarket is smart_fx.
+    if ($underlying->submarket->name eq 'smart_fx' or ($self->payout_currency_type and $self->payout_currency_type eq 'crypto')) {
+        return 'numeraire';
+    }
+
     # Everything should have a quoted currency, except our randoms.
     # However, rather than check for random directly, just do a numeraire bet if we don't know what it is.
     my $priced_with;
@@ -747,11 +750,6 @@ sub _build_priced_with {
         $priced_with = 'base';
     } else {
         $priced_with = 'quanto';
-    }
-
-    # price with numeraire if payout currency is crypto. We are only skipping for non_stable_coins
-    if ($underlying->submarket->name eq 'smart_fx' or $self->currency =~ /(?:BTC|BCH|ETH|ETC|LTC)/) {
-        $priced_with = 'numeraire';
     }
 
     return $priced_with;
