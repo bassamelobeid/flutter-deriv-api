@@ -160,17 +160,6 @@ subtest 'Cashier validation common' => sub {
 
     $cr_client->address_city($address_city);
     $cr_client->save;
-
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-    is $res->{error}->{message_to_client},
-        'It looks like you have more than one account with us. Please contact customer support for assistance.',
-        'Correct error for duplicate client';
-
-    $cr_client_2->status->set('duplicate_account', 'system', 'pending investigations');
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
-    is $res, undef, 'all clear';
-    $cr_client_2->status->clear_duplicate_account;
 };
 
 subtest 'Cashier validation deposit' => sub {
