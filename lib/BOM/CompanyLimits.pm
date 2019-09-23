@@ -69,10 +69,6 @@ sub add_buys {
     my $turnover_combinations =
         $self->_get_combinations_with_clients(\&BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations, \@clients);
 
-    # Exchange rates may change if queried at different times. This could cause the loss values
-    # we increment during buys to be different when we reverse them - in the time we wait for the
-    # database to reply, the exchange rate may have changed. To workaround this,  we cache the
-    # potential loss and turnover so that the same increments are used in both buys and reverse buys.
     my $contract_data = $self->{contract_data};
 
     my ($response, $hash_name);
@@ -84,6 +80,10 @@ sub add_buys {
     $hash_name = $self->{landing_company} . ':realized_loss';
     $redis->hmget($hash_name, my @real_loss_keys = (@{$self->{global_combinations}}, @{$user_combinations}), sub { });
 
+    # Exchange rates may change if queried at different times. This could cause the loss values
+    # we increment during buys to be different when we reverse them - in the time we wait for the
+    # database to reply, the exchange rate may have changed. To workaround this,  we cache the
+    # potential loss and turnover so that the same increments are used in both buys and reverse buys.
     my @pot_loss_keys;
     unless ($self->_has_no_payout) {
         my $potential_loss = $self->{potential_loss} =
