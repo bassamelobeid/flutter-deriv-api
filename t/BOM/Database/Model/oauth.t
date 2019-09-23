@@ -103,11 +103,6 @@ $expected_names = {
     $app2->{app_id} => $app2->{name}};
 is_deeply $names, $expected_names, "got correct name for multiple apps";
 
-my $delete_st = $m->delete_app($test_user_id, $app2->{app_id});
-ok $delete_st;
-$get_apps = $m->get_apps_by_user_id($test_user_id);
-is_deeply($get_apps, [$app1], 'delete app ok');
-
 ## test get_used_apps_by_loginid and revoke
 my $used_apps = $m->get_used_apps_by_loginid($test_loginid);
 is scalar(@{$used_apps}), 1;
@@ -120,12 +115,9 @@ $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 0, 'not confirmed after revoke';
 ($result_loginid, $t, $ua_fp) = @{$m->get_token_details($access_token)}{qw/loginid creation_time ua_fingerprint/};
 is $result_loginid, undef, 'token is not valid anymore';
-
-## delete again will just return 0
-$delete_st = $m->delete_app($test_user_id, $app2->{app_id});
-ok !$delete_st, 'was deleted';
-
-$delete_st = $m->delete_app($test_user_id, $app1->{app_id});
+# delete app_ids to avoid confusing
+my $sql = 'delete from oauth.apps where binary_user_id = ?';
+$m->dbic->dbh->do($sql, undef, $test_user_id);
 
 subtest 'revoke tokens by loginid and app_id' => sub {
     my $app1 = $m->create_app({
@@ -261,13 +253,26 @@ subtest 'unblock app' => sub {
         active       => 1
     });
 
+    $m->block_app($app1->{app_id}, $test_user_id + 1);
+    my $get_app = $m->get_app($test_user_id, $app1->{app_id});
+    is $get_app->{active}, 1, 'app should not be de-actived because the user id is wrong';
+
     $m->block_app($app1->{app_id});
-    my $get_app1 = $m->get_app($test_user_id, $app1->{app_id}, 0);
-    is $get_app1->{active}, 0, 'app should be de-activated';
+    $get_app = $m->get_app($test_user_id, $app1->{app_id}, 0);
+    is $get_app->{active}, 0, 'app should be de-activated without user id';
 
     $m->unblock_app($app1->{app_id});
-    my $get_app2 = $m->get_app($test_user_id, $app1->{app_id});
-    is $get_app2->{active}, 1, 'app should be activated';
+    $get_app = $m->get_app($test_user_id, $app1->{app_id});
+    is $get_app->{active}, 1, 'app should be activated';
+
+    $m->block_app($app1->{app_id}, $test_user_id);
+    $get_app = $m->get_app($test_user_id, $app1->{app_id}, 0);
+    is $get_app->{active}, 0, 'app should be de-activated with right user id';
+
+    $m->unblock_app($app1->{app_id});
+    $get_app = $m->get_app($test_user_id, $app1->{app_id});
+    is $get_app->{active}, 1, 'app should be activated';
+
 };
 
 subtest 'get app by id' => sub {
