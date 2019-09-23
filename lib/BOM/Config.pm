@@ -87,6 +87,11 @@ sub s3 {
     return $config;
 }
 
+sub feed_rpc {
+    state $config = YAML::XS::LoadFile('/etc/rmg/feed_rpc.yml');
+    return $config;
+}
+
 sub sanction_file {
     return "/var/lib/binary/sanctions.yml";
 }
