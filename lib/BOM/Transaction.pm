@@ -676,6 +676,15 @@ sub buy {
 sub batch_buy {
     my ($self, %options) = @_;
 
+    # we do not support batch buy for multiplier
+    if ($self->contract->category_code eq 'multiplier') {
+        return Error::Base->cuss(
+            -type              => 'UnsupportedBatchBuy',
+            -mesg              => "Multiplier not supported in batch_buy",
+            -message_to_client => localize('MULTUP and MULTDOWN are not supported.'),
+        );
+    }
+
     # TODO: shall we allow this operation only if $self->client is real-money?
     #       Or allow virtual $self->client only if all other clients are also
     #       virtual?
@@ -913,6 +922,14 @@ sub sell_by_shortcode {
     my ($self, %options) = @_;
 
     my $stats_data = $self->stats_start('sell');
+
+    if ($self->contract->category_code eq 'multiplier') {
+        return Error::Base->cuss(
+            -type              => 'UnsupportedBatchBuy',
+            -mesg              => "Multiplier not supported in sell_by_shortcode",
+            -message_to_client => localize('MULTUP and MULTDOWN are not supported.'),
+        );
+    }
 
     my ($error_status, $bet_data) = $self->prepare_sell($options{skip});
     $bet_data->{bet_data}{is_expired} = $self->contract->is_expired;
