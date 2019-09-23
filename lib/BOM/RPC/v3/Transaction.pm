@@ -441,7 +441,7 @@ rpc sell_contract_for_multiple_accounts => sub {
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'MultiplierNotAllowed',
-            message_to_client => localize('MULTUP and MULTDOWN are not supported.')}) if $shortcofe =~ /^(?:MULTUP|MULTDOWN)$/;
+            message_to_client => localize('MULTUP and MULTDOWN are not supported.')}) if $shortcode =~ /MULTUP|MULTDOWN/;
 
     my $token_list_res = _check_token_list($tokens);
 
