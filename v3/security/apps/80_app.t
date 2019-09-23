@@ -277,4 +277,13 @@ is $res->{msg_type}, 'authorize';
 is $res->{error}->{code}, 'InvalidAppID', 'Should return error if get wrong app_id and close connection';
 $t->finished_ok(1005);
 
+$t = build_wsapi_test({app_id => $app1->{app_id}});
+$t = $t->send_ok({json => {time => 1}})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+ok(!$res->{error}, 'no error at first');
+$Binary::WebSocketAPI::BLOCK_APP_IDS{$app1->{app_id}} = 1;
+$t = $t->send_ok({json => {time => 1}})->message_ok;
+$t->finished_ok(403);
+# avoid warn 'used only once warning'
+delete $Binary::WebSocketAPI::BLOCK_APP_IDS{$app1->{app_id}};
 done_testing();
