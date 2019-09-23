@@ -173,7 +173,7 @@ rpc app_delete => sub {
 
     my $oauth  = BOM::Database::Model::OAuth->new;
     my $app_id = $params->{args}->{app_delete};
-    my $status = $oauth->delete_app($user_id, $app_id);
+    my $status = $oauth->block_app($app_id, $user_id);
 
     return $status ? 1 : 0;
 };
