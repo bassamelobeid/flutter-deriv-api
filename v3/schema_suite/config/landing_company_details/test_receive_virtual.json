@@ -36,7 +36,7 @@
             "legal_allowed_contract_categories" : {
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|runs)$"
+                  "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|runs|multiplier)$"
                },
                "minItems" : 6,
                "type" : "array"
