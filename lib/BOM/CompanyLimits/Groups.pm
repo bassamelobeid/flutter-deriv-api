@@ -20,7 +20,7 @@ sub get_default_underlying_group_mappings {
     my %default_underlying_group;
     $default_underlying_group{$_->{symbol}} = $_->{market} for @uls;
 
-    return %default_underlying_group;
+    return \%default_underlying_group;
 }
 
 sub get_default_contract_group_mappings {
@@ -29,7 +29,7 @@ sub get_default_contract_group_mappings {
     my %default_contract_group;
     $default_contract_group{$_} = $contract_types->{$_}->{category} for (keys %$contract_types);
 
-    return %default_contract_group;
+    return \%default_contract_group;
 }
 
 my (%underlying_groups_cache, %contract_groups_cache, $cache_date);

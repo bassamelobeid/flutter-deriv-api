@@ -40,7 +40,7 @@ sub reset_daily_loss_hashes {
         }
     }
 
-    return %output;
+    return \%output;
 }
 
 1;
