@@ -493,16 +493,16 @@ sub prepare_bet_data_for_buy {
         $bet_params->{selected_tick}    = $contract->selected_tick;
         $bet_params->{relative_barrier} = $contract->supplied_barrier;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_MULTIPLIER) {
-        $bet_params->{multiplier}          = $contract->multiplier + 0;
-        $bet_params->{stop_out_order_date} = $contract->stop_out->order_date->db_timestamp;
-        $bet_params->{stop_out_amount}     = $contract->stop_out->order_amount;
-        $bet_params->{stop_out_basis_spot} = $contract->stop_out->basis_spot;
+        $bet_params->{multiplier}            = $contract->multiplier + 0;
+        $bet_params->{stop_out_order_date}   = $contract->stop_out->order_date->db_timestamp;
+        $bet_params->{stop_out_order_amount} = $contract->stop_out->order_amount;
+        $bet_params->{stop_out_basis_spot}   = $contract->stop_out->basis_spot;
 
         # take profit is optional. Same goes to stop loss.
         if ($contract->take_profit) {
-            $bet_params->{take_profit_order_date} = $contract->take_profit->order_date->db_timestamp;
-            $bet_params->{take_profit_amount}     = $contract->take_profit->order_amount;
-            $bet_params->{take_profit_basis_spot} = $contract->take_profit->basis_spot;
+            $bet_params->{take_profit_order_date}   = $contract->take_profit->order_date->db_timestamp;
+            $bet_params->{take_profit_order_amount} = $contract->take_profit->order_amount;
+            $bet_params->{take_profit_basis_spot}   = $contract->take_profit->basis_spot;
         }
     } else {
         return Error::Base->cuss(
@@ -1444,30 +1444,9 @@ sub sell_expired_contracts {
         my $failure = {fmb_id => $bet->{id}};
         try {
             my $bet_params = shortcode_to_parameters($bet->{short_code}, $currency);
-
+            my $orders = extract_limit_orders($bet_params);
             # for multiplier, we need to combine information on the child table to complete a contract
-            if ($bet->can('multiplier') and my $child = $bet->multiplier) {
-                if ($child->stop_out_order_date) {
-                    push @{$bet_params->{limit_order}},
-                        +{
-                        order_type   => 'stop_out',
-                        order_date   => $child->stop_out_order_date->epoch,
-                        basis_spot   => $child->stop_out_basis_spot,
-                        order_amount => $child->stop_out_amount,
-                        };
-                }
-
-                if ($child->take_profit_order_date) {
-                    push @{$bet_params->{limit_order}},
-                        +{
-                        order_type   => 'take_profit',
-                        order_date   => $child->take_profit_order_date->epoch,
-                        basis_spot   => $child->take_profit_basis_spot,
-                        order_amount => $child->take_profit_amount,
-                        };
-                }
-            }
-
+            $bet_params->{limit_order} = $orders if @$orders;
             $contract = produce_contract($bet_params);
         }
         catch { $error = 1; };
@@ -1676,6 +1655,33 @@ sub report {
         . sprintf("%30s: %s",   'Transaction Parameters', Dumper($self->transaction_parameters))
         . sprintf("%30s: %s\n", 'Transaction ID',         $self->transaction_id || -1)
         . sprintf("%30s: %s\n", 'Purchase Date',          $self->purchase_date->datetime_yyyymmdd_hhmmss);
+}
+
+=head2 extract_limit_orders
+
+use this function to parse parameters like stop_out and take_profit from financial_market_bet
+
+=cut
+
+sub extract_limit_orders {
+    my $contract_params = shift;
+
+    my @orders = ();
+
+    foreach my $order (qw(stop_out take_profit stop_loss)) {
+        my %params;
+        foreach my $order_param (qw(order_date order_amount basis_spot)) {
+            my $field_name = join '_', ($order, $order_param);
+            $params{$order} = $contract_params->{$field_name} if $contract_params->{$field_name};
+        }
+
+        if (%params) {
+            $params{order_type} = $order;
+            push @orders, \%params;
+        }
+    }
+
+    return \@orders;
 }
 
 sub _get_params_for_expiryqueue {
