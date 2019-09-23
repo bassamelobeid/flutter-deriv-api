@@ -201,40 +201,30 @@ sub new_mt5_signup {
     my $client = BOM::User::Client->new({loginid => $data->{loginid}});
     return unless $client;
 
-    my $user = $client->user;
-    my @mt_logins = sort grep { /^MT\d+$/ } $user->loginids;
-    foreach my $mt_ac (@mt_logins) {
-        my ($id) = $mt_ac =~ /^MT(\d+)$/;
-        # If we have group information, display it
-        my $cache_key  = "MT5_USER_GROUP::$id";
-        my $group      = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
-        my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
+    my $id         = $data->{mt5_login_id};
+    my $cache_key  = "MT5_USER_GROUP::$id";
+    my $group      = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
+    my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
 
-        my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
+    my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
 
-        if ($group->[0]) {
-            my $status = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'rights');
+    if ($group->[0]) {
+        my $status = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'rights');
 
-            my %rights;
+        my %rights;
 
-            # This should now have the following keys set:
-            # api,enabled,expert,password,reports,trailing
-            # Example: status (483 => 1E3)
-            $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
+        # This should now have the following keys set:
+        # api,enabled,expert,password,reports,trailing
+        # Example: status (483 => 1E3)
+        $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
 
-            if (sum0(@rights{qw(enabled api)}) == 2 and not $rights{trade_disabled}) {
-                print " ( Enabled )";
-            } else {
-                print " ( Disabled )";
-
-            }
-        } else {
-            # ... and if we don't, queue up the request. This may lead to a few duplicates
-            # in the queue - that's fine, we check each one to see if it's already
-            # been processed.
-            BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
-        }
+    } else {
+        # ... and if we don't, queue up the request. This may lead to a few duplicates
+        # in the queue - that's fine, we check each one to see if it's already
+        # been processed.
+        BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
     }
+    # }
 
     # send email to client to ask for authentication documents
     if ($data->{account_type} eq 'financial' and not $client->fully_authenticated) {
