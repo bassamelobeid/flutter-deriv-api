@@ -576,9 +576,7 @@ sub _is_currency_allowed {
         my $client_email   = $client->email;
         $result->{message} = localize('Please note that the selected currency is allowed for limited accounts only');
 
-        return $result
-            if (LandingCompany::Registry::get_currency_definition($currency)->{experimental}
-            and not any { $_ eq $client_email } @$allowed_emails);
+        return $result if not any { $_ eq $client_email } @$allowed_emails);
     }
 
     #that's enough for virtual accounts or empty siblings
