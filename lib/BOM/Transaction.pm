@@ -40,9 +40,9 @@ use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Database::ClientDB;
+use BOM::Transaction::CompanyLimits;
 use BOM::Transaction::Validation;
 use BOM::Config::RedisReplicated;
-use BOM::CompanyLimits;
 
 =head1 NAME
 
@@ -588,7 +588,7 @@ sub buy {
     my $error = 1;
     my ($fmb, $txn);
 
-    my $company_limits = BOM::CompanyLimits->new(
+    my $company_limits = BOM::Transaction::CompanyLimits->new(
         contract_data   => $bet_data->{bet_data},
         landing_company => $client->landing_company->short,
         currency        => $self->contract->currency,
@@ -718,7 +718,7 @@ sub batch_buy {
             );
 
             my @clients = map { $_->{client} } @$list;
-            my $company_limits = BOM::CompanyLimits->new(
+            my $company_limits = BOM::Transaction::CompanyLimits->new(
                 contract_data   => $bet_data->{bet_data},
                 landing_company => $clients[0]->landing_company->short,
                 currency        => $self->contract->currency,
@@ -915,7 +915,7 @@ sub sell {
         });
     }
 
-    BOM::CompanyLimits::->new(
+    BOM::Transaction::CompanyLimits::->new(
         contract_data   => $fmb,
         currency        => $self->contract->currency,
         landing_company => $client->landing_company->short,
@@ -990,7 +990,7 @@ sub sell_by_shortcode {
                     my $client = $r->{client};
 
                     # We cannot batch add sells; buy price may vary even with the same short code
-                    BOM::CompanyLimits::->new(
+                    BOM::Transaction::CompanyLimits::->new(
                         contract_data   => $res_row->{fmb},
                         currency        => $self->contract->currency,
                         landing_company => $client->landing_company->short,
@@ -1625,7 +1625,7 @@ sub sell_expired_contracts {
             $total_losses += $fmb->{sell_price} + 0 ? 0 : $fmb->{buy_price};
         }
 
-        BOM::CompanyLimits::->new(
+        BOM::Transaction::CompanyLimits::->new(
             contract_data   => $fmb,
             currency        => $currency,
             landing_company => $client->landing_company->short,

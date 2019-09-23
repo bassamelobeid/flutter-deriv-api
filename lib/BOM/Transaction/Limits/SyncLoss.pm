@@ -1,4 +1,4 @@
-package BOM::CompanyLimits::SyncLoss;
+package BOM::Transaction::Limits::SyncLoss;
 
 use strict;
 use warnings;

@@ -17,7 +17,7 @@ use BOM::Test::Contract qw(create_contract buy_contract sell_contract);
 use BOM::Test::ContractTestHelper qw(close_all_open_contracts reset_all_loss_hashes);
 use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
-use BOM::CompanyLimits::SyncLoss;
+use BOM::Transaction::Limits::SyncLoss;
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -228,7 +228,7 @@ subtest 'Realized loss and total turnover are on daily basis', sub {
     cmp_ok $turnover_total,      '==', 5, 'buying contract increments total turnover (before reset)';
 
     # Reset the loss and turnover by using force_reset
-    BOM::CompanyLimits::SyncLoss::reset_daily_loss_hashes(force_reset => 1);
+    BOM::Transaction::Limits::SyncLoss::reset_daily_loss_hashes(force_reset => 1);
 
     $realized_loss_total = $redis->hget('svg:realized_loss', $key)        // 0;
     $turnover_total      = $redis->hget('svg:turnover',      $client_key) // 0;

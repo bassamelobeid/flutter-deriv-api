@@ -1,4 +1,4 @@
-package BOM::CompanyLimits::Groups;
+package BOM::Transaction::Limits::Groups;
 use strict;
 use warnings;
 

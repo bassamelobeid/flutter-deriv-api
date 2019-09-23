@@ -15,7 +15,7 @@ use BOM::Test;
 use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Contract qw(create_contract buy_contract sell_contract batch_buy_contract sell_by_shortcode);
 use BOM::Test::ContractTestHelper qw(close_all_open_contracts reset_all_loss_hashes);
-use BOM::CompanyLimits::SyncLoss;
+use BOM::Transaction::Limits::SyncLoss;
 use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
 use BOM::Test::Email qw(mailbox_search);

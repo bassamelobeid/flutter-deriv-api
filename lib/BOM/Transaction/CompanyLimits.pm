@@ -1,20 +1,20 @@
-package BOM::CompanyLimits;
+package BOM::Transaction::CompanyLimits;
 use strict;
 use warnings;
 
 use ExchangeRates::CurrencyConverter;
 use BOM::Config::RedisReplicated;
-use BOM::CompanyLimits::Combinations;
-use BOM::CompanyLimits::Stats;
+use BOM::Transaction::Limits::Combinations;
+use BOM::Transaction::Limits::Stats;
 use LandingCompany::Registry;
 
 =head1 NAME
 
-BOM::CompanyLimits
+BOM::Transaction::CompanyLimits
 
 =head1 SYNOPSIS
 
-    my $company_limits = BOM::CompanyLimits->new(
+    my $company_limits = BOM::Transaction::CompanyLimits->new(
         contract_data => $contract_data,
         currency => $currency,
         landing_company => $landing_company,
@@ -42,8 +42,8 @@ sub new {
     $self->{contract_data}   = $params{contract_data};
     $self->{redis}           = BOM::Config::RedisReplicated::redis_limits_write;
 
-    my $attributes = BOM::CompanyLimits::Combinations::get_attributes_from_contract($params{contract_data});
-    $self->{global_combinations} = BOM::CompanyLimits::Combinations::get_global_limit_combinations($attributes);
+    my $attributes = BOM::Transaction::Limits::Combinations::get_attributes_from_contract($params{contract_data});
+    $self->{global_combinations} = BOM::Transaction::Limits::Combinations::get_global_limit_combinations($attributes);
     $self->{attributes}          = $attributes;
 
     return $self;
@@ -63,11 +63,11 @@ sub new {
 sub add_buys {
     my ($self, @clients) = @_;
 
-    my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'buys');
+    my $stat_dat = BOM::Transaction::Limits::Stats::stats_start($self, 'buys');
 
-    my $user_combinations = $self->_get_combinations_with_clients(\&BOM::CompanyLimits::Combinations::get_user_limit_combinations, \@clients);
+    my $user_combinations = $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_user_limit_combinations, \@clients);
     my $turnover_combinations =
-        $self->_get_combinations_with_clients(\&BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations, \@clients);
+        $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_turnover_incrby_combinations, \@clients);
 
     my $contract_data = $self->{contract_data};
 
@@ -108,7 +108,7 @@ sub add_buys {
     $redis->mainloop;
 
     $self->{has_add_buys} = 1;
-    BOM::CompanyLimits::Stats::stats_stop($stat_dat);
+    BOM::Transaction::Limits::Stats::stats_stop($stat_dat);
 
     # TODO: breach check implementation to come in 2nd phase...
     return $response,
@@ -124,12 +124,12 @@ sub reverse_buys {
     # because of company limits, it should not end up here.
     die "Cannot reverse buys unless add_buys is first called" unless $self->{has_add_buys};
 
-    my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'reverse_buys');
+    my $stat_dat = BOM::Transaction::Limits::Stats::stats_start($self, 'reverse_buys');
 
     # These combinations cannot be cached; we cannot assume that in reversing buys the exact same client list will be passed in
-    my $user_combinations = $self->_get_combinations_with_clients(\&BOM::CompanyLimits::Combinations::get_user_limit_combinations, \@clients);
+    my $user_combinations = $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_user_limit_combinations, \@clients);
     my $turnover_combinations =
-        $self->_get_combinations_with_clients(\&BOM::CompanyLimits::Combinations::get_turnover_incrby_combinations, \@clients);
+        $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_turnover_incrby_combinations, \@clients);
 
     my $hash_name;
     my $redis = $self->{redis};
@@ -151,7 +151,7 @@ sub reverse_buys {
     # buys, but it is kept here to avoid complications with pending Redis calls
     $redis->mainloop;
 
-    BOM::CompanyLimits::Stats::stats_stop($stat_dat);
+    BOM::Transaction::Limits::Stats::stats_stop($stat_dat);
 
     return;
 }
@@ -159,9 +159,9 @@ sub reverse_buys {
 sub add_sells {
     my ($self, @clients) = @_;
 
-    my $stat_dat = BOM::CompanyLimits::Stats::stats_start($self, 'sells');
+    my $stat_dat = BOM::Transaction::Limits::Stats::stats_start($self, 'sells');
 
-    my $user_combinations = $self->_get_combinations_with_clients(\&BOM::CompanyLimits::Combinations::get_user_limit_combinations, \@clients);
+    my $user_combinations = $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_user_limit_combinations, \@clients);
 
     # On sells, potential loss is deducted from open bets. Since exchange rates can vary in different points of time,
     # the potential loss we deduct here may not be the same value that we add during buys. This is something we would
@@ -192,7 +192,7 @@ sub add_sells {
     # but it is kept here to avoid complications with pending Redis calls
     $redis->mainloop;
 
-    BOM::CompanyLimits::Stats::stats_stop($stat_dat);
+    BOM::Transaction::Limits::Stats::stats_stop($stat_dat);
     return;
 }
 

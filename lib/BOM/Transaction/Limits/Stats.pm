@@ -1,4 +1,4 @@
-package BOM::CompanyLimits::Stats;
+package BOM::Transaction::Limits::Stats;
 use strict;
 use warnings;
 

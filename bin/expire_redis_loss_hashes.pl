@@ -22,10 +22,10 @@ use warnings;
 
 use Log::Any qw($log);
 use Data::Dumper;
-use BOM::CompanyLimits::SyncLoss;
+use BOM::Transaction::Limits::SyncLoss;
 use Log::Any::Adapter qw(Stdout), log_level => 'info';
 
-my $output = BOM::CompanyLimits::SyncLoss::reset_daily_loss_hashes();
+my $output = BOM::Transaction::Limits::SyncLoss::reset_daily_loss_hashes();
 
 $log->info('Expireat result (1 if timeout is set, 0 if key does not exist):', Dumper($output));
 

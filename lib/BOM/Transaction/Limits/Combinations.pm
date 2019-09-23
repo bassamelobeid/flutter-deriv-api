@@ -1,9 +1,9 @@
-package BOM::CompanyLimits::Combinations;
+package BOM::Transaction::Limits::Combinations;
 
 use strict;
 use warnings;
 
-use BOM::CompanyLimits::Groups;
+use BOM::Transaction::Limits::Groups;
 
 sub get_global_limit_combinations {
     my ($attributes) = @_;
@@ -69,7 +69,7 @@ sub get_turnover_incrby_combinations {
 sub get_attributes_from_contract {
     my ($bet_data) = @_;
 
-    my ($contract_group, $underlying_group) = BOM::CompanyLimits::Groups::get_limit_groups($bet_data);
+    my ($contract_group, $underlying_group) = BOM::Transaction::Limits::Groups::get_limit_groups($bet_data);
 
     if (not $underlying_group) {
         $underlying_group = 'default';
