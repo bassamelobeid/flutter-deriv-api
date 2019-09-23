@@ -665,8 +665,19 @@ Missing or incorrect header value will return false.
 =cut
 
 sub _is_profiling {
-    my $profiling = shift->req->headers->header('X-Profiling') // '';
+    my ($c) = @_;
+    return if !$c->tx || $c->tx->is_finished;
+    my $profiling = $c->req->headers->header('X-Profiling') // '';
     return $profiling eq '547a52075cb11e8404cd207a5612dd75';
+}
+
+sub check_app_id {
+    my ($c) = @_;
+    if (exists $Binary::WebSocketAPI::BLOCK_APP_IDS{$c->app_id}) {
+        $c->finish(403 => 'AccessRestricted');
+        return;
+    }
+
 }
 
 1;

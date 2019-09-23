@@ -525,12 +525,17 @@ command block => sub {
             my $rslt = {blocked => \%Binary::WebSocketAPI::BLOCK_APP_IDS};
             if ($app_id) {
                 if ($service) {
-                    $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id} = 1;
+                    $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id} = $service;
                 } else {
                     delete $Binary::WebSocketAPI::BLOCK_APP_IDS{$app_id};
                 }
+                # don't write the app_ids that marked as 'inactive' into redis
+                # this variable will be fetched when ws connection built. At that time ws knows the app id that marked as inactive is invalid
+                # So those app ids needn't to be stored in redis
+                my %blocked_app_ids = %Binary::WebSocketAPI::BLOCK_APP_IDS;
+                delete $blocked_app_ids{$app_id} if $service && $service eq 'inactive';
                 $redis->set(
-                    'app_id::blocked' => Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::BLOCK_APP_IDS)),
+                    'app_id::blocked' => Encode::encode_utf8($json->encode(\%blocked_app_ids)),
                     sub {
                         my ($redis, $err) = @_;
                         unless ($err) {
