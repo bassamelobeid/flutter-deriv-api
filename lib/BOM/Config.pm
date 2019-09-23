@@ -173,8 +173,8 @@ sub redis_queue_config {
     return $config;
 }
 
-sub redis_limits_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-exchangerates.yml');
+sub redis_limit_settings {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/limit_settings.yml');
     return $config;
 }
 
