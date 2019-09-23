@@ -384,4 +384,5 @@ subtest 'buy MULTUP with take profit', sub {
     }
     'survived';
 };
+
 done_testing();

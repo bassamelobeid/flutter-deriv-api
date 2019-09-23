@@ -756,4 +756,90 @@ subtest 'batch-buy multiple databases and datadog', sub {
     'survived';
 };
 
+subtest 'batch_buy multiplier contract' => sub {
+
+    lives_ok {
+        my $clm = create_client;    # manager
+        my $cl1 = create_client;
+        my $cl2 = create_client;
+        my $cl3 = create_client;
+
+        $clm->account('USD');
+        $cl1->account('USD');
+        $cl2->account('USD');
+        $cl3->account('USD');
+        $clm->save;
+        top_up $cl1, 'USD', 5000;
+        top_up $cl2, 'USD', 5000;
+
+        isnt + (my $acc1 = $cl1->account), 'USD', 'got USD account #1';
+        isnt + (my $acc2 = $cl2->account), 'USD', 'got USD account #2';
+
+        my $bal;
+        is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
+        is + ($bal = $acc2->balance + 0), 5000, 'USD balance #2 is 5000 got: ' . $bal;
+
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            amount_type  => 'stake',
+            amount       => 100,
+            multiplier   => 5,
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            contract      => $contract,
+            price         => 100.00,
+            stake         => $contract->ask_price,
+            amount_type   => 'stake',
+            multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
+            purchase_date => $contract->date_start,
+        });
+
+        subtest 'check limits' => sub {
+            my $mock_client  = Test::MockModule->new('BOM::User::Client');
+            my $mocked_limit = 100;
+            $mock_client->mock(
+                get_limit_for_account_balance => sub {
+                    my $c = shift;
+                    return ($c->loginid);
+                });
+
+            $txn->prepare_buy(1);
+            foreach my $m (@{$txn->multiple}) {
+                next if $m->{code} && $m->{code} eq 'ignore';
+                ok(!$m->{code}, 'no error');
+                ok($m->{client} && ref $m->{client} eq 'BOM::User::Client', 'check client');
+                is($m->{limits}{max_balance}, $m->{client}->loginid, 'check_limit');
+            }
+        };
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+            ExpiryQueue::queue_flush;
+            note explain +ExpiryQueue::queue_status;
+            $txn->batch_buy;
+        };
+
+        ok $error, 'unsuccessful batch_buy';
+
+        is $error->{'-mesg'}, 'Multiplier not supported in batch_buy', 'correct -mesg';
+        is $error->{'-message_to_client'}, 'MULTUP and MULTDOWN are not supported.', 'correct -message_to_client';
+    }
+    'survived';
+};
+
 done_testing;
