@@ -46,7 +46,6 @@ sub is_mt5_suspended {
                 my ($id, $queued) = split /:/, $job;
 
                 $log->debugf('Processing pending ID [%s]', $id);
-                warn "Processing pending ID $id";
 
                 my $cache_key = 'MT5_USER_GROUP::' . $id;
                 $redis->hgetall($cache_key)->then(
