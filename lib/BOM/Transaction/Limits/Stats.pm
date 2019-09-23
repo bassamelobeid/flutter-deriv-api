@@ -2,41 +2,48 @@ package BOM::Transaction::Limits::Stats;
 use strict;
 use warnings;
 
-use Time::HiRes qw(tv_interval gettimeofday time);
+use Time::HiRes qw(tv_interval gettimeofday);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 use BOM::Config;
 
 # Contains all code that compiles statistical data about company limits and
 # contracts that is coming in this system, and shipping that info to datadog.
 
-sub stats_start {
-    my ($company_limits, $what) = @_;
-    my $landing_company = $company_limits->{landing_company};
+sub with_dd_stats (&@) {
+    my ($sub, $what, $landing_company, $virtual) = @_;
 
-    my $virtual = $landing_company eq 'virtual' ? 'yes' : 'no';
-    my $rmgenv  = BOM::Config::env;
-    my $tags    = {tags => ["virtual:$virtual", "rmgenv:$rmgenv", "landing_company:$landing_company"]};
+    my $start = [gettimeofday];
 
-    return +{
-        start   => [gettimeofday],
-        tags    => $tags,
-        virtual => $virtual,
-        rmgenv  => $rmgenv,
-        what    => $what,
-    };
-}
+    my (@res, $no_ex);
+    if (wantarray) {
+        $no_ex = eval { @res = $sub->(); 1; };
+    } elsif (defined wantarray) {
+        $no_ex = eval { $res[0] = $sub->(); 1; };
+    } else {
+        $no_ex = eval { $sub->(); 1; };
+    }
 
-sub stats_stop {
-    my ($data) = @_;
+    $virtual = $virtual ? 'yes' : 'no';
 
-    my $what = $data->{what};
-    my $tags = $data->{tags};
+    if ($no_ex) {
+        stats_timing(
+            "companylimits.$what.elapsed_time",
+            1000 * tv_interval($start, [gettimeofday]),
+            {tags => ["virtual:$virtual",
+                      "rmgenv:" . BOM::Config::env,
+                      "landing_company:$landing_company"]});
+    } else {
+        stats_timing(
+            "companylimits.$what.failed.elapsed_time",
+            1000 * tv_interval($start, [gettimeofday]),
+            {tags => ["virtual:$virtual",
+                      "rmgenv:" . BOM::Config::env,
+                      "landing_company:$landing_company"]});
 
-    my $now = [gettimeofday];
-    stats_timing("companylimits.$what.elapsed_time", 1000 * tv_interval($data->{start}, $now), $tags);
+        die $@;
+    }
 
-    return;
+    return @res;
 }
 
 1;
-

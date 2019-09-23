@@ -33,11 +33,12 @@ sub new {
     my ($class, %params) = @_;
     my $self = bless {}, $class;
 
-    my $landing_company = $params{landing_company};
+    my $landing_company = LandingCompany::Registry::get($params{landing_company});
 
-    die "Unsupported landing company $landing_company" unless LandingCompany::Registry::get($landing_company);
+    die "Unsupported landing company $landing_company" unless $landing_company;
 
-    $self->{landing_company} = $landing_company;
+    $self->{landing_company} = $landing_company->short;
+    $self->{is_virtual}      = $landing_company->is_virtual;
     $self->{currency}        = $params{currency};
     $self->{contract_data}   = $params{contract_data};
     $self->{redis}           = BOM::Config::RedisReplicated::redis_limits_write;
@@ -63,7 +64,13 @@ sub new {
 sub add_buys {
     my ($self, @clients) = @_;
 
-    my $stat_dat = BOM::Transaction::Limits::Stats::stats_start($self, 'buys');
+    return BOM::Transaction::Limits::Stats::with_dd_stats {
+        $self->_add_buys(@clients);
+    } buy => @{$self}{qw/landing_company is_virtual/};
+}
+
+sub _add_buys {
+    my ($self, @clients) = @_;
 
     my $user_combinations = $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_user_limit_combinations, \@clients);
     my $turnover_combinations =
@@ -108,7 +115,6 @@ sub add_buys {
     $redis->mainloop;
 
     $self->{has_add_buys} = 1;
-    BOM::Transaction::Limits::Stats::stats_stop($stat_dat);
 
     # TODO: breach check implementation to come in 2nd phase...
     return $response,
@@ -124,9 +130,16 @@ sub reverse_buys {
     # because of company limits, it should not end up here.
     die "Cannot reverse buys unless add_buys is first called" unless $self->{has_add_buys};
 
-    my $stat_dat = BOM::Transaction::Limits::Stats::stats_start($self, 'reverse_buys');
+    return BOM::Transaction::Limits::Stats::with_dd_stats {
+        $self->_reverse_buys(@clients);
+    } reverse_buy => @{$self}{qw/landing_company is_virtual/};
+}
 
-    # These combinations cannot be cached; we cannot assume that in reversing buys the exact same client list will be passed in
+sub _reverse_buys {
+    my ($self, @clients) = @_;
+
+    # These combinations cannot be cached; we cannot assume that in reversing buys
+    # the exact same client list will be passed in
     my $user_combinations = $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_user_limit_combinations, \@clients);
     my $turnover_combinations =
         $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_turnover_incrby_combinations, \@clients);
@@ -151,15 +164,19 @@ sub reverse_buys {
     # buys, but it is kept here to avoid complications with pending Redis calls
     $redis->mainloop;
 
-    BOM::Transaction::Limits::Stats::stats_stop($stat_dat);
-
     return;
 }
 
 sub add_sells {
     my ($self, @clients) = @_;
 
-    my $stat_dat = BOM::Transaction::Limits::Stats::stats_start($self, 'sells');
+    return BOM::Transaction::Limits::Stats::with_dd_stats {
+        $self->_add_sells(@clients);
+    } sell => @{$self}{qw/landing_company is_virtual/};
+}
+
+sub _add_sells {
+    my ($self, @clients) = @_;
 
     my $user_combinations = $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_user_limit_combinations, \@clients);
 
@@ -192,7 +209,6 @@ sub add_sells {
     # but it is kept here to avoid complications with pending Redis calls
     $redis->mainloop;
 
-    BOM::Transaction::Limits::Stats::stats_stop($stat_dat);
     return;
 }
 
