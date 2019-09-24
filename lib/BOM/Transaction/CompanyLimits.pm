@@ -64,6 +64,8 @@ sub new {
 sub add_buys {
     my ($self, @clients) = @_;
 
+    return undef unless $ENV{'COMPANY_LIMITS_ENABLED'};
+
     return BOM::Transaction::Limits::Stats::with_dd_stats {
         $self->_add_buys(@clients);
     }
@@ -127,6 +129,8 @@ sub _add_buys {
 sub reverse_buys {
     my ($self, @clients) = @_;
 
+    return undef unless $ENV{'COMPANY_LIMITS_ENABLED'};
+
     # We only reverse buys for which errors come from database. If buys are blocked
     # because of company limits, it should not end up here.
     die "Cannot reverse buys unless add_buys is first called" unless $self->{has_add_buys};
@@ -171,6 +175,8 @@ sub _reverse_buys {
 
 sub add_sells {
     my ($self, @clients) = @_;
+
+    return undef unless $ENV{'COMPANY_LIMITS_ENABLED'};
 
     return BOM::Transaction::Limits::Stats::with_dd_stats {
         $self->_add_sells(@clients);
