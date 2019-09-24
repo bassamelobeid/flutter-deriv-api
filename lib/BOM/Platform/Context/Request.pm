@@ -51,6 +51,8 @@ has 'brand_name' => (
     lazy_build => 1,
 );
 
+has 'source' => (is => 'ro');
+
 has '_ip' => (
     is => 'ro',
 );
