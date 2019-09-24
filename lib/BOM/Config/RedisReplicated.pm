@@ -71,13 +71,15 @@ sub _redis_transaction_limits {
 
     my $key = 'limit_settings_' . $key_name;
 
-    try {
-        $connections->{$key}->ping();
+    if ($connections->{$key}) {
+        try {
+            $connections->{$key}->ping();
+        }
+        catch {
+            warn "RedisReplicated::_redis $key died: $_, reconnecting";
+            $connections->{$key} = undef;
+        };
     }
-    catch {
-        warn "RedisReplicated::_redis $key died: $_, reconnecting";
-        $connections->{$key} = undef;
-    };
 
     $connections->{$key} //= RedisDB->new(
         $timeout ? (timeout => $timeout) : (),
