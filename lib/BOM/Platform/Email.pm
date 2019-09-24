@@ -29,6 +29,7 @@ sub send_email {
     my $subject            = $args_ref->{'subject'} // '';
     my @message            = @{$args_ref->{'message'} // []};
     my $use_email_template = $args_ref->{'use_email_template'};
+    my $layout             = $args_ref->{'layout'} // 'default';
     my $attachment         = $args_ref->{'attachment'} // [];
     $attachment = ref($attachment) eq 'ARRAY' ? $attachment : [$attachment];
     my $skip_text2html   = $args_ref->{'skip_text2html'};
@@ -80,7 +81,7 @@ sub send_email {
             $vars->{website_url} = $app->{redirect_uri} if $app;
         }
 
-        BOM::Platform::Context::template()->process('common_email.html.tt', $vars, \$mail_message)
+        BOM::Platform::Context::template()->process("layouts/$layout.html.tt", $vars, \$mail_message)
             || die BOM::Platform::Context::template()->error();
     }
 
