@@ -51,7 +51,7 @@ sub is_mt5_suspended {
                 $redis->hgetall($cache_key)->then(
                     sub {
                         my ($data) = @_;
-			my $group = $data->[0];
+                        my $group = $data->[0];
                         if ($group) {
                             $log->debugf('Details found for ID [%s] - %s', $id, $group);
                             stats_inc('mt5.group_populator.item_cached', 1);
