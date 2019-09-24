@@ -329,7 +329,7 @@ sub _payment_and_profit_report {
     });
 
     # do not include if the currency is experimental
-    @movers = grep {not LandingCompany::Registry::get_currency_definition($_->{currency})->{experimental} } @movers;
+    @movers = grep { not LandingCompany::Registry::get_currency_definition($_->{currency})->{experimental} } @movers;
 
     my @deposits = sort { $b->{usd_payments} <=> $a->{usd_payments} } @movers;
     my @withdrawals = reverse @deposits;
