@@ -34,6 +34,7 @@ $redis->hmset('groups:underlying', ('R_50', 'volidx', 'frxUSDJPY', 'forex'));
 # Test for the correct key combinations
 subtest 'Key Combinations matching test', sub {
     top_up my $cr_cl = create_client('CR', undef, {binary_user_id => 4252}), 'USD', 12;
+    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company->short);
 
     my ($contract, $error, $contract_info, $key, $total);
 
@@ -85,6 +86,8 @@ subtest 'Different combinations of contracts', sub {
 
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
     my ($contract, $error, $contract_info, $key, $total);
+
+    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company->short);
 
     # Contract #1
     $contract = create_contract(
@@ -194,6 +197,7 @@ subtest 'Different combinations of contracts', sub {
 subtest 'Realized loss and total turnover are on daily basis', sub {
 
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
+    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company->short);
 
     my ($contract, $error, $contract_info, $key, $realized_loss_total, $turnover_total);
     my $client_key = 't,R_50,callput,' . $cr_cl->binary_user_id;
@@ -271,6 +275,7 @@ subtest 'Different underlying tests', sub {
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
 
     my ($error, $contract_info_svg, $contract, $key, $total);
+    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company->short);
 
     $contract = create_contract(
         payout     => 6,
@@ -359,6 +364,7 @@ subtest 'Different underlying tests', sub {
 
 subtest 'Different barrier tests', sub {
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
+    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company->short);
 
     my ($error, $contract_info_svg, $contract, $key, $total);
 
@@ -450,8 +456,11 @@ subtest 'Different landing companies test', sub {
 
     my $key = 'ta,R_50,callput';
 
-    my $svg_total = $redis->hget('svg:potential_loss', $key);
-    my $mx_total = $redis->hget('iom:potential_loss', $key) // 0;
+    my $redis_cr = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company->short);
+    my $redis_mx = BOM::Config::RedisReplicated::redis_limits_write($mx_cl->landing_company->short);
+
+    my $svg_total = $redis_cr->hget('svg:potential_loss', $key);
+    my $mx_total = $redis_mx->hget('iom:potential_loss', $key) // 0;
 
     cmp_ok $svg_total, '==', 4, 'buying contract with CR client adds potential loss to svg';
     cmp_ok $mx_total,  '==', 0, 'buying contract with CR client does not affect mx potential_loss';
@@ -462,8 +471,8 @@ subtest 'Different landing companies test', sub {
         contract  => $contract,
     );
 
-    $svg_total = $redis->hget('svg:potential_loss', $key);
-    $mx_total  = $redis->hget('iom:potential_loss', $key);
+    $svg_total = $redis_cr->hget('svg:potential_loss', $key);
+    $mx_total  = $redis_mx->hget('iom:potential_loss', $key);
 
     cmp_ok $svg_total, '==', 4, 'buying contract with MX client does not add potential loss to svg';
     cmp_ok $mx_total,  '==', 4, 'buying contract with MX client affects mx potential_loss';
@@ -474,6 +483,8 @@ subtest 'Different landing companies test', sub {
 subtest 'Different currencies', sub {
     top_up my $cr_usd = create_client('CR'), 'USD', 5000;
     top_up my $cr_eur = create_client('CR'), 'EUR', 5000;
+
+    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_usd->landing_company->short);
 
     my ($error, $contract_info_usd, $contract_info_eur, $usd_contract, $eur_contract);
 

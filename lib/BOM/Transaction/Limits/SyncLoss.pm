@@ -25,10 +25,11 @@ sub reset_daily_loss_hashes {
     my $new_day_start_epoch = Date::Utility::today()->epoch + 86400;
     my %output;
 
-    my $redis = BOM::Config::RedisReplicated::redis_limits_write;
+    my $redis;
     my @landing_companies_with_broker_codes = grep { $#{$_->broker_codes} > -1 } LandingCompany::Registry::all();
     foreach my $loss_type (qw/realized_loss turnover/) {
         foreach my $lc (@landing_companies_with_broker_codes) {
+            $redis = BOM::Config::RedisReplicated::redis_limits_write($lc);
             my $landing_company = $lc->{short};
             my $hash_name       = "$landing_company:$loss_type";
 

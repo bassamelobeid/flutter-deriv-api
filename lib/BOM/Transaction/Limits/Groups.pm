@@ -43,7 +43,7 @@ sub get_limit_groups {
     return _get_limit_groups($bet_data)
         if %underlying_groups_cache and $cache_date == $current_minute;
 
-    my $redis = BOM::Config::RedisReplicated::redis_limits_write;
+    my $redis = BOM::Config::RedisReplicated::redis_limits_write();
 
     $redis->hgetall(
         'groups:contract',

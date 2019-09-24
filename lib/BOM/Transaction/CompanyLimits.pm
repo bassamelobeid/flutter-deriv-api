@@ -40,7 +40,7 @@ sub new {
     $self->{landing_company} = $landing_company;
     $self->{currency}        = $params{currency};
     $self->{contract_data}   = $params{contract_data};
-    $self->{redis}           = BOM::Config::RedisReplicated::redis_limits_write;
+    $self->{redis}           = BOM::Config::RedisReplicated::redis_limits_write($landing_company);
 
     my $attributes = BOM::Transaction::Limits::Combinations::get_attributes_from_contract($params{contract_data});
     $self->{global_combinations} = BOM::Transaction::Limits::Combinations::get_global_limit_combinations($attributes);
