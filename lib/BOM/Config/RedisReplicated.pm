@@ -137,11 +137,6 @@ sub redis_limits_write {
     return _redis('companylimits', 'write', 10);
 }
 
-sub redis_limits {
-    $config->{companylimits} //= BOM::Config::redis_limit_settings();
-    return _redis('companylimits', 'read', 10);
-}
-
 sub redis_transaction_write {
     $config->{transaction} //= BOM::Config::redis_transaction_config();
     return _redis('transaction', 'write', 10);
