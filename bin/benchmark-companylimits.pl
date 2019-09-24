@@ -7,20 +7,20 @@ my ($nsend, $nrecv) = (0, 0);
 
 BEGIN {
     unless ($ENV{nobw}) {
-       *CORE::GLOBAL::send = sub {
-           my $n = &CORE::send;
+        *CORE::GLOBAL::send = sub {
+            my $n = &CORE::send;
 
-           $nsend += $n if ${*{$_[0]}}{' benchmark '};
+            $nsend += $n if ${*{$_[0]}}{' benchmark '};
 
-           return $n;
-       };
-       *CORE::GLOBAL::recv = sub {
-           my $n = CORE::recv $_[0], $_[1], $_[2], $_[3];
+            return $n;
+        };
+        *CORE::GLOBAL::recv = sub {
+            my $n = CORE::recv $_[0], $_[1], $_[2], $_[3];
 
-           $nrecv += length $_[1] if ${*{$_[0]}}{' benchmark '};
+            $nrecv += length $_[1] if ${*{$_[0]}}{' benchmark '};
 
-           return $n;
-       };
+            return $n;
+        };
     }
 }
 
@@ -82,16 +82,16 @@ sub parent {
         $totsum += $sum;
         $totsq += $sumsq;
         $totn += $n;
-       $totsnd += $nsnd;
-       $totrcv += $nrcv;
+        $totsnd += $nsnd;
+        $totrcv += $nrcv;
     }
     printf("total number of requests: %d, parallel: %d, avg time per req: %.3f msec, stddev: %.3f\n",
            $totn, $nproc, $totsum/$totn, sqrt($totsq/$totn - ($totsum/$totn)**2));
     unless ($ENV{nobw}) {
-       printf("total bytes sent to redis: %d, number of bytes received from redis: %d\n",
-              $totsnd, $totrcv);
-       printf("send bandwidth: %.3f bytes per request, receive bandwidth: %.3f bytes per request\n",
-              $totsnd/$totn, $totrcv/$totn);
+        printf("total bytes sent to redis: %d, number of bytes received from redis: %d\n",
+               $totsnd, $totrcv);
+        printf("send bandwidth: %.3f bytes per request, receive bandwidth: %.3f bytes per request\n",
+               $totsnd/$totn, $totrcv/$totn);
     }
 }
 
