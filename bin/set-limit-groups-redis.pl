@@ -7,7 +7,7 @@
 # 1. make sure the Finance::Underlying (public CPAN repo) module is up-to-date
 # 2. make sure the Finance::Contract (public CPAN repo) module is up-to-date
 # 3. call
-#      bin/extract-underlying-group-from-underlyings_yml.pl
+#      bin/set-limit-groups-redis.pl
 #
 # NOTE: we should NOT delete symbols/contracts unless we are absolutely sure there are
 #       no open contracts using them.
