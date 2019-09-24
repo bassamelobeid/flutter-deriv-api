@@ -77,7 +77,7 @@ sub cmd_UserAdd {
 
     $input->{mainPassword} eq $DETAILS{password}->{main}
         or die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
-    
+
     #disable check since password is generated auto when it is not provided
     # $input->{investPassword} eq $DETAILS{password}->{investor}
     #    or die "UserAdd with unexpected investorPassword=$input->{investPassword}\n";
