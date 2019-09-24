@@ -70,6 +70,7 @@ sub send_email {
             email_content_is_html => $args_ref->{'email_content_is_html'},
             skip_text2html        => $skip_text2html,
             content               => $message,
+            l                     => \&localize,
         };
         $vars->{text_email_template_loginid} = localize('Your Login ID: [_1]', $template_loginid)
             if $template_loginid;
