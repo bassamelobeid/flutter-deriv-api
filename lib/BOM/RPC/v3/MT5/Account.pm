@@ -222,11 +222,6 @@ async_rpc "mt5_new_account",
     my $invalid_account_type_error = create_error_future('InvalidAccountType');
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
-    return create_error_future('NoCitizen')
-        if not $client->is_virtual()
-        and $account_type ne "demo"
-        and not $client->citizen();
-
     $mt5_account_type = '' if $account_type eq 'gaming';
     $args->{investPassword} = _generate_password($args->{mainPassword}) unless $args->{investPassword};
 
@@ -286,8 +281,9 @@ async_rpc "mt5_new_account",
 
     return create_error_future('permission') if ($client->is_virtual() and $account_type ne 'demo');
 
-    my $requirements = LandingCompany::Registry->new->get($company_name)->requirements->{signup};
-    my @missing_fields = grep { !$client->$_ } @$requirements;
+    my $requirements = LandingCompany::Registry->new->get($company_name)->requirements;
+    my $signup_requirements = $requirements->{signup};
+    my @missing_fields = grep { !$client->$_ } @$signup_requirements;
 
     return create_error_future(
         'MissingSignupDetails',
@@ -304,16 +300,15 @@ async_rpc "mt5_new_account",
             : create_error_future('NoAgeVerification');
     }
 
-    return create_error_future('FinancialAssessmentMandatory') unless (_is_financial_assessment_complete($client, $group));
+    my $compliance_requirements = $requirements->{compliance};
+    return create_error_future('FinancialAssessmentMandatory') if ($compliance_requirements and $compliance_requirements->{financial_assessment} and not _is_financial_assessment_complete(client => $client, financial_assessment_requirements => $compliance_requirements->{financial_assessment}));
 
-    if ($account_type eq 'financial') {
-        # As per the following document: Automatic Exchange of Information,
-        # Guide for Reporting Financial Institutions by the Vanuatu Competent Authority
-        # we need to ask for tax details for selected countries
-        # if client wants to open financial account
-        return create_error_future('TINDetailsMandatory')
-            if ($countries_instance->is_tax_detail_mandatory($residence) and not $client->status->crs_tin_information);
-    }
+    # As per the following document: Automatic Exchange of Information,
+    # Guide for Reporting Financial Institutions by the Vanuatu Competent Authority
+    # we need to ask for tax details for selected countries
+    # if client wants to open financial account
+    return create_error_future('TINDetailsMandatory')
+        if ($compliance_requirements->{tax_information} and $countries_instance->is_tax_detail_mandatory($residence) and not $client->status->crs_tin_information);
 
     # Check if client is throttled before sending MT5 request
     if (_throttle($client->loginid)) {
@@ -465,13 +460,13 @@ async_rpc "mt5_new_account",
 
 Checks the financial assessment requirements of creating an account in an MT5 group.
 
-Takes two argument:
+Takes named argument with the following as parameter:
 
 =over 4
 
 =item * $client: an instance of C<BOM::User::Client> representing a binary client onject.
 
-=item * $group: the target MT5 group.
+=item * $financial_assessment_requirements for particular landing company.
 
 =back
 
@@ -480,12 +475,12 @@ Returns 1 of the financial assemssments meet the requirements; otherwise returns
 =cut
 
 sub _is_financial_assessment_complete {
-    my ($client, $mt5_group) = @_;
+    my %args = @_;
 
-    return 1 if $mt5_group =~ /^demo/;
+    my $client = $args{client};
 
     # this case doesn't follow the general rule (labuan and vanuatu are exclusively mt5 landing companies).
-    if ($mt5_group =~ /labuan|vanuatu/) {
+    if (my $financial_assessment_requirements = $args{financial_assessment_requirements}) {
         my $financial_assessment = decode_fa($client->financial_assessment());
         my $is_FI                = is_section_complete($financial_assessment, 'financial_information');
         my $is_TE                = is_section_complete($financial_assessment, 'trading_experience');

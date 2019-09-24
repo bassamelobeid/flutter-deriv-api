@@ -45,7 +45,6 @@ my $category_message_mapping = {
     HaveOpenPositions    => 'Please withdraw your account balance and close all your open positions before revoking MT5 account manager permissions.',
     MissingSignupDetails => 'Your profile appears to be incomplete. Please update your personal details to continue.',
     NoAccountDetails     => 'We are retrieving your MT5 details. Please give us a few more seconds.',
-    NoCitizen            => 'Please indicate your citizenship.',
     RealAccountMissing   => 'You are on a virtual account. To open an MT5 account, please upgrade to a real account.',
     FinancialAccountMissing => 'Your existing account does not allow MT5 trading. To open an MT5 account, please upgrade to a financial account.',
     GamingAccountMissing    => 'Your existing account does not allow MT5 trading. To open an MT5 account, please upgrade to a gaming account.',
