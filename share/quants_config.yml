@@ -18,7 +18,7 @@ default_stake:
   LTC: 0.25
   UST: 10
   USB: 10
-  IDK: 50000
+  IDK: 150000
 
 bet_limits:
   holiday_blackout_start: 345
