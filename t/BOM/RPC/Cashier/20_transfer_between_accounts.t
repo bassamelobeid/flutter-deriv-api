@@ -682,7 +682,7 @@ subtest 'transfer with fees' => sub {
     $params->{args}->{amount} = 0.01;
     # The amount will be accepted initially, but rejected when getting the recieved amount in BTC.
     $rpc_ct->call_ok($method, $params)->has_error->error_code_is('TransferBetweenAccountsError')
-        ->error_message_is("This amount is too low. Please enter a minimum of 1 USD.");
+        ->error_message_is("This amount is too low. Please enter a minimum of 1.09 USD.");
 
     $params->{args}->{amount} = $amount;
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
@@ -754,7 +754,7 @@ subtest 'transfer with fees' => sub {
         amount       => $amount
     };
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError')
-        ->error_message_is('This amount is too low. Please enter a minimum of 1 UST.');
+        ->error_message_is('This amount is too low. Please enter a minimum of 1.09 UST.');
 
     #No transfer fee for BTC-EUR
     $amount = 0.02;
