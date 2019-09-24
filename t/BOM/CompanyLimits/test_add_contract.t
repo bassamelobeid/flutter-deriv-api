@@ -21,6 +21,8 @@ use BOM::Transaction::Limits::SyncLoss;
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
+local $ENV{COMPANY_LIMITS_ENABLED} = 1;
+
 my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
 $mocked_CurrencyConverter->mock('in_usd', \&fake_in_usd);
 

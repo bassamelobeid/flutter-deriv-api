@@ -22,6 +22,8 @@ use BOM::Test::Email qw(mailbox_search);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
+local $ENV{COMPANY_LIMITS_ENABLED} = 1;
+
 my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
 
