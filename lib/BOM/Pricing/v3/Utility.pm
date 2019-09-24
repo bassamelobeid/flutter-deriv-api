@@ -72,7 +72,7 @@ sub create_relative_shortcode {
     my $date_expiry;
     if ($params->{date_expiry}) {
         $date_expiry = ($params->{date_expiry} - ($params->{date_start} || time)) . 'F';
-    } else {
+    } elsif (defined $params->{duration} and defined $params->{duration_unit}) {
         if ($params->{duration_unit} eq 't') {
             $date_expiry = $params->{duration} . 'T';
         } else {
@@ -85,6 +85,8 @@ sub create_relative_shortcode {
             $date_expiry = $params->{duration} * $map_to_seconds{$params->{duration_unit}};
         }
     }
+
+    $date_expiry //= 0;
 
     my @barriers = ($params->{barrier} // 'S0P', $params->{barrier2} // '0');
 
