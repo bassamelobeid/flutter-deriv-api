@@ -3,6 +3,27 @@
 use strict;
 use warnings;
 
+my ($nsend, $nrecv) = (0, 0);
+
+BEGIN {
+    unless ($ENV{nobw}) {
+       *CORE::GLOBAL::send = sub {
+           my $n = &CORE::send;
+
+           $nsend += $n if ${*{$_[0]}}{' benchmark '};
+
+           return $n;
+       };
+       *CORE::GLOBAL::recv = sub {
+           my $n = CORE::recv $_[0], $_[1], $_[2], $_[3];
+
+           $nrecv += length $_[1] if ${*{$_[0]}}{' benchmark '};
+
+           return $n;
+       };
+    }
+}
+
 use Getopt::Long;
 use BOM::Transaction::CompanyLimits;
 use Time::HiRes ();
@@ -53,17 +74,25 @@ for (@pids) {
 
 sub parent {
     my @vals;
-    my ($totsum, $totsq, $totn);
+    my ($totsum, $totsq, $totn, $totsnd, $totrcv);
     for (1..$nproc) {
         warn ("Unexpected EOF on pipe: $!\n"), last
             unless defined (my $l = readline $r);
-        my ($sum, $sumsq, $n) = split / /, $l;
+        my ($sum, $sumsq, $n, $nsnd, $nrcv) = split / /, $l;
         $totsum += $sum;
         $totsq += $sumsq;
         $totn += $n;
+       $totsnd += $nsnd;
+       $totrcv += $nrcv;
     }
     printf("total number of requests: %d, parallel: %d, avg time per req: %.3f msec, stddev: %.3f\n",
            $totn, $nproc, $totsum/$totn, sqrt($totsq/$totn - ($totsum/$totn)**2));
+    unless ($ENV{nobw}) {
+       printf("total bytes sent to redis: %d, number of bytes received from redis: %d\n",
+              $totsnd, $totrcv);
+       printf("send bandwidth: %.3f bytes per request, receive bandwidth: %.3f bytes per request\n",
+              $totsnd/$totn, $totrcv/$totn);
+    }
 }
 
 sub C::binary_user_id {
@@ -87,6 +116,7 @@ sub chld {
                                                                  payout_price => 100,
                                                                  buy_price => 50,
                                                                  bet_class => "fsd"});
+    ${*{$x->{redis}->{_socket}}}{' benchmark '} = 1;
     $x->{landing_company}=$prefix;
     # my @res = $x->$meth(map {C->new} 1..2);
     # use Data::Dumper; print +Data::Dumper->new([\@res], ['res'])->Useqq(1)->Sortkeys(1)->Dump;
@@ -100,7 +130,7 @@ sub chld {
         $sumsq += $tm ** 2;
     }
 
-    print $w "$sum $sumsq $nreq\n";
+    print $w "$sum $sumsq $nreq $nsend $nrecv\n";
     close $w;
     return 0;
 }
