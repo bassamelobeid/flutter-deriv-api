@@ -52,6 +52,42 @@ sub _redis {
     return $connections->{$key};
 }
 
+sub _redis_transaction_limits {
+    my ($landing_company, $timeout) = @_;
+
+    my $connection_config;
+
+    my $key_name;
+
+    # Check if landing company passed in or not
+    # If no landing company, default to global settings
+    if ($landing_company) {
+        $connection_config = $config->{'companylimits'}->{'per_landing_company'}->{$landing_company};
+        $key_name          = $landing_company;
+    } else {
+        $connection_config = $config->{'global_settings'};
+        $key_name          = 'global_settings';
+    }
+
+    my $key = 'limit_settings_' . $key_name;
+
+    try {
+        $connections->{$key}->ping();
+    }
+    catch {
+        warn "RedisReplicated::_redis $key died: $_, reconnecting";
+        $connections->{$key} = undef;
+    };
+
+    $connections->{$key} //= RedisDB->new(
+        $timeout ? (timeout => $timeout) : (),
+        host => $connection_config->{host},
+        port => $connection_config->{port},
+        ($connection_config->{password} ? ('password' => $connection_config->{password}) : ()));
+
+    return $connections->{$key};
+}
+
 sub redis_config {
     my ($redis_type, $access_type) = @_;
 
@@ -133,8 +169,10 @@ sub redis_events {
 }
 
 sub redis_limits_write {
+    my ($landing_company) = @_;
+
     $config->{companylimits} //= BOM::Config::redis_limit_settings();
-    return _redis('companylimits', 'write', 10);
+    return _redis_transaction_limits($landing_company, 10);
 }
 
 sub redis_transaction_write {
