@@ -66,7 +66,8 @@ sub add_buys {
 
     return BOM::Transaction::Limits::Stats::with_dd_stats {
         $self->_add_buys(@clients);
-    } buy => @{$self}{qw/landing_company is_virtual/};
+    }
+    buy => @{$self}{qw/landing_company is_virtual/};
 }
 
 sub _add_buys {
@@ -132,7 +133,8 @@ sub reverse_buys {
 
     return BOM::Transaction::Limits::Stats::with_dd_stats {
         $self->_reverse_buys(@clients);
-    } reverse_buy => @{$self}{qw/landing_company is_virtual/};
+    }
+    reverse_buy => @{$self}{qw/landing_company is_virtual/};
 }
 
 sub _reverse_buys {
@@ -172,7 +174,8 @@ sub add_sells {
 
     return BOM::Transaction::Limits::Stats::with_dd_stats {
         $self->_add_sells(@clients);
-    } sell => @{$self}{qw/landing_company is_virtual/};
+    }
+    sell => @{$self}{qw/landing_company is_virtual/};
 }
 
 sub _add_sells {

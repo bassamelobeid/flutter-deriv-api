@@ -27,6 +27,9 @@ $mocked_CurrencyConverter->mock('in_usd', \&fake_in_usd);
 my $redis = BOM::Config::RedisReplicated::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
 
+close_all_open_contracts();
+reset_all_loss_hashes();
+
 # Setup groups:
 $redis->hmset('groups:contract', ('CALL', 'callput', 'DIGITEVEN', 'digits', 'LBFLOATCALL', 'lookbacks'));
 $redis->hmset('groups:underlying', ('R_50', 'volidx', 'frxUSDJPY', 'forex'));

@@ -9,7 +9,7 @@ use BOM::Config;
 # Contains all code that compiles statistical data about company limits and
 # contracts that is coming in this system, and shipping that info to datadog.
 
-sub with_dd_stats (&@) {
+sub with_dd_stats (&@) {    ## no critic
     my ($sub, $what, $landing_company, $virtual) = @_;
 
     my $start = [gettimeofday];
@@ -24,22 +24,12 @@ sub with_dd_stats (&@) {
     }
 
     $virtual = $virtual ? 'yes' : 'no';
+    my $tags = {tags => ["virtual:$virtual", "rmgenv:" . BOM::Config::env, "landing_company:$landing_company"]};
 
     if ($no_ex) {
-        stats_timing(
-            "companylimits.$what.elapsed_time",
-            1000 * tv_interval($start, [gettimeofday]),
-            {tags => ["virtual:$virtual",
-                      "rmgenv:" . BOM::Config::env,
-                      "landing_company:$landing_company"]});
+        stats_timing("companylimits.$what.elapsed_time", 1000 * tv_interval($start, [gettimeofday]), $tags);
     } else {
-        stats_timing(
-            "companylimits.$what.failed.elapsed_time",
-            1000 * tv_interval($start, [gettimeofday]),
-            {tags => ["virtual:$virtual",
-                      "rmgenv:" . BOM::Config::env,
-                      "landing_company:$landing_company"]});
-
+        stats_inc("companylimits.$what.failure", $tags);
         die $@;
     }
 
