@@ -65,7 +65,7 @@ sub _redis_transaction_limits {
         $connection_config = $config->{'companylimits'}->{'per_landing_company'}->{$landing_company};
         $key_name          = $landing_company;
     } else {
-        $connection_config = $config->{'global_settings'};
+        $connection_config = $config->{'companylimits'}->{'global_settings'};
         $key_name          = 'global_settings';
     }
 
