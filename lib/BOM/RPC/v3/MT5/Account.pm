@@ -281,9 +281,9 @@ async_rpc "mt5_new_account",
 
     return create_error_future('permission') if ($client->is_virtual() and $account_type ne 'demo');
 
-    my $requirements = LandingCompany::Registry->new->get($company_name)->requirements;
+    my $requirements        = LandingCompany::Registry->new->get($company_name)->requirements;
     my $signup_requirements = $requirements->{signup};
-    my @missing_fields = grep { !$client->$_ } @$signup_requirements;
+    my @missing_fields      = grep { !$client->$_ } @$signup_requirements;
 
     return create_error_future(
         'MissingSignupDetails',
@@ -301,14 +301,22 @@ async_rpc "mt5_new_account",
     }
 
     my $compliance_requirements = $requirements->{compliance};
-    return create_error_future('FinancialAssessmentMandatory') if ($compliance_requirements and $compliance_requirements->{financial_assessment} and not _is_financial_assessment_complete(client => $client, financial_assessment_requirements => $compliance_requirements->{financial_assessment}));
+    return create_error_future('FinancialAssessmentMandatory')
+        if (
+            $compliance_requirements
+        and $compliance_requirements->{financial_assessment}
+        and not _is_financial_assessment_complete(
+            client                            => $client,
+            financial_assessment_requirements => $compliance_requirements->{financial_assessment}));
 
     # As per the following document: Automatic Exchange of Information,
     # Guide for Reporting Financial Institutions by the Vanuatu Competent Authority
     # we need to ask for tax details for selected countries
     # if client wants to open financial account
     return create_error_future('TINDetailsMandatory')
-        if ($compliance_requirements->{tax_information} and $countries_instance->is_tax_detail_mandatory($residence) and not $client->status->crs_tin_information);
+        if ($compliance_requirements->{tax_information}
+        and $countries_instance->is_tax_detail_mandatory($residence)
+        and not $client->status->crs_tin_information);
 
     # Check if client is throttled before sending MT5 request
     if (_throttle($client->loginid)) {
@@ -482,8 +490,9 @@ sub _is_financial_assessment_complete {
     # this case doesn't follow the general rule (labuan and vanuatu are exclusively mt5 landing companies).
     if (my $financial_assessment_requirements = $args{financial_assessment_requirements}) {
         my $financial_assessment = decode_fa($client->financial_assessment());
-        my $is_FI                = is_section_complete($financial_assessment, 'financial_information');
-        my $is_TE                = is_section_complete($financial_assessment, 'trading_experience');
+        my $is_FI =
+            $financial_assessment_requirements->{financial_information} ? is_section_complete($financial_assessment, 'financial_information') : 1;
+        my $is_TE = $financial_assessment_requirements->{trading_experience} ? is_section_complete($financial_assessment, 'trading_experience') : 1;
         ($is_FI and $is_TE) ? return 1 : return 0;
     }
 
