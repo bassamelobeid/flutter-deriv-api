@@ -283,6 +283,14 @@ Send CSV file to customer support for the list of MT5 accounts to disable
 
 =cut
 
+sub group_for_user {
+    my ($id) = @_;
+    return BOM::MT5::User::Async::get_user($id)->transform(
+        done => sub {
+            shift->{group};
+        });
+}
+
 sub send_mt5_disable_csv {
     my $data = shift;
 
@@ -298,10 +306,13 @@ sub send_mt5_disable_csv {
 
             $mt5_loginid =~ s/\D//g;
 
-            my $group = $redis->hmget("MT5_USER_GROUP::$mt5_loginid", 'group');
-
-            # Only real financial (labuan and vanuatu) are to be disabled
-            push @csv_rows, [$client_loginid_info, $mt5_loginid, $group] if ($group && $group !~ '^demo|svg$');
+            group_for_user($mt5_loginid)->then(
+                sub {
+                    my ($group) = @_;
+                    # Only real financial (labuan and vanuatu) are to be disabled
+                    push @csv_rows, [$client_loginid_info, $mt5_loginid, $group] if ($group && $group !~ '^demo|svg$');
+                    return Future->done();
+                })->get;
         }
     }
 
