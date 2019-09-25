@@ -37,6 +37,7 @@ my $prefix = 'benchmark';
 my $nuid   = 5000;
 my $meth   = '_add_buys';
 my $batch  = 1;
+my $datf;
 
 unless (GetOptions('fork=i'     => \$nproc,
                    'requests=i' => \$nreq,
@@ -44,6 +45,7 @@ unless (GetOptions('fork=i'     => \$nproc,
                    'users=i'    => \$nuid,
                    'method=s'   => \$meth,
                    'batch=i'    => \$batch,
+                   'datafile=s' => \$datf,
                   )) {
     ...;
 }
@@ -99,15 +101,29 @@ sub parent {
 
     @tm = sort {$a<=>$b} @tm;
 
-    my $step = @tm/100;
-    for (my $i=1; $i<100; $i++) {
-        printf "%d %.3f\n", int($i*$step), $tm[int($i*$step)];
-    }
-    printf "%d %.3f\n", $#tm, $tm[-1];
+    my $avg = 0;
+    map {$avg+=$_} @tm;
+    $avg/=@tm;
 
-    # printf("total number of requests: %d, parallel: %d, avg time per req: %.3f msec, stddev: %.3f, ".
-    #        "min: %.3f, max: %.3f\n",
-    #        $totn, $nproc, $totsum/$totn, sqrt($totsq/$totn - ($totsum/$totn)**2), $totmin, $totmax);
+    printf "number of requests: %d, parallelism: %d\n", 0+@tm, $nproc;
+    printf "min: %.3f ms, avg: %.3f ms, max: %.3f ms\n", $tm[0], $avg, $tm[-1];
+    printf "median: <%.3f, 95%%: <%.3f, 99%%: <%.3f, 99.9%%: <%.3f\n",
+        $tm[int(0.5+@tm*.5)],
+        $tm[int(0.5+@tm*.95)],
+        $tm[int(0.5+@tm*.99)],
+        $tm[int(0.5+@tm*.999)],
+        ;
+
+    if ($datf and open my $fh, '>', $datf) {
+        my $step = @tm/500;
+        for (my $i=1; $i<500; $i++) {
+            printf $fh "%d %.3f\n", int($i*$step), $tm[int($i*$step)];
+        }
+        printf $fh "%d %.3f\n", $#tm, $tm[-1];
+    } elsif ($datf) {
+        warn "datafile not written: $!\n";
+    }
+
     unless ($ENV{nobw}) {
         printf("total bytes sent to redis: %d, number of bytes received from redis: %d\n",
                $snd, $rcv);
