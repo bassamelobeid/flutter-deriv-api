@@ -12,16 +12,17 @@ use List::Util qw(any first);
 use Try::Tiny;
 use File::ShareDir;
 use Locale::Country::Extra;
-use LandingCompany::Registry;
 use WebService::MyAffiliates;
 use Future::Utils qw(fmap1);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
-use ExchangeRates::CurrencyConverter qw/convert_currency/;
 use JSON::MaybeXS;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Digest::SHA qw(sha384_hex);
-use BOM::RPC::Registry '-dsl';
 
+use LandingCompany::Registry;
+use ExchangeRates::CurrencyConverter qw/convert_currency/;
+
+use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::MT5::Errors;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
@@ -491,8 +492,10 @@ sub _is_financial_assessment_complete {
     if (my $financial_assessment_requirements = $args{financial_assessment_requirements}) {
         my $financial_assessment = decode_fa($client->financial_assessment());
         my $is_FI =
-            $financial_assessment_requirements->{financial_information} ? is_section_complete($financial_assessment, 'financial_information') : 1;
-        my $is_TE = $financial_assessment_requirements->{trading_experience} ? is_section_complete($financial_assessment, 'trading_experience') : 1;
+            first { $_ eq 'financial_information' }
+        @{$args{financial_assessment_requirements}} ? is_section_complete($financial_assessment, 'financial_information') : 1;
+        my $is_TE = first { $_ eq 'trading_experience' }
+        @{$args{financial_assessment_requirements}} ? is_section_complete($financial_assessment, 'trading_experience') : 1;
         ($is_FI and $is_TE) ? return 1 : return 0;
     }
 
