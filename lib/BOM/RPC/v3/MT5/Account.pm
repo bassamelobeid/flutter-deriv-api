@@ -46,8 +46,8 @@ use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
 use constant MT5_MALTAINVEST_MOCK_LEVERAGE => 33;
 use constant MT5_MALTAINVEST_REAL_LEVERAGE => 30;
 
-use constant MT5_VANUATU_STANDARD_MOCK_LEVERAGE => 1;
-use constant MT5_VANUATU_STANDARD_REAL_LEVERAGE => 1000;
+use constant MT5_SVG_STANDARD_MOCK_LEVERAGE => 1;
+use constant MT5_SVG_STANDARD_REAL_LEVERAGE => 1000;
 
 # Defines mt5 account rights combination when trading is enabled
 use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
@@ -308,10 +308,10 @@ async_rpc "mt5_new_account",
         group                             => $group,
         financial_assessment_requirements => $compliance_requirements->{financial_assessment});
 
-    # As per the following document: Automatic Exchange of Information,
-    # Guide for Reporting Financial Institutions by the Vanuatu Competent Authority
-    # we need to ask for tax details for selected countries
-    # if client wants to open financial account
+    # Following this regulation: Labuan Business Activity Tax
+    # (Automatic Exchange of Financial Account Information) Regulation 2018,
+    # we need to ask for tax details for selected countries if client wants
+    # to open a financial account.
     return create_error_future('TINDetailsMandatory')
         if ($compliance_requirements->{tax_information}
         and $countries_instance->is_tax_detail_mandatory($residence)
@@ -355,9 +355,9 @@ async_rpc "mt5_new_account",
                     # but MT5 only support 33
                     if ($group_details->{leverage} == MT5_MALTAINVEST_MOCK_LEVERAGE) {
                         $group_details->{leverage} = MT5_MALTAINVEST_REAL_LEVERAGE;
-                    } elsif ($group_details->{leverage} == MT5_VANUATU_STANDARD_MOCK_LEVERAGE) {
+                    } elsif ($group_details->{leverage} == MT5_SVG_STANDARD_MOCK_LEVERAGE) {
                         # MT5 bug it should be solved by MetaQuote
-                        $group_details->{leverage} = MT5_VANUATU_STANDARD_REAL_LEVERAGE;
+                        $group_details->{leverage} = MT5_SVG_STANDARD_REAL_LEVERAGE;
                     }
 
                     my $client_info = $client->get_mt5_details();
@@ -489,7 +489,7 @@ sub _is_financial_assessment_complete {
 
     return 1 if $group =~ /^demo/;
 
-    # this case doesn't follow the general rule (labuan and vanuatu are exclusively mt5 landing companies).
+    # this case doesn't follow the general rule (labuan are exclusively mt5 landing companies).
     if (my $financial_assessment_requirements = $args{financial_assessment_requirements}) {
         my $financial_assessment = decode_fa($client->financial_assessment());
 
@@ -1502,7 +1502,6 @@ sub _mt5_validate_and_get_amount {
             return create_error_future($error_code, {message => $err}) if $err;
 
             # master groups are real\svg_mamm_master and
-            # real\vanuatu_mamm_advanced_master
             return create_error_future('NoManagerAccountWithdraw', {override_code => $error_code})
 
                 if ($action eq 'withdrawal' and ($mt5_group // '') =~ /^real\\[a-z]*_mamm(?:_[a-z]*)?_master$/);
@@ -1657,7 +1656,8 @@ sub _fetch_mt5_lc {
     my $lc_short;
 
     # This extracts the landing company name from the mt5 group name
-    # E.g. real\labuan -> labuan , real\vanuatu_standard -> vanuatu
+    # E.g. real\labuan -> labuan , real\vanuatu_standard -> vanuatu, real\svg_standard -> svg
+
     if ($settings->{group} =~ m/[a-zA-Z]+\\([a-zA-Z]+)($|_.+)/) {
         $lc_short = $1;
     }
