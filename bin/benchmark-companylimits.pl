@@ -100,8 +100,8 @@ sub parent {
     @tm = sort {$a<=>$b} @tm;
 
     my $step = @tm/100;
-    for (my $i=0; $i<100; $i++) {
-        printf "%d %.3f\n", int(($i+1)*$step), $tm[int(($i+1)*$step)];
+    for (my $i=1; $i<100; $i++) {
+        printf "%d %.3f\n", int($i*$step), $tm[int($i*$step)];
     }
     printf "%d %.3f\n", $#tm, $tm[-1];
 
