@@ -79,7 +79,9 @@ sub is_mt5_suspended {
                                 # but 5 minutes is good enough for
                                 # a negative cache.
                                 my $ttl = $group ? 3600 : 300;
-                                $group //= 'unknown';
+                                $group  //= 'unknown';
+                                $rights //= 0x0004;
+
                                 stats_inc('mt5.group_populator.item_processed', 1);
                                 my $mt5_details = {
                                     'group'  => $group,
