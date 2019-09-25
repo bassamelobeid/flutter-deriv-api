@@ -131,7 +131,7 @@ subtest "sub market related" => sub {
         ],
         \@ul_random_daily, "Correct list of active symbols for random_daily sub market";
 
-    my @ul_random = qw( R_10 R_100 R_25 R_50 R_75 );
+    my @ul_random = qw(1HZ100V 1HZ10V R_10 R_100 R_25 R_50 R_75);
     eq_or_diff [
         sort $udb->get_symbols_for(
             market            => 'synthetic_index',
