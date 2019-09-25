@@ -138,9 +138,12 @@ sub email_verification {
 
             my $subject = localize('Verify your withdrawal request - [_1]', $website_name);
             my $message = $brand->process_template(
-                payment_withdraw => {
-                    verification_url => _build_verification_url($type_call, $args),
-                    is_paymentagent  => $is_paymentagent,
+                payment_withdraw => {(
+                        $verification_uri
+                        ? (verification_url => _build_verification_url($type_call, $args))
+                        : ()
+                    ),
+                    is_paymentagent => $is_paymentagent,
                     %common_args,
                 });
 
