@@ -180,12 +180,12 @@ subtest 'new account' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            account_type   => 'gaming',
-            country        => 'mt',
-            email          => $DETAILS{email},
-            name           => $DETAILS{name},
-            mainPassword   => $DETAILS{password},
-            leverage       => 100,
+            account_type => 'gaming',
+            country      => 'mt',
+            email        => $DETAILS{email},
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password},
+            leverage     => 100,
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword');
