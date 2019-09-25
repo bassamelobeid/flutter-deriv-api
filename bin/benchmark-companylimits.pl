@@ -146,7 +146,7 @@ sub chld {
         $max = $tm if $tm > $max;
     }
 
-    print $w "$sum $sumsq $nreq $min $max $first $nsend $nrecv\n";
+    print $w "$sum $sumsq $nreq $min $max $nsend $nrecv\n";
     close $w;
     return 0;
 }
