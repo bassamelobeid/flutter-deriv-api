@@ -99,7 +99,7 @@ sub parent {
     }
     printf("total number of requests: %d, parallel: %d, avg time per req: %.3f msec, stddev: %.3f, ".
            "min: %.3f, max: %.3f\n",
-           $totn, $nproc, $totsum/$totn, sqrt($totsq/$totn - ($totsum/$totn)**2)), $totmin, $totmax;
+           $totn, $nproc, $totsum/$totn, sqrt($totsq/$totn - ($totsum/$totn)**2), $totmin, $totmax);
     unless ($ENV{nobw}) {
         printf("total bytes sent to redis: %d, number of bytes received from redis: %d\n",
                $totsnd, $totrcv);
