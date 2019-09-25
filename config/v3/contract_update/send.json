@@ -1,0 +1,37 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : "Update a contract condition.",
+   "type" : "object",
+   "required" : [
+      "contract_id",
+      "update_parameters"
+   ],
+   "additionalProperties" : false,
+   "title" : "Contract Update",
+   "properties" : {
+      "subscribe" : {
+         "enum" : [
+            1
+         ],
+         "description" : "[Optional] 1 - updates and subscribes to proposal_open_contract of the updated contract."
+      },
+      "contract_id": {
+         "description" : "Binary.com internal contract identifier",
+         "type" : "integer"
+      },
+      "update_parameters": {
+         "type": "object",
+         "description": "contains parameters to update.",
+         "properties": {
+            "take_profit": {
+                "type": "number",
+                "description": "new take profit value for a contract."
+            }
+         }
+      }
+      "passthrough" : {
+         "type" : "object",
+         "description" : "[Optional] Used to pass data through the websocket, which may be retrieved via the echo_req output field."
+      }
+   }
+}

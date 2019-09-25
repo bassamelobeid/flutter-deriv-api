@@ -1,0 +1,48 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "type" : "object",
+   "description" : "Contract update status",
+   "title" : "Contract update response",
+   "properties" : {
+      "req_id" : {
+         "type" : "integer",
+         "description" : "Optional field send in request to map to response, present only when request contains req_id"
+      },
+      "echo_req" : {
+         "description" : "Echo of the request made",
+         "title" : "Echo request"
+      },
+      "contract_update": {
+         "type": "object",
+         "description": "contains the update status of the request",
+         "properties": {
+            "take_profit": {
+                "enum": [0,1],
+                "description": "status of the update"
+            }
+         }
+      },
+      "msg_type" : {
+         "description" : "contract_update",
+         "type" : "string"
+      },
+      "subscription" : {
+         "title" : "Subscription information",
+         "description" : "For subscription requests only",
+         "type" : "object",
+         "required" : [
+            "id"
+         ],
+         "properties": {
+            "id" : {
+             "description": "A per-connection unique identifier. Can be passed to the forget API call to unsubscribe.",
+             "type" : "string"
+            }
+         }
+     }
+   }
+}
