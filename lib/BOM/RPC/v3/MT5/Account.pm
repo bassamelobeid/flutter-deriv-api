@@ -303,12 +303,10 @@ async_rpc "mt5_new_account",
 
     my $compliance_requirements = $requirements->{compliance};
     return create_error_future('FinancialAssessmentMandatory')
-        if (
-            $compliance_requirements
-        and $compliance_requirements->{financial_assessment}
-        and not _is_financial_assessment_complete(
-            client                            => $client,
-            financial_assessment_requirements => $compliance_requirements->{financial_assessment}));
+        unless _is_financial_assessment_complete(
+        client                            => $client,
+        group                             => $group,
+        financial_assessment_requirements => $compliance_requirements->{financial_assessment});
 
     # As per the following document: Automatic Exchange of Information,
     # Guide for Reporting Financial Institutions by the Vanuatu Competent Authority
@@ -487,15 +485,23 @@ sub _is_financial_assessment_complete {
     my %args = @_;
 
     my $client = $args{client};
+    my $group  = $args{group};
+
+    return 1 if $group =~ /^demo/;
 
     # this case doesn't follow the general rule (labuan and vanuatu are exclusively mt5 landing companies).
     if (my $financial_assessment_requirements = $args{financial_assessment_requirements}) {
         my $financial_assessment = decode_fa($client->financial_assessment());
+
         my $is_FI =
-            first { $_ eq 'financial_information' }
-        @{$args{financial_assessment_requirements}} ? is_section_complete($financial_assessment, 'financial_information') : 1;
-        my $is_TE = first { $_ eq 'trading_experience' }
-        @{$args{financial_assessment_requirements}} ? is_section_complete($financial_assessment, 'trading_experience') : 1;
+            (first { $_ eq 'financial_information' } @{$args{financial_assessment_requirements}})
+            ? is_section_complete($financial_assessment, 'financial_information')
+            : 1;
+        my $is_TE =
+            (first { $_ eq 'trading_experience' } @{$args{financial_assessment_requirements}})
+            ? is_section_complete($financial_assessment, 'trading_experience')
+            : 1;
+
         ($is_FI and $is_TE) ? return 1 : return 0;
     }
 
