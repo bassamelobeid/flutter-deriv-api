@@ -76,8 +76,7 @@ sub _add_buys {
     my ($self, @clients) = @_;
 
     my $user_combinations = $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_user_limit_combinations, \@clients);
-    my $turnover_combinations =
-        $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_turnover_incrby_combinations, \@clients);
+    my $turnover_combinations = $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_turnover_combinations, \@clients);
 
     my $contract_data = $self->{contract_data};
 
@@ -147,8 +146,7 @@ sub _reverse_buys {
     # These combinations cannot be cached; we cannot assume that in reversing buys
     # the exact same client list will be passed in
     my $user_combinations = $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_user_limit_combinations, \@clients);
-    my $turnover_combinations =
-        $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_turnover_incrby_combinations, \@clients);
+    my $turnover_combinations = $self->_get_combinations_with_clients(\&BOM::Transaction::Limits::Combinations::get_turnover_combinations, \@clients);
 
     my $hash_name;
     my $redis = $self->{redis};

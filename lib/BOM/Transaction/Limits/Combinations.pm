@@ -53,7 +53,7 @@ sub get_user_limit_combinations {
     ];
 }
 
-sub get_turnover_incrby_combinations {
+sub get_turnover_combinations {
     my ($binary_user_id, $attributes) = @_;
     my ($underlying, $contract_group, $expiry_type) = @{$attributes}[1 .. 3];
 
