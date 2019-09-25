@@ -84,7 +84,7 @@ for (@pids) {
 sub parent {
     my @vals;
     my ($totsum, $totsq, $totn, $totmin, $totmax, $totsnd, $totrcv)
-        = (0, 0, 0, +inf, -inf, 0, 0);
+        = (0, 0, 0, '+inf', '-inf', 0, 0);
     for (1..$nproc) {
         warn ("Unexpected EOF on pipe: $!\n"), last
             unless defined (my $l = readline $r);
@@ -134,7 +134,7 @@ sub chld {
     # my @res = $x->$meth(map {C->new} 1..2);
     # use Data::Dumper; print +Data::Dumper->new([\@res], ['res'])->Useqq(1)->Sortkeys(1)->Dump;
 
-    my ($sum, $sumsq, $min, $max) = (0, 0, +inf, -inf);
+    my ($sum, $sumsq, $min, $max) = (0, 0, '+inf', '-inf');
     for (1..$nreq) {
         my $start = [Time::HiRes::gettimeofday];
         $x->$meth(map {C->new} 1..$batch);
