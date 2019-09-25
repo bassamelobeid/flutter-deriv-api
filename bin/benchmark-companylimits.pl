@@ -107,7 +107,7 @@ sub parent {
 
     printf "number of requests: %d, parallelism: %d\n", 0+@tm, $nproc;
     printf "min: %.3f ms, avg: %.3f ms, max: %.3f ms\n", $tm[0], $avg, $tm[-1];
-    printf "median: <%.3f, 95%%: <%.3f, 99%%: <%.3f, 99.9%%: <%.3f\n",
+    printf "median: <%.3f ms, 95%%: <%.3f ms, 99%%: <%.3f ms, 99.9%%: <%.3f ms\n",
         $tm[int(0.5+@tm*.5)],
         $tm[int(0.5+@tm*.95)],
         $tm[int(0.5+@tm*.99)],
