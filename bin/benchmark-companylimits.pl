@@ -83,29 +83,34 @@ for (@pids) {
 }
 
 sub parent {
-    my @vals;
-    my ($totsum, $totsq, $totn, $totmin, $totmax, $totsnd, $totrcv)
-        = (0, 0, 0, '+inf', '-inf', 0, 0);
-    for (1..$nproc) {
-        warn ("Unexpected EOF on pipe: $!\n"), last
-            unless defined (my $l = readline $r);
-        my ($sum, $sumsq, $n, $min, $max, $nsnd, $nrcv) = split / /, $l;
-        $totsum += $sum;
-        $totsq += $sumsq;
-        $totn += $n;
-        $totsnd += $nsnd;
-        $totrcv += $nrcv;
-        $totmin = $min if $min < $totmin;
-        $totmax = $max if $max > $totmax;
+    my @tm;
+    my ($snd, $rcv) = (0, 0);
+    while (defined (my $l = readline $r)) {
+        if (my ($prc, $tm) = $l =~ /^tm: (\S+) (\S+)$/) {
+            push @tm, $tm;
+        } elsif (my ($prc, $_snd, $_rcv) = $l =~ /^bw: (\S+) (\S+) (\S+)$/) {
+            $snd+=$_snd;
+            $rcv+=$_rcv;
+        } else {
+            warn "got garbage from pipe: $l";
+        }
     }
-    printf("total number of requests: %d, parallel: %d, avg time per req: %.3f msec, stddev: %.3f, ".
-           "min: %.3f, max: %.3f\n",
-           $totn, $nproc, $totsum/$totn, sqrt($totsq/$totn - ($totsum/$totn)**2), $totmin, $totmax);
+
+    @tm = sort {$a<=>$b} @tm;
+
+    my $step = @tm/100;
+    for (my $i=0; $i<100; $i++) {
+        printf "%d %.3f\n", int(($i+1)*$step), $tm[int(($i+1)*$step)];
+    }
+
+    # printf("total number of requests: %d, parallel: %d, avg time per req: %.3f msec, stddev: %.3f, ".
+    #        "min: %.3f, max: %.3f\n",
+    #        $totn, $nproc, $totsum/$totn, sqrt($totsq/$totn - ($totsum/$totn)**2), $totmin, $totmax);
     unless ($ENV{nobw}) {
         printf("total bytes sent to redis: %d, number of bytes received from redis: %d\n",
-               $totsnd, $totrcv);
+               $snd, $rcv);
         printf("send bandwidth: %.3f bytes per request, receive bandwidth: %.3f bytes per request\n",
-               $totsnd/$totn, $totrcv/$totn);
+               $snd/@tm, $rcv/@tm);
     }
 }
 
@@ -121,6 +126,7 @@ sub C::new {
 sub chld {
     close $r;
     srand;
+    select [select($w), $|=1]->[0];
     my $x=BOM::Transaction::CompanyLimits->new(landing_company => LandingCompany::Registry::get('virtual'),
                                                currency => "EUR",
                                                contract_data => {bet_type => "higher_lower_bet",
@@ -135,18 +141,14 @@ sub chld {
     # my @res = $x->$meth(map {C->new} 1..2);
     # use Data::Dumper; print +Data::Dumper->new([\@res], ['res'])->Useqq(1)->Sortkeys(1)->Dump;
 
-    my ($sum, $sumsq, $min, $max) = (0, 0, '+inf', '-inf');
     for (1..$nreq) {
         my $start = [Time::HiRes::gettimeofday];
         $x->$meth(map {C->new} 1..$batch);
         my $tm = Time::HiRes::tv_interval($start) * 1000; # in millisec
-        $sum += $tm;
-        $sumsq += $tm ** 2;
-        $min = $tm if $tm < $min;
-        $max = $tm if $tm > $max;
+        print $w "tm: $$ $tm\n";
     }
 
-    print $w "$sum $sumsq $nreq $min $max $nsend $nrecv\n";
+    print $w "bw: $$ $nsend $nrecv\n";
     close $w;
     return 0;
 }
