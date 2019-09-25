@@ -104,6 +104,10 @@ This value-less arg tells queue script to load a single worker in foreground, mo
 
 use constant RESTART_COOLDOWN => 1;
 
+ # To guarantee that all workers are terminated when service is stopped,
+ # it should be kept bellow supervisord's stopwaitsecs (10 seconds, by default)
+use constant SHUTDOWN_TIMEOUT => 9;
+
 my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
 
 GetOptions(
@@ -208,8 +212,16 @@ sub run_coordinator {
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
         $log->info("Terminating workers...");
-        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->get;
+        Future->needs_all(
+            map {
+                $_->shutdown(
+                    'TERM', timeout => SHUTDOWN_TIMEOUT,
+                    on_kill=> sub { $log->debug('Worker terminated by SIGKILL') },
+                )
+            } values %workers
+        )->get;
 
+        $log->info('Workers terminated.');
         unlink $SOCKETPATH;
         exit 0;
     };
@@ -241,9 +253,10 @@ sub handle_ctrl_command_DEC_WORKERS {
     }
     while (keys %workers > $WORKERS) {
         # Arbitrarily pick a victim
-        warn 'DELETING WORKERS';
         my $worker_to_die = delete $workers{(keys %workers)[0]};
-        $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })->retain;
+        $worker_to_die->shutdown('TERM', timeout => SHUTDOWN_TIMEOUT)
+            ->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })
+            ->retain;
     }
 }
 
@@ -384,13 +397,16 @@ sub run_worker_process {
             $queue_prefix ? (prefix => $queue_prefix) : (),
         ));
 
-    my $stopping;
     $loop->attach_signal(
         TERM => sub {
-            return if $stopping++;
+            $log->info("Stopping worker process");
             unlink $PID_FILE if ($PID_FILE);
-            $worker->stop->on_done(sub { exit 0; });
-        });
+            $worker->stop->then(sub {
+                $log->info("Worker process stopped");
+                exit 0;
+            })->get;
+        },
+    );
     $SIG{INT} = 'IGNORE';
 
     my %services = map {
