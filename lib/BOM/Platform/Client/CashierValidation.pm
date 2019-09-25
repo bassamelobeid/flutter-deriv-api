@@ -119,12 +119,6 @@ sub validate {
         'ASK_FIX_DETAILS', {fields => \@missing_fields})
         if @missing_fields;
 
-    return _create_error(
-        localize('It looks like you have more than one account with us. Please contact customer support for assistance.'))
-        if ($action eq 'deposit'
-        and BOM::Database::ClientDB->new({broker_code => $client->broker_code})
-        ->get_duplicate_client({(map { $_ => $client->$_ } qw( first_name last_name email date_of_birth phone ))}));
-
     return;
 }
 

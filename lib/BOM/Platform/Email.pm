@@ -11,6 +11,7 @@ use Encode;
 
 use BOM::Config;
 use BOM::Platform::Context qw(request localize);
+use BOM::Database::Model::OAuth;
 
 use parent 'Exporter';
 our @EXPORT_OK = qw(send_email);
@@ -71,6 +72,13 @@ sub send_email {
         };
         $vars->{text_email_template_loginid} = localize('Your Login ID: [_1]', $template_loginid)
             if $template_loginid;
+
+        $vars->{website_url} = $brand->default_url;
+        my $app_id = $request->source || '';
+        if ($brand->is_app_whitelisted($app_id)) {
+            my $app = BOM::Database::Model::OAuth->new->get_app_by_id($app_id);
+            $vars->{website_url} = $app->{redirect_uri} if $app;
+        }
 
         BOM::Platform::Context::template()->process('common_email.html.tt', $vars, \$mail_message)
             || die BOM::Platform::Context::template()->error();
