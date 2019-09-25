@@ -84,12 +84,12 @@ for (@pids) {
 
 sub parent {
     my @vals;
-    my ($totsum, $totsq, $totn, $totmin, $totmax, $totfirst, $nfirst, $totsnd, $totrcv)
-        = (0, 0, 0, '+inf', '-inf', 0, 0, 0, 0);
+    my ($totsum, $totsq, $totn, $totmin, $totmax, $totsnd, $totrcv)
+        = (0, 0, 0, '+inf', '-inf', 0, 0);
     for (1..$nproc) {
         warn ("Unexpected EOF on pipe: $!\n"), last
             unless defined (my $l = readline $r);
-        my ($sum, $sumsq, $n, $min, $max, $first, $nsnd, $nrcv) = split / /, $l;
+        my ($sum, $sumsq, $n, $min, $max, $nsnd, $nrcv) = split / /, $l;
         $totsum += $sum;
         $totsq += $sumsq;
         $totn += $n;
@@ -97,13 +97,10 @@ sub parent {
         $totrcv += $nrcv;
         $totmin = $min if $min < $totmin;
         $totmax = $max if $max > $totmax;
-        $totfirst += $first;
-        $nfirst++;
     }
     printf("total number of requests: %d, parallel: %d, avg time per req: %.3f msec, stddev: %.3f, ".
-           "min: %.3f, max: %.3f, first: %.3f\n",
-           $totn, $nproc, $totsum/$totn, sqrt($totsq/$totn - ($totsum/$totn)**2), $totmin, $totmax,
-           $totfirst/$nfirst);
+           "min: %.3f, max: %.3f\n",
+           $totn, $nproc, $totsum/$totn, sqrt($totsq/$totn - ($totsum/$totn)**2), $totmin, $totmax);
     unless ($ENV{nobw}) {
         printf("total bytes sent to redis: %d, number of bytes received from redis: %d\n",
                $totsnd, $totrcv);
@@ -138,13 +135,7 @@ sub chld {
     # my @res = $x->$meth(map {C->new} 1..2);
     # use Data::Dumper; print +Data::Dumper->new([\@res], ['res'])->Useqq(1)->Sortkeys(1)->Dump;
 
-    my ($sum, $sumsq, $min, $max, $first) = (0, 0, '+inf', '-inf', 0);
-    {
-        my $start = [Time::HiRes::gettimeofday];
-        $x->$meth(map {C->new} 1..$batch);
-        my $tm = Time::HiRes::tv_interval($start) * 1000; # in millisec
-        $first = $tm;
-    }
+    my ($sum, $sumsq, $min, $max) = (0, 0, '+inf', '-inf');
     for (1..$nreq) {
         my $start = [Time::HiRes::gettimeofday];
         $x->$meth(map {C->new} 1..$batch);
