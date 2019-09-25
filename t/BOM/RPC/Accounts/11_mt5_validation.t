@@ -148,6 +148,26 @@ subtest 'new account' => sub {
     $params->{args}->{account_type} = 'gaming';
     $c->call_ok($method, $params)->has_no_error('Citizenship is not required for creating gaming accounts');
 
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+    $params->{args}->{account_type}     = 'financial';
+    $params->{args}->{mt5_account_type} = 'standard';
+
+    $c->call_ok($method, $params)->has_no_error('Citizenship is not required for creating financial standard accounts');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+    $params->{args}->{mt5_account_type} = 'advanced';
+
+    my $result = $c->call_ok($method, $params)->response->result;
+    is $result->{error}->{code}, 'ASK_FIX_DETAILS', 'Correct error code if citizen is missing for financial advanced account';
+    is $result->{error}->{message_to_client}, 'Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Correct error message if citizen is missing for financial advanced account';
+    cmp_bag($result->{error}{details}{missing}, ['citizen'], 'Missing citizen should be under details.');
+
+    $params->{args}->{account_type} = 'gaming';
+    delete $params->{args}->{mt5_account_type};
+
     $test_client->citizen($citizen);
     $test_client->save;
 
