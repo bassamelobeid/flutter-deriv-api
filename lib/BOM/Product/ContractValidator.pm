@@ -460,7 +460,7 @@ sub _validate_input_parameters {
     } elsif ($self->expiry_daily) {
         my $date_expiry = $self->date_expiry;
         my $closing = $self->trading_calendar->closing_on($self->underlying->exchange, $date_expiry);
-        if ($closing and not $date_expiry->is_same_as($closing)) {
+        if ($closing and not $date_expiry->is_same_as($closing) and not $self->for_sale) {
             return {
                 message => 'daily expiry must expire at close '
                     . "[expiry: "
