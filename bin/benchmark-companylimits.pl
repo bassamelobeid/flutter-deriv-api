@@ -86,9 +86,10 @@ sub parent {
     my @tm;
     my ($snd, $rcv) = (0, 0);
     while (defined (my $l = readline $r)) {
-        if (my ($prc, $tm) = $l =~ /^tm: (\S+) (\S+)$/) {
+        my ($prc, $tm, $_snd, $_rcv);
+        if (($prc, $tm) = $l =~ /^tm: (\S+) (\S+)$/) {
             push @tm, $tm;
-        } elsif (my ($prc, $_snd, $_rcv) = $l =~ /^bw: (\S+) (\S+) (\S+)$/) {
+        } elsif (($prc, $_snd, $_rcv) = $l =~ /^bw: (\S+) (\S+) (\S+)$/) {
             $snd+=$_snd;
             $rcv+=$_rcv;
         } else {
@@ -102,6 +103,7 @@ sub parent {
     for (my $i=0; $i<100; $i++) {
         printf "%d %.3f\n", int(($i+1)*$step), $tm[int(($i+1)*$step)];
     }
+    printf "%d %.3f\n", $#tm, $tm[-1];
 
     # printf("total number of requests: %d, parallel: %d, avg time per req: %.3f msec, stddev: %.3f, ".
     #        "min: %.3f, max: %.3f\n",
