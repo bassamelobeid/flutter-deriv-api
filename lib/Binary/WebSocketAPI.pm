@@ -22,6 +22,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Accounts;
 use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
+use Binary::WebSocketAPI::v3::Wrapper::App;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master redis_queue |;
 
 use Brands;
@@ -385,11 +386,17 @@ sub startup {
         ],
         ['sell_expired', {require_auth => 'trade'}],
 
-        ['app_register',     {require_auth => 'admin'}],
-        ['app_list',         {require_auth => 'read'}],
-        ['app_get',          {require_auth => 'read'}],
-        ['app_update',       {require_auth => 'admin'}],
-        ['app_delete',       {require_auth => 'admin'}],
+        ['app_register', {require_auth => 'admin'}],
+        ['app_list',     {require_auth => 'read'}],
+        ['app_get',      {require_auth => 'read'}],
+        ['app_update',   {require_auth => 'admin'}],
+        [
+            'app_delete',
+            {
+                require_auth => 'admin',
+                success      => \&Binary::WebSocketAPI::v3::Wrapper::App::block_app_id,
+            }
+        ],
         ['oauth_apps',       {require_auth => 'read'}],
         ['revoke_oauth_app', {require_auth => 'admin'}],
 
@@ -580,9 +587,9 @@ sub startup {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
             before_forward => [
-                \&Binary::WebSocketAPI::Hooks::start_timing,   \&Binary::WebSocketAPI::Hooks::before_forward,
-                \&Binary::WebSocketAPI::Hooks::assign_rpc_url, \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
-                \&Binary::WebSocketAPI::Hooks::assign_ws_backend,
+                \&Binary::WebSocketAPI::Hooks::start_timing,      \&Binary::WebSocketAPI::Hooks::before_forward,
+                \&Binary::WebSocketAPI::Hooks::assign_rpc_url,    \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
+                \&Binary::WebSocketAPI::Hooks::assign_ws_backend, \&Binary::WebSocketAPI::Hooks::check_app_id
             ],
             before_call => [
                 \&Binary::WebSocketAPI::Hooks::log_call_timing_before_forward, \&Binary::WebSocketAPI::Hooks::add_app_id,
