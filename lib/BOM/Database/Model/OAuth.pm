@@ -338,25 +338,6 @@ sub get_app_ids_by_user_id {
     return $app_ids || [];
 }
 
-sub delete_app {
-    my ($self, $user_id, $app_id) = @_;
-
-    my $app = $self->get_app($user_id, $app_id);
-    return 0 unless $app;
-
-    my $dbic = $self->dbic;
-
-    $dbic->run(
-        ping => sub {
-            ## delete real delete
-            foreach my $table ('user_scope_confirm', 'access_token') {
-                $_->do("DELETE FROM oauth.$table WHERE app_id = ?", undef, $app_id);
-            }
-            $_->do("DELETE FROM oauth.apps WHERE id = ?", undef, $app_id);
-        });
-    return 1;
-}
-
 sub get_used_apps_by_loginid {
     my ($self, $loginid) = @_;
 
@@ -435,8 +416,10 @@ sub user_has_app_id {
 }
 
 sub block_app {
-    my ($self, $app_id) = @_;
+    my ($self, $app_id, $user_id) = @_;
     my $app = $self->get_app_by_id($app_id);
+    return 0 unless $app;
+    return 0 if ($user_id && $app->{binary_user_id} ne $user_id);
     $app->{active} = 0;
     return $self->update_app($app_id, $app);
 }
