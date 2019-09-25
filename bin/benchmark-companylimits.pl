@@ -28,6 +28,7 @@ BEGIN {
 
 use Getopt::Long;
 use BOM::Transaction::CompanyLimits;
+use LandingCompany::Registry;
 use Time::HiRes ();
 
 my $nproc  = 4;
@@ -120,7 +121,7 @@ sub C::new {
 sub chld {
     close $r;
     srand;
-    my $x=BOM::Transaction::CompanyLimits->new(landing_company => 'virtual',
+    my $x=BOM::Transaction::CompanyLimits->new(landing_company => LandingCompany::Registry::get('virtual'),
                                                currency => "EUR",
                                                contract_data => {bet_type => "higher_lower_bet",
                                                                  underlying_symbol => "R_100",

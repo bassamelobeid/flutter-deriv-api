@@ -6,7 +6,6 @@ use ExchangeRates::CurrencyConverter;
 use BOM::Config::RedisReplicated;
 use BOM::Transaction::Limits::Combinations;
 use BOM::Transaction::Limits::Stats;
-use LandingCompany::Registry;
 
 =head1 NAME
 
@@ -33,10 +32,7 @@ sub new {
     my ($class, %params) = @_;
     my $self = bless {}, $class;
 
-    my $landing_company = LandingCompany::Registry::get($params{landing_company});
-
-    die "Unsupported landing company $landing_company" unless $landing_company;
-
+    my $landing_company = $params{landing_company};
     $self->{landing_company} = $landing_company->short;
     $self->{is_virtual}      = $landing_company->is_virtual;
     $self->{currency}        = $params{currency};

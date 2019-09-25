@@ -590,7 +590,7 @@ sub buy {
 
     my $company_limits = BOM::Transaction::CompanyLimits->new(
         contract_data   => $bet_data->{bet_data},
-        landing_company => $client->landing_company->short,
+        landing_company => $client->landing_company,
         currency        => $self->contract->currency,
     );
 
@@ -720,7 +720,7 @@ sub batch_buy {
             my @clients = map { $_->{client} } @$list;
             my $company_limits = BOM::Transaction::CompanyLimits->new(
                 contract_data   => $bet_data->{bet_data},
-                landing_company => $clients[0]->landing_company->short,
+                landing_company => $clients[0]->landing_company,
                 currency        => $self->contract->currency,
             );
             $company_limits->add_buys(@clients);
@@ -918,7 +918,7 @@ sub sell {
     BOM::Transaction::CompanyLimits::->new(
         contract_data   => $fmb,
         currency        => $self->contract->currency,
-        landing_company => $client->landing_company->short,
+        landing_company => $client->landing_company,
     )->add_sells($client);
 
     return;
@@ -993,7 +993,7 @@ sub sell_by_shortcode {
                     BOM::Transaction::CompanyLimits::->new(
                         contract_data   => $res_row->{fmb},
                         currency        => $self->contract->currency,
-                        landing_company => $client->landing_company->short,
+                        landing_company => $client->landing_company,
                     )->add_sells($client);
 
                     $success++;
@@ -1628,7 +1628,7 @@ sub sell_expired_contracts {
         BOM::Transaction::CompanyLimits::->new(
             contract_data   => $fmb,
             currency        => $currency,
-            landing_company => $client->landing_company->short,
+            landing_company => $client->landing_company,
         )->add_sells($client);
     }
 
