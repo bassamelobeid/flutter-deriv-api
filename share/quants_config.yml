@@ -16,7 +16,6 @@ default_stake:
   BCH: 0.03
   ETH: 0.05
   LTC: 0.25
-  ETC: 2
   UST: 10
   USB: 10
 
@@ -33,7 +32,6 @@ bet_limits:
       BCH: 10
       ETH: 10
       LTC: 50
-      ETC: 50
       DAI: 1000
       UST: 1000
       USB: 1000
@@ -46,7 +44,6 @@ bet_limits:
       BCH: 50
       ETH: 50
       LTC: 50
-      ETC: 50
       DAI: 5000
       UST: 5000
       USB: 5000
@@ -59,7 +56,6 @@ bet_limits:
     BCH: 0.25
     ETH: 0.5
     LTC: 2.5
-    ETC: 2.5
     UST: 200
     USB: 200
   max_payout:
@@ -73,7 +69,6 @@ bet_limits:
         BCH: 5
         ETH: 10
         LTC: 50
-        ETC: 50
         UST: 5000
         USB: 5000
   min_stake:
@@ -87,7 +82,6 @@ bet_limits:
         BCH: 0.001
         ETH: 0.002
         LTC: 0.01
-        ETC: 0.05
         UST: 0.5
         USB: 0.5
       synthetic_index:
@@ -99,7 +93,6 @@ bet_limits:
         BCH: 0.001
         ETH: 0.002
         LTC: 0.01
-        ETC: 0.05
         UST: 0.5
         USB: 0.5
     maltainvest:
@@ -112,7 +105,6 @@ bet_limits:
         BCH: 0.01
         ETH: 0.02
         LTC: 0.1
-        ETC: 1
         UST: 5
         USB: 5
   min_commission_amount:
@@ -124,7 +116,6 @@ bet_limits:
     BCH: 0.000075
     ETH: 0.00015
     LTC: 0.00075
-    ETC: 0.0015
     UST: 0.02
     USB: 0.02
 
@@ -162,7 +153,6 @@ lookback_limits:
     BCH: 3
     ETH: 3
     LTC: 3
-    ETC: 3
     UST: 300
     USB: 300
 
@@ -177,7 +167,6 @@ risk_profile:
           BCH: 0
           ETH: 0
           LTC: 0
-          ETC: 0
           UST: 0
           USB: 0
       payout:
@@ -189,7 +178,6 @@ risk_profile:
           BCH: 0
           ETH: 0
           LTC: 0
-          ETC: 0
           UST: 0
           USB: 0
   extreme_risk:
@@ -202,7 +190,6 @@ risk_profile:
           BCH: 1
           ETH: 2
           LTC: 10
-          ETC: 10
           UST: 1000
           USB: 1000
       payout:
@@ -214,7 +201,6 @@ risk_profile:
           BCH: 0.1
           ETH: 0.2
           LTC: 1
-          ETC: 1
           UST: 100
           USB: 100
   moderate_risk:
@@ -227,7 +213,6 @@ risk_profile:
           BCH: 5
           ETH: 10
           LTC: 50
-          ETC: 50
           UST: 5000
           USB: 5000
       payout:
@@ -239,7 +224,6 @@ risk_profile:
           BCH: 1
           ETH: 2
           LTC: 10
-          ETC: 10
           UST: 1000
           USB: 1000
   high_risk:
@@ -252,7 +236,6 @@ risk_profile:
           BCH: 10
           ETH: 50
           LTC: 250
-          ETC: 250
           UST: 50000
           USB: 50000
       payout:
@@ -264,7 +247,6 @@ risk_profile:
           BCH: 2.5
           ETH: 5
           LTC: 50
-          ETC: 50
           UST: 5000
           USB: 5000
   medium_risk:
@@ -277,7 +259,6 @@ risk_profile:
           BCH: 10
           ETH: 50
           LTC: 250
-          ETC: 250
           UST: 100000
           USB: 100000
       payout:
@@ -289,7 +270,6 @@ risk_profile:
           BCH: 2.5
           ETH: 5
           LTC: 50
-          ETC: 50
           UST: 20000
           USB: 20000
   low_risk:
@@ -302,7 +282,6 @@ risk_profile:
           BCH: 20
           ETH: 100
           LTC: 500
-          ETC: 500
           UST: 500000
           USB: 500000
       payout:
@@ -314,6 +293,5 @@ risk_profile:
           BCH: 5
           ETH: 10
           LTC: 50
-          ETC: 50
           UST: 50000
           USB: 50000
