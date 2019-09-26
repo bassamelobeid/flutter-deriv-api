@@ -25,8 +25,18 @@
          "description": "contains parameters to update.",
          "properties": {
             "take_profit": {
-                "type": "number",
-                "description": "new take profit value for a contract."
+                "type": "object",
+                "description": "new take profit value for a contract.",
+                "properties": {
+                    "operation": {
+                        "enum": ["update","cancel"],
+                        "description": "defines the operation"
+                    },
+                    "value": {
+                        "type": "Maybe[number]",
+                        "description": "only defined when it is an update operation"
+                    }
+                }
             }
          }
       },
