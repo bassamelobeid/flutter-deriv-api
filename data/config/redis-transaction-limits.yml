@@ -19,6 +19,14 @@ per_landing_company:
         host: 127.0.0.1
         port: 6397
         password:
+    champion:
+        host: 127.0.0.1
+        port: 6397
+        password:
+    champion-virtual:
+        host: 127.0.0.1
+        port: 6397
+        password:
 global_settings:
     host: 127.0.0.1
     port: 6397

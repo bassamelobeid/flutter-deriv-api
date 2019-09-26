@@ -47,7 +47,7 @@ sub close_all_open_contracts {
 
 sub reset_all_loss_hashes {
     my $redis;
-    foreach my $landing_company (map { $_->{short} } grep { $#{$_->broker_codes} > -1 } LandingCompany::Registry::all()) {
+    foreach my $landing_company (grep { $#{$_->broker_codes} > -1 } LandingCompany::Registry::all()) {
         $redis = BOM::Config::RedisReplicated::redis_limits_write($landing_company);
         foreach my $loss_type (qw/turnover realized_loss potential_loss/) {
             $redis->del("$landing_company:$loss_type");
