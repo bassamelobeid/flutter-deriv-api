@@ -494,15 +494,14 @@ sub prepare_bet_data_for_buy {
         $bet_params->{relative_barrier} = $contract->supplied_barrier;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_MULTIPLIER) {
         $bet_params->{multiplier}            = $contract->multiplier + 0;
+        $bet_params->{basis_spot}            = $contract->stop_out->basis_spot;
         $bet_params->{stop_out_order_date}   = $contract->stop_out->order_date->db_timestamp;
         $bet_params->{stop_out_order_amount} = $contract->stop_out->order_amount;
-        $bet_params->{stop_out_basis_spot}   = $contract->stop_out->basis_spot;
 
         # take profit is optional. Same goes to stop loss.
         if ($contract->take_profit) {
             $bet_params->{take_profit_order_date}   = $contract->take_profit->order_date->db_timestamp;
             $bet_params->{take_profit_order_amount} = $contract->take_profit->order_amount;
-            $bet_params->{take_profit_basis_spot}   = $contract->take_profit->basis_spot;
         }
     } else {
         return Error::Base->cuss(
@@ -1670,13 +1669,14 @@ sub extract_limit_orders {
 
     foreach my $order (qw(stop_out take_profit stop_loss)) {
         my %params;
-        foreach my $order_param (qw(order_date order_amount basis_spot)) {
+        foreach my $order_param (qw(order_date order_amount)) {
             my $field_name = join '_', ($order, $order_param);
-            $params{$order} = $contract_params->{$field_name} if $contract_params->{$field_name};
+            $params{$order_param} = $contract_params->{$field_name} if $contract_params->{$field_name};
         }
 
         if (%params) {
             $params{order_type} = $order;
+            $params{basis_spot} = $contract_params->{basis_spot};
             push @orders, \%params;
         }
     }
