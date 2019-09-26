@@ -17,6 +17,7 @@ use BOM::User::Client;
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util::Numeric qw(isint);
 
+use BOM::Transaction::ContractUpdate;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Config;
@@ -946,6 +947,37 @@ sub _build_bid_response {
     $response->{$_ . '_display_value'} = $contract->underlying->pipsized_value($response->{$_}) for (grep { defined $response->{$_} } @spot_list);
     # makes sure they are numbers
     $response->{$_} += 0 for (grep { defined $response->{$_} } @spot_list);
+
+    return $response;
+}
+
+sub contract_update {
+    my $params = shift;
+
+    my $args        = $params->{args};
+    my $contract_id = $args->{contract_id};
+
+    unless ($contract_id) {
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => 'MissingContractId',
+            message_to_client => localize('Contract id is required to update contract'),
+        });
+    }
+
+    my $update_params = $args->{update_parameters};
+
+    my $response = try {
+        BOM::Transaction::ContractUpdate::update({
+            contract_id => $contract_id,
+            params      => $update_params
+        });
+    }
+    catch {
+        BOM::Pricing::v3::Utility::create_error({
+            code              => 'ContractUpdateError',
+            message_to_client => localize('Sorry, an error occurred while processing your request.'),
+        });
+    };
 
     return $response;
 }
