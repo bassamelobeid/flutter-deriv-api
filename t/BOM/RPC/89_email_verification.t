@@ -5,7 +5,10 @@ use BOM::RPC::v3::EmailVerification qw(email_verification);
 use Test::Most;
 use Email::Stuffer::TestLinks;
 use Brands;
+use Template;
+use Template::AutoFilter;
 use Test::MockModule;
+use BOM::Platform::Context qw(localize);
 use BOM::RPC::v3::Utility;
 use BOM::User;
 use BOM::User::Client;
@@ -15,7 +18,8 @@ my $website_name     = 'My website name';
 my $verification_uri = 'https://www.example.com/verify';
 my $language         = 'EN';
 my $source           = 1;
-my $support_mail     = Brands->new()->emails('support');
+my $brand            = Brands->new();
+my $support_mail     = $brand->emails('support');
 
 my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
 $mock_utility->mock(
@@ -92,6 +96,27 @@ sub get_verification_message {
     return $message;
 }
 
+sub process_template {
+    my ($template_name, $template_args) = @_;
+
+    my @include_path = ($brand->template_dir);
+
+    my $template_toolkit = Template::AutoFilter->new({
+            ENCODING     => 'utf8',
+            INCLUDE_PATH => join(':', @include_path),
+            INTERPOLATE  => 1,
+            PRE_CHOMP    => $Template::CHOMP_GREEDY,
+            POST_CHOMP   => $Template::CHOMP_GREEDY,
+            TRIM         => 1,
+        }) || die "$Template::ERROR\n";
+
+    my $message;
+    $template_toolkit->process("$template_name.html.tt", {$template_args->%*, l => \&localize}, \$message)
+        or die $template_toolkit->error();
+
+    return $message;
+}
+
 sub get_verification {
     my ($type, $with_link, $type_call) = @_;
 
@@ -103,6 +128,7 @@ sub get_verification {
             ($with_link ? (verification_uri => $verification_uri) : ()),
         })->{$type}->($type_call);
 
+    $verification->{message} = process_template($verification->{template_name}, $verification->{template_args});
     # removing whitesapces out of html
     $verification->{message} =~ s/(>)\s+|\s+(<\/)/$1 || $2 || ''/eg;
     $verification->{message} =~ s/&amp;/&/g;
