@@ -52,7 +52,7 @@ sub _redis {
     return $connections->{$key};
 }
 
-sub _redis_transaction_limits {
+sub _get_redis_transaction_server {
     my ($landing_company, $timeout) = @_;
 
     my $connection_config;
@@ -71,6 +71,7 @@ sub _redis_transaction_limits {
 
     my $key = 'limit_settings_' . $key_name;
 
+    # TODO: Remove this if-statement in v2
     if ($connections->{$key}) {
         try {
             $connections->{$key}->ping();
@@ -174,7 +175,7 @@ sub redis_limits_write {
     my ($landing_company) = @_;
 
     $config->{companylimits} //= BOM::Config::redis_limit_settings();
-    return _redis_transaction_limits($landing_company, 10);
+    return _get_redis_transaction_server($landing_company, 10);
 }
 
 sub redis_transaction_write {
