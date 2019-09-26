@@ -612,15 +612,25 @@
                   "requirements" : {
                      "additionalProperties" : false,
                      "type" : "object",
-                     "patternProperties" : {
-                        "^.+$" : {
-                           "type" : "array",
-                           "items" : {
-                              "type" : "string"
-                           }
+                     "properties" : {
+                        "signup": {
+                            "type" : "array",
+                            "items" : {
+                               "type" : "string"
+                            }
+                        },
+                        "compliance" : {
+                            "type" : "object",
+                            "patternProperties" : {
+                               "^.+$" : {
+                                  "type" : "array",
+                                  "items" : {
+                                     "type" : "string"
+                                  }
+                               }
+                            }
                         }
-                     },
-                     "properties" : {}
+                     }
                   },
                   "legal_allowed_contract_categories" : {
                      "items" : {
@@ -677,10 +687,7 @@
                   },
                   "address" : {
                      "description" : "Landing Company address",
-                     "type" : "array",
-                     "items" : {
-                        "type" : "string"
-                     }
+                     "type" : "null"
                   },
                   "legal_default_currency" : {
                      "type" : "string",
@@ -1053,9 +1060,6 @@
                      "description" : "Landing Company legal name"
                   },
                   "address" : {
-                     "items" : {
-                        "type" : "string"
-                     },
                      "description" : "Landing Company address",
                      "type" : "null"
                   }
