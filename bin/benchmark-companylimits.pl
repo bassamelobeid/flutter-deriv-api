@@ -19,7 +19,7 @@ BEGIN {
         *CORE::GLOBAL::recv = sub (*\$$$) {
             my $n = &CORE::recv;
 
-            $nrecv += length $_[1] if ${*{$_[0]}}{' benchmark '};
+            $nrecv += length ${$_[1]} if ${*{$_[0]}}{' benchmark '};
 
             return $n;
         };
