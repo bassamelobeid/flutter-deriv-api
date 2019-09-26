@@ -119,14 +119,12 @@ rpc "new_account_virtual",
 sub request_email {
     my ($email, $args) = @_;
 
-    my $subject = $args->{subject};
-    my $message = $args->{message};
-
     return send_email({
         from                  => request()->brand->emails('support'),
         to                    => $email,
-        subject               => $subject,
-        message               => [$message],
+        subject               => $args->{subject},
+        template_name         => $args->{template_name},
+        template_args         => $args->{template_args},
         use_email_template    => 1,
         email_content_is_html => 1,
         skip_text2html        => 1,

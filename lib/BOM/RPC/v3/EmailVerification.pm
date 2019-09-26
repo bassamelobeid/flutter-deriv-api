@@ -12,7 +12,9 @@ our @EXPORT_OK = qw(email_verification);
 
 =head2 email_verification
 
-Description: Creates verification email messages  for the different verification types that are called using the verify_email api call.
+Description: Creates arguments needed to process verification email messages for
+the different verification types that are called using the verify_email api call.
+
 Takes the following arguments as named parameters
 
 =over 4
@@ -58,7 +60,11 @@ url used in the verification email.
 
 =back
 
-Returns a Hash Reference of subroutines  used in the calling code, e.g. C<< email_verification()->{account_opening_new}->() >>
+Returns a Hash Reference of subroutines used in the calling code,
+e.g. C<< email_verification()->{account_opening_new}->() >>
+
+Each subroutine returns a Hash Reference containing arguments needed to send the
+email: C<subject>, C<template_name>, C<template_args>
 
 =cut
 
@@ -89,7 +95,6 @@ sub email_verification {
 
     my %common_args = (
         $args->%*,
-        l                  => \&localize,
         contact_url        => $contact_url,
         has_social_signup  => $has_social_signup,
         password_reset_url => $password_reset_url,
@@ -103,18 +108,16 @@ sub email_verification {
                 ? localize('Verify your account for Deriv')
                 : localize('Verify your email address - [_1]', $website_name);
 
-            my $message = $brand->process_template(
-                account_opening_new => {(
+            return {
+                subject       => $subject,
+                template_name => 'account_opening_new',
+                template_args => {(
                         $verification_uri
                         ? (verification_url => _build_verification_url('signup', $args))
                         : ()
                     ),
                     %common_args,
-                });
-
-            return {
-                subject => $subject,
-                message => $message,
+                },
             };
         },
         account_opening_existing => sub {
@@ -123,11 +126,10 @@ sub email_verification {
                 : $source == 1 ? localize('Duplicate email address submitted - [_1]', $website_name)
                 :                localize('Duplicate email address submitted to [_1] (powered by [_2])', $app_name, $website_name);
 
-            my $message = $brand->process_template(account_opening_existing => {%common_args});
-
             return {
-                subject => $subject,
-                message => $message,
+                subject       => $subject,
+                template_name => 'account_opening_existing',
+                template_args => {%common_args},
             };
         },
         payment_withdraw => sub {
@@ -136,52 +138,43 @@ sub email_verification {
             my $is_paymentagent = $type_call eq 'paymentagent_withdraw' ? 1 : 0;
             $type_call = 'payment_agent_withdraw' if $is_paymentagent;
 
-            my $subject = localize('Verify your withdrawal request - [_1]', $website_name);
-            my $message = $brand->process_template(
-                payment_withdraw => {(
+            return {
+                subject       => localize('Verify your withdrawal request - [_1]', $website_name),
+                template_name => 'payment_withdraw',
+                template_args => {(
                         $verification_uri
                         ? (verification_url => _build_verification_url($type_call, $args))
                         : ()
                     ),
                     is_paymentagent => $is_paymentagent,
                     %common_args,
-                });
-
-            return {
-                subject => $subject,
-                message => $message,
+                },
             };
         },
         reset_password => sub {
-            my $subject = localize('Reset your [_1] account password', $website_name);
-            my $message = $brand->process_template(
-                reset_password => {(
+            return {
+                subject       => localize('Reset your [_1] account password', $website_name),
+                template_name => 'reset_password',
+                template_args => {(
                         $verification_uri
                         ? (verification_url => _build_verification_url('reset_password', $args))
                         : ()
                     ),
                     %common_args,
-                });
-
-            return {
-                subject => $subject,
-                message => $message,
+                },
             };
         },
         mt5_password_reset => sub {
-            my $subject = localize('[_1] New MT5 Password Request', $website_name);
-            my $message = $brand->process_template(
-                mt5_password_reset => {(
+            return {
+                subject       => localize('[_1] New MT5 Password Request', $website_name),
+                template_name => 'mt5_password_reset',
+                template_args => {(
                         $verification_uri
                         ? (verification_url => _build_verification_url('mt5_password_reset', $args))
                         : ()
                     ),
                     %common_args,
-                });
-
-            return {
-                subject => $subject,
-                message => $message,
+                },
             };
         }
     };

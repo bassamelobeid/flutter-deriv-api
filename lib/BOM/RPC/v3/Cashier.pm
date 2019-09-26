@@ -722,10 +722,11 @@ rpc paymentagent_transfer => sub {
     my $brand = request()->brand;
 
     send_email({
-        'from'    => $brand->emails('support'),
-        'to'      => $client_to->email,
-        'subject' => localize('Acknowledgement of Money Transfer'),
-        'message' => _email_content('pa_transfer', $brand, $website_name, $client_to, $client_fm, $amount, $currency),
+        'from'          => $brand->emails('support'),
+        'to'            => $client_to->email,
+        'subject'       => localize('Acknowledgement of Money Transfer'),
+        'template_name' => 'pa_transfer_confirm',
+        'template_args' => _template_args($website_name, $client_to, $client_fm, $amount, $currency),
         ,
         'use_email_template'    => 1,
         'email_content_is_html' => 1,
@@ -1069,7 +1070,8 @@ rpc paymentagent_withdraw => sub {
         from                  => $brand->emails('support'),
         to                    => $paymentagent->email,
         subject               => localize('Acknowledgement of Withdrawal Request'),
-        message               => _email_content('pa_withdraw', $brand, $website_name, $client, $pa_client, $amount, $currency),
+        template_name         => 'pa_withdraw_confirm',
+        template_args         => _template_args($website_name, $client, $pa_client, $amount, $currency),
         use_email_template    => 1,
         email_content_is_html => 1,
         skip_text2html        => 1,
@@ -1738,13 +1740,12 @@ sub _check_facility_availability {
     return undef;
 }
 
-sub _email_content {
-    my ($type, $brand, $website_name, $client, $pa_client, $amount, $currency) = @_;
+sub _template_args {
+    my ($website_name, $client, $pa_client, $amount, $currency) = @_;
 
     my $client_name = $client->first_name . ' ' . $client->last_name;
 
-    my %template_args = (
-        l                 => \&localize,
+    return {
         website_name      => $website_name,
         amount            => $amount,
         currency          => $currency,
@@ -1758,19 +1759,7 @@ sub _email_content {
         pa_salutation     => encode_entities($pa_client->salutation),
         pa_first_name     => encode_entities($pa_client->first_name),
         pa_last_name      => encode_entities($pa_client->last_name),
-    );
-
-    my $mapping = {
-        pa_withdraw => sub {
-            return $brand->process_template(pa_withdraw_confirm => {%template_args});
-        },
-        pa_transfer => sub {
-            return $brand->process_template(pa_transfer_confirm => {%template_args});
-        },
     };
-
-    # send_email requires arrayref
-    return [$mapping->{$type}->()];
 }
 
 1;
