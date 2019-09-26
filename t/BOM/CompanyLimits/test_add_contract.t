@@ -39,7 +39,7 @@ $redis->hmset('groups:underlying', ('R_50', 'volidx', 'frxUSDJPY', 'forex'));
 # Test for the correct key combinations
 subtest 'Key Combinations matching test', sub {
     top_up my $cr_cl = create_client('CR', undef, {binary_user_id => 4252}), 'USD', 12;
-    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company->short);
+    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company);
 
     my ($contract, $error, $contract_info, $key, $total);
 
@@ -92,7 +92,7 @@ subtest 'Different combinations of contracts', sub {
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
     my ($contract, $error, $contract_info, $key, $total);
 
-    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company->short);
+    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company);
 
     # Contract #1
     $contract = create_contract(
@@ -202,7 +202,7 @@ subtest 'Different combinations of contracts', sub {
 subtest 'Realized loss and total turnover are on daily basis', sub {
 
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
-    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company->short);
+    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company);
 
     my ($contract, $error, $contract_info, $key, $realized_loss_total, $turnover_total);
     my $client_key = 't,R_50,callput,' . $cr_cl->binary_user_id;
@@ -280,7 +280,7 @@ subtest 'Different underlying tests', sub {
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
 
     my ($error, $contract_info_svg, $contract, $key, $total);
-    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company->short);
+    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company);
 
     $contract = create_contract(
         payout     => 6,
@@ -369,7 +369,7 @@ subtest 'Different underlying tests', sub {
 
 subtest 'Different barrier tests', sub {
     top_up my $cr_cl = create_client('CR'), 'USD', 5000;
-    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company->short);
+    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company);
 
     my ($error, $contract_info_svg, $contract, $key, $total);
 
@@ -461,8 +461,8 @@ subtest 'Different landing companies test', sub {
 
     my $key = 'ta,R_50,callput';
 
-    my $redis_cr = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company->short);
-    my $redis_mx = BOM::Config::RedisReplicated::redis_limits_write($mx_cl->landing_company->short);
+    my $redis_cr = BOM::Config::RedisReplicated::redis_limits_write($cr_cl->landing_company);
+    my $redis_mx = BOM::Config::RedisReplicated::redis_limits_write($mx_cl->landing_company);
 
     my $svg_total = $redis_cr->hget('svg:potential_loss', $key);
     my $mx_total = $redis_mx->hget('iom:potential_loss', $key) // 0;
@@ -489,7 +489,7 @@ subtest 'Different currencies', sub {
     top_up my $cr_usd = create_client('CR'), 'USD', 5000;
     top_up my $cr_eur = create_client('CR'), 'EUR', 5000;
 
-    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_usd->landing_company->short);
+    $redis = BOM::Config::RedisReplicated::redis_limits_write($cr_usd->landing_company);
 
     my ($error, $contract_info_usd, $contract_info_eur, $usd_contract, $eur_contract);
 
@@ -640,3 +640,4 @@ subtest 'Contracts with no payout', sub {
     reset_all_loss_hashes();
 };
 
+reset_all_loss_hashes();
