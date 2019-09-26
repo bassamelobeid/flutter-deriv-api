@@ -19,6 +19,8 @@ BEGIN {
         *CORE::GLOBAL::recv = sub (*\$$$) {
             my $n = &CORE::recv;
 
+            # the \$ prototype turns the buffer into a reference
+            # to a scalar. This explains the extra dereference here.
             $nrecv += length ${$_[1]} if ${*{$_[0]}}{' benchmark '};
 
             return $n;
@@ -38,6 +40,7 @@ my $nuid   = 5000;
 my $meth   = '_add_buys';
 my $batch  = 1;
 my $datf;
+my $sample;
 
 unless (GetOptions('fork=i'     => \$nproc,
                    'requests=i' => \$nreq,
@@ -46,6 +49,7 @@ unless (GetOptions('fork=i'     => \$nproc,
                    'method=s'   => \$meth,
                    'batch=i'    => \$batch,
                    'datafile=s' => \$datf,
+                   'sample=s'   => \$sample,
                   )) {
     ...;
 }
@@ -115,6 +119,15 @@ sub parent {
         ;
 
     if ($datf and open my $fh, '>', $datf) {
+        # @tm is an ordered list of numbers. It does not make much sense to
+        # save all of them. To get a good representation of the distribution
+        # of these numbers we safe 500 data points. The first data point then
+        # is a time where 0.2% of all requests were faster than that time.
+        # Similarly, 0.4% of all requests were faster than the 2nd data point.
+        # The interesting part of this data is basically the last 5-10%, that
+        # is the last 25-50 data points where the curve is expected to bend
+        # upwards.
+
         my $step = @tm/500;
         for (my $i=1; $i<500; $i++) {
             printf $fh "%d %.3f\n", int($i*$step), $tm[int($i*$step)];
@@ -127,7 +140,7 @@ sub parent {
     unless ($ENV{nobw}) {
         printf("total bytes sent to redis: %d, number of bytes received from redis: %d\n",
                $snd, $rcv);
-        printf("send bandwidth: %.3f bytes per request, receive bandwidth: %.3f bytes per request\n",
+        printf("send bandwidth: %.3f bytes/req, receive bandwidth: %.3f bytes/req\n",
                $snd/@tm, $rcv/@tm);
     }
 }
@@ -156,13 +169,26 @@ sub chld {
     my $x=BOM::Transaction::CompanyLimits->new(landing_company => LandingCompany::Registry::get('virtual'),
                                                currency => "EUR",
                                                contract_data => $contract);
-    # just in case there is no data for realized loss:
+    # patch the landing company to prevent overwriting potentially
+    # important data
     $x->{landing_company}=$prefix;
+
+    # just in case there is no data for realized loss:
     $x->_add_sells(map {C->new} 1..1000);
 
-    my @res = $x->$meth(map {C->new} 1..2);
-    use Data::Dumper;
-    warn +Data::Dumper->new([\@res, $nsend, $nrecv], [qw/res nsend nrecv/])->Useqq(1)->Sortkeys(1)->Dump;
+    if ($sample) {
+        my $fh;
+        if ($sample eq '-') {
+            $fh = \*STDOUT;
+        } else {
+            open $fh, '>', "$sample.$$"
+                or warn "Cannot open $sample.$$: $!\n";
+        }
+        my @res = $x->$meth(map {C->new} 1..2);
+        use Data::Dumper;
+        print $fh +Data::Dumper->new([\@res], [qw/res/])->Useqq(1)->Sortkeys(1)->Dump;
+        close $fh unless $fh = \*STDOUT;
+    }
 
     ${*{$x->{redis}->{_socket}}}{' benchmark '} = 1;
     for (1..$nreq) {
