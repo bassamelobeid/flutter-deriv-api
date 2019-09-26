@@ -63,7 +63,7 @@ sub deploy_test_contract {
     $currency->rpc_client->personal_unlockAccount($currency->account_config->{account}->{address},
         $currency->account_config->{account}->{passphrase}, 0);
 
-    my $total_supply = Math::BigFloat->new(100)->bmul(Math::BigInt->new(10)->bpow(18))->numify;
+    my $total_supply = Math::BigFloat->new(1000000000000)->bmul(Math::BigInt->new(10)->bpow(18))->numify;
     # the number 35 here is the time in seconds that we will wait to the contract be
     # deployed, for the tests since we are using a private node this works fine, this
     # will be removed on the future when we make the ethereum client async.
