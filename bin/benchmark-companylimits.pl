@@ -162,7 +162,7 @@ sub chld {
 
     my @res = $x->$meth(map {C->new} 1..2);
     use Data::Dumper;
-    warn +Data::Dumper->new([\@res], ['res'])->Useqq(1)->Sortkeys(1)->Dump;
+    warn +Data::Dumper->new([\@res, $nsend, $nrecv], [qw/res nsend nrecv/])->Useqq(1)->Sortkeys(1)->Dump;
 
     ${*{$x->{redis}->{_socket}}}{' benchmark '} = 1;
     for (1..$nreq) {
