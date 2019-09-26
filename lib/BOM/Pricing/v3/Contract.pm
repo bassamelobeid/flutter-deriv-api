@@ -978,13 +978,11 @@ sub contract_update {
         });
     }
 
-    my $update_params = $args->{update_parameters};
-
     my $response = try {
         BOM::Transaction::ContractUpdate::update({
             client      => $client,
             contract_id => $contract_id,
-            params      => $update_params
+            params      => $args->{update_parameters},
         });
     }
     catch {
@@ -993,6 +991,20 @@ sub contract_update {
             message_to_client => localize('Sorry, an error occurred while processing your request.'),
         });
     };
+
+    unless ($response) {
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => 'MissingContract',
+            message_to_client => localize('Could not find contract.'),
+        });
+    }
+
+    if (my $error = $response->{error}) {
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => $error->{code},
+            message_to_client => $error->{message_to_client},
+        });
+    }
 
     return $response;
 }
