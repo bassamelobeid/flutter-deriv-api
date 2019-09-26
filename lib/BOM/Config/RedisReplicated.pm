@@ -62,7 +62,7 @@ sub _get_redis_transaction_server {
     # Check if landing company passed in or not
     # If no landing company, default to global settings
     if ($landing_company) {
-        $connection_config = $config->{'companylimits'}->{'per_landing_company'}->{$landing_company};
+        $connection_config = $config->{'companylimits'}->{'per_landing_company'}->{$landing_company->short};
         $key_name          = $landing_company;
     } else {
         $connection_config = $config->{'companylimits'}->{'global_settings'};
