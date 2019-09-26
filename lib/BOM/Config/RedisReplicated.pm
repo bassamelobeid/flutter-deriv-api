@@ -69,6 +69,8 @@ sub _get_redis_transaction_server {
         $key_name          = 'global_settings';
     }
 
+    die "connection config should not be undef!" unless $connection_config;
+
     my $key = 'limit_settings_' . $key_name;
 
     # TODO: Remove this if-statement in v2
