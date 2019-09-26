@@ -17,7 +17,7 @@
          "type" : "integer"
       },
       "id" : {
-         "pattern" : "^fr$",
+         "pattern" : "^de$",
          "type" : "string"
       },
       "stash" : {
@@ -29,7 +29,7 @@
       },
       "name" : {
          "type" : "string",
-         "pattern" : "^France$"
+         "pattern" : "^Germany"
       },
       "financial_company" : {
          "required" : [
