@@ -128,6 +128,8 @@ sub request_email {
             use_email_template    => 1,
             email_content_is_html => 1,
         });
+
+    return 1;
 }
 
 sub get_verification_uri {

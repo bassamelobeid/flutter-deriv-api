@@ -47,6 +47,7 @@ use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
+use BOM::Platform::Event::Emitter;
 requires_auth();
 
 use constant MAX_DESCRIPTION_LENGTH => 250;
