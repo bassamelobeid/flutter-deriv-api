@@ -35,6 +35,6 @@ rpc asset_index => \&BOM::Pricing::v3::MarketData::asset_index;
 
 rpc trading_durations => \&BOM::Pricing::v3::MarketData::trading_durations;
 
-rpc contract_update => \&BOM::Pricing::v3::Conntract::update_contract;
+rpc contract_update => \&BOM::Pricing::v3::Contract::contract_update;
 
 1;
