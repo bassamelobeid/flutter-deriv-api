@@ -1,0 +1,25 @@
+per_landing_company:
+    svg:
+        host: 127.0.0.1
+        port: 6397
+        password:
+    iom:
+        host: 127.0.0.1
+        port: 6397
+        password:
+    malta:
+        host: 127.0.0.1
+        port: 6397
+        password:
+    maltainvest: 
+        host: 127.0.0.1
+        port: 6397
+        password:
+    virtual:
+        host: 127.0.0.1
+        port: 6397
+        password:
+global_settings:
+    host: 127.0.0.1
+    port: 6397
+    password:
