@@ -350,6 +350,7 @@ sub startup {
         ['reset_password'],
 
         # authenticated calls
+        ['contract_update', { require_auth => 'trade' }],
         ['sell', {require_auth => 'trade'}],
         [
             'buy',

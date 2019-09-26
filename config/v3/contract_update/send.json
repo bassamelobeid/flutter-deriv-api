@@ -9,10 +9,11 @@
    "additionalProperties" : false,
    "title" : "Contract Update",
    "properties" : {
+      "contract_update": {
+         "enum": [1]
+      },
       "subscribe" : {
-         "enum" : [
-            1
-         ],
+         "enum" : [1],
          "description" : "[Optional] 1 - updates and subscribes to proposal_open_contract of the updated contract."
       },
       "contract_id": {
@@ -28,7 +29,7 @@
                 "description": "new take profit value for a contract."
             }
          }
-      }
+      },
       "passthrough" : {
          "type" : "object",
          "description" : "[Optional] Used to pass data through the websocket, which may be retrieved via the echo_req output field."
