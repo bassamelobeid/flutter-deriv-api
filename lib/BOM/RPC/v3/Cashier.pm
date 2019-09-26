@@ -722,7 +722,7 @@ rpc paymentagent_transfer => sub {
     my $brand = request()->brand;
 
     send_email({
-        'from'          => $brand->emails('support'),
+        'from'          => $brand->emails('no-reply'),
         'to'            => $client_to->email,
         'subject'       => localize('Acknowledgement of Money Transfer'),
         'template_name' => 'pa_transfer_confirm',
@@ -1067,7 +1067,7 @@ rpc paymentagent_withdraw => sub {
     my $brand = request()->brand;
 
     send_email({
-        from                  => $brand->emails('support'),
+        from                  => $brand->emails('no-reply'),
         to                    => $paymentagent->email,
         subject               => localize('Acknowledgement of Withdrawal Request'),
         template_name         => 'pa_withdraw_confirm',

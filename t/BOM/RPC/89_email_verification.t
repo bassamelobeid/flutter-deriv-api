@@ -19,7 +19,6 @@ my $verification_uri = 'https://www.example.com/verify';
 my $language         = 'EN';
 my $source           = 1;
 my $brand            = Brands->new();
-my $support_mail     = $brand->emails('support');
 
 my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
 $mock_utility->mock(

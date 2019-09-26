@@ -120,7 +120,7 @@ sub request_email {
     my ($email, $args) = @_;
 
     return send_email({
-        from                  => request()->brand->emails('support'),
+        from                  => request()->brand->emails('no-reply'),
         to                    => $email,
         subject               => $args->{subject},
         template_name         => $args->{template_name},
