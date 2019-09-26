@@ -467,11 +467,13 @@ async_rpc "mt5_new_account",
 
 Checks the financial assessment requirements of creating an account in an MT5 group.
 
-Takes named argument with the following as parameter:
+Takes named argument with the following as key parameters:
 
 =over 4
 
 =item * $client: an instance of C<BOM::User::Client> representing a binary client onject.
+
+=item * $group: the target MT5 group.
 
 =item * $financial_assessment_requirements for particular landing company.
 
