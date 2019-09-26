@@ -964,10 +964,25 @@ sub contract_update {
         });
     }
 
+    my $client;
+    if ($params->{token_details} and exists $params->{token_details}->{loginid}) {
+        $client = BOM::User::Client->new({
+            loginid      => $args_copy->{token_details}->{loginid},
+            db_operation => 'replica',
+        });
+    } else {
+        # since this is an authenticated call, we can't proceed
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => 'MissingTokenDetails',
+            message_to_client => localize('Token details are required to update contract.'),
+        });
+    }
+
     my $update_params = $args->{update_parameters};
 
     my $response = try {
         BOM::Transaction::ContractUpdate::update({
+            client      => $client,
             contract_id => $contract_id,
             params      => $update_params
         });
