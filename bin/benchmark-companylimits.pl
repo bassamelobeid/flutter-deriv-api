@@ -156,13 +156,15 @@ sub chld {
     my $x=BOM::Transaction::CompanyLimits->new(landing_company => LandingCompany::Registry::get('virtual'),
                                                currency => "EUR",
                                                contract_data => $contract);
-    ${*{$x->{redis}->{_socket}}}{' benchmark '} = 1;
-    $x->{landing_company}=$prefix;
-    # my @res = $x->$meth(map {C->new} 1..2);
-    # use Data::Dumper; print +Data::Dumper->new([\@res], ['res'])->Useqq(1)->Sortkeys(1)->Dump;
-
     # just in case there is no data for realized loss:
+    $x->{landing_company}=$prefix;
     $x->_add_sells(map {C->new} 1..1000);
+
+    my @res = $x->$meth(map {C->new} 1..2);
+    use Data::Dumper;
+    warn +Data::Dumper->new([\@res], ['res'])->Useqq(1)->Sortkeys(1)->Dump;
+
+    ${*{$x->{redis}->{_socket}}}{' benchmark '} = 1;
     for (1..$nreq) {
         my $start = [Time::HiRes::gettimeofday];
         $x->$meth(map {C->new} 1..$batch);
