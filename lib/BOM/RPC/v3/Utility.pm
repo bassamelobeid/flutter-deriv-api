@@ -271,11 +271,11 @@ sub _check_password {
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'PasswordError',
-                message_to_client => localize('Old password is wrong.')}) if (not BOM::User::Password::checkpw($old_password, $user_pass));
+                message_to_client => localize('Provided password is incorrect.')}) if (not BOM::User::Password::checkpw($old_password, $user_pass));
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'PasswordError',
-                message_to_client => localize('New password is same as old password.')}) if ($new_password eq $old_password);
+                message_to_client => localize('Current password and new password cannot be the same.')}) if ($new_password eq $old_password);
     }
 
     return BOM::RPC::v3::Utility::create_error({
