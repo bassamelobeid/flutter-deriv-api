@@ -95,13 +95,17 @@ sub _invoke_mt5 {
             $out =~ s/[\x0D\x0A]//g;
             try {
                 $out = decode_json($out);
-                $f->done($out);
             }
             catch {
                 my $e = $_;
                 chomp $e;
                 $f->fail($e, mt5 => $cmd);
             };
+            if ($out->{error}) {
+                $f->fail(_future_error($out));
+            } else {
+                $f->done($out);
+            }
         },
     );
 
@@ -124,8 +128,6 @@ sub create_user {
     return _invoke_mt5('UserAdd', $param)->then(
         sub {
             my ($response) = @_;
-
-            return _future_error($response) if $response->{error};
             return Future->done({login => $response->{login}});
         });
 }
@@ -138,7 +140,6 @@ sub get_user {
         sub {
             my ($response) = @_;
 
-            return _future_error($response) if $response->{error};
             my $ret    = $response->{user};
             my @fields = _get_user_fields();
 
@@ -158,7 +159,6 @@ sub update_user {
     return _invoke_mt5('UserUpdate', $param)->then(
         sub {
             my ($response) = @_;
-            return _future_error($response) if $response->{error};
 
             my $ret = $response->{user};
             @fields = _get_user_fields();
@@ -179,7 +179,6 @@ sub update_mamm_user {
     return _invoke_mt5('UserUpdate', $param)->then(
         sub {
             my ($response) = @_;
-            return _future_error($response) if $response->{error};
 
             my $ret = $response->{user};
             @fields = _get_user_fields();
@@ -200,9 +199,7 @@ sub password_check {
 
     return _invoke_mt5('UserPasswordCheck', $param)->then(
         sub {
-            my ($response) = @_;
 
-            return _future_error($response) if $response->{error};
             return Future->done({status => 1});
         });
 }
@@ -217,9 +214,7 @@ sub password_change {
 
     return _invoke_mt5('UserPasswordChange', $param)->then(
         sub {
-            my ($response) = @_;
 
-            return _future_error($response) if $response->{error};
             return Future->done({status => 1});
         });
 }
@@ -235,9 +230,7 @@ sub deposit {
 
     return _invoke_mt5('UserDepositChange', $param)->then(
         sub {
-            my ($response) = @_;
 
-            return _future_error($response) if $response->{error};
             return Future->done({status => 1});
         });
 }
@@ -256,8 +249,7 @@ sub withdrawal {
 
     return _invoke_mt5('UserDepositChange', $param)->then(
         sub {
-            my ($response) = @_;
-            return _future_error($response) if $response->{error};
+
             return Future->done({status => 1});
         });
 }
@@ -276,9 +268,9 @@ sub manager_api_deposit {
         }
         )->catch(
         sub {
-            return Future->done({    # usually it should be fail but since RPC interface right now work like this...
-                error      => 'timeout',
-                error_code => 1,
+            return Future->fail({
+                error => 'timeout',
+                code  => 'timeout',
             });
         });
 }
@@ -288,7 +280,7 @@ sub manager_api_withdrawal {
     my $amount = $args->{amount};
     if ($amount >= 0) {
         warn "Amount should be < 0";
-        return Future->done({error => 'internal error'});
+        return Future->fail({error => 'internal error'});
     }
     return _mt5_manager->adjust_balance($args->{login}, $amount, $args->{comment}, $args->{request_UUID})->then(
         sub {
@@ -302,9 +294,9 @@ sub manager_api_withdrawal {
         }
         )->catch(
         sub {
-            return Future->done({    # usually it should be fail but since RPC interface right now work like this...
-                error      => 'timeout',
-                error_code => 0
+            return Future->fail({
+                error => 'timeout',
+                code  => 'timeout'
             });
         });
 }
@@ -315,7 +307,6 @@ sub get_open_positions_count {
     return _invoke_mt5('PositionGetTotal', {login => $login})->then(
         sub {
             my ($response) = @_;
-            return _future_error($response) if $response->{error};
 
             return Future->done({total => $response->{total}});
         });
@@ -327,7 +318,6 @@ sub get_group {
     return _invoke_mt5('GroupGet', {group => $group_name})->then(
         sub {
             my ($response) = @_;
-            return _future_error($response) if $response->{error};
 
             my $ret = $response->{group};
             return Future->done($ret);
@@ -340,7 +330,6 @@ sub get_users_logins {
     return _invoke_mt5('UserLogins', {group => $group_name})->then(
         sub {
             my ($response) = @_;
-            return _future_error($response) if $response->{error};
 
             my $ret = $response->{logins};
             return Future->done($ret);
@@ -349,9 +338,9 @@ sub get_users_logins {
 
 sub _future_error {
     my ($response) = @_;
-    return Future->done({
-            code  => _get_error_mapping($response->{ret_code}),
-            error => $response->{error}});
+    return {
+        code  => _get_error_mapping($response->{ret_code}),
+        error => $response->{error}};
 }
 
 1;
