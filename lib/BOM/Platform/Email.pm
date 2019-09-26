@@ -27,6 +27,8 @@ sub send_email {
     my $fromemail          = $args_ref->{'from'} // '';
     my $email              = $args_ref->{'to'} // '';
     my $subject            = $args_ref->{'subject'} // '';
+    my $template_name      = $args_ref->{'template_name'} // '';
+    my $template_args      = $args_ref->{'template_args'} // {};
     my @message            = @{$args_ref->{'message'} // []};
     my $use_email_template = $args_ref->{'use_email_template'};
     my $layout             = $args_ref->{'layout'} // 'default';
@@ -36,7 +38,6 @@ sub send_email {
     my $template_loginid = $args_ref->{template_loginid};
 
     my $request = request();
-    my $language = $request ? $request->language : 'EN';
 
     unless ($email && $fromemail && $subject) {
         warn("from, to, or subject missed - [from: $fromemail, to: $email, subject: $subject]");
@@ -64,13 +65,16 @@ sub send_email {
     my $message = join("\n", @message);
     my $mail_message = $message;
     if ($use_email_template) {
+        $template_name .= '.html.tt' if $template_name and $template_name !~ /\.html\.tt$/;
         $mail_message = '';
         my $vars = {
             # Allows inline HTML, default is off - be very, very careful when setting this #
             email_content_is_html => $args_ref->{'email_content_is_html'},
             skip_text2html        => $skip_text2html,
             content               => $message,
+            content_template      => $template_name,
             l                     => \&localize,
+            $template_args->%*,
         };
         $vars->{text_email_template_loginid} = localize('Your Login ID: [_1]', $template_loginid)
             if $template_loginid;
