@@ -17,7 +17,7 @@ based on the given args.
 
 =over 4
 
-=item * C<args> - The arguments needed to pass to C<send_email> - Arguments are described there
+=item * C<args> - The arguments needed to pass to C<send_email> - Arguments are described there as well
 
 =back
 
@@ -27,7 +27,7 @@ Main arguments:
 
 =over 4
 
-=item * C<from> - Email address of the sender
+=item * C<from> - Email address of the sender, defaults to C<no-reply> of the Brand
 
 =item * C<to> - The recipient email address
 
