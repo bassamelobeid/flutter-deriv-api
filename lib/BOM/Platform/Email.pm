@@ -18,7 +18,55 @@ our @EXPORT_OK = qw(send_email);
 
 =head2 send_email
 
-Send the email. Return 1 if success, otherwise 0
+Sends the email according to the given args.
+
+=over 4
+
+=item * C<args_ref> - A hashref of arguments used to send the email
+
+=back
+
+=head3
+
+Main arguments:
+
+=over 4
+
+=item * C<from> - Email address of the sender
+
+=item * C<to> - The recipient email address
+
+=item * C<subject> - Subject of the email
+
+=back
+
+=head3
+
+Optional arguments:
+
+=over 4
+
+=item * C<message> - An arrayref of messages that would be joined to send, will be ignored if C<template_name> is present
+
+=item * C<skip_text2html> - If 0 converts plain text to HTML, only applicable if C<message> is passed
+
+=item * C<layout> - (optional) The layout to be used for the email, defaults to C<layouts/default.html.tt>
+
+=item * C<template_name> - Name of the template located under C<Brands/share/[brand]/templates>
+
+=item * C<template_args> - The variables to be passed to the template while processing
+
+=item * C<use_email_template> - If 1, uses the layout and given template
+
+=item * C<email_content_is_html> - If 1, treats the email content as HTML, otherwise as text
+
+=item * C<attachment> - Could be one attachment or an arrayref of attachments
+
+=item * C<template_loginid> - The client's loginid that used to display on top of the template
+
+=back
+
+Returns 1 if email has been sent successfully, otherwise 0
 
 =cut
 
@@ -44,7 +92,7 @@ sub send_email {
         return 0;
     }
 
-# replace all whitespace - including vertical such as CR/LF - with a single space
+    # replace all whitespace - including vertical such as CR/LF - with a single space
     $subject =~ s/\s+/ /g;
 
     return 1 if $ENV{SKIP_EMAIL};
