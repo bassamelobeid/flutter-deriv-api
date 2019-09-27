@@ -44,12 +44,10 @@ sub update {
             }};
     }
 
-    my $update_params = $args->{params};
-    # technically, we should be allowing multiple updates,
-    # but I am not sure how the user interface will be. So, do update one at a time
-    my ($update) = keys %$update_params;
+    # currently only supports take profit, so hard-coding it.
+    my $update_params = $args->{params}->{take_profit};
 
-    unless ($allowed{$update}) {
+    unless ($update_params) {
         return {
             error => {
                 code              => 'UpdateNotAllowed',
@@ -57,11 +55,17 @@ sub update {
             }};
     }
 
+    if ($update_params->{operation} eq 'update' and not defined $update_params->{value}) {
+        return {
+            error => {
+                code              => 'ValueNotDefined',
+                message_to_client => localize('value is required for update operation.'),
+            }};
+    }
+
     my $status;
-    if ($update_params->{$update}->{operation} eq 'cancel') {
-        $status = $dm->delete_order($args->{contract_id}, $update);
-    } elsif ($update_params->{$update}->{operation} eq 'update') {
-        $status = $dm->update_order($args->{contract_id}, $update);
+    if ($update_params->{operation} eq 'cancel' or $update_params->{operation} eq 'update') {
+        $status = $dm->update_take_profit($args->{contract_id}, $update_params);
     } else {
         return {
             error => {
