@@ -75,7 +75,7 @@ sub send_email {
     my $fromemail          = $args_ref->{'from'} // '';
     my $email              = $args_ref->{'to'} // '';
     my $subject            = $args_ref->{'subject'} // '';
-    my $template_name      = $args_ref->{'template_name'} // '';
+    my $template_name      = $args_ref->{'template_name'} // '_default_content';
     my $template_args      = $args_ref->{'template_args'} // {};
     my @message            = @{$args_ref->{'message'} // []};
     my $use_email_template = $args_ref->{'use_email_template'};
@@ -113,7 +113,7 @@ sub send_email {
     my $message = join("\n", @message);
     my $mail_message = $message;
     if ($use_email_template) {
-        $template_name .= '.html.tt' if $template_name and $template_name !~ /\.html\.tt$/;
+        $template_name .= '.html.tt' if $template_name !~ /\.html\.tt$/;
         $mail_message = '';
         my $vars = {
             # Allows inline HTML, default is off - be very, very careful when setting this #
