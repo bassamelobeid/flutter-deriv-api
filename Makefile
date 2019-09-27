@@ -4,7 +4,7 @@ P=/etc/rmg/bin/prove -v --timer -I$D/lib -I$D -I$D/t
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test:
-	cp -a /home/git/regentmarkets/travis-scripts/conf/rmg/* /etc/rmg/
+	sudo cp -a /home/git/regentmarkets/travis-scripts/conf/rmg/* /etc/rmg/
 	@$(PROVE) -r t/BOM/
 
 tidy:
