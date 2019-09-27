@@ -21,7 +21,7 @@
                 <p class='hide error error_required'><%= l('Password is required.') %></p>
             </div>
             <% if ($is_reset_password_allowed) { %>
-                <a id="lost-password" class="hide" href="https://www.<%= $website_domain %>/<%= lc($r->language) %>/user/lost_passwordws.html"><%= l('Forgot password?') %></a>
+                <a id="lost-password" href="https://deriv.com/reset-password"><%= l('Forgot password?') %></a>
             <% } %>
             <button type="submit" class="button secondary" name="login" value="<%= l('Login') %>"><%= l('Login') %></button>
             <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
