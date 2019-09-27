@@ -9,8 +9,7 @@ use BOM::Config;
 # Contains all code that compiles statistical data about company limits and
 # contracts that is coming in this system, and shipping that info to datadog.
 
-# no critic for subroutine prototypes
-sub with_dd_stats (&@) {    ## no critic
+sub with_dd_stats (&@) {    ## no critic (ProhibitSubroutinePrototypes)
     my ($sub, $what, $landing_company, $virtual) = @_;
 
     my $start = [gettimeofday];
