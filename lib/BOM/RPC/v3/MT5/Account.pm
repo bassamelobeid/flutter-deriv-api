@@ -337,7 +337,15 @@ async_rpc "mt5_new_account",
             my (@logins) = @_;
 
             foreach (@logins) {
-                if (($_->{group} // '') eq $group) {
+                my $login_group = $_->{group} // '';
+
+                # hacky way to compare and throw error for duplicate
+                # as client have only one of
+                # real\vanuatu_standard and real\svg_standard
+                my ($group_account_type, $group_mt5_account_type);
+                ($group_account_type, $group_mt5_account_type) = $group =~ /^([a-z]+)\\[a-z]+_([a-z]+)$/ if $mt5_account_type;
+
+                if ($login_group eq $group or ($mt5_account_type and $login_group =~ /^$group_account_type\\[a-z]+_$group_mt5_account_type$/)) {
                     my $login = $_->{login};
 
                     return create_error_future(
