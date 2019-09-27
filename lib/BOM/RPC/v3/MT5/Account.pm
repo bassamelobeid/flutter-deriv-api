@@ -309,21 +309,23 @@ async_rpc "mt5_new_account",
             : create_error_future('NoAgeVerification');
     }
 
-    my $compliance_requirements = $requirements->{compliance};
-    return create_error_future('FinancialAssessmentMandatory')
-        unless _is_financial_assessment_complete(
-        client                            => $client,
-        group                             => $group,
-        financial_assessment_requirements => $compliance_requirements->{financial_assessment});
+    if ($group !~ /^demo/) {
+        my $compliance_requirements = $requirements->{compliance};
+        return create_error_future('FinancialAssessmentMandatory')
+            unless _is_financial_assessment_complete(
+            client                            => $client,
+            group                             => $group,
+            financial_assessment_requirements => $compliance_requirements->{financial_assessment});
 
-    # Following this regulation: Labuan Business Activity Tax
-    # (Automatic Exchange of Financial Account Information) Regulation 2018,
-    # we need to ask for tax details for selected countries if client wants
-    # to open a financial account.
-    return create_error_future('TINDetailsMandatory')
-        if ($compliance_requirements->{tax_information}
-        and $countries_instance->is_tax_detail_mandatory($residence)
-        and not $client->status->crs_tin_information);
+        # Following this regulation: Labuan Business Activity Tax
+        # (Automatic Exchange of Financial Account Information) Regulation 2018,
+        # we need to ask for tax details for selected countries if client wants
+        # to open a financial account.
+        return create_error_future('TINDetailsMandatory')
+            if ($compliance_requirements->{tax_information}
+            and $countries_instance->is_tax_detail_mandatory($residence)
+            and not $client->status->crs_tin_information);
+    }
 
     # Check if client is throttled before sending MT5 request
     if (_throttle($client->loginid)) {
