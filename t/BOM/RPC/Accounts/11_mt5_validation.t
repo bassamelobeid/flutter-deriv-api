@@ -194,7 +194,7 @@ subtest 'new account' => sub {
     $test_client->aml_risk_classification('high');
     $test_client->save();
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('Please complete our financial assessment.', 'Financial assessment mandatory for financial account');
+        ->has_error->error_message_is('Please complete your financial assessment.', 'Financial assessment mandatory for financial account');
 
     # Non-MLT/CR client
     $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
