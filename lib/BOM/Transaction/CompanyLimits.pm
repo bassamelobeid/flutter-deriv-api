@@ -60,6 +60,7 @@ sub new {
 sub add_buys {
     my ($self, @clients) = @_;
 
+    # TODO: The COMPANY_LIMITS_ENABLED flag is temporary; we eventually will increment by default
     return undef unless $ENV{'COMPANY_LIMITS_ENABLED'};
 
     return BOM::Transaction::Limits::Stats::with_dd_stats {
