@@ -28,7 +28,7 @@ subtest 'Extract landing company short' => sub {
     }
 
     # if it fails, it returns a future
-    is(BOM::RPC::v3::MT5::Account::_fetch_mt5_lc({group => 'wrong_mt5_group'})->get()->{error}->{code}, 'InvalidMT5Group', 'Error code is correct');
+    is(BOM::RPC::v3::MT5::Account::_fetch_mt5_lc({group => 'wrong\\mt5_group'}), undef, 'wrong group no return');
 };
 
 done_testing();
