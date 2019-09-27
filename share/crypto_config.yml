@@ -63,7 +63,7 @@ ETH:
         address: https://etherscan.io/address/
         transaction: https://etherscan.io/tx/
     ethgasstation_api: https://ethgasstation.info/json/ethgasAPI.json
-    safe_gas_price: 0.000011
+    safe_gas_price: 0.000000011
 UST:
     withdrawal:
         timeout: "3d"
