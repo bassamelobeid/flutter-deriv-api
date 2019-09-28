@@ -65,7 +65,7 @@ my $change_password = $t->await::change_password({
     new_password    => $new_password
 });
 is $change_password->{error}->{code}, 'PasswordError';
-ok $change_password->{error}->{message} =~ /Old password is wrong/;
+ok $change_password->{error}->{message} =~ /Provided password is incorrect/;
 test_schema('change_password', $change_password);
 
 $change_password = $t->await::change_password({
@@ -82,7 +82,7 @@ $change_password = $t->await::change_password({
     new_password    => $password
 });
 is $change_password->{error}->{code}, 'PasswordError';
-ok $change_password->{error}->{message} =~ /New password is same as old password/;
+ok $change_password->{error}->{message} =~ /Current password and new password cannot be the same/;
 test_schema('change_password', $change_password);
 
 # change password
