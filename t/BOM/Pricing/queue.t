@@ -66,6 +66,7 @@ subtest 'normal flow' => sub {
 
 subtest 'overloaded daemon' => sub {
     # kill the subscriptions or they will be added again
+    $redis->del('pricer_channels');
     $redis->del($_) for @keys;
 
     $queue->process;
@@ -85,36 +86,11 @@ subtest 'jobs processed by daemon' => sub {
 
 };
 
-subtest 'sleeping to next second' => sub {
+subtest 'prepare for next interval' => sub {
     my $start = Time::HiRes::time();
-    BOM::Pricing::Queue::_sleep_to_next_second();
+    $queue->_prep_for_next_interval;
     my $end = Time::HiRes::time();
-    cmp_ok($end - $start, '<', 1, 'time taken to sleep is less than a second');
-};
-
-subtest 'priority_queue' => sub {
-
-    my $pid = fork // die "Couldn't fork";
-    unless ($pid) {
-        sleep 1;
-        note "publishing high priority prices in fork";
-        $redis->publish('high_priority_prices', $_) for @keys;
-        exit;
-    }
-
-    $queue = new_ok(
-        'BOM::Pricing::Queue',
-        [
-            priority => 1,
-            , internal_ip => '1.2.3.4'
-        ],
-        'New priority BOM::Pricing::Queue processor'
-    );
-    # need to do 5 times because initial redis reply will be subscription confirmation
-    $queue->process for (0 .. 4);
-    is($redis->llen('pricer_jobs_priority'),        @keys, 'keys added to pricer_jobs_priority queue');
-    is($stats{'pricer_daemon.priority_queue.recv'}, @keys, 'receive stats updated in statsd');
-    is($stats{'pricer_daemon.priority_queue.send'}, @keys, 'send stats updated in statsd');
+    cmp_ok($end - $start, '<', $queue->pricing_interval, 'time taken to sleep is less than a pricing interval');
 };
 
 done_testing;
