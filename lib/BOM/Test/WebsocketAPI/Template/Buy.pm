@@ -95,14 +95,16 @@ rpc_response buy => sub {
 publish proposal_open_contract => sub {
     my $contract = $_->contract;
     return undef if $contract->is_sold;
+    my $lcn = $contract->client->landing_company_name;
+    my $real = ($lcn =~ /virtual$/) ? 0 : 1;
 
     my $key = sprintf(
-        'PRICER_KEYS::["short_code","%s","contract_id","%s","currency","%s","is_sold","0","landing_company","%s","price_daemon_cmd","bid","sell_time",null]',
+        'PRICER_KEYS::["short_code","%s","contract_id","%s","currency","%s","is_sold","0","landing_company","%s","price_daemon_cmd","bid","real_money","%s","sell_time",null]',
 
         $contract->shortcode,
         $contract->contract_id,
         $contract->client->currency,
-        $contract->client->landing_company_name,
+        $lcn, $real
     );
     return {
         $key => {
