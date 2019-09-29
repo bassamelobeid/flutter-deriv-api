@@ -60,11 +60,11 @@ try {
             redis_source        => $redis,
             start_override      => $start_override,
             symbols             => \@symbols,
-        )
-    );
+        ));
     $writer->run->get;
     $loop->run;
-} catch {
+}
+catch {
     $log->errorf("%s error: %s at %d", $service_name, $@, time);
 }
 $log->infof('%s finished at %d', $service_name, time);
