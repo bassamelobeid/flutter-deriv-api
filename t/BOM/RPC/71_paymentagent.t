@@ -738,47 +738,6 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         reset_transfer_testargs();
         reset_transfer_testargs();
 
-        $test = 'Transfer fails if amount is over the for_days limit for landing company iom';
-        $mock_user_client->mock('landing_company', sub { return LandingCompany::Registry->get_by_broker('MX') });
-        $lc_short       = $Alice->landing_company->short;
-        $test_lc_limits = $payment_withdrawal_limits->{$lc_short};
-        ($lc_currency, $lc_lifetime_limit, $lc_for_days, $lc_limit_for_days) = @$test_lc_limits{qw/ currency lifetime_limit for_days limit_for_days/};
-        ## IOM has an insanely high lifetime limit, so we do not check it here
-        ## We can check the for_days limit though
-        $mock_landingcompany->mock('allows_payment_agents', sub { return 1; });
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is(
-            $res->{error}{message_to_client},
-            "Sorry, you cannot withdraw. Your withdrawal amount $test_currency $test_amount exceeds withdrawal limit.",
-            "$test (for_days = $lc_limit_for_days)"
-        );
-        $mock_user_client->unmock('landing_company');
-        $mock_landingcompany->unmock('allows_payment_agents');
-        reset_transfer_testargs();
-
-        $test = 'Going over landing company limits for iom triggers cashier_locked status for the client';
-        $SQL  = 'SELECT * FROM betonmarkets.client_status WHERE client_loginid = ? AND status_code = ?';
-        my $sth_client_status = $clientdbh->prepare($SQL);
-        $sth_client_status->execute($Alice_id, 'cashier_locked');
-        my $actual   = $sth_client_status->fetchall_arrayref({});
-        my $expected = [{
-                'client_loginid'     => $Alice_id,
-                'staff_name'         => 'system',
-                'status_code'        => 'cashier_locked',
-                'reason'             => 'Exceeds withdrawal limit',
-                'id'                 => ignore(),
-                'last_modified_date' => ignore()}];
-        cmp_deeply($actual, $expected, $test);
-
-        $test = 'Going over landing company limits for iom triggers unwelcome status for the client';
-        $sth_client_status->execute($Alice_id, 'unwelcome');
-        $actual = $sth_client_status->fetchall_arrayref({});
-        $expected->[0]{status_code} = 'unwelcome';
-        cmp_deeply($actual, $expected, $test);
-        $SQL = 'DELETE FROM betonmarkets.client_status WHERE client_loginid = ?';
-        my $sth_clear_stats = $clientdbh->prepare($SQL);
-        $sth_clear_stats->execute($Alice_id);
-
         # Simulate a case where wrong error message is displayed when payment agent is authenticated
         authenticate_client($clientdbh, $Alice_id);
 
