@@ -687,12 +687,6 @@ rpc paymentagent_transfer => sub {
         } elsif ($error_code eq 'BI222') {
             my $error_detail = _get_json_error($error_msg);
 
-            # lock cashier and unwelcome if its MX (as per compliance, check with compliance if you want to remove it)
-            if ($lcshort eq 'iom') {
-                $client_fm->status->set('cashier_locked', 'system', 'Exceeds withdrawal limit');
-                $client_fm->status->set('unwelcome',      'system', 'Exceeds withdrawal limit');
-            }
-
             ## If the amount left is non-negative, we show exactly how much at the end of the message
             return $error_sub->(
                 localize(
