@@ -15,7 +15,6 @@ use Path::Tiny qw(path);
 use Syntax::Keyword::Try;
 use Time::Moment;
 use Text::Trim;
-use Path::Tiny;
 use Try::Tiny;
 use Time::HiRes qw(alarm);
 
