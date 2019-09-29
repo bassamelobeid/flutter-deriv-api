@@ -2,11 +2,8 @@
 
 =for comment
 
-    This is a replacement for a simple shell script to generate an emailed report to assist Compliance in our CCD obligations to MGA and UKGC.
+    This is a replacement for a simple shell script to generate an emailed report to assist Compliance in our CCD obligations to MGA.
     Here are some relevant details:
-    
-    UKGC: 6.3 ... casino operators must also apply CDD measures in relation to any transaction that amounts to 2,000 EUR or more,
-        whether the transaction is executed in a single operation or in several operations which appear to be linked
 
     MGA: Regulation 9(1) of the PMFLTR provides that CDD measures are to be applied when carrying out transactions amounting to 2,000 EUR or more,
         whether carried out within the context of a business relationship or otherwise...
@@ -25,7 +22,7 @@ use Path::Tiny qw(path);
 
 my $yesterday_date = Date::Utility->today()->minus_time_interval('1d')->date;
 
-foreach my $broker ('MX', 'MLT') {
+foreach my $broker ('MLT') {
     
     # Any database with '03' corresponds to replica
     my $svcdef  = lc($broker) . '03';
