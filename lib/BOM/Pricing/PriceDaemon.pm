@@ -124,6 +124,9 @@ sub run {
         my $key;
         try {
             $key = $redis->brpop(@{$args{queues}}, 0)
+                # FUTURE: Once Redis 5 or better is available
+                # this can be refactored to a `BZPOPMAX` in concert
+                # with a `ZUNIONSTORE` in `Queue` to populate the queue.
         }
         catch {
             my $err = $@;
@@ -168,6 +171,7 @@ sub run {
         # delete them here.
         unless ($self->_validate_params($next, $params)) {
             warn "Invalid parameters: $next";
+            $redis->zrem('pricer_channels', $key->[1], $next);
             $redis->del($key->[1], $next);
             next;
         }
@@ -186,6 +190,7 @@ sub run {
         my $subscribers_count = $redis->publish($key->[1], encode_json_utf8($response));
         # if None was subscribed, so delete the job
         if ($subscribers_count == 0) {
+            $redis->zrem('pricer_channels', $key->[1], $next);
             $redis->del($key->[1], $next);
         }
 
