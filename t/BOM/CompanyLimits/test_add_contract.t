@@ -18,6 +18,7 @@ use BOM::Test::ContractTestHelper qw(close_all_open_contracts reset_all_loss_has
 use BOM::Config::TransactionLimits;
 use BOM::Config::Runtime;
 use BOM::Transaction::Limits::SyncLoss;
+use BOM::Transaction::Limits::Groups;
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -33,8 +34,10 @@ close_all_open_contracts();
 reset_all_loss_hashes();
 
 # Setup groups:
-$redis->hmset('groups:contract', ('CALL', 'callput', 'DIGITEVEN', 'digits', 'LBFLOATCALL', 'lookbacks'));
-$redis->hmset('groups:underlying', ('R_50', 'volidx', 'frxUSDJPY', 'forex'));
+BOM::Transaction::Limits::Groups::_clear_cached_groups();
+$redis->del('groups:contract', 'groups:underlying');
+$redis->hmset('groups:contract', 'CALL', 'callput', 'DIGITEVEN', 'digits', 'LBFLOATCALL', 'lookbacks');
+$redis->hmset('groups:underlying', 'R_50', 'volidx', 'frxUSDJPY', 'forex');
 
 # Test for the correct key combinations
 subtest 'Key Combinations matching test', sub {
