@@ -29,6 +29,7 @@ BEGIN {
 }
 
 use Getopt::Long;
+use Pod::Usage;
 use BOM::Transaction::CompanyLimits;
 use LandingCompany::Registry;
 use Time::HiRes ();
@@ -51,7 +52,7 @@ unless (GetOptions('fork=i'     => \$nproc,
                    'datafile=s' => \$datf,
                    'sample=s'   => \$sample,
                   )) {
-    ...;
+    pod2usage(1);
 }
 
 {
@@ -203,3 +204,108 @@ sub chld {
     close $w;
     return 0;
 }
+
+__END__
+
+=head1 NAME
+
+benchmark-companylimits.pl - a tool to benchmark the company limits subsystem
+
+=head1 SYNOPSIS
+
+[B<nobw>=boolean] B<perl benchmark-compaqnylimits.pl>
+[S<B<-fork> I<number-of-parallel-threads>>]
+[S<B<-requests> I<total-number-requests>>]
+[S<B<-prefix> I<string>>]
+[S<B<-users> I<number-of-emulated-users>>]
+[S<B<-method> I<method-to-benchmark>>]
+[S<B<-batch> I<number-of-users-per-request>>]
+[S<B<-datafile> I<filename-to-write-details>>]
+[S<B<-sample> I<filename-to-write-sample-return-value>>]
+
+=head1 DESCRIPTION
+
+The B<benchmark-companylimits.pl> is used to measure different
+aspects of the company limits subsystem.
+
+=head1 OPTIONS
+
+All options can be abbreviated.
+
+=over 4
+
+=item B<-fork> I<number-of-parallel-threads>
+
+Specify number of concurrent execution threads. The program spawns as much sub-processes.
+The default value is B<4>. The number of requests (see below) must be a multiple of this
+value. If it's not, it will be adjusted downwards.
+
+=item B<-requests> I<total-number-requests>
+
+Specify the total number of requests to run. The default value is B<100000>. The work is
+distributed between the workers. Each worker runs the same amount of requests. This
+is the reason why this number has to be a multiple of the number of execution threads
+(see above). If it is not, it is adjusted downwards.
+
+=item B<-prefix> I<string>
+
+The limits subsystem modifies values in Redis. Usually the landing company short name
+is used as part of all redis keys. This option allows to change this part to avoid
+tampering information in a production setup. The default value is B<benchmark>.
+
+=item B<-users> I<number-of-emulated-users>
+
+The overall number of keys in redis affected by the limits subsystem depends on the
+number of active users. This option allows to set this number. The default value is
+B<5000>.
+
+=item B<-method> I<method-to-benchmark>
+
+By default the benchmark tool measures the B<I<_add_buys>> method. This is the innermost
+method which performs all redis operations for buying a contract. Other possible
+values can be I<add_buys>, I<_add_sells> or I<add_sells>. I<add_buys> differs from
+I<_add_buys> in that the former sends data also to datadog. The relationship for
+sells is the same.
+
+=item B<-batch> I<number-of-users-per-request>
+
+This option allows to emulate the I<buy-contract-for-multiple-accounts> situation.
+The default value is B<1>. The limits subsystem uses redis transactions. All changes
+are sent in a single transaction. The number of users per request affects the size
+of these transactions and, thus, the performance.
+
+=item B<-datafile> I<filename-to-write-details>
+
+This option allows to extract more details about the time distribution. Each request
+is timed separately. The times are then sorted. Out of this sorted list, 500 evenly
+distributed values are extracted. This means the fastest 0.2% of all requests were
+faster than the first extracted value, the fastest 0.4% faster than the 2nd value and
+so on. The last extracted value is the maximum. This allows for instance to plot
+a distribution graph.
+
+If this option is omitted, no file is written.
+
+=item B<-sample> I<filename-to-write-sample-return-value>
+
+This option allows to verify a sample of the return value of the I<method>. Each
+execution thread first performs one operation gathering the result. This result
+is then dumped to the specified file. If the filename given is I<->, the output
+is written to STDOUT. Otherwise, the PID of the current process is added to the
+filename and the output is written to that file.
+
+If this option is omitted, this step is skipped.
+
+=back
+
+=head1 ENVIRONMENT
+
+=over 4
+
+=item B<nobw>
+
+By default, this script hooks the Perl core's I<send> and I<recv> functions to
+measure the number of bytes written to and received from Redis. Since this can
+affect the performance, this environment variable allows to turn this measurement
+off.
+
+=back
