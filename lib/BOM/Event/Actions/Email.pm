@@ -8,16 +8,16 @@ no indirect;
 use Log::Any qw($log);
 
 use BOM::Platform::Context qw(request);
-use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Email qw(process_send_email);
 
 =head2 send_email_generic
 
-Uses C<BOM::Platform::Email::send_email> as of now to send an email
+Uses C<BOM::Platform::Email::process_send_email> as of now to send an email
 based on the given args.
 
 =over 4
 
-=item * C<args> - The arguments needed to pass to C<send_email> - Arguments are described there as well
+=item * C<args> - The arguments needed to pass to C<process_send_email> - Arguments are described there as well
 
 =back
 
@@ -66,7 +66,7 @@ sub send_email_generic {
 
     $args->{from} //= request()->brand->emails('no-reply');
 
-    my $status_code = send_email($args);
+    my $status_code = process_send_email($args);
 
     $log->errorf('Failed to send the email to: %s - subject: %s', $args->{to}, $args->{subject})
         unless $status_code;
