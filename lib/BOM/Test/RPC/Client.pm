@@ -4,17 +4,30 @@ use Data::Dumper;
 use MojoX::JSON::RPC::Client;
 use Test::More qw();
 use Data::UUID;
+use Job::Async::Client::Redis;
+use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
+use MojoX::JSON::RPC::Client;
+
+use BOM::Test::WebsocketAPI::Redis::RpcQueue;
 
 use Moose;
 use namespace::autoclean;
 
 has 'ua' => (
     is       => 'ro',
+    required => 0,
+);
+has 'redis' => (
+    is       => 'ro',
+    required => 0,
+);
+has 'loop' => (
+    is       => 'ro',
     required => 1,
+    builder  => '_build_loop',
 );
 has 'client' => (
     is         => 'ro',
-    isa        => 'MojoX::JSON::RPC::Client',
     builder    => '_build_client',
     lazy_build => 1,
 );
@@ -25,9 +38,27 @@ has 'params'   => (
     isa => 'ArrayRef'
 );
 
+sub _build_loop {
+    return IO::Async::Loop::Mojo->new;
+}
+
 sub _build_client {
     my $self = shift;
-    return MojoX::JSON::RPC::Client->new(ua => $self->ua);
+    return MojoX::JSON::RPC::Client->new(ua => $self->ua) if $self->ua;
+    if ($self->redis) {
+        my $queue_redis  = BOM::Test::WebsocketAPI::Redis::RpcQueue->new->config->{write};
+        my $queue_prefix = $ENV{JOB_QUEUE_PREFIX};
+        $self->loop->add(
+            my $client = Job::Async::Client::Redis->new(
+                uri     => 'redis://' . $queue_redis->{host} . ':' . $queue_redis->{port},
+                timeout => 5,
+                $queue_prefix ? (prefix => $queue_prefix) : (),
+            ));
+        $client->start->get;
+        return $client;
+    }
+
+    die 'Unknown rpc client type (neither http nor queue)';
 }
 
 sub call_ok {
@@ -147,18 +178,33 @@ sub _tcall {
 
     $self->params([$method, $req_params]);
 
-    my $r = $self->client->call(
-        "/$method",
-        {
-            id     => Data::UUID->new()->create_str(),
-            method => $method,
-            params => $req_params
-        });
+    my $request = {
+        id     => Data::UUID->new()->create_str(),
+        method => $method,
+        params => $req_params
+    };
+
+    my $r;
+    if (ref($self->client) eq 'MojoX::JSON::RPC::Client') {
+        $r = $self->client->call(
+            "/$method",
+            {
+                id     => Data::UUID->new()->create_str(),
+                method => $method,
+                params => $req_params
+            });
+    } else {
+        $req_params->{args}->{$method} //= 1;
+        my $request = {
+            name   => $method,
+            params => encode_json_utf8($req_params),
+        };
+        my $result = Future->wait_any($self->client->submit(%$request), $self->loop->delay_future(after => 10))->get;
+        $r = MojoX::JSON::RPC::Client::ReturnObject->new(rpc_response => decode_json_utf8($result)) if ($result);
+    }
 
     $self->response($r);
     $self->result($r->result) if $r;
-
-    return $r;
 }
 
 sub _test {
