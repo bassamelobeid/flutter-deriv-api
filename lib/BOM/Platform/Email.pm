@@ -14,9 +14,32 @@ use BOM::Platform::Context qw(request localize);
 use BOM::Database::Model::OAuth;
 
 use parent 'Exporter';
-our @EXPORT_OK = qw(send_email);
+our @EXPORT_OK = qw(send_email process_send_email);
 
 =head2 send_email
+
+Sends the email using an event or directly according to C<use_event> value
+in the given args.
+
+=over 4
+
+=item * C<args> - A hashref of arguments used to send the email, the key C<use_event> should be 1 when need to send it using an event
+
+=back
+
+=cut
+
+sub send_email {
+    my ($args) = @_;
+
+    if ($args->{use_event}) {
+        BOM::Platform::Event::Emitter::emit('send_email', $args);
+    } else {
+        process_send_email($args);
+    }
+}
+
+=head2 process_send_email
 
 Sends the email according to the given args.
 
@@ -70,7 +93,7 @@ Returns 1 if email has been sent successfully, otherwise 0
 
 =cut
 
-sub send_email {
+sub process_send_email {
     my $args_ref           = shift;
     my $fromemail          = $args_ref->{'from'} // '';
     my $email              = $args_ref->{'to'} // '';
