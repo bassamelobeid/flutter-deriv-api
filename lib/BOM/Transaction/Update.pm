@@ -20,18 +20,25 @@ sub update {
 
     my $dm = BOM::Database::DataMapper::FinancialMarketBet->new(
         broker_code => $args->{client}->broker_code,
-        operation   => 'replica',
+        operation   => 'write',
     );
 
     # We could probably just have an update function, but we
     # want verify if this contract allows update.
     my $fmbs = $dm->get_fmb_by_id([$args->{contract_id}]);
 
-    return unless $fmbs;
+    unless ($fmbs) {
+        return {
+            error => {
+                code              => 'ContractNotFound',
+                message_to_client => localize('Conntract not found for contract_id: [_1].', $args->{contract_id}),
+            }};
+    }
 
+    my $fmb = $fmbs->[0]->financial_market_bet_record;
     # Didn't want to go through the whole produce_contract method since we only need to get the category,
     # But, even then it feels like a hassle.
-    my $contract_params = shortcode_to_parameters($fmbs->[0]->{short_code}, $args->{client}->currency);
+    my $contract_params = shortcode_to_parameters($fmb->{short_code}, $args->{client}->currency);
     my $config          = Finance::Contract::Category::get_all_contract_types()->{$contract_params->{bet_type}};
     my $category        = Finance::Contract::Category->new($config->{category});
 
@@ -45,13 +52,14 @@ sub update {
     }
 
     # currently only supports take profit, so hard-coding it.
-    my $update_params = $args->{params}->{take_profit};
+    my $order_type    = 'take_profit';
+    my $update_params = $args->{params}->{$order_type};
 
     unless ($update_params) {
         return {
             error => {
                 code              => 'UpdateNotAllowed',
-                message_to_client => localize('Update is not allowed for this contract. Allowed updates [$_]', join(',', keys %allowed)),
+                message_to_client => localize('Update is not allowed for this contract. Allowed updates [_1]', join(',', keys %allowed)),
             }};
     }
 
@@ -59,13 +67,15 @@ sub update {
         return {
             error => {
                 code              => 'ValueNotDefined',
-                message_to_client => localize('value is required for update operation.'),
+                message_to_client => localize('Value is required for update operation.'),
             }};
     }
 
     my $status;
     if ($update_params->{operation} eq 'cancel' or $update_params->{operation} eq 'update') {
-        $status = $dm->update_take_profit($args->{contract_id}, $update_params);
+        my $method = $order_type . '_order_amount';
+        my $add_to_audit = defined $fmb->multiplier->$method ? 1 : 0;
+        $status = $dm->update_take_profit($args->{contract_id}, $update_params, $add_to_audit);
     } else {
         return {
             error => {
