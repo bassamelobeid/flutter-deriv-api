@@ -35,6 +35,7 @@ use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Config::PaymentAgent;
 use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Email qw(send_email);
 use BOM::User::AuditLog;
 use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
@@ -47,7 +48,6 @@ use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
-use BOM::Platform::Event::Emitter;
 requires_auth();
 
 use constant MAX_DESCRIPTION_LENGTH => 250;
@@ -713,17 +713,16 @@ rpc paymentagent_transfer => sub {
         payment_agent => 0,
     );
 
-    BOM::Platform::Event::Emitter::emit(
-        'send_email',
-        {
-            to                    => $client_to->email,
-            subject               => localize('Acknowledgement of Money Transfer'),
-            template_name         => 'pa_transfer_confirm',
-            template_args         => _template_args($website_name, $client_to, $client_fm, $amount, $currency),
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            template_loginid      => $loginid_to
-        });
+    send_email({
+        to                    => $client_to->email,
+        subject               => localize('Acknowledgement of Money Transfer'),
+        template_name         => 'pa_transfer_confirm',
+        template_args         => _template_args($website_name, $client_to, $client_fm, $amount, $currency),
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        use_event             => 1,
+        template_loginid      => $loginid_to
+    });
 
     return {
         status              => 1,
@@ -1055,17 +1054,16 @@ rpc paymentagent_withdraw => sub {
         payment_agent => 0,
     );
 
-    BOM::Platform::Event::Emitter::emit(
-        'send_email',
-        {
-            to                    => $paymentagent->email,
-            subject               => localize('Acknowledgement of Withdrawal Request'),
-            template_name         => 'pa_withdraw_confirm',
-            template_args         => _template_args($website_name, $client, $pa_client, $amount, $currency),
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            template_loginid      => $pa_client->loginid,
-        });
+    send_email({
+        to                    => $paymentagent->email,
+        subject               => localize('Acknowledgement of Withdrawal Request'),
+        template_name         => 'pa_withdraw_confirm',
+        template_args         => _template_args($website_name, $client, $pa_client, $amount, $currency),
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        use_event             => 1,
+        template_loginid      => $pa_client->loginid,
+    });
 
     return {
         status            => 1,

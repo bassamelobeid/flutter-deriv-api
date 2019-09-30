@@ -25,6 +25,7 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Event::Emitter;
+use BOM::Platform::Email qw(send_email);
 use BOM::User;
 use BOM::Config;
 use BOM::Platform::Context qw (request);
@@ -118,16 +119,15 @@ rpc "new_account_virtual",
 sub request_email {
     my ($email, $args) = @_;
 
-    BOM::Platform::Event::Emitter::emit(
-        'send_email',
-        {
-            to                    => $email,
-            subject               => $args->{subject},
-            template_name         => $args->{template_name},
-            template_args         => $args->{template_args},
-            use_email_template    => 1,
-            email_content_is_html => 1,
-        });
+    send_email({
+        to                    => $email,
+        subject               => $args->{subject},
+        template_name         => $args->{template_name},
+        template_args         => $args->{template_args},
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        use_event             => 1,
+    });
 
     return 1;
 }
