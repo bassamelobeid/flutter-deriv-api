@@ -104,8 +104,8 @@ With this value-less arg, coordinator process is skipped, createing only a singl
 
 use constant RESTART_COOLDOWN => 1;
 
- # To guarantee that all workers are terminated when service is stopped,
- # it should be kept bellow supervisord's stopwaitsecs (10 seconds, by default)
+# To guarantee that all workers are terminated when service is stopped,
+# it should be kept bellow supervisord's stopwaitsecs (10 seconds, by default)
 use constant SHUTDOWN_TIMEOUT => 9;
 
 my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
@@ -118,7 +118,7 @@ GetOptions(
     'redis|R=s'        => \(my $REDIS = $redis_config->{uri}),
     'log|l=s'          => \(my $log_level = "info"),
     'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // ''),
-    'pid-file=s' => \(my $PID_FILE),    #for BOM::Test::Script compatilibity
+    'pid-file=s'       => \(my $PID_FILE),                                                      #for BOM::Test::Script compatilibity
 ) or exit 1;
 
 require Log::Any::Adapter;
@@ -215,9 +215,10 @@ sub run_coordinator {
         Future->needs_all(
             map {
                 $_->shutdown(
-                    'TERM', timeout => SHUTDOWN_TIMEOUT,
-                    on_kill=> sub { $log->debug('Worker terminated by SIGKILL') },
-                )
+                    'TERM',
+                    timeout => SHUTDOWN_TIMEOUT,
+                    on_kill => sub { $log->debug('Worker terminated by SIGKILL') },
+                    )
             } values %workers
         )->get;
 
@@ -254,8 +255,7 @@ sub handle_ctrl_command_DEC_WORKERS {
     while (keys %workers > $WORKERS) {
         # Arbitrarily pick a victim
         my $worker_to_die = delete $workers{(keys %workers)[0]};
-        $worker_to_die->shutdown('TERM', timeout => SHUTDOWN_TIMEOUT)
-            ->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })
+        $worker_to_die->shutdown('TERM', timeout => SHUTDOWN_TIMEOUT)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })
             ->retain;
     }
 }
@@ -401,10 +401,11 @@ sub run_worker_process {
         TERM => sub {
             $log->info("Stopping worker process");
             unlink $PID_FILE if ($PID_FILE);
-            $worker->stop->then(sub {
-                $log->info("Worker process stopped");
-                exit 0;
-            })->get;
+            $worker->stop->then(
+                sub {
+                    $log->info("Worker process stopped");
+                    exit 0;
+                })->get;
         },
     );
     $SIG{INT} = 'IGNORE';
@@ -427,13 +428,12 @@ sub run_worker_process {
             my $job     = $_;
             my $name    = $job->data('name');
             my ($queue) = $worker->pending_queues;
-            my $tags    = {tags => ["rpc:$name", 'queue:' . $queue]};
-
-            my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
-
-            $log->tracef('Timeout for %s is %d', $name, $job_timeout);
-
             try {
+                my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
+
+                my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
+                $log->tracef('Timeout for %s is %d', $name, $job_timeout);
+
                 local $SIG{ALRM} = sub {
                     stats_inc("rpc_queue.worker.jobs.timeout", $tags);
                     $log->errorf('rpc_queue: Timeout error - Not able to get response for %s job, job timeout is configured at %s seconds',
@@ -457,6 +457,14 @@ sub run_worker_process {
             }
             catch {
                 $log->errorf('An error occurred while processing job for %s, ERROR: %s', $name, $@);
+                $job->done(
+                    encode_json_utf8({
+                            success => 0,
+                            result  => {
+                                error => {
+                                    code              => 'InternalServerError',
+                                    message_to_client => 'Sorry, an error occurred while processing your request.',
+                                }}}));
             }
             finally {
                 alarm 0;
