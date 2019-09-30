@@ -1,8 +1,8 @@
-package BOM::Config::TransactionLimits;
+package BOM::Config::RedisTransactionLimits;
 
 =head1 NAME
 
-BOM::Config::TransactionLimits - Provides write access of redis transaction, based on landing company
+BOM::Config::RedisTransactionLimits - Provides write access of redis transaction, based on landing company
 
 =head1 DESCRIPTION
 
