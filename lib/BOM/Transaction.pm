@@ -915,7 +915,7 @@ sub sell {
         });
     }
 
-    BOM::Transaction::CompanyLimits::->new(
+    BOM::Transaction::CompanyLimits->new(
         contract_data   => $fmb,
         currency        => $self->contract->currency,
         landing_company => $client->landing_company,
@@ -990,7 +990,7 @@ sub sell_by_shortcode {
                     my $client = $r->{client};
 
                     # We cannot batch add sells; buy price may vary even with the same short code
-                    BOM::Transaction::CompanyLimits::->new(
+                    BOM::Transaction::CompanyLimits->new(
                         contract_data   => $res_row->{fmb},
                         currency        => $self->contract->currency,
                         landing_company => $client->landing_company,
@@ -1625,7 +1625,7 @@ sub sell_expired_contracts {
             $total_losses += $fmb->{sell_price} + 0 ? 0 : $fmb->{buy_price};
         }
 
-        BOM::Transaction::CompanyLimits::->new(
+        BOM::Transaction::CompanyLimits->new(
             contract_data   => $fmb,
             currency        => $currency,
             landing_company => $client->landing_company,

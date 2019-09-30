@@ -32,6 +32,7 @@ BOM::Transaction::CompanyLimits
 sub new {
     my ($class, %params) = @_;
     my $self = bless {}, $class;
+    return $self unless $ENV{'COMPANY_LIMITS_ENABLED'};
 
     my $landing_company = $params{landing_company};
     $self->{landing_company} = $landing_company->short;
