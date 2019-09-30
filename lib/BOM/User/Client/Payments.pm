@@ -126,6 +126,7 @@ sub validate_payment {
             my $wd_left = financialrounding('amount', $currency, $lc_limits->{lifetime_limit} - $wd_epoch);
 
             if (financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $wd_left)) {
+                $self->set_authentication('ID_DOCUMENT')->status('needs_action');
                 if ($currency ne $lc_currency) {
                     die sprintf "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s].\n", $currency,
                         formatnumber('amount', $currency, convert_currency($absamt, $lc_currency, $currency)),
