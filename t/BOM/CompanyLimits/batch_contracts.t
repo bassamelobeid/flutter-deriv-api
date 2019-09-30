@@ -16,7 +16,7 @@ use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Contract qw(create_contract buy_contract sell_contract batch_buy_contract sell_by_shortcode);
 use BOM::Test::ContractTestHelper qw(close_all_open_contracts reset_all_loss_hashes);
 use BOM::Transaction::Limits::SyncLoss;
-use BOM::Config::TransactionLimits;
+use BOM::Config::RedisTransactionLimits;
 use BOM::Config::Runtime;
 use BOM::Test::Email qw(mailbox_search);
 
@@ -24,7 +24,7 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 local $ENV{COMPANY_LIMITS_ENABLED} = 1;
 
-my $redis = BOM::Config::TransactionLimits::redis_limits_write;
+my $redis = BOM::Config::RedisTransactionLimits::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
 
 # Discard unit test bets as it affects limits redis sync with db

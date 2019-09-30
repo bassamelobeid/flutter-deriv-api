@@ -4,7 +4,7 @@ use warnings;
 
 use ExchangeRates::CurrencyConverter;
 use BOM::Config::RedisReplicated;
-use BOM::Config::TransactionLimits;
+use BOM::Config::RedisTransactionLimits;
 use BOM::Transaction::Limits::Combinations;
 use BOM::Transaction::Limits::Stats;
 
@@ -38,7 +38,7 @@ sub new {
     $self->{is_virtual}      = $landing_company->is_virtual;
     $self->{currency}        = $params{currency};
     $self->{contract_data}   = $params{contract_data};
-    $self->{redis}           = BOM::Config::TransactionLimits::redis_limits_write($landing_company);
+    $self->{redis}           = BOM::Config::RedisTransactionLimits::redis_limits_write($landing_company);
 
     my $attributes = BOM::Transaction::Limits::Combinations::get_attributes_from_contract($params{contract_data});
     $self->{global_combinations} = BOM::Transaction::Limits::Combinations::get_global_limit_combinations($attributes);

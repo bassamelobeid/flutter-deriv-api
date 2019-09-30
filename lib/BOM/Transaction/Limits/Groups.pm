@@ -5,7 +5,7 @@ use warnings;
 use Finance::Underlying;
 use Finance::Contract::Category;
 use LandingCompany::Registry;
-use BOM::Config::TransactionLimits;
+use BOM::Config::RedisTransactionLimits;
 use BOM::Config::Runtime;
 
 # All code related to setting groups, changing groups, syncing
@@ -43,7 +43,7 @@ sub get_limit_groups {
     return _get_limit_groups($bet_data)
         if %underlying_groups_cache and $cache_date == $current_minute;
 
-    my $redis = BOM::Config::TransactionLimits::redis_limits_write();
+    my $redis = BOM::Config::RedisTransactionLimits::redis_limits_write();
 
     $redis->hgetall(
         'groups:contract',

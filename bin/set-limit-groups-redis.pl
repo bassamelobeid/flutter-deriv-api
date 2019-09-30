@@ -16,9 +16,9 @@ use strict;
 use warnings;
 
 use BOM::Transaction::Limits::Groups;
-use BOM::Config::TransactionLimits;
+use BOM::Config::RedisTransactionLimits;
 
-my $redis = BOM::Config::TransactionLimits::redis_limits_write();
+my $redis = BOM::Config::RedisTransactionLimits::redis_limits_write();
 
 print "\nSet default groups:contract into Redis... ",
     $redis->hmset('groups:contract', %{BOM::Transaction::Limits::Groups::get_default_contract_group_mappings()});
