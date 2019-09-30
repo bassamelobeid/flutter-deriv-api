@@ -123,10 +123,11 @@ sub validate_payment {
                 $absamt   = convert_currency($absamt,   $currency, $lc_currency) if $absamt > 0;
             }
 
-            my $wd_left = financialrounding('amount', $currency, $lc_limits->{lifetime_limit} - $wd_epoch);
+            # total withdrawal inclusive of this one
+            my $total_wd = financialrounding('amount', $currency, $wd_epoch + $absamt);
+            my $wd_left  = financialrounding('amount', $currency, $lc_limits->{lifetime_limit} - $wd_epoch);
 
             if (financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $wd_left)) {
-                $self->set_authentication('ID_DOCUMENT')->status('needs_action');
                 if ($currency ne $lc_currency) {
                     die sprintf "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s].\n", $currency,
                         formatnumber('amount', $currency, convert_currency($absamt, $lc_currency, $currency)),
@@ -137,6 +138,12 @@ sub validate_payment {
                         $currency, formatnumber('amount', $currency, $wd_left);
                 }
             }
+
+            if ($total_wd >= financialrounding('amount', $currency, $lc_limits->{lifetime_limit})) {
+                $self->set_authentication('ID_DOCUMENT')->status('needs_action');
+                $self->save();
+            }
+
         } else {
             my $for_days = $lc_limits->{for_days};
             my $since    = Date::Utility->new->minus_time_interval("${for_days}d");
