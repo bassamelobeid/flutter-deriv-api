@@ -158,6 +158,7 @@ sub chld {
     close $r;
     srand;
     select [select($w), $|=1]->[0];
+    local $ENV{'COMPANY_LIMITS_ENABLED'} = 1;
     my $contract = {bet_type => "higher_lower_bet",
                     underlying_symbol => "R_100",
                     short_code => "bla_S0P_0",
