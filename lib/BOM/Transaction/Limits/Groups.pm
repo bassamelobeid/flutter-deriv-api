@@ -72,6 +72,8 @@ sub _clear_cached_groups {
     # Currently this is only used for unit tests
     undef %underlying_groups_cache;
     undef %contract_groups_cache;
+
+    return;
 }
 
 sub _get_limit_groups {
