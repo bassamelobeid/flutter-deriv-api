@@ -30,15 +30,13 @@ BOM::Transaction::CompanyLimits
 =cut
 
 BEGIN {
-    *BOM::Transaction::CompanyLimits::Fake::add_buys =
-        *BOM::Transaction::CompanyLimits::Fake::add_sells =
-        *BOM::Transaction::CompanyLimits::Fake::reverse_buys =
-        sub {};
+    *BOM::Transaction::CompanyLimits::Fake::add_buys = *BOM::Transaction::CompanyLimits::Fake::add_sells =
+        *BOM::Transaction::CompanyLimits::Fake::reverse_buys = sub { };
 }
 
 sub new {
     my ($class, %params) = @_;
-    return bless {}, __PACKAGE__.'::Fake' unless $ENV{'COMPANY_LIMITS_ENABLED'};
+    return bless {}, __PACKAGE__ . '::Fake' unless $ENV{'COMPANY_LIMITS_ENABLED'};
 
     my $self = bless {}, $class;
     my $landing_company = $params{landing_company};
