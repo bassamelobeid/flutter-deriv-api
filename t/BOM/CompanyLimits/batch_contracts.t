@@ -32,8 +32,10 @@ close_all_open_contracts();
 reset_all_loss_hashes();
 
 # Setup groups:
-$redis->hmset('groups:contract',   ('CALL', 'callput'));
-$redis->hmset('groups:underlying', ('R_50', 'volidx'));
+BOM::Transaction::Limits::Groups::_clear_cached_groups();
+$redis->del('groups:contract', 'groups:underlying');
+$redis->hmset('groups:contract',   'CALL', 'callput');
+$redis->hmset('groups:underlying', 'R_50', 'volidx');
 
 subtest 'Batch buy sell', sub {
     my $manager_client;
