@@ -856,10 +856,20 @@ rpc paymentagent_withdraw => sub {
     return $error_sub->(localize('You cannot perform this action, please set your residence.')) unless $client->residence;
 
     return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->status->disabled;
-    my $paymentagent = BOM::User::Client::PaymentAgent->new({
+
+    my ($paymentagent, $paymentagent_error);
+    try {
+        $paymentagent = BOM::User::Client::PaymentAgent->new({
             'loginid'    => $paymentagent_loginid,
             db_operation => 'replica'
-        }) or return $error_sub->(localize('The payment agent account does not exist.'));
+        });
+    }
+    catch {
+        $paymentagent_error = $_;
+    };
+    if ($paymentagent_error or not $paymentagent) {
+        return $error_sub->(localize('Please enter a valid payment agent ID.'));
+    }
 
     my $pa_client = $paymentagent->client;
     return $error_sub->(
