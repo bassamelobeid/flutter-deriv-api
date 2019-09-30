@@ -38,7 +38,7 @@ rpc_response authorize => sub {
             token_type                 => 'oauth_token',
             token                      => $client->token,
             app_markup_percentage      => '0',
-            is_virtual                 => 0,
+            is_virtual                 => ($client->landing_company_name =~ /virtual$/) ? 1 : 0,
             email                      => $client->email,
             scopes                     => ['read', 'admin', 'trade', 'payments'],
             country                    => $client->country,
