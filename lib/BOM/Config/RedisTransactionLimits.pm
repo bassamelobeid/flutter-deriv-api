@@ -2,11 +2,17 @@ package BOM::Config::RedisTransactionLimits;
 
 =head1 NAME
 
-BOM::Config::RedisTransactionLimits - Provides write access of redis transaction, based on landing company
+BOM::Config::RedisTransactionLimits
 
 =head1 DESCRIPTION
 
-This module has function to return RedisDB object, connected to appropriate Redis.
+Returns a RedisDB instance given a landing company object. If no parameter is
+given, the global settings redis instance is returned. We implemented it this
+way to allow sharding for different landing companies via a configuration tweak
+in /etc/rmg/redis-transaction-limits.yml in Chef. Because of this, the configuration
+yml structure is different from other Redis yml config files.
+
+In QA environment it is all pointed to the same local Redis server at port 6329.
 
 Please note:
 Don't cache returned object for a long term. All needed caching is done inside
