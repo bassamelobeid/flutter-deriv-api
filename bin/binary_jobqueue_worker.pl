@@ -15,7 +15,6 @@ use Path::Tiny qw(path);
 use Syntax::Keyword::Try;
 use Time::Moment;
 use Text::Trim;
-use Path::Tiny;
 use Try::Tiny;
 use Time::HiRes qw(alarm);
 
@@ -45,7 +44,8 @@ This script loads a queue coordinator managing a number of queue worker processe
 
 =item B<--queue-prefix> or B<--q>
 
-Sets a prefix to the processing and pending queues, standing as the queue identifier, making the queue worker paired to specific clients. It enables a single redis server to serve multiple rpc queues (each with it's own prefixe). The default value is the envirnoment name (QAxx, production, qa, ...).
+Sets a prefix to the processing and pending queues, standing as the queue identifier, making the queue worker paired to specific clients. 
+It enables a single redis server to serve multiple rpc queues (each with it's own prefixe). It is usually set to the envirnoment name (QAxx, blue, ...).
 
 
 =item B<--workers> or B<--w>
@@ -117,7 +117,7 @@ GetOptions(
     'socket|S=s'       => \(my $SOCKETPATH = "/var/run/bom-rpc/binary_jobqueue_worker.sock"),
     'redis|R=s'        => \(my $REDIS = $redis_config->{uri}),
     'log|l=s'          => \(my $log_level = "info"),
-    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // path('/etc/rmg/environment')->slurp_utf8),
+    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // ''),
     'pid-file=s' => \(my $PID_FILE),    #for BOM::Test::Script compatilibity
 ) or exit 1;
 
