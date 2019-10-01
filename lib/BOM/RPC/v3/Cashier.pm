@@ -1192,8 +1192,15 @@ rpc transfer_between_accounts => sub {
         if $status->cashier_locked;
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if ($status->withdrawal_locked || $status->no_withdrawal_or_trading);
-    return _transfer_between_accounts_error(localize('Your profile appears to be incomplete. Please update your personal details to continue.'))
-        if ($client->missing_requirements('withdrawal'));
+
+    if (my @missed_fields = $client->missing_requirements('withdrawal')) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ASK_FIX_DETAILS',
+            message_to_client => localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
+            details           => {fields => \@missed_fields},
+        });
+    }
+
     return _transfer_between_accounts_error(localize('Your cashier is locked as per your request.')) if $client->cashier_setting_password;
 
     my $args = $params->{args};
