@@ -364,7 +364,6 @@ subtest 'buy MULTUP with take profit', sub {
         # note explain $chld;
 
         subtest 'chld row', sub {
-            plan tests => 11;
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{'multiplier'},             5,        'multiplier is 5';
             is $chld->{'basis_spot'},             '100.00', 'basis_spot is 100.00';
