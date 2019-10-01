@@ -46,9 +46,18 @@ cmp_ok($res, '==', 0, 'But it does not exists, it will return 0');
 
 $client->first_name($details->{first_name});
 $client->save;
+
+$client->status->set('withdrawal_locked', 'system', 'test');
+$res = BOM::Database::ClientDB->new({broker_code => 'CR'})->get_duplicate_client($details);
+cmp_ok($res, '>', 1, 'withdrawal_locked client is still flagged as duplicate');
+
+$res = BOM::Database::ClientDB->new({broker_code => 'CR'})->get_duplicate_client({%$details, exclude_status => ['withdrawal_locked']});
+cmp_ok($res, '==', 0, '...but not if that status is excluded');
+
 $client->status->set('disabled', 'system', 'test');
 $res = BOM::Database::ClientDB->new({broker_code => 'CR'})->get_duplicate_client($details);
-cmp_ok($res, '>', 1, 'Disabled client is still flagged as duplicate');
+cmp_ok($res, '==', 0, 'Client with disabled status is not flagged as duplicate');
+$client->status->clear_disabled;
 
 $client->status->set('duplicate_account', 'system', 'test');
 $res = BOM::Database::ClientDB->new({broker_code => 'CR'})->get_duplicate_client($details);
