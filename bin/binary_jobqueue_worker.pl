@@ -359,8 +359,8 @@ sub process_job {
                     success => 0,
                     result  => {
                         error => {
-                            code              => 'InternalServerError',
-                            message_to_client => 'Sorry, an error occurred while processing your request.',
+                            code              => 'UnknownMethod',
+                            message_to_client => "Unknown method $name was called.",
                         }}})) unless $job->is_ready;
     }
 
