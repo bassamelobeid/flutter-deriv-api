@@ -10,8 +10,6 @@ my $brand = request()->brand;
 sub send_email {
     my ($client_email, $balance) = @_;
     
-    my $email_subject = localize('Disabling');
-    
     my $email_content = localize('Dear Valued Customer,') . "\n\n" 
     $email_content .= localize("We regret to inform you that to remain compliant with applicable international laws governing online trading, we will be closing all clients' accounts in France.");
     
@@ -27,7 +25,7 @@ sub send_email {
     send_email({
         from                  => $brand->emails('support'),
         to                    => $client_email,
-        subject               => $email_subject,
+        subject               => localize('Account closure for clients in France'),
         message               => [$email_content],
         use_email_template    => 1,
         email_content_is_html => 1,
