@@ -413,12 +413,13 @@ async_rpc "mt5_new_account",
                     BOM::Platform::Event::Emitter::emit(
                         'new_mt5_signup',
                         {
-                            loginid      => $client->loginid,
-                            account_type => $account_type,
-                            mt5_group    => $group,
-                            mt5_login_id => $mt5_login,
-                            cs_email     => $brand->emails('support'),
-                            language     => $params->{language}});
+                            loginid          => $client->loginid,
+                            account_type     => $account_type,
+                            sub_account_type => $mt5_account_type,
+                            mt5_group        => $group,
+                            mt5_login_id     => $mt5_login,
+                            cs_email         => $brand->emails('support'),
+                            language         => $params->{language}});
 
                     # Compliance team must be notified if a client under Binary (Europe) Limited
                     #   opens an MT5 account while having limitations on their account.
