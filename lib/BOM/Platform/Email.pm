@@ -39,7 +39,7 @@ sub send_email {
             'send_email',
             {
                 $args->%*,
-                request_brand_name => $request->brand_name,
+                request_brand_name => $request->brand->name,
                 request_language   => $request->language,
             });
     } else {
