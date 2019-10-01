@@ -8,9 +8,9 @@ my $clientdb = BOM::Database::ClientDB->new( { broker_code => 'MF' } )->db->dbic
 my $brand = request()->brand;
 
 sub send_email {
-    my ($client_email, $balance) = @_;
+    my ($client_email, $client_first_name, $balance) = @_;
     
-    my $email_content = localize('Dear Valued Customer,') . "\n\n" 
+    my $email_content = localize('Dear [_1],', $client_first_name) . "\n\n" 
     $email_content .= localize("We regret to inform you that to remain compliant with applicable international laws governing online trading, we will be closing all clients' accounts in France.");
     
     if ($balance == 0) {
@@ -40,7 +40,7 @@ my @fr_residence_clients = @{
     $clientdb->run(
         fixup => sub {
             $_->selectall_arrayref(
-                "SELECT cli.loginid, cli.email AS email, COALESCE(ta.balance, 0) AS balance
+                "SELECT cli.loginid, cli.first_name, cli.email AS email, COALESCE(ta.balance, 0) AS balance
                 FROM betonmarkets.client as cli
                 left join transaction.account AS ta ON cli.loginid = ta.client_loginid
                  where cli.residence = 'fr'",
@@ -52,13 +52,15 @@ my @fr_residence_clients = @{
 $clientdb->txn(
     fixup => sub {
         foreach my $fr_client (@fr_residence_clients) {
+            
             my $email = $fr_client->{email};
             my $balance = $fr_client->{balance};
+            my $cl_first_name = $fr_client->{first_name};
             
             # If there is balance, mark as unwelcome. Otherwise, disable
             my $status = $balance == 0 ? 'disabled' : 'unwelcome';
             
-            send_email($email, $balance);
+            send_email($email, $cl_first_name, $balance);
             
             # Insert status
             $clientdb->run(
