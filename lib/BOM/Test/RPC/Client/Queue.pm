@@ -68,7 +68,9 @@ sub _tcall {
         params => encode_json_utf8($req_params),
     };
     my $result = Future->wait_any($self->client->submit(%$request), $self->loop->delay_future(after => 10))->get;
-    my $r = MojoX::JSON::RPC::Client::ReturnObject->new(rpc_response => decode_json_utf8($result)) if $result;
+
+    my $r;
+    $r = MojoX::JSON::RPC::Client::ReturnObject->new(rpc_response => decode_json_utf8($result)) if $result;
 
     $self->response($r);
     $self->result($r->result) if $r;
