@@ -184,20 +184,13 @@ sub get_duplicate_client {
     my $self = shift;
     my $args = shift;
 
-    my $dupe_sql    = "SELECT * FROM get_duplicate_client(?,?,?,?,?,?,?)";
+    my @params = (uc $args->{first_name}, uc $args->{last_name}, $args->{date_of_birth}, $args->{email}, $self->broker_code, $args->{phone});
+    push @params, $args->{exclude_status} if $args->{exclude_status};
+
     my $dbic        = $self->db->dbic;
     my @dupe_record = $dbic->run(
         fixup => sub {
-            my $dupe_sth = $_->prepare($dupe_sql);
-            $dupe_sth->bind_param(1, uc $args->{first_name});
-            $dupe_sth->bind_param(2, uc $args->{last_name});
-            $dupe_sth->bind_param(3, $args->{date_of_birth});
-            $dupe_sth->bind_param(4, $args->{email});
-            $dupe_sth->bind_param(5, $self->broker_code);
-            $dupe_sth->bind_param(6, $args->{phone});
-            $dupe_sth->bind_param(7, $args->{exclude_status} // ['duplicate_account']);
-            $dupe_sth->execute();
-            return $dupe_sth->fetchrow_array();
+            return $_->selectrow_array(q{select * from get_duplicate_client(} . join(',', map { '?' } @params) . q{)}, undef, @params);
         });
     return @dupe_record;
 }
