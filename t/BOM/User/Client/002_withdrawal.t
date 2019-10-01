@@ -151,6 +151,8 @@ subtest 'CR withdrawal' => sub {
             lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'first 5k withdrawal';
             throws_ok { $client->smart_payment(%withdrawal, amount => -5001) } qr/exceeds withdrawal limit \[USD 5000.00\]/,
                 'total withdraw cannot > 10k';
+            lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'second 5k withdrawal';
+            is($client->authentication_status, 'needs_action', 'Client should be marked as Needs action');
         };
     };
 
