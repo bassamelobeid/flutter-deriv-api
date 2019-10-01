@@ -11,6 +11,7 @@ use Encode;
 
 use BOM::Config;
 use BOM::Platform::Context qw(request localize);
+use BOM::Platform::Context::Request;
 use BOM::Database::Model::OAuth;
 
 use parent 'Exporter';
@@ -33,7 +34,14 @@ sub send_email {
     my ($args) = @_;
 
     if ($args->{use_event}) {
-        BOM::Platform::Event::Emitter::emit('send_email', $args);
+        my $request = request();
+        BOM::Platform::Event::Emitter::emit(
+            'send_email',
+            {
+                $args->%*,
+                request_brand_name => $request->brand_name,
+                request_language   => $request->language,
+            });
     } else {
         process_send_email($args);
     }
@@ -105,10 +113,10 @@ sub process_send_email {
     my $layout             = $args_ref->{'layout'} // 'default';
     my $attachment         = $args_ref->{'attachment'} // [];
     $attachment = ref($attachment) eq 'ARRAY' ? $attachment : [$attachment];
-    my $skip_text2html   = $args_ref->{'skip_text2html'};
-    my $template_loginid = $args_ref->{template_loginid};
-
-    my $request = request();
+    my $skip_text2html     = $args_ref->{'skip_text2html'};
+    my $template_loginid   = $args_ref->{template_loginid};
+    my $request_brand_name = $args_ref->{request_brand_name};
+    my $request_language   = $args_ref->{request_language};
 
     unless ($email && $fromemail && $subject) {
         warn("from, to, or subject missed - [from: $fromemail, to: $email, subject: $subject]");
@@ -128,7 +136,15 @@ sub process_send_email {
         }
     }
 
-    my $brand = request()->brand;
+    my $request = request(
+        defined $request_brand_name and defined $request_language
+        ? BOM::Platform::Context::Request->new(
+            brand_name => $request_brand_name,
+            language   => $request_language,
+            )
+        : ());
+
+    my $brand = $request->brand;
     if ($fromemail eq $brand->emails('support')) {
         $fromemail = "\"" . $brand->website_name . "\" <$fromemail>";
     }
