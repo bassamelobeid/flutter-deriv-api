@@ -193,7 +193,6 @@ subtest 'buy MULTUP', sub {
         ok !$error, 'buy without error';
 
         subtest 'transaction report', sub {
-            plan tests => 11;
             note $txn->report;
             my $report = $txn->report;
             like $report, qr/\ATransaction Report:$/m,                                                    'header';
@@ -256,7 +255,6 @@ subtest 'buy MULTUP', sub {
         # note explain $chld;
 
         subtest 'chld row', sub {
-            plan tests => 11;
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{'multiplier'},             5,        'multiplier is 5';
             is $chld->{'basis_spot'},             '100.00', 'basis_spot is 100.00';
