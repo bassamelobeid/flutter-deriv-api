@@ -221,7 +221,11 @@ sub new_mt5_signup {
         })->retain;
 
     # send email to client to ask for authentication documents
-    if ($data->{account_type} eq 'financial' and not $client->fully_authenticated) {
+    if (    $data->{account_type} eq 'financial'
+        and $data->{sub_account_type}
+        and $data->{sub_account_type} eq 'advanced'
+        and not $client->fully_authenticated)
+    {
         my $redis     = BOM::Config::RedisReplicated::redis_write();
         my $masterkey = 'MT5_REMINDER_AUTHENTICATION_CHECK';
 
