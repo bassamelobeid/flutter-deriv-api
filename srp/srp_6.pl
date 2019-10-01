@@ -10,10 +10,12 @@ my $brand = request()->brand;
 sub send_email {
     my ($client_email, $balance) = @_;
     
+    my $email_subject = localize('Disabling');
+    
     my $email_content = localize('Dear Valued Customer,') . "\n\n" 
     $email_content .= localize("We regret to inform you that to remain compliant with applicable international laws governing online trading, we will be closing all clients' accounts in France.");
     
-    if ($status eq 'disabled') {
+    if ($balance == 0) {
         $email_content .= localize('As there is no balance in your account, we have disabled your account.') . "\n\n";
     } else {
         $email_content .= localize('Please withdraw your money from your Binary.com account by going to this cashier’s section: https://www.binary.com/en/cashier/forwardws.html?action=withdraw') . "\n\n";
@@ -25,8 +27,8 @@ sub send_email {
     send_email({
         from                  => $brand->emails('support'),
         to                    => $client_email,
-        subject               => $current_client->loginid . ' ' . localize('Change in account settings'),
-        message               => [$message],
+        subject               => $email_subject,
+        message               => [$email_content],
         use_email_template    => 1,
         email_content_is_html => 1,
     });
@@ -58,7 +60,7 @@ $clientdb->txn(
             # If there is balance, mark as unwelcome. Otherwise, disable
             my $status = $balance == 0 ? 'disabled' : 'unwelcome';
             
-            send_email($email, $status);
+            send_email($email, $balance);
             
             # Insert status
             $clientdb->run(
