@@ -89,7 +89,7 @@ bet_limits:
         LTC: 0.01
         UST: 0.5
         USB: 0.5
-        IDK: 7.5
+        IDK: 8
       volidx:
         USD: 0.35
         EUR: 0.35
@@ -101,7 +101,7 @@ bet_limits:
         LTC: 0.01
         UST: 0.5
         USB: 0.5
-        IDK: 7.5
+        IDK: 8
     maltainvest:
       default_market:
         USD: 5
