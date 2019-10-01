@@ -10,7 +10,7 @@ my $brand = request()->brand;
 sub send_email {
     my ($client_email, $client_first_name, $balance) = @_;
     
-    my $email_content = localize('Dear [_1],', $client_first_name) . "\n\n" 
+    my $email_content = localize('Dear [_1],', $client_first_name) . "\n\n" ;
     $email_content .= localize("We regret to inform you that to remain compliant with applicable international laws governing online trading, we will be closing all clients' accounts in France.");
     
     if ($balance == 0) {
