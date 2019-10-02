@@ -84,7 +84,7 @@ sub group_for_user {
                                 # but 5 minutes is good enough for
                                 # a negative cache.
                                 my $ttl = $group ? 7 * 86400 : 300;
-                                $group //= 'unknown';
+                                $group //= 'Archived';
                                 stats_inc('mt5.group_populator.item_processed', 1);
                                 $redis->set(
                                     $cache_key => $group,

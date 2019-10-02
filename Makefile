@@ -35,7 +35,8 @@ i18n:
 		--directory=/home/git/regentmarkets/bom-platform/ \
 		--directory=/home/git/regentmarkets/bom-pricing/ \
 		--directory=/home/git/regentmarkets/bom-rpc/lib \
-		--directory=/home/git/regentmarkets/bom-transaction/
+		--directory=/home/git/regentmarkets/bom-transaction/ \
+		--directory=/home/git/regentmarkets/cpan/local/lib/perl5/auto/share/dist/Brands/
 	perl -I /home/git/regentmarkets/bom-platform/lib /home/git/regentmarkets/bom-backoffice/bin/extra_translations.pl  /home/git/binary-com/translations-websockets-api/src/locales/messages.pot
 	for i in $(shell ls /home/git/binary-com/translations-websockets-api/src/locales/*.po); do \
 		msgmerge --previous --backup none --no-wrap --update --sort-output $$i /home/git/binary-com/translations-websockets-api/src/locales/messages.pot ; \
