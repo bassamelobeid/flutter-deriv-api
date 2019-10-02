@@ -2750,15 +2750,17 @@ subtest $method => sub {
     my $bal_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
-
     my $bal_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MLT',
     });
     my $bal_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
     });
+    my $bal_mf_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+    });
 
-    for my $c ($bal_mf, $bal_mlt, $bal_vr) {
+    for my $c ($bal_mf, $bal_mlt, $bal_vr, $bal_mf_disabled) {
         $c->email($bal_email);
         $c->save;
         $bal_user->add_client($c);
@@ -2784,6 +2786,15 @@ subtest $method => sub {
     $bal_vr->set_default_account('USD');
     $bal_vr->save;
 
+    $bal_mf_disabled->set_default_account('USD');
+    $bal_mf_disabled->save;
+    $bal_mf_disabled->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+    $bal_mf_disabled->status->set('disabled', 1, 'test disabled');
+
     my $bal_token = $m->create_token($bal_mlt->loginid, 'mlt token');
 
     my $expected_result = {
@@ -2794,7 +2805,7 @@ subtest $method => sub {
     };
 
     my $result = $c->tcall($method, {token => $bal_token});
-    diag(explain($result));
+
     is_deeply($result, $expected_result, 'result is correct');
     my $args = {
         balance => 1,
@@ -2879,7 +2890,7 @@ subtest $method => sub {
                         }}}]
         },
 
-        'result is correct'
+        'result is correct for mix of real, virtual and disabled clients'
     );
 
     $result = $c->tcall(
@@ -2937,6 +2948,62 @@ subtest $method => sub {
                     }}}]};
 
     is_deeply($result, $expected_result, 'mt5 result is ok');
+
+    my $balence_currency_email = 'balance_currency@binary.com';
+    my $bal_currency_user      = BOM::User->create(
+        email    => $balence_currency_email,
+        password => $hash_pwd,
+    );
+
+    my $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $client_cr_ust = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    for my $c ($client_cr_btc, $client_cr_ust) {
+        $c->email($balence_currency_email);
+        $c->save;
+        $bal_currency_user->add_client($c);
+    }
+
+    $client_cr_btc->set_default_account('BTC');
+    $client_cr_btc->save;
+
+    $client_cr_ust->set_default_account('UST');
+    $client_cr_ust->save;
+
+    my $cr_btc_token = $m->create_token($client_cr_btc->loginid, 'cr_btc token');
+
+    $result = $c->tcall(
+        $method,
+        {
+            token => $cr_btc_token,
+            args  => $args
+        });
+
+    is $result->{all}[0]{total}{real}{currency}, 'USD', 'USD currency used for total balance when no fiat accounts exist';
+
+    my $client_cr_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $client_cr_eur->email($balence_currency_email);
+    $client_cr_eur->set_default_account('EUR');
+    $client_cr_eur->save;
+    $bal_currency_user->add_client($client_cr_eur);
+
+    $result = $c->tcall(
+        $method,
+        {
+            token => $cr_btc_token,
+            args  => $args
+        });
+
+    is $result->{all}[0]{total}{real}{currency}, 'EUR', 'fiat account currency used for total balance';
+
 };
 
 # Recursively get values from nested hashes
