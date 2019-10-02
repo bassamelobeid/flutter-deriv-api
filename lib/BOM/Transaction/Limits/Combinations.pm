@@ -71,18 +71,21 @@ sub get_attributes_from_contract {
 
     my ($contract_group, $underlying_group) = BOM::Transaction::Limits::Groups::get_limit_groups($bet_data);
 
-    if (not $underlying_group) {
-        $underlying_group = 'default';
-    }
-
-    if (not $contract_group) {
-        $contract_group = 'default';
-    }
+    $underlying_group //= 'default';
+    $contract_group   //= 'default';
 
     my $underlying = $bet_data->{underlying_symbol};
 
     # a for atm, n for non-atm
     my $barrier_type = ($bet_data->{short_code} =~ /_S0P_/) ? 'a' : 'n';
+
+    my $expiry_type = _get_expiry_type($bet_data);
+
+    return [$underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type];
+}
+
+sub _get_expiry_type {
+    my ($bet_data) = @_;
 
     my $expiry_type = 'i';    # intraday
     if ($bet_data->{tick_count} and $bet_data->{tick_count} > 0) {
@@ -96,7 +99,7 @@ sub get_attributes_from_contract {
         $expiry_type = 'u' if ($duration <= 300);    # ultra_short; 5 minutes
     }
 
-    return [$underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type];
+    return $expiry_type;
 }
 
 1;

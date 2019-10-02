@@ -26,7 +26,7 @@ sub reset_daily_loss_hashes {
     my %output;
 
     my $redis;
-    my @landing_companies_with_broker_codes = grep { $#{$_->broker_codes} > -1 } LandingCompany::Registry::all();
+    my @landing_companies_with_broker_codes = grep { $_->broker_codes->@* } LandingCompany::Registry::all();
     foreach my $loss_type (qw/realized_loss turnover/) {
         foreach my $lc (@landing_companies_with_broker_codes) {
             $redis = BOM::Config::RedisTransactionLimits::redis_limits_write($lc);
