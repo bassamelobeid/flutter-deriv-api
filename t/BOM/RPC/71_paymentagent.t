@@ -934,7 +934,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $mock_client_paymentagent->mock('new', sub { return ''; });
         $testargs->{args}{paymentagent_loginid} = 'NOSUCHUSER';
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        is($res->{error}{message_to_client}, 'The payment agent account does not exist.', $test);
+        is($res->{error}{message_to_client}, 'Please enter a valid payment agent ID.', $test);
         $mock_client_paymentagent->unmock('new');
         reset_withdraw_testargs();
 

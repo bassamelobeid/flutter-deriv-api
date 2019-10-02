@@ -510,83 +510,6 @@ subtest 'login list' => sub {
     cmp_bag(\@accounts, [$ACCOUNTS{'real\svg'}, $ACCOUNTS{'real\vanuatu_standard'}], "mt5_login_list result");
 };
 
-subtest 'login list partly successfull result' => sub {
-    my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('mt5_logins', sub { return qw(MT00000013 MT00000014) });
-
-    my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $mt5_acc_mock->mock(
-        'mt5_mamm',
-        sub {
-            my $login = shift->{args}{login};
-
-            #result one login should have error msg
-            return BOM::RPC::v3::MT5::Account::create_error_future('General') if $login eq '00000014';
-
-            return Future->done({some => 'valid data'});
-        });
-
-    my $method = 'mt5_login_list';
-    my $params = {
-        language => 'EN',
-        token    => $token,
-        args     => {},
-    };
-
-    $c->call_ok($method, $params)->has_error('has error for mt5_login_list')->error_code_is('General', 'Should return correct error code');
-};
-
-subtest 'login list without success results' => sub {
-    my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('mt5_logins', sub { return qw(MT00000013 MT00000014) });
-
-    my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $mt5_acc_mock->mock(
-        'mt5_mamm',
-        sub {
-            BOM::RPC::v3::MT5::Account::create_error_future('General');
-        });
-
-    my $method = 'mt5_login_list';
-    my $params = {
-        language => 'EN',
-        token    => $token,
-        args     => {},
-    };
-
-    $c->call_ok($method, $params)->has_error('has error for mt5_login_list')->error_code_is('General', 'Should return correct error code');
-};
-
-subtest 'create new account fails, when we get error during getting login list' => sub {
-    my $method = 'mt5_new_account';
-    my $params = {
-        language => 'EN',
-        token    => $token,
-        args     => {
-            account_type   => 'gaming',
-            country        => 'mt',
-            email          => $DETAILS{email},
-            name           => $DETAILS{name},
-            investPassword => 'Abcd1234',
-            mainPassword   => $DETAILS{password},
-            leverage       => 100,
-        },
-    };
-
-    my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('mt5_logins', sub { return qw(MT00000013 MT00000014) });
-
-    my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $mt5_acc_mock->mock(
-        'mt5_mamm',
-        sub {
-            BOM::RPC::v3::MT5::Account::create_error_future('General');
-        });
-
-    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok($method, $params)->has_error('has error for mt5_login_list')->error_code_is('General', 'Should return correct error code');
-};
-
 subtest 'password check' => sub {
     my $method = 'mt5_password_check';
     my $params = {
@@ -602,7 +525,7 @@ subtest 'password check' => sub {
 
     $params->{args}{password} = "wrong";
     $c->call_ok($method, $params)->has_error('error for mt5_password_check wrong password')
-        ->error_message_like(qr/Forgot your password?/, 'error code for mt5_password_check wrong password');
+        ->error_code_is('MT5PasswordCheckError', 'error code for mt5_password_check wrong password');
 
     $params->{args}{login} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_password_check wrong login')
@@ -1424,7 +1347,7 @@ subtest 'Suspended Transfers Currencies' => sub {
 
         $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
             ->error_code_is('MT5DepositError', 'Transfer from suspended currency not allowed - correct error code')
-            ->error_message_like(qr/BTC and USD are currently unavailable/, 'Transfer from suspended currency not allowed - correct error message');
+            ->error_message_like(qr/BTC and USD are currently unavilable/, 'Transfer from suspended currency not allowed - correct error message');
 
     };
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies([]);

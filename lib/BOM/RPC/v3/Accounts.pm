@@ -584,6 +584,8 @@ Takes the following (named) parameters:
 
 =item * C<params> - A hashref with reference to BOM::User::Client object under the key C<client>
 
+=item * C<loginid>
+
 =back
 
 Returns a hashref with following items
@@ -606,6 +608,8 @@ sub single_balance {
         loginid      => $loginid,
         db_operation => 'replica'
     });
+
+    return if $params->{exclude_disabled} && $client->status->disabled;
 
     return {
         currency   => '',
@@ -643,20 +647,23 @@ rpc balance => sub {
     #if (client has real account with USD OR doesn’t have fiat account) {
     #    use ‘USD’;
     #} elsif (there is more than one fiat account) {
-    #    use currency of financial account;
+    #    use currency of financial account (MF or CR);
     #} else {
     #    use currency of fiat account;
     #}
-    #// there is only one fiat account
 
     my ($has_usd, $financial_currency, $fiat_currency);
-    for my $loginid (sort $user->bom_real_loginids) {
+    $params->{exclude_disabled} = 1;
+
+    for my $loginid (sort $user->bom_loginids) {
         my $result = single_balance($params, $loginid);
+        next unless $result;
+        push @results, $result;
+        next if $loginid =~ /^VR/;
+        next unless (LandingCompany::Registry::get_currency_type($result->{currency}) // '') eq 'fiat';
         $has_usd            = 1                   if $result->{currency} eq 'USD';
         $financial_currency = $result->{currency} if $loginid =~ /^(MF|CR)/;
-        $fiat_currency      = $result->{currency}
-            if (LandingCompany::Registry::get_currency_type($result->{currency}) // '') eq 'fiat';
-        push @results, $result;
+        $fiat_currency      = $result->{currency};
     }
 
     my $total_currency;
@@ -680,7 +687,7 @@ rpc balance => sub {
     };
 
     for my $result (@results) {
-        if ($result->{account_id}) {
+        if ($result->{account_id} && $result->{loginid} !~ /^VR/) {
             $real_total->{amount} += convert_currency($result->{balance}, $result->{currency}, $total_currency);
             $result->{currency_rate_in_total_currency} =
                 convert_currency(1, $result->{currency}, $total_currency);    # This rate is used for the future stream
@@ -697,6 +704,7 @@ rpc balance => sub {
         $mt5_total->{amount} += convert_currency($result->{balance}, $result->{currency}, $total_currency);
     }
     $mt5_total->{amount} = formatnumber('amount', $total_currency, $mt5_total->{amount});
+
     return {
         all => \@results,
     };
