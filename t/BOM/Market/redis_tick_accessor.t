@@ -150,4 +150,32 @@ subtest 'ticks_in_between_start_end' => sub {
         });
 };
 
+subtest 'breaching_tick' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [100.01, $now + 1, $symbol],
+        [100.09, $now + 2, $symbol],
+        [101.05, $now + 3, $symbol],
+        [102.01, $now + 4, $symbol],
+        [99.89,  $now + 5, $symbol]);
+    my $accessor = BOM::Market::RedisTickAccessor->new(underlying => $underlying);
+    my %args = (
+        start_time => $now,
+        end_time   => $now + 5,
+        higher     => 102.02,
+    );
+    ok !$accessor->breaching_tick(%args), 'no breaching tick';
+    my $hit;
+    $args{higher} = 100.04;
+    ok $hit = $accessor->breaching_tick(%args);
+    is $hit->quote, 100.09, 'quote is 100.09';
+    is $hit->epoch, $now + 2, 'correct tick epoch';
+    $args{higher} = 102.02;
+    $args{lower}  = 99.9;
+    ok $hit = $accessor->breaching_tick(%args);
+    is $hit->quote, 99.89, 'quote is 99.89';
+    is $hit->epoch, $now + 5, 'correct tick epoch';
+    $args{lower} = 98;
+    ok !$accessor->breaching_tick(%args), 'no breaching tick';
+};
+
 done_testing();
