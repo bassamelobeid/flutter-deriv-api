@@ -56,20 +56,35 @@
                "description" : "Example: 10"
             },
             "barriers" : {
-               "type": "array",
+               "type": "object",
                "description": "Contains barrier information. (Only applicable for contract with internally calculated barrier(s).).",
-               "item": {
-                 "type": "object",
-                 "properties": {
-                   "display_name": {
-                     "type": "Str",
-                     "description": "The description of the barrier."
-                   },
-                   "barrier_value": {
-                     "type": "Str",
-                     "description": "The pip-sized barrier value."
-                   }
-                 }
+               "properties": {
+                  "take_profit": {
+                     "type": "object",
+                     "description": "take profit barrier information",
+                     "properties": {
+                        "display_name": {
+                            "type": "string"
+                        },
+                        "barrier_value": {
+                            "type": "string",
+                            "description": "pip-sized barrier value"
+                        }
+                     }
+                  },
+                  "stop_loss": {
+                     "type": "object",
+                     "description": "stop loss barrier information",
+                     "properties": {
+                        "display_name": {
+                            "type": "string"
+                        },
+                        "barrier_value": {
+                            "type": "string",
+                            "description": "pip-sized barrier value"
+                        }
+                     }
+                  }
                }
             }
          },

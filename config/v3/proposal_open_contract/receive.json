@@ -415,15 +415,11 @@
                     "description" : "[Only for reset trades] The epoch time of a barrier reset. Example: 1446629000",
                     "type" : "integer"
                 },
-                "orders" : {
+                "limit_order" : {
                     "description" : "Orders are applicable to MULTUP and MULTDOWN only.",
                     "type": "object",
                     "properties": {
                         "stop_out": {
-                            "order_type" : {
-                                "type": "string",
-                                "description": "type of order"
-                            },
                             "value" : {
                                 "type": "number",
                                 "description": "stop out order value"
@@ -434,10 +430,6 @@
                             }
                         },
                         "take_profit": {
-                            "order_type" : {
-                                "type": "string",
-                                "description": "type of order"
-                            },
                             "value" : {
                                 "type": "number",
                                 "description": "take profit order value"
