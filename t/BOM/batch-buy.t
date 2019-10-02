@@ -509,29 +509,17 @@ subtest 'single contract fails in database', sub {
 };
 
 subtest 'batch-buy multiple databases and datadog', sub {
-    plan tests => 27;
+    plan tests => 17;
     lives_ok {
         my $clm              = create_client 'VRTC';    # manager
-        my $mf_professional1 = create_client 'MF';
-        my $mf_professional2 = create_client 'MF';
         my @cl;
         push @cl, create_client;
         push @cl, create_client;
-        push @cl, create_client 'MF';
-        push @cl, create_client 'MF';
         push @cl, create_client 'VRTC';
 
         $clm->set_default_account('USD');
         $clm->save;
 
-        $mf_professional1->status->set("professional");
-        $mf_professional2->status->set("professional");
-
-        $mf_professional1->save();
-        $mf_professional2->save();
-
-        push @cl, $mf_professional1;
-        push @cl, $mf_professional2;
 
         top_up $_, 'USD', 5000 for (@cl);
 
@@ -592,7 +580,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
 
         my $expected_status = {
             active_queues  => 2,    # TICK_COUNT and SETTLEMENT_EPOCH
-            open_contracts => 5,    # the ones just bought
+            open_contracts => 3,    # the ones just bought
             ready_to_sell  => 0,    # obviously
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
@@ -681,38 +669,6 @@ subtest 'batch-buy multiple databases and datadog', sub {
             {
                 tags => [
                     qw/ broker:cr
-                        virtual:no
-                        rmgenv:production
-                        contract_class:higher_lower_bet
-                        landing_company:virtual
-                        market:forex
-                        amount_type:payout
-                        expiry_type:duration
-                        /
-                ]}];
-        check_datadog
-            action_name => 'count',
-            data        => [
-            "transaction.buy.attempt" => 2,
-            {
-                tags => [
-                    qw/ broker:mf
-                        virtual:no
-                        rmgenv:production
-                        contract_class:higher_lower_bet
-                        landing_company:virtual
-                        market:forex
-                        amount_type:payout
-                        expiry_type:duration
-                        /
-                ]}];
-        check_datadog
-            action_name => 'count',
-            data        => [
-            "transaction.buy.success" => 2,
-            {
-                tags => [
-                    qw/ broker:mf
                         virtual:no
                         rmgenv:production
                         contract_class:higher_lower_bet
