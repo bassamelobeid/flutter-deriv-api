@@ -650,13 +650,14 @@ rpc balance => sub {
     #// there is only one fiat account
 
     my ($has_usd, $financial_currency, $fiat_currency);
-    for my $loginid (sort $user->bom_real_loginids) {
+    for my $loginid (sort $user->bom_loginids) {
         my $result = single_balance($params, $loginid);
+        push @results, $result;
+        next if $loginid =~ /^VR/;
         $has_usd            = 1                   if $result->{currency} eq 'USD';
         $financial_currency = $result->{currency} if $loginid =~ /^(MF|CR)/;
         $fiat_currency      = $result->{currency}
             if (LandingCompany::Registry::get_currency_type($result->{currency}) // '') eq 'fiat';
-        push @results, $result;
     }
 
     my $total_currency;
@@ -680,7 +681,7 @@ rpc balance => sub {
     };
 
     for my $result (@results) {
-        if ($result->{account_id}) {
+        if ($result->{account_id} && $result->{loginid} !~ /^VR/) {
             $real_total->{amount} += convert_currency($result->{balance}, $result->{currency}, $total_currency);
             $result->{currency_rate_in_total_currency} =
                 convert_currency(1, $result->{currency}, $total_currency);    # This rate is used for the future stream
@@ -697,6 +698,7 @@ rpc balance => sub {
         $mt5_total->{amount} += convert_currency($result->{balance}, $result->{currency}, $total_currency);
     }
     $mt5_total->{amount} = formatnumber('amount', $total_currency, $mt5_total->{amount});
+
     return {
         all => \@results,
     };

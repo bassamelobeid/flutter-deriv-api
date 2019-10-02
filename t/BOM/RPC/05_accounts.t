@@ -142,6 +142,7 @@ my $test_client_vr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client
     broker_code => 'VRTC',
 });
 $test_client_vr_2->email($email);
+$test_client_vr_2->set_default_account('USD');
 $test_client_vr_2->save;
 
 my $email_mlt_mf    = 'mltmf@binary.com';
@@ -2780,6 +2781,9 @@ subtest $method => sub {
         remark   => 'free gift',
     );
 
+    $bal_vr->set_default_account('USD');
+    $bal_vr->save;
+
     my $bal_token = $m->create_token($bal_mlt->loginid, 'mlt token');
 
     my $expected_result = {
@@ -2857,6 +2861,21 @@ subtest $method => sub {
                         'real' => {
                             'amount'   => '2500.00',
                             'currency' => 'USD'
+                        }}
+                },
+                {
+                    'account_id' => $bal_vr->default_account->id,
+                    'balance'    => '0.00',
+                    'currency'   => 'USD',
+                    'loginid'    => $bal_vr->loginid,
+                    'total'      => {
+                        'mt5' => {
+                            'amount'   => '0.00',
+                            'currency' => 'USD'
+                        },
+                        'real' => {
+                            'amount'   => '2500.00',
+                            'currency' => 'USD'
                         }}}]
         },
 
@@ -2875,7 +2894,7 @@ subtest $method => sub {
                 'account_id' => '',
                 'balance'    => '0.00',
                 'currency'   => '',
-                'loginid'    => 'MF90000003',
+                'loginid'    => $test_client_mf->loginid,
                 'total'      => {
                     'mt5' => {
                         'amount'   => '1851.00',
@@ -2887,12 +2906,27 @@ subtest $method => sub {
                     }}
             },
             {
-                'account_id'                      => '201159',
+                'account_id'                      => $test_client_mlt->default_account->id,
                 'balance'                         => '0.00',
                 'currency'                        => 'EUR',
                 'currency_rate_in_total_currency' => 1,
-                'loginid'                         => 'MLT20',
+                'loginid'                         => $test_client_mlt->loginid,
                 'total'                           => {
+                    'mt5' => {
+                        'amount'   => '1851.00',
+                        'currency' => 'EUR'
+                    },
+                    'real' => {
+                        'amount'   => '0.00',
+                        'currency' => 'EUR'
+                    }}
+            },
+            {
+                'account_id' => $test_client_vr_2->default_account->id,
+                'balance'    => '0.00',
+                'currency'   => 'USD',
+                'loginid'    => $test_client_vr_2->loginid,
+                'total'      => {
                     'mt5' => {
                         'amount'   => '1851.00',
                         'currency' => 'EUR'
