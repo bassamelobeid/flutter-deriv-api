@@ -17,6 +17,7 @@ use BOM::Event::Actions::MT5;
 use BOM::Event::Actions::Client;
 use BOM::Event::Actions::CryptoSubscription;
 use BOM::Event::Actions::Anonymization;
+use BOM::Event::Actions::Email;
 use Scalar::Util qw(blessed);
 
 =head1 NAME
@@ -54,6 +55,7 @@ my $action_mapping = {
     authenticated_with_scans    => \&BOM::Event::Actions::Client::email_client_account_verification,
     qualifying_payment_check    => \&BOM::Event::Actions::Client::qualifying_payment_check,
     payment_deposit             => \&BOM::Event::Actions::Client::payment_deposit,
+    send_email                  => \&BOM::Event::Actions::Email::send_email_generic,
 };
 
 =head1 METHODS
