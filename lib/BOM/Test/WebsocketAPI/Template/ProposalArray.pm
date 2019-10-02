@@ -107,18 +107,16 @@ publish proposal_array => sub {
     my $pa           = $_->proposal_array;
     my $symbol       = $pa->underlying->symbol;
     my $display_name = $pa->underlying->display_name;
-    my $lcn          = $pa->client->landing_company_name;
-    my $real         = ($lcn =~ /virtual$/) ? 0 : 1;
     return {
         sprintf(
-            'PRICER_KEYS::["amount","1000","barriers",[%s],"basis","payout","contract_type",[%s],"currency","%s","duration","%s","duration_unit","%s","landing_company","%s","price_daemon_cmd","price","proposal_array","1","real_money","%s","skips_price_validation","1","subscribe","1","symbol","%s"]',
+            'PRICER_KEYS::["amount","1000","barriers",[%s],"basis","payout","contract_type",[%s],"currency","%s","duration","%s","duration_unit","%s","landing_company","%s","price_daemon_cmd","price","proposal_array","1","skips_price_validation","1","subscribe","1","symbol","%s"]',
 
             join(',', map { "\"$_\"" } $pa->barriers->@*),
             join(',', map { "\"$_\"" } $pa->contract_types->@*),
             $pa->client->currency,
             $pa->duration,
             $pa->duration_unit,
-            $lcn, $real,
+            $pa->client->landing_company_name,
             $pa->underlying->symbol
             ) => {
 
