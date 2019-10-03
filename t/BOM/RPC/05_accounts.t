@@ -905,10 +905,10 @@ subtest $method => sub {
                             status                          => "none",
                             "further_resubmissions_allowed" => 0
                         },
-                        needs_verification => ["document"],
+                        needs_verification => ["document", "identity"],
                     }
                 },
-                'authentication page for POA should be shown if needs action is set regardless of balance'
+                'authentication page for POI and POA should be shown if the client is not age verified and needs action is set regardless of balance'
             );
 
             my $mocked_status = Test::MockModule->new(ref($test_client_cr->status));
