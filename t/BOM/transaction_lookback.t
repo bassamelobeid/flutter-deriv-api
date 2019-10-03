@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::MockTime qw/:all/;
+use Test::MockTime::HiRes qw/set_relative_time restore_time/;
 use Test::MockModule;
 use Test::More tests => 10;
 use Test::Exception;
@@ -433,6 +433,7 @@ subtest 'sell a bet', sub {
             bet_type     => 'LBFLOATCALL',
             currency     => 'USD',
             multiplier   => 5,
+            date_start   => $now->epoch,
             duration     => '30m',
             current_tick => $tick,
             entry_tick   => $tick,
