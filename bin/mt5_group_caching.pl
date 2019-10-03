@@ -81,7 +81,7 @@ sub is_mt5_suspended {
                                 my $ttl = $group ? 3600 : 300;
                                 $group  //= 'Archived';
                                 $rights //= 0x0004;
-                                
+
                                 stats_inc('mt5.group_populator.item_processed', 1);
                                 my $mt5_details = {
                                     'group'  => $group,
