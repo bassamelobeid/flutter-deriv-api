@@ -104,26 +104,6 @@ test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusion/te
 fail_test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusion/test_receive_to_fail.json',
     _get_stashed('new_account_real/oauth_token');
 
-# PAYMENT SCOPE CALLS (CR)
-test_sendrecv_params 'cashier_password/test_send.json', 'cashier_password/test_receive.json', _get_stashed('new_account_real/oauth_token'), '0';
-test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive.json',
-    _get_stashed('new_account_real/oauth_token'), '1', 'Binary@12';
-test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_error.json', _get_stashed('new_account_real/oauth_token');
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test-rpc@binary.com', 'payment_withdraw';
-test_sendrecv_params 'cashier/test_send_withdraw.json', 'cashier/test_receive_error.json',
-    _get_stashed('new_account_real/oauth_token'), _get_token('test-rpc@binary.com');
-test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive_error.json',
-    _get_stashed('new_account_real/oauth_token'), '', 'Binary@12';
-test_sendrecv_params 'cashier_password/test_send.json', 'cashier_password/test_receive.json', _get_stashed('new_account_real/oauth_token'), '1';
-test_sendrecv_params 'cashier_password/test_send_unlock.json', 'cashier_password/test_receive.json',
-    _get_stashed('new_account_real/oauth_token'), '0', 'Binary@12';
-test_sendrecv_params 'cashier_password/test_send_unlock.json', 'cashier_password/test_receive_error.json',
-    _get_stashed('new_account_real/oauth_token'), '', 'Binary@12';
-test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive_password_error.json',
-    _get_stashed('new_account_real/oauth_token'), '', 'binary@12';
-test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive_error.json',
-    _get_stashed('new_account_real/oauth_token'), '', 'Binary@1';
-
 # VIRTUAL ACCOUNT OPENING FOR (MLT)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+mlt@binary.com', 'account_opening';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
