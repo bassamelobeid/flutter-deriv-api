@@ -557,8 +557,6 @@ sub _pricing_channel_for_proposal {
     # use residence when available, fall back to IP country
     $args_hash{country_code} = $c->stash('residence') || $c->stash('country_code');
     $args_hash{skips_price_validation} = 1;
-    # Ternary is here to reduce the range of possible values
-    $args_hash{real_money} = ($c->stash('loginid') && !$c->stash('is_virtual')) ? 1 : 0;
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel = $args->{amount} // $args->{multiplier};
 
@@ -579,7 +577,6 @@ sub pricing_channel_for_proposal_open_contract {
     $hash{language}         = $c->stash('language') || 'EN';
     $hash{price_daemon_cmd} = $price_daemon_cmd;
     $hash{landing_company}  = $c->landing_company_name;
-    $hash{real_money}       = ($c->stash('loginid') && !$c->stash('is_virtual')) ? 1 : 0;
     # use residence when available, fall back to IP country
     $hash{country_code} = $c->stash('residence') || $c->stash('country_code');
     $hash{limit_order} = $cache->{limit_order} if $cache->{limit_order};
