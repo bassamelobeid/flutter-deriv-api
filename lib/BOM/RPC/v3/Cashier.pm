@@ -1175,7 +1175,7 @@ rpc transfer_between_accounts => sub {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
 
-    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual && $token_type ne 'oauth_token';
 
     my $status = $client->status;
 
@@ -1198,10 +1198,6 @@ rpc transfer_between_accounts => sub {
     my ($currency, $amount) = @{$args}{qw/currency amount/};
 
     my $siblings = $client->real_account_siblings_information(include_disabled => 0);
-    unless (keys %$siblings) {
-        warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
-        return _transfer_between_accounts_error(localize('Internal server error'));
-    }
 
     my ($loginid_from, $loginid_to) = @{$args}{qw/account_from account_to/};
 
