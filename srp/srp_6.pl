@@ -8,34 +8,6 @@ use BOM::Platform::Email qw(send_email);
 my $clientdb = BOM::Database::ClientDB->new( { broker_code => 'MF' } )->db->dbic;
 my $brand = request()->brand;
 
-use Data::Dumper;
-
-sub send_email_to_client {
-    my ($client_email, $client_first_name, $balance) = @_;
-    
-    my $email_content = localize('Dear [_1],', $client_first_name) . "\n\n" ;
-    $email_content .= localize("We regret to inform you that to remain compliant with applicable international laws governing online trading, we will be closing all clients' accounts in France.") . "\n\n";
-    
-    if ($balance == 0) {
-        $email_content .= localize('As there is no balance in your account, we have disabled your account.') . "\n\n";
-    } else {
-        $email_content .= localize("Please withdraw your money from your Binary.com account by going to this cashier's section: [_1]", 'https://www.binary.com/en/cashier/forwardws.html?action=withdraw') . "\n\n";
-    }
-    
-    $email_content .= localize('We would like to thank you for your support thus far.') . "\n\n";
-    $email_content .= localize("Please contact us at [_1] if you have any questions.", 'support@binary.com') . "\n\n";
-    
-    return send_email({
-        from                  => $brand->emails('support'),
-        to                    => $client_email,
-        subject               => localize('Account closure for clients in France'),
-        message               => [$email_content],
-        use_email_template    => 1,
-        email_content_is_html => 1,
-    });
-    
-}
-
 # Get the following from MF database: email address, balance
 my @fr_residence_clients = @{
     $clientdb->run(
@@ -60,8 +32,6 @@ $clientdb->txn(
             
             # If there is balance, mark as unwelcome. Otherwise, disable
             my $status = $balance == 0 ? 'disabled' : 'unwelcome';
-            
-            send_email_to_client($email, $cl_first_name, $balance);
             
             # Insert status
             $clientdb->run(
