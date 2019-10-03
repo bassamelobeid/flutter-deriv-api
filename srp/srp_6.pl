@@ -2,11 +2,8 @@ use strict;
 use warnings;
 
 use BOM::Database::ClientDB;
-use BOM::Platform::Context qw (localize request);
-use BOM::Platform::Email qw(send_email);
 
 my $clientdb = BOM::Database::ClientDB->new( { broker_code => 'MF' } )->db->dbic;
-my $brand = request()->brand;
 
 # Get the following from MF database: email address, balance
 my @fr_residence_clients = @{
