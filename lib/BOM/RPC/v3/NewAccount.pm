@@ -107,6 +107,21 @@ rpc "new_account_virtual",
         amount        => 0,
         payment_agent => 0,
     );
+
+    # Welcome email for Binary brand is handled in customer.io
+    # we're sending for Deriv here as a temporary solution
+    # until customer.io is able to handle multiple domains
+    my $brand = request()->brand;
+    request_email(
+        $email,
+        {
+            subject       => localize('Welcome to Deriv'),
+            template_name => 'welcome_virtual',
+            template_args => {
+                website_url => $brand->default_url,
+            },
+        }) if $brand->name eq 'deriv';
+
     return {
         client_id => $client->loginid,
         email     => $email,
