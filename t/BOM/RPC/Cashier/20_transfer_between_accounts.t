@@ -426,26 +426,23 @@ subtest 'Validation for transfer from incomplete account' => sub {
         amount       => 10
     };
 
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
-        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.', 'Error msg for client is correct')
-        ->error_details_is({ fields => ['address_city'] }, 'Error details is correct');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Error msg for client is correct')->error_details_is({fields => ['address_city']}, 'Error details is correct');
 
     $client_cr1->address_city('Test City');
     $client_cr1->address_line_1('');
     $client_cr1->save;
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
-        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.', 'Error msg for client is correct')
-        ->error_details_is({ fields => ['address_line_1'] }, 'Error details is correct');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Error msg for client is correct')->error_details_is({fields => ['address_line_1']}, 'Error details is correct');
 
     $client_cr1->address_city('');
     $client_cr1->address_line_1('');
     $client_cr1->save;
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
-        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.', 'Error msg for client is correct')
-        ->error_details_is({ fields => ['address_city', 'address_line_1'] }, 'Error details is correct');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Error msg for client is correct')->error_details_is({fields => ['address_city', 'address_line_1']}, 'Error details is correct');
 
 };
 

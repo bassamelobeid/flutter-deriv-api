@@ -915,6 +915,12 @@ sub _get_authentication {
         $poa_structure->();
     }
 
+    # If needs action and not age verified, we require both POI and POA
+    if (($client->authentication_status // '') eq 'needs_action' and not defined $client->status->age_verification) {
+        $needs_verification_hash{document} = 'document';
+        $needs_verification_hash{identity} = 'identity';
+    }
+
     $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
     return $authentication_object;
 }
