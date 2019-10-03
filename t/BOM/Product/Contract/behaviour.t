@@ -482,5 +482,57 @@ subtest 'expiry condition for upordown' => sub {
     is $c->value, 0, 'zero payout';
 };
 
-done_testing;
+subtest 'too fast deal for expiry tick contract will be delayed' => sub {
+    my $entry_tick
+        = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            epoch      => $now->epoch,
+            underlying => 'R_50',
+        });
 
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(([111, $now->epoch, 'R_100'], [112, $now->epoch + 1, 'R_100']));
+
+    my $params = {
+        underlying   => 'R_100',
+        bet_type     => 'DIGITMATCH',
+        entry_tick   => $entry_tick,
+        date_start   => $now,
+        date_pricing => $now->epoch,
+        duration     => '1t',
+        currency     => 'USD',
+        payout       => 100,
+        barrier      => 8,
+    };
+
+    my $c = produce_contract($params);
+
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    like($c->primary_validation_error->message, qr/wait for next second after start time/, 'throws error');
+};
+
+subtest 'forward start contract should be possible to sell before start time' => sub {
+    my $entry_tick
+        = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            epoch      => $now->epoch,
+            underlying => 'R_50',
+        });
+
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [101, $now->epoch + 1, 'R_100'],);
+    my $params = {
+        bet_type            => 'DIGITMATCH',
+        underlying          => 'R_100',
+        entry_tick          => $entry_tick,
+        date_start          => $now->epoch + 10,
+        date_pricing        => $now->epoch,
+        duration            => '10s',
+        payout              => 100,
+        barrier             => 8,
+        currency            => 'USD',
+        is_forward_starting => 1,
+    };
+
+    my $c = produce_contract($params);
+
+    ok $c->is_valid_to_sell, 'should be valid to sell';
+};
+
+done_testing;

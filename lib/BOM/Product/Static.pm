@@ -113,6 +113,7 @@ my $config = {
         ZeroAbsoluteBarrier           => 'Barrier cannot be zero.',
         CountrySpecificError          => '[_1] is not allowed for residence of [_2].',
         MissingTradingPeriodStart     => '[_1] must be supplied for multi barrier contracts.',
+        SameStartSellTime             => 'Contract cannot be sold at this time. Please try again.',
     },
     generic => {
         # use it audit details
