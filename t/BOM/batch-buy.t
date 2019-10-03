@@ -736,12 +736,12 @@ subtest 'batch_buy multiplier contract' => sub {
         is + ($bal = $acc2->balance + 0), 5000, 'USD balance #2 is 5000 got: ' . $bal;
 
         my $contract = produce_contract({
-            underlying  => $underlying,
+            underlying  => 'R_100',
             bet_type    => 'MULTUP',
             currency    => 'USD',
             amount_type => 'stake',
             amount      => 100,
-            multiplier  => 5,
+            multiplier  => 10,
         });
 
         my $txn = BOM::Transaction->new({

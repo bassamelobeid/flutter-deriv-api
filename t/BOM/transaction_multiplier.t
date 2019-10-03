@@ -173,7 +173,7 @@ subtest 'buy MULTUP', sub {
             underlying   => $underlying,
             bet_type     => 'MULTUP',
             currency     => 'USD',
-            multiplier   => 5.0,
+            multiplier   => 10,
             amount       => 100,
             amount_type  => 'stake',
             current_tick => $current_tick,
@@ -256,7 +256,7 @@ subtest 'buy MULTUP', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             5,        'multiplier is 5';
+            is $chld->{'multiplier'},             10,        'multiplier is 10';
             is $chld->{'basis_spot'},             '100.00', 'basis_spot is 100.00';
             is $chld->{'stop_loss_order_amount'}, undef,    'stop_loss_order_amount is undef';
             is $chld->{'stop_loss_basis_spot'},   undef,    'stop_loss_basis_spot is undef';
@@ -272,19 +272,19 @@ subtest 'buy MULTUP', sub {
 
 subtest 'buy MULTUP with take profit', sub {
     lives_ok {
+        my $mock = Test::MockModule->new('Quant::Framework::Underlying');
+        $mock->mock('spot_tick' => sub {return $current_tick});
         my $contract = produce_contract({
                 underlying   => $underlying,
                 bet_type     => 'MULTUP',
                 currency     => 'USD',
-                multiplier   => 5,
+                multiplier   => 10,
                 amount       => 100,
                 amount_type  => 'stake',
                 current_tick => $current_tick,
-                limit_order  => [{
-                        order_type   => 'take_profit',
-                        order_amount => 5
-                    }
-                ],
+                limit_order  => {
+                        take_profit => 5
+                    },
             });
 
         my $txn = BOM::Transaction->new({
@@ -365,7 +365,7 @@ subtest 'buy MULTUP with take profit', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             5,        'multiplier is 5';
+            is $chld->{'multiplier'},             10,        'multiplier is 10';
             is $chld->{'basis_spot'},             '100.00', 'basis_spot is 100.00';
             is $chld->{'stop_loss_order_amount'}, undef,    'stop_loss_order_amount is undef';
             is $chld->{'stop_loss_order_date'},   undef,    'stop_loss_order_date is undef';
@@ -386,7 +386,7 @@ subtest 'sell a bet', sub {
             underlying   => $underlying,
             bet_type     => 'MULTUP',
             currency     => 'USD',
-            multiplier   => 5,
+            multiplier   => 10,
             amount       => 100,
             amount_type  => 'stake',
             current_tick => $current_tick,
