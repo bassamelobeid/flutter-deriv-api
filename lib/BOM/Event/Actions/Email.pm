@@ -27,7 +27,7 @@ Main arguments:
 
 =over 4
 
-=item * C<from> - Email address of the sender, defaults to C<no-reply> of the Brand
+=item * C<from> - Email address of the sender
 
 =item * C<to> - The recipient email address
 
@@ -63,8 +63,6 @@ Returns 1 if email has been sent, otherwise 0
 
 sub send_email_generic {
     my $args = shift;
-
-    $args->{from} //= request()->brand->emails('no-reply');
 
     my $status_code = process_send_email($args);
 
