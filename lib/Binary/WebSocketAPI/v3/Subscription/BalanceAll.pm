@@ -63,7 +63,11 @@ sub update_balance {
     my $args = $self->args;
     my $id   = $self->uuid;
     my $c    = $self->c;
-    $self->total_balance($self->total_balance + $payload->{amount} * $subscription->currency_rate_in_total_currency);
+
+    # currency_rate_in_total_currency will only be defined for real accounts
+    $self->total_balance($self->total_balance + $payload->{amount} * $subscription->currency_rate_in_total_currency)
+        if $subscription->currency_rate_in_total_currency && ($subscription->loginid // '') !~ /^VR/;
+
     my $details = {
         msg_type => 'balance',
         $args ? (echo_req => $args) : (),
