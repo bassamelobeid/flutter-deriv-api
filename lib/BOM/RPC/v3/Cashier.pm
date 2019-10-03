@@ -641,8 +641,6 @@ rpc paymentagent_transfer => sub {
             return $error_sub->(localize('Login ID ([_1]) does not exist.', $error_msg =~ /\b$loginid_fm\b/ ? $loginid_fm : $loginid_to));
         } elsif ($error_code eq 'BI206') {    ## Redundant check (account is virtual)
             return $error_sub->(localize('Sorry, this feature is not available.'), $full_error_msg);
-        } elsif ($error_code eq 'BI207') {
-            return $error_sub->(localize('Your cashier is locked as per your request.'), $full_error_msg);
         } elsif ($error_code eq 'BI208') {
             return $error_sub->(localize('You cannot transfer to account [_1], as their cashier is locked.', $loginid_to));
         } elsif ($error_code eq 'BI209') {
@@ -849,8 +847,6 @@ rpc paymentagent_withdraw => sub {
     return $error_sub->(localize('You are not authorized for withdrawals via payment agents.'))
         unless ($source_bypass_verification or BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client));
 
-    return $error_sub->(localize('Your cashier is locked as per your request.')) if $client->cashier_setting_password;
-
     return $error_sub->(localize('You cannot withdraw funds to the same account.')) if $client_loginid eq $paymentagent_loginid;
 
     return $error_sub->(localize('You cannot perform this action, please set your residence.')) unless $client->residence;
@@ -917,7 +913,7 @@ rpc paymentagent_withdraw => sub {
         if $pa_client->status->unwelcome;
 
     return $error_sub->(localize("You cannot perform the withdrawal to account [_1], as the payment agent's cashier is locked.", $pa_client->loginid))
-        if ($pa_client->status->cashier_locked or $pa_client->cashier_setting_password);
+        if $pa_client->status->cashier_locked;
 
     return $error_sub->(
         localize("You cannot perform withdrawal to account [_1], as payment agent's verification documents have expired.", $pa_client->loginid))
@@ -1179,7 +1175,7 @@ rpc transfer_between_accounts => sub {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
 
-    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual && $token_type ne 'oauth_token';
 
     my $status = $client->status;
 
@@ -1198,16 +1194,10 @@ rpc transfer_between_accounts => sub {
         });
     }
 
-    return _transfer_between_accounts_error(localize('Your cashier is locked as per your request.')) if $client->cashier_setting_password;
-
     my $args = $params->{args};
     my ($currency, $amount) = @{$args}{qw/currency amount/};
 
     my $siblings = $client->real_account_siblings_information(include_disabled => 0);
-    unless (keys %$siblings) {
-        warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
-        return _transfer_between_accounts_error(localize('Internal server error'));
-    }
 
     my ($loginid_from, $loginid_to) = @{$args}{qw/account_from account_to/};
 
@@ -1627,10 +1617,6 @@ sub _validate_transfer_between_accounts {
     return _transfer_between_accounts_error(
         localize("We are unable to transfer to [_1] because that account has been restricted.", $client_to->loginid))
         if $client_to->status->unwelcome;
-
-    return _transfer_between_accounts_error(
-        localize('You cannot perform this action, as your account [_1] cashier is locked as per request.', $client_to->loginid))
-        if $client_to->cashier_setting_password;
 
     # error out if from account has no currency set
     return _transfer_between_accounts_error(localize('Please deposit to your account.')) unless $from_currency;
