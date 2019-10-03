@@ -10,7 +10,7 @@ use BOM::User::Client;
 my $login_id = 'CR0009';
 
 subtest 'Almost all accessor/modifiers' => sub {
-    plan tests => 18;
+    plan tests => 17;
 
     my $client = BOM::User::Client::get_instance({'loginid' => $login_id});
     note "broker_code ", $client->broker_code;
@@ -33,10 +33,6 @@ subtest 'Almost all accessor/modifiers' => sub {
     $client->phone('00869145685791');
 
     is($client->phone, '00869145685791', "Got the client telephone number");
-
-    $client->cashier_setting_password('ILOVEBUGS');
-
-    is($client->cashier_setting_password, 'ILOVEBUGS', "Got the client cashier_setting_password");
 
     $client->set_exclusion->max_open_bets(50);
 
