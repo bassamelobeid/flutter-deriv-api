@@ -512,11 +512,17 @@ sub _get_permitted_expiries {
     foreach my $actual_et (uniq map { $_->[0] } @possibles) {
         my @remaining = grep { $_->[0] eq $actual_et && $_->[1] && $_->[2] } @possibles;
         my @mins =
-            ($actual_et eq 'tick' or $actual_et eq 'no_expiry')
+            (
+                   $actual_et eq 'tick'
+                or $actual_et eq 'no_expiry'
+            )
             ? sort { $a <=> $b } map { $_->[1] } @remaining
             : sort { $a->seconds <=> $b->seconds } map { Time::Duration::Concise::Localize->new(interval => $_->[1]) } @remaining;
         my @maxs =
-            ($actual_et eq 'tick' or $actual_et eq 'no_expiry')
+            (
+                   $actual_et eq 'tick'
+                or $actual_et eq 'no_expiry'
+            )
             ? sort { $b <=> $a } map { $_->[2] } @remaining
             : sort { $b->seconds <=> $a->seconds } map { Time::Duration::Concise::Localize->new(interval => $_->[2]) } @remaining;
         $result->{$actual_et} = {
