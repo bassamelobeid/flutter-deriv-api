@@ -5,7 +5,7 @@ use utf8;
 use Test::Most;
 use Test::Mojo;
 use Try::Tiny;
-use Test::MockTime qw(set_relative_time);
+use Test::MockTime::HiRes qw(set_relative_time);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
