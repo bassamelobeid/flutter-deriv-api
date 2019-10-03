@@ -143,7 +143,7 @@ subtest 'realtime report generation' => sub {
             $mocked_transaction->mock(
                 'produce_contract',
                 sub {
-                    if ($_[0] eq $short_code) {
+                    if ($_[0]->{shortcode} eq $short_code) {
                         die "error";
                     }
                     $mocked_transaction->original('produce_contract')->(@_);
