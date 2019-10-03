@@ -1665,7 +1665,7 @@ use this function to parse parameters like stop_out and take_profit from financi
 sub extract_limit_orders {
     my $contract_params = shift;
 
-    my @orders = ();
+    my %orders = ();
 
     foreach my $order (qw(stop_out take_profit stop_loss)) {
         my %params;
@@ -1677,11 +1677,11 @@ sub extract_limit_orders {
         if (%params) {
             $params{order_type} = $order;
             $params{basis_spot} = $contract_params->{basis_spot};
-            push @orders, \%params;
+            $orders{$order}     = \%params;
         }
     }
 
-    return \@orders;
+    return \%orders;
 }
 
 sub _get_params_for_expiryqueue {
