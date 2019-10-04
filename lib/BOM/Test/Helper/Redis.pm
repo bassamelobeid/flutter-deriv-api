@@ -5,7 +5,7 @@ use warnings;
 use Exporter 'import';
 use Test::More;
 
-use constant MAX_REDIS_KEYS => 44;
+use constant MAX_REDIS_KEYS => 45;
 
 our @EXPORT_OK = qw( is_within_threshold );
 
