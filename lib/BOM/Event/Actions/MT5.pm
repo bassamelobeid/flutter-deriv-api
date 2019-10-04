@@ -309,7 +309,7 @@ sub send_mt5_disable_csv {
         foreach my $mt5_loginid (@$mt5_loginids) {
 
             $mt5_loginid =~ s/\D//g;
-            
+
             group_for_user($mt5_loginid)->then(
                 sub {
                     my ($group) = @_;
