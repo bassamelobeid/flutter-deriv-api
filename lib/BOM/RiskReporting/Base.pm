@@ -6,7 +6,7 @@ BOM::RiskReporting::Base
 
 =head1 DESCRIPTION
 
-A generic base class for risk reporting modules. 
+A generic base class for risk reporting modules.
 =head1 SYNOPSIS
 
 BOM::RiskReport::Base->new->generate;
@@ -63,7 +63,7 @@ has _usd_rates => (
 );
 
 sub _build__usd_rates {
-    return {map { $_ => in_usd(1, $_) } LandingCompany::Registry->new()->all_currencies};
+    return {map { $_ => in_usd(1, $_) } grep { $_ ne 'ETC' } LandingCompany::Registry->new()->all_currencies};
 }
 
 sub amount_in_usd {
