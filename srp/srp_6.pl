@@ -32,7 +32,7 @@ $clientdb->txn(
             $clientdb->run(
                 ping => sub {
                     my $sth = $_->prepare(
-                        'INSERT INTO betonmarkets.client_status(client_loginid, status_code, staff_name, reason) VALUES (?,?,?,?)'
+                        'INSERT INTO betonmarkets.client_status(client_loginid, status_code, staff_name, reason) VALUES (?,?,?,?) ON CONFLICT DO NOTHING'
                     );
                     $sth->execute($fr_client->{loginid}, $status, 'SYSTEM', 'No binary options for clients residing in france');
                 }
