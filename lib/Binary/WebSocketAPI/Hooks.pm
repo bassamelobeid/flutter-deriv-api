@@ -170,7 +170,13 @@ sub add_req_data {
     my $args = {};
     if ($req_storage) {
         $args = $req_storage->{origin_args} || $req_storage->{args};
-        $api_response->{echo_req} = _sanitize_echo($args, $api_response->{msg_type});
+
+        my $err_code = $api_response->{error} && $api_response->{error}{code} // '';
+        $api_response->{echo_req} =
+            $err_code ne 'InputValidationFailed'
+            ? _sanitize_echo($args, $api_response->{msg_type})
+            : $args;
+
     } elsif (defined $api_response->{echo_req}) {
         $args = $api_response->{echo_req};
     }
