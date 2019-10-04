@@ -29,6 +29,9 @@ use Future;
 use IO::Async::Loop;
 use Net::Async::Redis;
 
+use List::Util qw(sum0);
+use HTML::Entities;
+
 use constant DAYS_TO_EXPIRE => 14;
 use constant SECONDS_IN_DAY => 86400;
 
@@ -195,30 +198,33 @@ have not
 
 sub new_mt5_signup {
     my $data = shift;
-
     my $client = BOM::User::Client->new({loginid => $data->{loginid}});
-
     return unless $client;
 
-    # Keep things around for a 11 days (1 day buffer)
-    # as we disable client after 10 days
-    # if they have not provided the authentication
-    # documents for financial accounts
-    my $ttl       = 11 * 86400;
-    my $cache_key = 'MT5_USER_GROUP::' . $data->{mt5_login_id};
+    my $id         = $data->{mt5_login_id};
+    my $cache_key  = "MT5_USER_GROUP::$id";
+    my $group      = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
+    my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
 
-    my $redis = _redis_mt5user_write();
-    $redis->connect->then(
-        sub {
-            $redis->set(
-                $cache_key => $data->{mt5_group},
-                EX         => $ttl
-            );
-        }
-        )->then(
-        sub {
-            return Future->done;
-        })->retain;
+    my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
+
+    if ($group->[0]) {
+        my $status = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'rights');
+
+        my %rights;
+
+        # This should now have the following keys set:
+        # api,enabled,expert,password,reports,trailing
+        # Example: status (483 => 1E3)
+        $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
+
+    } else {
+        # ... and if we don't, queue up the request. This may lead to a few duplicates
+        # in the queue - that's fine, we check each one to see if it's already
+        # been processed.
+        BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
+    }
+    # }
 
     # send email to client to ask for authentication documents
     if (    $data->{account_type} eq 'financial'
@@ -281,6 +287,14 @@ Send CSV file to customer support for the list of MT5 accounts to disable
 
 =cut
 
+sub group_for_user {
+    my ($id) = @_;
+    return BOM::MT5::User::Async::get_user($id)->transform(
+        done => sub {
+            shift->{group};
+        });
+}
+
 sub send_mt5_disable_csv {
     my $data = shift;
 
@@ -296,10 +310,13 @@ sub send_mt5_disable_csv {
 
             $mt5_loginid =~ s/\D//g;
 
-            my $group = $redis->get("MT5_USER_GROUP::$mt5_loginid");
-
-            # Only real financial (labuan and vanuatu) are to be disabled
-            push @csv_rows, [$client_loginid_info, $mt5_loginid, $group] if ($group && $group !~ '^demo|svg');
+            group_for_user($mt5_loginid)->then(
+                sub {
+                    my ($group) = @_;
+                    # Only real financial (labuan and vanuatu) are to be disabled
+                    push @csv_rows, [$client_loginid_info, $mt5_loginid, $group] if ($group && $group !~ '^demo|svg$');
+                    return Future->done();
+                })->get;
         }
     }
 
