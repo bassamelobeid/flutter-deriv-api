@@ -13,6 +13,8 @@ use BOM::Test::Script::RpcQueue;
 my @queue_requests;
 my @http_requests;
 
+$ENV{PRC_QUEUE_TIMEOUT} = 2;
+
 my $mock_queue_backend = Test::MockModule->new('Mojo::WebSocketProxy::Backend::JobAsync');
 $mock_queue_backend->mock(
     'call_rpc',
@@ -68,19 +70,12 @@ subtest 'swtich ws backend' => sub {
     is_deeply $res->{args}, $req, 'Request content was correct';
     ok !@http_requests, 'No request caught by http backend';
 
-    # stop rpc queue
-    $req = {states_list => 'us'};
-    $rpc_queue->stop_script();
-    ok await_with_timeout($t, $req), 'No message is recieved when rpc queue is stopped';
-    ok $res = pop @queue_requests, 'Request was caught by queue backend';
-    is_deeply $res->{args}, $req, 'Request content was correct';
-    ok !@http_requests, 'No request caught by http backend';
+    $expected_result = {
+        states_list => 'default',
+        id          => 1
+    };
+    is_deeply call_instrospection('backend', ['states_list', 'default']), $expected_result, 'Backend swithed back to default';
 
-    # restart rpc queue
-    $rpc_queue->start_script_if_not_running();
-    $t   = $t->message_ok;
-    $res = decode_json_utf8($t->message->[1]);
-    is $res->{msg_type}, 'states_list', 'The missing message is recieved after rpc queue is started';
 };
 
 subtest 'control options' => sub {
@@ -99,11 +94,11 @@ sub await_with_timeout {
     $t->send_ok({json => $request});
 
     my $timeout = 0;
-    my $id = Mojo::IOLoop->timer(2 => sub { ++$timeout });
+    my $id = Mojo::IOLoop->timer(5 => sub { ++$timeout });
     Mojo::IOLoop->one_tick while !($timeout or scalar($t->{messages}->@*));
 
     if ($expected_msg_type) {
-        ok $t->{messages}, 'Response received';
+        ok scalar $t->{messages}->@*, 'Response received';
         my $msg = decode_json_utf8((shift $t->{messages}->@*)->[1]);
         is $msg->{msg_type}, $expected_msg_type, "Correct message type";
         $result = $msg if ($msg->{msg_type} eq $expected_msg_type);
@@ -112,6 +107,11 @@ sub await_with_timeout {
     }
 
     return $result;
+}
+
+sub fail_with_timeout {
+    my ($t, $request) = @_;
+    return await_with_timeout($t, $request);
 }
 
 done_testing();

@@ -199,18 +199,6 @@ subtest "get error code (verify_email)" => sub {
     is $res->{error}->{code}, 'RateLimit';
 };
 
-subtest "check limits for cashier_password" => sub {
-    # as we are using 3 as testing limit, the API should fail 4th time
-    for (1 .. 4) {
-        $t->send_ok({
-                json => {
-                    cashier_password => 1,
-                }})->message_ok;
-    }
-    my $res = JSON::MaybeXS->new->decode(Encode::decode_utf8($t->message->[1]));
-    is $res->{error}->{code}, 'RateLimit';
-};
-
 subtest "expiration of limits" => sub {
     # lets flush redis
     $process_queue->();
