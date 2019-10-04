@@ -36,7 +36,7 @@ bet_limits:
       DAI: 1000
       UST: 1000
       USB: 1000
-      IDK: 150000
+      IDK: 15000
     digits:
       USD: 30000
       EUR: 30000
@@ -49,7 +49,7 @@ bet_limits:
       DAI: 5000
       UST: 5000
       USB: 5000
-      IDK: 450000
+      IDK: 45000
   inefficient_period_payout_max:
     USD: 200
     EUR: 200
@@ -75,7 +75,7 @@ bet_limits:
         LTC: 50
         UST: 5000
         USB: 5000
-        IDK: 750000
+        IDK: 75000
   min_stake:
     default_landing_company:
       default_market:
