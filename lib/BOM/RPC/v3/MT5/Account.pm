@@ -54,21 +54,13 @@ use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
 );
 
 my $error_registry = BOM::RPC::v3::MT5::Errors->new();
-my $error_handler  = sub {
-    my $err = shift;
-    if (ref $err eq 'HASH' and $err->{code}) {
-        create_error_future($err->{code}, {message => $err->{error}});
-    } else {
-        return Future->fail($err);
-    }
-};
 
 sub create_error_future {
     my ($error_code, $details, @extra) = @_;
     if (ref $details eq 'HASH' and ref $details->{message} eq 'HASH') {
-        return Future->fail({error => $details->{message}});
+        return Future->done({error => $details->{message}});
     }
-    return Future->fail($error_registry->format_error($error_code, $details, @extra));
+    return Future->done($error_registry->format_error($error_code, $details, @extra));
 
 }
 
@@ -343,6 +335,7 @@ async_rpc "mt5_new_account",
                             params        => [$account_type, $login]});
                 }
             }
+
             # TODO(leonerd): This has to nest because of the `Future->done` in the
             #   foreach loop above. A better use of errors-as-failures might avoid
             #   this.
@@ -465,8 +458,7 @@ async_rpc "mt5_new_account",
                                     ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
                         });
                 });
-        })->catch($error_handler);
-
+        });
     };
 
 =head2 _is_financial_assessment_complete
@@ -624,8 +616,7 @@ async_rpc "mt5_get_settings",
                     );
                     return Future->done($settings);
                 });
-        })->catch($error_handler);
-
+        });
     };
 
 sub _filter_settings {
@@ -729,7 +720,7 @@ async_rpc "mt5_password_check",
                 return create_error_future('MT5PasswordCheckError', {message => $status->{error}});
             }
             return Future->done(1);
-        })->catch($error_handler);
+        });
     };
 
 =head2 mt5_password_change
@@ -845,7 +836,7 @@ async_rpc "mt5_password_change",
                     new_password => $args->{new_password},
                     type         => $args->{password_type} // 'main',
                 })->then_done(1);
-        })->catch($error_handler);
+        });
     };
 
 =head2 mt5_password_reset
@@ -972,8 +963,7 @@ async_rpc "mt5_password_reset",
                 });
 
             return Future->done(1);
-
-        })->catch($error_handler);
+        });
     };
 
 sub _send_email {
@@ -1337,7 +1327,12 @@ async_rpc "mt5_mamm",
                             });
                         });
                 });
-        })->catch($error_handler);
+        }
+        )->else(
+        sub {
+            my ($code, $error) = @_;
+            return create_error_future($code, {message => $error});
+        });
     };
 
 sub _is_mt5_suspended {
@@ -1422,9 +1417,8 @@ sub _mt5_validate_and_get_amount {
 
             my $action = ($error_code =~ /Withdrawal/) ? 'withdrawal' : 'deposit';
 
-            my $mt5_group = $setting->{group};
-            my $mt5_lc    = _fetch_mt5_lc($setting);
-            return create_error_future('InvalidMT5Group') unless $mt5_lc;
+            my $mt5_group    = $setting->{group};
+            my $mt5_lc       = _fetch_mt5_lc($setting);
             my $mt5_currency = $setting->{currency};
 
             return create_error_future('CurrencyConflict', {override_code => $error_code})
@@ -1656,8 +1650,9 @@ sub _fetch_mt5_lc {
     }
 
     # check if lc exists
-    return $lc_short && LandingCompany::Registry::get($lc_short) ? $lc_short : undef;
+    return create_error_future('InvalidMT5Group') unless $lc_short and LandingCompany::Registry::get($lc_short);
 
+    return $lc_short;
 }
 
 sub _mt5_has_open_positions {
@@ -1670,7 +1665,7 @@ sub _mt5_has_open_positions {
                 if (ref $response eq 'HASH' and $response->{error});
 
             return Future->done($response->{total} ? 1 : 0);
-        })->catch($error_handler);
+        });
 }
 
 sub _notify_for_locked_mt5 {
@@ -1799,11 +1794,11 @@ sub do_mt5_deposit {
     }
 
     return $deposit_sub->({
-            login   => $login,
-            amount  => $amount,
-            comment => $comment,
-            txn_id  => $txn_id,
-        })->catch($error_handler);
+        login   => $login,
+        amount  => $amount,
+        comment => $comment,
+        txn_id  => $txn_id,
+    });
 }
 
 sub do_mt5_withdrawal {
@@ -1814,10 +1809,10 @@ sub do_mt5_withdrawal {
     }
 
     return $withdrawal_sub->({
-            login   => $login,
-            amount  => $amount,
-            comment => $comment,
-        })->catch($error_handler);
+        login   => $login,
+        amount  => $amount,
+        comment => $comment,
+    });
 }
 
 sub _generate_password {

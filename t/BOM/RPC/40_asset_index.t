@@ -13,11 +13,11 @@ use Email::Stuffer::TestLinks;
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 my $email     = 'test@binary.com';
-my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
+my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MLT',
     email       => $email,
 });
-my ($token_mf) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mf->loginid);
+my ($token_mlt) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
 
 use constant {
     NUM_TOTAL_SYMBOLS      => 77,    # Total number of symbols listed in underlyings.yml
@@ -27,7 +27,6 @@ use constant {
 # These numbers may differ from actual production output due to symbols being
 #   suspended in the live platform config, which won't be included in the return.
 my $entry_count_mlt = NUM_VOLATILITY_SYMBOLS;
-my $entry_count_mf  = NUM_TOTAL_SYMBOLS - NUM_VOLATILITY_SYMBOLS;
 my $entry_count_cr  = NUM_TOTAL_SYMBOLS;
 my $first_entry_mlt = [
     "1HZ10V",
@@ -46,7 +45,7 @@ my $first_entry_mlt = [
         ["lookback",      "Lookbacks",                  "1m",  "30m"],
         ["callputequal",  "Rise/Fall Equal",            "1t",  "1d"],
     ]];
-my $first_entry_cr_mf = [
+my $first_entry_cr = [
     "frxAUDJPY",
     "AUD/JPY",
     [
@@ -70,23 +69,13 @@ sub _test_asset_index {
     };
 }
 
-# Result should be for Binary Investments (Europe) Ltd
-# Trades everything except volatilities, so should be 106 entries and first entry should
-#   be frxAUDJPY with 5 contract types.
-subtest "asset_index logged in - no arg" => _test_asset_index({
-        language => 'EN',
-        token    => $token_mf
-    },
-    $entry_count_mf,
-    $first_entry_cr_mf
-);
 
 # Result should be for Binary (Europe) Ltd
 # Only trades volatilities, so should be 7 entries and first entry should
 #   be R_10 with all contract categories except lookbacks.
 subtest "asset_index logged in - with arg" => _test_asset_index({
         language => 'EN',
-        token    => $token_mf,
+        token    => $token_mlt,
         args     => {landing_company => 'malta'}
     },
     $entry_count_mlt,
@@ -96,7 +85,7 @@ subtest "asset_index logged in - with arg" => _test_asset_index({
 # Result should be Binary (SVG) Ltd.
 # Trades everything except, so should be 113 entries and first entry should
 #   be frxAUDJPY with 5 contract types.
-subtest "asset_index logged out - no arg" => _test_asset_index({language => 'EN'}, $entry_count_cr, $first_entry_cr_mf);
+subtest "asset_index logged out - no arg" => _test_asset_index({language => 'EN'}, $entry_count_cr, $first_entry_cr);
 
 # Result should be for Binary (Europe) Ltd
 # Only trades volatilities, so should be 7 entries and first entry should
@@ -106,7 +95,7 @@ subtest "asset_index logged out - with arg" => _test_asset_index({
         args     => {landing_company => 'malta'}
     },
     $entry_count_mlt,
-    $first_entry_mlt
+    $first_entry_mlt,
 );
 
 done_testing();

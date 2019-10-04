@@ -584,6 +584,8 @@ Takes the following (named) parameters:
 
 =item * C<params> - A hashref with reference to BOM::User::Client object under the key C<client>
 
+=item * C<loginid>
+
 =back
 
 Returns a hashref with following items
@@ -606,6 +608,8 @@ sub single_balance {
         loginid      => $loginid,
         db_operation => 'replica'
     });
+
+    return if $params->{exclude_disabled} && $client->status->disabled;
 
     return {
         currency   => '',
@@ -643,20 +647,23 @@ rpc balance => sub {
     #if (client has real account with USD OR doesn’t have fiat account) {
     #    use ‘USD’;
     #} elsif (there is more than one fiat account) {
-    #    use currency of financial account;
+    #    use currency of financial account (MF or CR);
     #} else {
     #    use currency of fiat account;
     #}
-    #// there is only one fiat account
 
     my ($has_usd, $financial_currency, $fiat_currency);
-    for my $loginid (sort $user->bom_real_loginids) {
+    $params->{exclude_disabled} = 1;
+
+    for my $loginid (sort $user->bom_loginids) {
         my $result = single_balance($params, $loginid);
+        next unless $result;
+        push @results, $result;
+        next if $loginid =~ /^VR/;
+        next unless (LandingCompany::Registry::get_currency_type($result->{currency}) // '') eq 'fiat';
         $has_usd            = 1                   if $result->{currency} eq 'USD';
         $financial_currency = $result->{currency} if $loginid =~ /^(MF|CR)/;
-        $fiat_currency      = $result->{currency}
-            if (LandingCompany::Registry::get_currency_type($result->{currency}) // '') eq 'fiat';
-        push @results, $result;
+        $fiat_currency      = $result->{currency};
     }
 
     my $total_currency;
@@ -680,7 +687,7 @@ rpc balance => sub {
     };
 
     for my $result (@results) {
-        if ($result->{account_id}) {
+        if ($result->{account_id} && $result->{loginid} !~ /^VR/) {
             $real_total->{amount} += convert_currency($result->{balance}, $result->{currency}, $total_currency);
             $result->{currency_rate_in_total_currency} =
                 convert_currency(1, $result->{currency}, $total_currency);    # This rate is used for the future stream
@@ -697,6 +704,7 @@ rpc balance => sub {
         $mt5_total->{amount} += convert_currency($result->{balance}, $result->{currency}, $total_currency);
     }
     $mt5_total->{amount} = formatnumber('amount', $total_currency, $mt5_total->{amount});
+
     return {
         all => \@results,
     };
@@ -973,122 +981,6 @@ rpc change_password => sub {
         });
 
     return {status => 1};
-};
-
-rpc cashier_password => sub {
-    my $params = shift;
-
-    my $client = $params->{client};
-    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
-
-    my ($client_ip, $args) = @{$params}{qw/client_ip args/};
-    my $unlock_password = $args->{unlock_password} // '';
-    my $lock_password   = $args->{lock_password}   // '';
-
-    unless (length($unlock_password) || length($lock_password)) {
-        # just return status
-        if (length $client->cashier_setting_password) {
-            return {status => 1};
-        } else {
-            return {status => 0};
-        }
-    }
-
-    my $error_sub = sub {
-        my ($error) = @_;
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'CashierPassword',
-            message_to_client => $error,
-        });
-    };
-
-    if (length($lock_password)) {
-        # lock operation
-        if (length $client->cashier_setting_password) {
-            return $error_sub->(localize('Your cashier was locked.'));
-        }
-
-        my $user = $client->user;
-        if (BOM::User::Password::checkpw($lock_password, $user->{password})) {
-            return $error_sub->(localize('Please use a different password than your login password.'));
-        }
-
-        if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $lock_password})) {
-            return $pass_error;
-        }
-
-        $client->cashier_setting_password(BOM::User::Password::hashpw($lock_password));
-        if (not $client->save()) {
-            return $error_sub->(localize('Sorry, an error occurred while processing your request.'));
-        } else {
-            send_email({
-                    'from'    => request()->brand->emails('support'),
-                    'to'      => $client->email,
-                    'subject' => localize("Cashier password updated"),
-                    'message' => [
-                        localize(
-                            "This is an automated message to alert you that a change was made to your cashier settings section of your account [_1] from IP address [_2]. If you did not perform this update please login to your account and update settings.",
-                            $client->loginid,
-                            $client_ip
-                        )
-                    ],
-                    'use_email_template'    => 1,
-                    'email_content_is_html' => 1,
-                    template_loginid        => $client->loginid,
-                });
-            return {status => 1};
-        }
-    } else {
-        # unlock operation
-        unless (length $client->cashier_setting_password) {
-            return $error_sub->(localize('Your cashier was not locked.'));
-        }
-
-        my $cashier_password = $client->cashier_setting_password;
-        if (!BOM::User::Password::checkpw($unlock_password, $cashier_password)) {
-            BOM::User::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
-            send_email({
-                    'from'    => request()->brand->emails('support'),
-                    'to'      => $client->email,
-                    'subject' => localize("Failed attempt to unlock cashier section"),
-                    'message' => [
-                        localize(
-                            'This is an automated message to alert you to the fact that there was a failed attempt to unlock the Cashier/Settings section of your account [_1] from IP address [_2]',
-                            $client->loginid,
-                            $client_ip
-                        )
-                    ],
-                    'use_email_template'    => 1,
-                    'email_content_is_html' => 1,
-                    template_loginid        => $client->loginid,
-                });
-
-            return $error_sub->(localize('Sorry, you have entered an incorrect cashier password'));
-        }
-
-        $client->cashier_setting_password('');
-        if (not $client->save()) {
-            return $error_sub->(localize('Sorry, an error occurred while processing your request.'));
-        } else {
-            send_email({
-                    'from'    => request()->brand->emails('support'),
-                    'to'      => $client->email,
-                    'subject' => localize("Cashier password updated"),
-                    'message' => [
-                        localize(
-                            "This is an automated message to alert you that a change was made to your cashier settings section of your account [_1] from IP address [_2]. If you did not perform this update please login to your account and update settings.",
-                            $client->loginid,
-                            $client_ip
-                        )
-                    ],
-                    'use_email_template'    => 1,
-                    'email_content_is_html' => 1,
-                    template_loginid        => $client->loginid,
-                });
-            BOM::User::AuditLog::log('cashier unlocked', $client->loginid);
-            return {status => 0};
-        }
-    }
 };
 
 rpc "reset_password",
