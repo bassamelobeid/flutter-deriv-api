@@ -330,61 +330,6 @@ subtest 'validation' => sub {
         'Correct error message for invalid maximum amount';
 };
 
-subtest 'Basic transfers' => sub {
-    $email = 'new_email' . rand(999) . '@binary.com';
-    my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        place_of_birth => 'ID',
-    });
-
-    my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        place_of_birth => 'ID',
-    });
-
-    $user = BOM::User->create(
-        email          => $email,
-        password       => BOM::User::Password::hashpw('hello'),
-        email_verified => 1,
-    );
-
-    for ($client_cr1, $client_cr2) {
-        $user->add_client($_);
-        $_->set_default_account('USD');
-    }
-
-    $client_cr1->payment_free_gift(
-        currency => 'EUR',
-        amount   => 1000,
-        remark   => 'free gift',
-    );
-
-    $params->{token}      = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
-    $params->{token_type} = 'oauth_token';
-    $params->{args}       = {
-        account_from => $client_cr1->loginid,
-        account_to   => $client_cr2->loginid,
-        currency     => 'USD',
-        amount       => 10
-    };
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts');
-
-    $params->{args}{account_from} = $client_cr2->loginid;
-    $params->{args}{account_to}   = $client_cr1->loginid;
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_no_error('can transfer using oauth token when account_from is not authorized client');
-
-    $params->{token_type}         = 'api_token';
-    $params->{args}{account_from} = $client_cr2->loginid;
-    $params->{args}{account_to}   = $client_cr1->loginid;
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is(
-        'From account provided should be same as current authorized client.',
-        'Cannot transfer using api token when account_from is not authorized client'
-    );
-};
-
 subtest 'Validation for transfer from incomplete account' => sub {
     $email = 'new_email' . rand(999) . '@binary.com';
     my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -426,26 +371,23 @@ subtest 'Validation for transfer from incomplete account' => sub {
         amount       => 10
     };
 
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
-        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.', 'Error msg for client is correct')
-        ->error_details_is({ fields => ['address_city'] }, 'Error details is correct');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Error msg for client is correct')->error_details_is({fields => ['address_city']}, 'Error details is correct');
 
     $client_cr1->address_city('Test City');
     $client_cr1->address_line_1('');
     $client_cr1->save;
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
-        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.', 'Error msg for client is correct')
-        ->error_details_is({ fields => ['address_line_1'] }, 'Error details is correct');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Error msg for client is correct')->error_details_is({fields => ['address_line_1']}, 'Error details is correct');
 
     $client_cr1->address_city('');
     $client_cr1->address_line_1('');
     $client_cr1->save;
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
-        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.', 'Error msg for client is correct')
-        ->error_details_is({ fields => ['address_city', 'address_line_1'] }, 'Error details is correct');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Error msg for client is correct')->error_details_is({fields => ['address_city', 'address_line_1']}, 'Error details is correct');
 
 };
 
