@@ -198,7 +198,7 @@ subtest 'get_current_profile_definitions' => sub {
                     'turnover_limit' => "50000.00",
                     'payout_limit'   => "5000.00",
                     'name'           => 'Commodities',
-                    'profile_name'   => 'high_risk'
+                    'profile_name'   => 'moderate_risk'
                 }
             ],
             'volidx' => [{
@@ -218,13 +218,13 @@ subtest 'get_current_profile_definitions' => sub {
                     'turnover_limit' => "50000.00",
                     'payout_limit'   => "5000.00",
                     'name'           => 'Minor Pairs',
-                    'profile_name'   => 'high_risk',
+                    'profile_name'   => 'moderate_risk',
                 },
                 {
                     'turnover_limit' => "50000.00",
                     'payout_limit'   => "5000.00",
                     'name'           => 'Smart FX',
-                    'profile_name'   => 'high_risk',
+                    'profile_name'   => 'moderate_risk',
                 },
             ],
             'indices' => [{
