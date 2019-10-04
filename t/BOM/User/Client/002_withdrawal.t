@@ -100,7 +100,7 @@ subtest 'General' => sub {
 
 # Test for disables and locks
 subtest 'Client-specific' => sub {
-    plan tests => 5;
+    plan tests => 4;
     my $client = new_client('USD');
 
     $client->status->set('withdrawal_locked', 'calum', 'reason?');
@@ -118,10 +118,6 @@ subtest 'Client-specific' => sub {
     $client->status->set('disabled', 'calum', 'reason?');
     throws_ok { $client->validate_payment(%withdrawal) } qr/Client is disabled/, 'Client withdrawals have been locked.';
     $client->status->clear_disabled;
-
-    $client->cashier_setting_password('12345');
-    throws_ok { $client->validate_payment(%withdrawal) } qr/Client has set the cashier password/, 'Client cashier is locked by himself.';
-    $client->cashier_setting_password('');
 };
 
 # Test for withdrawals that the exceed client's balance

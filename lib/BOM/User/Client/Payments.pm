@@ -43,8 +43,6 @@ sub validate_payment {
     die "Client is disabled.\n"
         if $self->status->disabled;
 
-    die "Client has set the cashier password.\n" if $self->cashier_setting_password;
-
     die "Payment currency [$currency] not client currency [$acccur].\n"
         if $currency ne $acccur;
 
