@@ -7,6 +7,7 @@ use Moo;
 
 use Carp qw(confess);
 use BOM::Market::DataDecimate;
+use List::Util qw(first);
 
 use Postgres::FeedDB::Spot::Tick;
 
@@ -193,6 +194,37 @@ sub has_cache {
     my $key = $self->_tick_source->_make_key($self->underlying->symbol, 0);
 
     return $self->_tick_source->redis_read->zcount($key, $epoch, $epoch + 10);
+}
+
+=head2 breaching_tick
+
+Returns a tick (if any) that touches/breaches a barrier.
+
+->breaching_tick(
+    start_time => time,
+    end_time   => time + 100,
+    higher     => 123,12,
+);
+
+=cut
+
+sub breaching_tick {
+    my ($self, %args) = @_;
+
+    my @ticks = reverse @{
+        $self->ticks_in_between_start_end({
+                start_time => $args{start_time},
+                end_time   => $args{end_time}})};
+
+    my ($lower, $higher);
+    $higher = $args{higher} - $self->underlying->pip_size / 2 if defined $args{higher};
+    $lower  = $args{lower} + $self->underlying->pip_size / 2  if defined $args{lower};
+
+    if (my $hit = first { (defined $higher and $_->quote > $higher) or (defined $lower and $_->quote < $lower) } @ticks) {
+        return $hit;
+    }
+
+    return undef;
 }
 
 sub cache_retention_interval {
