@@ -10,6 +10,7 @@ use BOM::Test::WebsocketAPI::Redis::Shared;
 use BOM::Test::WebsocketAPI::Redis::Master;
 use BOM::Test::WebsocketAPI::Redis::Pricer;
 use BOM::Test::WebsocketAPI::Redis::Transaction;
+use BOM::Test::WebsocketAPI::Redis::RpcQueue;
 
 =head1 NAME
 
@@ -24,7 +25,7 @@ A factory class for creating C<Future>-based async clients to the test redis ser
 =cut
 
 use Exporter qw/import/;
-our @EXPORT_OK = qw/shared_redis ws_redis_master redis_pricer redis_transaction/;
+our @EXPORT_OK = qw/shared_redis ws_redis_master redis_pricer redis_transaction redis_queue/;
 
 =head2 shared_redis
 
@@ -70,6 +71,18 @@ Returns the singleton async client to the test transaction redis server (B<redis
 
 sub redis_transaction {
     state $redis = BOM::Test::WebsocketAPI::Redis::Transaction->new();
+
+    return $redis->client;
+}
+
+=head2 redis_queue
+
+Returns the singleton async client to the test rpc queue redis server (B<redis_queue>);
+
+=cut
+
+sub redis_queue {
+    state $redis = BOM::Test::WebsocketAPI::Redis::RpcQueue->new();
 
     return $redis->client;
 }
