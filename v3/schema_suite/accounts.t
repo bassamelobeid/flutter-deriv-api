@@ -110,17 +110,9 @@ fail_test_sendrecv 'get_self_exclusion/test_send.json', 'get_self_exclusion/test
 test_sendrecv 'topup_virtual/test_send.json', 'topup_virtual/test_receive_error.json';
 
 # PAYMENT SCOPE CALLS (CR)
-test_sendrecv_params 'cashier_password/test_send.json', 'cashier_password/test_receive.json', '0';
-test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive.json', '1', 'Abc1234';
 test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_error.json';
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test@binary.com', 'payment_withdraw';
 test_sendrecv_params 'cashier/test_send_withdraw.json',        'cashier/test_receive_error.json',          $suite->get_token('test@binary.com');
-test_sendrecv_params 'cashier_password/test_send_lock.json',   'cashier_password/test_receive_error.json', '', 'Abc1234';
-test_sendrecv_params 'cashier_password/test_send.json',        'cashier_password/test_receive.json',       '1';
-test_sendrecv_params 'cashier_password/test_send_unlock.json', 'cashier_password/test_receive.json',       '0', 'Abc1234';
-test_sendrecv_params 'cashier_password/test_send_unlock.json', 'cashier_password/test_receive_error.json', '', 'Abc1234';
-test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive_password_error.json', '', 'abc1234';
-test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive_error.json', '', 'Abc123';
 
 test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json', 'Abc123', 'Abc123';
 test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json', 'Abc123', 'abc123';
