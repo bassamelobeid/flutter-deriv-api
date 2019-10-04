@@ -13,8 +13,8 @@
 <ul>
     <li>no_business: 0 Max Payout Per Contract(PCP), 0 Daily Turnver Per Client(DT)</li>
     <li>extreme_risk: 100 (PCP), 1000 (DT)</li>
-    <li>moderate_risk: 1000 (PCP), 5000 (DT)</li>
-    <li>high_risk: 5000 (PCP), 50000 (DT)</li>
+    <li>high_risk: 1000 (PCP), 5000 (DT)</li>
+    <li>moderate_risk: 5000 (PCP), 50000 (DT)</li>
     <li>medium_risk: 20000 (PCP), 100000 (DT)</li>
     <li>low_risk: 50000 (PCP), 500000 (DT)</li>
 </ul>
