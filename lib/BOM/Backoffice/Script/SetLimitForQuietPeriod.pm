@@ -28,14 +28,14 @@ sub script_run {
 
     if ($now->hour == 00) {
         $todo         = 'set extreme_risk_fx_tick_trade';
-        $to_remove    = 'set moderate_risk_fx_tick_trade';
+        $to_remove    = 'set high_risk_fx_tick_trade';
         $risk_profile = 'extreme_risk';
         $between      = "00 to " . $cut_off_hour . 'GMT';
 
     } elsif ($now->hour == $cut_off_hour) {
-        $todo         = 'set moderate_risk_fx_tick_trade';
+        $todo         = 'set high_risk_fx_tick_trade';
         $to_remove    = 'set extreme_risk_fx_tick_trade';
-        $risk_profile = 'moderate_risk';
+        $risk_profile = 'high_risk';
         $between      = $cut_off_hour . ' to 00GMT';
     } else {
         return 1;
