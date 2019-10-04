@@ -35,6 +35,7 @@ sub send_email {
 
     if ($args->{use_event}) {
         my $request = request();
+        $args->{from} //= $request->brand->emails('no-reply');
         BOM::Platform::Event::Emitter::emit(
             'send_email',
             {

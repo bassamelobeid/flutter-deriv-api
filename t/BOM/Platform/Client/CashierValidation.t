@@ -111,15 +111,6 @@ subtest 'Cashier validation common' => sub {
     is $res->{error}->{message_to_client}, 'Your account is disabled.', 'Correct error message as its disabled';
 
     $cr_client->status->clear_disabled;
-    $cr_client->cashier_setting_password('abc123');
-    $cr_client->save();
-
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code for cashier locked';
-    is $res->{error}->{message_to_client}, 'Your cashier is locked as per your request.', 'Correct error message for cashier locked';
-
-    $cr_client->cashier_setting_password('');
-    $cr_client->save();
 
     ok !$cr_client->documents_expired, "No documents so nothing to expire";
     my ($doc) = $cr_client->add_client_authentication_document({
