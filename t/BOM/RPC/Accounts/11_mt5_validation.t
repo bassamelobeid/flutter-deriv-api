@@ -142,11 +142,36 @@ subtest 'new account' => sub {
     $test_client->save;
 
     $c->call_ok($method, $params)->has_no_error('Citizenship is not required for creating demo accounts');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
     $params->{args}->{account_type} = 'gaming';
-    $c->call_ok($method, $params)->has_error->error_message_is('Please indicate your citizenship.', 'Citizen not set');
+    $c->call_ok($method, $params)->has_no_error('Citizenship is not required for creating gaming accounts');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+    $params->{args}->{account_type}     = 'financial';
+    $params->{args}->{mt5_account_type} = 'standard';
+
+    $c->call_ok($method, $params)->has_no_error('Citizenship is not required for creating financial standard accounts');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+    $params->{args}->{mt5_account_type} = 'advanced';
+
+    my $result = $c->call_ok($method, $params)->response->result;
+    is $result->{error}->{code}, 'ASK_FIX_DETAILS', 'Correct error code if citizen is missing for financial advanced account';
+    is $result->{error}->{message_to_client}, 'Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Correct error message if citizen is missing for financial advanced account';
+    cmp_bag($result->{error}{details}{missing}, ['citizen'], 'Missing citizen should be under details.');
+
+    $params->{args}->{account_type} = 'gaming';
+    delete $params->{args}->{mt5_account_type};
 
     $test_client->citizen($citizen);
     $test_client->save;
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $params->{args}->{account_type}   = 'demo';
     $params->{args}->{mainPassword}   = 'Abc123';
@@ -169,7 +194,7 @@ subtest 'new account' => sub {
     $test_client->aml_risk_classification('high');
     $test_client->save();
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('Please complete our financial assessment.', 'Financial assessment mandatory for financial account');
+        ->has_error->error_message_is('Please complete your financial assessment.', 'Financial assessment mandatory for financial account');
 
     # Non-MLT/CR client
     $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -258,7 +283,7 @@ subtest 'CR account types - low risk' => sub {
             account_type     => 'demo',
             mt5_account_type => 'standard'
         });
-    is $mt5_account_info->{group}, 'demo\vanuatu_standard', 'correct CR standard demo group';
+    is $mt5_account_info->{group}, 'demo\svg_standard', 'correct CR standard demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -273,26 +298,16 @@ subtest 'CR account types - low risk' => sub {
     $login = create_mt5_account->($c, $token, $client, {account_type => 'gaming'});
     is $mt5_account_info->{group}, 'real\svg', 'correct CR gaming group';
 
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'standard'
-        },
-        'FinancialAssessmentMandatory',
-        'Full financial assessment is required for financial accounts'
-    );
-
-    financial_assessment($client, 'full');
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
             mt5_account_type => 'standard'
         });
-    ok $login, 'financial account created with full financial assessment';
-    is $mt5_account_info->{group}, 'real\vanuatu_standard', 'correct CR standard financial group';
+    ok $login, 'financial assessment is not required for financial standard account';
+    is $mt5_account_info->{group}, 'real\svg_standard', 'correct CR standard financial group';
 
+    financial_assessment($client, 'full');
     $login = create_mt5_account->(
         $c, $token, $client,
         {
@@ -300,7 +315,7 @@ subtest 'CR account types - low risk' => sub {
             mt5_account_type => 'advanced'
         });
     ok $login, 'financial account created with full financial assessment';
-    is $mt5_account_info->{group}, 'real\labuan_advanced', 'correct CR standard financial group';
+    is $mt5_account_info->{group}, 'real\labuan_advanced', 'correct CR advanced financial group';
 };
 
 subtest 'CR account types - high risk' => sub {
@@ -334,7 +349,7 @@ subtest 'CR account types - high risk' => sub {
             account_type     => 'demo',
             mt5_account_type => 'standard'
         });
-    is $mt5_account_info->{group}, 'demo\vanuatu_standard', 'correct CR standard demo group';
+    is $mt5_account_info->{group}, 'demo\svg_standard', 'correct CR standard demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -359,26 +374,16 @@ subtest 'CR account types - high risk' => sub {
     ok $login, 'gaming account created with finantial information alone';
     is $mt5_account_info->{group}, 'real\svg', 'correct CR gaming group';
 
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'standard'
-        },
-        'FinancialAssessmentMandatory',
-        'Full financial assessment is required for financial accounts'
-    );
-
-    financial_assessment($client, 'full');
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
             mt5_account_type => 'standard'
         });
-    ok $login, 'financial account created with full financial assessment';
-    is $mt5_account_info->{group}, 'real\vanuatu_standard', 'correct CR standard financial group';
+    ok $login, 'financial assessment is not required for financial standard account';
+    is $mt5_account_info->{group}, 'real\svg_standard', 'correct CR standard financial group';
 
+    financial_assessment($client, 'full');
     $login = create_mt5_account->(
         $c, $token, $client,
         {
@@ -747,7 +752,7 @@ subtest 'VR account types - CR residence' => sub {
             account_type     => 'demo',
             mt5_account_type => 'standard'
         });
-    is $mt5_account_info->{group}, 'demo\vanuatu_standard', 'correct VRTC standard demo group';
+    is $mt5_account_info->{group}, 'demo\svg_standard', 'correct VRTC standard demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
