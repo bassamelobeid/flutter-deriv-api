@@ -49,7 +49,7 @@ my %date_string = (
 
 initialize_realtime_ticks_db();
 
-my %rates = map { $_ => 100 } ('BCH', 'EUR', 'BTC', 'GBP', 'LTC', 'ETH', 'AUD', 'JPY', 'UST', 'USB');
+my %rates = map { $_ => 100 } ('BCH', 'EUR', 'BTC', 'GBP', 'LTC', 'ETH', 'AUD', 'JPY', 'UST', 'USB','IDK');
 populate_exchange_rates(\%rates);
 
 foreach my $symbol (keys %date_string) {
