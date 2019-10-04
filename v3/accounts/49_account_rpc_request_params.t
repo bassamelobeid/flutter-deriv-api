@@ -386,8 +386,6 @@ is $call_params->{token}, $token;
 ok $call_params->{client_ip};
 ok $call_params->{token_type};
 
-$res = $t->await::cashier_password({cashier_password => 1});
-is($res->{cashier_password}, 1);
 is $call_params->{token}, $token;
 ok $call_params->{client_ip};
 
@@ -464,7 +462,6 @@ $t->await::change_password({
     old_password    => '123456',
     new_password    => '654321'
 });
-$t->await::cashier_password({cashier_password => 1});
 $t->await::reset_password({
     reset_password    => 1,
     verification_code => '123456789012345',
