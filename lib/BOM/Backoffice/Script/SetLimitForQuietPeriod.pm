@@ -13,13 +13,13 @@ sub documentation { return 'This script is to set limit for quiet period'; }
 
 sub script_run {
     my $self = shift;
-
     my $json = JSON::MaybeXS->new(
         pretty    => 1,
         canonical => 1
     );
     my %new_limit;
     my $quants_config            = BOM::Config::Runtime->instance->app_config;
+    $quants_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
     my $current                  = $quants_config->get('quants.custom_product_profiles');
     my $current_product_profiles = $json->decode($current);
     my ($todo, $risk_profile, $to_remove, $between);
@@ -41,7 +41,6 @@ sub script_run {
         return 1;
 
     }
-
     my $uniq_key = substr(md5_hex('new' . $todo), 0, 16);
 
     #removing old limit on forex tick trade
