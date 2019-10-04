@@ -227,7 +227,11 @@ sub new_mt5_signup {
     # }
 
     # send email to client to ask for authentication documents
-    if ($data->{account_type} eq 'financial' and not $client->fully_authenticated) {
+    if (    $data->{account_type} eq 'financial'
+        and $data->{sub_account_type}
+        and $data->{sub_account_type} eq 'advanced'
+        and not $client->fully_authenticated)
+    {
         my $redis     = BOM::Config::RedisReplicated::redis_write();
         my $masterkey = 'MT5_REMINDER_AUTHENTICATION_CHECK';
 
@@ -305,7 +309,7 @@ sub send_mt5_disable_csv {
         foreach my $mt5_loginid (@$mt5_loginids) {
 
             $mt5_loginid =~ s/\D//g;
-
+            
             group_for_user($mt5_loginid)->then(
                 sub {
                     my ($group) = @_;
