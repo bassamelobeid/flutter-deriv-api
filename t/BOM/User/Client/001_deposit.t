@@ -50,10 +50,6 @@ my %deposit = (
 my $client = $user->create_client(%$client_details);
 $client->set_default_account('USD');
 
-$client->cashier_setting_password('12345');
-throws_ok { $client->validate_payment(%deposit) } qr/Client has set the cashier password/, 'Client cashier is locked by himself.';
-$client->cashier_setting_password('');
-
 $client->status->set('unwelcome', 'calum', '..dont like you, sorry.');
 
 throws_ok { $client->validate_payment(%deposit) } qr/Deposits blocked/, 'cannot deposit when unwelcome.';
