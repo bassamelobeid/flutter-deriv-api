@@ -26,7 +26,8 @@ test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_malta.json',       'malta';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_maltainvest.json', 'maltainvest';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_error.json',       'unknown';
-test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', '', '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)', 10;
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', '', '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)',
+    11;
 test_sendrecv_params 'residence_list/test_send.json', 'residence_list/test_receive.json';
 test_sendrecv_params 'states_list/test_send.json',    'states_list/test_receive.json';
 
@@ -82,7 +83,7 @@ test_sendrecv_params 'buy/test_send.json', 'buy/test_receive_nobalance.json', _g
 # ADMIN SCOPE CALLS (CR)
 # TEMPORARY: Need to call this before sub account as sub account return all crypto currencies as well
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json',
-    _get_stashed('authorize/stash/token'), '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)', 10;
+    _get_stashed('authorize/stash/token'), '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)', 11;
 # ADMIN SCOPE CALLS (CR)
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
     _get_stashed('new_account_real/oauth_token'), 'USD';
@@ -102,26 +103,6 @@ test_sendrecv_params 'set_self_exclusion/test_send.json', 'set_self_exclusion/te
 test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusion/test_receive.json', _get_stashed('new_account_real/oauth_token');
 fail_test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusion/test_receive_to_fail.json',
     _get_stashed('new_account_real/oauth_token');
-
-# PAYMENT SCOPE CALLS (CR)
-test_sendrecv_params 'cashier_password/test_send.json', 'cashier_password/test_receive.json', _get_stashed('new_account_real/oauth_token'), '0';
-test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive.json',
-    _get_stashed('new_account_real/oauth_token'), '1', 'Binary@12';
-test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_error.json', _get_stashed('new_account_real/oauth_token');
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test-rpc@binary.com', 'payment_withdraw';
-test_sendrecv_params 'cashier/test_send_withdraw.json', 'cashier/test_receive_error.json',
-    _get_stashed('new_account_real/oauth_token'), _get_token('test-rpc@binary.com');
-test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive_error.json',
-    _get_stashed('new_account_real/oauth_token'), '', 'Binary@12';
-test_sendrecv_params 'cashier_password/test_send.json', 'cashier_password/test_receive.json', _get_stashed('new_account_real/oauth_token'), '1';
-test_sendrecv_params 'cashier_password/test_send_unlock.json', 'cashier_password/test_receive.json',
-    _get_stashed('new_account_real/oauth_token'), '0', 'Binary@12';
-test_sendrecv_params 'cashier_password/test_send_unlock.json', 'cashier_password/test_receive_error.json',
-    _get_stashed('new_account_real/oauth_token'), '', 'Binary@12';
-test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive_password_error.json',
-    _get_stashed('new_account_real/oauth_token'), '', 'binary@12';
-test_sendrecv_params 'cashier_password/test_send_lock.json', 'cashier_password/test_receive_error.json',
-    _get_stashed('new_account_real/oauth_token'), '', 'Binary@1';
 
 # VIRTUAL ACCOUNT OPENING FOR (MLT)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+mlt@binary.com', 'account_opening';
