@@ -63,6 +63,7 @@ ETH:
         address: https://etherscan.io/address/
         transaction: https://etherscan.io/tx/
     ethgasstation_api: https://ethgasstation.info/json/ethgasAPI.json
+    safe_gas_price: 11000000000 # Wei
 UST:
     withdrawal:
         timeout: "3d"
@@ -91,3 +92,16 @@ USB:
     blockchain_url:
         address: https://etherscan.io/address/
         transaction: https://etherscan.io/tx/
+IDK:
+    withdrawal:
+        timeout: "3d"
+        min_usd: 5
+        fee_limit_usd: 2
+    confirmation:
+        required_confirmations: 3
+    protocol_cost: 0
+    decimal_places: 18
+    blockchain_url:
+        address: https://etherscan.io/address/
+        transaction: https://etherscan.io/tx/
+

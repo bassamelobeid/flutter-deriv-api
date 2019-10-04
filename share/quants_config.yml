@@ -18,6 +18,7 @@ default_stake:
   LTC: 0.25
   UST: 10
   USB: 10
+  IDK: 150
 
 bet_limits:
   holiday_blackout_start: 345
@@ -35,6 +36,7 @@ bet_limits:
       DAI: 1000
       UST: 1000
       USB: 1000
+      IDK: 15000
     digits:
       USD: 30000
       EUR: 30000
@@ -47,6 +49,7 @@ bet_limits:
       DAI: 5000
       UST: 5000
       USB: 5000
+      IDK: 45000
   inefficient_period_payout_max:
     USD: 200
     EUR: 200
@@ -58,6 +61,7 @@ bet_limits:
     LTC: 2.5
     UST: 200
     USB: 200
+    IDK: 3000
   max_payout:
     default_landing_company:
       default_market:
@@ -71,6 +75,7 @@ bet_limits:
         LTC: 50
         UST: 5000
         USB: 5000
+        IDK: 75000
   min_stake:
     default_landing_company:
       default_market:
@@ -84,6 +89,7 @@ bet_limits:
         LTC: 0.01
         UST: 0.5
         USB: 0.5
+        IDK: 8
       volidx:
         USD: 0.35
         EUR: 0.35
@@ -95,6 +101,7 @@ bet_limits:
         LTC: 0.01
         UST: 0.5
         USB: 0.5
+        IDK: 8
     maltainvest:
       default_market:
         USD: 5
@@ -107,6 +114,7 @@ bet_limits:
         LTC: 0.1
         UST: 5
         USB: 5
+        IDK: 75
   min_commission_amount:
     USD: 0.02 # 0.02 dollar
     EUR: 0.02
@@ -118,6 +126,7 @@ bet_limits:
     LTC: 0.00075
     UST: 0.02
     USB: 0.02
+    IDK: 0.3
 
 #Lookback option limits – the Value-at-risk approach
 #
@@ -155,6 +164,7 @@ lookback_limits:
     LTC: 3
     UST: 300
     USB: 300
+    IDK: 4500
 
 risk_profile:
   no_business:
@@ -169,6 +179,7 @@ risk_profile:
           LTC: 0
           UST: 0
           USB: 0
+          IDK: 0
       payout:
           USD: 0
           EUR: 0
@@ -180,6 +191,7 @@ risk_profile:
           LTC: 0
           UST: 0
           USB: 0
+          IDK: 0
   extreme_risk:
       turnover:
           USD: 1000
@@ -192,6 +204,7 @@ risk_profile:
           LTC: 10
           UST: 1000
           USB: 1000
+          IDK: 15000
       payout:
           USD: 100
           EUR: 100
@@ -203,6 +216,7 @@ risk_profile:
           LTC: 1
           UST: 100
           USB: 100
+          IDK: 1500 
   high_risk:
       turnover:
           USD: 5000
@@ -215,6 +229,7 @@ risk_profile:
           LTC: 50
           UST: 5000
           USB: 5000
+          IDK: 75000
       payout:
           USD: 1000
           EUR: 1000
@@ -226,6 +241,7 @@ risk_profile:
           LTC: 10
           UST: 1000
           USB: 1000
+          IDK: 15000
   moderate_risk:
       turnover:
           USD: 50000
@@ -238,6 +254,7 @@ risk_profile:
           LTC: 250
           UST: 50000
           USB: 50000
+          IDK: 750000
       payout:
           USD: 5000
           EUR: 5000
@@ -249,6 +266,7 @@ risk_profile:
           LTC: 50
           UST: 5000
           USB: 5000
+          IDK: 75000
   medium_risk:
       turnover:
           USD: 100000
@@ -261,6 +279,7 @@ risk_profile:
           LTC: 250
           UST: 100000
           USB: 100000
+          IDK: 1500000
       payout:
           USD: 20000
           EUR: 20000
@@ -272,6 +291,7 @@ risk_profile:
           LTC: 50
           UST: 20000
           USB: 20000
+          IDK: 300000
   low_risk:
       turnover:
           USD: 500000
@@ -284,6 +304,7 @@ risk_profile:
           LTC: 500
           UST: 500000
           USB: 500000
+          IDK: 7500000
       payout:
           USD: 50000
           EUR: 50000
@@ -295,3 +316,4 @@ risk_profile:
           LTC: 50
           UST: 50000
           USB: 50000
+          IDK: 750000
