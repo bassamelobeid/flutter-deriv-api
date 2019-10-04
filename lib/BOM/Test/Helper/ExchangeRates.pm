@@ -20,6 +20,7 @@ my $rates = {
     UST => 1,
     USB => 1,
     AUD => 1,
+    IDK => 1,
 };
 
 sub populate_exchange_rates {
