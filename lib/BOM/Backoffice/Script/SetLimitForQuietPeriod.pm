@@ -18,7 +18,7 @@ sub script_run {
         canonical => 1
     );
     my %new_limit;
-    my $quants_config            = BOM::Config::Runtime->instance->app_config;
+    my $quants_config = BOM::Config::Runtime->instance->app_config;
     $quants_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
     my $current                  = $quants_config->get('quants.custom_product_profiles');
     my $current_product_profiles = $json->decode($current);
