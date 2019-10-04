@@ -40,6 +40,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::Contract::PredefinedParameters;
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use BOM::MarketData qw(create_underlying);
+use LandingCompany::Registry;
 my $json = JSON::MaybeXS->new;
 
 =head1 ATTRIBUTES
