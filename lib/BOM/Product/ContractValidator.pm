@@ -157,6 +157,16 @@ sub _confirm_sell_validity {
         }
     }
 
+    if (!$self->is_forward_starting && $self->date_start->epoch >= $self->date_pricing->epoch) {
+        # Trying to sell too fast, we can sell only on next second after start time
+        # this limitation from `basic validition` in DB
+        $self->_add_error({
+            message           => 'wait for next second after start time',
+            message_to_client => [$ERROR_MAPPING->{SameStartSellTime}],
+        });
+        return 0;
+    }
+
     return 1;
 }
 

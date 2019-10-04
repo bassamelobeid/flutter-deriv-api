@@ -63,7 +63,7 @@ sub _build_hit_tick {
     }
 
     return $self->_get_tick_expiry_hit_tick(%hit_conditions) if $self->tick_expiry;
-    return $self->underlying->breaching_tick(%hit_conditions);
+    return $self->_tick_accessor->breaching_tick(%hit_conditions);
 }
 
 has ok_through_expiry => (
