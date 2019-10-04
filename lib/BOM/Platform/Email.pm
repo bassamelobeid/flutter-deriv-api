@@ -146,7 +146,7 @@ sub process_send_email {
         : ());
 
     my $brand = $request->brand;
-    if ($fromemail eq $brand->emails('support')) {
+    if (grep { $fromemail eq $_ } ($brand->emails('support'), $brand->emails('no-reply'))) {
         $fromemail = "\"" . $brand->website_name . "\" <$fromemail>";
     }
 
