@@ -117,9 +117,6 @@ rpc "new_account_virtual",
         {
             subject       => localize('Welcome to Deriv'),
             template_name => 'welcome_virtual',
-            template_args => {
-                website_url => $brand->default_url,
-            },
         }) if $brand->name eq 'deriv';
 
     return {
