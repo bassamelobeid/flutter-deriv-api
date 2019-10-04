@@ -314,13 +314,6 @@ sub startup {
             }
         ],
         [
-            'cashier_password',
-            {
-                require_auth => 'payments',
-                stash_params => [qw/ client_ip /],
-            }
-        ],
-        [
             'api_token',
             {
                 require_auth => 'admin',
