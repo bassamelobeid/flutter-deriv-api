@@ -598,16 +598,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $cli->date_of_birth($input{date_of_birth});
         }
 
-        if ($input{save_cashier_password}) {
-            if (my $pw = $input{cashier_setting_password}) {
-                code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR! Cashier password must be 6-25 characters</p>")
-                    unless $pw =~ /^[ -~]{6,25}$/;
-                $cli->cashier_setting_password(BOM::User::Password::hashpw($pw));
-            } else {
-                $cli->cashier_setting_password('');
-            }
-        }
-
         CLIENT_KEY:
         foreach my $key (keys %input) {
             if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
