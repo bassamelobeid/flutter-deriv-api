@@ -1028,6 +1028,14 @@ subtest 'Purchase Sell Contract' => sub {
     ok($fmb->account_id, 'can retrieve the fmb db record');
 
     set_absolute_time($now->epoch + 61);
+    my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch,
+        underlying => 'R_50',
+    });
+    my $exit_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch + 1,
+        underlying => 'R_50',
+    });
     my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch + 60,
         underlying => 'R_50',
@@ -1042,9 +1050,9 @@ subtest 'Purchase Sell Contract' => sub {
         # Opposite contract can now be used to purchase. To simulate sellback behaviour,
         # set date_pricing to date_start + 1
         date_pricing => $now->epoch + 1,
-        entry_tick   => $current_tick,
+        entry_tick   => $entry_tick,
         current_tick => $current_tick,
-        exit_tick    => $current_tick,
+        exit_tick    => $exit_tick,
         barrier      => 'S0P',
     });
     my $mocked = Test::MockModule->new('BOM::Transaction::Validation');
