@@ -193,13 +193,6 @@ subtest 'common' => sub {
         ->error_message_is('This account is unavailable.', 'Correct error message for disabled client');
 
     $client_cr->status->clear_disabled;
-    $client_cr->cashier_setting_password('abc123');
-    $client_cr->save;
-
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has cashier password')
-        ->error_message_is('Your cashier is locked as per your request.', 'Correct error message when cashier password is set');
-
-    $client_cr->cashier_setting_password('');
     $client_cr->save;
 };
 

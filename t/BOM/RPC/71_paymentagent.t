@@ -466,22 +466,6 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
 
         ## Skip check that client account is not virtual - handled in Cashier.pm
 
-        $test = 'Transfer fails if client cashier has a password';
-        $Alice->cashier_setting_password('yin');
-        $Alice->save;
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, 'Your cashier is locked as per your request.', $test);
-        $Alice->cashier_setting_password('');
-        $Alice->save;
-
-        $test = 'Transfer fails if transfer_to client cashier has a password';
-        $Bob->cashier_setting_password('yang');
-        $Bob->save;
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, "You cannot transfer to account $Bob_id, as their cashier is locked.", $test);
-        $Bob->cashier_setting_password(undef);
-        $Bob->save;
-
         $test = 'Transfer fails if client status = cashier_locked';
         $Alice->status->set('cashier_locked', 'Testy McTestington', 'Just running some tests');
         $Alice->save;
@@ -895,14 +879,6 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         like($res->{error}{message_to_client}, qr/agent facilities are not available/, $test);
         reset_withdraw_testargs();
 
-        $test = 'Withdraw fails if client cashier has a password';
-        $Alice->cashier_setting_password('black');
-        $Alice->save;
-        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/Your cashier is locked/, $test);
-        $Alice->cashier_setting_password('');
-        $Alice->save;
-
         $test                                   = 'Withdraw fails if both sides are the same account';
         $testargs->{args}{paymentagent_loginid} = $Alice_id;
         $res                                    = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
@@ -1031,14 +1007,6 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         is($res->{error}{code}, 'PaymentAgentWithdrawError', $test);
         $Bob->status->clear_unwelcome;
-        $Bob->save;
-
-        $test = 'Withdraw fails if payment agent cashier has a password';
-        $Bob->cashier_setting_password('white');
-        $Bob->save;
-        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/payment agent's cashier is locked/, $test);
-        $Bob->cashier_setting_password('');
         $Bob->save;
 
         $test = 'Withdraw fails if payment agent status = cashier_locked';

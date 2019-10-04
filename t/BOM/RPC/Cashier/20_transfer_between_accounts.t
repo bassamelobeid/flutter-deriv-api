@@ -330,61 +330,6 @@ subtest 'validation' => sub {
         'Correct error message for invalid maximum amount';
 };
 
-subtest 'Basic transfers' => sub {
-    $email = 'new_email' . rand(999) . '@binary.com';
-    my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        place_of_birth => 'ID',
-    });
-
-    my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        place_of_birth => 'ID',
-    });
-
-    $user = BOM::User->create(
-        email          => $email,
-        password       => BOM::User::Password::hashpw('hello'),
-        email_verified => 1,
-    );
-
-    for ($client_cr1, $client_cr2) {
-        $user->add_client($_);
-        $_->set_default_account('USD');
-    }
-
-    $client_cr1->payment_free_gift(
-        currency => 'EUR',
-        amount   => 1000,
-        remark   => 'free gift',
-    );
-
-    $params->{token}      = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
-    $params->{token_type} = 'oauth_token';
-    $params->{args}       = {
-        account_from => $client_cr1->loginid,
-        account_to   => $client_cr2->loginid,
-        currency     => 'USD',
-        amount       => 10
-    };
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts');
-
-    $params->{args}{account_from} = $client_cr2->loginid;
-    $params->{args}{account_to}   = $client_cr1->loginid;
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_no_error('can transfer using oauth token when account_from is not authorized client');
-
-    $params->{token_type}         = 'api_token';
-    $params->{args}{account_from} = $client_cr2->loginid;
-    $params->{args}{account_to}   = $client_cr1->loginid;
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is(
-        'From account provided should be same as current authorized client.',
-        'Cannot transfer using api token when account_from is not authorized client'
-    );
-};
-
 subtest 'Validation for transfer from incomplete account' => sub {
     $email = 'new_email' . rand(999) . '@binary.com';
     my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -743,7 +688,7 @@ subtest 'transfer with fees' => sub {
     $params->{args}->{amount} = 0.01;
     # The amount will be accepted initially, but rejected when getting the recieved amount in BTC.
     $rpc_ct->call_ok($method, $params)->has_error->error_code_is('TransferBetweenAccountsError')
-        ->error_message_is("This amount is too low. Please enter a minimum of 1 USD.");
+        ->error_message_is("This amount is too low. Please enter a minimum of 1.09 USD.");
 
     $params->{args}->{amount} = $amount;
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
@@ -815,7 +760,7 @@ subtest 'transfer with fees' => sub {
         amount       => $amount
     };
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError')
-        ->error_message_is('This amount is too low. Please enter a minimum of 1 UST.');
+        ->error_message_is('This amount is too low. Please enter a minimum of 1.09 UST.');
 
     #No transfer fee for BTC-EUR
     $amount = 0.02;
