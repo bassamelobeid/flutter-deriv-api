@@ -170,7 +170,13 @@ sub add_req_data {
     my $args = {};
     if ($req_storage) {
         $args = $req_storage->{origin_args} || $req_storage->{args};
-        $api_response->{echo_req} = _sanitize_echo($args, $api_response->{msg_type});
+
+        my $err_code = $api_response->{error} && $api_response->{error}{code} // '';
+        $api_response->{echo_req} =
+            $err_code ne 'InputValidationFailed'
+            ? _sanitize_echo($args, $api_response->{msg_type})
+            : $args;
+
     } elsif (defined $api_response->{echo_req}) {
         $args = $api_response->{echo_req};
     }
@@ -231,8 +237,6 @@ my %rate_limit_map = (
     proposal_virtual               => 'websocket_call_pricing',
     proposal_open_contract_virtual => 'websocket_call_pricing',
     verify_email_virtual           => 'websocket_call_email',
-    cashier_password_real          => 'websocket_call_password',
-    cashier_password_virtual       => 'websocket_call_password',
     request_report_real            => 'websocket_call_email',
     request_report_virtual         => 'websocket_call_email',
     account_statistics_real        => 'websocket_call_expensive',
