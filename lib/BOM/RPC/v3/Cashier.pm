@@ -360,9 +360,8 @@ rpc get_limits => sub {
         $lifetimelimit = 99999999;
     }
 
-    $limit->{num_of_days} = $numdays;
-
-    $limit->{num_of_days_limit} = formatnumber('price', $currency, convert_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
+    $limit->{num_of_days}       = $numdays;
+    $limit->{num_of_days_limit} = formatnumber('price', $currency, convert_currency($numdayslimit, $withdrawal_limit_curr, $currency));
     $limit->{lifetime_limit}    = formatnumber('price', $currency, convert_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
 
     # Withdrawal since $numdays
@@ -641,8 +640,6 @@ rpc paymentagent_transfer => sub {
             return $error_sub->(localize('Login ID ([_1]) does not exist.', $error_msg =~ /\b$loginid_fm\b/ ? $loginid_fm : $loginid_to));
         } elsif ($error_code eq 'BI206') {    ## Redundant check (account is virtual)
             return $error_sub->(localize('Sorry, this feature is not available.'), $full_error_msg);
-        } elsif ($error_code eq 'BI207') {
-            return $error_sub->(localize('Your cashier is locked as per your request.'), $full_error_msg);
         } elsif ($error_code eq 'BI208') {
             return $error_sub->(localize('You cannot transfer to account [_1], as their cashier is locked.', $loginid_to));
         } elsif ($error_code eq 'BI209') {
@@ -713,17 +710,15 @@ rpc paymentagent_transfer => sub {
         payment_agent => 0,
     );
 
-    my $brand = request()->brand;
-
     send_email({
-        'from'    => $brand->emails('support'),
-        'to'      => $client_to->email,
-        'subject' => localize('Acknowledgement of Money Transfer'),
-        'message' => _email_content('pa_transfer', $brand, $website_name, $client_to, $client_fm, $amount, $currency),
-        ,
-        'use_email_template'    => 1,
-        'email_content_is_html' => 1,
-        'template_loginid'      => $loginid_to
+        to                    => $client_to->email,
+        subject               => localize('Acknowledgement of Money Transfer'),
+        template_name         => 'pa_transfer_confirm',
+        template_args         => _template_args($website_name, $client_to, $client_fm, $amount, $currency),
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        use_event             => 1,
+        template_loginid      => $loginid_to
     });
 
     return {
@@ -851,17 +846,25 @@ rpc paymentagent_withdraw => sub {
     return $error_sub->(localize('You are not authorized for withdrawals via payment agents.'))
         unless ($source_bypass_verification or BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client));
 
-    return $error_sub->(localize('Your cashier is locked as per your request.')) if $client->cashier_setting_password;
-
     return $error_sub->(localize('You cannot withdraw funds to the same account.')) if $client_loginid eq $paymentagent_loginid;
 
     return $error_sub->(localize('You cannot perform this action, please set your residence.')) unless $client->residence;
 
     return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->status->disabled;
-    my $paymentagent = BOM::User::Client::PaymentAgent->new({
+
+    my ($paymentagent, $paymentagent_error);
+    try {
+        $paymentagent = BOM::User::Client::PaymentAgent->new({
             'loginid'    => $paymentagent_loginid,
             db_operation => 'replica'
-        }) or return $error_sub->(localize('The payment agent account does not exist.'));
+        });
+    }
+    catch {
+        $paymentagent_error = $_;
+    };
+    if ($paymentagent_error or not $paymentagent) {
+        return $error_sub->(localize('Please enter a valid payment agent ID.'));
+    }
 
     my $pa_client = $paymentagent->client;
     return $error_sub->(
@@ -909,7 +912,7 @@ rpc paymentagent_withdraw => sub {
         if $pa_client->status->unwelcome;
 
     return $error_sub->(localize("You cannot perform the withdrawal to account [_1], as the payment agent's cashier is locked.", $pa_client->loginid))
-        if ($pa_client->status->cashier_locked or $pa_client->cashier_setting_password);
+        if $pa_client->status->cashier_locked;
 
     return $error_sub->(
         localize("You cannot perform withdrawal to account [_1], as payment agent's verification documents have expired.", $pa_client->loginid))
@@ -1056,15 +1059,14 @@ rpc paymentagent_withdraw => sub {
         payment_agent => 0,
     );
 
-    my $brand = request()->brand;
-
     send_email({
-        from                  => $brand->emails('support'),
         to                    => $paymentagent->email,
         subject               => localize('Acknowledgement of Withdrawal Request'),
-        message               => _email_content('pa_withdraw', $brand, $website_name, $client, $pa_client, $amount, $currency),
+        template_name         => 'pa_withdraw_confirm',
+        template_args         => _template_args($website_name, $client, $pa_client, $amount, $currency),
         use_email_template    => 1,
         email_content_is_html => 1,
+        use_event             => 1,
         template_loginid      => $pa_client->loginid,
     });
 
@@ -1172,7 +1174,7 @@ rpc transfer_between_accounts => sub {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
 
-    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual && $token_type ne 'oauth_token';
 
     my $status = $client->status;
 
@@ -1182,18 +1184,19 @@ rpc transfer_between_accounts => sub {
         if $status->cashier_locked;
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if ($status->withdrawal_locked || $status->no_withdrawal_or_trading);
-    return _transfer_between_accounts_error(localize('Your profile appears to be incomplete. Please update your personal details to continue.'))
-        if ($client->missing_requirements('withdrawal'));
-    return _transfer_between_accounts_error(localize('Your cashier is locked as per your request.')) if $client->cashier_setting_password;
+
+    if (my @missed_fields = $client->missing_requirements('withdrawal')) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'ASK_FIX_DETAILS',
+            message_to_client => localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
+            details           => {fields => \@missed_fields},
+        });
+    }
 
     my $args = $params->{args};
     my ($currency, $amount) = @{$args}{qw/currency amount/};
 
     my $siblings = $client->real_account_siblings_information(include_disabled => 0);
-    unless (keys %$siblings) {
-        warn __PACKAGE__ . "::transfer_between_accounts Error:  Unable to get user data for " . $client->loginid . "\n";
-        return _transfer_between_accounts_error(localize('Internal server error'));
-    }
 
     my ($loginid_from, $loginid_to) = @{$args}{qw/account_from account_to/};
 
@@ -1320,11 +1323,6 @@ rpc transfer_between_accounts => sub {
                             unless $setting->{error};
                         return Future->done($resp);
                     });
-            }
-            )->catch(
-            sub {
-                my $err = shift;
-                return Future->done(_transfer_between_accounts_error($err->{error}->{message_to_client}));
             })->get;
     }
 
@@ -1619,10 +1617,6 @@ sub _validate_transfer_between_accounts {
         localize("We are unable to transfer to [_1] because that account has been restricted.", $client_to->loginid))
         if $client_to->status->unwelcome;
 
-    return _transfer_between_accounts_error(
-        localize('You cannot perform this action, as your account [_1] cashier is locked as per request.', $client_to->loginid))
-        if $client_to->cashier_setting_password;
-
     # error out if from account has no currency set
     return _transfer_between_accounts_error(localize('Please deposit to your account.')) unless $from_currency;
 
@@ -1735,191 +1729,26 @@ sub _check_facility_availability {
     return undef;
 }
 
-sub _email_content {
-    my ($type, $brand, $website_name, $client, $pa_client, $amount, $currency) = @_;
+sub _template_args {
+    my ($website_name, $client, $pa_client, $amount, $currency) = @_;
 
     my $client_name = $client->first_name . ' ' . $client->last_name;
 
-    my %mapping = (
-
-        pa_withdraw_binary => localize(
-            'Dear [_1] [_2] [_3],
-                    
-                We would like to inform you that the withdrawal request of [_4][_5] by [_6] [_7] has been processed. The funds have been credited into your account [_8] at [_9].
-                
-                Kind Regards,
-                
-                The [_9] team.',
-            encode_entities($pa_client->salutation),
-            encode_entities($pa_client->first_name),
-            encode_entities($pa_client->last_name),
-            $currency,
-            $amount,
-            encode_entities($client_name),
-            $client->loginid,
-            $pa_client->loginid,
-            $website_name
-        ),
-
-        pa_transfer_binary => localize(
-            'Dear [_1] [_2] [_3],
-                    
-                We would like to inform you that the transfer of [_4] [_5] via [_6] has been processed. The funds have been credited into your account.
-                
-                Kind Regards,
-                
-                The [_7] team.',
-            encode_entities($client->salutation),
-            encode_entities($client->first_name),
-            encode_entities($client->last_name),
-            $currency,
-            $amount,
-            encode_entities($pa_client->payment_agent->payment_agent_name),
-            $website_name
-        ),
-
-        pa_withdraw_deriv => localize(
-            '<tr>
-                <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
-                    <!--~[if (gte mso 9)|(IE)~]>
-                    <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
-                    <!~[endif~]-->
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                        <tr>
-                            <td bgcolor="#ffffff" align="center" valign="top" style="padding: 60px 30px 0px 30px; border-top: 2px solid #ff444f;">
-                                <a href="https://www.deriv.com">
-                                    <img src="https://binary-com.github.io/deriv-email-templates/html/images/withdrawal-successful.png" width="162" height="162" border="0" style="display: block; max-width: 100%;" alt="Deriv.com">
-                                </a>
-                            </td>
-                        </tr>
-                    </table>
-                    <!--~[if (gte mso 9)|(IE)~]></td></tr></table>
-                    <!~[endif~]-->
-                </td>
-            </tr>
-            <!-- COPY BLOCK -->
-            <tr>
-                <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
-                    <!--~[if (gte mso 9)|(IE)~]>
-                    <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
-                    <!~[endif~]-->
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                        <tr>
-                            <td bgcolor="#ffffff" align="center" style="padding: 40px 50px 8px 50px;">
-                                <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">We\'ve completed</h2>
-                                <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">a withdrawal request</h2>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td bgcolor="#ffffff" align="center" style="padding: 20px 30px 20px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; font-weight: bold; margin: 0px 0px 0px 0px;">Your Login ID: [_1]</p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Dear Mr. [_2] [_3] [_4],</p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">We would like to inform you that the withdrawal request of <strong>[_5] [_6]</strong> by <strong>[_7] [_8]</strong> has been processed. The funds have been credited into your account <strong>[_1]</strong> at <strong>[_9]</strong>.</p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 40px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Kind regards,<br />The [_9] team.</p>
-                            </td>
-                        </tr>
-                    </table>
-                    <!--~[if (gte mso 9)|(IE)~]>
-                        </td></tr></table>
-                    <!~[endif~]-->
-                </td>
-            </tr>',
-            $pa_client->loginid,
-            encode_entities($pa_client->salutation),
-            encode_entities($pa_client->first_name),
-            encode_entities($pa_client->last_name),
-            $currency,
-            $amount,
-            encode_entities($client_name),
-            $client->loginid,
-            $website_name
-        ),
-
-        pa_transfer_deriv => localize(
-            '<tr>
-                <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
-                    <!--~[if (gte mso 9)|(IE)~]>
-                    <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
-                    <!~[endif~]-->
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                        <tr>
-                            <td bgcolor="#ffffff" align="center" valign="top" style="padding: 60px 30px 0px 30px; border-top: 2px solid #ff444f;">
-                                <a href="https://www.deriv.com">
-                                    <img src="https://binary-com.github.io/deriv-email-templates/html/images/withdrawal-successful.png" width="162" height="162" border="0" style="display: block; max-width: 100%;" alt="Deriv.com">
-                                </a>
-                            </td>
-                        </tr>
-                    </table>
-                    <!--~[if (gte mso 9)|(IE)~]></td></tr></table>
-                    <!~[endif~]-->
-                </td>
-            </tr>
-            <!-- COPY BLOCK -->
-            <tr>
-                <td bgcolor="#f3f3f3" align="center" style="padding: 0px 10px 0px 10px;">
-                    <!--~[if (gte mso 9)|(IE)~]>
-                    <table align="center" border="0" cellspacing="0" cellpadding="0" width="600"><tr><td align="center" valign="top" width="600">
-                    <!~[endif~]-->
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px;">
-                        <tr>
-                            <td bgcolor="#ffffff" align="center" style="padding: 40px 50px 8px 50px;">
-                                <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">We\'ve completed</h2>
-                                <h2 style="font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 32px; line-height: 40px; color: #333333; margin: 0;">a transfer</h2>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td bgcolor="#ffffff" align="center" style="padding: 20px 30px 20px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; font-weight: bold; margin: 0px 0px 0px 0px;">Your Login ID: [_1]</p>
-                            </td>
-                        </tr>
-                        <!-- COPY -->
-                        <tr>
-                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Dear Mr. [_2] [_3] [_4],</p>
-                            </td>
-                        </tr>
-                        <!-- COPY -->
-                        <tr>
-                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 20px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">We would like to inform you that the transfer of <strong>[_5] [_6]</strong> via <strong>[_7]</strong> has been processed. The funds have been credited into your account <strong>[_1]</strong> at <strong>[_7]</strong>.</p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td bgcolor="#ffffff" align="left" style="padding: 0px 30px 40px 30px;">
-                                <p style="color: #333333; font-family: \'IBM Plex Sans\', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px; margin: 0px 0px 0px 0px;">Kind regards,<br />The [_8] team.</p>
-                            </td>
-                        </tr>
-                    </table>
-                    <!--~[if (gte mso 9)|(IE)~]>
-                        </td></tr></table>
-                    <!~[endif~]-->
-                </td>
-            </tr>',
-            $client->loginid,
-            encode_entities($client->salutation),
-            encode_entities($client->first_name),
-            encode_entities($client->last_name),
-            $currency,
-            $amount,
-            encode_entities($pa_client->payment_agent->payment_agent_name),
-            $website_name
-        ),
-    );
-
-    # send_email requires arrayref
-    return [$mapping{$type . '_' . $brand->name}];
+    return {
+        website_name      => $website_name,
+        amount            => $amount,
+        currency          => $currency,
+        client_loginid    => $client->loginid,
+        client_name       => encode_entities($client_name),
+        client_salutation => encode_entities($client->salutation),
+        client_first_name => encode_entities($client->first_name),
+        client_last_name  => encode_entities($client->last_name),
+        pa_loginid        => $pa_client->loginid,
+        pa_name           => encode_entities($pa_client->payment_agent->payment_agent_name),
+        pa_salutation     => encode_entities($pa_client->salutation),
+        pa_first_name     => encode_entities($pa_client->first_name),
+        pa_last_name      => encode_entities($pa_client->last_name),
+    };
 }
 
 1;

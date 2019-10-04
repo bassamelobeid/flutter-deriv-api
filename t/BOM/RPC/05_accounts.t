@@ -142,6 +142,7 @@ my $test_client_vr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client
     broker_code => 'VRTC',
 });
 $test_client_vr_2->email($email);
+$test_client_vr_2->set_default_account('USD');
 $test_client_vr_2->save;
 
 my $email_mlt_mf    = 'mltmf@binary.com';
@@ -1504,133 +1505,6 @@ subtest $method => sub {
     $password = $new_password;
 };
 
-$method = 'cashier_password';
-subtest $method => sub {
-
-    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
-
-    is(
-        $c->tcall(
-            $method,
-            {
-                token => undef,
-            }
-            )->{error}{message_to_client},
-        'The token is invalid.',
-        'invalid token error'
-    );
-    isnt(
-        $c->tcall(
-            $method,
-            {
-                token => $token1,
-            }
-            )->{error}{message_to_client},
-        'The token is invalid.',
-        'no token error if token is valid'
-    );
-
-    is(
-        $c->tcall(
-            $method,
-            {
-                token => $token_disabled,
-            }
-            )->{error}{message_to_client},
-        'This account is unavailable.',
-        'check authorization'
-    );
-    is($c->tcall($method, {token => $token_vr})->{error}{message_to_client}, 'Permission denied.', 'need real money account');
-    my $params = {
-        token => $token1,
-        args  => {}};
-    is($c->tcall($method, $params)->{status}, 0, 'no unlock_password && lock_password, and not set password before, status will be 0');
-    my $tmp_password     = 'sfjksfSFjsk78Sjlk';
-    my $tmp_new_password = 'bjxljkwFWf278xK';
-    $test_client->cashier_setting_password($tmp_password);
-    $test_client->save;
-    is($c->tcall($method, $params)->{status}, 1, 'no unlock_password && lock_password, and set password before, status will be 1');
-    $params->{args}{lock_password} = $tmp_new_password;
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was locked.', 'return error if already locked');
-    $test_client->cashier_setting_password('');
-    $test_client->save;
-    $params->{args}{lock_password} = $password;
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Please use a different password than your login password.',
-        'return error if lock password same with user password'
-    );
-    $params->{args}{lock_password} = '1111111';
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Password should be at least six characters, including lower and uppercase letters with numbers.',
-        'check strong'
-    );
-    $params->{args}{lock_password} = $tmp_new_password;
-
-    mailbox_clear();
-    # here I mocked function 'save' to simulate the db failure.
-    my $mocked_client = Test::MockModule->new(ref($test_client));
-    $mocked_client->mock('save', sub { return undef });
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, an error occurred while processing your request.',
-        'return error if cannot save password'
-    );
-    $mocked_client->unmock_all;
-
-    is($c->tcall($method, $params)->{status}, 1, 'set password success');
-    my $subject = 'Cashier password updated';
-    my $msg     = mailbox_search(
-        email   => $email,
-        subject => qr/\Q$subject\E/
-    );
-    ok($msg, "email received");
-
-    # test unlock
-    $test_client->cashier_setting_password('');
-    $test_client->save;
-    delete $params->{args}{lock_password};
-    $params->{args}{unlock_password} = '123456';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
-
-    mailbox_clear();
-    $test_client->cashier_setting_password(BOM::User::Password::hashpw($tmp_password));
-    $test_client->save;
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, you have entered an incorrect cashier password',
-        'return error if not correct'
-    );
-    $subject = 'Failed attempt to unlock cashier section';
-    $msg     = mailbox_search(
-        email   => $email,
-        subject => qr/\Q$subject\E/
-    );
-    ok($msg, "email received");
-
-    # here I mocked function 'save' to simulate the db failure.
-    $mocked_client->mock('save', sub { return undef });
-    $params->{args}{unlock_password} = $tmp_password;
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, an error occurred while processing your request.',
-        'return error if cannot save'
-    );
-    $mocked_client->unmock_all;
-
-    mailbox_clear();
-    is($c->tcall($method, $params)->{status}, 0, 'unlock password ok');
-    $test_client->load;
-    ok(!$test_client->cashier_setting_password, 'Cashier password unset');
-    $subject = 'Cashier password updated';
-    $msg     = mailbox_search(
-        email   => $email,
-        subject => qr/\Q$subject\E/
-    );
-    ok($msg, "email received");
-};
-
 $method = 'get_settings';
 subtest $method => sub {
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
@@ -2749,15 +2623,17 @@ subtest $method => sub {
     my $bal_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
     });
-
     my $bal_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MLT',
     });
     my $bal_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
     });
+    my $bal_mf_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+    });
 
-    for my $c ($bal_mf, $bal_mlt, $bal_vr) {
+    for my $c ($bal_mf, $bal_mlt, $bal_vr, $bal_mf_disabled) {
         $c->email($bal_email);
         $c->save;
         $bal_user->add_client($c);
@@ -2780,6 +2656,18 @@ subtest $method => sub {
         remark   => 'free gift',
     );
 
+    $bal_vr->set_default_account('USD');
+    $bal_vr->save;
+
+    $bal_mf_disabled->set_default_account('USD');
+    $bal_mf_disabled->save;
+    $bal_mf_disabled->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+    $bal_mf_disabled->status->set('disabled', 1, 'test disabled');
+
     my $bal_token = $m->create_token($bal_mlt->loginid, 'mlt token');
 
     my $expected_result = {
@@ -2790,7 +2678,7 @@ subtest $method => sub {
     };
 
     my $result = $c->tcall($method, {token => $bal_token});
-    diag(explain($result));
+
     is_deeply($result, $expected_result, 'result is correct');
     my $args = {
         balance => 1,
@@ -2857,10 +2745,25 @@ subtest $method => sub {
                         'real' => {
                             'amount'   => '2500.00',
                             'currency' => 'USD'
+                        }}
+                },
+                {
+                    'account_id' => $bal_vr->default_account->id,
+                    'balance'    => '0.00',
+                    'currency'   => 'USD',
+                    'loginid'    => $bal_vr->loginid,
+                    'total'      => {
+                        'mt5' => {
+                            'amount'   => '0.00',
+                            'currency' => 'USD'
+                        },
+                        'real' => {
+                            'amount'   => '2500.00',
+                            'currency' => 'USD'
                         }}}]
         },
 
-        'result is correct'
+        'result is correct for mix of real, virtual and disabled clients'
     );
 
     $result = $c->tcall(
@@ -2875,7 +2778,7 @@ subtest $method => sub {
                 'account_id' => '',
                 'balance'    => '0.00',
                 'currency'   => '',
-                'loginid'    => 'MF90000003',
+                'loginid'    => $test_client_mf->loginid,
                 'total'      => {
                     'mt5' => {
                         'amount'   => '1851.00',
@@ -2887,12 +2790,27 @@ subtest $method => sub {
                     }}
             },
             {
-                'account_id'                      => '201159',
+                'account_id'                      => $test_client_mlt->default_account->id,
                 'balance'                         => '0.00',
                 'currency'                        => 'EUR',
                 'currency_rate_in_total_currency' => 1,
-                'loginid'                         => 'MLT20',
+                'loginid'                         => $test_client_mlt->loginid,
                 'total'                           => {
+                    'mt5' => {
+                        'amount'   => '1851.00',
+                        'currency' => 'EUR'
+                    },
+                    'real' => {
+                        'amount'   => '0.00',
+                        'currency' => 'EUR'
+                    }}
+            },
+            {
+                'account_id' => $test_client_vr_2->default_account->id,
+                'balance'    => '0.00',
+                'currency'   => 'USD',
+                'loginid'    => $test_client_vr_2->loginid,
+                'total'      => {
                     'mt5' => {
                         'amount'   => '1851.00',
                         'currency' => 'EUR'
@@ -2903,6 +2821,62 @@ subtest $method => sub {
                     }}}]};
 
     is_deeply($result, $expected_result, 'mt5 result is ok');
+
+    my $balence_currency_email = 'balance_currency@binary.com';
+    my $bal_currency_user      = BOM::User->create(
+        email    => $balence_currency_email,
+        password => $hash_pwd,
+    );
+
+    my $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $client_cr_ust = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    for my $c ($client_cr_btc, $client_cr_ust) {
+        $c->email($balence_currency_email);
+        $c->save;
+        $bal_currency_user->add_client($c);
+    }
+
+    $client_cr_btc->set_default_account('BTC');
+    $client_cr_btc->save;
+
+    $client_cr_ust->set_default_account('UST');
+    $client_cr_ust->save;
+
+    my $cr_btc_token = $m->create_token($client_cr_btc->loginid, 'cr_btc token');
+
+    $result = $c->tcall(
+        $method,
+        {
+            token => $cr_btc_token,
+            args  => $args
+        });
+
+    is $result->{all}[0]{total}{real}{currency}, 'USD', 'USD currency used for total balance when no fiat accounts exist';
+
+    my $client_cr_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $client_cr_eur->email($balence_currency_email);
+    $client_cr_eur->set_default_account('EUR');
+    $client_cr_eur->save;
+    $bal_currency_user->add_client($client_cr_eur);
+
+    $result = $c->tcall(
+        $method,
+        {
+            token => $cr_btc_token,
+            args  => $args
+        });
+
+    is $result->{all}[0]{total}{real}{currency}, 'EUR', 'fiat account currency used for total balance';
+
 };
 
 # Recursively get values from nested hashes

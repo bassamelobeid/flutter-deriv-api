@@ -330,12 +330,13 @@ subtest 'validation' => sub {
         'Correct error message for invalid maximum amount';
 };
 
-subtest 'Basic transfers' => sub {
+subtest 'Validation for transfer from incomplete account' => sub {
     $email = 'new_email' . rand(999) . '@binary.com';
     my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $email,
         place_of_birth => 'ID',
+        address_city   => '',
     });
 
     my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -369,20 +370,25 @@ subtest 'Basic transfers' => sub {
         currency     => 'USD',
         amount       => 10
     };
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts');
 
-    $params->{args}{account_from} = $client_cr2->loginid;
-    $params->{args}{account_to}   = $client_cr1->loginid;
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_no_error('can transfer using oauth token when account_from is not authorized client');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Error msg for client is correct')->error_details_is({fields => ['address_city']}, 'Error details is correct');
 
-    $params->{token_type}         = 'api_token';
-    $params->{args}{account_from} = $client_cr2->loginid;
-    $params->{args}{account_to}   = $client_cr1->loginid;
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is(
-        'From account provided should be same as current authorized client.',
-        'Cannot transfer using api token when account_from is not authorized client'
-    );
+    $client_cr1->address_city('Test City');
+    $client_cr1->address_line_1('');
+    $client_cr1->save;
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Error msg for client is correct')->error_details_is({fields => ['address_line_1']}, 'Error details is correct');
+
+    $client_cr1->address_city('');
+    $client_cr1->address_line_1('');
+    $client_cr1->save;
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Error msg for client is correct')->error_details_is({fields => ['address_city', 'address_line_1']}, 'Error details is correct');
+
 };
 
 subtest $method => sub {
@@ -682,7 +688,7 @@ subtest 'transfer with fees' => sub {
     $params->{args}->{amount} = 0.01;
     # The amount will be accepted initially, but rejected when getting the recieved amount in BTC.
     $rpc_ct->call_ok($method, $params)->has_error->error_code_is('TransferBetweenAccountsError')
-        ->error_message_is("This amount is too low. Please enter a minimum of 1 USD.");
+        ->error_message_is("This amount is too low. Please enter a minimum of 1.09 USD.");
 
     $params->{args}->{amount} = $amount;
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
@@ -754,7 +760,7 @@ subtest 'transfer with fees' => sub {
         amount       => $amount
     };
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError')
-        ->error_message_is('This amount is too low. Please enter a minimum of 1 UST.');
+        ->error_message_is('This amount is too low. Please enter a minimum of 1.09 UST.');
 
     #No transfer fee for BTC-EUR
     $amount = 0.02;
