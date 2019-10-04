@@ -1314,7 +1314,8 @@ sub is_verification_required {
     # loop through all mt5 loginids check
     # non demo mt5 group has advanced|standard then
     # its considered as financial
-    return 1 if (any { defined && /^(?!demo).*(_standard|_advanced)/ } @$mt5_groups);
+    # SVG standard is not considered financial
+    return 1 if (any { defined && /^^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_standard|_advanced)/ } @$mt5_groups);
 
     return 0;
 }
