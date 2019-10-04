@@ -69,7 +69,6 @@ sub validate {
     # better to do generic error validation before landing company or account specific
     return _create_error(localize('Your cashier is locked.'))                     if ($client->status->cashier_locked);
     return _create_error(localize('Your account is disabled.'))                   if ($client->status->disabled);
-    return _create_error(localize('Your cashier is locked as per your request.')) if ($client->cashier_setting_password);
 
     my $landing_company = $client->landing_company;
     return _create_error(localize('[_1] transactions may not be performed with this account.', $currency))
