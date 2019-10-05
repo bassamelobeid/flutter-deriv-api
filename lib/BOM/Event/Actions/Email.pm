@@ -66,8 +66,11 @@ sub send_email_generic {
 
     my $status_code = process_send_email($args);
 
-    $log->errorf('Failed to send the email to: %s - subject: %s', $args->{to}, $args->{subject})
-        unless $status_code;
+    $log->errorf(
+        'Failed to send the email with subject: %s - template_name: %s - request_brand_name: %s',
+        $args->{subject},
+        $args->{template_name},
+        $args->{request_brand_name}) unless $status_code;
 
     return $status_code;
 }
