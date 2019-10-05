@@ -26,13 +26,13 @@ my $args = {};
 my $result;
 local $ENV{SKIP_EMAIL};
 subtest 'args' => sub {
-    like(warning { $result = send_email($args); }, qr/missed/, 'no email address');
+    like(warning { $result = send_email($args); }, qr/missing/, 'no email address');
     ok(!$result, 'failed because no to email');
     $args->{to} = 'test@test.com';
-    like(warning { $result = send_email($args); }, qr/missed/, 'no from email address');
+    like(warning { $result = send_email($args); }, qr/missing/, 'no from email address');
     ok(!$result, 'failed because no from email');
     $args->{from} = 'from@test.com';
-    like(warning { $result = send_email($args); }, qr/missed/, 'no subject');
+    like(warning { $result = send_email($args); }, qr/missing/, 'no subject');
     ok(!$result, 'failed because no subject');
     local $ENV{SKIP_EMAIL} = 1;
     $args->{subject} = 'Test subject';
