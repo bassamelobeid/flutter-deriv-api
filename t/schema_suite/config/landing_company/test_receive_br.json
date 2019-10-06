@@ -494,9 +494,6 @@
                      "type" : "string"
                   },
                   "address" : {
-                     "items" : {
-                        "type" : "string"
-                     },
                      "description" : "Landing Company address",
                      "type" : "null"
                   },
@@ -781,10 +778,7 @@
                   },
                   "address" : {
                      "description" : "Landing Company address",
-                     "type" : "array",
-                     "items" : {
-                        "type" : "string"
-                     }
+                     "type" : "null"
                   },
                   "name" : {
                      "type" : "string",

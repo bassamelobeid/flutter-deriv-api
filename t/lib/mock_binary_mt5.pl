@@ -23,15 +23,15 @@ use constant {
 # Account numbers to be assigned to new accounts.
 # Add here if your test uses a new group.
 my %ACCOUNTS = (
-    'demo\vanuatu_standard'         => '00000001',
-    'demo\vanuatu_advanced'         => '00000002',
+    'demo\svg_standard'             => '00000001',
+    'demo\svg_advanced'             => '00000002',
     'demo\labuan_standard'          => '00000003',
     'demo\labuan_advanced'          => '00000004',
     'real\malta'                    => '00000010',
     'real\maltainvest_standard'     => '00000011',
     'real\maltainvest_standard_GBP' => '00000012',
     'real\svg'                      => '00000013',
-    'real\vanuatu_standard'         => '00000014',
+    'real\svg_standard'             => '00000014',
     'real\labuan_advanced'          => '00000015',
 );
 
