@@ -119,8 +119,8 @@ sub process_send_email {
     my $request_brand_name = $args_ref->{request_brand_name};
     my $request_language   = $args_ref->{request_language};
 
-    unless ($email && $fromemail && $subject) {
-        warn("from, to, or subject missed - [from: $fromemail, to: $email, subject: $subject]");
+    if (my @missing = grep { !$args_ref->{$_} } qw(from to subject)) {
+        warn("Failed to send the email due to missing fields: ", join ", ", @missing);
         return 0;
     }
 
@@ -146,7 +146,7 @@ sub process_send_email {
         : ());
 
     my $brand = $request->brand;
-    if ($fromemail eq $brand->emails('support')) {
+    if (grep { $fromemail eq $_ } ($brand->emails('support'), $brand->emails('no-reply'))) {
         $fromemail = "\"" . $brand->website_name . "\" <$fromemail>";
     }
 
