@@ -12,7 +12,7 @@ use Digest::MD5;
 use Media::Type::Simple;
 use Date::Utility;
 use List::UtilsBy qw(rev_sort_by);
-
+use List::Util qw(sum0);
 use LandingCompany::Registry;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 
@@ -915,8 +915,30 @@ foreach my $mt_ac (@mt_logins) {
     my ($id) = $mt_ac =~ /^MT(\d+)$/;
     print "<li>" . encode_entities($mt_ac);
     # If we have group information, display it
-    if (my $group = BOM::Config::RedisReplicated::redis_mt5_user()->get("MT5_USER_GROUP::$id")) {
-        print " (" . encode_entities($group) . ")";
+    my $cache_key  = "MT5_USER_GROUP::$id";
+    my $group      = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
+    my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
+
+    my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
+
+    if ($group->[0]) {
+        print " (" . encode_entities($group->[0]) . ")";
+
+        my $status = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'rights');
+
+        my %rights;
+
+        # This should now have the following keys set:
+        # api,enabled,expert,password,reports,trailing
+        # Example: status (483 => 1E3)
+        $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
+
+        if (sum0(@rights{qw(enabled api)}) == 2 and not $rights{trade_disabled}) {
+            print " ( Enabled )";
+        } else {
+            print " ( Disabled )";
+
+        }
     } else {
         # ... and if we don't, queue up the request. This may lead to a few duplicates
         # in the queue - that's fine, we check each one to see if it's already
