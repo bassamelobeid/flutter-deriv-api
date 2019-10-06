@@ -12,16 +12,17 @@ use List::Util qw(any first);
 use Try::Tiny;
 use File::ShareDir;
 use Locale::Country::Extra;
-use LandingCompany::Registry;
 use WebService::MyAffiliates;
 use Future::Utils qw(fmap1);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
-use ExchangeRates::CurrencyConverter qw/convert_currency/;
 use JSON::MaybeXS;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Digest::SHA qw(sha384_hex);
-use BOM::RPC::Registry '-dsl';
 
+use LandingCompany::Registry;
+use ExchangeRates::CurrencyConverter qw/convert_currency/;
+
+use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::MT5::Errors;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Cashier;
@@ -45,8 +46,8 @@ use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
 use constant MT5_MALTAINVEST_MOCK_LEVERAGE => 33;
 use constant MT5_MALTAINVEST_REAL_LEVERAGE => 30;
 
-use constant MT5_VANUATU_STANDARD_MOCK_LEVERAGE => 1;
-use constant MT5_VANUATU_STANDARD_REAL_LEVERAGE => 1000;
+use constant MT5_SVG_STANDARD_MOCK_LEVERAGE => 1;
+use constant MT5_SVG_STANDARD_REAL_LEVERAGE => 1000;
 
 # Defines mt5 account rights combination when trading is enabled
 use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
@@ -222,11 +223,6 @@ async_rpc "mt5_new_account",
     my $invalid_account_type_error = create_error_future('InvalidAccountType');
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
-    return create_error_future('NoCitizen')
-        if not $client->is_virtual()
-        and $account_type ne "demo"
-        and not $client->citizen();
-
     $mt5_account_type = '' if $account_type eq 'gaming';
     $args->{investPassword} = _generate_password($args->{mainPassword}) unless $args->{investPassword};
 
@@ -286,8 +282,9 @@ async_rpc "mt5_new_account",
 
     return create_error_future('permission') if ($client->is_virtual() and $account_type ne 'demo');
 
-    my $requirements = LandingCompany::Registry->new->get($company_name)->requirements->{signup};
-    my @missing_fields = grep { !$client->$_ } @$requirements;
+    my $requirements        = LandingCompany::Registry->new->get($company_name)->requirements;
+    my $signup_requirements = $requirements->{signup};
+    my @missing_fields      = grep { !$client->$_ } @$signup_requirements;
 
     return create_error_future(
         'MissingSignupDetails',
@@ -304,15 +301,22 @@ async_rpc "mt5_new_account",
             : create_error_future('NoAgeVerification');
     }
 
-    return create_error_future('FinancialAssessmentMandatory') unless (_is_financial_assessment_complete($client, $group));
+    if ($group !~ /^demo/) {
+        my $compliance_requirements = $requirements->{compliance};
+        return create_error_future('FinancialAssessmentMandatory')
+            unless _is_financial_assessment_complete(
+            client                            => $client,
+            group                             => $group,
+            financial_assessment_requirements => $compliance_requirements->{financial_assessment});
 
-    if ($account_type eq 'financial') {
-        # As per the following document: Automatic Exchange of Information,
-        # Guide for Reporting Financial Institutions by the Vanuatu Competent Authority
-        # we need to ask for tax details for selected countries
-        # if client wants to open financial account
+        # Following this regulation: Labuan Business Activity Tax
+        # (Automatic Exchange of Financial Account Information) Regulation 2018,
+        # we need to ask for tax details for selected countries if client wants
+        # to open a financial account.
         return create_error_future('TINDetailsMandatory')
-            if ($countries_instance->is_tax_detail_mandatory($residence) and not $client->status->crs_tin_information);
+            if ($compliance_requirements->{tax_information}
+            and $countries_instance->is_tax_detail_mandatory($residence)
+            and not $client->status->crs_tin_information);
     }
 
     # Check if client is throttled before sending MT5 request
@@ -325,7 +329,15 @@ async_rpc "mt5_new_account",
             my (@logins) = @_;
 
             foreach (@logins) {
-                if (($_->{group} // '') eq $group) {
+                my $login_group = $_->{group} // '';
+
+                # hacky way to compare and throw error for duplicate
+                # as client have only one of
+                # real\vanuatu_standard and real\svg_standard
+                my ($group_account_type, $group_mt5_account_type);
+                ($group_account_type, $group_mt5_account_type) = $group =~ /^([a-z]+)\\[a-z]+_([a-z]+)$/ if $mt5_account_type;
+
+                if ($login_group eq $group or ($mt5_account_type and $login_group =~ /^$group_account_type\\[a-z]+_$group_mt5_account_type$/)) {
                     my $login = $_->{login};
 
                     return create_error_future(
@@ -353,9 +365,9 @@ async_rpc "mt5_new_account",
                     # but MT5 only support 33
                     if ($group_details->{leverage} == MT5_MALTAINVEST_MOCK_LEVERAGE) {
                         $group_details->{leverage} = MT5_MALTAINVEST_REAL_LEVERAGE;
-                    } elsif ($group_details->{leverage} == MT5_VANUATU_STANDARD_MOCK_LEVERAGE) {
+                    } elsif ($group_details->{leverage} == MT5_SVG_STANDARD_MOCK_LEVERAGE) {
                         # MT5 bug it should be solved by MetaQuote
-                        $group_details->{leverage} = MT5_VANUATU_STANDARD_REAL_LEVERAGE;
+                        $group_details->{leverage} = MT5_SVG_STANDARD_REAL_LEVERAGE;
                     }
 
                     my $client_info = $client->get_mt5_details();
@@ -394,12 +406,13 @@ async_rpc "mt5_new_account",
                     BOM::Platform::Event::Emitter::emit(
                         'new_mt5_signup',
                         {
-                            loginid      => $client->loginid,
-                            account_type => $account_type,
-                            mt5_group    => $group,
-                            mt5_login_id => $mt5_login,
-                            cs_email     => $brand->emails('support'),
-                            language     => $params->{language}});
+                            loginid          => $client->loginid,
+                            account_type     => $account_type,
+                            sub_account_type => $mt5_account_type,
+                            mt5_group        => $group,
+                            mt5_login_id     => $mt5_login,
+                            cs_email         => $brand->emails('support'),
+                            language         => $params->{language}});
 
                     # Compliance team must be notified if a client under Binary (Europe) Limited
                     #   opens an MT5 account while having limitations on their account.
@@ -465,13 +478,15 @@ async_rpc "mt5_new_account",
 
 Checks the financial assessment requirements of creating an account in an MT5 group.
 
-Takes two argument:
+Takes named argument with the following as key parameters:
 
 =over 4
 
 =item * $client: an instance of C<BOM::User::Client> representing a binary client onject.
 
 =item * $group: the target MT5 group.
+
+=item * $financial_assessment_requirements for particular landing company.
 
 =back
 
@@ -480,15 +495,26 @@ Returns 1 of the financial assemssments meet the requirements; otherwise returns
 =cut
 
 sub _is_financial_assessment_complete {
-    my ($client, $mt5_group) = @_;
+    my %args = @_;
 
-    return 1 if $mt5_group =~ /^demo/;
+    my $client = $args{client};
+    my $group  = $args{group};
 
-    # this case doesn't follow the general rule (labuan and vanuatu are exclusively mt5 landing companies).
-    if ($mt5_group =~ /labuan|vanuatu/) {
+    return 1 if $group =~ /^demo/;
+
+    # this case doesn't follow the general rule (labuan are exclusively mt5 landing companies).
+    if (my $financial_assessment_requirements = $args{financial_assessment_requirements}) {
         my $financial_assessment = decode_fa($client->financial_assessment());
-        my $is_FI                = is_section_complete($financial_assessment, 'financial_information');
-        my $is_TE                = is_section_complete($financial_assessment, 'trading_experience');
+
+        my $is_FI =
+            (first { $_ eq 'financial_information' } @{$args{financial_assessment_requirements}})
+            ? is_section_complete($financial_assessment, 'financial_information')
+            : 1;
+        my $is_TE =
+            (first { $_ eq 'trading_experience' } @{$args{financial_assessment_requirements}})
+            ? is_section_complete($financial_assessment, 'trading_experience')
+            : 1;
+
         ($is_FI and $is_TE) ? return 1 : return 0;
     }
 
@@ -1489,7 +1515,6 @@ sub _mt5_validate_and_get_amount {
             return create_error_future($error_code, {message => $err}) if $err;
 
             # master groups are real\svg_mamm_master and
-            # real\vanuatu_mamm_advanced_master
             return create_error_future('NoManagerAccountWithdraw', {override_code => $error_code})
 
                 if ($action eq 'withdrawal' and ($mt5_group // '') =~ /^real\\[a-z]*_mamm(?:_[a-z]*)?_master$/);
@@ -1644,7 +1669,8 @@ sub _fetch_mt5_lc {
     my $lc_short;
 
     # This extracts the landing company name from the mt5 group name
-    # E.g. real\labuan -> labuan , real\vanuatu_standard -> vanuatu
+    # E.g. real\labuan -> labuan , real\vanuatu_standard -> vanuatu, real\svg_standard -> svg
+
     if ($settings->{group} =~ m/[a-zA-Z]+\\([a-zA-Z]+)($|_.+)/) {
         $lc_short = $1;
     }
