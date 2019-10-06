@@ -226,7 +226,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
             skip 'no error', 6
                 if (not defined $error or ref $error ne 'Error::Base');
 
-            is $error->get_type, 'tick_expiry_engine_turnover_limitExceeded', 'error is tick_expiry_engine_turnover_limit';
+            is $error->get_type, 'ProductSpecificTurnoverLimitExceeded', 'error is ProductSpecificTurnoverLimitExceeded';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
             is $error->{-mesg},              'Exceeds turnover limit on tick_expiry_engine_turnover_limit',   'mesg';
@@ -349,7 +349,7 @@ subtest 'asian_daily_turnover_limit', sub {
             skip 'no error', 6
                 if (not defined $error or ref $error ne 'Error::Base');
 
-            is $error->get_type, 'asian_turnover_limitExceeded', 'error is asian_turnover_limit';
+            is $error->get_type, 'ProductSpecificTurnoverLimitExceeded', 'error is ProductSpecificTurnoverLimitExceeded';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
             is $error->{-mesg}, 'Exceeds turnover limit on asian_turnover_limit', 'mesg';
@@ -482,7 +482,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             skip 'no error', 6
                 if (not defined $error or ref $error ne 'Error::Base');
 
-            is $error->get_type, 'intraday_spot_index_turnover_limitExceeded', 'error is intraday_spot_index_turnover_limit';
+            is $error->get_type, 'ProductSpecificTurnoverLimitExceeded', 'error is intraday_spot_index_turnover_limit';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
             $error->{-mesg} =~ s/\n//g;
@@ -637,7 +637,7 @@ subtest 'smartfx_turnover_limit', sub {
             skip 'no error', 6
                 if (not defined $error or ref $error ne 'Error::Base');
 
-            is $error->get_type, 'smart_fx_turnover_limitExceeded', 'error is smart_fx_turnover_limit';
+            is $error->get_type, 'ProductSpecificTurnoverLimitExceeded', 'error is ProductSpecificTurnoverLimitExceeded';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
             is $error->{-mesg},              'Exceeds turnover limit on smart_fx_turnover_limit',             'mesg';
@@ -876,7 +876,7 @@ subtest 'non atm turnover checks' => sub {
             skip 'no error', 6
                 if (not defined $error or ref $error ne 'Error::Base');
 
-            is $error->get_type, 'tick_expiry_nonatm_turnover_limitExceeded', 'error is tick_expiry_nonatm_turnover_limit';
+            is $error->get_type, 'ProductSpecificTurnoverLimitExceeded', 'error is ProductSpecificTurnoverLimitExceeded';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
             is $error->{-mesg},              'Exceeds turnover limit on tick_expiry_nonatm_turnover_limit',   'mesg';

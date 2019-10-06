@@ -1149,7 +1149,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         $msg =~ /^.+: ([^,]+)/ and $limit_name = $1;
 
         return Error::Base->cuss(
-            -type              => $limit_name . 'Exceeded',
+            -type              => 'ProductSpecificTurnoverLimitExceeded',
             -mesg              => 'Exceeds turnover limit on ' . $limit_name,
             -message_to_client => BOM::Platform::Context::localize('You have exceeded the daily limit for contracts of this type.'),
         );
