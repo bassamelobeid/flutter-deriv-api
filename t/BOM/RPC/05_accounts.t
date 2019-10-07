@@ -15,7 +15,7 @@ use Digest::SHA qw(hmac_sha256_hex);
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw/looks_like_number/;
 use LandingCompany::Registry;
-use BOM::Test::Email;
+use BOM::Test::Email qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);

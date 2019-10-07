@@ -963,22 +963,17 @@ rpc change_password => sub {
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
-    BOM::User::AuditLog::log('password has been changed', $client->email);
+    my $email = $client->email;
+    BOM::User::AuditLog::log('password has been changed', $email);
     send_email({
-            from    => request()->brand->emails('support'),
-            to      => $client->email,
-            subject => localize('Your password has been changed.'),
-            message => [
-                localize(
-                    'The password for your account [_1] has been changed. This request originated from IP address [_2]. If this request was not performed by you, please immediately contact Customer Support.',
-                    $client->email,
-                    $client_ip
-                )
-            ],
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            template_loginid      => $client->loginid,
-        });
+        to                 => $client->email,
+        subject            => localize('Your password has been changed.'),
+        template_name      => 'reset_password_confirm',
+        template_args      => {email => $email},
+        use_email_template => 1,
+        template_loginid   => $client->loginid,
+        use_event          => 1,
+    });
 
     return {status => 1};
 };
@@ -1044,19 +1039,14 @@ rpc "reset_password",
 
     BOM::User::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
-            from    => request()->brand->emails('support'),
-            to      => $email,
-            subject => localize('Your password has been reset.'),
-            message => [
-                localize(
-                    'The password for your account [_1] has been reset. If this request was not performed by you, please immediately contact Customer Support.',
-                    $email
-                )
-            ],
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            template_loginid      => $client->loginid,
-        });
+        to                 => $email,
+        subject            => localize('Your password has been reset.'),
+        template_name      => 'reset_password_confirm',
+        template_args      => {email => $email},
+        use_email_template => 1,
+        template_loginid   => $client->loginid,
+        use_event          => 1,
+    });
 
     return {status => 1};
     };
