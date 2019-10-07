@@ -28,6 +28,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::Config;
 use BOM::MT5::User::Async;
+use BOM::Platform::Email;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -1939,7 +1940,11 @@ subtest $method => sub {
         'emit',
         sub {
             my ($type, $data) = @_;
-            $emitted->{$type} = $data;
+            if ($type eq 'send_email') {
+                return BOM::Platform::Email::process_send_email($data);
+            } else {
+                $emitted->{$type} = $data;
+            }
         });
 
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
