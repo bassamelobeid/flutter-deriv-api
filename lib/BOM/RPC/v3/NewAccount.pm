@@ -112,13 +112,12 @@ rpc "new_account_virtual",
     # Welcome email for Binary brand is handled in customer.io
     # we're sending for Deriv here as a temporary solution
     # until customer.io is able to handle multiple domains
-    my $brand = request()->brand;
     request_email(
         $email,
         {
-            subject       => localize('Welcome to Deriv'),
+            subject       => localize('Welcome to Deriv!'),
             template_name => 'welcome_virtual',
-        }) if $brand->name eq 'deriv';
+        }) if request()->brand->name eq 'deriv';
 
     return {
         client_id => $client->loginid,
