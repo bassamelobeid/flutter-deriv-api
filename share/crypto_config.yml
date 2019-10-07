@@ -92,16 +92,3 @@ USB:
     blockchain_url:
         address: https://etherscan.io/address/
         transaction: https://etherscan.io/tx/
-IDK:
-    withdrawal:
-        timeout: "3d"
-        min_usd: 5
-        fee_limit_usd: 2
-    confirmation:
-        required_confirmations: 3
-    protocol_cost: 0
-    decimal_places: 18
-    blockchain_url:
-        address: https://etherscan.io/address/
-        transaction: https://etherscan.io/tx/
-
