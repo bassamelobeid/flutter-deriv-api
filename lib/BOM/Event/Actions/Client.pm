@@ -796,7 +796,7 @@ async sub _address_verification {
 
     unless ($addr->accuracy_at_least('locality')) {
         DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.failure', {tags => [$status]});
-        $log->warnf('Inaccurate address - only verified to %s precision', $addr->address_precision);
+        $log->debugf('Inaccurate address - only verified to %s precision', $addr->address_precision);
         return;
     }
 
