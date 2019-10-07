@@ -1548,12 +1548,13 @@ rpc set_settings => sub {
     my $full_address = join ', ', grep { defined $_ and /\S/ } @address_fields;
 
     my $residence_country = Locale::Country::code2country($current_client->residence);
+    my $citizen_country   = Locale::Country::code2country($current_client->citizen);
     my @updated_fields    = (
         [localize('Email address'),        $current_client->email],
         [localize('Country of Residence'), $residence_country],
         [localize('Address'),              $full_address],
         [localize('Telephone'),            $current_client->phone],
-        [localize('Citizen'),              $current_client->citizen]);
+        [localize('Citizen'),              $citizen_country]);
 
     my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($current_client->tax_residence || '');
     my $pob_country = $current_client->place_of_birth ? Locale::Country::code2country($current_client->place_of_birth) : '';
