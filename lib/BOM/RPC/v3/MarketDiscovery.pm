@@ -25,10 +25,10 @@ rpc active_symbols => sub {
     my $params = shift;
 
     my $landing_company_name = $params->{args}->{landing_company} // 'svg';
-    my $product_type         = $params->{args}->{product_type};
-    my $language             = $params->{language} || 'EN';
-    my $token_details        = $params->{token_details};
-    my $country_code         = $params->{country_code} // '';
+    my $product_type         = $params->{args}->{product_type}    // 'basic';
+    my $language      = $params->{language} || 'EN';
+    my $token_details = $params->{token_details};
+    my $country_code  = $params->{country_code} // '';
 
     my $offerings_obj;
     if ($token_details and exists $token_details->{loginid}) {
@@ -36,14 +36,12 @@ rpc active_symbols => sub {
             loginid      => $token_details->{loginid},
             db_operation => 'replica'
         });
-        $product_type //= $client->landing_company->default_offerings;
         my $method = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
         $offerings_obj = $client->landing_company->$method($client->residence, BOM::Config::Runtime->instance->get_offerings_config);
     }
 
     unless ($offerings_obj) {
         my $landing_company = LandingCompany::Registry::get($landing_company_name);
-        $product_type //= $landing_company->default_offerings;
         my $method = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
         $offerings_obj = $landing_company->$method($country_code, BOM::Config::Runtime->instance->get_offerings_config);
     }
