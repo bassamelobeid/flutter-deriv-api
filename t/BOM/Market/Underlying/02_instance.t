@@ -578,9 +578,9 @@ subtest 'last_licensed_display_epoch' => sub {
 
 subtest 'risk type' => sub {
     is(create_underlying('frxUSDJPY')->risk_profile, 'medium_risk', 'USDJPY is medium risk');
-    is(create_underlying('frxAUDCAD')->risk_profile, 'high_risk',   'AUDCAD is high risk');
+    is(create_underlying('frxAUDCAD')->risk_profile, 'moderate_risk',   'AUDCAD is moderate risk');
     is(create_underlying('AEX')->risk_profile,       'medium_risk', 'AEX is medium risk');
-    is(create_underlying('frxXAUUSD')->risk_profile, 'high_risk',   'XAUUSD is high risk');
+    is(create_underlying('frxXAUUSD')->risk_profile, 'moderate_risk',   'XAUUSD is moderate risk');
     is(create_underlying('R_100')->risk_profile,     'low_risk',    'R_100 is low risk');
 };
 
