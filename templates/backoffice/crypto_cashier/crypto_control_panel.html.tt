@@ -7,7 +7,6 @@
       <option value="BCH"[% IF currency == 'BCH' %] selected="selected"[% END %]>Bitcoin Cash</option>
       <option value="UST"[% IF currency == 'UST' %] selected="selected"[% END %]>Tether</option>
       <option value="USB"[% IF currency == 'USB' %] selected="selected"[% END %]>Binary Coin</option>
-      <option value="IDK"[% IF currency == 'IDK' %] selected="selected"[% END %]>IDK</option>
     </select>
 <!-- Manual wallet functions -->
         <input type="hidden" name="wallet_command" value="getnewaddress">
