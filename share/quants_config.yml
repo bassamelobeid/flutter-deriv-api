@@ -203,7 +203,7 @@ risk_profile:
           LTC: 1
           UST: 100
           USB: 100
-  moderate_risk:
+  high_risk:
       turnover:
           USD: 5000
           EUR: 5000
@@ -226,7 +226,7 @@ risk_profile:
           LTC: 10
           UST: 1000
           USB: 1000
-  high_risk:
+  moderate_risk:
       turnover:
           USD: 50000
           EUR: 50000
