@@ -9,6 +9,7 @@ use Mojo::UserAgent;
 use Date::Utility;
 use DataDog::DogStatsd::Helper;
 
+use BOM::Config::Runtime;
 use BOM::User::Client;
 use BOM::Config;
 use JSON::MaybeUTF8 qw(:v1);
@@ -28,7 +29,11 @@ When a new user signed up for binary.com, register_details will send user inform
 =cut
 
 sub register_details {
-    my $data    = shift;
+    my $data = shift;
+
+    BOM::Config::Runtime->instance->app_config->check_for_update();
+    return if (BOM::Config::Runtime->instance->app_config->system->suspend->customerio);
+
     my $loginid = $data->{loginid};
 
     return 0 unless $loginid;
@@ -64,7 +69,11 @@ When a user subscribes/unsubscribes to marketing's newsletter
 =cut
 
 sub email_consent {
-    my $data    = shift;
+    my $data = shift;
+
+    BOM::Config::Runtime->instance->app_config->check_for_update();
+    return if (BOM::Config::Runtime->instance->app_config->system->suspend->customerio);
+
     my $loginid = delete $data->{loginid};
 
     return 0 unless $loginid;
