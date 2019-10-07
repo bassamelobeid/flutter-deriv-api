@@ -23,7 +23,7 @@ use BOM::User::Utility;
 use BOM::User;
 
 use BOM::Transaction;
-use BOM::Transaction::Update;
+use BOM::Transaction::ContractUpdate;
 use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Platform::Client::IDAuthentication;
@@ -185,24 +185,20 @@ my ($trx, $fmb, $chld, $qv1, $qv2);
 
 subtest 'update take profit', sub {
 
-    # update without a relevant contract
-    my $output = BOM::Transaction::ContractUpdate::update({
-            client      => $cl,
-            contract_id => 123,
-            params      => {
-                take_profit => {
-                    operation => 'update',
-                    value     => 10,
-                }
-            },
-        });
-
-    is $output->{error}->{code}, 'ContractNotFound', 'code - ContractNotFound';
-    is $output->{error}->{message_to_client}, 'Conntract not found for contract_id: 123.',
-        'message_to_client - Conntract not found for contract_id: [_1].';
 
     my $txn;
     subtest 'error check' => sub {
+        # update without a relevant contract
+        my $updater = BOM::Transaction::ContractUpdate->new(
+            client => $cl,
+            contract_id => 123,
+            update_params => {},
+        );
+        ok !$updater->is_valid_to_update, 'not valid to update';
+        is $updater->validation_error->{code}, 'ContractNotFound', 'code - ContractNotFound';
+        is $updater->validation_error->{message_to_client}, 'Conntract not found for contract_id: 123.',
+            'message_to_client - Conntract not found for contract_id: [_1].';
+
         my $args = {
             underlying   => $underlying,
             bet_type     => 'CALL',
@@ -231,19 +227,14 @@ subtest 'update take profit', sub {
         (undef, $fmb) = get_transaction_from_db multiplier => $txn->transaction_id;
 
         # update take profit on unsupported contract
-        my $output = BOM::Transaction::ContractUpdate::update({
-                client      => $cl,
-                contract_id => $fmb->{id},
-                params      => {
-                    take_profit => {
-                        operation => 'update',
-                        value     => 10,
-                    }
-                },
-            });
-
-        is $output->{error}{code}, 'UpdateNotAllowed', 'code - UpdateNotAllowed';
-        is $output->{error}{message_to_client}, 'Update is not allowed for this contract.',
+        $updater = BOM::Transaction::ContractUpdate->new(
+            client => $cl,
+            contract_id => $fmb->{id},
+            update_params => {},
+        );
+        ok !$updater->is_valid_to_update, 'not valid to update';
+        is $updater->validation_error->{code}, 'UpdateNotAllowed', 'code - UpdateNotAllowed';
+        is $updater->validation_error->{message_to_client}, 'Update is not allowed for this contract.',
             'message_to_client - Update is not allowed for this contract.';
 
         delete $args->{duration};
@@ -268,48 +259,51 @@ subtest 'update take profit', sub {
 
         (undef, $fmb) = get_transaction_from_db multiplier => $txn->transaction_id;
 
-        $output = BOM::Transaction::ContractUpdate::update({
-                client      => $cl,
-                contract_id => $fmb->{id},
-                params      => {
-                    take_profit => {
-                        operation => 'update',
-                    }
-                },
-            });
+        $updater = BOM::Transaction::ContractUpdate->new(
+            client => $cl,
+            contract_id => $fmb->{id},
+            update_params      => {
+                take_profit => {
+                    operation => 'update',
+                }
+            },
+        );
 
-        is $output->{error}{code}, 'ValueNotDefined', 'code - ValueNotDefined';
-        is $output->{error}{message_to_client}, 'Value is required for update operation.',
+        ok !$updater->is_valid_to_update, 'not valid to update';
+        is $updater->validation_error->{code}, 'ValueNotDefined', 'code - ValueNotDefined';
+        is $updater->validation_error->{message_to_client}, 'Value is required for update operation.',
             'message_to_client - Value is required for update operation.';
 
-        $output = BOM::Transaction::ContractUpdate::update({
+        $updater = BOM::Transaction::ContractUpdate->new(
                 client      => $cl,
                 contract_id => $fmb->{id},
-                params      => {
+                update_params      => {
                     take_profit => {
                         operation => 'something',
                         value     => 10,
                     }
                 },
-            });
-
-        is $output->{error}{code},              'UnknownUpdateOperation',           'code - UnknownUpdateOperation';
-        is $output->{error}{message_to_client}, 'This operation is not supported.', 'message_to_client - This operation is not supported.';
+            );
+        ok !$updater->is_valid_to_update, 'not valid to update';
+        is $updater->validation_error->{code},              'UnknownUpdateOperation',           'code - UnknownUpdateOperation';
+        is $updater->validation_error->{message_to_client}, 'This operation is not supported. Allowed operations (update, cancel).', 'message_to_client - This operation is not supported.';
     };
 
     subtest 'update take profit' => sub {
-        my $output = BOM::Transaction::ContractUpdate::update({
+        my $updater = BOM::Transaction::ContractUpdate->new(
                 client      => $cl,
                 contract_id => $fmb->{id},
-                params      => {
+                update_params      => {
                     take_profit => {
                         operation => 'update',
                         value     => 10,
                     }
-                },
-            });
+                },);
 
-        ok !$output->{error}, 'no error in update';
+        ok $updater->is_valid_to_update, 'valid to update';
+        my $res = $updater->update;
+        is $res->{updated_queue}->{in}, 1, 'added one entry in the queue';
+        is $res->{updated_queue}->{out}, 0, 'did not remove anything from qeueu';
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
 
         subtest 'chld row', sub {
@@ -327,7 +321,7 @@ subtest 'update take profit', sub {
         my $audit_details = get_audit_details_by_fmbid($fmb->{id});
         ok !@$audit_details, 'no record is added to audit details';
 
-        $output = BOM::Transaction::ContractUpdate::update({
+        $updater = BOM::Transaction::ContractUpdate->new(
                 client      => $cl,
                 contract_id => $fmb->{id},
                 params      => {
@@ -336,7 +330,11 @@ subtest 'update take profit', sub {
                         value     => 15,
                     }
                 },
-            });
+            );
+        ok $updater->is_valid_to_update, 'valid to update';
+        $res = $updater->update;
+        is $res->{updated_queue}->{in}, 1, 'added one entry in the queue';
+        is $res->{updated_queue}->{out}, 1, 'removed one entry from the queue';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
 
@@ -359,15 +357,16 @@ subtest 'update take profit', sub {
 
         sleep 1;
 
-        $output = BOM::Transaction::ContractUpdate::update({
+        $updater = BOM::Transaction::ContractUpdate->new(
                 client      => $cl,
                 contract_id => $fmb->{id},
-                params      => {
+                update_params      => {
                     take_profit => {
                         operation => 'cancel',
                     }
                 },
-            });
+            );
+        ok $updater->update, 'valid to update';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
 
