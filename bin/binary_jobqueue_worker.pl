@@ -17,6 +17,7 @@ use Time::Moment;
 use Text::Trim;
 use Try::Tiny;
 use Time::HiRes qw(alarm);
+use Path::Tiny;
 
 use Getopt::Long;
 use Log::Any qw($log);
@@ -117,7 +118,7 @@ GetOptions(
     'socket|S=s'       => \(my $SOCKETPATH = "/var/run/bom-rpc/binary_jobqueue_worker.sock"),
     'redis|R=s'        => \(my $REDIS = $redis_config->{uri}),
     'log|l=s'          => \(my $log_level = "info"),
-    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // ''),
+    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // path('/etc/rmg/environment')->slurp_utf8),
     'pid-file=s' => \(my $PID_FILE),    #for BOM::Test::Script compatilibity
 ) or exit 1;
 
@@ -352,16 +353,16 @@ sub process_job {
                     result  => $result
                 })) unless $job->is_ready;
     } else {
-        $log->errorf("Unknown rpc method: %s", $name);
-        stats_inc("rpc_queue.worker.jobs.failed", $tags);
+        $log->errorf("Unknown rpc method called: %s", $name);
+        stats_inc("rpc_queue.worker.jobs.failed", {tags => [$tags->@*, "unknown_method:$name"]});
         # Transport mechanism itself succeeded, so ->done is fine here
         $job->done(
             encode_json_utf8({
                     success => 0,
                     result  => {
                         error => {
-                            code              => 'UnknownMethod',
-                            message_to_client => "Unknown method $name was called.",
+                            code              => 'InternalServerError',
+                            message_to_client => "Sorry, an error occurred while processing your request.",
                         }}})) unless $job->is_ready;
     }
 
@@ -402,11 +403,9 @@ sub run_worker_process {
         TERM => sub {
             $log->info("Stopping worker process");
             unlink $PID_FILE if ($PID_FILE);
-            $worker->stop->then(
-                sub {
-                    $log->info("Worker process stopped");
-                    exit 0;
-                })->get;
+            $worker->stop->wait_until_ready;
+            $log->info("Worker process stopped");
+            exit 0;
         },
     );
     $SIG{INT} = 'IGNORE';
