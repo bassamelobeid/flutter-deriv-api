@@ -427,6 +427,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        customerio:
+          description: "Suspend sending and syncing of information to customer.io"
+          isa: Bool
+          default: 0
+          global: 1
     directory:
       description: "Configuration for system wide directories"
       isa: section
