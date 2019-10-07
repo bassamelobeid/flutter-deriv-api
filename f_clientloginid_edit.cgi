@@ -41,6 +41,7 @@ use BOM::Backoffice::Config;
 use BOM::Database::DataMapper::Copier;
 use BOM::Platform::S3Client;
 use BOM::Config::RedisReplicated;
+use BOM::User::Onfido;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -87,6 +88,17 @@ if (0) {
     $input{allow_onfido_resubmission}
         ? $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1)
         : $redis->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+}
+
+if (defined $input{run_onfido_check}) {
+    my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
+    my $applicant_id   = $applicant_data->{id};
+
+    BOM::Platform::Event::Emitter::emit(
+        ready_for_authentication => {
+            loginid      => $loginid,
+            applicant_id => $applicant_id,
+        });
 }
 
 my $user = $client->user;
