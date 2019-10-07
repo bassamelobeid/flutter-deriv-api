@@ -154,7 +154,7 @@ sub email_verification {
         reset_password => sub {
             return {
                 subject       => localize('Reset your [_1] account password', $website_name),
-                template_name => 'reset_password',
+                template_name => 'reset_password_request',
                 template_args => {(
                         $verification_uri
                         ? (verification_url => _build_verification_url('reset_password', $args))
