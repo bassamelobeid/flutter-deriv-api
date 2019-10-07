@@ -2203,7 +2203,7 @@ subtest $method => sub {
         subject => qr/\Q$subject\E/
     );
     ok($msg, 'send a email to client');
-    like($msg->{body}, qr/>address line 1, address line 2, address city, Bali/s, 'email content correct');
+    like($msg->{body}, qr/address line 1, address line 2, address city, Bali/s, 'email content correct');
     mailbox_clear();
 
     $params->{args}->{request_professional_status} = 1;
