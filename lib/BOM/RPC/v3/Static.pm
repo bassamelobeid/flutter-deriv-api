@@ -164,26 +164,6 @@ sub _currencies_config {
     return \%currencies_config;
 }
 
-
-sub _crypto_config {
-
-    my @all_currencies = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
-    my ($minimum_withdrawal,$amount_in_usd) ;
-    
-    for my $currency (@all_currencies) {
-        if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
-            
-            $minimum_withdrawal = BOM::Config::crypto()->{$currency}->{'withdrawal'}->{min_usd};
-            $amount_in_usd   = ExchangeRates::CurrencyConverter::in_usd($minimum_withdrawal, $currency);
-            my %crypto_config = map { $_ => minimum_withdrawal =>  $amount_in_usd} @all_currencies;
-
-        }
-
-    }
-    
-    return \%crypto_config;
-}
-
 rpc website_status => sub {
     my $params = shift;
 
@@ -194,7 +174,7 @@ rpc website_status => sub {
         clients_country          => $params->{country_code},
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
-        crypto_config            => _crypto_config(),
+
     };
 };
 
