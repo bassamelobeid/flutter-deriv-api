@@ -268,22 +268,6 @@ subtest 'update take profit', sub {
 
         (undef, $fmb) = get_transaction_from_db multiplier => $txn->transaction_id;
 
-        # update contract with unsupported input
-        $output = BOM::Transaction::ContractUpdate::update({
-                client      => $cl,
-                contract_id => $fmb->{id},
-                params      => {
-                    stop_loss => {
-                        operation => 'update',
-                        value     => 10,
-                    }
-                },
-            });
-
-        is $output->{error}{code}, 'UpdateNotAllowed', 'code - UpdateNotAllowed';
-        is $output->{error}{message_to_client}, 'Update is not allowed for this contract. Allowed updates take_profit',
-            'message_to_client - Update is not allowed for this contract.';
-
         $output = BOM::Transaction::ContractUpdate::update({
                 client      => $cl,
                 contract_id => $fmb->{id},
@@ -370,8 +354,8 @@ subtest 'update take profit', sub {
 
         $audit_details = get_audit_details_by_fmbid($fmb->{id});
         ok $audit_details->[0], 'audit populated';
-        is $audit_details->[0][9],  'update',      'operation is update';
-        is $audit_details->[0][10], 'take_profit', 'order_type is take_profit';
+        is $audit_details->[0][9], 'take_profit', 'order_type is take_profit';
+        cmp_ok $audit_details->[0][10], "le", Date::Utility->new->db_timestamp, "timestamp is now";
 
         sleep 1;
 
@@ -396,16 +380,15 @@ subtest 'update take profit', sub {
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, undef, 'take_profit_order_amount is undef';
-            is $chld->{'take_profit_order_date'},   undef, 'take_profit_order_date is undef';
+            cmp_ok $chld->{'take_profit_order_date'},  "ge", $fmb->{start_time}, 'take_profit_order_date is correctly set';
         };
 
         $audit_details = get_audit_details_by_fmbid($fmb->{id});
         ok $audit_details->[0], 'audit cancel populated';
-        is $audit_details->[0][9],  'cancel',      'operation is cancel';
-        is $audit_details->[0][10], 'take_profit', 'order_type is take_profit';
+        is $audit_details->[0][9], 'take_profit', 'order_type is take_profit';
         ok $audit_details->[1], 'audit update populated';
-        is $audit_details->[1][9],  'update',      'operation is update';
-        is $audit_details->[1][10], 'take_profit', 'order_type is take_profit';
+        is $audit_details->[1][9], 'take_profit', 'order_type is take_profit';
+        cmp_ok $audit_details->[1][10], "lt", $audit_details->[0][10], "timestamp are in order";
     };
 };
 
