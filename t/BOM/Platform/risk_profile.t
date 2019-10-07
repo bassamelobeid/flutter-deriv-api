@@ -198,7 +198,7 @@ subtest 'get_current_profile_definitions' => sub {
                     'turnover_limit' => "50000.00",
                     'payout_limit'   => "5000.00",
                     'name'           => 'Commodities',
-                    'profile_name'   => 'high_risk'
+                    'profile_name'   => 'moderate_risk'
                 }
             ],
             'volidx' => [{
@@ -218,13 +218,13 @@ subtest 'get_current_profile_definitions' => sub {
                     'turnover_limit' => "50000.00",
                     'payout_limit'   => "5000.00",
                     'name'           => 'Minor Pairs',
-                    'profile_name'   => 'high_risk',
+                    'profile_name'   => 'moderate_risk',
                 },
                 {
                     'turnover_limit' => "50000.00",
                     'payout_limit'   => "5000.00",
                     'name'           => 'Smart FX',
-                    'profile_name'   => 'high_risk',
+                    'profile_name'   => 'moderate_risk',
                 },
             ],
             'indices' => [{
@@ -313,7 +313,7 @@ subtest 'commission profile' => sub {
 
 subtest 'precedence' => sub {
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
-        '{"yyy": {"underlying_symbol": "frxUSDJPY", "market": "forex", "contract_category": "callput", "risk_profile": "high_risk", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
+        '{"yyy": {"underlying_symbol": "frxUSDJPY", "market": "forex", "contract_category": "callput", "risk_profile": "moderate_risk", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
     );
     $ul = Quant::Framework::Underlying->new('frxUSDJPY');
     my $rp = BOM::Platform::RiskProfile->new(
