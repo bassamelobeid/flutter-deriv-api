@@ -9,10 +9,33 @@ use Email::Sender::Transport::Test;
 use Email::Sender::Simple;
 
 use Test::More;
+use Test::MockModule;
 
-use Exporter qw(import export_to_level);
+use BOM::Platform::Email qw(process_send_email);
 
-our @EXPORT_OK = our @EXPORT = qw(mailbox_check_empty mailbox_clear mailbox_search);
+use parent 'Exporter';
+our @EXPORT_OK = qw(mailbox_check_empty mailbox_clear mailbox_search);
+
+my $mocked_events;
+
+sub import {
+    my ($self, $init) = @_;
+    if ($init && $init eq ':no_event') {
+        $mocked_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+        $mocked_events->redefine(
+            'emit' => sub {
+                my ($type, $data) = @_;
+                if ($type eq 'send_email') {
+                    return process_send_email($data);
+                } else {
+                    return $mocked_events->original('emit')->(@_);
+                }
+            });
+    }
+
+    BOM::Test::Email->export_to_level(1, @EXPORT_OK);
+    return;
+}
 
 $ENV{EMAIL_SENDER_TRANSPORT} = 'Test';    ## no critic
 
