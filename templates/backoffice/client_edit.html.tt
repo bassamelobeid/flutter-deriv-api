@@ -370,6 +370,10 @@ table#client_edit td{
         </td>
     </tr>
     <tr>
+        <td class="label"></td>
+        <td><button name="run_onfido_check" type="submit" value="1">Run Onfido Check</button></td>
+    </tr>
+    <tr>
         <td class="label">Allow Resubmission: </td>
         <td> <input type="checkbox" name="allow_onfido_resubmission" value="1" [% IF onfido_resubmission %] checked="checked" [% END %]> <b>[DISABLED]</b> </td>
     </tr>
