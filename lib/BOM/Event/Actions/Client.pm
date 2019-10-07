@@ -89,6 +89,16 @@ use constant ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX         => 'ONFIDO::DOB::
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
 
+# List of document types that we use as proof of address
+use constant POA_DOCUMENTS_TYPE => qw(
+    proofaddress payslip bankstatement cardstatement
+);
+
+# List of document types that we use as proof of identity
+use constant POI_DOCUMENTS_TYPE => qw(
+    proofid driverslicense passport selfie_with_id
+);
+
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
     passport                                     => 'passport',
@@ -146,8 +156,7 @@ my %ONFIDO_DOCUMENT_TYPE_PRIORITY = (
     unknown                       => 0,
 );
 
-# List of document types that we use as proof of address
-my @POA_DOCUMENTS_TYPE = qw(proofaddress payslip bankstatement cardstatement);
+my %allowed_synchronizable_documents_type = map { $_ => 1 } (POA_DOCUMENTS_TYPE, POI_DOCUMENTS_TYPE);
 
 my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
@@ -234,6 +243,11 @@ async sub document_upload {
             loginid => $loginid,
             file_id => $file_id
         );
+        # don't sync documents to onfido if its not in allowed types
+        unless ($allowed_synchronizable_documents_type{$document_entry->{document_type}}) {
+            $log->debugf('Can not sync documents to Onfido as it is not in allowed types for client %s', $loginid);
+            return;
+        }
 
         die 'Expired document ' . $document_entry->{expiration_date}
             if $document_entry->{expiration_date} and Date::Utility->new($document_entry->{expiration_date})->is_before(Date::Utility->today);
@@ -1374,7 +1388,7 @@ async sub _send_email_notification_for_poa {
     my $client         = $args{client};
 
     # no need to notify if document is not POA
-    return undef unless (any { $_ eq $document_entry->{document_type} } @POA_DOCUMENTS_TYPE);
+    return undef unless (any { $_ eq $document_entry->{document_type} } POA_DOCUMENTS_TYPE);
 
     # don't send email if client is already authenticated
     return undef if $client->fully_authenticated();
