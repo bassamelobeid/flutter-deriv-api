@@ -17,7 +17,7 @@ BOM::Test::RPC::Client::Queue
 
 =head1 DESCRIPTION
 
-An RPC client for invoking methods over rpc queue and analyze the results.
+An RPC client for invoking methods over rpc queue and analyzing the results.
 It is a subclass of C<BOM::Test::RPC::Client>, compatibly borrowing all the internal mechanics.
 
 =head2
