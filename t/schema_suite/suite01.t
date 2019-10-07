@@ -18,7 +18,7 @@ sub _get_stashed { return $suite->get_stashed(@_); }
 
 set_language 'EN';
 
-test_sendrecv_params 'landing_company/test_send.json', "landing_company/test_receive_$_.json", $_ foreach qw( ua fr br );
+test_sendrecv_params 'landing_company/test_send.json', "landing_company/test_receive_$_.json", $_ foreach qw( ua de br );
 
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_svg.json',         'svg';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_virtual.json',     'virtual';
