@@ -1538,14 +1538,6 @@ rpc set_settings => sub {
         $current_client->add_note('Update Address Notification', $cil_message);
     }
 
-    my $message = localize(
-        'Dear [_1] [_2] [_3],',
-        map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($current_client->salutation),
-        $current_client->first_name,
-        $current_client->last_name
-    ) . "\n\n";
-    $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
-
     # lookup state name by id
     my $lookup_state =
         ($current_client->state and $current_client->residence)
@@ -1556,12 +1548,13 @@ rpc set_settings => sub {
     my $full_address = join ', ', grep { defined $_ and /\S/ } @address_fields;
 
     my $residence_country = Locale::Country::code2country($current_client->residence);
+    my $citizen_country   = Locale::Country::code2country($current_client->citizen);
     my @updated_fields    = (
         [localize('Email address'),        $current_client->email],
         [localize('Country of Residence'), $residence_country],
         [localize('Address'),              $full_address],
         [localize('Telephone'),            $current_client->phone],
-        [localize('Citizen'),              $current_client->citizen]);
+        [localize('Citizen'),              $citizen_country]);
 
     my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($current_client->tax_residence || '');
     my $pob_country = $current_client->place_of_birth ? Locale::Country::code2country($current_client->place_of_birth) : '';
@@ -1584,27 +1577,22 @@ rpc set_settings => sub {
                 or $current_client->status->professional_requested
         ) ? localize("Yes") : localize("No")];
 
-    $message .= "<table>";
-    foreach my $updated_field (@updated_fields) {
-        $message .=
-              '<tr><td style="vertical-align:top; text-align:left;"><strong>'
-            . encode_entities($updated_field->[0])
-            . '</strong></td><td style="vertical-align:top;">:&nbsp;</td><td style="vertical-align:top;text-align:left;">'
-            . encode_entities($updated_field->[1])
-            . '</td></tr>';
-    }
-    $message .= '</table>';
-    $message .= "\n" . localize('The [_1] team.', $website_name);
-
     send_email({
-        from                  => $brand->emails('support'),
-        to                    => $current_client->email,
-        subject               => $current_client->loginid . ' ' . localize('Change in account settings'),
-        message               => [$message],
-        use_email_template    => 1,
-        email_content_is_html => 1,
-        template_loginid      => $current_client->loginid,
-    });
+            to                    => $current_client->email,
+            subject               => $current_client->loginid . ' ' . localize('Change in account settings'),
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            use_event             => 1,
+            template_loginid      => $current_client->loginid,
+            template_name         => 'update_account_settings',
+            template_args         => {
+                updated_fields => [map { [encode_entities($_->[0]), encode_entities($_->[1])] } @updated_fields],
+                salutation => map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($current_client->salutation),
+                first_name   => $current_client->first_name,
+                last_name    => $current_client->last_name,
+                website_name => $website_name,
+            },
+        });
     BOM::User::AuditLog::log('Your settings have been updated successfully', $current_client->loginid);
     BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $current_client->loginid});
 
