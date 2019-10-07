@@ -203,7 +203,6 @@ risk_profile:
           LTC: 1
           UST: 100
           USB: 100
-          IDK: 1500 
   high_risk:
       turnover:
           USD: 5000
@@ -227,7 +226,6 @@ risk_profile:
           LTC: 10
           UST: 1000
           USB: 1000
-          IDK: 15000
   moderate_risk:
       turnover:
           USD: 50000
