@@ -23,6 +23,7 @@
       "update_parameters": {
          "type": "object",
          "description": "contains parameters to update.",
+         "additionalProperties" : false,
          "properties": {
             "take_profit": {
                 "type": "object",
