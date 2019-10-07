@@ -1700,7 +1700,7 @@ sub _get_params_for_expiryqueue {
 
     # These-are all non-exclusive conditions, we don't care if anything is
     # sold to which they all apply.
-    $hash->{settlement_epoch} = $contract->date_settlement->epoch;
+    $hash->{settlement_epoch} = $contract->date_settlement->epoch if $contract->category->has_user_defined_expiry;
     # if we were to enable back the intraday path dependent, the barrier saved
     # in expiry queue might be wrong, since barrier is set based on next tick.
     if ($contract->is_path_dependent) {
