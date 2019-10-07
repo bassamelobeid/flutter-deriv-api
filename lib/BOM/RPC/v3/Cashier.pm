@@ -360,8 +360,9 @@ rpc get_limits => sub {
         $lifetimelimit = 99999999;
     }
 
-    $limit->{num_of_days}       = $numdays;
-    $limit->{num_of_days_limit} = formatnumber('price', $currency, convert_currency($numdayslimit, $withdrawal_limit_curr, $currency));
+    $limit->{num_of_days} = $numdays;
+
+    $limit->{num_of_days_limit} = formatnumber('price', $currency, convert_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
     $limit->{lifetime_limit}    = formatnumber('price', $currency, convert_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
 
     # Withdrawal since $numdays

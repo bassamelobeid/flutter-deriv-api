@@ -9,6 +9,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use Email::Stuffer::TestLinks;
+use LandingCompany::Registry;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
@@ -38,6 +39,25 @@ subtest $method => sub {
     is($indices->{submarket_display_name}, 'Europe',  'the submarket_display_name is translated');
     is(scalar @$result,                    75,        'the default landing company is "svg", the number of result should be ok');
 
+};
+
+# unauthenticated call for `active_symbols` for landing company like `maltainvest` doesn't have an offering
+my $landing_company_name = 'maltainvest';
+subtest "active_symbols_for_$landing_company_name" => sub {
+
+    # check the selected landing comapny doesn't have offering
+    my $landing_company = LandingCompany::Registry::get($landing_company_name);
+    my $offering        = $landing_company->default_offerings;
+    is $offering, undef, "The selected landing company doesn't have an offering";
+
+    my $params = {
+        language => 'EN',
+        args     => {
+            active_symbols  => 'brief',
+            landing_company => $landing_company_name,
+        }};
+
+    $c->call_ok($method, $params)->has_no_system_error->result;
 };
 
 done_testing();
