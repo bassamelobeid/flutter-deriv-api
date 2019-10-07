@@ -11,7 +11,7 @@ use BOM::User::Password;
 
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase;
-use BOM::Test::Email;
+use BOM::Test::Email qw(:no_event);
 use BOM::RPC::v3::Utility;
 use BOM::Database::Model::AccessToken;
 use BOM::User;
@@ -44,23 +44,6 @@ my $expected_result = {
     },
     status => 1
 };
-
-my $mocked = Test::MockModule->new('BOM::RPC::v3::NewAccount');
-$mocked->mock(
-    'request_email',
-    sub {
-        my ($email_to, $args) = @_;
-
-        return BOM::Platform::Email::send_email({
-            from                  => 'no-reply@binary.com',
-            to                    => $email_to,
-            subject               => $args->{subject},
-            template_name         => $args->{template_name},
-            template_args         => $args->{template_args},
-            use_email_template    => 1,
-            email_content_is_html => 1,
-        });
-    });
 
 subtest 'Initialization' => sub {
     lives_ok {
@@ -223,7 +206,5 @@ subtest 'Payment withdraw' => sub {
     );
     ok !$msg, 'no email as token email different from passed email';
 };
-
-$mocked->unmock('request_email');
 
 done_testing();
