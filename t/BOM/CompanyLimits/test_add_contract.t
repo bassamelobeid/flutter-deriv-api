@@ -69,10 +69,11 @@ subtest 'Key Combinations matching test', sub {
     }
 
     my $expected_keys = [
-        'tn,R_50,digits',   'tn,R_50,+',   'tn,volidx,digits', 'tn,volidx,+', 'tn,+,digits',      'tn,+,+',      't+,R_50,digits',   't+,R_50,+',
-        't+,volidx,digits', 't+,volidx,+', 't+,+,digits',      't+,+,+',      '+n,R_50,digits',   '+n,R_50,+',   '+n,volidx,digits', '+n,volidx,+',
-        '+n,+,digits',      '+n,+,+',      '++,R_50,digits',   '++,R_50,+',   '++,volidx,digits', '++,volidx,+', '++,+,digits',      '++,+,+',
-        't,volidx,4252',    't,+,4252',    '+,volidx,4252',    '+,+,4252'
+        'tn,R_50,+,digits', 'tn,R_50,+,+', 'tn,+,volidx,digits', 'tn,+,volidx,+', 'tn,+,+,digits', 'tn,+,+,+',
+        't+,R_50,+,digits', 't+,R_50,+,+', 't+,+,volidx,digits', 't+,+,volidx,+', 't+,+,+,digits', 't+,+,+,+',
+        '+n,R_50,+,digits', '+n,R_50,+,+', '+n,+,volidx,digits', '+n,+,volidx,+', '+n,+,+,digits', '+n,+,+,+',
+        '++,R_50,+,digits', '++,R_50,+,+', '++,+,volidx,digits', '++,+,volidx,+', '++,+,+,digits', '++,+,+,+',
+        't,volidx,4252',    't,+,4252',    '+,volidx,4252',      '+,+,4252'
     ];
 
     foreach my $loss (qw/potential_loss realized_loss/) {
@@ -111,7 +112,7 @@ subtest 'Different combinations of contracts', sub {
         contract  => $contract,
     );
 
-    $key = 'tn,R_50,digits';
+    $key = 'tn,R_50,+,digits';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 5, 'buying digit contract increments correct key';
 
@@ -137,7 +138,7 @@ subtest 'Different combinations of contracts', sub {
         contract  => $contract,
     );
 
-    $key = 'ta,frxUSDJPY,callput';
+    $key = 'ta,frxUSDJPY,+,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 7, 'buying forex contract increments correct key';
 
@@ -162,7 +163,7 @@ subtest 'Different combinations of contracts', sub {
         contract  => $contract,
     );
 
-    $key = 'tn,R_25,digits';
+    $key = 'tn,R_25,+,digits';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 6, 'buying digit contract with different underlying increments correct key';
 
@@ -188,7 +189,7 @@ subtest 'Different combinations of contracts', sub {
         contract  => $contract,
     );
 
-    $key = 'ta,R_100,callput';
+    $key = 'ta,R_100,+,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 3, 'buying volatility contract increments correct key';
 
@@ -209,7 +210,7 @@ subtest 'Realized loss and total turnover are on daily basis', sub {
 
     my ($contract, $error, $contract_info, $key, $realized_loss_total, $turnover_total);
     my $client_key = 't,R_50,callput,' . $cr_cl->binary_user_id;
-    $key = 'ta,R_50,callput';
+    $key = 'ta,R_50,+,callput';
 
     # Loss and turnover still same on current day
     $contract = create_contract(
@@ -299,7 +300,7 @@ subtest 'Different underlying tests', sub {
         contract  => $contract,
     );
 
-    $key = 'ta,R_50,callput';
+    $key = 'ta,R_50,+,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 4, 'buying contract (R_50) increments count (R_50) from 0 to 4';
 
@@ -337,7 +338,7 @@ subtest 'Different underlying tests', sub {
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 7, 'buying contract (frxUSDJPY) keeps count (R_50) at 7';
 
-    $key = 'ta,frxUSDJPY,callput';
+    $key = 'ta,frxUSDJPY,+,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 3, 'buying contract (frxUSDJPY) increases count (frxUSDJPY) from 0 to 3';
 
@@ -355,15 +356,15 @@ subtest 'Different underlying tests', sub {
         contract  => $contract,
     );
 
-    $key = 'ta,R_50,callput';
+    $key = 'ta,R_50,+,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 7, 'buying contract (R_100) keeps count (R_50) from 0 to 3';
 
-    $key = 'ta,frxUSDJPY,callput';
+    $key = 'ta,frxUSDJPY,+,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 3, 'buying contract (R_100) keeps count (frxUSDJPY) from 0 to 3';
 
-    $key = 'ta,R_100,callput';
+    $key = 'ta,R_100,+,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 7, 'buying contract (R_100) increases count (R_100) from 0 to 7';
 
@@ -391,7 +392,7 @@ subtest 'Different barrier tests', sub {
         contract  => $contract,
     );
 
-    $key = 'ta,R_50,callput';
+    $key = 'ta,R_50,+,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 5, 'buying contract with barrier (a) increases count from 0 to 5';
 
@@ -415,7 +416,7 @@ subtest 'Different barrier tests', sub {
 
     $redis->hdel('svg:potential_loss', $key);
 
-    $key = 'tn,R_50,callput';
+    $key = 'tn,R_50,+,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 1, 'buying contract with barrier (n) increases count from 0 to 1';
 
@@ -434,7 +435,7 @@ subtest 'Different barrier tests', sub {
         contract  => $contract,
     );
 
-    $key = 'tn,R_50,callput';
+    $key = 'tn,R_50,+,callput';
     $total = $redis->hget('svg:potential_loss', $key);
     cmp_ok $total, '==', 3, 'buying contract with barrier (n) increases count from 1 to 3';
 
@@ -462,7 +463,7 @@ subtest 'Different landing companies test', sub {
         contract  => $contract,
     );
 
-    my $key = 'ta,R_50,callput';
+    my $key = 'ta,R_50,+,callput';
 
     my $redis_cr = BOM::Config::RedisTransactionLimits::redis_limits_write($cr_cl->landing_company);
     my $redis_mx = BOM::Config::RedisTransactionLimits::redis_limits_write($mx_cl->landing_company);
@@ -520,7 +521,7 @@ subtest 'Different currencies', sub {
         contract  => $usd_contract,
     );
 
-    my $key          = 'ta,R_50,callput';
+    my $key          = 'ta,R_50,+,callput';
     my $turnover_key = 't,R_50,callput,';
 
     my $potential_loss_total = $redis->hget('svg:potential_loss', $key);
@@ -618,7 +619,7 @@ subtest 'Contracts with no payout', sub {
     );
 
     is $error, undef, 'no errors during buy';
-    cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+') || 0, '==', 0, 'Lookbacks do not have potential loss';
+    cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+,+') || 0, '==', 0, 'Lookbacks do not have potential loss';
 
     cmp_ok $redis->hget('svg:turnover', "+,R_50,+," . $cr->binary_user_id()), '==', 2, 'Turnover increments works as usual';
 
@@ -629,7 +630,7 @@ subtest 'Contracts with no payout', sub {
         sell_outcome => 1,
     );
 
-    cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+') || 0, '==', 0, 'On sell potential loss is deducted as before';
+    cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+,+') || 0, '==', 0, 'On sell potential loss is deducted as before';
 
     ($error, $contract_info) = buy_contract(
         client    => $cr,
@@ -638,7 +639,7 @@ subtest 'Contracts with no payout', sub {
     );
 
     is defined($error), 1, 'Error thrown due to insufficient';
-    cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+') || 0, '==', 0, 'On reverse buy potential loss does not change';
+    cmp_ok $redis->hget('svg:potential_loss', '++,R_50,+,+') || 0, '==', 0, 'On reverse buy potential loss does not change';
 
     reset_all_loss_hashes();
 };

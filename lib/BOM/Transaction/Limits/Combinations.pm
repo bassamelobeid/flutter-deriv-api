@@ -9,33 +9,33 @@ sub get_global_limit_combinations {
     my ($attributes) = @_;
     my ($underlying_group, $underlying, $contract_group, $expiry_type, $barrier_type) = @$attributes;
 
-    my $g = '%s%s,%s,%s';
+    my $g = '%s%s,%s,%s,%s';
     return [
         # Global limits
-        sprintf($g, $expiry_type, $barrier_type, $underlying,       $contract_group),
-        sprintf($g, $expiry_type, $barrier_type, $underlying,       '+'),
-        sprintf($g, $expiry_type, $barrier_type, $underlying_group, $contract_group),
-        sprintf($g, $expiry_type, $barrier_type, $underlying_group, '+'),
-        sprintf($g, $expiry_type, $barrier_type, '+',               $contract_group),
-        sprintf($g, $expiry_type, $barrier_type, '+',               '+'),
-        sprintf($g, $expiry_type, '+',           $underlying,       $contract_group),
-        sprintf($g, $expiry_type, '+',           $underlying,       '+'),
-        sprintf($g, $expiry_type, '+',           $underlying_group, $contract_group),
-        sprintf($g, $expiry_type, '+',           $underlying_group, '+'),
-        sprintf($g, $expiry_type, '+',           '+',               $contract_group),
-        sprintf($g, $expiry_type, '+',           '+',               '+'),
-        sprintf($g, '+',          $barrier_type, $underlying,       $contract_group),
-        sprintf($g, '+',          $barrier_type, $underlying,       '+'),
-        sprintf($g, '+',          $barrier_type, $underlying_group, $contract_group),
-        sprintf($g, '+',          $barrier_type, $underlying_group, '+'),
-        sprintf($g, '+',          $barrier_type, '+',               $contract_group),
-        sprintf($g, '+',          $barrier_type, '+',               '+'),
-        sprintf($g, '+',          '+',           $underlying,       $contract_group),
-        sprintf($g, '+',          '+',           $underlying,       '+'),
-        sprintf($g, '+',          '+',           $underlying_group, $contract_group),
-        sprintf($g, '+',          '+',           $underlying_group, '+'),
-        sprintf($g, '+',          '+',           '+',               $contract_group),
-        sprintf($g, '+',          '+',           '+',               '+'),
+        sprintf($g, $expiry_type, $barrier_type, $underlying, '+',               $contract_group),
+        sprintf($g, $expiry_type, $barrier_type, $underlying, '+',               '+'),
+        sprintf($g, $expiry_type, $barrier_type, '+',         $underlying_group, $contract_group),
+        sprintf($g, $expiry_type, $barrier_type, '+',         $underlying_group, '+'),
+        sprintf($g, $expiry_type, $barrier_type, '+',         '+',               $contract_group),
+        sprintf($g, $expiry_type, $barrier_type, '+',         '+',               '+'),
+        sprintf($g, $expiry_type, '+',           $underlying, '+',               $contract_group),
+        sprintf($g, $expiry_type, '+',           $underlying, '+',               '+'),
+        sprintf($g, $expiry_type, '+',           '+',         $underlying_group, $contract_group),
+        sprintf($g, $expiry_type, '+',           '+',         $underlying_group, '+'),
+        sprintf($g, $expiry_type, '+',           '+',         '+',               $contract_group),
+        sprintf($g, $expiry_type, '+',           '+',         '+',               '+'),
+        sprintf($g, '+',          $barrier_type, $underlying, '+',               $contract_group),
+        sprintf($g, '+',          $barrier_type, $underlying, '+',               '+'),
+        sprintf($g, '+',          $barrier_type, '+',         $underlying_group, $contract_group),
+        sprintf($g, '+',          $barrier_type, '+',         $underlying_group, '+'),
+        sprintf($g, '+',          $barrier_type, '+',         '+',               $contract_group),
+        sprintf($g, '+',          $barrier_type, '+',         '+',               '+'),
+        sprintf($g, '+',          '+',           $underlying, '+',               $contract_group),
+        sprintf($g, '+',          '+',           $underlying, '+',               '+'),
+        sprintf($g, '+',          '+',           '+',         $underlying_group, $contract_group),
+        sprintf($g, '+',          '+',           '+',         $underlying_group, '+'),
+        sprintf($g, '+',          '+',           '+',         '+',               $contract_group),
+        sprintf($g, '+',          '+',           '+',         '+',               '+'),
     ];
 }
 
