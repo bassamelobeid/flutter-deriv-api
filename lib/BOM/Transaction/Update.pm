@@ -51,9 +51,7 @@ sub update {
             }};
     }
 
-    # currently only supports take profit, so hard-coding it.
-    my $order_type    = 'take_profit';
-    my $update_params = $args->{params}->{$order_type};
+    my ($order_type, $update_params) = %{$args->{params}};
 
     unless ($update_params) {
         return {
@@ -73,9 +71,7 @@ sub update {
 
     my $status;
     if ($update_params->{operation} eq 'cancel' or $update_params->{operation} eq 'update') {
-        my $method = $order_type . '_order_amount';
-        my $add_to_audit = defined $fmb->multiplier->$method ? 1 : 0;
-        $status = $dm->update_take_profit($args->{contract_id}, $update_params, $add_to_audit);
+        $status = $dm->update_multiplier_contract($args->{contract_id}, $order_type, $update_params, _order_exists($order_type, $fmb));
     } else {
         return {
             error => {
@@ -85,6 +81,19 @@ sub update {
     }
 
     return $status;
+}
+
+sub _order_exists {
+    my ($order_type, $fmb) = @_;
+
+    # The following scenarios define the status of the order:
+    # 1. Both order amount and order date are defined: active order.
+    # 2. Only the order date is defined: order cancelled.
+    # 3. Both order amount and order date are undefined: no order is placed throughout the life time of the contract.
+
+    my $method = $order_type . '_order_date';
+    return 1 if $fmb->multiplier->$method;
+    return 0;
 }
 
 1;
