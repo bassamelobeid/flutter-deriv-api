@@ -18,7 +18,7 @@ sub _get_stashed { return $suite->get_stashed(@_); }
 
 set_language 'EN';
 
-test_sendrecv_params 'landing_company/test_send.json', "landing_company/test_receive_$_.json", $_ foreach qw( ua fr br );
+test_sendrecv_params 'landing_company/test_send.json', "landing_company/test_receive_$_.json", $_ foreach qw( ua de br );
 
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_svg.json',         'svg';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_virtual.json',     'virtual';
@@ -26,8 +26,7 @@ test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_malta.json',       'malta';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_maltainvest.json', 'maltainvest';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_error.json',       'unknown';
-test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', '', '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)',
-    11;
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', '', '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)', 10;
 test_sendrecv_params 'residence_list/test_send.json', 'residence_list/test_receive.json';
 test_sendrecv_params 'states_list/test_send.json',    'states_list/test_receive.json';
 
@@ -83,7 +82,7 @@ test_sendrecv_params 'buy/test_send.json', 'buy/test_receive_nobalance.json', _g
 # ADMIN SCOPE CALLS (CR)
 # TEMPORARY: Need to call this before sub account as sub account return all crypto currencies as well
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json',
-    _get_stashed('authorize/stash/token'), '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)', 11;
+    _get_stashed('authorize/stash/token'), '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)', 10;
 # ADMIN SCOPE CALLS (CR)
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
     _get_stashed('new_account_real/oauth_token'), 'USD';

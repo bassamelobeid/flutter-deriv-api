@@ -89,6 +89,7 @@
                            "type" : "object",
                            "properties" : {
                               "min_stake" : {
+                                 "maximum" : 10,
                                  "minimum" : 0,
                                  "type" : "number"
                               },
@@ -115,6 +116,7 @@
                            "additionalProperties" : false,
                            "properties" : {
                               "min_stake" : {
+                                 "maximum" : 10,
                                  "minimum" : 0,
                                  "type" : "number"
                               },
@@ -149,7 +151,8 @@
                               },
                               "min_stake" : {
                                  "minimum" : 0,
-                                 "type" : "number"
+                                 "type" : "number",
+                                 "maximum" : 10
                               }
                            }
                         }
@@ -164,6 +167,7 @@
                         "^[A-Z]{3,4}$" : {
                            "properties" : {
                               "min_stake" : {
+                                 "maximum" : 10,
                                  "type" : "number",
                                  "minimum" : 0
                               },
@@ -200,7 +204,7 @@
                "type" : "array",
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)$"
+                  "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$"
                }
             },
             "legal_default_currency" : {
@@ -257,6 +261,7 @@
                                  "type" : "number"
                               },
                               "min_stake" : {
+                                 "maximum" : 10,
                                  "type" : "number",
                                  "minimum" : 0
                               }
@@ -282,7 +287,8 @@
                            "properties" : {
                               "min_stake" : {
                                  "minimum" : 0,
-                                 "type" : "number"
+                                 "type" : "number",
+                                 "maximum" : 10
                               },
                               "max_payout" : {
                                  "minimum" : 0,
@@ -304,7 +310,8 @@
                            "properties" : {
                               "min_stake" : {
                                  "type" : "number",
-                                 "minimum" : 0
+                                 "minimum" : 0,
+                                 "maximum" : 10
                               },
                               "max_payout" : {
                                  "type" : "number",
@@ -328,6 +335,7 @@
                            "additionalProperties" : false,
                            "properties" : {
                               "min_stake" : {
+                                 "maximum" : 10,
                                  "type" : "number",
                                  "minimum" : 0
                               },
@@ -351,7 +359,7 @@
             "legal_allowed_currencies" : {
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)$"
+                  "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$"
                },
                "type" : "array",
                "minItems" : 4
@@ -470,7 +478,8 @@
                                  "properties" : {
                                     "min_stake" : {
                                        "type" : "number",
-                                       "minimum" : 0
+                                       "minimum" : 0,
+                                       "maximum" : 10
                                     },
                                     "max_payout" : {
                                        "minimum" : 0,
@@ -499,6 +508,7 @@
                                  ],
                                  "properties" : {
                                     "min_stake" : {
+                                       "maximum" : 10,
                                        "type" : "number",
                                        "minimum" : 0
                                     },
@@ -524,7 +534,8 @@
                                  "properties" : {
                                     "min_stake" : {
                                        "minimum" : 0,
-                                       "type" : "number"
+                                       "type" : "number",
+                                       "maximum" : 10
                                     },
                                     "max_payout" : {
                                        "type" : "number",
@@ -547,6 +558,7 @@
                                        "minimum" : 0
                                     },
                                     "min_stake" : {
+                                       "maximum" : 10,
                                        "type" : "number",
                                        "minimum" : 0
                                     }
@@ -702,6 +714,7 @@
                                  ],
                                  "properties" : {
                                     "min_stake" : {
+                                       "maximum" : 10,
                                        "type" : "number",
                                        "minimum" : 0
                                     },
@@ -729,6 +742,7 @@
                                        "type" : "number"
                                     },
                                     "min_stake" : {
+                                       "maximum" : 10,
                                        "minimum" : 0,
                                        "type" : "number"
                                     }
@@ -759,6 +773,7 @@
                                        "minimum" : 0
                                     },
                                     "min_stake" : {
+                                       "maximum" : 10,
                                        "type" : "number",
                                        "minimum" : 0
                                     }
@@ -775,6 +790,7 @@
                                  ],
                                  "properties" : {
                                     "min_stake" : {
+                                       "maximum" : 10,
                                        "type" : "number",
                                        "minimum" : 0
                                     },
@@ -925,7 +941,8 @@
                                     },
                                     "min_stake" : {
                                        "type" : "number",
-                                       "minimum" : 0
+                                       "minimum" : 0,
+                                       "maximum" : 10
                                     }
                                  },
                                  "required" : [
@@ -945,6 +962,7 @@
                                  ],
                                  "properties" : {
                                     "min_stake" : {
+                                       "maximum" : 10,
                                        "minimum" : 0,
                                        "type" : "number"
                                     },
@@ -971,6 +989,7 @@
                                        "minimum" : 0
                                     },
                                     "min_stake" : {
+                                       "maximum" : 10,
                                        "type" : "number",
                                        "minimum" : 0
                                     }
@@ -999,7 +1018,8 @@
                                  "properties" : {
                                     "min_stake" : {
                                        "type" : "number",
-                                       "minimum" : 0
+                                       "minimum" : 0,
+                                       "maximum" : 10
                                     },
                                     "max_payout" : {
                                        "type" : "number",

@@ -6,7 +6,7 @@ use Test::Mojo;
 use Email::Address::UseXS;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::Email;
+use BOM::Test::Email qw(:no_event);
 use BOM::User;
 use utf8;
 use BOM::Platform::Token;
@@ -70,6 +70,7 @@ subtest 'reset_password_vrtc' => sub {
         }};
 
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result);
+
     my $subject = 'Your password has been reset.';
     my $msg     = mailbox_search(
         email   => $email_vr,

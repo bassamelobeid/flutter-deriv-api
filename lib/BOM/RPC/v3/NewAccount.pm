@@ -26,6 +26,7 @@ use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Locale;
 use BOM::User;
 use BOM::Config;
 use BOM::Platform::Context qw (request);
@@ -111,13 +112,12 @@ rpc "new_account_virtual",
     # Welcome email for Binary brand is handled in customer.io
     # we're sending for Deriv here as a temporary solution
     # until customer.io is able to handle multiple domains
-    my $brand = request()->brand;
     request_email(
         $email,
         {
-            subject       => localize('Welcome to Deriv'),
+            subject       => localize('Welcome to Deriv!'),
             template_name => 'welcome_virtual',
-        }) if $brand->name eq 'deriv';
+        }) if request()->brand->name eq 'deriv';
 
     return {
         client_id => $client->loginid,
@@ -360,6 +360,9 @@ rpc new_account_real => sub {
         amount        => 0,
         payment_agent => 0,
     );
+
+    _send_welcome_email_real_account($user, $new_client);
+
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
@@ -472,6 +475,9 @@ rpc new_account_maltainvest => sub {
         amount        => 0,
         payment_agent => 0,
     );
+
+    _send_welcome_email_real_account($user, $new_client);
+
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
@@ -479,5 +485,30 @@ rpc new_account_maltainvest => sub {
         oauth_token               => _create_oauth_token($params->{source}, $new_client->loginid),
     };
 };
+
+# First real account signup email for Binary brand is handled in customer.io
+# we're sending for Deriv here as a temporary solution
+# until customer.io is able to handle multiple domains
+sub _send_welcome_email_real_account {
+    my ($user, $new_client) = @_;
+
+    return unless (request()->brand->name eq 'deriv');
+
+    my $real_count = scalar grep { not $_->is_virtual } $user->clients(include_disabled => 0);
+
+    request_email(
+        $new_client->email,
+        {
+            subject       => localize('Your Deriv real account is ready!'),
+            template_name => 'welcome_real',
+            template_args => {
+                salutation => BOM::Platform::Locale::translate_salutation($new_client->salutation),
+                first_name => $new_client->first_name,
+                last_name  => $new_client->last_name,
+            },
+        }) if $real_count == 1;
+
+    return 1;
+}
 
 1;

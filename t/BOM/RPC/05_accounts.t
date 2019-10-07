@@ -15,7 +15,7 @@ use Digest::SHA qw(hmac_sha256_hex);
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw/looks_like_number/;
 use LandingCompany::Registry;
-use BOM::Test::Email;
+use BOM::Test::Email qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -28,6 +28,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::Config;
 use BOM::MT5::User::Async;
+use BOM::Platform::Email;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -1939,7 +1940,11 @@ subtest $method => sub {
         'emit',
         sub {
             my ($type, $data) = @_;
-            $emitted->{$type} = $data;
+            if ($type eq 'send_email') {
+                return BOM::Platform::Email::process_send_email($data);
+            } else {
+                $emitted->{$type} = $data;
+            }
         });
 
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
@@ -2203,7 +2208,7 @@ subtest $method => sub {
         subject => qr/\Q$subject\E/
     );
     ok($msg, 'send a email to client');
-    like($msg->{body}, qr/>address line 1, address line 2, address city, Bali/s, 'email content correct');
+    like($msg->{body}, qr/address line 1, address line 2, address city, Bali/s, 'email content correct');
     mailbox_clear();
 
     $params->{args}->{request_professional_status} = 1;
