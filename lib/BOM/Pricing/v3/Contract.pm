@@ -978,33 +978,30 @@ sub contract_update {
         });
     }
 
-    my $response = try {
-        BOM::Transaction::ContractUpdate::update({
-            client      => $client,
-            contract_id => $contract_id,
-            params      => $args->{update_parameters},
-        });
+    my $response;
+    try {
+        my $updater = BOM::Transaction::ContractUpdate->new(
+            client        => $client,
+            contract_id   => $contract_id,
+            update_params => $args->{update_parameters},
+        );
+        if ($updater->is_valid_to_update) {
+            $response = $updater->update();
+        } else {
+            my $error = $updater->validation_error;
+            $response = BOM::Pricing::v3::Utility::create_error({
+                    code              => $error->{code},
+                    message_to_client => $error->{message_to_client},
+
+            });
+        }
     }
     catch {
-        BOM::Pricing::v3::Utility::create_error({
+        $response = BOM::Pricing::v3::Utility::create_error({
             code              => 'ContractUpdateError',
             message_to_client => localize('Sorry, an error occurred while processing your request.'),
         });
     };
-
-    unless ($response) {
-        return BOM::Pricing::v3::Utility::create_error({
-            code              => 'MissingContract',
-            message_to_client => localize('Could not find contract.'),
-        });
-    }
-
-    if (my $error = $response->{error}) {
-        return BOM::Pricing::v3::Utility::create_error({
-            code              => $error->{code},
-            message_to_client => $error->{message_to_client},
-        });
-    }
 
     return $response;
 }
