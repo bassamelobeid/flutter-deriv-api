@@ -34,6 +34,7 @@ use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for 
 use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Config::PaymentAgent;
+use BOM::Platform::Event::Emitter;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::User::AuditLog;
@@ -377,8 +378,9 @@ rpc get_limits => sub {
         convert_currency($payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']}), $currency, $withdrawal_limit_curr);
 
     my $remainder = min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception));
-    if ($remainder < 0) {
+    if ($remainder <= 0) {
         $remainder = 0;
+        BOM::Platform::Event::Emitter::emit('set_needs_action', {loginid => $client->loginid});
     }
 
     $limit->{withdrawal_since_inception_monetary} =
