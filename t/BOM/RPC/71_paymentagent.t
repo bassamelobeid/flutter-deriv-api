@@ -702,23 +702,23 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
 
         deauthenticate_client($clientdbh, $Alice_id);
 
-        $test = 'Transfer fails if amount is over the lifetime limit for landing company champion';
-        ## Same as above, but we force the landing company to be champion
-        $mock_user_client->mock('landing_company', sub { return LandingCompany::Registry->get_by_broker('CH') });
-        $lc_short       = $Alice->landing_company->short;
-        $test_lc_limits = $payment_withdrawal_limits->{$lc_short};
-        ($lc_currency, $lc_lifetime_limit) = @$test_lc_limits{qw/ currency lifetime_limit /};
-        $mock_landingcompany->mock('allows_payment_agents', sub { return 1; });
-        ## As before, we carefully adjust our payment history
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is(
-            $res->{error}{message_to_client},
-            "Sorry, you cannot withdraw. Your withdrawal amount $test_currency $test_amount exceeds withdrawal limit.",
-            "$test ($lc_lifetime_limit)"
-        );
+        # $test = 'Transfer fails if amount is over the lifetime limit for landing company champion';
+        # ## Same as above, but we force the landing company to be champion
+        # $mock_user_client->mock('landing_company', sub { return LandingCompany::Registry->get_by_broker('CH') });
+        # $lc_short       = $Alice->landing_company->short;
+        # $test_lc_limits = $payment_withdrawal_limits->{$lc_short};
+        # ($lc_currency, $lc_lifetime_limit) = @$test_lc_limits{qw/ currency lifetime_limit /};
+        # $mock_landingcompany->mock('allows_payment_agents', sub { return 1; });
+        # ## As before, we carefully adjust our payment history
+        # $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        # is(
+        #     $res->{error}{message_to_client},
+        #     "Sorry, you cannot withdraw. Your withdrawal amount $test_currency $test_amount exceeds withdrawal limit.",
+        #     "$test ($lc_lifetime_limit)"
+        # );
 
-        $mock_user_client->unmock('landing_company');
-        $mock_landingcompany->unmock('allows_payment_agents');
+        # $mock_user_client->unmock('landing_company');
+        # $mock_landingcompany->unmock('allows_payment_agents');
         reset_transfer_testargs();
         reset_transfer_testargs();
 
