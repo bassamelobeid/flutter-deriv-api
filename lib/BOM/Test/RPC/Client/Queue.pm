@@ -67,13 +67,26 @@ sub _tcall {
         name   => $method,
         params => encode_json_utf8($req_params),
     };
-    my $result = Future->wait_any($self->client->submit(%$request), $self->loop->delay_future(after => 10))->get;
+    my $result = Future->wait_any(
+        $self->client->submit(%$request),
+        $self->loop->timeout_future(after => $ENV{QUEUE_TIMEOUT})->else(
+            sub {
+                Future->done(
+                    encode_json_utf8({
+                            'success' => 1,
+                            'result'  => {
+                                'error' => {
+                                    'code'              => 'RequestTimeout',
+                                    'message_to_client' => 'Request was timed out.',
+                                }}}));
+            }
+        ),
+    )->get;
 
-    my $r;
-    $r = MojoX::JSON::RPC::Client::ReturnObject->new(rpc_response => decode_json_utf8($result)) if $result;
+    my $r = MojoX::JSON::RPC::Client::ReturnObject->new(rpc_response => decode_json_utf8($result));
 
     $self->response($r);
-    $self->result($r->result) if $r;
+    $self->result($r->result);
     return $r;
 }
 
