@@ -20,6 +20,7 @@ use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
 use BOM::Database::ClientDB;
 use BOM::Config;
+use BOM::Platform::Event::Emitter;
 
 ## VERSION
 
@@ -138,8 +139,7 @@ sub validate_payment {
             }
 
             if ($total_wd >= financialrounding('amount', $currency, $lc_limits->{lifetime_limit})) {
-                $self->set_authentication('ID_DOCUMENT')->status('needs_action');
-                $self->save();
+                BOM::Platform::Event::Emitter::emit('set_needs_action', {loginid => $self->loginid});
             }
 
         } else {
