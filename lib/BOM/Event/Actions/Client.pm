@@ -2125,7 +2125,7 @@ sub set_needs_action {
 
     my $client = BOM::User::Client->new({
             loginid => $args->{loginid},
-        }) or die 'Could not instantiate client for login ID ' . $loginid;
+        }) or die 'Could not instantiate client for login ID ' . $args->{loginid};
 
     return if $client->fully_authenticated();
 
