@@ -1956,4 +1956,28 @@ async sub payment_deposit {
     return;
 }
 
+=head2 set_needs_action
+
+Sets 'needs_action' to a client
+
+=cut
+
+sub set_needs_action {
+    my ($args) = @_;
+
+    my $client = BOM::User::Client->new({
+            loginid => $args->{loginid},
+        }) or die 'Could not instantiate client for login ID ' . $loginid;
+
+    return if $client->fully_authenticated();
+
+    # set client as needs_action if only the status is not set yet
+    unless (($client->authentication_status // '') eq 'needs_action') {
+        $client->set_authentication('ID_DOCUMENT')->status('needs_action');
+        $client->save();
+    }
+
+    return;
+}
+
 1;
