@@ -17,6 +17,7 @@ use BOM::User::AuditLog;
 use BOM::User::Static;
 use BOM::User::Utility;
 use BOM::User::Client;
+use BOM::User::Onfido;
 use BOM::Config::Runtime;
 use LandingCompany::Registry;
 use Exporter qw( import );
