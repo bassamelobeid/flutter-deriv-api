@@ -68,7 +68,8 @@
                            "turnover_limit" : {
                               "type" : "number",
                               "enum" : [
-                                 50000
+                                 50000,
+                                 5000
                               ]
                            }
                         }
@@ -117,7 +118,8 @@
                            "turnover_limit" : {
                               "enum" : [
                                  100000,
-                                 50000
+                                 50000,
+                                 5000
                               ],
                               "type" : "number"
                            },

@@ -19,8 +19,8 @@
             "mt_financial_company" : {
                "properties" : {
                   "standard" : {
-                      "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"], 
-                      "type": "object", 
+                      "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"],
+                      "type": "object",
                      "has_reality_check" : {
                         "type" : "integer",
                         "enum" : [0]
@@ -74,7 +74,7 @@
                      }
                   },
                   "advanced" : {
-                      "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"], 
+                      "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"],
                      "type" : "object",
                      "legal_allowed_markets" : {
                         "items" : {
@@ -238,7 +238,7 @@
                   },
                   "legal_allowed_currencies" : {
                      "items" : {
-                        "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$",
+                        "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)$",
                         "type" : "string"
                      },
                      "minItems" : 5,
@@ -270,7 +270,7 @@
                      "type" : "array",
                      "items" : {
                         "type" : "string",
-                        "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$"
+                        "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)$"
                      }
                   },
                   "country" : {
