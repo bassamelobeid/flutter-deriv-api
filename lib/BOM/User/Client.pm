@@ -1304,7 +1304,7 @@ sub is_verification_required {
 
     # we need to check if mt5 group is for
     # labuan, if yes then it needs authentication
-    return 1 if (any { defined && /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_standard|_advanced)/ } values %{$self->user->mt5_logins_with_group()});
+    return 1 if (any { defined && /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_standard|_advanced)/ } values %{$self->user->mt5_logins_with_group('real')});
 
     return 0;
 }
