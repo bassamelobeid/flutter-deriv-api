@@ -174,6 +174,7 @@ rpc website_status => sub {
         clients_country          => $params->{country_code},
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
+
     };
 };
 
