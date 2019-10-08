@@ -263,7 +263,7 @@ sub bom_virtual_loginid {
 
 =head2 mt5_logins
 
-get mt5 loginis for the user
+get mt5 loginids for the user
 
 =over 4
 
