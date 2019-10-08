@@ -421,8 +421,10 @@ sub _invalid_contract {
                             option_type        => $contract->code,
                             currency_pair      => $contract->underlying->symbol,
                             ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
-                            : ($contract->barrier)    ? (barriers => $contract->barrier->as_absolute)
+                            : ($contract->can('barrier') && $contract->barrier) ? (barriers => $contract->barrier->as_absolute)
                             : (barriers => ''),
+                            ($contract->can('stop_out')    && $contract->stop_out)    ? (stop_out    => $contract->stop_out->barrier_value)    : (),
+                            ($contract->can('take_profit') && $contract->take_profit) ? (take_profit => $contract->take_profit->barrier_value) : (),
                             expiry => $contract->date_expiry->db_timestamp,
                             payout => $contract->payout
                         }

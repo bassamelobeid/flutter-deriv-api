@@ -173,7 +173,7 @@ subtest 'buy MULTUP', sub {
             underlying   => $underlying,
             bet_type     => 'MULTUP',
             currency     => 'USD',
-            multiplier   => 5.0,
+            multiplier   => 10,
             amount       => 100,
             amount_type  => 'stake',
             current_tick => $current_tick,
@@ -193,7 +193,6 @@ subtest 'buy MULTUP', sub {
         ok !$error, 'buy without error';
 
         subtest 'transaction report', sub {
-            plan tests => 11;
             note $txn->report;
             my $report = $txn->report;
             like $report, qr/\ATransaction Report:$/m,                                                    'header';
@@ -256,12 +255,11 @@ subtest 'buy MULTUP', sub {
         # note explain $chld;
 
         subtest 'chld row', sub {
-            plan tests => 11;
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'}, 5, 'multiplier is 5';
-            is $chld->{basis_spot}, '100.00', 'basis_spot is 100.00';
-            is $chld->{'stop_loss_order_amount'}, undef, 'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_order_date'},   undef, 'stop_loss_order_date is undef';
+            is $chld->{'multiplier'},             10,        'multiplier is 10';
+            is $chld->{'basis_spot'},             '100.00', 'basis_spot is 100.00';
+            is $chld->{'stop_loss_order_amount'}, undef,    'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_basis_spot'},   undef,    'stop_loss_basis_spot is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, undef, 'take_profit_order_amount is undef';
@@ -274,19 +272,19 @@ subtest 'buy MULTUP', sub {
 
 subtest 'buy MULTUP with take profit', sub {
     lives_ok {
+        my $mock = Test::MockModule->new('Quant::Framework::Underlying');
+        $mock->mock('spot_tick' => sub {return $current_tick});
         my $contract = produce_contract({
                 underlying   => $underlying,
                 bet_type     => 'MULTUP',
                 currency     => 'USD',
-                multiplier   => 5,
+                multiplier   => 10,
                 amount       => 100,
                 amount_type  => 'stake',
                 current_tick => $current_tick,
-                limit_order  => [{
-                        order_type   => 'take_profit',
-                        order_amount => 5
-                    }
-                ],
+                limit_order  => {
+                        take_profit => 5
+                    },
             });
 
         my $txn = BOM::Transaction->new({
@@ -366,12 +364,11 @@ subtest 'buy MULTUP with take profit', sub {
         # note explain $chld;
 
         subtest 'chld row', sub {
-            plan tests => 11;
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'}, 5, 'multiplier is 5';
-            is $chld->{basis_spot}, '100.00', 'basis_spot is 100.00';
-            is $chld->{'stop_loss_order_amount'}, undef, 'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_order_date'},   undef, 'stop_loss_order_date is undef';
+            is $chld->{'multiplier'},             10,        'multiplier is 10';
+            is $chld->{'basis_spot'},             '100.00', 'basis_spot is 100.00';
+            is $chld->{'stop_loss_order_amount'}, undef,    'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_order_date'},   undef,    'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, 5, 'take_profit_order_amount is 5';
@@ -389,7 +386,7 @@ subtest 'sell a bet', sub {
             underlying   => $underlying,
             bet_type     => 'MULTUP',
             currency     => 'USD',
-            multiplier   => 5,
+            multiplier   => 10,
             amount       => 100,
             amount_type  => 'stake',
             current_tick => $current_tick,
