@@ -30,7 +30,7 @@ subtest 'Method call over rpc queue' => sub {
     is_deeply $result1, $result2, 'The same result from queue and http rpc for residence_list';
 
     is $c_http->_tcall('no_existing_method'), undef, 'No result for invalid method call';
-    $c_queue->call_ok('no_existing_method')->has_no_system_error->has_error->error_code_is('UnknownMethod');
+    $c_queue->call_ok('no_existing_method')->has_no_system_error->has_error->error_code_is('InternalServerError');
 };
 
 subtest 'Redis failure recovery' => sub {

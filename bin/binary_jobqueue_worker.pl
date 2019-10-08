@@ -354,8 +354,7 @@ sub process_job {
                 })) unless $job->is_ready;
     } else {
         $log->errorf("Unknown rpc method called: %s", $name);
-        stats_inc("rpc_queue.worker.jobs.failed", {tags => [$tags->@*, "unknown_method:$name"]});
-        # Transport mechanism itself succeeded, so ->done is fine here
+        stats_inc("rpc_queue.worker.jobs.failed", $tags);
         $job->done(
             encode_json_utf8({
                     success => 0,
@@ -403,7 +402,7 @@ sub run_worker_process {
         TERM => sub {
             $log->info("Stopping worker process");
             unlink $PID_FILE if ($PID_FILE);
-            $worker->stop->wait_until_ready;
+            $worker->stop->block_until_ready;
             $log->info("Worker process stopped");
             exit 0;
         },
@@ -426,11 +425,11 @@ sub run_worker_process {
     $worker->jobs->each(
         sub {
             my $job     = $_;
-            my $name    = $job->data('name');
+            my $name    = $job->data('name') // '';
             my ($queue) = $worker->pending_queues;
-            try {
-                my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
+            my $tags    = {tags => ["rpc:$name", "queue:$queue"]};
 
+            try {
                 my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
                 $log->tracef('Timeout for %s is %d', $name, $job_timeout);
 
@@ -457,6 +456,7 @@ sub run_worker_process {
             }
             catch {
                 $log->errorf('An error occurred while processing job for %s, ERROR: %s', $name, $@);
+                stats_inc("rpc_queue.worker.jobs.failed", $tags);
                 $job->done(
                     encode_json_utf8({
                             success => 0,
