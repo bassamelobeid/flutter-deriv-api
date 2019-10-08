@@ -6,7 +6,7 @@ BOM::RiskReporting::Base
 
 =head1 DESCRIPTION
 
-A generic base class for risk reporting modules. 
+A generic base class for risk reporting modules.
 =head1 SYNOPSIS
 
 BOM::RiskReport::Base->new->generate;
