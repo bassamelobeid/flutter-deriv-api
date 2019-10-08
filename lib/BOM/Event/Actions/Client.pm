@@ -46,6 +46,10 @@ use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
 use BOM::Config::RedisReplicated;
 use BOM::Event::Services;
+use Encode qw(decode_utf8 encode_utf8);
+use Time::HiRes;
+use File::Temp;
+use Digest::MD5;
 
 # For smartystreets datadog stats_timing
 $Future::TIMES = 1;
@@ -84,6 +88,16 @@ use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AG
 use constant ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX         => 'ONFIDO::DOB::MISMATCH::EMAIL::PER::USER::';
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
+
+# List of document types that we use as proof of address
+use constant POA_DOCUMENTS_TYPE => qw(
+    proofaddress payslip bankstatement cardstatement
+);
+
+# List of document types that we use as proof of identity
+use constant POI_DOCUMENTS_TYPE => qw(
+    proofid driverslicense passport selfie_with_id
+);
 
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
@@ -142,8 +156,7 @@ my %ONFIDO_DOCUMENT_TYPE_PRIORITY = (
     unknown                       => 0,
 );
 
-# List of document types that we use as proof of address
-my @POA_DOCUMENTS_TYPE = qw(proofaddress payslip bankstatement cardstatement);
+my %allowed_synchronizable_documents_type = map { $_ => 1 } (POA_DOCUMENTS_TYPE, POI_DOCUMENTS_TYPE);
 
 my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
@@ -230,6 +243,11 @@ async sub document_upload {
             loginid => $loginid,
             file_id => $file_id
         );
+        # don't sync documents to onfido if its not in allowed types
+        unless ($allowed_synchronizable_documents_type{$document_entry->{document_type}}) {
+            $log->debugf('Can not sync documents to Onfido as it is not in allowed types for client %s', $loginid);
+            return;
+        }
 
         die 'Expired document ' . $document_entry->{expiration_date}
             if $document_entry->{expiration_date} and Date::Utility->new($document_entry->{expiration_date})->is_before(Date::Utility->today);
@@ -442,7 +460,7 @@ async sub client_verification {
                     });
             }
 
-            await _store_applicant_documents($applicant_id, $client);
+            await _store_applicant_documents($applicant_id, $client, \@all_report);
 
             my $redis_events_write = _redis_events_write();
 
@@ -579,7 +597,7 @@ Gets the client's documents from Onfido and store in DB
 =cut
 
 async sub _store_applicant_documents {
-    my ($applicant_id, $client) = @_;
+    my ($applicant_id, $client, $all_report) = @_;
     my $loop   = IO::Async::Loop->new;
     my $onfido = _onfido();
 
@@ -624,7 +642,21 @@ async sub _store_applicant_documents {
             }
             catch {
                 my $e = $@;
-                warn "Error in storing document data: $e";
+                $log->debugf("Error in storing document data: $e");
+            }
+
+            try {
+                await _sync_onfido_bo_document({
+                    type          => 'document',
+                    document_id   => $doc->id,
+                    client        => $client,
+                    applicant_id  => $applicant_id,
+                    onfido_result => $doc,
+                    all_report    => $all_report
+                });
+            }
+            catch {
+                $log->debugf("Error in downloading and sync document file : $@");
             }
         }
     }
@@ -654,7 +686,133 @@ async sub _store_applicant_documents {
                 my $e = $@;
                 warn "Error in storing live photo: $e";
             }
+
+            try {
+                await _sync_onfido_bo_document({
+                    type          => 'photo',
+                    document_id   => $photo->id,
+                    client        => $client,
+                    applicant_id  => $applicant_id,
+                    onfido_result => $photo,
+                    all_report    => $all_report
+                });
+            }
+            catch {
+                $log->debugf("Error in downloading and sync photo file : $@");
+            }
+
         }
+    }
+
+    return;
+}
+
+=head2 _sync_onfido_bo_document
+
+Gets the client's documents from Onfido and upload to S3
+
+=cut
+
+async sub _sync_onfido_bo_document {
+    my $args = shift;
+    my ($type, $doc_id, $client, $applicant_id, $onfido_res, $all_report) =
+        @{$args}{qw/type document_id client applicant_id onfido_result all_report/};
+
+    my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
+
+    my $loop   = IO::Async::Loop->new;
+    my $onfido = _onfido();
+    my $doc_type;
+    my $page_type = '';
+    my $image_blob;
+    my $expiration_date;
+    my $document_numbers;
+    my @doc_ids;
+
+    if ($type eq 'document') {
+        $doc_type  = $onfido_res->type;
+        $page_type = $onfido_res->side;
+        for my $each_report (@{$all_report}) {
+            if ($each_report->documents) {
+                @doc_ids = @{$each_report->documents};
+                my %all_ids = map { $_->{id} => 1 } @doc_ids;
+
+                if (exists($all_ids{$doc_id})) {
+                    ($expiration_date, $document_numbers) = @{$each_report->{properties}}{qw(date_of_expiry document_numbers)};
+                    last;
+                }
+            } else {
+                next;
+            }
+        }
+        $image_blob = await $onfido->download_document(
+            applicant_id => $applicant_id,
+            document_id  => $doc_id
+        );
+    } elsif ($type eq 'photo') {
+        $doc_type   = 'photo';
+        $image_blob = await $onfido->download_photo(
+            applicant_id  => $applicant_id,
+            live_photo_id => $doc_id
+        );
+    } else {
+        die "Unsupported document type";
+    }
+
+    my $file_type = $onfido_res->file_type;
+
+    my $fh = File::Temp->new(DIR => '/var/lib/binary');
+    my $tmp_filename = $fh->filename;
+    print $fh $image_blob;
+    seek $fh, 0, 0;
+    my $file_checksum = Digest::MD5->new->addfile($fh)->hexdigest;
+    close $fh;
+
+    my $upload_info;
+    my $s3_uploaded;
+    my $file_id;
+    my $new_file_name;
+    my $doc_id_number;
+    $doc_id_number = $document_numbers->[0]->{value} if $document_numbers;
+
+    try {
+        $upload_info = $client->db->dbic->run(
+            ping => sub {
+                $_->selectrow_hashref(
+                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)',
+                    undef, $client->loginid, $doc_type, $file_type,
+                    $expiration_date || undef,
+                    $doc_id_number   || '',
+                    $file_checksum, '', $page_type,
+                );
+            });
+
+        die "Document already exists" unless $upload_info;
+
+        ($file_id, $new_file_name) = @{$upload_info}{qw/file_id file_name/};
+
+        $log->debugf("Starting to upload file_id: $file_id to S3 ");
+        $s3_uploaded = await $s3_client->upload($new_file_name, $tmp_filename, $file_checksum);
+    }
+    catch {
+        my $error = $@;
+        $log->errorf("Error in creating record in db and uploading Onfido document to S3: %s", $error);
+    };
+
+    if ($s3_uploaded) {
+        $log->debugf("Successfully uploaded file_id: $file_id to S3 ");
+        try {
+            my $finish_upload_result = $client->db->dbic->run(
+                ping => sub {
+                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $file_id);
+                });
+            die "Db returned unexpected file_id on finish. Expected $file_id but got $finish_upload_result. Please check the record"
+                unless $finish_upload_result == $file_id;
+        }
+        catch {
+            my $error = $@;
+            $log->errorf("Error in updating db: %s", $error);
+        };
     }
 
     return;
@@ -796,7 +954,7 @@ async sub _address_verification {
 
     unless ($addr->accuracy_at_least('locality')) {
         DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.failure', {tags => [$status]});
-        $log->warnf('Inaccurate address - only verified to %s precision', $addr->address_precision);
+        $log->debugf('Inaccurate address - only verified to %s precision', $addr->address_precision);
         return;
     }
 
@@ -1230,7 +1388,7 @@ async sub _send_email_notification_for_poa {
     my $client         = $args{client};
 
     # no need to notify if document is not POA
-    return undef unless (any { $_ eq $document_entry->{document_type} } @POA_DOCUMENTS_TYPE);
+    return undef unless (any { $_ eq $document_entry->{document_type} } POA_DOCUMENTS_TYPE);
 
     # don't send email if client is already authenticated
     return undef if $client->fully_authenticated();
