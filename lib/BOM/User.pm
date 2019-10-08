@@ -261,6 +261,22 @@ sub bom_virtual_loginid {
     return first { $_ =~ VIRTUAL_REGEX } $self->loginids;
 }
 
+=head2 mt5_logins
+
+get mt5 loginis for the user
+
+=over 4
+
+=item * C<self> - self user object
+
+=item * C<filter> - regex to filter out groups
+
+=back
+
+Returns a list of mt5 loginids
+
+=cut
+
 sub mt5_logins {
     my $self = shift;
 
@@ -270,6 +286,22 @@ sub mt5_logins {
 
     return @mt5_logins;
 }
+
+=head2 mt5_logins_with_group
+
+get mt5 loginis with group for the user
+
+=over 4
+
+=item * C<self> - self user object
+
+=item * C<filter> - regex to filter out groups
+
+=back
+
+Returns a hashref of form { login => group }
+
+=cut
 
 sub mt5_logins_with_group {
     my $self = shift;
