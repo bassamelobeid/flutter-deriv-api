@@ -217,7 +217,7 @@ risk_profile:
           UST: 100
           USB: 100
           IDK: 1500
-  moderate_risk:
+  high_risk:
       turnover:
           USD: 5000
           EUR: 5000
@@ -242,7 +242,7 @@ risk_profile:
           UST: 1000
           USB: 1000
           IDK: 15000
-  high_risk:
+  moderate_risk:
       turnover:
           USD: 50000
           EUR: 50000
