@@ -70,7 +70,7 @@ subtest "Client load and saving." => sub {
         'email'            => 'felix@regentmarkets.com',
         'latest_environment' =>
             '31-May-10 02h09GMT 99.99.99.63 Mozilla 5.0 (X11; U; Linux i686; en-US; rv:1.9.2.3) Gecko 20100401 Firefox 3.6.3 LANG=EN SKIN=',
-        'address_city'             => 'Subang Jaya',
+        'address_city' => 'Subang Jaya',
         'address_line_1' =>
             '†•…‰™œŠŸž€ΑΒΓΔΩαβγδωАБВГДабвгд∀∂∈ℝ∧∪≡∞↑↗↨↻⇣┐┼╔╘░►☺',
         'secret_answer'         => '::ecp::52616e646f6d495633363368676674792dd36b78f1d98017',

@@ -260,24 +260,29 @@ sub bom_virtual_loginid {
     return first { $_ =~ VIRTUAL_REGEX } $self->loginids;
 }
 
-#
 sub mt5_logins {
     my $self = shift;
-    my $filter = shift // 'real|demo';
-    my @mt5_logins;
 
-    for my $login (sort grep { $_ =~ MT5_REGEX } $self->loginids) {
-        push(@mt5_logins, $login)
-            if (
-            not $filter or (
-                BOM::MT5::User::Async::get_user(
-                    do { $login =~ /(\d+)/; $1 }
-                )->get->{group} // ''
-            ) =~ /^$filter/
-            );
+    my $filter = shift // 'real|demo';
+
+    return sort keys %{$self->mt5_logins_with_group($filter)};
+}
+
+sub mt5_logins_with_group {
+    my $self = shift;
+
+    my $filter = shift // 'real|demo';
+    my $mt5_logins_with_group = {};
+
+    for my $login (sort $self->get_mt5_loginids()) {
+        my $group = BOM::MT5::User::Async::get_user(
+            do { $login =~ /(\d+)/; $1 }
+        )->get->{group} // '';
+
+        $mt5_logins_with_group->{$login} = $group if (not $filter or $group =~ /^$filter/);
     }
 
-    return @mt5_logins;
+    return $mt5_logins_with_group;
 }
 
 sub get_last_successful_login_history {
