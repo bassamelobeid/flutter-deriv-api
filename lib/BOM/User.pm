@@ -266,7 +266,9 @@ sub mt5_logins {
 
     my $filter = shift // 'real|demo';
 
-    return sort keys %{$self->mt5_logins_with_group($filter)};
+    my @mt5_logins = sort keys %{$self->mt5_logins_with_group($filter)};
+
+    return @mt5_logins;
 }
 
 sub mt5_logins_with_group {
