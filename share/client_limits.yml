@@ -9,6 +9,7 @@ maximum_daily_turnover:
   LTC: 500
   UST: 500000
   USB: 500000
+  IDK: 7500000
 max_balance:
   virtual:
     USD: 1000000
@@ -21,6 +22,7 @@ max_balance:
     LTC: 1000
     UST: 1000000
     USB: 1000000
+    IDK: 15000000
   real:
     USD: 300000
     EUR: 300000
@@ -32,6 +34,7 @@ max_balance:
     LTC: 500
     UST: 300000
     USB: 300000
+    IDK: 4500000
 max_payout_open_positions:
     USD: 50000
     EUR: 50000
@@ -43,4 +46,5 @@ max_payout_open_positions:
     LTC: 50
     UST: 50000
     USB: 50000
+    IDK: 750000
 max_open_bets_default: 100
