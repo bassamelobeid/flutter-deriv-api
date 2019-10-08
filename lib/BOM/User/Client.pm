@@ -1302,20 +1302,9 @@ sub is_verification_required {
 
     return 1 if $self->landing_company->short eq 'maltainvest';
 
-    # for labuan and vanuatu accounts we need to check
-    # if they have real standard and demo accounts
-    my @mt_loginid_keys = map { /^MT(\d+)$/ ? "MT5_USER_GROUP::$1" : () } $self->user->loginids;
-
-    return 0 unless scalar(@mt_loginid_keys);
-
-    my $redis_mt5_user = BOM::Config::RedisReplicated::redis_mt5_user();
-    my $mt5_groups     = $redis_mt5_user->mget(@mt_loginid_keys);
-
-    # loop through all mt5 loginids check
-    # non demo mt5 group has advanced|standard then
-    # its considered as financial
-    # SVG standard is not considered financial
-    return 1 if (any { defined && /^^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_standard|_advanced)/ } @$mt5_groups);
+    # we need to check if mt5 group is for
+    # labuan, if yes then it needs authentication
+    return 1 if (any { defined && /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_standard|_advanced)/ } values %{$self->user->mt5_logins_with_group('real')});
 
     return 0;
 }
