@@ -115,19 +115,17 @@
                "description" : "The tick that is predicted to have the highest/lowest value - for tickhigh and ticklow contracts."
             },
             "limit_order": {
-              "type": "array",
-              "description": "add an order to close the contract once the order condition is met (only for MULTUP and MULTDOWN)",
-              "item": {
-                "type": "object",
-                "properties": {
-                  "order_type": {
-                      "enum": ["take_profit"],
-                      "description": "The supported type of limit order."
-                  },
-                  "order_amount": {
-                      "type": "number",
-                      "description": "Quoted in dollar amount. If it is set to 10 and order_type set to take_profit, the contract will be closed when it hits a profit of 10."
-                  }
+              "type": "object",
+              "additionalProperties" : false,
+              "description": "add an order to close the contract once the order condition is met (only for MULTUP and MULTDOWN). Supported order (take_profit, stop_loss)",
+              "properties": {
+                "take_profit": {
+                  "type": "number",
+                  "description": "Contract will be automatically closed when the profit amount is reached."
+                },
+                "stop_loss": {
+                  "type": "number",
+                  "description": "Contract will be automatically closed when the loss amount is reached."
                 }
               }
             }
