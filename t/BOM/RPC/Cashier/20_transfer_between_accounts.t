@@ -363,7 +363,7 @@ subtest 'Validation for transfer from incomplete account' => sub {
         remark   => 'free gift',
     );
 
-    $params->{token}      = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
+    $params->{token}      = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
     $params->{token_type} = 'oauth_token';
     $params->{args}       = {
         account_from => $client_cr1->loginid,
