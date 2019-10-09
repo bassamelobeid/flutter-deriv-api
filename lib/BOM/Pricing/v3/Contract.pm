@@ -967,7 +967,7 @@ sub contract_update {
     my $client;
     if ($params->{token_details} and exists $params->{token_details}->{loginid}) {
         $client = BOM::User::Client->new({
-            loginid      => $args_copy->{token_details}->{loginid},
+            loginid      => $args->{token_details}->{loginid},
             db_operation => 'replica',
         });
     } else {
@@ -986,13 +986,41 @@ sub contract_update {
             update_params => $args->{update_parameters},
         );
         if ($updater->is_valid_to_update) {
-            $response = $updater->update();
+            my $update_res = $updater->update();
+            # It could be that the contract is sold after $updater->is_valid_to_update is called.
+            # The update will fail in this case because the contract has expired.
+            if (defined $update_res->{updated_table}) {
+                # we will need to resubscribe for the new proposal open contract when the contract
+                # parameters changed, if subscription is turned on. That's why we need contract_details.
+                $response = {
+                    status           => 1,
+                    type             => $updater->new_order->order_type,
+                    barrier_value    => $updater->contract->underlying->pipsized_value($updater->new_order->barrier_value),
+                    contract_details => {
+                        account_id      => $client->account_id,
+                        shortcode       => $updater->shortcode,
+                        contract_id     => $updater->fmb->{id},
+                        currency        => $client->currency,
+                        buy_price       => $updater->fmb->{buy_price},
+                        sell_price      => $updater->fmb->{sell_price},
+                        sell_time       => $updater->fmb->{sell_time},
+                        purchase_time   => Date::Utility->new($updater->fmb->{purchase_time})->epoch,
+                        is_sold         => $updater->fmb->{is_sold},
+                        transaction_ids => {buy => $updater->fmb->{buy_transaction_id}},
+                        longcode        => localize($updater->longcode),
+                    },
+                };
+            } else {
+                $response = BOM::Pricing::v3::Utility::create_error({
+                    code              => 'ContractUpdateFailure',
+                    message_to_client => localize('Contract update failed.'),
+                });
+            }
         } else {
             my $error = $updater->validation_error;
             $response = BOM::Pricing::v3::Utility::create_error({
-                    code              => $error->{code},
-                    message_to_client => $error->{message_to_client},
-
+                code              => $error->{code},
+                message_to_client => $error->{message_to_client},
             });
         }
     }
