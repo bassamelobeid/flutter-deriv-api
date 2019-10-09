@@ -63,7 +63,7 @@ is $res->{error}->{message}, 'Barrier is not allowed for this contract type.', '
 delete $req->{barrier};
 $res = $t->await::proposal($req);
 ok $res->{error}, 'proposal error';
-is $res->{error}->{code}, 'ContractCreationFailure', 'error code ContractCreationFailure';
+is $res->{error}->{code}, 'ContractBuyValidationError', 'error code ContractCreationFailure';
 is $res->{error}->{message}, 'Multiplier is not in acceptable range. Accepts 20,40,60,100,200.',
     'message \'Multiplier is not in acceptable range. Accepts 20,40,60,100,200.\'';
 
