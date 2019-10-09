@@ -7,7 +7,7 @@ use Test::MockModule;
 use Email::Address::UseXS;
 use BOM::User;
 
-use BOM::Test::Email qw( mailbox_search mailbox_clear );
+use BOM::Test::Email qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::RPC::Client;
 use LWP::UserAgent;

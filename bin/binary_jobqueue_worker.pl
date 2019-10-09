@@ -12,10 +12,11 @@ use IO::Socket::UNIX;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use Path::Tiny qw(path);
-use Data::Dump 'pp';
 use Syntax::Keyword::Try;
 use Time::Moment;
 use Text::Trim;
+use Try::Tiny;
+use Time::HiRes qw(alarm);
 
 use Getopt::Long;
 use Log::Any qw($log);
@@ -24,6 +25,84 @@ use BOM::Config::RedisReplicated;
 use BOM::RPC::JobTimeout;
 
 use constant QUEUE_WORKER_TIMEOUT => 300;
+
+=head1 NAME binary_jobqueue_worker.pl
+
+RPC queue worker script. It instantiates queue workers according input args and manages their lifetime.
+
+=head1 SYNOPSIS
+
+    perl binary_jobqueue_worker.pl [--queue-prefix QA12] [--workers n] [--log=warn] [--socket /path/to/socket/file] [--redis redis://...]  [--testing] [--pid-file=/path/to/pid/file] [--foreground] 
+    
+=head1 DESCRIPTION
+
+This script loads a queue coordinator managing a number of queue worker processes.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--queue-prefix> or B<--q>
+
+Sets a prefix to the processing and pending queues, standing as the queue identifier, making the queue worker paired to specific clients. 
+It enables a single redis server to serve multiple rpc queues (each with it's own prefixe). It is usually set to the envirnoment name (QAxx, blue, ...).
+
+
+=item B<--workers> or B<--w>
+
+The number of queue workers to be created by coordinator (default = 4). Workers will normally run in parallel as background processes.
+
+=item B<--log> or B<--l>
+
+The log level of the RPC queue which accepts one of the following values: info (default), warn, error, trace.
+
+=item B<--socket> or B<--s>
+
+The socket file for interacting with RPC queue coordinator at runtime. It supports the fillowing commands:
+
+=over 8
+
+=item I<DEC_WORKERS>
+
+Kills one of the queue workers and returns the number of remaining workers.
+
+=item I<ADD_WORKERS>
+
+Adds a new queue worker and returns resulting number of workers.
+
+=item I<PING>
+
+A command for testing if serice is up and running. Return B<PONG> in response.
+
+=item I<EXIT>
+
+Terminates the queue coordinator process immediately, without terminating the worker processes.
+
+=back
+
+=item B<--redis> or B<--r>
+
+The connection string of the queue redis server.
+
+
+=item  B<--testing> or B<--t>
+
+A value-less arg indicating that rpc workers are being loaded from L<BOM::Test>.
+
+=item B<pid-file> or B<s>
+
+Path to file that will keep pid of the coordinator process after start-up. It makes RPC queue compatible with L<BOM::Test::Script>, thus easier test development.
+
+=item  B<--foreground> or B<--f>
+
+With this value-less arg, coordinator process is skipped, createing only a single worker in foreground, mostly used for testing and easier log monitoring.
+
+
+=back
+
+=cut
+
+use constant RESTART_COOLDOWN => 1;
 
 my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
 
@@ -43,8 +122,6 @@ Log::Any::Adapter->import(qw(Stderr), log_level => $log_level);
 
 exit run_worker_process($REDIS) if $FOREGROUND;
 
-# TODO: This probably depends on a queue name which will come in as an a
-#   commandline argument sometime
 # TODO: Should it live in /var/run/bom-daemon? That exists but I don't know
 #   what it is
 my $loop = IO::Async::Loop->new();
@@ -131,7 +208,7 @@ sub run_coordinator {
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
         $log->info("Terminating workers...");
-        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->retain;
+        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->get;
 
         unlink $SOCKETPATH;
         exit 0;
@@ -214,7 +291,7 @@ sub add_worker_process {
 
             $log->debug("Restarting");
 
-            $loop->delay_future(after => 1)->on_done(sub { add_worker_process($redis) })->retain;
+            $loop->delay_future(after => RESTART_COOLDOWN)->on_done(sub { add_worker_process($redis) })->retain;
         },
     );
 
@@ -249,11 +326,11 @@ sub process_job {
         return;
     }
 
-    $log->tracef("Running RPC <%s> for: %s", $name, pp($params));
+    $log->tracef("Running RPC <%s> for: %s", $name, $params);
 
     if (my $method = $code_sub) {
         my $result = $method->($params);
-        $log->tracef("Results:\n%s", join("\n", map { " | $_" } split m/\n/, pp($result)));
+        $log->tracef("Results:\n%s", $result);
 
         $job->done(
             encode_json_utf8({
@@ -261,7 +338,7 @@ sub process_job {
                     result  => $result
                 })) unless $job->is_ready;
     } else {
-        $log->trace("  UNKNOWN");
+        $log->errorf("Unknown rpc method: %s", $name);
         stats_inc("rpc_queue.worker.jobs.failed", $tags);
         # Transport mechanism itself succeeded, so ->done is fine here
         $job->done(
@@ -296,10 +373,7 @@ sub run_worker_process {
         no warnings 'once';
         @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
-        if ($PID_FILE) {
-            my $pid_file = Path::Tiny->new($PID_FILE);
-            $pid_file->spew("$$");
-        }
+        Path::Tiny->new($PID_FILE)->spew("$$") if $PID_FILE;
     }
 
     $loop->add(
@@ -334,15 +408,14 @@ sub run_worker_process {
     # Result: JSON-encoded result
     $worker->jobs->each(
         sub {
-            my $job = $_;
-
-            my $name = $job->data('name');
+            my $job     = $_;
+            my $name    = $job->data('name');
             my ($queue) = $worker->pending_queues;
+            my $tags    = {tags => ["rpc:$name", 'queue:' . $queue]};
 
             my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
-            $log->tracef('Timeout for %s is %d', $name, $job_timeout);
 
-            my $tags = {tags => ["rpc:$name", 'queue:' . $queue]};
+            $log->tracef('Timeout for %s is %d', $name, $job_timeout);
 
             try {
                 local $SIG{ALRM} = sub {

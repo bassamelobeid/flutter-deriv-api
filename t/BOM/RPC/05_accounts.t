@@ -15,7 +15,7 @@ use Digest::SHA qw(hmac_sha256_hex);
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw/looks_like_number/;
 use LandingCompany::Registry;
-use BOM::Test::Email;
+use BOM::Test::Email qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -28,6 +28,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::Config;
 use BOM::MT5::User::Async;
+use BOM::Platform::Email;
 
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -1505,133 +1506,6 @@ subtest $method => sub {
     $password = $new_password;
 };
 
-$method = 'cashier_password';
-subtest $method => sub {
-
-    is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
-
-    is(
-        $c->tcall(
-            $method,
-            {
-                token => undef,
-            }
-            )->{error}{message_to_client},
-        'The token is invalid.',
-        'invalid token error'
-    );
-    isnt(
-        $c->tcall(
-            $method,
-            {
-                token => $token1,
-            }
-            )->{error}{message_to_client},
-        'The token is invalid.',
-        'no token error if token is valid'
-    );
-
-    is(
-        $c->tcall(
-            $method,
-            {
-                token => $token_disabled,
-            }
-            )->{error}{message_to_client},
-        'This account is unavailable.',
-        'check authorization'
-    );
-    is($c->tcall($method, {token => $token_vr})->{error}{message_to_client}, 'Permission denied.', 'need real money account');
-    my $params = {
-        token => $token1,
-        args  => {}};
-    is($c->tcall($method, $params)->{status}, 0, 'no unlock_password && lock_password, and not set password before, status will be 0');
-    my $tmp_password     = 'sfjksfSFjsk78Sjlk';
-    my $tmp_new_password = 'bjxljkwFWf278xK';
-    $test_client->cashier_setting_password($tmp_password);
-    $test_client->save;
-    is($c->tcall($method, $params)->{status}, 1, 'no unlock_password && lock_password, and set password before, status will be 1');
-    $params->{args}{lock_password} = $tmp_new_password;
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was locked.', 'return error if already locked');
-    $test_client->cashier_setting_password('');
-    $test_client->save;
-    $params->{args}{lock_password} = $password;
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Please use a different password than your login password.',
-        'return error if lock password same with user password'
-    );
-    $params->{args}{lock_password} = '1111111';
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Password should be at least six characters, including lower and uppercase letters with numbers.',
-        'check strong'
-    );
-    $params->{args}{lock_password} = $tmp_new_password;
-
-    mailbox_clear();
-    # here I mocked function 'save' to simulate the db failure.
-    my $mocked_client = Test::MockModule->new(ref($test_client));
-    $mocked_client->mock('save', sub { return undef });
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, an error occurred while processing your request.',
-        'return error if cannot save password'
-    );
-    $mocked_client->unmock_all;
-
-    is($c->tcall($method, $params)->{status}, 1, 'set password success');
-    my $subject = 'Cashier password updated';
-    my $msg     = mailbox_search(
-        email   => $email,
-        subject => qr/\Q$subject\E/
-    );
-    ok($msg, "email received");
-
-    # test unlock
-    $test_client->cashier_setting_password('');
-    $test_client->save;
-    delete $params->{args}{lock_password};
-    $params->{args}{unlock_password} = '123456';
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
-
-    mailbox_clear();
-    $test_client->cashier_setting_password(BOM::User::Password::hashpw($tmp_password));
-    $test_client->save;
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, you have entered an incorrect cashier password',
-        'return error if not correct'
-    );
-    $subject = 'Failed attempt to unlock cashier section';
-    $msg     = mailbox_search(
-        email   => $email,
-        subject => qr/\Q$subject\E/
-    );
-    ok($msg, "email received");
-
-    # here I mocked function 'save' to simulate the db failure.
-    $mocked_client->mock('save', sub { return undef });
-    $params->{args}{unlock_password} = $tmp_password;
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, an error occurred while processing your request.',
-        'return error if cannot save'
-    );
-    $mocked_client->unmock_all;
-
-    mailbox_clear();
-    is($c->tcall($method, $params)->{status}, 0, 'unlock password ok');
-    $test_client->load;
-    ok(!$test_client->cashier_setting_password, 'Cashier password unset');
-    $subject = 'Cashier password updated';
-    $msg     = mailbox_search(
-        email   => $email,
-        subject => qr/\Q$subject\E/
-    );
-    ok($msg, "email received");
-};
-
 $method = 'get_settings';
 subtest $method => sub {
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
@@ -2066,7 +1940,11 @@ subtest $method => sub {
         'emit',
         sub {
             my ($type, $data) = @_;
-            $emitted->{$type} = $data;
+            if ($type eq 'send_email') {
+                return BOM::Platform::Email::process_send_email($data);
+            } else {
+                $emitted->{$type} = $data;
+            }
         });
 
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
@@ -2330,7 +2208,7 @@ subtest $method => sub {
         subject => qr/\Q$subject\E/
     );
     ok($msg, 'send a email to client');
-    like($msg->{body}, qr/>address line 1, address line 2, address city, Bali/s, 'email content correct');
+    like($msg->{body}, qr/address line 1, address line 2, address city, Bali/s, 'email content correct');
     mailbox_clear();
 
     $params->{args}->{request_professional_status} = 1;

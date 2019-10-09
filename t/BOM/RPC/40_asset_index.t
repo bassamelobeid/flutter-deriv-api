@@ -12,7 +12,7 @@ use Email::Stuffer::TestLinks;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
-my $email     = 'test@binary.com';
+my $email      = 'test@binary.com';
 my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MLT',
     email       => $email,
@@ -68,7 +68,6 @@ sub _test_asset_index {
         return undef;
     };
 }
-
 
 # Result should be for Binary (Europe) Ltd
 # Only trades volatilities, so should be 7 entries and first entry should

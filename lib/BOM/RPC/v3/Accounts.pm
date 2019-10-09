@@ -963,140 +963,19 @@ rpc change_password => sub {
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
-    BOM::User::AuditLog::log('password has been changed', $client->email);
+    my $email = $client->email;
+    BOM::User::AuditLog::log('password has been changed', $email);
     send_email({
-            from    => request()->brand->emails('support'),
-            to      => $client->email,
-            subject => localize('Your password has been changed.'),
-            message => [
-                localize(
-                    'The password for your account [_1] has been changed. This request originated from IP address [_2]. If this request was not performed by you, please immediately contact Customer Support.',
-                    $client->email,
-                    $client_ip
-                )
-            ],
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            template_loginid      => $client->loginid,
-        });
+        to                 => $client->email,
+        subject            => localize('Your password has been changed.'),
+        template_name      => 'reset_password_confirm',
+        template_args      => {email => $email},
+        use_email_template => 1,
+        template_loginid   => $client->loginid,
+        use_event          => 1,
+    });
 
     return {status => 1};
-};
-
-rpc cashier_password => sub {
-    my $params = shift;
-
-    my $client = $params->{client};
-    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
-
-    my ($client_ip, $args) = @{$params}{qw/client_ip args/};
-    my $unlock_password = $args->{unlock_password} // '';
-    my $lock_password   = $args->{lock_password}   // '';
-
-    unless (length($unlock_password) || length($lock_password)) {
-        # just return status
-        if (length $client->cashier_setting_password) {
-            return {status => 1};
-        } else {
-            return {status => 0};
-        }
-    }
-
-    my $error_sub = sub {
-        my ($error) = @_;
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'CashierPassword',
-            message_to_client => $error,
-        });
-    };
-
-    if (length($lock_password)) {
-        # lock operation
-        if (length $client->cashier_setting_password) {
-            return $error_sub->(localize('Your cashier was locked.'));
-        }
-
-        my $user = $client->user;
-        if (BOM::User::Password::checkpw($lock_password, $user->{password})) {
-            return $error_sub->(localize('Please use a different password than your login password.'));
-        }
-
-        if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $lock_password})) {
-            return $pass_error;
-        }
-
-        $client->cashier_setting_password(BOM::User::Password::hashpw($lock_password));
-        if (not $client->save()) {
-            return $error_sub->(localize('Sorry, an error occurred while processing your request.'));
-        } else {
-            send_email({
-                    'from'    => request()->brand->emails('support'),
-                    'to'      => $client->email,
-                    'subject' => localize("Cashier password updated"),
-                    'message' => [
-                        localize(
-                            "This is an automated message to alert you that a change was made to your cashier settings section of your account [_1] from IP address [_2]. If you did not perform this update please login to your account and update settings.",
-                            $client->loginid,
-                            $client_ip
-                        )
-                    ],
-                    'use_email_template'    => 1,
-                    'email_content_is_html' => 1,
-                    template_loginid        => $client->loginid,
-                });
-            return {status => 1};
-        }
-    } else {
-        # unlock operation
-        unless (length $client->cashier_setting_password) {
-            return $error_sub->(localize('Your cashier was not locked.'));
-        }
-
-        my $cashier_password = $client->cashier_setting_password;
-        if (!BOM::User::Password::checkpw($unlock_password, $cashier_password)) {
-            BOM::User::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
-            send_email({
-                    'from'    => request()->brand->emails('support'),
-                    'to'      => $client->email,
-                    'subject' => localize("Failed attempt to unlock cashier section"),
-                    'message' => [
-                        localize(
-                            'This is an automated message to alert you to the fact that there was a failed attempt to unlock the Cashier/Settings section of your account [_1] from IP address [_2]',
-                            $client->loginid,
-                            $client_ip
-                        )
-                    ],
-                    'use_email_template'    => 1,
-                    'email_content_is_html' => 1,
-                    template_loginid        => $client->loginid,
-                });
-
-            return $error_sub->(localize('Sorry, you have entered an incorrect cashier password'));
-        }
-
-        $client->cashier_setting_password('');
-        if (not $client->save()) {
-            return $error_sub->(localize('Sorry, an error occurred while processing your request.'));
-        } else {
-            send_email({
-                    'from'    => request()->brand->emails('support'),
-                    'to'      => $client->email,
-                    'subject' => localize("Cashier password updated"),
-                    'message' => [
-                        localize(
-                            "This is an automated message to alert you that a change was made to your cashier settings section of your account [_1] from IP address [_2]. If you did not perform this update please login to your account and update settings.",
-                            $client->loginid,
-                            $client_ip
-                        )
-                    ],
-                    'use_email_template'    => 1,
-                    'email_content_is_html' => 1,
-                    template_loginid        => $client->loginid,
-                });
-            BOM::User::AuditLog::log('cashier unlocked', $client->loginid);
-            return {status => 0};
-        }
-    }
 };
 
 rpc "reset_password",
@@ -1160,19 +1039,14 @@ rpc "reset_password",
 
     BOM::User::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
-            from    => request()->brand->emails('support'),
-            to      => $email,
-            subject => localize('Your password has been reset.'),
-            message => [
-                localize(
-                    'The password for your account [_1] has been reset. If this request was not performed by you, please immediately contact Customer Support.',
-                    $email
-                )
-            ],
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            template_loginid      => $client->loginid,
-        });
+        to                 => $email,
+        subject            => localize('Your password has been reset.'),
+        template_name      => 'reset_password_confirm',
+        template_args      => {email => $email},
+        use_email_template => 1,
+        template_loginid   => $client->loginid,
+        use_event          => 1,
+    });
 
     return {status => 1};
     };
@@ -1664,14 +1538,6 @@ rpc set_settings => sub {
         $current_client->add_note('Update Address Notification', $cil_message);
     }
 
-    my $message = localize(
-        'Dear [_1] [_2] [_3],',
-        map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($current_client->salutation),
-        $current_client->first_name,
-        $current_client->last_name
-    ) . "\n\n";
-    $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
-
     # lookup state name by id
     my $lookup_state =
         ($current_client->state and $current_client->residence)
@@ -1682,12 +1548,13 @@ rpc set_settings => sub {
     my $full_address = join ', ', grep { defined $_ and /\S/ } @address_fields;
 
     my $residence_country = Locale::Country::code2country($current_client->residence);
+    my $citizen_country   = Locale::Country::code2country($current_client->citizen);
     my @updated_fields    = (
         [localize('Email address'),        $current_client->email],
         [localize('Country of Residence'), $residence_country],
         [localize('Address'),              $full_address],
         [localize('Telephone'),            $current_client->phone],
-        [localize('Citizen'),              $current_client->citizen]);
+        [localize('Citizen'),              $citizen_country]);
 
     my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($current_client->tax_residence || '');
     my $pob_country = $current_client->place_of_birth ? Locale::Country::code2country($current_client->place_of_birth) : '';
@@ -1710,27 +1577,22 @@ rpc set_settings => sub {
                 or $current_client->status->professional_requested
         ) ? localize("Yes") : localize("No")];
 
-    $message .= "<table>";
-    foreach my $updated_field (@updated_fields) {
-        $message .=
-              '<tr><td style="vertical-align:top; text-align:left;"><strong>'
-            . encode_entities($updated_field->[0])
-            . '</strong></td><td style="vertical-align:top;">:&nbsp;</td><td style="vertical-align:top;text-align:left;">'
-            . encode_entities($updated_field->[1])
-            . '</td></tr>';
-    }
-    $message .= '</table>';
-    $message .= "\n" . localize('The [_1] team.', $website_name);
-
     send_email({
-        from                  => $brand->emails('support'),
-        to                    => $current_client->email,
-        subject               => $current_client->loginid . ' ' . localize('Change in account settings'),
-        message               => [$message],
-        use_email_template    => 1,
-        email_content_is_html => 1,
-        template_loginid      => $current_client->loginid,
-    });
+            to                    => $current_client->email,
+            subject               => $current_client->loginid . ' ' . localize('Change in account settings'),
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            use_event             => 1,
+            template_loginid      => $current_client->loginid,
+            template_name         => 'update_account_settings',
+            template_args         => {
+                updated_fields => [map { [encode_entities($_->[0]), encode_entities($_->[1])] } @updated_fields],
+                salutation => map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($current_client->salutation),
+                first_name   => $current_client->first_name,
+                last_name    => $current_client->last_name,
+                website_name => $website_name,
+            },
+        });
     BOM::User::AuditLog::log('Your settings have been updated successfully', $current_client->loginid);
     BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $current_client->loginid});
 

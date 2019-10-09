@@ -331,61 +331,6 @@ subtest 'validation' => sub {
         'Correct error message for invalid maximum amount';
 };
 
-subtest 'Basic transfers' => sub {
-    $email = 'new_email' . rand(999) . '@binary.com';
-    my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        place_of_birth => 'ID',
-    });
-
-    my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        place_of_birth => 'ID',
-    });
-
-    $user = BOM::User->create(
-        email          => $email,
-        password       => BOM::User::Password::hashpw('hello'),
-        email_verified => 1,
-    );
-
-    for ($client_cr1, $client_cr2) {
-        $user->add_client($_);
-        $_->set_default_account('USD');
-    }
-
-    $client_cr1->payment_free_gift(
-        currency => 'EUR',
-        amount   => 1000,
-        remark   => 'free gift',
-    );
-
-    $params->{token}      = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
-    $params->{token_type} = 'oauth_token';
-    $params->{args}       = {
-        account_from => $client_cr1->loginid,
-        account_to   => $client_cr2->loginid,
-        currency     => 'USD',
-        amount       => 10
-    };
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts');
-
-    $params->{args}{account_from} = $client_cr2->loginid;
-    $params->{args}{account_to}   = $client_cr1->loginid;
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_no_error('can transfer using oauth token when account_from is not authorized client');
-
-    $params->{token_type}         = 'api_token';
-    $params->{args}{account_from} = $client_cr2->loginid;
-    $params->{args}{account_to}   = $client_cr1->loginid;
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is(
-        'From account provided should be same as current authorized client.',
-        'Cannot transfer using api token when account_from is not authorized client'
-    );
-};
-
 subtest 'Validation for transfer from incomplete account' => sub {
     $email = 'new_email' . rand(999) . '@binary.com';
     my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -427,26 +372,23 @@ subtest 'Validation for transfer from incomplete account' => sub {
         amount       => 10
     };
 
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
-        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.', 'Error msg for client is correct')
-        ->error_details_is({ fields => ['address_city'] }, 'Error details is correct');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Error msg for client is correct')->error_details_is({fields => ['address_city']}, 'Error details is correct');
 
     $client_cr1->address_city('Test City');
     $client_cr1->address_line_1('');
     $client_cr1->save;
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
-        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.', 'Error msg for client is correct')
-        ->error_details_is({ fields => ['address_line_1'] }, 'Error details is correct');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Error msg for client is correct')->error_details_is({fields => ['address_line_1']}, 'Error details is correct');
 
     $client_cr1->address_city('');
     $client_cr1->address_line_1('');
     $client_cr1->save;
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
-        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.', 'Error msg for client is correct')
-        ->error_details_is({ fields => ['address_city', 'address_line_1'] }, 'Error details is correct');
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+        ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
+        'Error msg for client is correct')->error_details_is({fields => ['address_city', 'address_line_1']}, 'Error details is correct');
 
 };
 
@@ -747,7 +689,7 @@ subtest 'transfer with fees' => sub {
     $params->{args}->{amount} = 0.01;
     # The amount will be accepted initially, but rejected when getting the recieved amount in BTC.
     $rpc_ct->call_ok($method, $params)->has_error->error_code_is('TransferBetweenAccountsError')
-        ->error_message_is("This amount is too low. Please enter a minimum of 1 USD.");
+        ->error_message_is("This amount is too low. Please enter a minimum of 1.09 USD.");
 
     $params->{args}->{amount} = $amount;
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
@@ -819,7 +761,7 @@ subtest 'transfer with fees' => sub {
         amount       => $amount
     };
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError')
-        ->error_message_is('This amount is too low. Please enter a minimum of 1 UST.');
+        ->error_message_is('This amount is too low. Please enter a minimum of 1.09 UST.');
 
     #No transfer fee for BTC-EUR
     $amount = 0.02;
@@ -1257,15 +1199,15 @@ subtest 'MT5' => sub {
     #   t/lib/mock_binary_mt5.pl
 
     my %ACCOUNTS = (
-        'demo\vanuatu_standard'         => '00000001',
-        'demo\vanuatu_advanced'         => '00000002',
+        'demo\svg_standard'             => '00000001',
+        'demo\svg_advanced'             => '00000002',
         'demo\labuan_standard'          => '00000003',
         'demo\labuan_advanced'          => '00000004',
         'real\malta'                    => '00000010',
         'real\maltainvest_standard'     => '00000011',
         'real\maltainvest_standard_GBP' => '00000012',
         'real\svg'                      => '00000013',
-        'real\vanuatu_standard'         => '00000014',
+        'real\svg_standard'             => '00000014',
         'real\labuan_advanced'          => '00000015',
     );
 
@@ -1371,11 +1313,11 @@ subtest 'MT5' => sub {
                 account_type => 'binary'
             },
             {
-                loginid      => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
+                loginid      => 'MT' . $ACCOUNTS{'real\svg_standard'},
                 balance      => num($DETAILS{balance}),
                 currency     => 'USD',
                 account_type => 'mt5',
-                mt5_group    => 'real\\vanuatu_standard'
+                mt5_group    => 'real\\svg_standard'
             },
             {
                 loginid      => 'MT' . $ACCOUNTS{'real\labuan_advanced'},
@@ -1389,15 +1331,15 @@ subtest 'MT5' => sub {
     );
 
     $params->{args} = {
-        account_from => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
+        account_from => 'MT' . $ACCOUNTS{'real\svg_standard'},
         account_to   => 'MT' . $ACCOUNTS{'real\labuan_advanced'},
         currency     => "USD",
-        amount       => 180                                          # this is the only deposit amount allowed by mock MT5
+        amount       => 180                                         # this is the only deposit amount allowed by mock MT5
     };
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5->MT5 transfer error code')
         ->error_message_is('Transfer between two MT5 accounts is not allowed.', 'MT5->MT5 transfer error message');
 
-    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'demo\vanuatu_standard'};
+    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'demo\svg_standard'};
     $params->{args}{account_to}   = $test_client->loginid;
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5 demo -> real account transfer error code')
@@ -1405,7 +1347,7 @@ subtest 'MT5' => sub {
 
     # real -> MT5
     $params->{args}{account_from} = $test_client->loginid;
-    $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+    $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\svg_standard'};
     $rpc_ct->call_ok($method, $params)->has_no_error("Real account -> real MT5 ok");
     cmp_deeply(
         $rpc_ct->result,
@@ -1416,11 +1358,11 @@ subtest 'MT5' => sub {
             client_to_loginid   => $params->{args}{account_to},
             stash               => ignore(),
             accounts            => bag({
-                    loginid      => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
+                    loginid      => 'MT' . $ACCOUNTS{'real\svg_standard'},
                     balance      => num($DETAILS{balance}),
                     currency     => 'USD',
                     account_type => 'mt5',
-                    'mt5_group'  => 'real\\vanuatu_standard'
+                    'mt5_group'  => 'real\\svg_standard'
                 },
                 {
                     loginid      => $test_client->loginid,
@@ -1434,9 +1376,11 @@ subtest 'MT5' => sub {
     cmp_ok $test_client->default_account->balance, '==', 820, 'real money account balance decreased';
 
     # MT5 -> real
-    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+    $mock_client->mock(fully_authenticated => sub { return 0 });
+
+    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\svg_standard'};
     $params->{args}{account_to}   = $test_client->loginid;
-    $params->{args}{amount}       = 150;                                         # this is the only withdrawal amount allowed by mock MT5
+    $params->{args}{amount}       = 150;                                     # this is the only withdrawal amount allowed by mock MT5
     $rpc_ct->call_ok($method, $params)->has_no_error("Real MT5 -> real account ok");
     cmp_deeply(
         $rpc_ct->result,
@@ -1447,11 +1391,11 @@ subtest 'MT5' => sub {
             client_to_loginid   => $params->{args}{account_to},
             stash               => ignore(),
             accounts            => bag({
-                    loginid      => 'MT' . $ACCOUNTS{'real\vanuatu_standard'},
+                    loginid      => 'MT' . $ACCOUNTS{'real\svg_standard'},
                     balance      => num($DETAILS{balance}),
                     currency     => 'USD',
                     account_type => 'mt5',
-                    'mt5_group'  => 'real\\vanuatu_standard'
+                    'mt5_group'  => 'real\\svg_standard'
                 },
                 {
                     loginid      => $test_client->loginid,
@@ -1465,18 +1409,19 @@ subtest 'MT5' => sub {
 
     cmp_ok $test_client->default_account->balance, '==', 970, 'real money account balance increased';
 
+    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\labuan_advanced'};
     $mock_client->mock(fully_authenticated => sub { return 0 });
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_like(qr/authenticate/, 'Error message returned from inner MT5 sub');
     $mock_client->mock(fully_authenticated => sub { return 1 });
 
     $params->{args}{account_from} = $test_client->loginid;
-    $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+    $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\labuan_advanced'};
     $params->{args}{currency}     = 'EUR';
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for real account_from');
 
-    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\labuan_advanced'};
     $params->{args}{account_to}   = $test_client->loginid;
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for MT5 account_from');
@@ -1487,7 +1432,7 @@ subtest 'MT5' => sub {
 
         $params->{args}{amount}       = 180;
         $params->{args}{account_from} = $test_client->loginid;
-        $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+        $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\svg_standard'};
 
         $params->{token_type} = 'oauth_token';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('with oauth token, ok if account_from is not the authenticated client');
@@ -1498,7 +1443,7 @@ subtest 'MT5' => sub {
         );
 
         $params->{args}{amount}       = 150;
-        $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\vanuatu_standard'};
+        $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\svg_standard'};
         $params->{args}{account_to}   = $test_client->loginid;
 
         $params->{token_type} = 'oauth_token';

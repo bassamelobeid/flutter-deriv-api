@@ -15,7 +15,7 @@ use POSIX qw/ ceil /;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Email;
+use BOM::Test::Email qw(:no_event);
 use BOM::Platform::Token;
 use BOM::User::Client;
 use Email::Stuffer::TestLinks;

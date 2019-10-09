@@ -50,7 +50,7 @@
             "legal_allowed_currencies" : {
                "type" : "array",
                "items" : {
-                  "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$",
+                  "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)$",
                   "type" : "string"
                },
                "minItems" : 4
@@ -73,7 +73,6 @@
                            "type" : "object",
                            "properties" : {
                               "min_stake" : {
-                                 "maximum" : 10,
                                  "minimum" : 0,
                                  "type" : "number"
                               },
@@ -104,8 +103,7 @@
                            "properties" : {
                               "min_stake" : {
                                  "minimum" : 0,
-                                 "type" : "number",
-                                 "maximum" : 10
+                                 "type" : "number"
                               },
                               "max_payout" : {
                                  "type" : "number",
@@ -131,8 +129,7 @@
                               },
                               "min_stake" : {
                                  "type" : "number",
-                                 "minimum" : 0,
-                                 "maximum" : 10
+                                 "minimum" : 0
                               }
                            },
                            "type" : "object",
@@ -158,7 +155,6 @@
                                  "minimum" : 0
                               },
                               "min_stake" : {
-                                 "maximum" : 10,
                                  "minimum" : 0,
                                  "type" : "number"
                               }
@@ -212,7 +208,7 @@
                "minItems" : 4,
                "type" : "array",
                "items" : {
-                  "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB)$",
+                  "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)$",
                   "type" : "string"
                }
             },
@@ -237,8 +233,7 @@
                               },
                               "min_stake" : {
                                  "minimum" : 0,
-                                 "type" : "number",
-                                 "maximum" : 10
+                                 "type" : "number"
                               }
                            },
                            "required" : [
@@ -269,8 +264,7 @@
                               },
                               "min_stake" : {
                                  "minimum" : 0,
-                                 "type" : "number",
-                                 "maximum" : 10
+                                 "type" : "number"
                               }
                            },
                            "type" : "object",
@@ -293,8 +287,7 @@
                               },
                               "min_stake" : {
                                  "type" : "number",
-                                 "minimum" : 0,
-                                 "maximum" : 10
+                                 "minimum" : 0
                               }
                            },
                            "additionalProperties" : false,
@@ -316,8 +309,7 @@
                            "properties" : {
                               "min_stake" : {
                                  "type" : "number",
-                                 "minimum" : 0,
-                                 "maximum" : 10
+                                 "minimum" : 0
                               },
                               "max_payout" : {
                                  "type" : "number",
@@ -502,9 +494,6 @@
                      "type" : "string"
                   },
                   "address" : {
-                     "items" : {
-                        "type" : "string"
-                     },
                      "description" : "Landing Company address",
                      "type" : "null"
                   },
@@ -521,7 +510,6 @@
                                        "minimum" : 0
                                     },
                                     "min_stake" : {
-                                       "maximum" : 10,
                                        "type" : "number",
                                        "minimum" : 0
                                     }
@@ -549,7 +537,6 @@
                                        "type" : "number"
                                     },
                                     "min_stake" : {
-                                       "maximum" : 10,
                                        "minimum" : 0,
                                        "type" : "number"
                                     }
@@ -579,8 +566,7 @@
                                     },
                                     "min_stake" : {
                                        "minimum" : 0,
-                                       "type" : "number",
-                                       "maximum" : 10
+                                       "type" : "number"
                                     }
                                  }
                               }
@@ -598,8 +584,7 @@
                                  "properties" : {
                                     "min_stake" : {
                                        "minimum" : 0,
-                                       "type" : "number",
-                                       "maximum" : 10
+                                       "type" : "number"
                                     },
                                     "max_payout" : {
                                        "minimum" : 0,
@@ -679,7 +664,6 @@
                               "^[A-Z]{3,4}$" : {
                                  "properties" : {
                                     "min_stake" : {
-                                       "maximum" : 10,
                                        "type" : "number",
                                        "minimum" : 0
                                     },
@@ -711,8 +695,7 @@
                                     },
                                     "min_stake" : {
                                        "minimum" : 0,
-                                       "type" : "number",
-                                       "maximum" : 10
+                                       "type" : "number"
                                     }
                                  },
                                  "type" : "object",
@@ -738,8 +721,7 @@
                                  "properties" : {
                                     "min_stake" : {
                                        "minimum" : 0,
-                                       "type" : "number",
-                                       "maximum" : 10
+                                       "type" : "number"
                                     },
                                     "max_payout" : {
                                        "minimum" : 0,
@@ -762,8 +744,7 @@
                                  "properties" : {
                                     "min_stake" : {
                                        "type" : "number",
-                                       "minimum" : 0,
-                                       "maximum" : 10
+                                       "minimum" : 0
                                     },
                                     "max_payout" : {
                                        "minimum" : 0,
@@ -797,10 +778,7 @@
                   },
                   "address" : {
                      "description" : "Landing Company address",
-                     "type" : "array",
-                     "items" : {
-                        "type" : "string"
-                     }
+                     "type" : "null"
                   },
                   "name" : {
                      "type" : "string",
@@ -884,8 +862,7 @@
                                     },
                                     "min_stake" : {
                                        "type" : "number",
-                                       "minimum" : 0,
-                                       "maximum" : 10
+                                       "minimum" : 0
                                     }
                                  },
                                  "required" : [
@@ -905,8 +882,7 @@
                                  "properties" : {
                                     "min_stake" : {
                                        "type" : "number",
-                                       "minimum" : 0,
-                                       "maximum" : 10
+                                       "minimum" : 0
                                     },
                                     "max_payout" : {
                                        "minimum" : 0,
@@ -932,7 +908,6 @@
                                  "type" : "object",
                                  "properties" : {
                                     "min_stake" : {
-                                       "maximum" : 10,
                                        "type" : "number",
                                        "minimum" : 0
                                     },
@@ -956,7 +931,6 @@
                               "^[A-Z]{3,4}$" : {
                                  "properties" : {
                                     "min_stake" : {
-                                       "maximum" : 10,
                                        "minimum" : 0,
                                        "type" : "number"
                                     },

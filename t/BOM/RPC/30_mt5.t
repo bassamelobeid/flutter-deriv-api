@@ -16,7 +16,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Helper::Client qw(create_client top_up);
-use BOM::Test::Email;
+use BOM::Test::Email qw(:no_event);
 use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;
@@ -54,15 +54,15 @@ $manager_module->mock(
 #   t/lib/mock_binary_mt5.pl
 
 my %ACCOUNTS = (
-    'demo\vanuatu_standard'         => '00000001',
-    'demo\vanuatu_advanced'         => '00000002',
+    'demo\svg_standard'             => '00000001',
+    'demo\svg_advanced'             => '00000002',
     'demo\labuan_standard'          => '00000003',
     'demo\labuan_advanced'          => '00000004',
     'real\malta'                    => '00000010',
     'real\maltainvest_standard'     => '00000011',
     'real\maltainvest_standard_GBP' => '00000012',
     'real\svg'                      => '00000013',
-    'real\vanuatu_standard'         => '00000014',
+    'real\svg_standard'             => '00000014',
     'real\labuan_advanced'          => '00000015',
 );
 
@@ -254,14 +254,11 @@ subtest 'MF should be allowed' => sub {
         },
     };
 
-    $c->call_ok($method, $params)->has_error('no error for mt5_new_account')->error_code_is('TINDetailsMandatory', 'Tax information is required');
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account for financial standard with no tax information');
 
     $test_client->tax_residence('mt');
     $test_client->tax_identification_number('111222333');
     $test_client->save;
-
-    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account');
-
 };
 
 subtest 'MF to MLT account switching' => sub {
@@ -507,7 +504,7 @@ subtest 'login list' => sub {
     $c->call_ok($method, $params)->has_no_error('no error for mt5_login_list');
 
     my @accounts = map { $_->{login} } @{$c->result};
-    cmp_bag(\@accounts, [$ACCOUNTS{'real\svg'}, $ACCOUNTS{'real\vanuatu_standard'}], "mt5_login_list result");
+    cmp_bag(\@accounts, [$ACCOUNTS{'real\svg'}, $ACCOUNTS{'real\svg_standard'}], "mt5_login_list result");
 };
 
 subtest 'password check' => sub {
