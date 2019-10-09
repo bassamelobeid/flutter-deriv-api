@@ -72,9 +72,9 @@
                         }
                      }
                   },
-                  "stop_loss": {
+                  "stop_out": {
                      "type": "object",
-                     "description": "stop loss barrier information",
+                     "description": "stop out barrier information",
                      "properties": {
                         "display_name": {
                             "type": "string"
