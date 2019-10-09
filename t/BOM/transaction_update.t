@@ -188,7 +188,7 @@ lives_ok {
 my ($trx, $fmb, $chld, $qv1, $qv2);
 
 subtest 'update take profit', sub {
-    my $txn;
+    my ($txn, $contract);
     subtest 'error check' => sub {
         # update without a relevant contract
         my $updater = BOM::Transaction::ContractUpdate->new(
@@ -216,7 +216,7 @@ subtest 'update take profit', sub {
             amount_type  => 'stake',
             current_tick => $current_tick,
         };
-        my $contract = produce_contract($args);
+        $contract = produce_contract($args);
 
         $txn = BOM::Transaction->new({
             client        => $cl,
@@ -404,6 +404,73 @@ subtest 'update take profit', sub {
         ok $audit_details->[1], 'audit update populated';
         is $audit_details->[1][9], 'take_profit', 'order_type is take_profit';
         cmp_ok $audit_details->[1][10], "lt", $audit_details->[0][10], "timestamp are in order";
+    };
+
+    subtest 'update take profit on a sold contract' => sub {
+        # we just want to _validate_trade_pricing_adjustment
+        my $mocked = Test::MockModule->new('BOM::Transaction::Validation');
+        $mocked->mock($_ => sub { '' })
+            for (
+            qw/
+            _validate_sell_transaction_rate
+            _validate_iom_withdrawal_limit
+            _is_valid_to_sell
+            _validate_currency
+            _validate_date_pricing/
+            );
+
+        # no limits
+        $mocked->mock('limits', sub { {} });
+
+        $txn = BOM::Transaction->new({
+            purchase_date => $contract->date_start,
+            client        => $cl,
+            contract_parameters      => {
+                shortcode => $contract->shortcode,
+                currency => $cl->currency,
+                landing_company => $cl->landing_company->short,
+                limit_order => $contract->available_orders,
+            },
+            contract_id   => $fmb->{id},
+            price         => 99.50,
+            amount_type   => 'payout',
+            source        => 23,
+        });
+
+        my $updater = BOM::Transaction::ContractUpdate->new(
+            client        => $cl,
+            contract_id   => $fmb->{id},
+            update_params => {
+                take_profit => {
+                    operation => 'update',
+                    value     => 10,
+                }
+            },
+        );
+        ok $updater->is_valid_to_update, 'valid to update';
+        # sell after is_valid_to_sell is called
+        ok !$txn->sell, 'no error when sell';
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
+        ok $fmb->{is_sold}, 'contract is  sold successfully';
+        sleep 1;
+        my $res = $updater->update;
+        ok !$res->{updated_queue}, 'undefined updated_queue';
+        ok !$res->{updated_table}, 'undefined updated_table';
+
+        $updater = BOM::Transaction::ContractUpdate->new(
+            client        => $cl,
+            contract_id   => $fmb->{id},
+            update_params => {
+                take_profit => {
+                    operation => 'update',
+                    value     => 10,
+                }
+            },
+        );
+        ok !$updater->is_valid_to_update, 'not valid to update';
+        is $updater->validation_error->{code}, 'ContractIsSold', 'code - ContractIsSold';
+        is $updater->validation_error->{message_to_client}, 'Conntract has expired.',
+            'message_to_client - Conntract has expired.';
     };
 };
 

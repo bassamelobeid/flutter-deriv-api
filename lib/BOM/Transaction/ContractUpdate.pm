@@ -170,22 +170,22 @@ sub update {
 
     my ($order_type, $update_params) = %{$self->update_params};
 
-    my $res =
+    my $res_table =
         BOM::Database::Helper::FinancialMarketBet->new(db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db)
         ->update_multiplier_contract({
             contract_id   => $self->contract_id,
             order_type    => $order_type,
             update_params => $update_params,
             add_to_audit  => $self->_order_exists($order_type),
-        });
+        })->{$self->contract_id};
 
     my $queue_res;
-    if (my $res_fmb = $res->{$self->contract_id}) {
-        $queue_res = $self->_requeue_transaction($order_type, $res_fmb);
+    if ($res_table) {
+        $queue_res = $self->_requeue_transaction($order_type, $res_table);
     }
 
     return {
-        updated_table => $res,
+        updated_table => $res_table,
         updated_queue => $queue_res,
     };
 }
