@@ -6,8 +6,9 @@ use BOM::Platform::Context qw(localize);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Helper::FinancialMarketBet;
 
-use Finance::Contract::Category;
+use BOM::Transaction;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use BOM::Product::ContractFactory qw(produce_contract);
 use ExpiryQueue qw(enqueue_open_contract dequeue_open_contract);
 
 =head1 NAME
@@ -45,75 +46,119 @@ has update_params => (
     required => 1,
 );
 
-has validation_error => (
-    is      => 'rw',
-    default => sub { {} },
+has [qw(fmb validation_error)] => (
+    is       => 'rw',
+    init_arg => undef,
+    default  => undef,
 );
+
+has contract => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_contract',
+);
+
+sub _build_contract {
+    my $self = shift;
+
+    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new(
+        broker_code => $self->client->broker_code,
+        operation   => 'replica',
+    );
+
+    # fmb reference with buy_transantion transaction ids (buy or buy and sell)
+    my $fmb = $fmb_dm->get_contract_details_with_transaction_ids($self->contract_id)->[0];
+
+    return undef unless $fmb;
+
+    $self->fmb($fmb);
+
+    my $contract_params = shortcode_to_parameters($fmb->{short_code}, $self->client->currency);
+    my $limit_order = BOM::Transaction::extract_limit_orders($fmb);
+    $contract_params->{limit_order} = $limit_order if %$limit_order;
+    $contract_params->{is_sold} = $fmb->{is_sold};
+
+    return produce_contract($contract_params);
+}
+
+sub _validate_update_parameter {
+    my $self = shift;
+
+    if (ref $self->update_params ne 'HASH') {
+        return {
+            code              => 'InvalidUpdateArgument',
+            message_to_client => localize('Update only accepts hash reference as input parameter.'),
+        };
+    }
+
+    my ($order_type, $params) = %{$self->update_params};
+
+    if ($params->{operation} eq 'update' and not defined $params->{value}) {
+        return {
+            code              => 'ValueNotDefined',
+            message_to_client => localize('Value is required for update operation.'),
+        };
+    }
+
+    if ($params->{operation} ne 'cancel' and $params->{operation} ne 'update') {
+        return {
+            code              => 'UnknownUpdateOperation',
+            message_to_client => localize('This operation is not supported. Allowed operations (update, cancel).'),
+        };
+    }
+
+    my $contract = $self->contract;
+
+    unless ($contract) {
+        return {
+            code              => 'ContractNotFound',
+            message_to_client => localize('Conntract not found for contract_id: [_1].', $self->contract_id),
+        };
+    }
+
+    # Contract can be closed if any of the limit orders is breached.
+    if ($contract->is_sold) {
+        return {
+            code              => 'ContractIsSold',
+            message_to_client => localize('Conntract has expired.'),
+        };
+    }
+
+    unless (@{$contract->category->allowed_update}) {
+        return {
+            code              => 'UpdateNotAllowed',
+            message_to_client => localize('Update is not allowed for this contract.'),
+        };
+    }
+
+    unless (grep { $self->update_params->{$_} } @{$contract->category->allowed_update}) {
+        return {
+            code => 'UpdateNotAllowed',
+            message_to_client =>
+                localize('Update is not allowed for this contract. Allowed updates [_1]', join(',', @{$contract->category->allowed_update})),
+        };
+    }
+
+    # when it reaches this stage, if it is a cancel operation, let it through
+    return undef if $params->{operation} eq 'cancel';
+
+    my $new_order = $contract->new_order({$order_type => $params->{value}});
+    unless ($new_order->is_valid($contract->underlying->spot_tick->quote)) {
+        return $new_order->validation_error;
+    }
+
+    $self->_new_order($new_order);
+
+    return undef;
+}
 
 sub is_valid_to_update {
     my $self = shift;
 
-    my $client           = $self->client;
-    my $fmb              = $self->_contract_config->{fmb};
-    my $contract_details = $self->_contract_config->{contract_details};
+    my $error = $self->_validate_update_parameter();
 
-    unless ($fmb) {
-        $self->_set_validation_error(
-            code              => 'ContractNotFound',
-            message_to_client => localize('Conntract not found for contract_id: [_1].', $self->contract_id),
-        );
-        return 0;
-    }
-
-    # Contract can be closed if any of the limit orders is breached.
-    if ($fmb->{is_sold}) {
-        $self->_set_validation_error(
-            code              => 'ContractIsSold',
-            message_to_client => localize('Conntract has expired.'),
-        );
-        return 0;
-    }
-
-    unless (%{$contract_details->{allowed_update}}) {
-        $self->_set_validation_error(
-            code              => 'UpdateNotAllowed',
-            message_to_client => localize('Update is not allowed for this contract.'),
-        );
-        return 0;
-    }
-
-    if (ref $self->update_params ne 'HASH') {
-        return {
-            error => {
-                code              => 'InvalidUpdateArgument',
-                message_to_client => localize('Update only accepts hash reference as input parameter.'),
-            }};
-    }
-
-    my ($order_type, $update_params) = %{$self->update_params};
-
-    unless ($contract_details->{allowed_update}{$order_type}) {
-        $self->_set_validation_error(
-            code => 'UpdateNotAllowed',
-            message_to_client =>
-                localize('Update is not allowed for this contract. Allowed updates [_1]', join(',', keys %{$contract_details->{allowed_update}})),
-        );
-        return 0;
-    }
-
-    if ($update_params->{operation} eq 'update' and not defined $update_params->{value}) {
-        $self->_set_validation_error(
-            code              => 'ValueNotDefined',
-            message_to_client => localize('Value is required for update operation.'),
-        );
-        return 0;
-    }
-
-    if ($update_params->{operation} ne 'cancel' and $update_params->{operation} ne 'update') {
-        $self->_set_validation_error(
-            code              => 'UnknownUpdateOperation',
-            message_to_client => localize('This operation is not supported. Allowed operations (update, cancel).'),
-        );
+    if ($error) {
+        $self->validation_error($error);
         return 0;
     }
 
@@ -134,7 +179,10 @@ sub update {
             add_to_audit  => $self->_order_exists($order_type),
         });
 
-    my $queue_res = $self->_requeue_transaction($order_type, $res->{$self->contract_id});
+    my $queue_res;
+    if (my $res_fmb = $res->{$self->contract_id}) {
+        $queue_res = $self->_requeue_transaction($order_type, $res_fmb);
+    }
 
     return {
         updated_table => $res,
@@ -144,43 +192,11 @@ sub update {
 
 ### PRIVATE ###
 
-has _contract_config => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_contract_config',
-);
-
-sub _build_contract_config {
-    my $self = shift;
-
-    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new(
-        broker_code => $self->client->broker_code,
-        operation   => 'replica',
-    );
-
-    # fmb reference with buy_transantion transaction ids (buy or buy and sell)
-    my $fmb = $fmb_dm->get_contract_details_with_transaction_ids($self->contract_id)->[0];
-
-    return {} unless $fmb;
-
-    # Didn't want to go through the whole produce_contract method since we only need to get the category,
-    # But, even then it feels like a hassle.
-    my $contract_params = shortcode_to_parameters($fmb->{short_code}, $self->client->currency);
-    my $contract_config = Finance::Contract::Category::get_all_contract_types()->{$contract_params->{bet_type}};
-    my $category        = Finance::Contract::Category->new($contract_config->{category});
-    my %allowed_update  = map { $_ => 1 } @{$category->allowed_update};
-
-    return {
-        fmb              => $fmb,
-        contract_details => {%$contract_config, allowed_update => \%allowed_update},
-    };
-}
-
 sub _requeue_transaction {
     my ($self, $order_type, $updated_fmb) = @_;
 
-    my $fmb              = $self->_contract_config->{fmb};
-    my $contract_details = $self->_contract_config->{contract_details};
+    my $fmb      = $self->fmb;
+    my $contract = $self->contract;
 
     my $expiry_queue_params = {
         purchase_price        => $fmb->{buy_price},
@@ -191,14 +207,14 @@ sub _requeue_transaction {
         held_by               => $self->client->loginid,
     };
 
-    my $which_side = (
-               ($contract_details->{sentiment} eq 'up'   and $order_type eq 'take_profit')
-            or ($contract_details->{sentiment} eq 'down' and $order_type eq 'stop_loss')) ? 'up_level' : 'down_level';
+    my $which_side = $order_type . '_side';
+    my $key = $contract->$which_side eq 'lower' ? 'down_level' : 'up_level';
 
-    $expiry_queue_params->{$which_side} = $fmb->{$order_type . '_order_amount'};
-    my $out = dequeue_open_contract($expiry_queue_params);
-    $expiry_queue_params->{$which_side} = $updated_fmb->{$order_type . '_order_amount'};
-    my $in = enqueue_open_contract($expiry_queue_params);
+    $expiry_queue_params->{$key} = $contract->$order_type->barrier_value if $contract->$order_type;
+    my $out = dequeue_open_contract($expiry_queue_params) // 0;
+    delete $expiry_queue_params->{$key};
+    $expiry_queue_params->{$key} = $self->_new_order->barrier_value if $self->_new_order;
+    my $in = enqueue_open_contract($expiry_queue_params) // 0;
 
     return {
         out => $out,
@@ -214,16 +230,14 @@ sub _order_exists {
     # 2. Only the order date is defined: order cancelled.
     # 3. Both order amount and order date are undefined: no order is placed throughout the life time of the contract.
 
-    my $fmb = $self->_contract_config->{fmb};
+    my $fmb = $self->fmb;
     return 1 if $fmb and defined $fmb->{$order_type . '_order_date'};
     return 0;
 }
 
-sub _set_validation_error {
-    my ($self, %error) = @_;
-
-    $self->validation_error(\%error);
-    return;
-}
+has _new_order => (
+    is       => 'rw',
+    init_arg => undef,
+);
 
 1;

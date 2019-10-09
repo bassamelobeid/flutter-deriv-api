@@ -12,6 +12,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Client qw(top_up);
+use ExpiryQueue qw(queue_flush);
 
 use Guard;
 use Crypt::NamedKeys;
@@ -40,6 +41,7 @@ my $user = BOM::User->create(
     password => $hash_pwd
 );
 
+queue_flush();
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
@@ -61,6 +63,8 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch       => $now->epoch,
     quote       => 100,
 });
+my $mocked_u = Test::MockModule->new('Quant::Framework::Underlying');
+$mocked_u->mock('spot_tick', sub { return $current_tick });
 
 initialize_realtime_ticks_db();
 
@@ -184,15 +188,18 @@ lives_ok {
 my ($trx, $fmb, $chld, $qv1, $qv2);
 
 subtest 'update take profit', sub {
-
-
     my $txn;
     subtest 'error check' => sub {
         # update without a relevant contract
         my $updater = BOM::Transaction::ContractUpdate->new(
-            client => $cl,
-            contract_id => 123,
-            update_params => {},
+            client        => $cl,
+            contract_id   => 123,
+            update_params => {
+                take_profit => {
+                    operation => 'update',
+                    value     => 10
+                }
+            },
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
         is $updater->validation_error->{code}, 'ContractNotFound', 'code - ContractNotFound';
@@ -228,9 +235,14 @@ subtest 'update take profit', sub {
 
         # update take profit on unsupported contract
         $updater = BOM::Transaction::ContractUpdate->new(
-            client => $cl,
-            contract_id => $fmb->{id},
-            update_params => {},
+            client        => $cl,
+            contract_id   => $fmb->{id},
+            update_params => {
+                take_profit => {
+                    operation => 'update',
+                    value     => 10
+                }
+            },
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
         is $updater->validation_error->{code}, 'UpdateNotAllowed', 'code - UpdateNotAllowed';
@@ -260,9 +272,9 @@ subtest 'update take profit', sub {
         (undef, $fmb) = get_transaction_from_db multiplier => $txn->transaction_id;
 
         $updater = BOM::Transaction::ContractUpdate->new(
-            client => $cl,
-            contract_id => $fmb->{id},
-            update_params      => {
+            client        => $cl,
+            contract_id   => $fmb->{id},
+            update_params => {
                 take_profit => {
                     operation => 'update',
                 }
@@ -275,34 +287,35 @@ subtest 'update take profit', sub {
             'message_to_client - Value is required for update operation.';
 
         $updater = BOM::Transaction::ContractUpdate->new(
-                client      => $cl,
-                contract_id => $fmb->{id},
-                update_params      => {
-                    take_profit => {
-                        operation => 'something',
-                        value     => 10,
-                    }
-                },
-            );
+            client        => $cl,
+            contract_id   => $fmb->{id},
+            update_params => {
+                take_profit => {
+                    operation => 'something',
+                    value     => 10,
+                }
+            },
+        );
         ok !$updater->is_valid_to_update, 'not valid to update';
-        is $updater->validation_error->{code},              'UnknownUpdateOperation',           'code - UnknownUpdateOperation';
-        is $updater->validation_error->{message_to_client}, 'This operation is not supported. Allowed operations (update, cancel).', 'message_to_client - This operation is not supported.';
+        is $updater->validation_error->{code}, 'UnknownUpdateOperation', 'code - UnknownUpdateOperation';
+        is $updater->validation_error->{message_to_client}, 'This operation is not supported. Allowed operations (update, cancel).',
+            'message_to_client - This operation is not supported.';
     };
 
     subtest 'update take profit' => sub {
         my $updater = BOM::Transaction::ContractUpdate->new(
-                client      => $cl,
-                contract_id => $fmb->{id},
-                update_params      => {
-                    take_profit => {
-                        operation => 'update',
-                        value     => 10,
-                    }
-                },);
-
+            client        => $cl,
+            contract_id   => $fmb->{id},
+            update_params => {
+                take_profit => {
+                    operation => 'update',
+                    value     => 10,
+                }
+            },
+        );
         ok $updater->is_valid_to_update, 'valid to update';
         my $res = $updater->update;
-        is $res->{updated_queue}->{in}, 1, 'added one entry in the queue';
+        is $res->{updated_queue}->{in},  1, 'added one entry in the queue';
         is $res->{updated_queue}->{out}, 0, 'did not remove anything from qeueu';
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
 
@@ -322,18 +335,18 @@ subtest 'update take profit', sub {
         ok !@$audit_details, 'no record is added to audit details';
 
         $updater = BOM::Transaction::ContractUpdate->new(
-                client      => $cl,
-                contract_id => $fmb->{id},
-                params      => {
-                    take_profit => {
-                        operation => 'update',
-                        value     => 15,
-                    }
-                },
-            );
+            client        => $cl,
+            contract_id   => $fmb->{id},
+            update_params => {
+                take_profit => {
+                    operation => 'update',
+                    value     => 15,
+                }
+            },
+        );
         ok $updater->is_valid_to_update, 'valid to update';
         $res = $updater->update;
-        is $res->{updated_queue}->{in}, 1, 'added one entry in the queue';
+        is $res->{updated_queue}->{in},  1, 'added one entry in the queue';
         is $res->{updated_queue}->{out}, 1, 'removed one entry from the queue';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
@@ -358,15 +371,18 @@ subtest 'update take profit', sub {
         sleep 1;
 
         $updater = BOM::Transaction::ContractUpdate->new(
-                client      => $cl,
-                contract_id => $fmb->{id},
-                update_params      => {
-                    take_profit => {
-                        operation => 'cancel',
-                    }
-                },
-            );
-        ok $updater->update, 'valid to update';
+            client        => $cl,
+            contract_id   => $fmb->{id},
+            update_params => {
+                take_profit => {
+                    operation => 'cancel',
+                }
+            },
+        );
+        ok $updater->is_valid_to_update, 'valid to update';
+        $res = $updater->update;
+        is $res->{updated_queue}->{in},  0, 'nothing is added to the queue';
+        is $res->{updated_queue}->{out}, 1, 'removed one entry from the queue';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
 
@@ -379,7 +395,7 @@ subtest 'update take profit', sub {
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, undef, 'take_profit_order_amount is undef';
-            cmp_ok $chld->{'take_profit_order_date'},  "ge", $fmb->{start_time}, 'take_profit_order_date is correctly set';
+            cmp_ok $chld->{'take_profit_order_date'}, "ge", $fmb->{start_time}, 'take_profit_order_date is correctly set';
         };
 
         $audit_details = get_audit_details_by_fmbid($fmb->{id});
