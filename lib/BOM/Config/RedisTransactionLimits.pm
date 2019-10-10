@@ -24,7 +24,7 @@ use strict;
 use warnings;
 
 use RedisDB;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use BOM::Config;
 
@@ -58,7 +58,7 @@ sub _get_redis_transaction_server {
             $connections->{$redis_key}->ping();
         }
         catch {
-            warn "RedisReplicated::_redis $key died: $_, reconnecting";
+            warn "RedisReplicated::_redis $redis_key died: $_, reconnecting";
             $connections->{$redis_key} = undef;
         };
     }
@@ -69,7 +69,7 @@ sub _get_redis_transaction_server {
         port => $connection_config->{port},
         ($connection_config->{password} ? ('password' => $connection_config->{password}) : ()));
 
-    return $connections->{$key};
+    return $connections->{$redis_key};
 }
 
 sub redis_limits_write {
