@@ -9,6 +9,10 @@
    "additionalProperties" : false,
    "title" : "Contract Update",
    "properties" : {
+      "req_id" : {
+         "type" : "integer",
+         "description" : "[Optional] Used to map request to response."
+      },
       "contract_update": {
          "enum": [1]
       },
@@ -34,7 +38,7 @@
                         "description": "defines the operation"
                     },
                     "value": {
-                        "type": "Maybe[number]",
+                        "type": "number",
                         "description": "only defined when it is an update operation"
                     }
                 }

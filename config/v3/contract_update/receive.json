@@ -20,9 +20,17 @@
          "type": "object",
          "description": "contains the update status of the request",
          "properties": {
-            "take_profit": {
+            "status": {
                 "enum": [0,1],
                 "description": "status of the update"
+            },
+            "type": {
+                "enum": ["take_profit", "stop_loss"],
+                "description": "The type of update"
+            },
+            "barrier_value": {
+                "type": "string",
+                "description": "pip-sized barrier value"
             }
          }
       },
