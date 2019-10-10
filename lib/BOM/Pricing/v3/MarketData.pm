@@ -417,47 +417,36 @@ sub generate_asset_index {
                         },
                         ['barrier_category']))
                 {
-                    if ($_->has_user_defined_expiry) {
-                        my %offered = %{
-                            _get_permitted_expiries(
-                                $offerings,
-                                {
-                                    underlying_symbol => $underlying->symbol,
-                                    contract_category => $_->code,
-                                    barrier_category  => $barrier_category,
-                                })};
-                        foreach my $expiry (qw(intraday daily tick)) {
-                            if (my $included = $offered{$expiry}) {
-                                foreach my $key (qw(min max)) {
-                                    if ($expiry eq 'tick') {
-                                        # some tick is set to seconds somehow in this code.
-                                        # don't want to waste time to figure out how it is set
-                                        my $tick_count = (ref $included->{$key}) ? $included->{$key}->seconds : $included->{$key};
-                                        my $tick_array =
-                                            $tick_count eq 'non-applicable' ? [$tick_count, $tick_count] : [$tick_count, $tick_count . 't'];
-                                        push @{$times{$barrier_category}}, $tick_array;
-                                    } else {
-                                        my $duration_int = $included->{$key};
-                                        my $duration_array;
+                    my %offered = %{
+                        _get_permitted_expiries(
+                            $offerings,
+                            {
+                                underlying_symbol => $underlying->symbol,
+                                contract_category => $_->code,
+                                barrier_category  => $barrier_category,
+                            })};
 
-                                        if ($duration_int eq 'non-applicable') {
-                                            $duration_array = [$duration_int, $duration_int];
-                                        } else {
-                                            $duration_int = Time::Duration::Concise::Localize->new(
-                                                interval => $included->{$key},
-                                                locale   => $language
-                                            ) unless (ref $duration_int);
-                                            $duration_array = [$included->{$key}->seconds, $included->{$key}->as_concise_string];
-                                        }
-                                        push @{$times{$barrier_category}}, $duration_array;
-                                    }
+                    foreach my $expiry (qw(intraday daily tick no_expiry)) {
+                        if (my $included = $offered{$expiry}) {
+                            foreach my $key (qw(min max)) {
+                                if ($expiry eq 'no_expiry') {
+                                    push @{$times{$barrier_category}}, [$included->{$key}, $included->{$key} || ''];
+                                } elsif ($expiry eq 'tick') {
+                                    # some tick is set to seconds somehow in this code.
+                                    # don't want to waste time to figure out how it is set
+                                    my $tick_count = (ref $included->{$key}) ? $included->{$key}->seconds : $included->{$key};
+                                    push @{$times{$barrier_category}}, [$tick_count, $tick_count . 't'];
+                                } else {
+                                    $included->{$key} = Time::Duration::Concise::Localize->new(
+                                        interval => $included->{$key},
+                                        locale   => $language
+                                    ) unless (ref $included->{$key});
+                                    push @{$times{$barrier_category}}, [$included->{$key}->seconds, $included->{$key}->as_concise_string];
                                 }
                             }
                         }
-                        @{$times{$barrier_category}} = sort { $a->[0] <=> $b->[0] } @{$times{$barrier_category}};
-                    } else {
-                        push @{$times{$barrier_category}}, ['non-applicable', 'non-applicable'];
                     }
+                    @{$times{$barrier_category}} = sort { $a->[0] <=> $b->[0] } @{$times{$barrier_category}};
                 }
                 return \%times;
             },
@@ -521,13 +510,19 @@ sub _get_permitted_expiries {
 
     my @possibles = $offerings_obj->query($args, ['expiry_type', $min_field, $max_field]);
     foreach my $actual_et (uniq map { $_->[0] } @possibles) {
-        my @remaining = grep { $_->[0] eq $actual_et && $_->[1] && $_->[2] } @possibles;
+        my @remaining = grep { $_->[0] eq $actual_et && defined $_->[1] && defined $_->[2] } @possibles;
         my @mins =
-            ($actual_et eq 'tick')
+            (
+                   $actual_et eq 'tick'
+                or $actual_et eq 'no_expiry'
+            )
             ? sort { $a <=> $b } map { $_->[1] } @remaining
             : sort { $a->seconds <=> $b->seconds } map { Time::Duration::Concise::Localize->new(interval => $_->[1]) } @remaining;
         my @maxs =
-            ($actual_et eq 'tick')
+            (
+                   $actual_et eq 'tick'
+                or $actual_et eq 'no_expiry'
+            )
             ? sort { $b <=> $a } map { $_->[2] } @remaining
             : sort { $b->seconds <=> $a->seconds } map { Time::Duration::Concise::Localize->new(interval => $_->[2]) } @remaining;
         $result->{$actual_et} = {
