@@ -144,10 +144,17 @@ sub _validate_update_parameter {
 
     my $new_order = $contract->new_order({$order_type => $params->{value}});
     unless ($new_order->is_valid($contract->underlying->spot_tick->quote)) {
-        return $new_order->validation_error;
+        return {
+            code              => 'InvalidContractUpdate',
+            message_to_client => localize(
+                ref $new_order->validation_error->{message_to_client} eq 'ARRAY'
+                ? @{$new_order->validation_error->{message_to_client}}
+                : $new_order->validation_error->{message_to_client}
+            ),
+        };
     }
 
-    $self->_new_order($new_order);
+    $self->new_order($new_order);
 
     return undef;
 }
@@ -213,7 +220,7 @@ sub _requeue_transaction {
     $expiry_queue_params->{$key} = $contract->$order_type->barrier_value if $contract->$order_type;
     my $out = dequeue_open_contract($expiry_queue_params) // 0;
     delete $expiry_queue_params->{$key};
-    $expiry_queue_params->{$key} = $self->_new_order->barrier_value if $self->_new_order;
+    $expiry_queue_params->{$key} = $self->new_order->barrier_value if $self->new_order;
     my $in = enqueue_open_contract($expiry_queue_params) // 0;
 
     return {
@@ -235,7 +242,7 @@ sub _order_exists {
     return 0;
 }
 
-has _new_order => (
+has new_order => (
     is       => 'rw',
     init_arg => undef,
 );
