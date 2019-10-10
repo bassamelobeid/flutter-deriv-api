@@ -172,7 +172,7 @@ sub populate_response_proposal_contract {
         };
 
         my $orders = BOM::Transaction::extract_limit_orders($fmb);
-        $contract->{limit_order} = $orders if @$orders;
+        $contract->{limit_order} = $orders if %$orders;
         $contract->{sell_time} //= $sell_time;
 
         $contract = BOM::Pricing::v3::Contract::get_bid($contract);

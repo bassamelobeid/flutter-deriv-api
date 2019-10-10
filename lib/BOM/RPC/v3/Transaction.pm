@@ -531,7 +531,7 @@ rpc "sell",
     };
 
     my $orders = BOM::Transaction::extract_limit_orders($fmb);
-    $contract_parameters->{limit_order} = $orders if @$orders;
+    $contract_parameters->{limit_order} = $orders if %$orders;
 
     my $purchase_date = time;
     my $trx           = BOM::Transaction->new({
