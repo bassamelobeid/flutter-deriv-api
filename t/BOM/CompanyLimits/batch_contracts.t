@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::MockTime qw/:all/;
+use Test::MockTime qw(:all);
 use Test::MockModule;
 use Test::More tests => 3;
 use Test::Warnings;
