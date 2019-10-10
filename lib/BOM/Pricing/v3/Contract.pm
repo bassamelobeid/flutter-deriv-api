@@ -967,14 +967,14 @@ sub contract_update {
     my $client;
     if ($params->{token_details} and exists $params->{token_details}->{loginid}) {
         $client = BOM::User::Client->new({
-            loginid      => $args->{token_details}->{loginid},
+            loginid      => $params->{token_details}->{loginid},
             db_operation => 'replica',
         });
     } else {
         # since this is an authenticated call, we can't proceed
         return BOM::Pricing::v3::Utility::create_error({
-            code              => 'MissingTokenDetails',
-            message_to_client => localize('Token details are required to update contract.'),
+            code              => 'AuthorizationRequired',
+            message_to_client => localize('Please log in.'),
         });
     }
 
@@ -997,8 +997,8 @@ sub contract_update {
                     type             => $updater->new_order->order_type,
                     barrier_value    => $updater->contract->underlying->pipsized_value($updater->new_order->barrier_value),
                     contract_details => {
-                        account_id      => $client->account_id,
-                        shortcode       => $updater->shortcode,
+                        account_id      => $client->account->id,
+                        shortcode       => $updater->fmb->{short_code},
                         contract_id     => $updater->fmb->{id},
                         currency        => $client->currency,
                         buy_price       => $updater->fmb->{buy_price},
@@ -1007,7 +1007,7 @@ sub contract_update {
                         purchase_time   => Date::Utility->new($updater->fmb->{purchase_time})->epoch,
                         is_sold         => $updater->fmb->{is_sold},
                         transaction_ids => {buy => $updater->fmb->{buy_transaction_id}},
-                        longcode        => localize($updater->longcode),
+                        longcode        => localize($updater->contract->longcode),
                     },
                 };
             } else {
@@ -1027,7 +1027,7 @@ sub contract_update {
     catch {
         $response = BOM::Pricing::v3::Utility::create_error({
             code              => 'ContractUpdateError',
-            message_to_client => localize('Sorry, an error occurred while processing your request.'),
+            message_to_client => localize("Sorry, an error occurred while processing your request."),
         });
     };
 
