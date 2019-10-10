@@ -1003,22 +1003,33 @@ sub contract_update {
             if (defined $update_res->{updated_table}) {
                 # we will need to resubscribe for the new proposal open contract when the contract
                 # parameters changed, if subscription is turned on. That's why we need contract_details.
+                my %common_details = (
+                    account_id      => $client->account->id,
+                    shortcode       => $updater->fmb->{short_code},
+                    contract_id     => $updater->fmb->{id},
+                    currency        => $client->currency,
+                    buy_price       => $updater->fmb->{buy_price},
+                    sell_price      => $updater->fmb->{sell_price},
+                    sell_time       => $updater->fmb->{sell_time},
+                    purchase_time   => Date::Utility->new($updater->fmb->{purchase_time})->epoch,
+                    is_sold         => $updater->fmb->{is_sold},
+                    transaction_ids => {buy => $updater->fmb->{buy_transaction_id}},
+                    longcode        => localize($updater->contract->longcode),
+                );
+
                 $response = {
                     status           => 1,
                     type             => $updater->new_order->order_type,
                     barrier_value    => $updater->contract->underlying->pipsized_value($updater->new_order->barrier_value),
                     contract_details => {
-                        account_id      => $client->account->id,
-                        shortcode       => $updater->fmb->{short_code},
-                        contract_id     => $updater->fmb->{id},
-                        currency        => $client->currency,
-                        buy_price       => $updater->fmb->{buy_price},
-                        sell_price      => $updater->fmb->{sell_price},
-                        sell_time       => $updater->fmb->{sell_time},
-                        purchase_time   => Date::Utility->new($updater->fmb->{purchase_time})->epoch,
-                        is_sold         => $updater->fmb->{is_sold},
-                        transaction_ids => {buy => $updater->fmb->{buy_transaction_id}},
-                        longcode        => localize($updater->contract->longcode),
+                        %common_details,
+                        limit_order => {
+                            %{$updater->contract->available_orders},
+                            $updater->new_order->order_type => $updater->contract->extract_details($updater->new_order)}
+                    },
+                    old_contract_details => {
+                        %common_details,
+                        limit_order => $updater->contract->available_orders,
                     },
                 };
             } else {

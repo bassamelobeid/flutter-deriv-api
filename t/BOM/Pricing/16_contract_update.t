@@ -7,6 +7,7 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockTime::HiRes qw(set_relative_time restore_time);
 use Test::MockModule;
+use Test::Deep;
 
 use Date::Utility;
 use Data::Dumper;
@@ -129,6 +130,11 @@ subtest 'contract_update' => sub {
     ok $res->{barrier_value}, 'has barrier value';
     is $res->{type}, 'take_profit', 'type is take_profit';
     ok $res->{contract_details}, 'has contract_details';
+    is_deeply $res->{contract_details}{limit_order}{stop_out}, $res->{old_contract_details}{limit_order}{stop_out};
+    ok $res->{contract_details}{limit_order}{take_profit};
+    is $res->{contract_details}{limit_order}{take_profit}{order_amount}, 10;
+    ok !$res->{old_contract_details}{limit_order}{take_profit};
+
 
     # sell_time cannot be equals to purchase_time, hence the sleep.
     sleep 1;
