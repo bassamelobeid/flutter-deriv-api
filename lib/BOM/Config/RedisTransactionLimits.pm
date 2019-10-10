@@ -36,34 +36,34 @@ sub _get_redis_transaction_server {
 
     my $connection_config;
 
-    my $key_name;
+    my $connection_key;
 
     # Check if landing company passed in or not
     # If no landing company, default to global settings
     if ($landing_company) {
-        $key_name          = $landing_company->short;
-        $connection_config = $config->{'companylimits'}->{'per_landing_company'}->{$key_name};
+        $connection_key    = $landing_company->short;
+        $connection_config = $config->{'companylimits'}->{'per_landing_company'}->{$connection_key};
     } else {
         $connection_config = $config->{'companylimits'}->{'global_settings'};
-        $key_name          = 'global_settings';
+        $connection_key    = 'global_settings';
     }
 
     die "connection config should not be undef!" unless $connection_config;
 
-    my $key = 'limit_settings_' . $key_name;
+    my $redis_key = 'limit_settings_' . $connection_key;
 
     # TODO: Remove this if-statement in v2
-    if ($connections->{$key}) {
+    if ($connections->{$redis_key}) {
         try {
-            $connections->{$key}->ping();
+            $connections->{$redis_key}->ping();
         }
         catch {
             warn "RedisReplicated::_redis $key died: $_, reconnecting";
-            $connections->{$key} = undef;
+            $connections->{$redis_key} = undef;
         };
     }
 
-    $connections->{$key} //= RedisDB->new(
+    $connections->{$redis_key} //= RedisDB->new(
         $timeout ? (timeout => $timeout) : (),
         host => $connection_config->{host},
         port => $connection_config->{port},
