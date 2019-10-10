@@ -14,11 +14,13 @@ our @EXPORT_OK = qw(close_all_open_contracts reset_all_loss_hashes);
 # As an alternative to deleting bets from unit test data, we can sell bets
 # and set the sell_time to contract start date
 sub close_all_open_contracts {
+    my ($broker_code, $fullpayout) = @_;
+
     my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
     $mocked_CurrencyConverter->mock('in_usd', \&fake_in_usd);
 
-    my $broker_code = shift // 'CR';
-    my $fullpayout  = shift // 0;
+    $broker_code //= 'CR';
+    $fullpayout  //= 0;
     my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker_code});
 
     my $dbh = $clientdb->db->dbh;
@@ -48,7 +50,7 @@ sub close_all_open_contracts {
 
 sub reset_all_loss_hashes {
     my $redis;
-    foreach my $landing_company (grep { $#{$_->broker_codes} > -1 } LandingCompany::Registry::all()) {
+    foreach my $landing_company (grep { $_->broker_codes->@* > 0 } LandingCompany::Registry::all()) {
         $redis = BOM::Config::RedisTransactionLimits::redis_limits_write($landing_company);
         my $lc = $landing_company->short;
         foreach my $loss_type (qw/turnover realized_loss potential_loss/) {

@@ -47,7 +47,14 @@ use BOM::MarketData::Types;
 use Exporter qw( import );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-our @EXPORT_OK = qw(create_contract buy_contract sell_contract batch_buy_contract sell_by_shortcode close_all_open_contracts);
+our @EXPORT_OK = qw(
+    create_contract
+    buy_contract
+    sell_contract
+    batch_buy_contract
+    sell_by_shortcode
+    close_all_open_contracts
+);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -177,14 +184,12 @@ sub get_tick {
 
     return $cache if $cache;
 
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $epoch,
-        underlying => $params{underlying},
-    });
-
-    $ticks_hash->{$key} = $tick;
-
-    return $tick;
+    return $ticks_hash->{$key} //= do {
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            epoch      => $epoch,
+            underlying => $params{underlying},
+        });
+        }
 }
 
 sub get_underlying {
