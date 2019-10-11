@@ -482,6 +482,8 @@ sub _process_proposal_open_contract_response {
                 my $cache = {map { $_ => $contract->{$_} }
                         qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
 
+                $cache->{limit_order} = $contract->{limit_order} if $contract->{limit_order};
+
                 if (not $uuid = pricing_channel_for_proposal_open_contract($c, $args, $cache)->{uuid}) {
                     my $error =
                         $c->new_error('proposal_open_contract', 'AlreadySubscribed',
@@ -499,6 +501,9 @@ sub _process_proposal_open_contract_response {
             my $result = {$uuid ? (id => $uuid) : (), %{$contract}};
             delete $result->{rpc_time};
             delete $result->{account_id};
+
+            # need to restructure limit order for poc response
+            $result->{limit_order} = _to_hashref($contract);
             $c->send({
                     json => {
                         msg_type               => 'proposal_open_contract',
@@ -512,6 +517,23 @@ sub _process_proposal_open_contract_response {
     }
 
     return;
+}
+
+sub _to_hashref {
+    my $contract = shift;
+
+    my %hash = @{$contract->{limit_order}};
+    foreach my $key (keys %hash) {
+        my %inner_hash = @{$hash{$key}};
+        # put in barrier value for each limit order here
+        $inner_hash{'barrier_value'} = delete $contract->{$key} if $contract->{$key};
+        # remove unnecessary details
+        delete $inner_hash{order_type};
+        delete $inner_hash{basis_spot};
+        $hash{$key} = \%inner_hash;
+    }
+
+    return \%hash;
 }
 
 sub _serialized_args {

@@ -343,7 +343,14 @@ sub startup {
         ['reset_password'],
 
         # authenticated calls
-        ['contract_update', { require_auth => 'trade' }],
+        [
+            'contract_update',
+            {
+                require_auth => 'trade',
+                success      => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::contract_update_resubscribe,
+                response     => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::contract_update_set_poc_subscription_id,
+            }
+        ],
         ['sell', {require_auth => 'trade'}],
         [
             'buy',

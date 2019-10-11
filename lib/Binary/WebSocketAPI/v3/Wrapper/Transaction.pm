@@ -10,18 +10,75 @@ use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Subscription::Transaction;
 
 sub buy_get_single_contract {
-    my ($c, $api_response, $req_storage) = @_;
+    my ($c, $api_response, $req_storage, $store_last_contract_id) = @_;
 
+    $store_last_contract_id //= 1;
     my $contract_details = delete $api_response->{contract_details};
 
     $req_storage->{uuid} = _subscribe_to_contract($c, $contract_details, $req_storage->{call_params}->{args})
         if $req_storage->{call_params}->{args}->{subscribe};
 
-    buy_store_last_contract_id($c, $api_response);
+    buy_store_last_contract_id($c, $api_response) if $store_last_contract_id;
 
     $c->stash(%{$api_response->{stash}}) if $api_response->{stash};
 
     return undef;
+}
+
+=head2 contract_update_resubscribe
+
+Handle related contract subscription when a contract is updated.
+
+1. Unsubscribe from both (proposal_open_contract and sell transaction stream) of old contract, if any.
+2. Subscribes to both proposal_open_contract and sell transaction stream, if subscribe=1.
+
+=cut
+
+sub contract_update_resubscribe {
+    my ($c, $api_response, $req_storage) = @_;
+
+    #unsubscribe to old transaction sell stream
+    my $old_details = delete $api_response->{old_contract_details};
+    my $poc_params  = _get_poc_params($old_details);
+    my $account_id  = $poc_params->{account_id};
+    my $contract_id = $poc_params->{contract_id};
+    my $args = {
+        contract_id            => $poc_params->{contract_id},
+        proposal_open_contract => 1
+    };
+
+    # get existing subscription uuid and unsubscribe if any
+    if (my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_proposal_open_contract($c, $args, $poc_params)->{uuid}) {
+        # unsubscribe poc
+        Binary::WebSocketAPI::v3::Subscription->unregister_by_uuid($c, $uuid);
+        # unsubscribe sell transaction stream
+        transaction_channel(
+            $c, 'unsubscribe', $account_id,    # should not go to client
+            'sell', $args, $contract_id, $uuid
+        );
+    }
+
+    buy_get_single_contract($c, $api_response, $req_storage, 0);
+
+    return undef;
+}
+
+=head2 contract_update_set_poc_subscription_id
+
+Sets subscription id on contract_update response, if any.
+
+=cut
+
+sub contract_update_set_poc_subscription_id {
+    my ($rpc_response, $api_response, $req_storage) = @_;
+    return $api_response if $rpc_response->{error};
+
+    my $uuid = delete $req_storage->{uuid};
+    return {
+        contract_update => $rpc_response,
+        msg_type        => 'contract_update',
+        ($uuid ? (subscription => {id => $uuid}) : ()),
+    };
 }
 
 =head2 buy_set_poc_subscription_id
@@ -57,13 +114,20 @@ sub buy_set_poc_subscription_id {
     };
 }
 
+sub _get_poc_params {
+    my $details = shift;
+
+    my %params = map { $_ => $details->{$_} }
+        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode);
+    $params{limit_order} = $details->{limit_order} if $details->{limit_order};
+
+    return \%params;
+}
+
 sub _subscribe_to_contract {
     my ($c, $contract_details, $req_args) = @_;
 
-    my $contract = {map { $_ => $contract_details->{$_} }
-            qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
-
-    $contract->{limit_order} = $contract_details->{limit_order} if $contract_details->{limit_order};
+    my $contract = _get_poc_params($contract_details);
 
     my $account_id  = $contract->{account_id};
     my $contract_id = $contract->{contract_id};

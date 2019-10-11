@@ -420,23 +420,31 @@
                     "type": "object",
                     "properties": {
                         "stop_out": {
-                            "value" : {
-                                "type": "number",
-                                "description": "stop out order value"
+                            "order_date" : {
+                                "type": "integer",
+                                "description": "stop out order epoch"
                             },
-                            "display_value" : {
+                            "order_amount" : {
+                                "type": "number",
+                                "description": "stop out dollar amount"
+                            },
+                            "barrier_value" : {
                                 "type": "string",
-                                "description": "stop our order display value"
+                                "description" : "stop out pip-sized barrier value"
                             }
                         },
                         "take_profit": {
-                            "value" : {
-                                "type": "number",
-                                "description": "take profit order value"
+                            "order_date" : {
+                                "type": "integer",
+                                "description": "take profit order epoch"
                             },
-                            "display_value" : {
+                            "order_amount" : {
+                                "type": "number",
+                                "description": "take profit dollar amount"
+                            },
+                            "barrier_value" : {
                                 "type": "string",
-                                "description": "take profit order display value"
+                                "description" : "take profit pip-sized barrier value"
                             }
                         }
                     }
