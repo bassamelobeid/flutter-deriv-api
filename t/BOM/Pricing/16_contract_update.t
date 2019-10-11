@@ -30,13 +30,15 @@ $client->deposit_virtual_funds;
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
 my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'R_100',
-    epoch => $now->epoch,
-    quote => 100,
-    }, 1);
+        underlying => 'R_100',
+        epoch      => $now->epoch,
+        quote      => 100,
+    },
+    1
+);
 
 my $mocked = Test::MockModule->new('Quant::Framework::Underlying');
-$mocked->mock('spot_tick', sub {return $current_tick});
+$mocked->mock('spot_tick', sub { return $current_tick });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -59,7 +61,7 @@ subtest 'contract_update' => sub {
     my $update_params = {
         client_ip => '127.0.0.1',
         args      => {
-            contract_update         => 1,
+            contract_update => 1,
         }};
 
     $c->call_ok('contract_update', $update_params)->has_error->error_code_is('MissingContractId')
@@ -68,31 +70,29 @@ subtest 'contract_update' => sub {
     $update_params->{args}->{contract_id} = 123;
 
     # calling contract_update without authentication
-    $c->call_ok('contract_update', $update_params)->has_error->error_code_is('AuthorizationRequired')
-        ->error_message_is('Please log in.');
+    $c->call_ok('contract_update', $update_params)->has_error->error_code_is('AuthorizationRequired')->error_message_is('Please log in.');
 
     $update_params->{token} = $token;
     $update_params->{args}->{update_parameters} = {
         take_profit => {
             operation => 'update',
-            value => 10
-        }
-    };
+            value     => 10
+        }};
 
     $c->call_ok('contract_update', $update_params)->has_error->error_code_is('ContractNotFound')
         ->error_message_is('Contract not found for contract_id: 123.');
 
     my $buy_params = {
-        client_ip => '127.0.0.1',
-        token => $token,
+        client_ip           => '127.0.0.1',
+        token               => $token,
         contract_parameters => {
-                contract_type => 'MULTUP',
-                basis => 'stake',
-                amount => 100,
-                multiplier => 10,
-                symbol => 'R_100',
-                currency => 'USD',
-            },
+            contract_type => 'MULTUP',
+            basis         => 'stake',
+            amount        => 100,
+            multiplier    => 10,
+            symbol        => 'R_100',
+            currency      => 'USD',
+        },
         args => {price => 100},
     };
     my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
@@ -100,53 +100,66 @@ subtest 'contract_update' => sub {
     ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
     ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
 
-    $update_params->{args}->{contract_id} = $buy_res->{contract_id};
+    $update_params->{args}->{contract_id}       = $buy_res->{contract_id};
     $update_params->{args}->{update_parameters} = ();
-    my $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidUpdateArgument')->error_message_is('Update only accepts hash reference as input parameter.');
+    my $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidUpdateArgument')
+        ->error_message_is('Update only accepts hash reference as input parameter.');
+
+    $update_params->{args}->{update_parameters} = {take_profit => {operation => 'update'}};
+    $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('ValueNotDefined')
+        ->error_message_is('Value is required for update operation.');
 
     $update_params->{args}->{update_parameters} = {
-        take_profit => {operation => 'update'}
+        take_profit => {
+            operation => 'something',
+            value     => 10
+        },
     };
-    $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('ValueNotDefined')->error_message_is('Value is required for update operation.');
+    $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('UnknownUpdateOperation')
+        ->error_message_is('This operation is not supported. Allowed operations (update, cancel).');
 
     $update_params->{args}->{update_parameters} = {
-        take_profit => {operation => 'something', value => 10},
+        something => {
+            operation => 'update',
+            value     => 10
+        },
     };
-    $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('UnknownUpdateOperation')->error_message_is('This operation is not supported. Allowed operations (update, cancel).');
-
+    $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('UpdateNotAllowed')
+        ->error_message_is('Update is not allowed for this contract. Allowed updates take_profit');
     $update_params->{args}->{update_parameters} = {
-        something => {operation => 'update', value => 10},
+        take_profit => {
+            operation => 'update',
+            value     => -1
+        },
     };
-    $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('UpdateNotAllowed')->error_message_is('Update is not allowed for this contract. Allowed updates take_profit');
+    $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidContractUpdate')
+        ->error_message_is('Invalid take profit. Take profit must be higher than current spot price.');
     $update_params->{args}->{update_parameters} = {
-        take_profit => {operation => 'update', value => -1},
-    };
-    $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidContractUpdate')->error_message_is('Invalid take profit. Take profit must be higher than current spot price.');
-    $update_params->{args}->{update_parameters} = {
-        take_profit => {operation => 'update', value => 10},
+        take_profit => {
+            operation => 'update',
+            value     => 10
+        },
     };
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
-    ok $res->{status}==1, 'contract_update status=1';
-    ok $res->{barrier_value}, 'has barrier value';
-    is $res->{type}, 'take_profit', 'type is take_profit';
+    ok $res->{status} == 1, 'contract_update status=1';
+    ok $res->{barrier_value},    'has barrier value';
+    is $res->{type},             'take_profit', 'type is take_profit';
     ok $res->{contract_details}, 'has contract_details';
     is_deeply $res->{contract_details}{limit_order}{stop_out}, $res->{old_contract_details}{limit_order}{stop_out};
     ok $res->{contract_details}{limit_order}{take_profit};
     is $res->{contract_details}{limit_order}{take_profit}{order_amount}, 10;
     ok !$res->{old_contract_details}{limit_order}{take_profit};
 
-
     # sell_time cannot be equals to purchase_time, hence the sleep.
     sleep 1;
 
     my $sell_params = {
         client_ip => '127.0.0.1',
-        token => $token,
-        args => {
-            sell => $buy_res->{contract_id},
+        token     => $token,
+        args      => {
+            sell  => $buy_res->{contract_id},
             price => 99.50
-        }
-    };
+        }};
     my $sell_res = $c->call_ok('sell', $sell_params)->has_no_error->result;
     is $sell_res->{sold_for}, '99.50', 'sold for 99.50';
     # try to update after it is sold

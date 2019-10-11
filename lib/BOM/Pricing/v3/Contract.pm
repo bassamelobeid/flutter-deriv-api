@@ -872,15 +872,11 @@ sub _build_bid_response {
 
     # for multiplier, we want to return the orders and insurance details.
     if ($contract->category_code eq 'multiplier') {
-        foreach my $order_name (qw(stop_out take_profit)) {
-            if ($contract->can($order_name) and my $order = $contract->$order_name) {
-                $response->{orders}{$order->order_type} = {
-                    value         => $order->barrier_value,
-                    display_value => $order->order_amount,
-                    order_type    => $order->order_type,
-                };
-            }
-        }
+        # this goes into proposal_open_contract PRICER_KEYS
+        $response->{limit_order} = $contract->available_orders;
+        # these are the barrier value for the limit orders
+        $response->{stop_out} = $contract->stop_out->barrier_value;
+        $response->{take_profit} = $contract->take_profit->barrier_value if $contract->take_profit;
     }
 
     if (    $contract->exit_tick
@@ -1023,9 +1019,7 @@ sub contract_update {
                     barrier_value    => $updater->contract->underlying->pipsized_value($updater->new_order->barrier_value),
                     contract_details => {
                         %common_details,
-                        limit_order => {
-                            %{$updater->contract->available_orders},
-                            $updater->new_order->order_type => $updater->contract->extract_details($updater->new_order)}
+                        limit_order => $updater->contract->available_orders($updater->new_order),
                     },
                     old_contract_details => {
                         %common_details,
