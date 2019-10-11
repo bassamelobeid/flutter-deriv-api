@@ -2207,8 +2207,4 @@ async sub payment_deposit {
     return;
 }
 
-sub _client_is_under18 {
-
-}
-
 1;
