@@ -133,4 +133,94 @@ subtest 'contract_update' => sub {
     is $res->{contract_update}->{type}, 'take_profit';
 };
 
+subtest 'contrcat_update on unsupported contract type' => sub {
+    my $proposal_res = $t->await::proposal({
+        "proposal"      => 1,
+        "amount"        => "100",
+        "basis"         => "stake",
+        "contract_type" => "CALL",
+        "currency"      => "USD",
+        "symbol"        => "R_100",
+        "duration_unit" => "m",
+        "duration"      => 5,
+    });
+
+    my $buy_res = $t->await::buy({
+        buy   => $proposal_res->{proposal}->{id},
+        price => 100,
+    });
+
+    ok $buy_res->{buy}->{transaction_id}, 'contract bought successfully';
+
+    my $res = $t->await::contract_update({
+            contract_update   => 1,
+            contract_id       => $buy_res->{buy}->{contract_id},
+            update_parameters => {
+                take_profit => {
+                    operation => 'update',
+                    value     => 1,
+                },
+            }});
+    ok $res->{error}, 'error';
+    is $res->{error}->{code}, 'UpdateNotAllowed', 'error code - UpdateNotAllowed';
+    is $res->{error}->{message}, 'Update is not allowed for this contract.',
+        'error message - Update is not allowed for this contract.';
+};
+
+subtest 'contract_update subscribe=1' => sub {
+    my $proposal_res = $t->await::proposal({
+        "proposal"      => 1,
+        "amount"        => "100",
+        "basis"         => "stake",
+        "currency"      => "USD",
+        "symbol"        => "R_100",
+        "contract_type" => "MULTUP",
+        "multiplier"    => 10,
+    });
+
+    my $buy_res = $t->await::buy({
+        buy       => $proposal_res->{proposal}->{id},
+        price     => 100,
+        subscribe => 1,
+    });
+
+    ok $buy_res->{buy}->{transaction_id}, 'contract bought successfully';
+    ok $buy_res->{subscription}->{id},    'has subscription id';
+
+    my $poc_res = $t->await::proposal_open_contract({
+            proposal_open_contract => 1,
+            subscribe              => 1,
+            contract_id            => $buy_res->{buy}->{contract_id}});
+
+    ok $poc_res->{error}, 'subscription error';
+    is $poc_res->{error}{code}, 'AlreadySubscribed', 'error code - AlreadySubscribed';
+    is $poc_res->{error}{message}, 'You are already subscribed to proposal_open_contract.',
+        'error message - You are already subscribed to proposal_open_contract.';
+
+    my $update_res = $t->await::contract_update({
+            contract_update   => 1,
+            contract_id       => $buy_res->{buy}->{contract_id},
+            update_parameters => {
+                take_profit => {
+                    operation => 'update',
+                    value     => 1,
+                },
+            },
+            subscribe => 1,
+        });
+    ok $update_res->{contract_update}{status} == 1, 'contract_update successful';
+    ok $update_res->{subscription}{id}, 'return subscription id when subscribe';
+    cmp_ok $buy_res->{subscription}{id}, "ne", $update_res->{subscription}{id}, 'subscription id is not equals to previous buy subscription id';
+
+    my $poc_res2 = $t->await::proposal_open_contract({
+            proposal_open_contract => 1,
+            subscribe              => 1,
+            contract_id            => $buy_res->{buy}->{contract_id}});
+
+    ok $poc_res2->{error}, 'subscription error';
+    is $poc_res2->{error}{code}, 'AlreadySubscribed', 'error code - AlreadySubscribed';
+    is $poc_res2->{error}{message}, 'You are already subscribed to proposal_open_contract.',
+        'error message - You are already subscribed to proposal_open_contract.';
+};
+
 done_testing();
