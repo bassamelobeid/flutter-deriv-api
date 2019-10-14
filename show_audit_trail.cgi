@@ -197,7 +197,7 @@ if ($loginid) {    # don't page for single login report
 }
 
 my @allhdrs = ('no data found');
-@allhdrs = (@system_cols, 'table', @{_sort_headers(\%hdrs)}) if @logs;
+@allhdrs = (@system_cols, 'table', @{_sort_headers(\%hdrs, $myself_args->{category})}) if @logs;
 
 my $logs = [sort { $a->{data}->{stamp} cmp $b->{data}->{stamp} } @logs];
 
@@ -210,9 +210,12 @@ my $stash = {
     prev     => $page > 0 ? $page - 1 : $page,
     pagesize => $pagesize,
     url_to_myself => request()->url_for("backoffice/show_audit_trail.cgi", $myself_args),
-    url_to_client => request()->url_for("backoffice/$return_cgi",          $return_args),
-    hidden_cols => {map { $_ => 1 } (qw/client_password secret_answer secret_question date_joined document_path/)},
-};
+    url_to_client => request()->url_for("backoffice/$return_cgi",          $return_args)};
+
+# These hidden fields are not needed in audit trail
+unless ($myself_args->{category} eq 'payment_agent') {
+    $stash->{hidden_cols} = {map { $_ => 1 } (qw/client_password secret_answer secret_question date_joined document_path/)};
+}
 
 Bar($title_bar);
 
@@ -221,14 +224,20 @@ BOM::Backoffice::Request::template()->process('backoffice/show_audit_trail.html.
 code_exit_BO();
 
 sub _sort_headers {
-    my $h             = shift;
-    my $counter_end   = 200;
-    my $counter_begin = -200;
-    $h->{$_} = $counter_end++
-        for (
-        qw/address_city address_line_1 address_line_2 address_postcode address_state allow_copiers allow_login broker_code cashier_setting_password checked_affiliate_exposures citizen client_password/
-        );
-    $h->{$_} = $counter_begin++ for (qw/reason status_code document_type expiration_date comments first_name last_name/);
+    my ($h, $category) = @_;
+
+    if ($category ne 'payment_agent') {
+
+        my $counter_end   = 200;
+        my $counter_begin = -200;
+        $h->{$_} = $counter_end++
+            for (
+            qw/address_city address_line_1 address_line_2 address_postcode address_state allow_copiers allow_login broker_code cashier_setting_password checked_affiliate_exposures citizen client_password/
+            );
+        $h->{$_} = $counter_begin++ for (qw/reason status_code document_type expiration_date comments first_name last_name/);
+
+    }
+
     return [sort { $h->{$a} <=> $h->{$b} || $a cmp $b } keys %$h];
 }
 
