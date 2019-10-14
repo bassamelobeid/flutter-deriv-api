@@ -31,6 +31,7 @@
          "properties": {
             "take_profit": {
                 "type": "object",
+                "additionalProperties" : false,
                 "description": "new take profit value for a contract.",
                 "properties": {
                     "operation": {

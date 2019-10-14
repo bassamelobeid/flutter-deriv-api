@@ -1,5 +1,5 @@
 {
-    "contrat_update": 1,
+    "contract_update": 1,
     "contract_id": 123,
     "update_parameters": {
         "take_profit": {
