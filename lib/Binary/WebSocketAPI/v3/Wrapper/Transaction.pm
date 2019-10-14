@@ -42,7 +42,7 @@ sub contract_update_resubscribe {
     my $poc_params  = _get_poc_params($old_details);
     my $account_id  = $poc_params->{account_id};
     my $contract_id = $poc_params->{contract_id};
-    my $args = {
+    my $args        = {
         contract_id            => $poc_params->{contract_id},
         proposal_open_contract => 1
     };
