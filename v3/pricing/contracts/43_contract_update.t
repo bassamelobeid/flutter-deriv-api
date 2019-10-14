@@ -71,7 +71,7 @@ subtest 'contract_update' => sub {
     is $res->{msg_type}, 'contract_update', 'msg_type - contract_update';
     ok $res->{error}, 'error';
     is $res->{error}->{code}, 'ContractNotFound', 'error code - ContractNotFound';
-    is $res->{error}->{message}, 'Contract not found for contract_id: 123.', 'error message - Contract not found for contract_id: 123.';
+    is $res->{error}->{message}, 'Contract not found for contract id: 123.', 'error message - Contract not found for contract id: 123.';
 
     my $proposal_res = $t->await::proposal({
         "proposal"      => 1,
