@@ -380,7 +380,7 @@ rpc get_limits => sub {
     my $remainder = min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception));
     if ($remainder <= 0) {
         $remainder = 0;
-        BOM::Platform::Event::Emitter::emit('set_needs_action', {loginid => $client->loginid});
+        BOM::Platform::Event::Emitter::emit('withdrawal_limit_reached', {loginid => $client->loginid});
     }
 
     $limit->{withdrawal_since_inception_monetary} =
