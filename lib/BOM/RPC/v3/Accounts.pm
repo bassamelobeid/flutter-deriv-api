@@ -1418,7 +1418,6 @@ rpc set_settings => sub {
 
         and BOM::Database::ClientDB->new({broker_code => $current_client->broker_code})->get_duplicate_client($dup_details);
 
-    my $cil_message;
     #citizenship is mandatory for some clients,so we shouldnt let them to remove it
     return BOM::RPC::v3::Utility::create_error({
             code              => 'PermissionDenied',
@@ -1433,13 +1432,15 @@ rpc set_settings => sub {
                 message_to_client => localize('Sorry, our service is not available for your country of citizenship.')});
     }
 
+    my ($needs_verify_address_trigger, $cil_message);
     if (   ($address1 and $address1 ne $current_client->address_1)
         or ($address2 ne $current_client->address_2)
         or ($addressTown ne $current_client->city)
         or ($addressState ne $current_client->state)
         or ($addressPostcode ne $current_client->postcode))
     {
-        BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $current_client->loginid});
+
+        $needs_verify_address_trigger = 1;
 
         if ($current_client->fully_authenticated) {
             $cil_message =
@@ -1538,10 +1539,8 @@ rpc set_settings => sub {
     }
     # Send request to update onfido details
     BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $current_client->loginid});
-
-    if ($cil_message) {
-        $current_client->add_note('Update Address Notification', $cil_message);
-    }
+    BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $current_client->loginid}) if $needs_verify_address_trigger;
+    $current_client->add_note('Update Address Notification', $cil_message) if $cil_message;
 
     # lookup state name by id
     my $lookup_state =
