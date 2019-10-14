@@ -139,7 +139,7 @@ sub validate_payment {
             }
 
             if ($total_wd >= financialrounding('amount', $currency, $lc_limits->{lifetime_limit})) {
-                BOM::Platform::Event::Emitter::emit('set_needs_action', {loginid => $self->loginid});
+                BOM::Platform::Event::Emitter::emit('withdrawal_limit_reached', {loginid => $self->loginid});
             }
 
         } else {
