@@ -158,7 +158,7 @@ subtest 'CR withdrawal' => sub {
             throws_ok { $client->smart_payment(%withdrawal, amount => -5001) } qr/exceeds withdrawal limit \[USD 5000.00\]/,
                 'total withdraw cannot > 10k';
             lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'second 5k withdrawal';
-            is($emitted{$client->loginid}, 'set_needs_action', 'An event is emitted to set the client as needs_action');
+            is($emitted{$client->loginid}, 'withdrawal_limit_reached', 'An event is emitted to set the client as needs_action');
         };
 
         $mock_events->unmock_all();
