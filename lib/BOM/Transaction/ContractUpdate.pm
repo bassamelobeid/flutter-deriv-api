@@ -120,7 +120,7 @@ sub _validate_update_parameter {
     if ($contract->is_sold) {
         return {
             code              => 'ContractIsSold',
-            message_to_client => localize('Conntract has expired.'),
+            message_to_client => localize('Contract has expired.'),
         };
     }
 
