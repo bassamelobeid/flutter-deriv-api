@@ -188,7 +188,7 @@ sub update {
 
     my $queue_res;
     if ($res_table) {
-        $queue_res = $self->_requeue_transaction($order_type, $res_table);
+        $queue_res = $self->_requeue_transaction($order_type);
     }
 
     return {
@@ -200,7 +200,7 @@ sub update {
 ### PRIVATE ###
 
 sub _requeue_transaction {
-    my ($self, $order_type, $updated_fmb) = @_;
+    my ($self, $order_type) = @_;
 
     my $fmb      = $self->fmb;
     my $contract = $self->contract;
