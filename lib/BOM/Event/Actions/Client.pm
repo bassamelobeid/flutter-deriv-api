@@ -884,19 +884,25 @@ async sub verify_address {
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die 'Could not instantiate client for login ID ' . $loginid;
 
+    DataDog::DogStatsd::Helper::stats_inc('event.address_verification.request');
+
     # verify address only if client has made any deposits
     # or client is fully authenticated
+    my $has_deposits           = $client->has_deposits({exclude => ['free_gift']});
+    my $is_fully_authenticated = $client->fully_authenticated();
+    my @dd_tags                = ();
     do {
-        # clear existing status
-        $client->status->clear_address_verified();
         try {
+            DataDog::DogStatsd::Helper::stats_inc('event.address_verification.triggered', {tags => \@dd_tags});
             return await _address_verification(client => $client);
         }
         catch {
             my $e = $@;
+            DataDog::DogStatsd::Helper::stats_inc('event.address_verification.exception', {tags => \@dd_tags});
             $log->errorf('Failed to verify applicants address: %s', $e);
         };
-    } if ($client->has_deposits({exclude => ['free_gift']}) or $client->fully_authenticated());
+        } if (($has_deposits and push(@dd_tags, 'verify_address:deposits'))
+        or ($is_fully_authenticated and push(@dd_tags, 'verify_address:authenticated')));
 
     return;
 }
@@ -927,21 +933,27 @@ async sub _address_verification {
         encode_utf8(join(' ', ($freeform, ($client->residence // '')))));
 
     if ($check_already_performed) {
+        DataDog::DogStatsd::Helper::stats_inc('event.address_verification.already_exists');
         $log->debugf('Returning as address verification already performed for same details.');
         return;
     }
 
+    DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.trigger');
     # Next step is an address check. Let's make sure that whatever they
     # are sending is valid at least to locality level.
     my $future_verify_ss = _smartystreets()->verify(%details);
 
     $future_verify_ss->on_fail(
         sub {
+            DataDog::DogStatsd::Helper::stats_inc('smartystreet.lookup.failure');
+            # clear current status on failure, if any
+            $client->status->clear_address_verified();
             $log->errorf('Address lookup failed for %s - %s', $client->loginid, $_[0]);
             return;
         }
         )->on_done(
         sub {
+            DataDog::DogStatsd::Helper::stats_inc('smartystreet.lookup.success');
             DataDog::DogStatsd::Helper::stats_timing("event.address_verification.smartystreet.verify." . $future_verify_ss->state . ".elapsed",
                 $future_verify_ss->elapsed);
         });
@@ -952,28 +964,27 @@ async sub _address_verification {
     $log->debugf('Smartystreets verification status: %s', $status);
     $log->debugf('Address info back from SmartyStreets is %s', {%$addr});
 
-    unless ($addr->accuracy_at_least('locality')) {
-        DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.failure', {tags => [$status]});
+    if (not $addr->accuracy_at_least('locality')) {
+        DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.failure', {tags => ['verify_address:' . $status]});
         $log->debugf('Inaccurate address - only verified to %s precision', $addr->address_precision);
-        return;
+    } else {
+        DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.success', {tags => ['verify_address:' . $status]});
+        $log->debugf('Address verified with accuracy of locality level by smartystreet.');
+
+        _update_client_status(
+            client  => $client,
+            status  => 'address_verified',
+            message => 'SmartyStreets - address verified',
+        );
     }
-
-    DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.success', {tags => [$status]});
-    $log->debugf('Address verified with accuracy of locality level by smartystreet.');
-
-    _update_client_status(
-        client  => $client,
-        status  => 'address_verified',
-        message => 'SmartyStreets - address verified',
-    );
 
     my $redis_events_write = _redis_events_write();
     await $redis_events_write->connect;
     await $redis_events_write->hset('ADDRESS_VERIFICATION_RESULT' . $client->binary_user_id,
         encode_utf8(join(' ', ($freeform, ($client->residence // '')))), $status);
+    DataDog::DogStatsd::Helper::stats_inc('event.address_verification.recorded.redis');
 
     return;
-
 }
 
 =head2 _is_supported_country_onfido
