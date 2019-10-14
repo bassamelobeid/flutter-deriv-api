@@ -203,8 +203,8 @@ subtest 'update take profit', sub {
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
         is $updater->validation_error->{code}, 'ContractNotFound', 'code - ContractNotFound';
-        is $updater->validation_error->{message_to_client}, 'Contract not found for contract_id: 123.',
-            'message_to_client - Contract not found for contract_id: [_1].';
+        is $updater->validation_error->{message_to_client}, 'Contract not found for contract id: 123.',
+            'message_to_client - Contract not found for contract id: [_1].';
 
         my $args = {
             underlying   => $underlying,
