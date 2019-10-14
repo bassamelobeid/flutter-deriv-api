@@ -173,7 +173,7 @@ sub is_valid_to_update {
 }
 
 sub update {
-    my ($self, $args) = @_;
+    my ($self) = @_;
 
     my ($order_type, $update_params) = %{$self->update_params};
 
