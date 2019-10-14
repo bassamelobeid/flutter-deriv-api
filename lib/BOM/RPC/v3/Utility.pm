@@ -829,4 +829,13 @@ sub get_user_by_token {
     return $user;
 }
 
+sub missing_details_error {
+    my %args = @_;
+
+    return create_error({
+            code              => 'ASK_FIX_DETAILS',
+            message_to_client => localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
+            details           => {fields => $args{details}}});
+}
+
 1;

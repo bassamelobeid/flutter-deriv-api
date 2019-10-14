@@ -331,11 +331,26 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->payment_agent->min_withdrawal(undef);
 
         # this test assume address_city is a withdrawal requirement for SVG in landing_companies.yml
-        $test = 'Transfer fails if missing required details (address_city)';
+        $test = 'Transfer fails if missing required details (address_city + address_line_1)';
+
         $Alice->address_city('');
+        $Alice->address_line_1('');
         $Alice->save;
+
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         like($res->{error}{message_to_client}, qr/Your profile appears to be incomplete. Please update your personal details to continue./, $test);
+        cmp_ok(@{$res->{error}->{details}->{fields}}, '==', 2, 'Correct number of details fetched (2)');
+        is_deeply($res->{error}->{details}->{fields}, ['address_city', 'address_line_1'], 'Correct fields matched (2)');
+
+        $Alice->address_line_1('Disney land');
+        $Alice->save;
+
+        $test = 'Transfer fails if missing required details (address_city)';
+        $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        like($res->{error}{message_to_client}, qr/Your profile appears to be incomplete. Please update your personal details to continue./, $test);
+        cmp_ok(@{$res->{error}->{details}->{fields}}, '==', 1, 'Correct number of details fetched (1)');
+        is_deeply($res->{error}->{details}->{fields}, ['address_city'], 'Correct fields matched (1)');
+
         $Alice->address_city('Beverly Hills');
         $Alice->save;
 
