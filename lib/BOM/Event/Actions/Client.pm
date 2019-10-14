@@ -542,6 +542,7 @@ async sub client_verification {
                                 failure_reason => "because Onfido reported the date of birth as $first_dob which is below age 18.",
                                 redis_key      => ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
                                 is_disabled    => 0,
+                                account_info   => $siblings,
                             };
 
                             unless ($have_balance) {
