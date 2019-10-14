@@ -3,7 +3,7 @@
         <h3 class="center-text"><%= l('Log in to Deriv') %></h3>
         <form id="frmLogin" method="POST">
             <div class="input-wrapper">
-                <input type="email" id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" required autocomplete="off" autofocus="autofocus" maxlength="254" />
+                <input id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" required autocomplete="off" autofocus="autofocus" maxlength="254" />
                 <label for="txtEmail"><%= l('Email') %></label>
                 <span class="bar"></span>
                 <span id="btnClear" class="input-button"></span>
@@ -17,13 +17,15 @@
                 <input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" required autocomplete="off" />
                 <label for="txtPass"><%= l('Password') %></label>
                 <span class="bar"></span>
-                <span id="btnToggle" class="input-button"></span>
+                <span id="btnToggle" class="input-button icon_hidden"></span>
                 <p class='hide error error_required'><%= l('Password is required.') %></p>
             </div>
-            <% if ($is_reset_password_allowed) { %>
-                <a id="lost-password" href="https://deriv.com/reset-password"><%= l('Forgot password?') %></a>
-            <% } %>
-            <button type="submit" class="button secondary" name="login" value="<%= l('Login') %>"><%= l('Login') %></button>
+            <div id="lost-password-container">
+                <% if ($is_reset_password_allowed) { %>
+                    <a id="lost-password" href="https://deriv.com/reset-password"><%= l('Forgot password?') %></a>
+                <% } %>
+                <button type="submit" class="button secondary" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button>
+            </div>
             <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
         </form>
         <% if ($use_social_login) { %>
@@ -106,12 +108,14 @@
     }
 
     function hideErrors(element) {
+        element.parentNode.classList.remove('has_error');
         element.parentNode.querySelectorAll('.error').forEach(function (el) {
             el.classList.add('hide');
         });
     }
 
     function showError(element, errorType) {
+        element.parentNode.classList.add('has_error');
         var el = element.parentNode.querySelector('.error_' + errorType);
         if (el) {
             el.classList.remove('hide');
@@ -119,7 +123,15 @@
     }
 
     function togglePasswordVisibility() {
-        txtPass.type = txtPass.type === 'password' ? 'text' : 'password';
+        if (txtPass.type === 'password') {
+            txtPass.type = 'text';
+            btnToggle.classList.remove('icon_hidden');
+            btnToggle.classList.add('icon_visible');
+        } else {
+            txtPass.type = 'password';
+            btnToggle.classList.remove('icon_visible');
+            btnToggle.classList.add('icon_hidden');
+        }
     }
 
     function clearEmailInput() {
