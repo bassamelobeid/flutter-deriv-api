@@ -10,6 +10,7 @@ use Test::Exception;
 
 use Crypt::NamedKeys;
 use Date::Utility;
+use BOM::Database::ClientDB;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract );
@@ -309,7 +310,7 @@ SELECT t.*, b.*, c.*, v1.*, v2.*, t2.*
 SQL
 
     my $db = BOM::Database::ClientDB->new({
-            broker_code => 'VRTC',
+            broker_code => 'CR',
         })->db;
     $stmt = $db->dbh->prepare($stmt);
     $stmt->execute($txnid);
