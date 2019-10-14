@@ -38,7 +38,15 @@ Bar("START ANONYMIZATION");
 print "<b>WARNING : THIS WILL RESULT IN PERMANENT DATA LOSS</b><br><br>
     Anonymization will make the following changes:<br>
     <ul>
-    <li>TBC : This functionality is not yet implemented</li>
+    <li>Replace first and last names with deleted+loginid</li>
+    <li>Replace Address1 and 2 including town/city and postcode with deleted</li>
+    <li>Replace Tax Identification Number with deleted</li>
+    <li>Replace secret question and answer with deleted</li>
+    <li>Replace email address with loginid\@deleted.binary.user</li>
+    <li>Replace telephone number with empty string</li>
+    <li>Replace all personal data and IP address in audit trail(history of changes) in BO with deleted</li>
+    <li>Replace payment remarks for bank wires transactions available on the client's account statement in BO with `deleted wire payment</li>
+    <li>Delete all documents from database and S3</li>
     </ul>
     <hr>";
 my $loginid  = $input->{clientloginid} // '';
