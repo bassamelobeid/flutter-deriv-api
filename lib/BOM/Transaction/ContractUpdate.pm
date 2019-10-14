@@ -112,7 +112,7 @@ sub _validate_update_parameter {
     unless ($contract) {
         return {
             code              => 'ContractNotFound',
-            message_to_client => localize('Contract not found for contract_id: [_1].', $self->contract_id),
+            message_to_client => localize('Contract not found for contract id: [_1].', $self->contract_id),
         };
     }
 
