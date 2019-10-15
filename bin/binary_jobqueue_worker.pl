@@ -221,7 +221,7 @@ sub run_coordinator {
                 $_->shutdown(
                     'TERM',
                     timeout => SHUTDOWN_TIMEOUT,
-                    on_kill => sub { $log->info('Worker terminated forcefully by SIGKILL') },
+                    on_kill => sub { $log->error('Worker terminated forcefully by SIGKILL') },
                     )
             } values %workers
         )->get;
@@ -412,17 +412,22 @@ sub run_worker_process {
 
                     $log->debug('Worker failed to stop. Going to re-try after 1 second');
                     return $loop->timeout_future(after => 1);
-                    # Waiting for more than GracefulShutdown timeout to let it forcefully kill the resisting worker.
                 }
-                foreach => [1 .. SHUTDOWN_TIMEOUT + 1],
-                until   => sub { shift->is_done })->get;
+                foreach => [1 .. SHUTDOWN_TIMEOUT],
+                until   => sub {
+                    shift->is_done;
+                }
+                )->on_fail(
+                sub {
+                    $log->errorf('Failed to stop worker gracefully: %s', shift);
+                })->block_until_ready;
 
             if ($FOREGROUND) {
                 unlink $PID_FILE if $PID_FILE;
                 unlink unlink $SOCKETPATH;
             }
 
-            $log->info("Worker process stopped");
+            $log->info('Worker process stopped');
             exit 0;
         },
     );
