@@ -22,7 +22,7 @@ use LandingCompany::Registry;
 sub reset_daily_loss_hashes {
     my %params = @_;
 
-    my $new_day_start_epoch = Date::Utility::today()->epoch + 86400;
+    my $tomorrow = Date::Utility->today->plus_time_interval("1d");
     my %output;
 
     my $redis;
@@ -34,9 +34,10 @@ sub reset_daily_loss_hashes {
             my $hash_name       = "$landing_company:$loss_type";
 
             if ($params{force_reset}) {
-                $output{$hash_name} = $redis->del($hash_name);
+                $output{$hash_name} = $redis->del($hash_name) ? 'deleted' : 'not found';
             } else {
-                $output{$hash_name} = $redis->expireat($hash_name, $new_day_start_epoch);
+                $output{$hash_name} = $redis->expireat($hash_name, $tomorrow->epoch)
+                    ? 'expires at ' . $tomorrow->db_timestamp : 'not found';
             }
         }
     }
