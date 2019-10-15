@@ -56,7 +56,6 @@ my $action_mapping = {
     qualifying_payment_check    => \&BOM::Event::Actions::Client::qualifying_payment_check,
     payment_deposit             => \&BOM::Event::Actions::Client::payment_deposit,
     send_email                  => \&BOM::Event::Actions::Email::send_email_generic,
-    test_one                    => \&BOM::Event::Actions::Client::test_one,
 };
 
 =head1 METHODS

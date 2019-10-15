@@ -1347,51 +1347,19 @@ sub _send_email_account_closure_client {
 sub _send_email_underage_disable_account {
     my ($loginid, $support_email) = @_;
 
-    my $client = BOM::User::Client->new({loginid => $loginid});
-
-    my $client_email_template = localize(
-        "\
-        <p><b>Dear Mr. [_1]</b></p>
-        <p>Thank you for your interest in our trading platform.</p>
-        <p>Please be informed that we have closed your account.</p>
-        <p>We are not able to offer our services to underage clients.<br>
-        Please refer to our terms and conditions at the link below;</p>
-        <p>https://www.binary.com/en/terms-and-conditions.html#legal-binary</p>
-        <p><b>N. Account Opening </b><br>
-        You can only register an account on this site with the following conditions:</p>
-        <p>- You are over 18 years old, unless you are an Estonian resident, you must be over 21 years old,</p>
-        <p>If you need further assistance please contact us again.</p>
-        <p>Kind regards.</p>
-        Team [_2]
-        ", $client->first_name, ucfirst BOM::Config::domain()->{default_domain});
+    my $client        = BOM::User::Client->new({loginid => $loginid});
+    my $website_name  = ucfirst BOM::Config::domain()->{default_domain};
+    my $email_subject = "We closed your $website_name account";
 
     send_email({
-        from                  => $support_email,
         to                    => $client->email,
-        subject               => localize("We're sorry you're underage"),
-        message               => [$client_email_template],
+        subject               => localize($email_subject),
+        template_name         => 'close_account_underage',
+        template_args         => {website_name => $website_name},
         use_email_template    => 1,
         email_content_is_html => 1,
-        skip_text2html        => 1
+        use_event             => 1,
     });
-
-    return undef;
-}
-
-async sub test_one {
-
-    _send_email_underage_disable_account('CR90000001', $BRANDS->emails('support'));
-    my $client = BOM::User::Client->new({loginid => 'CR90000001'});
-
-    my $email_details = {
-        client         => $client,
-        short_reason   => 'under_18',
-        failure_reason => "because Onfido reported the date of birth as dasda which is below age 18.",
-        redis_key      => '123',
-        is_disabled    => 0,
-    };
-
-    await _send_report_automated_age_verification_failed($email_details);
 
     return undef;
 }
@@ -1405,7 +1373,8 @@ Send email to CS because of which we were not able to mark client as age_verifie
 async sub _send_report_automated_age_verification_failed {
     my $args = shift;
 
-    my ($client, $short_reason, $failure_reason, $redis_key, $is_disabled) = @{$args}{qw/client short_reason failure_reason redis_key is_disabled/};
+    my ($client, $short_reason, $failure_reason, $redis_key, $is_disabled, $account_info) =
+        @{$args}{qw/client short_reason failure_reason redis_key is_disabled account_info/};
 
     # Prevent sending multiple emails for the same user
     my $redis_events_read = _redis_events_read();
@@ -1417,7 +1386,17 @@ async sub _send_report_automated_age_verification_failed {
     if ($short_reason eq 'under_18') {
         $email_content = "The client is detected as underage by Onfido ";
 
-        $email_content .= ($is_disabled) ? "and was disabled as there is no balance. " : " but not disabled as there is balance. ";
+        if ($is_disabled) {
+            $email_content .= "and was disabled as there is no balance. ";
+        } else {
+            $email_content .= "but not disabled as there is balance in: ";
+
+            for my $each_client (keys %{$account_info}) {
+                my $balance = $account_info->{$each_client}->{balance};
+                $email_content .= " $each_client" if ($balance > 0);
+            }
+            $email_content .= '.';
+        }
     }
 
     my $loginid = $client->loginid;
