@@ -84,6 +84,19 @@
                             "description": "pip-sized barrier value"
                         }
                      }
+                  },
+                  "stop_loss": {
+                     "type": "object",
+                     "description": "take profit barrier information",
+                     "properties": {
+                        "display_name": {
+                            "type": "string"
+                        },
+                        "barrier_value": {
+                            "type": "string",
+                            "description": "pip-sized barrier value"
+                        }
+                     }
                   }
                }
             }

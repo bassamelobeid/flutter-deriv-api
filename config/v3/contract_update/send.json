@@ -40,7 +40,22 @@
                     },
                     "value": {
                         "type": "number",
-                        "description": "only defined when it is an update operation"
+                        "description": "only defined when it is an update operation. Non-zero positive value."
+                    }
+                }
+            },
+            "stop_loss": {
+                "type": "object",
+                "additionalProperties" : false,
+                "description": "new stop loss value for a contract.",
+                "properties": {
+                    "operation": {
+                        "enum": ["update","cancel"],
+                        "description": "defines the operation"
+                    },
+                    "value": {
+                        "type": "number",
+                        "description": "only defined when it is an update operation. Non-zero negative value."
                     }
                 }
             }

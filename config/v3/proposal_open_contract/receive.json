@@ -446,6 +446,20 @@
                                 "type": "string",
                                 "description" : "take profit pip-sized barrier value"
                             }
+                        },
+                        "stop_loss": {
+                            "order_date" : {
+                                "type": "integer",
+                                "description": "take profit order epoch"
+                            },
+                            "order_amount" : {
+                                "type": "number",
+                                "description": "take profit dollar amount"
+                            },
+                            "barrier_value" : {
+                                "type": "string",
+                                "description" : "take profit pip-sized barrier value"
+                            }
                         }
                     }
                 }
