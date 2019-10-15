@@ -10,7 +10,6 @@ use Test::Exception;
 use JSON::MaybeXS;
 
 use Date::Utility;
-use Data::Dumper;
 use BOM::Test;
 use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Contract qw(create_contract buy_contract sell_contract batch_buy_contract sell_by_shortcode);
