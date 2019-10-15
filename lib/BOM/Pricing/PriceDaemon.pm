@@ -279,6 +279,7 @@ sub _process_price {
 sub _process_bid {
     my ($self, $params) = @_;
     $params->{validation_params}->{skip_barrier_validation} = 1;
+    $params->{streaming_params}->{format_limit_order} = 1;
     return BOM::Pricing::v3::Contract::send_bid($params);
 }
 

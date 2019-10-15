@@ -406,15 +406,19 @@ sub get_bid {
             return;
         }
 
+        my $format_limit_order = ($params->{streaming_params} and $params->{streaming_params}->{format_limit_order}) ? 1 : 0;
+
         $response = _build_bid_response({
-                contract         => $contract,
-                contract_id      => $contract_id,
-                is_valid_to_sell => $valid_to_sell->{is_valid_to_sell},
-                is_sold          => $is_sold,
-                is_expired       => $is_expired,
-                sell_price       => $sell_price,
-                sell_time        => $sell_time,
-                validation_error => $valid_to_sell->{validation_error}});
+            contract         => $contract,
+            contract_id      => $contract_id,
+            is_valid_to_sell => $valid_to_sell->{is_valid_to_sell},
+            is_sold          => $is_sold,
+            is_expired       => $is_expired,
+            sell_price       => $sell_price,
+            sell_time        => $sell_time,
+            validation_error => $valid_to_sell->{validation_error},
+            from_pricer      => $format_limit_order,
+        });
 
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
@@ -865,7 +869,7 @@ sub _build_bid_response {
     # for multiplier, we want to return the orders and insurance details.
     if ($contract->category_code eq 'multiplier') {
         # this goes into proposal_open_contract PRICER_KEYS
-        $response->{limit_order} = $contract->available_orders;
+        $response->{limit_order} = $params->{from_pricer} ? $contract->available_orders_hashref : $contract->available_orders;
         # these are the barrier value for the limit orders
         $response->{stop_out}    = $contract->stop_out->barrier_value;
         $response->{take_profit} = $contract->take_profit->barrier_value if $contract->take_profit;
