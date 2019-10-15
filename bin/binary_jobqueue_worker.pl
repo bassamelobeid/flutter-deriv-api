@@ -18,6 +18,7 @@ use Text::Trim;
 use Try::Tiny;
 use Time::HiRes qw(alarm);
 use Path::Tiny;
+use Future::Utils qw(try_repeat);
 
 use Getopt::Long;
 use Log::Any qw($log);
@@ -110,6 +111,8 @@ use constant RESTART_COOLDOWN => 1;
 use constant SHUTDOWN_TIMEOUT => 9;
 
 my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
+my $env = path('/etc/rmg/environment')->slurp_utf8;
+chomp($env);
 
 GetOptions(
     'testing|T'        => \my $TESTING,
@@ -118,8 +121,8 @@ GetOptions(
     'socket|S=s'       => \(my $SOCKETPATH = "/var/run/bom-rpc/binary_jobqueue_worker.sock"),
     'redis|R=s'        => \(my $REDIS = $redis_config->{uri}),
     'log|l=s'          => \(my $log_level = "info"),
-    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // path('/etc/rmg/environment')->slurp_utf8),
-    'pid-file=s' => \(my $PID_FILE),    #for BOM::Test::Script compatilibity
+    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // $env),
+    'pid-file=s'       => \(my $PID_FILE),                                                      #for BOM::Test::Script compatilibity
 ) or exit 1;
 
 require Log::Any::Adapter;
@@ -218,13 +221,13 @@ sub run_coordinator {
                 $_->shutdown(
                     'TERM',
                     timeout => SHUTDOWN_TIMEOUT,
-                    on_kill => sub { $log->debug('Worker terminated by SIGKILL') },
+                    on_kill => sub { $log->info('Worker terminated forcefully by SIGKILL') },
                     )
             } values %workers
         )->get;
 
         $log->info('Workers terminated.');
-
+        unlink $PID_FILE if $PID_FILE;
         unlink $SOCKETPATH;
         exit 0;
     };
@@ -401,8 +404,24 @@ sub run_worker_process {
     $loop->attach_signal(
         TERM => sub {
             $log->info("Stopping worker process");
-            unlink $PID_FILE if ($PID_FILE);
-            $worker->stop->block_until_ready;
+
+            (
+                try_repeat {
+                    my $stopping_future = $worker->stop;
+                    return $stopping_future if $stopping_future->is_done;
+
+                    $log->debug('Worker failed to stop. Going to re-try after 1 second');
+                    return $loop->timeout_future(after => 1);
+                    # Waiting for more than GracefulShutdown timeout to let it forcefully kill the resisting worker.
+                }
+                foreach => [1 .. SHUTDOWN_TIMEOUT + 1],
+                until   => sub { shift->is_done })->get;
+
+            if ($FOREGROUND) {
+                unlink $PID_FILE if $PID_FILE;
+                unlink unlink $SOCKETPATH;
+            }
+
             $log->info("Worker process stopped");
             exit 0;
         },
