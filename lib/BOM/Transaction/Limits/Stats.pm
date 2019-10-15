@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use Time::HiRes qw(tv_interval gettimeofday);
-use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use BOM::Config;
 
 # Contains all code that compiles statistical data about company limits and
@@ -33,7 +33,7 @@ sub with_dd_stats (&@) {    ## no critic (ProhibitSubroutinePrototypes)
         die $@;
     }
 
-    return @res;
+    return wantarray ? @res : $res[0];
 }
 
 1;
