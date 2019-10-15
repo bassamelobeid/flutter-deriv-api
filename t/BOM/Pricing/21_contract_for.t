@@ -66,7 +66,13 @@ subtest "Request $method" => sub {
 
     $params[1]{args}{contracts_for} = 'invalid symbol';
     $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if symbol does not exist')
-        ->error_message_is('Offering is unavailable on this symbol.', 'It should return error if symbol does not exist');
+        ->error_message_is('This contract is not offered in your country.', 'It should return error if symbol does not exist');
+
+    delete $params[1]{args}{product_type};
+    $params[1]{args}{landing_company} = 'maltainvest';
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if offering is unavailable')
+        ->error_message_is('This contract is not offered in your country.', 'It should return error if offering is unavailable');
+
 };
 
 done_testing();

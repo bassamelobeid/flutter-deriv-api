@@ -577,12 +577,18 @@ sub contracts_for {
         # override the details here since we already have a client.
         $landing_company = $client->landing_company->short;
         $country_code    = $client->residence;
-        $product_type //= $client->landing_company->default_offerings;
     }
 
-    unless ($product_type) {
-        $product_type = LandingCompany::Registry::get($landing_company)->default_offerings;
-    }
+    $product_type //= LandingCompany::Registry::get($landing_company)->default_product_type;
+
+    #Preparing error handler;
+    my $get_invalid_symbol_error = sub {
+        BOM::Pricing::v3::Utility::create_error({
+                code              => 'InvalidSymbol',
+                message_to_client => BOM::Platform::Context::localize('This contract is not offered in your country.')});
+    };
+
+    return $get_invalid_symbol_error->() unless $product_type;
 
     my $finder        = BOM::Product::ContractFinder->new;
     my $method        = $product_type eq 'basic' ? 'basic_contracts_for' : 'multi_barrier_contracts_for';
@@ -600,16 +606,11 @@ sub contracts_for {
         $i++;
     }
 
-    if (not $contracts_for or $contracts_for->{hit_count} == 0) {
-        return BOM::Pricing::v3::Utility::create_error({
-                code              => 'InvalidSymbol',
-                message_to_client => BOM::Platform::Context::localize('Offering is unavailable on this symbol.')});
-    } else {
-        $contracts_for->{'spot'} = create_underlying($symbol)->spot();
-        return $contracts_for;
-    }
+    return $get_invalid_symbol_error->()
+        if !$contracts_for || $contracts_for->{hit_count} == 0;
 
-    return;
+    $contracts_for->{'spot'} = create_underlying($symbol)->spot();
+    return $contracts_for;
 }
 
 sub _log_exception {
