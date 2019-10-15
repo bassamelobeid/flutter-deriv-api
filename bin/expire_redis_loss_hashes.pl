@@ -26,7 +26,7 @@ use Log::Any::Adapter qw(Stdout), log_level => 'info';
 
 my $output = BOM::Transaction::Limits::SyncLoss::reset_daily_loss_hashes();
 
-$log->info(sprintf "%s: %s\n", $_, $output->{$_})
+$log->info(sprintf "%s: %s", $_, $output->{$_})
     for (sort keys %$output);
 
 exit 0;
