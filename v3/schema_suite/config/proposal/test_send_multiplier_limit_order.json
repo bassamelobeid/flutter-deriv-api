@@ -1,0 +1,12 @@
+{
+  "proposal": 1,
+  "multiplier": "[_4]",
+  "currency": "USD",
+  "contract_type": "[_1]",
+  "symbol": "[_2]",
+  "basis": "[_3]",
+  "amount": "100",
+  "limit_order": {
+    "[_5]": [_6]
+  }
+}
