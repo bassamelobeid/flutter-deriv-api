@@ -21,13 +21,12 @@ use warnings;
 # delete the hash at some time with as much precision as you would have Redis do it.
 
 use Log::Any qw($log);
-use Data::Dumper;
 use BOM::Transaction::Limits::SyncLoss;
 use Log::Any::Adapter qw(Stdout), log_level => 'info';
 
 my $output = BOM::Transaction::Limits::SyncLoss::reset_daily_loss_hashes();
 
-$log->info('Expireat result (1 if timeout is set, 0 if key does not exist):', Dumper($output));
+$log->info(sprintf "%s: %s\n", $_, $output->{$_})
+    for (sort keys %$output);
 
-
-
+exit 0;
