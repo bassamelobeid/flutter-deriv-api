@@ -503,6 +503,11 @@ sub prepare_bet_data_for_buy {
             $bet_params->{take_profit_order_date}   = $contract->take_profit->order_date->db_timestamp;
             $bet_params->{take_profit_order_amount} = $contract->take_profit->order_amount;
         }
+
+        if ($contract->stop_loss) {
+            $bet_params->{stop_loss_order_date}   = $contract->stop_loss->order_date->db_timestamp;
+            $bet_params->{stop_loss_order_amount} = $contract->stop_loss->order_amount;
+        }
     } else {
         return Error::Base->cuss(
             -type              => 'UnsupportedBetClass',
@@ -1733,6 +1738,11 @@ sub _get_params_for_expiryqueue {
         if ($contract->can('take_profit') and $contract->take_profit) {
             my $which_level = $contract->take_profit_side eq 'lower' ? 'down_level' : 'up_level';
             $hash->{$which_level} = $contract->underlying->pipsized_value($contract->take_profit->barrier_value);
+        }
+
+        if ($contract->can('stop_loss') and $contract->stop_loss) {
+            my $which_level = $contract->stop_loss_side eq 'lower' ? 'down_level' : 'up_level';
+            $hash->{$which_level} = $contract->underlying->pipsized_value($contract->stop_loss->barrier_value);
         }
     }
 

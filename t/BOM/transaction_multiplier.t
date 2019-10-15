@@ -379,6 +379,115 @@ subtest 'buy MULTUP with take profit', sub {
     'survived';
 };
 
+subtest 'buy MULTUP with stop loss', sub {
+    lives_ok {
+        my $mock = Test::MockModule->new('Quant::Framework::Underlying');
+        $mock->mock('spot_tick' => sub {return $current_tick});
+        my $contract = produce_contract({
+                underlying   => $underlying,
+                bet_type     => 'MULTUP',
+                currency     => 'USD',
+                multiplier   => 10,
+                amount       => 100,
+                amount_type  => 'stake',
+                current_tick => $current_tick,
+                limit_order  => {
+                        stop_loss => -5
+                    },
+            });
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = $txn->buy;
+        ok !$error, 'buy without error';
+
+        subtest 'transaction report', sub {
+            plan tests => 11;
+            note $txn->report;
+            my $report = $txn->report;
+            like $report, qr/\ATransaction Report:$/m,                                                    'header';
+            like $report, qr/^\s*Client: \Q${\$cl}\E$/m,                                                  'client';
+            like $report, qr/^\s*Contract: \Q${\$contract->code}\E$/m,                                    'contract';
+            like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
+            like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
+            like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
+            like $report, qr/^\s*Comment: \Q${\$txn->comment->[0]}\E$/m,                                  'comment';
+            like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
+            like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
+            like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
+            like $report, qr/^\s*Purchase Date: \Q${\$txn->purchase_date->datetime_yyyymmdd_hhmmss}\E$/m, 'purchase date';
+        };
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
+
+        # note explain $trx;
+
+        subtest 'transaction row', sub {
+            plan tests => 12;
+            cmp_ok $trx->{id}, '>', 0, 'id';
+            is $trx->{account_id}, $acc_usd->id, 'account_id';
+            is $trx->{action_type}, 'buy', 'action_type';
+            is $trx->{amount} + 0, -100, 'amount';
+            is $trx->{balance_after} + 0, 4800 - 100, 'balance_after';
+            is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            is $trx->{payment_id},    undef,                  'payment_id';
+            is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
+            is $trx->{remark},        undef,                  'remark';
+            is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
+            is $trx->{source}, 19, 'source';
+            cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
+        };
+
+        # note explain $fmb;
+
+        subtest 'fmb row', sub {
+            plan tests => 19;
+            cmp_ok $fmb->{id}, '>', 0, 'id';
+            is $fmb->{account_id}, $acc_usd->id, 'account_id';
+            is $fmb->{bet_class}, 'multiplier', 'bet_class';
+            is $fmb->{bet_type},  'MULTUP',     'bet_type';
+            is $fmb->{buy_price} + 0, 100, 'buy_price';
+            is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
+            cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
+            is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
+            is !$fmb->{is_expired}, !0, 'is_expired';
+            is !$fmb->{is_sold},    !0, 'is_sold';
+            cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
+            like $fmb->{remark},   qr/\btrade\[100\.00000\]/, 'remark';
+            is $fmb->{sell_price}, undef,                     'sell_price';
+            is $fmb->{sell_time},  undef,                     'sell_time';
+            cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
+            like $fmb->{short_code}, qr/MULTUP/, 'short_code';
+            cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
+            is $fmb->{tick_count},        undef,   'tick_count';
+            is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
+        };
+
+        # note explain $chld;
+
+        subtest 'chld row', sub {
+            is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+            is $chld->{'multiplier'},             10,        'multiplier is 10';
+            is $chld->{'basis_spot'},             '100.00', 'basis_spot is 100.00';
+            is $chld->{'stop_loss_order_amount'}, -5,    'stop_loss_order_amount is -5';
+            cmp_ok $chld->{'stop_loss_order_date'}, "eq", $fmb->{start_time}, 'stop_loss_order_date is correctly set';
+            is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
+            cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
+            is $chld->{'take_profit_order_amount'}, undef, 'take_profit_order_amount is undef';
+            is $chld->{'take_profit_order_date'},   undef,    'take_profit_order_date is undef';
+        };
+
+    }
+    'survived';
+};
+
 subtest 'sell a bet', sub {
     lives_ok {
         sleep 1;    # sell_time != purchase_time
@@ -419,7 +528,7 @@ subtest 'sell a bet', sub {
             is $trx->{account_id}, $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'sell', 'action_type';
             is $trx->{amount} + 0, $contract->bid_price + 0, 'amount';
-            is $trx->{balance_after} + 0, 4900, 'balance_after';
+            is $trx->{balance_after} + 0, 4800, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
             is $trx->{quantity},      1,                      'quantity';
