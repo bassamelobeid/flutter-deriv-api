@@ -97,6 +97,28 @@ if (my $proposal = $res->{proposal}) {
 }
 
 $req->{limit_order} = {
+    take_profit => 1,
+    stop_loss   => -10
+};
+
+$res = $t->await::proposal($req);
+
+if (my $proposal = $res->{proposal}) {
+    ok $proposal->{id}, 'Should return id';
+    ok $proposal->{barriers}->{stop_out}, 'has stop out';
+    ok $proposal->{barriers}->{stop_out}->{barrier_value}, 'has stop out barrier value';
+    ok $proposal->{barriers}->{stop_out}->{display_name},  'has stop out display_name';
+    ok $proposal->{barriers}->{take_profit}, 'has take profit';
+    ok $proposal->{barriers}->{take_profit}->{barrier_value}, 'has take profit barrier value';
+    ok $proposal->{barriers}->{take_profit}->{display_name},  'has take profit display_name';
+    ok $proposal->{barriers}->{stop_loss}, 'has stop loss';
+    ok $proposal->{barriers}->{stop_loss}->{barrier_value}, 'has take profit barrier value';
+    ok $proposal->{barriers}->{stop_loss}->{display_name},  'has take profit display_name';
+} else {
+    diag Dumper($res);
+}
+
+$req->{limit_order} = {
     take_something => 10,
 };
 $res = $t->await::proposal($req);
