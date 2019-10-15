@@ -867,8 +867,9 @@ sub _build_bid_response {
         # this goes into proposal_open_contract PRICER_KEYS
         $response->{limit_order} = $contract->available_orders;
         # these are the barrier value for the limit orders
-        $response->{stop_out} = $contract->stop_out->barrier_value;
+        $response->{stop_out}    = $contract->stop_out->barrier_value;
         $response->{take_profit} = $contract->take_profit->barrier_value if $contract->take_profit;
+        $response->{stop_loss}   = $contract->stop_loss->barrier_value if $contract->stop_loss;
     }
 
     if (    $contract->exit_tick
