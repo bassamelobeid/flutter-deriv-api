@@ -127,7 +127,7 @@ subtest 'contract_update' => sub {
         },
     };
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('UpdateNotAllowed')
-        ->error_message_is('Update is not allowed for this contract. Allowed updates take_profit');
+        ->error_message_is('Update is not allowed for this contract. Allowed updates take_profit,stop_loss');
     $update_params->{args}->{update_parameters} = {
         take_profit => {
             operation => 'update',
@@ -152,6 +152,21 @@ subtest 'contract_update' => sub {
     is $res->{old_contract_details}{limit_order}->[0],    'stop_out';
     is_deeply $res->{contract_details}{limit_order}->[1], $res->{old_contract_details}{limit_order}->[1];
     ok !$res->{old_contract_details}{limit_order}->[2];
+
+    $update_params->{args}->{update_parameters} = {
+        stop_loss => {
+            operation => 'update',
+            value => -5,
+        },
+    };
+    $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
+    ok $res->{status} == 1, 'contract_update status=1';
+    ok $res->{barrier_value},    'has barrier value';
+    is $res->{type},             'stop_loss', 'type is stop_loss';
+    ok $res->{contract_details}, 'has contract_details';
+    is $res->{contract_details}{limit_order}->[0],        'stop_loss';
+    is $res->{contract_details}{limit_order}->[2],        'stop_out';
+    is $res->{contract_details}{limit_order}->[4],        'take_profit';
 
     # sell_time cannot be equals to purchase_time, hence the sleep.
     sleep 1;
