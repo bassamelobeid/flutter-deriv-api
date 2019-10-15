@@ -36,8 +36,7 @@ sub reset_daily_loss_hashes {
             if ($params{force_reset}) {
                 $output{$hash_name} = $redis->del($hash_name) ? 'deleted' : 'not found';
             } else {
-                $output{$hash_name} = $redis->expireat($hash_name, $tomorrow->epoch)
-                    ? 'expires at ' . $tomorrow->db_timestamp : 'not found';
+                $output{$hash_name} = $redis->expireat($hash_name, $tomorrow->epoch) ? 'expires at ' . $tomorrow->db_timestamp : 'not found';
             }
         }
     }
