@@ -76,10 +76,8 @@ subtest 'contract_update' => sub {
 
     $update_params->{token} = $token;
     $update_params->{args}->{update_parameters} = {
-        take_profit => {
-            operation => 'update',
-            value     => 10
-        }};
+        take_profit => 10,
+    };
 
     $c->call_ok('contract_update', $update_params)->has_error->error_code_is('ContractNotFound')
         ->error_message_is('Contract not found for contract id: 123.');
@@ -107,41 +105,19 @@ subtest 'contract_update' => sub {
     my $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidUpdateArgument')
         ->error_message_is('Update only accepts hash reference as input parameter.');
 
-    $update_params->{args}->{update_parameters} = {take_profit => {operation => 'update'}};
-    $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('ValueNotDefined')
-        ->error_message_is('Value is required for update operation.');
+    $update_params->{args}->{update_parameters} = {take_profit => 'notanumberornull'};
+    $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidUpdateValue')
+        ->error_message_is('Update value accepts number or null string');
 
     $update_params->{args}->{update_parameters} = {
-        take_profit => {
-            operation => 'something',
-            value     => 10
-        },
-    };
-    $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('UnknownUpdateOperation')
-        ->error_message_is('This operation is not supported. Allowed operations (update, cancel).');
-
-    $update_params->{args}->{update_parameters} = {
-        something => {
-            operation => 'update',
-            value     => 10
-        },
+        something => 1,
     };
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('UpdateNotAllowed')
         ->error_message_is('Update is not allowed for this contract. Allowed updates take_profit,stop_loss');
-    $update_params->{args}->{update_parameters} = {
-        take_profit => {
-            operation => 'update',
-            value     => -1
-        },
-    };
+    $update_params->{args}->{update_parameters} = {take_profit => -1};
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidContractUpdate')
         ->error_message_is('Invalid take profit. Take profit must be higher than current spot price.');
-    $update_params->{args}->{update_parameters} = {
-        take_profit => {
-            operation => 'update',
-            value     => 10
-        },
-    };
+    $update_params->{args}->{update_parameters} = {take_profit => 10};
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
     ok $res->{status} == 1, 'contract_update status=1';
     ok $res->{barrier_value},    'has barrier value';
@@ -153,20 +129,15 @@ subtest 'contract_update' => sub {
     is_deeply $res->{contract_details}{limit_order}->[1], $res->{old_contract_details}{limit_order}->[1];
     ok !$res->{old_contract_details}{limit_order}->[2];
 
-    $update_params->{args}->{update_parameters} = {
-        stop_loss => {
-            operation => 'update',
-            value => -80,
-        },
-    };
+    $update_params->{args}->{update_parameters} = {stop_loss => -80};
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
     ok $res->{status} == 1, 'contract_update status=1';
     ok $res->{barrier_value},    'has barrier value';
     is $res->{type},             'stop_loss', 'type is stop_loss';
     ok $res->{contract_details}, 'has contract_details';
-    is $res->{contract_details}{limit_order}->[0],        'stop_loss';
-    is $res->{contract_details}{limit_order}->[2],        'stop_out';
-    is $res->{contract_details}{limit_order}->[4],        'take_profit';
+    is $res->{contract_details}{limit_order}->[0], 'stop_loss';
+    is $res->{contract_details}{limit_order}->[2], 'stop_out';
+    is $res->{contract_details}{limit_order}->[4], 'take_profit';
 
     # sell_time cannot be equals to purchase_time, hence the sleep.
     sleep 1;
