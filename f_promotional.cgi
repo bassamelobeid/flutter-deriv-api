@@ -231,8 +231,9 @@ foreach my $client (@clients) {
 
     my $user          = $client->user;
     my $login_history = $user->login_history(
-        order => 'desc',
-        limit => 1,
+        order                    => 'desc',
+        show_impersonate_records => 1,
+        limit                    => 1,
     );
     my $client_ip = 'no ip';
     if (@$login_history > 0) {

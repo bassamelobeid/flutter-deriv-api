@@ -1171,8 +1171,9 @@ Bar($user->{email} . " Login history");
 print '<div><br/>';
 my $limit         = 200;
 my $login_history = $user->login_history(
-    order => 'desc',
-    limit => $limit
+    order                    => 'desc',
+    show_impersonate_records => 1,
+    limit                    => $limit
 );
 
 BOM::Backoffice::Request::template()->process(
