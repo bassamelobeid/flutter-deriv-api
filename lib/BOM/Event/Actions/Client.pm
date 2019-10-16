@@ -2140,6 +2140,10 @@ sub set_needs_action {
 
     return if $client->fully_authenticated();
 
+    # check if POA is pending:
+    my $documents = $client->documents_uploaded();
+    return if $documents->{proof_of_address}->{is_pending};
+
     # set client as needs_action if only the status is not set yet
     unless (($client->authentication_status // '') eq 'needs_action') {
         $client->set_authentication('ID_DOCUMENT')->status('needs_action');
