@@ -72,9 +72,9 @@ $res = $t->await::proposal($req);
 
 if (my $proposal = $res->{proposal}) {
     ok $proposal->{id}, 'Should return id';
-    ok $proposal->{barriers}->{stop_out}, 'has stop out';
-    ok $proposal->{barriers}->{stop_out}->{barrier_value}, 'has stop out barrier value';
-    ok $proposal->{barriers}->{stop_out}->{display_name},  'has stop out display_name';
+    ok $proposal->{limit_order}->{stop_out}, 'has stop out';
+    ok $proposal->{limit_order}->{stop_out}->{value},        'has stop out barrier value';
+    ok $proposal->{limit_order}->{stop_out}->{display_name}, 'has stop out display_name';
 } else {
     diag Dumper($res);
 }
@@ -86,12 +86,12 @@ $res = $t->await::proposal($req);
 
 if (my $proposal = $res->{proposal}) {
     ok $proposal->{id}, 'Should return id';
-    ok $proposal->{barriers}->{stop_out}, 'has stop out';
-    ok $proposal->{barriers}->{stop_out}->{barrier_value}, 'has stop out barrier value';
-    ok $proposal->{barriers}->{stop_out}->{display_name},  'has stop out display_name';
-    ok $proposal->{barriers}->{take_profit}, 'has take profit';
-    ok $proposal->{barriers}->{take_profit}->{barrier_value}, 'has take profit barrier value';
-    ok $proposal->{barriers}->{take_profit}->{display_name},  'has take profit display_name';
+    ok $proposal->{limit_order}->{stop_out}, 'has stop out';
+    ok $proposal->{limit_order}->{stop_out}->{value},        'has stop out barrier value';
+    ok $proposal->{limit_order}->{stop_out}->{display_name}, 'has stop out display_name';
+    ok $proposal->{limit_order}->{take_profit}, 'has take profit';
+    ok $proposal->{limit_order}->{take_profit}->{value},        'has take profit barrier value';
+    ok $proposal->{limit_order}->{take_profit}->{display_name}, 'has take profit display_name';
 } else {
     diag Dumper($res);
 }
@@ -105,15 +105,15 @@ $res = $t->await::proposal($req);
 
 if (my $proposal = $res->{proposal}) {
     ok $proposal->{id}, 'Should return id';
-    ok $proposal->{barriers}->{stop_out}, 'has stop out';
-    ok $proposal->{barriers}->{stop_out}->{barrier_value}, 'has stop out barrier value';
-    ok $proposal->{barriers}->{stop_out}->{display_name},  'has stop out display_name';
-    ok $proposal->{barriers}->{take_profit}, 'has take profit';
-    ok $proposal->{barriers}->{take_profit}->{barrier_value}, 'has take profit barrier value';
-    ok $proposal->{barriers}->{take_profit}->{display_name},  'has take profit display_name';
-    ok $proposal->{barriers}->{stop_loss}, 'has stop loss';
-    ok $proposal->{barriers}->{stop_loss}->{barrier_value}, 'has take profit barrier value';
-    ok $proposal->{barriers}->{stop_loss}->{display_name},  'has take profit display_name';
+    ok $proposal->{limit_order}->{stop_out}, 'has stop out';
+    ok $proposal->{limit_order}->{stop_out}->{value},        'has stop out barrier value';
+    ok $proposal->{limit_order}->{stop_out}->{display_name}, 'has stop out display_name';
+    ok $proposal->{limit_order}->{take_profit}, 'has take profit';
+    ok $proposal->{limit_order}->{take_profit}->{value},        'has take profit barrier value';
+    ok $proposal->{limit_order}->{take_profit}->{display_name}, 'has take profit display_name';
+    ok $proposal->{limit_order}->{stop_loss}, 'has stop loss';
+    ok $proposal->{limit_order}->{stop_loss}->{value},        'has take profit barrier value';
+    ok $proposal->{limit_order}->{stop_loss}->{display_name}, 'has take profit display_name';
 } else {
     diag Dumper($res);
 }

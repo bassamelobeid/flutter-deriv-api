@@ -46,7 +46,7 @@
                "type" : "number",
                "enum" : [[_7]]
             },
-            "barriers" : {
+            "limit_order" : {
                "type": "object",
                "description": "Contains barrier information. (Only applicable for contract with internally calculated barrier(s).).",
                "properties": {
@@ -57,7 +57,7 @@
                         "display_name": {
                             "type": "string"
                         },
-                        "barrier_value": {
+                        "value": {
                             "type": "string",
                             "description": "pip-sized barrier value"
                         }
@@ -71,7 +71,7 @@
                             "type": "string",
                             "enum": ["[_9]"]
                         },
-                        "barrier_value": {
+                        "value": {
                             "type": "string",
                             "description": "pip-sized barrier value",
                             "enum": ["[_10]"]
@@ -86,7 +86,7 @@
                             "type": "string",
                             "enum": ["[_11]"]
                         },
-                        "barrier_value": {
+                        "value": {
                             "type": "string",
                             "description": "pip-sized barrier value",
                             "enum": ["[_12]"]
