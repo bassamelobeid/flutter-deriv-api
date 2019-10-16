@@ -1,0 +1,63 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "title" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "required" : [
+      "msg_type",
+      "echo_req"
+   ],
+   "properties" : {
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^buy$"
+      },
+      "echo_req" : {},
+      "buy" : {
+         "required" : [
+            "longcode",
+            "balance_after",
+            "start_time",
+            "transaction_id",
+            "buy_price",
+            "purchase_time",
+            "payout",
+            "shortcode",
+            "contract_id"
+         ],
+         "properties" : {
+            "longcode" : {
+               "type" : "string"
+            },
+            "balance_after" : {
+               "type" : "number"
+            },
+            "start_time" : {
+               "type" : "integer"
+            },
+            "transaction_id" : {
+               "type" : "integer"
+            },
+            "buy_price" : {
+               "type" : "number",
+               "enum" : [[_1]]
+            },
+            "purchase_time" : {
+               "type" : "integer"
+            },
+            "payout" : {
+               "enum" : [[_2]],
+               "type" : "number"
+            },
+            "shortcode" : {
+               "type" : "string"
+            },
+            "contract_id" : {
+               "type" : "integer"
+            }
+         },
+         "type" : "object"
+      }
+   }
+}
