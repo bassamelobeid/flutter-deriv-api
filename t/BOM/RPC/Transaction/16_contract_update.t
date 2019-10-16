@@ -156,7 +156,7 @@ subtest 'contract_update' => sub {
     $update_params->{args}->{update_parameters} = {
         stop_loss => {
             operation => 'update',
-            value => -5,
+            value => -80,
         },
     };
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
