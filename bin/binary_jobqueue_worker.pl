@@ -410,7 +410,7 @@ sub run_worker_process {
                     my $stopping_future = $worker->stop;
                     return $stopping_future if $stopping_future->is_done;
 
-                    $log->debug('Worker failed to stop. Going to re-try after 1 second');
+                    $log->debug('Worker failed to stop. Retying in 1 second');
                     return $loop->timeout_future(after => 1);
                 }
                 foreach => [1 .. SHUTDOWN_TIMEOUT],
