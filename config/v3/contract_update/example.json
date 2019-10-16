@@ -2,9 +2,6 @@
     "contract_update": 1,
     "contract_id": 123,
     "update_parameters": {
-        "take_profit": {
-            "operation": "update",
-            "value": 10
-        }
+        "take_profit": 1
     }
 }
