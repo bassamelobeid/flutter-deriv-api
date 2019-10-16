@@ -87,19 +87,15 @@ sub get_attributes_from_contract {
 sub _get_expiry_type {
     my ($bet_data) = @_;
 
-    my $expiry_type = 'i';    # intraday
-    if ($bet_data->{tick_count} and $bet_data->{tick_count} > 0) {
-        $expiry_type = 't';    # tick
-    } elsif ($bet_data->{expiry_daily}) {
-        $expiry_type = 'd';    # daily
-    } else {
-        my $duration = Date::Utility->new($bet_data->{expiry_time})->epoch - Date::Utility->new($bet_data->{start_time})->epoch;
-        # TODO: ultra_short will be become a flexible value in the future. This part of the code
-        #       needs to be able to accomodate this eventually.
-        $expiry_type = 'u' if ($duration <= 300);    # ultra_short; 5 minutes
-    }
+    # TODO: ultra_short will be become a flexible value in the future. This part of the code
+    #       needs to be able to accomodate this eventually.
+    my $ultrashort_duration = 300;
 
-    return $expiry_type;
+    return 't' if $bet_data->{tick_count} and $bet_data->{tick_count} > 0;
+    return 'd' if $bet_data->{expiry_daily};
+    my $duration = Date::Utility->new($bet_data->{expiry_time})->epoch - Date::Utility->new($bet_data->{start_time})->epoch;
+    return 'u' if $duration <= $ultrashort_duration;
+    return 'i';
 }
 
 1;
