@@ -244,16 +244,16 @@ sub _login {
 
     my $brand_name = $c->stash('brand')->name;
 
-    my $login_details = {
+    my $result = _validate_login({
         c              => $c,
         oneall_user_id => $oneall_user_id,
         app            => $app
-    };
-
-    my $result = _validate_login($login_details);
+    });
 
     if (my $err = $result->{error_code}) {
         _stats_inc_error($brand_name, $err);
+
+        my $id = $app->{id};
 
         $c->render(
             template                  => $c->_get_template_name('login'),
@@ -265,8 +265,8 @@ sub _login {
             use_social_login          => $c->_is_social_login_available(),
             login_providers           => $c->stash('login_providers'),
             login_method              => undef,
-            is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
-            website_domain            => $c->_website_domain($app->{id}),
+            is_reset_password_allowed => _is_reset_password_allowed($id),
+            website_domain            => $c->_website_domain($id),
         );
 
         return;
@@ -298,12 +298,17 @@ sub _login_env {
     my $c = shift;
     my $r = $c->stash('request');
 
-    my $now                = Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
-    my $ip_address         = $r->client_ip || '';
+    my $now = Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
+
+    my $ip_address = $r->client_ip || '';
+
     my $ip_address_country = uc $r->country_code || '';
-    my $ua                 = $c->req->headers->header('User-Agent') || '';
-    my $lang               = uc $r->language || '';
-    my $environment        = "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
+
+    my $ua = $c->req->headers->header('User-Agent') || '';
+    my $lang = uc $r->language || '';
+
+    my $environment = "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
+
     return $environment;
 }
 
@@ -477,6 +482,8 @@ sub _validate_login {
     my $oneall_user_id = delete $login_details->{oneall_user_id};
     my $app            = delete $login_details->{app};
 
+    my $app_id = $app->{id};
+
     my $email    = lc defang($c->param('email'));
     my $password = $c->param('password');
 
@@ -514,7 +521,7 @@ sub _validate_login {
 
     }
 
-    # Get last login before current login to get last record
+    # Get last login (this excludes impersonate) before current login to get last record
     my $new_env    = $c->_login_env();
     my $last_login = $user->get_last_successful_login_history();
 
@@ -522,12 +529,13 @@ sub _validate_login {
         password        => $password,
         environment     => $new_env,
         is_social_login => $oneall_user_id ? 1 : 0,
+        app_id          => $app_id
     );
 
     return $err_var->($result->{error}) if exists $result->{error};
 
     my @filtered_clients = _filter_user_clients_by_app_id(
-        app_id => $app->{id},
+        app_id => $app_id,
         user   => $user
     );
 
@@ -535,15 +543,13 @@ sub _validate_login {
 
     my $client = $filtered_clients[0];
 
-    # See if sign-in activity is different from previous
-    # NOTE: App ID = 4 (impersonate from backoffice using read only tokens)
     _compare_signin_activity({
             old_env => _get_details_from_environment($last_login->{environment}),
             new_env => _get_details_from_environment($new_env),
             client  => $client,
             c       => $c,
             app     => $app
-        }) unless ($app->{id} eq '4' || !$last_login);
+        }) if $last_login;
 
     return $err_var->("TEMP_DISABLED") if grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins};
     return $err_var->("DISABLED") if ($client->status->is_login_disallowed or $client->status->disabled);
