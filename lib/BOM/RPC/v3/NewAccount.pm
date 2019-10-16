@@ -96,8 +96,8 @@ rpc "new_account_virtual",
     $user->add_login_history(
         action      => 'login',
         environment => BOM::RPC::v3::Utility::login_env($params),
-        successful  => 't'
-    );
+        successful  => 't',
+        app_id      => $params->{source});
 
     BOM::User::AuditLog::log("successful login", "$email");
     BOM::User::Client::PaymentNotificationQueue->add(
@@ -333,8 +333,8 @@ rpc new_account_real => sub {
     $user->add_login_history(
         action      => 'login',
         environment => BOM::RPC::v3::Utility::login_env($params),
-        successful  => 't'
-    );
+        successful  => 't',
+        app_id      => $params->{source});
 
     if ($new_client->residence eq 'gb' or $new_client->landing_company->check_max_turnover_limit_is_set)
     {    # RTS 12 - Financial Limits - UK Clients and MLT Clients
@@ -455,8 +455,8 @@ rpc new_account_maltainvest => sub {
     $user->add_login_history(
         action      => 'login',
         environment => BOM::RPC::v3::Utility::login_env($params),
-        successful  => 't'
-    );
+        successful  => 't',
+        app_id      => $params->{source});
 
     BOM::User::AuditLog::log("successful login", "$client->email");
     BOM::User::Client::PaymentNotificationQueue->add(

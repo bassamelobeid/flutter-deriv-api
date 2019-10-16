@@ -289,12 +289,16 @@ sub _check_password {
 sub login_env {
     my $params = shift;
 
-    my $now                = Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
-    my $ip_address         = $params->{client_ip} || '';
+    my $now = Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
+
+    my $ip_address = $params->{client_ip} || '';
+
     my $ip_address_country = $params->{country_code} ? uc $params->{country_code} : '';
-    my $lang               = $params->{language} ? uc $params->{language} : '';
-    my $ua                 = $params->{user_agent} || '';
-    my $environment        = "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
+
+    my $lang = $params->{language} ? uc $params->{language} : '';
+    my $ua = $params->{user_agent} || '';
+
+    my $environment = "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
     return $environment;
 }
 
@@ -805,7 +809,7 @@ sub check_ip_country {
     return undef;
 }
 
-=head2 check_ip_country
+=head2 get_user_by_token
 
 Gets user by passing the VERIFICATION TOKEN
 

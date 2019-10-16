@@ -38,6 +38,7 @@ $user->add_login_history(
     environment => 'dummy environment',
     successful  => 't',
     action      => 'logout',
+    app_id      => '1098'
 );
 
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_loginid);
@@ -69,6 +70,7 @@ for (1 .. 100) {
         environment => 'dummy environment',
         successful  => 't',
         action      => 'logout',
+        app_id      => '1098'
     );
 }
 
