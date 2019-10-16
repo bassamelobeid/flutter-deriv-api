@@ -315,7 +315,7 @@ sub mt5_logins_with_group {
     for my $login (sort $self->get_mt5_loginids()) {
         my $group = BOM::MT5::User::Async::get_user(
             do { $login =~ /(\d+)/; $1 }
-        )->get->{group} // '';
+        )->else(sub { Future->done({}); })->get->{group} // '';
 
         $mt5_logins_with_group->{$login} = $group if (not $filter or $group =~ /^$filter/);
     }
