@@ -493,7 +493,7 @@ async sub client_verification {
                     if (@other_dob) {
                         await _send_report_automated_age_verification_failed({
                             client         => $client,
-                            short_reason   => 'dob_not_unifom',
+                            short_reason   => 'dob_not_same',
                             failure_reason => "as birth dates are not the same in the documents.",
                             redis_key      => ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
                         });
