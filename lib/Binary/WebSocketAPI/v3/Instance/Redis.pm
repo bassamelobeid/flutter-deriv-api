@@ -99,24 +99,26 @@ sub create {
 }
 
 sub check_connections {
-    my ($server, $server_name);
-    for my $sn (sort keys %$servers) {
+    my $server;
+    for my $server_name (sort keys %$servers) {
         try {
             undef $server;
-            $server_name = $sn;
+            $server_name = $server_name;
             $server      = __PACKAGE__->$server_name();
             $server->ping() if $server;
         }
         catch {
             if ($server) {
-                die "Redis server $sn does not work! Host: "
+                # Clear current_config from server if server ping fails
+                delete $servers->{$server_name}->{current_config};
+                die "Redis server $server_name does not work! Host: "
                     . (eval { $server->url->host } // "(failed - $@)")
                     . ", port: "
                     . (eval { $server->url->port } // "(failed - $@)")
                     . ", reason: "
                     . $_;
             } else {
-                die "$sn is not available: " . $_;
+                die "$server_name is not available: " . $_;
             }
         }
     }

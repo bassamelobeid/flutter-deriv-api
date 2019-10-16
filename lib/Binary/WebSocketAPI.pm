@@ -100,6 +100,7 @@ sub apply_usergroup {
 
 sub startup {
     my $app = shift;
+    my $log = $app->log;
 
     check_connections();                                              ### Raise and check redis connections
 
@@ -112,11 +113,7 @@ sub startup {
     $app->moniker('websocket');
     $app->plugin('Config' => {file => $ENV{WEBSOCKET_CONFIG} || '/etc/rmg/websocket.conf'});
 
-    my $log = $app->log;
-
-    my $signature = "Binary.com Websockets API";
-
-    $log->info("$signature: Starting.");
+    $log->info("Binary.com Websockets API: Starting.");
     $log->info("Mojolicious Mode is " . $app->mode);
     $log->info("Log Level        is " . $log->level);
 
@@ -178,8 +175,8 @@ sub startup {
 
             my $client_ip = $c->client_ip;
             #TODO is this brand that brand ? can be used to create a Brands object ?
-            my $brand_name = defang($c->req->param('brand'));
-            my $binary_brand = Brands->new(name => 'binary');
+            my $brand_name = defang($c->req->param('brand')) // 'binary';
+            my $binary_brand = Brands->new(name => $brand_name);
 
             if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
                 $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
