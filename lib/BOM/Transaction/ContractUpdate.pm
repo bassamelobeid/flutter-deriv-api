@@ -94,7 +94,7 @@ sub _validate_update_parameter {
 
     my ($order_type, $order_value) = %{$self->update_params};
 
-    if (not looks_like_number($order_value) and $order_value ne 'null') {
+    unless (looks_like_number($order_value) or $order_value eq 'null') {
         return {
             code              => 'InvalidUpdateValue',
             message_to_client => localize('Update value accepts number or null string'),

@@ -195,10 +195,7 @@ subtest 'update take profit', sub {
             client        => $cl,
             contract_id   => 123,
             update_params => {
-                take_profit => {
-                    operation => 'update',
-                    value     => 10
-                }
+                take_profit => 10
             },
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
@@ -238,10 +235,7 @@ subtest 'update take profit', sub {
             client        => $cl,
             contract_id   => $fmb->{id},
             update_params => {
-                take_profit => {
-                    operation => 'update',
-                    value     => 10
-                }
+                take_profit => 10
             },
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
@@ -270,36 +264,6 @@ subtest 'update take profit', sub {
         ok !$error, 'buy without error';
 
         (undef, $fmb) = get_transaction_from_db multiplier => $txn->transaction_id;
-
-        $updater = BOM::Transaction::ContractUpdate->new(
-            client        => $cl,
-            contract_id   => $fmb->{id},
-            update_params => {
-                take_profit => {
-                    operation => 'update',
-                }
-            },
-        );
-
-        ok !$updater->is_valid_to_update, 'not valid to update';
-        is $updater->validation_error->{code}, 'ValueNotDefined', 'code - ValueNotDefined';
-        is $updater->validation_error->{message_to_client}, 'Value is required for update operation.',
-            'message_to_client - Value is required for update operation.';
-
-        $updater = BOM::Transaction::ContractUpdate->new(
-            client        => $cl,
-            contract_id   => $fmb->{id},
-            update_params => {
-                take_profit => {
-                    operation => 'something',
-                    value     => 10,
-                }
-            },
-        );
-        ok !$updater->is_valid_to_update, 'not valid to update';
-        is $updater->validation_error->{code}, 'UnknownUpdateOperation', 'code - UnknownUpdateOperation';
-        is $updater->validation_error->{message_to_client}, 'This operation is not supported. Allowed operations (update, cancel).',
-            'message_to_client - This operation is not supported.';
     };
 
     subtest 'update take profit' => sub {
@@ -307,10 +271,7 @@ subtest 'update take profit', sub {
             client        => $cl,
             contract_id   => $fmb->{id},
             update_params => {
-                take_profit => {
-                    operation => 'update',
-                    value     => 10,
-                }
+                take_profit => 10
             },
         );
         ok $updater->is_valid_to_update, 'valid to update';
@@ -338,10 +299,7 @@ subtest 'update take profit', sub {
             client        => $cl,
             contract_id   => $fmb->{id},
             update_params => {
-                take_profit => {
-                    operation => 'update',
-                    value     => 15,
-                }
+                take_profit => 15
             },
         );
         ok $updater->is_valid_to_update, 'valid to update';
@@ -374,9 +332,7 @@ subtest 'update take profit', sub {
             client        => $cl,
             contract_id   => $fmb->{id},
             update_params => {
-                take_profit => {
-                    operation => 'cancel',
-                }
+                take_profit => 'null'
             },
         );
         ok $updater->is_valid_to_update, 'valid to update';
@@ -441,10 +397,7 @@ subtest 'update take profit', sub {
             client        => $cl,
             contract_id   => $fmb->{id},
             update_params => {
-                take_profit => {
-                    operation => 'update',
-                    value     => 10,
-                }
+                take_profit => 10
             },
         );
         ok $updater->is_valid_to_update, 'valid to update';
@@ -461,10 +414,7 @@ subtest 'update take profit', sub {
             client        => $cl,
             contract_id   => $fmb->{id},
             update_params => {
-                take_profit => {
-                    operation => 'update',
-                    value     => 10,
-                }
+                take_profit => 10
             },
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
