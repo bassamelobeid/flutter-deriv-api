@@ -47,6 +47,7 @@ lives_ok {
 
 my %args = (
     password => $password,
+    app_id   => '1098'
 );
 my $status;
 my $user;
@@ -299,8 +300,10 @@ subtest 'login_history' => sub {
         environment => 'test environment',
         successful  => 't',
         ip          => '1.2.3.4',
-        country     => 'earth'
+        country     => 'earth',
+        app_id      => '1098'
     };
+
     lives_ok { $user->add_login_history(%$args); } 'add login history';
     $login_history = $user->login_history(order => 'desc');
     is(scalar @$login_history, 13, 'login_history ok');
