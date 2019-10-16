@@ -30,34 +30,12 @@
          "additionalProperties" : false,
          "properties": {
             "take_profit": {
-                "type": "object",
-                "additionalProperties" : false,
-                "description": "new take profit value for a contract.",
-                "properties": {
-                    "operation": {
-                        "enum": ["update","cancel"],
-                        "description": "defines the operation"
-                    },
-                    "value": {
-                        "type": "number",
-                        "description": "only defined when it is an update operation. Non-zero positive value."
-                    }
-                }
+                "type": ["number", "null"],
+                "description": "New take profit value for a contract. To cancel, pass 'null'."
             },
             "stop_loss": {
-                "type": "object",
-                "additionalProperties" : false,
-                "description": "new stop loss value for a contract.",
-                "properties": {
-                    "operation": {
-                        "enum": ["update","cancel"],
-                        "description": "defines the operation"
-                    },
-                    "value": {
-                        "type": "number",
-                        "description": "only defined when it is an update operation. Non-zero negative value."
-                    }
-                }
+                "type": ["number", "null"],
+                "description": "New stop loss value for a contract. To cancel, pass 'null'."
             }
          }
       },
