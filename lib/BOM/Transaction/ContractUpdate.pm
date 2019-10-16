@@ -6,6 +6,7 @@ use BOM::Platform::Context qw(localize);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Helper::FinancialMarketBet;
 
+use Scalar::Util qw(looks_like_number);
 use BOM::Transaction;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -91,19 +92,12 @@ sub _validate_update_parameter {
         };
     }
 
-    my ($order_type, $params) = %{$self->update_params};
+    my ($order_type, $order_value) = %{$self->update_params};
 
-    if ($params->{operation} eq 'update' and not defined $params->{value}) {
+    if (not looks_like_number($order_value) and $order_value ne 'null') {
         return {
-            code              => 'ValueNotDefined',
-            message_to_client => localize('Value is required for update operation.'),
-        };
-    }
-
-    if ($params->{operation} ne 'cancel' and $params->{operation} ne 'update') {
-        return {
-            code              => 'UnknownUpdateOperation',
-            message_to_client => localize('This operation is not supported. Allowed operations (update, cancel).'),
+            code              => 'InvalidUpdateValue',
+            message_to_client => localize('Update value accepts number or null string'),
         };
     }
 
@@ -140,9 +134,9 @@ sub _validate_update_parameter {
     }
 
     # when it reaches this stage, if it is a cancel operation, let it through
-    return undef if $params->{operation} eq 'cancel';
+    return undef if $order_value eq 'null';
 
-    my $new_order = $contract->new_order({$order_type => $params->{value}});
+    my $new_order = $contract->new_order({$order_type => $order_value});
     unless ($new_order->is_valid($contract->underlying->spot_tick->quote)) {
         return {
             code              => 'InvalidContractUpdate',
@@ -175,15 +169,15 @@ sub is_valid_to_update {
 sub update {
     my ($self) = @_;
 
-    my ($order_type, $update_params) = %{$self->update_params};
+    my ($order_type, $order_value) = %{$self->update_params};
 
     my $res_table =
         BOM::Database::Helper::FinancialMarketBet->new(db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db)
         ->update_multiplier_contract({
-            contract_id   => $self->contract_id,
-            order_type    => $order_type,
-            update_params => $update_params,
-            add_to_audit  => $self->_order_exists($order_type),
+            contract_id  => $self->contract_id,
+            order_type   => $order_type,
+            order_value  => $order_value,
+            add_to_audit => $self->_order_exists($order_type),
         })->{$self->contract_id};
 
     my $queue_res;
