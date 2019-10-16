@@ -565,7 +565,7 @@ async sub client_verification {
                     my $result = @reports ? $reports[0]->result : 'blank';
                     my $failure_reason = "as onfido result was marked as $result.";
                     await _send_report_automated_age_verification_failed({
-                        clietn         => $client,
+                        client         => $client,
                         short_reason   => 'check_not_pass',
                         failure_reason => $failure_reason,
                         redis_key      => ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
