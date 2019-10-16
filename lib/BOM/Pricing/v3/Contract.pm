@@ -224,7 +224,7 @@ sub _get_ask {
 
             if ($contract->can('barriers_for_display') and my $display = $contract->barriers_for_display) {
                 $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
-                $response->{barriers} = $display;
+                $response->{limit_order} = $display;
             }
         }
         my $pen = $contract->pricing_engine_name;
