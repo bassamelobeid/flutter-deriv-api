@@ -93,7 +93,7 @@ my $connection_lost = 1;
                             sub {
                                 $log->errorf('Failure when retrieving group for [%s] - %s', $id, [@_]);
                                 stats_inc('mt5.group_populator.item_failed', 1);
-                                Future->done('failed to get group');
+                                Future->done({});
                             }
                             )->then(
                             sub {
