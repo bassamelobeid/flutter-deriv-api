@@ -17,8 +17,10 @@
                 <th>Action</th>
                 <th>Status</th>
                 <th>IP Address</th>
+                <th>Company IP?</th>
                 <th>Country</th>
                 <th>Environment Info</th>
+                <th>App ID</th>
             </tr>
 [%       FOREACH l IN history.reverse;
             date = l.history_date;
@@ -28,14 +30,17 @@
             ip = matches.0;
             cc = matches.1
             env = env.remove('.+User_AGENT=');
+            is_company_ip = l.app_id == 4 ? 'Yes' : 'No';
 %]
             <tr>
                 <td width='150'>[% date %] GMT</td>
                 <td>[% l.action %]</td>
                 <td>[% status %]</td>
                 <td>[% ip %]</td>
+                <td>[% is_company_ip %]</td>
                 <td>[% cc %]</td>
                 <td>[% env %]</td>
+                <td>[% l.app_id || 'N/A' %]</td>
             </tr>
 
         [% END %]

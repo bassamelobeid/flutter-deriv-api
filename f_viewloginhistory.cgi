@@ -24,7 +24,8 @@ if (my $email_list = request()->param('email')) {
         my $history;
         if ($user) {
             $history = $user->login_history(
-                order => 'desc',
+                order                    => 'desc',
+                show_impersonate_records => 1,
                 $limit > 0 ? (limit => $limit) : (),
             );
         }

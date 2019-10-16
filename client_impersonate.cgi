@@ -32,8 +32,16 @@ my $client = BOM::User::Client::get_instance({
     'loginid'    => uc $login,
     db_operation => 'replica'
 });
+
 if (not $client) {
     print "Error: wrong loginid ($encoded_login) could not get client instance";
+    code_exit_BO();
+}
+
+if ($client->status->disabled || $client->status->duplicate_account) {
+    my $reason = $client->status->disabled ? 'disabled' : 'duplicated';
+
+    print "Error: Client cannot be impersonated, as the client account is $reason";
     code_exit_BO();
 }
 
