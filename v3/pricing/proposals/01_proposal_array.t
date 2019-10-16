@@ -267,7 +267,7 @@ SKIP: {
                 $uuid = $response->{proposal_array}->{id};
                 ok $uuid, "There is an id";
                 is $response->{subscription}->{id}, $uuid, "And it is the same as the subscription id";
-            };
+            }
 
             my $failure = $t->await::proposal_array($proposal_array_req_tpl);
             is $failure->{error}->{code}, 'Deprecated', 'Deprecated';
@@ -294,7 +294,7 @@ SKIP: {
                 ok(!$subscription, 'subscription is destroyed');
                 is @{$response->{forget_all}}, 1, 'Correct number of subscriptions forgotten';
                 is $response->{forget_all}->[0], $uuid, 'Correct subscription id returned';
-            };
+            }
         };
 
         subtest 'using durations' => sub {
