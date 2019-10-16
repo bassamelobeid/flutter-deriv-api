@@ -6,7 +6,7 @@ use warnings;
 use feature 'state';
 use Try::Tiny;
 use Date::Utility;
-use List::Util qw(first any);
+use List::Util qw(first any all);
 use Scalar::Util qw(blessed looks_like_number);
 use Carp qw(croak carp);
 
@@ -529,6 +529,18 @@ sub is_payment_agents_suspended_in_country {
 sub get_mt5_loginids {
     my $self = shift;
     return grep { $_ =~ MT5_REGEX } $self->loginids;
+}
+
+=head2 is_closed
+
+Returns true or false if a user has been disabled, for example by the account_closure API call.
+In our system, this means all sub accounts have disabled status.
+
+=cut
+
+sub is_closed {
+    my $self = shift;
+    return all { $_->status->disabled } $self->clients;
 }
 
 1;
