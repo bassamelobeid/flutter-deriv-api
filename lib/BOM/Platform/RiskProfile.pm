@@ -24,6 +24,7 @@ use LandingCompany::Registry;
 
 use BOM::Config::Runtime;
 use BOM::Config;
+use Syntax::Keyword::Try;
 
 use constant RISK_PROFILES => [qw(no_business extreme_risk high_risk moderate_risk medium_risk low_risk)];
 
@@ -208,6 +209,11 @@ sub get_turnover_limit_parameters {
     my $self = shift;
     my $ap = shift || [];
 
+    # Complince team establish turnover limits only for svg landing company
+    # Therefore we are using svg for getting limits for all companies
+    my $svg_lc           = LandingCompany::Registry::get('svg');
+    my $offerings_config = BOM::Config::Runtime->instance->get_offerings_config;
+
     return [
         map {
             my $params;
@@ -237,22 +243,37 @@ sub get_turnover_limit_parameters {
                 $params->{non_atm} = 1;
             }
 
-            my $offerings_obj = _offerings_obj();
+            try {
+                if ($_->{underlying_symbol}) {
+                    $params->{symbols} = [split ',', $_->{underlying_symbol}];
+                } elsif ($_->{submarket}) {
+                    $params->{symbols} =
+                        [$svg_lc->default_offerings($offerings_config)
+                            ->query({submarket => [split ',', $_->{submarket} =~ s/\s//gr]}, ['underlying_symbol'],)];
+                } elsif ($_->{market}) {
+                    $params->{symbols} = [
+                        $svg_lc->default_offerings($offerings_config)->query({market => [split ',', $_->{market} =~ s/\s//gr]}, ['underlying_symbol'])
+                    ];
+                }
+            }
+            catch {
+                my $err = $@;
+                die if $err !~ m/^LANDING_COMPANY_DOES_NOT_HAVE_OFFERINGS/;
 
-            if ($_->{underlying_symbol}) {
-                $params->{symbols} = [split ',', $_->{underlying_symbol}];
-            } elsif ($_->{submarket}) {
-                my $submarket = $_->{submarket};
-                $submarket =~ s/\s//g;
-                $params->{symbols} = [$offerings_obj->query({submarket => [split ',', $submarket]}, ['underlying_symbol'])];
-            } elsif ($_->{market}) {
-                my $market = $_->{market};
-                $market =~ s/\s//g;
-                $params->{symbols} = [$offerings_obj->query({market => [split ',', $market]}, ['underlying_symbol'])];
+                $params->{symbols} = [];
             }
 
-            if ($_->{contract_category}) {
-                $params->{bet_type} = [$offerings_obj->query({contract_category => $_->{contract_category}}, ['contract_type'])];
+            try {
+                if ($_->{contract_category}) {
+                    $params->{bet_type} =
+                        [$svg_lc->default_offerings($offerings_config)->query({contract_category => $_->{contract_category}}, ['contract_type'])];
+                }
+            }
+            catch {
+                my $err = $@;
+                die if $err !~ m/^LANDING_COMPANY_DOES_NOT_HAVE_OFFERINGS/;
+
+                $params->{bet_type} = [];
             }
 
             $params;
@@ -306,9 +327,25 @@ sub get_current_profile_definitions {
         ($currency, $landing_company) = ('USD', 'svg');
     }
 
-    my $offerings_obj = _offerings_obj($landing_company, $country_code);
-    my @markets =
-        map { Finance::Asset::Market::Registry->get($_) } $offerings_obj->values_for_key('market');
+    my (@markets, $offerings_obj);
+    try {
+        my $offerings_config = BOM::Config::Runtime->instance->get_offerings_config;
+        my $lc_obj           = LandingCompany::Registry::get($landing_company);
+        $offerings_obj =
+              $country_code
+            ? $lc_obj->default_offerings_for_country($country_code, $offerings_config)
+            : $lc_obj->default_offerings($offerings_config);
+
+        @markets =
+            map { Finance::Asset::Market::Registry->get($_) } $offerings_obj->values_for_key('market');
+    }
+    catch {
+        my $err = $@;
+        die if $err !~ m/^LANDING_COMPANY_DOES_NOT_HAVE_OFFERINGS/;
+
+        return {};
+    }
+
     my $limit_ref = BOM::Config::quants()->{risk_profile};
 
     my %limits;
@@ -372,21 +409,6 @@ sub _match_conditions {
     }
 
     return $real_tests_performed;                                                                   # all conditions match
-}
-
-sub _offerings_obj {
-    my $landing_company_short = shift // 'svg';
-    my $country_code = shift;
-
-    my $landing_company = LandingCompany::Registry::get($landing_company_short);
-
-    if ($country_code) {
-        my $method = $landing_company->default_offerings eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
-        return $landing_company->$method($country_code, BOM::Config::Runtime->instance->get_offerings_config);
-    } else {
-        my $method = $landing_company->default_offerings eq 'basic' ? 'basic_offerings' : 'multi_barrier_offerings';
-        return $landing_company->$method(BOM::Config::Runtime->instance->get_offerings_config);
-    }
 }
 
 no Moose;

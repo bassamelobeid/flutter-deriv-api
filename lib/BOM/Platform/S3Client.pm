@@ -121,8 +121,10 @@ sub head_object {
 
 sub delete {
     my ($self, $filename) = @_;
+    # s3 delete_object needs filename and bucket in HTTP request header
     return $self->{s3}->delete_object(
-        key => $filename,
+        key    => $filename,
+        bucket => $self->{config}->{aws_bucket},
     );
 }
 1;

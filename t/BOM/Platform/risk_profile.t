@@ -5,6 +5,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
+use Test::MockModule;
 use Test::Warnings;
 use Test::Deep;
 
@@ -182,6 +183,34 @@ subtest 'turnover limit parameters' => sub {
     ok !$param->[0]->{daily}, 'daily set to 0';
     ok $param->[0]->{ultra_short}, 'daily set to 1';
     is scalar(@{$param->[0]->{symbols}}), 9, '9 symbols selected';
+};
+
+subtest 'Handling errors for companies with no offering' => sub {
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{"yyy": {"market": "forex", "contract_category": "callput", "risk_profile": "high_risk", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}'
+    );
+    $ul = Quant::Framework::Underlying->new('frxUSDJPY');
+    my $rp = BOM::Platform::RiskProfile->new(
+        contract_category              => 'callput',
+        start_type                     => 'spot',
+        expiry_type                    => 'tick',
+        currency                       => 'USD',
+        barrier_category               => 'euro_atm',
+        landing_company                => $landing_company,
+        symbol                         => $ul->symbol,
+        market_name                    => $ul->market->name,
+        submarket_name                 => $ul->submarket->name,
+        underlying_risk_profile        => $ul->risk_profile,
+        underlying_risk_profile_setter => $ul->risk_profile_setter,
+    );
+    my $landing_company_mock = Test::MockModule->new('LandingCompany');
+    $landing_company_mock->mock(default_offerings => sub { die 'LANDING_COMPANY_DOES_NOT_HAVE_OFFERINGS' });
+    my $param = $rp->get_turnover_limit_parameters;
+    is_deeply $param->[0]{symbols},  [], 'No symbols for companies without offerings';
+    is_deeply $param->[0]{bet_type}, [], 'No bet types for companies without offerings';
+
+    $landing_company_mock->mock(default_offerings => sub { die 'UNEXPECTED_PRODUCT_TYPE' });
+    throws_ok { $rp->get_turnover_limit_parameters } qr/^UNEXPECTED_PRODUCT_TYPE/, 'Only exception without offerings is handled';
 };
 
 subtest 'empty limit condition' => sub {
