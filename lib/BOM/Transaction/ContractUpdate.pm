@@ -180,16 +180,60 @@ sub update {
             add_to_audit => $self->_order_exists($order_type),
         })->{$self->contract_id};
 
-    my $queue_res;
-    if ($res_table) {
-        $queue_res = $self->_requeue_transaction($order_type);
-    }
+    return undef unless $res_table;
+
+    my $res = $self->build_contract_update_response;
+    $res->{updated_queue} = $self->_requeue_transaction($order_type);
+
+    return $res;
+}
+
+sub build_contract_update_response {
+    my $self = shift;
+
+    my $contract = $self->contract;
+    # we will need to resubscribe for the new proposal open contract when the contract
+    # parameters changed, if subscription is turned on. That's why we need contract_details.
+    my %common_details = (
+        account_id      => $self->client->account->id,
+        shortcode       => $self->fmb->{short_code},
+        contract_id     => $self->fmb->{id},
+        currency        => $self->client->currency,
+        buy_price       => $self->fmb->{buy_price},
+        sell_price      => $self->fmb->{sell_price},
+        sell_time       => $self->fmb->{sell_time},
+        purchase_time   => Date::Utility->new($self->fmb->{purchase_time})->epoch,
+        is_sold         => $self->fmb->{is_sold},
+        transaction_ids => {buy => $self->fmb->{buy_transaction_id}},
+        longcode        => localize($contract->longcode),
+    );
+
+    my $new_order_type = $self->new_order->order_type;
+    my $take_profit =
+          $new_order_type eq 'take_profit' ? $self->new_order->barrier_value
+        : $contract->take_profit           ? $self->contract->take_profit->barrier_value
+        :                                    undef;
+    my $stop_loss =
+        $new_order_type eq 'stop_loss' ? $self->new_order->barrier_value : $contract->stop_loss ? $self->contract->stop_loss->barrier_value : undef;
 
     return {
-        updated_table => $res_table,
-        updated_queue => $queue_res,
+        take_profit      => $take_profit,
+        stop_loss        => $stop_loss,
+        contract_details => {
+            %common_details,
+            limit_order => $self->contract->available_orders($self->new_order),
+        },
+        old_contract_details => {
+            %common_details,
+            limit_order => $self->contract->available_orders,
+        },
     };
 }
+
+has new_order => (
+    is       => 'rw',
+    init_arg => undef,
+);
 
 ### PRIVATE ###
 
@@ -235,10 +279,5 @@ sub _order_exists {
     return 1 if $fmb and defined $fmb->{$order_type . '_order_date'};
     return 0;
 }
-
-has new_order => (
-    is       => 'rw',
-    init_arg => undef,
-);
 
 1;
