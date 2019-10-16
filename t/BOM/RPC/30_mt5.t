@@ -16,7 +16,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Helper::Client qw(create_client top_up);
-use BOM::Test::Email;
+use BOM::Test::Email qw(:no_event);
 use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;

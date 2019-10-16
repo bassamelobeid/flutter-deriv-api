@@ -112,7 +112,12 @@ rpc authorize => sub {
 
     my $user = $client->user;
     my $token_type;
+
+    $params->{app_id} = $params->{source};
+    my $app_id = $params->{app_id};
+
     if (length $token == 15) {
+
         $token_type = 'api_token';
         # add to login history for api token only as oauth login already creates an entry
         if ($params->{args}->{add_to_login_history} && $user) {
@@ -120,16 +125,32 @@ rpc authorize => sub {
                 environment => BOM::RPC::v3::Utility::login_env($params),
                 successful  => 't',
                 action      => 'login',
+                app_id      => $app_id
             );
         }
+
     } elsif (length $token == 32 && $token =~ /^a1-/) {
         $token_type = 'oauth_token';
-        BOM::RPC::v3::Utility::check_ip_country(
-            client_residence => $client->{residence},
-            client_ip        => $params->{client_ip},
-            country_code     => $params->{country_code},
-            client_login_id  => $params->{token_details}->{loginid},
-            broker_code      => $client->{broker_code}) if $client->landing_company->ip_check_required;
+
+        my $oauth = BOM::Database::Model::OAuth->new;
+        $app_id = $oauth->get_app_id_by_token($params->{token});
+
+        # App ID 4 comes from Backoffice, when client account is impersonated
+        if ($app_id eq '4') {
+            $user->add_login_history(
+                environment => BOM::RPC::v3::Utility::login_env($params),
+                successful  => 't',
+                action      => 'login',
+                app_id      => $app_id,
+                token       => $params->{token});
+        } else {
+            BOM::RPC::v3::Utility::check_ip_country(
+                client_residence => $client->{residence},
+                client_ip        => $params->{client_ip},
+                country_code     => $params->{country_code},
+                client_login_id  => $params->{token_details}->{loginid},
+                broker_code      => $client->{broker_code}) if $client->landing_company->ip_check_required;
+        }
     }
 
     my $_get_account_details = sub {
@@ -190,7 +211,7 @@ rpc logout => sub {
 
     if (my $email = $params->{email}) {
         my $token_details = $params->{token_details};
-        my ($loginid, $scopes) = ($token_details and exists $token_details->{loginid}) ? @{$token_details}{qw/loginid scopes/} : ();
+        my $loginid = ($token_details and exists $token_details->{loginid}) ? @{$token_details}{qw/loginid/} : ();
 
         # if the $loginid is not undef, then only check for ip_mismatch.
         # PS: changing password will trigger logout, however, in that process, $loginid is not sent in, causing error in this line
@@ -204,33 +225,29 @@ rpc logout => sub {
                 client_residence => $client->{residence},
                 client_ip        => $params->{client_ip},
                 country_code     => $params->{country_code},
-                client_login_id  => $params->{token_details}->{loginid},
+                client_login_id  => $loginid,
                 broker_code      => $client->{broker_code}) if $client->landing_company->ip_check_required;
         }
 
         if (my $user = BOM::User->new(email => $email)) {
-            my $skip_login_history;
 
             if ($params->{token_type} eq 'oauth_token') {
                 # revoke tokens for user per app_id
                 my $oauth  = BOM::Database::Model::OAuth->new;
                 my $app_id = $oauth->get_app_id_by_token($params->{token});
 
-                # need to skip as we impersonate from backoffice using read only token
-                $skip_login_history = 1 if ($scopes and scalar(@$scopes) == 1 and $scopes->[0] eq 'read');
-
                 foreach my $c1 ($user->clients) {
                     $oauth->revoke_tokens_by_loginid_app($c1->loginid, $app_id);
                 }
 
-                unless ($skip_login_history) {
-                    $user->add_login_history(
-                        environment => BOM::RPC::v3::Utility::login_env($params),
-                        successful  => 't',
-                        action      => 'logout',
-                    );
-                    BOM::User::AuditLog::log("user logout", join(',', $email, $loginid // ''));
-                }
+                $user->add_login_history(
+                    environment => BOM::RPC::v3::Utility::login_env($params),
+                    successful  => 't',
+                    action      => 'logout',
+                    app_id      => $app_id // $params->{source},
+                    token       => $params->{token});
+
+                BOM::User::AuditLog::log("user logout", join(',', $email, $loginid // ''));
             }
         }
     }

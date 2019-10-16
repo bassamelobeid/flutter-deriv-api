@@ -26,6 +26,7 @@ use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Locale;
 use BOM::User;
 use BOM::Config;
 use BOM::Platform::Context qw (request);
@@ -95,8 +96,8 @@ rpc "new_account_virtual",
     $user->add_login_history(
         action      => 'login',
         environment => BOM::RPC::v3::Utility::login_env($params),
-        successful  => 't'
-    );
+        successful  => 't',
+        app_id      => $params->{source});
 
     BOM::User::AuditLog::log("successful login", "$email");
     BOM::User::Client::PaymentNotificationQueue->add(
@@ -111,13 +112,12 @@ rpc "new_account_virtual",
     # Welcome email for Binary brand is handled in customer.io
     # we're sending for Deriv here as a temporary solution
     # until customer.io is able to handle multiple domains
-    my $brand = request()->brand;
     request_email(
         $email,
         {
-            subject       => localize('Welcome to Deriv'),
+            subject       => localize('Welcome to Deriv!'),
             template_name => 'welcome_virtual',
-        }) if $brand->name eq 'deriv';
+        }) if request()->brand->name eq 'deriv';
 
     return {
         client_id => $client->loginid,
@@ -181,47 +181,39 @@ rpc "verify_email",
         source           => $params->{source},
         app_name         => get_app_name($params->{source}),
         email            => $email,
+        type             => $type,
         %$extra_url_params
     });
 
-    my $email_already_exist = BOM::User->new(
+    my $existing_user = BOM::User->new(
         email => $email,
     );
 
-    my $payment_sub = sub {
-        my $type_call = shift;
+    if ($existing_user and $existing_user->is_closed) {
+        request_email($email, $verification->{closed_account}->());
+        return {status => 1};
+    }
 
-        my $skip_email = 0;
-        # we should only check for loginid email but as its v3 so need to have backward compatibility
-        # in next version need to remove else
-        if ($loginid) {
-            $skip_email = 1 unless (
-                BOM::User::Client->new({
-                        loginid      => $loginid,
-                        db_operation => 'replica'
-                    }
-                )->email eq $email
-            );
-        } else {
-            $skip_email = 1 unless $email_already_exist;
-        }
+    # If user is logged in, email for verification must belong to the logged in account
+    if ($loginid) {
+        return {status => 1}
+            unless BOM::User::Client->new({
+                loginid      => $loginid,
+                db_operation => 'replica'
+            })->email eq $email;
+    }
 
-        request_email($email, $verification->{payment_withdraw}->($type_call)) unless $skip_email;
-    };
-
-    if ($email_already_exist and $type eq 'reset_password') {
+    if ($existing_user and $type eq 'reset_password') {
         request_email($email, $verification->{reset_password}->());
     } elsif ($type eq 'account_opening') {
-        unless ($email_already_exist) {
+        unless ($existing_user) {
             request_email($email, $verification->{account_opening_new}->());
         } else {
             request_email($email, $verification->{account_opening_existing}->());
         }
-    } elsif ($type eq 'paymentagent_withdraw') {
-        $payment_sub->($type);
-    } elsif ($type eq 'payment_withdraw') {
-        $payment_sub->($type);
-    } elsif ($type eq 'mt5_password_reset') {
+    } elsif ($existing_user and ($type eq 'paymentagent_withdraw' or $type eq 'payment_withdraw')) {
+        request_email($email, $verification->{payment_withdraw}->());
+    } elsif ($existing_user and $type eq 'mt5_password_reset') {
         request_email($email, $verification->{mt5_password_reset}->());
     }
 
@@ -341,8 +333,8 @@ rpc new_account_real => sub {
     $user->add_login_history(
         action      => 'login',
         environment => BOM::RPC::v3::Utility::login_env($params),
-        successful  => 't'
-    );
+        successful  => 't',
+        app_id      => $params->{source});
 
     if ($new_client->residence eq 'gb' or $new_client->landing_company->check_max_turnover_limit_is_set)
     {    # RTS 12 - Financial Limits - UK Clients and MLT Clients
@@ -360,6 +352,9 @@ rpc new_account_real => sub {
         amount        => 0,
         payment_agent => 0,
     );
+
+    _send_welcome_email_real_account($user, $new_client);
+
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
@@ -460,8 +455,8 @@ rpc new_account_maltainvest => sub {
     $user->add_login_history(
         action      => 'login',
         environment => BOM::RPC::v3::Utility::login_env($params),
-        successful  => 't'
-    );
+        successful  => 't',
+        app_id      => $params->{source});
 
     BOM::User::AuditLog::log("successful login", "$client->email");
     BOM::User::Client::PaymentNotificationQueue->add(
@@ -472,6 +467,9 @@ rpc new_account_maltainvest => sub {
         amount        => 0,
         payment_agent => 0,
     );
+
+    _send_welcome_email_real_account($user, $new_client);
+
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
@@ -479,5 +477,30 @@ rpc new_account_maltainvest => sub {
         oauth_token               => _create_oauth_token($params->{source}, $new_client->loginid),
     };
 };
+
+# First real account signup email for Binary brand is handled in customer.io
+# we're sending for Deriv here as a temporary solution
+# until customer.io is able to handle multiple domains
+sub _send_welcome_email_real_account {
+    my ($user, $new_client) = @_;
+
+    return unless (request()->brand->name eq 'deriv');
+
+    my $real_count = scalar grep { not $_->is_virtual } $user->clients(include_disabled => 0);
+
+    request_email(
+        $new_client->email,
+        {
+            subject       => localize('Your Deriv real account is ready!'),
+            template_name => 'welcome_real',
+            template_args => {
+                salutation => BOM::Platform::Locale::translate_salutation($new_client->salutation),
+                first_name => $new_client->first_name,
+                last_name  => $new_client->last_name,
+            },
+        }) if $real_count == 1;
+
+    return 1;
+}
 
 1;

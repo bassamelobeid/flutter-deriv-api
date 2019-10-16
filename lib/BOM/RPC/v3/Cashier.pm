@@ -529,8 +529,9 @@ rpc paymentagent_transfer => sub {
     return $error_sub->(localize('You cannot transfer to a client in a different country of residence.'))
         if $client_fm->residence ne $client_to->residence and not _is_pa_residence_exclusion($client_fm);
 
-    return $error_sub->(localize('Your profile appears to be incomplete. Please update your personal details to continue.'))
-        if ($client_fm->missing_requirements('withdrawal'));
+    if (my @missing_requirements = $client_fm->missing_requirements('withdrawal')) {
+        return BOM::RPC::v3::Utility::missing_details_error(details => \@missing_requirements);
+    }
 
     #disable/suspending pa transfers in a country, does not exclude a pa if a previous transfer is recorded in db.
     if (is_payment_agents_suspended_in_country($client_to->residence)) {
@@ -899,8 +900,9 @@ rpc paymentagent_withdraw => sub {
     return $error_sub->(localize('You cannot perform this action, as your account is withdrawal locked.'))
         if $client->status->withdrawal_locked;
 
-    return $error_sub->(localize('Your profile appears to be incomplete. Please update your personal details to continue.'))
-        if ($client->missing_requirements('withdrawal'));
+    if (my @missing_requirements = $client->missing_requirements('withdrawal')) {
+        return BOM::RPC::v3::Utility::missing_details_error(details => \@missing_requirements);
+    }
 
     return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client->documents_expired;
 
@@ -1186,11 +1188,7 @@ rpc transfer_between_accounts => sub {
         if ($status->withdrawal_locked || $status->no_withdrawal_or_trading);
 
     if (my @missed_fields = $client->missing_requirements('withdrawal')) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'ASK_FIX_DETAILS',
-            message_to_client => localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
-            details           => {fields => \@missed_fields},
-        });
+        return BOM::RPC::v3::Utility::missing_details_error(details => \@missed_fields);
     }
 
     my $args = $params->{args};

@@ -17,7 +17,7 @@
          "type" : "integer"
       },
       "id" : {
-         "pattern" : "^fr$",
+         "pattern" : "^de$",
          "type" : "string"
       },
       "stash" : {
@@ -29,7 +29,103 @@
       },
       "name" : {
          "type" : "string",
-         "pattern" : "^France$"
+         "pattern" : "^Germany"
+      },
+      "mt_financial_company" : {
+          "standard" : {
+              "name" : "Binary Investments (Europe) Ltd",
+              "shortcode" : "maltainvest",
+              "changeable_fields" : {},
+              "legal_allowed_currencies" : [
+                  "EUR",
+                  "GBP",
+                  "USD"
+              ],
+              "legal_default_currency" : "EUR",
+              "country" : "Malta",
+              "requirements" : {
+                  "signup" : [
+                      "salutation",
+                      "citizen",
+                      "tax_residence",
+                      "tax_identification_number",
+                      "first_name",
+                      "last_name",
+                      "date_of_birth",
+                      "residence",
+                      "address_line_1",
+                      "address_city",
+                      "account_opening_reason"
+              ]
+              },
+              "legal_allowed_contract_categories" : [
+                  "asian",
+                  "callput",
+                  "callputequal",
+                  "digits",
+                  "endsinout",
+                  "staysinout",
+                  "touchnotouch"
+              ],
+              "has_reality_check" : 1,
+              "legal_allowed_markets" : [
+                  "commodities",
+                  "forex",
+                  "indices"
+              ],
+              "address" : [
+                  "W Business Centre",
+                  "Level 3",
+                  "Triq Dun Karm",
+                  "Birkirkara",
+                  "BKR 9033",
+                  "Malta"
+              ],
+              "currency_config" : {
+                  "indices" : {
+                  "EUR" : {
+                      "max_payout" : 50000,
+                      "min_stake" : 5
+                  },
+                  "GBP" : {
+                      "min_stake" : 5,
+                      "max_payout" : 50000
+                  },
+                  "USD" : {
+                      "min_stake" : 5,
+                      "max_payout" : 50000
+                  }
+              },
+                  "commodities" : {
+                  "USD" : {
+                      "max_payout" : 50000,
+                      "min_stake" : 5
+                  },
+                  "EUR" : {
+                      "max_payout" : 50000,
+                      "min_stake" : 5
+                  },
+                  "GBP" : {
+                      "max_payout" : 50000,
+                      "min_stake" : 5
+                  }
+              },
+                  "forex" : {
+                  "USD" : {
+                      "min_stake" : 5,
+                      "max_payout" : 50000
+                  },
+                  "GBP" : {
+                      "min_stake" : 5,
+                      "max_payout" : 50000
+                  },
+                  "EUR" : {
+                      "min_stake" : 5,
+                      "max_payout" : 50000
+                  }
+              }
+          }
+          }
       },
       "financial_company" : {
          "required" : [

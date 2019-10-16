@@ -117,7 +117,8 @@ sub process_template {
 }
 
 sub get_verification {
-    my ($type, $with_link, $type_call) = @_;
+    my ($type, $with_link, $template) = @_;
+    $template //= $type;
 
     my $verification = email_verification({
             code         => $code,
@@ -125,7 +126,8 @@ sub get_verification {
             language     => $language,
             source       => $source,
             ($with_link ? (verification_uri => $verification_uri) : ()),
-        })->{$type}->($type_call);
+            type => $type,
+        })->{$template}->();
 
     $verification->{message} = process_template($verification->{template_name}, $verification->{template_args});
     # removing whitesapces out of html
@@ -169,21 +171,20 @@ subtest 'Account Opening (new) Verification' => sub {
 };
 
 subtest 'Payment Withdraw Verification' => sub {
-    my $verification_type = 'payment_withdraw';
-    my $verification = get_verification($verification_type, 0, $verification_type);
+    my $verification = get_verification('payment_withdraw', 0);
 
     is $verification->{subject}, "Verify your withdrawal request - $website_name", 'Payment Withdraw subject';
-    is $verification->{message}, get_verification_message($verification_type), 'Payment Withdraw with token';
+    is $verification->{message}, get_verification_message('payment_withdraw'), 'Payment Withdraw with token';
 
-    $verification = get_verification($verification_type, 1, $verification_type);
+    $verification = get_verification('payment_withdraw', 1);
 
-    is $verification->{message}, get_verification_message($verification_type, $verification_type), 'Payment Withdraw with verification URI';
+    is $verification->{message}, get_verification_message('payment_withdraw', 'payment_withdraw'), 'Payment Withdraw with verification URI';
 
-    $verification = get_verification($verification_type, 0, 'paymentagent_withdraw');
+    $verification = get_verification('paymentagent_withdraw', 0, 'payment_withdraw');
 
     is $verification->{message}, get_verification_message('payment_agent_withdraw'), 'Payment Agent Withdraw with token';
 
-    $verification = get_verification($verification_type, 1, 'paymentagent_withdraw');
+    $verification = get_verification('paymentagent_withdraw', 1, 'payment_withdraw');
 
     is $verification->{message},
         get_verification_message('payment_agent_withdraw', 'payment_agent_withdraw'), 'Payment Agent Withdraw with verification URI';
