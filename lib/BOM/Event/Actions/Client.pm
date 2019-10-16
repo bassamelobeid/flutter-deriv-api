@@ -1360,7 +1360,7 @@ sub _send_email_underage_disable_account {
 
     my $client        = BOM::User::Client->new({loginid => $loginid});
     my $website_name  = ucfirst BOM::Config::domain()->{default_domain};
-    my $email_subject = "We closed your $website_name account";
+    my $email_subject = localize('We closed your [_1] account', $website_name);
 
     send_email({
         to                    => $client->email,
