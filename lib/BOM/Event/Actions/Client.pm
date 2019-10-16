@@ -1364,7 +1364,7 @@ sub _send_email_underage_disable_account {
 
     send_email({
         to                    => $client->email,
-        subject               => localize($email_subject),
+        subject               => $email_subject,
         template_name         => 'close_account_underage',
         template_args         => {website_name => $website_name},
         use_email_template    => 1,
