@@ -3,7 +3,6 @@ use warnings;
 
 use Test::More;
 use Test::Mojo;
-use Test::MockModule;
 use Test::Fatal qw(lives_ok);
 
 use MojoX::JSON::RPC::Client;
@@ -205,6 +204,64 @@ subtest 'Payment withdraw' => sub {
         subject => qr/Verify your withdrawal request/
     );
     ok !$msg, 'no email as token email different from passed email';
+};
+
+subtest 'Closed account' => sub {
+
+    $client->status->set('disabled', 1, 'test disabled');
+    mailbox_clear();
+    $params[1]->{args}->{verify_email} = $email;
+    $params[1]->{args}->{type}         = 'account_opening';
+    $params[1]->{server_name}          = 'binary.com';
+    $params[1]->{link}                 = 'binary.com/some_url';
+
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('no error for disabled account')
+        ->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
+
+    my $msg = mailbox_search(
+        email   => $params[1]->{args}->{verify_email},
+        subject => qr/Signup unsuccessful/
+    );
+    ok $msg, 'Correct email received for signup attempt on closed account';
+
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $user->add_client($client2);
+
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('no error after adding a non-disabled account')
+        ->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
+
+    $msg = mailbox_search(
+        email   => $params[1]->{args}->{verify_email},
+        subject => qr/Duplicate email address submitted/
+    );
+    ok $msg, 'Get the regular email when not all accounts are disabled';
+
+    $client2->status->set('disabled', 1, 'test disabled');
+    mailbox_clear();
+    $params[1]->{args}->{type} = 'reset_password';
+
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('no error for disabled account')
+        ->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
+
+    $msg = mailbox_search(
+        email   => $params[1]->{args}->{verify_email},
+        subject => qr/Password reset unsuccessful/
+    );
+    ok $msg, 'Correct email received for reset password attempt on closed account';
+
+    mailbox_clear();
+    $params[1]->{args}->{type} = 'payment_withdraw';
+
+    $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('no error for disabled account')
+        ->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
+
+    $msg = mailbox_search(
+        email   => $params[1]->{args}->{verify_email},
+        subject => qr/Email verification unsuccessful/
+    );
+    ok $msg, 'Correct email received for payment withdraw attempt on closed account';
 };
 
 done_testing();

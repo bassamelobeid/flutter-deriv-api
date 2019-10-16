@@ -71,17 +71,13 @@ email: C<subject>, C<template_name>, C<template_args>
 sub email_verification {
     my $args = shift;
 
-    my $code             = $args->{code};
-    my $website_name     = $args->{website_name};
-    my $verification_uri = $args->{verification_uri};
-    my $language         = $args->{language};
-    my $source           = $args->{source};
-    my $app_name         = $args->{app_name};
+    my ($code, $website_name, $verification_uri, $language, $source, $app_name, $type) =
+        @{$args}{qw/code website_name verification_uri language source app_name type/};
 
     my ($has_social_signup, $user_name);
     if ($code and my $user = BOM::RPC::v3::Utility::get_user_by_token($code)) {
         $has_social_signup = $user->{has_social_signup};
-        $user_name         = ($user->clients)[0]->last_name;
+        $user_name = ($user->clients)[0]->last_name if $user->clients;
     }
 
     my $brand              = request()->brand;
@@ -99,6 +95,7 @@ sub email_verification {
         has_social_signup  => $has_social_signup,
         password_reset_url => $password_reset_url,
         user_name          => $user_name,
+        support_email      => $brand->emails('support'),
     );
 
     return {
@@ -133,17 +130,15 @@ sub email_verification {
             };
         },
         payment_withdraw => sub {
-            my $type_call = shift;
-
-            my $is_paymentagent = $type_call eq 'paymentagent_withdraw' ? 1 : 0;
-            $type_call = 'payment_agent_withdraw' if $is_paymentagent;
+            my $is_paymentagent = $type eq 'paymentagent_withdraw' ? 1 : 0;
+            my $action = $is_paymentagent ? 'payment_agent_withdraw' : $type;
 
             return {
                 subject       => localize('Verify your withdrawal request - [_1]', $website_name),
                 template_name => 'payment_withdraw',
                 template_args => {(
                         $verification_uri
-                        ? (verification_url => _build_verification_url($type_call, $args))
+                        ? (verification_url => _build_verification_url($action, $args))
                         : ()
                     ),
                     is_paymentagent => $is_paymentagent,
@@ -175,6 +170,25 @@ sub email_verification {
                     ),
                     %common_args,
                 },
+            };
+        },
+        closed_account => sub {
+            my ($subject, $template);
+            if ($type eq 'account_opening') {
+                $subject  = localize('Signup unsuccessful');
+                $template = 'verify_email_closed_account_signup';
+            } elsif ($type eq 'reset_password') {
+                $subject  = localize('Password reset unsuccessful');
+                $template = 'verify_email_closed_account_other';
+            } else {
+                $subject  = localize('Email verification unsuccessful');
+                $template = 'verify_email_closed_account_other';
+            }
+
+            return {
+                subject       => $subject,
+                template_name => $template,
+                template_args => {%common_args},
             };
         }
     };

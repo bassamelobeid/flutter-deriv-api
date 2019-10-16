@@ -181,47 +181,39 @@ rpc "verify_email",
         source           => $params->{source},
         app_name         => get_app_name($params->{source}),
         email            => $email,
+        type             => $type,
         %$extra_url_params
     });
 
-    my $email_already_exist = BOM::User->new(
+    my $existing_user = BOM::User->new(
         email => $email,
     );
 
-    my $payment_sub = sub {
-        my $type_call = shift;
+    if ($existing_user and $existing_user->is_closed) {
+        request_email($email, $verification->{closed_account}->());
+        return {status => 1};
+    }
 
-        my $skip_email = 0;
-        # we should only check for loginid email but as its v3 so need to have backward compatibility
-        # in next version need to remove else
-        if ($loginid) {
-            $skip_email = 1 unless (
-                BOM::User::Client->new({
-                        loginid      => $loginid,
-                        db_operation => 'replica'
-                    }
-                )->email eq $email
-            );
-        } else {
-            $skip_email = 1 unless $email_already_exist;
-        }
+    # If user is logged in, email for verification must belong to the logged in account
+    if ($loginid) {
+        return {status => 1}
+            unless BOM::User::Client->new({
+                loginid      => $loginid,
+                db_operation => 'replica'
+            })->email eq $email;
+    }
 
-        request_email($email, $verification->{payment_withdraw}->($type_call)) unless $skip_email;
-    };
-
-    if ($email_already_exist and $type eq 'reset_password') {
+    if ($existing_user and $type eq 'reset_password') {
         request_email($email, $verification->{reset_password}->());
     } elsif ($type eq 'account_opening') {
-        unless ($email_already_exist) {
+        unless ($existing_user) {
             request_email($email, $verification->{account_opening_new}->());
         } else {
             request_email($email, $verification->{account_opening_existing}->());
         }
-    } elsif ($type eq 'paymentagent_withdraw') {
-        $payment_sub->($type);
-    } elsif ($type eq 'payment_withdraw') {
-        $payment_sub->($type);
-    } elsif ($type eq 'mt5_password_reset') {
+    } elsif ($existing_user and ($type eq 'paymentagent_withdraw' or $type eq 'payment_withdraw')) {
+        request_email($email, $verification->{payment_withdraw}->());
+    } elsif ($existing_user and $type eq 'mt5_password_reset') {
         request_email($email, $verification->{mt5_password_reset}->());
     }
 
