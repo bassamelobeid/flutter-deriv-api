@@ -39,7 +39,9 @@ function showHidden(){
 }
 </script>
 <a href="[% url_to_client | none %]">&laquo; return to client details</a><br>
-Note: some columns are hidden. <button onclick="showHidden()">Show them</button>, if you need.<br>
+
+[% IF hidden_cols %]Note: some columns are hidden. <button onclick="showHidden()">Show them</button>, if you need.<br>[% END %]
+
 [% INCLUDE pager %]
 <table id="show_log_list_table">
     <tr>

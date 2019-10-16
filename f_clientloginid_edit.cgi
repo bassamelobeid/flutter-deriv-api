@@ -972,13 +972,21 @@ eval {
         if $mt5_log_size > 500;
 
 } or print encode_entities($@);
+
 my $log_args = {
     broker   => $broker,
     category => 'client_details',
     loginid  => $loginid
 };
+
 my $new_log_href = request()->url_for('backoffice/show_audit_trail.cgi', $log_args);
 print qq{<p>Click for <a href="$new_log_href">history of changes</a> to $encoded_loginid</p>};
+
+if ($payment_agent) {
+    $log_args->{category} = 'payment_agent';
+    $new_log_href = request()->url_for('backoffice/show_audit_trail.cgi', $log_args);
+    print qq{<p>Click for <a href="$new_log_href">payment agent history</a> for $encoded_loginid</p>};
+}
 
 print qq[<form action="$self_post?loginID=$encoded_loginid" id="clientInfoForm" method="post">
     <input type="submit" value="Save Client Details">
@@ -1163,8 +1171,9 @@ Bar($user->{email} . " Login history");
 print '<div><br/>';
 my $limit         = 200;
 my $login_history = $user->login_history(
-    order => 'desc',
-    limit => $limit
+    order                    => 'desc',
+    show_impersonate_records => 1,
+    limit                    => $limit
 );
 
 BOM::Backoffice::Request::template()->process(

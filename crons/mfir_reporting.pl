@@ -31,12 +31,9 @@ my $rptDate  = $specified_rptDate ? $rd->date_yyyymmdd            : $rd->minus_t
 my $fileDate = $specified_rptDate ? $rd->plus_time_interval('1d') : $rd;
 
 # our files will be written out for reference
-my $FN = sprintf('BNRY_%04d%02d%02d%02d%02d%02d.csv',
+my $FN_mt5 = sprintf('BNRY_%04d%02d%02d%02d%02d%02d.csv',
     $fileDate->year, $fileDate->month, $fileDate->day_of_month, $fileDate->hour, $fileDate->minute, $fileDate->second);
 # that gives us something like this: BNRY_20180307270320.csv , which is the prescribed format
-
-my $rd2 = $fileDate->plus_time_interval('1s');
-my $FN_mt5 = sprintf('BNRY_%04d%02d%02d%02d%02d%02d.csv', $rd2->year, $rd2->month, $rd2->day_of_month, $rd2->hour, $rd2->minute, $rd2->second);
 
 # where will they go under reports/ and create that if it doesn't yet exist
 my $reports_path = "/reports/MiFIR/@{[ $fileDate->year ]}";
@@ -44,38 +41,6 @@ path($reports_path)->mkpath;
 
 # let psql do our CSV formatting
 my $rz = qx(/usr/bin/psql service=report -qX -v ON_ERROR_STOP=1 2>&1 <<SQL
-    SET SESSION CHARACTERISTICS as TRANSACTION READ ONLY;
-    \\COPY (SELECT * FROM mfirmfsa_report('$rptDate','$rptDate')) TO STDOUT WITH (FORMAT 'csv', DELIMITER ',', FORCE_QUOTE *);
-SQL
-);
-
-# On weekends there is usually nothing to report, so $rz is empty
-# If the call fails or $rz for some reason does not match expectations, the condition will still fail because of the mismatch
-if ($? or ($rz and $rz !~ /^"1","Transaction","new"/)) {
-    send_email({
-            from    => $brand->emails('sysadmin'),
-            to      => $failure_recipients,
-            subject => "MFIR reporting failure - $FN - $rptDate",
-            message => ["An unexpected empty response was received while trying to create the report file today: $FN\n\n$rz"]});
-} else {
-    open(my $fh, '>', "$reports_path/$FN") || die "Failed to open report file for writing: $reports_path/$FN";
-    print $fh BNRY_header();
-    print $fh $rz;
-    close $fh;
-
-    my $upload_status = BOM::Datatracks::upload("$reports_path", [$FN], $brand);
-    my $message = $upload_status ? "There was a problem uploading the file, $FN: $upload_status" : 'Files uploaded successfully';
-    $message .= "\n\nSee attached.";
-    my $brand_name = $brand->website_name;
-    send_email({
-            from       => $brand->emails('support'),
-            to         => $report_recipients,
-            subject    => "MFIR reporting ($brand_name)- $rptDate",
-            message    => [$message],
-            attachment => ["$reports_path/$FN"]});
-}
-
-$rz = qx(/usr/bin/psql service=report -qX -v ON_ERROR_STOP=1 2>&1 <<SQL
     SET SESSION CHARACTERISTICS as TRANSACTION READ ONLY;
     \\COPY (SELECT * FROM mt5.mfirmfsa_report('$rptDate','$rptDate')) TO STDOUT WITH (FORMAT 'csv', DELIMITER ',', FORCE_QUOTE *);
 SQL

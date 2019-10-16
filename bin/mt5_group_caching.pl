@@ -23,8 +23,10 @@ use BOM::Config::RedisReplicated;
 use BOM::MT5::User::Async;
 
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stdout), log_level => 'info';
+use Log::Any::Adapter ('Stderr', log_level => 'info');
 use DataDog::DogStatsd::Helper qw(stats_inc);
+
+use constant COOLDOWN => 1;
 
 my $loop = IO::Async::Loop->new;
 $loop->add(
@@ -38,10 +40,36 @@ sub is_mt5_suspended {
     return 0;
 }
 
+my $connection_lost = 1;
+
 (
     try_repeat {
-        $redis->brpop('MT5_USER_GROUP_PENDING', 60000)->then(
+        $redis->connect->else(
             sub {
+                my $delay = 1;
+                while ($delay <= 8) {
+                    $log->debugf('Failed to connect to redis. Retrying after %d seconds', $delay);
+                    my $f = $loop->delay_future(after => $delay)->then(
+                        sub {
+                            $redis->connect;
+                        })->block_until_ready;
+                    return Future->done() if $f->is_done;
+                    $delay *= 2;
+                }
+                return Future->fail('Connection refused', 'redis', 'connection');
+            }
+            )->then(
+            sub {
+                $log->info('Redis connection established. Fetching requests.') if $connection_lost;
+                $connection_lost = 0;
+                $redis->brpop('MT5_USER_GROUP_PENDING', 60000);
+            }
+            )->then(
+            sub {
+                unless ($_[0]) {
+                    $log->info('There was not any requst pending request');
+                    return Future->done;
+                }
                 my ($queue, $job) = @{$_[0]};
                 my ($id, $queued) = split /:/, $job;
 
@@ -100,9 +128,11 @@ sub is_mt5_suspended {
                             });
                     });
             }
-            )->on_fail(
+            )->else(
             sub {
                 $log->errorf('Failure - %s', [@_]);
+                $connection_lost = 1;
+                return $loop->delay_future(after => COOLDOWN);
             })
     }
     while => sub {
