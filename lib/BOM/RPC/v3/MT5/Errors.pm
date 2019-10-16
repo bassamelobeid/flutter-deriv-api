@@ -32,7 +32,7 @@ my $category_message_mapping = {
     DemoTopupBalance =>
         'We cannot complete your request. You can only ask for additional virtual funds if your demo account balance falls below [_1] [_2].',
     TransferSuspended    => 'Transfers between fiat and crypto accounts are currently unavailable. Please try again later.',
-    CurrencySuspended    => 'Transfers between [_1] and [_2] are currently unavilable. Please try again later.',
+    CurrencySuspended    => 'Transfers between [_1] and [_2] are currently unavailable. Please try again later.',
     ClientFrozen         => 'We are completing your request. Please give us a few more seconds.',
     MT5AccountLocked     => 'Your MT5 account is locked. Please contact us for more information.',
     NoExchangeRates      => 'Transfers are unavailable on weekends. Please try again anytime from Monday to Friday.',
@@ -53,8 +53,8 @@ my $category_message_mapping = {
     TINDetailsMandatory          => 'We require your tax information for regulatory purposes. Please fill in your tax information.',
     MT5Duplicate  => "An account already exists with the information you provided. If you've forgotten your username or password, please contact us.",
     MissingID     => 'Your login ID is missing. Please check the details and try again.',
-    MissingAmount => 'Please enter the amount you wish to transfer.',
-    WrongAmount   => 'Please enter a valid amount you wish to transfer.',
+    MissingAmount => 'Please enter the amount you want to transfer.',
+    WrongAmount   => 'Please enter a valid amount to transfer.',
     MT5NotAllowed => 'MT5 [_1] account is not available in your country yet.',
     MT5CreateUserError           => 'An error occured while creating your account. Please check your information and try again.',
     NoDemoWithdrawals            => 'Withdrawals are not possible for demo accounts.',
@@ -107,15 +107,17 @@ sub format_error {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $message = $category_message_mapping->{$error_code} || $category_message_mapping->{'General'};
+    my $message = $category_message_mapping->{$error_code};
     my @params;
     my $details;
     if (ref $options eq 'HASH') {
-        $message    = $options->{message}       if $options->{message};
+        $message = $options->{message} if $options->{message} && !$message;
         $error_code = $options->{override_code} if $options->{override_code};
         @params = ref $options->{params} eq 'ARRAY' ? @{$options->{params}} : ($options->{params}) if exists $options->{params};
         $details = $options->{details} if $options->{details};
     }
+
+    $message = $category_message_mapping->{'General'} unless $message;
 
     return $self->_create_error($error_code, localize($message, @params), $details);
 }
