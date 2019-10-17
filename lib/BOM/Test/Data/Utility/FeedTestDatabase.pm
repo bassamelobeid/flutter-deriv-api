@@ -26,21 +26,21 @@ my $encoder = Sereal::Encoder->new({
 });
 
 sub _db_name {
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
-    return "feed$db_postfix";
+    return "feed";
 }
 
 sub _db_migrations_dir {
     return '/home/git/regentmarkets/bom-postgres-feeddb/config/sql/';
 }
 
+# TODO: change feeddb to use unittest cluster as well
 sub _build__connection_parameters {
     my $self = shift;
     return {
         database       => $self->_db_name,
         driver         => 'Pg',
         host           => 'localhost',
-        port           => '5433',
+        port           => $ENV{DB_TEST_PORT} // '5433',
         user           => 'postgres',
         password       => 'mRX1E3Mi00oS8LG',
         pgbouncer_port => '6433',
@@ -72,11 +72,10 @@ sub setup_ticks {
     my $file_name = "$date.$table.copy";
     # get this file's path, not the path of script that is using this function
     # this is to make the path below a relative path
-    my $feed_file  = dirname(__FILE__) . "/../../../../../feed/combined/$currency_pair/$file_name";
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
-    my $db         = "feed$db_postfix";
+    my $feed_file = dirname(__FILE__) . "/../../../../../feed/combined/$currency_pair/$file_name";
+    my $port = $ENV{DB_TEST_PORT} // '5433';
 
-    my $command = qq{psql -p 5433 postgresql://write:mRX1E3Mi00oS8LG\@localhost/$db -c "\\COPY $table FROM '$feed_file'"};
+    my $command = qq{psql -p $port postgresql://write:mRX1E3Mi00oS8LG\@localhost/feed -c "\\COPY $table FROM '$feed_file'"};
     return 1 if system($command) == 0;
     warn "setup ticks failed: $?\n";
     return;
@@ -265,9 +264,8 @@ sub _create_table_for_date {
         });
 
     if ($table_present->[0] < 1) {
-        my $db_postfix = $ENV{DB_POSTFIX} // '';
-        my $db         = 'feed' . $db_postfix;
-        my $dbh        = DBI->connect("dbi:Pg:dbname=$db;host=localhost;port=5433", 'postgres', 'mRX1E3Mi00oS8LG') or croak $DBI::errstr;
+        my $port = $ENV{DB_TEST_PORT} // '5433';
+        my $dbh = DBI->connect("dbi:Pg:dbname=feed;host=localhost;port=$port", 'postgres', 'mRX1E3Mi00oS8LG') or croak $DBI::errstr;
 
         # This operation is bound to raise an warning about how index was created.
         # We can ignore it.

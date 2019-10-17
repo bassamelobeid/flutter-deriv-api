@@ -92,6 +92,9 @@ BEGIN {
 
         $ENV{DB_POSTFIX}    = '_test';
         $ENV{PGSERVICEFILE} = '/home/nobody/.pg_service_test.conf';
+
+        # This port is only valid in QA. In CI, we use the same ports as QA manual testing
+        $ENV{DB_TEST_PORT} = 5451;
     }
     $ENV{TEST_DATABASE}    = 1;                     ## no critic (RequireLocalizedPunctuationVars)
     $ENV{JOB_QUEUE_PREFIX} = 'TEST_' . uc(env());
