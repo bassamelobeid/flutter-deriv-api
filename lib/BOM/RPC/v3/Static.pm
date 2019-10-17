@@ -164,6 +164,39 @@ sub _currencies_config {
     return \%currencies_config;
 }
 
+=head2 _crypto_config
+
+Returns limits for cryptocurrencies in USD
+
+=over 4
+
+=item * text (curency name)
+
+=item * amount (minimum withdrawal)
+
+=back 
+
+Returns a HASH.
+
+=cut
+
+sub _crypto_config {
+
+    my @all_currencies = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
+    my %crypto_config;
+    for my $currency (@all_currencies) {
+        next unless LandingCompany::Registry::get_currency_type($currency) eq 'crypto';
+
+        # To check if Exchange Rate is present currently [ Ex: IDK ]
+        my $converted = eval {
+            ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::crypto()->{$currency}->{'withdrawal'}->{min_usd}, 'USD', $currency);
+        } or undef;
+        $crypto_config{$currency}->{minimum_withdrawal} = 0 + financialrounding('amount', $currency, $converted) if $converted;
+    }
+
+    return \%crypto_config;
+}
+
 rpc website_status => sub {
     my $params = shift;
 
@@ -174,7 +207,7 @@ rpc website_status => sub {
         clients_country          => $params->{country_code},
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
-
+        crypto_config            => _crypto_config(),
     };
 };
 
