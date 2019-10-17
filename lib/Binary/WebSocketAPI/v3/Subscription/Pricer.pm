@@ -55,7 +55,7 @@ has subchannel => (
 );
 
 has pricer_args => (
-    is => 'ro',
+    is       => 'ro',
     required => 1,
 );
 

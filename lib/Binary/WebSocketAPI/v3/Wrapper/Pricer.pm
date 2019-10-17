@@ -580,8 +580,8 @@ sub _pricing_channel_for_proposal {
     $args_hash{country_code} = $c->stash('residence') || $c->stash('country_code');
     $args_hash{skips_price_validation} = 1;
     my $redis_channel = _serialized_args(\%args_hash);
-    my $subchannel = $args->{amount} // $args->{multiplier};
-    my $pricer_args = $redis_channel;
+    my $subchannel    = $args->{amount} // $args->{multiplier};
+    my $pricer_args   = $redis_channel;
 
     my $skip = _skip_streaming($args);
 
@@ -614,7 +614,7 @@ sub pricing_channel_for_proposal_open_contract {
     my %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
     $hash{account_id}     = delete $cache->{account_id};
     $hash{transaction_id} = $cache->{transaction_ids}->{buy};    # transaction is going to be stored
-    my $subchannel = _serialized_args(\%hash);
+    my $subchannel    = _serialized_args(\%hash);
     my $redis_channel = 'CONTRACT_PRICE::' . $hash{contract_id};
 
     return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, 'ProposalOpenContract', $cache);
@@ -626,13 +626,13 @@ sub _create_pricer_channel {
     my ($c, $args, $redis_channel, $subchannel, $pricer_args, $class, $cache, $skip_redis_subscr) = @_;
 
     my $subscription = create_subscription(
-        c          => $c,
-        channel    => $redis_channel,
-        subchannel => $subchannel,
+        c           => $c,
+        channel     => $redis_channel,
+        subchannel  => $subchannel,
         pricer_args => $pricer_args,
-        args       => $args,
-        cache      => $cache,
-        class      => $class
+        args        => $args,
+        cache       => $cache,
+        class       => $class
     );
 
     # channel already generated

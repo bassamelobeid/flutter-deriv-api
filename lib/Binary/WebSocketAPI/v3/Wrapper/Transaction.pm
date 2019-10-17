@@ -35,8 +35,8 @@ Deletes of pricer key and set the new pricer key
 sub contract_update_handler {
     my ($c, $api_response, $req_storage) = @_;
 
-    my $old_poc_params  = _get_poc_params(delete $api_response->{old_contract_details});
-    my $new_poc_params  = _get_poc_params(delete $api_response->{contract_details});
+    my $old_poc_params = _get_poc_params(delete $api_response->{old_contract_details});
+    my $new_poc_params = _get_poc_params(delete $api_response->{contract_details});
 
     my $pricer_subscription_manager = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager();
     $pricer_subscription_manager->redis->del(Binary::WebSocketAPI::v3::Wrapper::Pricer::get_pricer_args($c, $old_poc_params));
