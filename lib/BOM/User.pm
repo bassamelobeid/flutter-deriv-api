@@ -6,7 +6,7 @@ use warnings;
 use feature 'state';
 use Try::Tiny;
 use Date::Utility;
-use List::Util qw(first any);
+use List::Util qw(first any all);
 use Scalar::Util qw(blessed looks_like_number);
 use Carp qw(croak carp);
 
@@ -142,9 +142,12 @@ Returns hashref, {success => 1} if successfully authenticated user or {error => 
 
 sub login {
     my ($self, %args) = @_;
+
     my $password        = $args{password}        || die "requires password argument";
     my $environment     = $args{environment}     || '';
     my $is_social_login = $args{is_social_login} || 0;
+    my $app_id          = $args{app_id}          || undef;
+
     use constant {
         MAX_FAIL_TIMES   => 5,
         ATTEMPT_INTERVAL => '5 minutes'
@@ -177,7 +180,7 @@ sub login {
     BOM::User::AuditLog::log($error_log_msgs->{$error || 'Success'}, $self->{email});
     $self->dbic->run(
         fixup => sub {
-            $_->do('select users.record_login_history(?,?,?,?)', undef, $self->{id}, $error ? 'f' : 't', $log_as_failed, $environment);
+            $_->do('select users.record_login_history(?,?,?,?,?)', undef, $self->{id}, $error ? 'f' : 't', $log_as_failed, $environment, $app_id);
         });
     return {error => $error_mapping->{$error}} if $error;
 
@@ -312,7 +315,7 @@ sub mt5_logins_with_group {
     for my $login (sort $self->get_mt5_loginids()) {
         my $group = BOM::MT5::User::Async::get_user(
             do { $login =~ /(\d+)/; $1 }
-        )->get->{group} // '';
+        )->else(sub { Future->done({}); })->get->{group} // '';
 
         $mt5_logins_with_group->{$login} = $group if (not $filter or $group =~ /^$filter/);
     }
@@ -440,17 +443,35 @@ sub login_history {
     my ($self, %args) = @_;
     $args{order} //= 'desc';
     my $limit = looks_like_number($args{limit}) ? "limit $args{limit}" : '';
-    my $sql = "select * from users.get_login_history(?,?) $limit";
+    my $sql = "select * from users.get_login_history(?,?,?) $limit";
     return $self->dbic->run(
         fixup => sub {
-            $_->selectall_arrayref($sql, {Slice => {}}, $self->{id}, $args{order});
+            $_->selectall_arrayref($sql, {Slice => {}}, $self->{id}, $args{order}, $args{show_impersonate_records} // 0);
         });
 }
 
 sub add_login_history {
     my ($self, %args) = @_;
     $args{binary_user_id} = $self->{id};
-    my @history_fields = qw(binary_user_id action environment successful ip country);
+
+    if ($args{app_id} eq '4') {
+
+        # Key format: binary user id, epoch
+        my $key   = $self->{id} . '-' . $args{token};
+        my $redis = BOM::Config::RedisReplicated::redis_write();
+
+        # If the key exists, there is no need to do anything else
+        # Otherwise:
+        # - Store the key,
+        # - or if it is a logout session, remove the key
+        if ($args{action} eq 'login') {
+            return undef unless $redis->setnx($key, 1);
+        } else {
+            $redis->del($key);
+        }
+    }
+
+    my @history_fields = qw(binary_user_id action environment successful ip country app_id);
     my @new_values     = @args{@history_fields};
 
     my $placeholders = join ",", ('?') x @new_values;
@@ -529,6 +550,18 @@ sub is_payment_agents_suspended_in_country {
 sub get_mt5_loginids {
     my $self = shift;
     return grep { $_ =~ MT5_REGEX } $self->loginids;
+}
+
+=head2 is_closed
+
+Returns true or false if a user has been disabled, for example by the account_closure API call.
+In our system, this means all sub accounts have disabled status.
+
+=cut
+
+sub is_closed {
+    my $self = shift;
+    return all { $_->status->disabled } $self->clients;
 }
 
 1;
