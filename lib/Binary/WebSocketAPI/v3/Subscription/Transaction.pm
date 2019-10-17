@@ -376,6 +376,7 @@ sub _create_poc_stream {
                     purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
                     sell_price      => undef,
                     sell_time       => undef,
+                    limit_order     => $payload->{limit_order},
                 })->{uuid};
 
             # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
