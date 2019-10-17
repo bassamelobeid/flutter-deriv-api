@@ -94,7 +94,14 @@ sub _master_db_connections {
     foreach my $lc (keys %{$config}) {
         if (ref $config->{$lc}) {
             my $data = $config->{$lc}->{write};
-            $data->{dbname} = $data->{unit_test_dbname} if $ENV{DB_POSTFIX} and $ENV{DB_POSTFIX} eq '_test';
+            my $port;
+
+            if ($ENV{DB_TEST_PORT}) {
+                # Unit test env, specific only to QA:
+                $port = $ENV{DB_TEST_PORT};
+                $data->{dbname} = 'cr_test';
+            }
+
             $data->{dbname}   //= 'regentmarkets';
             $data->{password} //= $config->{password};
             # conn contains a hash ref which contains conection details needed per database
@@ -102,6 +109,7 @@ sub _master_db_connections {
                 ip       => $data->{ip},
                 dbname   => $data->{dbname},
                 password => $data->{password},
+                port     => $port // 5432,
             };
         }
     }
@@ -111,7 +119,7 @@ sub _master_db_connections {
 sub _db {
     my $conn_info = shift;
     return DBI->connect(
-        "dbi:Pg:dbname=$conn_info->{dbname};host=$conn_info->{ip};port=5432;application_name=notify_pub;sslmode=require",
+        "dbi:Pg:dbname=$conn_info->{dbname};host=$conn_info->{ip};port=$conn_info->{port};application_name=notify_pub;sslmode=require",
         'write',
         $conn_info->{password},
         {

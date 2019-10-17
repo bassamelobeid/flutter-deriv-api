@@ -1329,9 +1329,10 @@ subtest 'batch_buy', sub {
     my $ip     = $config->{svg}->{write}->{ip};                 # create_client creates CR clients
     my $db     = $config->{svg}->{write}->{dbname};             # create_client creates CR clients
     my $pw     = $config->{password};
+    my $port   = $ENV{DB_TEST_PORT} // 5432;
 
     my $listener = DBI->connect(
-        "dbi:Pg:dbname=$db@{[$ENV{DB_POSTFIX}//'']};host=$ip;port=5432;application_name=notify_pub",
+        "dbi:Pg:dbname=$db;host=$ip;port=$port;application_name=notify_pub",
         'write', $pw,
         {
             AutoCommit => 1,
