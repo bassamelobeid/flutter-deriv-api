@@ -615,7 +615,7 @@ sub pricing_channel_for_proposal_open_contract {
     $hash{account_id}     = delete $cache->{account_id};
     $hash{transaction_id} = $cache->{transaction_ids}->{buy};    # transaction is going to be stored
     my $subchannel    = _serialized_args(\%hash);
-    my $redis_channel = 'CONTRACT_PRICE::' . $hash{contract_id};
+    my $redis_channel = 'CONTRACT_PRICE::' . $cache->{contract_id};
 
     return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, 'ProposalOpenContract', $cache);
 }
