@@ -2153,14 +2153,21 @@ rpc account_closure => sub {
 
     foreach my $mt5_loginid ($user->get_mt5_loginids) {
         $mt5_loginid =~ s/\D//g;
-        my $mt5_user = BOM::MT5::User::Async::get_user($mt5_loginid)->get;
+
+        my $mt5_user;
+        try {
+            $mt5_user = BOM::MT5::User::Async::get_user($mt5_loginid)->get;
+        }
+        catch {
+            $mt5_user = undef;
+        };
 
         # TODO :: Include mt5 currency when we have better access to that data. FE will be mapping that for now (they already make a mt5_login_list API call every page)
         $accounts_with_balance{"MT" . $mt5_loginid} = {
             balance  => $mt5_user->{balance},
             currency => ""
             }
-            if (($mt5_user->{group} =~ /^real/) && ($mt5_user->{balance} > 0));
+            if ($mt5_user && ($mt5_user->{group} =~ /^real/) && ($mt5_user->{balance} > 0));
     }
 
     return BOM::RPC::v3::Utility::create_error({

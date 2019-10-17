@@ -38,16 +38,14 @@ subtest $method => sub {
     is($indices->{market_display_name},    'Indices', 'the market_display_name is translated');
     is($indices->{submarket_display_name}, 'Europe',  'the submarket_display_name is translated');
     is(scalar @$result,                    75,        'the default landing company is "svg", the number of result should be ok');
-
 };
 
 # unauthenticated call for `active_symbols` for landing company like `maltainvest` doesn't have an offering
 my $landing_company_name = 'maltainvest';
-subtest "active_symbols_for_$landing_company_name" => sub {
-
-    # check the selected landing comapny doesn't have offering
+subtest "active_symbols_for_" => sub {
+    # check the selected landing comapny doesn't have offerings
     my $landing_company = LandingCompany::Registry::get($landing_company_name);
-    my $offering        = $landing_company->default_offerings;
+    my $offering        = $landing_company->default_product_type;
     is $offering, undef, "The selected landing company doesn't have an offering";
 
     my $params = {
@@ -57,7 +55,7 @@ subtest "active_symbols_for_$landing_company_name" => sub {
             landing_company => $landing_company_name,
         }};
 
-    $c->call_ok($method, $params)->has_no_system_error->result;
+    is_deeply $c->call_ok($method, $params)->has_no_error->result, [], 'No active symbols for companies without offerings';
 };
 
 done_testing();
