@@ -105,9 +105,8 @@ subtest 'contract_update' => sub {
             update_parameters => {
                 take_profit => 10
             }});
-    ok $res->{contract_update}->{status}==1, 'update successfully';
-    ok $res->{contract_update}->{barrier_value}, 'barrier value';
-    is $res->{contract_update}->{type}, 'take_profit';
+    ok $res->{contract_update}->{take_profit}, 'take profit update successfully';
+    ok !$res->{contract_update}->{stop_loss}, '';
 };
 
 subtest 'contrcat_update on unsupported contract type' => sub {
