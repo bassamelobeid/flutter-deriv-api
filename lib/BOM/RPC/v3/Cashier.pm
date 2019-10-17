@@ -1321,6 +1321,11 @@ rpc transfer_between_accounts => sub {
                             unless $setting->{error};
                         return Future->done($resp);
                     });
+            }
+            )->catch(
+            sub {
+                my $err = shift;
+                return Future->done(_transfer_between_accounts_error($err->{error}->{message_to_client}));
             })->get;
     }
 
