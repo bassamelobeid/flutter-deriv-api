@@ -69,7 +69,7 @@ rpc "cashier", sub {
         });
     };
 
-    my ($client, $args) = @{$params}{qw/client args/};
+    my ($client, $args, $app_id, $ua_fingerprint) = @{$params}{qw/client args source ua_fingerprint/};
     my $action   = $args->{cashier}  // 'deposit';
     my $provider = $args->{provider} // 'doughflow';
 
@@ -105,8 +105,17 @@ rpc "cashier", sub {
     my ($brand, $currency) = (request()->brand, $client->default_account->currency_code());
 
     if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
-        return _get_cryptocurrency_cashier_url($client->loginid, $params->{website_name},
-            $currency, $action, $params->{language}, $brand->name, $params->{domain});
+        return _get_cryptocurrency_cashier_url({
+            loginid        => $client->loginid,
+            website_name   => $params->{website_name},
+            currency       => $currency,
+            action         => $action,
+            language       => $params->{language},
+            brand_name     => $brand->name,
+            domain         => $params->{domain},
+            app_id         => $app_id,
+            ua_fingerprint => $ua_fingerprint,
+        });
     }
 
     return $error_sub->(localize('Sorry, cashier is temporarily unavailable due to system maintenance.'))
@@ -274,7 +283,7 @@ sub _age_error {
 }
 
 sub _get_handoff_token_key {
-    my $loginid = shift;
+    my ($loginid, $app_id, $ua_fingerprint) = @_;
 
     # create handoff token
     my $cb = BOM::Database::ClientDB->new({
@@ -291,6 +300,8 @@ sub _get_handoff_token_key {
         data_object_params => {
             key            => BOM::Database::Model::HandoffToken::generate_session_key,
             client_loginid => $loginid,
+            app_id         => $app_id,
+            ua_fingerprint => $ua_fingerprint,
             expires        => time + 60,
         },
     );
@@ -304,7 +315,10 @@ sub _get_cryptocurrency_cashier_url {
 }
 
 sub _get_cashier_url {
-    my ($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name, $domain) = @_;
+    my ($prefix, $args) = @_;
+
+    my ($loginid, $website_name, $currency, $action, $language, $brand_name, $domain, $app_id, $ua_fingerprint) =
+        @{$args}{qw/loginid website_name currency action language brand_name domain app_id ua_fingerprint/};
 
     $prefix = lc($currency) if $prefix eq 'cryptocurrency';
 
@@ -322,7 +336,9 @@ sub _get_cashier_url {
     }
 
     $url .=
-        "/handshake?token=" . _get_handoff_token_key($loginid) . "&loginid=$loginid&currency=$currency&action=$action&l=$language&brand=$brand_name";
+          "/handshake?token="
+        . _get_handoff_token_key($loginid, $app_id, $ua_fingerprint)
+        . "&loginid=$loginid&currency=$currency&action=$action&l=$language&brand=$brand_name&app_id=$app_id";
 
     return $url;
 }
