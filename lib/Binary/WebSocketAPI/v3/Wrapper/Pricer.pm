@@ -581,17 +581,18 @@ sub _pricing_channel_for_proposal {
     $args_hash{skips_price_validation} = 1;
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel = $args->{amount} // $args->{multiplier};
+    my $pricer_args = $redis_channel;
 
     my $skip = _skip_streaming($args);
 
     # uuid is needed regardless of whether its subscription or not
-    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $class, $cache, $skip);
+    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, $class, $cache, $skip);
 }
 
-sub pricing_channel_for_proposal_open_contract {
-    my ($c, $args, $cache) = @_;
-    my $price_daemon_cmd = 'bid';
+sub get_pricer_args {
+    my ($c, $cache) = @_;
 
+    my $price_daemon_cmd = 'bid';
     my %hash;
     # get_bid RPC call requires 'short_code' param, not 'shortcode'
     @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(shortcode contract_id currency sell_time)};
@@ -602,24 +603,33 @@ sub pricing_channel_for_proposal_open_contract {
     # use residence when available, fall back to IP country
     $hash{country_code} = $c->stash('residence') || $c->stash('country_code');
     $hash{limit_order} = $cache->{limit_order} if $cache->{limit_order};
-    my $redis_channel = _serialized_args(\%hash);
-    %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
+
+    return _serialized_args(\%hash);
+}
+
+sub pricing_channel_for_proposal_open_contract {
+    my ($c, $args, $cache) = @_;
+
+    my $pricer_args = get_pricer_args($c, $cache);
+    my %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
     $hash{account_id}     = delete $cache->{account_id};
     $hash{transaction_id} = $cache->{transaction_ids}->{buy};    # transaction is going to be stored
     my $subchannel = _serialized_args(\%hash);
+    my $redis_channel = 'CONTRACT_PRICE::' . $hash{contract_id};
 
-    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, 'ProposalOpenContract', $cache);
+    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, 'ProposalOpenContract', $cache);
 }
 
 # will return a hash {uuid => $subscription->uuid, subscription => $subscription}
 # here return a hash to avoid caller testing subscription when fetch uuid
 sub _create_pricer_channel {
-    my ($c, $args, $redis_channel, $subchannel, $class, $cache, $skip_redis_subscr) = @_;
+    my ($c, $args, $redis_channel, $subchannel, $pricer_args, $class, $cache, $skip_redis_subscr) = @_;
 
     my $subscription = create_subscription(
         c          => $c,
         channel    => $redis_channel,
         subchannel => $subchannel,
+        pricer_args => $pricer_args,
         args       => $args,
         cache      => $cache,
         class      => $class

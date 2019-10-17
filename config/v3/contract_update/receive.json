@@ -21,11 +21,11 @@
          "description": "contains the update status of the request",
          "properties": {
             "take_profit": {
-                "type": "string",
+                "type": ["string","null"],
                 "description": "pip-sized take profit value"
             },
             "stop_loss": {
-                "type": "string",
+                "type": ["string","null"],
                 "description": "pip-sized stop loss value"
             }
          }
@@ -33,6 +33,6 @@
       "msg_type" : {
          "description" : "contract_update",
          "type" : "string"
-      },
+      }
    }
 }

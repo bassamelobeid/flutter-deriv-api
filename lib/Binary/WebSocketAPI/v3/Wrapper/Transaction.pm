@@ -25,60 +25,24 @@ sub buy_get_single_contract {
     return undef;
 }
 
-=head2 contract_update_resubscribe
+=head2 contract_update_handler
 
-Handle related contract subscription when a contract is updated.
+Handles contract update handling for proposal open contract.
 
-1. Unsubscribe from both (proposal_open_contract and sell transaction stream) of old contract, if any.
-2. Subscribes to both proposal_open_contract and sell transaction stream, if subscribe=1.
-
+Deletes of pricer key and set the new pricer key
 =cut
 
-sub contract_update_resubscribe {
+sub contract_update_handler {
     my ($c, $api_response, $req_storage) = @_;
 
-    #unsubscribe to old transaction sell stream
-    my $old_details = delete $api_response->{old_contract_details};
-    my $poc_params  = _get_poc_params($old_details);
-    my $account_id  = $poc_params->{account_id};
-    my $contract_id = $poc_params->{contract_id};
-    my $args        = {
-        contract_id            => $poc_params->{contract_id},
-        proposal_open_contract => 1
-    };
+    my $old_poc_params  = _get_poc_params(delete $api_response->{old_contract_details});
+    my $new_poc_params  = _get_poc_params(delete $api_response->{contract_details});
 
-    # get existing subscription uuid and unsubscribe if any
-    if (my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_proposal_open_contract($c, $args, $poc_params)->{uuid}) {
-        # unsubscribe poc
-        Binary::WebSocketAPI::v3::Subscription->unregister_by_uuid($c, $uuid);
-        # unsubscribe sell transaction stream
-        transaction_channel(
-            $c, 'unsubscribe', $account_id,    # should not go to client
-            'sell', $args, $contract_id, $uuid
-        );
-    }
-
-    buy_get_single_contract($c, $api_response, $req_storage, 0);
+    my $pricer_subscription_manager = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager();
+    $pricer_subscription_manager->redis->del(Binary::WebSocketAPI::v3::Wrapper::Pricer::get_pricer_args($c, $old_poc_params));
+    $pricer_subscription_manager->redis->set(Binary::WebSocketAPI::v3::Wrapper::Pricer::get_pricer_args($c, $new_poc_params), 1);
 
     return undef;
-}
-
-=head2 contract_update_set_poc_subscription_id
-
-Sets subscription id on contract_update response, if any.
-
-=cut
-
-sub contract_update_set_poc_subscription_id {
-    my ($rpc_response, $api_response, $req_storage) = @_;
-    return $api_response if $rpc_response->{error};
-
-    my $uuid = delete $req_storage->{uuid};
-    return {
-        contract_update => $rpc_response,
-        msg_type        => 'contract_update',
-        ($uuid ? (subscription => {id => $uuid}) : ()),
-    };
 }
 
 =head2 buy_set_poc_subscription_id

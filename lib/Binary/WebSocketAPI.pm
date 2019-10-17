@@ -344,8 +344,7 @@ sub startup {
             'contract_update',
             {
                 require_auth => 'trade',
-                success      => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::contract_update_resubscribe,
-                response     => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::contract_update_set_poc_subscription_id,
+                success      => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::contract_update_handler,
             }
         ],
         ['sell', {require_auth => 'trade'}],
