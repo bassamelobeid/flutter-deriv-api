@@ -235,11 +235,14 @@ sub _is_authenticated {
 sub _log_new_api_request {
     my ($c, $type) = @_;
 
+    my $params = $c->request_parameters;
+    $params = $params->as_hashref if ref $params eq 'Hash::MultiValue';
+
     $new_api_log->debugf(
         'Request details: type: %s, timestamp: %s, method: %s and params: %s',
         ($type // ''),
         Date::Utility->new->datetime_yyyymmdd_hhmmss,
-        $c->req->method, $c->req->parameters->as_hashref
+        $c->req->method, $params
     );
 
     return undef;
