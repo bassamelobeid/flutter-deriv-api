@@ -1448,7 +1448,7 @@ sub sell_expired_contracts {
         my $failure = {fmb_id => $bet->{id}};
         try {
             my $bet_params = shortcode_to_parameters($bet->{short_code}, $currency);
-            my $orders = extract_limit_orders($bet_params);
+            my $orders = extract_limit_orders($bet);
             # for multiplier, we need to combine information on the child table to complete a contract
             $bet_params->{limit_order} = $orders if %$orders;
             $contract = produce_contract($bet_params);
