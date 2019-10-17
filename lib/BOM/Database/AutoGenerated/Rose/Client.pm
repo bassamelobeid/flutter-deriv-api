@@ -28,7 +28,7 @@ __PACKAGE__->meta->setup(
         date_joined                              => { type => 'timestamp', default => 'now()' },
         latest_environment                       => { type => 'varchar', length => 1024, not_null => 1 },
         secret_question                          => { type => 'varchar', length => 255, not_null => 1 },
-        secret_answer                            => { type => 'varchar', length => 500, not_null => 1 },
+        secret_answer                            => { type => 'varchar', length => 500 },
         restricted_ip_address                    => { type => 'varchar', length => 50, not_null => 1 },
         gender                                   => { type => 'varchar', length => 1, not_null => 1 },
         cashier_setting_password                 => { type => 'varchar', length => 255, not_null => 1 },
