@@ -16,10 +16,6 @@
       "contract_update": {
          "enum": [1]
       },
-      "subscribe" : {
-         "enum" : [1],
-         "description" : "[Optional] 1 - updates and subscribes to proposal_open_contract of the updated contract."
-      },
       "contract_id": {
          "description" : "Binary.com internal contract identifier",
          "type" : "integer"

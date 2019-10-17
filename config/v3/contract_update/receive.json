@@ -20,17 +20,13 @@
          "type": "object",
          "description": "contains the update status of the request",
          "properties": {
-            "status": {
-                "enum": [0,1],
-                "description": "status of the update"
-            },
-            "type": {
-                "enum": ["take_profit", "stop_loss"],
-                "description": "The type of update"
-            },
-            "barrier_value": {
+            "take_profit": {
                 "type": "string",
-                "description": "pip-sized barrier value"
+                "description": "pip-sized take profit value"
+            },
+            "stop_loss": {
+                "type": "string",
+                "description": "pip-sized stop loss value"
             }
          }
       },
@@ -38,19 +34,5 @@
          "description" : "contract_update",
          "type" : "string"
       },
-      "subscription" : {
-         "title" : "Subscription information",
-         "description" : "For subscription requests only",
-         "type" : "object",
-         "required" : [
-            "id"
-         ],
-         "properties": {
-            "id" : {
-             "description": "A per-connection unique identifier. Can be passed to the forget API call to unsubscribe.",
-             "type" : "string"
-            }
-         }
-     }
    }
 }
