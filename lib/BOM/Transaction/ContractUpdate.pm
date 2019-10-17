@@ -182,14 +182,14 @@ sub update {
 
     return undef unless $res_table;
 
-    my $res = $self->build_contract_update_response;
+    my $res = $self->build_contract_update_response($order_type, $order_value);
     $res->{updated_queue} = $self->_requeue_transaction($order_type);
 
     return $res;
 }
 
 sub build_contract_update_response {
-    my $self = shift;
+    my ($self, $order_type, $order_value) = @_;
 
     my $contract = $self->contract;
     # we will need to resubscribe for the new proposal open contract when the contract
@@ -208,13 +208,13 @@ sub build_contract_update_response {
         longcode        => localize($contract->longcode),
     );
 
-    my $new_order_type = $self->new_order->order_type;
-    my $take_profit =
-          $new_order_type eq 'take_profit' ? $self->new_order->barrier_value
-        : $contract->take_profit           ? $self->contract->take_profit->barrier_value
-        :                                    undef;
-    my $stop_loss =
-        $new_order_type eq 'stop_loss' ? $self->new_order->barrier_value : $contract->stop_loss ? $self->contract->stop_loss->barrier_value : undef;
+    my ($take_profit, $stop_loss);
+    if ($order_type eq 'take_profit') {
+        $take_profit =
+            $order_value ne 'null' ? $self->new_order->barrier_value : $contract->take_profit ? $contract->take_profit->barrier_value : undef;
+    } elsif ($order_type eq 'stop_loss') {
+        $stop_loss = $order_value ne 'null' ? $self->new_order->barrier_value : $contract->stop_loss ? $contract->stop_loss->barrier_value : undef;
+    }
 
     return {
         take_profit      => $take_profit,

@@ -194,9 +194,7 @@ subtest 'update take profit', sub {
         my $updater = BOM::Transaction::ContractUpdate->new(
             client        => $cl,
             contract_id   => 123,
-            update_params => {
-                take_profit => 10
-            },
+            update_params => {take_profit => 10},
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
         is $updater->validation_error->{code}, 'ContractNotFound', 'code - ContractNotFound';
@@ -234,9 +232,7 @@ subtest 'update take profit', sub {
         $updater = BOM::Transaction::ContractUpdate->new(
             client        => $cl,
             contract_id   => $fmb->{id},
-            update_params => {
-                take_profit => 10
-            },
+            update_params => {take_profit => 10},
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
         is $updater->validation_error->{code}, 'UpdateNotAllowed', 'code - UpdateNotAllowed';
@@ -270,9 +266,7 @@ subtest 'update take profit', sub {
         my $updater = BOM::Transaction::ContractUpdate->new(
             client        => $cl,
             contract_id   => $fmb->{id},
-            update_params => {
-                take_profit => 10
-            },
+            update_params => {take_profit => 10},
         );
         ok $updater->is_valid_to_update, 'valid to update';
         my $res = $updater->update;
@@ -298,9 +292,7 @@ subtest 'update take profit', sub {
         $updater = BOM::Transaction::ContractUpdate->new(
             client        => $cl,
             contract_id   => $fmb->{id},
-            update_params => {
-                take_profit => 15
-            },
+            update_params => {take_profit => 15},
         );
         ok $updater->is_valid_to_update, 'valid to update';
         $res = $updater->update;
@@ -331,9 +323,7 @@ subtest 'update take profit', sub {
         $updater = BOM::Transaction::ContractUpdate->new(
             client        => $cl,
             contract_id   => $fmb->{id},
-            update_params => {
-                take_profit => 'null'
-            },
+            update_params => {take_profit => 'null'},
         );
         ok $updater->is_valid_to_update, 'valid to update';
         $res = $updater->update;
@@ -379,26 +369,24 @@ subtest 'update take profit', sub {
         $mocked->mock('limits', sub { {} });
 
         $txn = BOM::Transaction->new({
-            purchase_date => $contract->date_start,
-            client        => $cl,
-            contract_parameters      => {
-                shortcode => $contract->shortcode,
-                currency => $cl->currency,
-                landing_company => $cl->landing_company->short,
-                limit_order => $contract->available_orders,
-            },
-            contract_id   => $fmb->{id},
-            price         => 99.50,
-            amount_type   => 'payout',
-            source        => 23,
-        });
+                purchase_date       => $contract->date_start,
+                client              => $cl,
+                contract_parameters => {
+                    shortcode       => $contract->shortcode,
+                    currency        => $cl->currency,
+                    landing_company => $cl->landing_company->short,
+                    limit_order     => $contract->available_orders,
+                },
+                contract_id => $fmb->{id},
+                price       => 99.50,
+                amount_type => 'payout',
+                source      => 23,
+            });
 
         my $updater = BOM::Transaction::ContractUpdate->new(
             client        => $cl,
             contract_id   => $fmb->{id},
-            update_params => {
-                take_profit => 10
-            },
+            update_params => {take_profit => 10},
         );
         ok $updater->is_valid_to_update, 'valid to update';
         # sell after is_valid_to_sell is called
@@ -413,14 +401,11 @@ subtest 'update take profit', sub {
         $updater = BOM::Transaction::ContractUpdate->new(
             client        => $cl,
             contract_id   => $fmb->{id},
-            update_params => {
-                take_profit => 10
-            },
+            update_params => {take_profit => 10},
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
-        is $updater->validation_error->{code}, 'ContractIsSold', 'code - ContractIsSold';
-        is $updater->validation_error->{message_to_client}, 'Contract has expired.',
-            'message_to_client - Contract has expired.';
+        is $updater->validation_error->{code},              'ContractIsSold',        'code - ContractIsSold';
+        is $updater->validation_error->{message_to_client}, 'Contract has expired.', 'message_to_client - Contract has expired.';
     };
 };
 
