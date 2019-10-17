@@ -159,7 +159,7 @@ sub chld {
     close $r;
     srand;
     $w->autoflush(1);
-    local $ENV{'COMPANY_LIMITS_ENABLED'} = 1;
+    { no warnings 'redefine'; *BOM::Transaction::CompanyLimits::fake_it = sub {0}; }
     my $contract = {bet_type => "higher_lower_bet",
                     underlying_symbol => "R_100",
                     short_code => "bla_S0P_0",

@@ -2,6 +2,10 @@
 
 use strict;
 use warnings;
+
+# this must be defined before CompanyLimits.pm is loaded
+sub BOM::Transaction::CompanyLimits::fake_it {0}
+
 use Test::MockTime qw(:all);
 use Test::MockModule;
 use Test::More tests => 3;
@@ -20,8 +24,6 @@ use BOM::Config::Runtime;
 use BOM::Test::Email qw(mailbox_search);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
-
-local $ENV{COMPANY_LIMITS_ENABLED} = 1;
 
 my $redis = BOM::Config::RedisTransactionLimits::redis_limits_write;
 my $json  = JSON::MaybeXS->new;

@@ -2,6 +2,10 @@
 
 use strict;
 use warnings;
+
+# this must be defined before CompanyLimits.pm is loaded
+sub BOM::Transaction::CompanyLimits::fake_it {0}
+
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More tests => 9;
@@ -21,8 +25,6 @@ use BOM::Transaction::Limits::SyncLoss;
 use BOM::Transaction::Limits::Groups;
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
-
-local $ENV{COMPANY_LIMITS_ENABLED} = 1;
 
 my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
 $mocked_CurrencyConverter->mock('in_usd', \&fake_in_usd);

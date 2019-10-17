@@ -30,16 +30,19 @@ BOM::Transaction::CompanyLimits
 =cut
 
 # Once we decide to activate these limits, this BEGIN block and the
-# "...unless $ENV{'COMPANY_LIMITS_ENABLED'};" line in the constructor
+# "... if fake_it;" statement in the constructor
 # below have to be removed. No other changes are needed.
 BEGIN {
     *BOM::Transaction::CompanyLimits::Fake::add_buys = *BOM::Transaction::CompanyLimits::Fake::add_sells =
         *BOM::Transaction::CompanyLimits::Fake::reverse_buys = sub { };
+    *fake_it = sub {
+        return 'yes' ne (readlink "/etc/rmg/turn-on-company-limits" // "")
+    } unless defined &fake_it;
 }
 
 sub new {
     my ($class, %params) = @_;
-    return bless {}, __PACKAGE__ . '::Fake' unless $ENV{'COMPANY_LIMITS_ENABLED'};
+    return bless {}, __PACKAGE__ . '::Fake' if fake_it;
 
     my $self = bless {}, $class;
     my $landing_company = $params{landing_company};
