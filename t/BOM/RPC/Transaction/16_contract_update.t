@@ -119,9 +119,8 @@ subtest 'contract_update' => sub {
         ->error_message_is('Invalid take profit. Take profit must be higher than current spot price.');
     $update_params->{args}->{update_parameters} = {take_profit => 10};
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
-    ok $res->{status} == 1, 'contract_update status=1';
-    ok $res->{barrier_value},    'has barrier value';
-    is $res->{type},             'take_profit', 'type is take_profit';
+    ok $res->{take_profit}, 'returns the new take profit value';
+    ok !$res->{stop_loss},    'stop loss is undef';
     ok $res->{contract_details}, 'has contract_details';
     is $res->{contract_details}{limit_order}->[0],        'stop_out';
     is $res->{contract_details}{limit_order}->[2],        'take_profit';
@@ -131,9 +130,8 @@ subtest 'contract_update' => sub {
 
     $update_params->{args}->{update_parameters} = {stop_loss => -80};
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
-    ok $res->{status} == 1, 'contract_update status=1';
-    ok $res->{barrier_value},    'has barrier value';
-    is $res->{type},             'stop_loss', 'type is stop_loss';
+    ok $res->{take_profit}, 'returns the new take profit value';
+    ok $res->{stop_loss},    'returns the new stop loss value';
     ok $res->{contract_details}, 'has contract_details';
     is $res->{contract_details}{limit_order}->[0], 'stop_loss';
     is $res->{contract_details}{limit_order}->[2], 'stop_out';
