@@ -17,6 +17,9 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use BOM::Config::RedisReplicated;
 use BOM::Test::Helper qw/build_wsapi_test/;
+use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
+
+populate_exchange_rates();
 
 my $json = JSON::MaybeXS->new;
 initialize_realtime_ticks_db();
