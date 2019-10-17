@@ -34,6 +34,7 @@ $user->add_login_history(
     environment => 'dummy environment',
     successful  => 't',
     action      => 'logout',
+    app_id      => '1098'
 );
 
 my $t = build_wsapi_test();

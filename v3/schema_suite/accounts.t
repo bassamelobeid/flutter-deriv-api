@@ -114,7 +114,7 @@ test_sendrecv 'topup_virtual/test_send.json', 'topup_virtual/test_receive_error.
 # PAYMENT SCOPE CALLS (CR)
 test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_error.json';
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test@binary.com', 'payment_withdraw';
-test_sendrecv_params 'cashier/test_send_withdraw.json',        'cashier/test_receive_error.json',          $suite->get_token('test@binary.com');
+test_sendrecv_params 'cashier/test_send_withdraw.json', 'cashier/test_receive_error.json', $suite->get_token('test@binary.com');
 
 test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json', 'Abc123', 'Abc123';
 test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json', 'Abc123', 'abc123';
