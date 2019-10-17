@@ -529,8 +529,6 @@ async sub client_verification {
                             );
                         } else {
 
-                            my $client = BOM::User::Client->new({loginid => $loginid});
-
                             my $siblings = $client->real_account_siblings_information(include_disabled => 0);
 
                             # check if there is balance
@@ -553,7 +551,7 @@ async sub client_verification {
                                 }
 
                                 # need to send email to client
-                                _send_email_underage_disable_account($loginid, $BRANDS->emails('support'));
+                                _send_email_underage_disable_account($client, $BRANDS->emails('support'));
 
                                 $email_details->{is_disabled} = 1;
                             }
@@ -1356,10 +1354,9 @@ sub _send_email_account_closure_client {
 }
 
 sub _send_email_underage_disable_account {
-    my ($loginid, $support_email) = @_;
+    my ($client, $support_email) = @_;
 
-    my $client        = BOM::User::Client->new({loginid => $loginid});
-    my $website_name  = ucfirst BOM::Config::domain()->{default_domain};
+    my $website_name = ucfirst BOM::Config::domain()->{default_domain};
     my $email_subject = localize('We closed your [_1] account', $website_name);
 
     send_email({
