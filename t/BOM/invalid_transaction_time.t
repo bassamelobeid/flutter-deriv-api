@@ -18,7 +18,8 @@ my $fmb_mock = Test::MockModule->new('BOM::Database::Helper::FinancialMarketBet'
 my $client    = create_client();
 my $account   = $client->account('USD');
 my $db        = $client->db->dbic;
-my $database  = $client->db->database =~ s/svg-write/cr/r;
+my $port      = $ENV{DB_TEST_PORT} // 5432;
+my $database  = lc($client->broker_code);
 my $now       = Date::Utility->new;
 my $past_10s  = $now->minus_time_interval('10s');
 my $past_11s  = $now->minus_time_interval('11s');
@@ -107,14 +108,14 @@ END {
 
 sub _disable_trigger {
     note qx{
-    sudo -u postgres psql $database -c "
+    sudo -u postgres psql -p $port $database -c "
 ALTER TABLE transaction.transaction DISABLE TRIGGER validate_transaction_time_trg;"
     };
 }
 
 sub _enable_trigger {
     note qx{
-    sudo -u postgres psql $database -c "
+    sudo -u postgres psql -p $port $database -c "
 ALTER TABLE transaction.transaction ENABLE TRIGGER validate_transaction_time_trg;"
     };
 }
