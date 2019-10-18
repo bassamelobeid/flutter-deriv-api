@@ -33,7 +33,7 @@ Deletes of pricer key and set the new pricer key
 =cut
 
 sub contract_update_handler {
-    my ($c, $api_response, $req_storage) = @_;
+    my ($c, $api_response) = @_;
 
     my $old_poc_params = _get_poc_params(delete $api_response->{old_contract_details});
     my $new_poc_params = _get_poc_params(delete $api_response->{contract_details});
