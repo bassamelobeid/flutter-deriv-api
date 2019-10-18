@@ -215,11 +215,6 @@ sub get_settings_by_group {
                 quants.underlyings.disable_autoupdate_vol
                 quants.underlyings.suspend_buy
                 quants.underlyings.suspend_trades
-                quants.multiplier_config.commission.R_10
-                quants.multiplier_config.commission.R_25
-                quants.multiplier_config.commission.R_50
-                quants.multiplier_config.commission.R_75
-                quants.multiplier_config.commission.R_100
                 )
         ],
         it => [qw(
