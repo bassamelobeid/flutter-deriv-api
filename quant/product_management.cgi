@@ -14,6 +14,7 @@ use List::Util qw(first all);
 use Text::Trim qw(trim);
 use f_brokerincludeall;
 use Try::Tiny;
+use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
@@ -237,6 +238,26 @@ BOM::Backoffice::Request::template()->process(
     {
         url => request()->url_for('backoffice/quant/product_management.cgi'),
     }) || die BOM::Backoffice::Request::template()->error;
+
+Bar("Multiplier Config");
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/update_multiplier_config.html.tt',
+    {
+        upload_url      => request()->url_for('backoffice/quant/market_data_mgmt/update_multiplier_config.cgi'),
+        existing_config => _get_existing_multiplier_config(),
+    }) || die BOM::Backoffice::Request::template()->error;
+
+sub _get_existing_multiplier_config {
+    my $qc = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
+    my $existing = $qc->get_config('multiplier_config');
+    foreach my $symbol (sort keys %$existing) {
+        my $config = $existing->{$symbol};
+        $config->{multiplier_range_json} = encode_json_utf8($config->{multiplier_range}) unless $config->{multiplier_range_json};
+    }
+
+    return $existing;
+}
 
 sub send_notification_email {
     my $limit = shift;
