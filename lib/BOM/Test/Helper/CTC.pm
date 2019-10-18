@@ -9,7 +9,7 @@ use BOM::CTC::Helper;
 use BOM::CTC::Currency;
 use BOM::Platform::Client::CashierValidation;
 
-our @EXPORT_OK = qw( wait_miner );
+our @EXPORT_OK = qw( wait_miner deploy_test_contract );
 
 BEGIN {
     *BOM::Platform::Client::CashierValidation::is_crypto_currency_suspended = sub {
@@ -45,7 +45,11 @@ sub deploy_test_contract {
 
     my $currency = BOM::CTC::Currency->new(currency_code => $currency_code);
 
-    my $bytecode = path(sprintf("/home/git/regentmarkets/bom-test/resources/%s_bytecode", lc $currency->currency_code))->slurp;
+    my $path = "/home/git/regentmarkets/bom-test/resources/erc20_bytecode";
+
+    return undef unless -e $path;
+
+    my $bytecode = path($path)->slurp();
     $bytecode =~ s/[\x0D\x0A]+//g;
 
     my $contract = $currency->rpc_client->contract({
@@ -59,16 +63,17 @@ sub deploy_test_contract {
         gas => 4000000,
     });
 
+    my $decimals = BOM::Config::crypto()->{$currency_code}->{decimal_places};
+
     # 0 here means that we will unlock this account until geth be restarted
     $currency->rpc_client->personal_unlockAccount($currency->account_config->{account}->{address},
         $currency->account_config->{account}->{passphrase}, 0);
 
-    my $total_supply = Math::BigFloat->new(1000000000000)->bmul(Math::BigInt->new(10)->bpow(18))->numify;
+    my $total_supply = Math::BigFloat->new(1000000000000)->bmul(Math::BigInt->new(10)->bpow($decimals))->numify();
     # the number 35 here is the time in seconds that we will wait to the contract be
     # deployed, for the tests since we are using a private node this works fine, this
     # will be removed on the future when we make the ethereum client async.
-    my $response = $contract->invoke_deploy($bytecode, $currency_code, $currency_code, $total_supply, $currency->account_config->{account}->{address})
-        ->get_contract_address(35);
+    my $response = $contract->invoke_deploy($bytecode, $currency_code, $currency_code, $total_supply, $decimals)->get_contract_address(35);
 
     $contract->contract_address($response->get->response);
 
