@@ -2,8 +2,11 @@ package BOM::Pricing::v3::Utility;
 
 use strict;
 use warnings;
+use feature 'state';
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
+use JSON::MaybeUTF8 qw(decode_json_utf8);
+use Try::Tiny;
 
 use BOM::Config::RedisReplicated;
 use BOM::Product::Contract;
@@ -93,6 +96,38 @@ sub create_relative_shortcode {
     }
 
     return uc join '_', ($params->{contract_type}, $params->{symbol}, $date_start, $date_expiry, @barriers);
+}
+
+=head2 extract_from_channel_key
+
+Extracts the hashref and string representations of a pub/sub
+channel key
+
+Returns:
+
+(hashref, unprefixed_str)
+
+=cut
+
+sub extract_from_channel_key {
+    my $key = shift // '';
+
+    state $namespace_prefix = 'PRICER_KEYS::';
+    state $ns_rs            = qr/^\Q$namespace_prefix/;
+    state $error_key        = 'bom_pricing.v_3.utility.extract_error';
+
+    if ($key =~ s/$ns_rs//) {
+        if (my %params = try { @{decode_json_utf8($key // [])} }) {
+            # This happy path is pretty buried. :(
+            return (\%params, $key);
+        }
+
+        stats_inc($error_key, {tags => ['bad_json:' . $key]});
+        return (+{}, $key);
+    }
+
+    stats_inc($error_key, {tags => ['bad_prefix:' . $key]});
+    return (+{}, '');
 }
 
 1;

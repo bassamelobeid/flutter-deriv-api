@@ -25,7 +25,7 @@ GetOptions(
     "pid-file=s"  => \my $pid_file,
     "no-warmup=i" => \my $nowarmup,
 );
-$queues ||= 'pricer_jobs_priority,pricer_jobs, pricer_jobs_bid';
+$queues ||= 'pricer_jobs';
 $workers ||= max(1, Sys::Info->new->device("CPU")->count);
 
 if ($pid_file) {
