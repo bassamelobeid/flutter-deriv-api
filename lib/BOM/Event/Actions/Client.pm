@@ -547,7 +547,7 @@ async sub client_verification {
                                 # if all of the account doesn't have any balance, disable them
                                 for my $each_siblings (keys %{$siblings}) {
                                     my $current_client = BOM::User::Client->new({loginid => $each_siblings});
-                                    $client->status->set('disabled', 'system', 'Onfido - client is underage');
+                                    $current_client->status->set('disabled', 'system', 'Onfido - client is underage');
                                 }
 
                                 # need to send email to client
