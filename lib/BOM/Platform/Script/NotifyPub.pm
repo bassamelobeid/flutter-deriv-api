@@ -99,7 +99,7 @@ sub _master_db_connections {
             if ($ENV{DB_TEST_PORT}) {
                 # Unit test env, specific only to QA:
                 $port = $ENV{DB_TEST_PORT};
-                $data->{dbname} = 'cr_test';
+                $data->{dbname} = 'cr';
             }
 
             $data->{dbname}   //= 'regentmarkets';
