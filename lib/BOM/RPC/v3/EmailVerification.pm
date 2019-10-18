@@ -173,21 +173,18 @@ sub email_verification {
             };
         },
         closed_account => sub {
-            my ($subject, $template);
+            my $subject;
             if ($type eq 'account_opening') {
-                $subject  = localize('Signup unsuccessful');
-                $template = 'verify_email_closed_account_signup';
+                $subject = localize('Signup unsuccessful');
             } elsif ($type eq 'reset_password') {
-                $subject  = localize('Password reset unsuccessful');
-                $template = 'verify_email_closed_account_other';
+                $subject = localize('Password reset unsuccessful');
             } else {
-                $subject  = localize('Email verification unsuccessful');
-                $template = 'verify_email_closed_account_other';
+                $subject = localize('Email verification unsuccessful');
             }
 
             return {
                 subject       => $subject,
-                template_name => $template,
+                template_name => 'verify_email_closed_account',
                 template_args => {%common_args},
             };
         }
