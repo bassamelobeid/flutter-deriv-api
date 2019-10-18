@@ -55,11 +55,12 @@ sub save_config {
     my ($self, $config_type, $args) = @_;
 
     my $method = '_' . $config_type;
-    my $config = $self->$method($args);
+    my $config = $self->can($method) ? $self->$method($args) : $args;
 
     $self->chronicle_writer->set($namespace, $config_type, $config, $self->recorded_date);
 
-    return $config->{$args->{name}};
+    return $config->{$args->{name}} if $args->{name};
+    return $config;
 }
 
 sub _commission {
