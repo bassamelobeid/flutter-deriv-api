@@ -237,39 +237,6 @@ quants:
               isa: Num
               default: 100
               global: 1
-    multiplier_config:
-      description: "Tunable commissions for multiplier contract"
-      isa: section
-      contains:
-        commission:
-          description: "per underlying commission for multiplier. 0.00005 is equals to 0.005%."
-          isa: section
-          contains:
-            R_10:
-              description: "commission for R_10"
-              isa: Num
-              default: 0.00005
-              global: 1
-            R_25:
-              description: "commission for R_25"
-              isa: Num
-              default: 0.000126
-              global: 1
-            R_50:
-              description: "commission for R_50"
-              isa: Num
-              default: 0.000252
-              global: 1
-            R_75:
-              description: "commission for R_75"
-              isa: Num
-              default: 0.000378
-              global: 1
-            R_100:
-              description: "commission for R_100"
-              isa: Num
-              default: 0.000504
-              global: 1
     features:
       description: "Toggles for various platform features"
       isa: section

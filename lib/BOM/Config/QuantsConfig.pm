@@ -28,8 +28,11 @@ use List::Util qw(first);
 use Scalar::Util qw(looks_like_number);
 use Finance::Contract::Category;
 use Try::Tiny;
+use YAML::XS qw(LoadFile);
 
 use BOM::Config::Runtime;
+
+my $default_multiplier_config = LoadFile('/home/git/regentmarkets/bom-config/share/default_multiplier_config.yml');
 
 has [qw(chronicle_reader chronicle_writer)] => (is => 'ro');
 
@@ -133,6 +136,26 @@ sub get_config {
 
     my $method = $self->for_date ? 'get_for' : 'get';
     my $existing_config = $self->chronicle_reader->$method($namespace, $config_type, $self->for_date) // {};
+
+    # custom commission requires some special treatment.
+    return $self->_process_commission($existing_config, $args) if $config_type eq 'commission';
+    return $self->_process_multiplier_config($existing_config, $args) if $config_type eq 'multiplier_config';
+    return $existing_config;
+}
+
+sub _process_multiplier_config {
+    my ($self, $existing_config, $args) = @_;
+
+    # if there's no existing config in chronicle, loads it from default yaml file.
+    my $config = %$existing_config ? $existing_config : $default_multiplier_config;
+
+    return $config unless $args->{underlying_symbol};
+    return $config->{$args->{underlying_symbol}};
+}
+
+sub _process_commission {
+    my ($self, $existing_config, $args) = @_;
+
     return [values %$existing_config] unless $args;
 
     my ($foreign_curr, $domestic_curr) = $args->{underlying_symbol} =~ /^(?:frx|(?=WLD))(\w{3})(\w{3})$/;
