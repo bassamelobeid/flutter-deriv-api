@@ -900,7 +900,7 @@ sub _get_authentication {
                         if $report_document_sub_result =~ /^rejected|suspected/;
                     $authentication_object->{identity}->{status} = 'rejected' if $report_document_sub_result eq 'caution';
                     $authentication_object->{identity}->{status} = 'pending'
-                        if (($report_document_sub_result =~ /^clear|consider/) and !$client->status->age_verification);
+                        if (($report_document_sub_result =~ /^clear|consider/) and not $client->status->age_verification);
                 }
             }
         }
