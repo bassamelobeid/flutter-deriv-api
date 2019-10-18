@@ -24,14 +24,12 @@ subtest 'shortcodes' => sub {
     # fixed time because we need to compare shortcode outputs
     set_fixed_time('2018-07-10T00:00:00Z');
     my $now = Date::Utility->new('2018-07-10')->epoch;
+
+    # Using `create_realtime_tick` to update the tick set by the previous tests
+    my @tick_args = map { {underlying => $_, epoch => $now, quote => 101} } qw(frxUSDJPY R_100);
     my ($tick_frxUSDJPY, $tick_R_100) =
-        map {
-            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                underlying => $_,
-                epoch => $now,
-                quote => 101,
-            })
-        } qw(frxUSDJPY R_100);
+        map { BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick($_) && BOM::Test::Data::Utility::FeedTestDatabase::create_tick($_) }
+        @tick_args;
 
     my $sb_args = {
         bet_type     => 'CALL',
