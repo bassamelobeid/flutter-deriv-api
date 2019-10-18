@@ -18,6 +18,9 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use ExpiryQueue qw(queue_flush);
+
+queue_flush();
 
 my $now = Date::Utility->new();
 
@@ -128,7 +131,8 @@ subtest 'contract_update' => sub {
     is_deeply $res->{contract_details}{limit_order}->[1], $res->{old_contract_details}{limit_order}->[1];
     ok !$res->{old_contract_details}{limit_order}->[2];
 
-    $update_params->{args}->{update_parameters} = {stop_loss => -80};
+    delete $update_params->{args}->{update_parameters}->{take_profit};
+    $update_params->{args}->{update_parameters}->{stop_loss} = -80;
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
     ok $res->{take_profit}, 'returns the new take profit value';
     ok $res->{stop_loss},    'returns the new stop loss value';
@@ -136,7 +140,6 @@ subtest 'contract_update' => sub {
     is $res->{contract_details}{limit_order}->[0], 'stop_loss';
     is $res->{contract_details}{limit_order}->[2], 'stop_out';
     is $res->{contract_details}{limit_order}->[4], 'take_profit';
-
     # sell_time cannot be equals to purchase_time, hence the sleep.
     sleep 1;
 
@@ -148,6 +151,7 @@ subtest 'contract_update' => sub {
             price => 99.50
         }};
     my $sell_res = $c->call_ok('sell', $sell_params)->has_no_error->result;
+
     is $sell_res->{sold_for}, '99.50', 'sold for 99.50';
     # try to update after it is sold
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('ContractIsSold')->error_message_is('Contract has expired.');
