@@ -1,4 +1,6 @@
 package BOM::Transaction::CompanyLimits;
+
+use 5.024;
 use strict;
 use warnings;
 
@@ -6,7 +8,7 @@ use ExchangeRates::CurrencyConverter;
 use BOM::Config::RedisReplicated;
 use BOM::Config::RedisTransactionLimits;
 use BOM::Transaction::Limits::Combinations;
-use BOM::Transaction::Limits::Stats;
+use DataDog::DogStatsd::Helper qw(stats_timed);
 
 =head1 NAME
 
@@ -60,6 +62,16 @@ sub new {
     return $self;
 }
 
+sub dd_opts {
+    my $self = shift;
+
+    state $opts = {tags => ["rmgenv:" . BOM::Config::env]};
+    $opts->{tags}->[1] = 'landing_company:' . $self->{landing_company};
+    $opts->{tags}->[2] = 'virtual:' . ($self->{is_virtual} ? 'yes' : 'no');
+
+    return $opts;
+}
+
 # A note about the precision of values in Redis: The most accurate calculation of the loss for
 # currencies not in USD is always the current exchange rate. However, the exchange rate we use to
 # increment the loss is always the exchange rate at the time we calculate the increment. A solution
@@ -74,10 +86,10 @@ sub new {
 sub add_buys {
     my ($self, @clients) = @_;
 
-    return BOM::Transaction::Limits::Stats::with_dd_stats {
+    return stats_timed {
         $self->_add_buys(@clients);
     }
-    buy => @{$self}{qw/landing_company is_virtual/};
+    'companylimits.buy' => $self->dd_opts;
 }
 
 sub _add_buys {
@@ -140,10 +152,10 @@ sub reverse_buys {
     # because of company limits, it should not end up here.
     die "Cannot reverse buys unless add_buys is first called" unless $self->{has_add_buys};
 
-    return BOM::Transaction::Limits::Stats::with_dd_stats {
+    return stats_timed {
         $self->_reverse_buys(@clients);
     }
-    reverse_buy => @{$self}{qw/landing_company is_virtual/};
+    'companylimits.reverse_buy' => $self->dd_opts;
 }
 
 sub _reverse_buys {
@@ -180,10 +192,10 @@ sub _reverse_buys {
 sub add_sells {
     my ($self, @clients) = @_;
 
-    return BOM::Transaction::Limits::Stats::with_dd_stats {
+    return stats_timed {
         $self->_add_sells(@clients);
     }
-    sell => @{$self}{qw/landing_company is_virtual/};
+    'companylimits.sell' => $self->dd_opts;
 }
 
 sub _add_sells {
