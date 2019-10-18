@@ -37,9 +37,7 @@ BOM::Transaction::CompanyLimits
 BEGIN {
     *BOM::Transaction::CompanyLimits::Fake::add_buys = *BOM::Transaction::CompanyLimits::Fake::add_sells =
         *BOM::Transaction::CompanyLimits::Fake::reverse_buys = sub { };
-    *fake_it = sub {
-        return 'yes' ne (readlink "/etc/rmg/turn-on-company-limits" // "");
-        }
+    *fake_it = sub { return !-e "/etc/rmg/turn-on-company-limits"; }
         unless defined &fake_it;
 }
 
