@@ -20,13 +20,12 @@ use warnings;
 # It is possible to simply delete the hashes precisely at midnight, but you can never precisely
 # delete the hash at some time with as much precision as you would have Redis do it.
 
-use Log::Any qw($log);
 use BOM::Transaction::Limits::SyncLoss;
+use Log::Any qw($log);
 use Log::Any::Adapter qw(Stdout), log_level => 'info';
 
 my $output = BOM::Transaction::Limits::SyncLoss::reset_daily_loss_hashes();
 
-$log->info(sprintf "%s: %s", $_, $output->{$_})
-    for (sort keys %$output);
+$log->infof("%s: %s", $_, $output->{$_}) for (sort keys %$output);
 
 exit 0;
