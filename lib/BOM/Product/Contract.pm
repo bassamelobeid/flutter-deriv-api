@@ -1487,7 +1487,7 @@ Returns the relative barrier.
 =cut
 
 sub to_relative_barrier {
-    my ($self, $barrier, $spot, $symbol) = @_;
+    my (undef, $barrier, $spot, $symbol) = @_;
 
     return ($barrier // '') =~ s/\.//r if (!$barrier || $barrier =~ /^S/);
 
