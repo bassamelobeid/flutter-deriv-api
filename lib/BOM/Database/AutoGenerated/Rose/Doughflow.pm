@@ -14,7 +14,7 @@ __PACKAGE__->meta->setup(
         trace_id          => { type => 'bigint', not_null => 1 },
         created_by        => { type => 'varchar', length => 50 },
         payment_processor => { type => 'varchar', length => 50, not_null => 1 },
-        ip_address        => { type => 'varchar', length => 15 },
+        ip_address        => { type => 'text' },
         transaction_id    => { type => 'varchar', length => 100 },
     ],
 
