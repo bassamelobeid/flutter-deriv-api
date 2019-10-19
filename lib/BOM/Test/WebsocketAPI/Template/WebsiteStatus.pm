@@ -62,7 +62,30 @@ rpc_response website_status => sub {
                 minutely   => 80,
             },
         },
-        clients_country   => 'aq',
+        clients_country => 'aq',
+        crypto_config   => {
+            BCH => {
+                minimum_withdrawal => 0.021,
+            },
+            BTC => {
+                minimum_withdrawal => 0.003,
+            },
+            ETH => {
+                minimum_withdrawal => 0.028,
+            },
+            IDK => {
+                minimum_withdrawal => 76.632,
+            },
+            LTC => {
+                minimum_withdrawal => 0.087,
+            },
+            USB => {
+                minimum_withdrawal => 5,
+            },
+            UST => {
+                minimum_withdrawal => 25,
+            },
+        },
         currencies_config => {
             AUD => {
                 fractional_digits         => 2,
@@ -186,6 +209,24 @@ rpc_response website_status => sub {
                     },
                 },
                 type => 'fiat',
+            },
+            IDK => {
+                fractional_digits         => 0,
+                is_suspended              => 0,
+                name                      => 'IDK',
+                stake_default             => 150,
+                transfer_between_accounts => {
+                    fees => {
+                        AUD => 0.5,
+                        EUR => 0.5,
+                        GBP => 0.5,
+                        USD => 0.5,
+                    },
+                    limits => {
+                        min => 15.0,
+                    },
+                },
+                type => 'crypto',
             },
             LTC => {
                 fractional_digits         => 8,

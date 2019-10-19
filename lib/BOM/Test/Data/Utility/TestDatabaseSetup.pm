@@ -142,24 +142,22 @@ sub _create_dbs {
         );
     }
 
-    ## TODO: This needs refactoring in the follow up cards ~ Jack
-    if ((-f $self->_db_migrations_dir . '/circleci_foreign_servers_for_testdb.sql') && BOM::Config::on_development()) {
+    # Because we have different database setups for devbox and CI, foreign servers need to configured differently
+    # depending on the environment.
+    my $foreign_server_setup_sql = $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql';
+    if (BOM::Config::on_development()) {    # Circle CI test
+        $foreign_server_setup_sql = $self->_db_migrations_dir . '/circleci_foreign_servers_for_testdb.sql';
+    }
+
+    if (-f $foreign_server_setup_sql) {
         $m->psql({
                 before => "SET session_replication_role TO 'replica';\n",
                 after  => ";\nSET session_replication_role TO 'origin';\n"
             },
-            $self->_db_migrations_dir . '/circleci_foreign_servers_for_testdb.sql'
+            $foreign_server_setup_sql
         );
     }
 
-    if ((-f $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql') && $self->_db_name =~ m/_test/) {
-        $m->psql({
-                before => "SET session_replication_role TO 'replica';\n",
-                after  => ";\nSET session_replication_role TO 'origin';\n"
-            },
-            $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql'
-        );
-    }
     return $self->_create_template;
 }
 
@@ -264,11 +262,14 @@ sub _kill_all_pg_connections {
     {
         local $SIG{__WARN__} = sub { warn @_ if $_[0] !~ /is not a PostgreSQL server process/; };
 
-        # kill everything else besides pglogical
+        # kill connections to db except itself and pglogical
+        my $db_name = $self->_db_name;
         $dbh->do(
-            q{SELECT pid, pg_terminate_backend(pid) terminated
-            FROM pg_stat_get_activity(NULL::integer) s(datid, pid)
-            WHERE pid <> pg_backend_pid() AND application_name NOT LIKE '%pglogical%'}
+            "SELECT pg_terminate_backend(pid)
+                    FROM pg_stat_activity
+                   WHERE pid <> pg_backend_pid()
+                     AND application_name NOT LIKE '%pglogical%'
+                     AND datname = '$db_name'"
         );
     }
 
