@@ -18,7 +18,7 @@ __PACKAGE__->meta->setup(
         trader_token    => { type => 'text' },
     ],
 
-    primary_key_columns => [ 'asset', 'trade_type', 'copier_id', 'trader_id', 'trader_token', 'max_trade_stake', 'min_trade_stake' ],
+    primary_key_columns => [ 'copier_id', 'trade_type', 'min_trade_stake', 'trader_token', 'asset', 'max_trade_stake', 'trader_id' ],
 
     foreign_keys => [
         client => {
