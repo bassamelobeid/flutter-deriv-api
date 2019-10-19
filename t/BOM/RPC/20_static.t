@@ -8,6 +8,7 @@ use Test::Mojo;
 use BOM::Test::RPC::Client;
 use BOM::Config::CurrencyConfig;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+use Format::Util::Numbers qw/financialrounding/;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 subtest 'residence_list' => sub {
@@ -76,6 +77,32 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
             "Transfer between account fee is correct for ${currency}_$_"
         ) for @all_currencies;
     }
+
+};
+
+subtest 'crypto_config' => sub {
+
+    populate_exchange_rates();
+    my $result = $c->call_ok(
+        'website_status',
+        {
+            language => 'EN',
+            args     => {website_status => 1}})->has_no_system_error->has_no_error->result;
+
+    my @all_currencies = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
+    my @currency       = map {
+        if (LandingCompany::Registry::get_currency_type($_) eq 'crypto') { $_ }
+    } @all_currencies;
+    my @crypto_currency = grep { $_ ne '' } @currency;
+
+    cmp_ok(
+        0 + financialrounding(
+            'amount', $_, ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::crypto()->{$_}->{'withdrawal'}->{min_usd}, 'USD', $_)
+        ),
+        '==',
+        $result->{crypto_config}->{$_}->{minimum_withdrawal},
+        "API:website_status:crypto_config=> Minimum withdrawal in USD is correct for $_"
+    ) for @crypto_currency;
 
 };
 
