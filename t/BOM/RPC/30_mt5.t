@@ -930,7 +930,7 @@ subtest 'withdrawal' => sub {
         token    => $token,
         args     => {
             from_mt5  => $ACCOUNTS{'real\svg'},
-            to_binary => $test_client->loginid,
+            to_binary => $test_client_vr->loginid,
             amount    => 150,
         },
     };
@@ -939,6 +939,16 @@ subtest 'withdrawal' => sub {
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'svg' });
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok($method, $params)->has_error('cannot withdrawals to virtual account')
+        ->error_message_is('You cannot perform this action with a virtual account.');
+
+    $params->{args}->{to_binary} = $test_client->loginid;
+    $params->{token} = $token_vr;
+    $c->call_ok($method, $params)->has_error('fail withdrawals with vr_token')
+        ->error_code_is('PermissionDenied', 'error code is PermissionDenied');
+    $params->{token} = $token;
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');

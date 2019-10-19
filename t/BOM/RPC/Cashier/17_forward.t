@@ -377,17 +377,48 @@ subtest 'crypto_cashier_forward_page' => sub {
     my $website_name = '';
     my $brand_name   = 'binary.com';
     my $action       = 'deposit';
+    my $app_id       = 1003;
 
-    my $invalid_deposit =
-        BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name, 'binary.la');
+    my $invalid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
+        $prefix,
+        {
+            loginid      => $loginid,
+            website_name => $website_name,
+            currency     => $currency,
+            action       => $action,
+            language     => $language,
+            brand_name   => $brand_name,
+            app_id       => $app_id,
+            domain       => 'binary.la',
+        });
     ok $invalid_deposit =~ /^https:\/\/cryptocurrency.binary.com/, 'valid domain to invalid domain';
-    my $valid_deposit =
-        BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name, 'binary.me');
+    my $valid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
+        $prefix,
+        {
+            loginid      => $loginid,
+            website_name => $website_name,
+            currency     => $currency,
+            action       => $action,
+            language     => $language,
+            brand_name   => $brand_name,
+            app_id       => $app_id,
+            domain       => 'binary.me',
+        });
     ok $valid_deposit =~ /^https:\/\/cryptocurrency.binary.me/, 'valid domain to valid domain';
 
     $website_name = 'binaryqa25.com';
-    my $valid_QA_deposit =
-        BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $loginid, $website_name, $currency, $action, $language, $brand_name, 'binary.me');
+    my $valid_QA_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
+        $prefix,
+        {
+            loginid      => $loginid,
+            website_name => $website_name,
+            currency     => $currency,
+            action       => $action,
+            language     => $language,
+            brand_name   => $brand_name,
+            app_id       => $app_id,
+            domain       => 'binary.me',
+        });
     ok $valid_QA_deposit =~ /^https:\/\/www.binaryqa25.com/;
 
 };
