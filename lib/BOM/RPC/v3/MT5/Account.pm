@@ -1514,6 +1514,9 @@ sub _mt5_validate_and_get_amount {
                     params        => $params
                 }) if $err;
 
+            #  Not allow virtual token/oauth to process with real account.
+            return create_error_future('permission') if $authorized_client->is_virtual and not $client->is_virtual;
+
             my $client_currency = $client->account ? $client->account->currency_code() : undef;
             my $brand = Brands->new(name => request()->brand);
 
@@ -1773,7 +1776,7 @@ sub _validate_client {
     my $loginid = $client_obj->loginid;
 
     # only for real money account
-    return 'permission' if ($client_obj->is_virtual);
+    return 'VirtualProhibited' if ($client_obj->is_virtual);
 
     my $lc = $client_obj->landing_company->short;
 
