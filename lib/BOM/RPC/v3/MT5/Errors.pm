@@ -71,6 +71,8 @@ my $category_message_mapping = {
     TransferBetweenAccountsError => 'Transfers between accounts are not available for your account.',
     CurrencyConflict             => 'Currency provided is different from account currency.',
     InvalidMT5Group              => 'This MT5 account has an invalid Landing Company.',
+    VirtualProhibited            => 'You cannot perform this action with a virtual account.',
+
 };
 
 =head2 new
