@@ -24,8 +24,7 @@ BEGIN {
 }
 
 sub _db_name {
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
-    return 'cr' . $db_postfix;
+    return 'cr';
 }
 
 sub _db_migrations_dir {
@@ -39,7 +38,7 @@ sub _build__connection_parameters {
         domain         => 'TEST',
         driver         => 'Pg',
         host           => 'localhost',
-        port           => '5432',
+        port           => $ENV{DB_TEST_PORT} // '5432',
         user           => 'postgres',
         password       => 'mRX1E3Mi00oS8LG',
         pgbouncer_port => '6432',
