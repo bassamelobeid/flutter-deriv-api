@@ -47,9 +47,9 @@ $user->add_client($client);
 
 subtest 'attempt contract_update before authorized' => sub {
     my $res = $t->await::contract_update({
-            contract_update   => 1,
-            contract_id       => 123,
-            update_parameters => {}});
+            contract_update => 1,
+            contract_id     => 123,
+            parameters      => {}});
     ok $res->{error}, 'error';
     is $res->{error}->{code},    'AuthorizationRequired', 'error code - AuthorizationRequired';
     is $res->{error}->{message}, 'Please log in.',        'error message - Please log in.';
@@ -60,9 +60,9 @@ my $authorize = $t->await::authorize({authorize => $token});
 
 subtest 'contract_update' => sub {
     my $res = $t->await::contract_update({
-            contract_update   => 1,
-            contract_id       => 123,
-            update_parameters => {
+            contract_update => 1,
+            contract_id     => 123,
+            parameters      => {
                 take_profit => 1,
             }});
     is $res->{msg_type}, 'contract_update', 'msg_type - contract_update';
@@ -88,23 +88,19 @@ subtest 'contract_update' => sub {
     ok $buy_res->{buy}->{transaction_id}, 'contract bought successfully';
 
     $res = $t->await::contract_update({
-            contract_update   => 1,
-            contract_id       => $buy_res->{buy}->{contract_id},
-            update_parameters => {
+            contract_update => 1,
+            contract_id     => $buy_res->{buy}->{contract_id},
+            parameters      => {
                 something => 1,
             }});
     ok $res->{error}, 'error';
     is $res->{error}->{code}, 'InputValidationFailed', 'error code - InputValidationFailed';
-    is $res->{error}->{message}, 'Input validation failed: update_parameters',
-        'error message - Input validation failed: update_parameters';
-
+    is $res->{error}->{message}, 'Input validation failed: parameters', 'error message - Input validation failed: parameters';
 
     $res = $t->await::contract_update({
-            contract_update   => 1,
-            contract_id       => $buy_res->{buy}->{contract_id},
-            update_parameters => {
-                take_profit => 10
-            }});
+            contract_update => 1,
+            contract_id     => $buy_res->{buy}->{contract_id},
+            parameters      => {take_profit => 10}});
     ok $res->{contract_update}->{take_profit}, 'take profit update successfully';
     ok !$res->{contract_update}->{stop_loss}, '';
 };
@@ -129,15 +125,14 @@ subtest 'contrcat_update on unsupported contract type' => sub {
     ok $buy_res->{buy}->{transaction_id}, 'contract bought successfully';
 
     my $res = $t->await::contract_update({
-            contract_update   => 1,
-            contract_id       => $buy_res->{buy}->{contract_id},
-            update_parameters => {
+            contract_update => 1,
+            contract_id     => $buy_res->{buy}->{contract_id},
+            parameters      => {
                 take_profit => 1,
             }});
     ok $res->{error}, 'error';
     is $res->{error}->{code}, 'UpdateNotAllowed', 'error code - UpdateNotAllowed';
-    is $res->{error}->{message}, 'Update is not allowed for this contract.',
-        'error message - Update is not allowed for this contract.';
+    is $res->{error}->{message}, 'Update is not allowed for this contract.', 'error message - Update is not allowed for this contract.';
 };
 
 done_testing();
