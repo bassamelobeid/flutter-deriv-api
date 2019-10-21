@@ -4,7 +4,7 @@
    "type" : "object",
    "required" : [
       "contract_id",
-      "update_parameters"
+      "parameters"
    ],
    "additionalProperties" : false,
    "title" : "Contract Update",
@@ -20,7 +20,7 @@
          "description" : "Binary.com internal contract identifier",
          "type" : "integer"
       },
-      "update_parameters": {
+      "parameters": {
          "type": "object",
          "description": "contains parameters to update.",
          "additionalProperties" : false,
