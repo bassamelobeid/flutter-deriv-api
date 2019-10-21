@@ -426,7 +426,7 @@
                             },
                             "order_amount" : {
                                 "type": "number",
-                                "description": "stop out dollar amount"
+                                "description": "stop out amount"
                             },
                             "barrier_value" : {
                                 "type": "string",
@@ -440,7 +440,7 @@
                             },
                             "order_amount" : {
                                 "type": "number",
-                                "description": "take profit dollar amount"
+                                "description": "take profit amount"
                             },
                             "barrier_value" : {
                                 "type": "string",
@@ -454,7 +454,7 @@
                             },
                             "order_amount" : {
                                 "type": "number",
-                                "description": "take profit dollar amount"
+                                "description": "take profit amount"
                             },
                             "barrier_value" : {
                                 "type": "string",

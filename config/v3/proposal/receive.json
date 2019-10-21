@@ -57,24 +57,24 @@
             },
             "limit_order" : {
                "type": "object",
-               "description": "Contains barrier information. (Only applicable for contract with internally calculated barrier(s).).",
+               "description": "Contains limit order information. (Only applicable for contract with limit order).",
                "properties": {
                   "take_profit": {
                      "type": "object",
-                     "description": "take profit barrier information",
+                     "description": "The target spot price where the contract will be closed with profit.",
                      "properties": {
                         "display_name": {
                             "type": "string"
                         },
                         "value": {
                             "type": "string",
-                            "description": "pip-sized barrier value"
+                            "description": "pip-sized take profit value"
                         }
                      }
                   },
                   "stop_out": {
                      "type": "object",
-                     "description": "stop out barrier information",
+                     "description": "The target spot price where the contract will be closed with loss.",
                      "properties": {
                         "display_name": {
                             "type": "string"
@@ -87,7 +87,7 @@
                   },
                   "stop_loss": {
                      "type": "object",
-                     "description": "take profit barrier information",
+                     "description": "The target spot price where the contract will be closed with loss.",
                      "properties": {
                         "display_name": {
                             "type": "string"
