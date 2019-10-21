@@ -77,9 +77,12 @@ subscribe the channel and store channel to Redis so that pricer_queue script can
 
 =cut
 
+my $index_key = 'pricer_channels';
 before subscribe => sub {
-    my $self = shift;
-    $self->subscription_manager->redis->set($self->pricer_args, 1);
+    my $self  = shift;
+    my $redis = $self->subscription_manager->redis;
+    $redis->zadd($index_key, 0, $self->channel);
+    $redis->set($self->pricer_args, 1);
 };
 
 # This method is used to find a subscription. Class name + _unique_key will be a unique index of the subscription objects.
