@@ -208,10 +208,10 @@ sub build_contract_update_response {
         longcode        => localize($contract->longcode),
     );
 
-    my $take_profit = $contract->take_profit ? $contract->take_profit->barrier_value : undef;
+    my $take_profit = $contract->take_profit ? $contract->take_profit->barrier_value : '';
     $take_profit = $self->new_order->barrier_value if $order_type eq 'take_profit' and $order_value ne 'null';
 
-    my $stop_loss = $contract->stop_loss ? $contract->stop_loss->barrier_value : undef;
+    my $stop_loss = $contract->stop_loss ? $contract->stop_loss->barrier_value : '';
     $stop_loss = $self->new_order->barrier_value if $order_type eq 'stop_loss' and $order_value ne 'null';
 
     return {
