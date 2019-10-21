@@ -15,6 +15,7 @@ use Data::Dumper;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context;
+use BOM::Pricing::Queue;
 use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
 use BOM::Pricing::v3::Contract;
@@ -109,9 +110,36 @@ sub process_job {
     return $response;
 }
 
+=head2 run
+
+Parameters hashref:
+
+Required:
+
+B<queues>: list of Redis queues to process
+
+Recommended (produce warnings and less useable reporting without):
+
+B<fork_index>: index of the parallel fork
+B<ip>: IP address
+B<pid>: process id of the fork
+
+Optional:
+
+B<redis>: RedisDB object to use (default: C<RedisReplicated::redis_pricer()> )
+B<queue_obj>: Pricing::Queue object to use (default: C<BOM::Pricing::Queue->new> )
+B<wait_timeout>: Time to block for list items in seconds (default: B<0> -- forever)
+
+=cut
+
 sub run {
     my ($self, %args) = @_;
-    my $redis = BOM::Config::RedisReplicated::redis_pricer(timeout => 0);
+
+    # Allow for a bit of dependency injection to facilitate testing
+    my $redis = $args{redis} // BOM::Config::RedisReplicated::redis_pricer(timeout => 0);
+    my $qo = $args{queue_obj} // BOM::Pricing::Queue->new;
+    # Block forever by default
+    my $pop_to = $args{wait_timeout} // 0;
 
     my $tv_appconfig          = [0, 0];
     my $tv                    = [Time::HiRes::gettimeofday];
@@ -121,12 +149,15 @@ sub run {
     # Allow ->stop and restart
     local $self->{is_running} = 1;
     LOOP: while ($self->is_running) {
-        my $key;
+        my $popped;
         try {
-            $key = $redis->brpop(@{$args{queues}}, 0)
+            $popped = $redis->brpop(@{$args{queues}}, $pop_to);
+            # FUTURE: Once Redis 5 or better is available
+            # this can be refactored to a `BZPOPMAX` in concert
+            # with a `ZUNIONSTORE` in `Queue` to populate the queue.
         }
         catch {
-            my $err = $@;
+            my $err = $_;
             if (blessed($err) && $err->isa('RedisDB::Error::EAGAIN')) {
                 stats_inc("pricer_daemon.resource_unavailable_error");
                 next LOOP;
@@ -134,7 +165,7 @@ sub run {
                 die $err;
             }
         };
-        last LOOP unless $key;
+        last LOOP unless $popped;
         my $current_eco_cache_epoch = $redis->get('economic_events_cache_snapshot');
         if ($current_eco_cache_epoch and $eco_snapshot != $current_eco_cache_epoch) {
             Volatility::LinearCache::clear_cache();
@@ -143,7 +174,7 @@ sub run {
 
         # Remember that we had some jobs
         my $tv_now = [Time::HiRes::gettimeofday];
-        my $queue  = $key->[0];
+        my ($queue, $chan) = @$popped;
         # Apply this for the duration of the current price only
         local $self->{current_queue} = $queue;
 
@@ -158,21 +189,19 @@ sub run {
             $tv_appconfig = $tv_now;
         }
 
-        my $next = $key->[1];
-        next unless $next =~ s/^PRICER_KEYS:://;
-        my $payload       = decode_json_utf8($next);
-        my $params        = {@{$payload}};
+        my ($params, $param_str) = BOM::Pricing::v3::Utility::extract_from_channel_key($chan);
+        next unless $param_str;
         my $contract_type = $params->{contract_type};
 
         # If incomplete or invalid keys somehow got into pricer,
         # delete them here.
-        unless ($self->_validate_params($next, $params)) {
-            warn "Invalid parameters: $next";
-            $redis->del($key->[1], $next);
+        unless ($self->_validate_params($param_str, $params)) {
+            warn 'Invalid parameters: ' . $param_str;
+            $qo->remove($chan, $param_str);
             next;
         }
 
-        my $response = $self->process_job($redis, $next, $params) or next;
+        my $response = $self->process_job($redis, $param_str, $params) or next;
 
         if (($response->{rpc_time} // 0) > 1000) {
             my $contract_type_string =
@@ -184,12 +213,10 @@ sub run {
         }
 
         # On websocket clients are subscribing to proposal open contract with "CONTRACT_PRICE::$contract_id" as the key
-        my $redis_channel = $params->{contract_id} ? 'CONTRACT_PRICE::' . $params->{contract_id} : $key->[1];
+        my $redis_channel = $params->{contract_id} ? 'CONTRACT_PRICE::' . $params->{contract_id} : $chan;
         my $subscribers_count = $redis->publish($redis_channel, encode_json_utf8($response));
         # if None was subscribed, so delete the job
-        if ($subscribers_count == 0) {
-            $redis->del($key->[1], $next);
-        }
+        $qo->remove($chan, $param_str) if ($subscribers_count == 0);
 
         $tv_now = [Time::HiRes::gettimeofday];
 
