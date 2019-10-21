@@ -35,6 +35,8 @@ Deletes of pricer key and set the new pricer key
 sub contract_update_handler {
     my ($c, $api_response) = @_;
 
+    # do not send this back
+    delete $api_response->{updated_queue};
     my $old_poc_params = _get_poc_params(delete $api_response->{old_contract_details});
     my $new_poc_params = _get_poc_params(delete $api_response->{contract_details});
 
