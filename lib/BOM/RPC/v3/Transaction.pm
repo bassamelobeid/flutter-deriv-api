@@ -608,9 +608,9 @@ rpc contract_update => sub {
     my $response;
     try {
         my $updater = BOM::Transaction::ContractUpdate->new(
-            client      => $client,
-            contract_id => $contract_id,
-            parameters  => $args->{parameters},
+            client        => $client,
+            contract_id   => $contract_id,
+            update_params => $args->{parameters},
         );
         if ($updater->is_valid_to_update) {
             $response = $updater->update();
