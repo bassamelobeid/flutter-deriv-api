@@ -65,8 +65,8 @@ subtest 'contract_update' => sub {
         client_ip => '127.0.0.1',
         token     => $token,
         args      => {
-            contract_update   => 1,
-            update_parameters => {},
+            contract_update => 1,
+            parameters      => {},
         }};
 
     $c->call_ok('contract_update', $update_params)->has_error->error_code_is('MissingContractId')
@@ -78,7 +78,7 @@ subtest 'contract_update' => sub {
     $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidToken')->error_message_is('The token is invalid.');
 
     $update_params->{token} = $token;
-    $update_params->{args}->{update_parameters} = {
+    $update_params->{args}->{parameters} = {
         take_profit => 10,
     };
 
@@ -103,27 +103,27 @@ subtest 'contract_update' => sub {
     ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
     ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
 
-    $update_params->{args}->{contract_id}       = $buy_res->{contract_id};
-    $update_params->{args}->{update_parameters} = ();
+    $update_params->{args}->{contract_id} = $buy_res->{contract_id};
+    $update_params->{args}->{parameters}  = ();
     my $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidUpdateArgument')
         ->error_message_is('Update only accepts hash reference as input parameter.');
 
-    $update_params->{args}->{update_parameters} = {take_profit => 'notanumberornull'};
+    $update_params->{args}->{parameters} = {take_profit => 'notanumberornull'};
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidUpdateValue')
         ->error_message_is('Update value accepts number or null string');
 
-    $update_params->{args}->{update_parameters} = {
+    $update_params->{args}->{parameters} = {
         something => 1,
     };
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('UpdateNotAllowed')
         ->error_message_is('Update is not allowed for this contract. Allowed updates take_profit,stop_loss');
-    $update_params->{args}->{update_parameters} = {take_profit => -1};
+    $update_params->{args}->{parameters} = {take_profit => -1};
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidContractUpdate')
         ->error_message_is('Invalid take profit. Take profit must be higher than current spot price.');
-    $update_params->{args}->{update_parameters} = {take_profit => 10};
+    $update_params->{args}->{parameters} = {take_profit => 10};
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
     ok $res->{take_profit}, 'returns the new take profit value';
-    ok !$res->{stop_loss},    'stop loss is undef';
+    ok !$res->{stop_loss}, 'stop loss is undef';
     ok $res->{contract_details}, 'has contract_details';
     is $res->{contract_details}{limit_order}->[0],        'stop_out';
     is $res->{contract_details}{limit_order}->[2],        'take_profit';
@@ -131,11 +131,11 @@ subtest 'contract_update' => sub {
     is_deeply $res->{contract_details}{limit_order}->[1], $res->{old_contract_details}{limit_order}->[1];
     ok !$res->{old_contract_details}{limit_order}->[2];
 
-    delete $update_params->{args}->{update_parameters}->{take_profit};
-    $update_params->{args}->{update_parameters}->{stop_loss} = -80;
+    delete $update_params->{args}->{parameters}->{take_profit};
+    $update_params->{args}->{parameters}->{stop_loss} = -80;
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
-    ok $res->{take_profit}, 'returns the new take profit value';
-    ok $res->{stop_loss},    'returns the new stop loss value';
+    ok $res->{take_profit},      'returns the new take profit value';
+    ok $res->{stop_loss},        'returns the new stop loss value';
     ok $res->{contract_details}, 'has contract_details';
     is $res->{contract_details}{limit_order}->[0], 'stop_loss';
     is $res->{contract_details}{limit_order}->[2], 'stop_out';
