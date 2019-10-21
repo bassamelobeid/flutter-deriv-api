@@ -480,18 +480,21 @@ subtest 'MirrorBinaryUserId' => sub {
     my $pgservice_conf = "/tmp/pgservice.conf.$$";
     my $pgpass_conf    = "/tmp/pgpass.conf.$$";
     my $dbh;
-    my $t = $ENV{DB_POSTFIX} // '';
+    # In our unit test container (debian-ci), there is no unit test cluster;
+    # so we need to route depending on environment. Ideally both db setups
+    # should be consistent in the not too distant future
+    my $port = $ENV{DB_TEST_PORT} // 5436;
     lives_ok {
         path($pgservice_conf)->append(<<"CONF");
 [user01]
 host=$cfg->{ip}
-port=5436
+port=$port
 user=write
-dbname=users$t
+dbname=users
 CONF
 
         path($pgpass_conf)->append(<<"CONF");
-$cfg->{ip}:5436:users$t:write:$cfg->{password}
+$cfg->{ip}:$port:users:write:$cfg->{password}
 CONF
         chmod 0400, $pgpass_conf;
 
