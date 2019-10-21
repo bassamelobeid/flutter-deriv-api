@@ -58,10 +58,10 @@ sub update_financial_assessment {
 
     # Remove unwelcome status for clients that have breached social responsibility
     # and have filled in the financial assessment the first time
-    if ($client->landing_company->social_responsibility_check_required) {
+    if ($client->landing_company->social_responsibility_check_required && !$previous && $client->status->unwelcome) {
         my $redis    = BOM::Config::RedisReplicated::redis_events_write();
         my $key_name = $client->loginid . '_sr_risk_status';
-        $client->status->clear_unwelcome if ($redis->get($key_name) && $client->status->unwelcome && !$previous);
+        $client->status->clear_unwelcome if $redis->get($key_name);
     }
 
     # Emails are sent for:
