@@ -5,6 +5,8 @@ use Test::More;
 use Test::MockModule;
 use JSON::MaybeUTF8;
 use Format::Util::Numbers qw(get_min_unit financialrounding);
+use ExchangeRates::CurrencyConverter qw/convert_currency/;
+use List::Util qw(max);
 
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Runtime;
@@ -84,7 +86,21 @@ subtest 'transfer_between_accounts_limits' => sub {
 
 };
 
-subtest 'transfer_between_accounts_lower_bounds' => sub {
+sub check_lower_bound {
+    my ($currency, $lower_bound) = @_;
+    my @all_currencies = LandingCompany::Registry::all_currencies();
+
+    for my $to_currency (@all_currencies) {
+        my $transfer_fee = max(get_min_unit($currency), $lower_bound * BOM::Config::CurrencyConfig::MAX_TRANSFER_FEE / 100);
+        my $remaining_amount = convert_currency($lower_bound - $transfer_fee, $currency, $to_currency);
+        return
+            "Lower bound $lower_bound for $currency is incorrect. Remaining amount $remaining_amount is less than the minimum unit of $to_currency"
+            if $remaining_amount < get_min_unit($to_currency);
+    }
+    return '';
+}
+
+subtest 'transfer_between_accounts_lower_bounds old' => sub {
     my $rates = {
         USD => 1,
         EUR => 1.2,
@@ -103,12 +119,22 @@ subtest 'transfer_between_accounts_lower_bounds' => sub {
     $mock_rates->mock(
         'in_usd' => sub {
             my ($amount, $currency) = @_;
-            return $amount * $rates->{$currency} if $currency ne 'EUR';
-            die "EUR not available";
+            return $amount * $rates->{$currency};
         });
 
     my @all_currencies = LandingCompany::Registry::all_currencies();
     my %lower_bounds   = BOM::Config::CurrencyConfig::transfer_between_accounts_lower_bounds()->%*;
+
+    for my $currency (@all_currencies) {
+        is check_lower_bound($currency, $lower_bounds{$currency}), '', "Acceptable lower bound for currency $currency";
+    }
+
+    for my $currency (@all_currencies) {
+        like check_lower_bound($currency, $lower_bounds{$currency} - get_min_unit($currency)),
+            qr'Remaining amount .* is less than the minimum unit of',
+            "Any amount less than lower bound of sending currency ($currency) will make zero received amount at least on one receiving currency";
+    }
+
     grep { ok($lower_bounds{$_}, "$_ Lower bounds contains all currencies with valid values") } @all_currencies;
 
     my $min_by_cyrrency = {
