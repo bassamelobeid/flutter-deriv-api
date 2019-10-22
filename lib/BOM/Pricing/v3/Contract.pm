@@ -222,7 +222,7 @@ sub _get_ask {
 
             $response->{multiplier} = $contract->multiplier unless $contract->is_binary;
 
-            if ($contract->can('barriers_for_display') and my $display = $contract->barriers_for_display) {
+            if ($contract->category_code eq 'multiplier' and my $display = $contract->available_orders_for_display) {
                 $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
                 $response->{limit_order} = $display;
             }
@@ -869,12 +869,17 @@ sub _build_bid_response {
 
     # for multiplier, we want to return the orders and insurance details.
     if ($contract->category_code eq 'multiplier') {
-        # this goes into proposal_open_contract PRICER_KEYS
-        $response->{limit_order} = $params->{from_pricer} ? $contract->available_orders_hashref : $contract->available_orders;
-        # these are the barrier value for the limit orders
-        $response->{stop_out}    = $contract->stop_out->barrier_value;
-        $response->{take_profit} = $contract->take_profit->barrier_value if $contract->take_profit;
-        $response->{stop_loss}   = $contract->stop_loss->barrier_value if $contract->stop_loss;
+        # If the caller is not from price daemon, we need:
+        # 1. sorted orders as array reference ($contract->available_orders) for PRICER_KEY
+        # 2. available order for display in the websocket api response ($contract->available_orders_for_display)
+        my $display = $contract->available_orders_for_display;
+        $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
+        if ($params->{from_pricer}) {
+            $response->{limit_order} = $display;
+        } else {
+            $response->{limit_order}            = $contract->available_orders;
+            $response->{limit_order_as_hashref} = $display;
+        }
     }
 
     if (    $contract->exit_tick
