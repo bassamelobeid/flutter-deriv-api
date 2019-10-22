@@ -428,9 +428,13 @@
                                 "type": "number",
                                 "description": "stop out amount"
                             },
-                            "barrier_value" : {
+                            "value" : {
                                 "type": "string",
                                 "description" : "stop out pip-sized barrier value"
+                            },
+                            "display_name": {
+                                "type": "string",
+                                "description": "localized display name"
                             }
                         },
                         "take_profit": {
@@ -442,23 +446,31 @@
                                 "type": "number",
                                 "description": "take profit amount"
                             },
-                            "barrier_value" : {
+                            "value" : {
                                 "type": "string",
                                 "description" : "take profit pip-sized barrier value"
+                            },
+                            "display_name": {
+                                "type": "string",
+                                "description": "localized display name"
                             }
                         },
                         "stop_loss": {
                             "order_date" : {
                                 "type": "integer",
-                                "description": "take profit order epoch"
+                                "description": "stop loss order epoch"
                             },
                             "order_amount" : {
                                 "type": "number",
-                                "description": "take profit amount"
+                                "description": "stop loss amount"
                             },
-                            "barrier_value" : {
+                            "value" : {
                                 "type": "string",
-                                "description" : "take profit pip-sized barrier value"
+                                "description" : "stop loss pip-sized barrier value"
+                            },
+                            "display_name": {
+                                "type": "string",
+                                "description": "localized display name"
                             }
                         }
                     }
