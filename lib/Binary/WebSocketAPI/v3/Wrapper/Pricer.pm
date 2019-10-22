@@ -598,7 +598,6 @@ sub pricing_channel_for_proposal_open_contract {
 
     my $contract_id = $cache->{contract_id};
     my $pricer_args = get_pricer_args($c, $cache);
-    warn "pricer args $pricer_args";
     my %hash        = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
     $hash{account_id}     = delete $cache->{account_id};
     $hash{transaction_id} = $cache->{transaction_ids}->{buy};    # transaction is going to be stored
