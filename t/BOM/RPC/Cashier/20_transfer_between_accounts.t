@@ -729,16 +729,9 @@ subtest 'transfer with fees' => sub {
 
     my $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
 
-<<<<<<< HEAD
+    $amount = $transfer_limits->{BTC}->{min};
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_btc->loginid, _get_unique_display_name());
-    $amount          = 0.1;
-    $params->{args}  = {
-=======
-    #No transfer fee for BTC-EUR (transfer failure expected)
-    my $amount = $transfer_limits->{BTC}->{min};
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_btc->loginid, 'test token');
     $params->{args} = {
->>>>>>> origin/master
         account_from => $client_cr_btc->loginid,
         account_to   => $client_cr_eur->loginid,
         currency     => "BTC",
@@ -751,15 +744,6 @@ subtest 'transfer with fees' => sub {
         my $previous_balance_btc = $client_cr_btc->default_account->balance;
         my $previous_balance_usd = $client_cr_usd->default_account->balance;
 
-<<<<<<< HEAD
-    $amount = 0.1;
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_pa_btc->loginid, _get_unique_display_name());
-    $params->{args} = {
-        account_from => $client_cr_pa_btc->loginid,
-        account_to   => $client_cr_usd->loginid,
-        currency     => "BTC",
-        amount       => $amount
-=======
         $params->{args} = {
             account_from => $client_cr_usd->loginid,
             account_to   => $client_cr_btc->loginid,
@@ -780,7 +764,7 @@ subtest 'transfer with fees' => sub {
 
         $previous_balance_btc = $client_cr_btc->default_account->balance;
         $previous_balance_usd = $client_cr_usd->default_account->balance;
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_btc->loginid, 'test token');
+	$params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_btc->loginid, _get_unique_display_name());
         $amount          = $transfer_limits->{BTC}->{min};
         $params->{args}  = {
             account_from => $client_cr_btc->loginid,
@@ -802,13 +786,12 @@ subtest 'transfer with fees' => sub {
             financialrounding('price', 'BTC', $previous_balance_btc - $amount),
             'non-pa to non-pa (BTC to USD), correct balance after transfer including fees'
         );
->>>>>>> origin/master
     };
 
     subtest 'unauthorised pa to non-pa transfer' => sub {
         my $previous_balance_btc = $client_cr_pa_btc->default_account->balance;
         my $previous_balance_usd = $client_cr_usd->default_account->balance;
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_pa_btc->loginid, 'test token');
+	$params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_pa_btc->loginid, _get_unique_display_name());
         my $amount = $transfer_limits->{BTC}->{min};
         $params->{args} = {
             account_from => $client_cr_pa_btc->loginid,
@@ -831,53 +814,17 @@ subtest 'transfer with fees' => sub {
     # in 2 seconds
     sleep(2);
 
-<<<<<<< HEAD
-    #The minimum fee 0.01 UST is applied on the total of 0.02. The reamining 0.01 is less than 0.01 EUR (minimum allowed)
-    #Similar to the case of 0.01 USD transfer above.
-    $amount = 0.02;
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_ust->loginid, _get_unique_display_name());
-    $params->{args} = {
-        account_from => $client_cr_ust->loginid,
-        account_to   => $client_cr_eur->loginid,
-        currency     => "UST",
-        amount       => $amount
-    };
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError')
-        ->error_message_is('This amount is too low. Please enter a minimum of 1.09 UST.');
-
-    #No transfer fee for BTC-EUR
-    $amount = 0.02;
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_btc->loginid, _get_unique_display_name());
-    $params->{args} = {
-        account_from => $client_cr_btc->loginid,
-        account_to   => $client_cr_eur->loginid,
-        currency     => "BTC",
-        amount       => $amount
-    };
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError')
-        ->error_message_is('Account transfers are not possible between BTC and EUR.');
-
-    $amount = 100;
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_usd->loginid, _get_unique_display_name());
-    $params->{args} = {
-        account_from => $client_cr_usd->loginid,
-        account_to   => $client_cr_pa_btc->loginid,
-        currency     => "USD",
-        amount       => $amount
-    };
-=======
     subtest 'non-pa to unauthorised pa transfer' => sub {
         my $previous_balance_btc = $client_cr_pa_btc->default_account->balance;
         my $previous_balance_usd = $client_cr_usd->default_account->balance;
         my $amount               = $transfer_limits->{USD}->{min};
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
+	$params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_usd->loginid, _get_unique_display_name());
         $params->{args} = {
             account_from => $client_cr_usd->loginid,
             account_to   => $client_cr_pa_btc->loginid,
             currency     => "USD",
             amount       => $amount
         };
->>>>>>> origin/master
 
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
         is $result->{client_to_loginid}, $client_cr_pa_btc->loginid, 'Transaction successful';
