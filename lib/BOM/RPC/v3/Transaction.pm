@@ -610,7 +610,7 @@ rpc contract_update => sub {
         my $updater = BOM::Transaction::ContractUpdate->new(
             client        => $client,
             contract_id   => $contract_id,
-            update_params => $args->{parameters},
+            update_params => $args->{limit_order},
         );
         if ($updater->is_valid_to_update) {
             $response = $updater->update();
