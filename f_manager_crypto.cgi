@@ -327,7 +327,7 @@ EOF
     if ($cmd eq 'getbalance') {
         my $get_balance = $currency_wrapper->get_total_balance();
         for my $currency_balance (keys %$get_balance) {
-            print sprintf("<p>%s:<pre>%s</pre></p>", $currency_balance, $get_balance->{$currency_balance});
+            print sprintf("<p>%s:<pre>%s</pre></p>", $currency_balance, formatnumber('amount', $currency_balance, $get_balance->{$currency_balance}));
         }
     } elsif ($cmd eq 'getinfo') {
         my $get_info = $currency_wrapper->get_info;

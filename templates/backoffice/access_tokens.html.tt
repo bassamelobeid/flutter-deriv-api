@@ -4,7 +4,7 @@
 
 <table>
     <tr>
-        <td class="small_header" colspan="5">ACTIVE ([% tokens.size %])</td>
+        <td class="small_header" colspan="6">ACTIVE ([% tokens.size %])</td>
     </tr>
     [% IF tokens.size > 0 %]
     <tr>
@@ -25,32 +25,34 @@
         [% END %]
      [% ELSE %]
      <tr>
-         <td colspan="5">No active tokens</td>
+         <td colspan="6">No active tokens</td>
      </tr>
      [% END %]
     <tr>
-        <td class="small_header" colspan="5">DELETED ([% deleted.size %])</td>
+        <td class="small_header" colspan="6">DELETED ([% deleted.size %])</td>
     </tr>
     [% IF deleted.size > 0 %]
     <tr>
         <th>Login ID</th>
         <th>Token</th>
         <th>Type</th>
+        <th>Created</th>
         <th>Deleted</th>
         <th>Details</th>
     </tr>
         [% FOREACH token IN deleted %]
         <tr>
             <td class="tokencell">[% token.loginid %]</td>
-            <td class="tokencell">[% token.token %]</td>
+            <td class="tokencell" style="text-align:center">[% token.token %]</td>
             <td class="tokencell">API</td>
-            <td class="tokencell">[% token.deleted %]</td>
+            <td class="tokencell">[% token.creation_time %]</td>
+            <td class="tokencell" style="text-align:center">[% token.deleted %]</td>
             <td class="tokencell">[% token.info %]</td>
         </tr>
         [% END %]
      [% ELSE %]
      <tr>
-         <td colspan="5">No deleted tokens</td>
+         <td colspan="6">No deleted tokens</td>
      </tr>
      [% END %]    
 </table>
