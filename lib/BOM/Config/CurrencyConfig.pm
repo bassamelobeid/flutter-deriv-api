@@ -198,9 +198,12 @@ sub transfer_between_accounts_lower_bounds {
                 $log->tracef("No exchange rate for the currency pair %s-%s.", $target_currency, $to_currency);
             };
         }
-        # an extra min_unit is added to make for truncations in rounding
-        $result->{$target_currency} += get_min_unit($target_currency);
-        $result->{$target_currency} = financialrounding('amount', $target_currency, $result->{$target_currency});
+
+        my $rounded = financialrounding('amount', $target_currency, $result->{$target_currency});
+        my $min_unit = get_min_unit($target_currency);
+        # increase by min_unit is if the value is truncated by financial rounding
+        $rounded = financialrounding('amount', $target_currency, $rounded + $min_unit) if $result->{$target_currency} - $rounded > $min_unit / 10.0;
+        $result->{$target_currency} = $rounded;
     }
 
     return $result;
