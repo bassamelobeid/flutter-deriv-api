@@ -135,6 +135,19 @@ sub get_all_tokens_by_loginid {
         });
 }
 
+sub token_deletion_history {
+    my ($self, $loginid) = @_;
+
+    my $tokens = $self->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT * FROM audit.get_deleted_tokens(?)", {Slice => {}}, $loginid);
+        });
+    # Easier to convert the scopes array here than in Postgres
+    map { $_->{scopes} =~ s/[\[\]\"]//g; $_->{info} = 'Name: ' . $_->{name} . '; Scopes: ' . $_->{scopes} } @$tokens;
+
+    return $tokens;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
