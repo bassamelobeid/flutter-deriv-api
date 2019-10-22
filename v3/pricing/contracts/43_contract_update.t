@@ -49,7 +49,7 @@ subtest 'attempt contract_update before authorized' => sub {
     my $res = $t->await::contract_update({
             contract_update => 1,
             contract_id     => 123,
-            parameters      => {}});
+            limit_order     => {}});
     ok $res->{error}, 'error';
     is $res->{error}->{code},    'AuthorizationRequired', 'error code - AuthorizationRequired';
     is $res->{error}->{message}, 'Please log in.',        'error message - Please log in.';
@@ -62,7 +62,7 @@ subtest 'contract_update' => sub {
     my $res = $t->await::contract_update({
             contract_update => 1,
             contract_id     => 123,
-            parameters      => {
+            limit_order     => {
                 take_profit => 1,
             }});
     is $res->{msg_type}, 'contract_update', 'msg_type - contract_update';
@@ -90,17 +90,17 @@ subtest 'contract_update' => sub {
     $res = $t->await::contract_update({
             contract_update => 1,
             contract_id     => $buy_res->{buy}->{contract_id},
-            parameters      => {
+            limit_order     => {
                 something => 1,
             }});
     ok $res->{error}, 'error';
     is $res->{error}->{code}, 'InputValidationFailed', 'error code - InputValidationFailed';
-    is $res->{error}->{message}, 'Input validation failed: parameters', 'error message - Input validation failed: parameters';
+    is $res->{error}->{message}, 'Input validation failed: limit_order', 'error message - Input validation failed: limit_order';
 
     $res = $t->await::contract_update({
             contract_update => 1,
             contract_id     => $buy_res->{buy}->{contract_id},
-            parameters      => {take_profit => 10}});
+            limit_order     => {take_profit => 10}});
     ok $res->{contract_update}->{take_profit}, 'take profit update successfully';
     ok !$res->{contract_update}->{stop_loss}, '';
 };
@@ -127,7 +127,7 @@ subtest 'contrcat_update on unsupported contract type' => sub {
     my $res = $t->await::contract_update({
             contract_update => 1,
             contract_id     => $buy_res->{buy}->{contract_id},
-            parameters      => {
+            limit_order     => {
                 take_profit => 1,
             }});
     ok $res->{error}, 'error';
