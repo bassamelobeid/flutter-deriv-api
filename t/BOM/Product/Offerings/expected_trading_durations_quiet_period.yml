@@ -1,8 +1,6 @@
 ---
 - data:
   - symbol:
-    - display_name: GBP/USD
-      name: frxGBPUSD
     - display_name: USD/CHF
       name: frxUSDCHF
     trade_durations:
@@ -109,6 +107,8 @@
       name: frxEURUSD
     - display_name: GBP/JPY
       name: frxGBPJPY
+    - display_name: GBP/USD
+      name: frxGBPUSD
     - display_name: USD/JPY
       name: frxUSDJPY
     trade_durations:
