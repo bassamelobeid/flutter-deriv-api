@@ -55,16 +55,14 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
     my $currency_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
     my $currency_fees   = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
 
-    cmp_ok(
+    is(
         $currency_limits->{$_}->{min},
-        '==',
         $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits}->{min},
         "Transfer between account minimum is correct for $_"
     ) for @all_currencies;
 
-    cmp_ok(
+    is(
         $currency_limits->{$_}->{max},
-        '==',
         $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits}->{max},
         "Transfer between account maximum is correct for $_"
     ) for @all_currencies;

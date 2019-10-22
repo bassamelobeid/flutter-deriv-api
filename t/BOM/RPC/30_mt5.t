@@ -9,7 +9,7 @@ use Test::MockTime qw(:all);
 use JSON::MaybeUTF8;
 use List::Util qw();
 use Email::Address::UseXS;
-use Format::Util::Numbers qw/financialrounding/;
+use Format::Util::Numbers qw/financialrounding get_min_unit/;
 
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -22,6 +22,7 @@ use BOM::Platform::Token;
 use BOM::User;
 use BOM::Config::Runtime;
 use BOM::Config::RedisReplicated;
+use BOM::Config::CurrencyConfig;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 my $json = JSON::MaybeXS->new;
@@ -1343,9 +1344,10 @@ subtest 'multi currency transfers' => sub {
 };
 
 subtest 'Transfers Limits' => sub {
+    my $EUR_USD = 1.1;
     $redis->hmset(
         'exchange_rates::EUR_USD',
-        quote => 1.2,
+        quote => $EUR_USD,
         epoch => time
     );
 
@@ -1375,22 +1377,28 @@ subtest 'Transfers Limits' => sub {
     # unlimit the transfers again
     BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5(999);
 
-    $deposit_params->{args}->{amount} = 2.001;
+    $deposit_params->{args}->{amount} = 1 + get_min_unit('EUR') / 10.0;
+    $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
+        ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')->error_message_is(
+        'Invalid amount. Amount provided can not have more than 2 decimal places.',
+        'Transfers amount validation - correct extra decimal error message'
+        );
+
+    my $expected_eur_min = financialrounding('amount', 'EUR', 1 / $EUR_USD);    # it is 1 USD converted to EUR
+
+    $deposit_params->{args}->{amount} = $expected_eur_min - get_min_unit('EUR');
     $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
         ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
-        ->error_message_is('Invalid amount. Amount provided can not have more than 2 decimal places.',
-        'Transfers amount validation - correct error message');
+        ->error_message_like(qr/minimum amount for transfers is EUR $expected_eur_min/, 'Transfers minimum - correct error message');
 
-    $deposit_params->{args}->{amount} = 0.6;
-    $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
-        ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
-        ->error_message_like(qr/minimum amount for transfers is EUR 0.83/, 'Transfers minimum - correct error message');
-
+    $EUR_USD = 1000;
     $redis->hmset(
         'exchange_rates::EUR_USD',
-        quote => 10000,
+        quote => $EUR_USD,
         epoch => time
     );
+    my $expected_usd_min = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{USD}->{min};
+    cmp_ok $expected_usd_min, '>', 10, 'USD-EUR transfer minimum limit elevated to lower bounds by changing exchange rate to $EUR_USD';
 
     my $withdraw_params = {
         language => 'EN',
@@ -1401,9 +1409,10 @@ subtest 'Transfers Limits' => sub {
             amount    => 1,
         },
     };
+
     $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('Transfers should have been stopped')
         ->error_code_is('MT5WithdrawalError', 'Lower bound - correct error code')
-        ->error_message_like(qr/minimum amount for transfers is 107.54 USD/, 'Lower bound - correct error message');
+        ->error_message_like(qr/minimum amount for transfers is $expected_usd_min USD/, 'Lower bound - correct error message');
 
     $demo_account_mock->unmock;
 };
