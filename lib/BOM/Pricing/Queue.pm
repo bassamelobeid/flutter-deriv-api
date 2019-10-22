@@ -221,10 +221,14 @@ sub score_for_parameters {
     };
     # Indicate it has been touched, even if we make no further adjustments
     my $score = 1;
-    $score *= 101 if (($params->{price_daemon_cmd} // '') eq 'bid');    # bid before price
-    $score *= 11 if ($params->{real_money});                                                          # Real money accounts first
-    $score *= 7  if ($short_units->{$params->{duration_unit} // ''} and $params->{duration} < 60);    # Low total time is faster
-    $score *= 2  if ($params->{skips_price_validation});                                              # Unvalidated is faster
+    # bid before price
+    $score *= 101 if (($params->{price_daemon_cmd} // '') eq 'bid');
+    # Real money accounts first
+    $score *= 11 if ($params->{real_money});
+    # Low total time is faster
+    $score *= 7 if ($short_units->{$params->{duration_unit} // ''} and ($params->{duration} // 0) < 60);
+    # Unvalidated is faster
+    $score *= 2 if ($params->{skips_price_validation});
 
     return $score;
 }
