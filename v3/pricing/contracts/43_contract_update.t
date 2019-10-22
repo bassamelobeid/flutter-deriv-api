@@ -102,7 +102,7 @@ subtest 'contract_update' => sub {
             contract_id     => $buy_res->{buy}->{contract_id},
             limit_order     => {take_profit => 10}});
     ok $res->{contract_update}->{take_profit}, 'take profit update successfully';
-    ok !$res->{contract_update}->{stop_loss}, '';
+    ok !%{$res->{contract_update}->{stop_loss}}, 'stop loss empty hashref';
 };
 
 subtest 'contrcat_update on unsupported contract type' => sub {
