@@ -291,7 +291,7 @@ EOF
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ && $_ ne '' ? $_ : '' } @{$db_tran}{qw(account transaction_type)};
 
-        my $address = $currency_wrapper->is_valid_address($db_tran->{to}) ? $db_tran->{to} : $db_tran->{from};
+        my $address = $db_tran->{to} || $db_tran->{from};
         my $encoded_address = encode_entities($address);
         print '<td><a href="' . $address_uri . $encoded_address . '" target="_blank">' . $encoded_address . '</a></td>';
 
