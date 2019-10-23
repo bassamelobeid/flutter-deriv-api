@@ -377,7 +377,9 @@ subtest 'crypto_cashier_forward_page' => sub {
     my $website_name = '';
     my $brand_name   = 'binary.com';
     my $action       = 'deposit';
-    my $app_id       = 1003;
+    my $app_id       = 1098;
+    my $deriv_brand_name   = 'deriv.app';
+    my $deriv_app_id       = 16303;
 
     my $invalid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
         $prefix,
@@ -391,7 +393,8 @@ subtest 'crypto_cashier_forward_page' => sub {
             app_id       => $app_id,
             domain       => 'binary.la',
         });
-    ok $invalid_deposit =~ /^https:\/\/cryptocurrency.binary.com/, 'valid domain to invalid domain';
+
+    ok $invalid_deposit =~ /^https:\/\/crypto-cashier.binary.com/, 'valid domain to invalid domain';
     my $valid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
         $prefix,
         {
@@ -404,7 +407,35 @@ subtest 'crypto_cashier_forward_page' => sub {
             app_id       => $app_id,
             domain       => 'binary.me',
         });
-    ok $valid_deposit =~ /^https:\/\/cryptocurrency.binary.me/, 'valid domain to valid domain';
+    ok $valid_deposit =~ /^https:\/\/crypto-cashier.binary.me/, 'valid domain to valid domain';
+    my $deriv_invalid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
+        $prefix,
+        {
+            loginid      => $loginid,
+            website_name => $website_name,
+            currency     => $currency,
+            action       => $action,
+            language     => $language,
+            brand_name   => $deriv_brand_name,
+            app_id       => $deriv_app_id,
+            domain       => 'deriv.la',
+        });
+
+    ok $deriv_invalid_deposit =~ /^https:\/\/crypto-cashier.binary.com/, 'valid deriv domain to invalid domain';
+    my $deriv_valid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
+        $prefix,
+        {
+            loginid      => $loginid,
+            website_name => $website_name,
+            currency     => $currency,
+            action       => $action,
+            language     => $language,
+            brand_name   => $deriv_brand_name,
+            app_id       => $deriv_app_id,
+            domain       => 'deriv.app',
+        });
+
+    ok $deriv_valid_deposit =~ /^https:\/\/crypto-cashier.deriv.app/, 'valid deriv domain to valid deriv domain';
 
     $website_name = 'binaryqa25.com';
     my $valid_QA_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
