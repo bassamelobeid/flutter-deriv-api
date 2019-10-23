@@ -86,7 +86,7 @@
       "legal_allowed_markets" : {
          "type" : "array",
          "items" : {
-            "pattern" : "^(volidx)$",
+            "pattern" : "^(synthetic_index)$",
             "type" : "string"
          },
          "minItems" : 1
@@ -99,10 +99,10 @@
          "type" : "object",
          "additionalProperties" : false,
          "required" : [
-            "volidx"
+            "synthetic_index"
          ],
          "properties" : {
-            "volidx" : {
+            "synthetic_index" : {
                "additionalProperties" : false,
                "type" : "object",
                "patternProperties" : {

@@ -59,7 +59,7 @@
                "minItems" : 4,
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(commodities|forex|indices|volidx)$"
+                  "pattern" : "^(commodities|forex|indices|synthetic_index)$"
                },
                "type" : "array"
             },
@@ -90,7 +90,7 @@
                      "type" : "object",
                      "additionalProperties" : false
                   },
-                  "volidx" : {
+                  "synthetic_index" : {
                      "type" : "object",
                      "additionalProperties" : false,
                      "properties" : {},
@@ -216,7 +216,7 @@
                "minItems" : 4,
                "type" : "array",
                "items" : {
-                  "pattern" : "^(commodities|forex|indices|volidx)$",
+                  "pattern" : "^(commodities|forex|indices|synthetic_index)$",
                   "type" : "string"
                }
             },
@@ -272,7 +272,7 @@
                         }
                      }
                   },
-                  "volidx" : {
+                  "synthetic_index" : {
                      "properties" : {},
                      "patternProperties" : {
                         "^[A-Z]{3,4}$" : {
@@ -549,7 +549,7 @@
                            },
                            "properties" : {}
                         },
-                        "volidx" : {
+                        "synthetic_index" : {
                            "properties" : {},
                            "patternProperties" : {
                               "^[A-Z]{3,4}$" : {
@@ -681,7 +681,7 @@
                               }
                            }
                         },
-                        "volidx" : {
+                        "synthetic_index" : {
                            "patternProperties" : {
                               "^[A-Z]{3,4}$" : {
                                  "required" : [
@@ -899,7 +899,7 @@
                            "additionalProperties" : false,
                            "type" : "object"
                         },
-                        "volidx" : {
+                        "synthetic_index" : {
                            "additionalProperties" : false,
                            "type" : "object",
                            "patternProperties" : {
