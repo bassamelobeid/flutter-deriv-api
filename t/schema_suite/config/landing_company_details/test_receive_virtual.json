@@ -55,7 +55,7 @@
          "required" : [
             "forex",
             "commodities",
-            "volidx",
+            "synthetic_index",
             "indices"
          ],
          "properties" : {
@@ -111,7 +111,7 @@
                },
                "properties" : {}
             },
-            "volidx" : {
+            "synthetic_index" : {
                "patternProperties" : {
                   "^[A-Z]{3,4}$" : {
                      "additionalProperties" : false,
@@ -178,7 +178,7 @@
       "legal_allowed_markets" : {
          "type" : "array",
          "items" : {
-            "pattern" : "^(commodities|forex|indices|volidx)$",
+            "pattern" : "^(commodities|forex|indices|synthetic_index)$",
             "type" : "string"
          },
          "minItems" : 4
