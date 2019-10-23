@@ -2233,8 +2233,8 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-            note "setting quants->markets->disabled to [''volidx']";
-            BOM::Config::Runtime->instance->app_config->quants->markets->disabled(['volidx']);
+            note "setting quants->markets->disabled to [''synthetic_index']";
+            BOM::Config::Runtime->instance->app_config->quants->markets->disabled(['synthetic_index']);
 
             my $txn = BOM::Transaction->new({
                 client        => $cl,

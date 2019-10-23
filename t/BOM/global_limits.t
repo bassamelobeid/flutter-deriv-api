@@ -100,7 +100,7 @@ subtest 'global potential loss' => sub {
 
     BOM::Test::Helper::QuantsConfig::create_config({
         limit_type   => 'global_potential_loss',
-        market       => ['volidx'],
+        market       => ['synthetic_index'],
         limit_amount => 0
     });
 
@@ -156,12 +156,12 @@ subtest 'global potential loss' => sub {
     foreach my $config ((
             {limit_amount => 100},
             {
-                market            => ['volidx'],
+                market            => ['synthetic_index'],
                 underlying_symbol => ['R_50'],
                 limit_amount      => 49
             },
             {
-                market            => ['volidx'],
+                market            => ['synthetic_index'],
                 underlying_symbol => ['default'],
                 limit_amount      => 99
             }))
@@ -317,12 +317,12 @@ subtest 'global realized loss' => sub {
     foreach my $config ((
             {limit_amount => 299},
             {
-                market            => ['volidx'],
+                market            => ['synthetic_index'],
                 underlying_symbol => ['R_50'],
                 limit_amount      => 49
             },
             {
-                market            => ['volidx'],
+                market            => ['synthetic_index'],
                 underlying_symbol => ['default'],
                 limit_amount      => 149
             }))
