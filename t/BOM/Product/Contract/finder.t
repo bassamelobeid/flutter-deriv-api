@@ -107,7 +107,7 @@ subtest "basic_contracts_for" => sub {
             }
 
             ok $f->{feed_license}, 'has feed license key available';
-            is($f->{feed_license}, 'realtime', 'correct feed license key available') if ($market eq 'volidx');
+            is($f->{feed_license}, 'realtime', 'correct feed license key available') if ($market eq 'synthetic_index');
             my %got;
             $got{$_->{contract_category}}++ for (@{$f->{available}});
             cmp_ok $got{$_}, '==', $expected{$u}{$_}, "expected outcome for $u-$_" for (keys %{$expected{$u}});
