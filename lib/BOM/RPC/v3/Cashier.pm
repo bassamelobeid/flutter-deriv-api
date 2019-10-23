@@ -333,7 +333,7 @@ sub _get_cashier_url {
     } else {
         my $is_white_listed = $domain && (any { $domain eq $_ } BOM::Config->domain->{white_list}->@*);
         $domain = BOM::Config->domain->{default_domain} unless $domain and $is_white_listed;
-        $url .= "cryptocurrency.$domain/cryptocurrency/$prefix";
+        $url .= "crypto-cashier.$domain/cryptocurrency/$prefix";
     }
 
     $url .=
