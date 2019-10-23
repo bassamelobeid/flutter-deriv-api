@@ -12,7 +12,7 @@ use Test::Warn;
 use MojoX::JSON::RPC::Client;
 use POSIX qw/ ceil /;
 use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
-use Format::Util::Numbers qw/financialrounding/;
+use Format::Util::Numbers qw/financialrounding get_min_unit/;
 
 use BOM::User::Client;
 use BOM::RPC::v3::MT5::Account;
@@ -312,22 +312,73 @@ subtest 'validation' => sub {
     $params->{args}->{account_from} = $client_cr->loginid;
     $params->{args}->{account_to}   = $cr_dummy->loginid;
 
-    my $min = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{'USD'}->{min};
-    $params->{args}->{amount} = financialrounding('amount', 'USD', $min - 0.01);
+    my $limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+    $params->{args}->{amount} = $limits->{USD}->{min} - get_min_unit('USD');
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
 
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
     like $result->{error}->{message_to_client},
-        qr/Provided amount is not within permissible limits. Minimum transfer amount for USD currency is/,
-        'Correct error message for invalid minimum amount';
+        qr/Provided amount is not within permissible limits. Minimum transfer amount for USD currency is $limits->{USD}->{min}/,
+        'Correct error message for a value less than minimum limit';
 
-    my $max = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{'USD'}->{max};
-    $params->{args}->{amount} = financialrounding('amount', 'USD', $max * 2);
+    $params->{args}->{amount} = $limits->{USD}->{min};
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    like $result->{error}->{message_to_client}, qr/The maximum amount you may transfer is: USD 0.00/, 'Correct error message for an empty account';
+
+    $client_cr->payment_free_gift(
+        currency       => 'USD',
+        amount         => $limits->{USD}->{min},
+        remark         => 'free gift',
+        place_of_birth => 'id',
+    );
+
+    $params->{args}->{amount} = $limits->{USD}->{min};
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+
+    $params->{args}->{amount} = $limits->{USD}->{max} + get_min_unit('USD');
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
     like $result->{error}->{message_to_client},
-        qr/Provided amount is not within permissible limits. Maximum transfer amount for USD currency is/,
-        'Correct error message for invalid maximum amount';
+        qr/Provided amount is not within permissible limits. Maximum transfer amount for USD currency is $limits->{USD}->{max}/,
+        'Correct error message for a value more than max limit';
+
+    $params->{args}->{amount} = $limits->{USD}->{max};
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
+    like $result->{error}->{message_to_client}, qr/The maximum amount you may transfer is: USD 0.00/, 'Correct error message for an empty account';
+
+    $client_cr->payment_free_gift(
+        currency       => 'USD',
+        amount         => $limits->{USD}->{max} + $limits->{USD}->{min},
+        remark         => 'free gift',
+        place_of_birth => 'id',
+    );
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+
+    #set an invalid value to minimum
+    my $invalid_min = 0.01;
+    my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig', no_auto => 1);
+    $mock_fees->mock(
+        transfer_between_accounts_limits => sub {
+            my $force_refresh = shift;
+            my $limits        = $mock_fees->original('transfer_between_accounts_limits')->($force_refresh);
+            #fetching fake limits conditionally
+            unless ($force_refresh) {
+                $limits->{USD}->{min} = $invalid_min;
+            }
+            return $limits;
+        });
+    $params->{args}->{amount} = $invalid_min;
+
+    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $elevated_minimum = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{USD}->{min};
+    cmp_ok $elevated_minimum, '>', $invalid_min, 'Transfer minimum is automatically elevated to the lower bound';
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
+    like $result->{error}->{message_to_client},
+        qr/This amount is too low. Please enter a minimum of USD $elevated_minimum./,
+        'A different error message containing the elevated (lower bound) minimum value included.';
+    $mock_fees->unmock_all;
 };
 
 subtest 'Validation for transfer from incomplete account' => sub {
@@ -644,18 +695,18 @@ subtest 'transfer with fees' => sub {
     cmp_ok $client_cr_ust->default_account->balance, '==', 1000, 'correct balance';
 
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
-    my $amount = 10;
+
     $params->{args} = {
         account_from => $client_cr_usd->loginid,
         account_to   => $client_cr_btc->loginid,
         currency     => "USD",
-        amount       => $amount
+        amount       => 10
     };
 
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(1);
     $rpc_ct->call_ok($method, $params)->has_error('error as all transfer_between_accounts are suspended in system config')
         ->error_code_is('TransferBetweenAccountsError', 'error code is TransferBetweenAccountsError')
-        ->error_message_like(qr/Transfers between fiat and crypto accounts/)->result;
+        ->error_message_like(qr/Transfers between fiat and crypto accounts/);
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(0);
 
     my ($usd_btc_fee, $btc_usd_fee, $usd_ust_fee, $ust_usd_fee, $ust_eur_fee) = (2, 3, 4, 5, 6);
@@ -673,131 +724,121 @@ subtest 'transfer with fees' => sub {
                 },
                 'BTC' => {'USD' => $btc_usd_fee},
             };
-        },
-        transfer_between_accounts_limits => sub {
-            my $force_refresh = shift;
-            my $limits        = $mock_fees->original('transfer_between_accounts_limits')->($force_refresh);
-            #It ensures that instead of fake values below, actual limits will be retrieved in error handling, where update to transfer limits is requested.
-            unless ($force_refresh) {
-                $limits->{USD}->{min} = 0.01;
-                $limits->{UST}->{min} = 0.01;
-            }
-            return $limits;
         });
 
-    $params->{args}->{amount} = 0.01;
-    # The amount will be accepted initially, but rejected when getting the recieved amount in BTC.
-    $rpc_ct->call_ok($method, $params)->has_error->error_code_is('TransferBetweenAccountsError')
-        ->error_message_is("This amount is too low. Please enter a minimum of 1 USD.");
+    my $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
 
-    $params->{args}->{amount} = $amount;
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{client_to_loginid}, $client_cr_btc->loginid, 'Transaction successful';
-
-    # fiat to crypto. exchange rate is 4000 for BTC
-    my $fee_percent     = $usd_btc_fee;
-    my $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
-    my $current_balance = $client_cr_btc->default_account->balance;
-    cmp_ok $current_balance, '==', 1 + $transfer_amount, 'correct balance after transfer including fees';
-    cmp_ok $client_cr_usd->default_account->balance, '==', 1000 - $amount, 'non-pa to non-pa(USD to BTC), correct balance, exact amount deducted';
-
+    #No transfer fee for BTC-EUR (transfer failure expected)
+    my $amount = $transfer_limits->{BTC}->{min};
     $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_btc->loginid, 'test token');
-    $amount          = 0.1;
-    $params->{args}  = {
-        account_from => $client_cr_btc->loginid,
-        account_to   => $client_cr_usd->loginid,
-        currency     => "BTC",
-        amount       => $amount
-    };
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
-
-    # crypto to fiat is 1%
-    $fee_percent     = $btc_usd_fee;
-    $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
-    cmp_ok $client_cr_usd->default_account->balance, '==', 990 + $transfer_amount, 'correct balance after transfer including fees';
-    is(
-        financialrounding('price', 'BTC', $client_cr_btc->account->balance),
-        financialrounding('price', 'BTC', $current_balance - $amount),
-        'non-pa to non-pa (BTC to USD), correct balance after transfer including fees'
-    );
-
-    $amount = 0.1;
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_pa_btc->loginid, 'test token');
     $params->{args} = {
-        account_from => $client_cr_pa_btc->loginid,
-        account_to   => $client_cr_usd->loginid,
+        account_from => $client_cr_btc->loginid,
+        account_to   => $client_cr_eur->loginid,
         currency     => "BTC",
         amount       => $amount
     };
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError')
+        ->error_message_is('Account transfers are not possible between BTC and EUR.');
 
-    my $previous_amount     = $client_cr_pa_btc->default_account->balance;
-    my $previous_amount_usd = $client_cr_usd->default_account->balance;
+    subtest 'non-pa to non-pa transfers' => sub {
+        my $previous_balance_btc = $client_cr_btc->default_account->balance;
+        my $previous_balance_usd = $client_cr_usd->default_account->balance;
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
+        $params->{args} = {
+            account_from => $client_cr_usd->loginid,
+            account_to   => $client_cr_btc->loginid,
+            currency     => "USD",
+            amount       => $transfer_limits->{USD}->{min}};
 
-    # crypto to fiat is 1% and fiat to crypto is 1%
-    $fee_percent     = $btc_usd_fee;
-    $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
-    cmp_ok $client_cr_pa_btc->default_account->balance, '==', $previous_amount - $amount, 'correct balance after transfer including fees';
-    $current_balance = $client_cr_usd->default_account->balance;
-    cmp_ok $current_balance, '==', $previous_amount_usd + $transfer_amount,
-        'unauthorised pa to non-pa transfer (BTC to USD) correct balance after transfer including fees';
+        my $amount = $transfer_limits->{USD}->{min};
+        $params->{args}->{amount} = $amount;
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+        is $result->{client_to_loginid}, $client_cr_btc->loginid, 'Transaction successful';
+
+        # fiat to crypto. exchange rate is 4000 for BTC
+        my $fee_percent     = $usd_btc_fee;
+        my $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
+        cmp_ok $transfer_amount, '>=', get_min_unit('BTC'), 'Transfered amount is not less than minimum unit';
+        cmp_ok $client_cr_btc->default_account->balance, '==', 1 + $transfer_amount, 'correct balance after transfer including fees';
+        cmp_ok $client_cr_usd->default_account->balance, '==', 1000 - $amount, 'non-pa to non-pa(USD to BTC), correct balance, exact amount deducted';
+
+        $previous_balance_btc = $client_cr_btc->default_account->balance;
+        $previous_balance_usd = $client_cr_usd->default_account->balance;
+        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_btc->loginid, 'test token');
+        $amount          = $transfer_limits->{BTC}->{min};
+        $params->{args}  = {
+            account_from => $client_cr_btc->loginid,
+            account_to   => $client_cr_usd->loginid,
+            currency     => "BTC",
+            amount       => $amount
+        };
+        $params->{args}->{amount} = $amount;
+        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+        is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
+        # crypto to fiat is 1%
+        $fee_percent     = $btc_usd_fee;
+        $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
+        cmp_ok $transfer_amount, '>=', get_min_unit('USD'), 'Transfered amount is not less than minimum unit';
+        cmp_ok $client_cr_usd->default_account->balance, '==', $previous_balance_usd + $transfer_amount,
+            'correct balance after transfer including fees';
+        is(
+            financialrounding('price', 'BTC', $client_cr_btc->account->balance),
+            financialrounding('price', 'BTC', $previous_balance_btc - $amount),
+            'non-pa to non-pa (BTC to USD), correct balance after transfer including fees'
+        );
+    };
+
+    subtest 'unauthorised pa to non-pa transfer' => sub {
+        my $previous_balance_btc = $client_cr_pa_btc->default_account->balance;
+        my $previous_balance_usd = $client_cr_usd->default_account->balance;
+        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_pa_btc->loginid, 'test token');
+        my $amount = $transfer_limits->{BTC}->{min};
+        $params->{args} = {
+            account_from => $client_cr_pa_btc->loginid,
+            account_to   => $client_cr_usd->loginid,
+            currency     => "BTC",
+            amount       => $amount
+        };
+
+        # crypto to fiat is 1% and fiat to crypto is 1%
+        my $fee_percent = $btc_usd_fee;
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+        cmp_ok my $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000, '>=', get_min_unit('USD'), 'Valid transfered amount';
+        cmp_ok $client_cr_pa_btc->default_account->balance, '==', financialrounding('amount', 'BTC', $previous_balance_btc - $amount),
+            'correct balance after transfer including fees';
+        cmp_ok $client_cr_usd->default_account->balance, '==', financialrounding('amount', 'BTC', $previous_balance_usd + $transfer_amount),
+            'unauthorised pa to non-pa transfer (BTC to USD) correct balance after transfer including fees';
+    };
 
     # database function throw error if same transaction happens
     # in 2 seconds
     sleep(2);
 
-    #The minimum fee 0.01 UST is applied on the total of 0.02. The reamining 0.01 is less than 0.01 EUR (minimum allowed)
-    #Similar to the case of 0.01 USD transfer above.
-    $amount = 0.02;
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_ust->loginid, 'test token');
-    $params->{args} = {
-        account_from => $client_cr_ust->loginid,
-        account_to   => $client_cr_eur->loginid,
-        currency     => "UST",
-        amount       => $amount
+    subtest 'non-pa to unauthorised pa transfer' => sub {
+        my $previous_balance_btc = $client_cr_pa_btc->default_account->balance;
+        my $previous_balance_usd = $client_cr_usd->default_account->balance;
+        my $amount               = $transfer_limits->{USD}->{min};
+        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
+        $params->{args} = {
+            account_from => $client_cr_usd->loginid,
+            account_to   => $client_cr_pa_btc->loginid,
+            currency     => "USD",
+            amount       => $amount
+        };
+
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+        is $result->{client_to_loginid}, $client_cr_pa_btc->loginid, 'Transaction successful';
+
+        my $fee_percent = $usd_btc_fee;
+        cmp_ok my $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000, '>=', get_min_unit('BTC'), 'Valid received amound';
+        cmp_ok $client_cr_usd->default_account->balance, '==', $previous_balance_usd - $amount, 'correct balance after transfer including fees';
+
+        is(
+            financialrounding('price', 'BTC', $client_cr_pa_btc->default_account->balance),
+            financialrounding('price', 'BTC', $previous_balance_btc + $transfer_amount),
+            'non-pa to unauthorised pa transfer (USD to BTC) correct balance after transfer including fees'
+        );
     };
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError')
-        ->error_message_is('This amount is too low. Please enter a minimum of 1 UST.');
-
-    #No transfer fee for BTC-EUR
-    $amount = 0.02;
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_btc->loginid, 'test token');
-    $params->{args} = {
-        account_from => $client_cr_btc->loginid,
-        account_to   => $client_cr_eur->loginid,
-        currency     => "BTC",
-        amount       => $amount
-    };
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError')
-        ->error_message_is('Account transfers are not possible between BTC and EUR.');
-
-    $amount = 100;
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
-    $params->{args} = {
-        account_from => $client_cr_usd->loginid,
-        account_to   => $client_cr_pa_btc->loginid,
-        currency     => "USD",
-        amount       => $amount
-    };
-
-    $previous_amount_usd = $client_cr_usd->default_account->balance;
-    my $previous_amount_btc = $client_cr_pa_btc->default_account->balance;
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{client_to_loginid}, $client_cr_pa_btc->loginid, 'Transaction successful';
-
-    $fee_percent     = $usd_btc_fee;
-    $transfer_amount = ($amount - $amount * $fee_percent / 100) / 4000;
-    cmp_ok $client_cr_usd->default_account->balance, '==', $previous_amount_usd - $amount, 'correct balance after transfer including fees';
-    $current_balance = $client_cr_pa_btc->default_account->balance;
-
-    is(
-        financialrounding('price', 'BTC', $current_balance),
-        financialrounding('price', 'BTC', $previous_amount_btc + $transfer_amount),
-        'non-pa to unauthorised pa transfer (USD to BTC) correct balance after transfer including fees'
-    );
 
     subtest 'Correct commission charged for fiat -> stablecoin crypto' => sub {
         my $previous_amount_usd = $client_cr_usd->account->balance;
@@ -815,7 +856,7 @@ subtest 'transfer with fees' => sub {
             amount       => $amount
         };
 
-        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
         is $result->{client_to_loginid}, $client_cr_ust->loginid, 'Transaction successful';
 
         cmp_ok $client_cr_usd->account->balance, '==', $previous_amount_usd - $amount, 'From account deducted correctly';
@@ -828,7 +869,7 @@ subtest 'transfer with fees' => sub {
 
         my $amount                   = 100;
         my $expected_fee_percent     = $ust_usd_fee;
-        my $expected_transfer_amount = ($amount - $amount * $expected_fee_percent / 100);
+        my $expected_transfer_amount = financialrounding('amount', 'USD', $amount - $amount * $expected_fee_percent / 100);
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_ust->loginid, 'test token');
         $params->{args} = {
@@ -838,7 +879,7 @@ subtest 'transfer with fees' => sub {
             amount       => $amount
         };
 
-        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
         is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
 
         cmp_ok $client_cr_ust->account->balance, '==', $previous_amount_ust - $amount, 'From account deducted correctly';
@@ -850,9 +891,9 @@ subtest 'transfer with fees' => sub {
         my $previous_amount_usd = $client_cr_usd->account->balance;
         my $previous_amount_ust = $client_cr_ust->account->balance;
 
-        my $amount                   = 1;
+        my $amount                   = $transfer_limits->{UST}->{min};
         my $expected_fee_percent     = $ust_usd_fee;
-        my $expected_transfer_amount = ($amount - $amount * $expected_fee_percent / 100);
+        my $expected_transfer_amount = financialrounding('amount', 'UST', $amount - $amount * $expected_fee_percent / 100);
 
         $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_ust->loginid, 'test token');
         $params->{args} = {
@@ -862,7 +903,7 @@ subtest 'transfer with fees' => sub {
             amount       => $amount
         };
 
-        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
         is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
 
         cmp_ok $client_cr_ust->account->balance, '==', $previous_amount_ust - $amount, 'From account deducted correctly';
