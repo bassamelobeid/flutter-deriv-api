@@ -370,16 +370,16 @@ subtest 'all status are covered' => sub {
 };
 
 subtest 'crypto_cashier_forward_page' => sub {
-    my $prefix       = 'cryptocurrency';
-    my $language     = 'EN';
-    my $currency     = "BTC";
-    my $loginid      = 'CR90000000';
-    my $website_name = '';
-    my $brand_name   = 'binary.com';
-    my $action       = 'deposit';
-    my $app_id       = 1098;
-    my $deriv_brand_name   = 'deriv.app';
-    my $deriv_app_id       = 16303;
+    my $prefix           = 'cryptocurrency';
+    my $language         = 'EN';
+    my $currency         = "BTC";
+    my $loginid          = 'CR90000000';
+    my $website_name     = '';
+    my $brand_name       = 'binary.com';
+    my $action           = 'deposit';
+    my $app_id           = 1098;
+    my $deriv_brand_name = 'deriv.app';
+    my $deriv_app_id     = 16303;
 
     my $invalid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
         $prefix,
