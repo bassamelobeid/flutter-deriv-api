@@ -165,8 +165,9 @@ try {
     $currency_wrapper->get_info();
 }
 catch {
+    warn $_;
     print "<p style='color:red'><strong>ERROR: Failed to load $currency currency info. Please contact IT. </strong></p>";
-    code_exit_BO($_);
+    code_exit_BO();
 };
 
 if ($view_action eq 'withdrawals') {
