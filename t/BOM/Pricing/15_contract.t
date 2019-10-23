@@ -807,8 +807,7 @@ subtest 'send_ask - country validation' => sub {
         args      => $args,
     };
 
-    $c->call_ok('send_ask', $params)->has_error->error_code_is('OfferingsValidationError')
-        ->error_message_is('Trading is not offered for this duration.');
+    $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
     $args->{duration} = 30;
     $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
     $args->{symbol}        = 'R_100';

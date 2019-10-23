@@ -6,7 +6,7 @@ use Test::Most;
 use Test::Exception;
 use Test::Warnings qw(warnings);
 
-use Time::HiRes qw(CLOCK_REALTIME clock_gettime alarm);
+use Time::HiRes;
 use YAML::XS;
 use RedisDB;
 
@@ -31,35 +31,6 @@ is_deeply(\%stats, {}, 'start with no metrics');
 is_deeply(\%tags,  {}, 'start with no tags');
 
 use BOM::Pricing::Queue;
-use BOM::Pricing::PriceDaemon;
-
-subtest 'priority scoring' => sub {
-    # This is a little too tied to the implementation right now, but
-    # it's better than nothing
-    my $params = {
-        price_daemon_cmd       => 'bid',
-        real_money             => '1',
-        duration_unit          => 's',
-        duration               => '59',
-        skips_price_validation => '1',
-    };
-    my $max_score = BOM::Pricing::Queue::score_for_parameters($params);
-    cmp_ok($max_score, '==', 15554, 'Our example is the current max score possible');
-    my $min_score = BOM::Pricing::Queue::score_for_parameters();
-    cmp_ok($min_score, '==', 1, 'Even forgetting to send in parameters does not error, scores 1');
-    $params->{underlying} = 'frxUSDJPY';
-    cmp_ok(BOM::Pricing::Queue::score_for_parameters($params), '==', $max_score, 'Adding in an unconsidered parameter does not change score');
-    $params->{skips_price_validation} = '0';
-    my $skip_score = BOM::Pricing::Queue::score_for_parameters($params);
-    cmp_ok($skip_score, '<', $max_score, 'String-y zeros are correctly interpreted as false');
-    $params->{skips_price_validation} = '1';
-    $params->{duration}               = 61;
-    my $long_score = BOM::Pricing::Queue::score_for_parameters($params);
-    cmp_ok($long_score, '<', $skip_score, 'Long duration and skipping validation is less important than short and validated');
-    $params->{duration}      = 1;
-    $params->{duration_unit} = 'h';
-    cmp_ok(BOM::Pricing::Queue::score_for_parameters($params), '==', $long_score, 'Duration and units work together to determine long/short');
-};
 
 # use a separate redis client for this test
 my $redis = RedisDB->new(YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write}->%*);
@@ -69,31 +40,24 @@ my $queue;
 my @keys = (
     "PRICER_KEYS::[\"amount\",1000,\"basis\",\"payout\",\"contract_type\",\"PUT\",\"country_code\",\"ph\",\"currency\",\"AUD\",\"duration\",3,\"duration_unit\",\"m\",\"landing_company\",null,\"price_daemon_cmd\",\"price\",\"product_type\",\"basic\",\"proposal\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxAUDJPY\"]",
     "PRICER_KEYS::[\"amount\",1000,\"basis\",\"payout\",\"contract_type\",\"CALL\",\"country_code\",\"ph\",\"currency\",\"AUD\",\"duration\",3,\"duration_unit\",\"m\",\"landing_company\",null,\"price_daemon_cmd\",\"price\",\"product_type\",\"basic\",\"proposal\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxAUDJPY\"]",
-    # The below is set to sort first by priority, despite appearing third here
-    "PRICER_KEYS::[\"amount\",1000,\"barriers\",[\"106.902\",\"106.952\",\"107.002\",\"107.052\",\"107.102\",\"107.152\",\"107.202\"],\"basis\",\"payout\",\"contract_type\",[\"PUT\",\"CALLE\"],\"country_code\",\"ph\",\"currency\",\"JPY\",\"date_expiry\",\"1522923300\",\"landing_company\",null,\"price_daemon_cmd\",\"bid\",\"product_type\",\"multi_barrier\",\"proposal_array\",1,\"real_money\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxUSDJPY\",\"trading_period_start\",\"1522916100\"]",
     "PRICER_KEYS::[\"amount\",1000,\"barriers\",[\"106.902\",\"106.952\",\"107.002\",\"107.052\",\"107.102\",\"107.152\",\"107.202\"],\"basis\",\"payout\",\"contract_type\",[\"PUT\",\"CALLE\"],\"country_code\",\"ph\",\"currency\",\"JPY\",\"date_expiry\",\"1522923300\",\"landing_company\",null,\"price_daemon_cmd\",\"price\",\"product_type\",\"multi_barrier\",\"proposal_array\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxUSDJPY\",\"trading_period_start\",\"1522916100\"]",
     "PRICER_KEYS::[\"amount\",1000,\"barriers\",[\"106.902\",\"106.952\",\"107.002\",\"107.052\",\"107.102\",\"107.152\",\"107.202\"],\"basis\",\"payout\",\"contract_type\",[\"PUT\",\"CALLE\"],\"country_code\",\"ph\",\"currency\",\"JPY\",\"date_expiry\",\"1522923300\",\"landing_company\",null,\"price_daemon_cmd\",\"price\",\"product_type\",\"multi_barrier\",\"proposal_array\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxEURCAD\",\"trading_period_start\",\"1522916100\"]",
 );
 
 subtest 'normal flow' => sub {
-    $queue = new_ok('BOM::Pricing::Queue', [internal_ip => '1.2.3.4'], 'New BOM::Pricing::Queue processor');
-    is($queue->add(@keys), scalar(@keys), 'All keys added to pending');
-    eq_or_diff([sort $queue->reindexed_channels], [sort @keys], 'Index contains newly added items');
-    # See comment in sample jobs list to understand the indices here
-    isnt(($queue->channels_from_index)[0], $keys[2], "Insertion order is not by desired priority");
-    my $review_count = 0;
-    until ($queue->clear_review_queue) {
-        $review_count++;
-    }
-    cmp_ok($review_count, '==', scalar(@keys), 'Reviewed one key per call');
-    # See comment in sample jobs list to understand the indices here
-    is(($queue->channels_from_index)[0], $keys[2], "Real money is sorted first now");
+    $queue = new_ok(
+        'BOM::Pricing::Queue',
+        [
+            priority    => 0,
+            internal_ip => '1.2.3.4'
+        ],
+        'New BOM::Pricing::Queue processor'
+    );
+
+    $redis->set($_ => 1) for @keys;
     $queue->process;
 
-    my @index_channels = $queue->channels_from_index;
-    my @keys_channels  = $queue->channels_from_keys;
-    is(scalar(@index_channels),                     @keys,                            'Channels queued in index');
-    is(scalar(@keys_channels),                      @keys,                            'Channel keys exist');
+    is($redis->llen('pricer_jobs'),                 @keys,                            'keys added to pricer_jobs queue');
     is($stats{'pricer_daemon.queue.overflow'},      0,                                'zero overflow reported in statd');
     is($stats{'pricer_daemon.queue.size'},          @keys,                            'keys waiting for processing in statsd');
     is($stats{'pricer_daemon.queue.not_processed'}, 0,                                'zero not_processed reported in statsd');
@@ -102,7 +66,6 @@ subtest 'normal flow' => sub {
 
 subtest 'overloaded daemon' => sub {
     # kill the subscriptions or they will be added again
-    $redis->del('pricer_channels');
     $redis->del($_) for @keys;
 
     $queue->process;
@@ -122,62 +85,36 @@ subtest 'jobs processed by daemon' => sub {
 
 };
 
-subtest 'prepare for next interval' => sub {
-    my $start = clock_gettime(CLOCK_REALTIME);
-    $queue->_prep_for_next_interval;
-    my $end = clock_gettime(CLOCK_REALTIME);
-    cmp_ok($end - $start, '<=', $queue->pricing_interval, 'time taken to sleep is less than a pricing interval');
+subtest 'sleeping to next second' => sub {
+    my $start = Time::HiRes::time();
+    BOM::Pricing::Queue::_sleep_to_next_second();
+    my $end = Time::HiRes::time();
+    cmp_ok($end - $start, '<', 1, 'time taken to sleep is less than a second');
 };
 
-subtest 'daemon loading and unloading' => sub {
-    note("These are largely correct in construction but cannot be priced in most environments");
-    # This is ugly, but the PD code is largely untestable itself.
-    my $duration_units = ['m', 's', 't'];
-    my $symbols = ['frxUSDPY', 'frxEURUSD', 'GDAXI', 'R_50', 'R_100'];
-    my $load_size = 16384;
-    my @load_keys;
-    for my $i (1 .. $load_size) {
-        push @load_keys,
-            sprintf(
-            'PRICER_KEYS::["amount","1000","basis","payout","contract_type","CALL","currency","USD","duration","%s","duration_unit","%s","landing_company","svg","price_daemon_cmd","price","product_type","basic","proposal","1","real_money","%s","skips_price_validation","1","subscribe","1","symbol","%s"]',
-            $i, $duration_units->[$i % 3],
-            $i % 2, $symbols->[$i % 5]);
-        $i++;
-    }
-    is($queue->add(@load_keys), $load_size, 'All keys added to pending');
-    $queue->process;
-    is($queue->active_job_count, $load_size, 'All keys converted to jobs');
-    {
-        my $daemon = new_ok('BOM::Pricing::PriceDaemon', [tags => ['tag:1.2.3.4']], 'Test daemon');
-        local $SIG{ALRM} = sub { $daemon->stop; };
-        # We know we cannot really price things most places, so don't emit so much noise.
-        no strict 'refs';
-        no warnings;
-        # Skip pricing, just return placeholder value(s)
-        # Including `rpc_time` makes the serialisation and publish not upset with an
-        # empty hashref this can be expanded/adjusted to create a more realistic mock
-        local *{"BOM::Pricing::PriceDaemon::process_job"} = sub { +{rpc_time => 10,}; };
-        alarm(10);
-        # This is an MVP configuration, can be exxpanded to improve realism as needed
-        $daemon->run(
-            queues       => ['pricer_jobs'],
-            ip           => '1.2.3.4',
-            fork_index   => 0,
-            pid          => $$,
-            redis        => $redis,
-            queue_obj    => $queue,
-            wait_timeout => 1,
-        );
-    }
-    my $active = $queue->active_job_count;
-    cmp_ok($active, '<=', $load_size / 2, 'Consumed at least half the list');
-    my @index_channels = $queue->channels_from_index;
-    note 'We do not want an explicit test here, because we might be able to actually price';
-    note 'Active: ' . $active;
-    note 'Pending: ' . scalar(@index_channels);
+subtest 'priority_queue' => sub {
 
-    my @keys_channels = $queue->channels_from_keys;
-    eq_or_diff([sort @index_channels], [sort @keys_channels], 'Index and keyspace are in sync');
+    my $pid = fork // die "Couldn't fork";
+    unless ($pid) {
+        sleep 1;
+        note "publishing high priority prices in fork";
+        $redis->publish('high_priority_prices', $_) for @keys;
+        exit;
+    }
+
+    $queue = new_ok(
+        'BOM::Pricing::Queue',
+        [
+            priority => 1,
+            , internal_ip => '1.2.3.4'
+        ],
+        'New priority BOM::Pricing::Queue processor'
+    );
+    # need to do 5 times because initial redis reply will be subscription confirmation
+    $queue->process for (0 .. 4);
+    is($redis->llen('pricer_jobs_priority'),        @keys, 'keys added to pricer_jobs_priority queue');
+    is($stats{'pricer_daemon.priority_queue.recv'}, @keys, 'receive stats updated in statsd');
+    is($stats{'pricer_daemon.priority_queue.send'}, @keys, 'send stats updated in statsd');
 };
 
 done_testing;
