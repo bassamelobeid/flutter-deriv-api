@@ -6,9 +6,10 @@ use Test::Most;
 use Test::Exception;
 use Test::Warnings qw(warnings);
 
+use Path::Tiny;
+use RedisDB;
 use Time::HiRes qw(CLOCK_REALTIME clock_gettime alarm);
 use YAML::XS;
-use RedisDB;
 
 my (%stats, %tags);
 
@@ -132,27 +133,18 @@ subtest 'prepare for next interval' => sub {
 subtest 'daemon loading and unloading' => sub {
     note("These are largely correct in construction but cannot be priced in most environments");
     # This is ugly, but the PD code is largely untestable itself.
-    my $duration_units = ['m', 's', 't'];
-    my $symbols = ['frxUSDPY', 'frxEURUSD', 'GDAXI', 'R_50', 'R_100'];
-    my $load_size = 16384;
-    my @load_keys;
-    for my $i (1 .. $load_size) {
-        push @load_keys,
-            sprintf(
-            'PRICER_KEYS::["amount","1000","basis","payout","contract_type","CALL","currency","USD","duration","%s","duration_unit","%s","landing_company","svg","price_daemon_cmd","price","product_type","basic","proposal","1","real_money","%s","skips_price_validation","1","subscribe","1","symbol","%s"]',
-            $i, $duration_units->[$i % 3],
-            $i % 2, $symbols->[$i % 5]);
-        $i++;
-    }
+    my $key_file  = path(__FILE__)->sibling('pricer_keys-green-live-20191022.txt');
+    my @load_keys = $key_file->lines_utf8({chomp => 1});
+    my $load_size = @load_keys;
     is($queue->add(@load_keys), $load_size, 'All keys added to pending');
-    $queue->process;
-    is($queue->active_job_count, $load_size, 'All keys converted to jobs');
     {
+        # We know we cannot really price things most places, so don't emit so much noise.
+        $SIG{__WARN__} = sub { };
+        $queue->process;
+        is($queue->active_job_count, $load_size, 'All keys converted to jobs');
         my $daemon = new_ok('BOM::Pricing::PriceDaemon', [tags => ['tag:1.2.3.4']], 'Test daemon');
         local $SIG{ALRM} = sub { $daemon->stop; };
-        # We know we cannot really price things most places, so don't emit so much noise.
         no strict 'refs';
-        no warnings;
         # Skip pricing, just return placeholder value(s)
         # Including `rpc_time` makes the serialisation and publish not upset with an
         # empty hashref this can be expanded/adjusted to create a more realistic mock
