@@ -189,7 +189,7 @@ sub update {
 }
 
 sub build_contract_update_response {
-    my ($self, $order_type, $order_value) = @_;
+    my $self = shift;
 
     my $contract = $self->contract;
     # we will need to resubscribe for the new proposal open contract when the contract
