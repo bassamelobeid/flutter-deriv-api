@@ -28,7 +28,7 @@
                "minItems" : 4,
                "type" : "array",
                "items" : {
-                  "pattern" : "^(commodities|forex|indices|synthetic_index)$",
+                  "pattern" : "^(commodities|forex|indices|volidx)$",
                   "type" : "string"
                }
             },
