@@ -184,7 +184,7 @@ sub run {
         }
 
         # On websocket clients are subscribing to proposal open contract with "CONTRACT_PRICE::$contract_id" as the key
-        my $redis_channel = $params->{contract_id} ? 'CONTRACT_PRICE::' . $params->{contract_id} : $chan;
+        my $redis_channel = $params->{contract_id} ? 'CONTRACT_PRICE::' . $params->{contract_id} : $key->[1];
         my $subscribers_count = $redis->publish($redis_channel, encode_json_utf8($response));
         # if None was subscribed, so delete the job
         if ($subscribers_count == 0) {
