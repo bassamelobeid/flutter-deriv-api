@@ -29,7 +29,7 @@ sub buy_get_single_contract {
 
 Handles contract update handling for proposal open contract.
 
-Deletes of pricer key and set the new pricer key
+Deletes old pricer key and sets the new pricer key
 =cut
 
 sub contract_update_handler {
