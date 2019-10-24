@@ -169,7 +169,7 @@ sub _collect_correlation_ages {
 
 sub _collect_pipsize_stats {
     my @symbols = create_underlying_db->get_symbols_for(
-        market            => ['synthetic_index'],
+        market            => ['volidx'],
         contract_category => 'ANY'
     );
     foreach my $symbol (@symbols) {

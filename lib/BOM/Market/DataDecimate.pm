@@ -156,7 +156,7 @@ sub _build_data_cache_size {
     my $self = shift;
 
 # We added 1 min here as a buffer,
-# Now both forex and synthetic_index is 31 mins.
+# Now both forex and volidx is 31 mins.
     my $cache_size = 31 * 60;
 
     return $cache_size;
@@ -260,7 +260,7 @@ sub _update {
 
 =head2 clean_up_raw
 
-Clean up old feed-raw data up to end_epoch - retention interval. For raw feed, retention interval is 31m for forex and 5h for synthetic_index.
+Clean up old feed-raw data up to end_epoch - retention interval. For raw feed, retention interval is 31m for forex and 5h for volidx.
 	
 =cut	
 
