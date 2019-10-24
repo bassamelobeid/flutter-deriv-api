@@ -181,7 +181,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
     is($error->get_type, 'RandomRestrictedCountry', 'Germany clients are not allowed to place Random contracts as their country is restricted.');
     like(
         $error->{-message_to_client},
-        qr/Sorry, contracts on Synthetic Indices are not available in your country of residence/,
+        qr/Sorry, contracts on Volatility Indices are not available in your country of residence/,
         'Germany clients are not allowed to place Random contracts as their country is restricted due to vat regulations'
     );
 
