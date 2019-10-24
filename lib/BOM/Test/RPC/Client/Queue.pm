@@ -33,16 +33,6 @@ has '+client' => (
     lazy_build => 1,
 );
 
-has 'loop' => (
-    is       => 'ro',
-    required => 1,
-    builder  => '_build_loop',
-);
-
-sub _build_loop {
-    return IO::Async::Loop::Mojo->new;
-}
-
 sub _build_client {
     my $self         = shift;
     my $queue_redis  = BOM::Test::WebsocketAPI::Redis::RpcQueue->new->config->{write};
@@ -55,6 +45,16 @@ sub _build_client {
         ));
     $client->start->get;
     return $client;
+}
+
+has 'loop' => (
+    is       => 'ro',
+    required => 1,
+    builder  => '_build_loop',
+);
+
+sub _build_loop {
+    return IO::Async::Loop::Mojo->new;
 }
 
 sub _tcall {
