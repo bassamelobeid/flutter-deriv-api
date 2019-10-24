@@ -630,7 +630,7 @@ rpc contract_update => sub {
     }
     catch {
         $response = BOM::Pricing::v3::Utility::create_error({
-            code              => 'ContractUpdateError',
+            code              => 'ContractUpdateError' . $_,
             message_to_client => localize("Sorry, an error occurred while processing your request."),
         });
     };

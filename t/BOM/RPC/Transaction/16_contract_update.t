@@ -88,7 +88,7 @@ subtest 'contract_update' => sub {
     my $buy_params = {
         client_ip            => '127.0.0.1',
         token                => $token,
-        contract_limit_order => {
+        contract_parameters => {
             contract_type => 'MULTUP',
             basis         => 'stake',
             amount        => 100,
@@ -123,7 +123,7 @@ subtest 'contract_update' => sub {
     $update_params->{args}->{limit_order} = {take_profit => 10};
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
     ok $res->{take_profit}, 'returns the new take profit value';
-    ok !$res->{stop_loss}, 'stop loss is undef';
+    ok !%{$res->{stop_loss}}, 'stop loss is undef';
     ok $res->{contract_details}, 'has contract_details';
     is $res->{contract_details}{limit_order}->[0],        'stop_out';
     is $res->{contract_details}{limit_order}->[2],        'take_profit';
