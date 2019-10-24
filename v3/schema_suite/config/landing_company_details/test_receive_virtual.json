@@ -27,7 +27,7 @@
             },
             "legal_allowed_markets" : {
                "items" : {
-                  "pattern" : "^(commodities|forex|indices|synthetic_index)$",
+                  "pattern" : "^(commodities|forex|indices|volidx)$",
                   "type" : "string"
                },
                "minItems" : 4,
