@@ -215,7 +215,7 @@ subtest $method => sub {
         'epoch'  => 1127287461,
         'quote'  => '76.8996',
     };
-    my $decimate_cache = BOM::Market::DataDecimate->new({market => 'synthetic_index'});
+    my $decimate_cache = BOM::Market::DataDecimate->new({market => 'volidx'});
 
     my $key = $decimate_cache->_make_key('R_50', 0);
     $decimate_cache->_update($decimate_cache->redis_write, $key, 1127287461, $decimate_cache->encoder->encode($single_data));
