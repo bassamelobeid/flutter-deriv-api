@@ -36,8 +36,11 @@ subtest 'Method call over rpc queue' => sub {
 subtest 'Redis failure recovery' => sub {
     my $redis = BOM::Test::WebsocketAPI::Redis::redis_queue();
     ok $redis->then(sub { shift->client_kill('SKIPME', 'no') })->get, 'Redis server closed all existing connections';
-    $c_queue->client->start->get;
-    ok my $result = $c_queue->call_ok('residence_list')->has_no_system_error, 'Queue client and worker recovered from connection loss';
+    $c_queue->client->start->on_ready(
+        sub {
+            ok shift->is_done, 'Queue client has to be restarted after connection loss';
+        })->get;
+    ok my $result = $c_queue->call_ok('residence_list')->has_no_system_error, 'Queue worker automatically recovered from connection loss';
     ok $result->has_no_error, 'RPC response has no error';
 };
 
@@ -45,7 +48,7 @@ subtest 'Worker service restart' => sub {
     my $rpc_queue = BOM::Test::Script::RpcQueue::get_script;
     my $pid       = $rpc_queue->pid;
     $rpc_queue->stop_script();
-    ok !`ps -p $pid | grep $pid`, 'Worker process is killed successfully';
+    ok !kill(0, $pid), 'Worker process is killed successfully';
 
     my $mocked_script = Test::MockModule->new('BOM::Test::Script');
     $mocked_script->mock(
@@ -54,7 +57,7 @@ subtest 'Worker service restart' => sub {
     $rpc_queue->start_script;
     $pid = $rpc_queue->pid;
     $rpc_queue->stop_script();
-    ok !`ps -p $pid | grep $pid`, 'Worker process is killed successfully while disconnected from redis';
+    ok !kill(0, $pid), 'Worker process is killed successfully while disconnected from redis';
 
     $mocked_script->unmock_all;
     $rpc_queue->start_script;

@@ -364,7 +364,7 @@ sub process_job {
                     result  => {
                         error => {
                             code              => 'InternalServerError',
-                            message_to_client => "Sorry, an error occurred while processing your request.",
+                            message_to_client => 'Sorry, an error occurred while processing your request.',
                         }}})) unless $job->is_ready;
     }
 
@@ -403,7 +403,7 @@ sub run_worker_process {
 
     $loop->attach_signal(
         TERM => sub {
-            $log->info("Stopping worker process");
+            $log->info("Stopping RPC queue worker process");
 
             (
                 try_repeat {
@@ -424,10 +424,10 @@ sub run_worker_process {
 
             if ($FOREGROUND) {
                 unlink $PID_FILE if $PID_FILE;
-                unlink unlink $SOCKETPATH;
+                unlink $SOCKETPATH;
             }
 
-            $log->info('Worker process stopped');
+            $log->info('RPC queue worker process stopped');
             exit 0;
         },
     );
@@ -449,12 +449,13 @@ sub run_worker_process {
     $worker->jobs->each(
         sub {
             my $job     = $_;
-            my $name    = $job->data('name') // '';
+            my $name    = $job->data('name') // 'missing';
             my ($queue) = $worker->pending_queues;
             my $tags    = {tags => ["rpc:$name", "queue:$queue"]};
 
             try {
-                my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
+                die 'RPC method name is mssing' if $name eq 'missing';
+                my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category}) // QUEUE_WORKER_TIMEOUT;
                 $log->tracef('Timeout for %s is %d', $name, $job_timeout);
 
                 local $SIG{ALRM} = sub {
