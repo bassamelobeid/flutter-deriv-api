@@ -332,7 +332,7 @@ sub _get_cashier_url {
     } else {
         my $is_white_listed = $domain && (any { $domain eq $_ } BOM::Config->domain->{white_list}->@*);
         $domain = BOM::Config->domain->{default_domain} unless $domain and $is_white_listed;
-        $url .= "cryptocurrency.$domain/cryptocurrency/$prefix";
+        $url .= "crypto-cashier.$domain/cryptocurrency/$prefix";
     }
 
     $url .=
@@ -1404,9 +1404,9 @@ rpc transfer_between_accounts => sub {
             $err,
             localize(
                 "This amount is too low. Please enter a minimum of [_1] [_2].",
-                BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{$from_currency}->{min},
-                $from_currency
-            )) if ($err =~ /The amount .* is below the minimum allowed amount .* for $to_currency/);
+                $from_currency,
+                formatnumber('amount', $from_currency, BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{$from_currency}->{min}))
+        ) if ($err =~ /The amount .* is below the minimum allowed amount .* for $to_currency/);
 
         return $error_audit_sub->($err);
     }
@@ -1718,17 +1718,20 @@ sub validate_amount {
 }
 
 sub _validate_paymentagent_limits {
-    my (%args) = @_;
-
-    my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($args{currency});
+    my (%args)   = @_;
+    my $currency = $args{currency};
+    my $min_max  = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
 
     my $amount    = $args{amount};
     my $error_sub = $args{error_sub};
     my $min       = $args{payment_agent}->min_withdrawal // $min_max->{minimum};
     my $max       = $args{payment_agent}->max_withdrawal // $min_max->{maximum};
 
-    return $error_sub->(localize('Invalid amount. Minimum is [_1], maximum is [_2].', $min, $max))
-        if ($amount < $min || $amount > $max);
+    return $error_sub->(
+        localize(
+            'Invalid amount. Minimum is [_1], maximum is [_2].',
+            formatnumber('amount', $currency, $min),
+            formatnumber('amount', $currency, $max))) if ($amount < $min || $amount > $max);
 
     return undef;
 }
