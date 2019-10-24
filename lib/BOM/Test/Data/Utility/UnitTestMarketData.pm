@@ -110,11 +110,11 @@ sub _init {
                     'commission' => {
                         'adjustment' => {
                             'per_market_scaling' => {
-                                'forex'           => '100',
-                                'indices'         => '100',
-                                'commodities'     => '100',
-                                'synthetic_index' => '100',
-                                'config'          => '100',
+                                'forex'       => '100',
+                                'indices'     => '100',
+                                'commodities' => '100',
+                                'volidx'      => '100',
+                                'config'      => '100',
                             }}
                     },
                     enable_global_potential_loss => 0,
