@@ -165,6 +165,12 @@
             "description": "Contract will be automatically closed when the loss amount is reached."
           }
         }
+      },
+      "deal_cancellation": {
+         "type" : "integer",
+         "description" : "Epoch value of the expiry time for the deal cancellation option (only for MULTUP and MULTDOWN).",
+         "minimum" : 0,
+         "maximum" : 9999999999
       }
    }
 }
