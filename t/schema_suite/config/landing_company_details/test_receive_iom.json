@@ -50,7 +50,7 @@
          "type" : "array",
          "items" : {
             "type" : "string",
-            "pattern" : "^synthetic_index$"
+            "pattern" : "^volidx$"
          },
          "minItems" : 1
       },
@@ -62,7 +62,7 @@
          "type" : "object",
          "additionalProperties" : false,
          "properties" : {
-            "synthetic_index" : {
+            "volidx" : {
                "patternProperties" : {
                   "^[A-Z]{3,4}$" : {
                      "properties" : {
@@ -90,7 +90,7 @@
             }
          },
          "required" : [
-            "synthetic_index"
+            "volidx"
          ]
       },
       "stash" : {
