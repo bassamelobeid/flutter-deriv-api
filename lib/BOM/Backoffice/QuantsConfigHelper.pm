@@ -193,7 +193,7 @@ sub decorate_for_display {
         fixup => sub {
             $_->selectall_arrayref("SELECT market from betonmarkets.quants_wishlist group by market");
         });
-    my @market_order = uniq(qw(forex indices commodities synthetic_index default), (map { @$_ } (@$output, @$potentially_new_market)));
+    my @market_order = uniq(qw(forex indices commodities volidx default), (map { @$_ } (@$output, @$potentially_new_market)));
     my @type_order = qw(market symbol_default symbol);
 
     my @sorted_records = ();

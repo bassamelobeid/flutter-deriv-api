@@ -21,11 +21,11 @@ my @limits = ({
         limit_amount      => 40000,
     },
     {
-        market       => ['synthetic_index'],
+        market       => ['volidx'],
         limit_amount => 200000,
     },
     {
-        market            => ['synthetic_index'],
+        market            => ['volidx'],
         underlying_symbol => ['default'],
         limit_amount      => 75000,
     },
