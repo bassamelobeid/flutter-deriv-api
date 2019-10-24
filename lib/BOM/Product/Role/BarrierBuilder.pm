@@ -44,10 +44,7 @@ sub make_barrier {
     }
 
     # for volatlity indices, we allow absolute and relative barriers for tick expiry contracts
-    if (    $self->tick_expiry
-        and $self->pricing_new
-        and $string_version !~ /^S-?\d+P|[-+]\d+(\.\d+)?$/i
-        and $self->underlying->market->name ne 'synthetic_index')
+    if ($self->tick_expiry and $self->pricing_new and $string_version !~ /^S-?\d+P|[-+]\d+(\.\d+)?$/i and $self->underlying->market->name ne 'volidx')
     {
         $self->_add_error({
             severity          => 100,
@@ -126,7 +123,7 @@ sub _apply_barrier_adjustment {
     #  We don't want to indulge in that as we need fast prices and numerical methods may not converge fast enough for our automated system.
     # So the best solution is to estimate a continuous price such that its error is minimum to the true value. Broadie, Glasserman and Kou estimate this in their paper "http://www.columbia.edu/~sk75/mfBGK.pdf".
     #  This shift comes out to be : exp(0.5826 * vol * sqrt(delT))
-    # Here, delT = barrier monitoring interval (so for example, as we generate a synthetic_index tick every 2 seconds right now, dltT = 2/60/60/24/365).
+    # Here, delT = barrier monitoring interval (so for example, as we generate a volidx tick every 2 seconds right now, dltT = 2/60/60/24/365).
     # The number 0.5826 is a rough estimation of : 0.5826 ~ eta(0.5) / sqrt(2*pi), where eta = Riemann zeta function (this is available on page 327 of the above mentioned paper).
     # So if the barrier is above the spot, new barrier for pricing = barrier * exp(0.5826 * vol * sqrt(delT))
     # and when it is below the barrier, new barrier = barrier / exp(0.5826 * vol * sqrt(delT))
@@ -137,10 +134,10 @@ sub _apply_barrier_adjustment {
     # So another way of looking at it is as a seller of an option, missing ticks is great if we are just selling OTs but very bad for the NTs.
     # So we need a shift that would adjust for this while monitoring barriers discretely by increasing the price of NT / DNTs and decreasing the price for OT/DOTs.
 
-    if ($self->market->name eq 'synthetic_index' and $self->is_path_dependent) {
+    if ($self->market->name eq 'volidx' and $self->is_path_dependent) {
         my $used_vol            = $self->pricing_vol;
-        my $generation_interval = $self->underlying->generation_interval->days / 365;
-        my $dir                 = ($barrier > $self->current_spot) ? 1 : -1;                     # Move in same direction from spot.
+        my $generation_interval = $self->underlying->submarket->generation_interval->days / 365;
+        my $dir                 = ($barrier > $self->current_spot) ? 1 : -1;                       # Move in same direction from spot.
         my $shift               = exp($dir * 0.5826 * $used_vol * sqrt($generation_interval));
         $barrier *= $shift;
     }
