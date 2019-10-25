@@ -117,7 +117,7 @@
             "limit_order": {
               "type": "object",
               "additionalProperties" : false,
-              "description": "add an order to close the contract once the order condition is met (currently only for MULTUP and MULTDOWN)",
+              "description": "Add an order to close the contract once the order condition is met (currently only for MULTUP and MULTDOWN)",
               "properties": {
                 "take_profit": {
                   "type": "number",

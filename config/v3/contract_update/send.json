@@ -22,7 +22,7 @@
       },
       "limit_order": {
          "type": "object",
-         "description": "specify limit order to update.",
+         "description": "Specify limit order to update.",
          "additionalProperties" : false,
          "properties": {
             "take_profit": {

@@ -154,7 +154,7 @@
       "limit_order": {
         "type": "object",
         "additionalProperties" : false,
-        "description": "add an order to close the contract once the order condition is met (only for MULTUP and MULTDOWN). Supported order (take_profit, stop_loss)",
+        "description": "Add an order to close the contract once the order condition is met (only for MULTUP and MULTDOWN). Supported order (take_profit, stop_loss)",
         "properties": {
           "take_profit": {
             "type": "number",
