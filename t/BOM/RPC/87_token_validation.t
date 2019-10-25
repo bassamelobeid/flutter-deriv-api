@@ -49,7 +49,7 @@ subtest 'Initialization' => sub {
     'Initial RPC server and client connection';
 };
 
-$params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+$params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
 
 $c->call_ok('cashier', $params)
     ->has_no_system_error->has_error->error_code_is('InvalidToken', 'Reset password token can not be used for cashier withdrawal')

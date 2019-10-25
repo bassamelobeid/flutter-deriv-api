@@ -70,7 +70,7 @@ subtest 'Basic transfers' => sub {
         remark   => 'free gift',
     );
 
-    $params->{token}      = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
+    $params->{token}      = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
     $params->{token_type} = 'oauth_token';
     $params->{args}       = {
         account_from => $client_cr1->loginid,
@@ -155,7 +155,7 @@ subtest 'Virtual accounts' => sub {
     );
 
     $params->{args}       = {};
-    $params->{token}      = BOM::Database::Model::AccessToken->new->create_token($client_vr1->loginid, 'test token');
+    $params->{token}      = BOM::Platform::Token::API->new->create_token($client_vr1->loginid, 'test token');
     $params->{token_type} = 'api_token';
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_message_is('Permission denied.', 'Permission denied for vr account with api token');

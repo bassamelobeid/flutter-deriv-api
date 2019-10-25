@@ -131,7 +131,7 @@ my %basic_details = (
 $test_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
 $test_client->save;
 
-my $m        = BOM::Database::Model::AccessToken->new;
+my $m        = BOM::Platform::Token::API->new;
 my $token    = $m->create_token($test_client->loginid, 'test token');
 my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
