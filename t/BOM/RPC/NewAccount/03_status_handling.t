@@ -82,7 +82,7 @@ subtest 'MX' => sub {
 
         _reset_params();
 
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vr_client->loginid, 'test token');
+        $params->{token} = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
         $params->{args} = new_client_details(residence => 'gb');
 
         my $file_path = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianInsufficientDOB.xml";
@@ -128,7 +128,7 @@ subtest 'MX' => sub {
 
         _reset_params();
 
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vr_client->loginid, 'test token');
+        $params->{token} = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
         $params->{args} = new_client_details(residence => 'gb');
 
         my $file_path = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianValid.xml";
@@ -176,7 +176,7 @@ subtest 'MF' => sub {
 
     _reset_params();
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vr_client->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
     $params->{args} = new_client_details(residence => 'es');
 
     # MF needs additional arguments to create
@@ -221,7 +221,7 @@ subtest 'CR' => sub {
 
     _reset_params();
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vr_client->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
     $params->{args} = new_client_details(residence => 'id');
     $result = $rpc_ct->call_ok("new_account_real", $params)->has_no_system_error->has_no_error('Real account created')->result;
     $loginid = $result->{client_id};
@@ -257,7 +257,7 @@ subtest 'MLT' => sub {
 
     _reset_params();
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($vr_client->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
     $params->{args} = new_client_details(residence => 'be');
     $result = $rpc_ct->call_ok("new_account_real", $params)->has_no_system_error->has_no_error('Real account created')->result;
     $loginid = $result->{client_id};

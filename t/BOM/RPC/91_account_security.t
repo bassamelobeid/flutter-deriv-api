@@ -8,7 +8,7 @@ use Authen::OATH;
 use Convert::Base32;
 use BOM::User;
 use BOM::User::Password;
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Email::Stuffer::TestLinks;
@@ -42,7 +42,7 @@ subtest 'Initialization' => sub {
         );
         $user->add_client($client_cr);
 
-        $token = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+        $token = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
 
     }
     'Initial RPC Client and other parameters';
