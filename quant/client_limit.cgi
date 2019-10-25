@@ -89,7 +89,7 @@ sub get_limited_client_list {
             my $comment         = delete $copy{name};
             my $profile         = delete $copy{risk_profile};
             my $limit_condition = join ",", map { $_ . "[$copy{$_}] " } grep { $copy{$_} } keys %copy;
-            my $market_type     = $copy{market} ? ($copy{market} ne 'synthetic_index' ? 'financial' : 'non_financial') : 'N.A.';
+            my $market_type     = $copy{market} ? ($copy{market} ne 'volidx' ? 'financial' : 'non_financial') : 'N.A.';
 
             push @client_output, +{
                 binary_user_id       => $binary_user_id,
