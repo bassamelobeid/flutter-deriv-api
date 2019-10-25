@@ -114,7 +114,7 @@ subtest 'call params validation' => sub {
     $user->add_client($client_mlt);
     $user->add_client($client_mf);
 
-    $token = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $token = BOM::Platform::Token::API->new->create_token($client_cr->loginid, _get_unique_display_name());
     $params->{token} = $token;
 
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
@@ -150,7 +150,7 @@ subtest 'call params validation' => sub {
     $params->{args}->{currency}     = 'EUR';
     $params->{args}->{account_from} = $client_vr->loginid;
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_vr->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_vr->loginid, _get_unique_display_name());
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code},              'PermissionDenied',   'Correct error code for virtual account';
@@ -202,14 +202,14 @@ subtest 'validation' => sub {
     $params->{args}->{account_from} = $client_mlt->loginid;
     $params->{args}->{account_to}   = $client_mlt->loginid;
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, _get_unique_display_name());
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if from and to are same';
     is $result->{error}->{message_to_client}, 'Account transfers are not available within same account.',
         'Correct error message if from and to are same';
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, _get_unique_display_name());
     $params->{args}->{account_from} = $client_cr->loginid;
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
@@ -218,7 +218,8 @@ subtest 'validation' => sub {
         'Correct error message for different landing companies';
 
     $params->{args}->{account_from} = $client_mf->loginid;
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mf->loginid, 'test token');
+
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, _get_unique_display_name());
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code},              'TransferBetweenAccountsError',    'Correct error code for no default currency';
     is $result->{error}->{message_to_client}, 'Please deposit to your account.', 'Correct error message for no default currency';
@@ -247,7 +248,7 @@ subtest 'validation' => sub {
 
     $client_mlt->set_default_account('USD');
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mf->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, _get_unique_display_name());
     $params->{args}->{account_from} = $client_mf->loginid;
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as no different currency')
@@ -278,7 +279,7 @@ subtest 'validation' => sub {
     $client_cr->set_default_account('BTC');
     $cr_dummy->set_default_account('BTC');
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, _get_unique_display_name());
     $params->{args}->{currency}     = 'BTC';
     $params->{args}->{account_from} = $client_cr->loginid;
     $params->{args}->{account_to}   = $cr_dummy->loginid;
@@ -307,7 +308,7 @@ subtest 'validation' => sub {
     $user->add_client($client_cr);
     $client_cr->set_default_account('USD');
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, _get_unique_display_name());
     $params->{args}->{currency}     = 'USD';
     $params->{args}->{account_from} = $client_cr->loginid;
     $params->{args}->{account_to}   = $cr_dummy->loginid;
@@ -413,7 +414,7 @@ subtest 'Validation for transfer from incomplete account' => sub {
         remark   => 'free gift',
     );
 
-    $params->{token}      = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
+    $params->{token}      = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
     $params->{token_type} = 'oauth_token';
     $params->{args}       = {
         account_from => $client_cr1->loginid,
@@ -470,7 +471,7 @@ subtest $method => sub {
     };
 
     subtest 'Validate transfers' => sub {
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
+        $params->{token} = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, _get_unique_display_name());
         $params->{args} = {
             account_from => $client_mlt->loginid,
             account_to   => $client_mf->loginid,
@@ -536,7 +537,7 @@ subtest $method => sub {
             currency     => "EUR",
             amount       => 10,
         };
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
+        $params->{token} = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, _get_unique_display_name());
         $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
         is $result->{client_to_loginid},   $client_mf->loginid,   'transfer_between_accounts to client is ok';
         is $result->{client_to_full_name}, $client_mf->full_name, 'transfer_between_accounts to client name is ok';
@@ -694,8 +695,8 @@ subtest 'transfer with fees' => sub {
 
     cmp_ok $client_cr_ust->default_account->balance, '==', 1000, 'correct balance';
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
-
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_usd->loginid, _get_unique_display_name());
+    my $amount = 10;
     $params->{args} = {
         account_from => $client_cr_usd->loginid,
         account_to   => $client_cr_btc->loginid,
@@ -728,9 +729,8 @@ subtest 'transfer with fees' => sub {
 
     my $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
 
-    #No transfer fee for BTC-EUR (transfer failure expected)
-    my $amount = $transfer_limits->{BTC}->{min};
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_btc->loginid, 'test token');
+    $amount = $transfer_limits->{BTC}->{min};
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_btc->loginid, _get_unique_display_name());
     $params->{args} = {
         account_from => $client_cr_btc->loginid,
         account_to   => $client_cr_eur->loginid,
@@ -764,7 +764,7 @@ subtest 'transfer with fees' => sub {
 
         $previous_balance_btc = $client_cr_btc->default_account->balance;
         $previous_balance_usd = $client_cr_usd->default_account->balance;
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_btc->loginid, 'test token');
+	$params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_btc->loginid, _get_unique_display_name());
         $amount          = $transfer_limits->{BTC}->{min};
         $params->{args}  = {
             account_from => $client_cr_btc->loginid,
@@ -791,7 +791,7 @@ subtest 'transfer with fees' => sub {
     subtest 'unauthorised pa to non-pa transfer' => sub {
         my $previous_balance_btc = $client_cr_pa_btc->default_account->balance;
         my $previous_balance_usd = $client_cr_usd->default_account->balance;
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_pa_btc->loginid, 'test token');
+	$params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_pa_btc->loginid, _get_unique_display_name());
         my $amount = $transfer_limits->{BTC}->{min};
         $params->{args} = {
             account_from => $client_cr_pa_btc->loginid,
@@ -818,7 +818,7 @@ subtest 'transfer with fees' => sub {
         my $previous_balance_btc = $client_cr_pa_btc->default_account->balance;
         my $previous_balance_usd = $client_cr_usd->default_account->balance;
         my $amount               = $transfer_limits->{USD}->{min};
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
+	$params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_usd->loginid, _get_unique_display_name());
         $params->{args} = {
             account_from => $client_cr_usd->loginid,
             account_to   => $client_cr_pa_btc->loginid,
@@ -848,7 +848,7 @@ subtest 'transfer with fees' => sub {
         my $expected_fee_percent     = $usd_ust_fee;
         my $expected_transfer_amount = ($amount - $amount * $expected_fee_percent / 100);
 
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
+        $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_usd->loginid, _get_unique_display_name());
         $params->{args} = {
             account_from => $client_cr_usd->loginid,
             account_to   => $client_cr_ust->loginid,
@@ -871,7 +871,7 @@ subtest 'transfer with fees' => sub {
         my $expected_fee_percent     = $ust_usd_fee;
         my $expected_transfer_amount = financialrounding('amount', 'USD', $amount - $amount * $expected_fee_percent / 100);
 
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_ust->loginid, 'test token');
+        $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_ust->loginid, _get_unique_display_name());
         $params->{args} = {
             account_from => $client_cr_ust->loginid,
             account_to   => $client_cr_usd->loginid,
@@ -895,7 +895,7 @@ subtest 'transfer with fees' => sub {
         my $expected_fee_percent     = $ust_usd_fee;
         my $expected_transfer_amount = financialrounding('amount', 'UST', $amount - $amount * $expected_fee_percent / 100);
 
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_ust->loginid, 'test token');
+        $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_ust->loginid, _get_unique_display_name());
         $params->{args} = {
             account_from => $client_cr_ust->loginid,
             account_to   => $client_cr_usd->loginid,
@@ -990,7 +990,7 @@ subtest 'transfer with no fee' => sub {
     $client_cr_pa_usd->save();
 
     my $amount = 0.1;
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_pa_btc->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_pa_btc->loginid, _get_unique_display_name());
     $params->{args} = {
         account_from => $client_cr_pa_btc->loginid,
         account_to   => $client_cr_usd->loginid,
@@ -1025,7 +1025,7 @@ subtest 'transfer with no fee' => sub {
 
     sleep(2);
     $amount = 10;
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_usd->loginid, _get_unique_display_name());
     $params->{args} = {
         account_from => $client_cr_usd->loginid,
         account_to   => $client_cr_pa_btc->loginid,
@@ -1062,7 +1062,7 @@ subtest 'multi currency transfers' => sub {
         remark   => 'free gift',
     );
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr_eur->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_eur->loginid, _get_unique_display_name());
     $params->{args} = {
         account_from => $client_cr_eur->loginid,
         account_to   => $client_cr_usd->loginid,
@@ -1166,9 +1166,9 @@ subtest 'suspended currency transfers' => sub {
     $user->add_client($client_mf_eur);
     $user->add_client($client_mlt_eur);
 
-    my $token_cr_usd = BOM::Database::Model::AccessToken->new->create_token($client_cr_usd->loginid, 'test token');
-    my $token_cr_btc = BOM::Database::Model::AccessToken->new->create_token($client_cr_btc->loginid, 'test token');
-    my $token_mf_eur = BOM::Database::Model::AccessToken->new->create_token($client_mf_eur->loginid, 'test token');
+    my $token_cr_usd = BOM::Platform::Token::API->new->create_token($client_cr_usd->loginid, _get_unique_display_name());
+    my $token_cr_btc = BOM::Platform::Token::API->new->create_token($client_cr_btc->loginid, _get_unique_display_name());
+    my $token_mf_eur = BOM::Platform::Token::API->new->create_token($client_mf_eur->loginid, _get_unique_display_name());
 
     subtest 'it should stop transfers to suspended currency' => sub {
         $params->{token} = $token_cr_usd;
@@ -1293,7 +1293,7 @@ subtest 'MT5' => sub {
     $user->add_client($test_client);
     $user->add_client($test_client_btc);
 
-    my $token = BOM::Database::Model::AccessToken->new->create_token($test_client->loginid, 'test token');
+    my $token = BOM::Platform::Token::API->new->create_token($test_client->loginid, _get_unique_display_name());
 
     my $params = {
         language => 'EN',
@@ -1467,7 +1467,7 @@ subtest 'MT5' => sub {
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for MT5 account_from');
 
     subtest 'transfers using an account other than authenticated client' => sub {
-        $params->{token} = BOM::Database::Model::AccessToken->new->create_token($test_client_btc->loginid, 'test token');
+        $params->{token} = BOM::Platform::Token::API->new->create_token($test_client_btc->loginid, 'test token');
         $params->{args}{currency} = 'USD';
 
         $params->{args}{amount}       = 180;
@@ -1498,5 +1498,10 @@ subtest 'MT5' => sub {
     # restore config
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->manager_api;
 };
+
+sub _get_unique_display_name {
+    my @a = ('A'..'Z','a'..'z');
+    return join '', map {$a[int(rand($#a))]} (1..3);
+}
 
 done_testing();

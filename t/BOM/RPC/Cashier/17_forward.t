@@ -135,7 +135,7 @@ $client_mx->status->set('max_turnover_limit_not_set', 'tests', 'Newly created GB
 my $method = 'cashier';
 subtest 'common' => sub {
     $params->{args}->{cashier} = 'deposit';
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_vr->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
 
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier forward error as client is virtual')
@@ -145,7 +145,7 @@ subtest 'common' => sub {
     my $user_mocked = Test::MockModule->new('BOM::User');
     $user_mocked->mock('new', sub { bless {}, 'BOM::User' });
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')
         ->error_message_is('Terms and conditions approval is required.', 'Correct error message for terms and conditions');
 
@@ -157,14 +157,14 @@ subtest 'common' => sub {
     $client_cr1->set_default_account('JPY');
     $client_cr1->save;
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr1->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has wrong default currency for landing_company')
         ->error_message_is('JPY transactions may not be performed with this account.', 'Correct error message for wrong default account');
 
     $client_cr->status->set('tnc_approval', 'system', $current_tnc_version);
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_CURRENCY', 'Client has no default currency')
         ->error_message_is('Please set the currency.', 'Correct error message when currency is not set');
 
@@ -233,7 +233,7 @@ subtest 'withdraw' => sub {
             created_for => 'payment_withdraw',
         })->token;
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token1');
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('ASK_CURRENCY',
         'Terms and condition check is skipped for withdrawal, currency check comes after that.')
@@ -252,7 +252,7 @@ subtest 'withdraw' => sub {
         'Terms and condition check is skipped for withdrawal, even with correct version set same currency error occur.')
         ->error_message_is('Please set the currency.', 'Correct error message as terms and condition check is skipped for withdrawal.');
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_cr->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token1');
     $params->{args}->{verification_code} = BOM::Platform::Token->new({
             email       => $client_cr->email,
             expires_in  => 3600,
@@ -269,7 +269,7 @@ subtest 'landing_companies_specific' => sub {
     $params->{args}->{cashier} = 'deposit';
     delete $params->{args}->{verification_code};
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mlt->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, 'test token1');
 
     $client_mlt->set_default_account('EUR');
     $client_mlt->status->set('tnc_approval', 'system', $current_tnc_version);
@@ -295,7 +295,7 @@ subtest 'landing_companies_specific' => sub {
             'Attempted to forward request to the cashier after validation');
     };
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mf->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, 'test token1');
 
     $client_mf->set_default_account('EUR');
     $client_mf->save;
@@ -328,7 +328,7 @@ subtest 'landing_companies_specific' => sub {
         ->error_message_is('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
         'tax information is required for malatainvest');
 
-    $params->{token} = BOM::Database::Model::AccessToken->new->create_token($client_mx->loginid, 'test token');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token2');
 
     $client_mx->set_default_account('GBP');
     $client_mx->residence('gb');
