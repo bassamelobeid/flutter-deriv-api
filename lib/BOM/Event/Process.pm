@@ -56,6 +56,7 @@ my $action_mapping = {
     qualifying_payment_check    => \&BOM::Event::Actions::Client::qualifying_payment_check,
     payment_deposit             => \&BOM::Event::Actions::Client::payment_deposit,
     send_email                  => \&BOM::Event::Actions::Email::send_email_generic,
+    withdrawal_limit_reached    => \&BOM::Event::Actions::Client::set_needs_action,
 };
 
 =head1 METHODS
