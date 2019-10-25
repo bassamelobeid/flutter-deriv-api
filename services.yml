@@ -5,3 +5,4 @@
 - postgres-user
 - redis
 - redis-replicated
+- redis-transaction-limits
