@@ -64,15 +64,16 @@
                      "description": "The target spot price where the contract will be closed with profit.",
                      "properties": {
                         "display_name": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "Localized display name"
                         },
                         "value": {
                             "type": "string",
-                            "description": "pip-sized take profit value"
+                            "description": "Pip-sized take profit value"
                         },
                         "order_amount" : {
                             "type": "number",
-                            "description": "take profit amount"
+                            "description": "Take profit amount"
                         }
                      }
                   },
@@ -81,15 +82,16 @@
                      "description": "The target spot price where the contract will be closed with loss.",
                      "properties": {
                         "display_name": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "Localized display name"
                         },
                         "value": {
                             "type": "string",
-                            "description": "pip-sized barrier value"
+                            "description": "Pip-sized barrier value"
                         },
                         "order_amount" : {
                             "type": "number",
-                            "description": "stop out amount"
+                            "description": "Stop out amount"
                         }
                      }
                   },
@@ -98,15 +100,16 @@
                      "description": "The target spot price where the contract will be closed with loss.",
                      "properties": {
                         "display_name": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "Localized display name"
                         },
                         "value": {
                             "type": "string",
-                            "description": "pip-sized barrier value"
+                            "description": "Pip-sized barrier value"
                         },
                         "order_amount" : {
                             "type": "number",
-                            "description": "stop loss amount"
+                            "description": "Stop loss amount"
                         }
                      }
                   }

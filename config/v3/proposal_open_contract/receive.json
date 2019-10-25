@@ -420,57 +420,69 @@
                     "type": "object",
                     "properties": {
                         "stop_out": {
-                            "order_date" : {
-                                "type": "integer",
-                                "description": "stop out order epoch"
-                            },
-                            "order_amount" : {
-                                "type": "number",
-                                "description": "stop out amount"
-                            },
-                            "value" : {
-                                "type": "string",
-                                "description" : "stop out pip-sized barrier value"
-                            },
-                            "display_name": {
-                                "type": "string",
-                                "description": "localized display name"
+                            "type": "object",
+                            "description": "The target spot price where the contract will be closed with loss.",
+                            "properties": {
+                                "order_date" : {
+                                    "type": "integer",
+                                    "description": "Stop out order epoch"
+                                },
+                                "order_amount" : {
+                                    "type": "number",
+                                    "description": "Stop out amount"
+                                },
+                                "value" : {
+                                    "type": "string",
+                                    "description" : "Stop out pip-sized barrier value"
+                                },
+                                "display_name": {
+                                    "type": "string",
+                                    "description": "Localized display name"
+                                }
                             }
                         },
                         "take_profit": {
-                            "order_date" : {
-                                "type": "integer",
-                                "description": "take profit order epoch"
-                            },
-                            "order_amount" : {
-                                "type": "number",
-                                "description": "take profit amount"
-                            },
-                            "value" : {
-                                "type": "string",
-                                "description" : "take profit pip-sized barrier value"
-                            },
-                            "display_name": {
-                                "type": "string",
-                                "description": "localized display name"
+                            "type": "object",
+                            "description": "The target spot price where the contract will be closed with profit.",
+                            "properties": {
+                                "order_date" : {
+                                    "type": "integer",
+                                    "description": "Take profit order epoch"
+                                },
+                                "order_amount" : {
+                                    "type": "number",
+                                    "description": "Take profit amount"
+                                },
+                                "value" : {
+                                    "type": "string",
+                                    "description" : "Take profit pip-sized barrier value"
+                                },
+                                "display_name": {
+                                    "type": "string",
+                                    "description": "Localized display name"
+                                }
                             }
                         },
                         "stop_loss": {
-                            "order_date" : {
-                                "type": "integer",
-                                "description": "stop loss order epoch"
-                            },
-                            "order_amount" : {
-                                "type": "number",
-                                "description": "stop loss amount"
-                            },
-                            "value" : {
-                                "type": "string",
-                                "description" : "stop loss pip-sized barrier value"
-                            },
-                            "display_name": {
-                                "type": "string",
-                                "description": "localized display name"
+                            "type": "object",
+                            "description": "The target spot price where the contract will be closed with profit.",
+                            "properties": {
+                                "order_date" : {
+                                    "type": "integer",
+                                    "description": "Stop loss order epoch"
+                                },
+                                "order_amount" : {
+                                    "type": "number",
+                                    "description": "Stop loss amount"
+                                },
+                                "value" : {
+                                    "type": "string",
+                                    "description" : "Stop loss pip-sized barrier value"
+                                },
+                                "display_name": {
+                                    "type": "string",
+                                    "description": "Localized display name"
+                                }
                             }
                         }
                     }
