@@ -26,10 +26,10 @@ subtest 'relative_shortcode' => sub {
     is($create_relative_shortcode->($params), 'CALL_R_10_0_300_S0P_0', 'relative duration');
 
     $params->{date_start} = Date::Utility->new('2019-09-10 10:00:00')->epoch;
-    is($create_relative_shortcode->($params), 'CALL_R_10_0F_300_S0P_0', 'forward starting');
+    is($create_relative_shortcode->($params), 'CALL_R_10_7200F_300_S0P_0', 'forward starting');
 
     $params->{date_expiry} = Date::Utility->new('2019-09-10 11:00:00')->epoch;
-    is($create_relative_shortcode->($params), 'CALL_R_10_0F_3600F_S0P_0', 'forward starting, date expiry');
+    is($create_relative_shortcode->($params), 'CALL_R_10_7200F_3600F_S0P_0', 'forward starting, date expiry');
 
     delete $params->{date_start};
     is($create_relative_shortcode->($params), 'CALL_R_10_0_10800F_S0P_0', 'date expiry');
