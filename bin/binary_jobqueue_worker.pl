@@ -17,6 +17,8 @@ use Time::Moment;
 use Text::Trim;
 use Try::Tiny;
 use Time::HiRes qw(alarm);
+use Path::Tiny;
+use Future::Utils qw(try_repeat);
 
 use Getopt::Long;
 use Log::Any qw($log);
@@ -104,7 +106,13 @@ With this value-less arg, coordinator process is skipped, createing only a singl
 
 use constant RESTART_COOLDOWN => 1;
 
+# To guarantee that all workers are terminated when service is stopped,
+# it should be kept bellow supervisord's stopwaitsecs (10 seconds, by default)
+use constant SHUTDOWN_TIMEOUT => 9;
+
 my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
+my $env = path('/etc/rmg/environment')->slurp_utf8;
+chomp($env);
 
 GetOptions(
     'testing|T'        => \my $TESTING,
@@ -113,7 +121,7 @@ GetOptions(
     'socket|S=s'       => \(my $SOCKETPATH = "/var/run/bom-rpc/binary_jobqueue_worker.sock"),
     'redis|R=s'        => \(my $REDIS = $redis_config->{uri}),
     'log|l=s'          => \(my $log_level = "info"),
-    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // ''),
+    'queue-prefix|q=s' => \(my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // $env),
     'pid-file=s'       => \(my $PID_FILE),                                                      #for BOM::Test::Script compatilibity
 ) or exit 1;
 
@@ -208,8 +216,18 @@ sub run_coordinator {
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
         $log->info("Terminating workers...");
-        Future->needs_all(map { $_->shutdown('TERM', timeout => 15) } values %workers)->get;
+        Future->needs_all(
+            map {
+                $_->shutdown(
+                    'TERM',
+                    timeout => SHUTDOWN_TIMEOUT,
+                    on_kill => sub { $log->error('Worker terminated forcefully by SIGKILL') },
+                    )
+            } values %workers
+        )->get;
 
+        $log->info('Workers terminated.');
+        unlink $PID_FILE if $PID_FILE;
         unlink $SOCKETPATH;
         exit 0;
     };
@@ -241,9 +259,9 @@ sub handle_ctrl_command_DEC_WORKERS {
     }
     while (keys %workers > $WORKERS) {
         # Arbitrarily pick a victim
-        warn 'DELETING WORKERS';
         my $worker_to_die = delete $workers{(keys %workers)[0]};
-        $worker_to_die->shutdown('TERM', timeout => 15)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })->retain;
+        $worker_to_die->shutdown('TERM', timeout => SHUTDOWN_TIMEOUT)->on_done(sub { $conn->write("WORKERS " . scalar(keys %workers) . "\n") })
+            ->retain;
     }
 }
 
@@ -338,9 +356,8 @@ sub process_job {
                     result  => $result
                 })) unless $job->is_ready;
     } else {
-        $log->errorf("Unknown rpc method: %s", $name);
+        $log->errorf("Unknown rpc method called: %s", $name);
         stats_inc("rpc_queue.worker.jobs.failed", $tags);
-        # Transport mechanism itself succeeded, so ->done is fine here
         $job->done(
             encode_json_utf8({
                     success => 0,
@@ -384,13 +401,36 @@ sub run_worker_process {
             $queue_prefix ? (prefix => $queue_prefix) : (),
         ));
 
-    my $stopping;
     $loop->attach_signal(
         TERM => sub {
-            return if $stopping++;
-            unlink $PID_FILE if ($PID_FILE);
-            $worker->stop->on_done(sub { exit 0; });
-        });
+            $log->info("Stopping RPC queue worker process");
+
+            (
+                try_repeat {
+                    my $stopping_future = $worker->stop;
+                    return $stopping_future if $stopping_future->is_done;
+
+                    $log->debug('Worker failed to stop. Retying in 1 second');
+                    return $loop->timeout_future(after => 1);
+                }
+                foreach => [1 .. SHUTDOWN_TIMEOUT],
+                until   => sub {
+                    shift->is_done;
+                }
+                )->on_fail(
+                sub {
+                    $log->errorf('Failed to stop worker gracefully: %s', shift);
+                })->block_until_ready;
+
+            if ($FOREGROUND) {
+                unlink $PID_FILE if $PID_FILE;
+                unlink $SOCKETPATH;
+            }
+
+            $log->info('RPC queue worker process stopped');
+            exit 0;
+        },
+    );
     $SIG{INT} = 'IGNORE';
 
     my %services = map {
@@ -409,15 +449,15 @@ sub run_worker_process {
     $worker->jobs->each(
         sub {
             my $job     = $_;
-            my $name    = $job->data('name');
+            my $name    = $job->data('name') // 'missing';
             my ($queue) = $worker->pending_queues;
-            my $tags    = {tags => ["rpc:$name", 'queue:' . $queue]};
-
-            my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category});
-
-            $log->tracef('Timeout for %s is %d', $name, $job_timeout);
+            my $tags    = {tags => ["rpc:$name", "queue:$queue"]};
 
             try {
+                die 'RPC method name is mssing' if $name eq 'missing';
+                my $job_timeout = BOM::RPC::JobTimeout::get_timeout(category => $services{$name}{category}) // QUEUE_WORKER_TIMEOUT;
+                $log->tracef('Timeout for %s is %d', $name, $job_timeout);
+
                 local $SIG{ALRM} = sub {
                     stats_inc("rpc_queue.worker.jobs.timeout", $tags);
                     $log->errorf('rpc_queue: Timeout error - Not able to get response for %s job, job timeout is configured at %s seconds',
@@ -441,6 +481,15 @@ sub run_worker_process {
             }
             catch {
                 $log->errorf('An error occurred while processing job for %s, ERROR: %s', $name, $@);
+                stats_inc("rpc_queue.worker.jobs.failed", $tags);
+                $job->done(
+                    encode_json_utf8({
+                            success => 0,
+                            result  => {
+                                error => {
+                                    code              => 'InternalServerError',
+                                    message_to_client => 'Sorry, an error occurred while processing your request.',
+                                }}}));
             }
             finally {
                 alarm 0;
