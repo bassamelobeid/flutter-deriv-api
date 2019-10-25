@@ -13,12 +13,15 @@ use BOM::Test::RPC::Client;
 use BOM::User;
 use BOM::User::Client;
 use BOM::RPC::v3::Accounts;
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use Email::Stuffer::TestLinks;
 use BOM::Platform::Copier;
 use BOM::Database::DataMapper::Copier;
+use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
+use BOM::Database::Model::AccessToken;
 
 # cleanup
+cleanup_redis_tokens();
 BOM::Database::Model::AccessToken->new->dbic->dbh->do("
     DELETE FROM $_
 ") foreach ('auth.access_token');
@@ -95,7 +98,7 @@ is $test_token->{display_name}, 'Test';
 ok !$test_token->{last_used}, 'last_used is null';
 
 ## check scopes
-my @scopes = BOM::Database::Model::AccessToken->new->get_scopes_by_access_token($test_token->{token});
+my @scopes = BOM::Platform::Token::API->new->get_scopes_by_access_token($test_token->{token});
 is_deeply([sort @scopes], ['read', 'trade'], 'right scopes');
 
 ## check for valid ip

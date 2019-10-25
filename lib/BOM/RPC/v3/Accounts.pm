@@ -48,7 +48,7 @@ use BOM::User::Password;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
@@ -899,6 +899,8 @@ sub _get_authentication {
                     $authentication_object->{identity}->{status} = $report_document_sub_result
                         if $report_document_sub_result =~ /^rejected|suspected/;
                     $authentication_object->{identity}->{status} = 'rejected' if $report_document_sub_result eq 'caution';
+                    $authentication_object->{identity}->{status} = 'pending'
+                        if (($report_document_sub_result =~ /^clear|consider/) and not $client->status->age_verification);
                 }
             }
         }
@@ -1965,7 +1967,7 @@ rpc api_token => sub {
 
     my ($client, $args, $client_ip) = @{$params}{qw/client args client_ip/};
 
-    my $m = BOM::Database::Model::AccessToken->new;
+    my $m = BOM::Platform::Token::API->new;
     my $rtn;
     if (my $token = $args->{delete_token}) {
         # When a token is deleted from authdb, it need to be deleted from clientdb betonmarkets.copiers
@@ -1979,7 +1981,7 @@ rpc api_token => sub {
                 token     => $token
             });
 
-        BOM::Platform::Token::API->new->remove_by_token($token, $client->loginid);
+        $m->remove_by_token($token, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
@@ -1995,30 +1997,15 @@ rpc api_token => sub {
         }
     }
     if (my $display_name = $args->{new_token}) {
-        my $display_name_err;
-        if ($display_name =~ /^[\w\s\-]{2,32}$/) {
-            if ($m->is_name_taken($client->loginid, $display_name)) {
-                $display_name_err = localize('The name is taken.');
-            }
-        } else {
-            $display_name_err = localize('alphanumeric with space and dash, 2-32 characters');
-        }
-        unless ($display_name_err) {
-            my $token_cnt = $m->get_token_count_by_loginid($client->loginid);
-            $display_name_err = localize('Max 30 tokens are allowed.') if $token_cnt >= 30;
-        }
-        if ($display_name_err) {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'APITokenError',
-                message_to_client => $display_name_err,
-            });
-        }
         ## for old API calls (we'll make it required on v4)
         my $scopes = $args->{new_token_scopes} || ['read', 'trade', 'payments', 'admin'];
-        if ($args->{valid_for_current_ip_only}) {
-            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes, $client_ip);
-        } else {
-            BOM::Platform::Token::API->new->create_token($client->loginid, $display_name, $scopes);
+        my $token = $m->create_token($client->loginid, $display_name, $scopes, ($args->{valid_for_current_ip_only} ? $client_ip : undef));
+
+        if (ref $token eq 'HASH' and my $error = $token->{error}) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'APITokenError',
+                message_to_client => $error,
+            });
         }
         $rtn->{new_token} = 1;
     }
@@ -2270,11 +2257,6 @@ rpc set_financial_assessment => sub {
     ) unless ($client->landing_company->short eq "maltainvest" ? $is_TE_complete && $is_FI_complete : $is_FI_complete);
 
     update_financial_assessment($client->user, $params->{args});
-
-    # Clear unwelcome status for clients without financial assessment and have breached
-    # social responsibility thresholds
-    $client->status->clear_unwelcome if ($client->landing_company->social_responsibility_check_required
-        && $client->status->unwelcome);
 
     # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
     my $response = build_financial_assessment($params->{args})->{scores};

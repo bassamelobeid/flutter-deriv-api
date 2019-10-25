@@ -13,11 +13,13 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use Test::BOM::RPC::Contract;
 use BOM::Transaction;
 use Email::Stuffer::TestLinks;
+use BOM::Platform::Token::API;
+use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 
 {
     use BOM::Database::Model::AccessToken;
-
     # cleanup
+    cleanup_redis_tokens();
     BOM::Database::Model::AccessToken->new->dbic->dbh->do('DELETE FROM auth.access_token');
 }
 
