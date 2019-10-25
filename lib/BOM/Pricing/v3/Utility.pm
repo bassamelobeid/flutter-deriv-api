@@ -63,11 +63,11 @@ Returns the relative shortcode.
 sub create_relative_shortcode {
     my ($params, $current_spot) = @_;
 
-    return BOM::Product::Contract::get_relative_shortcode(undef, $params->{short_code})
+    return BOM::Product::Contract->get_relative_shortcode($params->{short_code})
         if (exists $params->{short_code});
 
     $params->{date_start} //= 0;
-    my $date_start = $params->{date_start} ? '0F' : '0';
+    my $date_start = $params->{date_start} ? int($params->{date_start} - time) . 'F' : '0';
 
     my $date_expiry;
     if ($params->{date_expiry}) {
@@ -91,7 +91,7 @@ sub create_relative_shortcode {
     my @barriers = ($params->{barrier} // 'S0P', $params->{barrier2} // '0');
 
     if ($params->{contract_type} !~ /digit/i) {
-        @barriers = map { BOM::Product::Contract::to_relative_barrier($_, $current_spot, $params->{symbol}) } @barriers;
+        @barriers = map { BOM::Product::Contract->to_relative_barrier($_, $current_spot, $params->{symbol}) } @barriers;
     }
 
     return uc join '_', ($params->{contract_type}, $params->{symbol}, $date_start, $date_expiry, @barriers);
