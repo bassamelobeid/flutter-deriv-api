@@ -16,7 +16,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::OAuth;
 use BOM::MarketData qw(create_underlying_db);
@@ -65,7 +65,7 @@ subtest 'Initialization' => sub {
             remark   => 'free gift',
         );
 
-        my $m = BOM::Database::Model::AccessToken->new;
+        my $m = BOM::Platform::Token::API->new;
 
         $client_token = $m->create_token($client->loginid, 'test token');
 

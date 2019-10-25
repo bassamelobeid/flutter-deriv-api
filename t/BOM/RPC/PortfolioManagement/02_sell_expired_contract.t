@@ -13,7 +13,7 @@ use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::Database::Model::OAuth;
 use BOM::Database::ClientDB;
 use Email::Stuffer::TestLinks;
@@ -59,7 +59,7 @@ subtest 'Initialization' => sub {
             remark   => 'free gift',
         );
 
-        my $m = BOM::Database::Model::AccessToken->new;
+        my $m = BOM::Platform::Token::API->new;
 
         $client_token  = $m->create_token($client->loginid,  'test token');
         $vclient_token = $m->create_token($vclient->loginid, 'test token');

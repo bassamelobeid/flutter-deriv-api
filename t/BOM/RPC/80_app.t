@@ -12,7 +12,7 @@ use TestHelper qw/create_test_user/;
 use Test::MockModule;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::Test::RPC::Client;
 use Test::Mojo;
 use Email::Stuffer::TestLinks;
@@ -27,7 +27,7 @@ $dbh->do("DELETE FROM oauth.access_token");
 $dbh->do("DELETE FROM oauth.user_scope_confirm");
 $dbh->do("DELETE FROM oauth.official_apps");
 $dbh->do("DELETE FROM oauth.apps WHERE id <> 1");
-BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
+BOM::Platform::Token::API->new->remove_by_loginid($test_loginid);
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
