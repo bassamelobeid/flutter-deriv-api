@@ -7,7 +7,7 @@ use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 
 use BOM::User;
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use await;
 
@@ -29,7 +29,7 @@ my $user    = BOM::User->create(
 );
 $user->add_client($client);
 
-my $token = BOM::Database::Model::AccessToken->new->create_token($loginid, 'Test', ['read']);
+my $token = BOM::Platform::Token::API->new->create_token($loginid, 'Test', ['read']);
 
 my $authorize = $t->await::authorize({authorize => $token});
 is $authorize->{authorize}->{email},   $email;

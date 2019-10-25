@@ -8,7 +8,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use Test::MockModule;
 use Test::MockObject;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::User;
 
 use await;
@@ -80,7 +80,7 @@ my $user    = BOM::User->create(
 );
 $user->add_client($client);
 
-my $token = BOM::Database::Model::AccessToken->new->create_token($loginid, 'Test', ['trade']);
+my $token = BOM::Platform::Token::API->new->create_token($loginid, 'Test', ['trade']);
 $t->await::authorize({authorize => $token});
 @$timing = ();
 $res     = $t->await::buy({

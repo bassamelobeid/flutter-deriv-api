@@ -73,7 +73,8 @@ test_sendrecv 'get_financial_assessment/test_send.json', 'get_financial_assessme
 
 # TESTS TO RETURN ERROR (GENERAL)
 test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json', 'test';
-test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_error.json',  'test';
+# Create api token with the same display name
+test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json',  'test';
 test_sendrecv_params 'app_delete/test_send.json', 'app_delete/test_receive.json',       $suite->get_stashed('app_register/app_register/app_id'), '1';
 test_sendrecv_params 'app_update/test_send.json', 'app_update/test_receive_error.json', $suite->get_stashed('app_register/app_register/app_id');
 test_sendrecv_params 'app_get/test_send.json',    'app_get/test_receive_error.json',    $suite->get_stashed('app_register/app_register/app_id');

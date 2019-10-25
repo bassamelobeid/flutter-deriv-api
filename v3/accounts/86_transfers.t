@@ -8,7 +8,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::Config::RedisReplicated;
 use BOM::User::Password;
 use BOM::User;
@@ -34,7 +34,7 @@ my $user_client = BOM::User->create(
     email_verified => 1,
 );
 $user_client->add_client($client_usd);
-my $client_token = BOM::Database::Model::AccessToken->new->create_token($client_usd->loginid, 'test token', ['read', 'payments']);
+my $client_token = BOM::Platform::Token::API->new->create_token($client_usd->loginid, 'test token', ['read', 'payments']);
 
 #Create payment agent
 $email = 'dummy' . rand(999) . '@binary.com';
@@ -68,7 +68,7 @@ my $user_agent = BOM::User->create(
 );
 $user_agent->add_client($agent_usd);
 
-my $agent_token = BOM::Database::Model::AccessToken->new->create_token($agent_usd->loginid, 'test token', ['read', 'payments']);
+my $agent_token = BOM::Platform::Token::API->new->create_token($agent_usd->loginid, 'test token', ['read', 'payments']);
 
 $client_usd->payment_free_gift(
     currency => 'USD',
@@ -168,7 +168,7 @@ subtest 'transfer between accounts' => sub {
     });
     $client_btc->set_default_account('BTC');
     $user_client->add_client($client_btc);
-    my $btc_token = BOM::Database::Model::AccessToken->new->create_token($client_btc->loginid, 'test token', ['read', 'payment']);
+    my $btc_token = BOM::Platform::Token::API->new->create_token($client_btc->loginid, 'test token', ['read', 'payment']);
 
     $t->await::authorize({authorize => $client_token});
     my $client_balance = $client_usd->default_account->balance;
