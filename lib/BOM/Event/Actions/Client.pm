@@ -491,11 +491,12 @@ async sub client_verification {
                     my ($first_dob, @other_dob) = keys %dob;
                     # All documents should have the same date of birth
                     if (@other_dob) {
-                        await _send_report_automated_age_verification_failed(
-                            $client,
-                            "as birth dates are not the same in the documents.",
-                            ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX . $client->binary_user_id
-                        );
+                        await _send_report_automated_age_verification_failed({
+                            client         => $client,
+                            short_reason   => 'dob_not_same',
+                            failure_reason => "as birth dates are not the same in the documents.",
+                            redis_key      => ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
+                        });
                     } else {
                         # Override date_of_birth if there is mismatch between Onfido report and client submited data
                         if ($client->date_of_birth ne $first_dob) {
@@ -527,18 +528,46 @@ async sub client_verification {
                                 message => 'Onfido - age verified'
                             );
                         } else {
-                            await _send_report_automated_age_verification_failed(
-                                $client,
-                                "because Onfido reported the date of birth as $first_dob which is below age 18.",
-                                ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id
-                            );
+
+                            my $siblings = $client->real_account_siblings_information(include_disabled => 0);
+
+                            # check if there is balance
+                            my $have_balance = (any { $siblings->{$_}->{balance} > 0 } keys %{$siblings}) ? 1 : 0;
+
+                            my $email_details = {
+                                client         => $client,
+                                short_reason   => 'under_18',
+                                failure_reason => "because Onfido reported the date of birth as $first_dob which is below age 18.",
+                                redis_key      => ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
+                                is_disabled    => 0,
+                                account_info   => $siblings,
+                            };
+
+                            unless ($have_balance) {
+                                # if all of the account doesn't have any balance, disable them
+                                for my $each_siblings (keys %{$siblings}) {
+                                    my $current_client = BOM::User::Client->new({loginid => $each_siblings});
+                                    $current_client->status->set('disabled', 'system', 'Onfido - client is underage');
+                                }
+
+                                # need to send email to client
+                                _send_email_underage_disable_account($client, $BRANDS->emails('support'));
+
+                                $email_details->{is_disabled} = 1;
+                            }
+
+                            await _send_report_automated_age_verification_failed($email_details);
                         }
                     }
                 } else {
                     my $result = @reports ? $reports[0]->result : 'blank';
                     my $failure_reason = "as onfido result was marked as $result.";
-                    await _send_report_automated_age_verification_failed($client, $failure_reason,
-                        ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $client->binary_user_id);
+                    await _send_report_automated_age_verification_failed({
+                        client         => $client,
+                        short_reason   => 'check_not_pass',
+                        failure_reason => $failure_reason,
+                        redis_key      => ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
+                    });
                 }
                 # Update expiration_date and document_id of each document in DB
                 # Using corresponding values in Onfido response
@@ -1324,6 +1353,25 @@ sub _send_email_account_closure_client {
     return undef;
 }
 
+sub _send_email_underage_disable_account {
+    my ($client, $support_email) = @_;
+
+    my $website_name = ucfirst BOM::Config::domain()->{default_domain};
+    my $email_subject = localize('We closed your [_1] account', $website_name);
+
+    send_email({
+        to                    => $client->email,
+        subject               => $email_subject,
+        template_name         => 'close_account_underage',
+        template_args         => {website_name => $website_name},
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        use_event             => 1,
+    });
+
+    return undef;
+}
+
 =head2 _send_report_automated_age_verification_failed
 
 Send email to CS because of which we were not able to mark client as age_verified
@@ -1331,23 +1379,45 @@ Send email to CS because of which we were not able to mark client as age_verifie
 =cut
 
 async sub _send_report_automated_age_verification_failed {
-    my ($client, $failure_reason, $redis_key) = @_;
+    my $args = shift;
+
+    my ($client, $short_reason, $failure_reason, $redis_key, $is_disabled, $account_info) =
+        @{$args}{qw/client short_reason failure_reason redis_key is_disabled account_info/};
 
     # Prevent sending multiple emails for the same user
     my $redis_events_read = _redis_events_read();
     await $redis_events_read->connect;
     return undef if await $redis_events_read->exists($redis_key);
 
+    my $email_content;
+
+    if ($short_reason eq 'under_18') {
+        $email_content = "The client is detected as underage by Onfido ";
+
+        if ($is_disabled) {
+            $email_content .= "and was disabled as there is no balance. ";
+        } else {
+            $email_content .= "but not disabled as there is balance in: ";
+
+            for my $each_client (keys %{$account_info}) {
+                my $balance = $account_info->{$each_client}->{balance};
+                $email_content .= " $each_client" if ($balance > 0);
+            }
+            $email_content .= '.';
+        }
+    }
+
     my $loginid = $client->loginid;
+
+    $email_content .= "We were unable to automatically mark client ($loginid) as age verified, $failure_reason Please check and verify.";
+
     $log->debugf("Can not mark client (%s) as age verified, failure reason is %s", $loginid, $failure_reason);
 
     my $email_subject = "Automated age verification failed for $loginid";
 
-    my $from_email = $BRANDS->emails('no-reply');
-    my $to_email   = $BRANDS->emails('authentications');
-    my $email_status =
-        Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)
-        ->text_body("We were unable to automatically mark client ($loginid) as age verified, $failure_reason Please check and verify.")->send();
+    my $from_email   = $BRANDS->emails('no-reply');
+    my $to_email     = $BRANDS->emails('authentications');
+    my $email_status = Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->text_body($email_content)->send();
 
     if ($email_status) {
         my $redis_events_write = _redis_events_write();
