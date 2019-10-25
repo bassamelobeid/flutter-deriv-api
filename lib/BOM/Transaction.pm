@@ -40,6 +40,7 @@ use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Database::ClientDB;
+use BOM::Transaction::CompanyLimits;
 use BOM::Transaction::Validation;
 use BOM::Config::RedisReplicated;
 
@@ -586,7 +587,16 @@ sub buy {
 
     my $error = 1;
     my ($fmb, $txn);
+
+    my $company_limits = BOM::Transaction::CompanyLimits->new(
+        contract_data   => $bet_data->{bet_data},
+        landing_company => $client->landing_company,
+        currency        => $self->contract->currency,
+    );
+
     try {
+        $company_limits->add_buys($client);
+
         ($fmb, $txn) = $fmb_helper->buy_bet;
         $self->contract_details($fmb);
         $self->transaction_details($txn);
@@ -596,6 +606,7 @@ sub buy {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
         stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
+        $company_limits->reverse_buys($client);
         $error_status = $self->_recover($_);
     };
     return $self->stats_stop($stats_data, $error_status) if $error_status;
@@ -706,6 +717,14 @@ sub batch_buy {
                 db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
             );
 
+            my @clients = map { $_->{client} } @$list;
+            my $company_limits = BOM::Transaction::CompanyLimits->new(
+                contract_data   => $bet_data->{bet_data},
+                landing_company => $clients[0]->landing_company,
+                currency        => $self->contract->currency,
+            );
+            $company_limits->add_buys(@clients);
+
             my $success = 0;
             my $result  = $fmb_helper->batch_buy_bet;
             for my $el (@$list) {
@@ -730,6 +749,9 @@ sub batch_buy {
                     $success++;
                 }
             }
+
+            $company_limits->reverse_buys(map { $_->{client} } grep { defined $_->{error} } @$list);
+
             $stat{$broker}->{success} = $success;
             enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
         }
@@ -893,6 +915,12 @@ sub sell {
         });
     }
 
+    BOM::Transaction::CompanyLimits->new(
+        contract_data   => $fmb,
+        currency        => $self->contract->currency,
+        landing_company => $client->landing_company,
+    )->add_sells($client);
+
     return;
 }
 
@@ -958,6 +986,15 @@ sub sell_by_shortcode {
                     $r->{tnx}       = $res_row->{txn};
                     $r->{fmb}       = $res_row->{fmb};
                     $r->{buy_tr_id} = $res_row->{buy_tr_id};
+
+                    my $client = $r->{client};
+
+                    # We cannot batch add sells; buy price may vary even with the same short code
+                    BOM::Transaction::CompanyLimits->new(
+                        contract_data   => $res_row->{fmb},
+                        currency        => $self->contract->currency,
+                        landing_company => $client->landing_company,
+                    )->add_sells($client);
 
                     $success++;
                 }
@@ -1587,6 +1624,12 @@ sub sell_expired_contracts {
         if ($sr_check_required) {
             $total_losses += $fmb->{sell_price} + 0 ? 0 : $fmb->{buy_price};
         }
+
+        BOM::Transaction::CompanyLimits->new(
+            contract_data   => $fmb,
+            currency        => $currency,
+            landing_company => $client->landing_company,
+        )->add_sells($client);
     }
 
     $client->increment_social_responsibility_values({
