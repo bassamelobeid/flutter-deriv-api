@@ -2253,11 +2253,6 @@ rpc set_financial_assessment => sub {
 
     update_financial_assessment($client->user, $params->{args});
 
-    # Clear unwelcome status for clients without financial assessment and have breached
-    # social responsibility thresholds
-    $client->status->clear_unwelcome if ($client->landing_company->social_responsibility_check_required
-        && $client->status->unwelcome);
-
     # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
     my $response = build_financial_assessment($params->{args})->{scores};
 

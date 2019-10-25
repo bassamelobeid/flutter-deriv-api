@@ -947,8 +947,7 @@ subtest 'withdrawal' => sub {
 
     $params->{args}->{to_binary} = $test_client->loginid;
     $params->{token} = $token_vr;
-    $c->call_ok($method, $params)->has_error('fail withdrawals with vr_token')
-        ->error_code_is('PermissionDenied', 'error code is PermissionDenied');
+    $c->call_ok($method, $params)->has_error('fail withdrawals with vr_token')->error_code_is('PermissionDenied', 'error code is PermissionDenied');
     $params->{token} = $token;
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
