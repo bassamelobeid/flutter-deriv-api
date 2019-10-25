@@ -27,7 +27,7 @@ use BOM::User;
 use BOM::MT5::User::Async;
 
 # TODO(leonerd): should have been present
-use BOM::Database::Model::AccessToken;
+use BOM::Platform::Token::API;
 use BOM::RPC::v3::MT5::Account;
 # END TODO
 
@@ -75,7 +75,7 @@ my $user = BOM::User->create(
 );
 $user->add_client($test_client);
 
-my $m = BOM::Database::Model::AccessToken->new;
+my $m = BOM::Platform::Token::API->new;
 my $token = $m->create_token($test_client->loginid, 'test token');
 
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');

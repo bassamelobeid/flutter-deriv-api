@@ -131,7 +131,7 @@ my %basic_details = (
 $test_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
 $test_client->save;
 
-my $m        = BOM::Database::Model::AccessToken->new;
+my $m        = BOM::Platform::Token::API->new;
 my $token    = $m->create_token($test_client->loginid, 'test token');
 my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
@@ -947,8 +947,7 @@ subtest 'withdrawal' => sub {
 
     $params->{args}->{to_binary} = $test_client->loginid;
     $params->{token} = $token_vr;
-    $c->call_ok($method, $params)->has_error('fail withdrawals with vr_token')
-        ->error_code_is('PermissionDenied', 'error code is PermissionDenied');
+    $c->call_ok($method, $params)->has_error('fail withdrawals with vr_token')->error_code_is('PermissionDenied', 'error code is PermissionDenied');
     $params->{token} = $token;
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
