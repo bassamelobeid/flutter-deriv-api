@@ -1,64 +1,62 @@
+#!/usr/bin/perl
+
 use strict;
 use warnings;
-use Test::More;
-use BOM::Database::Model::AccessToken;
 
-# mockup for BOM::Test::Data::Utility::UnitTestRedis
-# since bom-postgres do not rely on bom-market
-BEGIN {
-    $INC{'BOM/Market/Underlying.pm'} = 1;
-    $INC{'BOM/Market/AggTicks.pm'}   = 1;
-}
+use Test::More;
+use Test::FailWarnings;
+use Test::Exception;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init :disable_redis_cleanup);
-use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init :disable_cleanup);
 
-my $m = BOM::Database::Model::AccessToken->new;
-$m->dbic->dbh->do("DELETE FROM auth.access_token");
-my $test_loginid = 'CR10002';
+use BOM::Database::Model::AccessToken;
+use Date::Utility;
 
-ok not $m->is_name_taken($test_loginid, 'Test Token');
-my $token = $m->create_token($test_loginid, 'Test Token', ['read', 'admin', 'payments']);
-is length($token), 15;
-ok $m->is_name_taken($test_loginid, 'Test Token'), 'name is taken after create';
-my @scopes = $m->get_scopes_by_access_token($token);
-is_deeply([sort @scopes], ['admin', 'payments', 'read'], 'token has right scope');
+my $db_model = BOM::Database::Model::AccessToken->new;
 
-my $client_loginid = $m->get_token_details($token)->{loginid};
-is $client_loginid, $test_loginid;
+subtest 'save_token' => sub {
+    my $args = {
+        token         => _token(),
+        display_name  => 'test',
+        loginid       => 'CR123',
+        scopes        => ['read'],
+        valid_for_ip  => '',
+        creation_time => Date::Utility->new->db_timestamp,
+    };
+    my $res = $db_model->save_token($args);
+    ok $res, 'successfully saved';
 
-my $tokens = $m->get_tokens_by_loginid($test_loginid);
-is scalar @$tokens, 1;
-is $tokens->[0]->{token},        $token;
-is $tokens->[0]->{display_name}, 'Test Token';
-is_deeply [sort @{$tokens->[0]->{scopes}}], ['admin', 'payments', 'read'];
-ok $tokens->[0]->{last_used} =~ /^[\d\-]{10}\s+[\d\:]{8}$/;    # update on get_token_details
-my $token_cnt = $m->get_token_count_by_loginid($test_loginid);
-is $token_cnt, 1;
+    is $res->{token}, $args->{token}, 'token matched';
+    $args->{token} = _token();
+    $res = $db_model->save_token($args);
+    ok $res, 'saved when display_name is the same';
+    is $res->{token}, $args->{token}, 'token matched';
 
-my $ok = $m->remove_by_token($token, $test_loginid);
-ok $ok;
+    $args->{loginid} = 'CR1234';
+    $args->{token}   = _token();
+    $res             = $db_model->save_token($args);
+    ok $res, 'saved successfully';
+    ok $db_model->_update_token_last_used($res->{token}, Date::Utility->new->db_timestamp), 'last_used timestamp updated';
+};
 
-$client_loginid = $m->get_token_details($token)->{loginid};
-is $client_loginid, undef;                                     # it should be undef since removed
+my $tokens;
+subtest 'get_all_tokens_by_loginid' => sub {
+    $tokens = $db_model->get_all_tokens_by_loginid('CR123');
+    is scalar(@$tokens), 2, 'two tokens for CR123';
+    $tokens = $db_model->get_all_tokens_by_loginid('CR1234');
+    is scalar(@$tokens), 1, 'one token for CR1234';
+};
 
-$m->create_token($test_loginid, 'Test Token');
-$tokens = $m->get_tokens_by_loginid($test_loginid);
-is scalar @$tokens, 1;
-ok $m->remove_by_loginid($test_loginid), 'remove ok';
-$tokens = $m->get_tokens_by_loginid($test_loginid);
-is scalar @$tokens, 0, 'all removed';
-
-### test scope
-$token = $m->create_token($test_loginid, 'Test Token X', ['read', 'admin']);
-@scopes = $m->get_scopes_by_access_token($token);
-is_deeply([sort @scopes], ['admin', 'read'], 'scope is correct');
-
-### test ip
-ok $m->remove_by_loginid($test_loginid), 'remove ok';
-$token = $m->create_token($test_loginid, 'Test Token X', ['read', 'admin'], '127.0.0.1');
-$tokens = $m->get_tokens_by_loginid($test_loginid);
-is $tokens->[0]->{valid_for_ip}, '127.0.0.1';
+subtest 'remove_by_token' => sub {
+    ok $db_model->remove_by_token($tokens->[0]->{token}, Date::Utility->new->db_timestamp), 'removed token';
+    $tokens = $db_model->get_all_tokens_by_loginid('CR1234');
+    is scalar(@$tokens), 0, 'no token for CR1234';
+};
 
 done_testing();
+
+sub _token {
+    my @a = ('A' .. 'Z');
+    return join '', map { $a[int(rand($#a))] } (1 .. 5);
+}

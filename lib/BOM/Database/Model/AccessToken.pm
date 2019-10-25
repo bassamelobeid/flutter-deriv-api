@@ -1,7 +1,9 @@
 package BOM::Database::Model::AccessToken;
 
 use Moose;
+
 use BOM::Database::AuthDB;
+use Date::Utility;
 
 has 'dbic' => (
     is         => 'ro',
@@ -12,114 +14,81 @@ sub _build_dbic {
     return BOM::Database::AuthDB::rose_db()->dbic;
 }
 
-sub __parse_array {
+sub save_token {
+    my ($self, $args) = @_;
+
+    for (grep { not $args->{$_} } qw(token display_name loginid scopes)) {
+        die "$_ is required in create_token";
+    }
+
+    $args->{valid_for_ip}  //= '';
+    $args->{creation_time} //= Date::Utility->new->db_timestamp;
+
+    my $dbic = $self->dbic;
+    my $res  = $dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare(
+                "INSERT INTO auth.access_token(token, display_name, client_loginid, scopes, valid_for_ip, creation_time)
+                VALUES (?,?,?,?,?,?)
+                RETURNING *"
+            );
+            $sth->execute(@{$args}{'token', 'display_name', 'loginid', 'scopes', 'valid_for_ip', 'creation_time'});
+            $sth->fetchrow_hashref();
+        });
+
+    return $res;
+}
+
+sub remove_by_token {
+    my ($self, $token, $last_used) = @_;
+
+    # we might be deleting token that was never used
+    $self->_update_token_last_used($token, $last_used) if $last_used;
+
+    return $self->dbic->run(
+        fixup => sub {
+            $_->do("DELETE FROM auth.access_token WHERE token = ?", undef, $token);
+        });
+}
+
+sub _update_token_last_used {
+    my ($self, $token, $last_used) = @_;
+
+    unless ($token and $last_used) {
+        die 'token and last_used are required to update_token_last_used';
+    }
+
+    return $self->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare(q{UPDATE auth.access_token SET last_used=$1 WHERE token=$2 AND last_used IS DISTINCT FROM $1});
+            $sth->bind_param(1, $last_used);
+            $sth->bind_param(2, $token);
+            $sth->execute();
+        });
+}
+
+sub get_all_tokens {
+    my $self = shift;
+
+    my $res = $self->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare("SELECT * FROM auth.access_token");
+            $sth->execute();
+            $sth->fetchall_hashref('token');
+        });
+
+    foreach my $key (keys %$res) {
+        $res->{$key}{scopes} = _parse_array($res->{$key}{scopes});
+    }
+
+    return $res;
+}
+
+sub _parse_array {
     my ($array_string) = @_;
     return $array_string if ref($array_string) eq 'ARRAY';
     return [] unless $array_string;
     return BOM::Database::AuthDB::rose_db()->parse_array($array_string);
-}
-
-my @token_scopes = ('read', 'trade', 'payments', 'admin');
-my %available_scopes = map { $_ => 1 } @token_scopes;
-
-sub __filter_valid_scopes {
-    my $s = shift;
-    return [grep { $available_scopes{$_} } @$s];
-}
-
-sub create_token {
-    my ($self, $loginid, $display_name, $scopes, $ip) = @_;
-
-    $scopes = __filter_valid_scopes($scopes);
-
-    my $dbic = $self->dbic;
-    my ($token) =
-        $dbic->run(ping => sub { $_->selectrow_array("SELECT auth.create_token(15, ?, ?, ?, ?)", undef, $loginid, $display_name, $scopes, $ip) });
-
-    return $token;
-}
-
-sub get_token_details {
-    my ($self, $token) = @_;
-
-    my $details = $self->dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref(<<'SQL', undef, $token) });
-SELECT loginid, creation_time, scopes, display_name, last_used, valid_for_ip
-  FROM auth.get_token_details($1)
-SQL
-    $details->{scopes} = __parse_array($details->{scopes});
-
-    return $details;
-}
-
-sub get_scopes_by_access_token {
-    my ($self, $access_token) = @_;
-
-    my $scopes = $self->dbic->run(
-        fixup => sub {
-            my $sth = $_->prepare("
-        SELECT scopes FROM auth.access_token
-        WHERE token = ?
-    ");
-            $sth->execute($access_token);
-            $sth->fetchrow_array;
-        });
-    $scopes = __parse_array($scopes);
-    return @$scopes;
-}
-
-sub get_tokens_by_loginid {
-    my ($self, $loginid) = @_;
-
-    my $tokens = $self->dbic->run(
-        fixup => sub {
-            my $sth = $_->prepare("
-        SELECT
-            token, display_name, scopes, last_used::timestamp(0), valid_for_ip
-        FROM auth.access_token WHERE client_loginid = ? ORDER BY display_name
-    ");
-            $sth->execute($loginid);
-            return $sth->fetchall_arrayref({});
-        });
-    $_->{scopes} = __parse_array($_->{scopes}) for @$tokens;
-    return wantarray ? @$tokens : $tokens;
-}
-
-sub get_token_count_by_loginid {
-    my ($self, $loginid) = @_;
-
-    return $self->dbic->run(
-        fixup => sub {
-            $_->selectrow_array("SELECT COUNT(*) FROM auth.access_token WHERE client_loginid = ?", undef, $loginid);
-        });
-}
-
-sub is_name_taken {
-    my ($self, $loginid, $display_name) = @_;
-
-    return $self->dbic->run(
-        fixup => sub {
-            $_->selectrow_array("SELECT 1 FROM auth.access_token WHERE client_loginid = ? AND display_name = ?", undef, $loginid, $display_name);
-        });
-}
-
-sub remove_by_loginid {
-    my ($self, $client_loginid) = @_;
-
-    return $self->dbic->run(
-        ping => sub {
-            $_->do("DELETE FROM auth.access_token WHERE client_loginid = ?", undef, $client_loginid);
-        });
-}
-
-sub remove_by_token {
-    my ($self, $token, $loginid) = @_;
-
-    return $self->dbic->run(
-        ping => sub {
-            $_->do("DELETE FROM auth.access_token WHERE token = ? and client_loginid = ?", undef, $token, $loginid);
-        });
 }
 
 sub get_all_tokens_by_loginid {
@@ -157,33 +126,6 @@ sub token_deletion_history {
     map { $_->{scopes} =~ s/[\[\]\"]//g; $_->{info} = 'Name: ' . $_->{name} . '; Scopes: ' . $_->{scopes} } @$tokens;
 
     return $tokens;
-}
-
-### Methods to support api token migration phase
-
-sub save_token {
-    my ($self, $args) = @_;
-
-    for (grep { not $args->{$_} } qw(token display_name loginid scopes)) {
-        die "$_ is required in create_token";
-    }
-
-    $args->{valid_for_ip}  //= '';
-    $args->{creation_time} //= Date::Utility->new->db_timestamp;
-
-    my $dbic = $self->dbic;
-    my $res  = $dbic->run(
-        fixup => sub {
-            my $sth = $_->prepare("
-                INSERT INTO auth.access_token(token, display_name, client_loginid, scopes, valid_for_ip, creation_time)
-                VALUES (?,?,?,?,?,?)
-                RETURNING *
-            ");
-            $sth->execute(@{$args}{'token', 'display_name', 'loginid', 'scopes', 'valid_for_ip', 'creation_time'});
-            $sth->fetchrow_hashref();
-        });
-
-    return $res->{token};
 }
 
 no Moose;
