@@ -78,13 +78,14 @@ BEGIN {
 
     if (on_qa()) {
         # Redis rand and replicated servers config
-        $ENV{BOM_TEST_REDIS_REPLICATED}  = $config_dir . '/redis-replicated.yml';
-        $ENV{BOM_TEST_REDIS_RAND}        = $config_dir . '/redis.yml';
-        $ENV{BOM_TEST_REDIS_FEED}        = $config_dir . '/redis-feed.yml';
-        $ENV{BOM_TEST_REDIS_EVENTS}      = $config_dir . '/redis-replicated.yml';
-        $ENV{BOM_TEST_REDIS_QUEUE}       = $config_dir . '/redis-replicated.yml';
-        $ENV{BOM_TEST_REDIS_TRANSACTION} = $config_dir . '/redis-replicated.yml';
-        $ENV{BOM_TEST_REDIS_AUTH}        = $config_dir . '/redis.yml';
+        $ENV{BOM_TEST_REDIS_REPLICATED}         = $config_dir . '/redis-replicated.yml';
+        $ENV{BOM_TEST_REDIS_RAND}               = $config_dir . '/redis.yml';
+        $ENV{BOM_TEST_REDIS_FEED}               = $config_dir . '/redis-feed.yml';
+        $ENV{BOM_TEST_REDIS_EVENTS}             = $config_dir . '/redis-replicated.yml';
+        $ENV{BOM_TEST_REDIS_QUEUE}              = $config_dir . '/redis-replicated.yml';
+        $ENV{BOM_TEST_REDIS_TRANSACTION}        = $config_dir . '/redis-replicated.yml';
+        $ENV{BOM_TEST_REDIS_TRANSACTION_LIMITS} = $config_dir . '/redis-transaction-limits.yml';
+        $ENV{BOM_TEST_REDIS_AUTH}               = $config_dir . '/redis.yml';
 
         # Cache redis server
         $ENV{REDIS_CACHE_SERVER} = $ENV{BOM_CACHE_SERVER} = '127.0.1.3:6385';
