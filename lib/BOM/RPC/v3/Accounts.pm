@@ -899,6 +899,8 @@ sub _get_authentication {
                     $authentication_object->{identity}->{status} = $report_document_sub_result
                         if $report_document_sub_result =~ /^rejected|suspected/;
                     $authentication_object->{identity}->{status} = 'rejected' if $report_document_sub_result eq 'caution';
+                    $authentication_object->{identity}->{status} = 'pending'
+                        if (($report_document_sub_result =~ /^clear|consider/) and not $client->status->age_verification);
                 }
             }
         }
@@ -913,6 +915,11 @@ sub _get_authentication {
         $needs_verification_hash{document} = 'document' if $client->is_verification_required(check_authentication_status => 1);
     } else {
         $poa_structure->();
+    }
+
+    # If needs action and not age verified, we require both POI and POA
+    if ($client->is_verification_required(check_authentication_status => 1) and not defined $client->status->age_verification) {
+        $needs_verification_hash{identity} = 'identity' if $authentication_object->{identity}->{status} eq 'none';
     }
 
     $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
@@ -2250,11 +2257,6 @@ rpc set_financial_assessment => sub {
     ) unless ($client->landing_company->short eq "maltainvest" ? $is_TE_complete && $is_FI_complete : $is_FI_complete);
 
     update_financial_assessment($client->user, $params->{args});
-
-    # Clear unwelcome status for clients without financial assessment and have breached
-    # social responsibility thresholds
-    $client->status->clear_unwelcome if ($client->landing_company->social_responsibility_check_required
-        && $client->status->unwelcome);
 
     # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
     my $response = build_financial_assessment($params->{args})->{scores};
