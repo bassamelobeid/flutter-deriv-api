@@ -20,6 +20,7 @@ use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
 use BOM::Database::ClientDB;
 use BOM::Config;
+use BOM::Platform::Event::Emitter;
 
 ## VERSION
 
@@ -121,7 +122,9 @@ sub validate_payment {
                 $absamt   = convert_currency($absamt,   $currency, $lc_currency) if $absamt > 0;
             }
 
-            my $wd_left = financialrounding('amount', $currency, $lc_limits->{lifetime_limit} - $wd_epoch);
+            # total withdrawal inclusive of this one
+            my $total_wd = financialrounding('amount', $currency, $wd_epoch + $absamt);
+            my $wd_left  = financialrounding('amount', $currency, $lc_limits->{lifetime_limit} - $wd_epoch);
 
             if (financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $wd_left)) {
                 if ($currency ne $lc_currency) {
@@ -134,6 +137,11 @@ sub validate_payment {
                         $currency, formatnumber('amount', $currency, $wd_left);
                 }
             }
+
+            if ($total_wd >= financialrounding('amount', $currency, $lc_limits->{lifetime_limit})) {
+                BOM::Platform::Event::Emitter::emit('withdrawal_limit_reached', {loginid => $self->loginid});
+            }
+
         } else {
             my $for_days = $lc_limits->{for_days};
             my $since    = Date::Utility->new->minus_time_interval("${for_days}d");

@@ -136,6 +136,16 @@ subtest 'CR withdrawal' => sub {
     subtest 'in USD, unauthenticated' => sub {
         my $client = new_client('USD');
         my $dbh    = $client->dbh;
+
+        my %emitted;
+        my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+        $mock_events->mock(
+            'emit',
+            sub {
+                my ($type, $data) = @_;
+                $emitted{$data->{loginid}} = $type;
+            });
+
         $client->smart_payment(%deposit, amount => 10500);
         throws_ok { $client->validate_payment(%withdrawal, amount => -10001) } qr/exceeds withdrawal limit/,
             'Non-Authed CR withdrawal greater than USD10K';
@@ -147,7 +157,11 @@ subtest 'CR withdrawal' => sub {
             lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'first 5k withdrawal';
             throws_ok { $client->smart_payment(%withdrawal, amount => -5001) } qr/exceeds withdrawal limit \[USD 5000.00\]/,
                 'total withdraw cannot > 10k';
+            lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'second 5k withdrawal';
+            is($emitted{$client->loginid}, 'withdrawal_limit_reached', 'An event is emitted to set the client as needs_action');
         };
+
+        $mock_events->unmock_all();
     };
 
     # CR withdrawals in EUR
