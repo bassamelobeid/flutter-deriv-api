@@ -30,6 +30,7 @@ use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
 use BOM::Config::RedisReplicated;
 use Log::Any ();
+use BOM::Platform::Context qw (localize);
 
 use constant {
     NAMESPACE       => 'TOKEN',
@@ -45,6 +46,9 @@ sub create_token {
     die $self->_log->fatal("loginid is required")      unless $loginid;
     die $self->_log->fatal("display_name is required") unless $display_name;
 
+    return {error => localize('alphanumeric with space and dash, 2-32 characters')} if $display_name !~ /^[\w\s\-]{2,32}$/;
+    return {error => localize('Max 30 tokens are allowed.')} if $self->get_token_count_by_loginid($loginid) > 30;
+
     $scopes = [grep { $supported_scopes{$_} } @$scopes];
     my $token = $self->generate_token(TOKEN_LENGTH);
 
@@ -59,20 +63,91 @@ sub create_token {
         last_used     => '',
     };
 
-    # save in database for persistence
-    $self->_db_model->save_token($data);
+    # save in database for persistence.
+    # tokens will be saved in the database first before saving it in redis because
+    # database will still be the source of truth for the API token
+    my $success = $self->_db_model->save_token($data);
+    $self->save_token_details_to_redis($data) if $success->{token};
 
-    $self->save_token_details_to_redis($data);
+    return $success->{token};
+}
 
-    return $token;
+=head2 get_token_details
+
+returns a hash reference containing details of a token
+
+=cut
+
+my %last_updated_epoch = ();
+
+sub get_token_details {
+    my ($self, $token, $update_last_used) = @_;
+
+    $update_last_used //= 0;
+    my $key = $self->_make_key($token);
+    my %details = @{$self->_redis_read->hgetall($key) // []};
+
+    return \%details unless keys %details;
+
+    $details{scopes} = decode_json_utf8($details{scopes}) if $details{scopes};
+
+    my $now = time;
+    my $last_updated = $last_updated_epoch{$key} // 0;
+
+    # only update once per second
+    if ($update_last_used and $last_updated < $now) {
+        $self->_redis_write->hset($key, 'last_used', $now);
+        $last_updated_epoch{$key} = $now;
+    }
+
+    # last_used is expected as string in the API schema
+    $details{last_used} = Date::Utility->new($details{last_used})->datetime if $details{last_used};
+
+    return \%details;
+}
+
+sub get_scopes_by_access_token {
+    my ($self, $token) = @_;
+
+    my $details = $self->get_token_details($token);
+
+    return @{$details->{scopes}} if $details and ref $details->{scopes} eq 'ARRAY';
+    return ();
+}
+
+=head2 get_tokens_by_loginid
+
+Returns all API tokens belong to the provided loginid.
+
+This could be slow if loginid has a lot of tokens. Use with caution!
+
+=cut
+
+sub get_tokens_by_loginid {
+    my ($self, $loginid) = @_;
+
+    my $tokens = $self->_redis_read->hkeys($self->_make_key_by_id($loginid));
+
+    return [sort { $a->{display_name} cmp $b->{display_name} } map { _cleanup($self->get_token_details($_)) } @$tokens];
+}
+
+=head2 get_token_count_by_loginid
+
+Return the number of tokens available for the provided loginid
+
+=cut
+
+sub get_token_count_by_loginid {
+    my ($self, $loginid) = @_;
+
+    return $self->_redis_read->hlen($self->_make_key_by_id($loginid));
 }
 
 sub save_token_details_to_redis {
     my ($self, $data) = @_;
 
-    my $token           = $data->{token};
-    my $writer          = $self->_redis_write;
-    my $redis_key_by_id = $self->_make_key_by_id($data->{loginid});
+    my $token  = $data->{token};
+    my $writer = $self->_redis_write;
 
     $data->{scopes}        = encode_json_utf8($data->{scopes})                 if $data->{scopes} and ref $data->{scopes} eq 'ARRAY';
     $data->{creation_time} = Date::Utility->new($data->{creation_time})->epoch if $data->{creation_time};
@@ -80,10 +155,10 @@ sub save_token_details_to_redis {
 
     $writer->multi;
     $writer->hmset($self->_make_key($token), %$data);
-    $writer->hset($redis_key_by_id, $token, 1);
+    $writer->hset($self->_make_key_by_id($data->{loginid}), $token, 1);
     $writer->exec;
 
-    return;
+    return 1;
 }
 
 =head2 remove_by_loginid
@@ -93,21 +168,26 @@ removes all API tokens for loginid
 =cut
 
 sub remove_by_loginid {
-    my ($self, $loginid) = @_;
+    my ($self, $loginid, $rechecked) = @_;
 
+    $rechecked //= 0;
     my $key_by_id = $self->_make_key_by_id($loginid);
     my %all       = @{$self->_redis_read->hgetall($key_by_id)};
     my $redis     = $self->_redis_write;
 
     foreach my $token (keys %all) {
-        #remove token from database first before removing it from redis
-        $self->_db_model->remove_by_token($token, $loginid);
-
+        my $token_details = $self->get_token_details($token);
         $redis->multi;
         $redis->del($self->_make_key($token));
         $redis->hdel($key_by_id, $token);
         $redis->exec;
+        #remove token from database happens after redis since it is the source of truth
+        $self->_db_model->remove_by_token($token, ($token_details->{last_used} ? Date::Utility->new($token_details->{last_used})->db_timestamp : ''));
     }
+
+    # there's potentially a race condition where a token is added while we're in the foreach
+    # loop, so check it again here.
+    $self->remove_by_loginid($loginid, 1) if @{$self->_redis_read->hgetall($key_by_id)} and not $rechecked;
 
     return 1;
 }
@@ -121,17 +201,18 @@ removes token for loginid
 sub remove_by_token {
     my ($self, $token, $loginid) = @_;
 
-    my $key_by_id = $self->_make_key_by_id($loginid);
+    my $key_by_id     = $self->_make_key_by_id($loginid);
+    my $token_details = $self->get_token_details($token);
 
     my $redis = $self->_redis_write;
-
-    #remove token from database first before removing it from redis
-    $self->_db_model->remove_by_token($token, $loginid);
 
     $redis->multi;
     $redis->del($self->_make_key($token));
     $redis->hdel($key_by_id, $token);
     $redis->exec;
+
+    #remove token from database happens after redis since it is the source of truth
+    $self->_db_model->remove_by_token($token, ($token_details->{last_used} ? Date::Utility->new($token_details->{last_used})->db_timestamp : ''));
 
     return 1;
 }
@@ -153,18 +234,24 @@ sub generate_token {
     )->string_from(join('', @chars), $length);
 }
 
-sub update_cached_last_used {
-    my ($self, $token, $last_used) = @_;
+=head2 token_exists
 
-    die $self->_log->fatal("token and last_used are required") unless $token and $last_used;
-    my $key    = $self->_make_key($token);
-    my $writer = $self->_redis_write;
+Check if token exists in auth redis. Returns a boolean.
 
-    $writer->hset($key, 'last_used', Date::Utility->new($last_used)->epoch) if $writer->hexists($key, 'last_used');
+=cut
 
-    return;
+sub token_exists {
+    my ($self, $token) = @_;
+
+    return $self->_redis_read->exists($self->_make_key($token));
 }
+
 ### PRIVATE ###
+sub _cleanup {
+    my $token = shift;
+    delete $token->{$_} for qw(creation_time loginid type);
+    return $token;
+}
 
 has _db_model => (
     is      => 'ro',
