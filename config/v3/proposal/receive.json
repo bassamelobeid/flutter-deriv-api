@@ -63,6 +63,10 @@
                      "type": "object",
                      "description": "The target spot price where the contract will be closed with profit.",
                      "properties": {
+                        "order_date" : {
+                            "type": "integer",
+                            "description": "Take profit order epoch"
+                        },
                         "display_name": {
                             "type": "string",
                             "description": "Localized display name"
@@ -81,6 +85,10 @@
                      "type": "object",
                      "description": "The target spot price where the contract will be closed with loss.",
                      "properties": {
+                        "order_date" : {
+                            "type": "integer",
+                            "description": "Stop out order epoch"
+                        },
                         "display_name": {
                             "type": "string",
                             "description": "Localized display name"
@@ -99,6 +107,10 @@
                      "type": "object",
                      "description": "The target spot price where the contract will be closed with loss.",
                      "properties": {
+                        "order_date" : {
+                            "type": "integer",
+                            "description": "Stop loss order epoch"
+                        },
                         "display_name": {
                             "type": "string",
                             "description": "Localized display name"
