@@ -3,12 +3,14 @@
     <tr>
         <th>Underlying symbol</th>
         <th>Commission</th>
+        <th>Deal cancellation commission</th>
         <th>Multiplier range</th>
     </tr>
     [% FOREACH symbol IN existing_config.keys %]
     <tr>
         <td>[% symbol %]</td>
         <td><input type="text" name="[% symbol %]-commission" value="[% existing_config.$symbol.commission %]"></input></td>
+        <td><input type="text" name="[% symbol %]-deal_cancellation_commission" value="[% existing_config.$symbol.deal_cancellation_commission %]"></input></td>
         <td><input type="text" name="[% symbol %]-multiplier_range" value="[% existing_config.$symbol.multiplier_range_json %]"></input></td>
     </tr>
     [% END %]
