@@ -1456,14 +1456,12 @@ sub get_relative_shortcode {
         $params->{date_expiry} .= 'F' if $params->{fixed_expiry};
     }
 
-    $params->{date_start} = $params->{starts_as_forward_starting} ? '0F' : '0';
+    $params->{date_start} = $params->{starts_as_forward_starting} ? int($params->{date_start} - time) . 'F' : '0';
 
     $params->{high_barrier} //= $params->{barrier};
     $params->{low_barrier}  //= '0';
 
-    my $current_spot = $self ? $self->current_spot : $params->{current_spot};
-    my $underlying   = $self ? $self->underlying   : $params->{underlying};
-    $params->{$_} = to_relative_barrier($params->{$_}, $current_spot, $underlying) for qw(high_barrier low_barrier);
+    $params->{$_} = $self->to_relative_barrier($params->{$_}, $params->{current_spot}, $params->{underlying}) for qw(high_barrier low_barrier);
 
     return uc join '_', map { $params->{$_} } qw(bet_type underlying date_start date_expiry high_barrier low_barrier);
 }
@@ -1489,11 +1487,11 @@ Returns the relative barrier.
 =cut
 
 sub to_relative_barrier {
-    my ($barrier, $spot, $symbol) = @_;
+    my (undef, $barrier, $spot, $symbol) = @_;
 
     return ($barrier // '') =~ s/\.//r if (!$barrier || $barrier =~ /^S/);
 
-    my $underlying = $symbol->can('spot') ? $symbol : _get_underlying_instance($symbol);
+    my $underlying = _get_underlying_instance($symbol);
 
     $barrier -= ($spot // $underlying->spot()) if ($barrier !~ /^[+-]/);
 
