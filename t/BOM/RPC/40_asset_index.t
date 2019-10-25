@@ -20,8 +20,8 @@ my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 my ($token_mlt) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
 
 use constant {
-    NUM_TOTAL_SYMBOLS      => 77,    # Total number of symbols listed in underlyings.yml
-    NUM_VOLATILITY_SYMBOLS => 9,     # Total number of volatility symbols listed in underlyings.yml
+    NUM_TOTAL_SYMBOLS      => 75,    # Total number of symbols listed in underlyings.yml
+    NUM_VOLATILITY_SYMBOLS => 7,     # Total number of volatility symbols listed in underlyings.yml
 };
 
 # These numbers may differ from actual production output due to symbols being
@@ -29,8 +29,8 @@ use constant {
 my $entry_count_mlt = NUM_VOLATILITY_SYMBOLS;
 my $entry_count_cr  = NUM_TOTAL_SYMBOLS;
 my $first_entry_mlt = [
-    "1HZ10V",
-    "Volatility 10 (1s) Index",
+    "R_10",
+    "Volatility 10 Index",
     [
         ["callput",       "Higher/Lower",               "5t",  "365d"],
         ["callput",       "Rise/Fall",                  "1t",  "365d"],
