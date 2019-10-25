@@ -8,6 +8,7 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Context qw (request);
 use BOM::Platform::Email qw(send_email);
 use BOM::Config;
+use BOM::Config::RedisReplicated;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 use List::Util qw/none all any/;
@@ -57,8 +58,12 @@ sub update_financial_assessment {
 
     # Clear unwelcome status for clients without financial assessment and have breached
     # social responsibility thresholds
-    $client->status->clear_unwelcome if ($client->landing_company->social_responsibility_check_required
-        && $client->status->unwelcome);
+    if ($client->landing_company->social_responsibility_check_required && $client->status->unwelcome) {
+        my $redis    = BOM::Config::RedisReplicated::redis_events_write();
+        my $key_name = $client->loginid . '_sr_risk_status';
+
+        $client->status->clear_unwelcome if $redis->get($key_name);
+    }
 
     # Emails are sent for:
     # - Non-CR clients
