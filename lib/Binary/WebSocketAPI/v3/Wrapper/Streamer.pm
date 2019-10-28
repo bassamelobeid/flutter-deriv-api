@@ -32,7 +32,7 @@ sub get_status_msg {
         feed_issues => $c->l(
             'We are having an issue with one or more of our data feeds. We are working to resolve the issue but some markets may be unavailable for the time being.'
         ),
-        mt5_issues     => $c->l('Sorry, but we are having a technical issue with our MT5 platform. Trading is unavailable for the time being.'),
+        mt5_issues     => $c->l('Sorry, we are having a technical issue with our MT5 platform.'),
         cashier_issues => $c->l(
             'Sorry, but we are experiencing a technical issue with our Cashier. Your funds are safe but deposits and withdrawals are unavailable for the time being.'
         ),
