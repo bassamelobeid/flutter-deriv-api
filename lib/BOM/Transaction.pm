@@ -811,6 +811,17 @@ sub prepare_bet_data_for_sell {
         : (),
     };
 
+    # we need to verify child table for multiplier to avoid cases where a contract
+    # is sold while it is being updated via a difference process.
+    if ($contract->category_code eq 'multiplier') {
+        my $dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+            broker_code => $self->client->broker_code,
+            operation   => 'replica',
+        });
+        my $child = $dm->get_multiplier_child_table_by_id($self->contract_id);
+        $bet_params->{verify_child} = $child if $child;
+    }
+
     my $quants_bet_variables;
     if (my $comment_hash = $self->comment->[1]) {
         $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
