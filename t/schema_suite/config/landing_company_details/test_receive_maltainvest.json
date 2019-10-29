@@ -173,7 +173,7 @@
       "has_reality_check" : {
          "type" : "integer",
          "enum" : [
-            1
+            0
          ]
       },
       "stash" : {

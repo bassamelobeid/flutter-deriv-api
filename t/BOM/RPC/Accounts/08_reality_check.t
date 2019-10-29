@@ -61,6 +61,19 @@ is_deeply $result,
     },
     'empty record for client that has no reality check';
 
+($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client_mf->loginid);
+
+$result = $c->call_ok($method, {token => $token})->result;
+is_deeply $result,
+    {
+    stash => {
+        valid_source               => 1,
+        source_bypass_verification => 0,
+        app_markup_percentage      => 0,
+    },
+    },
+    'empty record for client that has no reality check';
+
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client_mlt->loginid);
 my $details       = BOM::RPC::v3::Utility::get_token_details($token);
 my $creation_time = $details->{epoch};

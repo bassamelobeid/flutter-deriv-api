@@ -67,7 +67,7 @@
                   "staysinout",
                   "touchnotouch"
               ],
-              "has_reality_check" : 1,
+              "has_reality_check" : 0,
               "legal_allowed_markets" : [
                   "commodities",
                   "forex",
@@ -167,7 +167,7 @@
             "has_reality_check" : {
                "type" : "integer",
                "enum" : [
-                  1
+                  0
                ]
             },
             "changeable_fields" : {
