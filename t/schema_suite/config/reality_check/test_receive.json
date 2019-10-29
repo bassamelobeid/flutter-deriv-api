@@ -34,7 +34,7 @@
       },
       "loginid" : {
          "type" : "string",
-         "pattern" : "^MF\\d+$"
+         "pattern" : "^MLT\\d+$"
       },
       "sell_amount" : {
          "type" : "number"
