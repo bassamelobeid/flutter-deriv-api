@@ -149,10 +149,7 @@ sub _price_stream_results_adjustment {
 
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
-        $log->warnf(
-            'missing theo probability from pricer. Contract parameter dump %s, pricer response: %s',
-            encode_json_text($contract_parameters),
-            encode_json_text($results));
+        $log->warnf('missing theo probability from pricer. Contract parameter dump %s, pricer response: %s', $contract_parameters, $results);
         stats_inc('price_adjustment.missing_theo_probability');
     }
 
