@@ -814,12 +814,20 @@ sub prepare_bet_data_for_sell {
     # we need to verify child table for multiplier to avoid cases where a contract
     # is sold while it is being updated via a difference process.
     if ($contract->category_code eq 'multiplier') {
-        my $dm = BOM::Database::DataMapper::FinancialMarketBet->new({
-            broker_code => $self->client->broker_code,
-            operation   => 'replica',
-        });
-        my $child = $dm->get_multiplier_child_table_by_id($self->contract_id);
-        $bet_params->{verify_child} = $child if $child;
+        my $child = {
+            financial_market_bet_id => $self->contract_id,
+            basis_spot              => $contract->basis_spot,
+            multiplier              => $contract->multiplier,
+        };
+
+        foreach my $order (@{$contract->supported_orders}) {
+            if ($contract->$order) {
+                $child->{$order . '_order_amount'} = $contract->$order->order_amount;
+                $child->{$order . '_order_date'}   = $contract->$order->order_date->db_timestamp;
+            }
+        }
+
+        $bet_params->{verify_child} = $child;
     }
 
     my $quants_bet_variables;
