@@ -1373,6 +1373,11 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         -mesg              => 'per user realized loss limit reached',
         -message_to_client => BOM::Platform::Context::localize('This contract is currently unavailable due to market conditions'),
     ),
+    BI023 => Error::Base->cuss(
+        -type              => 'SellFailureDueToUpdate',
+        -mesg              => 'Contract is updated while attempting to sell',
+        -message_to_client => BOM::Platform::Context::localize('Sell failed because contract was updated.'),
+    ),
 );
 
 sub _recover {
