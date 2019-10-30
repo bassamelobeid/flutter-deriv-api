@@ -495,7 +495,7 @@ sub prepare_bet_data_for_buy {
         $bet_params->{relative_barrier} = $contract->supplied_barrier;
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_MULTIPLIER) {
         $bet_params->{multiplier}            = $contract->multiplier + 0;
-        $bet_params->{basis_spot}            = $contract->stop_out->basis_spot;
+        $bet_params->{basis_spot}            = $contract->stop_out->basis_spot + 0;
         $bet_params->{stop_out_order_date}   = $contract->stop_out->order_date->db_timestamp;
         $bet_params->{stop_out_order_amount} = $contract->stop_out->order_amount;
 
@@ -815,21 +815,28 @@ sub prepare_bet_data_for_sell {
     # is sold while it is being updated via a difference process.
     if ($contract->category_code eq 'multiplier') {
         my $child = {
-            financial_market_bet_id => $self->contract_id,
-            basis_spot              => $contract->basis_spot,
+            financial_market_bet_id => $self->contract_id + 0,
+            basis_spot              => $contract->basis_spot + 0,
             multiplier              => $contract->multiplier,
         };
 
         foreach my $order (@{$contract->supported_orders}) {
             if ($contract->$order) {
                 $child->{$order . '_order_amount'} = $contract->$order->order_amount;
-                $child->{$order . '_order_date'}   = $contract->$order->order_date->db_timestamp;
+                # jsonb converts datatme to 2019-10-30T02:12:27 format
+                # let's do the same here.
+                my $order_date = $contract->$order->order_date->db_timestamp;
+                $order_date =~ s/\s/T/;
+                $child->{$order . '_order_date'}   = $order_date;
+            } else {
+                # to match null in the child table
+                $child->{$order . '_order_amount'} = undef;
+                $child->{$order . '_order_date'}   = undef;
             }
         }
 
         $bet_params->{verify_child} = $child;
     }
-
     my $quants_bet_variables;
     if (my $comment_hash = $self->comment->[1]) {
         $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
