@@ -827,7 +827,7 @@ sub prepare_bet_data_for_sell {
                 # let's do the same here.
                 my $order_date = $contract->$order->order_date->db_timestamp;
                 $order_date =~ s/\s/T/;
-                $child->{$order . '_order_date'}   = $order_date;
+                $child->{$order . '_order_date'} = $order_date;
             } else {
                 # to match null in the child table
                 $child->{$order . '_order_amount'} = undef;
