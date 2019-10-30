@@ -817,7 +817,7 @@ sub prepare_bet_data_for_sell {
         my $child = {
             financial_market_bet_id => $self->contract_id + 0,
             basis_spot              => $contract->basis_spot + 0,
-            multiplier              => $contract->multiplier,
+            multiplier              => $contract->multiplier + 0,
         };
 
         foreach my $order (@{$contract->supported_orders}) {

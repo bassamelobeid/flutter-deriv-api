@@ -277,7 +277,7 @@ subtest 'update take profit', sub {
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{'multiplier'},             10,       'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.00', 'basis_spot is 100.00';
+            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
             is $chld->{'stop_loss_order_amount'}, undef,    'stop_loss_order_amount is undef';
             is $chld->{'stop_loss_order_date'},   undef,    'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
@@ -304,7 +304,7 @@ subtest 'update take profit', sub {
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{'multiplier'},             10,       'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.00', 'basis_spot is 100.00';
+            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
             is $chld->{'stop_loss_order_amount'}, undef,    'stop_loss_order_amount is undef';
             is $chld->{'stop_loss_order_date'},   undef,    'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
@@ -335,7 +335,7 @@ subtest 'update take profit', sub {
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{'multiplier'},             10,       'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.00', 'basis_spot is 100.00';
+            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
             is $chld->{'stop_loss_order_amount'}, undef,    'stop_loss_order_amount is undef';
             is $chld->{'stop_loss_order_date'},   undef,    'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
@@ -367,7 +367,7 @@ subtest 'update take profit', sub {
 
         # no limits
         $mocked->mock('limits', sub { {} });
-
+        my $last_updated_record = $chld;
         $txn = BOM::Transaction->new({
                 purchase_date       => $contract->date_start,
                 client              => $cl,
@@ -375,7 +375,20 @@ subtest 'update take profit', sub {
                     shortcode       => $contract->shortcode,
                     currency        => $cl->currency,
                     landing_company => $cl->landing_company->short,
-                    limit_order     => $contract->available_orders,
+                    limit_order     => {
+                        stop_out => {
+                            order_type   => 'stop_out',
+                            order_amount => $last_updated_record->{stop_out_order_amount},
+                            order_date   => $last_updated_record->{stop_out_order_date},
+                            basis_spot   => $last_updated_record->{basis_spot},
+                        },
+                        take_profit => {
+                            order_type   => 'take_profit',
+                            order_amount => $last_updated_record->{take_profit_order_amount},
+                            order_date   => $last_updated_record->{take_profit_order_date},
+                            basis_spot   => $last_updated_record->{basis_spot},
+                        },
+                    },
                 },
                 contract_id => $fmb->{id},
                 price       => 99.50,
