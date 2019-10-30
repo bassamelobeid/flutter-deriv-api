@@ -275,6 +275,7 @@ sub _update_transaction {
                 currency        => $payload->{currency_code},
                 language        => $c->stash('language'),
                 landing_company => $c->landing_company_name,
+                ($payload->{limit_order} ? (limit_order => $payload->{limit_order}) : ()),
             },
             rpc_response_cb => sub {
                 my ($c, $rpc_response) = @_;
