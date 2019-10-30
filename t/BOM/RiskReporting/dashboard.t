@@ -6,13 +6,14 @@ use BOM::RiskReporting::Dashboard;
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+use LandingCompany::Registry;
 use Date::Utility;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
 
-my %rates = map { $_ => 100 } ('BCH', 'EUR', 'BTC', 'GBP', 'LTC', 'ETH', 'AUD', 'JPY', 'UST', 'USB', 'IDK');
+my %rates = map { $_ => 100 } LandingCompany::Registry::all_currencies();
 populate_exchange_rates(\%rates);
 
 my $dashboard = BOM::RiskReporting::Dashboard->new(
