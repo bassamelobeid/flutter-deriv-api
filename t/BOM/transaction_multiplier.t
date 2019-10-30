@@ -57,9 +57,9 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    undeerlying => $underlying->symbol,
-    epoch       => $now->epoch,
-    quote       => 100,
+    underlying => $underlying->symbol,
+    epoch      => $now->epoch,
+    quote      => 100,
 });
 
 my $mocked_u = Test::MockModule->new('Quant::Framework::Underlying');
@@ -259,10 +259,10 @@ subtest 'buy MULTUP', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             10,       'multiplier is 10';
+            is $chld->{'multiplier'},             10,      'multiplier is 10';
             is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
-            is $chld->{'stop_loss_order_amount'}, undef,    'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_basis_spot'},   undef,    'stop_loss_basis_spot is undef';
+            is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_basis_spot'},   undef,   'stop_loss_basis_spot is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, undef, 'take_profit_order_amount is undef';
@@ -366,10 +366,10 @@ subtest 'buy MULTUP with take profit', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             10,       'multiplier is 10';
+            is $chld->{'multiplier'},             10,      'multiplier is 10';
             is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
-            is $chld->{'stop_loss_order_amount'}, undef,    'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_order_date'},   undef,    'stop_loss_order_date is undef';
+            is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_order_date'},   undef,   'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, 5, 'take_profit_order_amount is 5';
@@ -473,10 +473,10 @@ subtest 'buy MULTUP with stop loss', sub {
         # note explain $chld;
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},               10,       'multiplier is 10';
+            is $chld->{'multiplier'},               10,      'multiplier is 10';
             is $chld->{'basis_spot'},               '100.0', 'basis_spot is 100.0';
-            is $chld->{'stop_loss_order_amount'},   -5,       'stop_loss_order_amount is -5';
-            cmp_ok $chld->{'stop_loss_order_date'}, "eq",     $fmb->{start_time}, 'stop_loss_order_date is correctly set';
+            is $chld->{'stop_loss_order_amount'},   -5,      'stop_loss_order_amount is -5';
+            cmp_ok $chld->{'stop_loss_order_date'}, "eq",    $fmb->{start_time}, 'stop_loss_order_date is correctly set';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, undef, 'take_profit_order_amount is undef';
@@ -564,8 +564,8 @@ subtest 'sell a bet', sub {
             is $fmb->{is_expired},   0, 'is_expired';
             ok $fmb->{is_sold},      'is_sold';
             is $fmb->{sell_price} + 0, $contract->bid_price + 0, 'sell_price';
-            cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch,       '<=', $contract->date_pricing->epoch, 'sell_time';
-            cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>',  time, 'settlement_time';
+            cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch, '<=', $contract->date_pricing->epoch, 'sell_time';
+            cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
             like $fmb->{short_code}, qr/MULTUP/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
             is $fmb->{tick_count},        undef,   'tick_count';
@@ -580,33 +580,32 @@ subtest 'sell a bet', sub {
 };
 
 subtest 'sell failure due to update' => sub {
-        my $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'MULTUP',
-            currency     => 'USD',
-            multiplier   => 10,
-            amount       => 100,
-            amount_type  => 'stake',
-            current_tick => $current_tick,
-        });
+    my $contract = produce_contract({
+        underlying   => $underlying,
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        multiplier   => 10,
+        amount       => 100,
+        amount_type  => 'stake',
+        current_tick => $current_tick,
+    });
 
-        my $txn = BOM::Transaction->new({
-            client        => $cl,
-            contract      => $contract,
-            price         => 100,
-            amount        => 100,
-            amount_type   => 'stake',
-            source        => 19,
-            purchase_date => $contract->date_start,
-        });
+    my $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
 
-        my $error = $txn->buy;
-        ok !$error, 'buy without error';
+    my $error = $txn->buy;
+    ok !$error, 'buy without error';
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
-
-        # create sell transaction object
-        my $contract_sell = produce_contract({
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
+    # create sell transaction object
+    my $contract_sell = produce_contract({
             underlying   => $underlying,
             bet_type     => 'MULTUP',
             date_start   => $contract->date_start,
@@ -622,30 +621,43 @@ subtest 'sell failure due to update' => sub {
                     order_amount => -100,
                     order_date   => $contract_start_time,
                     basis_spot   => '100.00',
-                }
-            }
-        });
-        my $sell_txn = BOM::Transaction->new({
-            purchase_date => $contract->date_start,
-            client        => $cl,
-            contract      => $contract_sell,
-            contract_id   => $fmb->{id},
-            price         => $contract_sell->bid_price,
-            source        => 23,
-        });
+                }}});
+    my $sell_txn = BOM::Transaction->new({
+        purchase_date => $contract->date_start,
+        client        => $cl,
+        contract      => $contract_sell,
+        contract_id   => $fmb->{id},
+        price         => $contract_sell->bid_price,
+        source        => 23,
+    });
 
-       # update contract before sell
-        my $updater = BOM::Transaction::ContractUpdate->new(
-            client        => $cl,
-            contract_id   => $fmb->{id},
-            update_params => {take_profit => 10},
-        );
-        ok $updater->is_valid_to_update, 'valid to update';
-        $updater->update;
-        $error = $sell_txn->sell;
-        ok $error, 'sell failed after contract is updated';
-        is $error->{-mesg}, 'Contract is updated while attempting to sell', 'error mesg Contract is updated while attempting to sell';
-        is $error->{-type}, 'SellFailureDueToUpdate', 'error type SellFailureDueToUpdate';
+    # update contract before sell
+    my $updater = BOM::Transaction::ContractUpdate->new(
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        update_params => {take_profit => 10},
+    );
+    ok $updater->is_valid_to_update, 'valid to update';
+    $updater->update;
+    $error = $sell_txn->sell;
+    ok $error, 'sell failed after contract is updated';
+    is $error->{-mesg}, 'Contract is updated while attempting to sell', 'error mesg Contract is updated while attempting to sell';
+    is $error->{-type}, 'SellFailureDueToUpdate', 'error type SellFailureDueToUpdate';
+
+    subtest 'sell_expired_contract with contract id' => sub {
+        # expiring the contract by setting current tick to 101.15 (the value of take profit)
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => $underlying->symbol,
+            epoch      => $now->epoch + 1,
+            quote      => 101.15,
+        });
+        sleep 1;
+        my $out = BOM::Transaction::sell_expired_contracts({
+                client       => $cl,
+                source       => 23,
+                contract_ids => [$fmb->{id}]});
+        ok $out->{number_of_sold_bets} == 1, 'sold one contract';
+    };
 };
 
 done_testing();
