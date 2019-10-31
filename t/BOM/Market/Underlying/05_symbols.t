@@ -29,6 +29,6 @@ foreach my $symbol (@symbols) {
 foreach my $symbol (@symbols) {
     my $underlying = create_underlying($symbol);
     my $market     = $underlying->market->name;
-    Test::More::is($market, 'volidx', "$symbol belongs to $market market");
+    Test::More::is($market, 'synthetic_index', "$symbol belongs to $market market");
 }
 
