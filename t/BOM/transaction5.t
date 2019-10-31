@@ -71,7 +71,7 @@ subtest 'validate client error message' => sub {
             transaction => $transaction
         })->_is_valid_to_buy($cr);
 
-    like($error->{-message_to_client}, qr/Try out the Volatility Indices/, 'CR client got message about Volatility Indices');
+    like($error->{-message_to_client}, qr/Try out the Synthetic Indices/, 'CR client got message about Synthetic Indices');
 
 # same params, but new object - not to hold prev error
     $contract = produce_contract({
@@ -97,7 +97,7 @@ subtest 'validate client error message' => sub {
             transaction => $transaction
         })->_is_valid_to_buy($mf);
 
-    unlike($error->{-message_to_client}, qr/Try out the Volatility Indices/, 'MF client didnt got message about Volatility Indices');
+    unlike($error->{-message_to_client}, qr/Try out the Synthetic Indices/, 'MF client didnt got message about Synthetic Indices');
 
 };
 
