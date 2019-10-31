@@ -265,7 +265,7 @@ subtest "Friday after close, weekend, won't open check." => sub {
             success  => 1,
         },
         friday_after_close => {
-            datetime => '2013-02-01 21:00:01',
+            datetime => '2013-02-01 20:55:01',
             success  => 0,
         },
         weekend => {
