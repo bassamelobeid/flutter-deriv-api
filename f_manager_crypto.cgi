@@ -31,6 +31,7 @@ use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
 use BOM::CTC::Utility;
 use BOM::Database::ClientDB;
 use BOM::DualControl;
+use LandingCompany::Registry;
 use f_brokerincludeall;
 
 BOM::Backoffice::Sysinit::init();
@@ -141,6 +142,9 @@ my $display_transactions = sub {
         }) || die $tt->error();
 };
 
+my @crypto_currencies =
+    map { my $def = LandingCompany::Registry::get_currency_definition($_); $def->{type} eq 'crypto' ? {currency => $_, name => $def->{name}} : () }
+    LandingCompany::Registry::all_currencies();
 my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
     'backoffice/crypto_cashier/crypto_control_panel.html.tt',
@@ -148,6 +152,7 @@ $tt2->process(
         exchange_rate  => $exchange_rate,
         controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
         currency       => $currency,
+        all_crypto     => [@crypto_currencies],
         cmd            => request()->param('command') // '',
         broker         => $broker,
         start_date     => $start_date->date_yyyymmdd,

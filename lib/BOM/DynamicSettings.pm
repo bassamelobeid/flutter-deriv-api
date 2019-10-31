@@ -201,7 +201,6 @@ sub get_settings_by_group {
                 system.mt5.suspend.all
                 system.mt5.suspend.deposits
                 system.mt5.suspend.withdrawals
-                system.mt5.suspend.manager_api
                 )
         ],
         quant => [qw(
@@ -209,7 +208,7 @@ sub get_settings_by_group {
                 quants.commission.adjustment.per_market_scaling.forex
                 quants.commission.adjustment.per_market_scaling.indices
                 quants.commission.adjustment.per_market_scaling.commodities
-                quants.commission.adjustment.per_market_scaling.volidx
+                quants.commission.adjustment.per_market_scaling.synthetic_index
                 quants.markets.disabled
                 quants.features.suspend_contract_types
                 quants.underlyings.disable_autoupdate_vol
