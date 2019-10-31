@@ -13,8 +13,6 @@ __PACKAGE__->meta->setup(
         client_loginid => { type => 'varchar', length => 12 },
         expires        => { type => 'timestamp' },
         id             => { type => 'bigint', not_null => 1, sequence => 'sequences.global_serial' },
-        app_id         => { type => 'bigint' },
-        ua_fingerprint => { type => 'varchar' },
     ],
 
     primary_key_columns => [ 'id' ],

@@ -14,7 +14,7 @@ __PACKAGE__->meta->setup(
         tmstmp => { type => 'timestamp', default => 'now()' },
     ],
 
-    primary_key_columns => [ 'id', 'status', 'tmstmp' ],
+    primary_key_columns => [ 'status', 'tmstmp', 'id' ],
 
     allow_inline_column_values => 1,
 
