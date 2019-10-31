@@ -30,6 +30,6 @@ is(Binary::WebSocketAPI::v3::Wrapper::Pricer::_skip_streaming($proposal_param), 
 $proposal_param->{contract_type} = 'CALL';
 delete $proposal_param->{barrier};
 delete $proposal_param->{barrier2};
-is(Binary::WebSocketAPI::v3::Wrapper::Pricer::_skip_streaming($proposal_param), 1, "Do not stream ATM volidx");
+is(Binary::WebSocketAPI::v3::Wrapper::Pricer::_skip_streaming($proposal_param), 1, "Do not stream ATM synthetic_index");
 
 done_testing();
