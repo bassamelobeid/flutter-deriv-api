@@ -36,7 +36,7 @@ sub create_pricing_data {
     } elsif ($underlying->market->name eq 'commodities') {
         my $symbol = 'frx' . $underlying->asset_symbol . $payout_currency;
         push @quanto_list, $symbol;
-    } elsif ($underlying->market->name ne 'volidx') {
+    } elsif ($underlying->market->name ne 'synthetic_index') {
         if (my $symbol = _order_symbol($underlying->quoted_currency_symbol, $payout_currency)) {
             push @quanto_list, $symbol;
         }
@@ -96,7 +96,7 @@ sub create_pricing_data {
     @currencies       = uniq(grep { defined } @currencies);
     @dividend_symbols = uniq(grep { defined } @dividend_symbols);
 
-    if ($underlying->market->name ne 'volidx') {
+    if ($underlying->market->name ne 'synthetic_index') {
         BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             'index',
             {

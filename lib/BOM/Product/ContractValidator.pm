@@ -508,12 +508,12 @@ sub _validate_trading_times {
     my $self = shift;
     my $args = shift;
 
-    my $underlying  = $self->underlying;
-    my $exchange    = $underlying->exchange;
-    my $calendar    = $self->trading_calendar;
-    my $date_expiry = $self->date_expiry;
-    my $date_start  = $self->date_start;
-    my $volidx_flag = 1;
+    my $underlying           = $self->underlying;
+    my $exchange             = $underlying->exchange;
+    my $calendar             = $self->trading_calendar;
+    my $date_expiry          = $self->date_expiry;
+    my $date_start           = $self->date_start;
+    my $synthetic_index_flag = 1;
     my (@markets, $lc);
 
     if (not($calendar->trades_on($exchange, $date_start) and $calendar->is_open_at($exchange, $date_start))) {
@@ -525,10 +525,10 @@ sub _validate_trading_times {
             } else {
                 @markets = @{$lc->legal_allowed_markets};
             }
-            $volidx_flag = any { $_ eq 'volidx' } @markets;
+            $synthetic_index_flag = any { $_ eq 'synthetic_index' } @markets;
         }
         my $error_code;
-        if ($volidx_flag) {
+        if ($synthetic_index_flag) {
             $error_code = $self->is_forward_starting ? 'MarketNotOpenTryVolatility' : 'MarketIsClosedTryVolatility';
         } else {
             $error_code = $self->is_forward_starting ? 'MarketNotOpen' : 'MarketIsClosed';
@@ -649,7 +649,7 @@ sub _validate_start_and_expiry_date {
 
     # random_index will not have any blackout period unless this rule were to change in the future.
     # returning early here!
-    # DO NOT change this to $self->market->name eq 'volidx' because we have blackout period for random_daily submarket
+    # DO NOT change this to $self->market->name eq 'synthetic_index' because we have blackout period for random_daily submarket
     # This is done for buy optimisation
     return if $self->underlying->submarket->name eq 'random_index';
 

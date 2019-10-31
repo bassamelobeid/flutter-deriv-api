@@ -483,13 +483,13 @@ sub test_flexible_commission {
 }
 
 subtest 'flexible commission check for different markets' => sub {
-    test_flexible_commission 'R_100',     'volidx',      50;
+    test_flexible_commission 'R_100',     'synthetic_index',      50;
     test_flexible_commission 'frxEURUSD', 'forex',       30;
     test_flexible_commission 'frxUSDJPY', 'forex',       70;
     test_flexible_commission 'frxXAUUSD', 'commodities', 70;
     test_flexible_commission 'FCHI',      'indices',     170;
 
-    test_flexible_commission 'R_100',     'volidx',      10000;
+    test_flexible_commission 'R_100',     'synthetic_index',      10000;
     test_flexible_commission 'frxEURUSD', 'forex',       10000;
     test_flexible_commission 'frxUSDJPY', 'forex',       10000;
     test_flexible_commission 'frxXAUUSD', 'commodities', 10000;
@@ -536,7 +536,7 @@ subtest 'Commission for Runs is 4.8%' => sub {
 
 subtest 'non ATM volatility indices variable commission structure' => sub {
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
-        '{"yyy": {"market": "volidx", "commission": "0.1", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}');
+        '{"yyy": {"market": "synthetic_index", "commission": "0.1", "name": "test2", "updated_on": "xxx date", "updated_by": "xxyy"}}');
     my $args = {
         bet_type     => "CALL",
         underlying   => 'R_100',
