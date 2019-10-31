@@ -8,6 +8,8 @@ use lib "$Bin";
 
 use BOM::Test::Suite::DSL;
 
+use LandingCompany::Registry;
+
 my $suite = start(
     title             => "suite01.t",
     test_app          => 'BOM::RPC::Transport::HTTP',
@@ -18,6 +20,10 @@ sub _get_stashed { return $suite->get_stashed(@_); }
 
 set_language 'EN';
 
+my @currencies = LandingCompany::Registry::all_currencies();
+my $currencies = sprintf("(%s)", join("|", @currencies));
+my $length     = scalar @currencies;
+
 test_sendrecv_params 'landing_company/test_send.json', "landing_company/test_receive_$_.json", $_ foreach qw( ua de br );
 
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_svg.json',         'svg';
@@ -26,8 +32,7 @@ test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_malta.json',       'malta';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_maltainvest.json', 'maltainvest';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_error.json',       'unknown';
-test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', '', '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)',
-    11;
+test_sendrecv_params 'payout_currencies/test_send.json',       'payout_currencies/test_receive.json',                   '', $currencies, $length;
 test_sendrecv_params 'residence_list/test_send.json', 'residence_list/test_receive.json';
 test_sendrecv_params 'states_list/test_send.json',    'states_list/test_receive.json';
 
@@ -83,7 +88,7 @@ test_sendrecv_params 'buy/test_send.json', 'buy/test_receive_nobalance.json', _g
 # ADMIN SCOPE CALLS (CR)
 # TEMPORARY: Need to call this before sub account as sub account return all crypto currencies as well
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json',
-    _get_stashed('authorize/stash/token'), '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)', 11;
+    _get_stashed('authorize/stash/token'), $currencies, $length;
 # ADMIN SCOPE CALLS (CR)
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
     _get_stashed('new_account_real/oauth_token'), 'USD';
@@ -131,7 +136,6 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mf.json
     _get_stashed('new_account_maltainvest/oauth_token'), 'cz', 'test\\\\+mlt@binary.com';
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json',
     _get_stashed('authorize/stash/token'), '(USD|EUR|GBP)', 3;
-
 
 # ADMIN SCOPE CALLS (MF)
 test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json',

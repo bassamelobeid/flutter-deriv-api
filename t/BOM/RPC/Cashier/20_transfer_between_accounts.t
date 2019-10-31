@@ -764,7 +764,7 @@ subtest 'transfer with fees' => sub {
 
         $previous_balance_btc = $client_cr_btc->default_account->balance;
         $previous_balance_usd = $client_cr_usd->default_account->balance;
-	$params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_btc->loginid, _get_unique_display_name());
+        $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_btc->loginid, _get_unique_display_name());
         $amount          = $transfer_limits->{BTC}->{min};
         $params->{args}  = {
             account_from => $client_cr_btc->loginid,
@@ -791,7 +791,7 @@ subtest 'transfer with fees' => sub {
     subtest 'unauthorised pa to non-pa transfer' => sub {
         my $previous_balance_btc = $client_cr_pa_btc->default_account->balance;
         my $previous_balance_usd = $client_cr_usd->default_account->balance;
-	$params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_pa_btc->loginid, _get_unique_display_name());
+        $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_pa_btc->loginid, _get_unique_display_name());
         my $amount = $transfer_limits->{BTC}->{min};
         $params->{args} = {
             account_from => $client_cr_pa_btc->loginid,
@@ -818,7 +818,7 @@ subtest 'transfer with fees' => sub {
         my $previous_balance_btc = $client_cr_pa_btc->default_account->balance;
         my $previous_balance_usd = $client_cr_usd->default_account->balance;
         my $amount               = $transfer_limits->{USD}->{min};
-	$params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_usd->loginid, _get_unique_display_name());
+        $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_usd->loginid, _get_unique_display_name());
         $params->{args} = {
             account_from => $client_cr_usd->loginid,
             account_to   => $client_cr_pa_btc->loginid,
@@ -1496,8 +1496,8 @@ subtest 'MT5' => sub {
 };
 
 sub _get_unique_display_name {
-    my @a = ('A'..'Z','a'..'z');
-    return join '', map {$a[int(rand($#a))]} (1..3);
+    my @a = ('A' .. 'Z', 'a' .. 'z');
+    return join '', map { $a[int(rand($#a))] } (1 .. 3);
 }
 
 done_testing();
