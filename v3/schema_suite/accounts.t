@@ -9,6 +9,8 @@ use lib "$Bin";
 
 use BOM::Test::Suite::DSL;
 
+use LandingCompany::Registry;
+
 my $suite = start(
     title             => "accounts.t",
     test_app          => 'Binary::WebSocketAPI',
@@ -16,6 +18,10 @@ my $suite = start(
 );
 
 set_language 'EN';
+
+my @currencies = LandingCompany::Registry::all_currencies();
+my $currencies = sprintf("(%s)", join("|", @currencies));
+my $length     = scalar @currencies;
 
 # VIRTUAL ACCOUNT OPENING FOR (CR)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test@binary.com', 'account_opening';
@@ -71,7 +77,7 @@ test_sendrecv 'get_financial_assessment/test_send.json', 'get_financial_assessme
 # TESTS TO RETURN ERROR (GENERAL)
 test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json', 'test';
 # Create api token with the same display name
-test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json',  'test';
+test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json', 'test';
 test_sendrecv_params 'app_delete/test_send.json', 'app_delete/test_receive.json',       $suite->get_stashed('app_register/app_register/app_id'), '1';
 test_sendrecv_params 'app_update/test_send.json', 'app_update/test_receive_error.json', $suite->get_stashed('app_register/app_register/app_id');
 test_sendrecv_params 'app_get/test_send.json',    'app_get/test_receive_error.json',    $suite->get_stashed('app_register/app_register/app_id');
@@ -85,8 +91,7 @@ test_sendrecv_params 'new_account_real/test_send.json',      'new_account_real/t
 test_sendrecv_params 'authorize/test_send.json',             'authorize/test_receive_cr.json',
     $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'test@binary.com', 'Peter';
 test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', '', $suite->get_stashed('authorize/authorize/loginid');
-test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)',
-    10;
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', $currencies, $length;
 
 # READ SCOPE CALLS (CR) BEFORE CHANGE
 test_sendrecv 'get_limits/test_send.json',   'get_limits/test_receive_cr.json';
