@@ -7,14 +7,11 @@ no indirect;
 use JSON;
 use IPC::Run3;
 use Try::Tiny;
-use BOM::MT5::User::Manager;
 use Data::UUID;
 
 use IO::Async::Loop;
 # Overrideable in unit tests
 our @MT5_WRAPPER_COMMAND = ('/usr/bin/php', '/home/git/regentmarkets/php-mt5-webapi/lib/binary_mt5.php');
-
-my $manager;
 
 my @common_fields = qw(
     email
@@ -59,10 +56,6 @@ sub _get_user_fields {
 
 sub _get_update_user_fields {
     return (@common_fields, qw/login rights/);
-}
-
-sub _get_mamm_update_user_fields {
-    return (_get_update_user_fields(), qw/rights/);
 }
 
 sub _invoke_mt5 {
@@ -113,12 +106,6 @@ sub _invoke_mt5 {
     return $f;
 }
 
-sub _mt5_manager {
-    return $manager if defined $manager;
-    IO::Async::Loop->new->add($manager = BOM::MT5::User::Manager->new);
-    return $manager;
-}
-
 sub create_user {
     my $args = shift;
 
@@ -153,26 +140,6 @@ sub get_user {
 sub update_user {
     my $args   = shift;
     my @fields = _get_update_user_fields();
-
-    my $param = {};
-    $param->{$_} = $args->{$_} for (@fields);
-
-    return _invoke_mt5('UserUpdate', $param)->then(
-        sub {
-            my ($response) = @_;
-
-            my $ret = $response->{user};
-            @fields = _get_user_fields();
-
-            my $mt_user;
-            $mt_user->{$_} = $ret->{$_} for (@fields);
-            return Future->done($mt_user);
-        });
-}
-
-sub update_mamm_user {
-    my $args   = shift;
-    my @fields = _get_mamm_update_user_fields();
 
     my $param = {};
     $param->{$_} = $args->{$_} for (@fields);
@@ -252,59 +219,6 @@ sub withdrawal {
         sub {
 
             return Future->done({status => 1});
-        });
-}
-
-sub manager_api_deposit {
-    my $args = shift;
-    return _mt5_manager->adjust_balance($args->{login}, $args->{amount}, $args->{comment})->then(
-        sub {
-            my ($response) = @_;
-
-            if ($response->{success}) {
-                return Future->done({status => 1});
-            }
-
-            return Future->done($response);
-        }
-        )->catch(
-        sub {
-            return Future->fail(
-                _future_error({
-                        code  => 'Timeout',
-                        error => 'timeout'
-                    }));
-        });
-}
-
-sub manager_api_withdrawal {
-    my $args   = shift;
-    my $amount = $args->{amount};
-    if ($amount >= 0) {
-        warn "Amount should be < 0";
-        return Future->fail(
-            _future_error({
-                    code  => 'InternalError',
-                    error => 'internal error',
-                }));
-    }
-    return _mt5_manager->adjust_balance($args->{login}, $amount, $args->{comment}, $args->{request_UUID})->then(
-        sub {
-            my ($response) = @_;
-
-            if ($response->{success}) {
-                return Future->done({status => 1});
-            }
-
-            return Future->done($response);
-        }
-        )->catch(
-        sub {
-            return Future->fail(
-                _future_error({
-                        code  => 'Timeout',
-                        error => 'timeout'
-                    }));
         });
 }
 
