@@ -544,7 +544,11 @@ sub _pricing_channel_for_proposal {
 
     my %args_hash = %{$args};
 
-    if ($args_hash{basis} and defined $args_hash{amount}) {
+    # Payout=1000 is only used for binary option, where the pricer calculate theo probability
+    # for payout=1000 and then in binary-websocket-api we use Price::Calculator to calculate
+    # price. For non binary option, we do not take this approach and we calculate the price
+    # directly in the pricer. Spread is a non binary.
+    if ($args_hash{basis} and defined $args_hash{amount} and $args_hash{contract_type} !~ /SPREAD$/) {
         $args_hash{amount} = 1000;
         $args_hash{basis}  = 'payout';
     }
@@ -721,7 +725,9 @@ sub _skip_streaming {
     return 1 if $args->{skip_streaming};
     my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
     my $atm_callput_contract =
-        ($args->{contract_type} =~ /^(CALL|PUT|CALLE|PUTE)$/ and not($args->{barrier} or ($args->{proposal_array} and $args->{barriers}))) ? 1 : 0;
+        ($args->{contract_type} =~ /^(CALL|PUT|CALLE|PUTE)$/ and not($args->{barrier} or ($args->{proposal_array} and $args->{barriers})))
+        ? 1
+        : 0;
 
     my ($skip_atm_callput, $skip_contract_type) = (0, 0);
 
