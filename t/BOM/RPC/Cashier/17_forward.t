@@ -390,7 +390,6 @@ subtest 'crypto_cashier_forward_page' => sub {
             action       => $action,
             language     => $language,
             brand_name   => $brand_name,
-            app_id       => $app_id,
             domain       => 'binary.la',
         });
 
@@ -404,7 +403,6 @@ subtest 'crypto_cashier_forward_page' => sub {
             action       => $action,
             language     => $language,
             brand_name   => $brand_name,
-            app_id       => $app_id,
             domain       => 'binary.me',
         });
     ok $valid_deposit =~ /^https:\/\/crypto-cashier.binary.me/, 'valid domain to valid domain';
@@ -417,7 +415,6 @@ subtest 'crypto_cashier_forward_page' => sub {
             action       => $action,
             language     => $language,
             brand_name   => $deriv_brand_name,
-            app_id       => $deriv_app_id,
             domain       => 'deriv.la',
         });
 
@@ -431,7 +428,6 @@ subtest 'crypto_cashier_forward_page' => sub {
             action       => $action,
             language     => $language,
             brand_name   => $deriv_brand_name,
-            app_id       => $deriv_app_id,
             domain       => 'deriv.app',
         });
 
@@ -447,7 +443,6 @@ subtest 'crypto_cashier_forward_page' => sub {
             action       => $action,
             language     => $language,
             brand_name   => $brand_name,
-            app_id       => $app_id,
             domain       => 'binary.me',
         });
     ok $valid_QA_deposit =~ /^https:\/\/www.binaryqa25.com/;
