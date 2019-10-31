@@ -424,7 +424,7 @@ sub startup {
             'cashier',
             {
                 require_auth => 'payments',
-                stash_params => [qw/ server_name domain ua_fingerprint source /],
+                stash_params => [qw/ server_name domain /],
             }
         ],
         [
