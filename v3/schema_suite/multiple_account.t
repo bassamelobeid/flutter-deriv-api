@@ -8,6 +8,8 @@ use lib "$Bin";
 
 use BOM::Test::Suite::DSL;
 
+use LandingCompany::Registry;
+
 my $suite = start(
     title             => "multiple_account.t",
     test_app          => 'Binary::WebSocketAPI',
@@ -15,6 +17,10 @@ my $suite = start(
 );
 
 set_language 'EN';
+
+my @currencies = LandingCompany::Registry::all_currencies();
+my $currencies = sprintf("(%s)", join("|", @currencies));
+my $length     = scalar @currencies;
 
 my $placeholder;    # a variable to store temporary results in for reuse later on
 
@@ -56,8 +62,7 @@ fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/t
 
 # authorize real account to make multiple accounts
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_cr.json', $placeholder, 'testmultiple@binary.com', 'Howdee';
-test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)',
-    10;
+test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', $currencies, $length;
 # will fail as currency for existing client is not set
 fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Howdee', 'id', '+69876543000';
 

@@ -19,7 +19,7 @@
             "legal_allowed_currencies" : {
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)$"
+                  "pattern" : "^[A-Z]{3,4}$"
                },
                "type" : "array",
                "minItems" : 7

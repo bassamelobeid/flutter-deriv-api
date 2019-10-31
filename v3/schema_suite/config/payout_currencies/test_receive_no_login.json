@@ -13,7 +13,7 @@
       "payout_currencies" : {
          "items" : {
             "type" : "string",
-            "pattern" : "^(USD|EUR|GBP|AUD|BTC|LTC|BCH|ETH|UST|USB|IDK)$"
+            "pattern" : "^[A-Z]{3,4}$"
          },
          "minItems" : 7,
          "type" : "array"
