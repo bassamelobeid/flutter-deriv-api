@@ -468,9 +468,4 @@ system:
               isa: Bool
               default: 0
               global: 1
-            manager_api:
-              description: "Suspend MT5 Manager API from doing transfer (switch back to MT5 Web API)"
-              isa: Bool
-              default: 0
-              global: 1
 
