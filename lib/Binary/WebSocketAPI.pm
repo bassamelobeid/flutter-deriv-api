@@ -473,13 +473,6 @@ sub startup {
             }
         ],
         [
-            'mt5_mamm',
-            {
-                require_auth => 'admin',
-                stash_params => [qw/ server_name client_ip user_agent /],
-            }
-        ],
-        [
             'document_upload',
             {
                 stash_params    => [qw/ token /],
