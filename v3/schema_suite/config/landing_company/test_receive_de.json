@@ -50,7 +50,7 @@
                   },
                   "has_reality_check" : {
                      "type" : "integer",
-                     "enum" : [1]
+                     "enum" : [0]
                   },
                   "legal_default_currency" : {
                      "type" : "string",
