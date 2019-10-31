@@ -232,21 +232,6 @@ subtest 'withdrawal' => sub {
         ->error_code_is('PermissionDenied', 'error code for mt5_withdrawal wrong login');
 };
 
-subtest 'mt5 mamm' => sub {
-    my $method = "mt5_mamm";
-    my $params = {
-        language => 'EN',
-        token    => $token,
-        args     => {
-            login => $DETAILS{login},
-        },
-    };
-    $c->call_ok($method, $params)->has_no_error('no error for mt5_mamm');
-    my $result = $c->result;
-    is $result->{status},     1,  'Request was successful';
-    is $result->{manager_id}, '', 'No manager assigned';
-};
-
 done_testing();
 
 package BOM::Test::RedisQueue::Client;
