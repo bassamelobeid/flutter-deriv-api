@@ -81,7 +81,7 @@
                "type" : "array",
                "items" : {
                   "type" : "string",
-                  "pattern" : "^volidx$"
+                  "pattern" : "^synthetic_index$"
                }
             }
          },
