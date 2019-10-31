@@ -222,8 +222,8 @@ quants:
                   isa: Num
                   default: 100
                   global: 1
-                volidx:
-                  description: "The scaling factor for all volatility index commissions. (percent of base commission. Example: Base commission is 3.5%, when you input 100%, the commission charge will be 3.5%. If you input 50%, the commission charge will only be 1.75%.)"
+                synthetic_index:
+                  description: "The scaling factor for all synthetic index commissions. (percent of base commission. Example: Base commission is 3.5%, when you input 100%, the commission charge will be 3.5%. If you input 50%, the commission charge will only be 1.75%.)"
                   isa: Num
                   default: 100
                   global: 1
