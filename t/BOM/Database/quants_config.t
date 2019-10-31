@@ -82,7 +82,7 @@ subtest 'set global' => sub {
         {
             limit_type   => 'global_potential_loss',
             limit_amount => 109,
-            market       => ['forex', 'volidx'],
+            market       => ['forex', 'synthetic_index'],
         },
         {
             limit_type        => 'global_potential_loss',
@@ -139,7 +139,7 @@ subtest 'set global' => sub {
         {
             limit_type   => 'global_potential_loss',
             limit_amount => 209,
-            market       => ['forex', 'volidx'],
+            market       => ['forex', 'synthetic_index'],
             start_time   => '19990704 0:00',
             end_time     => '20200704 23:59',
         },
@@ -182,7 +182,7 @@ subtest 'get global limit' => sub {
             107
         ],
         [{
-                market         => 'volidx',
+                market         => 'synthetic_index',
                 expiry_type    => 'tick',
                 barrier_type   => 'atm',
                 contract_group => 'callput',
@@ -191,7 +191,7 @@ subtest 'get global limit' => sub {
             105
         ],
         [{
-                market         => 'volidx',
+                market         => 'synthetic_index',
                 expiry_type    => 'tick',
                 contract_group => 'callput',
                 limit_type     => 'global_potential_loss',
@@ -316,7 +316,7 @@ subtest 'get all global limit' => sub {
                         'expiry_type'           => 'default',
                         'global_potential_loss' => 400000,
                         'global_realized_loss'  => 200000,
-                        'market'                => 'volidx',
+                        'market'                => 'synthetic_index',
                         'type'                  => 'market',
                         'underlying_symbol'     => '-',
                     },
@@ -354,7 +354,7 @@ subtest 'get all global limit' => sub {
             'expiry_type'           => 'default',
             'global_potential_loss' => 400000,
             'global_realized_loss'  => 200000,
-            'market'                => 'volidx',
+            'market'                => 'synthetic_index',
             'type'                  => 'market',
             'underlying_symbol'     => '-',
             'landing_company'       => 'iom',
@@ -412,7 +412,7 @@ subtest 'set per client limit' => sub {
             {
                 limit_type   => 'per_client_maximum_payout',
                 limit_amount => 109,
-                market       => ['forex', 'volidx'],
+                market       => ['forex', 'synthetic_index'],
                 client_id    => ['default'],
             },
             {
@@ -490,7 +490,7 @@ subtest 'get per client limit' => sub {
                     expiry_type       => 'intraday',
                     contract_type     => 'CALL',
                     underlying_symbol => 'R_100',
-                    market            => 'volidx',
+                    market            => 'synthetic_index',
                     client            => $client2->loginid,
                 },
                 109
