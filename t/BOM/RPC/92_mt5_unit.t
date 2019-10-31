@@ -11,7 +11,6 @@ my %account_lc_short = (
     'real\labuan_advanced'          => 'labuan',
     'real\maltainvest_standard'     => 'maltainvest',
     'real\maltainvest_standard_GBP' => 'maltainvest',
-    'real\svg_mamm_2343'            => 'svg',
     'real\svg'                      => 'svg',
 );
 
