@@ -8,6 +8,7 @@ use Encode;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use JSON::MaybeUTF8 qw(:v1);
 use List::Util qw(first);
+use Log::Any qw( $log );
 use Scalar::Util qw(blessed);
 use Time::HiRes ();
 use Syntax::Keyword::Try;
@@ -167,12 +168,25 @@ sub run {
         # If incomplete or invalid keys somehow got into pricer,
         # delete them here.
         unless ($self->_validate_params($next, $params)) {
-            warn "Invalid parameters: $next";
+            $log->warnf('Invalid parameters: %s', $next);
             $redis->del($key->[1], $next);
-            next;
+            next LOOP;
         }
 
-        my $response = $self->process_job($redis, $next, $params) or next;
+        # Just having valid parameters may not be enough.
+        # Let's stay alive and track failing processing
+        # Also, remove from the forward queue
+        my $response;
+        try {
+            # Possible transient failure/dupe spot time
+            $response = $self->process_job($redis, $next, $params) // next LOOP;
+        }
+        catch {
+            my $err = $@;
+            $log->warnf('process_job_exception: param_str[%s], exception[%s], params[%s]', $next, $err, $params);
+            $redis->del($key->[1], $next);
+            next LOOP;
+        }
 
         if (($response->{rpc_time} // 0) > 1000) {
             my $contract_type_string =
@@ -237,14 +251,15 @@ sub _get_underlying_or_log {
     my $underlying = $commands->{$cmd}->{get_underlying}->($self, $params);
 
     if (not $underlying or not ref($underlying)) {
-        warn "Have legacy underlying - $underlying with params " . encode_json_text($params) . "\n" if not ref($underlying);
+        $log->warnf('Have legacy underlying - %s with params %s', $underlying, $params) if not ref($underlying);
         stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
         return undef;
     }
 
     unless (defined $underlying->spot_tick and defined $underlying->spot_tick->epoch) {
-        warn "Underlying spot_tick " . Dumper($underlying->spot_tick) if defined $underlying->spot_tick;
-        warn $underlying->system_symbol . " has invalid spot tick (request: $next)" if $underlying->calendar->is_open($underlying->exchange);
+        $log->warnf('Underlying spot_tick %s', $underlying->spot_tick) if defined $underlying->spot_tick;
+        $log->warnf('%s has invalid spot tick (request: %s)', $underlying->system_symbol, $next)
+            if $underlying->calendar->is_open($underlying->exchange);
         stats_inc("pricer_daemon.$cmd.invalid", {tags => $self->tags});
         return undef;
     }
@@ -254,7 +269,7 @@ sub _get_underlying_or_log {
 sub _get_underlying_price {
     my ($self, $params) = @_;
     unless (exists $params->{symbol}) {
-        warn "symbol is not provided price daemon for price";
+        $log->warn("symbol is not provided price daemon for price");
         return undef;
     }
     return create_underlying($params->{symbol});
@@ -263,7 +278,7 @@ sub _get_underlying_price {
 sub _get_underlying_bid {
     my ($self, $params) = @_;
     unless (exists $params->{short_code} and $params->{currency}) {
-        warn "short_code or currency is not provided price daemon for bid";
+        $log->warn("short_code or currency is not provided price daemon for bid");
         return undef;
     }
     my $from_shortcode = shortcode_to_parameters($params->{short_code}, $params->{currency});
@@ -289,18 +304,19 @@ sub _validate_params {
     my ($self, $next, $params) = @_;
 
     my $cmd = $params->{price_daemon_cmd};
+    my $pnext = $next // 'undefined';
     unless ($cmd) {
-        warn "No Pricer command! Payload is: " . ($next // 'undefined');
+        $log->warnf('No Pricer command! Payload is: %s', $pnext);
         stats_inc("pricer_daemon.no_cmd", {tags => $self->tags});
         return 0;
     }
     unless (defined($commands->{$cmd})) {
-        warn "Unrecognized Pricer command $cmd! Payload is: " . ($next // 'undefined');
+        $log->warnf('Unrecognized Pricer command %s! Payload is: %s', $cmd, $pnext);
         stats_inc("pricer_daemon.unknown.invalid", {tags => $self->tags});
         return 0;
     }
     if (first { not defined $params->{$_} } @{$commands->{$cmd}{required_params}}) {
-        warn "Not all required params provided for $cmd! Payload is: " . ($next // 'undefined');
+        $log->warnf('Not all required params provided for %s! Payload is: %s', $cmd, $pnext);
         stats_inc("pricer_daemon.required_params_missed", {tags => $self->tags});
         return 0;
     }
