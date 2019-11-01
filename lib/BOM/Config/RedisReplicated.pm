@@ -78,7 +78,7 @@ sub redis_read {
 sub redis_pricer {
     $config->{pricer} //= BOM::Config::redis_pricer_config();
     my %args = @_;
-    return _redis('pricer', 'write', $args{timeout} // 3600);
+    return _redis('pricer', 'write', $args{timeout} // 10);
 }
 
 sub redis_exchangerates {
