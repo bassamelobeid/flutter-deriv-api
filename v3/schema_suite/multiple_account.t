@@ -53,18 +53,18 @@ fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_vir
     $suite->get_token('testmultiple@binary.com'), 'testmultiple@binary.com', 'id';
 
 # REAL ACCOUNT OPENING
-test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Howdee', 'id', '+69876543000';
+test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Howdee', 'id', '+61 2 9876 5432';
 
 $placeholder = $suite->get_stashed('new_account_real/new_account_real/oauth_token');
 
 # virtual client not allowed to make multiple real account call
-fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Howdee', 'id', '+69876543000';
+fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Howdee', 'id', '+61 2 9876 5432';
 
 # authorize real account to make multiple accounts
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_cr.json', $placeholder, 'testmultiple@binary.com', 'Howdee';
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', $currencies, $length;
 # will fail as currency for existing client is not set
-fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Howdee', 'id', '+69876543000';
+fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Howdee', 'id', '+61 2 9876 5432';
 
 # set account currency
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'USD';
@@ -83,7 +83,7 @@ fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_cu
 # we only allow one fiat currency so this will also fail
 fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'EUR';
 # will fail as accounts exhausted
-fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Howdee', 'id', '+69876543000';
+fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Howdee', 'id', '+61 2 9876 5432';
 
 # fail to set currency not in allowed currencies for landing company
 fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'ETC';
@@ -113,17 +113,17 @@ test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
     $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-multiple-mlt@binary.com';
 
-test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'Howdee', 'dk', '+69876543003';
+test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'Howdee', 'dk', '+61 2 9876 5432';
 
 $placeholder = $suite->get_stashed('new_account_real/new_account_real/oauth_token');
 
 # virtual not allowed to make multiple new accounts
-fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'Howdee', 'dk', '+69876543000';
+fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'Howdee', 'dk', '+61 2 9876 5433';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mlt.json', $placeholder, 'test-multiple-mlt@binary.com', 'Howdee';
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|GBP)', 3;
 
 # not allowed as previous account has no currency set
-fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'Howdee', 'dk', '+69876543000';
+fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'Howdee', 'dk', '+61 2 9876 5432';
 
 # not allowed as not supported yet
 fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'LTC';
@@ -135,7 +135,7 @@ test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currenc
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', 'EUR', 1;
 
 # still not allowed as fiat currency exhausted and MLT has no cryptocurrency
-fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'Howdee', 'dk', '+69876543000';
+fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'Howdee', 'dk', '+61 2 9876 5432';
 
 test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive_error.json', '0', 'Howdee', 'dk', '+61234567001';
 # mlt able to upgrade to maltainvest
@@ -172,9 +172,9 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.js
     $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-multiple-mf@binary.com';
 
 # for germany we don't have gaming company so it should fail
-fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'MFName', 'de', '+69876543000';
+fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'MFName', 'de', '+61 2 9876 5432';
 
-test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'MFName', 'de', '+6123456700011';
+test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'MFName', 'de', '+61 2 9876 5434';
 $placeholder = $suite->get_stashed('new_account_maltainvest/new_account_maltainvest/oauth_token');
 
 # not allowed multiple upgrade from financial
@@ -208,17 +208,17 @@ fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_vir
 
 # REAL ACCOUNT OPENING (MX)
 
-test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+69876543000';
+test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+61 2 9876 5432';
 $placeholder = $suite->get_stashed('new_account_real/new_account_real/oauth_token');
 
 # not allowed to open it again from virtual
-fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+69876543000';
+fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+61 2 9876 5432';
 
 # authorize real account to make multiple accounts
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mx.json', $placeholder, 'test-multiple-mx@binary.com', 'Johny';
 
 # will fail as currency for existing client is not set
-fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+69876543000';
+fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+61 2 9876 5432';
 
 # crypto currencies not allowed
 fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'BTC';
@@ -227,6 +227,6 @@ test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currenc
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', 'GBP', 1;
 
 # will fail as exhausted
-fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+69876543000';
+fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+61 2 9876 5432';
 
 finish;
