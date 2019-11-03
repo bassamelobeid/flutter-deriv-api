@@ -18,6 +18,7 @@ use Date::Utility;
 use HTML::Entities qw(encode_entities);
 use List::Util qw(any sum0 first min uniq);
 use Digest::SHA qw(hmac_sha256_hex);
+use Text::Trim qw(trim);
 
 use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(is_section_complete update_financial_assessment decode_fa build_financial_assessment);
@@ -45,6 +46,7 @@ use BOM::Transaction;
 use BOM::MT5::User::Async;
 use BOM::Config;
 use BOM::User::Password;
+use BOM::User::Phone;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
@@ -1115,6 +1117,7 @@ rpc set_settings => sub {
     my $params = shift;
 
     my $current_client = $params->{client};
+    my $error_map      = BOM::RPC::v3::Utility::error_map();
 
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
@@ -1206,6 +1209,17 @@ rpc set_settings => sub {
                     if ($current_client->place_of_birth
                     and $args->{place_of_birth} ne $current_client->place_of_birth);
             }
+        }
+
+        if ($args->{phone}) {
+            my $phone = BOM::User::Phone::format_phone($args->{phone});
+            unless ($phone) {
+                my $error_code = 'InvalidPhone';
+                return BOM::RPC::v3::Utility::create_error({
+                        code              => $error_code,
+                        message_to_client => $error_map->{$error_code}});
+            }
+            $args->{phone} = $phone;
         }
 
         if ($args->{date_of_birth}) {
@@ -1396,8 +1410,8 @@ rpc set_settings => sub {
     my $date_of_birth          = $args->{date_of_birth} // $current_client->date_of_birth;
     my $citizen                = ($args->{'citizen'} // $current_client->citizen) // '';
     my $salutation             = $args->{'salutation'} // $current_client->salutation;
-    my $first_name             = $args->{'first_name'} // $current_client->first_name;
-    my $last_name              = $args->{'last_name'} // $current_client->last_name;
+    my $first_name             = trim($args->{'first_name'} // $current_client->first_name);
+    my $last_name              = trim($args->{'last_name'} // $current_client->last_name);
     my $account_opening_reason = $args->{'account_opening_reason'} // $current_client->account_opening_reason;
     my $secret_answer          = $args->{secret_answer} ? BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) : '';
     my $secret_question        = $args->{secret_question} // '';

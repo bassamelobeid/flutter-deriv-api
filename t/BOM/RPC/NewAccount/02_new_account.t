@@ -264,6 +264,12 @@ subtest $method => sub {
 
         $user->update_email_fields(email_verified => 1);
 
+        $params->{args}->{phone} = '1234567890';
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidPhone', 'It should return error if phone cannot be formatted to E.123')
+            ->error_message_is('Please enter a valid phone number, including the country code (e.g. +15417541234).', 'It should return expected error message');
+        delete $params->{args}->{phone};
+
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
             'Binary (SVG) Ltd.',
@@ -322,7 +328,7 @@ subtest $method => sub {
             first_name    => 'James' . rand(999),
             last_name     => 'Brown' . rand(999),
             date_of_birth => '1960-01-02',
-            phone         => '+79272075' . int(rand(999)),
+            phone         => sprintf("+7 927 207 56 %02d", rand(99)),
         };
 
         @{$params->{args}}{keys %$client_cr} = values %$client_cr;
@@ -559,6 +565,12 @@ subtest $method => sub {
         #if citizenship is from restricted country but residence is valid,it shouldn't throw any error
         $params->{args}->{citizen} = 'ir';
 
+        $params->{args}->{phone} = '1234567890';
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidPhone', 'It should return error if phone cannot be formatted to E.123')
+            ->error_message_is('Please enter a valid phone number, including the country code (e.g. +15417541234).', 'It should return expected error message');
+        delete $params->{args}->{phone};
+
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
             'Binary Investments (Europe) Ltd',
@@ -624,7 +636,7 @@ subtest $method => sub {
 
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
-        $params->{args}->{phone}         = '1234567890';
+        $params->{args}->{phone}         = '+62 21 12345678';
         $params->{args}->{date_of_birth} = '1990-09-09';
 
         # We have to delete these fields here as our test helper function creates clients with different fields than what is declared above in this file. Should change this.
@@ -689,7 +701,7 @@ subtest $method => sub {
 
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
-        $params->{args}->{phone}         = '1234567890';
+        $params->{args}->{phone}         = '+62 21 12345678';
         $params->{args}->{date_of_birth} = '1990-09-09';
 
         $client_mx->status->set('unwelcome', 'system', 'test');
@@ -745,7 +757,7 @@ subtest $method => sub {
 
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
-        $params->{args}->{phone}         = '1234567890';
+        $params->{args}->{phone}         = '+62 21 12345678';
         $params->{args}->{date_of_birth} = '1990-09-09';
 
         $rpc_ct->call_ok($method, $params)
@@ -772,7 +784,7 @@ subtest $method => sub {
         $email = 'virtual_de_email' . rand(999) . '@binary.com';
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
-        $params->{args}->{phone}         = '1234567821';
+        $params->{args}->{phone}         = '+62 21 12345999';
         $params->{args}->{date_of_birth} = '1990-09-09';
 
         $user = BOM::User->create(

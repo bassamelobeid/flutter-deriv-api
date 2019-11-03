@@ -1559,7 +1559,7 @@ subtest $method => sub {
             'date_of_birth'                  => '267408000',
             'address_state'                  => 'LA',
             'address_postcode'               => '232323',
-            'phone'                          => '+112123121',
+            'phone'                          => '+1 541 754 3010',
             'last_name'                      => 'pItT',
             'email'                          => 'sample@binary.com',
             'address_line_2'                 => '301',
@@ -2122,6 +2122,15 @@ subtest $method => sub {
             'cannot send account_opening_reason with a different value'
         );
     }
+
+    delete $params->{args}->{account_opening_reason};
+    $params->{args}->{phone} = '+11111111';
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Please enter a valid phone number, including the country code (e.g. +15417541234).',
+        'Cannot send invalid phone number'
+    );
+    delete $params->{args}->{phone};
 
     $params->{args} = {%full_args};
     $mocked_client->mock('save', sub { return undef });
