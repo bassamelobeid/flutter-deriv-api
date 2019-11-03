@@ -22,7 +22,7 @@ my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 my $cr_us_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
     email       => $email,
-    phone       => '+112123121'
+    phone       => '+1 541 754 3010'
 });
 
 my $cr_uk_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

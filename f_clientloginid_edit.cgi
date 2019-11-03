@@ -42,6 +42,7 @@ use BOM::Database::DataMapper::Copier;
 use BOM::Platform::S3Client;
 use BOM::Config::RedisReplicated;
 use BOM::User::Onfido;
+use BOM::User::Phone;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -491,6 +492,16 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     # status change for existing promo code
     if (exists $input{promo_code_status} and not exists $input{promo_code}) {
         $client->promo_code_status($input{promo_code_status});
+    }
+
+    # Prior to duplicate check and storing, strip off trailing and leading whitespace
+    foreach (qw/first_name last_name/) {
+        $input{$_} = trim($input{$_}) if exists $input{$_};
+    }
+    if ($input{phone}) {
+        my $phone = BOM::User::Phone::format_phone($input{phone});
+        code_exit_BO('<p style="color:red; font-weight:bold;">ERROR: Phone number is not valid</p>') unless $phone;
+        $input{phone} = $phone;
     }
 
     if (   ($input{first_name} and $input{first_name} ne $client->first_name)
