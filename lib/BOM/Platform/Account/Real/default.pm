@@ -7,8 +7,10 @@ use Date::Utility;
 use Try::Tiny;
 use Locale::Country;
 use List::MoreUtils qw(any);
+use Text::Trim qw(trim);
 
 use BOM::User::Client;
+use BOM::User::Phone;
 use BOM::User::Client::Desk;
 
 use BOM::Database::ClientDB;
@@ -296,6 +298,15 @@ sub validate_account_details {
 
     for my $field (keys %default_values) {
         $details->{$field} = $args->{$field} // $default_values{$field};
+    }
+
+    $details->{$_} = trim($details->{$_}) foreach (qw/first_name last_name/);
+    if ($details->{phone}) {
+        # This validation + formatting is performed here (as oppose to above as other validations)
+        # because to we do not want to modify the args hashref
+        my $phone = BOM::User::Phone::format_phone($details->{phone});
+        return {error => 'InvalidPhone'} unless $phone;
+        $details->{phone} = $phone;
     }
 
     return {details => $details};

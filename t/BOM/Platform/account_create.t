@@ -79,7 +79,7 @@ my %real_client_details = (
     address_city                  => 'city',
     address_state                 => 'state',
     address_postcode              => '89902872',
-    phone                         => '82083808372',
+    phone                         => '+62 21 12345678',
     secret_question               => 'Mother\'s maiden name',
     secret_answer                 => 'sjgjdhgdjgdj',
     myaffiliates_token_registered => 0,
@@ -222,7 +222,13 @@ subtest 'create account' => sub {
     $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client, $broker, 1);
     is $details->{error}, undef, 'no error for empty place of birth';
 
-    $t_details{phone} = '+8201111' . int(rand(999));
+    # Invalid phone
+    $t_details{phone} = '+623234234234777';
+    $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client, $broker, 1);
+    is $details->{error}, 'InvalidPhone', 'Invalid phone';
+
+    $t_details{phone} = sprintf("+15417555%03d", rand(999));
+
     # real acc
     lives_ok {
         $real_acc = BOM::Platform::Account::Real::default::create_account({
@@ -256,7 +262,7 @@ subtest 'create account' => sub {
         'create VR account';
 
         is($social_login_user->{has_social_signup}, 1, 'social login user has social signup flag');
-        $real_client_details{phone} = '+8201122' . int(rand(999));
+        $real_client_details{phone} = sprintf("+15417123%03d", rand(999));
 
         my %details = (
             %real_client_details,
@@ -346,7 +352,7 @@ sub create_mf_acc {
     $details{broker_code}     = 'MF';
     $details{first_name}      = 'MF_' . $from_client->broker;
     $details{client_password} = $from_client->password;
-    $details{phone}           = '+8201234' . int(rand(999));
+    $details{phone}           = sprintf("+15417321%03d", rand(999));
 
     my $params = \%financial_data;
     $params->{accept_risk} = 1;
