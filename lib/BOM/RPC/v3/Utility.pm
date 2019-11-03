@@ -335,6 +335,7 @@ sub error_map {
         'InvalidBrand'               => localize('Brand is invalid.'),
         'CannotChangeAccountDetails' => localize('You may not change these account details.'),
         'UnwelcomeAccount'           => localize('We are unable to do that because your account has been restricted. If you need help, let us know.'),
+        'InvalidPhone'               => localize('Please enter a valid phone number, including the country code (e.g. +15417541234).'),
 
     };
 }
