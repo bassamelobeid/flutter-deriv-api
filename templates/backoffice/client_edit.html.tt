@@ -348,25 +348,34 @@ table#client_edit td{
                         <a class="lspace" target="_blank" href="[% href_xml | none %]">[XML]</a>
                         [% IF proveID.has_saved_pdf %]
                         <a class="lspace" target="_blank" href="[% href_pdf | none %] ">[PDF]</a>
-                        [% END %]
-                    [% ELSE %]
+                        [% # has_saved_pdf
+                        END %]
+                    [% # has_saved_xml
+                    ELSE %]
 		                <b>ProveID requested, but resulting xml file doesn't exist or has been deleted. Please try again later or resend the ProveID request</b>
-                    [% END %]
-                [% ELSE %]
+                    [% # has_saved_xml
+                    END %]
+                [% # proveID.client.status.proveid_requested || proveID.has_saved_xml;
+                ELSE %]
                     An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has NOT</span> been done.
-                [%  END %]
+                [% # proveID.client.status.proveid_requested || proveID.has_saved_xml;
+                END %]
                     <br/>
-            [%  END %]
-            [% IF client.broker == 'MX' %]
+            [% # client_for_prove
+            END %]
+            [% IF client.residence == 'gb' %]
                     <input type="submit" name="do_id_check" value="Submit a new ProveID request"/>
                 [% IF proveID.has_saved_xml or proveID.has_saved_pdf %]
                 <br/>
                     <input type="submit" name="delete_existing_192" value="Delete existing Experian results"/>
                 <br/>
-                [% END %]
-            [% ELSE %]
-                Please go to the client's MX account to submit/delete proveID requests.
-            [% END %]
+                [% # proveID.has_saved_xml or proveID.has_saved_pdf
+                END %]
+            [% # client.residence == 'gb'
+            ELSE %]
+                Please go to the client's MX account with residence 'gb' to submit/delete proveID requests.
+            [% # client.residence == 'gb'
+            END %]
         </td>
     </tr>
     <tr>
