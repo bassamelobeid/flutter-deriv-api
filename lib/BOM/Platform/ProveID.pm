@@ -382,7 +382,7 @@ sub _upload_file {
     die "Type should be xml or pdf" unless $type && $type =~ /xml|pdf/;
     die "File has to be a Path::Tiny object" unless $file && $file->isa('Path::Tiny');
     my $file_name = $type eq 'xml' ? $self->_xml_file_name : $self->_pdf_file_name;
-    my $old_file  = $type eq 'xml' ? $self->_has_old_xml   : $self->_has_old_pdf;
+    my $old_file  = $type eq 'xml' ? $self->_old_xml_file  : $self->_old_pdf_file;
     my $checksum  = Digest::MD5->new->addfile($file->filehandle('<'))->hexdigest;
     return $self->s3client->upload($file_name, "$file", $checksum)->then(
         sub {
@@ -621,36 +621,36 @@ sub delete_existing_reports {
     my $self   = shift;
     my $client = $self->client;
 
-    my $xml_report_filepath = $self->xml_folder . "/" . $self->_file_name;
-    my $pdf_report_filepath = $self->pdf_folder . "/" . $self->_pdf_file_name;
+    $self->_old_xml_file->remove() if $self->_old_xml_file;
+    $self->_old_pdf_file->remove() if $self->_old_pdf_file;
 
-    Path::Tiny::path($xml_report_filepath)->remove();
-    Path::Tiny::path($pdf_report_filepath)->remove();
-
-    Future->wait_all(map { $self->s3client->delete($_) } ($self->_xml_file_name, $self->_pdf_file_name))->else_done(0)->get;
+    Future->wait_all(
+        map {
+            $self->s3client->delete($_)->on_fail(sub { warn shift })
+        } ($self->_xml_file_name, $self->_pdf_file_name))->else_done(0)->get;
 
     return 1;
 }
 
-=head2 _has_old_xml
+=head2 _old_xml_file
 
 Returns path object if there is a saved XML at $xml_folder . "/" . $file_name , else undef
 
 =cut
 
-sub _has_old_xml {
+sub _old_xml_file {
     my $self    = shift;
     my $old_xml = path($self->xml_folder . "/" . $self->_file_name);
     return $old_xml->exists ? $old_xml : undef;
 }
 
-=head2 _has_old_pdf
+=head2 _old_pdf_file
 
 Returns path object if there is a saved PDF at $pdf_folder . "/" . $file_name, else undef
 
 =cut
 
-sub _has_old_pdf {
+sub _old_pdf_file {
     my $self    = shift;
     my $old_pdf = path($self->pdf_folder . "/" . $self->_file_name);
     return $old_pdf->exists ? $old_pdf : undef;
@@ -664,8 +664,9 @@ Returns 1 if there is a saved XML at local dir or S3 server
 
 sub has_saved_xml {
     my $self = shift;
-    return $self->_has_old_xml
-        || $self->s3client->head_object($self->_xml_file_name)->then_done(1)->else_done(0)->get;
+    return $self->_old_xml_file
+        || $self->s3client->head_object($self->_xml_file_name)->on_fail(sub { warn $_[0] unless $_[0] =~ /^404|^no such file/ })->then_done(1)
+        ->else_done(0)->get;
 }
 
 =head2 has_saved_pdf
@@ -676,8 +677,9 @@ Returns 1 if there is a saved pdf at local dir or S3 server.
 
 sub has_saved_pdf {
     my $self = shift;
-    return $self->_has_old_pdf
-        || $self->s3client->head_object($self->_pdf_file_name)->then_done(1)->else_done(0)->get;
+    return $self->_old_pdf_file
+        || $self->s3client->head_object($self->_pdf_file_name)->on_fail(sub { warn $_[0] unless $_[0] =~ /^404|^no such file/ })->then_done(1)
+        ->else_done(0)->get;
 }
 
 =head2 BUILDERS
@@ -707,7 +709,7 @@ sub _build_xml_result {
     my ($result) = $self->s3client->download($self->_xml_file_name)->else(sub { $s3_error = shift; Future->done('') })->get;
 
     # for back compatible
-    $result ||= try { path($self->xml_folder . "/" . $self->_file_name)->slurp_utf8 } catch { return '' };
+    $result ||= try { $self->_old_xml_file ? $self->_old_xml_file->slurp_utf8 : '' } catch { return '' };
 
     warn "There is no such experian document on either local dir or S3. Maybe S3 has problem: $s3_error" unless $result;
     return $result;
@@ -747,13 +749,13 @@ sub _build__pdf_file_name {
 
 sub _build_xml_url {
     my $self = shift;
-    return undef if $self->_has_old_xml;
+    return undef if $self->_old_xml_file;
     return $self->s3client->get_s3_url($self->_xml_file_name);
 }
 
 sub _build_pdf_url {
     my $self = shift;
-    return undef if $self->_has_old_xml;
+    return undef if $self->_old_pdf_file;
     return $self->s3client->get_s3_url($self->_pdf_file_name);
 }
 
