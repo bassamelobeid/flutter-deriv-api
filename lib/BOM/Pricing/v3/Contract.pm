@@ -537,6 +537,7 @@ sub get_contract_details {
     try {
         $bet_params->{app_markup_percentage} = $params->{app_markup_percentage} // 0;
         $bet_params->{landing_company}       = $params->{landing_company};
+        $bet_params->{limit_order}           = $params->{limit_order} if $params->{limit_order};
         $contract                            = produce_contract($bet_params);
     }
     catch {
@@ -560,8 +561,12 @@ sub get_contract_details {
     if ($contract->two_barriers) {
         $response->{high_barrier} = $contract->high_barrier->supplied_barrier;
         $response->{low_barrier}  = $contract->low_barrier->supplied_barrier;
-    } else {
+    } elsif ($contract->can('barrier')) {
         $response->{barrier} = $contract->barrier ? $contract->barrier->supplied_barrier : undef;
+    } elsif ($contract->category_code eq 'multiplier') {
+        foreach $order (@{$contract->supported_orders}) {
+            $response->{$order} = $contract->$order->barrier_value if $contract->$order and $contract->$order->barrier_value;
+        }
     }
 
     return $response;
