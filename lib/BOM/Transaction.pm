@@ -1856,7 +1856,7 @@ sub _get_info_to_verify_child {
     foreach my $order (@{$contract->supported_orders}) {
         if ($contract->$order) {
             # make sure it is numeric
-            $info->{$order . '_order_amount'} = $contract->$order->order_amount + 0;
+            $info->{$order . '_order_amount'} = $contract->$order->order_amount ? $contract->$order->order_amount + 0 : undef;
             # jsonb converts datatme to 2019-10-30T02:12:27 format
             # let's do the same here.
             my $order_date = $contract->$order->order_date->db_timestamp;
