@@ -98,6 +98,27 @@
             "transaction_time" : {
                "description" : "Time at which transaction was performed, for buy its purchase time, for sell its sell time",
                "type" : "integer"
+            },
+            "stop_out": {
+                "type": [
+                    "string",
+                    "null"
+                ],
+                "description": "The target spot price where the contract will be closed with loss."
+            },
+            "take_profit": {
+                "type": [
+                    "string",
+                    "null"
+                ],
+                "description": "The target spot price where the contract will be closed with profit."
+            },
+            "stop_loss": {
+                "type": [
+                    "string",
+                    "null"
+                ],
+                "description": "The target spot price where the contract will be closed with loss."
             }
          },
          "title" : "Latest update to transaction"
