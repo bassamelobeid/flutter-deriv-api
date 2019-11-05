@@ -503,7 +503,7 @@ sub _process_proposal_open_contract_response {
             delete $result->{account_id};
 
             # need to restructure limit order for poc response
-            $result->{limit_order} = delete $contract->{limit_order_as_hashref} if $contract->{limit_order_as_hashref};
+            $result->{limit_order} = delete $result->{limit_order_as_hashref} if $result->{limit_order_as_hashref};
             $c->send({
                     json => {
                         msg_type               => 'proposal_open_contract',
