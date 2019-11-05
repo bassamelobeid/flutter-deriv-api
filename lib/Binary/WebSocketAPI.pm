@@ -431,7 +431,7 @@ sub startup {
             'cashier',
             {
                 require_auth => 'payments',
-                stash_params => [qw/ server_name domain ua_fingerprint source /],
+                stash_params => [qw/ server_name domain /],
             }
         ],
         [
@@ -476,13 +476,6 @@ sub startup {
             {
                 require_auth => 'admin',
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('mt5_withdrawal'),
-                stash_params => [qw/ server_name client_ip user_agent /],
-            }
-        ],
-        [
-            'mt5_mamm',
-            {
-                require_auth => 'admin',
                 stash_params => [qw/ server_name client_ip user_agent /],
             }
         ],
