@@ -533,8 +533,7 @@ rpc "sell",
         landing_company => $client->landing_company->short,
     };
 
-    my $orders = BOM::Transaction::extract_limit_orders($fmb);
-    $contract_parameters->{limit_order} = $orders if %$orders;
+    $contract_parameters->{limit_order} = BOM::Transaction::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
 
     my $purchase_date = time;
     my $trx           = BOM::Transaction->new({
