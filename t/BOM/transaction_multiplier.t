@@ -658,6 +658,21 @@ subtest 'sell failure due to update' => sub {
                 contract_ids => [$fmb->{id}]});
         ok $out->{number_of_sold_bets} == 1, 'sold one contract';
     };
+
+    subtest 'sell_expired_contract without contract id' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => $underlying->symbol,
+            epoch      => $now->epoch + 2,
+            quote      => 0,
+        });
+        sleep 1;
+        my $out = BOM::Transaction::sell_expired_contracts({
+            client => $cl,
+            source => 23,
+        });
+        # sold the remaining two contracts
+        ok $out->{number_of_sold_bets} == 2, 'sold two contracts';
+    };
 };
 
 done_testing();
