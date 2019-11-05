@@ -156,7 +156,7 @@
                      },
                      "properties" : {}
                   },
-                  "volidx" : {
+                  "synthetic_index" : {
                      "type" : "object",
                      "additionalProperties" : false,
                      "properties" : {},
@@ -191,7 +191,7 @@
                "minItems" : 4,
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(commodities|forex|indices|volidx)$"
+                  "pattern" : "^(commodities|forex|indices|synthetic_index)$"
                },
                "type" : "array"
             },
@@ -271,7 +271,7 @@
                      },
                      "properties" : {}
                   },
-                  "volidx" : {
+                  "synthetic_index" : {
                      "properties" : {},
                      "patternProperties" : {
                         "^[A-Z]{3,4}$" : {
@@ -359,7 +359,7 @@
             "legal_allowed_markets" : {
                "type" : "array",
                "items" : {
-                  "pattern" : "^(commodities|forex|indices|volidx)$",
+                  "pattern" : "^(commodities|forex|indices|synthetic_index)$",
                   "type" : "string"
                },
                "minItems" : 4
@@ -487,7 +487,7 @@
                            },
                            "properties" : {}
                         },
-                        "volidx" : {
+                        "synthetic_index" : {
                            "properties" : {},
                            "patternProperties" : {
                               "^[A-Z]{3,4}$" : {
@@ -741,7 +741,7 @@
                            "additionalProperties" : false,
                            "type" : "object"
                         },
-                        "volidx" : {
+                        "synthetic_index" : {
                            "type" : "object",
                            "additionalProperties" : false,
                            "properties" : {},
@@ -961,7 +961,7 @@
                            "additionalProperties" : false,
                            "type" : "object"
                         },
-                        "volidx" : {
+                        "synthetic_index" : {
                            "properties" : {},
                            "patternProperties" : {
                               "^[A-Z]{3,4}$" : {

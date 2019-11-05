@@ -28,7 +28,6 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::
 my $json = JSON::MaybeXS->new;
 
 my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
-$runtime_system->mt5->suspend->manager_api(1);
 
 my $redis = BOM::Config::RedisReplicated::redis_exchangerates_write();
 
@@ -514,7 +513,7 @@ subtest 'login list partly successfull result' => sub {
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mt5_acc_mock->mock(
-        'mt5_mamm',
+        'mt5_get_settings',
         sub {
             my $login = shift->{args}{login};
 
@@ -540,7 +539,7 @@ subtest 'login list without success results' => sub {
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mt5_acc_mock->mock(
-        'mt5_mamm',
+        'mt5_get_settings',
         sub {
             BOM::RPC::v3::MT5::Account::create_error_future('General');
         });
@@ -576,7 +575,7 @@ subtest 'create new account fails, when we get error during getting login list' 
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mt5_acc_mock->mock(
-        'mt5_mamm',
+        'mt5_get_settings',
         sub {
             BOM::RPC::v3::MT5::Account::create_error_future('General');
         });

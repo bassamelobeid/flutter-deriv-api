@@ -1220,8 +1220,6 @@ subtest 'suspended currency transfers' => sub {
 subtest 'MT5' => sub {
 
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
-    my $mt5_mgr_suspend = BOM::Config::Runtime->instance->app_config->system->mt5->suspend->manager_api;
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->manager_api(1);
     my $mock_account = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mock_account->mock(
         _is_financial_assessment_complete => sub { return 1 },
@@ -1495,8 +1493,6 @@ subtest 'MT5' => sub {
         );
     };
 
-    # restore config
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->manager_api;
 };
 
 sub _get_unique_display_name {

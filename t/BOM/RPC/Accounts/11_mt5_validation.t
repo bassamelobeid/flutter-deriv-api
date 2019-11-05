@@ -63,8 +63,6 @@ my $assessment_keys = {
     ],
 };
 
-BOM::Config::Runtime->instance->app_config->system->mt5->suspend->manager_api(1);
-
 #mocking this module will let us avoid making calls to MT5 server.
 my $mt5_account_info;
 my $mocked_mt5 = Test::MockModule->new('BOM::MT5::User::Async');
