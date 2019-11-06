@@ -287,7 +287,7 @@ sub _get_underlying_bid {
 
 sub _process_price {
     my ($self, $params) = @_;
-    $params->{streaming_params}->{add_theo_probability} = 1;
+    $params->{streaming_params}->{from_pricer} = 1;
     # we want to log proposal array under different key
     $params->{log_price_daemon_cmd} = 'price_batch' if $params->{proposal_array};
     return BOM::Pricing::v3::Contract::send_ask({args => $params});

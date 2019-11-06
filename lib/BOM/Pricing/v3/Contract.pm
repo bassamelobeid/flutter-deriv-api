@@ -204,15 +204,16 @@ sub _get_ask {
                 contract_parameters => $contract_parameters,
             };
 
-            if ($contract->require_price_adjustment) {
-                if (not $contract->is_binary) {
-                    $response->{contract_parameters}->{price_adjustment}  = 'non_binary';
-                    $response->{contract_parameters}->{theo_price}        = $contract->theo_price;
-                    $response->{contract_parameters}->{multiplier}        = $contract->multiplier if not $contract->user_defined_multiplier;
-                    $response->{contract_parameters}->{maximum_ask_price} = $contract->maximum_ask_price if $contract->can('maximum_ask_price');
-                } elsif ($streaming_params->{add_theo_probability}) {
-                    $response->{contract_parameters}->{price_adjustment} = 'binary';
-                    $response->{contract_parameters}->{theo_probability} = $contract->theo_probability->amount;
+            if (not $contract->is_binary) {
+                $response->{contract_parameters}->{multiplier}        = $contract->multiplier        if not $contract->user_defined_multiplier;
+                $response->{contract_parameters}->{maximum_ask_price} = $contract->maximum_ask_price if $contract->can('maximum_ask_price');
+            }
+
+            if ($contract->require_price_adjustment and $streaming_params->{from_pricer}) {
+                if ($contract->is_binary) {
+                    $response->{theo_probability} = $contract->theo_probability->amount;
+                } else {
+                    $response->{theo_price} = $contract->theo_price;
                 }
             }
 

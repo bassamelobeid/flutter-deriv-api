@@ -143,7 +143,7 @@ subtest 'get_ask' => sub {
         "duration"         => "60",
         "duration_unit"    => "s",
         "symbol"           => "R_50",
-        "streaming_params" => {add_theo_probability => 1},
+        "streaming_params" => {from_pricer => 1},
     };
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
     diag explain $result->{error} if exists $result->{error};
@@ -155,8 +155,8 @@ subtest 'get_ask' => sub {
         'longcode'            => 'Win payout if Volatility 50 Index is strictly higher than entry spot at 1 minute after contract start time.',
         'spot'                => '963.3054',
         'payout'              => '100',
+        'theo_probability'    => 0.499862430427529,
         'contract_parameters' => {
-            'theo_probability'      => 0.499862430427529,
             'deep_otm_threshold'    => '0.025',
             'barrier'               => 'S0P',
             'duration'              => '60s',
@@ -169,7 +169,6 @@ subtest 'get_ask' => sub {
             'amount'                => '100',
             'app_markup_percentage' => 0,
             'proposal'              => 1,
-            'price_adjustment'      => 'binary',
             'date_start'            => ignore(),
             'staking_limits'        => {
                 'min' => '0.35',
@@ -207,7 +206,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'symbol'           => 'R_50',
         'amount'           => '100',
         'date_start'       => 1476676000,
-        "streaming_params" => {add_theo_probability => 1},
+        "streaming_params" => {from_pricer => 1},
     };
     my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
     is($result->{error}{code}, 'ContractCreationFailure', 'error code is ContractCreationFailure if start time is in the past');
@@ -227,7 +226,7 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'symbol'           => 'R_50',
         'amount'           => '11',
         'date_start'       => '1476670200',
-        "streaming_params" => {add_theo_probability => 1},
+        "streaming_params" => {from_pricer => 1},
     };
     $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
 
@@ -283,7 +282,7 @@ subtest 'send_ask - invalid symbol' => sub {
             "duration"         => "60",
             "duration_unit"    => "s",
             "symbol"           => "Invalid",
-            "streaming_params" => {add_theo_probability => 1},
+            "streaming_params" => {from_pricer => 1},
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')
@@ -302,7 +301,7 @@ subtest 'send_ask' => sub {
             "duration"         => "60",
             "duration_unit"    => "s",
             "symbol"           => "R_50",
-            "streaming_params" => {add_theo_probability => 1},
+            "streaming_params" => {from_pricer => 1},
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
@@ -354,7 +353,7 @@ subtest 'send_ask_when_date_expiry_smaller_than_date_start' => sub {
             'duration_unit' => 'm',
             'date_start'    => '1476676000',
 
-            "streaming_params" => {add_theo_probability => 1},
+            "streaming_params" => {from_pricer => 1},
         }};
     $c->call_ok('send_ask', $params)->has_error->error_code_is('ContractCreationFailure')->error_message_is('Expiry time cannot be in the past.');
 };
@@ -799,8 +798,8 @@ subtest 'send_ask - country validation' => sub {
         "duration"         => "29",
         "duration_unit"    => "m",
         "symbol"           => "frxUSDJPY",
-        "streaming_params" => {add_theo_probability => 1},
-        country_code       => 'cn',                          # china
+        "streaming_params" => {from_pricer => 1},
+        country_code       => 'cn',                 # china
     };
     my $params = {
         client_ip => '127.0.0.1',
