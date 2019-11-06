@@ -17,7 +17,7 @@
          "enum": [1]
       },
       "contract_id": {
-         "description" : "Binary.com internal contract identifier",
+         "description" : "Internal unique contract identifier.",
          "type" : "integer"
       },
       "limit_order": {

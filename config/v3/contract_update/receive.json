@@ -22,7 +22,7 @@
          "properties": {
             "take_profit": {
                 "type": "object",
-                "description": "The target spot price where the contract will be closed with profit.",
+                "description": "The target spot price where the contract will be closed automatically at the profit specified by the user.",
                 "properties": {
                     "order_date" : {
                         "type": "integer",
@@ -44,19 +44,19 @@
             },
             "stop_loss": {
                 "type": "object",
-                "description": "The target spot price where the contract will be closed with loss.",
+                "description": "The target spot price where the contract will be closed automatically at the loss specified by the user.",
                 "properties": {
                     "order_date" : {
                         "type": "integer",
-                        "description": "Take profit order epoch"
+                        "description": "Stop loss order epoch"
                     },
                     "order_amount" : {
                         "type": "number",
-                        "description": "Take profit amount"
+                        "description": "Stop loss amount"
                     },
                     "value" : {
                         "type": "string",
-                        "description" : "Take profit pip-sized barrier value"
+                        "description" : "Stop loss pip-sized barrier value"
                     },
                     "display_name": {
                         "type": "string",
