@@ -231,8 +231,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         ##
 
         $test = 'Transfer fails if given an invalid amount';
-        ## Cashier->_validate_amount declares that amounts must be: /^(?:\d+\.?\d*|\.\d+)$/
-        for my $bad_amount (qw/ abc 1e80 1.2.3 1;2 . /) {
+        for my $bad_amount (qw/ abc 1.2.3 1;2 . /) {
             $testargs->{args}{amount} = $bad_amount;
             $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
             is($res->{error}{message_to_client}, 'Invalid amount.', "$test ($bad_amount)");
@@ -254,7 +253,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         for my $currency (@crypto_currencies, @fiat_currencies) {
             $testargs->{args}{currency} = $currency;
             my $local_precision = (grep { $_ eq $currency } @crypto_currencies) ? 8 : 2;
-            $testargs->{args}{amount} = '1.2' . ('0' x $local_precision);
+            $testargs->{args}{amount} = '1.2' . ('0' x $local_precision) . '1';
             $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
             is(
                 $res->{error}{message_to_client},
@@ -848,8 +847,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         reset_withdraw_testargs();
 
         $test = 'Withdraw fails if given an invalid amount';
-        ## Cashier->_validate_amount declares that amounts must be: /^(?:\d+\.?\d*|\.\d+)$/
-        for my $badamount (qw/ abc 1e80 1.2.3 1;2 . /) {
+        for my $badamount (qw/ abc 1.2.3 1;2 . /) {
             $testargs->{args}{amount} = $badamount;
             $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
             is($res->{error}{message_to_client}, 'Invalid amount.', "$test ($badamount)");
@@ -860,7 +858,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         for my $currency (@crypto_currencies, @fiat_currencies) {
             $testargs->{args}{currency} = $currency;
             my $precision = (grep { $_ eq $currency } @crypto_currencies) ? 8 : 2;
-            $testargs->{args}{amount} = '1.2' . ('0' x $precision);
+            $testargs->{args}{amount} = '1.2' . ('0' x $precision) . '1';
             $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
             like(
                 $res->{error}{message_to_client},

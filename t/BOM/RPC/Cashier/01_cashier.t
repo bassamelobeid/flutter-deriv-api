@@ -86,5 +86,22 @@ subtest 'Doughflow' => sub {
 
 };
 
+subtest 'validate_amount' => sub {
+
+    my $mocked_fun = Test::MockModule->new('Format::Util::Numbers');
+    $mocked_fun->mock('get_precision_config', sub { return {amount => {'BBB' => 5}} });
+    is(BOM::RPC::v3::Cashier::validate_amount(0.00001, 'BBB'), undef,             'Valid Amount');
+    is(BOM::RPC::v3::Cashier::validate_amount(1e-05,   'BBB'), undef,             'Valid Amount');
+    is(BOM::RPC::v3::Cashier::validate_amount('1e-05', 'BBB'), undef,             'Valid Amount');
+    is(BOM::RPC::v3::Cashier::validate_amount('fred',  'BBB'), 'Invalid amount.', 'Invalid Amount');
+    is(BOM::RPC::v3::Cashier::validate_amount(0.001,   'BBB'), undef,             'Valid Amount');
+    is(BOM::RPC::v3::Cashier::validate_amount(1,       'BBB'), undef,             'Valid Amount');
+    is(
+        BOM::RPC::v3::Cashier::validate_amount(0.000001, 'BBB'),
+        'Invalid amount. Amount provided can not have more than 5 decimal places.',
+        'Too many decimals'
+    );
+};
+
 done_testing();
 

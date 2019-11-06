@@ -20,6 +20,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use JSON::MaybeXS;
 use Text::Trim;
+use Math::BigFloat;
 
 use BOM::User qw( is_payment_agents_suspended_in_country );
 use LandingCompany::Registry;
@@ -1701,14 +1702,13 @@ sub _validate_transfer_between_accounts {
 sub validate_amount {
     my ($amount, $currency) = @_;
 
-    return localize('Invalid amount.') if ($amount !~ m/^(?:\d+\.?\d*|\.\d+)$/);
+    return localize('Invalid amount.') unless (looks_like_number($amount));
 
     my $num_of_decimals = Format::Util::Numbers::get_precision_config()->{amount}->{$currency};
     return localize('Invalid currency.') unless defined $num_of_decimals;
-
-    my ($precision) = $amount =~ /\.(\d+)/;
+    my ($int, $precision) = Math::BigFloat->new($amount)->length();
     return localize('Invalid amount. Amount provided can not have more than [_1] decimal places.', $num_of_decimals)
-        if (defined $precision and length($precision) > $num_of_decimals);
+        if ($precision > $num_of_decimals);
 
     return undef;
 }
