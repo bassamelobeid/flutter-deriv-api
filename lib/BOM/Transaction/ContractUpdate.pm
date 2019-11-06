@@ -93,11 +93,12 @@ sub _validate_update_parameter {
     }
 
     my ($order_type, $order_value) = %{$self->update_params};
-
+    # $order_value will be undef for cancel operation
+    $order_value //= 'null';
     unless (looks_like_number($order_value) or $order_value eq 'null') {
         return {
             code              => 'InvalidUpdateValue',
-            message_to_client => localize('Update value accepts number or null string'),
+            message_to_client => localize('Update value accepts number or null'),
         };
     }
 
@@ -125,7 +126,7 @@ sub _validate_update_parameter {
         };
     }
 
-    unless (grep { $self->update_params->{$_} } @{$contract->category->allowed_update}) {
+    unless (grep { exists $self->update_params->{$_} } @{$contract->category->allowed_update}) {
         return {
             code => 'UpdateNotAllowed',
             message_to_client =>
