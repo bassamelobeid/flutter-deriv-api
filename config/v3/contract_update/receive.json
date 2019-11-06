@@ -21,38 +21,47 @@
          "description": "contains the update status of the request",
          "properties": {
             "take_profit": {
-                "order_date" : {
-                    "type": "integer",
-                    "description": "take profit order epoch"
-                },
-                "order_amount" : {
-                    "type": "number",
-                    "description": "take profit amount"
-                },
-                "value" : {
-                    "type": "string",
-                    "description" : "take profit pip-sized barrier value"
-                },
-                "display_name": {
-                    "type": "string",
-                    "description": "localized display name"
+                "type": "object",
+                "description": "The target spot price where the contract will be closed automatically at the profit specified by the user.",
+                "properties": {
+                    "order_date" : {
+                        "type": "integer",
+                        "description": "Take profit order epoch"
+                    },
+                    "order_amount" : {
+                        "type": "number",
+                        "description": "Take profit amount"
+                    },
+                    "value" : {
+                        "type": "string",
+                        "description" : "Take profit pip-sized barrier value"
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "description": "Localized display name"
+                    }
                 }
             },
             "stop_loss": {
-                "order_date" : {
-                    "type": "integer",
-                    "description": "take profit order epoch"
-                },
-                "order_amount" : {
-                    "type": "number",
-                    "description": "take profit amount"
-                },
-                "value" : {
-                    "type": "string",
-                    "description" : "take profit pip-sized barrier value"
-                },
-                "display_name": {
-                    "type": "string"
+                "type": "object",
+                "description": "The target spot price where the contract will be closed automatically at the loss specified by the user.",
+                "properties": {
+                    "order_date" : {
+                        "type": "integer",
+                        "description": "Stop loss order epoch"
+                    },
+                    "order_amount" : {
+                        "type": "number",
+                        "description": "Stop loss amount"
+                    },
+                    "value" : {
+                        "type": "string",
+                        "description" : "Stop loss pip-sized barrier value"
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "description": "Localized display name"
+                    }
                 }
             }
          }

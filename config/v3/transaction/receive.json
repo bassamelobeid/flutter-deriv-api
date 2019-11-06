@@ -98,6 +98,27 @@
             "transaction_time" : {
                "description" : "Time at which transaction was performed, for buy its purchase time, for sell its sell time",
                "type" : "integer"
+            },
+            "stop_out": {
+                "type": [
+                    "string",
+                    "null"
+                ],
+                "description": "The pip-sized target spot price where the contract will be closed automatically when the value of the contract is close to zero. This is set by the us."
+            },
+            "take_profit": {
+                "type": [
+                    "string",
+                    "null"
+                ],
+                "description": "The pip-sized target spot price where the contract will be closed automatically at the profit specified by the user."
+            },
+            "stop_loss": {
+                "type": [
+                    "string",
+                    "null"
+                ],
+                "description": "The pip-sized target spot price where the contract will be closed automatically at the loss specified by the user."
             }
          },
          "title" : "Latest update to transaction"

@@ -227,14 +227,16 @@ sub _price_stream_results_adjustment {
     my ($self, $c, $cache, $results) = @_;
 
     my $contract_parameters = $cache->{contract_parameters};
-
+    my $price_adjustment    = delete $contract_parameters->{price_adjustment};
     # We are handling pricing adjustment for 3 different scenarios here:
     # 1. adjustment for binary contracts where we expect theo probability to be present
     # 2. adjustment for non-binary where we we expect theo price
     # 3. no adjustment needed. Some contract does not require any pricing adjustment on the websocket layer.
-    if ($contract_parameters->{non_binary_price_adjustment}) {
+    return $results unless $price_adjustment;
+
+    if ($price_adjustment eq 'non_binary') {
         return $self->_non_binary_price_adjustment($c, $contract_parameters, $results);
-    } elsif ($contract_parameters->{binary_price_adjustment}) {
+    } elsif ($price_adjustment eq 'binary') {
         return $self->_binary_price_adjustment($c, $contract_parameters, $results);
     }
 

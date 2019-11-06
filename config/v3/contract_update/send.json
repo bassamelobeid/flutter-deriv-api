@@ -17,12 +17,12 @@
          "enum": [1]
       },
       "contract_id": {
-         "description" : "Binary.com internal contract identifier",
+         "description" : "Internal unique contract identifier.",
          "type" : "integer"
       },
       "limit_order": {
          "type": "object",
-         "description": "specify limit order to update.",
+         "description": "Specify limit order to update.",
          "additionalProperties" : false,
          "properties": {
             "take_profit": {
