@@ -737,7 +737,9 @@ sub _skip_streaming {
     return 1 if $args->{skip_streaming};
     my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
     my $atm_callput_contract =
-        ($args->{contract_type} =~ /^(CALL|PUT|CALLE|PUTE)$/ and not($args->{barrier} or ($args->{proposal_array} and $args->{barriers}))) ? 1 : 0;
+        ($args->{contract_type} =~ /^(CALL|PUT|CALLE|PUTE)$/ and not($args->{barrier} or ($args->{proposal_array} and $args->{barriers})))
+        ? 1
+        : 0;
 
     my ($skip_atm_callput, $skip_contract_type) = (0, 0);
 
@@ -757,12 +759,12 @@ sub _skip_streaming {
 sub _skip_basis_override {
     my $args = shift;
 
-    # to override multiplier contract just does not make any sense because
+    # to override multiplier or callputspread contracts (non-binary) just does not make any sense because
     # the ask_price is defined by the user and the output of limit order (take profit or stop out),
     # is dependent of the stake and multiplier provided by the client.
     #
     # There is no probability calculation involved. Hence, not optimising anything.
-    return 1 if $args->{contract_type} =~ /^(MULTUP|MULTDOWN)$/;
+    return 1 if $args->{contract_type} =~ /^(MULTUP|MULTDOWN|CALLSPREAD|PUTSPREAD)$/;
     return 0;
 }
 
