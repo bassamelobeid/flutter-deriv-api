@@ -183,11 +183,11 @@ subtest 'MX client can upgrade to MF' => sub {
 
     subtest 'create MX acc, authorize' => sub {
         my %details = %client_details;
-        $details{first_name} = 'first name GB';
+        $details{first_name} = 'InsufficientDOB';
         $details{residence}  = 'gb';
         $details{phone}      = '+44 20 7234 3457';
+        my $res = $t->await::new_account_real(\%details, { timeout => 10 });
 
-        my $res = $t->await::new_account_real(\%details);
         ok($res->{new_account_real});
         test_schema('new_account_real', $res);
 
