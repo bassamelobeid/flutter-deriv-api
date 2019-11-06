@@ -564,7 +564,7 @@ sub get_contract_details {
     } elsif ($contract->can('barrier')) {
         $response->{barrier} = $contract->barrier ? $contract->barrier->supplied_barrier : undef;
     } elsif ($contract->category_code eq 'multiplier') {
-        foreach $order (@{$contract->supported_orders}) {
+        foreach my $order (@{$contract->supported_orders}) {
             $response->{$order} = $contract->$order->barrier_value if $contract->$order and $contract->$order->barrier_value;
         }
     }
