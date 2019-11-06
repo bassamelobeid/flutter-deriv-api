@@ -450,11 +450,11 @@
                                     "description": "Take profit order epoch"
                                 },
                                 "order_amount" : {
-                                    "type": "number",
+                                    "type": ["number","null"],
                                     "description": "Take profit amount"
                                 },
                                 "value" : {
-                                    "type": "string",
+                                    "type": ["string","null"],
                                     "description" : "Pip-sized barrier value"
                                 },
                                 "display_name": {
@@ -472,11 +472,11 @@
                                     "description": "Stop loss order epoch"
                                 },
                                 "order_amount" : {
-                                    "type": "number",
+                                    "type": ["number","null"],
                                     "description": "Stop loss amount"
                                 },
                                 "value" : {
-                                    "type": "string",
+                                    "type": ["string","null"],
                                     "description" : "Pip-sized barrier value"
                                 },
                                 "display_name": {
