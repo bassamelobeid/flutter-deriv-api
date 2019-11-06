@@ -715,7 +715,7 @@ sub create_subscription {
 }
 
 my %skip_duration_list = map { $_ => 1 } qw(t s m h);
-my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 R_10 RDBULL RDBEAR);
+my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 R_10 RDBULL RDBEAR 1HZ100V 1HZ10V);
 my %skip_type_list =
     map { $_ => 1 } qw(DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN ASIAND ASIANU TICKHIGH TICKLOW RESETCALL RESETPUT);
 
