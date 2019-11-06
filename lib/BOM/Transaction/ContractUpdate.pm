@@ -135,7 +135,11 @@ sub _validate_update_parameter {
     }
 
     # when it reaches this stage, if it is a cancel operation, let it through
-    return undef if $order_value eq 'null';
+    if ($order_value eq 'null') {
+        my $new_order = $contract->new_order({$order_type => undef});
+        $self->new_order($new_order);
+        return undef;
+    }
 
     my $new_order = $contract->new_order({$order_type => $order_value});
     unless ($new_order->is_valid($contract->underlying->spot_tick->quote)) {
