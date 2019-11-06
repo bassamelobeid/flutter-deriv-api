@@ -314,7 +314,7 @@ sub _get_overview {
         },
     );
 
-    my $barrier_to_compare = ($bet->two_barriers) ? $bet->high_barrier : $bet->barrier;
+    my $barrier_to_compare = ($bet->two_barriers) ? $bet->high_barrier : $bet->can('barrier') ? $bet->barrier : undef;
 
     my @pricing_param = ({
             label => 'Duration in days (number of vol rollovers between start and end)',
@@ -383,7 +383,7 @@ sub _get_overview {
                 q_rate           => $bet->q_rate,
                 premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
             });
-        } else {
+        } elsif ($bet->can('barrier')) {
             $delta_strike1 = 100 * get_delta_for_strike({
                 strike           => $bet->barrier->as_absolute,
                 atm_vol          => $atm_vol,
@@ -593,7 +593,7 @@ sub _get_cost_of_greeks {
                         high_barrier => $bet->high_barrier->supplied_barrier,
                         low_barrier  => $bet->low_barrier->supplied_barrier
                     );
-                } else {
+                } elsif ($bet->can('barrier')) {
                     %barriers = (barrier => $bet->barrier->supplied_barrier);
                 }
                 $new_bet = produce_contract({
