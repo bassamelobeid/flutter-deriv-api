@@ -962,7 +962,7 @@ sub sell_by_shortcode {
 
     if ($self->contract->category_code eq 'multiplier') {
         return Error::Base->cuss(
-            -type              => 'UnsupportedBatchBuy',
+            -type              => 'UnsupportedBatchSell',
             -mesg              => "Multiplier not supported in sell_by_shortcode",
             -message_to_client => localize('MULTUP and MULTDOWN are not supported.'),
         );
@@ -1052,6 +1052,16 @@ sub sell_by_shortcode {
     $self->stats_stop($stats_data, undef, \%stat);
 
     return;
+}
+
+sub cancel_by_shortcode {
+    my ($self, %options) = @_;
+
+    return Error::Base->cuss(
+        -type              => 'UnsupportedBatchCancel',
+        -mesg              => "Multiplier not supported in sell_by_shortcode",
+        -message_to_client => localize('MULTUP and MULTDOWN are not supported.'),
+    );
 }
 
 =head1 METHODS
