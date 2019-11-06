@@ -126,6 +126,10 @@
                      }
                   }
                }
+            },
+            "cost_of_deal_cancellation": {
+                "type": "number",
+                "description" : "Example: 2.14",
             }
          },
          "required" : [
