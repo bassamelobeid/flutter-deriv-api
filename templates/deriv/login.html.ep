@@ -1,6 +1,7 @@
 <% if (!$login_method || stash('error') || stash('social_error')) { %>
     <div id="container">
         <h3 class="center-text"><%= l('Log in to Deriv') %></h3>
+        <p class="note-text"><%== l('Got a [_1] account? You can log in to [_2] with your [_1] username and password.', '<strong>Binary.com</strong>', '<strong>Deriv</strong>') %></p>
         <form id="frmLogin" method="POST">
             <div class="input-wrapper">
                 <input id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" required autocomplete="off" autofocus="autofocus" maxlength="254" />

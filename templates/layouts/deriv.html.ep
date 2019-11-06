@@ -131,10 +131,13 @@
                 flex-direction: column;
                 align-items: center;
                 width: 100%;
-                margin: 4rem auto;
+                margin: 0 auto 4rem;
             }
             form .input-wrapper {
                 margin-top: 4.6rem;
+            }
+            form .input-wrapper:first-child {
+                margin-top: 0;
             }
             form a {
                 align-self: center;
@@ -327,6 +330,14 @@
 
             .center-text {
                 text-align: center;
+            }
+            .note-text {
+                color: var(--color-grey-1);
+                text-align: center;
+                margin-bottom: 1rem;
+                max-width: 430px;
+                font-size: var(--text-size-xs);
+                margin-top: 2.4rem;
             }
             .hide {
                 display: none;
