@@ -225,6 +225,7 @@ sub _get_ask {
             if ($contract->category_code eq 'multiplier' and my $display = $contract->available_orders_for_display) {
                 $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
                 $response->{limit_order} = $display;
+                $response->{cost_of_deal_cancellation} = $contract->cost_of_deal_cancellation;
             }
         }
         my $pen = $contract->pricing_engine_name;
