@@ -1313,60 +1313,50 @@ subtest 'MT5' => sub {
     $params->{args}{mt5_account_type} = 'advanced';
     $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for advanced mt5_new_account');
 
+    my @real_accounts = ({
+            loginid      => $test_client->loginid,
+            balance      => num(1000),
+            currency     => 'USD',
+            account_type => 'binary',
+
+        },
+        {
+            loginid      => $test_client_btc->loginid,
+            balance      => num(10),
+            currency     => 'BTC',
+            account_type => 'binary'
+        },
+    );
+
+    my @mt5_accounts = ({
+            loginid      => 'MT' . $ACCOUNTS{'real\svg_standard'},
+            balance      => num($DETAILS{balance}),
+            currency     => 'USD',
+            account_type => 'mt5',
+            mt5_group    => 'real\\svg_standard'
+        },
+        {
+            loginid      => 'MT' . $ACCOUNTS{'real\labuan_advanced'},
+            balance      => num($DETAILS{balance}),
+            currency     => 'USD',
+            account_type => 'mt5',
+            mt5_group    => 'real\\labuan_advanced'
+        },
+    );
+
     $params->{args} = {};
     $rpc_ct->call_ok($method, $params)->has_no_error("no error for $method with no params");
-    cmp_bag(
-        $rpc_ct->result->{accounts},
-        [{
-                loginid      => $test_client->loginid,
-                balance      => num(1000),
-                currency     => 'USD',
-                account_type => 'binary',
 
-            },
-            {
-                loginid      => $test_client_btc->loginid,
-                balance      => num(10),
-                currency     => 'BTC',
-                account_type => 'binary'
-            },
-        ],
-        "all real binary accounts by empty $method call"
-    );
+    cmp_bag($rpc_ct->result->{accounts}, [@real_accounts], "all real binary accounts by empty $method call");
 
     $params->{args} = {accounts => 'all'};
     $rpc_ct->call_ok($method, $params)->has_no_error("no error for $method with accounts=all");
-    cmp_bag(
-        $rpc_ct->result->{accounts},
-        [{
-                loginid      => $test_client->loginid,
-                balance      => num(1000),
-                currency     => 'USD',
-                account_type => 'binary'
-            },
-            {
-                loginid      => $test_client_btc->loginid,
-                balance      => num(10),
-                currency     => 'BTC',
-                account_type => 'binary'
-            },
-            {
-                loginid      => 'MT' . $ACCOUNTS{'real\svg_standard'},
-                balance      => num($DETAILS{balance}),
-                currency     => 'USD',
-                account_type => 'mt5',
-                mt5_group    => 'real\\svg_standard'
-            },
-            {
-                loginid      => 'MT' . $ACCOUNTS{'real\labuan_advanced'},
-                balance      => num($DETAILS{balance}),
-                currency     => 'USD',
-                account_type => 'mt5',
-                mt5_group    => 'real\\labuan_advanced'
-            },
-        ],
-        "accounts=all returns all binary + MT5 accounts"
-    );
+    cmp_bag($rpc_ct->result->{accounts}, [@real_accounts, @mt5_accounts], "accounts=all returns all binary + MT5 accounts");
+
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(1);
+    $rpc_ct->call_ok($method, $params)->has_no_error("no error for $method with accounts=all when mt5 suspended");
+    cmp_bag($rpc_ct->result->{accounts}, [@real_accounts], "accounts=all returns only binary accounts when MT5 suspended");
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(0);
 
     $params->{args} = {
         account_from => 'MT' . $ACCOUNTS{'real\svg_standard'},

@@ -1224,8 +1224,7 @@ rpc transfer_between_accounts => sub {
 
     # just return accounts list if loginid from or to is not provided
     if (not $loginid_from or not $loginid_to) {
-
-        if (($args->{accounts} // '') eq 'all') {
+        if (($args->{accounts} // '') eq 'all' and not(BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all)) {
             my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->get;
             push @accounts,
                 {
