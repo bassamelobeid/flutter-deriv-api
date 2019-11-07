@@ -94,6 +94,6 @@ test_schema('transaction', $response);
 $response = $t->await::forget_all({forget_all => 'transaction'});
 is scalar @{$response->{forget_all}}, 1, 'Correct number of ids';
 is $response->{forget_all}->[0], $uuid, 'Correct id value';
-test_schema('transaction', $response);
+test_schema('forget_all', $response);
 
 done_testing();
