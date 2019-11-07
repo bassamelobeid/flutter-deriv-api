@@ -1,39 +1,42 @@
 {
-   "$schema" : "http://json-schema.org/draft-04/schema#",
-   "additionalProperties" : false,
-   "title" : "Change Password Request",
-   "required" : [
-      "old_password",
-      "new_password",
-      "change_password"
-   ],
-   "description" : "Change Password. Note: this call is NOT available when authenticated to a per-app token. It is only available for in-house Binary.com apps.",
-   "type" : "object",
-   "properties" : {
-      "new_password" : {
-         "pattern" : "^[ -~]{6,25}$",
-         "description" : "New password (length within 6-25 chars, accepts any printable ASCII character)",
-         "type" : "string",
-         "sensitive" : 1
-      },
-      "old_password" : {
-         "pattern" : "^[ -~]+$",
-         "type" : "string",
-         "description" : "Old password for validation (non-empty string, accepts any printable ASCII character)",
-         "sensitive" : 1
-      },
-      "passthrough" : {
-         "type" : "object",
-         "description" : "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
-      },
-      "change_password" : {
-         "enum" : [1],
-         "description" : "Must be 1",
-         "type" : "number"
-      },
-      "req_id" : {
-         "description" : "Optional field to map request to response",
-         "type" : "integer"
-      }
-   }
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Change Password (request)",
+    "description": "Change Password. Note: this call is NOT available when authenticated to a per-app token. It is only available for in-house Binary.com apps.",
+    "hidden": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "change_password",
+        "new_password",
+        "old_password"
+    ],
+    "properties": {
+        "change_password": {
+            "description": "Must be 1",
+            "type": "number",
+            "enum": [
+                1
+            ]
+        },
+        "new_password": {
+            "description": "New password (length within 6-25 chars, accepts any printable ASCII character)",
+            "type": "string",
+            "pattern": "^[ -~]{6,25}$",
+            "sensitive": 1
+        },
+        "old_password": {
+            "description": "Old password for validation (non-empty string, accepts any printable ASCII character)",
+            "type": "string",
+            "pattern": "^[ -~]+$",
+            "sensitive": 1
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the echo_req output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
 }

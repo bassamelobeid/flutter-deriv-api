@@ -153,6 +153,7 @@ sub _non_binary_price_adjustment {
 sub _binary_price_adjustment {
     my ($self, $c, $contract_parameters, $results, $resp_theo_probability) = @_;
 
+    my $resp_theo_probability = delete $results->{theo_probability};
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
         $log->warnf('missing theo probability from pricer. Contract parameter dump %s, pricer response: %s', $contract_parameters, $results);
@@ -173,9 +174,9 @@ sub _binary_price_adjustment {
         maximum     => 1,
     });
 
-    $contract_parameters->{theo_probability} = $theo_probability;
-
-    my $price_calculator = Price::Calculator->new(%$contract_parameters);
+    # don't set $contract_parameters->{theo_probability} = $theo_probability because $contract_parameters is actually the cache of the
+    # input parameters of the contract with some additional internally set client info or markup.
+    my $price_calculator = Price::Calculator->new({%$contract_parameters, theo_probability => $theo_probability});
     # TODO from Zakame: I think this shouldn't be here; websocket-api is supposed to be an interface only, and in particular here should only concern with managing subscriptions, rather than calling pricing methods without the RPC (even for the fallback case.)
     if (my $error = $price_calculator->validate_price) {
         state $error_map = {
