@@ -122,14 +122,13 @@ sub handle_message {
 requires 'do_handle_message';
 
 sub _price_stream_results_adjustment {
-    my ($self, $c, $cache, $results, $resp_theo_probability) = @_;
+    my ($self, $c, $cache, $results) = @_;
 
     my $contract_parameters = $cache->{contract_parameters};
 
-    if ($contract_parameters->{non_binary_results_adjustment}) {
+    if (my $theo_price = delete $results->{theo_price}) {
         #do app markup adjustment here
         my $app_markup_percentage = $contract_parameters->{app_markup_percentage} // 0;
-        my $theo_price            = $contract_parameters->{theo_price}            // 0;
         my $multiplier            = $contract_parameters->{multiplier}            // 0;
 
         my $app_markup_per_unit = $theo_price * $app_markup_percentage / 100;
@@ -147,6 +146,7 @@ sub _price_stream_results_adjustment {
         return $results;
     }
 
+    my $resp_theo_probability = delete $results->{theo_probability};
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
         $log->warnf('missing theo probability from pricer. Contract parameter dump %s, pricer response: %s', $contract_parameters, $results);
@@ -167,9 +167,9 @@ sub _price_stream_results_adjustment {
         maximum     => 1,
     });
 
-    $contract_parameters->{theo_probability} = $theo_probability;
-
-    my $price_calculator = Price::Calculator->new(%$contract_parameters);
+    # don't set $contract_parameters->{theo_probability} = $theo_probability because $contract_parameters is actually the cache of the
+    # input parameters of the contract with some additional internally set client info or markup.
+    my $price_calculator = Price::Calculator->new({%$contract_parameters, theo_probability => $theo_probability});
     # TODO from Zakame: I think this shouldn't be here; websocket-api is supposed to be an interface only, and in particular here should only concern with managing subscriptions, rather than calling pricing methods without the RPC (even for the fallback case.)
     if (my $error = $price_calculator->validate_price) {
         state $error_map = {
