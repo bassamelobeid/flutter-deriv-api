@@ -11,10 +11,9 @@ git config --local user.email "sysadmin@binary.com"
 git config --local user.name "CircleCI"
 
 rsync /home/git/regentmarkets/binary-websocket-api/config /tmp/websockets/ --delete -a
-rm -fvr /tmp/websockets/config/*/change_password
-rm -fvr /tmp/websockets/config/*/reset_password
-rm -fvr /tmp/websockets/config/*/service_token
-rm -fvr /tmp/websockets/config/*/notification_event
+
+# Generate api list yml file, and remove json files of excluded methods
+/home/git/regentmarkets/binary-websocket-api/script/websocket_api_list.pl /tmp/websockets/
 
 # Show what we're changing - anyone can easily check version control for this,
 # but this diff usually is not too long.
