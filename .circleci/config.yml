@@ -184,6 +184,12 @@ workflows:
         context: perl
     - subscriptions:
         context: perl
+    - update_docs:
+        context: perl
+        filters:
+          branches:
+            only:
+            - master
   daily:
     jobs:
     - structure:
