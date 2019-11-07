@@ -266,6 +266,7 @@ subtest 'get_ask' => sub {
         "duration_unit"   => "m",
         "symbol"          => "R_50",
         "landing_company" => "virtual",
+        streaming_params  => {from_pricer => 1},
     };
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -285,21 +286,20 @@ subtest 'get_ask' => sub {
         'spot'                => '963.3054',
         multiplier            => 100,
         'payout'              => '0',
+        'theo_price'          => '1.99145854964839',
         'contract_parameters' => {
-            'deep_otm_threshold'          => '0.025',
-            'duration'                    => '15m',
-            'bet_type'                    => 'LBFLOATCALL',
-            'underlying'                  => 'R_50',
-            'currency'                    => 'USD',
-            'base_commission'             => '0.02',
-            'min_commission_amount'       => '0.02',
-            'multiplier'                  => '100',
-            'app_markup_percentage'       => 0,
-            'proposal'                    => 1,
-            'date_start'                  => ignore(),
-            non_binary_results_adjustment => 1,
-            'theo_price'                  => '1.99145854964839',
-            'landing_company'             => 'virtual'
+            'deep_otm_threshold'    => '0.025',
+            'duration'              => '15m',
+            'bet_type'              => 'LBFLOATCALL',
+            'underlying'            => 'R_50',
+            'currency'              => 'USD',
+            'base_commission'       => '0.02',
+            'min_commission_amount' => '0.02',
+            'multiplier'            => '100',
+            'app_markup_percentage' => 0,
+            'proposal'              => 1,
+            'date_start'            => ignore(),
+            'landing_company'       => 'virtual'
         }};
 
     cmp_deeply($result, $expected, 'the left values are all right');

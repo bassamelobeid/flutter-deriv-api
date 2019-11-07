@@ -204,14 +204,18 @@ sub _get_ask {
                 contract_parameters => $contract_parameters,
             };
 
-            if ($streaming_params->{add_theo_probability} and $contract->is_binary) {
-                $response->{theo_probability} = $contract->theo_probability->amount;
+            # the caller is pricer daemon, hence we will stream the theo_price for binary or theo_probability for non_binary
+            if ($streaming_params->{from_pricer}) {
+                if ($contract->is_binary) {
+                    $response->{theo_probability} = $contract->theo_probability->amount;
+                } else {
+                    $response->{theo_price} = $contract->theo_price;
+                }
             }
 
             unless ($contract->is_binary) {
-                $response->{contract_parameters}->{non_binary_results_adjustment} = 1;
-                $response->{contract_parameters}->{theo_price}                    = $contract->theo_price;
-                $response->{contract_parameters}->{multiplier}                    = $contract->multiplier if not $contract->user_defined_multiplier;
+                # cache this in websocket since these are static value for the contract. Hence, we don't have stream it for price adjustment
+                $response->{contract_parameters}->{multiplier}        = $contract->multiplier        if not $contract->user_defined_multiplier;
                 $response->{contract_parameters}->{maximum_ask_price} = $contract->maximum_ask_price if $contract->can('maximum_ask_price');
             }
 
