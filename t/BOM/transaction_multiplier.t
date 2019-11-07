@@ -675,4 +675,33 @@ subtest 'sell failure due to update' => sub {
     };
 };
 
+subtest 'buy multiplier with unsupported underlying' => sub {
+    lives_ok {
+        my $contract = produce_contract({
+            underlying   => 'frxAUDJPY',
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            multiplier   => 10,
+            amount       => 100,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = $txn->buy;
+        ok $error, 'buy failed with error';
+        is $error->{-mesg}, 'multiplier commission not defined for frxAUDJPY', 'message is multiplier commission not defined for frxAUDJPY';
+        is $error->{-message_to_client}, 'Trading is not offered for this asset.', 'message to client Trading is not offered for this asset.';
+    };
+};
+
 done_testing();
