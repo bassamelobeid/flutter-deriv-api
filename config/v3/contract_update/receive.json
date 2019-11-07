@@ -55,7 +55,7 @@
                         "description": "Stop loss amount"
                     },
                     "value" : {
-                        "type": {"string","null"],
+                        "type": ["string","null"],
                         "description" : "Stop loss pip-sized barrier value"
                     },
                     "display_name": {
