@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Service Token Response",
+    "title": "Service Token (response)",
     "description": "A message with Service Token",
     "type": "object",
     "required": [
@@ -9,39 +9,42 @@
     ],
     "properties": {
         "service_token": {
+            "title": "service_token",
+            "description": "The object containing the retrieved token",
             "type": "object",
             "additionalProperties": false,
-            "description": "The object containing the retrieved token",
             "required": [
-                "token",
-                "service"
+                "service",
+                "token"
             ],
             "properties": {
-                "token": {
-                    "type": "string",
-                    "description": "Retrieved token for the requested service."
-                },
                 "service": {
+                    "description": "Name of the service that token is retrieved for.",
                     "type": "string",
                     "enum": [
                         "onfido"
-                    ],
-                    "description": "Name of the service that token is retrieved for."
+                    ]
+                },
+                "token": {
+                    "description": "Retrieved token for the requested service.",
+                    "type": "string"
                 }
             }
         },
         "echo_req": {
-            "type": "object",
-            "title": "Echo request",
-            "description": "Echo of the request made."
+            "description": "Echo of the request made.",
+            "type": "object"
         },
         "msg_type": {
+            "description": "Action name of the request made.",
             "type": "string",
-            "description": "service_token"
+            "enum": [
+                "service_token"
+            ]
         },
         "req_id": {
-            "type": "integer",
-            "description": "ID used to map request to response, present only when the request contains req_id."
+            "description": "Optional field sent in request to map to response, present only when request contains req_id.",
+            "type": "integer"
         }
     }
 }

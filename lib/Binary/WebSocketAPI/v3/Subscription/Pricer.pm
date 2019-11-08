@@ -127,12 +127,11 @@ sub handle_message {
 requires 'do_handle_message';
 
 sub _non_binary_price_adjustment {
-    my ($self, $c, $contract_parameters, $results) = @_;
+    my ($self, $c, $contract_parameters, $results, $theo_price) = @_;
 
     my $t = [gettimeofday];
     #do app markup adjustment here
     my $app_markup_percentage = $contract_parameters->{app_markup_percentage} // 0;
-    my $theo_price            = $contract_parameters->{theo_price}            // 0;
     my $multiplier            = $contract_parameters->{multiplier}            // 0;
 
     my $app_markup_per_unit = $theo_price * $app_markup_percentage / 100;
@@ -152,9 +151,7 @@ sub _non_binary_price_adjustment {
 }
 
 sub _binary_price_adjustment {
-    my ($self, $c, $contract_parameters, $results) = @_;
-
-    my $resp_theo_probability = $contract_parameters->{theo_probability};
+    my ($self, $c, $contract_parameters, $results, $resp_theo_probability) = @_;
 
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
@@ -176,9 +173,9 @@ sub _binary_price_adjustment {
         maximum     => 1,
     });
 
-    $contract_parameters->{theo_probability} = $theo_probability;
-
-    my $price_calculator = Price::Calculator->new(%$contract_parameters);
+    # don't set $contract_parameters->{theo_probability} = $theo_probability because $contract_parameters is actually the cache of the
+    # input parameters of the contract with some additional internally set client info or markup.
+    my $price_calculator = Price::Calculator->new({%$contract_parameters, theo_probability => $theo_probability});
     # TODO from Zakame: I think this shouldn't be here; websocket-api is supposed to be an interface only, and in particular here should only concern with managing subscriptions, rather than calling pricing methods without the RPC (even for the fallback case.)
     if (my $error = $price_calculator->validate_price) {
         state $error_map = {
@@ -227,17 +224,14 @@ sub _price_stream_results_adjustment {
     my ($self, $c, $cache, $results) = @_;
 
     my $contract_parameters = $cache->{contract_parameters};
-    my $price_adjustment    = delete $contract_parameters->{price_adjustment};
     # We are handling pricing adjustment for 3 different scenarios here:
     # 1. adjustment for binary contracts where we expect theo probability to be present
     # 2. adjustment for non-binary where we we expect theo price
     # 3. no adjustment needed. Some contract does not require any pricing adjustment on the websocket layer.
-    return $results unless $price_adjustment;
-
-    if ($price_adjustment eq 'non_binary') {
-        return $self->_non_binary_price_adjustment($c, $contract_parameters, $results);
-    } elsif ($price_adjustment eq 'binary') {
-        return $self->_binary_price_adjustment($c, $contract_parameters, $results);
+    if (my $theo_price = delete $results->{theo_price}) {
+        return $self->_non_binary_price_adjustment($c, $contract_parameters, $results, $theo_price);
+    } elsif (my $theo_probability = delete $results->{theo_probability}) {
+        return $self->_binary_price_adjustment($c, $contract_parameters, $results, $theo_probability);
     }
 
     return $results;

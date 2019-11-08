@@ -137,7 +137,6 @@ jobs:
     - run:
         <<: *5
         command: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make structure
         name: Code structure and syntax
     - store_test_results:
@@ -185,6 +184,12 @@ workflows:
         context: perl
     - subscriptions:
         context: perl
+    - update_docs:
+        context: perl
+        filters:
+          branches:
+            only:
+            - master
   daily:
     jobs:
     - structure:

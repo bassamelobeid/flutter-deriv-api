@@ -503,7 +503,7 @@ sub _process_proposal_open_contract_response {
             delete $result->{account_id};
 
             # need to restructure limit order for poc response
-            $result->{limit_order} = delete $contract->{limit_order_as_hashref} if $contract->{limit_order_as_hashref};
+            $result->{limit_order} = delete $result->{limit_order_as_hashref} if $result->{limit_order_as_hashref};
             $c->send({
                     json => {
                         msg_type               => 'proposal_open_contract',
@@ -671,6 +671,8 @@ sub send_proposal_open_contract_last_time {
 
                 for my $each_contract (keys %{$rpc_response}) {
                     delete $rpc_response->{$each_contract}->{account_id};
+                    $rpc_response->{$each_contract}->{limit_order} = delete $rpc_response->{$each_contract}->{limit_order_as_hashref}
+                        if $rpc_response->{$each_contract}->{limit_order_as_hashref};
                 }
                 return {
                     proposal_open_contract => $rpc_response->{$contract_id} || {},
@@ -727,7 +729,7 @@ sub create_subscription {
 }
 
 my %skip_duration_list = map { $_ => 1 } qw(t s m h);
-my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 R_10 RDBULL RDBEAR);
+my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 R_10 RDBULL RDBEAR 1HZ100V 1HZ10V);
 my %skip_type_list =
     map { $_ => 1 } qw(DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN ASIAND ASIANU TICKHIGH TICKLOW RESETCALL RESETPUT);
 

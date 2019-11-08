@@ -1,43 +1,44 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "additionalProperties": false,
-    "title": "Notification Event",
+    "title": "Notification Event (request)",
     "description": "Notify the backend about a specific event.",
+    "hidden": 1,
     "type": "object",
+    "additionalProperties": false,
     "required": [
         "category",
         "event",
         "notification_event"
     ],
     "properties": {
-        "req_id" : {
-            "description" : "Optional field to map request to response",
-            "type" : "integer"
-        },
         "notification_event": {
+            "description": "Must be 1",
             "type": "integer",
             "enum": [
                 1
-            ],
-            "description": "Must be 1."
+            ]
         },
         "category": {
+            "description": "The category or nature of the event.",
             "type": "string",
             "enum": [
                 "authentication"
-            ],
-            "description": "The category or nature of the event."
+            ]
         },
         "event": {
+            "description": "The name of the event.",
             "type": "string",
             "enum": [
                 "poi_documents_uploaded"
-            ],
-            "description": "The name of the event."
+            ]
         },
         "passthrough": {
-            "type": "object",
-            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the echo_req output field."
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the echo_req output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
         }
     }
 }
