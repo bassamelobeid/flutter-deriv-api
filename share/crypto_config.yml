@@ -64,6 +64,11 @@ ETH:
         transaction: https://etherscan.io/tx/
     ethgasstation_api: https://ethgasstation.info/json/ethgasAPI.json
     safe_gas_price: 11000000000 # Wei
+    cold_wallet:
+        min_transfer: 10 # ETH
+        max_transfer: 100 # ETH
+        reserve_balance: 120 # ETH
+        address: 0x067f48d1bbaab135cfbe43535cc34312facc54a1 # multis.co address
 UST:
     withdrawal:
         timeout: "3d"
