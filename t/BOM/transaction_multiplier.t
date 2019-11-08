@@ -531,7 +531,7 @@ subtest 'sell a bet', sub {
         };
         is $error, undef, 'no error';
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
 
         # note explain $trx;
 
