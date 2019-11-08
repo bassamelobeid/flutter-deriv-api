@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Contract Update",
+    "title": "Contract Update (request)",
     "description": "Update a contract condition.",
     "type": "object",
     "additionalProperties": false,
@@ -10,6 +10,8 @@
     ],
     "properties": {
         "contract_update": {
+            "description": "Must be 1.",
+            "type": "integer",
             "enum": [
                 1
             ]
