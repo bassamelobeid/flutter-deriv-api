@@ -323,7 +323,7 @@ subtest 'update take profit', sub {
         $updater = BOM::Transaction::ContractUpdate->new(
             client        => $cl,
             contract_id   => $fmb->{id},
-            update_params => {take_profit => 'null'},
+            update_params => {take_profit => undef},
         );
         ok $updater->is_valid_to_update, 'valid to update';
         $res = $updater->update;
