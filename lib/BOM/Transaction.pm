@@ -836,7 +836,12 @@ sub prepare_bet_data_for_sell {
 }
 
 sub prepare_sell {
-    my ($self, $skip) = @_;
+    my ($self, $skip, $validation_method) = @_;
+
+    # Transaction should be refactored to be more modular IMO.
+    # This is the minimal to support contract cancellation.
+    # Refactoring will be done in a separate card.
+    $validation_method //= 'validate_trx_sell';
 
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
@@ -863,7 +868,7 @@ sub prepare_sell {
     my $error_status = BOM::Transaction::Validation->new({
             transaction => $self,
             clients     => \@clients,
-        })->validate_trx_sell();
+        })->$validation_method();
 
     return $error_status if $error_status;
 
@@ -1054,14 +1059,97 @@ sub sell_by_shortcode {
     return;
 }
 
+sub prepare_cancel {
+    my ($self, $skip_validation) = @_;
+
+    $self->price($self->contract->cancel_price);
+
+    return $self->prepare_sell($skip_validation, 'validate_trx_cancel');
+}
+
 sub cancel_by_shortcode {
-    my ($self, %options) = @_;
+    my $self = shift;
 
     return Error::Base->cuss(
         -type              => 'UnsupportedBatchCancel',
         -mesg              => "Multiplier not supported in sell_by_shortcode",
         -message_to_client => localize('MULTUP and MULTDOWN are not supported.'),
     );
+}
+
+sub cancel {
+    my ($self, %options) = @_;
+
+    my $stats_data = $self->stats_start('cancel');
+
+    my ($error_status, $bet_data) = $self->prepare_cancel($options{skip_validation});
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
+
+    my $client = $self->client;
+
+    $bet_data->{account_data} = {
+        client_loginid => $client->loginid,
+        currency_code  => $self->contract->currency,
+    };
+
+    $bet_data->{bet_data}{is_expired} = $self->contract->is_expired;
+    $self->stats_validation_done($stats_data);
+
+    my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
+        %$bet_data,
+        db => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+    );
+
+    my $error = 1;
+    my ($fmb, $txn, $buy_txn_id);
+    try {
+        ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
+        $error = 0;
+    }
+    catch {
+        # if $error_status is defined, return it
+        # otherwise the function re-throws the exception
+        $error_status = $self->_recover($_);
+    };
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
+
+    return $self->stats_stop(
+        $stats_data,
+        Error::Base->cuss(
+            -type              => 'GeneralError',
+            -mesg              => 'Cannot perform database action',
+            -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
+        )) if $error;
+
+    return $self->stats_stop(
+        $stats_data,
+        Error::Base->cuss(
+            -type              => 'NoOpenPosition',
+            -mesg              => 'No such open contract.',
+            -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
+        )) unless defined $txn->{id} && defined $buy_txn_id;
+
+    $self->stats_stop($stats_data);
+
+    $self->balance_after($txn->{balance_after});
+    $self->transaction_id($txn->{id});
+    $self->reference_id($buy_txn_id);
+
+    if ($client->landing_company->social_responsibility_check_required) {
+        my $loss = $fmb->{buy_price} - $fmb->{sell_price};
+
+        $client->increment_social_responsibility_values({
+            losses => $loss > 0 ? $loss : 0,
+        });
+    }
+
+    BOM::Transaction::CompanyLimits->new(
+        contract_data   => $fmb,
+        currency        => $self->contract->currency,
+        landing_company => $client->landing_company,
+    )->add_sells($client);
+
+    return;
 }
 
 =head1 METHODS

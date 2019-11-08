@@ -29,6 +29,25 @@ has transaction => (is => 'ro');
 my $json = JSON::MaybeXS->new;
 ################ Client and transaction validation ########################
 
+sub validate_trx_cancel {
+    my $self = shift;
+
+    my $contract = $self->transaction->contract;
+
+    unless ($contract->is_valid_to_cancel) {
+        my $error = $contract->primary_validation_error;
+
+        return Error::Base->cuss(
+            -type              => 'BetExpired',
+            -mesg              => $error->message,
+            -message_to_client => localize($error->message_to_client),
+        );
+    }
+
+    $self->transaction->price($contract->cancel_price);
+    return undef;
+}
+
 sub validate_trx_sell {
     my $self = shift;
     ### Client-depended checks
