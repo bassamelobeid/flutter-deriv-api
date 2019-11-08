@@ -1,74 +1,86 @@
 {
-   "$schema" : "http://json-schema.org/draft-04/schema#",
-   "required" : [
-      "msg_type",
-      "echo_req"
-   ],
-   "type" : "object",
-   "description" : "Contract update status",
-   "title" : "Contract update response",
-   "properties" : {
-      "req_id" : {
-         "type" : "integer",
-         "description" : "Optional field send in request to map to response, present only when request contains req_id"
-      },
-      "echo_req" : {
-         "description" : "Echo of the request made",
-         "title" : "Echo request"
-      },
-      "contract_update": {
-         "type": "object",
-         "description": "contains the update status of the request",
-         "properties": {
-            "take_profit": {
-                "type": "object",
-                "description": "The target spot price where the contract will be closed automatically at the profit specified by the user.",
-                "properties": {
-                    "order_date" : {
-                        "type": "integer",
-                        "description": "Take profit order epoch"
-                    },
-                    "order_amount" : {
-                        "type": ["number","null"],
-                        "description": "Take profit amount"
-                    },
-                    "value" : {
-                        "type": ["string","null"],
-                        "description" : "Take profit pip-sized barrier value"
-                    },
-                    "display_name": {
-                        "type": "string",
-                        "description": "Localized display name"
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Contract update response",
+    "description": "Contract update status",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "contract_update": {
+            "description": "contains the update status of the request",
+            "type": "object",
+            "properties": {
+                "stop_loss": {
+                    "description": "The target spot price where the contract will be closed automatically at the loss specified by the user.",
+                    "type": "object",
+                    "properties": {
+                        "display_name": {
+                            "description": "Localized display name",
+                            "type": "string"
+                        },
+                        "order_amount": {
+                            "description": "Stop loss amount",
+                            "type": [
+                                "null",
+                                "number"
+                            ]
+                        },
+                        "order_date": {
+                            "description": "Stop loss order epoch",
+                            "type": "integer"
+                        },
+                        "value": {
+                            "description": "Stop loss pip-sized barrier value",
+                            "type": [
+                                "null",
+                                "string"
+                            ]
+                        }
                     }
-                }
-            },
-            "stop_loss": {
-                "type": "object",
-                "description": "The target spot price where the contract will be closed automatically at the loss specified by the user.",
-                "properties": {
-                    "order_date" : {
-                        "type": "integer",
-                        "description": "Stop loss order epoch"
-                    },
-                    "order_amount" : {
-                        "type": ["number","null"],
-                        "description": "Stop loss amount"
-                    },
-                    "value" : {
-                        "type": ["string","null"],
-                        "description" : "Stop loss pip-sized barrier value"
-                    },
-                    "display_name": {
-                        "type": "string",
-                        "description": "Localized display name"
+                },
+                "take_profit": {
+                    "description": "The target spot price where the contract will be closed automatically at the profit specified by the user.",
+                    "type": "object",
+                    "properties": {
+                        "display_name": {
+                            "description": "Localized display name",
+                            "type": "string"
+                        },
+                        "order_amount": {
+                            "description": "Take profit amount",
+                            "type": [
+                                "null",
+                                "number"
+                            ]
+                        },
+                        "order_date": {
+                            "description": "Take profit order epoch",
+                            "type": "integer"
+                        },
+                        "value": {
+                            "description": "Take profit pip-sized barrier value",
+                            "type": [
+                                "null",
+                                "string"
+                            ]
+                        }
                     }
                 }
             }
-         }
-      },
-      "msg_type" : {
-         "description" : "contract_update",
-         "type" : "string"
-      }
-   }
+        },
+        "echo_req": {
+            "title": "Echo request",
+            "description": "Echo of the request made"
+        },
+        "msg_type": {
+            "description": "contract_update",
+            "type": "string"
+        },
+        "req_id": {
+            "description": "Optional field send in request to map to response, present only when request contains req_id",
+            "type": "integer"
+        }
+    }
 }
