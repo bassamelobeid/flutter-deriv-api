@@ -110,7 +110,7 @@ subtest 'contract_update' => sub {
 
     $update_params->{args}->{limit_order} = {take_profit => 'notanumberornull'};
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidUpdateValue')
-        ->error_message_is('Update value accepts number or null string');
+        ->error_message_is('Update value accepts number or null');
 
     $update_params->{args}->{limit_order} = {
         something => 1,
