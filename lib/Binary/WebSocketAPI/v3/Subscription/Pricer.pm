@@ -153,7 +153,6 @@ sub _non_binary_price_adjustment {
 sub _binary_price_adjustment {
     my ($self, $c, $contract_parameters, $results, $resp_theo_probability) = @_;
 
-    my $resp_theo_probability = delete $results->{theo_probability};
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
         $log->warnf('missing theo probability from pricer. Contract parameter dump %s, pricer response: %s', $contract_parameters, $results);
