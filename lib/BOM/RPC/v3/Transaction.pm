@@ -163,8 +163,6 @@ rpc "buy",
     if (defined $price and defined $amount and defined $amount_type and $amount_type eq 'stake') {
         $error = _validate_stake($price, $amount, $currency);
         return $error if $error;
-
-        $price = $amount;
     }
 
     my $trx = BOM::Transaction->new({
@@ -653,7 +651,7 @@ rpc cancel => sub {
     unless ($contract_id) {
         return BOM::Pricing::v3::Utility::create_error({
             code              => 'MissingContractId',
-            message_to_client => localize('Contract id is required to update contract'),
+            message_to_client => localize('Contract id is required to cancel contract'),
         });
     }
 
@@ -674,8 +672,9 @@ rpc cancel => sub {
     my @fmbs = @{$clientdb->getall_arrayref('select * from bet_v1.get_open_contract_by_id(?)', [$contract_id])};
 
     return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidCancelContractProposal',
-            message_to_client => BOM::Platform::Context::localize('Contract is sold.')}) unless @fmbs;
+            code              => 'ContractNotFound',
+            message_to_client => BOM::Platform::Context::localize('Contract not found for contract id: [_1].', $contract_id),
+        }) unless @fmbs;
 
     my $fmb = $fmbs[0];
 
