@@ -14,6 +14,8 @@ use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Backoffice::Request qw(request localize);
+use Finance::Contract::Longcode qw(shortcode_to_parameters);
+use BOM::Transaction;
 use HTML::Entities;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -78,7 +80,9 @@ BOM::Transaction::sell_expired_contracts({
 
 my $open_bets = get_open_contracts($client);
 foreach my $open_bet (@$open_bets) {
-    my $bet = produce_contract($open_bet->{short_code}, $client->currency);
+    my $bet_parameters = shortcode_to_parameters($open_bet->{short_code}, $client->currency);
+    $bet_parameters->{limit_order} = BOM::Transaction::extract_limit_orders($open_bet) if $open_bet->{bet_class} eq 'multiplier';
+    my $bet = produce_contract($bet_parameters);
     $open_bet->{description} = localize($bet->longcode);
     if ($bet->may_settle_automatically) {
         $open_bet->{sale_price} = $bet->bid_price;
