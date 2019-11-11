@@ -40,6 +40,7 @@ use Email::Stuffer;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::User;
 use BOM::User::Client;
+use BOM::User::Onfido;
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
 use BOM::Platform::S3Client;
@@ -431,33 +432,18 @@ async sub client_verification {
                 or die 'Could not instantiate client for login ID ' . $loginid;
             $log->debugf('Onfido check result for %s (applicant %s): %s (%s)', $loginid, $applicant_id, $result, $check_status);
 
+            # check if the applicant already exist for this check. If not, store the applicant record in db
+            # this is to cater the case where CS/Compliance perform manual check in Onfido dashboard
+            my $new_applicant_flag = await check_or_store_onfido_applicant($loginid, $applicant_id);
+
             my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
-            $dbic->run(
-                fixup => sub {
-                    $_->do('select * from users.update_onfido_check_status(?::TEXT, ?::TEXT, ?::TEXT)',
-                        undef, $check->id, $check->status, $check->result,);
-                });
+            $new_applicant_flag ? BOM::User::Onfido::store_onfido_check($applicant_id, $check) : BOM::User::Onfido::update_onfido_check($check);
 
             my @all_report = await $check->reports->as_list;
 
             for my $each_report (@all_report) {
-                $dbic->run(
-                    fixup => sub {
-                        $_->do(
-                            'select users.add_onfido_report(?::TEXT, ?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::JSONB, ?::JSONB)',
-                            undef,
-                            $each_report->id,
-                            $check->id,
-                            $each_report->name,
-                            Date::Utility->new($each_report->created_at)->datetime_yyyymmdd_hhmmss,
-                            $each_report->status,
-                            $each_report->result,
-                            $each_report->sub_result,
-                            $each_report->variant,
-                            encode_json_utf8($each_report->breakdown),
-                            encode_json_utf8($each_report->properties));
-                    });
+                BOM::User::Onfido::store_onfido_report($check, $each_report);
             }
 
             await _store_applicant_documents($applicant_id, $client, \@all_report);
@@ -633,12 +619,7 @@ async sub _store_applicant_documents {
     my @documents = await $onfido->document_list(applicant_id => $applicant_id)->as_list;
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
-    my $existing_onfido_docs = $dbic->run(
-        fixup => sub {
-            my $result = $_->prepare('select * from users.get_onfido_documents(?::BIGINT, ?::TEXT)');
-            $result->execute($client->binary_user_id, $applicant_id);
-            return $result->fetchall_hashref('id');
-        });
+    my $existing_onfido_docs = BOM::User::Onfido::get_onfido_document($client->binary_user_id);
 
     foreach my $doc (@documents) {
 
@@ -649,30 +630,8 @@ async sub _store_applicant_documents {
 
         unless ($existing_onfido_docs && $existing_onfido_docs->{$doc->id}) {
             $log->debugf('Insert document data for user %s and document id %s', $client->binary_user_id, $doc->id);
-            try {
-                $dbic->run(
-                    fixup => sub {
-                        $_->do(
-                            'select users.add_onfido_document(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::INTEGER)',
-                            undef,
-                            $doc->id,
-                            $applicant_id,
-                            Date::Utility->new($doc->created_at)->datetime_yyyymmdd_hhmmss,
-                            $doc->href,
-                            $doc->download_href,
-                            $type,
-                            $side,
-                            uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3')),
-                            $doc->file_name,
-                            $doc->file_type,
-                            $doc->file_size
-                        );
-                    });
-            }
-            catch {
-                my $e = $@;
-                $log->debugf("Error in storing document data: $e");
-            }
+
+            BOM::User::Onfido::store_onfido_document($doc, $applicant_id, $client->place_of_birth, $type, $side);
 
             try {
                 await _sync_onfido_bo_document({
@@ -691,30 +650,13 @@ async sub _store_applicant_documents {
     }
 
     my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
-    my $existing_onfido_photos = $dbic->run(
-        fixup => sub {
-            my $result = $_->prepare('select * from users.get_onfido_live_photos(?::BIGINT, ?::TEXT)');
-            $result->execute($client->binary_user_id, $applicant_id);
-            return $result->fetchall_hashref('id');
-        });
+    my $existing_onfido_photos = BOM::User::Onfido::get_onfido_live_photo($client->binary_user_id);
 
     foreach my $photo (@live_photos) {
         unless ($existing_onfido_photos && $existing_onfido_photos->{$photo->id}) {
             $log->debugf('Insert live photo data for user %s and document id %s', $client->binary_user_id, $photo->id);
-            try {
-                $dbic->run(
-                    fixup => sub {
-                        $_->do(
-                            'select users.add_onfido_live_photo(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::INTEGER)',
-                            undef, $photo->id, $applicant_id, Date::Utility->new($photo->created_at)->datetime_yyyymmdd_hhmmss,
-                            $photo->href, $photo->download_href, $photo->file_name, $photo->file_type, $photo->file_size
-                        );
-                    });
-            }
-            catch {
-                my $e = $@;
-                warn "Error in storing live photo: $e";
-            }
+
+            BOM::User::Onfido::store_onfido_live_photo($photo, $applicant_id);
 
             try {
                 await _sync_onfido_bo_document({
@@ -866,12 +808,8 @@ async sub sync_onfido_details {
 
         my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
-        my $applicant_data = $dbic->run(
-            fixup => sub {
-                my $sth = $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $client->user_id);
-            });
-
-        my $applicant_id = $applicant_data->{id};
+        my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
+        my $applicant_id   = $applicant_data->{id};
 
         # Only for users that are registered in onfido
         return unless $applicant_id;
@@ -1070,10 +1008,7 @@ async sub _get_onfido_applicant {
             return undef;
         }
         # accessing applicant_data from onfido_applicant table
-        my $applicant_data = $dbic->run(
-            fixup => sub {
-                my $sth = $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $client->user_id);
-            });
+        my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
 
         my $applicant_id = $applicant_data->{id};
 
@@ -1087,14 +1022,7 @@ async sub _get_onfido_applicant {
         my $elapsed   = Time::HiRes::time() - $start;
 
         # saving data into onfido_applicant table
-        $dbic->run(
-            fixup => sub {
-                $_->do(
-                    'select users.add_onfido_applicant(?::TEXT,?::TIMESTAMP,?::TEXT,?::BIGINT)',
-                    undef, $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
-                    $applicant->href, $client->user_id
-                );
-            });
+        BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id);
 
         $applicant
             ? DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.done.elapsed",   $elapsed)
@@ -1845,33 +1773,9 @@ async sub _upload_documents {
         my $redis_events_write = _redis_events_write();
 
         if ($type eq 'live_photo') {
-            $dbic->run(
-                fixup => sub {
-                    $_->do(
-                        'select users.add_onfido_live_photo(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::INTEGER)',
-                        undef, $doc->id, $applicant->id, Date::Utility->new($doc->created_at)->datetime_yyyymmdd_hhmmss,
-                        $doc->href, $doc->download_href, $doc->file_name, $doc->file_type, $doc->file_size
-                    );
-                });
+            BOM::User::Onfido::store_onfido_live_photo($doc, $applicant->id);
         } else {
-            $dbic->run(
-                fixup => sub {
-                    $_->do(
-                        'select users.add_onfido_document(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::INTEGER)',
-                        undef,
-                        $doc->id,
-                        $applicant->id,
-                        Date::Utility->new($doc->created_at)->datetime_yyyymmdd_hhmmss,
-                        $doc->href,
-                        $doc->download_href,
-                        $type,
-                        $side,
-                        uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3')),
-                        $doc->file_name,
-                        $doc->file_type,
-                        $doc->file_size
-                    );
-                });
+            BOM::User::Onfido::store_onfido_document($doc, $applicant->id, $client->place_of_birth, $type, $side);
 
             await $redis_events_write->connect;
             await $redis_events_write->set(ONFIDO_DOCUMENT_ID_PREFIX . $doc->id, $document_entry->{id});
@@ -1957,23 +1861,7 @@ async sub _check_applicant {
 
                 my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
-                $dbic->run(
-                    fixup => sub {
-                        $_->do(
-                            'select users.add_onfido_check(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT[])',
-                            undef,
-                            $check->id,
-                            $applicant_id,
-                            Date::Utility->new($check->created_at)->datetime_yyyymmdd_hhmmss,
-                            $check->href,
-                            $check->type,
-                            $check->status,
-                            $check->result,
-                            $check->results_uri,
-                            $check->download_uri,
-                            $check->tags
-                        );
-                    });
+                BOM::User::Onfido::store_onfido_check($applicant_id, $check);
 
             });
 
@@ -2221,6 +2109,37 @@ sub set_needs_action {
     }
 
     return;
+}
+
+=head2 check_or_store_onfido_applicant
+
+Check if applicant exists in database. Store applicant info if client loginid is valid.
+This is due to manual checks at onfido site by CS/Compliance. Such act will creates a new applicant id.
+We stores the applicant as we want to link any check related to the client 
+
+=cut
+
+async sub check_or_store_onfido_applicant {
+    my ($loginid, $applicant_id) = @_;
+    #die if client not exists
+    my $client = BOM::User::Client->new({loginid => $loginid}) or die "$loginid does not exists.";
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    # gets all the applicant record for the user
+    my $user_applicant = BOM::User::Onfido::get_all_user_onfido_applicant($client->binary_user_id);
+
+    # returns 0 if the applicant record exists
+    return 0 if $user_applicant->{$applicant_id};
+
+    # fetch and store the new applicantid for the user
+    my $onfido = _onfido();
+    my $applicant = await $onfido->applicant_get(applicant_id => $applicant_id);
+
+    BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id);
+
+    return 1;
+
 }
 
 1;
