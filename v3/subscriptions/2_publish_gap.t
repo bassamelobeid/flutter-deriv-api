@@ -21,8 +21,7 @@ $loop->add(
                 filter => sub {
                     state $count;
                     my $params = delete $_[0]->{params};
-                    my ($call) = $_[0]->%*;
-                    ++$count->{$call} == 1;
+                    ++$count->{$_[0]->{request}} == 1;
                 },
             ),
         }
