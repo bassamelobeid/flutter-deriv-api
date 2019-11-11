@@ -80,7 +80,7 @@ sub create {
     # encode and decode again. That means we do 'encode' & 'decode' twice.
     # In most cases it is ok. I'm afraid that will cause new problem if we
     # fix it. And we will replace Mojo::Redis2 in the future, so we don't
-    # fix it now. Given that in the readis_transaction, we send it by
+    # fix it now. Given that in the redis_transaction, we send it by
     # RedisDB, that will generate an error 'wide character' when we decode
     # message twice. So we disable it now
     $redis->encoding(undef) if $name =~ /^redis_transaction$/;
