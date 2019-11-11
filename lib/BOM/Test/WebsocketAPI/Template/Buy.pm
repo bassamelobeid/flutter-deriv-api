@@ -9,7 +9,7 @@ use Date::Utility;
 
 request buy => sub {
     my $contract = $_->contract;
-    return {
+    return buy => {
         buy        => 1,
         parameters => {
             symbol        => $contract->underlying->symbol,
@@ -25,7 +25,7 @@ request buy => sub {
     },
     qw(contract);
 
-rpc_request buy => sub {
+rpc_request {
     my $contract   = $_->contract;
     my $parameters = {
         app_markup_percentage => '0',
@@ -55,10 +55,10 @@ rpc_request buy => sub {
         source       => '1',
         country_code => 'aq'
     };
-    },
-    qw(contract);
+}
+qw(contract);
 
-rpc_response buy => sub {
+rpc_response {
     my $contract = $_->contract;
     $_->global->{contracts}{$contract->client}{$contract} = $contract;
     my $contract_id = $contract->contract_id;

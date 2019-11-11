@@ -5,6 +5,8 @@ no indirect;
 use strict;
 use warnings;
 
+use BOM::Test::WebsocketAPI::Parameters qw( test_params );
+
 use parent qw(BOM::Test::WebsocketAPI::SanityChecker::Base);
 
 =head1 NAME
@@ -39,7 +41,13 @@ sub published {
 
     # The first response is published way sooner than received, therefore
     # we will receive too old response errors if run general tests.
-    my @balances = map { $_->@[1 .. $_->$#*] } values %balance_by_id;
+    # In case of balance all, we skip based on number of clients
+    my @balances = map {
+        ;
+        my ($first) = values $_->@*;
+        my $skip = $first->request->{account} // '' eq 'all' ? scalar test_params()->{client}->@* : 1;
+        $_->@[$skip .. $_->$#*]
+    } values %balance_by_id;
     for my $balance (@balances) {
         return 0 unless $self->general($balance);
     }

@@ -9,7 +9,7 @@ use BOM::Test::WebsocketAPI::Template::DSL;
 # No requests, buy subscribes to open contracts for us, or you can manually create a proposal_open_contract request
 
 # with contract_id
-rpc_request proposal_open_contract => sub {
+rpc_request {
     return {
         source_bypass_verification => 0,
         source                     => '1',
@@ -27,12 +27,12 @@ rpc_request proposal_open_contract => sub {
         token        => $_->contract->client->token,
         valid_source => '1'
     };
-    },
-    qw(contract);
+}
+qw(contract);
 
 # With contract_id, called from Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time
 # This only works for contracts bought earlier in a test
-rpc_request_new_contracts proposal_open_contract => sub {
+rpc_request_new_contracts {
     return {
         logging => {},
         args    => {
@@ -46,11 +46,11 @@ rpc_request_new_contracts proposal_open_contract => sub {
         source_bypass_verification => 0,
         valid_source               => '1'
     };
-    },
-    qw(contract);
+}
+qw(contract);
 
 # Same as previous, but for poc subscription to all contracts
-rpc_request_new_contracts proposal_open_contract => sub {
+rpc_request_new_contracts {
     return {
         logging                    => {},
         args                       => {proposal_open_contract => 1},
@@ -61,11 +61,11 @@ rpc_request_new_contracts proposal_open_contract => sub {
         source_bypass_verification => 0,
         valid_source               => '1'
     };
-    },
-    qw(contract);
+}
+qw(contract);
 
 # without contract_id
-rpc_request proposal_open_contract => sub {
+rpc_request {
     return {
         logging => {},
         args    => {
@@ -81,11 +81,11 @@ rpc_request proposal_open_contract => sub {
         language                   => 'EN',
         valid_source               => '1'
     };
-    },
-    qw(client);
+}
+qw(client);
 
 # without contract_id (contract_id is handled in Buy)
-rpc_response proposal_open_contract => sub {
+rpc_response {
     return {} unless $_->contract or exists $_->global->{contracts}{$_->client};
 
     my @contracts = $_->contract ? ($_->contract) : values $_->global->{contracts}{$_->client}->%*;

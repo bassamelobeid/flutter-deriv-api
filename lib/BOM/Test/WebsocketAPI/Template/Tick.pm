@@ -7,13 +7,13 @@ no indirect;
 use BOM::Test::WebsocketAPI::Template::DSL;
 
 request ticks => sub {
-    return {
+    return ticks => {
         ticks  => $_->underlying->symbol,
         req_id => ++$_->global->{req_id}};
     },
     qw(underlying);
 
-rpc_request ticks => sub {
+rpc_request {
     return {
         logging                    => {},
         valid_source               => '1',
@@ -25,10 +25,10 @@ rpc_request ticks => sub {
             ticks  => $_->underlying->symbol,
             req_id => 2
         }};
-    },
-    qw(underlying);
+}
+qw(underlying);
 
-rpc_response ticks => sub {
+rpc_response {
     my $pip_size = log(1 / $_->underlying->pip_size) / log(10);
     return {
         stash => {
