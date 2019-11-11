@@ -30,11 +30,21 @@ use Finance::Underlying;
 use Struct::Dumb qw( -named_constructors );
 use Date::Utility;
 
+struct ParamLists => [qw(
+        underlying
+        ticks_history
+        global
+        proposal_array
+        client
+        contract
+        )];
+
 struct Client => [qw(
         loginid
         account_id
         country
         balance
+        total_balance
         token
         email
         landing_company_name
@@ -97,8 +107,9 @@ my @client = (
         account_id               => '200000',
         country                  => 'uk',
         balance                  => '10000.00',
+        total_balance            => '30000.00',
         token                    => 'TestTokenMLT',
-        email                    => 'binary+mlt@binary.com',
+        email                    => 'binary@binary.com',
         landing_company_name     => 'mlt',
         landing_company_fullname => 'Binary (Europe) Ltd',
         currency                 => 'EUR',
@@ -108,8 +119,9 @@ my @client = (
         account_id               => '200001',
         country                  => 'id',
         balance                  => '10000.00',
+        total_balance            => '30000.00',
         token                    => 'TestTokenCR',
-        email                    => 'binary+cr@binary.com',
+        email                    => 'binary@binary.com',
         landing_company_name     => 'svg',
         landing_company_fullname => 'Binary (SVG) Ltd.',
         currency                 => 'USD',
@@ -119,8 +131,9 @@ my @client = (
         account_id               => '200002',
         country                  => 'id',
         balance                  => '10000.00',
+        total_balance            => '30000.00',
         token                    => 'TestTokenVRTC',
-        email                    => 'binary+MLT@binary.com',
+        email                    => 'binary@binary.com',
         landing_company_name     => 'virtual',
         landing_company_fullname => 'Binary Ltd',
         currency                 => 'USD',
@@ -216,7 +229,7 @@ for my $ul (@underlying) {
     }
 }
 
-my $parameters = {
+our $parameters = {
     underlying     => \@underlying,
     ticks_history  => \@ticks_history,
     global         => [{req_id => 10000}],
@@ -224,6 +237,7 @@ my $parameters = {
     client         => \@client,
     contract       => \@contract,
 };
+$parameters->{param_lists} = [ParamLists($parameters->%*)];
 
 =head2 test_params
 
@@ -275,7 +289,7 @@ See the L<Template/DSL.pm> for more info.
 sub expand_params {
     my (@params) = @_;
 
-    return map { params($_->%*) } permutations($parameters->%{(@params, qw(global))})->@*;
+    return map { params($_->%*) } permutations($parameters->%{(@params, qw(global param_lists))})->@*;
 }
 
 sub params { return BOM::Test::WebsocketAPI::Parameters::Params->new(@_) }

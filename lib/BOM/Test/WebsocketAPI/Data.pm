@@ -140,12 +140,8 @@ sub requests {
 
     my @requests;
     for my $call ($calls->@*) {
-        my @filtered_requests =
-            map {
-            { $call => $_->{$call} }
-            }
-            grep {
-            my $params     = $_->{params};
+        for my $req_item ($requests->{$call}->@*) {
+            my $params     = $req_item->{params};
             my $req_client = $params->client;
             # If the client is not present in the params, it's most
             # likely present as part of another parameter.
@@ -154,12 +150,10 @@ sub requests {
             }
             # Skip this request if it doesn't belong to the client
             # in this group.
-            my $result = 1;
-            $result = 0 if defined $req_client and $req_client ne $client;
-            $result = 0 unless $filter->($_);
-            $result;
-            } $requests->{$call}->@*;
-        push @requests, @filtered_requests;
+            next if defined $req_client and $req_client ne $client;
+            next unless $filter->($req_item);
+            push @requests, {$req_item->{request} => $req_item->{payload}};
+        }
     }
     return \@requests;
 }

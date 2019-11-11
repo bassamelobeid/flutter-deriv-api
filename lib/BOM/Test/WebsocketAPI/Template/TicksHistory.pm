@@ -8,7 +8,7 @@ use BOM::Test::WebsocketAPI::Template::DSL;
 
 request ticks_history => sub {
     my $history = $_->ticks_history;
-    return {
+    return ticks_history => {
         ticks_history => $history->underlying->symbol,
         end           => 'latest',
         style         => 'ticks',
@@ -18,7 +18,7 @@ request ticks_history => sub {
     },
     qw(ticks_history);
 
-rpc_request ticks_history => sub {
+rpc_request {
     my $history = $_->ticks_history;
     return {
         logging                    => {},
@@ -34,10 +34,10 @@ rpc_request ticks_history => sub {
         valid_source => '1',
         brand        => 'binary'
     };
-    },
-    qw(ticks_history);
+}
+qw(ticks_history);
 
-rpc_response ticks_history => sub {
+rpc_response {
     my $now        = time;
     my $history    = $_->ticks_history;
     my $underlying = $history->underlying;

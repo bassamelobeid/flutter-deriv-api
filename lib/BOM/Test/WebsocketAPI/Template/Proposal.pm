@@ -8,7 +8,7 @@ use BOM::Test::WebsocketAPI::Template::DSL;
 
 request proposal => sub {
     my $contract = $_->contract;
-    return {
+    return proposal => {
         proposal      => 1,
         amount        => $contract->amount,
         basis         => $contract->basis,
@@ -21,7 +21,7 @@ request proposal => sub {
     },
     qw(contract);
 
-rpc_request send_ask => sub {
+rpc_request {
     my $contract = $_->contract;
     return {
         brand                      => 'binary',
@@ -46,10 +46,10 @@ rpc_request send_ask => sub {
             duration_unit => $contract->duration_unit,
             currency      => $contract->client->currency
         }};
-    },
-    qw(contract);
+}
+qw(contract);
 
-rpc_response send_ask => sub {
+rpc_response {
     my $contract = $_->contract;
     my $now_str  = '' . time;
     return {

@@ -6,7 +6,7 @@ no indirect;
 
 use BOM::Test::WebsocketAPI::Template::DSL;
 
-rpc_request authorize => sub {
+rpc_request {
     return {
         args => {
             authorize => $_->client->token,
@@ -23,10 +23,10 @@ rpc_request authorize => sub {
         valid_source               => undef,
         ua_fingerprint             => 'c4ca4238a0b923820dcc509a6f75849b'
     };
-    },
-    qw(client);
+}
+qw(client);
 
-rpc_response authorize => sub {
+rpc_response sub {
     my $client = $_->client;
     return {
         stash => {

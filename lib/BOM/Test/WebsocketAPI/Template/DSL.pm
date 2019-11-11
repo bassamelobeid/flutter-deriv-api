@@ -1,5 +1,6 @@
 package BOM::Test::WebsocketAPI::Template::DSL;
 
+## no critic (Subroutines::ProhibitSubroutinePrototypes)
 no indirect;
 use warnings;
 use strict;
@@ -89,7 +90,12 @@ sub request {
     my $requests = $BOM::Test::WebsocketAPI::Data::requests //= {};
 
     push $requests->{$type}->@*, map {
-        { $type => {$template->()->%*}, params => $_ }
+        my ($request, $payload) = $template->();
+        {
+            request => $request,
+            payload => $payload,
+            params  => $_
+        }
     } expand_params(@params);
 
     return undef;
@@ -102,8 +108,8 @@ C<@params>, the same C<@params> will be passed to C<publish> and C<rpc_response>
 
 =cut
 
-sub rpc_request {
-    my ($type, $template, @params) = @_;
+sub rpc_request (&@) {
+    my ($template, @params) = @_;
 
     my ($module) = caller;
 
@@ -124,9 +130,9 @@ for new contracts, which are created by C<@buy> calls.
 
 =cut
 
-sub rpc_request_new_contracts {
-    my ($type, $template) = @_;
-    my ($module) = caller;
+sub rpc_request_new_contracts (&@) {
+    my ($template) = @_;
+    my ($module)   = caller;
     push @rpc_requests_new_contracts,
         {
         module => $module,
@@ -143,8 +149,8 @@ receives the same C<@params> as the ones used to generate C<rpc_request>.
 
 =cut
 
-sub rpc_response {
-    my ($type, $template) = @_;
+sub rpc_response (&) {
+    my ($template) = @_;
 
     my ($module) = caller;
     $rpc_response_cb->{$module} = $template;
@@ -350,5 +356,7 @@ $BOM::Test::WebsocketAPI::Data::publish_data = sub {
     }
     return $data;
 };
+
+## use critic
 
 1;

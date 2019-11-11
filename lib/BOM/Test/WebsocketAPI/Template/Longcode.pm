@@ -6,7 +6,7 @@ no indirect;
 
 use BOM::Test::WebsocketAPI::Template::DSL;
 
-rpc_request longcode => sub {
+rpc_request {
     my $contract = $_->contract;
     return {
         'short_codes'                => [$contract->shortcode],
@@ -18,10 +18,10 @@ rpc_request longcode => sub {
         'args'                       => {},
         'source'                     => '1',
         'logging'                    => {}};
-    },
-    qw(contract);
+}
+qw(contract);
 
-rpc_response longcode => sub {
+rpc_response {
     my $contract = $_->contract;
     return {
         longcodes => {$contract->shortcode => $contract->longcode},
