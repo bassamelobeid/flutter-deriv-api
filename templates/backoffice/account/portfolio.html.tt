@@ -21,7 +21,7 @@
             %]
             <div class="grd-parent grd-grid-12 table-body table-body-lines">
                 <div class="grd-grid-1">
-                    <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { shortcode => open_bet.short_code, currency => currency, purchase_time => open_bet.purchase_time, loginid => loginid}) | none %]">[% open_bet.buy_transaction_id %]</a>
+                    <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { shortcode => open_bet.short_code, currency => currency, purchase_time => open_bet.purchase_time, loginid => loginid, limit_order => open_bet.limit_order}) | none %]">[% open_bet.buy_transaction_id %]</a>
                 </div>
                 <div class="grd-grid-7">[% open_bet.description %]</div>
                 <div class="grd-grid-2 right-aligned">

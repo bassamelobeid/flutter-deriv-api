@@ -18,6 +18,7 @@ use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::Transaction;
 use HTML::Entities;
 use BOM::Backoffice::Sysinit ();
+use JSON::MaybeUTF8 qw(:v1);
 BOM::Backoffice::Sysinit::init();
 
 local $\ = "\n";
@@ -81,7 +82,11 @@ BOM::Transaction::sell_expired_contracts({
 my $open_bets = get_open_contracts($client);
 foreach my $open_bet (@$open_bets) {
     my $bet_parameters = shortcode_to_parameters($open_bet->{short_code}, $client->currency);
-    $bet_parameters->{limit_order} = BOM::Transaction::extract_limit_orders($open_bet) if $open_bet->{bet_class} eq 'multiplier';
+    if ($open_bet->{bet_class} eq 'multiplier') {
+        $bet_parameters->{limit_order} = BOM::Transaction::extract_limit_orders($open_bet);
+        $open_bet->{limit_order} =
+            encode_json_utf8($bet_parameters->{limit_order});
+    }
     my $bet = produce_contract($bet_parameters);
     $open_bet->{description} = localize($bet->longcode);
     if ($bet->may_settle_automatically) {

@@ -24,6 +24,7 @@ use BOM::PricingDetails;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
+use JSON::MaybeUTF8 qw(:v1);
 BOM::Backoffice::Sysinit::init();
 
 use BOM::User::Client;
@@ -48,13 +49,13 @@ $landing_company = $lc_registry->short if $lc_registry;
 
 my $bet = do {
     my $contract_object = '';
-    my ($shortcode, $currency) = map { request()->param($_) } qw(shortcode currency);
+    my ($shortcode, $currency, $limit_order) = map { request()->param($_) } qw(shortcode currency limit_order);
 
     if ($landing_company and $shortcode and $currency) {
-
         my $contract_parameters = shortcode_to_parameters($shortcode, $currency);
+        $contract_parameters->{limit_order}     = decode_json_utf8($limit_order) if $limit_order;
         $contract_parameters->{landing_company} = $landing_company;
-        $contract_object = produce_contract($contract_parameters);
+        $contract_object                        = produce_contract($contract_parameters);
     }
     $contract_object;
 };
