@@ -675,7 +675,7 @@ rpc cancel => sub {
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidCancelContractProposal',
-            message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless @fmbs;
+            message_to_client => BOM::Platform::Context::localize('Contract is sold.')}) unless @fmbs;
 
     my $fmb = $fmbs[0];
 
