@@ -153,6 +153,15 @@ sub _validate_update_parameter {
         };
     }
 
+    # We need to limit the number of updates per second.
+    # Currently, we only allow one update per second which I think is reason.
+    if ($self->$order_type and $new_order->order_date->epoch <= $contract->$order_type->order_date->epoch) {
+        return {
+            code              => 'TooFrequentUpdate',
+            message_to_client => localize('Only one update per second is allowed.'),
+        };
+    }
+
     $self->new_order($new_order);
 
     return undef;
