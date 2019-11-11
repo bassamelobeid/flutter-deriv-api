@@ -38,7 +38,7 @@ sub validate_trx_cancel {
         my $error = $contract->primary_validation_error;
 
         return Error::Base->cuss(
-            -type              => 'BetExpired',
+            -type              => 'CancelFailed',
             -mesg              => $error->message,
             -message_to_client => localize($error->message_to_client),
         );
