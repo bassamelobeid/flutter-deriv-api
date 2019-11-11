@@ -98,6 +98,7 @@ BEGIN {
     }
     $ENV{TEST_DATABASE}    = 1;                     ## no critic (RequireLocalizedPunctuationVars)
     $ENV{JOB_QUEUE_PREFIX} = 'TEST_' . uc(env());
+    $ENV{QUEUE_TIMEOUT}    = 2;
 
     # remove PERL5OPT which could cause confusion when forking to perls
     # different from our own (e.g. from binary-com/perl to /usr/bin/perl)
