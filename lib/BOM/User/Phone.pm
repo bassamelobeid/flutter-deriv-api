@@ -24,7 +24,8 @@ sub format_phone {
     $phone =~ s/^00/+/;
 
     my $phone_obj = Number::Phone->new($phone);
-    my $formatted_phone = $phone_obj ? $phone_obj->format : '';
+    # To keep numbers unique for duplicate check, we retain only the leading + and numbers
+    my $formatted_phone = $phone_obj ? $phone_obj->format =~ s{[^0-9+]+}{}gr : '';
 
     return $formatted_phone;
 }
