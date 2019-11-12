@@ -7,12 +7,12 @@ no indirect;
 use BOM::Test::WebsocketAPI::Template::DSL;
 
 request transaction => sub {
-    return {
+    return transaction => {
         transaction => 1,
     };
 };
 
-rpc_request transaction => sub {
+rpc_request {
     my $contract = $_->contract;
     return {
         currency                   => $contract->client->currency,
@@ -31,10 +31,10 @@ rpc_request transaction => sub {
         language     => 'EN',
         logging      => {},
     };
-    },
-    qw(contract);
+}
+qw(contract);
 
-rpc_response transaction => sub {
+rpc_response {
     my $contract = $_->contract;
     {
         longcode     => $contract->longcode,

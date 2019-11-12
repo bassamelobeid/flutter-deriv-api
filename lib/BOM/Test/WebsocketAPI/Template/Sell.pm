@@ -8,7 +8,7 @@ use BOM::Test::WebsocketAPI::Template::DSL;
 use Date::Utility;
 
 # this will only work for contracts bought earlier in the test
-rpc_request_new_contracts sell => sub {
+rpc_request_new_contracts {
     my $contract = $_->contract;
 
     return {
@@ -28,7 +28,7 @@ rpc_request_new_contracts sell => sub {
     };
 };
 
-rpc_response sell => sub {
+rpc_response {
     my $contract = $_->contract;
 
     $contract->is_sold = 1;

@@ -7,12 +7,12 @@ no indirect;
 use BOM::Test::WebsocketAPI::Template::DSL;
 
 request website_status => sub {
-    return {
+    return website_status => {
         website_status => 1,
     };
 };
 
-rpc_request website_status => sub {
+rpc_request {
     return {
         logging                    => {},
         country_code               => 'aq',
@@ -27,19 +27,7 @@ rpc_request website_status => sub {
         }};
 };
 
-publish website_status => sub {
-    return {
-        'NOTIFY::broadcast::channel' => {
-            site_status => 'up',
-            # a unique message is added, expecting to be delivered to website_status subscribers (needed for sanity checks).
-            passthrough => {
-                test_publisher_message => 'message #' . ++$_->{counter},
-            },
-        },
-    };
-};
-
-rpc_response website_status => sub {
+rpc_response {
     return {
         api_call_limits => {
             max_proposal_subscription => {
@@ -309,6 +297,18 @@ rpc_response website_status => sub {
         },
         supported_languages      => ['EN', 'ID', 'RU', 'ES', 'FR', 'IT', 'PT', 'PL', 'DE', 'ZH_CN', 'VI', 'ZH_TW', 'TH'],
         terms_conditions_version => 'Version 1 1970-01-01',
+    };
+};
+
+publish website_status => sub {
+    return {
+        'NOTIFY::broadcast::channel' => {
+            site_status => 'up',
+            # a unique message is added, expecting to be delivered to website_status subscribers (needed for sanity checks).
+            passthrough => {
+                test_publisher_message => 'message #' . ++$_->{counter},
+            },
+        },
     };
 };
 

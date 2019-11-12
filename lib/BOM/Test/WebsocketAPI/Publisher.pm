@@ -224,6 +224,7 @@ handler transaction => sub {
                         balance  => $transaction->{balance_after},
                         currency => $currency,
                         loginid  => $loginid,
+                        ($transaction->{total} ? (total => $transaction->{total}) : ()),
                     });
             }));
 };

@@ -1,4 +1,4 @@
-package BOM::Test::WebsocketAPI::Template::Balance;
+package BOM::Test::WebsocketAPI::Template::BalanceAll;
 
 use strict;
 use warnings;
@@ -6,8 +6,11 @@ no indirect;
 
 use BOM::Test::WebsocketAPI::Template::DSL;
 
-request balance => sub {
-    return balance => {balance => 1};
+request balance_all => sub {
+    return balance => {
+        balance => 1,
+        account => 'all'
+    };
 };
 
 rpc_request {
@@ -20,7 +23,8 @@ rpc_request {
         args                       => {
             balance   => 1,
             req_id    => 3,
-            subscribe => 1
+            subscribe => 1,
+            account   => 'all',
         },
         source  => '1',
         logging => {},
@@ -31,11 +35,22 @@ qw(client);
 
 rpc_response {
     return {
-        loginid    => $_->client->loginid,
-        balance    => $_->client->balance,
-        currency   => $_->client->currency,
-        account_id => $_->client->account_id,
-    };
+        all => [
+            map {
+                currency       => $_->currency,
+                    account_id => $_->account_id,
+                    total      => {
+                    real => {
+                        amount   => $_->total_balance,
+                        currency => $_->currency
+                    }
+                    },
+                    balance                         => $_->balance,
+                    currency_rate_in_total_currency => 1,
+                    loginid                         => $_->loginid,
+            },
+            $_->param_lists->client->@*
+        ]};
 };
 
 publish transaction => sub {
@@ -44,7 +59,8 @@ publish transaction => sub {
     my $account_id = $client->account_id;
     my $amount     = sprintf("%.2f", (rand(1000) - 500));
     my $action     = $amount < 0 ? 'withdrawal' : 'deposit';
-    $client->balance += $amount;
+    $client->balance       += $amount;
+    $client->total_balance += $amount;
 
     return {
         "TXNUPDATE::transaction_$account_id" => {
@@ -54,9 +70,16 @@ publish transaction => sub {
             loginid        => $client->loginid,
             amount         => $amount,
             id             => ++$_->global->{transaction_id},
-            payment_remark => 'published by balance template'
+            payment_remark => 'published by balance template',
+            total          => {
+                real => {
+                    amount   => $client->total_balance,
+                    currency => $client->currency,
+                },
+            },
         },
     };
 };
 
 1;
+
