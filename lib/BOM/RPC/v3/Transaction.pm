@@ -595,6 +595,13 @@ rpc contract_update => sub {
         });
     }
 
+    if (scalar(%{$args->{limit_order}}) > 1) {
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => 'OnlyOneUpdate',
+            message_to_client => localize('You can only update one limit order at a time'),
+        });
+    }
+
     my $client = $params->{client};
     unless ($client) {
         # since this is an authenticated call, we can't proceed
