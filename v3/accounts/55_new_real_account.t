@@ -33,7 +33,7 @@ my %client_details = (
     address_city           => 'Cyberjaya',
     address_state          => 'Selangor',
     address_postcode       => '47120',
-    phone                  => '+60 3 2168 5000',
+    phone                  => '+60321685000',
     secret_question        => 'Favourite dish',
     secret_answer          => 'nasi lemak,teh tarik',
     account_opening_reason => 'Speculative'
@@ -78,7 +78,7 @@ subtest 'new MX real account' => sub {
     $details{residence} = 'gb';
     $details{citizen}   = 'gb';
     $details{first_name} = 'Valid';
-    $details{phone} = '+44 20 7234 3456';
+    $details{phone} = '+442072343456';
 
     subtest 'UK client - invalid postcode' => sub {
         my $res = $t->await::new_account_real({%details, address_postcode => ''}, { timeout => 10 });
@@ -115,7 +115,7 @@ subtest 'new MLT real account' => sub {
     $details{residence} = 'nl';
     $details{first_name} = 'first\'name';
     $details{citizen} = 'nl';
-    $details{phone}   = '+31 20 555 1111';
+    $details{phone}   = '+31205551111';
 
     my $res = $t->await::new_account_real(\%details);
     ok($res->{new_account_real});
@@ -143,7 +143,7 @@ subtest 'create account failed' => sub {
         my %details = %client_details;
         $details{residence} = 'id';
         $details{first_name} .= '-id';
-        $details{phone} = '+60 3 2168 5001';
+        $details{phone} = '+60321685001';
 
         my $res = $t->await::new_account_real(\%details);
 
@@ -266,7 +266,7 @@ subtest 'new_real_account with currency provided' => sub {
 
     $details{currency}  = 'USD';
     $details{last_name} = 'Torvalds';
-    $details{phone}     = '+60 3 2168 5007';
+    $details{phone}     = '+60321685007';
     my $res = $t->await::new_account_real(\%details);
     $compiled_checks->($res, \%details);
 

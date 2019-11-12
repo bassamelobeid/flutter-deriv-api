@@ -36,7 +36,7 @@ my %client_details = (
     address_city              => 'Cyberjaya',
     address_state             => 'Selangor',
     address_postcode          => '47120',
-    phone                     => '+60 3 2168 5000',
+    phone                     => '+60321685000',
     secret_question           => 'Favourite dish',
     secret_answer             => 'nasi lemak,teh tarik',
     tax_residence             => 'de,nl',
@@ -115,7 +115,7 @@ subtest 'VR upgrade to MF - Germany' => sub {
         delete $details{new_account_real};
         $details{first_name} = 'first name DE';
         $details{residence}  = 'de';
-        $details{phone}      = '+44 20 7234 3457';
+        $details{phone}      = '+442072343457';
 
         my $res = $t->await::new_account_maltainvest(\%details);
         ok($res->{new_account_maltainvest});
@@ -146,7 +146,7 @@ subtest 'CR client cannot upgrade to MF' => sub {
         my %details = %client_details;
         $details{first_name} = 'first name ID';
         $details{residence}  = 'id';
-        $details{phone}      = '+44 20 7234 3457';
+        $details{phone}      = '+442072343457';
 
         my $res = $t->await::new_account_real(\%details);
         ok($res->{new_account_real});
@@ -185,7 +185,7 @@ subtest 'MX client can upgrade to MF' => sub {
         my %details = %client_details;
         $details{first_name} = 'InsufficientDOB';
         $details{residence}  = 'gb';
-        $details{phone}      = '+44 20 7234 3457';
+        $details{phone}      = '+442072343457';
         my $res = $t->await::new_account_real(\%details, { timeout => 10 });
 
         ok($res->{new_account_real});
