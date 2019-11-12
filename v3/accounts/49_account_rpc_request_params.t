@@ -402,7 +402,7 @@ $res = $t->await::set_settings({
     address_city     => "Test City",
     address_state    => "01",
     address_postcode => "123456",
-    phone            => "+1 541 754 3010"
+    phone            => "+15417543010"
 });
 is($res->{set_settings},     1);
 is($call_params->{language}, 'EN');
@@ -474,7 +474,7 @@ $t->await::set_settings({
     address_city     => "Test City",
     address_state    => "01",
     address_postcode => "123456",
-    phone            => "+1 541 754 3010"
+    phone            => "+15417543010"
 });
 $t->await::set_self_exclusion({
     set_self_exclusion => 1,
