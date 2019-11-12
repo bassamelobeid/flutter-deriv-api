@@ -86,22 +86,20 @@ if ($bet) {
                 date_pricing    => $start,
                 landing_company => $landing_company
             });
-        $debug_link = BOM::PricingDetails->new({bet => $start_bet})->debug_link;
+        BOM::Backoffice::Request::template()->process(
+            'backoffice/bpot.html.tt',
+            {
+                longcode => $bet      ? localize($bet->longcode)     : '',
+                bet      => $bet,
+                start    => $start    ? $start->datetime             : '',
+                end      => $end      ? $end->datetime               : '',
+                timestep => $timestep ? $timestep->as_concise_string : '',
+                debug_link => $bet->category_code ne 'multiplier' ? BOM::PricingDetails->new({bet => $start_bet})->debug_link : undef,
+            }) || die BOM::Backoffice::Request::template()->error;
     }
     catch {
         code_exit_BO("<pre>$_</pre>");
     };
 }
-
-BOM::Backoffice::Request::template()->process(
-    'backoffice/bpot.html.tt',
-    {
-        longcode => $bet      ? localize($bet->longcode)     : '',
-        bet      => $bet,
-        start    => $start    ? $start->datetime             : '',
-        end      => $end      ? $end->datetime               : '',
-        timestep => $timestep ? $timestep->as_concise_string : '',
-        debug_link => $debug_link,
-    }) || die BOM::Backoffice::Request::template()->error;
 
 code_exit_BO();
