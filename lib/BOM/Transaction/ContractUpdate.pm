@@ -92,6 +92,13 @@ sub _validate_update_parameter {
         };
     }
 
+    if (scalar(%{$self->update_params}) > 1) {
+        return {
+            code              => 'OnlyOneUpdate',
+            message_to_client => localize('You can only update one limit order at a time'),
+        };
+    }
+
     my ($order_type, $order_value) = %{$self->update_params};
     # $order_value will be undef for cancel operation
     $order_value //= 'null';
