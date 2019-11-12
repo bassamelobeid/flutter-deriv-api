@@ -6,6 +6,7 @@
         <tr><td>Time step</td><td><input value="[% timestep %]" size="4" type="text" name="timestep" id="timestep"/></td></tr>
         <tr><td>Graph start </td><td><input value="[% start %]" size="20" type="text" name="start" id="start"/>[For a forward starting contract, it will start from purchase time]</td></tr>
         <tr><td>Graph end</td><td><input value="[% end %]" size="20" type="text" name="end" id="end"/></td></tr>
+        <tr><td>Graph end</td><td><input value="[% limit_order || none %]" size="20" type="hidden" name="limit_order" id="limit_order"/></td></tr>
         <tr><td colspan=2><input type="submit" id="draw_quant_graph" value="Graph it!"/></td></tr>
 </table>
 </form>

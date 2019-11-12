@@ -46,10 +46,11 @@ if ($broker) {
 }
 
 $landing_company = $lc_registry->short if $lc_registry;
+my $limit_order = request()->param('limit_order');
 
 my $bet = do {
     my $contract_object = '';
-    my ($shortcode, $currency, $limit_order) = map { request()->param($_) } qw(shortcode currency limit_order);
+    my ($shortcode, $currency) = map { request()->param($_) } qw(shortcode currency);
 
     if ($landing_company and $shortcode and $currency) {
         my $contract_parameters = shortcode_to_parameters($shortcode, $currency);
@@ -94,6 +95,7 @@ if ($bet) {
                 start    => $start    ? $start->datetime             : '',
                 end      => $end      ? $end->datetime               : '',
                 timestep => $timestep ? $timestep->as_concise_string : '',
+                defined $limit_order ? (limit_order => $limit_order) : (),
                 debug_link => $bet->category_code ne 'multiplier' ? BOM::PricingDetails->new({bet => $start_bet})->debug_link : undef,
             }) || die BOM::Backoffice::Request::template()->error;
     }
