@@ -328,7 +328,7 @@ subtest $method => sub {
             first_name    => 'James' . rand(999),
             last_name     => 'Brown' . rand(999),
             date_of_birth => '1960-01-02',
-            phone         => sprintf("+7 927 207 56 %02d", rand(99)),
+            phone         => sprintf("+792720756%02d", rand(99)),
         };
 
         @{$params->{args}}{keys %$client_cr} = values %$client_cr;
