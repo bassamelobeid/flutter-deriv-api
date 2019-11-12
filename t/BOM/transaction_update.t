@@ -289,6 +289,8 @@ subtest 'update take profit', sub {
         my $audit_details = get_audit_details_by_fmbid($fmb->{id});
         ok !@$audit_details, 'no record is added to audit details';
 
+        # only one update per second is allowed
+        sleep 1;
         $updater = BOM::Transaction::ContractUpdate->new(
             client        => $cl,
             contract_id   => $fmb->{id},
@@ -396,6 +398,8 @@ subtest 'update take profit', sub {
                 source      => 23,
             });
 
+        # only one update per second is allowed
+        sleep 1;
         my $updater = BOM::Transaction::ContractUpdate->new(
             client        => $cl,
             contract_id   => $fmb->{id},
