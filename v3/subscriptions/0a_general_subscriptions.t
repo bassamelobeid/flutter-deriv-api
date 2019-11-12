@@ -24,6 +24,7 @@ $loop->add(
                 calls  => [qw( buy transaction balance )],
                 filter => sub {
                     my $params = shift->{params};
+                    return 0 if exists $params->{balance}{account} and $params->{balance}{account} eq 'all';
                     # Checking R_100 only, for faster tests.
                     not $params->contract or ($params->contract->underlying->symbol eq 'R_100');
                 }
@@ -35,9 +36,11 @@ $loop->add(
 subtest 'General subscriptions: buy, transaction & balance' => sub {
 
     Future->needs_all(
-        $tester->subscribe_multiple_times(count => 10), $tester->subscribe_twice, $tester->subscribe,
-        $tester->subscribe_after_request,     $tester->multiple_subscriptions_forget, $tester->multiple_subscriptions_forget_all,
-        $tester->multiple_connections_forget, $tester->multiple_connections_forget_all,
+        $tester->subscribe_multiple_times(count => 10),
+        $tester->subscribe_twice, $tester->subscribe,
+        $tester->subscribe_after_request,
+        $tester->multiple_connections_forget,
+        $tester->multiple_connections_forget_all,
     )->get;
 
     $tester->run_sanity_checks;
