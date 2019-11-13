@@ -40,7 +40,7 @@ sub new_client_details {
         address_city           => 'test address_city',
         address_state          => 'test address_state',
         address_postcode       => 'test address_postcode',
-        phone                  =>  sprintf("+15417555%03d", rand(999)),
+        phone                  => sprintf("+15417555%03d", rand(999)),
         secret_question        => 'test secret_question',
         secret_answer          => 'test secret_answer',
         account_opening_reason => 'Speculative',
