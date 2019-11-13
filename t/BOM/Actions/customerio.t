@@ -27,6 +27,8 @@ $mock_config->mock(
             }};
     });
 
+BOM::Config::Runtime->instance->app_config->system->suspend->customerio(0);
+
 subtest 'register_details Argument Validations' => sub {
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',

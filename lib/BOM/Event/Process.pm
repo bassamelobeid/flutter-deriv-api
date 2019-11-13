@@ -18,6 +18,7 @@ use BOM::Event::Actions::Client;
 use BOM::Event::Actions::CryptoSubscription;
 use BOM::Event::Actions::Anonymization;
 use BOM::Event::Actions::Email;
+use BOM::Event::Actions::MyAffiliate;
 use Scalar::Util qw(blessed);
 
 =head1 NAME
@@ -56,6 +57,7 @@ my $action_mapping = {
     qualifying_payment_check    => \&BOM::Event::Actions::Client::qualifying_payment_check,
     payment_deposit             => \&BOM::Event::Actions::Client::payment_deposit,
     send_email                  => \&BOM::Event::Actions::Email::send_email_generic,
+    affiliate_sync_initiated    => \&BOM::Event::Actions::MyAffiliate::affiliate_sync_initiated,
     withdrawal_limit_reached    => \&BOM::Event::Actions::Client::set_needs_action,
 };
 
