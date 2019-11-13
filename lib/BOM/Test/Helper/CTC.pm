@@ -5,17 +5,12 @@ use warnings;
 
 use Exporter qw( import );
 use Path::Tiny;
+use LandingCompany::Registry;
+
 use BOM::CTC::Helper;
 use BOM::CTC::Currency;
-use BOM::Platform::Client::CashierValidation;
 
 our @EXPORT_OK = qw( wait_miner deploy_test_contract );
-
-BEGIN {
-    *BOM::Platform::Client::CashierValidation::is_crypto_currency_suspended = sub {
-        return 0;
-    };
-}
 
 =head2 wait_miner
 
@@ -40,10 +35,37 @@ sub wait_miner {
     return undef;
 }
 
+=head2 deploy_all_test_contracts
+
+Generates test contract addresses for ERC20 currencies. It is supposed to be invoked
+on QA box rebuild as a preparatory step for for cryto cashier manual tests 
+(no problem if invoked manually afterwards). 
+It returns a hash ref containing the addresses just created for ERC20 currencies.
+
+=cut
+
+sub deploy_all_test_contracts {
+    my $result = {};
+    for (LandingCompany::Registry->new()->all_currencies) {
+        my $contract_address = deploy_test_contract($_);
+        $result->{$_} = $contract_address if $contract_address;
+    }
+
+    return $result;
+}
+
 sub deploy_test_contract {
     my ($currency_code) = @_;
 
+    return undef unless LandingCompany::Registry::get_currency_type($currency_code) eq 'crypto';
+
     my $currency = BOM::CTC::Currency->new(currency_code => $currency_code);
+
+    return undef unless ($currency->parent_currency // '') eq 'ETH';
+
+    my $address = $currency->_contract->{contract_address};
+    # avoid creating duplicate addresses in QA boxes
+    return $address if $address;
 
     my $path = "/home/git/regentmarkets/bom-test/resources/erc20_bytecode";
 
