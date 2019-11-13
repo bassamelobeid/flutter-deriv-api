@@ -267,7 +267,8 @@ subtest $method => sub {
         $params->{args}->{phone} = '1234567890';
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidPhone', 'It should return error if phone cannot be formatted to E.123')
-            ->error_message_is('Please enter a valid phone number, including the country code (e.g. +15417541234).', 'It should return expected error message');
+            ->error_message_is('Please enter a valid phone number, including the country code (e.g. +15417541234).',
+            'It should return expected error message');
         delete $params->{args}->{phone};
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
@@ -568,7 +569,8 @@ subtest $method => sub {
         $params->{args}->{phone} = '1234567890';
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidPhone', 'It should return error if phone cannot be formatted to E.123')
-            ->error_message_is('Please enter a valid phone number, including the country code (e.g. +15417541234).', 'It should return expected error message');
+            ->error_message_is('Please enter a valid phone number, including the country code (e.g. +15417541234).',
+            'It should return expected error message');
         delete $params->{args}->{phone};
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
