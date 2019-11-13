@@ -55,7 +55,7 @@ sub _get_user_fields {
 }
 
 sub _get_update_user_fields {
-    return (@common_fields, qw/login rights/);
+    return (@common_fields, qw/login rights agent/);
 }
 
 sub _invoke_mt5 {
