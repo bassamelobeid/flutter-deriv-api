@@ -1,0 +1,60 @@
+[% WRAPPER layout title='AFFILIATE IB STATUS' %]
+    <p>
+       <span style="margin-right: 10px"><b>Status</b>:</span> 
+        [% IF mt5_login %]
+           <span style="color: green"><b>IB</b></span>
+        [% ELSE %]
+           <span style="color: red"><b>NO IB</b></span>
+        [% END %]
+    <p>
+[% END %]
+
+[% IF mt5_login %]
+    [% WRAPPER layout title='SYNC AFFILIATE TO MT5' %]
+        [% IF action == 'sync_to_mt5' && action_result == 'success' %]
+            <p style="color: green"><b>Sync proccess was started. Wait for email with result</b></p>
+        [% ELSIF action == 'sync_to_mt5' && action == 'fail' %]
+            <p style="color: red"><b>Fail to start sync process. try again later</b></p>
+        [% ELSE %]
+            <p>
+                <span style="display:inline-block; width: 9em"><b>Client Login ID</b>:</span>
+                <span><b>[% loginid %]</b></span>
+            </p>
+            <p>
+                <span style="display:inline-block; width: 9em"><b>Affiliate ID</b>:</span>
+                <span><b>[% affiliate_id %]</b></span>
+            </p>
+            <p>
+                <span style="display:inline-block; width: 9em"><b>MT5 login ID</b>:</span>
+                <span><b>[% mt5_login %]</b></span>
+            </p>
+            <form action="[% request.url_for('backoffice/f_ib_affiliate.cgi') | url %]?loginid=[% loginid | url %]" method='post' style="margin:0">
+                <p>
+                    <span style="display:inline-block; width: 9em">Notify when done</span>
+                    <input type='email' name='email' value='[% email %]'>
+                </p>
+                <input type='hidden' name='mt5_login' value='[% mt5_login %]'>
+                <input type='hidden' name='affiliate_id' value='[% affiliate_id %]'>
+                <input type='hidden' name='loginid' value='[% loginid %]'>
+                <input type='hidden' name='_csrf' value='[% csrf %]'>
+                <input type='hidden' name='action' value='sync_to_mt5'>
+                <input type='submit' value='Start sync process'>
+            </form>
+        [% END %]
+    [% END %]
+[% END%]
+
+[% BLOCK layout %]
+    <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="97%">
+        <tbody>
+           <tr class="Blacklabel">
+                <td class="whitelabel" colspan="2">[% title %]</td>
+            </tr>
+            <tr>
+                <td align="left" style="padding: 10px;">
+                [% content | none %]
+                </td>
+            </tr>
+        </tbody>
+    </table>
+[% END %]
