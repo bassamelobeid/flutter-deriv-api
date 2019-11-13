@@ -238,11 +238,7 @@ sub build_contract_update_response {
         contract_details => {
             %common_details,
             limit_order => $self->contract->available_orders($self->new_order),
-        },
-        old_contract_details => {
-            %common_details,
-            limit_order => $self->contract->available_orders,
-        },
+        }
     };
 }
 
