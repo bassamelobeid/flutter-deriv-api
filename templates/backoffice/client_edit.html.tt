@@ -84,7 +84,7 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">Affiliate Token</td>
-        <td>: 
+        <td>:
         [% IF client.myaffiliates_token %]
             [% client.myaffiliates_token %] (This is the token <strong>currently registered</strong> with MyAffiliates.)
         [% ELSE %]
@@ -93,6 +93,10 @@ table#client_edit td{
         </td>
     </tr>
 
+    <tr>
+        <td class="label">&nbsp;</td>
+        <td><a href="[% request.url_for('backoffice/f_ib_affiliate.cgi', {loginid => client.loginid}) | url %]">IB Affiliate Status</a></td>
+    </tr>
     <tr>
         <td class="small_header" colspan="2">#Identity</td>
     </tr>
