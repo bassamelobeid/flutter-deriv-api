@@ -39,12 +39,11 @@ sub contract_update_handler {
     delete $api_response->{updated_queue};
     my $new_poc_params = _get_poc_params(delete $api_response->{contract_details});
 
-    my $redis       = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager()->redis;
-    my $contract_id = $api_response->{contract_details}->{contract_id};
-    my $old_key     = $redis->get($contract_id);
+    my $redis = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager()->redis;
 
-    my $new_pricer_args = Binary::WebSocketAPI::v3::Wrapper::Pricer::get_pricer_args($c, $new_poc_params);
+    my ($new_pricer_args, $contract_id) = @{Binary::WebSocketAPI::v3::Wrapper::Pricer::get_pricer_args($c, $new_poc_params)};
 
+    my $old_key = $redis->get($contract_id);
     # can't use redis->multi & exec here because it is not supported by Mojo::Redis2
     $redis->del($old_key) if $old_key;
     # for pricer queue

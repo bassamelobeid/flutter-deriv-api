@@ -94,9 +94,10 @@ before subscribe => sub {
     # Future bug is waiting to happen when we change the order or something is mistakenly converted to string instead of number
     # or vice versa.
     my ($pricer_args, $id) = @{$self->pricer_args};
-
     my $redis = $self->subscription_manager->redis;
     # can't use redis->multi & exec here because it is not supported by Mojo::Redis2
+    my $old_key = $redis->get($id);
+    $redis->del($old_key) if $old_key;
     # for pricer demon
     $redis->set($pricer_args, $id);
     # for update retrieval based on id
