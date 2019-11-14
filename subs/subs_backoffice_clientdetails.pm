@@ -12,6 +12,7 @@ use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use JSON::MaybeUTF8 qw(:v1);
 use LandingCompany::Registry;
 
+use BOM::Transaction;
 use BOM::Config;
 use BOM::User::AuditLog;
 use BOM::Database::ClientDB;

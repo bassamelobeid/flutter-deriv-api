@@ -27,7 +27,7 @@
 <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding">
     <div class="grd-grid-1">[% contract.purchase_time %]</div>
     <div class="grd-grid-1">
-        <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { currency => currency, shortcode => contract.short_code, purchase_time => contract.purchase_time, loginid => loginid}) | none %]">[% ident %]</a>
+        <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { currency => currency, limit_order => contract.limit_order, shortcode => contract.short_code, purchase_time => contract.purchase_time, loginid => loginid}) | none %]">[% ident %]</a>
         <div>
             <label for="investigate_list" class="investigate">
                 <input type="checkbox" name="investigate_list"
