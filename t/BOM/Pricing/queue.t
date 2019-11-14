@@ -96,14 +96,7 @@ subtest 'normal flow' => sub {
     );
     cmp_ok($queue->pricing_interval, '==', 0.125, 'pricing_interval set at start-up');
     is($queue->add(@keys), scalar(@keys), 'All keys added to pending');
-    eq_or_diff([sort $queue->reindexed_channels], [sort @keys], 'Index contains newly added items');
-    # See comment in sample jobs list to understand the indices here
-    isnt(($queue->channels_from_index)[0], $keys[2], "Insertion order is not by desired priority");
-    my $review_count = 0;
-    until ($queue->clear_review_queue) {
-        $review_count++;
-    }
-    cmp_ok($review_count, '==', scalar(@keys), 'Reviewed one key per call');
+    eq_or_diff([sort $queue->channels_from_index], [sort @keys], 'Index contains newly added items');
     # See comment in sample jobs list to understand the indices here
     is(($queue->channels_from_index)[0], $keys[2], "Real money is sorted first now");
     $queue->process;
@@ -120,12 +113,11 @@ subtest 'normal flow' => sub {
 
 subtest 'overloaded daemon' => sub {
     # kill the subscriptions or they will be added again
-    $redis->del('pricer_channels');
     $redis->del($_) for @keys;
 
     $queue->process;
     is($stats{'pricer_daemon.queue.overflow'},      @keys, 'overflow correctly reported in statsd');
-    is($stats{'pricer_daemon.queue.size'},          0,     'no keys pending processing in statsd');
+    is($stats{'pricer_daemon.queue.size'},          @keys, 'all keys pending processing in statsd');
     is($stats{'pricer_daemon.queue.not_processed'}, @keys, 'not_processed correctly reported in statsd');
 };
 

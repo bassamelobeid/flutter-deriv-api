@@ -20,11 +20,6 @@ use RedisDB;
 use BOM::Config::RedisReplicated;
 use BOM::Pricing::v3::Utility;
 
-# Comments prepended with 'FUTURE:' note ways
-# in which the queue-handling can/ought to be improved
-# once a more modern version of Redis (>= 5.0.0) is
-# available to these services
-
 =head1 NAME
 
 BOM::Pricing::Queue - manages the pricer queue.
@@ -74,33 +69,6 @@ has pricing_interval => (
     default => sub { 1 },
 );
 
-=head2 reindex_queue_passes
-
-Integer.  Number of passes between complete queue reindexing
-
-Defaults to 43_189
-A prime number of seconds close to 12h at a 1s pricing_interval
-
-=cut
-
-has reindex_queue_passes => (
-    is      => 'ro',
-    default => sub { 43_189 },
-);
-
-=head2 channels_key
-
-String.  Key under which the pricing channels index
-should be stored.
-
-Defaults to 'pricer_channels'
-
-=cut
-
-has channels_key => (
-    is      => 'ro',
-    default => sub { 'pricer_channels' });
-
 =head2 jobs_key
 
 String.  Key into which the queue is to
@@ -139,6 +107,14 @@ sub _build_redis {
     };
 }
 
+has _cached_index => (
+    is       => 'ro',
+    init_arg => undef,
+    default  => sub {
+        +{map { $_ => score_for_channel_name($_) } shift->channels_from_keys};
+    },
+);
+
 sub run {
     my $self = shift;
 
@@ -162,51 +138,11 @@ Used to sleep until the next pricing interval is reached
 sub _prep_for_next_interval {
     my $self = shift;
 
-    state $near_end = $self->pricing_interval / 4;
-    my $sleep;
-
-    until (defined $sleep) {
-        my $rem = $self->time_in_interval;
-        # If the time left is low, we immediately continue on.
-        # Otherwise, examine the queue to see if items need sorting.
-        # If nothing needed sorting, we will continue upon return.
-        $sleep = ($rem <= $near_end) ? $rem : $self->clear_review_queue;
-    }
-
+    my $sleep = $self->time_in_interval;
     $log->debugf('sleeping for %s secs...', $sleep);
     clock_nanosleep(CLOCK_REALTIME, $sleep * 1_000_000_000);
 
     return;
-}
-
-=head2 clear_review_queue
-
-Sort out recently added items for priority.
-
-Returns true if there is no more work to be done, false
-if we think we can still do something useful if called again.
-
-=cut
-
-sub clear_review_queue {
-    my $self = shift;
-
-    my $redis    = $self->redis;
-    my $chan_key = $self->channels_key;
-    # Grab an unscored item for processing
-    my $item = ($redis->zrangebyscore($chan_key, 0, 0, 'LIMIT', 0, 1) // [])->[0];
-    # All queue items reviewed, `_prep` may continue
-    return $self->time_in_interval unless $item;
-    my ($params) = BOM::Pricing::v3::Utility::extract_from_channel_key($item);
-    if (%$params) {
-        $redis->zadd($chan_key, score_for_parameters($params), $item);
-        stats_inc('pricer_daemon.queue.item_reviewed', $self->stat_tags);
-    } else {
-        # If it didn't parse this time, there is no reason to believe it
-        # will do so in the future
-        $self->remove($item);
-    }
-    return undef;
 }
 
 sub score_for_parameters {
@@ -233,6 +169,12 @@ sub score_for_parameters {
     return $score;
 }
 
+sub score_for_channel_name {
+    my $item = shift;
+    my ($params) = BOM::Pricing::v3::Utility::extract_from_channel_key($item);
+    return score_for_parameters($params);
+}
+
 sub time_in_interval {
     my $self = shift;
     state $i = $self->pricing_interval;
@@ -249,9 +191,6 @@ Processes the queue
 sub _process_price_queue {
     my $self = shift;
 
-    # Force reindex at startup
-    state $passes_until_reindex = 0;
-
     $log->trace('processing price_queue...');
     $self->_prep_for_next_interval;
     my $redis    = $self->redis;
@@ -265,17 +204,12 @@ sub _process_price_queue {
         $self->_prep_for_next_interval;
     }
 
-    # We prepend short_code where possible, so sorting means we should get similar contracts together,
-    # which should help with portfolio table update synchronisation
-    my @channels = ($redis->exists($self->channels_key) and $passes_until_reindex--) ? $self->channels_from_index : $self->reindexed_channels;
-    $passes_until_reindex ||= $self->reindex_queue_passes;
-    # FUTURE: we should not spend time copying the keys back to the perl
-    # process and then reloading them into redis.
-    # The happy path is dropped.  The new-`if` (current-`else`) loads a missing
-    # `$self->channels_key`.  After, we populate the queue:
-    # $redis->zunionstore($self->jobs_key, 1, $self->channels_key)
+    # The bookkeeping overhead in maintaining a sorted array for the duration
+    # seems like it would dominate doing a fresh sort on each invocation.
+    # Also note that we might possibly price a contract for one extra interval
+    my @channels = $self->channels_from_index;
 
-    # Take note of keys that were not processed since the last second
+    # Take note of keys that were not processed since the last pricing_interval
     # (which may be the same or not as $overflow, depending on how busy
     # the system gets)
     my $not_processed = $self->active_job_count;
@@ -284,13 +218,9 @@ sub _process_price_queue {
     $log->tracef('%s queue updating...', $jobs_key);
     $redis->del($jobs_key);
     $redis->lpush($jobs_key, @channels) if @channels;
-    # FUTURE: the code which accomplishes this (`@channels` stuff above) should instead
-    # happen here. The `delete` happens for free on the `zunionstore` overwrite.
     $log->debug($jobs_key . ' queue updated.');
 
     my $channel_count = 0 + @channels;
-    # FUTURE: we don't bring the keys back so we just count how many are in the
-    # persistent queue:  `$redis->zcard($self->channels_key)`
 
     stats_gauge('pricer_daemon.queue.overflow',      $overflow,      $self->stat_tags);
     stats_gauge('pricer_daemon.queue.size',          $channel_count, $self->stat_tags);
@@ -310,16 +240,25 @@ sub _process_price_queue {
     # There might be multiple occurrences of the same 'relative shortcode'
     # to achieve higher performance, we count them first, then update the redis
     my %queued;
-    for my $channel (@channels) {
+    my $cached  = $self->_cached_index;
+    my $compare = {%$cached};
+    for my $channel ($self->channels_from_keys) {
         my ($params) = BOM::Pricing::v3::Utility::extract_from_channel_key($channel);
         unless (exists $params->{barriers}) {    # exclude proposal_array
             my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode($params);
             $queued{$relative_shortcode}++;
         }
+        # Now ensure our index is up-to-date and that everything gets processed
+        if (not defined(delete $compare->{$channel}) and %$params) {
+            # This is seemingly valid and new to the index:
+            # Queue straightaway and add it to the index with its score
+            $redis->lpush($jobs_key, $channel);
+            $cached->{$channel} = score_for_parameters($params);
+        }
     }
-    $self->redis->hincrby('PRICE_METRICS::QUEUED', $_, $queued{$_}) for keys %queued;
-    # FUTURE: This will need reconsideration/refactoring once we no longer
-    # marshal the key-list into and out of perl.
+    $redis->hincrby('PRICE_METRICS::QUEUED', $_, $queued{$_}) for keys %queued;
+    # Anything left in $compare no longer exists amongst the keys
+    delete $cached->{$_} for keys %$compare;
 
     return undef;
 }
@@ -327,8 +266,7 @@ sub _process_price_queue {
 sub active_job_count {
     my $self = shift;
 
-    return $self->redis->llen($self->jobs_key);
-    # FUTURE: This becomes `$redis->zcard($self->jobs_key)`
+    return $self->redis->llen($self->jobs_key) // 0;
 }
 
 sub channels_from_keys {
@@ -343,40 +281,33 @@ sub channels_from_keys {
 }
 
 sub channels_from_index {
-    my $self = shift;
-    return (@{$self->redis->zrevrangebyscore($self->channels_key, '+inf', 0) // []});
-}
-
-sub reindexed_channels {
-    my $self  = shift;
-    my $redis = $self->redis;
-    # Clear up old work in case it has gotten out of sync
-    $redis->del($self->channels_key);
-    # Convert the extant channels into the queue
-    my @channels = $self->channels_from_keys;
-    $self->add(@channels);
+    my $self     = shift;
+    my %qi       = %{$self->_cached_index};
+    my @channels = sort { $qi{$b} <=> $qi{$a} } (keys %qi);
     return @channels;
 }
 
 sub remove {
     my ($self, @items) = @_;
 
+    my $count = 0;
     my $redis = $self->redis;
-
-    $redis->zrem($self->channels_key, @items);
-    return $redis->del(@items);
+    for my $item (@items) {
+        $count += 1 if (defined(delete $self->_cached_index->{$item}));
+        $redis->del($item);
+    }
+    return $count;
 }
 
 sub add {
     my ($self, @items) = @_;
 
-    my $redis    = $self->redis;
-    my $chan_key = $self->channels_key;
-
     my $count = 0;
-    foreach my $item (@items) {
-        $count += $redis->zadd($chan_key, 0, $item);
+    my $redis = $self->redis;
+    for my $item (@items) {
+        $self->_cached_index->{$item} = score_for_channel_name($item);
         $redis->set($item, 1);
+        $count++;
     }
 
     return $count;
