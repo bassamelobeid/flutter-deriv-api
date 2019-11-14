@@ -127,9 +127,6 @@ subtest 'contract_update' => sub {
     ok $res->{contract_details}, 'has contract_details';
     is $res->{contract_details}{limit_order}->[0],        'stop_out';
     is $res->{contract_details}{limit_order}->[2],        'take_profit';
-    is $res->{old_contract_details}{limit_order}->[0],    'stop_out';
-    is_deeply $res->{contract_details}{limit_order}->[1], $res->{old_contract_details}{limit_order}->[1];
-    ok !$res->{old_contract_details}{limit_order}->[2];
 
     delete $update_params->{args}->{limit_order}->{take_profit};
     $update_params->{args}->{limit_order}->{stop_loss} = -80;
