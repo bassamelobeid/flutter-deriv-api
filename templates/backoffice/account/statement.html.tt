@@ -99,7 +99,7 @@
             <span class="app-name">[% apps.$id %]</span>
         </div>
         <div class="grd-grid-1">
-            <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid}) | none %]">[%
+            <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, limit_order => transaction.limit_order, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid}) | none %]">[%
                 transaction.id %]</a>
         </div>
         <div class="grd-grid-1">
