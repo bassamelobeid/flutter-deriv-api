@@ -1,0 +1,23 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+use Log::Any::Adapter qw(Stderr), log_level => 'info';
+
+package BOM::Platform::Onfido::Webhook;
+use parent qw(Mojolicious);
+
+use BOM::Platform::Onfido::Webhook::Check;
+
+use Log::Any qw($log);
+
+sub startup {
+    my ($self) = @_;
+    $log->infof('Starting webhook handler');
+    $self->routes->post('/')->to('check#check');
+    $self->routes->get('/')->to('check#check');
+}
+
+return BOM::Platform::Onfido::Webhook->new if caller;
+
+1;
