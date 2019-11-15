@@ -19,6 +19,8 @@ use BOM::Event::Actions::CryptoSubscription;
 use BOM::Event::Actions::Anonymization;
 use BOM::Event::Actions::Email;
 use BOM::Event::Actions::MyAffiliate;
+use BOM::Event::Actions::OTC;
+
 use Scalar::Util qw(blessed);
 
 =head1 NAME
@@ -59,6 +61,13 @@ my $action_mapping = {
     send_email                  => \&BOM::Event::Actions::Email::send_email_generic,
     affiliate_sync_initiated    => \&BOM::Event::Actions::MyAffiliate::affiliate_sync_initiated,
     withdrawal_limit_reached    => \&BOM::Event::Actions::Client::set_needs_action,
+    otc_offer_created           => \&BOM::Event::Actions::OTC::offer_created,
+    otc_offer_updated           => \&BOM::Event::Actions::OTC::offer_updated,
+    otc_order_created           => \&BOM::Event::Actions::OTC::order_created,
+    otc_order_updated           => \&BOM::Event::Actions::OTC::order_updated,
+    otc_order_expired           => \&BOM::Event::Actions::OTC::order_expired,
+    otc_agent_created           => \&BOM::Event::Actions::OTC::agent_created,
+    otc_agent_updated           => \&BOM::Event::Actions::OTC::offer_updated,
 };
 
 =head1 METHODS
