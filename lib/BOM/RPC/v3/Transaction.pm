@@ -38,6 +38,7 @@ my $nonbinary_list = 'LBFLOATCALL|LBFLOATPUT|LBHIGHLOW';
 sub trade_copiers {
     my $params = shift;
 
+    my $action  = $params->{action};
     my $copiers = BOM::Database::DataMapper::Copier->new(
         broker_code => $params->{client}->broker_code,
         operation   => 'replica',
@@ -46,7 +47,7 @@ sub trade_copiers {
             trade_type => $params->{contract}{bet_type},
             asset      => $params->{contract}->underlying->symbol,
             # copier's min/max price condition is ignored for sell
-            price => $params->{action} eq 'buy' && $params->{price} ? $params->{price} : undef,
+            price => $action eq 'buy' && $params->{price} ? $params->{price} : undef,
         });
 
     return unless $copiers && ref $copiers eq 'ARRAY' && scalar @$copiers;
@@ -56,7 +57,7 @@ sub trade_copiers {
     my $trx = BOM::Transaction->new({
         client   => $params->{client},
         multiple => \@multiple,
-        $params->{action} eq 'buy' ? (contract => $params->{contract}) : (contract_parameters => $params->{contract_parameters}),
+        $action eq 'buy' ? (contract => $params->{contract}) : (contract_parameters => $params->{contract_parameters}),
         price => ($params->{price} || 0),
         source => $params->{source},
         (defined $params->{payout})      ? (payout      => $params->{payout})      : (),
@@ -64,7 +65,12 @@ sub trade_copiers {
         purchase_date => $params->{purchase_date},
     });
 
-    my $err = $params->{action} eq 'buy' ? $trx->batch_buy : $trx->sell_by_shortcode;
+    my $err =
+          $action eq 'buy'    ? $trx->batch_buy
+        : $action eq 'sell'   ? $trx->sell_by_shortcode
+        : $action eq 'cancel' ? $trx->cancel_by_shortcode
+        :                       die 'unknown action';
+
     die $err->get_type . " - $err->{-message_to_client}: $err->{-mesg}" if $err;
 
     return 1;
@@ -157,8 +163,6 @@ rpc "buy",
     if (defined $price and defined $amount and defined $amount_type and $amount_type eq 'stake') {
         $error = _validate_stake($price, $amount, $currency);
         return $error if $error;
-
-        $price = $amount;
     }
 
     my $trx = BOM::Transaction->new({
@@ -635,6 +639,93 @@ rpc contract_update => sub {
     };
 
     return $response;
+};
+
+rpc cancel => sub {
+    my $params = shift;
+
+    my $source      = $params->{source};
+    my $args        = $params->{args};
+    my $contract_id = $args->{cancel};
+
+    unless ($contract_id) {
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => 'MissingContractId',
+            message_to_client => localize('Contract id is required to cancel contract'),
+        });
+    }
+
+    my $client = $params->{client};
+    unless ($client) {
+        # since this is an authenticated call, we can't proceed
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => 'AuthorizationRequired',
+            message_to_client => localize('Please log in.'),
+        });
+    }
+
+    my $clientdb = BOM::Database::ClientDB->new({
+        client_loginid => $client->loginid,
+        operation      => 'replica',
+    });
+
+    my @fmbs = @{$clientdb->getall_arrayref('select * from bet_v1.get_open_contract_by_id(?)', [$contract_id])};
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'ContractNotFound',
+            message_to_client => BOM::Platform::Context::localize('Contract not found for contract id: [_1].', $contract_id),
+        }) unless @fmbs;
+
+    my $fmb = $fmbs[0];
+
+    my $contract_parameters = {
+        shortcode       => $fmb->{short_code},
+        currency        => $client->currency,
+        landing_company => $client->landing_company->short,
+    };
+
+    $contract_parameters->{limit_order} = BOM::Transaction::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
+
+    my $purchase_date = time;
+    my $trx           = BOM::Transaction->new({
+        purchase_date       => $purchase_date,
+        client              => $client,
+        contract_parameters => $contract_parameters,
+        contract_id         => $contract_id,
+        source              => $source,
+    });
+
+    if (my $err = $trx->cancel) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => $err->get_type,
+            message_to_client => $err->{-message_to_client},
+            message           => "Contract-Cancel Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}"
+        });
+    }
+
+    try {
+        trade_copiers({
+                action              => 'cancel',
+                client              => $client,
+                contract_parameters => $contract_parameters,
+                contract            => $trx->contract,
+                source              => $source,
+                purchase_date       => $purchase_date,
+            }) if $client->allow_copiers;
+    }
+    catch {
+        warn "Copiers trade cancel error: " . $_;
+    };
+
+    my $trx_rec = $trx->transaction_record;
+
+    return {
+        transaction_id => $trx->transaction_id,
+        reference_id   => $trx->reference_id,                                                   ### buy transaction ID
+        contract_id    => $contract_id,
+        balance_after  => formatnumber('amount', $client->currency, $trx_rec->balance_after),
+        sold_for       => formatnumber('price', $client->currency, $trx_rec->amount),
+    };
 };
 
 1;
