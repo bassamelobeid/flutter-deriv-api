@@ -201,7 +201,7 @@ if (defined $do_calculation && $sold_contracts_size) {
 my $open_contracts = get_open_contracts($client);
 foreach my $contract (@$open_contracts) {
     $contract->{purchase_time} = Date::Utility->new($contract->{purchase_time})->datetime_yyyymmdd_hhmmss;
-    $contract->{limit_order}   = encode_json_utf8(BOM::Transaction::extract_limit_orders($contract)) if $contract->{bet_class} eq 'multiplier';
+    $contract->{limit_order} = encode_json_utf8(BOM::Transaction::extract_limit_orders($contract)) if $contract->{bet_class} eq 'multiplier';
 }
 #Sort open contracts according to desceding order of purchase time
 @$open_contracts = sort { $b->{purchase_time} cmp $a->{purchase_time} } @$open_contracts;
