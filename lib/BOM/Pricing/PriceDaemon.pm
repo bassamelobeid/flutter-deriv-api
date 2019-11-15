@@ -203,7 +203,7 @@ sub run {
         # if None was subscribed, so delete the job
         if ($subscribers_count == 0) {
             $redis->del($key->[1], $next);
-            $redis->del($params->{contract_id});
+            $redis->del($params->{contract_id}) if $params->{contract_id};
         }
 
         $tv_now = [Time::HiRes::gettimeofday];
