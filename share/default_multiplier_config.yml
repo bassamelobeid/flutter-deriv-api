@@ -2,21 +2,28 @@
 1HZ10V:
   multiplier_range: [100, 200, 300, 500, 1000]
   commission: 0.00005
+  deal_cancellation_commission: 0.02
 R_10:
   multiplier_range: [100, 200, 300, 500, 1000]
   commission: 0.00005
+  deal_cancellation_commission: 0.02
 R_25:
   multiplier_range: [50, 100, 150, 250, 500]
   commission: 0.000126
+  deal_cancellation_commission: 0.02
 R_50:
   multiplier_range: [20, 40, 60, 100, 200]
   commission: 0.000252
+  deal_cancellation_commission: 0.02
 R_75:
   multiplier_range: [15, 30, 50, 75, 150]
   commission: 0.000378
+  deal_cancellation_commission: 0.02
 R_100:
   multiplier_range: [10, 20, 30, 50, 100]
   commission: 0.000504
+  deal_cancellation_commission: 0.02
 1HZ100V:
   multiplier_range: [10, 20, 30, 50, 100]
   commission: 0.000504
+  deal_cancellation_commission: 0.02
