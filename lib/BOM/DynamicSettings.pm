@@ -198,6 +198,7 @@ sub get_settings_by_group {
                 system.suspend.transfer_currencies
                 system.suspend.onfido
                 system.suspend.customerio
+                system.suspend.otc
                 system.mt5.suspend.all
                 system.mt5.suspend.deposits
                 system.mt5.suspend.withdrawals
@@ -224,6 +225,7 @@ sub get_settings_by_group {
         ],
         payments => [qw(
                 payments.payment_limits
+                payments.otc
                 payments.transfer_between_accounts.limits.between_accounts
                 payments.transfer_between_accounts.limits.MT5
                 payments.transfer_between_accounts.exchange_rate_expiry.fiat
