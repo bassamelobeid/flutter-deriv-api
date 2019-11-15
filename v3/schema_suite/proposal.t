@@ -32,7 +32,7 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_buy_exception.jso
 # R_100
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'ASIANU', 'R_100', '5', 't', 'Win payout if the last tick of Volatility 100 Index is strictly higher than the average of the 5 ticks.',
-    '51.49', '51.49', '65258.19';
+    '51.19', '51.19', '65258.19';
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'R_100', '30', 'd', 'Win payout if Volatility 100 Index is strictly higher than entry spot at close on 2016-09-08.', '45.44',
     '45.44', '65258.19';
