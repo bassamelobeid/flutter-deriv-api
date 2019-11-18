@@ -31,6 +31,7 @@ use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
 use BOM::CTC::Utility;
 use BOM::Database::ClientDB;
 use BOM::DualControl;
+use LandingCompany::Registry;
 use f_brokerincludeall;
 
 BOM::Backoffice::Sysinit::init();
@@ -113,8 +114,7 @@ my $currency_wrapper = BOM::CTC::Currency->new(
     broker_code   => $broker
 );
 
-# Exchange rate should be populated according to supported cryptocurrencies.
-my $exchange_rate = eval { in_usd(1.0, $currency) } or code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.")->();
+my $exchange_rate = eval { in_usd(1.0, $currency) } // 'N.A.';
 
 my $display_transactions = sub {
     my $trxns = shift;
@@ -142,6 +142,9 @@ my $display_transactions = sub {
         }) || die $tt->error();
 };
 
+my @crypto_currencies =
+    map { my $def = LandingCompany::Registry::get_currency_definition($_); $def->{type} eq 'crypto' ? {currency => $_, name => $def->{name}} : () }
+    LandingCompany::Registry::all_currencies();
 my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
     'backoffice/crypto_cashier/crypto_control_panel.html.tt',
@@ -149,12 +152,29 @@ $tt2->process(
         exchange_rate  => $exchange_rate,
         controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
         currency       => $currency,
+        all_crypto     => [@crypto_currencies],
         cmd            => request()->param('command') // '',
         broker         => $broker,
         start_date     => $start_date->date_yyyymmdd,
         end_date       => $end_date->date_yyyymmdd,
         staff          => $staff,
     }) || die $tt2->error();
+
+# Exchange rate should be populated according to supported cryptocurrencies.
+if ($exchange_rate eq 'N.A.') {
+    print "<p style='color:red'><strong>ERROR: No exchange rate found for currency " . $currency . ". Please contact IT. </strong></p>";
+    code_exit_BO();
+}
+
+try {
+    $currency_wrapper->get_info();
+}
+catch {
+    warn "Failed to load $currency currency info: $_";
+    print "<p style='color:red'><strong>ERROR: Failed to load $currency currency info. Please contact IT. </strong></p>";
+    code_exit_BO();
+};
+
 if ($view_action eq 'withdrawals') {
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
@@ -265,7 +285,16 @@ if ($view_action eq 'withdrawals') {
 } elsif ($view_action eq 'reconcil') {
     Bar($currency . ' Reconciliation');
 
+    if (Date::Utility::days_between($end_date, $start_date) > 30) {
+        print "<p style='color:red'><strong>ERROR: Cannot accept dates more than 30 days apart. Please edit start and end dates. </strong></p>";
+        code_exit_BO();
+    }
+
     my @recon_list = $currency_wrapper->recon_report($start_date, $end_date);
+
+    unless (scalar @recon_list) {
+        code_exit_BO("Empty reconciliation report. There is no record to display.");
+    }
 
     my @hdr = (
         'Client ID',     'Type',             'Address',     'Amount',       'Amount USD',      'Fee',
@@ -291,7 +320,7 @@ EOF
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ && $_ ne '' ? $_ : '' } @{$db_tran}{qw(account transaction_type)};
 
-        my $address = $currency_wrapper->is_valid_address($db_tran->{to}) ? $db_tran->{to} : $db_tran->{from};
+        my $address = $db_tran->{to} || $db_tran->{from};
         my $encoded_address = encode_entities($address);
         print '<td><a href="' . $address_uri . $encoded_address . '" target="_blank">' . $encoded_address . '</a></td>';
 

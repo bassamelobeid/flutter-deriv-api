@@ -198,10 +198,10 @@ sub get_settings_by_group {
                 system.suspend.transfer_currencies
                 system.suspend.onfido
                 system.suspend.customerio
+                system.suspend.otc
                 system.mt5.suspend.all
                 system.mt5.suspend.deposits
                 system.mt5.suspend.withdrawals
-                system.mt5.suspend.manager_api
                 )
         ],
         quant => [qw(
@@ -209,7 +209,7 @@ sub get_settings_by_group {
                 quants.commission.adjustment.per_market_scaling.forex
                 quants.commission.adjustment.per_market_scaling.indices
                 quants.commission.adjustment.per_market_scaling.commodities
-                quants.commission.adjustment.per_market_scaling.volidx
+                quants.commission.adjustment.per_market_scaling.synthetic_index
                 quants.markets.disabled
                 quants.features.suspend_contract_types
                 quants.underlyings.disable_autoupdate_vol
@@ -225,6 +225,7 @@ sub get_settings_by_group {
         ],
         payments => [qw(
                 payments.payment_limits
+                payments.otc
                 payments.transfer_between_accounts.limits.between_accounts
                 payments.transfer_between_accounts.limits.MT5
                 payments.transfer_between_accounts.exchange_rate_expiry.fiat

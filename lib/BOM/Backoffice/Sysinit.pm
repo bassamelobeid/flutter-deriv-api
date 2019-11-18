@@ -47,6 +47,7 @@ my $permissions = {
     'f_app_management.cgi'          => ['Marketing'],
     'f_payment_agent_list.cgi'      => ['Marketing'],
     'f_change_affiliates_token.cgi' => ['Marketing'],
+    'f_ib_affiliate.cgi'            => ['Marketing'],
 
     'c_listclientlimits.cgi'          => ['CS'],
     'client_email.cgi'                => ['CS'],
@@ -268,4 +269,3 @@ sub _check_access {
 }
 
 1;
-
