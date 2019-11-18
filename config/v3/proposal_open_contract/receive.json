@@ -283,6 +283,90 @@
                     "description": "Whether the contract can be sold back to Binary.com. Boolean value 1 or 0",
                     "type": "integer"
                 },
+                "limit_order": {
+                    "description": "Orders are applicable to MULTUP and MULTDOWN only.",
+                    "type": "object",
+                    "properties": {
+                        "stop_loss": {
+                            "description": "Contains information where the contract will be closed automatically at the loss specified by the user.",
+                            "type": "object",
+                            "properties": {
+                                "display_name": {
+                                    "description": "Localized display name",
+                                    "type": "string"
+                                },
+                                "order_amount": {
+                                    "description": "Stop loss amount",
+                                    "type": [
+                                        "null",
+                                        "number"
+                                    ]
+                                },
+                                "order_date": {
+                                    "description": "Stop loss order epoch",
+                                    "type": "integer"
+                                },
+                                "value": {
+                                    "description": "Pip-sized barrier value",
+                                    "type": [
+                                        "null",
+                                        "string"
+                                    ]
+                                }
+                            }
+                        },
+                        "stop_out": {
+                            "description": "Contains information where the contract will be closed automatically when the value of the contract is close to zero. This is set by the us.",
+                            "type": "object",
+                            "properties": {
+                                "display_name": {
+                                    "description": "Localized display name",
+                                    "type": "string"
+                                },
+                                "order_amount": {
+                                    "description": "Stop out amount",
+                                    "type": "number"
+                                },
+                                "order_date": {
+                                    "description": "Stop out order epoch",
+                                    "type": "integer"
+                                },
+                                "value": {
+                                    "description": "Pip-sized barrier value",
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "take_profit": {
+                            "description": "Contain information where the contract will be closed automatically at the profit specified by the user.",
+                            "type": "object",
+                            "properties": {
+                                "display_name": {
+                                    "description": "Localized display name",
+                                    "type": "string"
+                                },
+                                "order_amount": {
+                                    "description": "Take profit amount",
+                                    "type": [
+                                        "null",
+                                        "number"
+                                    ]
+                                },
+                                "order_date": {
+                                    "description": "Take profit order epoch",
+                                    "type": "integer"
+                                },
+                                "value": {
+                                    "description": "Pip-sized barrier value",
+                                    "type": [
+                                        "null",
+                                        "string"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
                 "longcode": {
                     "description": "Text description of the contract purchased, Example: Win payout if Volatility 100 Index is strictly higher than entry spot at 10 minutes after contract start time.",
                     "type": "string"
@@ -411,78 +495,6 @@
                 "validation_error": {
                     "description": "Error message if validation fails",
                     "type": "string"
-                },
-                "limit_order" : {
-                    "description" : "Orders are applicable to MULTUP and MULTDOWN only.",
-                    "type": "object",
-                    "properties": {
-                        "stop_out": {
-                            "type": "object",
-                            "description": "Contains information where the contract will be closed automatically when the value of the contract is close to zero. This is set by the us.",
-                            "properties": {
-                                "order_date" : {
-                                    "type": "integer",
-                                    "description": "Stop out order epoch"
-                                },
-                                "order_amount" : {
-                                    "type": "number",
-                                    "description": "Stop out amount"
-                                },
-                                "value" : {
-                                    "type": "string",
-                                    "description" : "Pip-sized barrier value"
-                                },
-                                "display_name": {
-                                    "type": "string",
-                                    "description": "Localized display name"
-                                }
-                            }
-                        },
-                        "take_profit": {
-                            "type": "object",
-                            "description": "Contain information where the contract will be closed automatically at the profit specified by the user.",
-                            "properties": {
-                                "order_date" : {
-                                    "type": "integer",
-                                    "description": "Take profit order epoch"
-                                },
-                                "order_amount" : {
-                                    "type": ["number","null"],
-                                    "description": "Take profit amount"
-                                },
-                                "value" : {
-                                    "type": ["string","null"],
-                                    "description" : "Pip-sized barrier value"
-                                },
-                                "display_name": {
-                                    "type": "string",
-                                    "description": "Localized display name"
-                                }
-                            }
-                        },
-                        "stop_loss": {
-                            "type": "object",
-                            "description": "Contains information where the contract will be closed automatically at the loss specified by the user.",
-                            "properties": {
-                                "order_date" : {
-                                    "type": "integer",
-                                    "description": "Stop loss order epoch"
-                                },
-                                "order_amount" : {
-                                    "type": ["number","null"],
-                                    "description": "Stop loss amount"
-                                },
-                                "value" : {
-                                    "type": ["string","null"],
-                                    "description" : "Pip-sized barrier value"
-                                },
-                                "display_name": {
-                                    "type": "string",
-                                    "description": "Localized display name"
-                                }
-                            }
-                        }
-                    }
                 }
             }
         },

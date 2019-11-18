@@ -59,4 +59,15 @@ sub do_handle_message {
 
 }
 
+=head2 subscribe
+
+subscribe the channel and store channel to Redis so that pricer_queue script can handle them
+
+=cut
+
+before subscribe => sub {
+    my $self = shift;
+    $self->subscription_manager->redis->set($self->pricer_args, 1);
+};
+
 1;
