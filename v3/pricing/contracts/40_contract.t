@@ -260,7 +260,7 @@ $proposal_1 = $t->await::proposal({
 $proposal_id = $proposal_1->{proposal}->{id};
 $res         = $t->await::buy({
     buy   => $proposal_id,
-    price => 10000
+    price => 1
 });
 is $res->{buy}->{buy_price}, 1.00;
 
@@ -289,7 +289,7 @@ subtest 'buy and subscribe' => sub {
     $proposal_id = $proposal_3->{proposal}->{id};
     $res         = $t->await::buy({
         buy         => $proposal_id,
-        price       => 10000,
+        price       => 1000,
         "subscribe" => "1",
         req_id      => 1111,
     });

@@ -263,7 +263,7 @@ SKIP: {
 
         $res = $t->await::buy({
             buy   => $proposal_id,
-            price => 10000
+            price => 100
         });
         is $res->{buy}->{buy_price}, 100.00, 'Buy with proposal id: Buy price is 100';
         ok $res->{buy}->{payout} > 100, 'Buy with proposal id: Payout is greater than 100';
@@ -295,7 +295,7 @@ SKIP: {
         ok $res->{buy}->{payout} > 100, 'Buy with defined contract parameters: Payout is greater than 100';
         $res = $t->await::buy({
             buy        => 1,
-            price      => 10000,
+            price      => 100,
             parameters => {%contract},
         });
 
