@@ -147,7 +147,7 @@ sub actions_config {
                 success      => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::contract_update_handler,
             }
         ],
-        ['sell', {require_auth => 'trade'}],
+        ['sell',   {require_auth => 'trade'}],
         ['cancel', {require_auth => 'trade'}],
         [
             'buy',
