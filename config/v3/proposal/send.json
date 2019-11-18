@@ -99,6 +99,7 @@
         },
         "deal_cancellation": {
             "description": "Epoch value of the expiry time for the deal cancellation option (only for MULTUP and MULTDOWN).",
+            "type": "integer",
             "enum": [
                 1,
                 0
