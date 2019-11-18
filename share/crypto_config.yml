@@ -6,8 +6,6 @@ BTC:
     confirmation:
         required_confirmations: 3
     subscription:
-        timeout: 100
-        msg_timeout: 3600
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
@@ -22,8 +20,6 @@ LTC:
     confirmation:
         required_confirmations: 3
     subscription:
-        timeout: 100
-        msg_timeout: 3600
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
@@ -38,8 +34,6 @@ BCH:
     confirmation:
         required_confirmations: 3
     subscription:
-        timeout: 100
-        msg_timeout: 3600
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
@@ -54,8 +48,6 @@ ETH:
     confirmation:
         required_confirmations: 3
     subscription:
-        timeout: 100
-        msg_timeout: 3600
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 18
@@ -77,11 +69,10 @@ UST:
     confirmation:
         required_confirmations: 3
     subscription:
-        timeout: 100
-        msg_timeout: 3600
         rpc_timeout: 100
     protocol_cost: 0.00000546
     decimal_places: 8
+    property_id: 2147484941
     blockchain_url:
         address: https://omniexplorer.info/tx/
         transaction: https://omniexplorer.info/address/
