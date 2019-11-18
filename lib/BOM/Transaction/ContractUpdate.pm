@@ -223,16 +223,13 @@ sub update {
     my ($self) = @_;
 
     my $update_args = {contract_id => $self->contract_id};
-    my $add_to_audit = 0;
     foreach my $order_name (keys %{$self->update_params}) {
         if (my $order = $self->$order_name) {
             # $order->order_amount will be undef for cancel operation so we pass
             # in 0 to database function to perform cancellation
             $update_args->{$order_name} = $order->order_amount // 0;
-            $add_to_audit = 1 if $self->_order_exists($order_name);
         }
     }
-    $update_args->{add_to_audit} = $add_to_audit;
 
     my $res_table =
         BOM::Database::Helper::FinancialMarketBet->new(db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db)
@@ -317,19 +314,6 @@ sub _requeue_transaction {
         out => $out,
         in  => $in,
     };
-}
-
-sub _order_exists {
-    my ($self, $order_type) = @_;
-
-    # The following scenarios define the status of the order:
-    # 1. Both order amount and order date are defined: active order.
-    # 2. Only the order date is defined: order cancelled.
-    # 3. Both order amount and order date are undefined: no order is placed throughout the life time of the contract.
-
-    my $fmb = $self->fmb;
-    return 1 if $fmb and defined $fmb->{$order_type . '_order_date'};
-    return 0;
 }
 
 1;
