@@ -4,13 +4,24 @@ use strict;
 use warnings;
 
 use Exporter qw( import );
+
+use Test::MockModule;
 use Path::Tiny;
 use LandingCompany::Registry;
 
 use BOM::CTC::Helper;
 use BOM::CTC::Currency;
+use BOM::Platform::Client::CashierValidation;
+use BOM::Database::ClientDB;
+use Try::Tiny;
 
-our @EXPORT_OK = qw( wait_miner deploy_test_contract );
+our @EXPORT_OK = qw( wait_miner deploy_test_contract set_pending );
+
+my $mock_cashier_validation = Test::MockModule->new('BOM::Platform::Client::CashierValidation');
+$mock_cashier_validation->mock(
+    is_crypto_currency_suspended => sub {
+        return 0;
+    });
 
 =head2 wait_miner
 
@@ -33,6 +44,42 @@ sub wait_miner {
     } until defined $transaction->{blockNumber};
 
     return undef;
+}
+
+=head2 set_pending
+
+set transaction as pending in payment.cryptocurrency
+
+=over
+
+=item* C<broker_code> broker_code
+
+=item* C<address> blockchain address
+
+=item* C<currency_code> currency code
+
+=item* C<amount> amount transacted
+
+=item* C<transaction> blockchain transaction hash
+
+=cut
+
+sub set_pending {
+    my ($broker_code, $address, $currency_code, $amount, $transaction) = @_;
+
+    my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker_code});
+    my $dbic = $clientdb->db->dbic;
+    # since we are using bom-events for subscription we need to set
+    # the transaction to pending manually here.
+    return try {
+        return $dbic->run(
+            ping => sub {
+                $_->selectrow_array('SELECT payment.ctc_set_deposit_pending(?, ?, ?, ?)', undef, $address, $currency_code, $amount, $transaction);
+            });
+    }
+    catch {
+        return 0;
+    };
 }
 
 =head2 deploy_all_test_contracts
