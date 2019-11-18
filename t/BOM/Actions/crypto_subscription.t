@@ -33,9 +33,13 @@ $mock_btc->mock(
     });
 
 subtest "change_address_status" => sub {
+
+    my $transaction_hash1 = "abcdefgh";
+    my $transaction_hash2 = "dddddddd";
+
     my $transaction = Net::Async::Blockchain::Transaction->new(
         currency => 'LTC',
-        hash     => 'abcdefgh',
+        hash     => $transaction_hash1,
         to       => ['abc', 'def'],
         type     => 'receive',
         amount   => 0,
@@ -69,6 +73,35 @@ subtest "change_address_status" => sub {
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, 1, "Correct status";
+
+    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response, undef, "Can't set pending a transaction already pending";
+
+    $transaction->{hash}   = $transaction_hash2;
+    $transaction->{amount} = 0.2;
+
+    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response, 1, "Able to set pending a transaction to the same address with an different hash";
+
+    my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
+    my $dbic = $clientdb->db->dbic;
+
+    my $start = Time::HiRes::time;
+    my $rows  = $dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare(q{SELECT * FROM payment.ctc_find_deposit_pending_by_currency(?)});
+            $sth->execute('BTC');
+            return $sth->fetchall_arrayref({});
+        });
+
+    my @address_entries = grep { $_->{address} eq $btc_address } $rows->@*;
+
+    is @address_entries, 2, "correct number of pending transactions";
+
+    my @tx1 = grep { $_->{blockchain_txn} eq $transaction_hash1 } @address_entries;
+    is @tx1, 1, "Correct hash for the first deposit";
+    my @tx2 = grep { $_->{blockchain_txn} eq $transaction_hash2 } @address_entries;
+    is @tx2, 1, "Correct hash for the second deposit";
 
     my $currency = BOM::CTC::Currency->new(
         currency_code => $transaction->{currency},
