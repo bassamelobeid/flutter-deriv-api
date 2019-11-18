@@ -297,9 +297,9 @@ if ($view_action eq 'withdrawals') {
     }
 
     my @hdr = (
-        'Client ID',     'Type',             'Address',     'Amount',       'Amount USD',      'Fee',
-        'Protocol Cost', 'Status',           'Status date', 'Payment date', 'Blockchain date', 'Confirmations',
-        'Transactions',  'Transaction Hash', 'Errors'
+        'Client ID',        'Type',   'Address',     'Amount',       'Amount USD',      'Fee',
+        'Protocol Cost',    'Status', 'Status date', 'Payment date', 'Blockchain date', 'Confirmations',
+        'Transaction Hash', 'Errors'
     );
     my $filename = join '-', $start_date->date_yyyymmdd, $end_date->date_yyyymmdd, $currency;
 
@@ -339,11 +339,14 @@ EOF
             for map { $_ // '' } @{$db_tran}{qw(status_date database_date blockchain_date)};
         print '<td><span style="color: ' . ($_ + 0 >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // 0 } @{$db_tran}{qw(confirmations)};
-        print '<td><span style="color: ' . ($_ + 0 > 1 ? 'red' : $_ == 1 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
-            for map { $_ // 0 } @{$db_tran}{qw(transaction_count)};
         print '<td>';
-        print '<a target="_blank" href="' . ($transaction_uri . $_) . '">' . encode_entities($_) . '</a><br>'
-            for grep { $_ } @{$db_tran->{transactions}};
+        if ($db_tran->{transaction_hash}) {
+            print '<a target="_blank" href="'
+                . ($transaction_uri . $db_tran->{transaction_hash}) . '">'
+                . encode_entities($db_tran->{transaction_hash})
+                . '</a><br>';
+        }
+
         print '</td>';
         print '<td style="color:red;">' . (join '<br><br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
         print '</tr>';
