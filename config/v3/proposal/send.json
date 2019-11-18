@@ -171,21 +171,6 @@
             "description": "[Optional] Used to map request to response.",
             "type": "integer"
         },
-        "limit_order": {
-          "type": "object",
-          "additionalProperties" : false,
-          "description": "Add an order to close the contract once the order condition is met (only for MULTUP and MULTDOWN). Supported order (take_profit, stop_loss)",
-          "properties": {
-            "take_profit": {
-              "type": "number",
-              "description": "Contract will be automatically closed when the value of the contract reaches a specific profit."
-            },
-            "stop_loss": {
-              "type": "number",
-              "description": "Contract will be automatically closed when the value of the contract reaches a specific loss."
-            }
-          }
-        },
         "deal_cancellation": {
            "enum" : [1,0],
            "description" : "Epoch value of the expiry time for the deal cancellation option (only for MULTUP and MULTDOWN)."

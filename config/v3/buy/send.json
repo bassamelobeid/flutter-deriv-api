@@ -130,21 +130,6 @@
                     "maximum": 9999999999,
                     "minimum": 1
                 },
-                "limit_order": {
-                  "type": "object",
-                  "additionalProperties" : false,
-                  "description": "Add an order to close the contract once the order condition is met (currently only for MULTUP and MULTDOWN)",
-                  "properties": {
-                    "take_profit": {
-                      "type": "number",
-                      "description": "Contract will be automatically closed when the value of the contract reaches a specific profit."
-                    },
-                    "stop_loss": {
-                      "type": "number",
-                      "description": "Contract will be automatically closed when the value of the contract reaches a specific loss."
-                    }
-                  }
-                },
                 "deal_cancellation": {
                     "enum" : [1,0],
                     "description" : "Epoch value of the expiry time for the deal cancellation option (only for MULTUP and MULTDOWN)."
