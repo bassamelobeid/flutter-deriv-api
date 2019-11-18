@@ -97,6 +97,13 @@
             "maximum": 9999999999,
             "minimum": 0
         },
+        "deal_cancellation": {
+            "description": "Epoch value of the expiry time for the deal cancellation option (only for MULTUP and MULTDOWN).",
+            "enum": [
+                1,
+                0
+            ]
+        },
         "duration": {
             "description": "Duration quantity. Either date_expiry or duration is required.",
             "type": "integer",
@@ -170,10 +177,6 @@
         "req_id": {
             "description": "[Optional] Used to map request to response.",
             "type": "integer"
-        },
-        "deal_cancellation": {
-           "enum" : [1,0],
-           "description" : "Epoch value of the expiry time for the deal cancellation option (only for MULTUP and MULTDOWN)."
         }
-      }
+    }
 }

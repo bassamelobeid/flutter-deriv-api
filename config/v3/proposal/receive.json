@@ -27,6 +27,10 @@
                     "description": "Example: 5.14",
                     "type": "number"
                 },
+                "cost_of_deal_cancellation": {
+                    "description": "Example: 2.14",
+                    "type": "number"
+                },
                 "date_start": {
                     "description": "Example: 1439999053",
                     "type": "integer"
@@ -130,10 +134,6 @@
                 "spot_time": {
                     "description": "Example: 1439999052",
                     "type": "integer"
-                },
-                "cost_of_deal_cancellation": {
-                    "type": "number",
-                    "description" : "Example: 2.14"
                 }
             }
         },
