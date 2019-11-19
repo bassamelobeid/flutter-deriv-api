@@ -38,7 +38,15 @@ $mocked_payment_notification->mock(
         return Future->done;
     });
 
-populate_exchange_rates();
+populate_exchange_rates({
+    USD => 1,
+    EUR => 1.1888,
+    GBP => 1.3333,
+    JPY => 0.0089,
+    BTC => 5500,
+    BCH => 320,
+    LTC => 50,
+});
 
 my $recorded_date = Date::Utility->new;
 
