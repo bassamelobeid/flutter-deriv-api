@@ -54,6 +54,11 @@ has subchannel => (
     required => 1,
 );
 
+has pricer_args => (
+    is       => 'ro',
+    required => 1,
+);
+
 =head1 METHODS
 
 =head2 subscription_manager
@@ -74,7 +79,7 @@ subscribe the channel and store channel to Redis so that pricer_queue script can
 
 before subscribe => sub {
     my $self = shift;
-    $self->subscription_manager->redis->set($self->channel, 1);
+    $self->subscription_manager->redis->set($self->pricer_args, 1);
 };
 
 # This method is used to find a subscription. Class name + _unique_key will be a unique index of the subscription objects.
