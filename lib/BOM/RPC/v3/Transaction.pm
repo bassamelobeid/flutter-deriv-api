@@ -236,7 +236,7 @@ rpc "buy",
         purchase_time   => $trx->purchase_date->epoch,
         is_sold         => $contract_details->{is_sold},
         transaction_ids => {buy => $transaction_details->{id}},
-        longcode        => localize(shortcode_to_longcode($contract_details->{short_code})),
+        longcode        => localize(shortcode_to_longcode($contract_details->{short_code}, $currency)),
     };
 
     # multiplier requires additional parameters to define a contract
