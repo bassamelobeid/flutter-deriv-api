@@ -4,27 +4,17 @@ use strict;
 use warnings;
 use BOM::Config::RedisReplicated;
 
+use LandingCompany::Registry;
 use Exporter qw( import );
 our @EXPORT_OK = qw( populate_exchange_rates populate_exchange_rates_db);
-
 # Subroutine for populating exchange rates for tests
-my $rates = {
-    USD => 1,
-    EUR => 1.1888,
-    GBP => 1.3333,
-    JPY => 0.0089,
-    BTC => 5500,
-    BCH => 320,
-    LTC => 50,
-    ETH => 490,
-    UST => 1,
-    USB => 1,
-    AUD => 1,
-    IDK => 0.07057,
-};
+my %all_currencies_rates =
+    map { $_ => 1 } LandingCompany::Registry::all_currencies();
+my $rates = \%all_currencies_rates;
 
 sub populate_exchange_rates {
     my $local_rates = shift || $rates;
+    $local_rates = {%$rates, %$local_rates};
     my $redis = BOM::Config::RedisReplicated::redis_exchangerates_write();
     $redis->hmset(
         'exchange_rates::' . $_ . '_USD',
@@ -38,6 +28,7 @@ sub populate_exchange_rates {
 sub populate_exchange_rates_db {
     my $dbic = shift;
     my $local_rates = shift || $rates;
+    $local_rates = {%$rates, %$local_rates};
 
     $dbic->run(
         fixup => sub {

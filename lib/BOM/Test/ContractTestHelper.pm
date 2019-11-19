@@ -3,8 +3,6 @@ package BOM::Test::ContractTestHelper;
 use strict;
 use warnings;
 use BOM::Config::RedisTransactionLimits;
-
-use BOM::Test::FakeCurrencyConverter qw(fake_in_usd);
 use BOM::Product::ContractFactory qw( produce_contract );
 use LandingCompany::Registry;
 use Exporter qw( import );
@@ -15,9 +13,6 @@ our @EXPORT_OK = qw(close_all_open_contracts reset_all_loss_hashes);
 # and set the sell_time to contract start date
 sub close_all_open_contracts {
     my ($broker_code, $fullpayout) = @_;
-
-    my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
-    $mocked_CurrencyConverter->mock('in_usd', \&fake_in_usd);
 
     $broker_code //= 'CR';
     $fullpayout  //= 0;
