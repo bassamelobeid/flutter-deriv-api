@@ -4,11 +4,12 @@ use warnings;
 use utf8;
 use Test::Most;
 use Test::Mojo;
-
 use BOM::Test::RPC::Client;
 use BOM::Config::CurrencyConfig;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use Format::Util::Numbers qw/financialrounding/;
+
+populate_exchange_rates();
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 subtest 'residence_list' => sub {
@@ -44,7 +45,6 @@ subtest 'states_list' => sub {
 
 subtest 'currencies_config.transfer_between_accounts' => sub {
 
-    populate_exchange_rates();
     my $result = $c->call_ok(
         'website_status',
         {
@@ -80,7 +80,6 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
 
 subtest 'crypto_config' => sub {
 
-    populate_exchange_rates();
     my $result = $c->call_ok(
         'website_status',
         {
