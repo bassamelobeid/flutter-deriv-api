@@ -586,8 +586,9 @@ sub get_pricer_args {
     # use residence when available, fall back to IP country
     $hash{country_code} = $c->stash('residence') || $c->stash('country_code');
     $hash{limit_order} = $cache->{limit_order} if $cache->{limit_order};
+    my $id = $hash{contract_id} . '_' . $hash{landing_company};
 
-    return [_serialized_args(\%hash), $hash{contract_id}];
+    return [_serialized_args(\%hash), $id];
 }
 
 sub pricing_channel_for_proposal_open_contract {
