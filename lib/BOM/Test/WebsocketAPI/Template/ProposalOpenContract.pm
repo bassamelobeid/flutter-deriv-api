@@ -184,14 +184,7 @@ publish proposal_open_contract => sub {
     for my $contract (values $_->global->{contracts}{$_->client}->%*) {
         next if $contract->is_sold;
         my $payload = {
-            sprintf(
-                'PRICER_KEYS::["short_code","%s","contract_id","%s","currency","%s","is_sold","0","landing_company","%s","price_daemon_cmd","bid","sell_time",null]',
-
-                $contract->shortcode,
-                $contract->contract_id,
-                $contract->client->currency,
-                $contract->client->landing_company_name,
-                ) => {
+            sprintf('CONTRACT_PRICE::%s_%s', $contract->contract_id, $contract->client->landing_company_name) => {
                 price_daemon_cmd    => 'bid',
                 currency            => $contract->client->currency,
                 rpc_time            => 31.425,
@@ -220,7 +213,7 @@ publish proposal_open_contract => sub {
                 is_valid_to_sell    => 1,
                 date_expiry         => $contract->date_expiry,
                 contract_type       => $contract->contract_type,
-                },
+            },
         };
         push $poc->@*, $payload;
     }

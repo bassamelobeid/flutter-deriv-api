@@ -96,14 +96,7 @@ publish proposal_open_contract => sub {
     my $contract = $_->contract;
     return undef if $contract->is_sold;
 
-    my $key = sprintf(
-        'PRICER_KEYS::["short_code","%s","contract_id","%s","currency","%s","is_sold","0","landing_company","%s","price_daemon_cmd","bid","sell_time",null]',
-
-        $contract->shortcode,
-        $contract->contract_id,
-        $contract->client->currency,
-        $contract->client->landing_company_name,
-    );
+    my $key = sprintf('CONTRACT_PRICE::%s_%s', $contract->contract_id, $contract->client->landing_company_name);
     return {
         $key => {
             price_daemon_cmd    => 'bid',
