@@ -9,9 +9,10 @@ use Locale::Country 'code2country';
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
-
+use JSON::MaybeUTF8 qw(:v1);
 use LandingCompany::Registry;
 
+use BOM::Transaction;
 use BOM::Config;
 use BOM::User::AuditLog;
 use BOM::Database::ClientDB;
@@ -687,8 +688,10 @@ sub client_statement_for_backoffice {
         });
 
         foreach my $transaction (@{$transactions}) {
-            $transaction->{amount} = abs($transaction->{amount});
-            $transaction->{remark} = $transaction->{bet_remark};
+            $transaction->{amount}      = abs($transaction->{amount});
+            $transaction->{remark}      = $transaction->{bet_remark};
+            $transaction->{limit_order} = encode_json_utf8(BOM::Transaction::extract_limit_orders($transaction))
+                if $transaction->{bet_class} eq 'multiplier';
         }
     }
 

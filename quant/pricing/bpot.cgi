@@ -24,6 +24,7 @@ use BOM::PricingDetails;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
+use JSON::MaybeUTF8 qw(:v1);
 BOM::Backoffice::Sysinit::init();
 
 use BOM::User::Client;
@@ -45,16 +46,17 @@ if ($broker) {
 }
 
 $landing_company = $lc_registry->short if $lc_registry;
+my $limit_order = request()->param('limit_order');
 
 my $bet = do {
     my $contract_object = '';
     my ($shortcode, $currency) = map { request()->param($_) } qw(shortcode currency);
 
     if ($landing_company and $shortcode and $currency) {
-
         my $contract_parameters = shortcode_to_parameters($shortcode, $currency);
+        $contract_parameters->{limit_order}     = decode_json_utf8($limit_order) if $limit_order;
         $contract_parameters->{landing_company} = $landing_company;
-        $contract_object = produce_contract($contract_parameters);
+        $contract_object                        = produce_contract($contract_parameters);
     }
     $contract_object;
 };
@@ -85,22 +87,21 @@ if ($bet) {
                 date_pricing    => $start,
                 landing_company => $landing_company
             });
-        $debug_link = BOM::PricingDetails->new({bet => $start_bet})->debug_link;
+        BOM::Backoffice::Request::template()->process(
+            'backoffice/bpot.html.tt',
+            {
+                longcode => $bet      ? localize($bet->longcode)     : '',
+                bet      => $bet,
+                start    => $start    ? $start->datetime             : '',
+                end      => $end      ? $end->datetime               : '',
+                timestep => $timestep ? $timestep->as_concise_string : '',
+                defined $limit_order ? (limit_order => $limit_order) : (),
+                debug_link => $bet->category_code ne 'multiplier' ? BOM::PricingDetails->new({bet => $start_bet})->debug_link : undef,
+            }) || die BOM::Backoffice::Request::template()->error;
     }
     catch {
         code_exit_BO("<pre>$_</pre>");
     };
 }
-
-BOM::Backoffice::Request::template()->process(
-    'backoffice/bpot.html.tt',
-    {
-        longcode => $bet      ? localize($bet->longcode)     : '',
-        bet      => $bet,
-        start    => $start    ? $start->datetime             : '',
-        end      => $end      ? $end->datetime               : '',
-        timestep => $timestep ? $timestep->as_concise_string : '',
-        debug_link => $debug_link,
-    }) || die BOM::Backoffice::Request::template()->error;
 
 code_exit_BO();
