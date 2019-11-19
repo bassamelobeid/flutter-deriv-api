@@ -70,7 +70,8 @@ sub send_email_generic {
         'Failed to send the email with subject: %s - template_name: %s - request_brand_name: %s',
         $args->{subject},
         $args->{template_name},
-        $args->{request_brand_name}) unless $status_code;
+        request()->brand->name
+    ) unless $status_code;
 
     return $status_code;
 }

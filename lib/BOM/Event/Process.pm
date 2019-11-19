@@ -20,6 +20,8 @@ use BOM::Event::Actions::Anonymization;
 use BOM::Event::Actions::Email;
 use BOM::Event::Actions::MyAffiliate;
 use BOM::Event::Actions::OTC;
+use BOM::Platform::Context qw(request);
+use BOM::Platform::Context::Request;
 
 use Scalar::Util qw(blessed);
 
@@ -90,14 +92,14 @@ Process event passed by invoking corresponding method from action mapping
 
 =over 4
 
-=item * event_to_be_processed : emitted event ( {type => action, details => {}}, $queue_name )
+=item * event_to_be_processed : emitted event ( {type => action, details => {}, context => {}}, $queue_name )
 
 =back
 
 =cut
 
 sub process {
-    # event is of form { type => action, details => {} }
+    # event is of form { type => action, details => {}, context => {} }
 
     my $event_to_be_processed = shift;
     my $queue_name            = shift;
@@ -115,6 +117,11 @@ sub process {
         return undef;
     }
 
+    my $context_info = $event_to_be_processed->{context} // {};
+    my @req_args = map { $_ => $context_info->{$_} } grep { $context_info->{$_} } qw(brand_name language);
+    my $req = BOM::Platform::Context::Request->new(@req_args);
+    request($req);
+
     my $response = 0;
     try {
         $response = get_action_mappings()->{$event_type}->($event_to_be_processed->{details});
@@ -122,7 +129,7 @@ sub process {
         stats_inc(lc "$queue_name.processed.success");
     }
     catch {
-        $log->errorf("An error ocurred processing %s: %s", $event_type, $_);
+        $log->errorf("An error occurred processing %s: %s", $event_type, $_);
         stats_inc(lc "$queue_name.processed.failure");
     };
 
