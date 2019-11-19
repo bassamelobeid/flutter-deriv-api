@@ -223,10 +223,12 @@ sub _get_ask {
 
             $response->{multiplier} = $contract->multiplier unless $contract->is_binary;
 
-            if ($contract->category_code eq 'multiplier' and my $display = $contract->available_orders_for_display) {
+            if ($contract->category_code eq 'multiplier') {
+                my $display = $contract->available_orders_for_display;
                 $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
                 $response->{limit_order} = $display;
                 $response->{cost_of_deal_cancellation} = formatnumber('price', $contract->currency, $contract->cost_of_deal_cancellation);
+                $response->{commission} = $contract->commission * 100;    # commission in percentage term
             }
         }
         my $pen = $contract->pricing_engine_name;
@@ -887,6 +889,8 @@ sub _build_bid_response {
             $response->{limit_order}            = $contract->available_orders;
             $response->{limit_order_as_hashref} = $display;
         }
+        # commission in payout currency amount
+        $response->{commission} = $contract->commission_amount;
     }
 
     if (    $contract->exit_tick
