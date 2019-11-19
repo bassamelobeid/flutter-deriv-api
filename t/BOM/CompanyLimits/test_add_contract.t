@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 # this must be defined before CompanyLimits.pm is loaded
-sub BOM::Transaction::CompanyLimits::fake_it {0}
+sub BOM::Transaction::CompanyLimits::fake_it { 0 }
 
 use Test::MockTime qw/:all/;
 use Test::MockModule;
@@ -15,7 +15,6 @@ use JSON::MaybeXS;
 
 use Date::Utility;
 use BOM::Test;
-use BOM::Test::FakeCurrencyConverter qw(fake_in_usd);
 use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Contract qw(create_contract buy_contract sell_contract);
 use BOM::Test::ContractTestHelper qw(close_all_open_contracts reset_all_loss_hashes);
@@ -23,11 +22,16 @@ use BOM::Config::RedisTransactionLimits;
 use BOM::Config::Runtime;
 use BOM::Transaction::Limits::SyncLoss;
 use BOM::Transaction::Limits::Groups;
+use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
-my $mocked_CurrencyConverter = Test::MockModule->new('ExchangeRates::CurrencyConverter');
-$mocked_CurrencyConverter->mock('in_usd', \&fake_in_usd);
+populate_exchange_rates({
+    USD => 1,
+    EUR => 1.18,
+    GBP => 1.3333,
+    JPY => 0.0089,
+});
 
 my $redis = BOM::Config::RedisTransactionLimits::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
