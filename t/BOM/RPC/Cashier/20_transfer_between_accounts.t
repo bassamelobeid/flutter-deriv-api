@@ -65,9 +65,13 @@ my $method = 'transfer_between_accounts';
 my $btc_usd_rate = 4000;
 my $custom_rates = {
     'BTC' => $btc_usd_rate,
-    'UST' => 1
+    'UST' => 1,
+    'USD' => 1,
+    'EUR' => 1.1888,
+    'GBP' => 1.3333,
+    'JPY' => 0.0089,
+    'AUD' => 1,
 };
-
 populate_exchange_rates();
 populate_exchange_rates($custom_rates);
 
@@ -178,7 +182,6 @@ subtest 'call params validation' => sub {
 subtest 'validation' => sub {
 
     #populate exchange reates for BOM::TEST redis server to be used on validation_transfer_between_accounts
-    populate_exchange_rates();
 
     # random loginid to make it fail
     $params->{token} = $token;
@@ -503,8 +506,8 @@ subtest $method => sub {
         $params->{args}->{amount} = 0;
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
             ->error_message_is('Please provide valid amount.', 'Correct error message for transfering invalid amount');
-
-        $params->{args}->{amount} = 1;
+            
+            $params->{args}->{amount} = 1;
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
             ->error_message_is('The maximum amount you may transfer is: EUR 0.00.', 'Correct error message for transfering invalid amount');
     };
@@ -588,7 +591,6 @@ subtest $method => sub {
 };
 
 subtest 'transfer with fees' => sub {
-    populate_exchange_rates($custom_rates);
 
     $email         = 'new_transfer_email' . rand(999) . '@sample.com';
     $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

@@ -935,10 +935,12 @@ async_rpc "mt5_password_reset",
     my $args   = $params->{args};
     my $login  = $args->{login};
 
-    my $email = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
+    my $email = $client->user->email;
 
-    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'mt5_password_reset')->{error}) {
-        return create_error_future($err);
+    my $verification = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'mt5_password_reset');
+
+    if ($verification->{error}) {
+        return Future->fail($verification);
     }
 
     # MT5 login not belongs to user
