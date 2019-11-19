@@ -36,13 +36,7 @@ sub send_email {
     if ($args->{use_event}) {
         my $request = request();
         $args->{from} //= $request->brand->emails('no-reply');
-        BOM::Platform::Event::Emitter::emit(
-            'send_email',
-            {
-                $args->%*,
-                request_brand_name => $request->brand->name,
-                request_language   => $request->language,
-            });
+        BOM::Platform::Event::Emitter::emit('send_email', $args);
     } else {
         process_send_email($args);
     }
@@ -114,10 +108,8 @@ sub process_send_email {
     my $layout             = $args_ref->{'layout'} // 'default';
     my $attachment         = $args_ref->{'attachment'} // [];
     $attachment = ref($attachment) eq 'ARRAY' ? $attachment : [$attachment];
-    my $skip_text2html     = $args_ref->{'skip_text2html'};
-    my $template_loginid   = $args_ref->{template_loginid};
-    my $request_brand_name = $args_ref->{request_brand_name};
-    my $request_language   = $args_ref->{request_language};
+    my $skip_text2html   = $args_ref->{'skip_text2html'};
+    my $template_loginid = $args_ref->{template_loginid};
 
     if (my @missing = grep { !$args_ref->{$_} } qw(from to subject)) {
         warn("Failed to send the email due to missing fields: ", join ", ", @missing);
@@ -137,15 +129,8 @@ sub process_send_email {
         }
     }
 
-    my $request = request(
-        defined $request_brand_name and defined $request_language
-        ? BOM::Platform::Context::Request->new(
-            brand_name => $request_brand_name,
-            language   => $request_language,
-            )
-        : ());
-
-    my $brand = $request->brand;
+    my $request = request();
+    my $brand   = $request->brand;
     if (grep { $fromemail eq $_ } ($brand->emails('support'), $brand->emails('no-reply'))) {
         $fromemail = "\"" . $brand->website_name . "\" <$fromemail>";
     }

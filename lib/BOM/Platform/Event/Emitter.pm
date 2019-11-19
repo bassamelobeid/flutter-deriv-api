@@ -11,6 +11,8 @@ use RedisDB;
 use Try::Tiny;
 use YAML::XS qw(LoadFile);
 
+use BOM::Platform::Context qw(request);
+
 =head1 NAME
 
 BOM::Platform::Event::Emitter - Emitter events to storage
@@ -78,11 +80,18 @@ sub emit {
     die "Missing required parameter: type." unless $type;
     die "Missing required parameter: data." unless $data;
 
+    my $request      = request();
+    my $context_info = {
+        brand_name => $request->brand->name,
+        language   => $request->language,
+    };
+
     my $event_data;
     try {
         $event_data = encode_json_utf8({
             type    => $type,
-            details => $data
+            details => $data,
+            context => $context_info,
         });
     }
     catch {
