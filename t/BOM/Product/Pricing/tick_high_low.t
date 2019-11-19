@@ -59,11 +59,11 @@ subtest 'prices' => sub {
     my %expectations = (
         TICKHIGH => {
             bs_prob => 0.141,
-            markup  => 0.015,
+            markup  => 0.012,
         },
         TICKLOW => {
             bs_prob => 0.141,
-            markup  => 0.015,
+            markup  => 0.012,
         },
     );
 
@@ -84,7 +84,7 @@ subtest 'prices' => sub {
     $params->{bet_type} = 'TICKHIGH';
     my $c = produce_contract($params);
     _check_amount($c->theo_probability,  0.141, 'bs_prob');
-    _check_amount($c->commission_markup, 0.015, 'markup not the minimum');
+    _check_amount($c->commission_markup, 0.012, 'markup not the minimum');
 };
 
 sub _check_amount {
