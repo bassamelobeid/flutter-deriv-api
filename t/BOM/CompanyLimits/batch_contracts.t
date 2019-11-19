@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 # this must be defined before CompanyLimits.pm is loaded
-sub BOM::Transaction::CompanyLimits::fake_it {0}
+sub BOM::Transaction::CompanyLimits::fake_it { 0 }
 
 use Test::MockTime qw(:all);
 use Test::MockModule;
@@ -22,9 +22,11 @@ use BOM::Transaction::Limits::SyncLoss;
 use BOM::Config::RedisTransactionLimits;
 use BOM::Config::Runtime;
 use BOM::Test::Email qw(mailbox_search);
+use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
+populate_exchange_rates();
 my $redis = BOM::Config::RedisTransactionLimits::redis_limits_write;
 my $json  = JSON::MaybeXS->new;
 

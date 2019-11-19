@@ -330,16 +330,16 @@ subtest 'sell a bet', sub {
         set_relative_time 1;
         my $reset_time = guard { restore_time };
         my $contract = produce_contract({
-                underlying => $underlying,
-                bet_type   => 'CALL',
-                currency   => 'USD',
-                payout     => 1000,
-                duration   => '15m',
-                date_start   => $now->epoch,
-                current_tick => $tick,
-                entry_tick   => $tick,
-                exit_tick    => $tick,
-                barrier      => 'S0P',
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 1000,
+            duration     => '15m',
+            date_start   => $now->epoch,
+            current_tick => $tick,
+            entry_tick   => $tick,
+            exit_tick    => $tick,
+            barrier      => 'S0P',
         });
         my $txn;
         #note 'bid price: ' . $contract->bid_price;

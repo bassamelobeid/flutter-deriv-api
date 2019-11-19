@@ -511,7 +511,7 @@ subtest 'single contract fails in database', sub {
 subtest 'batch-buy multiple databases and datadog', sub {
     plan tests => 17;
     lives_ok {
-        my $clm              = create_client 'VRTC';    # manager
+        my $clm = create_client 'VRTC';    # manager
         my @cl;
         push @cl, create_client;
         push @cl, create_client;
@@ -519,7 +519,6 @@ subtest 'batch-buy multiple databases and datadog', sub {
 
         $clm->set_default_account('USD');
         $clm->save;
-
 
         top_up $_, 'USD', 5000 for (@cl);
 
