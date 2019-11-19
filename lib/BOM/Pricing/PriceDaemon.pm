@@ -197,7 +197,9 @@ sub run {
                 {tags => $self->tags('contract_type:' . $contract_type_string, 'currency:' . $params->{currency})});
         }
 
-        my $subscribers_count = $redis->publish($key->[1], encode_json_utf8($response));
+        # On websocket clients are subscribing to proposal open contract with "CONTRACT_PRICE::$contract_id" as the key
+        my $redis_channel = $params->{contract_id} ? 'CONTRACT_PRICE::' . $params->{contract_id} . '_' . $params->{landing_company} : $key->[1];
+        my $subscribers_count = $redis->publish($redis_channel, encode_json_utf8($response));
         # if None was subscribed, so delete the job
         if ($subscribers_count == 0) {
             $redis->del($key->[1], $next);
