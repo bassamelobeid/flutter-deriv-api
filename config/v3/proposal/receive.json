@@ -27,6 +27,10 @@
                     "description": "Example: 5.14",
                     "type": "number"
                 },
+                "commission": {
+                    "description": "Commission changed in percentage (%).",
+                    "type": ["number",null]
+                },
                 "cost_of_deal_cancellation": {
                     "description": "Example: 2.14",
                     "type": "number"

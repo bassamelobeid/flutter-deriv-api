@@ -164,6 +164,10 @@
                     "description": "Price at which contract was purchased",
                     "type": "number"
                 },
+                "commision": {
+                    "description": "Commission in payout currency amount.",
+                    "type": ["number", null]
+                },
                 "contract_id": {
                     "description": "Binary.com internal contract identifier",
                     "type": "integer"
