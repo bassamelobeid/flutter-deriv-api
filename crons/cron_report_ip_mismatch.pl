@@ -58,7 +58,7 @@ BOM::Backoffice::Request::template()->process(
 my $brands = BOM::Config->brand();
 
 send_email({
-    from                  => $brands->emails('system'),
+    from                  => $brands->emails('no-reply'),
     to                    => $brands->emails('compliance_alert'),
     subject               => 'IP Address Mismatch - ' . Date::Utility->new()->date(),
     message               => [$list_ip_mismatch_email,],
