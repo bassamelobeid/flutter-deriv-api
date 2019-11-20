@@ -6,9 +6,13 @@ use Module::Path qw/module_path/;
 use Digest::SHA1;
 
 my %file_details = (
+    runs => {
+        filename => module_path('BOM::Product::Contract::Runhigh'),
+        hash => '27404d4a93be0860f01bf4c94bcd8454559a5bfe'
+    },
     risefall => {
-        filename => module_path('BOM::Product::Contract::Upordown'),
-        hash     => 'e0bd58ca569f2e833783aac14846a55d8eae79fb'
+        filename => module_path('BOM::Product::Contract::Call'),
+        hash     => '547145eab4e09cb377c7819e2a888a69accbe6cd'
     },
     higherlower => {
         filename => module_path('BOM::Product::Contract::Call'),
@@ -27,8 +31,8 @@ my %file_details = (
         hash     => '7db442786004654b27e8fa69a88e9f7a88987fc0'
     },
     asians => {
-        filename => module_path('Pricing::Engine::BlackScholes'),
-        hash     => 'b98e6d6b9428b0116fc65b79fff8153924bdbc3b'
+        filename => module_path('BOM::Product::Contract::Asianu'),
+        hash     => '656aaac4f48b5b995bda7603e45648d60b12e4a3'
     },
     digitsmatchdiffers => {
         filename => module_path('BOM::Product::Contract::Digitmatch'),
