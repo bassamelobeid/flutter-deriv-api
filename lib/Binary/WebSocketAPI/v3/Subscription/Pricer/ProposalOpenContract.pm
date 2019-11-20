@@ -37,8 +37,9 @@ sub do_handle_message {
             my $cost_of_cancellation = delete $message->{cost_of_cancellation} // 0;
             # we need to exclude cost of cancellation in profit/loss calculation to avoid confusion since
             # pnl always refers to the main contract.
-            $message->{profit} = formatnumber('price', $message->{currency}, $message->{bid_price} - $message->{buy_price} - $cost_of_cancellation);
-            $message->{profit_percentage} = roundcommon(0.01, $message->{profit} / $message->{buy_price} * 100);
+            my $main_contract_price = $message->{buy_price} - $cost_of_cancellation;
+            $message->{profit} = formatnumber('price', $message->{currency}, $message->{bid_price} - $main_contract_price);
+            $message->{profit_percentage} = roundcommon(0.01, $message->{profit} / $main_contract_price * 100);
         }
         $self->unregister
             if $message->{is_sold};
