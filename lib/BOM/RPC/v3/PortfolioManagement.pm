@@ -190,11 +190,13 @@ sub populate_response_proposal_contract {
             $contract->{sell_price}      = formatnumber('price', $client->currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
 
             if (defined $contract->{buy_price} and (defined $contract->{bid_price} or defined $contract->{sell_price})) {
+                my $cost_of_cancellation = delete $contract->{cost_of_cancellation} // 0;
+                my $main_contract_price = $contract->{buy_price} - $cost_of_cancellation;
                 $contract->{profit} =
                     (defined $contract->{sell_price})
-                    ? formatnumber('price', $client->currency, $contract->{sell_price} - $contract->{buy_price})
-                    : formatnumber('price', $client->currency, $contract->{bid_price} - $contract->{buy_price});
-                $contract->{profit_percentage} = roundcommon(0.01, $contract->{profit} / $contract->{buy_price} * 100);
+                    ? formatnumber('price', $client->currency, $contract->{sell_price} - $main_contract_price)
+                    : formatnumber('price', $client->currency, $contract->{bid_price} - $main_contract_price);
+                $contract->{profit_percentage} = roundcommon(0.01, $contract->{profit} / $main_contract_price * 100);
             }
             $response->{$id} = $contract;
         }
