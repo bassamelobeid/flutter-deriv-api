@@ -95,6 +95,7 @@ sub set_gamstop_self_exclusion {
             email         => $client->email,
             date_of_birth => $client->date_of_birth,
             postcode      => $client->postcode,
+            mobile        => $client->phone,
         );
 
         stats_inc('GAMSTOP_RESPONSE', {tags => ['EXCLUSION:' . ($gamstop_response->get_exclusion() // 'NA'), "landing_company:$lc"]});
