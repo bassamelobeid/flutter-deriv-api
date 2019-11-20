@@ -283,6 +283,10 @@
                     "description": "Whether the contract is sold or not. Boolean value 1 or 0",
                     "type": "integer"
                 },
+                "is_valid_to_cancel": {
+                    "description": "Whether the contract can be cancenlled. Boolean value 1 or 0",
+                    "type": "integer"
+                },
                 "is_valid_to_sell": {
                     "description": "Whether the contract can be sold back to Binary.com. Boolean value 1 or 0",
                     "type": "integer"
