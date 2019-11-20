@@ -413,15 +413,16 @@ sub get_bid {
         my $format_limit_order = ($params->{streaming_params} and $params->{streaming_params}->{format_limit_order}) ? 1 : 0;
 
         $response = _build_bid_response({
-            contract         => $contract,
-            contract_id      => $contract_id,
-            is_valid_to_sell => $valid_to_sell->{is_valid_to_sell},
-            is_sold          => $is_sold,
-            is_expired       => $is_expired,
-            sell_price       => $sell_price,
-            sell_time        => $sell_time,
-            validation_error => $valid_to_sell->{validation_error},
-            from_pricer      => $format_limit_order,
+            contract           => $contract,
+            contract_id        => $contract_id,
+            is_valid_to_sell   => $valid_to_sell->{is_valid_to_sell},
+            is_valid_to_cancel => $contract->is_valid_to_cancel,
+            is_sold            => $is_sold,
+            is_expired         => $is_expired,
+            sell_price         => $sell_price,
+            sell_time          => $sell_time,
+            validation_error   => $valid_to_sell->{validation_error},
+            from_pricer        => $format_limit_order,
         });
 
         my $pen = $contract->pricing_engine_name;
