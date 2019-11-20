@@ -305,7 +305,7 @@ subtest 'CR account types - low risk' => sub {
     ok $login, 'financial assessment is not required for financial standard account';
     is $mt5_account_info->{group}, 'real\svg_standard', 'correct CR standard financial group';
 
-    financial_assessment($client, 'full');
+    full_authentication($client);
     $login = create_mt5_account->(
         $c, $token, $client,
         {
@@ -381,7 +381,7 @@ subtest 'CR account types - high risk' => sub {
     ok $login, 'financial assessment is not required for financial standard account';
     is $mt5_account_info->{group}, 'real\svg_standard', 'correct CR standard financial group';
 
-    financial_assessment($client, 'full');
+    full_authentication($client);
     $login = create_mt5_account->(
         $c, $token, $client,
         {
@@ -1010,6 +1010,16 @@ sub financial_assessment {
 
     $client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%data)});
     $client->save();
+
+}
+
+sub full_authentication {
+    my ($client) = shift;
+
+    $client->set_authentication('ID_DOCUMENT')->status('pass');
+    $client->save();
+    financial_assessment($client, 'full');
+
 }
 
 $mocked_mt5->unmock_all;
