@@ -509,10 +509,21 @@ sub has_valid_documents {
     return 1;
 }
 
+=head2 fully_authenticated
+
+For reference a client is termed fully authenticated with following parameters :
+
+CR - POI + POA
+MX - Prove ID / (POI + POA)
+MLT - POI + POA
+MF - POI + POA + Selfie in Onfido
+
+=cut
+
 sub fully_authenticated {
     my $self = shift;
 
-    for my $method (qw/ID_DOCUMENT ID_NOTARIZED/) {
+    for my $method (qw/ID_DOCUMENT ID_NOTARIZED ID_ONLINE/) {
         my $auth = $self->get_authentication($method);
         return 1 if $auth and $auth->status eq 'pass';
     }
@@ -522,6 +533,10 @@ sub fully_authenticated {
 
 sub authentication_status {
     my ($self) = @_;
+
+    my $online = $self->get_authentication('ID_ONLINE');
+
+    return 'online' if $online and $online->status eq 'pass';
 
     my $notarized = $self->get_authentication('ID_NOTARIZED');
 
@@ -1290,7 +1305,7 @@ sub is_verification_required {
 
     if ($args{check_authentication_status}) {
         return 1 if ($self->authentication_status // '') eq 'needs_action';
-        return 1 if ($self->residence eq 'gb' and not $self->status->ukgc_authenticated and $self->status->unwelcome);
+        return 1 if ($self->residence eq 'gb' and not $self->get_authentication('ID_ONLINE') and $self->status->unwelcome);
     }
 
     # applicable for all landing companies
