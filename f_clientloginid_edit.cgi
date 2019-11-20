@@ -411,6 +411,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $loginid});
         }
 
+        my $already_passed_id_online = $client->get_authentication('ID_ONLINE') ? $client->get_authentication('ID_ONLINE')->status : '';
+        if ($auth_method eq 'ID_ONLINE' && !($already_passed_id_online eq 'pass')) {
+            $client->set_authentication('ID_ONLINE')->status('pass');
+        }
+
         if ($auth_method eq 'NEEDS_ACTION') {
             $client->set_authentication('ID_DOCUMENT')->status('needs_action');
             # if client is marked as needs action then we need to inform

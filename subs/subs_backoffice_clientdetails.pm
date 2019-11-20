@@ -476,8 +476,7 @@ sub get_untrusted_client_reason {
             'Pending proof of age',
             'Others'
         ],
-        Duplicate          => ['Duplicate account'],
-        UKGCAuthentication => ['Online verification passed'],
+        Duplicate => ['Duplicate account'],
     };
 }
 
@@ -750,12 +749,6 @@ sub get_untrusted_types {
             'linktype'    => 'duplicateaccount',
             'comments'    => 'Duplicate account',
             'code'        => 'duplicate_account',
-            'show_reason' => 'yes'
-        },
-        {
-            'linktype'    => 'ukgcauthenticated',
-            'comments'    => 'UKGC authenticated',
-            'code'        => 'ukgc_authenticated',
             'show_reason' => 'yes'
         },
         {
