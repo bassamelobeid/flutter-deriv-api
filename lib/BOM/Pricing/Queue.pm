@@ -111,7 +111,8 @@ has _cached_index => (
     is       => 'ro',
     init_arg => undef,
     default  => sub {
-        +{map { $_ => score_for_channel_name($_) } shift->channels_from_keys};
+        my $self = shift;
+        +{map { $_ => $self->score_for_channel_name($_) } $self->channels_from_keys};
     },
 );
 
@@ -145,16 +146,29 @@ sub _prep_for_next_interval {
     return;
 }
 
+=head2 short_duration
+
+An attribute which contains a hashref of duration units with values
+reflecting the maximum couunt where they are considered short.
+
+Defaults to C<{'t' => 20, 's' => 60}>
+
+=cut
+
+has short_duration => (
+    is      => 'ro',
+    default => sub { +{'t' => 10, 's' => 60} },
+);
+
+=head2 score_for_parameters
+
+Takes a pricing parameters hashref and produces an integer score
+
+=cut
+
 sub score_for_parameters {
-    my $params = shift;
+    my ($self, $params) = @_;
     return 1 unless (ref($params) // '') eq 'HASH';
-    # In the longer-term it may make sense to refactor any state vars
-    # into config parameters.  First we need to figure out if this is
-    # worth it and what the values ought to be
-    state $short_units = {
-        t => 1,
-        s => 1,
-    };
     # Indicate it has been touched, even if we make no further adjustments
     my $score = 1;
     # bid before price
@@ -162,18 +176,34 @@ sub score_for_parameters {
     # Real money accounts first
     $score *= 11 if ($params->{real_money});
     # Low total time is faster
-    $score *= 7 if ($short_units->{$params->{duration_unit} // ''} and ($params->{duration} // 0) < 60);
+    if (my $short_count = $self->short_duration->{$params->{duration_unit} // ''}) {
+        $score *= 7 if ($params->{duration} // 0) <= $short_count;
+    }
     # Unvalidated is faster
     $score *= 2 if ($params->{skips_price_validation});
 
     return $score;
 }
 
+=head2 score_for_channel_name
+
+Convenience method turns a channel name into a set of parameters and
+returns the L<score_for_parameters> thereof
+
+=cut
+
 sub score_for_channel_name {
-    my $item = shift;
-    my ($params) = BOM::Pricing::v3::Utility::extract_from_channel_key($item);
-    return score_for_parameters($params);
+    my ($self, $key) = @_;
+    my ($params) = BOM::Pricing::v3::Utility::extract_from_channel_key($key);
+    return $self->score_for_parameters($params);
 }
+
+=head2 tine_in_interval
+
+Returns a floating point number of seconds remaining in the
+current L<pricing_interval>
+
+=cut
 
 sub time_in_interval {
     my $self = shift;
@@ -305,7 +335,7 @@ sub add {
     my $count = 0;
     my $redis = $self->redis;
     for my $item (@items) {
-        $self->_cached_index->{$item} = score_for_channel_name($item);
+        $self->_cached_index->{$item} = $self->score_for_channel_name($item);
         $redis->set($item, 1);
         $count++;
     }

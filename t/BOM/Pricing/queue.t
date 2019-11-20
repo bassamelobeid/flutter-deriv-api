@@ -41,7 +41,7 @@ is_deeply(\%tags,  {}, 'start with no tags');
 use BOM::Pricing::Queue;
 use BOM::Pricing::PriceDaemon;
 
-my $sfp = \&BOM::Pricing::Queue::score_for_parameters;
+my $queue;
 
 subtest 'priority scoring' => sub {
     # This is a little too tied to the implementation right now, but
@@ -53,27 +53,33 @@ subtest 'priority scoring' => sub {
         duration               => '59',
         skips_price_validation => '1',
     };
-    my $max_score = $sfp->($params);
+    $queue = new_ok(
+        'BOM::Pricing::Queue',
+        [
+            internal_ip => '1.2.3.4',
+        ],
+        'Testing queue'
+    );
+    my $max_score = $queue->score_for_parameters($params);
     cmp_ok($max_score, '==', 15554, 'Our example is the current max score possible');
-    my $min_score = $sfp->();
+    my $min_score = $queue->score_for_parameters();
     cmp_ok($min_score, '==', 1, 'Even forgetting to send in parameters does not error, scores 1');
     $params->{underlying} = 'frxUSDJPY';
-    cmp_ok($sfp->($params), '==', $max_score, 'Adding in an unconsidered parameter does not change score');
+    cmp_ok($queue->score_for_parameters($params), '==', $max_score, 'Adding in an unconsidered parameter does not change score');
     $params->{skips_price_validation} = '0';
-    my $skip_score = $sfp->($params);
+    my $skip_score = $queue->score_for_parameters($params);
     cmp_ok($skip_score, '<', $max_score, 'String-y zeros are correctly interpreted as false');
     $params->{skips_price_validation} = '1';
     $params->{duration}               = 61;
-    my $long_score = $sfp->($params);
+    my $long_score = $queue->score_for_parameters($params);
     cmp_ok($long_score, '<', $skip_score, 'Long duration and skipping validation is less important than short and validated');
     $params->{duration}      = 1;
     $params->{duration_unit} = 'h';
-    cmp_ok($sfp->($params), '==', $long_score, 'Duration and units work together to determine long/short');
+    cmp_ok($queue->score_for_parameters($params), '==', $long_score, 'Duration and units work together to determine long/short');
 };
 
 # use a separate redis client for this test
 my $redis = RedisDB->new(YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write}->%*);
-my $queue;
 
 # Sample pricer jobs
 my @keys = (
@@ -213,7 +219,7 @@ subtest 'daemon loading and unloading' => sub {
     my $efck = \&BOM::Pricing::v3::Utility::extract_from_channel_key;
     my ($ip, $kp) = map { [BOM::Pricing::v3::Utility::extract_from_channel_key($_)] } ($ani, $ak);
     eq_or_diff($ip, $kp, '... as are the parameters extracted therefrom');
-    cmp_ok($sfp->($ip->[0]), 'eq', $sfp->($kp->[0]), '... and the numbers produced from scoring.');
+    cmp_ok($queue->score_for_parameters($ip->[0]), 'eq', $queue->score_for_parameters($kp->[0]), '... and the numbers produced from scoring.');
 };
 
 done_testing;
