@@ -26,9 +26,11 @@ use BOM::Config::RedisReplicated;
 
 sub onfido {
     my ($self) = @_;
-
     return $self->{onfido} //= do {
-        $self->add_child(my $service = WebService::Async::Onfido->new(token => BOM::Config::third_party()->{onfido}->{authorization_token}));
+        $self->add_child(
+            my $service = WebService::Async::Onfido->new(
+                token => BOM::Config::third_party()->{onfido}->{authorization_token} // 'test',
+                $ENV{ONFIDO_URL} ? (base_uri => $ENV{ONFIDO_URL}) : ()));
         $service;
         }
 }
