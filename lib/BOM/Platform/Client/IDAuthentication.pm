@@ -11,13 +11,14 @@ use Text::Markdown;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
+use feature 'state';
 
 has client => (
     is       => 'ro',
     required => 1
 );
 
-use constant NEEDED_MATCHES_FOR_UKGC_AUTH        => 2;
+use constant NEEDED_MATCHES_FOR_ONLINE_AUTH      => 2;
 use constant NEEDED_MATCHES_FOR_AGE_VERIFICATION => 1;
 
 =head2 run_validation
@@ -40,10 +41,10 @@ sub run_validation {
 
     my %error_info = ();
 
-    my $action_mapping = {
-        age_verified     => '_age_verified',
-        fully_auth_check => '_fully_auth_check',
-        proveid          => 'proveid',
+    state $action_mapping = {
+        age_verified     => \&_age_verified,
+        fully_auth_check => \&_fully_auth_check,
+        proveid          => \&proveid,
     };
 
     for my $action (@$actions) {
@@ -143,8 +144,9 @@ sub proveid {
         my $vr_acc = BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid});
         $vr_acc->status->clear_unwelcome;
         $vr_acc->status->set('age_verification', 'system', 'Experian results are sufficient to mark client as age verified.');
-        if ($name_address_match >= NEEDED_MATCHES_FOR_UKGC_AUTH) {
-            $client->status->set('ukgc_authenticated', 'system', "Online verification passed");
+        if ($name_address_match >= NEEDED_MATCHES_FOR_ONLINE_AUTH) {
+            $client->set_authentication('ID_ONLINE')->status('pass');
+            $client->save();
         } else {
             $client->status->set('unwelcome', 'system', "Experian results are insufficient to enable deposits.");
 
