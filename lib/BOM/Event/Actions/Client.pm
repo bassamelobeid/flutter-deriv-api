@@ -1402,11 +1402,8 @@ async sub _send_email_notification_for_poa {
     # don't send email if client is already authenticated
     return undef if $client->fully_authenticated();
 
-    # send email for landing company other than costarica
-    # TODO: remove this landing company check
-    # when we enable it for all landing companies
-    # this should be a config in landing company
-    unless ($client->landing_company->short eq 'svg') {
+    # send email for all landing company
+    if ($client->landing_company->short) {
         await _send_poa_email($client);
         return undef;
     }
