@@ -58,12 +58,6 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         code_exit_BO();
     }
 
-    # check invalid UKGC_authenticated action for non-GB residence
-    if ($client_status_type eq 'ukgcauthenticated' and $client->residence ne 'gb') {
-        print "<br /><font color=red><b>ERROR : This action is only applicable for UK clients</b></font><br /><br />";
-        code_exit_BO();
-    }
-
     my $encoded_login_id =
           '<a href="'
         . request()->url_for("backoffice/f_clientloginid_edit.cgi", {loginID => encode_entities($login_id)}) . '">'
@@ -138,12 +132,6 @@ foreach my $login_id (split(/\s+/, $clientID)) {
             catch { $insert_error_msg };
         } elsif ($action eq 'remove_status') {
             $printline = try { $client->status->clear_duplicate_account; $remove_success_msg } catch { $remove_error_msg };
-        }
-    } elsif ($client_status_type eq 'ukgcauthenticated') {
-        if ($action eq 'insert_data') {
-            $printline = try { $client->status->set('ukgc_authenticated', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
-        } elsif ($action eq 'remove_status') {
-            $printline = try { $client->status->clear_ukgc_authenticated; $remove_success_msg } catch { $remove_error_msg };
         }
     } elsif ($client_status_type eq 'professionalrequested') {
         if ($action eq 'remove_status') {
