@@ -370,26 +370,14 @@ sub _slippage {
     #Record failed transaction here.
     for my $c (@{$self->clients}) {
         my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
-                login_id => $c->loginid,
-                ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
-                shortcode   => $contract->shortcode,
-                action_type => $p->{action},
-                reason      => 'SLIPPAGE',
-                details     => $json->encode({
-                        order_price      => $self->transaction->price,
-                        recomputed_price => $p->{action} eq 'buy' ? $contract->ask_price : $contract->bid_price,
-                        slippage         => $self->transaction->price - $contract->ask_price,
-                        option_type      => $contract->code,
-                        currency_pair    => $contract->underlying->symbol,
-                        ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
-                        : $contract->barrier      ? (barriers => $contract->barrier->as_absolute)
-                        : (),
-                        expiry => $contract->date_expiry->db_timestamp,
-                        payout => $contract->payout
-                    }
-                ),
-                db => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
-            });
+            login_id => $c->loginid,
+            ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
+            shortcode   => $contract->shortcode,
+            action_type => $p->{action},
+            reason      => 'SLIPPAGE',
+            details     => $self->_get_rejected_contract_details(),
+            db          => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
+        });
         $rejected_trade->record_fail_txn();
     }
     return Error::Base->cuss(
@@ -404,6 +392,27 @@ sub _slippage {
     );
 }
 
+sub _get_rejected_contract_details {
+    my $self = shift;
+
+    my $contract = $self->transaction->contract;
+    my $details  = $json->encode({
+            current_tick_epoch => $contract->current_tick->epoch,
+            pricing_epoch      => $contract->date_pricing->epoch,
+            option_type        => $contract->code,
+            currency_pair      => $contract->underlying->symbol,
+            ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
+            : ($contract->can('barrier') && $contract->barrier) ? (barriers => $contract->barrier->as_absolute)
+            : (barriers => ''),
+            $contract->can('available_orders') ? (limit_order => $contract->available_orders)
+            : (),
+            expiry => $contract->date_expiry->db_timestamp,
+            payout => $contract->payout
+        });
+
+    return $details;
+}
+
 sub _invalid_contract {
     my ($self, $p) = @_;
 
@@ -416,25 +425,14 @@ sub _invalid_contract {
         #Record failed transaction here.
         for my $c (@{$self->clients}) {
             my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
-                    login_id => $c->loginid,
-                    ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
-                    shortcode   => $contract->shortcode,
-                    action_type => $p->{action},
-                    reason      => $message_to_client,
-                    details     => $json->encode({
-                            current_tick_epoch => $contract->current_tick->epoch,
-                            pricing_epoch      => $contract->date_pricing->epoch,
-                            option_type        => $contract->code,
-                            currency_pair      => $contract->underlying->symbol,
-                            ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
-                            : ($contract->barrier)    ? (barriers => $contract->barrier->as_absolute)
-                            : (barriers => ''),
-                            expiry => $contract->date_expiry->db_timestamp,
-                            payout => $contract->payout
-                        }
-                    ),
-                    db => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
-                });
+                login_id => $c->loginid,
+                ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
+                shortcode   => $contract->shortcode,
+                action_type => $p->{action},
+                reason      => $message_to_client,
+                details     => $self->_get_rejected_contract_details(),
+                db          => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
+            });
             $rejected_trade->record_fail_txn();
         }
     }

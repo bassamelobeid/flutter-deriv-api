@@ -85,6 +85,7 @@ sub _build_contract {
     if ($param->{shortcode}) {
         $param = shortcode_to_parameters($param->{shortcode}, $param->{currency});
         $param->{landing_company} = $self->contract_parameters->{landing_company};
+        $param->{limit_order} = $self->contract_parameters->{limit_order} if $self->contract_parameters->{limit_order};
     }
     return produce_contract($param);
 }
@@ -492,6 +493,22 @@ sub prepare_bet_data_for_buy {
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_RUNS) {
         $bet_params->{selected_tick}    = $contract->selected_tick;
         $bet_params->{relative_barrier} = $contract->supplied_barrier;
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_MULTIPLIER) {
+        $bet_params->{multiplier}            = $contract->multiplier + 0;
+        $bet_params->{basis_spot}            = $contract->stop_out->basis_spot + 0;
+        $bet_params->{stop_out_order_date}   = $contract->stop_out->order_date->db_timestamp;
+        $bet_params->{stop_out_order_amount} = $contract->stop_out->order_amount;
+
+        # take profit is optional. Same goes to stop loss.
+        if ($contract->take_profit) {
+            $bet_params->{take_profit_order_date}   = $contract->take_profit->order_date->db_timestamp;
+            $bet_params->{take_profit_order_amount} = $contract->take_profit->order_amount;
+        }
+
+        if ($contract->stop_loss) {
+            $bet_params->{stop_loss_order_date}   = $contract->stop_loss->order_date->db_timestamp;
+            $bet_params->{stop_loss_order_amount} = $contract->stop_loss->order_amount;
+        }
     } else {
         return Error::Base->cuss(
             -type              => 'UnsupportedBetClass',
@@ -674,6 +691,15 @@ sub buy {
 sub batch_buy {
     my ($self, %options) = @_;
 
+    # we do not support batch buy for multiplier
+    if ($self->contract->category_code eq 'multiplier') {
+        return Error::Base->cuss(
+            -type              => 'UnsupportedBatchBuy',
+            -mesg              => "Multiplier not supported in batch_buy",
+            -message_to_client => localize('MULTUP and MULTDOWN are not supported.'),
+        );
+    }
+
     # TODO: shall we allow this operation only if $self->client is real-money?
     #       Or allow virtual $self->client only if all other clients are also
     #       virtual?
@@ -785,6 +811,11 @@ sub prepare_bet_data_for_sell {
         : (),
     };
 
+    # we need to verify child table for multiplier to avoid cases where a contract
+    # is sold while it is being updated via a difference process.
+    if ($contract->category_code eq 'multiplier') {
+        $bet_params->{verify_child} = _get_info_to_verify_child($self->contract_id, $contract);
+    }
     my $quants_bet_variables;
     if (my $comment_hash = $self->comment->[1]) {
         $quants_bet_variables = BOM::Database::Model::DataCollection::QuantsBetVariables->new({
@@ -928,6 +959,14 @@ sub sell_by_shortcode {
     my ($self, %options) = @_;
 
     my $stats_data = $self->stats_start('sell');
+
+    if ($self->contract->category_code eq 'multiplier') {
+        return Error::Base->cuss(
+            -type              => 'UnsupportedBatchBuy',
+            -mesg              => "Multiplier not supported in sell_by_shortcode",
+            -message_to_client => localize('MULTUP and MULTDOWN are not supported.'),
+        );
+    }
 
     my ($error_status, $bet_data) = $self->prepare_sell($options{skip});
     $bet_data->{bet_data}{is_expired} = $self->contract->is_expired;
@@ -1328,6 +1367,11 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         -mesg              => 'per user realized loss limit reached',
         -message_to_client => BOM::Platform::Context::localize('This contract is currently unavailable due to market conditions'),
     ),
+    BI023 => Error::Base->cuss(
+        -type              => 'SellFailureDueToUpdate',
+        -mesg              => 'Contract is updated while attempting to sell',
+        -message_to_client => BOM::Platform::Context::localize('Sell failed because contract was updated.'),
+    ),
 );
 
 sub _recover {
@@ -1429,7 +1473,6 @@ sub sell_expired_contracts {
         broker_code => $client->broker_code,
         operation   => 'replica',
     });
-
     my $bets =
           (defined $contract_ids)
         ? [map { $_->financial_market_bet_record } @{$mapper->get_fmb_by_id($contract_ids)}]
@@ -1449,7 +1492,15 @@ sub sell_expired_contracts {
         my $contract;
         my $error;
         my $failure = {fmb_id => $bet->{id}};
-        try { $contract = produce_contract($bet->{short_code}, $currency); } catch { $error = 1; };
+        try {
+            my $bet_params = shortcode_to_parameters($bet->{short_code}, $currency);
+            if ($bet->{bet_class} eq 'multiplier') {
+                # for multiplier, we need to combine information on the child table to complete a contract
+                $bet_params->{limit_order} = extract_limit_orders($bet);
+            }
+            $contract = produce_contract($bet_params);
+        }
+        catch { $error = 1; };
         if ($error) {
             $failure->{reason} = 'Could not instantiate contract object';
             push @{$result->{failures}}, $failure;
@@ -1458,7 +1509,6 @@ sub sell_expired_contracts {
 
         # if contract is not expired, don't bother to do anything
         next unless $contract->is_expired;
-
         my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code}
             or warn "No logging class found for contract type " . $contract->code;
         $logging_class //= 'INVALID';
@@ -1470,6 +1520,10 @@ sub sell_expired_contracts {
                     ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
                 $bet->{absolute_barrier} = $contract->barrier->as_absolute
                     if $contract->category_code eq 'asian' and $contract->is_after_settlement;
+
+                if ($contract->category_code eq 'multiplier') {
+                    $bet->{verify_child} = _get_info_to_verify_child($bet->{id}, $contract);
+                }
 
                 $bet->{quantity} = 1;
                 push @bets_to_sell, $bet;
@@ -1663,6 +1717,55 @@ sub report {
         . sprintf("%30s: %s\n", 'Purchase Date',          $self->purchase_date->datetime_yyyymmdd_hhmmss);
 }
 
+=head2 extract_limit_orders
+
+use this function to parse parameters like stop_out and take_profit from financial_market_bet
+
+=cut
+
+sub extract_limit_orders {
+    my $contract_params = shift;
+
+    my %orders = ();
+
+    my @supported_order = qw(stop_out take_profit stop_loss);
+    if (ref $contract_params eq 'BOM::Database::AutoGenerated::Rose::FinancialMarketBet') {
+        my $child      = $contract_params->{multiplier};
+        my $basis_spot = $child->basis_spot;
+        foreach my $order (@supported_order) {
+            # when the order date is defined, there's an order
+            my $order_date = join '_', ($order, 'order_date');
+            if ($child->$order_date) {
+                my $order_amount = join '_', ($order, 'order_amount');
+                $orders{$order} = {
+                    order_type   => $order,
+                    basis_spot   => $basis_spot,
+                    order_date   => $child->$order_date->epoch,
+                    order_amount => $child->$order_amount,
+                };
+            }
+        }
+    } elsif (ref $contract_params eq 'HASH') {
+        my $basis_spot = $contract_params->{basis_spot};
+        foreach my $order (@supported_order) {
+            my $order_date = join '_', ($order, 'order_date');
+            if ($contract_params->{$order_date}) {
+                my $order_amount = join '_', ($order, 'order_amount');
+                $orders{$order} = {
+                    order_type   => $order,
+                    basis_spot   => $basis_spot,
+                    order_date   => $contract_params->{$order_date},
+                    order_amount => $contract_params->{$order_amount},
+                };
+            }
+        }
+    } else {
+        die 'Invalid contract parameters';
+    }
+
+    return \%orders;
+}
+
 sub _get_params_for_expiryqueue {
     my $self = shift;
 
@@ -1679,7 +1782,7 @@ sub _get_params_for_expiryqueue {
 
     # These-are all non-exclusive conditions, we don't care if anything is
     # sold to which they all apply.
-    $hash->{settlement_epoch} = $contract->date_settlement->epoch;
+    $hash->{settlement_epoch} = $contract->date_settlement->epoch if $contract->category->has_user_defined_expiry;
     # if we were to enable back the intraday path dependent, the barrier saved
     # in expiry queue might be wrong, since barrier is set based on next tick.
     if ($contract->is_path_dependent) {
@@ -1693,13 +1796,30 @@ sub _get_params_for_expiryqueue {
                 $hash->{relative_up_level}   = $contract->supplied_high_barrier;
                 $hash->{relative_down_level} = $contract->supplied_low_barrier;
             }
-        } elsif ($contract->barrier and $contract->barrier->barrier_type eq 'absolute') {
-            my $which_level = ($contract->barrier->as_difference > 0) ? 'up_level' : 'down_level';
-            $hash->{$which_level} = $contract->barrier->as_absolute;
-        } elsif ($contract->barrier) {
-            $hash->{entry_tick_epoch} = $contract->date_start->epoch + 1;
-            my $which_level = ($contract->barrier->pip_difference > 0) ? 'relative_up_level' : 'relative_down_level';
-            $hash->{$which_level} = $contract->supplied_barrier;
+        } elsif ($contract->can('barrier')) {
+            if ($contract->barrier and $contract->barrier->barrier_type eq 'absolute') {
+                my $which_level = ($contract->barrier->as_difference > 0) ? 'up_level' : 'down_level';
+                $hash->{$which_level} = $contract->barrier->as_absolute;
+            } elsif ($contract->barrier) {
+                $hash->{entry_tick_epoch} = $contract->date_start->epoch + 1;
+                my $which_level = ($contract->barrier->pip_difference > 0) ? 'relative_up_level' : 'relative_down_level';
+                $hash->{$which_level} = $contract->supplied_barrier;
+            }
+        }
+
+        if ($contract->can('stop_out') and $contract->stop_out) {
+            my $which_level = $contract->stop_out_side eq 'lower' ? 'down_level' : 'up_level';
+            $hash->{$which_level} = $contract->underlying->pipsized_value($contract->stop_out->barrier_value);
+        }
+
+        if ($contract->can('take_profit') and $contract->take_profit) {
+            my $which_level = $contract->take_profit_side eq 'lower' ? 'down_level' : 'up_level';
+            $hash->{$which_level} = $contract->underlying->pipsized_value($contract->take_profit->barrier_value);
+        }
+
+        if ($contract->can('stop_loss') and $contract->stop_loss) {
+            my $which_level = $contract->stop_loss_side eq 'lower' ? 'down_level' : 'up_level';
+            $hash->{$which_level} = $contract->underlying->pipsized_value($contract->stop_loss->barrier_value);
         }
     }
 
@@ -1723,6 +1843,35 @@ sub _get_list_for_expiryqueue {
     }
 
     return \@eq_list;
+}
+
+sub _get_info_to_verify_child {
+    my ($contract_id, $contract) = @_;
+
+    my $info = {
+        financial_market_bet_id => $contract_id + 0,
+        basis_spot              => $contract->basis_spot + 0,
+        multiplier              => $contract->multiplier + 0,
+    };
+
+    foreach my $order (@{$contract->supported_orders}) {
+        if ($contract->$order) {
+            # make sure it is numeric
+            $info->{$order . '_order_amount'} = $contract->$order->order_amount ? $contract->$order->order_amount + 0 : undef;
+            # jsonb converts datatme to 2019-10-30T02:12:27 format
+            # let's do the same here.
+            my $order_date = $contract->$order->order_date->db_timestamp;
+            $order_date =~ s/\s/T/;
+            $info->{$order . '_order_date'} = $order_date;
+        } else {
+            # to match null in the child table
+            $info->{$order . '_order_amount'} = undef;
+            $info->{$order . '_order_date'}   = undef;
+        }
+    }
+
+    return $info;
+
 }
 
 no Moose;

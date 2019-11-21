@@ -711,4 +711,108 @@ subtest 'batch-buy multiple databases and datadog', sub {
     'survived';
 };
 
+subtest 'batch_buy multiplier contract' => sub {
+
+    lives_ok {
+        my $clm = create_client;    # manager
+        my $cl1 = create_client;
+        my $cl2 = create_client;
+        my $cl3 = create_client;
+
+        $clm->account('USD');
+        $cl1->account('USD');
+        $cl2->account('USD');
+        $cl3->account('USD');
+        $clm->save;
+        top_up $cl1, 'USD', 5000;
+        top_up $cl2, 'USD', 5000;
+
+        isnt + (my $acc1 = $cl1->account), 'USD', 'got USD account #1';
+        isnt + (my $acc2 = $cl2->account), 'USD', 'got USD account #2';
+
+        my $bal;
+        is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
+        is + ($bal = $acc2->balance + 0), 5000, 'USD balance #2 is 5000 got: ' . $bal;
+
+        my $contract = produce_contract({
+            underlying  => 'R_100',
+            bet_type    => 'MULTUP',
+            currency    => 'USD',
+            amount_type => 'stake',
+            amount      => 100,
+            multiplier  => 10,
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            contract      => $contract,
+            price         => 100.00,
+            stake         => $contract->ask_price,
+            amount_type   => 'stake',
+            multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
+            purchase_date => $contract->date_start,
+        });
+
+        subtest 'batch_buy' => sub {
+            my $error = do {
+                my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+                $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+                my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+                # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+                $mock_validation->mock(_validate_trade_pricing_adjustment =>
+                        sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+                $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+                my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+                $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+                $txn->batch_buy;
+            };
+
+            ok $error, 'unsuccessful batch_buy';
+
+            is $error->{'-mesg'},              'Multiplier not supported in batch_buy',  'correct -mesg';
+            is $error->{'-message_to_client'}, 'MULTUP and MULTDOWN are not supported.', 'correct -message_to_client';
+        };
+
+        subtest "sell_by_shortcode", sub {
+            my $trx = BOM::Transaction->new({
+                    purchase_date => $contract->date_start,
+                    client        => $clm,
+                    multiple      => [{
+                            loginid  => $cl2->loginid,
+                            currency => $clm->currency
+                        },
+                        {loginid => $cl3->loginid},
+                        {loginid => $cl1->loginid},
+                        {loginid => $cl2->loginid},
+                    ],
+                    contract_parameters => {
+                        shortcode       => $contract->shortcode,
+                        landing_company => $clm->landing_company->short,
+                        limit_order     => $contract->available_orders,
+                        currency        => $clm->currency
+                    },
+                    price  => 10,
+                    source => 1,
+                });
+            my $err = do {
+                my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+                $mock_contract->mock(is_valid_to_sell => sub { note "mocked Contract->is_valid_to_sell returning true"; 1 });
+                my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+                $mock_validation->mock(_validate_sell_pricing_adjustment =>
+                        sub { note "mocked Transaction::Validation->_validate_sell_pricing_adjustment returning nothing"; () });
+                $mock_validation->mock(_validate_offerings => sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () }
+                );
+                $trx->sell_by_shortcode;
+            };
+            ok $err, 'unsuccessful multisell';
+            is $err->{'-mesg'},              'Multiplier not supported in sell_by_shortcode', 'correct -mesg';
+            is $err->{'-message_to_client'}, 'MULTUP and MULTDOWN are not supported.',        'correct -message_to_client';
+        };
+    }
+    'survived';
+};
+
 done_testing;
