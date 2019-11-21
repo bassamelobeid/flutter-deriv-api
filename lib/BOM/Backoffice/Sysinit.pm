@@ -101,6 +101,7 @@ my $permissions = {
     'quant/market_data_mgmt/update_used_interest_rates.cgi'                   => ['Quants'],
     'quant/market_data_mgmt/update_volatilities/save_used_volatilities.cgi'   => ['Quants'],
     'quant/market_data_mgmt/update_volatilities/update_used_volatilities.cgi' => ['Quants'],
+    'quant/market_data_mgmt/update_multiplier_config.cgi'                     => ['Quants'],
     'quant/pricing/bpot_graph_json.cgi'                                       => ['Quants'],
     'quant/risk_dashboard.cgi'                                                => ['Quants'],
     'quant/trading_strategy.cgi'                                              => ['Quants'],

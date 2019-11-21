@@ -306,6 +306,7 @@ table#client_edit td{
                 {'value' => 'CLEAR_ALL', 'short_name' => 'no', 'details' => 'Not authenticated' }
                 {'value' => 'ID_DOCUMENT', 'short_name' => 'scans', 'details' => 'Authenticated with scans' }
                 {'value' => 'ID_NOTARIZED', 'short_name' => 'notarized','details' => 'Authenticated with Notarized docs' }
+                {'value' => 'ID_ONLINE', 'short_name' => 'online', 'details' => 'Authenticated with online verification' }
                 {'value' => 'NEEDS_ACTION',  'short_name' => 'needs_action', 'details' => 'Needs Action' }
            ];
            authentication_status = client.authentication_status;
@@ -604,7 +605,7 @@ function residence_change(sel) {
 function update_age_verification(auth_status) {
     var age_verification_status = [% IF client_age_verified %] 'yes' [% ELSE %] 'no' [% END %];
     var age_verification_element = document.getElementById('age_verification');
-    age_verification_element.value = (auth_status == 'ID_DOCUMENT' || auth_status == 'ID_NOTARIZED') ? 'yes' : age_verification_status;
+    age_verification_element.value = (auth_status == 'ID_DOCUMENT' || auth_status == 'ID_NOTARIZED' || auth_status == 'ID_ONLINE') ? 'yes' : age_verification_status;
     if (age_verification_element.value !== age_verification_status) {
         age_verification_element.classList.add('data-changed');
     }
