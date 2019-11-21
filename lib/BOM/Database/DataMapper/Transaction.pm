@@ -121,7 +121,8 @@ sub get_accounts_with_open_bets_at_end_of {
 SELECT b.*
   FROM (
      SELECT *
-       FROM bet.financial_market_bet
+       FROM bet.financial_market_bet fmb
+       LEFT JOIN bet.multiplier m on m.financial_market_bet_id=fmb.id
       WHERE is_sold IS FALSE
         AND bet_class NOT IN ('legacy_bet', 'run_bet')
         AND purchase_time < $3::TIMESTAMP
@@ -129,7 +130,8 @@ SELECT b.*
       UNION ALL
 
      SELECT *
-       FROM bet.financial_market_bet
+       FROM bet.financial_market_bet fmb
+       LEFT JOIN bet.multiplier m on m.financial_market_bet_id=fmb.id
       WHERE is_sold
         AND bet_class NOT IN ('legacy_bet', 'run_bet')
         AND purchase_time < $3::TIMESTAMP
@@ -330,6 +332,14 @@ sub get_transactions_ws {
     my $sql = q{
             SELECT
                 t.*,
+                m.multiplier,
+                m.basis_spot,
+                m.stop_out_order_date,
+                m.stop_out_order_amount,
+                m.take_profit_order_date,
+                m.take_profit_order_amount,
+                m.stop_loss_order_date,
+                m.stop_loss_order_amount,
                 b.short_code,
                 b.buy_price,
                 b.purchase_time,
@@ -339,6 +349,7 @@ sub get_transactions_ws {
                 b.sell_price,
                 b.is_sold,
                 b.payout_price,
+                b.bet_class,
                 p.payment_time,
                 p.remark AS payment_remark,
                 t1.id AS buy_tr_id
@@ -360,6 +371,8 @@ sub get_transactions_ws {
                     ON (t1.action_type = $$buy$$ AND t.action_type = $$sell$$ AND t.financial_market_bet_id = t1.financial_market_bet_id)
                 LEFT JOIN payment.payment p
                     ON (t.payment_id = p.id)
+                LEFT JOIN bet.multiplier m
+                    ON (b.id = m.financial_market_bet_id)
                 ORDER BY t.transaction_time DESC
     };
 
@@ -497,6 +510,14 @@ sub get_transactions {
     my $sql = q{
             SELECT
                 t.*,
+                m.multiplier,
+                m.basis_spot,
+                m.stop_out_order_date,
+                m.stop_out_order_amount,
+                m.take_profit_order_date,
+                m.take_profit_order_amount,
+                m.stop_loss_order_date,
+                m.stop_loss_order_amount,
                 b.short_code,
                 b.bet_class,
                 b.buy_price,
@@ -506,6 +527,7 @@ sub get_transactions {
                 b.purchase_time,
                 b.is_sold,
                 b.remark AS bet_remark,
+                b.bet_class,
                 p.remark AS payment_remark
             FROM
                 (
@@ -521,6 +543,8 @@ sub get_transactions {
                     ON (t.financial_market_bet_id = b.id)
                 LEFT JOIN payment.payment p
                     ON (t.payment_id = p.id)
+                LEFT JOIN bet.multiplier m
+                    ON (b.id = m.financial_market_bet_id)
                 ORDER BY t.transaction_time DESC
         };
 

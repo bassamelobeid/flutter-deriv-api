@@ -29,6 +29,7 @@ use BOM::Database::Model::FinancialMarketBet::ResetBet;
 use BOM::Database::Model::FinancialMarketBet::HighLowTick;
 use BOM::Database::Model::FinancialMarketBet::CallputSpread;
 use BOM::Database::Model::FinancialMarketBet::Runs;
+use BOM::Database::Model::FinancialMarketBet::Multiplier;
 use Date::Utility;
 use Try::Tiny;
 
@@ -112,6 +113,7 @@ sub get_fmb_by_id {
             $BOM::Database::Model::Constants::BET_CLASS_TOUCH_BET,        $BOM::Database::Model::Constants::BET_CLASS_LEGACY_BET,
             $BOM::Database::Model::Constants::BET_CLASS_DIGIT_BET,        $BOM::Database::Model::Constants::BET_CLASS_LOOKBACK_OPTION,
             $BOM::Database::Model::Constants::BET_CLASS_RESET_BET,        $BOM::Database::Model::Constants::BET_CLASS_HIGH_LOW_TICK,
+            $BOM::Database::Model::Constants::BET_CLASS_MULTIPLIER,
         ],
         query => [id => $bet_ids],
         db    => $self->db,
@@ -283,10 +285,11 @@ sub get_contract_details_with_transaction_ids {
     my $contract_id = shift;
 
     my $sql = q{
-        SELECT fmb.*, t.id as transaction_id, t.action_type, t.app_markup
+        SELECT fmb.*, m.*, t.id as transaction_id, t.action_type, t.app_markup
         FROM
             bet.financial_market_bet fmb
             JOIN transaction.transaction t on t.financial_market_bet_id=fmb.id
+            LEFT JOIN bet.multiplier m on m.financial_market_bet_id=fmb.id
         WHERE
             fmb.id = ?
     };
@@ -365,6 +368,9 @@ sub _fmb_rose_to_fmb_model {
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_RUNS) {
         $param->{'runs_record'} = $rose_object->runs;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::Runs';
+    } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_MULTIPLIER) {
+        $param->{'multiplier_record'} = $rose_object->multiplier;
+        $model_class = 'BOM::Database::Model::FinancialMarketBet::Multiplier';
     } else {
         Carp::croak('UNSUPPORTED rose_object class [' . $rose_object->bet_class . ']');
     }
