@@ -1,0 +1,45 @@
+<form id='multiplier_config'>
+<table>
+    <tr>
+        <th>Underlying symbol</th>
+        <th>Commission</th>
+        <th>Multiplier range</th>
+    </tr>
+    [% FOREACH symbol IN existing_config.keys %]
+    <tr>
+        <td>[% symbol %]</td>
+        <td><input type="text" name="[% symbol %]-commission" value="[% existing_config.$symbol.commission %]"></input></td>
+        <td><input type="text" name="[% symbol %]-multiplier_range" value="[% existing_config.$symbol.multiplier_range_json %]"></input></td>
+    </tr>
+    [% END %]
+    <tr>
+        <td><button onClick="SaveMultiplierConfig('[% upload_url %]')" type="button">save</button></td>
+        <td class="multiplier_config_result"></td>
+    </tr>
+</table>
+</form>
+
+<script>
+    function SaveMultiplierConfig(upload_url) {
+        var el = \$('form#multiplier_config');
+        var json_str = JSON.stringify(el.serializeArray());
+        var result = el.find('td.multiplier_config_result');
+        result.text('processing ...');
+
+        \$.ajax({
+            url: upload_url,
+            data: {
+                save_multiplier_config: 1,
+                multiplier_config_json: json_str,
+            },
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'red');
+                } else {
+                    result.text('saved').css('color', 'green');
+                }
+            }
+        });
+    }
+</script>
