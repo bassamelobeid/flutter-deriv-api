@@ -893,7 +893,7 @@ sub _build_bid_response {
         # commission in payout currency amount
         $response->{commission} = $contract->commission_amount;
         # cost of cancellation
-        $response->{cost_of_cancellation} = $contract->cost_of_cancellation;
+        $response->{cost_of_cancellation} = $contract->cost_of_deal_cancellation;
     }
 
     if (    $contract->exit_tick
