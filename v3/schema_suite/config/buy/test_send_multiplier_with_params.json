@@ -1,0 +1,12 @@
+{
+  "buy": 1,
+  "price": 100,
+  "parameters": {
+    "multiplier": "10",
+    "contract_type": "MULTUP",
+    "currency": "USD",
+    "symbol": "R_100",
+    "basis": "stake",
+    "amount": 100
+  }
+}

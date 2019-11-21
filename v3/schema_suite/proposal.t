@@ -175,6 +175,24 @@ test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_rec
     'Win up to USD 100 if Volatility 100 Index\'s exit tick is between 65258.00 and 65208.19 at close on 2016-08-16.',
     '53.38', '53.38', '65258.19';
 
+# multiplier
+test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'payout', '10',
+    'ContractCreationFailure', 'Basis must be stake for this contract.';
+test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'frxUSDJPY', 'stake', '10',
+    'OfferingsValidationError', 'Trading is not offered for this asset.';
+test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'stake', '5',
+    'ContractBuyValidationError', 'Multiplier is not in acceptable range. Accepts 10,20,30,50,100.';
+test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_multiplier.json', 'MULTUP', 'R_100', 'stake', '10',
+    'Win 10% of your stake for every 1% rise in the market price.', '100.00', '100', '65258.19', 'Stop Out', '58765.26', '', '';
+test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake', '10',
+    'something', '1', 'InputValidationFailed', 'Input validation failed: limit_order';
+test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake', '10',
+    'take_profit', '-1', 'ContractBuyValidationError', 'Invalid take profit. Take profit must be higher than 0.00.';
+test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake', '10',
+    'stop_loss', '1', 'ContractBuyValidationError', 'Invalid stop loss. Stop loss must be lower than 0.00.';
+test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_multiplier_limit_order.json', 'MULTUP', 'R_100', 'stake', '10',
+    'stop_loss', '-1', 'Win 10% of your stake for every 1% rise in the market price.', '100.00', '100', '65258.19', 'Stop Out', '58765.26', 'Stop Loss', '65225.82';
+
 #subscription
 test_sendrecv_params 'proposal/test_send_subscribe.json', 'proposal/test_receive_subscribe.json',
     '100', 'ASIANU', 'R_100', '5', 't', 'Win payout if the last tick of Volatility 100 Index is strictly higher than the average of the 5 ticks.',
