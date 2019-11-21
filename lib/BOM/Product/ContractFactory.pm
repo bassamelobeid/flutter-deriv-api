@@ -33,6 +33,8 @@ BEGIN {
     our @EXPORT_OK = qw( produce_contract make_similar_contract produce_batch_contract );
 }
 
+use BOM::Product::Contract::Multup;
+use BOM::Product::Contract::Multdown;
 use BOM::Product::Contract::Batch;
 use BOM::Product::Contract::Asiand;
 use BOM::Product::Contract::Asianu;
@@ -176,17 +178,19 @@ sub _validate_input_parameters {
         details    => {field => 'trading_period_start'},
     ) if (($params->{product_type} // '') eq 'multi_barrier' and not $params->{trading_period_start});
 
-    my $start  = Date::Utility->new($params->{date_start});
-    my $expiry = Date::Utility->new($params->{date_expiry});
+    if ($params->{category}->has_user_defined_expiry) {
+        my $start  = Date::Utility->new($params->{date_start});
+        my $expiry = Date::Utility->new($params->{date_expiry});
 
-    BOM::Product::Exception->throw(
-        error_code => 'SameExpiryStartTime',
-        details    => {field => defined($params->{duration}) ? 'duration' : 'date_expiry'},
-    ) if $start->epoch == $expiry->epoch;
-    BOM::Product::Exception->throw(
-        error_code => 'PastExpiryTime',
-        details    => {field => 'date_expiry'},
-    ) if $expiry->is_before($start);
+        BOM::Product::Exception->throw(
+            error_code => 'SameExpiryStartTime',
+            details    => {field => defined($params->{duration}) ? 'duration' : 'date_expiry'},
+        ) if $start->epoch == $expiry->epoch;
+        BOM::Product::Exception->throw(
+            error_code => 'PastExpiryTime',
+            details    => {field => 'date_expiry'},
+        ) if $expiry->is_before($start);
+    }
 
     # hard-coded svg because that's the widest offerings range we have.
     my $lc        = LandingCompany::Registry::get('svg');
@@ -242,6 +246,10 @@ sub make_similar_contract {
 
     # Start by making a copy of the parameters we used to build this bet.
     my %build_parameters = %{$orig_contract->build_parameters};
+    if ($build_parameters{ask_price}) {
+        $build_parameters{amount}      = delete $build_parameters{ask_price};
+        $build_parameters{amount_type} = 'stake';
+    }
 
     if ($changes->{as_new}) {
         if ($orig_contract->two_barriers) {

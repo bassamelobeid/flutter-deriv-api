@@ -67,7 +67,7 @@ subtest 'test everything' => sub {
                 payout       => 100,
             };
             if (List::Util::any { $ref->{contract_type} eq $_ } qw(LBFLOATCALL LBFLOATPUT LBHIGHLOW)) {
-                $contract_args->{multiplier}  = 5;
+                $contract_args->{multiplier} = 5;
                 delete $contract_args->{payout};
             } elsif (
                 List::Util::any {
@@ -83,6 +83,8 @@ subtest 'test everything' => sub {
                 $contract_args = {%$contract_args, %barriers};
             }
 
+            # there's no pricing engine for multiplier
+            next if $contract_args->{bet_type} eq 'MULTUP' or $contract_args->{bet_type} eq 'MULTDOWN';
             my $c = produce_contract($contract_args);
 
             next unless exists $expected->{$c->shortcode};

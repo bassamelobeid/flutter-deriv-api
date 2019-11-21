@@ -58,7 +58,7 @@ my $args = {
     date_pricing => $now,
     duration     => '1h',
     currency     => 'USD',
-    multiplier  => '1',
+    multiplier   => '1',
 };
 
 subtest 'lbfloatcall' => sub {
@@ -199,7 +199,7 @@ subtest 'spot_min and spot_max checks' => sub {
         date_pricing => $now,
         duration     => '1h',
         currency     => 'USD',
-        multiplier       => 1,
+        multiplier   => 1,
     };
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
@@ -243,7 +243,7 @@ subtest 'lookback expiry conditions' => sub {
             date_pricing => $expiry->epoch + 1,
             date_expiry  => $expiry,
             currency     => 'USD',
-            multiplier       => 1,
+            multiplier   => 1,
         };
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                 underlying => 'R_100',
@@ -296,7 +296,7 @@ subtest 'do not floor ask price on bid' => sub {
         date_pricing => $now,
         date_expiry  => $now->plus_time_interval('1m'),
         currency     => 'USD',
-        multiplier       => 1,
+        multiplier   => 1,
     });
 
     is $c->ask_price, 0.5,  'ask price is floored at 50 cents';

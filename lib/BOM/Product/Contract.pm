@@ -422,6 +422,7 @@ The expiry type of a contract (daily, tick or intraday).
 sub expiry_type {
     my $self = shift;
 
+    return 'no_expiry' unless $self->category->has_user_defined_expiry;
     return ($self->tick_expiry) ? 'tick' : ($self->expiry_daily) ? 'daily' : 'intraday';
 }
 
@@ -934,6 +935,10 @@ sub extra_info {
 
 sub pricing_details {
     my ($self, $action) = @_;
+
+    # non of these information actually valid for multiplier, skipping it here
+    return [] if $self->category_code eq 'multiplier';
+
     # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
     my $iv = $self->is_after_expiry ? 0 : $self->pricing_vol;
     my $iv_2 = 0;
@@ -1310,6 +1315,16 @@ sub is_settleable {
 
     return 1 if $self->is_sold;
     return ($self->is_expired and $self->is_valid_to_sell);
+}
+
+=head2 require_price_adjustment
+
+does this contract require price adjustment
+
+=cut
+
+sub require_price_adjustment {
+    return 1;
 }
 
 =head2 invalid_user_input

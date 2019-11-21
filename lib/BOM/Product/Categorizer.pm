@@ -366,10 +366,16 @@ sub _initialize_other_parameters {
         );
     }
 
-    if ($params->{category}->has_user_defined_expiry and not $params->{date_expiry}) {
+    if ($params->{category}->has_user_defined_expiry) {
         BOM::Product::Exception->throw(
             error_code => 'MissingEither',
             error_args => ['duration', 'date_expiry'],
+            details    => {field => 'duration'},
+        ) if not $params->{date_expiry};
+    } elsif ($params->{pricing_new} and $params->{date_expiry}) {
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidExpiry',
+            error_args => [$params->{bet_type}],
             details    => {field => 'duration'},
         );
     }
@@ -456,7 +462,23 @@ sub _initialize_other_parameters {
     }
     delete $params->{$_} for qw(amount amount_type);
 
+    if (my $orders = delete $params->{limit_order}) {
+        $params->{_order} = ref($orders) eq 'ARRAY' ? _to_hashref($orders) : $orders;
+    }
+
     return;
+}
+
+sub _to_hashref {
+    my $orders = shift;
+
+    my %hash = @$orders;
+    foreach my $key (keys %hash) {
+        my %inner_hash = @{$hash{$key}};
+        $hash{$key} = \%inner_hash;
+    }
+
+    return \%hash;
 }
 
 has _trading_calendar => (

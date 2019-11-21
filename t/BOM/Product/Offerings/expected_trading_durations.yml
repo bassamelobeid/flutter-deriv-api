@@ -1042,6 +1042,14 @@
       trade_type:
         display_name: Only Ups/Only Downs
         name: runs
+    - durations:
+      - display_name: No Expiry
+        max: 0
+        min: 0
+        name: no_expiry
+      trade_type:
+        display_name: Multiply Up/Multiply Down
+        name: multiplier
   market:
     display_name: Synthetic Indices
     name: synthetic_index

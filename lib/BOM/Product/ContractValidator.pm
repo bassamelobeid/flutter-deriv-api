@@ -177,17 +177,7 @@ sub _confirm_validity {
     # if there's initialization error, we will not proceed anyway.
     return 0 if $self->primary_validation_error;
 
-    # Add any new validation methods here.
-    # Looking them up can be too slow for pricing speed constraints.
-    # This is the default list of validations.
-    my @validation_methods = qw(_validate_offerings _validate_input_parameters _validate_start_and_expiry_date);
-    push @validation_methods, qw(_validate_trading_times) unless $self->underlying->always_available;
-    push @validation_methods, '_validate_barrier'         unless $args->{skip_barrier_validation};
-    push @validation_methods, '_validate_barrier_type'    unless $self->for_sale;
-    push @validation_methods, '_validate_feed';
-    push @validation_methods, '_validate_price'           unless $self->skips_price_validation;
-    push @validation_methods, '_validate_volsurface'      unless $self->volsurface->type eq 'flat';
-
+    my @validation_methods = @{$self->_validation_methods($args)};
     foreach my $method (@validation_methods) {
         if (my $err = $self->$method($args)) {
             $self->_add_error($err);
@@ -200,6 +190,23 @@ sub _confirm_validity {
 
 # PRIVATE method.
 # Validation methods.
+
+sub _validation_methods {
+    my ($self, $args) = @_;
+
+    # Add any new validation methods here.
+    # Looking them up can be too slow for pricing speed constraints.
+    # This is the default list of validations.
+    my @validation_methods = qw(_validate_offerings _validate_input_parameters _validate_start_and_expiry_date);
+    push @validation_methods, qw(_validate_trading_times) unless $self->underlying->always_available;
+    push @validation_methods, '_validate_barrier'         unless $args->{skip_barrier_validation};
+    push @validation_methods, '_validate_barrier_type'    unless $self->for_sale;
+    push @validation_methods, '_validate_feed';
+    push @validation_methods, '_validate_price'           unless $self->skips_price_validation;
+    push @validation_methods, '_validate_volsurface'      unless $self->volsurface->type eq 'flat';
+
+    return \@validation_methods;
+}
 
 # Is this underlying or contract is disabled/suspended from trading.
 sub _validate_offerings {
@@ -470,7 +477,7 @@ sub _validate_input_parameters {
     } elsif ($self->expiry_daily) {
         my $date_expiry = $self->date_expiry;
         my $closing = $self->trading_calendar->closing_on($self->underlying->exchange, $date_expiry);
-        if ($closing and not $date_expiry->is_same_as($closing) and not $self->for_sale) {
+        if ($self->category->has_user_defined_expiry and $closing and not $date_expiry->is_same_as($closing) and not $self->for_sale) {
             return {
                 message => 'daily expiry must expire at close '
                     . "[expiry: "
@@ -539,7 +546,11 @@ sub _validate_trading_times {
             message_to_client => [$ERROR_MAPPING->{$error_code}],
             details           => {field => $self->is_forward_starting ? 'date_start' : 'symbol'},
         };
-    } elsif (not $calendar->trades_on($exchange, $date_expiry)) {
+    }
+
+    return unless $self->category->has_user_defined_expiry;
+
+    if (not $calendar->trades_on($exchange, $date_expiry)) {
         return ({
             message           => "Exchange is closed on expiry date [expiry: " . $date_expiry->date . "]",
             message_to_client => [$ERROR_MAPPING->{TradingDayExpiry}],

@@ -64,6 +64,7 @@ my $config = {
         InvalidLowBarrierRange        => 'Low barrier is out of acceptable range. Please adjust the low barrier.',
         InvalidNonBinaryPrice         => 'Contract price cannot be zero.',
         InvalidStake                  => 'Invalid stake/payout.',
+        InvalidExpiry                 => 'Invalid input (duration or date_expiry) for this contract type ([_1]).',
         MarketIsClosed                => 'This market is presently closed.',
         MarketIsClosedTryVolatility   => 'This market is presently closed. Try out the Synthetic Indices which are always open.',
         MarketNotOpen                 => 'The market must be open at the start time.',
@@ -112,8 +113,19 @@ my $config = {
         WrongAmountTypeTwo            => 'Basis can either be [_1] or [_2] for this contract.',
         ZeroAbsoluteBarrier           => 'Barrier cannot be zero.',
         CountrySpecificError          => '[_1] is not allowed for residence of [_2].',
+        InvalidStopOut                => 'Invalid stop out. Stop out must be [_1] than current spot price. Please adjust stake or multiplier.',
+        InvalidTakeProfit             => 'Invalid take profit. Take profit must be higher than [_1].',
+        InvalidStopLoss               => 'Invalid stop loss. Stop loss must be lower than [_1].',
+        InvalidMultiplierStake        => 'Stake must be at least [_1] 1.',
+        TakeProfitTooHigh             => 'Invalid take profit. Take profit cannot be more than 100 times of stake.',
+        CommissionNotDefined          => 'Commission is not defined for [_1].',
+        MultiplierOutOfRange          => 'Multiplier is not in acceptable range. Accepts [_1].',
         MissingTradingPeriodStart     => '[_1] must be supplied for multi barrier contracts.',
         SameStartSellTime             => 'Contract cannot be sold at this time. Please try again.',
+        MissingBasisSpot              => 'Basis spot is not defined.',
+        ZeroOrderAmount               => 'Limit order amount cannot be zero.',
+        TakeProfitIncorrectDecimal    => 'Take profit can not have more than [_1] decimal places.',
+        StopLossIncorrectDecimal      => 'Stop loss can not have more than [_1] decimal places.',
     },
     generic => {
         # use it audit details
@@ -158,6 +170,9 @@ my $config = {
         payout       => 'Payoff',
         serverdown   => 'There was a problem accessing the server.',
         purchasedown => 'There was a problem accessing the server during purchase.',
+        take_profit  => 'Take Profit',
+        stop_loss    => 'Stop Loss',
+        stop_out     => 'Stop Out',
     },
 };
 

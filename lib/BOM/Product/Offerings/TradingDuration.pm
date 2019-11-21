@@ -134,9 +134,10 @@ my %min_max_mapper = (
 
 my %order = (
     duration => {
-        tick     => 1,
-        intraday => 2,
-        daily    => 3,
+        tick      => 1,
+        intraday  => 2,
+        daily     => 3,
+        no_expiry => 4,
     },
     barrier_type => {
         euro_atm     => 10,
@@ -241,6 +242,14 @@ sub generate_trading_durations {
                                     max          => ($max * $type->{multiplier}) + 0,
                                     };
                             }
+                        } elsif ($offering->{expiry_type} eq 'no_expiry') {
+                            push @{$trade_durations{$trade_name}{durations}},
+                                +{
+                                name         => 'no_expiry',
+                                display_name => 'No Expiry',
+                                min          => $offering->{min_contract_duration} + 0,
+                                max          => $offering->{max_contract_duration} + 0,
+                                };
                         } else {
                             die 'Unknown expiry_type ' . $offering->{expiry_type};
                         }

@@ -9,9 +9,12 @@ use Finance::Contract::Category;
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use Number::Closest::XS qw(find_closest_numbers_around);
+use YAML::XS qw(LoadFile);
 
 use BOM::Product::Contract::Strike;
 use BOM::MarketData::Fetcher::VolSurface;
+use BOM::Config::QuantsConfig;
+use BOM::Config::Chronicle;
 
 sub decorate {
     my $args = shift;
@@ -62,13 +65,17 @@ sub decorate {
             or $contract_category eq 'asian'
             or $contract_category eq 'highlowticks'
             or $barrier_category eq 'euro_atm'
-            or $contract_type =~ /^DIGIT(?:EVEN|ODD)$/)
+            or $contract_type =~ /^DIGIT(?:EVEN|ODD)$/
+            or $contract_category eq 'multiplier')
         {
             $o->{barriers} = 0;
         } else {
             $o->{barriers} = 1;
         }
 
+        if ($contract_category eq 'multiplier') {
+            $o->{multiplier_range} = _get_multiplier_range($underlying->symbol);
+        }
         # The reason why we have to append 't' to tick expiry duration
         # is because in the backend it is easier to handle them if the
         # min and max are set as numbers rather than strings.
@@ -152,6 +159,15 @@ sub _default_barrier {
     my $barrier = $duration >= 86400 ? $strike->as_absolute : $strike->as_difference;
 
     return $underlying->market->integer_barrier ? floor($barrier) : $barrier;
+}
+
+sub _get_multiplier_range {
+    my $symbol = shift;
+
+    my $config = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader())
+        ->get_config('multiplier_config', {underlying_symbol => $symbol}) // {};
+
+    return $config->{multiplier_range};
 }
 
 1;
