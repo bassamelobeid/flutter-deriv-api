@@ -10,16 +10,46 @@ use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Subscription::Transaction;
 
 sub buy_get_single_contract {
-    my ($c, $api_response, $req_storage) = @_;
+    my ($c, $api_response, $req_storage, $store_last_contract_id) = @_;
 
+    $store_last_contract_id //= 1;
     my $contract_details = delete $api_response->{contract_details};
 
     $req_storage->{uuid} = _subscribe_to_contract($c, $contract_details, $req_storage->{call_params}->{args})
         if $req_storage->{call_params}->{args}->{subscribe};
 
-    buy_store_last_contract_id($c, $api_response);
+    buy_store_last_contract_id($c, $api_response) if $store_last_contract_id;
 
     $c->stash(%{$api_response->{stash}}) if $api_response->{stash};
+
+    return undef;
+}
+
+=head2 contract_update_handler
+
+Handles contract update handling for proposal open contract.
+
+Deletes old pricer key and sets the new pricer key
+=cut
+
+sub contract_update_handler {
+    my ($c, $api_response) = @_;
+
+    # do not send this back
+    delete $api_response->{updated_queue};
+    my $new_poc_params = _get_poc_params(delete $api_response->{contract_details});
+
+    my $redis = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager()->redis;
+
+    my ($new_pricer_args, $contract_id) = @{Binary::WebSocketAPI::v3::Wrapper::Pricer::get_pricer_args($c, $new_poc_params)};
+
+    my $old_key = $redis->get($contract_id);
+    # can't use redis->multi & exec here because it is not supported by Mojo::Redis2
+    $redis->del($old_key) if $old_key;
+    # for pricer queue
+    $redis->set($new_pricer_args, $contract_id);
+    # for future update
+    $redis->set($contract_id, $new_pricer_args);
 
     return undef;
 }
@@ -57,11 +87,20 @@ sub buy_set_poc_subscription_id {
     };
 }
 
+sub _get_poc_params {
+    my $details = shift;
+
+    my %params = map { $_ => $details->{$_} }
+        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode);
+    $params{limit_order} = $details->{limit_order} if $details->{limit_order};
+
+    return \%params;
+}
+
 sub _subscribe_to_contract {
     my ($c, $contract_details, $req_args) = @_;
 
-    my $contract = {map { $_ => $contract_details->{$_} }
-            qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
+    my $contract = _get_poc_params($contract_details);
 
     my $account_id  = $contract->{account_id};
     my $contract_id = $contract->{contract_id};

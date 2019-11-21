@@ -140,6 +140,13 @@ sub actions_config {
         ['reset_password'],
 
         # authenticated calls
+        [
+            'contract_update',
+            {
+                require_auth => 'trade',
+                success      => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::contract_update_handler,
+            }
+        ],
         ['sell', {require_auth => 'trade'}],
         [
             'buy',

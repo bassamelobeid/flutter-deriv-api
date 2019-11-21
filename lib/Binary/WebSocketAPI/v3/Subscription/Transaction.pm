@@ -275,6 +275,7 @@ sub _update_transaction {
                 currency        => $payload->{currency_code},
                 language        => $c->stash('language'),
                 landing_company => $c->landing_company_name,
+                ($payload->{limit_order} ? (limit_order => $payload->{limit_order}) : ()),
             },
             rpc_response_cb => sub {
                 my ($c, $rpc_response) = @_;
@@ -376,6 +377,7 @@ sub _create_poc_stream {
                     purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
                     sell_price      => undef,
                     sell_time       => undef,
+                    limit_order     => $payload->{limit_order},
                 })->{uuid};
 
             # subscribe to transaction channel as when contract is manually sold we need to cancel streaming

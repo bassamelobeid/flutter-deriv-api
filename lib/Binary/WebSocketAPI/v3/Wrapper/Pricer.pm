@@ -482,6 +482,8 @@ sub _process_proposal_open_contract_response {
                 my $cache = {map { $_ => $contract->{$_} }
                         qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
 
+                $cache->{limit_order} = $contract->{limit_order} if $contract->{limit_order};
+
                 if (not $uuid = pricing_channel_for_proposal_open_contract($c, $args, $cache)->{uuid}) {
                     my $error =
                         $c->new_error('proposal_open_contract', 'AlreadySubscribed',
@@ -499,6 +501,9 @@ sub _process_proposal_open_contract_response {
             my $result = {$uuid ? (id => $uuid) : (), %{$contract}};
             delete $result->{rpc_time};
             delete $result->{account_id};
+
+            # need to restructure limit order for poc response
+            $result->{limit_order} = delete $result->{limit_order_as_hashref} if $result->{limit_order_as_hashref};
             $c->send({
                     json => {
                         msg_type               => 'proposal_open_contract',
@@ -542,13 +547,9 @@ sub _pricing_channel_for_proposal {
 
     my $price_daemon_cmd = 'price';
 
-    my %args_hash = %{$args};
-
-    # Payout=1000 is only used for binary option, where the pricer calculate theo probability
-    # for payout=1000 and then in binary-websocket-api we use Price::Calculator to calculate
-    # price. For non binary option, we do not take this approach and we calculate the price
-    # directly in the pricer. Spread is a non binary.
-    if ($args_hash{basis} and defined $args_hash{amount} and $args_hash{contract_type} !~ /SPREAD$/) {
+    my %args_hash           = %{$args};
+    my $skip_basis_override = _skip_basis_override($args);
+    if (not $skip_basis_override and $args_hash{basis} and defined $args_hash{amount}) {
         $args_hash{amount} = 1000;
         $args_hash{basis}  = 'payout';
     }
@@ -571,10 +572,10 @@ sub _pricing_channel_for_proposal {
     return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, $class, $cache, $skip);
 }
 
-sub pricing_channel_for_proposal_open_contract {
-    my ($c, $args, $cache) = @_;
-    my $price_daemon_cmd = 'bid';
+sub get_pricer_args {
+    my ($c, $cache) = @_;
 
+    my $price_daemon_cmd = 'bid';
     my %hash;
     my $contract_id = $cache->{contract_id};
     # get_bid RPC call requires 'short_code' param, not 'shortcode'
@@ -585,9 +586,18 @@ sub pricing_channel_for_proposal_open_contract {
     $hash{landing_company}  = $c->landing_company_name;
     # use residence when available, fall back to IP country
     $hash{country_code} = $c->stash('residence') || $c->stash('country_code');
-    my $pricer_args = _serialized_args(\%hash);
+    $hash{limit_order} = $cache->{limit_order} if $cache->{limit_order};
+    my $id = $hash{contract_id} . '_' . $hash{landing_company};
 
-    %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
+    return [_serialized_args(\%hash), $id];
+}
+
+sub pricing_channel_for_proposal_open_contract {
+    my ($c, $args, $cache) = @_;
+
+    my $contract_id = $cache->{contract_id};
+    my $pricer_args = get_pricer_args($c, $cache);
+    my %hash        = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
     $hash{account_id}     = delete $cache->{account_id};
     $hash{transaction_id} = $cache->{transaction_ids}->{buy};    # transaction is going to be stored
     my $subchannel    = _serialized_args(\%hash);
@@ -663,6 +673,8 @@ sub send_proposal_open_contract_last_time {
 
                 for my $each_contract (keys %{$rpc_response}) {
                     delete $rpc_response->{$each_contract}->{account_id};
+                    $rpc_response->{$each_contract}->{limit_order} = delete $rpc_response->{$each_contract}->{limit_order_as_hashref}
+                        if $rpc_response->{$each_contract}->{limit_order_as_hashref};
                 }
                 return {
                     proposal_open_contract => $rpc_response->{$contract_id} || {},
@@ -746,6 +758,18 @@ sub _skip_streaming {
 
     return 1 if ($skip_atm_callput or $skip_contract_type);
     return;
+}
+
+sub _skip_basis_override {
+    my $args = shift;
+
+    # to override multiplier or callputspread contracts (non-binary) just does not make any sense because
+    # the ask_price is defined by the user and the output of limit order (take profit or stop out),
+    # is dependent of the stake and multiplier provided by the client.
+    #
+    # There is no probability calculation involved. Hence, not optimising anything.
+    return 1 if $args->{contract_type} =~ /^(MULTUP|MULTDOWN|CALLSPREAD|PUTSPREAD)$/;
+    return 0;
 }
 
 1;

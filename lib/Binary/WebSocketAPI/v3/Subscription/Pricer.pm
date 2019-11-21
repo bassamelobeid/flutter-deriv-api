@@ -71,17 +71,6 @@ sub subscription_manager {
     return Binary::WebSocketAPI::v3::SubscriptionManager->redis_pricer_manager();
 }
 
-=head2 subscribe
-
-subscribe the channel and store channel to Redis so that pricer_queue script can handle them
-
-=cut
-
-before subscribe => sub {
-    my $self = shift;
-    $self->subscription_manager->redis->set($self->pricer_args, 1);
-};
-
 # This method is used to find a subscription. Class name + _unique_key will be a unique index of the subscription objects.
 sub _unique_key {
     my $self = shift;
@@ -126,32 +115,33 @@ sub handle_message {
 
 requires 'do_handle_message';
 
-sub _price_stream_results_adjustment {
-    my ($self, $c, $cache, $results) = @_;
+sub _non_binary_price_adjustment {
+    my ($self, $c, $contract_parameters, $results, $theo_price) = @_;
 
-    my $contract_parameters = $cache->{contract_parameters};
+    my $t = [gettimeofday];
+    #do app markup adjustment here
+    my $app_markup_percentage = $contract_parameters->{app_markup_percentage} // 0;
+    my $multiplier            = $contract_parameters->{multiplier}            // 0;
 
-    if (my $theo_price = delete $results->{theo_price}) {
-        #do app markup adjustment here
-        my $app_markup_percentage = $contract_parameters->{app_markup_percentage} // 0;
-        my $multiplier            = $contract_parameters->{multiplier}            // 0;
+    my $app_markup_per_unit = $theo_price * $app_markup_percentage / 100;
+    my $app_markup          = $multiplier * $app_markup_per_unit;
 
-        my $app_markup_per_unit = $theo_price * $app_markup_percentage / 100;
-        my $app_markup          = $multiplier * $app_markup_per_unit;
+    #Currently we only have 2 non binary contracts, lookback and callput spread
+    #Callput spread has maximum ask price
+    my $adjusted_ask_price = $results->{ask_price} + $app_markup;
+    $adjusted_ask_price = min($contract_parameters->{maximum_ask_price}, $adjusted_ask_price)
+        if exists $contract_parameters->{maximum_ask_price};
 
-        #Currently we only have 2 non binary contracts, lookback and callput spread
-        #Callput spread has maximum ask price
-        my $adjusted_ask_price = $results->{ask_price} + $app_markup;
-        $adjusted_ask_price = min($contract_parameters->{maximum_ask_price}, $adjusted_ask_price)
-            if exists $contract_parameters->{maximum_ask_price};
+    $results->{ask_price} = $results->{display_value} =
+        financialrounding('price', $contract_parameters->{currency}, $adjusted_ask_price);
+    stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
 
-        $results->{ask_price} = $results->{display_value} =
-            financialrounding('price', $contract_parameters->{currency}, $adjusted_ask_price);
+    return $results;
+}
 
-        return $results;
-    }
+sub _binary_price_adjustment {
+    my ($self, $c, $contract_parameters, $results, $resp_theo_probability) = @_;
 
-    my $resp_theo_probability = delete $results->{theo_probability};
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
         $log->warnf('missing theo probability from pricer. Contract parameter dump %s, pricer response: %s', $contract_parameters, $results);
@@ -215,6 +205,24 @@ sub _price_stream_results_adjustment {
     $results->{payout} = $price_calculator->payout;
     $results->{$_} .= '' for qw(ask_price display_value payout);
     stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
+
+    return $results;
+}
+
+sub _price_stream_results_adjustment {
+    my ($self, $c, $cache, $results) = @_;
+
+    my $contract_parameters = $cache->{contract_parameters};
+    # We are handling pricing adjustment for 3 different scenarios here:
+    # 1. adjustment for binary contracts where we expect theo probability to be present
+    # 2. adjustment for non-binary where we we expect theo price
+    # 3. no adjustment needed. Some contract does not require any pricing adjustment on the websocket layer.
+    if (my $theo_price = delete $results->{theo_price}) {
+        return $self->_non_binary_price_adjustment($c, $contract_parameters, $results, $theo_price);
+    } elsif (my $theo_probability = delete $results->{theo_probability}) {
+        return $self->_binary_price_adjustment($c, $contract_parameters, $results, $theo_probability);
+    }
+
     return $results;
 }
 
