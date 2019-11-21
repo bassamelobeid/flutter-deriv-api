@@ -1,0 +1,35 @@
+{
+   "$schema" : "http://json-schema.org/draft-04/schema#",
+   "description" : null,
+   "additionalProperties" : null,
+   "type" : "object",
+   "title" : null,
+   "required" : [
+      "echo_req",
+      "msg_type"
+   ],
+   "properties" : {
+      "echo_req" : {},
+      "error" : {
+         "type" : "object",
+         "properties" : {
+            "message" : {
+               "pattern" : "^[_6]$",
+               "type" : "string"
+            },
+            "code" : {
+               "pattern" : "^[_5]$",
+               "type" : "string"
+            }
+         },
+         "required" : [
+            "message",
+            "code"
+         ]
+      },
+      "msg_type" : {
+         "type" : "string",
+         "pattern" : "^proposal$"
+      }
+   }
+}
