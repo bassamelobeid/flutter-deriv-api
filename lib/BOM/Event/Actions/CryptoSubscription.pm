@@ -82,12 +82,17 @@ sub set_pending_transaction {
             # address has no new transaction so it's safe to create a new one since we
             # already verified that the transaction hash is not present on the table
             if (all { $_->{status} ne 'NEW' } @payment) {
-                clientdb()->run(
+                my $result = clientdb()->run(
                     ping => sub {
                         my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit(?, ?, ?, ?, ?)');
                         $sth->execute($address, $transaction->{currency}, $payment[0]->{client_loginid}, $transaction->{fee}, $transaction->{hash})
                             or die $sth->errstr;
                     });
+
+                unless ($result) {
+                    $log->warnf("Can't insert new duplicated deposit for tx: %s", $transaction->{hash});
+                    return undef;
+                }
             }
 
             # for omnicore we need to check if the property id is correct
