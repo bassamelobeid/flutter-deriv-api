@@ -170,6 +170,8 @@ sub populate_response_proposal_contract {
             account_id            => $fmb->{account_id},
             country_code          => $client->residence,
         };
+
+        $contract->{limit_order} = BOM::Transaction::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
         $contract->{sell_time} //= $sell_time;
 
         $contract = BOM::Pricing::v3::Contract::get_bid($contract);

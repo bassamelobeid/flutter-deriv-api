@@ -25,6 +25,9 @@ use BOM::Database::DataMapper::Copier;
 use BOM::Pricing::v3::Contract;
 use BOM::Pricing::v3::Utility;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
+use BOM::User::Client;
+use BOM::Transaction::ContractUpdate;
+use Date::Utility;
 
 my $json = JSON::MaybeXS->new;
 
@@ -233,8 +236,13 @@ rpc "buy",
         purchase_time   => $trx->purchase_date->epoch,
         is_sold         => $contract_details->{is_sold},
         transaction_ids => {buy => $transaction_details->{id}},
-        longcode        => localize(shortcode_to_longcode($contract_details->{short_code})),
+        longcode        => localize(shortcode_to_longcode($contract_details->{short_code}, $currency)),
     };
+
+    # multiplier requires additional parameters to define a contract
+    if ($contract->category_code eq 'multiplier') {
+        $contract_proposal_details->{limit_order} = $contract->available_orders;
+    }
 
     my $tv_interval = 1000 * Time::HiRes::tv_interval($tv);
 
@@ -278,6 +286,11 @@ rpc buy_contract_for_multiple_accounts => sub {
     return +{result => $token_list_res->{result}} unless $token_list_res->{success};
 
     my ($source, $contract_parameters, $payout) = @{$params}{qw/source contract_parameters payout/};
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'MultiplierNotAllowed',
+            message_to_client => localize('MULTUP and MULTDOWN are not supported.')}
+    ) if $contract_parameters->{contract_type} =~ /^(?:MULTUP|MULTDOWN)$/;
 
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::Pricing::v3::Contract::prepare_ask($contract_parameters);
@@ -430,12 +443,15 @@ rpc sell_contract_for_multiple_accounts => sub {
     my ($source, $args) = ($params->{source}, $params->{args});
 
     my $shortcode = $args->{shortcode};
-
     my $tokens = $args->{tokens} // [];
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'TooManyTokens',
             message_to_client => localize('Up to 100 tokens are allowed.')}) if scalar @$tokens > 100;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'MultiplierNotAllowed',
+            message_to_client => localize('MULTUP and MULTDOWN are not supported.')}) if $shortcode =~ /MULTUP|MULTDOWN/;
 
     my $token_list_res = _check_token_list($tokens);
 
@@ -509,11 +525,16 @@ rpc "sell",
             code              => 'InvalidSellContractProposal',
             message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless @fmbs;
 
+    my $fmb = $fmbs[0];
+
     my $contract_parameters = {
-        shortcode => $fmbs[0]->{short_code},
-        currency  => $client->currency
+        shortcode       => $fmb->{short_code},
+        currency        => $client->currency,
+        landing_company => $client->landing_company->short,
     };
-    $contract_parameters->{landing_company} = $client->landing_company->short;
+
+    $contract_parameters->{limit_order} = BOM::Transaction::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
+
     my $purchase_date = time;
     my $trx           = BOM::Transaction->new({
         purchase_date       => $purchase_date,
@@ -560,5 +581,60 @@ rpc "sell",
         sold_for       => formatnumber('price', $client->currency, $trx_rec->amount),
     };
     };
+
+rpc contract_update => sub {
+    my $params = shift;
+
+    my $args        = $params->{args};
+    my $contract_id = $args->{contract_id};
+
+    unless ($contract_id) {
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => 'MissingContractId',
+            message_to_client => localize('Contract id is required to update contract'),
+        });
+    }
+
+    my $client = $params->{client};
+    unless ($client) {
+        # since this is an authenticated call, we can't proceed
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => 'AuthorizationRequired',
+            message_to_client => localize('Please log in.'),
+        });
+    }
+
+    my $response;
+    try {
+        my $updater = BOM::Transaction::ContractUpdate->new(
+            client        => $client,
+            contract_id   => $contract_id,
+            update_params => $args->{limit_order},
+        );
+        if ($updater->is_valid_to_update) {
+            $response = $updater->update();
+            unless ($response) {
+                $response = BOM::Pricing::v3::Utility::create_error({
+                    code              => 'ContractUpdateFailure',
+                    message_to_client => localize('Contract update failed.'),
+                });
+            }
+        } else {
+            my $error = $updater->validation_error;
+            $response = BOM::Pricing::v3::Utility::create_error({
+                code              => $error->{code},
+                message_to_client => $error->{message_to_client},
+            });
+        }
+    }
+    catch {
+        $response = BOM::Pricing::v3::Utility::create_error({
+            code              => 'ContractUpdateError',
+            message_to_client => localize("Sorry, an error occurred while processing your request."),
+        });
+    };
+
+    return $response;
+};
 
 1;
