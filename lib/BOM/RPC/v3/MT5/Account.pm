@@ -310,6 +310,9 @@ async_rpc "mt5_new_account",
             and not $client->status->crs_tin_information);
     }
 
+    return create_error_future('AuthenticateAccount')
+        if ($account_type ne 'demo' and $company_name eq 'labuan' and not $client->fully_authenticated);
+
     # Check if client is throttled before sending MT5 request
     if (_throttle($client->loginid)) {
         return create_error_future('Throttle', {override_code => $error_code});
