@@ -301,7 +301,6 @@ subtest 'get_ask' => sub {
             'date_start'            => ignore(),
             'landing_company'       => 'virtual'
         }};
-
     cmp_deeply($result, $expected, 'the left values are all right');
 };
 

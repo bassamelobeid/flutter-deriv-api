@@ -426,10 +426,12 @@ sub generate_asset_index {
                                 barrier_category  => $barrier_category,
                             })};
 
-                    foreach my $expiry (qw(intraday daily tick)) {
+                    foreach my $expiry (qw(intraday daily tick no_expiry)) {
                         if (my $included = $offered{$expiry}) {
                             foreach my $key (qw(min max)) {
-                                if ($expiry eq 'tick') {
+                                if ($expiry eq 'no_expiry') {
+                                    push @{$times{$barrier_category}}, [$included->{$key}, $included->{$key} || ''];
+                                } elsif ($expiry eq 'tick') {
                                     # some tick is set to seconds somehow in this code.
                                     # don't want to waste time to figure out how it is set
                                     my $tick_count = (ref $included->{$key}) ? $included->{$key}->seconds : $included->{$key};
@@ -508,13 +510,19 @@ sub _get_permitted_expiries {
 
     my @possibles = $offerings_obj->query($args, ['expiry_type', $min_field, $max_field]);
     foreach my $actual_et (uniq map { $_->[0] } @possibles) {
-        my @remaining = grep { $_->[0] eq $actual_et && $_->[1] && $_->[2] } @possibles;
+        my @remaining = grep { $_->[0] eq $actual_et && defined $_->[1] && defined $_->[2] } @possibles;
         my @mins =
-            ($actual_et eq 'tick')
+            (
+                   $actual_et eq 'tick'
+                or $actual_et eq 'no_expiry'
+            )
             ? sort { $a <=> $b } map { $_->[1] } @remaining
             : sort { $a->seconds <=> $b->seconds } map { Time::Duration::Concise::Localize->new(interval => $_->[1]) } @remaining;
         my @maxs =
-            ($actual_et eq 'tick')
+            (
+                   $actual_et eq 'tick'
+                or $actual_et eq 'no_expiry'
+            )
             ? sort { $b <=> $a } map { $_->[2] } @remaining
             : sort { $b->seconds <=> $a->seconds } map { Time::Duration::Concise::Localize->new(interval => $_->[2]) } @remaining;
         $result->{$actual_et} = {

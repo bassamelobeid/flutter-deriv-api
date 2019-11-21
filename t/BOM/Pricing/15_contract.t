@@ -306,8 +306,7 @@ subtest 'send_ask' => sub {
 
     my $result = $c->call_ok('send_ask', $params)->has_no_error->result;
     my $expected_keys =
-        [sort { $a cmp $b }
-            (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout theo_probability contract_parameters stash auth_time))];
+        [sort { $a cmp $b } (qw(longcode spot display_value ask_price spot_time date_start rpc_time payout contract_parameters stash auth_time theo_probability))];
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
     is(
         $result->{longcode},

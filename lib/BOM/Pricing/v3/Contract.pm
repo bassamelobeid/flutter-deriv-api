@@ -204,19 +204,17 @@ sub _get_ask {
                 contract_parameters => $contract_parameters,
             };
 
-            # the caller is pricer daemon, hence we will stream the theo_price for binary or theo_probability for non_binary
-            if ($streaming_params->{from_pricer}) {
+            if (not $contract->is_binary) {
+                $response->{contract_parameters}->{multiplier}        = $contract->multiplier        if not $contract->user_defined_multiplier;
+                $response->{contract_parameters}->{maximum_ask_price} = $contract->maximum_ask_price if $contract->can('maximum_ask_price');
+            }
+
+            if ($contract->require_price_adjustment and $streaming_params->{from_pricer}) {
                 if ($contract->is_binary) {
                     $response->{theo_probability} = $contract->theo_probability->amount;
                 } else {
                     $response->{theo_price} = $contract->theo_price;
                 }
-            }
-
-            unless ($contract->is_binary) {
-                # cache this in websocket since these are static value for the contract. Hence, we don't have stream it for price adjustment
-                $response->{contract_parameters}->{multiplier}        = $contract->multiplier        if not $contract->user_defined_multiplier;
-                $response->{contract_parameters}->{maximum_ask_price} = $contract->maximum_ask_price if $contract->can('maximum_ask_price');
             }
 
             if ($contract->underlying->feed_license eq 'realtime') {
@@ -225,6 +223,10 @@ sub _get_ask {
 
             $response->{multiplier} = $contract->multiplier unless $contract->is_binary;
 
+            if ($contract->category_code eq 'multiplier' and my $display = $contract->available_orders_for_display) {
+                $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
+                $response->{limit_order} = $display;
+            }
         }
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
@@ -358,6 +360,7 @@ sub get_bid {
     my ($response, $contract, $bet_params);
     try {
         $bet_params = shortcode_to_parameters($short_code, $currency);
+        $bet_params->{limit_order} = $params->{limit_order} if $params->{limit_order};
     }
     catch {
         warn __PACKAGE__ . " get_bid shortcode_to_parameters failed: $short_code, currency: $currency";
@@ -404,15 +407,19 @@ sub get_bid {
             return;
         }
 
+        my $format_limit_order = ($params->{streaming_params} and $params->{streaming_params}->{format_limit_order}) ? 1 : 0;
+
         $response = _build_bid_response({
-                contract         => $contract,
-                contract_id      => $contract_id,
-                is_valid_to_sell => $valid_to_sell->{is_valid_to_sell},
-                is_sold          => $is_sold,
-                is_expired       => $is_expired,
-                sell_price       => $sell_price,
-                sell_time        => $sell_time,
-                validation_error => $valid_to_sell->{validation_error}});
+            contract         => $contract,
+            contract_id      => $contract_id,
+            is_valid_to_sell => $valid_to_sell->{is_valid_to_sell},
+            is_sold          => $is_sold,
+            is_expired       => $is_expired,
+            sell_price       => $sell_price,
+            sell_time        => $sell_time,
+            validation_error => $valid_to_sell->{validation_error},
+            from_pricer      => $format_limit_order,
+        });
 
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
@@ -531,6 +538,7 @@ sub get_contract_details {
     try {
         $bet_params->{app_markup_percentage} = $params->{app_markup_percentage} // 0;
         $bet_params->{landing_company}       = $params->{landing_company};
+        $bet_params->{limit_order}           = $params->{limit_order} if $params->{limit_order};
         $contract                            = produce_contract($bet_params);
     }
     catch {
@@ -554,8 +562,12 @@ sub get_contract_details {
     if ($contract->two_barriers) {
         $response->{high_barrier} = $contract->high_barrier->supplied_barrier;
         $response->{low_barrier}  = $contract->low_barrier->supplied_barrier;
-    } else {
+    } elsif ($contract->can('barrier')) {
         $response->{barrier} = $contract->barrier ? $contract->barrier->supplied_barrier : undef;
+    } elsif ($contract->category_code eq 'multiplier') {
+        foreach my $order (@{$contract->supported_orders}) {
+            $response->{$order} = $contract->$order->barrier_value if $contract->$order and $contract->$order->barrier_value;
+        }
     }
 
     return $response;
@@ -853,11 +865,26 @@ sub _build_bid_response {
             $response->{high_barrier} = $contract->high_barrier->as_absolute;
             $response->{low_barrier}  = $contract->low_barrier->as_absolute;
         }
-    } elsif ($contract->barrier) {
+    } elsif ($contract->can('barrier') and $contract->barrier) {
         if ($contract->barrier->supplied_type eq 'absolute' or $contract->barrier->supplied_type eq 'digit') {
             $response->{barrier} = $contract->barrier->as_absolute;
         } elsif ($contract->entry_spot) {
             $response->{barrier} = $contract->barrier->as_absolute;
+        }
+    }
+
+    # for multiplier, we want to return the orders and insurance details.
+    if ($contract->category_code eq 'multiplier') {
+        # If the caller is not from price daemon, we need:
+        # 1. sorted orders as array reference ($contract->available_orders) for PRICER_KEY
+        # 2. available order for display in the websocket api response ($contract->available_orders_for_display)
+        my $display = $contract->available_orders_for_display;
+        $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
+        if ($params->{from_pricer}) {
+            $response->{limit_order} = $display;
+        } else {
+            $response->{limit_order}            = $contract->available_orders;
+            $response->{limit_order_as_hashref} = $display;
         }
     }
 
@@ -939,4 +966,5 @@ sub _build_bid_response {
 
     return $response;
 }
+
 1;
