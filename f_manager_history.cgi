@@ -24,6 +24,7 @@ use BOM::Database::ClientDB;
 use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
+use BOM::CTC::Currency;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
