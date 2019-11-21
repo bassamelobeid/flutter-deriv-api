@@ -85,6 +85,7 @@ print "<span style='color:red; font-weight:bold; font-size:14px'>PAYMENT AGENT</
 
 # We either choose the dropdown currency from transaction page or use the client currency for quick jump
 my $currency = $client->currency;
+my $currency_wrapper = BOM::CTC::Currency->new(currency_code => $client->currency);
 if (my $currency_dropdown = request()->param('currency_dropdown')) {
     $currency = $currency_dropdown unless $currency_dropdown eq 'default';
 }
@@ -235,16 +236,10 @@ if (@trxns) {
 
 if ($action && $action eq 'prioritize') {
     my $prioritize_address = request()->param('address');
-    my ($error) = $clientdb->db->dbic->run(
-        ping => sub {
-            $_->selectrow_array('SELECT * FROM payment.ctc_set_address_priority(?, ?)', undef, $prioritize_address, $currency);
-        });
+    my $status             = $currency_wrapper->prioritize_address($prioritize_address);
 
-    if ($error) {
-        print "<p style='color:red'><strong>ERROR: $error while trying to prioritize address $prioritize_address</strong></p>";
-    } else {
-        print "<p style='color:green'><strong>SUCCESS: Requested priority to address: $prioritize_address</strong></p>";
-    }
+    print "<p style='color:red'><strong>ERROR: can't prioritize address</strong></p>" unless $status;
+    print "<p style='color:green'><strong>SUCCESS: Requested priority</strong></p>" if $status;
 }
 
 code_exit_BO();
