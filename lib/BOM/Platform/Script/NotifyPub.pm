@@ -10,6 +10,10 @@ use IO::Select;
 use Try::Tiny;
 use RedisDB;
 use JSON::MaybeUTF8 qw(:v1);
+use Date::Utility;
+use Time::HiRes qw(tv_interval);
+use DataDog::DogStatsd::Helper qw(stats_histogram);
+use Format::Util::Numbers qw(formatnumber);
 
 my $conn;
 
@@ -39,7 +43,7 @@ sub run {
                     while ($sel->can_read) {
                         while (my $notify = $dbh->pg_notifies) {
                             my ($name, $pid, $payload) = @$notify;
-                            _publish($redis, _msg($payload));
+                            _publish($redis, _msg($payload, $dbh));
                         }
                     }
                 }
@@ -77,13 +81,41 @@ sub _publish {
 }
 
 sub _msg {
-    my $payload = shift;
+    my ($payload, $dbh) = @_;
 
     my %msg;
     @msg{
         qw/id account_id action_type referrer_type financial_market_bet_id
             payment_id amount balance_after transaction_time short_code currency_code purchase_time purchase_price sell_time payment_remark/
     } = split(',', $payload, 15);
+
+    # Buy and subscribe require details of child table for multiplier contract.
+    # fetching the child table here.
+    if ($msg{short_code} and $msg{short_code} =~ /MULTUP|MULTDOWN/) {
+        my $hash_ref = $dbh->selectall_hashref("SELECT * FROM bet.multiplier WHERE financial_market_bet_id=$msg{financial_market_bet_id}",
+            'financial_market_bet_id');
+        my $order = $hash_ref->{$msg{financial_market_bet_id}};
+        my @arr;
+        foreach my $order_name (sort qw(stop_out stop_loss take_profit)) {
+            if ($order->{$order_name . '_order_date'}) {
+                my %hash = (
+                    order_type   => $order_name,
+                    basis_spot   => $order->{basis_spot} + 0,
+                    order_amount => formatnumber('price', $msg{currency_code}, $order->{$order_name . '_order_amount'}),
+                    order_date   => int(Date::Utility->new($order->{$order_name . '_order_date'})->epoch),
+                );
+                push @arr, ($order_name, [map { $_, $hash{$_} } sort keys %hash]);
+            }
+        }
+        $msg{limit_order} = \@arr;
+    }
+
+    # measuring the potential delay on transaction notification
+
+    my ($datetime_str, $subsecond) = split '\.', $msg{transaction_time};
+    $subsecond = ("0." . $subsecond) + 0;
+    my $timediff = tv_interval([Date::Utility->new($datetime_str)->epoch, $subsecond * 1e6]);
+    stats_histogram 'notifypub.delay', $timediff * 1000;    # millisec
 
     return \%msg;
 }
