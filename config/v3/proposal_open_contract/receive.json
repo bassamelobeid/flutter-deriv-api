@@ -204,6 +204,20 @@
                     "description": "Start date (epoch) of the contract. Example: 1446629000",
                     "type": "integer"
                 },
+                "deal_cancellation": {
+                    "description": "Contains information about deal cancellation option.",
+                    "type": "object",
+                    "properties": {
+                        "ask_price": {
+                            "description": "Ask price of deal cancellation option.",
+                            "type": "number"
+                        },
+                        "date_expiry": {
+                            "description": "Expiry time in epoch for deal cancellation option.",
+                            "type": "integer"
+                        }
+                    }
+                },
                 "display_name": {
                     "description": "Display name of underlying",
                     "type": "string"

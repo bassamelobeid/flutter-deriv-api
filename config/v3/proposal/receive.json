@@ -31,9 +31,19 @@
                     "description": "Commission changed in percentage (%).",
                     "type": ["number",null]
                 },
-                "cost_of_deal_cancellation": {
-                    "description": "Example: 2.14",
-                    "type": "number"
+                "deal_cancellation": {
+                    "description": "Contains information about deal cancellation option.",
+                    "type": "object",
+                    "properties": {
+                        "ask_price": {
+                            "description": "Ask price of deal cancellation option.",
+                            "type": "number"
+                        },
+                        "date_expiry": {
+                            "description": "Expiry time in epoch for deal cancellation option.",
+                            "type": "integer"
+                        }
+                    }
                 },
                 "date_start": {
                     "description": "Example: 1439999053",
