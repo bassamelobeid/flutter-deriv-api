@@ -90,7 +90,7 @@ sub set_pending_transaction {
                     });
 
                 unless ($result) {
-                    $log->warnf("Can't insert new duplicated deposit for tx: %s", $transaction->{hash});
+                    $log->warnf("Duplicate deposit rejected for %s transaction: %s", $transaction->{currency}, $transaction->{hash});
                     return undef;
                 }
             }
