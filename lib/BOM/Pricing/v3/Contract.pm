@@ -227,8 +227,14 @@ sub _get_ask {
                 my $display = $contract->available_orders_for_display;
                 $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
                 $response->{limit_order} = $display;
-                $response->{cost_of_deal_cancellation} = formatnumber('price', $contract->currency, $contract->cost_of_deal_cancellation);
                 $response->{commission} = $contract->commission * 100;    # commission in percentage term
+
+                if ($contract->deal_cancellation) {
+                    $response->{deal_cancellation} = {
+                        ask_price   => $contract->cost_of_deal_cancellation,
+                        date_expiry => $contract->cancellation_expiry->epoch,
+                    };
+                }
             }
         }
         my $pen = $contract->pricing_engine_name;
@@ -892,8 +898,13 @@ sub _build_bid_response {
         }
         # commission in payout currency amount
         $response->{commission} = $contract->commission_amount;
-        # cost of cancellation
-        $response->{cost_of_cancellation} = $contract->cost_of_deal_cancellation;
+        # deal cancellation
+        if ($contract->deal_cancellation) {
+            $response->{deal_cancellation} = {
+                ask_price       => $contract->cost_of_deal_cancellation;
+                    date_expiry => $contract->cancellation_expiry->epoch;
+            };
+        }
     }
 
     if (    $contract->exit_tick
