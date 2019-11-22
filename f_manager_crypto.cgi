@@ -386,8 +386,11 @@ EOF
         if ($currency_wrapper->is_valid_address($prioritize_address)) {
             my $status = $currency_wrapper->prioritize_address($prioritize_address);
 
-            print "<p style='color:red'><strong>ERROR: can't prioritize address</strong></p>" unless $status;
-            print "<p style='color:green'><strong>SUCCESS: Requested priority</strong></p>" if $status;
+            if ($status) {
+                print "<p style='color:green'><strong>SUCCESS: Requested priority</strong></p>";
+            } else {
+                print "<p style='color:red'><strong>ERROR: can't prioritize address</strong></p>";
+            }
         } else {
             print "<p style='color:red'><strong>ERROR: invalid address format</strong></p>";
         }
