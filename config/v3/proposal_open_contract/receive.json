@@ -461,6 +461,7 @@
                         "sold",
                         "won",
                         "lost",
+                        "cancelled",
                         null
                     ]
                 },
