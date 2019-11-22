@@ -43,7 +43,7 @@ use JSON::MaybeUTF8 qw(:v1);
     }
 
     sub subscription_manager {
-        return Binary::WebSocketAPI::v3::SubscriptionManager->shared_redis_manager();
+        return Binary::WebSocketAPI::v3::SubscriptionManager->redis_feed_master_manager();
     }
 }
 
@@ -73,7 +73,7 @@ use JSON::MaybeUTF8 qw(:v1);
     }
 
     sub subscription_manager {
-        return Binary::WebSocketAPI::v3::SubscriptionManager->shared_redis_manager();
+        return Binary::WebSocketAPI::v3::SubscriptionManager->redis_feed_master_manager();
     }
 }
 
