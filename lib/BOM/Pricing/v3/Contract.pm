@@ -901,8 +901,8 @@ sub _build_bid_response {
         # deal cancellation
         if ($contract->deal_cancellation) {
             $response->{deal_cancellation} = {
-                ask_price       => $contract->cost_of_deal_cancellation;
-                    date_expiry => $contract->cancellation_expiry->epoch;
+                ask_price   => $contract->cost_of_deal_cancellation,
+                date_expiry => $contract->cancellation_expiry->epoch,
             };
         }
     }
