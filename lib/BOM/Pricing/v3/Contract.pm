@@ -858,6 +858,9 @@ sub _build_bid_response {
         $response->{status} = 'open';
     }
 
+    # overwrite the above status if contract is cancelled
+    $response->{status} = 'cancelled' if $contract->is_cancelled;
+
     if ($contract->entry_spot) {
         my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
         $response->{entry_tick}      = $entry_spot;
