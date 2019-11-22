@@ -383,6 +383,7 @@ sub get_bid {
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
         $bet_params->{landing_company}       = $landing_company;
         $bet_params->{sell_time}             = $sell_time if $is_sold;
+        $bet_params->{sell_price}            = $sell_price if defined $sell_price;
         $contract                            = produce_contract($bet_params);
     }
     catch {
