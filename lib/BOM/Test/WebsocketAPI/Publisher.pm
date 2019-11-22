@@ -40,7 +40,7 @@ use Future::Utils qw(fmap0);
 
 use BOM::Test;
 use Binary::API::Mapping::Response;
-use BOM::Test::WebsocketAPI::Redis qw/shared_redis ws_redis_master redis_transaction/;
+use BOM::Test::WebsocketAPI::Redis qw/redis_feed_master ws_redis_master redis_transaction/;
 use BOM::Test::WebsocketAPI::Data qw( publish_data publish_methods );
 use BOM::Test::WebsocketAPI::Parameters qw( test_params );
 
@@ -268,7 +268,7 @@ in C<published>
 sub publish {
     my ($self, $channel, $method, $payload, $redis_client) = @_;
 
-    $redis_client //= shared_redis;
+    $redis_client //= redis_feed_master;
 
     $log->debugf('Publishing a %s, %s', $method, join ", ", map { $_ . ': ' . $payload->{$_} } sort keys $payload->%*);
 
