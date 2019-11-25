@@ -19,6 +19,7 @@ use Email::Address::UseXS;
 use Email::Stuffer;
 use YAML::XS qw(LoadFile);
 use BOM::Platform::Context qw(request);
+use BOM::Config::Runtime;
 
 sub aes_keys {
     state $config = YAML::XS::LoadFile('/etc/rmg/aes_keys.yml');
@@ -124,6 +125,53 @@ sub set_gamstop_self_exclusion {
     catch {
         warn "An error occurred while setting client exclusion: $_";
     };
+
+    return undef;
+}
+
+#TODO: Maybe better to move it somewere else.
+
+=head2 escrow_for_currency
+
+Helper function to return an escrow account.
+
+Escrow account is an account which is hold funds during
+OTC order creation to till it is completed or cancelled.
+
+TAkes the following parameters:
+
+=over 4
+
+=item * C<$broker> - e.g. C<CR>
+
+=item * C<$currency> - e.g. C<USD>
+
+=back
+
+Returns a L<BOM::User::Client> instance or C<undef> if not found.
+
+=cut
+
+sub escrow_for_currency {
+    my ($broker, $currency) = @_;
+    my @escrow_list = BOM::Config::Runtime->instance->app_config->payments->otc->escrow->@*;
+    require BOM::User::Client;
+    while (my $loginid = shift @escrow_list) {
+        my $acc = try {
+            my $escrow_account = BOM::User::Client->new({loginid => $loginid});
+            return undef unless $escrow_account;
+            return undef unless $escrow_account->broker eq $broker;
+            return undef unless my $acc = $escrow_account->default_account;
+            return undef unless $acc->currency_code eq $currency;
+
+            return $escrow_account;
+        }
+        catch {
+            return undef;
+        };
+
+        return $acc if $acc;
+    }
 
     return undef;
 }
