@@ -32,42 +32,42 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_buy_exception.jso
 # R_100
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'ASIANU', 'R_100', '5', 't', 'Win payout if the last tick of Volatility 100 Index is strictly higher than the average of the 5 ticks.',
-    '51.19', '51.19', '65258.19';
+    '51.49', '51.49', '65258.19';
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
-    '100', 'CALL', 'R_100', '30', 'd', 'Win payout if Volatility 100 Index is strictly higher than entry spot at close on 2016-09-08.', '45.44',
-    '45.44', '65258.19';
+    '100', 'CALL', 'R_100', '30', 'd', 'Win payout if Volatility 100 Index is strictly higher than entry spot at close on 2016-09-08.', '45.74',
+    '45.74', '65258.19';
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'R_100', '15', 's',
-    'Win payout if Volatility 100 Index is strictly higher than entry spot at 15 seconds after contract start time.', '51.19', '51.19', '65258.19';
+    'Win payout if Volatility 100 Index is strictly higher than entry spot at 15 seconds after contract start time.', '51.49', '51.49', '65258.19';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
     'DIGITMATCH', 'R_100', '10', 't', '0', 'Win payout if the last digit of Volatility 100 Index is 0 after 10 ticks.', 11.00, '11.00', '65258.19';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
     'CALL', 'R_100', '15', 'm', '+0.1',
-    'Win payout if Volatility 100 Index is strictly higher than entry spot plus 0.10 at 15 minutes after contract start time.', '51.08', '51.08',
+    'Win payout if Volatility 100 Index is strictly higher than entry spot plus 0.10 at 15 minutes after contract start time.', '51.38', '51.38',
     '65258.19';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
-    'CALL', 'R_100', '30', 'd', '65268.19', 'Win payout if Volatility 100 Index is strictly higher than 65268.19 at close on 2016-09-08.', '45.41',
-    '45.41', '65258.19';
+    'CALL', 'R_100', '30', 'd', '65268.19', 'Win payout if Volatility 100 Index is strictly higher than 65268.19 at close on 2016-09-08.', '45.71',
+    '45.71', '65258.19';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
     'ONETOUCH', 'R_100', '2', 'm', '+200',
-    'Win payout if Volatility 100 Index touches entry spot plus 200.00 through 2 minutes after contract start time.', '10.92', '10.92', '65258.19';
+    'Win payout if Volatility 100 Index touches entry spot plus 200.00 through 2 minutes after contract start time.', '11.22', '11.22', '65258.19';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
-    'ONETOUCH', 'R_100', '30', 'd', '69968.19', 'Win payout if Volatility 100 Index touches 69968.19 through close on 2016-09-08.', '79.19', '79.19',
+    'ONETOUCH', 'R_100', '30', 'd', '69968.19', 'Win payout if Volatility 100 Index touches 69968.19 through close on 2016-09-08.', '79.49', '79.49',
     '65258.19';
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
     'EXPIRYMISS', 'R_100', '2', 'm', '+10', '-5',
     'Win payout if Volatility 100 Index ends outside entry spot minus 5.00 to entry spot plus 10.00 at 2 minutes after contract start time.',
-    '96.46', '96.46', '65258.19';
+    '96.76', '96.76', '65258.19';
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
     'EXPIRYRANGE', 'R_100', '30', 'd', '65968.19', '65068.19',
-    'Win payout if Volatility 100 Index ends strictly between 65068.19 to 65968.19 at close on 2016-09-08.', '3.07', '3.07', '65258.19';
+    'Win payout if Volatility 100 Index ends strictly between 65068.19 to 65968.19 at close on 2016-09-08.', '3.37', '3.37', '65258.19';
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
     'RANGE', 'R_100', '30', 'd', '65271.19', '65257.19',
     'Win payout if Volatility 100 Index stays between 65257.19 to 65271.19 through close on 2016-09-08.', 2.50, '2.50', '65258.19';
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
     'UPORDOWN', 'R_100', '2', 'm', '+200', '-50',
     'Win payout if Volatility 100 Index goes outside entry spot minus 50.00 and entry spot plus 200.00 through 2 minutes after contract start time.',
-    '73.69', '73.69', '65258.19';
+    '73.99', '73.99', '65258.19';
 
 # frxUSDJPY
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
@@ -153,7 +153,7 @@ test_sendrecv_params 'proposal/test_send_lookback.json', 'proposal/test_receive_
 # R_100 touch tick trade
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
     'ONETOUCH', 'R_100', '5', 't', '+20.5',
-    'Win payout if Volatility 100 Index touches entry spot plus 20.50 through 5 ticks after first tick.', '44.51', '44.51', '65258.19';
+    'Win payout if Volatility 100 Index touches entry spot plus 20.50 through 5 ticks after first tick.', '44.81', '44.81', '65258.19';
 
 # test for negative amount
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive_negative.json', '-1', 'ASIANU', 'R_100', '5', 't';
@@ -168,12 +168,12 @@ test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_off
 test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_receive_callputspread.json',
     '100', 'CALLSPREAD', 'R_100', '7', 'd', '65258.00', '65208.19',
     'Win up to USD 100 if Volatility 100 Index\'s exit tick is between 65208.19 and 65258.00 at close on 2016-08-16.',
-    '47.81', '47.81', '65258.19';
+    '47.95', '47.95', '65258.19';
 
 test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_receive_callputspread.json',
     '100', 'PUTSPREAD', 'R_100', '7', 'd', '65258.00', '65208.19',
     'Win up to USD 100 if Volatility 100 Index\'s exit tick is between 65258.00 and 65208.19 at close on 2016-08-16.',
-    '53.38', '53.38', '65258.19';
+    '53.54', '53.54', '65258.19';
 
 # multiplier
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'payout', '10',
@@ -196,6 +196,6 @@ test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal
 #subscription
 test_sendrecv_params 'proposal/test_send_subscribe.json', 'proposal/test_receive_subscribe.json',
     '100', 'ASIANU', 'R_100', '5', 't', 'Win payout if the last tick of Volatility 100 Index is strictly higher than the average of the 5 ticks.',
-    '51.19', '51.19', '65258.19';
+    '51.49', '51.49', '65258.19';
 
 finish;
