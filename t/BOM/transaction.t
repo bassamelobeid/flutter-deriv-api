@@ -224,7 +224,7 @@ subtest 'buy a bet', sub {
         my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
-            price         => 511.47,
+            price         => 514.00,
             payout        => $contract->payout,
             amount_type   => 'payout',
             source        => 19,
@@ -259,8 +259,8 @@ subtest 'buy a bet', sub {
             cmp_ok $trx->{id}, '>', 0, 'id';
             is $trx->{account_id}, $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'buy', 'action_type';
-            is $trx->{amount} + 0, -511.47, 'amount';
-            is $trx->{balance_after} + 0, 5000 - 511.47, 'balance_after';
+            is $trx->{amount} + 0, -514, 'amount';
+            is $trx->{balance_after} + 0, 5000 - 514, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
             is $trx->{quantity},      1,                      'quantity';
@@ -279,7 +279,7 @@ subtest 'buy a bet', sub {
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
             is $fmb->{bet_class}, 'higher_lower_bet', 'bet_class';
             is $fmb->{bet_type},  'CALL',             'bet_type';
-            is $fmb->{buy_price} + 0, 511.47, 'buy_price';
+            is $fmb->{buy_price} + 0, 514, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
@@ -287,7 +287,7 @@ subtest 'buy a bet', sub {
             is !$fmb->{is_sold},    !0, 'is_sold';
             cmp_ok $fmb->{payout_price} + 0, '==', 1000, 'payout_price';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark},   qr/\btrade\[511\.47000\]/, 'remark';
+            like $fmb->{remark},   qr/\btrade\[514\.00000\]/, 'remark';
             is $fmb->{sell_price}, undef,                     'sell_price';
             is $fmb->{sell_time},  undef,                     'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
@@ -313,7 +313,7 @@ subtest 'buy a bet', sub {
             plan tests => 3;
             is $qv1->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $qv1->{transaction_id},          $trx->{id}, 'transaction_id';
-            is $qv1->{trade} + 0, 511.47, 'trade';
+            is $qv1->{trade} + 0, 514, 'trade';
         };
 
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
@@ -370,7 +370,7 @@ subtest 'sell a bet', sub {
             is $trx->{account_id}, $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'sell', 'action_type';
             is $trx->{amount} + 0, $contract->bid_price, 'amount';
-            is $trx->{balance_after} + 0, 5000 - 511.47 + $contract->bid_price, 'balance_after';
+            is $trx->{balance_after} + 0, 5000 - 514 + $contract->bid_price, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
             is $trx->{quantity},      1,                      'quantity';
@@ -389,7 +389,7 @@ subtest 'sell a bet', sub {
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
             is $fmb->{bet_class}, 'higher_lower_bet', 'bet_class';
             is $fmb->{bet_type},  'CALL',             'bet_type';
-            is $fmb->{buy_price} + 0, 511.47, 'buy_price';
+            is $fmb->{buy_price} + 0, 514, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
@@ -397,7 +397,7 @@ subtest 'sell a bet', sub {
             is !$fmb->{is_sold}, !1, 'is_sold';
             cmp_ok $fmb->{payout_price} + 0, '==', 1000, 'payout_price';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark}, qr/\btrade\[511\.47000\]/, 'remark';
+            like $fmb->{remark}, qr/\btrade\[514\.00000\]/, 'remark';
             is $fmb->{sell_price} + 0, $contract->bid_price, 'sell_price';
             cmp_ok +Date::Utility->new($fmb->{sell_time})->epoch,       '<=', time, 'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>',  time, 'settlement_time';
@@ -432,7 +432,7 @@ subtest 'sell a bet', sub {
             plan tests => 3;
             is $qv2->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             isnt $qv2->{transaction_id},        $trx->{id}, 'transaction_id';
-            is $qv2->{trade} + 0, 511.47, 'trade';
+            is $qv2->{trade} + 0, 514, 'trade';
         };
 
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
