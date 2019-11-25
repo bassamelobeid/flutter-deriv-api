@@ -828,6 +828,7 @@ sub _build_bid_response {
         bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
         is_settleable       => $is_valid_to_settle,
         barrier_count       => $contract->two_barriers ? 2 : 1,
+        is_valid_to_cancel  => $params->{is_valid_to_cancel},
     };
     if (!$contract->uses_barrier) {
         $response->{barrier_count} = 0;
