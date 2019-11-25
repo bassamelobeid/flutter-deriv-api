@@ -51,7 +51,7 @@ my $c = produce_contract({
 });
 is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes', 'correct pricing engine';
 is roundcommon(0.0001, $c->theo_probability->amount), 0.4999, 'bs probability is 0.4999';
-is $c->commission_markup->amount, 0.012, 'total markup is 0.012';
+is $c->commission_markup->amount, 0.015, 'total markup is 0.015';
 
 $c = produce_contract({
     %$params,
@@ -61,7 +61,7 @@ $c = produce_contract({
 });
 is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes', 'correct pricing engine';
 is roundcommon(0.0001, $c->theo_probability->amount), 0.5001, 'bs probability is 0.5001';
-is $c->commission_markup->amount, 0.012, 'total markup is 0.012';
+is $c->commission_markup->amount, 0.015, 'total markup is 0.015';
 
 delete $params->{barrier};
 
@@ -73,7 +73,7 @@ $c = produce_contract({
 });
 is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes', 'correct pricing engine';
 is roundcommon(0.0001, $c->theo_probability->amount), 0.4999, 'correct bs probability';
-is $c->commission_markup->amount, 0.012, 'correct total markup';
+is $c->commission_markup->amount, 0.015, 'correct total markup';
 
 $c = produce_contract({
     %$params,
@@ -83,4 +83,4 @@ $c = produce_contract({
 });
 is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes', 'correct pricing engine';
 is roundcommon(0.0001, $c->theo_probability->amount), 0.5001, 'correct bs probability';
-is $c->commission_markup->amount, 0.012, 'correct total markup';
+is $c->commission_markup->amount, 0.015, 'correct total markup';
