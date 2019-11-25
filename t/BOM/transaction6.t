@@ -335,8 +335,8 @@ subtest 'buy a bet', sub {
             cmp_ok $trx->{id}, '>', 0, 'id';
             is $trx->{account_id}, $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'buy', 'action_type';
-            is $trx->{amount} + 0, -3.2, 'amount';
-            is $trx->{balance_after} + 0, 5000 - 3.2, 'balance_after';
+            is $trx->{amount} + 0, -3.5, 'amount';
+            is $trx->{balance_after} + 0, 5000 - 3.5, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $trx->{payment_id},    undef,                  'payment_id';
             is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
@@ -354,14 +354,14 @@ subtest 'buy a bet', sub {
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
             is $fmb->{bet_class}, 'touch_bet', 'bet_class';
             is $fmb->{bet_type},  'ONETOUCH',  'bet_type';
-            is $fmb->{buy_price} + 0, 3.2, 'buy_price';
+            is $fmb->{buy_price} + 0, 3.5, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
             is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
             is !$fmb->{is_expired}, !0, 'is_expired';
             is !$fmb->{is_sold},    !0, 'is_sold';
             cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-            like $fmb->{remark},   qr/\btrade\[3\.20000\]/, 'remark';
+            like $fmb->{remark},   qr/\btrade\[3\.50000\]/, 'remark';
             is $fmb->{sell_price}, undef,                   'sell_price';
             is $fmb->{sell_time},  undef,                   'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
@@ -386,7 +386,7 @@ subtest 'buy a bet', sub {
             plan tests => 3;
             is $qv1->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $qv1->{transaction_id},          $trx->{id}, 'transaction_id';
-            is $qv1->{trade} + 0, 3.2, 'trade';
+            is $qv1->{trade} + 0, 3.5, 'trade';
         };
 
         is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
