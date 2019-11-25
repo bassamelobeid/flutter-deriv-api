@@ -166,7 +166,10 @@
                 },
                 "commision": {
                     "description": "Commission in payout currency amount.",
-                    "type": ["number", null]
+                    "type": [
+                        "null",
+                        "number"
+                    ]
                 },
                 "contract_id": {
                     "description": "Binary.com internal contract identifier",
@@ -462,7 +465,7 @@
                         "won",
                         "lost",
                         "cancelled",
-                        null
+                        "null"
                     ]
                 },
                 "tick_count": {

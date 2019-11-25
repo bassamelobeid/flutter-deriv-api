@@ -29,7 +29,14 @@
                 },
                 "commission": {
                     "description": "Commission changed in percentage (%).",
-                    "type": ["number",null]
+                    "type": [
+                        "null",
+                        "number"
+                    ]
+                },
+                "date_start": {
+                    "description": "Example: 1439999053",
+                    "type": "integer"
                 },
                 "deal_cancellation": {
                     "description": "Contains information about deal cancellation option.",
@@ -44,10 +51,6 @@
                             "type": "integer"
                         }
                     }
-                },
-                "date_start": {
-                    "description": "Example: 1439999053",
-                    "type": "integer"
                 },
                 "display_value": {
                     "description": "Example: 5.14, same as ask_price",
