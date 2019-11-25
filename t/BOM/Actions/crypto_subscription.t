@@ -40,7 +40,7 @@ subtest "change_address_status" => sub {
     my $transaction = Net::Async::Blockchain::Transaction->new(
         currency => 'LTC',
         hash     => $transaction_hash1,
-        to       => ['abc', 'def'],
+        to       => 'abc',
         type     => 'receive',
         amount   => 0,
         block    => 10,
@@ -59,7 +59,13 @@ subtest "change_address_status" => sub {
     }
     'survived get_deposit_address';
 
-    $transaction->{to} = [$btc_address];
+    my $btc_address2;
+    lives_ok {
+        $btc_address2 = $helper->get_deposit_address;
+    }
+    'survived get_deposit_address 2';
+
+    $transaction->{to} = $btc_address;
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, undef, "Invalid currency";
@@ -82,6 +88,12 @@ subtest "change_address_status" => sub {
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, 1, "Able to set pending a transaction to the same address with an different hash";
+
+    $transaction->{address} = $btc_address2;
+    is $response, 1, "Able to set pending a the same transaction to two different addresses";
+
+    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response, undef, "Can't set pending a transaction already pending";
 
     my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
     my $dbic = $clientdb->db->dbic;

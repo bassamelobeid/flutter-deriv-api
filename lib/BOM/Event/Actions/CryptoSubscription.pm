@@ -48,7 +48,7 @@ sub set_pending_transaction {
         my $payment_rows = clientdb()->run(
             fixup => sub {
                 my $sth = $_->prepare('select * from payment.find_crypto_by_addresses(?::VARCHAR[])');
-                $sth->execute($transaction->{to});
+                $sth->execute([$transaction->{to}]);
                 return $sth->fetchall_arrayref({});
             });
 
@@ -82,12 +82,17 @@ sub set_pending_transaction {
             # address has no new transaction so it's safe to create a new one since we
             # already verified that the transaction hash is not present on the table
             if (all { $_->{status} ne 'NEW' } @payment) {
-                clientdb()->run(
+                my $result = clientdb()->run(
                     ping => sub {
                         my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit(?, ?, ?, ?, ?)');
                         $sth->execute($address, $transaction->{currency}, $payment[0]->{client_loginid}, $transaction->{fee}, $transaction->{hash})
                             or die $sth->errstr;
                     });
+
+                unless ($result) {
+                    $log->warnf("Duplicate deposit rejected for %s transaction: %s", $transaction->{currency}, $transaction->{hash});
+                    return undef;
+                }
             }
 
             # for omnicore we need to check if the property id is correct
