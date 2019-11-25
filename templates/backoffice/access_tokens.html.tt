@@ -2,7 +2,7 @@
 .tokencell { padding-right: 15px; }
 </style>
 
-<table>
+<table class="collapsed hover" border="1">
     <tr>
         <td class="small_header" colspan="6">ACTIVE ([% tokens.size %])</td>
     </tr>
@@ -12,7 +12,7 @@
         <th>Token</th>
         <th>Type</th>
         <th>Created</th>
-        <th>Details</th>
+        <th colspan="2">Details</th>
     </tr>
         [% FOREACH token IN tokens %]
         <tr>
@@ -20,7 +20,7 @@
             <td class="tokencell">[% token.token %]</td>
             <td class="tokencell">[% token.type %]</td>
             <td class="tokencell">[% token.creation_time %]</td>
-            <td class="tokencell">[% token.info %]</td>
+            <td class="tokencell" colspan="2">[% token.info %]</td>
         </tr>
         [% END %]
      [% ELSE %]
@@ -54,5 +54,5 @@
      <tr>
          <td colspan="6">No deleted tokens</td>
      </tr>
-     [% END %]    
+     [% END %]
 </table>

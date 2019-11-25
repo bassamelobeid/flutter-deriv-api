@@ -388,7 +388,7 @@ sub build_client_warning_message {
 
     # build the table
     my $output =
-          '<br/><table border="1" cellpadding="2" style="background-color:#cccccc">' . '<tr>'
+          '<br/><table border="1" class="collapsed hover">' . '<tr>'
         . '<th>STATUS</th>'
         . '<th>REASON/INFO</th>'
         . '<th>STAFF</th>'
