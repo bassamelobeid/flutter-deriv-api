@@ -189,7 +189,7 @@ test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal
 test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake', '10',
     'take_profit', '-1', 'ContractBuyValidationError', 'Invalid take profit. Take profit must be higher than 0.00.';
 test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake', '10',
-    'stop_loss', '1', 'ContractBuyValidationError', 'Invalid stop loss. Stop loss must be lower than 0.00.';
+    'stop_loss', '1', 'ContractBuyValidationError', 'Invalid stop loss. Stop loss must be lower than -0.50.';
 test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_multiplier_limit_order.json', 'MULTUP', 'R_100', 'stake', '10',
     'stop_loss', '-1', 'Win 10% of your stake for every 1% rise in the market price.', '100.00', '100', '65258.19', 'Stop Out', '58765.26', 'Stop Loss', '65225.82';
 
