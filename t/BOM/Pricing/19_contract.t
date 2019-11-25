@@ -261,8 +261,8 @@ subtest 'get_ask' => sub {
     ok(delete $result->{spot_time},  'result have spot time');
     ok(delete $result->{date_start}, 'result have date_start');
     my $expected = {
-        'display_value' => '6.38',
-        'ask_price'     => '6.38',
+        'display_value' => '6.41',
+        'ask_price'     => '6.41',
         'longcode' => "Win payout if Volatility 50 Index after 15 minutes is strictly higher than it was at either entry or 7 minutes 30 seconds.",
 
         'spot'                => '963.3054',
@@ -274,7 +274,7 @@ subtest 'get_ask' => sub {
             'bet_type'              => 'RESETCALL',
             'underlying'            => 'R_50',
             'currency'              => 'USD',
-            'base_commission'       => '0.012',
+            'base_commission'       => '0.015',
             'min_commission_amount' => 0.02,
             'amount'                => '10',
             'amount_type'           => 'payout',
