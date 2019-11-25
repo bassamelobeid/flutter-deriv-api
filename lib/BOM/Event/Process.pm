@@ -18,6 +18,7 @@ use BOM::Event::Actions::Client;
 use BOM::Event::Actions::CryptoSubscription;
 use BOM::Event::Actions::Anonymization;
 use BOM::Event::Actions::Email;
+use BOM::Event::Actions::OTC;
 use BOM::Event::Actions::MyAffiliate;
 use BOM::Event::Actions::OTC;
 use BOM::Platform::Context qw(request);
@@ -68,7 +69,7 @@ my $action_mapping = {
     otc_order_updated           => \&BOM::Event::Actions::OTC::order_updated,
     otc_order_expired           => \&BOM::Event::Actions::OTC::order_expired,
     otc_agent_created           => \&BOM::Event::Actions::OTC::agent_created,
-    otc_agent_updated           => \&BOM::Event::Actions::OTC::offer_updated,
+    otc_agent_updated           => \&BOM::Event::Actions::OTC::agent_updated,
 };
 
 =head1 METHODS

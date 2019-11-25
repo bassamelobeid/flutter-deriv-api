@@ -111,12 +111,11 @@ subtest 'process' => sub {
                 store_mt5_transaction new_mt5_signup anonymize_client
                 document_upload ready_for_authentication account_closure client_verification
                 verify_address social_responsibility_check sync_onfido_details
-                set_pending_transaction authenticated_with_scans qualifying_payment_check payment_deposit withdrawal_limit_reached
-                affiliate_sync_initiated
+                set_pending_transaction authenticated_with_scans qualifying_payment_check payment_deposit
                 otc_agent_created otc_agent_updated
                 otc_offer_created otc_offer_updated
                 otc_order_created otc_order_updated otc_order_expired
-                /
+                affiliate_sync_initiated withdrawal_limit_reached/
         ],
         'Correct number of actions that can be emitted'
     );
