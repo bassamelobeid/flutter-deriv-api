@@ -384,13 +384,13 @@ EOF
 
         $prioritize_address =~ s/^\s+|\s+$//g;
         if ($currency_wrapper->is_valid_address($prioritize_address)) {
-            my ($error) = $dbic->run(
-                ping => sub {
-                    $_->selectrow_array('SELECT * FROM payment.ctc_set_address_priority(?, ?)', undef, $prioritize_address, $currency);
-                });
+            my $status = $currency_wrapper->prioritize_address($prioritize_address);
 
-            print "<p style='color:red'><strong>ERROR: $error</strong></p>" if $error;
-            print "<p style='color:green'><strong>SUCCESS: Requested priority</strong></p>" unless $error;
+            if ($status) {
+                print "<p style='color:green'><strong>SUCCESS: Requested priority</strong></p>";
+            } else {
+                print "<p style='color:red'><strong>ERROR: can't prioritize address</strong></p>";
+            }
         } else {
             print "<p style='color:red'><strong>ERROR: invalid address format</strong></p>";
         }
