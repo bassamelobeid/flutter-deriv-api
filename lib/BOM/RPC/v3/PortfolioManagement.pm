@@ -190,8 +190,8 @@ sub populate_response_proposal_contract {
             $contract->{sell_price}      = formatnumber('price', $client->currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
 
             if (defined $contract->{buy_price} and (defined $contract->{bid_price} or defined $contract->{sell_price})) {
-                my $deal_cancellation   = $contract->{deal_cancellation};
-                my $main_contract_price = $contract->{buy_price} - $deal_cancellation->{ask_price};
+                my $deal_cancellation = $contract->{deal_cancellation};
+                my $main_contract_price = $deal_cancellation ? $contract->{buy_price} - $deal_cancellation->{ask_price} : $contract->{buy_price};
                 $contract->{profit} =
                     (defined $contract->{sell_price})
                     ? formatnumber('price', $client->currency, $contract->{sell_price} - $main_contract_price)
