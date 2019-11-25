@@ -690,7 +690,7 @@ sub client_statement_for_backoffice {
             $transaction->{amount}      = abs($transaction->{amount});
             $transaction->{remark}      = $transaction->{bet_remark};
             $transaction->{limit_order} = encode_json_utf8(BOM::Transaction::extract_limit_orders($transaction))
-                if $transaction->{bet_class} eq 'multiplier';
+                if defined $transaction->{bet_class} and $transaction->{bet_class} eq 'multiplier';
         }
     }
 
