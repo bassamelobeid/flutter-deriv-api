@@ -93,7 +93,7 @@ Please refer to L<Binary::WebSocketAPI::v3::Subscription/subscription_manager>
 =cut
 
 sub subscription_manager {
-    return Binary::WebSocketAPI::v3::SubscriptionManager->shared_redis_manager();
+    return Binary::WebSocketAPI::v3::SubscriptionManager->redis_feed_master_manager();
 }
 
 =head2 channel
