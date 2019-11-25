@@ -465,7 +465,7 @@
                         "won",
                         "lost",
                         "cancelled",
-                        "null"
+                        null
                     ]
                 },
                 "tick_count": {
