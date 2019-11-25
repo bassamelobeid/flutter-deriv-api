@@ -104,7 +104,7 @@ async sub _set_affiliate_for_mt5 {
     my $mt5_login_id = $mt5_login =~ s/^MT//r;
     my $user_details = await BOM::MT5::User::Async::get_user($mt5_login_id);
 
-    return 0 if $user_details->{group} ne 'real\\svg';
+    return 0 if $user_details->{group} =~ /^demo/;
     return 0 if $user_details->{agent};
 
     await BOM::MT5::User::Async::update_user({
