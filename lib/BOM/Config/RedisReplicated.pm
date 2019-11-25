@@ -161,4 +161,15 @@ sub redis_auth {
     $config->{auth} //= BOM::Config::redis_auth_config();
     return _redis('auth', 'read', 10);
 }
+
+sub redis_otc_write {
+    $config->{otc} //= BOM::Config::redis_otc_config();
+    return _redis('otc', 'write', 10);
+}
+
+sub redis_otc {
+    $config->{otc} //= BOM::Config::redis_otc_config();
+    return _redis('otc', 'read', 10);
+}
+
 1;

@@ -183,6 +183,14 @@ sub redis_auth_config {
     return $config;
 }
 
+sub redis_otc_config {
+    state $config = $ENV{BOM_TEST_REDIS_OTC}
+                  ? YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_OTC})
+                  : redis_replicated_config();
+
+    return $config;
+}
+
 sub mt5_user_rights {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/mt5_user_rights.yml');
     return $config;
