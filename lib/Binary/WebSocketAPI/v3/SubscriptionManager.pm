@@ -14,7 +14,7 @@ use Log::Any qw($log);
 use Scalar::Util qw(refaddr weaken);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_dec);
 use Binary::WebSocketAPI::v3::Subscription;
-use Binary::WebSocketAPI::v3::Instance::Redis qw(shared_redis redis_pricer redis_transaction);
+use Binary::WebSocketAPI::v3::Instance::Redis qw(redis_feed_master redis_pricer redis_transaction);
 use namespace::clean;
 
 =head1 NAME
@@ -86,7 +86,7 @@ return redis instance
 =cut
 
 my $config = {
-    shared_redis_manager      => sub { return shared_redis() },
+    redis_feed_master_manager => sub { return redis_feed_master() },
     redis_pricer_manager      => sub { return redis_pricer() },
     redis_transaction_manager => sub { return redis_transaction() },
 };
