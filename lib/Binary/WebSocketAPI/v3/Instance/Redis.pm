@@ -25,10 +25,10 @@ use Scalar::Util qw(looks_like_number);
 # Add entries here if a new Redis instance is available, this will then be accessible
 # via a function of the same name.
 my $servers = {
-    shared_redis => {
-        config   => '/etc/rmg/chronicle.yml',
-        user     => 'read',
-        override => 'BOM_TEST_REDIS_REPLICATED'
+    redis_feed_master => {
+        config   => '/etc/rmg/redis-feed.yml',
+        user     => 'master-read',
+        override => 'BOM_TEST_REDIS_FEED'
     },
     redis_transaction => {
         config   => '/etc/rmg/redis-transaction.yml',
@@ -80,10 +80,10 @@ sub create {
     # encode and decode again. That means we do 'encode' & 'decode' twice.
     # In most cases it is ok. I'm afraid that will cause new problem if we
     # fix it. And we will replace Mojo::Redis2 in the future, so we don't
-    # fix it now. But in shared_redis and transaction redis, we send it by
+    # fix it now. Given that in the redis_transaction, we send it by
     # RedisDB, that will generate an error 'wide character' when we decode
     # message twice. So we disable it now
-    $redis->encoding(undef) if $name =~ /^(?:shared_redis|redis_transaction)$/;
+    $redis->encoding(undef) if $name =~ /^redis_transaction$/;
     $redis->on(
         connection => sub {
             stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.connections');
