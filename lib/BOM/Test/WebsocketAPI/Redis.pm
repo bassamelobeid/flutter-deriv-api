@@ -6,7 +6,7 @@ use strict;
 use warnings;
 use feature 'state';
 
-use BOM::Test::WebsocketAPI::Redis::Feed;
+use BOM::Test::WebsocketAPI::Redis::Shared;
 use BOM::Test::WebsocketAPI::Redis::Master;
 use BOM::Test::WebsocketAPI::Redis::Pricer;
 use BOM::Test::WebsocketAPI::Redis::Transaction;
@@ -25,16 +25,16 @@ A factory class for creating C<Future>-based async clients to the test redis ser
 =cut
 
 use Exporter qw/import/;
-our @EXPORT_OK = qw/redis_feed_master ws_redis_master redis_pricer redis_transaction redis_queue/;
+our @EXPORT_OK = qw/shared_redis ws_redis_master redis_pricer redis_transaction redis_queue/;
 
-=head2 redis_feed_master
+=head2 shared_redis
 
-Returns the singleton async client to the test feed redis server (B<redis_feed_master>);
+Returns the singleton async client to the test shared redis server (B<shared_redis>);
 
 =cut
 
-sub redis_feed_master {
-    state $redis = BOM::Test::WebsocketAPI::Redis::Feed->new();
+sub shared_redis {
+    state $redis = BOM::Test::WebsocketAPI::Redis::Shared->new();
 
     return $redis->client;
 }
