@@ -35,8 +35,6 @@ my $loginid = $input->{loginid} // '';
 
 BrokerPresentation("AFFILIATE IB STATUS MANAGING");
 
-my $client = BOM::User::Client->new({loginid => $input->{loginid}});
-
 my ($affiliate_id, $mt5_login, $action, $action_result);
 if (request()->http_method eq 'POST') {
     code_exit_BO(_get_display_error_message('Invalid CSRF Token')) if $input->{_csrf} ne _get_csrf_token();
@@ -58,17 +56,29 @@ if (request()->http_method eq 'POST') {
 } else {
     my $my_affiliates = BOM::MyAffiliates->new();
 
-    code_exit_BO(_get_display_error_message('Client isn\'t an affiliate')) unless $client->myaffiliates_token;
+    my $res = $my_affiliates->get_users(
+        VARIABLE_NAME  => 'affiliates_client_loginid',
+        VARIABLE_VALUE => $input->{loginid});
 
-    $affiliate_id = $my_affiliates->get_affiliate_id_from_token($client->myaffiliates_token);
-    my $affiliate = $my_affiliates->get_user($affiliate_id);
+    my @affiliates =
+          ref $res->{USER} eq 'ARRAY' ? @{$res->{USER}}
+        : $res->{USER}                ? ($res->{USER})
+        :                               ();
 
-    my @user_variables =
-        $affiliate->{USER_VARIABLES} && ref $affiliate->{USER_VARIABLES}{VARIABLE} eq 'ARRAY'
-        ? @{$affiliate->{USER_VARIABLES}{VARIABLE}}
-        : ();
+    code_exit_BO(_get_display_error_message('Client isn\'t an affiliate')) unless @affiliates;
 
-    ($mt5_login) = map { $_->{VALUE} } grep { $_->{NAME} eq 'mt5_account' } @user_variables;
+    for my $affiliate (@affiliates) {
+        $affiliate_id = $affiliate->{ID};
+
+        my @user_variables =
+            $affiliate->{USER_VARIABLES} && ref $affiliate->{USER_VARIABLES}{VARIABLE} eq 'ARRAY'
+            ? @{$affiliate->{USER_VARIABLES}{VARIABLE}}
+            : ();
+
+        ($mt5_login) = map { $_->{VALUE} } grep { $_->{NAME} eq 'mt5_account' } @user_variables;
+
+        last if $mt5_login;
+    }
 }
 
 BOM::Backoffice::Request::template()->process(
