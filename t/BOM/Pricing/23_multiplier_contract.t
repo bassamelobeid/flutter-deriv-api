@@ -87,7 +87,7 @@ subtest 'multiplier - send_ask' => sub {
             'date_start'            => 0,
             'proposal'              => 1,
             'amount'                => '100',
-            'base_commission'       => '0.012',
+            'base_commission'       => '0.015',
             'underlying'            => 'R_100',
             'bet_type'              => 'MULTUP'
         },
@@ -131,7 +131,7 @@ subtest 'multiplier - send_ask' => sub {
             'date_start'            => 0,
             'proposal'              => 1,
             'amount'                => '100',
-            'base_commission'       => '0.012',
+            'base_commission'       => '0.015',
             'underlying'            => 'R_100',
             'bet_type'              => 'MULTUP'
         },
@@ -183,7 +183,7 @@ subtest 'multiplier - send_ask' => sub {
             'date_start'            => 0,
             'proposal'              => 1,
             'amount'                => '100',
-            'base_commission'       => '0.012',
+            'base_commission'       => '0.015',
             'underlying'            => 'R_100',
             'bet_type'              => 'MULTUP'
         },
@@ -222,6 +222,162 @@ subtest 'multiplier - send_ask' => sub {
     $args->{deal_cancellation} = 1;
     $res = $c->call_ok('send_ask', $params)->has_no_error->result;
     cmp_deeply($res, $expected, 'send_ask output as expected');
+};
+
+subtest 'multiplier - get_bid' => sub {
+    my $contract = produce_contract({
+            bet_type     => 'MULTUP',
+            underlying   => 'R_100',
+            multiplier   => 10,
+            currency     => 'USD',
+            amount_type  => 'stake',
+            amount       => 100,
+            date_start   => $now,
+            date_pricing => $now->epoch + 1,
+            limit_order  => {
+                stop_out => {
+                    order_type   => 'stop_out',
+                    order_amount => -100,
+                    order_date   => $now->epoch,
+                    basis_spot   => 100
+                }}});
+    my $params = {
+        short_code      => $contract->shortcode,
+        contract_id     => $contract->id,
+        currency        => 'USD',
+        is_sold         => 0,
+        country_code    => 'cr',
+        landing_company => 'svg',
+        limit_order     => $contract->available_orders,
+    };
+
+    my $expected = {
+        'entry_tick_time'            => ignore(),
+        'current_spot_display_value' => '100.00',
+        'stash'                      => {
+            'app_markup_percentage'      => '0',
+            'source_bypass_verification' => 0,
+            'valid_source'               => 1
+        },
+        'barrier_count'          => 1,
+        'entry_tick'             => 100,
+        'date_settlement'        => ignore(),
+        'underlying'             => 'R_100',
+        'contract_type'          => 'MULTUP',
+        'is_path_dependent'      => '1',
+        'limit_order'            => ['stop_out', ['basis_spot', 100, 'order_amount', '-100.00', 'order_date', $now->epoch, 'order_type', 'stop_out']],
+        'multiplier'             => '10',
+        'current_spot_time'      => ignore(),
+        'date_expiry'            => ignore(),
+        'entry_spot'             => 100,
+        'currency'               => 'USD',
+        'limit_order_as_hashref' => {
+            'stop_out' => {
+                'order_amount' => '-100.00',
+                'order_date'   => $now->epoch,
+                'display_name' => 'Stop Out',
+                'value'        => '90.05'
+            }
+        },
+        'display_name'             => 'Volatility 100 Index',
+        'is_settleable'            => 0,
+        'is_intraday'              => 0,
+        'entry_tick_display_value' => '100.00',
+        'is_expired'               => 0,
+        'is_forward_starting'      => 0,
+        'bid_price'                => '99.50',
+        'shortcode'                => ignore(),
+        'contract_id'              => '470',
+        'longcode'                 => 'Win 10% of your stake for every 1% rise in the market price.',
+        'is_valid_to_sell'         => 1,
+        'entry_spot_display_value' => '100.00',
+        'commission'               => '0.50',
+        'current_spot'             => 100,
+        'date_start'               => $now->epoch,
+        'status'                   => 'open'
+    };
+    my $res = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    cmp_deeply($res, $expected, 'get_bid as expected');
+
+    $contract = produce_contract({
+            bet_type     => 'MULTUP',
+            underlying   => 'R_100',
+            multiplier   => 10,
+            currency     => 'USD',
+            amount_type  => 'stake',
+            amount       => 100,
+            date_start   => $now,
+            date_pricing => $now->epoch + 1,
+            limit_order  => {
+                stop_out => {
+                    order_type   => 'stop_out',
+                    order_amount => -100,
+                    order_date   => $now->epoch,
+                    basis_spot   => 100
+                }
+            },
+            deal_cancellation => 1,
+        });
+    $params = {
+        short_code      => $contract->shortcode,
+        contract_id     => $contract->id,
+        currency        => 'USD',
+        is_sold         => 0,
+        country_code    => 'cr',
+        landing_company => 'svg',
+        limit_order     => $contract->available_orders,
+    };
+
+    $expected = {
+        'entry_tick_time'            => ignore(),
+        'current_spot_display_value' => '100.00',
+        'stash'                      => {
+            'app_markup_percentage'      => '0',
+            'source_bypass_verification' => 0,
+            'valid_source'               => 1
+        },
+        'barrier_count'          => 1,
+        'entry_tick'             => 100,
+        'date_settlement'        => ignore(),
+        'underlying'             => 'R_100',
+        'contract_type'          => 'MULTUP',
+        'is_path_dependent'      => '1',
+        'limit_order'            => ['stop_out', ['basis_spot', 100, 'order_amount', '-100.00', 'order_date', $now->epoch, 'order_type', 'stop_out']],
+        'multiplier'             => '10',
+        'current_spot_time'      => ignore(),
+        'date_expiry'            => ignore(),
+        'entry_spot'             => 100,
+        'currency'               => 'USD',
+        'limit_order_as_hashref' => {
+            'stop_out' => {
+                'order_amount' => '-100.00',
+                'order_date'   => $now->epoch,
+                'display_name' => 'Stop Out',
+                'value'        => '90.05'
+            }
+        },
+        'display_name'             => 'Volatility 100 Index',
+        'is_settleable'            => 0,
+        'is_intraday'              => 0,
+        'entry_tick_display_value' => '100.00',
+        'is_expired'               => 0,
+        'is_forward_starting'      => 0,
+        'bid_price'                => '99.50',
+        'shortcode'                => ignore(),
+        'contract_id'              => '470',
+        'longcode'                 => 'Win 10% of your stake for every 1% rise in the market price.',
+        'is_valid_to_sell'         => 1,
+        'entry_spot_display_value' => '100.00',
+        'commission'               => '0.50',
+        'current_spot'             => 100,
+        'date_start'               => $now->epoch,
+        'status'                   => 'open',
+        'deal_cancellation'        => {
+            'ask_price'   => 4.35,
+            'date_expiry' => ignore(),
+        }};
+    $res = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    cmp_deeply($res, $expected, 'get_bid as expected');
 };
 
 done_testing();
