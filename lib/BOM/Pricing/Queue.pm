@@ -171,8 +171,8 @@ sub score_for_parameters {
     return 1 unless (ref($params) // '') eq 'HASH';
     # Indicate it has been touched, even if we make no further adjustments
     my $score = 1;
-    # bid before price
-    $score *= 101 if (($params->{price_daemon_cmd} // '') eq 'bid');
+    # Extant contracts first
+    $score *= 101 if ($params->{contract_id});
     # Real money accounts first
     $score *= 11 if ($params->{real_money});
     # Low total time is faster
