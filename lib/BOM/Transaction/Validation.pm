@@ -232,9 +232,10 @@ sub _validate_sell_pricing_adjustment {
     }
 
     # Due to the volatile nature of the bid price for multiplier (high multiplier),
-    # all multiplier contracts will be closed at market price without going through price movement checks.
+    # all multiplier contracts will be closed at recomputed bid price without going through price movement checks.
     # This is specified in the contract terms and conditions.
     if ($contract->category_code eq 'multiplier') {
+        $self->price($contract->bid_price);
         return undef;
     }
 
