@@ -231,6 +231,13 @@ sub _validate_sell_pricing_adjustment {
         return undef;
     }
 
+    # Due to the volatile nature of the bid price for multiplier (high multiplier),
+    # all multiplier contracts will be closed at market price without going through price movement checks.
+    # This is specified in the contract terms and conditions.
+    if ($contract->category_code eq 'multiplier') {
+        return undef;
+    }
+
     if ($contract->is_expired) {
         return Error::Base->cuss(
             -type              => 'BetExpired',
