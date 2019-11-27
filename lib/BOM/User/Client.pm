@@ -14,6 +14,7 @@ use Date::Utility;
 use List::Util qw/all first min any/;
 use Locale::Country::Extra;
 use Format::Util::Numbers qw(roundcommon);
+use Text::Trim qw(trim);
 use BOM::Platform::Context qw (request);
 
 use Rose::DB::Object::Util qw(:all);
@@ -28,6 +29,7 @@ use BOM::User::Client::Payments;
 use BOM::User::Client::PaymentAgent;
 use BOM::User::Client::Status;
 use BOM::User::Client::Account;
+use BOM::User::Phone;
 use BOM::User::FinancialAssessment qw(is_section_complete decode_fa);
 use BOM::User::Utility;
 use BOM::Platform::Event::Emitter;
@@ -1355,6 +1357,205 @@ sub increment_qualifying_payments {
     my $event_name = $loginid . '_qualifying_payment_check';
     BOM::Platform::Event::Emitter::emit('qualifying_payment_check', {loginid => $loginid}) if $redis->setnx($event_name, 1);
 
+    return undef;
+}
+
+=pod
+
+=head2 format_input_details
+
+format the input fields for new_account and set_settings and backoffice
+
+=over 4
+
+=item * $args
+
+Hashref of the input fields
+
+=back
+
+Return {
+    error   => C<error_code>
+}
+
+=cut
+
+sub format_input_details {
+    my ($self, $args) = @_;
+
+    my %format = (
+        first_name => sub { trim(shift) },
+        last_name  => sub { trim(shift) },
+        phone      => sub { BOM::User::Phone::format_phone(shift) || die "InvalidPhone\n" },
+        date_of_birth => sub {
+            eval { Date::Utility->new(shift)->date } // die "InvalidDateOfBirth\n";
+        },
+    );
+
+    return try {
+        $args->{$_} = $format{$_}->($args->{$_}) for grep { exists $format{$_} } keys %$args;
+    }
+    catch {
+        chomp(my $err = $_);
+        return {error => $err} if $err =~ /^[A-Za-z]+$/;
+        return {error => 'UnknownError'};
+    };
+}
+
+=pod
+
+=head2 validate_common_account_details
+
+common client details validation for new_account and set_settings and backoffice
+
+=over 4
+
+=item * $args
+
+Hashref of the input fields
+
+=back
+
+Return {
+    error   => C<error_code>
+    details => C<detail info>
+}
+
+=cut
+
+sub validate_common_account_details {
+    my ($client, $args) = @_;
+
+    return try {
+        if ($args->{date_of_birth}) {
+            _validate_dob($args->{date_of_birth}, $client->residence);
+        }
+
+        die "NeedBothSecret\n" if ($args->{secret_answer} xor $args->{secret_question});
+
+        die "InvalidPlaceOfBirth\n" if ($args->{place_of_birth} and not Locale::Country::code2country($args->{place_of_birth}));
+
+        my $brand = request()->brand;
+
+        die "InvalidCitizenship\n"
+            if ($args->{'citizen'} && !defined $brand->countries_instance->countries->country_from_code($args->{'citizen'}));
+    }
+    catch {
+        chomp(my $err = $_);
+        return {error => $err} if $err =~ /^[A-Za-z]+$/;
+        return {error => 'UnknownError'};
+    };
+
+}
+
+sub _validate_dob {
+    my ($dob, $residence) = @_;
+
+    my $dob_date = try { Date::Utility->new($dob) };
+    die "InvalidDateOfBirth\n" unless $dob_date;
+
+    my $countries_instance = request()->brand->countries_instance;
+
+    # Get the minimum age from the client's residence
+    my $min_age = $countries_instance && $countries_instance->minimum_age_for_country($residence);
+    die "InvalidResidence\n" unless $min_age;
+
+    my $minimum_date = Date::Utility->new->minus_time_interval($min_age . 'y');
+    die "BelowMinimumAge\n" if $dob_date->is_after($minimum_date);
+
+    return undef;
+}
+
+=pod
+
+=head2 validate_fields_immutable
+
+check if any fields_immutable is changed
+
+=over 4
+
+=item * $args
+
+Hashref of the input fields
+
+=back
+
+Return {
+    error   => C<error_code>
+    details => C<field>
+}
+
+=cut
+
+sub validate_fields_immutable {
+    my ($self, $args) = @_;
+
+    #fields not allow to change once been set
+    my @fields_immutable =
+        qw/place_of_birth date_of_birth salutation first_name last_name citizen account_opening_reason secret_answer secret_question/;
+
+    for my $field (@fields_immutable) {
+        #if the input field value is differnt from self setting, means it is been changed
+        if ($args->{$field} and $self->$field and ($args->{$field} ne $self->$field)) {
+            if ($self->landing_company->is_field_changeable_before_auth($field)) {
+                return {
+                    error   => 'NoChangeAfterAuth',
+                    details => $field
+                } if $self->fully_authenticated();
+            } else {
+                return {
+                    error   => 'ImmutableField',
+                    details => $field
+                };
+            }
+        }
+    }
+    return undef;
+}
+
+=pod
+
+=head2 check_duplicate_account
+
+check if the input fields match any exists account
+
+=over 4
+
+=item * $args
+
+Hashref of the input fields
+
+=back
+
+Return {
+    error   => C<error_code>
+    details => C<dup_account_details>
+}
+
+=cut
+
+sub check_duplicate_account {
+    my ($client, $args) = @_;
+
+    return undef if $client->is_virtual;
+
+    my @duplicate_check = qw/first_name last_name date_of_birth phone/;
+    if (any { $args->{$_} and $args->{$_} ne $client->$_ } @duplicate_check) {
+        my $dup_details = {
+            email          => $client->email,
+            exclude_status => ['duplicate_account', 'disabled'],
+        };
+        $dup_details->{$_} = $args->{$_} || $client->$_ for @duplicate_check;
+        #name + dob is one group to check, phone is another independent condition
+        #current logic is we only check phone when it is changed
+        delete $dup_details->{phone} unless $args->{phone} and $args->{phone} ne $client->phone;
+        my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->get_duplicate_client($dup_details);
+
+        return {
+            error   => 'DuplicateAccount',
+            details => \@dup_account_details
+        } if scalar @dup_account_details;
+    }
     return undef;
 }
 
