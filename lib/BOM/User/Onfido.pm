@@ -58,7 +58,7 @@ sub get_user_onfido_applicant {
     try {
         return $dbic->run(
             fixup => sub {
-                my $sth = $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $user_id,);
+                $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $user_id,);
             });
     }
     catch {
@@ -132,6 +132,31 @@ sub store_onfido_check {
     return;
 }
 
+=head2 get_latest_onfido_check
+
+Given a user_id, get the latest onfido check from DB
+
+=cut
+
+sub get_latest_onfido_check {
+    my ($user_id) = @_;
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    try {
+        return $dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT * FROM users.get_onfido_checks(?::BIGINT)', undef, $user_id);
+            });
+    }
+    catch {
+        my $e = $@;
+        die "Fail to get Onfido checks in DB: $e . Please check USER_ID: $user_id";
+    };
+
+    return;
+
+}
+
 =head2 update_onfido_check
 
 Stores onfido check into the DB
@@ -193,6 +218,28 @@ sub store_onfido_report {
         warn "Fail to store Onfido report in DB: $e . Please check REPORT_ID: " . $report->id;
     };
 
+    return;
+}
+
+=head2 get_all_onfido_reports
+
+Get all onfido reports given check id and user id
+
+=cut
+
+sub get_all_onfido_reports {
+    my ($user_id, $check_id) = @_;
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+    try {
+        return $dbic->run(
+            fixup => sub {
+                $_->selectall_hashref('SELECT * FROM users.get_onfido_reports(?::BIGINT, ?::TEXT)', 'id', undef, ($user_id, $check_id));
+            });
+    }
+    catch {
+        my $e = $@;
+        warn "Fail to get Onfido report from DB: $e . Please check USER_ID $user_id and CHECK_ID $check_id";
+    };
     return;
 }
 
