@@ -284,7 +284,7 @@ subtest 'test cancel functionality', sub {
         ok !$error, 'no error on cancel';
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
 
-        is $fmb->{sell_price}+0, $contract->cancel_price, 'contract sold with stake';
+        is $fmb->{sell_price} + 0, $contract->cancel_price, 'contract sold with stake';
     };
 };
 

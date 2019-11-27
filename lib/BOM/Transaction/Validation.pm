@@ -319,10 +319,8 @@ sub _validate_trade_pricing_adjustment {
     $allowed_move = 0 if $contract->is_binary and $recomputed == 1;
 
     # non-binary where $amount_type is multiplier always work in price space.
-    my ($amount, $recomputed_amount) = (
-               $amount_type eq 'payout'
-            or $amount_type eq 'multiplier'
-    ) ? ($self->transaction->price, $recomputed_price) : ($self->transaction->payout, $contract->payout);
+    my ($amount, $recomputed_amount) =
+        ($amount_type eq 'payout') ? ($self->transaction->price, $recomputed_price) : ($self->transaction->payout, $contract->payout);
 
     return if $move == 0;
 
@@ -358,7 +356,7 @@ sub _validate_trade_pricing_adjustment {
 
     # For non-binary where $amount_type is always equals to multiplier.
     # We will non need to consider the case where it is 'payout'.
-    if ($amount_type eq 'payout' or $amount_type eq 'multiplier') {
+    if ($amount_type eq 'payout') {
         $self->transaction->price($final_value);
     } else {
         $self->transaction->payout($final_value);
