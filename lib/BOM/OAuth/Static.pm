@@ -45,6 +45,7 @@ my $config = {
         'InvalidBrand'        => "Brand is invalid.",
         'invalid'             => "Sorry, an error occurred. Please try again later.",
         'UNAUTHORIZED_ACCESS' => 'Sorry, your account is not authorized to access this application. Currently, only USD accounts are allowed.',
+        'SUSPICIOUS_BLOCKED'  => 'Suspicious activity detected from this device - for safety, login has been blocked temporarily.',
 
         # brand-specific messages
         USER_NOT_FOUND_BINARY => "Incorrect email or password. Please check if you previously logged in via a social network.",

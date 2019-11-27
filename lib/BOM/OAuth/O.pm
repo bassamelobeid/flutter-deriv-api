@@ -10,7 +10,7 @@ use Date::Utility;
 use Try::Tiny;
 use Digest::MD5 qw(md5_hex);
 use Email::Valid;
-use List::Util qw(any first);
+use List::Util qw(any first min);
 use HTML::Entities;
 use Format::Util::Strings qw( defang );
 use DataDog::DogStatsd::Helper qw(stats_inc);
@@ -19,6 +19,7 @@ use HTTP::BrowserDetect;
 use Brands;
 
 use BOM::Config::Runtime;
+use BOM::Config::RedisReplicated;
 use BOM::User;
 use BOM::User::Client;
 use BOM::User::TOTP;
@@ -29,7 +30,20 @@ use BOM::User::AuditLog;
 use BOM::Platform::Context qw(localize);
 use BOM::OAuth::Static qw(get_message_mapping);
 
+use Log::Any qw($log);
+
 use constant APPS_LOGINS_RESTRICTED => qw(16063);    # mobytrader
+
+# Time in seconds we'll start blocking someone for repeated bad logins from the same IP
+use constant BLOCK_MIN_DURATION => 5 * 60;
+# Upper limit in seconds we'll block an IP  for
+use constant BLOCK_MAX_DURATION => 24 * 60 * 60;
+# How long in seconds before we reset (expire) the exponential backoff
+use constant BLOCK_TTL_RESET_AFTER => 24 * 60 * 60;
+# How many failed attempts (not necessarily consecutive) before we block this IP
+use constant BLOCK_TRIGGER_COUNT => 10;
+# How much time in seconds with no failed attempts before we reset (expire) the failure count
+use constant BLOCK_TRIGGER_WINDOW => 5 * 60;
 
 sub authorize {
     my $c = shift;
@@ -487,6 +501,16 @@ sub _validate_login {
     my $email    = lc defang($c->param('email'));
     my $password = $c->param('password');
 
+    my $r = $c->stash('request');
+    my $ip = $r->client_ip || '';
+
+    # Check for blocked IPs early in the process. 
+    my $redis = BOM::Config::RedisReplicated::redis_auth_write();
+    if($ip and $redis->get('oauth::blocked_by_ip::' . $ip)) {
+        stats_inc('login.authorizer.block.hit');
+        return $err_var->("SUSPICIOUS_BLOCKED");
+    }
+
     my $user;
 
     if ($oneall_user_id) {
@@ -532,7 +556,42 @@ sub _validate_login {
         app_id          => $app_id
     );
 
-    return $err_var->($result->{error}) if exists $result->{error};
+    if(exists $result->{error}) {
+        stats_inc('login.authorizer.login_failed');
+        # Something went wrong - most probably login failure. Innocent enough in isolation;
+        # if we see a pattern of failures from the same address, we would want to discourage
+        # further attempts.
+        if($ip) {
+            try {
+                my $k = 'oauth::failure_count_by_ip::' . $ip;
+                if($redis->incr($k) > BLOCK_TRIGGER_COUNT) {
+                    # Note that we don't actively delete the failure count here, since we expect
+                    # it to expire before the block does. If it doesn't... well, this only applies
+                    # on failed login attempt, if you get the password right first time after the
+                    # block then you're home free.
+
+                    my $ttl = $redis->get('oauth::backoff_by_ip::' . $ip);
+                    $ttl = min(BLOCK_MAX_DURATION, $ttl ? $ttl * 2 : BLOCK_MIN_DURATION);
+                    $log->infof('Multiple login failures from the same IP %s, blocking for %d seconds', $ip, $ttl);
+
+                    # Record our new TTL (hangs around for a day, which we expect to be sufficient
+                    # to slow down offenders enough that we no longer have to be particularly concerned),
+                    # and also apply the block at this stage.
+                    $redis->set('oauth::backoff_by_ip::' . $ip, $ttl, EX => BLOCK_TTL_RESET_AFTER);
+                    $redis->set('oauth::blocked_by_ip::' . $ip, 1, EX => $ttl);
+                    stats_inc('login.authorizer.block.add');
+                } else {
+                    # Extend expiry every time there's a failure
+                    $redis->expire($k, BLOCK_TRIGGER_WINDOW);
+                    stats_inc('login.authorizer.block.fail');
+                }
+            } catch {
+                $log->errorf('Failure encountered while handling Redis blocklists for failed login: %s', $_);
+                stats_inc('login.authorizer.block.error');
+            };
+        }
+        return $err_var->($result->{error});
+    }
 
     my @filtered_clients = _filter_user_clients_by_app_id(
         app_id => $app_id,

@@ -2,6 +2,8 @@ package BOM::OAuth;
 
 use Mojo::Base 'Mojolicious';
 
+use Mojolicious::Plugin::ClientIP::Pluggable;
+
 use BOM::Config;
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
@@ -21,7 +23,11 @@ sub startup {
     $log->warn("Log Level        is " . $log->level);
 
     $app->plugin('DefaultHelpers');
-    $app->plugin('ClientIP');
+    $app->plugin(
+        'Mojolicious::Plugin::ClientIP::Pluggable',
+        analyze_headers => [qw/cf-pseudo-ipv4 cf-connecting-ip true-client-ip/],
+        restrict_family => 'ipv4',
+        fallbacks       => [qw/rfc-7239 x-forwarded-for remote_address/]);
     $app->secrets([BOM::Config::aes_keys()->{web_secret}{1}]);
 
     $app->helper(
