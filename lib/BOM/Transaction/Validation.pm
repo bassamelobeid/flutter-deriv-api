@@ -318,9 +318,11 @@ sub _validate_trade_pricing_adjustment {
 
     $allowed_move = 0 if $contract->is_binary and $recomputed == 1;
 
-    # non-binary where $amount_type is multiplier always work in price space.
+    # - lookbacks and multiplier doesn't have payout
+    # - if amount_type=payout, we should be comparing price
+    my $override_price = ($amount_type eq 'payout' or $contract->category_code eq 'multiplier' or $contract->category_code eq 'lookbacks') ? 1 : 0;
     my ($amount, $recomputed_amount) =
-        ($amount_type eq 'payout') ? ($self->transaction->price, $recomputed_price) : ($self->transaction->payout, $contract->payout);
+        $override_price ? ($self->transaction->price, $recomputed_price) : ($self->transaction->payout, $contract->payout);
 
     return if $move == 0;
 
@@ -354,9 +356,7 @@ sub _validate_trade_pricing_adjustment {
         }
     }
 
-    # For non-binary where $amount_type is always equals to multiplier.
-    # We will non need to consider the case where it is 'payout'.
-    if ($amount_type eq 'payout') {
+    if ($override_price) {
         $self->transaction->price($final_value);
     } else {
         $self->transaction->payout($final_value);
