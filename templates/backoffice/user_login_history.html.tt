@@ -11,7 +11,7 @@
             </form>
             </p>
         [% END %]
-        <table class="GreyCandy collapsed" border="1" cellspacing="0" cellpadding="5">
+        <table class="BlackCandy collapsed hover" border="1">
             <tr>
                 <th>Date and Time</th>
                 <th>Action</th>

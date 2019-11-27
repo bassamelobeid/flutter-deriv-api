@@ -33,10 +33,11 @@ sub BrokerPresentation {
     print "<title>$Title-$ENV{REMOTE_ADDR}</title>";
     print '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
     print '<link rel="SHORTCUT ICON" href="' . request()->url_for('images/common/favicon_1.ico') . '" />';
-    print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/style.css',         undef, undef, {internal_static => 1}) . '"/>';
-    print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/sell_popup.css',    undef, undef, {internal_static => 1}) . '"/>';
-    print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/external/grid.css', undef, undef, {internal_static => 1}) . '"/>';
-    print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/external/jquery-ui.custom.css') . '"/>';
+
+    my $base_dir = Mojo::URL->new(BOM::Config::Runtime->instance->app_config->cgi->backoffice->static_url);
+    $base_dir->path('css/');
+    print '<link rel="stylesheet" type="text/css" href="' . $base_dir->to_string . $_ . '"/>'
+        for ('style.css', 'sell_popup.css', 'external/grid.css', 'external/jquery-ui.custom.css');
 
     foreach my $js_file (BOM::JavascriptConfig->instance->bo_js_files_for($0)) {
         print '<script type="text/javascript" src="' . $js_file . '"></script>';
@@ -97,7 +98,7 @@ sub Bar {
     <td class="whitelabel" colspan="2">$bartext</td>
    </tr>
    <tr>
-    <td align="left" style="padding-left: 10px;">~;
+    <td align="left" style="padding: 10px;">~;
 
     $vk_BarIsDoneOnce = 'yes';
     return;
@@ -269,7 +270,7 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
         . qq~" class="Blue" style="margin-left: 10px;">Investigative Tools</a>
 								</td>
 							</tr>
-							
+
 							<tr>
 								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
 									<a href="~

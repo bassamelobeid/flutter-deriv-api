@@ -748,8 +748,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 Bar("NAVIGATION");
 print qq[<style>
         div.flat { display: inline-block }
-        table.collapsed { border-collapse: collapse }
-        table.collapsed td { padding: 0px 8px 0px 4px }
     </style>
 ];
 
@@ -1149,38 +1147,87 @@ if (not $client->is_virtual) {
         });
 }
 
+=head2 Trading Experience & Financial Information
+
+The purpose of this section is to display the client's
+financial assessment information and scores in tables.
+
+Also, with a B<Compliance> access, it will render editable dropdowns
+instead of labels which provide them the ability to update the
+client's financial assessment information.
+
+=cut
+
+my $is_compliance = BOM::Backoffice::Auth0::has_authorisation(['Compliance']);
+my %fa_updated;
+if ($is_compliance && $input{whattodo} =~ /^(trading_experience|financial_information)$/) {
+    update_fa($client, $input{whattodo});
+    $fa_updated{$input{whattodo}} = 1;
+}
+
+sub update_fa {
+    my ($client, $section_name) = @_;
+    my $config = BOM::Config::financial_assessment_fields();
+    my $args = +{map { $_ => request()->param($_) } grep { request()->param($_) } keys $config->{$section_name}->%*};
+    return BOM::User::FinancialAssessment::update_financial_assessment($client->user, $args);
+}
+
 my $built_fa =
     BOM::User::FinancialAssessment::build_financial_assessment(BOM::User::FinancialAssessment::decode_fa($client->financial_assessment()));
-my $fa_score              = $built_fa->{scores};
-my $trading_experience    = $built_fa->{trading_experience};
-my $financial_information = $built_fa->{financial_information};
-if ($trading_experience) {
-    Bar("Trading Experience");
-    print_fa_table(%$trading_experience);
-    print '<p>Trading experience score: ' . $fa_score->{trading_experience} . '</p>';
-    print '<p>CFD Score: ' . $fa_score->{cfd_score} . '</p><br/>';
-}
-if ($financial_information) {
-    Bar("Financial Information");
-    print_fa_table(%$financial_information);
-    print '<p>Financial information score: ' . $fa_score->{financial_information} . '</p><br/>';
+my $fa_score = $built_fa->{scores};
+
+for my $section_name (qw(trading_experience financial_information)) {
+    next unless ($built_fa->{$section_name});
+
+    my $title = join ' ', map { ucfirst } split '_', $section_name;
+
+    print "<a name='$section_name'></a>";
+    Bar($title);
+
+    print_fa_table($section_name, $self_href, $is_compliance, $built_fa->{$section_name}->%*);
+    print "<strong style='color: #060;'>$title updated.</strong>" if $fa_updated{$section_name};
+
+    print "<p>$title score: <strong>" . $fa_score->{$section_name} . '</strong></p>';
+    print '<p>CFD Score: <strong>' . $fa_score->{cfd_score} . '</strong></p>' if ($section_name eq 'trading_experience');
 }
 
 sub print_fa_table {
-    my %section = @_;
+    my ($section_name, $self_href, $is_editable, %section) = @_;
 
     my @hdr = ('Question', 'Answer', 'Score');
+    my $config = BOM::Config::financial_assessment_fields();
 
-    print '<br/><table style="width:100%;" border="1" class="sortable"><thead><tr>';
+    print "<form method='post' action='$self_href#$section_name'><input type='hidden' name='whattodo' value='$section_name'>"
+        if $is_editable;
+    print '<table border="1" class="sortable BlackCandy collapsed hover"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
-    for my $key (keys %section) {
-        my $answer = $section{$key}->{answer} // 'Client did not answer this question.';
-        print '<tr><td>' . $section{$key}->{label} . '</td><td>' . $answer . '</td><td>' . $section{$key}->{score} . '</td></tr>';
+    for my $key (sort keys %section) {
+        my $answer           = $section{$key}->{answer};
+        my @possible_answers = sort keys $config->{$section_name}->{$key}->{possible_answer}->%*;
+        print '<tr><td>'
+            . $section{$key}->{label}
+            . '</td><td>'
+            . ($is_editable ? dropdown($key, $answer, @possible_answers) : $answer // 'Client did not answer this question.')
+            . '</td><td>'
+            . $section{$key}->{score}
+            . '</td></tr>';
     }
-    print '</tbody></table></br>';
+    print '</tbody></table>';
+    print '<input type="submit" value="Update"></form>' if $is_editable;
 
     return undef;
+}
+
+sub dropdown {
+    my ($name, $selected, @values) = @_;
+
+    my $ddl = "<select name='$name'>";
+    $ddl .= "<option value=''></option>" unless $selected;
+    $ddl .= "<option value='$_'@{[$_ eq $selected ? ' selected=\"selected\"' : '']}>$_</option>" for @values;
+    $ddl .= '</select>';
+
+    return $ddl;
 }
 
 Bar($user->{email} . " Login history");
