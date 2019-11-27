@@ -58,6 +58,7 @@ use BOM::Config::Runtime;
 use BOM::Config::ContractPricingLimits qw(market_pricing_limits);
 use BOM::RPC::v3::Services;
 use BOM::Config::RedisReplicated;
+use BOM::User::Onfido;
 
 use constant DEFAULT_STATEMENT_LIMIT              => 100;
 use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
@@ -889,10 +890,7 @@ sub _get_authentication {
     # check for onfido check status and inform accordingly
     if ($user_applicant) {
 
-        my $user_check = $dbic->run(
-            fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM users.get_onfido_checks(?::BIGINT)', undef, $client->binary_user_id);
-            });
+        my $user_check = BOM::User::Onfido::get_latest_onfido_check($client->binary_user_id);
 
         unless ($user_check) {
             $needs_verification_hash{identity} = 'identity' if $client->is_verification_required();
@@ -901,11 +899,7 @@ sub _get_authentication {
                 if ($user_check->{status} =~ /^in_progress|awaiting_applicant$/) {
                     $authentication_object->{identity}->{status} = 'pending';
                 } elsif ($user_check->{result} eq 'consider') {
-                    my $user_reports = $dbic->run(
-                        fixup => sub {
-                            $_->selectall_hashref('SELECT * FROM users.get_onfido_reports(?::BIGINT, ?::TEXT)',
-                                'id', undef, ($client->binary_user_id, $check_id));
-                        });
+                    my $user_reports = BOM::User::Onfido::get_all_onfido_reports($client->binary_user_id, $check_id);
 
                     # check for document result as we have accepted documents
                     # manually so facial similarity is not accurate as client
