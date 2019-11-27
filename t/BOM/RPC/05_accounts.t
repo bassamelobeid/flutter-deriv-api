@@ -2021,10 +2021,10 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
     $params->{args} = {%full_args};
 
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Already have a secret_answer.', 'Cannot send secret_answer if already exists');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your secret answer cannot be changed.', 'Cannot send secret_answer if already exists');
     delete $params->{args}{secret_answer};
 
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Already have a secret_question.', 'Cannot send secret_question if already exists');
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your secret question cannot be changed.', 'Cannot send secret_question if already exists');
     delete $params->{args}{secret_question};
 
     delete $full_args{secret_question};
@@ -2045,7 +2045,7 @@ subtest $method => sub {
     $params->{args}{date_of_birth} = '1987-1-1';
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
-        'Your landing company does not allow date of birth to be changed.',
+        'Your date of birth cannot be changed.',
         'date_of_birth not allow changed'
     );
     delete $params->{args}{date_of_birth};
@@ -2068,7 +2068,7 @@ subtest $method => sub {
 
         is(
             $c->tcall($method, $params)->{error}{message_to_client},
-            'Your landing company does not allow place of birth to be changed.',
+            'Your place of birth cannot be changed.',
             'cannot send place_of_birth with a different value'
         );
     }
@@ -2118,7 +2118,7 @@ subtest $method => sub {
         $params->{args} = {%full_args};
         is(
             $c->tcall($method, $params)->{error}{message_to_client},
-            'Your landing company does not allow account opening reason to be changed.',
+            'Your account opening reason cannot be changed.',
             'cannot send account_opening_reason with a different value'
         );
     }
@@ -2191,7 +2191,7 @@ subtest $method => sub {
             $test_client->save();
             is(
                 $c->tcall($method, $params)->{error}{message_to_client},
-                'Your landing company does not allow citizen to be changed.',
+                'Your citizen cannot be changed.',
                 'different value for citizenship'
             );
         };
