@@ -235,7 +235,7 @@ sub _validate_sell_pricing_adjustment {
     # all multiplier contracts will be closed at recomputed bid price without going through price movement checks.
     # This is specified in the contract terms and conditions.
     if ($contract->category_code eq 'multiplier') {
-        $self->price($contract->bid_price);
+        $self->transaction->price($contract->bid_price);
         return undef;
     }
 
