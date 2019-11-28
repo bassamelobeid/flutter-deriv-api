@@ -279,13 +279,7 @@ sub _validate_trade_pricing_adjustment {
     my $recomputed_price = $contract->is_binary ? $contract->ask_price : formatnumber('price', $contract->currency, $contract->ask_price);
     $self->transaction->recomputed_price($recomputed_price);
     my $recomputed = $contract->is_binary ? $contract->ask_probability->amount : $recomputed_price;
-    my $move = ($contract->is_binary or ($requested == 0)) ? $requested - $recomputed : ($requested - $recomputed) / $requested;
-
-    #We use price here  for binary option to double check check the slippage.
-    #Because we are seeing issues where price difference is very small
-    #like 4.17 vs 4.17111...
-    $move = 0 if ($contract->is_binary and ($self->transaction->price eq formatnumber('price', $contract->currency, $recomputed_price)));
-
+    my $move         = ($contract->is_binary or ($requested == 0)) ? $requested - $recomputed : ($requested - $recomputed) / $requested;
     my $slippage     = $self->transaction->price - $recomputed_price;
     my $allowed_move = $contract->allowed_slippage;
 
