@@ -48,7 +48,7 @@ sub set_pending_transaction {
         my $payment_rows = clientdb()->run(
             fixup => sub {
                 my $sth = $_->prepare('select * from payment.find_crypto_by_addresses(?::VARCHAR[])');
-                $sth->execute([$transaction->{to}]);
+                $sth->execute($transaction->{to});
                 return $sth->fetchall_arrayref({});
             });
 

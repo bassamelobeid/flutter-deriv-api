@@ -40,7 +40,7 @@ subtest "change_address_status" => sub {
     my $transaction = Net::Async::Blockchain::Transaction->new(
         currency => 'LTC',
         hash     => $transaction_hash1,
-        to       => 'abc',
+        to       => ['abc'],
         type     => 'receive',
         amount   => 0,
         block    => 10,
@@ -65,7 +65,7 @@ subtest "change_address_status" => sub {
     }
     'survived get_deposit_address 2';
 
-    $transaction->{to} = $btc_address;
+    $transaction->{to} = [$btc_address];
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, undef, "Invalid currency";
