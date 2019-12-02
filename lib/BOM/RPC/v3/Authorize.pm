@@ -3,6 +3,7 @@ package BOM::RPC::v3::Authorize;
 use strict;
 use warnings;
 
+use Syntax::Keyword::Try;
 use Date::Utility;
 use List::MoreUtils qw(any);
 use Convert::Base32;
@@ -10,6 +11,7 @@ use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Utility;
+use BOM::Config::RedisReplicated ();
 use BOM::Platform::Context qw (localize request);
 use BOM::User;
 use BOM::User::AuditLog;
@@ -17,6 +19,8 @@ use BOM::User::Client;
 use BOM::User::TOTP;
 
 use LandingCompany::Registry;
+
+use Log::Any qw($log);
 
 sub _get_upgradeable_landing_companies {
     my ($client_list, $client) = @_;
@@ -102,6 +106,41 @@ rpc authorize => sub {
     });
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
+    $params->{app_id} = $params->{source};
+    my $app_id = $params->{app_id};
+
+    # At this point we had a valid token, but we have not
+    # done any significant amount of filtering on the client
+    # status or self-exclusion. We want to know how API tokens
+    # are being used, though, so at this point we record
+    # the `authorize` action in Redis for later analysis.
+    try {
+        # The raw token is stored directly in Redis, since
+        # this is the same server that will (eventually!)
+        # be responsible for *all* auth data.
+        my $redis_key = 'authorize::success::' . $token;
+
+        # Since user-agent is provided by the user, usual
+        # delimiters such as `:` are not going to work -
+        # Redis allows binary hash keys so we store with
+        # NUL separators in a UTF-8 bytestring.
+        my $hash_key = join("\0", $app_id // '?', request()->language // '?', $client_ip // '?', $params->{user_agent} // '?',);
+
+        # We normally expect a single token to have only a
+        # small number of users, so we do not expect
+        # the hash key count to grow too rapidly. However,
+        # we would expect a secondary process to pull this
+        # data out of Redis periodically and to move it
+        # somewhere safer.
+        BOM::Config::RedisReplicated::redis_auth_write()->hincrby(
+            $redis_key => $hash_key,
+            1
+        );
+    }
+    catch {
+        $log->errorf('Failed to record authorize stats: %s', $@);
+    }
+
     my ($lc, $brand_name) = ($client->landing_company, request()->brand->name);
     # check for not allowing cross brand tokens
     return BOM::RPC::v3::Utility::invalid_token_error() unless (grep { $brand_name eq $_ } @{$lc->allowed_for_brands});
@@ -112,9 +151,6 @@ rpc authorize => sub {
 
     my $user = $client->user;
     my $token_type;
-
-    $params->{app_id} = $params->{source};
-    my $app_id = $params->{app_id};
 
     if (length $token == 15) {
 
