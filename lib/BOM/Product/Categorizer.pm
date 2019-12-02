@@ -397,6 +397,12 @@ sub _initialize_other_parameters {
         $params->{amount_type} = 'payout';
     }
 
+    # ask_price could come from $contract->build_parameters if make_similar_contract is used
+    if (defined $params->{ask_price} and not(defined $params->{amount} and defined $params->{amount_type})) {
+        $params->{amount}      = delete $params->{ask_price};
+        $params->{amount_type} = 'stake';
+    }
+
     if ($params->{category}->require_basis) {
         BOM::Product::Exception->throw(
             error_code => 'MissingEither',
