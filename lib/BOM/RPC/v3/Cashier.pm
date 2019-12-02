@@ -50,6 +50,7 @@ use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
+use BOM::Config::RedisReplicated;
 requires_auth();
 
 use constant MAX_DESCRIPTION_LENGTH => 250;
@@ -1546,6 +1547,13 @@ rpc topup_virtual => sub {
         });
     };
 
+    # Block virtual topup for contest
+    # TODO: remove this after contest!
+    my $redis_reader = BOM::Config::RedisReplicated::redis_read();
+    if ($redis_reader->get('TOPUP_VIRTUAL::' . $client->loginid)) {
+        return $error_sub->(localize('You cannot top up virtual account for this contest.'));
+    }
+
     # ERROR CHECKS
     if (!$client->is_virtual) {
         return $error_sub->(localize('Sorry, this feature is available to virtual accounts only'));
@@ -1564,6 +1572,8 @@ rpc topup_virtual => sub {
 
     # CREDIT HIM WITH THE MONEY
     my ($curr, $amount) = $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
+    # TODO: remove this after contest!
+    BOM::Config::RedisReplicated::redis_write()->set('TOPUP_VIRTUAL::' . $client->loginid, 1);
 
     return {
         amount   => $amount,
