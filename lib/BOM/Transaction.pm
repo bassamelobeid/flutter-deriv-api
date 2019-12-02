@@ -148,6 +148,12 @@ sub _build_payout {
     return $self->contract->payout;
 }
 
+=head2 amount_type
+
+amount_type can either be 'payout' or 'stake'. This works for all existing contract types.
+
+=cut
+
 has amount_type => (
     is         => 'rw',
     isa        => 'Str',
@@ -158,13 +164,16 @@ sub _build_amount_type {
     my $self = shift;
 
     my $param = $self->contract_parameters;
+    my $amount_type;
+    # shortcode is generated internally and not part of buy parameter. When is part of the $self->contract_parameters,
+    # this is an existing contract.
     if ($param->{shortcode}) {
-        return shortcode_to_parameters($param->{shortcode}, $param->{currency})->{amount_type};
+        $amount_type = shortcode_to_parameters($param->{shortcode}, $param->{currency})->{amount_type};
     }
 
-    return 'multiplier' if defined $param->{multiplier};
+    die 'amount_type is required' unless defined $amount_type;
 
-    die 'amount type is required';
+    return $amount_type;
 }
 
 has comment => (
