@@ -100,6 +100,7 @@ sub generate {
                         my $symbol = $bet_params->{underlying};
                         $bet_params->{underlying} = $cached_underlyings{$symbol}
                             if ($cached_underlyings{$symbol});
+                        $bet_params->{limit_order} = BOM::Transaction::extract_limit_orders($open_fmb);
                         my $bet = produce_contract($bet_params);
                         $cached_underlyings{$symbol} ||= $bet->underlying;
 
