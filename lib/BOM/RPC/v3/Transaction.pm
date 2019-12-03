@@ -130,7 +130,6 @@ rpc "buy",
 
     my ($source, $contract_parameters, $args, $payout) = @{$params}{qw/source contract_parameters args payout/};
 
-    my $trading_period_start = $contract_parameters->{trading_period_start};
     my $purchase_date        = time;                                           # Purchase is considered to have happened at the point of request.
 
     $contract_parameters = BOM::Pricing::v3::Contract::prepare_ask($contract_parameters);
@@ -169,9 +168,6 @@ rpc "buy",
             (defined $amount_type) ? (amount_type => $amount_type) : (),
             purchase_date => $purchase_date,
             source        => $source,
-            (defined $trading_period_start)
-            ? (trading_period_start => $trading_period_start)
-            : (),
         });
 
     try {
