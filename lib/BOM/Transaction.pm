@@ -171,6 +171,9 @@ sub _build_amount_type {
         $amount_type = shortcode_to_parameters($param->{shortcode}, $param->{currency})->{amount_type};
     }
 
+    # lookbacks does not require amount_type and amount as it's input, but internally we would
+    # still want to compare the ask price
+    $amount_type = 'payout' unless $self->contract->category->require_basis;
     die 'amount_type is required' unless defined $amount_type;
 
     return $amount_type;
