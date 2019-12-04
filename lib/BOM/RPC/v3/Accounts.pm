@@ -1850,6 +1850,13 @@ rpc api_token => sub {
         }
     }
     if (my $display_name = $args->{new_token}) {
+        # Block any payment agent from creating API tokens since we only expect them
+        # to be depositing and withdrawing, not running bots or doing trading.
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'PermissionDenied',
+                message_to_client => localize('Permission denied'),
+            }) if $client->payment_agent;
+
         ## for old API calls (we'll make it required on v4)
         my $scopes = $args->{new_token_scopes} || ['read', 'trade', 'payments', 'admin'];
         my $token = $m->create_token($client->loginid, $display_name, $scopes, ($args->{valid_for_current_ip_only} ? $client_ip : undef));
