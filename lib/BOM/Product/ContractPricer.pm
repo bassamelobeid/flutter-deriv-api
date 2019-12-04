@@ -673,9 +673,8 @@ sub _build_base_commission {
 sub _build_commission_markup {
     my $self = shift;
 
-    # commission_markup needs theo_probability and min_commission_amount
+    # commission_markup needs theo_probability
     $self->price_calculator->theo_probability($self->theo_probability);
-    $self->price_calculator->min_commission_amount($self->min_commission_amount);
     return $self->price_calculator->commission_markup;
 }
 
@@ -820,6 +819,7 @@ sub _build_price_calculator {
         deep_otm_threshold    => $self->otm_threshold,
         base_commission       => $self->base_commission,
         app_markup_percentage => $self->app_markup_percentage,
+        min_commission_amount => $self->min_commission_amount,
         # due to discount on end of hour, we just want to have a safety net to make sure we don't go below 0.45
         ($self->priced_with_intraday_model and $self->is_atm_bet) ? (minimum_ask_probability => 0.45) : (),
         ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
