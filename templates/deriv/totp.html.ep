@@ -1,3 +1,17 @@
+<style>
+#txtOTP::placeholder {
+    opacity: 0.8;
+}
+
+#txtOTP:focus::placeholder {
+    opacity: 0.4;
+}
+
+#txtOTP {
+    border: 1px solid #CCC;
+    margin: 1rem 0rem 1rem 0rem;
+}
+</style>
 <div class="container">
     <p class="center-text"><%= l('Please enter your verification code') %></p>
     <% if (stash('error')) { %>
