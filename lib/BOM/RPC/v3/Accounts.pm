@@ -15,7 +15,6 @@ use JSON::MaybeXS;
 use Try::Tiny;
 use WWW::OneAll;
 use Date::Utility;
-use HTML::Entities qw(encode_entities);
 use List::Util qw(any sum0 first min uniq);
 use Digest::SHA qw(hmac_sha256_hex);
 use Text::Trim qw(trim);
@@ -1445,11 +1444,11 @@ rpc set_settings => sub {
             template_loginid      => $current_client->loginid,
             template_name         => 'update_account_settings',
             template_args         => {
-                updated_fields => [map { [encode_entities($_->[0]), encode_entities($_->[1])] } @updated_fields],
-                salutation => map { encode_entities($_) } BOM::Platform::Locale::translate_salutation($current_client->salutation),
-                first_name   => $current_client->first_name,
-                last_name    => $current_client->last_name,
-                website_name => $website_name,
+                updated_fields => [@updated_fields],
+                salutation     => BOM::Platform::Locale::translate_salutation($current_client->salutation),
+                first_name     => $current_client->first_name,
+                last_name      => $current_client->last_name,
+                website_name   => $website_name,
             },
         });
     BOM::User::AuditLog::log('Your settings have been updated successfully', $current_client->loginid);
