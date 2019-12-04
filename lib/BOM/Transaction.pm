@@ -77,6 +77,8 @@ sub BUILD {
         $self->requested_amount($self->price);
         $self->recomputed_amount($self->contract->ask_price);
     }
+
+    return;
 }
 
 has client => (
