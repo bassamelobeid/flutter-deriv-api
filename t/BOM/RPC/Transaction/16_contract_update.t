@@ -86,8 +86,8 @@ subtest 'contract_update' => sub {
         ->error_message_is('Contract not found for contract id: 123.');
 
     my $buy_params = {
-        client_ip            => '127.0.0.1',
-        token                => $token,
+        client_ip           => '127.0.0.1',
+        token               => $token,
         contract_parameters => {
             contract_type => 'MULTUP',
             basis         => 'stake',
@@ -125,8 +125,8 @@ subtest 'contract_update' => sub {
     ok $res->{take_profit}, 'returns the new take profit value';
     ok !%{$res->{stop_loss}}, 'stop loss is undef';
     ok $res->{contract_details}, 'has contract_details';
-    is $res->{contract_details}{limit_order}->[0],        'stop_out';
-    is $res->{contract_details}{limit_order}->[2],        'take_profit';
+    is $res->{contract_details}{limit_order}->[0], 'stop_out';
+    is $res->{contract_details}{limit_order}->[2], 'take_profit';
 
     delete $update_params->{args}->{limit_order}->{take_profit};
     $update_params->{args}->{limit_order}->{stop_loss} = -80;

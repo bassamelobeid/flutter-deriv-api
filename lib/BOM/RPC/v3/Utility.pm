@@ -331,12 +331,15 @@ sub error_map {
         'InvalidPlaceOfBirth'        => localize('Please enter a valid place of birth.'),
         'InsufficientAccountDetails' => localize('Please provide complete details for account opening.'),
         'InvalidCitizenship'         => localize('Sorry, our service is not available for your country of citizenship.'),
+        'InvalidResidence'           => localize('Sorry, our service is not available for your country of residence.'),
         'InvalidDateFirstContact'    => localize('Date first contact is invalid.'),
         'InvalidBrand'               => localize('Brand is invalid.'),
         'CannotChangeAccountDetails' => localize('You may not change these account details.'),
         'UnwelcomeAccount'           => localize('We are unable to do that because your account has been restricted. If you need help, let us know.'),
         'InvalidPhone'               => localize('Please enter a valid phone number, including the country code (e.g. +15417541234).'),
-
+        'NeedBothSecret'             => localize('Need both secret question and secret answer.'),
+        'DuplicateAccount' => localize('Sorry, an account already exists with those details. Only one real money account is allowed per client.'),
+        'BelowMinimumAge'  => localize('Value of date of birth is below the minimum age required.'),
     };
 }
 
@@ -838,6 +841,41 @@ sub missing_details_error {
             code              => 'ASK_FIX_DETAILS',
             message_to_client => localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
             details           => {fields => $args{details}}});
+}
+
+=head2 create_error_by_code
+
+call the create_error with error_code and message from error_map.
+
+=over 4
+
+=item * C<error_code>
+
+A string from error_map HASH key.
+
+=item * C<options> (optional)
+
+Hash with advance options like override_code, details, message.
+
+=back
+
+Returns error format of create_error
+
+=cut
+
+sub create_error_by_code {
+    my ($error_code, %options) = @_;
+
+    my $message = error_map()->{$error_code};
+
+    return BOM::RPC::v3::Utility::permission_error() unless $message;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code => $options{override_code} ? $options{override_code} : $error_code,
+            message_to_client => $message,
+            $options{message} ? (message => $options{message}) : (),
+            $options{details} ? (details => $options{details}) : ()});
+
 }
 
 1;
