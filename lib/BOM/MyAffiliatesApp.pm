@@ -21,9 +21,9 @@ sub startup {
     $app->plugin('DefaultHelpers');
 
     my $r = $app->routes;
-    $r->get('/activity_report')->to('C#activity_report');
-    $r->get('/registration')->to('C#registration');
-    $r->get('/turnover_report')->to('C#turnover_report');
+    $r->get('/activity_report')->to('Controller#activity_report');
+    $r->get('/registration')->to('Controller#registration');
+    $r->get('/turnover_report')->to('Controller#turnover_report');
 
     return;
 }

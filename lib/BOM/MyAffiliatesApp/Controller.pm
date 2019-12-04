@@ -1,4 +1,4 @@
-package BOM::MyAffiliatesApp::C;
+package BOM::MyAffiliatesApp::Controller;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Date::Utility;
