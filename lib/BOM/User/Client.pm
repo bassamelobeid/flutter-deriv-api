@@ -1307,7 +1307,7 @@ sub is_verification_required {
 
     if ($args{check_authentication_status}) {
         return 1 if ($self->authentication_status // '') eq 'needs_action';
-        return 1 if ($self->residence eq 'gb' and not $self->get_authentication('ID_ONLINE') and $self->status->unwelcome);
+        return 1 if ($self->residence eq 'gb' and not $self->get_authentication('ID_ONLINE'));
     }
 
     # applicable for all landing companies
