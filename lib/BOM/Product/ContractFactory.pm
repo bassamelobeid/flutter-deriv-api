@@ -246,10 +246,6 @@ sub make_similar_contract {
 
     # Start by making a copy of the parameters we used to build this bet.
     my %build_parameters = %{$orig_contract->build_parameters};
-    if ($build_parameters{ask_price}) {
-        $build_parameters{amount}      = delete $build_parameters{ask_price};
-        $build_parameters{amount_type} = 'stake';
-    }
 
     if ($changes->{as_new}) {
         if ($orig_contract->two_barriers) {
