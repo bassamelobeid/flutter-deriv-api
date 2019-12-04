@@ -30,14 +30,20 @@
                 --color-red-3: #d43e47;
                 --color-grey: #c2c2c2;
                 --color-grey-1: #999999;
+                --color-grey-2: #666565;
+                --color-grey-3: #f2f2f2;
+                --color-grey-4: #f2f3f4;
                 --color-grey-5: #d6dadb;
+                --color-grey-6: #777777;
                 --color-green: #85acb0;
                 --color-blue: #4c76be;
                 --color-blue-2: #365899;
                 --color-yellow: #fff2df;
 
                 /* sizes */
+                --text-size-xxxs: 1rem;
                 --text-size-xxs: 1.2rem;
+                --text-size-xsm: 1.3rem;
                 --text-size-xs: 1.4rem;
                 --text-size-s: 1.6rem;
                 --text-size-sm: 2rem;
@@ -60,14 +66,15 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                height: 7.2rem;
-                margin-bottom: 8rem;
+                height: 10.4rem;
+                margin-bottom: 4rem;
                 background-color: var(--color-black);
             }
             header #logo {
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                max-width: 100%;
             }
             a {
                 color: var(--color-red);
@@ -82,7 +89,7 @@
             p {
                 color: var(--color-black-3);
                 font-weight: normal;
-                font-size: var(--text-size-s);
+                font-size: var(--text-size-xs);
                 line-height: 1.5;
                 margin: 0;
             }
@@ -123,8 +130,9 @@
                 flex-direction: column;
                 align-items: center;
                 width: 95%;
-                max-width: 524px;
+                max-width: 40rem;
                 margin: auto;
+                text-align: center;
             }
             form {
                 display: flex;
@@ -168,9 +176,6 @@
                 background-position: center center;
                 cursor: pointer;
                 display: none;
-            }
-            div.input-wrapper #btnClear {
-                background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICAgIDxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPGNpcmNsZSBjeD0iOCIgY3k9IjgiIHI9IjgiIGZpbGw9IiNERDU3M0EiLz4KICAgICAgICA8cGF0aCBmaWxsPSIjRkZGIiBmaWxsLXJ1bGU9Im5vbnplcm8iIGQ9Ik04IDYuNTg2bDIuMjkzLTIuMjkzYTEgMSAwIDAgMSAxLjQxNCAxLjQxNEw5LjQxNCA4bDIuMjkzIDIuMjkzYTEgMSAwIDAgMS0xLjQxNCAxLjQxNEw4IDkuNDE0bC0yLjI5MyAyLjI5M2ExIDEgMCAxIDEtMS40MTQtMS40MTRMNi41ODYgOCA0LjI5MyA1LjcwN2ExIDEgMCAwIDEgMS40MTQtMS40MTRMOCA2LjU4NnoiLz4KICAgIDwvZz4KPC9zdmc+Cg==");
             }
             div.input-wrapper #btnToggle.icon_hidden {
                 background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICAgIDxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPHBhdGggZD0iTTAgMGgxNnYxNkgweiIvPgogICAgICAgIDxwYXRoIGZpbGw9IiM5OTkiIGZpbGwtcnVsZT0ibm9uemVybyIgZD0iTTE0LjE3NyAyLjExOGEuNS41IDAgMSAxIC42NDYuNzY0bC0yLjA0OCAxLjczMkE3LjkyNSA3LjkyNSAwIDAgMSAxNS4zMzMgOGMtMS4xNTMgMi45MjctNCA1LTcuMzMzIDVhNy44MyA3LjgzIDAgMCAxLTMuOTA4LTEuMDM4bC0yLjI2OSAxLjkyYS41LjUgMCAxIDEtLjY0Ni0uNzY0bDIuMDQ3LTEuNzMzQTcuOTI1IDcuOTI1IDAgMCAxIC42NjcgOEMxLjgyIDUuMDczIDQuNjY3IDMgOCAzYTcuODMgNy44MyAwIDAgMSAzLjkwOSAxLjAzOHptLTIuMjY1IDMuMjI2TDEwLjU4IDYuNDcyYy4yNjcuNDQ4LjQyLjk3LjQyIDEuNTI4IDAgMS42NTMtMS4zNDcgMy0zIDMtLjczNiAwLTEuNDEtLjI2Ny0xLjkzMy0uNzA4bC0xLjEwNi45MzVDNS44OCAxMS43MjcgNi45MTQgMTIgOCAxMmMyLjU4NSAwIDQuODc4LTEuNTUgNi00YTcuMDQ2IDcuMDQ2IDAgMCAwLTIuMDg4LTIuNjU2ek04IDRDNS40MjIgNCAzLjEyMiA1LjU1IDIgOGE3LjA1IDcuMDUgMCAwIDAgMi4wODYgMi42NTZMNS40MiA5LjUyOEEyLjk4IDIuOTggMCAwIDEgNSA4YzAtMS42NTMgMS4zNDctMyAzLTMgLjczNiAwIDEuNDExLjI2NyAxLjkzNC43MDlsMS4xMDUtLjkzNUE2LjMzNiA2LjMzNiAwIDAgMCA4IDR6bTEuODAyIDMuMTNMNi44NDUgOS42MzNBMiAyIDAgMCAwIDkuODAyIDcuMTN6TTggNmEyIDIgMCAwIDAtMS44MDIgMi44N2wyLjk1Ny0yLjUwM0ExLjk5IDEuOTkgMCAwIDAgOCA2eiIvPgogICAgPC9nPgo8L3N2Zz4K");
@@ -263,8 +268,8 @@
             }
             button {
                 border-radius: 6px;
-                padding: 1.3rem 2rem;
-                font-size: 1.6rem;
+                padding: 1rem 1.6rem;
+                font-size: 1.4rem;
                 transition: all 0.25s;
                 font-weight: bold;
             }
@@ -300,16 +305,26 @@
                 border-color: var(--color-red-3);
             }
 
+            #lost-password {
+                align-self: flex-end;
+                font-weight: bold;
+                margin-bottom: 1.6rem;
+            }
+
             #lost-password-container {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 width: 100%;
-                margin-top: 5.6rem;
+                margin-top: 2.4rem;
+                flex-direction: column;
             }
 
             #lost-password-container button[type="submit"] {
                 margin-left: auto;
+                border: none;
+                width: 100%;
+                height: 4rem;
             }
 
             #oa_social_login_container {
@@ -327,20 +342,87 @@
                 color: var(--color-red);
                 font-size: var(--text-size-s);
             }
-
+            .title-text {
+                margin-bottom: 2rem;
+            }
+            .subtitle-text {
+                display: flex;
+                font-size: var(--text-size-xsm);
+                color: var(--color-grey-2);
+                margin-bottom: 2rem;
+                align-items: center;
+            }
+            .deriv-url {
+                background-color: var(--color-grey-3);
+                border-radius: var(--text-size-s);
+                margin-left: 0.8rem;
+                line-height: 0;
+            }
+            .binary-logo {
+                margin: 0 1.5rem;
+            }
             .center-text {
                 text-align: center;
             }
-            .note-text {
-                color: var(--color-grey-1);
-                text-align: center;
-                margin-bottom: 1rem;
-                max-width: 430px;
+            .note-container {
+                background-color: var(--color-grey-4);
+                display: flex;
+                padding: 1.2rem 1.6rem;
+                margin-bottom: 2.5rem;
+                align-items: center;
+            }
+            .note-wrapper {
+                text-align: left;
+                display: flex;
+                flex-direction: column;
+            }
+            .note-title {
                 font-size: var(--text-size-xs);
-                margin-top: 2.4rem;
+                color: var(--color-grey-2);
+                text-align: left;
+                font-weight: normal;
+                margin-top: 0;
+                margin-bottom: 0.3rem;
+            }
+            .note-text {
+                color: var(--color-grey-2);
+                font-size: var(--text-size-xxxs);
+            }
+            .separator {
+                width: 100%;
+                border-top: 1px solid var(--color-grey-5);
+            }
+            .social-text {
+                color: var(--color-grey-6);
+                width: fit-content;
+                margin: auto;
+                transform: translateY(-11px);
+                background: var(--color-white);
+                padding: 0 1.1rem;
+            }
+            .account-link {
+                margin-left: 0.6rem;
+                font-weight: bold;
+            }
+            .account-text {
+                color: var(--color-grey-6);
+                font-size: var(--text-size-xs);
+                margin-top: 1.6rem;
             }
             .hide {
                 display: none;
+            }
+            @media (max-width: 368px) {
+                html {
+                    font-size: 55%;
+                }
+                .subtitle-text {
+                    flex-direction: column;
+                }
+                .deriv-url {
+                    margin-top: 0.8rem;
+                    margin-left: 0;
+                }
             }
 
             /*---------- Scopes confirmation page ---------- */
@@ -365,17 +447,32 @@
     <body class="oauth">
         <header>
             <a id="logo" href="https://<%= $website_domain %>/">
-                <svg xmlns="http://www.w3.org/2000/svg" width="160" height="27">
+                <svg xmlns="http://www.w3.org/2000/svg" width="200" height="73" viewBox="0 0 200 73">
                     <defs>
                         <linearGradient id="a" x1="50%" x2="50%" y1="0%" y2="100%">
                             <stop offset="0%" stop-color="#FF6544"/>
                             <stop offset="100%" stop-color="#FF4449"/>
                         </linearGradient>
                     </defs>
-                    <g fill="none">
-                        <path fill="url(#a)" d="M6.13 0v.03L16.314 13.5 0 26.97V27h16.474c4.807 0 8.979-3.373 10.06-8.136l1.363-6.008a10.63 10.63 0 0 0-1.98-8.894A10.261 10.261 0 0 0 17.84 0H6.13z"/>
-                        <path fill="#B51A31" d="M16.308 13.527L9.144 27H0z"/>
-                        <path fill="#FFF" d="M39.64 0h10.283c8.279 0 13.01 5.782 11.702 13.327l-.013.076c-1.31 7.547-8.05 13.406-16.338 13.406H34.992L39.639 0zm6.559 21.485c4.744 0 8.51-3.255 9.334-8.005l.013-.077c.824-4.747-1.799-8.08-6.546-8.08h-4.48l-2.804 16.162H46.2zM69.473 0h19.89l-.912 5.247H74.328l-.945 5.438h9.118l-.91 5.247h-9.117l-.976 5.625H85.81l-.91 5.247H64.826L69.473 0zm38.975 17.235l4.778 9.574h-6.78l-6.31-13.793h4.364c2.826 0 4.712-1.541 5.103-3.791l.014-.076c.438-2.523-1.07-3.825-3.895-3.825h-5.754L96.24 26.808h-5.8L95.088 0h12.054c3.353 0 5.785.959 7.204 2.72 1.21 1.492 1.64 3.6 1.197 6.127l-.013.077c-.742 4.326-3.51 7.046-7.082 8.311zM122.963 0h5.8l-4.647 26.809h-5.802L122.964 0zm10.51 0h6.402l3.62 18.88L153.662 0h6.254l-15.343 27h-5.123l-5.977-27z"/>
+                    <g fill="none" fill-rule="evenodd">
+                        <g fill-rule="nonzero">
+                            <path fill="url(#a)" d="M6.13 0v.03L16.314 13.5 0 26.97V27h16.474c4.807 0 8.979-3.373 10.06-8.136l1.363-6.008a10.63 10.63 0 0 0-1.98-8.894A10.261 10.261 0 0 0 17.84 0H6.13z" transform="translate(20 23)"/>
+                            <path fill="#B51A31" d="M36.308 36.527L29.144 50H20z"/>
+                            <path fill="#FFF" d="M159.883 23l3.62 18.88L173.67 23h6.254L164.58 50h-5.123l-5.977-27h6.402zm-89.952 0c8.279 0 13.01 5.782 11.702 13.327l-.013.076C80.31 43.95 73.57 49.81 65.282 49.81H55L59.647 23h10.284zm57.22 0c3.352 0 5.784.959 7.203 2.72 1.21 1.492 1.64 3.6 1.197 6.127l-.013.077c-.742 4.326-3.51 7.047-7.082 8.311l4.778 9.574h-6.78l-6.31-13.793h4.364c2.826 0 4.712-1.541 5.103-3.791l.014-.076c.438-2.523-1.07-3.826-3.895-3.826h-5.754l-3.727 21.486h-5.8L115.096 23h12.054zm21.62 0l-4.647 26.809h-5.802L142.972 23h5.8zm-39.4 0l-.912 5.247H94.336l-.945 5.438h9.118l-.91 5.247h-9.117l-.976 5.625h14.313l-.91 5.247H84.834L89.481 23h19.89zm-40.363 5.324h-4.481l-2.804 16.161h4.484c4.744 0 8.51-3.255 9.334-8.005l.013-.077c.824-4.747-1.799-8.08-6.546-8.08z"/>
+                        </g>
+                        <path stroke="#FFF" d="M199.5 23v27"/>
+                    </g>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="172" height="73" viewBox="0 0 172 73">
+                    <g fill="none" fill-rule="evenodd">
+                        <g fill-rule="nonzero">
+                            <path fill="#FEFEFE" d="M27.425 29.073c-4.095-4.097-10.757-4.097-14.854-.001-4.095 4.095-4.095 10.76 0 14.855 4.097 4.098 10.76 4.097 14.854 0 4.1-4.095 4.1-10.76 0-14.854"/>
+                            <path fill="#293052" d="M19.5 36.003s.137.681 1 .997l-.23-.285s.44-.767-.77-.712"/>
+                            <path fill="#293052" d="M20.38 33.08c.575.37.76 1.476.76 1.476-.732.301-.577-1.047-.577-1.047l-.183-.429zm5.153 9.19c-.106.1-.211.198-.32.293-2.35 1.848-4.16.928-4.18.928-1.228-.236-1.836-.24-2.18-.462-.087-.056-.365-.2-.429-.165-.25.144-.595.218-.95-.054a1.324 1.324 0 0 1-.088-.078c-.39-.375-.258-.762-.128-.897.09-.088-.069-.336-.069-.336s-.46-.66-.775-1.058c-.347-.436-.394-1.301-.398-1.313l-.004-.012c-.35-.401-.387-.525-.508-.72-.07-.116-.18-.224-.271-.317a1.677 1.677 0 0 1-.163-.173c-.01-.012-.012-.029-.008-.055.032-.188.45-.601.54-.659.11-.069.586-.348.586-.348s.267-.406.723-.406c.41.003.662-.021 1.37.201l.295.09c.493.153.929.333 1.275.477.293.122.528.221.709.267.61.155 1.689-.322 1.916-.524.373-.327.534-.546.536-.726.003-.101-.043-.19-.149-.296-.055-.049-.126-.14-.214-.227-.015-.013-.03-.03-.047-.042-1.035-1.06-.856-1.724-.855-1.735.045-.477-.239-.783-.543-1.1l-.05-.06c-.016-.013-.035-.038-.035-.038.44.07.74.24 1.6.333.49.05.335.046.725.037.538-.016.964-.062.993-.18-.052-.043-.29.013-1.432-.408a16.964 16.964 0 0 0-.948-.332c-.433-.14-.901-.335-.901-.335 1.863.471 2.473.656 3.325.667.33.006.526-.032.641-.055.122-.021.498-.103.54-.229.013-.022-.36.06-1.052-.16-2.175-.694-2.36-1.04-3.566-1.493-.42-.158-.557-.244-1.827-.56-.582-.145-1.462-.062-1.582.01-1.649-.374-2.023-.333-2.507-.232 3.226-1.996 7.583-1.636 10.405 1.086a8.3 8.3 0 0 1 1.018 1.19l.04.057a7.776 7.776 0 0 1 1.389 4.45c0 2.152-.87 4.174-2.447 5.698zm1.185-12.49c-3.707-3.707-9.733-3.707-13.44 0-3.704 3.705-3.704 9.735 0 13.441 3.707 3.706 9.735 3.705 13.44 0 3.71-3.706 3.71-9.736 0-13.44z"/>
+                        </g>
+                        <text fill="#FFF" font-family="IBMPlexSans, IBM Plex Sans" font-size="12" transform="translate(36.5 25)">
+                            <tspan x="0" y="12.372">a </tspan> <tspan x="8.676" y="12" font-family="IBMPlexSans-Bold, IBM Plex Sans" font-weight="bold">Binary.com</tspan> <tspan x="0" y="24.372">brand</tspan>
+                        </text>
                     </g>
                 </svg>
             </a>
