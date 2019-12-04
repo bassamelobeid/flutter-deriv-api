@@ -51,6 +51,34 @@ use BOM::Config::RedisReplicated;
 =cut
 
 my $json = JSON::MaybeXS->new;
+
+has [qw(requested_amount recomputed_amount)] => (
+    is       => 'rw',
+    init_arg => undef,
+);
+
+sub _adjust_amount {
+    my ($self, $amount) = @_;
+
+    return $self->payout($amount) if $self->amount_type eq 'stake' and $self->contract->has_non_zero_payout;
+    return $self->price($amount);
+}
+
+sub BUILD {
+    my $self = shift;
+
+    my $amount_type = $self->amount_type;
+
+    # certain contract types do not have payout so we will be comparing stake for these contracts.
+    if ($amount_type eq 'stake' and $self->contract->has_non_zero_payout) {
+        $self->requested_amount($self->payout);
+        $self->recomputed_amount($self->contract->payout);
+    } else {
+        $self->requested_amount($self->price);
+        $self->recomputed_amount($self->contract->ask_price);
+    }
+}
+
 has client => (
     is  => 'ro',
     isa => 'BOM::User::Client',
@@ -175,6 +203,7 @@ sub _build_amount_type {
     # still want to compare the ask price
     $amount_type = 'payout' unless $self->contract->category->require_basis;
     die 'amount_type is required' unless defined $amount_type;
+    die 'amount_type can only be stake or payout' unless ($amount_type eq 'stake' or $amount_type eq 'payout');
 
     return $amount_type;
 }
