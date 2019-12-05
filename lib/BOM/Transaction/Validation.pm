@@ -208,121 +208,23 @@ sub _validate_currency {
 sub _validate_sell_pricing_adjustment {
     my $self = shift;
 
-    my $contract = $self->transaction->contract;
+    my $transaction = $self->transaction;
+    my $contract    = $transaction->contract;
 
-    if (not defined $self->transaction->price) {
-        $self->transaction->price($contract->bid_price);
+    return Error::Base->cuss(
+        -quiet             => 1,
+        -type              => 'BetExpired',
+        -mesg              => 'Contract expired with a new price',
+        -message_to_client => localize('The contract has expired'),
+    ) if $contract->is_expired;
+
+    if (not defined $transaction->price) {
+        $transaction->price($contract->bid_price);
         return undef;
     }
 
-    if ($contract->is_expired) {
-        return Error::Base->cuss(
-            -quiet             => 1,
-            -type              => 'BetExpired',
-            -mesg              => 'Contract expired with a new price',
-            -message_to_client => localize('The contract has expired'),
-        );
-    }
-
-    my $requested = $contract->is_binary ? $self->transaction->price / $self->transaction->payout : $self->transaction->price;
-    my $amount = $self->transaction->price;
-    # We use is_binary here because we only want to fix slippage issue for non binary without messing up with binary contracts.
-    my $recomputed_amount = $contract->is_binary ? $contract->bid_price : financialrounding('price', $contract->currency, $contract->bid_price);
-    # set the requested price and recomputed  price to be store in db
-    ### TODO: move out from validation
-    $self->transaction->requested_price($amount);
-    $self->transaction->recomputed_price($recomputed_amount);
-    my $recomputed      = $contract->is_binary ? $contract->bid_probability->amount : $recomputed_amount;
-    my $non_binary_move = ($requested == 0)    ? $recomputed - $requested           : ($recomputed - $requested) / $requested;
-    my $move            = $contract->is_binary ? $recomputed - $requested           : $non_binary_move;
-    my $slippage        = $recomputed_amount - $amount;
-    my $allowed_move    = $contract->allowed_slippage;
-
-    $allowed_move = 0 if $contract->is_binary and $recomputed == 1;
-
-    return if $move == 0;
-
-    my $final_value;
-    if ($allowed_move == 0 or $slippage == 0) {
-        $final_value = $recomputed_amount;
-    } elsif ($move < -$allowed_move) {
-        return $self->_write_to_rejected({
-            type              => 'slippage',
-            action            => 'sell',
-            amount            => $amount,
-            recomputed_amount => $recomputed_amount
-        });
-    } else {
-        if ($move <= $allowed_move and $move >= -$allowed_move) {
-            $final_value = $amount;
-            # We absorbed the price difference here and we want to keep it in our book.
-            $self->transaction->price_slippage($slippage);
-        } elsif ($move > $allowed_move) {
-            $self->transaction->execute_at_better_price(1);
-            # We need to keep record of slippage even it is executed at better price
-            $self->transaction->price_slippage($slippage);
-            $final_value = $recomputed_amount;
-        }
-    }
-
-    $self->transaction->price($final_value);
-
-    return undef;
-}
-
-sub _validate_binary_price_adjustment {
-    my $self = shift;
-
-    # we're using probability here to handle both cases where amount_type=stake|payout
-    # If amount_type=stake, the payout ($self->transaction->payout) of the contract is calculated
-    # If amount_type=payout, the ask_price ($self->transaction->price) of the contract is calculated
-    my $transaction            = $self->transaction;
-    my $requested_probability  = $transaction->price / $transaction->payout;
-    my $recomputed_probability = $transaction->contract->ask_probability->amount;
-
-    my $move         = $requested_probability - $recomputed_probability;
-    my $allowed_move = $transaction->contract->allowed_slippage;           # allowed_slippage is in probability space.
-
-    return $self->_adjust_trade($move, $allowed_move);
-}
-
-sub _validate_non_binary_price_adjustment {
-    my $self = shift;
-
-    # non_binary only deals in price space and not probability space.
-    my $transaction  = $self->transaction;
-    my $move         = $transaction->requested_amount - $transaction->recomputed_amount;
-    my $allowed_move = $transaction->contract->allowed_slippage;
-
-    return $self->_adjust_trade($move, $allowed_move);
-}
-
-sub _adjust_trade {
-    my ($self, $move, $allowed_move) = @_;
-
-    my $transaction = $self->transaction;
-    # if we do not allow slippage
-    if (($allowed_move == 0 and $move != 0) or ($move < -$allowed_move)) {
-        return $self->_write_to_rejected({
-            type              => 'slippage',
-            action            => 'buy',
-            amount            => $transaction->requested_amount,
-            recomputed_amount => $transaction->recomputed_amount,
-        });
-    }
-
-    my $slippage = financialrounding('price', $transaction->contract->currency, $transaction->requested_amount - $transaction->recomputed_amount);
-    if ($move <= $allowed_move and $move >= -$allowed_move) {
-        # We absorbed the price difference here and we want to keep it in our book.
-        $transaction->price_slippage($slippage) if $slippage != 0;
-    } elsif ($move > $allowed_move) {
-        $transaction->execute_at_better_price(1);
-        # We need to keep record of slippage even it is executed at better price
-        $transaction->price_slippage($slippage);
-        $transaction->_adjust_amount($transaction->recomputed_amount);
-    }
-
-    return undef;
+    return $self->_validate_binary_price_adjustment('bid_probability') if $contract->is_binary;
+    return $self->_validate_non_binary_price_adjustment();
 }
 
 sub _validate_trade_pricing_adjustment {
@@ -336,8 +238,73 @@ sub _validate_trade_pricing_adjustment {
         -message_to_client => localize('The contract has expired'),
     ) if $contract->is_expired;
 
-    return $self->_validate_binary_price_adjustment if $contract->is_binary;
-    return $self->_validate_non_binary_price_adjustment;
+    return $self->_validate_binary_price_adjustment('ask_probability') if $contract->is_binary;
+    return $self->_validate_non_binary_price_adjustment();
+}
+
+sub _validate_binary_price_adjustment {
+    my ($self, $probability_type) = @_;
+
+    # we're using probability here to handle both cases where amount_type=stake|payout
+    # If amount_type=stake, the payout ($self->transaction->payout) of the contract is calculated
+    # If amount_type=payout, the ask_price ($self->transaction->price) of the contract is calculated
+    my $transaction            = $self->transaction;
+    my $requested_probability  = $transaction->price / $transaction->payout;
+    my $recomputed_probability = $transaction->contract->$probability_type->amount;
+
+    my $move = $requested_probability - $recomputed_probability;
+    $move *= -1 if $transaction->action_type eq 'sell';
+    my $allowed_move = $recomputed_probability == 1 ? 0 : $transaction->contract->allowed_slippage;    # allowed_slippage is in probability space.
+
+    return $self->_adjust_trade($move, $allowed_move);
+}
+
+sub _validate_non_binary_price_adjustment {
+    my $self = shift;
+
+    # non_binary only deals in price space and not probability space.
+    my $transaction = $self->transaction;
+    my $move        = $transaction->requested_amount - $transaction->recomputed_amount;
+    $move *= -1 if $transaction->action_type eq 'sell';
+    my $allowed_move = $transaction->contract->allowed_slippage;
+
+    return $self->_adjust_trade($move, $allowed_move);
+}
+
+sub _adjust_trade {
+    my ($self, $move, $allowed_move) = @_;
+
+    my $transaction = $self->transaction;
+    # if we do not allow slippage
+    if ($allowed_move == 0 and $move != 0) {
+        $transaction->_adjust_amount($transaction->recomputed_amount);
+        return undef;
+    }
+
+    if ($move < -$allowed_move) {
+        return $self->_write_to_rejected({
+            type              => 'slippage',
+            action            => $self->transaction->action_type,
+            amount            => $transaction->requested_amount,
+            recomputed_amount => $transaction->recomputed_amount,
+        });
+    }
+
+    my $slippage = $transaction->requested_amount - $transaction->recomputed_amount;
+    $slippage *= -1 if $transaction->action_type eq 'sell';
+    $slippage = financialrounding('price', $transaction->contract->currency, $slippage);
+
+    if ($move <= $allowed_move and $move >= -$allowed_move) {
+        # We absorbed the price difference here and we want to keep it in our book.
+        $transaction->price_slippage($slippage) if $slippage != 0;
+    } elsif ($move > $allowed_move) {
+        $transaction->execute_at_better_price(1);
+        # We need to keep record of slippage even it is executed at better price
+        $transaction->price_slippage($slippage);
+        $transaction->_adjust_amount($transaction->recomputed_amount);
+    }
+
+    return undef;
 }
 
 sub _slippage {

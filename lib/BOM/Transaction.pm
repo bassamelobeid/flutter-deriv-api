@@ -52,33 +52,44 @@ use BOM::Config::RedisReplicated;
 
 my $json = JSON::MaybeXS->new;
 
-has [qw(requested_amount recomputed_amount)] => (
+=head2 action_type
+
+This can be either 'buy' or 'sell'.
+
+=cut
+
+has action_type => (
     is       => 'rw',
     init_arg => undef,
+);
+
+has [qw(requested_amount recomputed_amount)] => (
+    is         => 'ro',
+    init_arg   => undef,
+    lazy_build => 1,
 );
 
 sub _adjust_amount {
     my ($self, $amount) = @_;
 
-    return $self->payout($amount) if $self->amount_type eq 'stake' and $self->contract->has_non_zero_payout;
+    return $self->payout($amount) if $self->action_type eq 'buy' and $self->amount_type eq 'stake' and $self->contract->has_non_zero_payout;
     return $self->price($amount);
 }
 
-sub BUILD {
+sub _build_requested_amount {
     my $self = shift;
 
-    my $amount_type = $self->amount_type;
+    # certain contract types do not have payout so we will be comparing stake for these contracts.
+    return $self->payout if ($self->action_type eq 'buy' and $self->amount_type eq 'stake' and $self->contract->has_non_zero_payout);
+    return $self->price;
+}
+
+sub _build_recomputed_amount {
+    my $self = shift;
 
     # certain contract types do not have payout so we will be comparing stake for these contracts.
-    if ($amount_type eq 'stake' and $self->contract->has_non_zero_payout) {
-        $self->requested_amount($self->payout);
-        $self->recomputed_amount($self->contract->payout);
-    } else {
-        $self->requested_amount($self->price);
-        $self->recomputed_amount($self->contract->ask_price);
-    }
-
-    return;
+    return $self->contract->payout if ($self->action_type eq 'buy' and $self->amount_type eq 'stake' and $self->contract->has_non_zero_payout);
+    return $self->action_type eq 'buy' ? $self->contract->ask_price : $self->contract->bid_price;
 }
 
 has client => (
@@ -130,18 +141,6 @@ has price => (
 has price_slippage => (
     is      => 'rw',
     default => 0,
-);
-
-# This is the requested buy or sell price
-has requested_price => (
-    is  => 'rw',
-    isa => 'Maybe[Num]',
-);
-
-# This is the recomputed buy or sell price
-has recomputed_price => (
-    is  => 'rw',
-    isa => 'Maybe[Num]',
 );
 
 has transaction_record => (
@@ -629,9 +628,16 @@ sub prepare_buy {
         _build_pricing_comment({
                 contract => $self->contract,
                 price    => $self->price,
-                ($self->requested_price)  ? (requested_price  => $self->requested_price)  : (),
-                ($self->recomputed_price) ? (recomputed_price => $self->recomputed_price) : (),
-                ($self->price_slippage)   ? (price_slippage   => $self->price_slippage)   : (),
+                ($self->requested_amount)
+                ? (requested_price => $self->requested_amount)
+                : (),    # requested_price could be ask price or payout. Since this field is embedded in database schema, I don't want to change it.
+                ($self->recomputed_amount)
+                ? (recomputed_price => $self->recomputed_amount)
+                : (),    # recomputed_price could be ask price or payout. Since this field is embedded in database schema, I don't want to change it.
+                ($self->price_slippage)
+                ? (price_slippage => $self->price_slippage)
+                : ()
+                , # price_slippage could be slippage of ask price or payout. Since this field is embedded in database schema, I don't want to change it.
                 action => 'buy'
             })) unless (@{$self->comment});
 
@@ -641,6 +647,7 @@ sub prepare_buy {
 sub buy {
     my ($self, %options) = @_;
 
+    $self->action_type('buy');
     my $stats_data = $self->stats_start('buy');
 
     my $client = $self->client;
@@ -762,6 +769,7 @@ sub batch_buy {
     # TODO: shall we allow this operation only if $self->client is real-money?
     #       Or allow virtual $self->client only if all other clients are also
     #       virtual?
+    $self->action_type('buy');
     my $stats_data = $self->stats_start('batch_buy');
 
     my ($error_status, $bet_data) = $self->prepare_buy($options{skip_validation});
@@ -930,9 +938,15 @@ sub prepare_sell {
         _build_pricing_comment({
                 contract => $self->contract,
                 price    => $self->price,
-                ($self->requested_price)  ? (requested_price  => $self->requested_price)  : (),
-                ($self->recomputed_price) ? (recomputed_price => $self->recomputed_price) : (),
-                ($self->price_slippage)   ? (price_slippage   => $self->price_slippage)   : (),
+                ($self->requested_amount)
+                ? (requested_price => $self->requested_amount)
+                : (),    # requested_price is bid price send by user.
+                ($self->recomputed_amount)
+                ? (recomputed_price => $self->recomputed_amount)
+                : (),    # recomputed_price is recomputed bid price
+                ($self->price_slippage)
+                ? (price_slippage => $self->price_slippage)
+                : (),    # price_slippage is the difference between the requested bid price and the recomputed bid price.
                 action => 'sell'
             })) unless @{$self->comment};
 
@@ -942,6 +956,7 @@ sub prepare_sell {
 sub sell {
     my ($self, %options) = @_;
 
+    $self->action_type('sell');
     my $stats_data = $self->stats_start('sell');
 
     my ($error_status, $bet_data) = $self->prepare_sell($options{skip_validation});
@@ -1019,6 +1034,7 @@ sub sell {
 sub sell_by_shortcode {
     my ($self, %options) = @_;
 
+    $self->action_type('sell');
     my $stats_data = $self->stats_start('sell');
 
     if ($self->contract->category_code eq 'multiplier') {

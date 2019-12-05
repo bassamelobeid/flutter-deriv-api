@@ -427,11 +427,11 @@ subtest 'BUY - trade pricing adjustment' => sub {
         my $transaction = BOM::Transaction->new({
             client        => $client,
             contract      => $contract,
-            action        => 'BUY',
             price         => $price,
             amount_type   => 'payout',
             purchase_date => Date::Utility->new(),
         });
+        $transaction->action_type('buy');
         my $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_trade_pricing_adjustment($client);
@@ -497,11 +497,11 @@ subtest 'BUY - trade pricing adjustment' => sub {
         my $transaction = BOM::Transaction->new({
             client        => $client,
             contract      => $contract,
-            action        => 'BUY',
             amount_type   => 'payout',
             price         => $requested_price,
             purchase_date => Date::Utility->new(),
         });
+        $transaction->action_type('buy');
         my $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_trade_pricing_adjustment($client);
@@ -512,47 +512,47 @@ subtest 'BUY - trade pricing adjustment' => sub {
             'price move - msg to client'
         );
         is $transaction->price_slippage, 0, 'correct probability slippage set';
-        is $transaction->requested_price, $requested_price, 'correct requested price';
-        is $transaction->recomputed_price, $contract->ask_price, 'correct recomputed price';
+        is $transaction->requested_amount, $requested_price, 'correct requested price';
+        is $transaction->recomputed_amount, $contract->ask_price, 'correct recomputed price';
 
         # amount_type = payout, price increase < allowed move
         my $price = $contract->ask_price - ($allowed_move * $contract->payout / 2);
         $transaction = BOM::Transaction->new({
             client        => $client,
             contract      => $contract,
-            action        => 'BUY',
             price         => $price,
             amount_type   => 'payout',
             purchase_date => Date::Utility->new(),
         });
 
+        $transaction->action_type('buy');
         $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_trade_pricing_adjustment($client);
         is($error, undef, 'BUY price increase within allowable move');
         cmp_ok($transaction->price, '==', $price, 'BUY with original price');
         is $transaction->price_slippage, -0.25, 'correct probability slippage set';
-        is $transaction->requested_price, $price, 'correct requested price';
-        is $transaction->recomputed_price, $contract->ask_price, 'correct recomputed price';
+        is $transaction->requested_amount, $price, 'correct requested price';
+        is $transaction->recomputed_amount, $contract->ask_price, 'correct recomputed price';
 
         # amount_type = payout, price decrease => better execution price
         $price = $contract->ask_price + ($allowed_move * $contract->payout * 2);
         $transaction = BOM::Transaction->new({
             client        => $client,
             contract      => $contract,
-            action        => 'BUY',
             price         => $price,
             amount_type   => 'payout',
             purchase_date => Date::Utility->new(),
         });
+        $transaction->action_type('buy');
         $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_trade_pricing_adjustment($client);
         is($error, undef, 'BUY price decrease, better execution price');
         cmp_ok($transaction->price, '<', $price, 'BUY with lower price');
-        is $transaction->price_slippage, 1, 'correct probability slippage set';
-        is $transaction->requested_price, $price, "correct requested price $price";
-        is $transaction->recomputed_price, $contract->ask_price, 'correct recomputed price ' . $contract->ask_price;
+        is $transaction->price_slippage, '1.00', 'correct probability slippage set';
+        is $transaction->requested_amount, $price, "correct requested price $price";
+        is $transaction->recomputed_amount, $contract->ask_price, 'correct recomputed price ' . $contract->ask_price;
 
         # sale back slippage check
         $requested_price = $contract->bid_price + ($allowed_move * $contract->payout + 0.1);
@@ -560,11 +560,12 @@ subtest 'BUY - trade pricing adjustment' => sub {
             purchase_date => $contract->date_start,
             client        => $client,
             contract      => $contract,
-            action        => 'SELL',
             price         => $requested_price,
             amount_type   => 'payout',
         });
-        $error = BOM::Transaction::Validation->new({
+        $transaction->action_type('sell');
+        $DB::single = 1;
+        $error      = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_sell_pricing_adjustment($client);
         is($error->get_type, 'PriceMoved', 'Price move too much opposite favour of client');
@@ -574,8 +575,8 @@ subtest 'BUY - trade pricing adjustment' => sub {
             'price move - msg to client'
         );
         is $transaction->price_slippage, 0, 'correct probability slippage set';
-        is $transaction->requested_price, $requested_price, 'correct requested price';
-        is $transaction->recomputed_price, $contract->bid_price, 'correct recomputed price';
+        is $transaction->requested_amount, $requested_price, 'correct requested price';
+        is $transaction->recomputed_amount, $contract->bid_price, 'correct recomputed price';
 
         # amount_type = payout, price increase < allowed move
         $price = $contract->bid_price - ($allowed_move * $contract->payout / 2);
@@ -583,18 +584,18 @@ subtest 'BUY - trade pricing adjustment' => sub {
             purchase_date => $contract->date_start,
             client        => $client,
             contract      => $contract,
-            action        => 'SELL',
             price         => $price,
             amount_type   => 'payout',
         });
+        $transaction->action_type('sell');
         $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_sell_pricing_adjustment($client);
         is($error, undef, 'SELL price increase within allowable move');
         cmp_ok($transaction->price, '==', $price, 'sell with original price');
         is $transaction->price_slippage, 0.25, 'correct probability slippage set';
-        is $transaction->requested_price, $price, 'correct requested price';
-        is $transaction->recomputed_price, $contract->bid_price, 'correct recomputed price';
+        is $transaction->requested_amount, $price, 'correct requested price';
+        is $transaction->recomputed_amount, $contract->bid_price, 'correct recomputed price';
 
         # amount_type = payout, price increase > allowable move => better execution price
         $price = $contract->bid_price - ($allowed_move * $contract->payout * 2);
@@ -602,18 +603,18 @@ subtest 'BUY - trade pricing adjustment' => sub {
             purchase_date => $contract->date_start,
             client        => $client,
             contract      => $contract,
-            action        => 'SELL',
             price         => $price,
             amount_type   => 'payout',
         });
+        $transaction->action_type('sell');
         $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_sell_pricing_adjustment($client);
         is($error, undef, 'SELL price increase, better execution price');
         cmp_ok($transaction->price, '>', $price, 'SELL with higher price');
-        is $transaction->price_slippage, 1, 'correct probability slippage set';
-        is $transaction->requested_price, $price, "correct requested price $price";
-        is $transaction->recomputed_price, $contract->bid_price, 'correct recomputed price ' . $contract->bid_price;
+        is $transaction->price_slippage, '1.00', 'correct probability slippage set';
+        is $transaction->requested_amount, $price, "correct requested price $price";
+        is $transaction->recomputed_amount, $contract->bid_price, 'correct recomputed price ' . $contract->bid_price;
         $mock_contract->unmock_all;
     };
 
@@ -666,12 +667,12 @@ subtest 'BUY - trade pricing adjustment' => sub {
         my $transaction = BOM::Transaction->new({
             client        => $client,
             contract      => $contract,
-            action        => 'BUY',
             price         => 10,
             payout        => 100,
             amount_type   => 'stake',
             purchase_date => Date::Utility->new(),
         });
+        $transaction->action_type('buy');
         my $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_trade_pricing_adjustment($client);
@@ -681,9 +682,9 @@ subtest 'BUY - trade pricing adjustment' => sub {
             qr/The underlying market has moved too much since you priced the contract. The contract payout has changed from GBP100.00 to GBP94.34./,
             'payout move - msg to client'
         );
-        is $transaction->price_slippage,  0,  'correct probability slippage set';
-        is $transaction->requested_price, 10, 'correct requested price';
-        is $transaction->recomputed_price, $contract->ask_price, 'correct recomputed price';
+        is $transaction->price_slippage,   0,   'correct probability slippage set';
+        is $transaction->requested_amount, 100, 'correct requested price';
+        is $transaction->recomputed_amount, $contract->payout, 'correct recomputed price';
         $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
             description => 'fake ask prov',
@@ -697,20 +698,21 @@ subtest 'BUY - trade pricing adjustment' => sub {
         $transaction = BOM::Transaction->new({
             client        => $client,
             contract      => $contract,
-            action        => 'BUY',
             price         => 10,
             payout        => 100,
             amount_type   => 'stake',
             purchase_date => Date::Utility->new(),
         });
+        $transaction->action_type('buy');
         $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_trade_pricing_adjustment($client);
+        $DB::single = 1;
         is($error, undef, 'BUY decrease within allowable move');
         cmp_ok($transaction->payout, '==', 100, 'BUY with original payout');
-        is $transaction->price_slippage,  -0.4, 'correct probability slippage set';
-        is $transaction->requested_price, 10,   'correct requested price';
-        is $transaction->recomputed_price, $contract->ask_price, 'correct recomputed price';
+        is $transaction->price_slippage,   3.85, 'correct payout slippage set';
+        is $transaction->requested_amount, 100,  'correct requested price';
+        is $transaction->recomputed_amount, $contract->payout, 'correct recomputed price';
         # amount_type = stake, payout increase within  range of allowed move
         $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
@@ -725,20 +727,20 @@ subtest 'BUY - trade pricing adjustment' => sub {
         $transaction = BOM::Transaction->new({
             client        => $client,
             contract      => $contract,
-            action        => 'BUY',
             price         => 10,
             payout        => 100,
             amount_type   => 'stake',
             purchase_date => Date::Utility->new(),
         });
+        $transaction->action_type('buy');
         $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_trade_pricing_adjustment($client);
         is($error, undef, 'BUY decrease within allowable move');
         cmp_ok($transaction->payout, '==', 100, 'BUY with original payout');
-        is $transaction->price_slippage,  0.4, 'correct probability slippage set';
-        is $transaction->requested_price, 10,  'correct requested price';
-        is $transaction->recomputed_price, $contract->ask_price, 'correct recomputed price';
+        is $transaction->price_slippage,   -4.17, 'correct payout slippage set';
+        is $transaction->requested_amount, 100,   'correct requested price';
+        is $transaction->recomputed_amount, $contract->payout, 'correct recomputed price';
         # amount_type = stake, payout increase => better execution price
         $ask_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'ask_probability',
@@ -753,21 +755,21 @@ subtest 'BUY - trade pricing adjustment' => sub {
         $transaction = BOM::Transaction->new({
             client        => $client,
             contract      => $contract,
-            action        => 'BUY',
             price         => 10,
             payout        => 100,
             amount_type   => 'stake',
             purchase_date => Date::Utility->new(),
         });
+        $transaction->action_type('buy');
         $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_trade_pricing_adjustment($client);
         is($error, undef, 'payout increase, better execution price');
         cmp_ok($transaction->payout, '>',  100,     'BUY with higher payout');
         cmp_ok($transaction->payout, '==', 106.383, 'payout');
-        is $transaction->price_slippage,  0.6, 'correct probability slippage set';
-        is $transaction->requested_price, 10,  'correct requested price 10';
-        is $transaction->recomputed_price, $contract->ask_price, 'correct recomputed price ' . $contract->ask_price;
+        is $transaction->price_slippage,   -6.38, 'correct payout slippage set';
+        is $transaction->requested_amount, 100,   'correct requested price';
+        is $transaction->recomputed_amount, $contract->payout, 'correct recomputed price';
         $mock_contract->unmock_all;
     };
 
@@ -825,9 +827,9 @@ subtest 'SELL - sell pricing adjustment' => sub {
             purchase_date => $contract->date_start,
             client        => $client,
             contract      => $contract,
-            action        => 'SELL',
             price         => $price,
         });
+        $transaction->action_type('sell');
         my $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_sell_pricing_adjustment($client);
@@ -886,9 +888,9 @@ subtest 'SELL - sell pricing adjustment' => sub {
             purchase_date => $contract->date_start,
             client        => $client,
             contract      => $contract,
-            action        => 'SELL',
             price         => $requested_price,
         });
+        $transaction->action_type('sell');
 
         my $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
@@ -900,43 +902,43 @@ subtest 'SELL - sell pricing adjustment' => sub {
             'price move - msg to client'
         );
         is $transaction->price_slippage, 0, 'correct probability slippage set';
-        is $transaction->requested_price, $requested_price, 'correct requested price';
-        is $transaction->recomputed_price, $contract->bid_price, 'correct recomputed price';
+        is $transaction->requested_amount, $requested_price, 'correct requested price';
+        is $transaction->recomputed_amount, $contract->bid_price, 'correct recomputed price';
         # amount_type = payout, sell price decrease < allowed move
         my $price = $contract->bid_price + ($allowed_move * $contract->payout - 0.1);
         $transaction = BOM::Transaction->new({
             purchase_date => $contract->date_start,
             client        => $client,
             contract      => $contract,
-            action        => 'SELL',
             price         => $price,
         });
+        $transaction->action_type('sell');
 
         $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_sell_pricing_adjustment($client);
         is($error, undef, 'SELL price descrease within allowable move');
         cmp_ok($transaction->price, '==', $price, 'SELL with original price');
-        is $transaction->price_slippage, -0.4, 'correct probability slippage set';
-        is $transaction->requested_price, $price, 'correct requested price';
-        is $transaction->recomputed_price, $contract->bid_price, 'correct recomputed price';
+        is $transaction->price_slippage, '-0.40', 'correct probability slippage set';
+        is $transaction->requested_amount, $price, 'correct requested price';
+        is $transaction->recomputed_amount, $contract->bid_price, 'correct recomputed price';
         # amount_type = payout, sell price increase => better execution price
         $price = $contract->bid_price - ($allowed_move * $contract->payout * 2);
         $transaction = BOM::Transaction->new({
             purchase_date => $contract->date_start,
             client        => $client,
             contract      => $contract,
-            action        => 'SELL',
             price         => $price,
         });
+        $transaction->action_type('sell');
         $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_sell_pricing_adjustment($client);
         is($error, undef, 'SELL price increase, better execution price');
         cmp_ok($transaction->price, '>', $price, 'SELL with higher price');
-        is $transaction->price_slippage, 1, 'correct probability slippage set';
-        is $transaction->requested_price, $price, "correct requested price $price";
-        is $transaction->recomputed_price, $contract->bid_price, 'correct recomputed price ' . $contract->bid_price;
+        is $transaction->price_slippage, '1.00', 'correct probability slippage set';
+        is $transaction->requested_amount, $price, "correct requested price $price";
+        is $transaction->recomputed_amount, $contract->bid_price, 'correct recomputed price ' . $contract->bid_price;
         $mock_contract->unmock_all;
     };
 
@@ -959,9 +961,9 @@ subtest 'SELL - sell pricing adjustment' => sub {
             purchase_date => $contract->date_start,
             client        => $client,
             contract      => $contract,
-            action        => 'SELL',
             price         => undef,
         });
+        $transaction->action_type('sell');
         my $error = BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]})->_validate_sell_pricing_adjustment($client);
@@ -1028,10 +1030,6 @@ subtest 'Purchase Sell Contract' => sub {
     ok($fmb->account_id, 'can retrieve the fmb db record');
 
     set_absolute_time($now->epoch + 61);
-    my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch,
-        underlying => 'R_50',
-    });
     my $exit_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch + 1,
         underlying => 'R_50',
@@ -1050,7 +1048,7 @@ subtest 'Purchase Sell Contract' => sub {
         # Opposite contract can now be used to purchase. To simulate sellback behaviour,
         # set date_pricing to date_start + 1
         date_pricing => $now->epoch + 1,
-        entry_tick   => $entry_tick,
+        entry_tick   => $random_tick,
         current_tick => $current_tick,
         exit_tick    => $exit_tick,
         barrier      => 'S0P',
