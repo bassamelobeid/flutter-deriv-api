@@ -508,7 +508,7 @@ subtest 'test CALL (binary) slippage' => sub {
 
         $error = $txn->buy;
         ok !$error, 'no error';
-        is $txn->price_slippage, '1.42', 'correct price slippage';
+        is $txn->payout_slippage, '1.42', 'correct price slippage';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
@@ -548,7 +548,7 @@ subtest 'test CALL (binary) slippage' => sub {
         $error = $txn->buy;
         is $error, undef, 'case 2 no error';
         ok $txn->execute_at_better_price, 'executed at better price';
-        is $txn->price_slippage,          '-1.41';
+        is $txn->payout_slippage,         '-1.41';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 

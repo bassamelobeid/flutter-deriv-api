@@ -277,7 +277,7 @@ sub _adjust_trade {
     my $transaction = $self->transaction;
     # if we do not allow slippage
     if ($allowed_move == 0 and $move != 0) {
-        $transaction->_adjust_amount($transaction->recomputed_amount);
+        $transaction->adjust_amount($transaction->recomputed_amount);
         return undef;
     }
 
@@ -296,12 +296,12 @@ sub _adjust_trade {
 
     if ($move <= $allowed_move and $move >= -$allowed_move) {
         # We absorbed the price difference here and we want to keep it in our book.
-        $transaction->price_slippage($slippage) if $slippage != 0;
+        $transaction->record_slippage($slippage) if $slippage != 0;
     } elsif ($move > $allowed_move) {
         $transaction->execute_at_better_price(1);
         # We need to keep record of slippage even it is executed at better price
-        $transaction->price_slippage($slippage);
-        $transaction->_adjust_amount($transaction->recomputed_amount);
+        $transaction->record_slippage($slippage);
+        $transaction->adjust_amount($transaction->recomputed_amount);
     }
 
     return undef;
