@@ -78,7 +78,7 @@ sub _build_request_type {
     my $self = shift;
 
     # certain contract types do not have payout so we will be comparing stake for these contracts.
-    return 'payout' if ($self->action_type eq 'buy' and $self->amount_type eq 'stake' and $self->contract->has_non_zero_payout);
+    return 'payout' if ($self->action_type eq 'buy' and $self->amount_type eq 'stake' and $self->contract->is_non_zero_payout);
     return 'price';
 }
 
