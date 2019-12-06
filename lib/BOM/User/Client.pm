@@ -66,7 +66,7 @@ use constant PROOF_OF_ADDRESS_DOCUMENTS_TYPE => qw(
 );
 
 use constant PROOF_OF_IDENTITY_DOCUMENTS_TYPE => qw(
-    proofid driverslicense passport
+    proofid driverslicense passport driving_licence national_identity_card
 );
 
 # this email address should not be added into brand as it is specific to internal system
