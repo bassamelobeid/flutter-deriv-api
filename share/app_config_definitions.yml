@@ -112,15 +112,11 @@ payments:
               description: 'Limits the numbers of daily purchases per day'
               default: 3
               global: 1
-            maximum:
-              isa: section
-              description: 'Transfer maximum amount'
-              contains:
-                default:
-                  description: 'Maximum amount per offer (in USD)'
-                  isa: Num
-                  default: 100
-                  global: 1
+            maximum_offer:
+              isa: Num            
+              description: 'Maximum amount per offer (in USD)'
+              default: 100
+              global: 1
     transfer_between_accounts:
       description: 'Transfer between accounts config'
       isa: section
