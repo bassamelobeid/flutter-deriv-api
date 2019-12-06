@@ -17,17 +17,13 @@ BrokerPresentation('Risk Dashboard.');
 
 Bar('Risk Dashboard');
 
-# This is for contest only. TODO: This should be removed after contest.
-my $dashboard = BOM::RiskReporting::Dashboard->new(
-    start => Date::Utility->new('2019-12-03'),
-    end   => Date::Utility->new('2019-12-07'));
-my $report = $dashboard->fetch;
+my $report = BOM::RiskReporting::Dashboard->new->fetch;
 
 my $today = Date::Utility->today;
 
 $report->{dtr_link}         = request()->url_for('backoffice/f_dailyturnoverreport.cgi');
-$report->{multibarrier}     = $dashboard->multibarrierreport();
-$report->{exposures_report} = $dashboard->exposures_report();
+$report->{multibarrier}     = BOM::RiskReporting::Dashboard->new->multibarrierreport();
+$report->{exposures_report} = BOM::RiskReporting::Dashboard->new->exposures_report();
 
 $report->{link_to_pnl} = sub {
     my $loginid = shift;
