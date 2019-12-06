@@ -104,11 +104,63 @@ sub adjust_amount {
     return $self->$type($amount);
 }
 
+=head2 record_slippage
+
+This function is record slippage amount (price or payout) for a particular contract into $transaction->price_slippage
+attribute in BOM::Transaction object.
+
+slippage amount under different situations could benefit the user or the company. For ease of reporting,
+we will convert slippage amount to reflect the following:
+
+- postive slippage: company's gain
+- negative slippage: company's loss
+
+slippage amount is calculated with the following formula:
+
+$slippage = $requested - $recomputed
+
+Buying a contract:
+
+- When $transaction->request_type eq 'price'
+
+    A positive slippage (in ask price) means profit for the company. For example:
+
+    User requested to buy the contract for 10 USD. When it reaches our server, the recomputed ask price of the contract is now 9 USD. In this case, slippage (10 USD - 9 USD) is 1 USD.
+    The contract is sold at 10USD (theoretically sold at a more expensive price)
+
+    On the other hand, a negative slippage  means loss for the company. The logic is the same, we sold the contract at a cheaper price.
+
+- When $transaction->request_type eq 'payout'
+
+    A positive slippage (in payout price) means loss for the company. For example:
+
+    User wanted to stake 5 USD to win a 10 USD payout. So, the requested payout is 10 USD. When it reaches our server, the recomputed payout of the contract is now 9 USD.
+    In this case, payout slippage (10 USD - 9 USD) is 1 USD. We are giving user 1 USD more than what it should be, hence a company loss.
+
+    On the other hand, a negative payout slippage means profit for the company.
+
+Selling a contract:
+
+When you're selling a contract, the requested and recomputed amount are always going to be in bid price space.
+
+A positive slippage (in bid price) means loss for the company and vice versa.
+
+=cut
+
 sub record_slippage {
     my ($self, $amount) = @_;
 
-    return $self->price_slippage($amount) if $self->request_type eq 'price';
-    return $self->payout_slippage($amount);
+    my $action_type  = $self->action_type;
+    my $request_type = $self->request_type;
+
+    die 'action_type is not defined' unless $action_type;
+
+    # invert slippage amount to reflect company's position
+    if (($action_type eq 'buy' and $request_type eq 'payout') or $action_type eq 'sell') {
+        $amount *= -1;
+    }
+
+    return $self->price_slippage(financialrounding('price', $self->contract->currency, $amount));
 }
 
 has client => (
@@ -157,43 +209,13 @@ has price => (
 
 =head2 price_slippage
 
-price_slippage is the price difference between the requested buy or sell price from the recomputed price.
-If the slippage is within the acceptable amount, 50% of commission then we will honour the requested price.
+ positive price slippage means contract was bought or sold to the client in company's favour.
 
-More details about price slippage. Slippage is calculated with the following formula:
-
-$price_slippage = $requested_price - $recomputed_price
-
-If you're buying a contract, a positive price slippage means profit for the company. For example:
-
-User requested to buy the contract for 10 USD. When it reaches our server, the recomputed ask price of the contract is now 9 USD. In this case, slippage (10 USD - 9 USD) is 1 USD.
-The contract is sold at 10USD (theoretically sold at a more expensive price)
-
-On the other hand, a negative price slippage means loss for the company. The logic is the same, we sold the contract at a cheaper price.
-
-If you're selling a contract, things work in the opposite manner where a positive price slippage means loss for the company and vice versa.
-
-=head2 payout_slippage
-
-When amount_type=stake, we recalculate the payout of the contract.
-
-payout_slippage is the payout difference between the requested payout price and the recomputed payout price.
-This only applies to buy operations.
-
-More details about payout slippage. Slippage is calculated with the following formula:
-
-$payout_slippage = $requested_payout - $recomputed_payout
-
-Payout slippage will only happen in contract buy. So, a positive payout slippage means loss for the company. For example:
-
-User wanted to stake 5 USD to win a 10 USD payout. So, the requested payout is 10 USD. When it reaches our server, the recomputed payout of the contract is now 9 USD.
-In this case, payout slippage (10 USD - 9 USD) is 1 USD. We are giving user 1 USD more than what it should be, hence a company loss.
-
-On the other hand, a negative payout slippage means profit for the company.
+ We absorb price slippage on either side up to 50% of contract commission.
 
 =cut
 
-has [qw(price_slippage payout_slippage)] => (
+has price_slippage => (
     is      => 'rw',
     default => 0,
 );
@@ -691,10 +713,7 @@ sub prepare_buy {
                 : (),    # recomputed_price could be ask price or payout. Since this field is embedded in database schema, I don't want to change it.
                 ($self->price_slippage)
                 ? (price_slippage => $self->price_slippage)
-                : (),    # price_slippage is the slippage of ask price.
-                ($self->payout_slippage)
-                ? (payout_slippage => $self->payout_slippage)
-                : (),    # payout_slippage is the slippage of payout price.
+                : (),    # price_slippage is the slippage of ask price or payout price.
                 action => 'buy'
             })) unless (@{$self->comment});
 

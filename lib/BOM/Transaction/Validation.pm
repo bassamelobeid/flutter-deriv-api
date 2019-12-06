@@ -291,8 +291,6 @@ sub _adjust_trade {
     }
 
     my $slippage = $transaction->requested_amount - $transaction->recomputed_amount;
-    $slippage *= -1 if $transaction->action_type eq 'sell';
-    $slippage = financialrounding('price', $transaction->contract->currency, $slippage);
 
     if ($move <= $allowed_move and $move >= -$allowed_move) {
         # We absorbed the price difference here and we want to keep it in our book.

@@ -681,8 +681,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             qr/The underlying market has moved too much since you priced the contract. The contract payout has changed from GBP100.00 to GBP94.34./,
             'payout move - msg to client'
         );
-        is $transaction->price_slippage,   0,   'no price slippage set';
-        is $transaction->payout_slippage,  0,   'no payout slippage set';
+        is $transaction->price_slippage,  0,   'no payout slippage set';
         is $transaction->requested_amount, 100, 'correct requested price';
         is $transaction->recomputed_amount, $contract->payout, 'correct recomputed price';
         $ask_cv = Math::Util::CalculatedValue::Validatable->new({
@@ -710,8 +709,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
 
         is($error, undef, 'BUY decrease within allowable move');
         cmp_ok($transaction->payout, '==', 100, 'BUY with original payout');
-        is $transaction->price_slippage,   0,    'correct price slippage set';
-        is $transaction->payout_slippage,  3.85, 'correct payout slippage set';
+        is $transaction->price_slippage,  -3.85, 'correct payout slippage set';
         is $transaction->requested_amount, 100,  'correct requested price';
         is $transaction->recomputed_amount, $contract->payout, 'correct recomputed price';
         # amount_type = stake, payout increase within  range of allowed move
@@ -739,8 +737,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
                 clients     => [$client]})->_validate_trade_pricing_adjustment($client);
         is($error, undef, 'BUY decrease within allowable move');
         cmp_ok($transaction->payout, '==', 100, 'BUY with original payout');
-        is $transaction->price_slippage,   0,     'correct price slippage set';
-        is $transaction->payout_slippage,  -4.17, 'correct payout slippage set';
+        is $transaction->price_slippage,  4.17, 'correct payout slippage set';
         is $transaction->requested_amount, 100,   'correct requested price';
         is $transaction->recomputed_amount, $contract->payout, 'correct recomputed price';
         # amount_type = stake, payout increase => better execution price
@@ -769,8 +766,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
         is($error, undef, 'payout increase, better execution price');
         cmp_ok($transaction->payout, '>',  100,     'BUY with higher payout');
         cmp_ok($transaction->payout, '==', 106.383, 'payout');
-        is $transaction->price_slippage,   0,     'correct price slippage set';
-        is $transaction->payout_slippage,  -6.38, 'correct payout slippage set';
+        is $transaction->price_slippage,  6.38, 'correct payout slippage set';
         is $transaction->requested_amount, 100,   'correct requested price';
         is $transaction->recomputed_amount, $contract->payout, 'correct recomputed price';
         $mock_contract->unmock_all;
