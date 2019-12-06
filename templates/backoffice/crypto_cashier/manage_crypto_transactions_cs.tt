@@ -19,6 +19,7 @@
             <th>BlockchainInfo</th>
             <th>PaymentInfo</th>
             <th>Date</th>
+            <th>Details</th>
             <th>Action</th>
         </tr>
         [% FOREACH trx IN transactions %]
@@ -60,6 +61,11 @@
                         <tr><td>Sent:[% trx.sent_date %]</td></tr>
                     [% END %]
                 </tbody></table></td>
+                <td><table><tbody>
+                    <tr><td>Remark: [% trx.remark %]</td></tr>
+                    <tr><td>Error: [% trx.error_text %]</td></tr>
+                    <tr><td>Resolution: [% trx.resolution %]</td></tr>
+                </tbody></table></td> 
                 [% IF trx.status == 'NEW' %]
                     <td>
                         <form action="[% controller_url %]" method="POST">
