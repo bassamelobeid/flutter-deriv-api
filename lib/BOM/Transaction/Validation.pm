@@ -191,6 +191,7 @@ sub _validate_offerings {
     my $err = $offerings_obj->validate_offerings($self->transaction->contract->metadata($action));
 
     return Error::Base->cuss(
+        -quiet             => 1,
         -type              => 'InvalidOfferings',
         -mesg              => $err->{message},
         -message_to_client => localize(@{$err->{message_to_client}})) if $err;
@@ -204,6 +205,7 @@ sub _validate_currency {
 
     if (not $client->landing_company->is_currency_legal($currency)) {
         return Error::Base->cuss(
+            -quiet             => 1,
             -type              => 'InvalidCurrency',
             -mesg              => "Invalid $currency",
             -message_to_client => localize("The provided currency [_1] is invalid.", $currency),
@@ -212,6 +214,7 @@ sub _validate_currency {
 
     if ($client->default_account and $currency ne $client->currency) {
         return Error::Base->cuss(
+            -quiet             => 1,
             -type              => 'NotDefaultCurrency',
             -mesg              => "not default currency for client [$currency], client currency[" . $client->currency . "]",
             -message_to_client => localize("The provided currency [_1] is not the default currency", $currency),
@@ -241,6 +244,7 @@ sub _validate_sell_pricing_adjustment {
 
     if ($contract->is_expired) {
         return Error::Base->cuss(
+            -quiet             => 1,
             -type              => 'BetExpired',
             -mesg              => 'Contract expired with a new price',
             -message_to_client => localize('The contract has expired'),
@@ -306,13 +310,7 @@ sub _validate_trade_pricing_adjustment {
     my $recomputed_price = $contract->is_binary ? $contract->ask_price : formatnumber('price', $contract->currency, $contract->ask_price);
     $self->transaction->recomputed_price($recomputed_price);
     my $recomputed = $contract->is_binary ? $contract->ask_probability->amount : $recomputed_price;
-    my $move = ($contract->is_binary or ($requested == 0)) ? $requested - $recomputed : ($requested - $recomputed) / $requested;
-
-    #We use price here  for binary option to double check check the slippage.
-    #Because we are seeing issues where price difference is very small
-    #like 4.17 vs 4.17111...
-    $move = 0 if ($contract->is_binary and ($self->transaction->price eq formatnumber('price', $contract->currency, $recomputed_price)));
-
+    my $move         = ($contract->is_binary or ($requested == 0)) ? $requested - $recomputed : ($requested - $recomputed) / $requested;
     my $slippage     = $self->transaction->price - $recomputed_price;
     my $allowed_move = $contract->allowed_slippage;
 
@@ -329,6 +327,7 @@ sub _validate_trade_pricing_adjustment {
     my $final_value;
 
     return Error::Base->cuss(
+        -quiet             => 1,
         -type              => 'BetExpired',
         -mesg              => 'Bet expired with a new price[' . $recomputed_amount . '] (old price[' . $amount . '])',
         -message_to_client => localize('The contract has expired'),
@@ -406,8 +405,9 @@ sub _slippage {
         $rejected_trade->record_fail_txn();
     }
     return Error::Base->cuss(
-        -type => 'PriceMoved',
-        -mesg => "Difference between submitted and newly calculated bet price: currency "
+        -quiet => 1,
+        -type  => 'PriceMoved',
+        -mesg  => "Difference between submitted and newly calculated bet price: currency "
             . $currency
             . ", amount: "
             . $p->{amount}
@@ -463,8 +463,9 @@ sub _invalid_contract {
     }
 
     return Error::Base->cuss(
-        -type => ($p->{action} eq 'buy' ? 'InvalidtoBuy' : 'InvalidtoSell'),
-        -mesg => $contract->primary_validation_error->message,
+        -quiet             => 1,
+        -type              => ($p->{action} eq 'buy' ? 'InvalidtoBuy' : 'InvalidtoSell'),
+        -mesg              => $contract->primary_validation_error->message,
         -message_to_client => $message_to_client,
     );
 }
@@ -518,6 +519,7 @@ sub _validate_date_pricing {
         and abs(time - $contract->date_pricing->epoch) > 20)
     {
         return Error::Base->cuss(
+            -quiet             => 1,
             -type              => 'InvalidDatePricing',
             -mesg              => 'Bet was validated for a time [' . $contract->date_pricing->epoch . '] too far from now[' . time . ']',
             -message_to_client => localize('This contract cannot be properly validated at this time.'));
@@ -562,8 +564,9 @@ sub _validate_iom_withdrawal_limit {
 
     if ($remaining_withdrawal_eur <= 0) {
         return Error::Base->cuss(
-            -type => 'iomWithdrawalLimit',
-            -mesg => $client->loginid . ' caught in IOM withdrawal limit check',
+            -quiet => 1,
+            -type  => 'iomWithdrawalLimit',
+            -mesg  => $client->loginid . ' caught in IOM withdrawal limit check',
             -message_to_client =>
                 localize("Due to regulatory requirements, you are required to authenticate your account in order to continue trading."),
         );
@@ -584,8 +587,9 @@ sub _validate_stake_limit {
 
     if ($contract->ask_price < $stake_limit) {
         return Error::Base->cuss(
-            -type => 'StakeTooLow',
-            -mesg => $client->loginid . ' stake [' . $contract->ask_price . '] is lower than minimum allowable stake [' . $stake_limit . ']',
+            -quiet => 1,
+            -type  => 'StakeTooLow',
+            -mesg  => $client->loginid . ' stake [' . $contract->ask_price . '] is lower than minimum allowable stake [' . $stake_limit . ']',
             -message_to_client => localize(
                 "This contract's price is [_1][_2]. Contracts purchased from [_3] must have a purchase price above [_1][_4]. Please accordingly increase the contract amount to meet this minimum stake.",
                 $currency,
@@ -617,6 +621,7 @@ sub _validate_payout_limit {
         my $custom_profile = $rp->get_risk_profile(\@cl_rp);
         if ($custom_profile eq 'no_business') {
             return Error::Base->cuss(
+                -quiet             => 1,
                 -type              => 'NoBusiness',
                 -mesg              => $client->loginid . ' manually disabled by quants',
                 -message_to_client => localize('This contract is unavailable on this account.'),
@@ -626,6 +631,7 @@ sub _validate_payout_limit {
         my $custom_limit = BOM::Config::quants()->{risk_profile}{$custom_profile}{payout}{$contract->currency};
         if (defined $custom_limit and (my $payout = $self->transaction->payout) > $custom_limit) {
             return Error::Base->cuss(
+                -quiet             => 1,
                 -type              => 'PayoutLimitExceeded',
                 -mesg              => $client->loginid . ' payout [' . $payout . '] over custom limit[' . $custom_limit . ']',
                 -message_to_client => ($custom_limit == 0)
@@ -654,8 +660,9 @@ sub _validate_jurisdictional_restrictions {
 
     if (not $residence and not $client->is_virtual) {
         return Error::Base->cuss(
-            -type => 'NoResidenceCountry',
-            -mesg => 'Client cannot place contract as we do not know their residence.',
+            -quiet => 1,
+            -type  => 'NoResidenceCountry',
+            -mesg  => 'Client cannot place contract as we do not know their residence.',
             -message_to_client =>
                 localize('In order for you to place contracts, we need to know your Residence (Country). Please update your settings.'),
         );
@@ -666,6 +673,7 @@ sub _validate_jurisdictional_restrictions {
     my %legal_allowed_ct = map { $_ => 1 } @{$lc->legal_allowed_contract_types};
     if (not $legal_allowed_ct{$contract->code}) {
         return Error::Base->cuss(
+            -quiet             => 1,
             -type              => 'NotLegalContractCategory',
             -mesg              => 'Clients are not allowed to trade on this contract category as its restricted for this landing company',
             -message_to_client => localize('Please switch accounts to trade this contract.'),
@@ -674,6 +682,7 @@ sub _validate_jurisdictional_restrictions {
 
     if (not grep { $market_name eq $_ } @{$lc->legal_allowed_markets}) {
         return Error::Base->cuss(
+            -quiet             => 1,
             -type              => 'NotLegalMarket',
             -mesg              => 'Clients are not allowed to trade on this markets as its restricted for this landing company',
             -message_to_client => localize('Please switch accounts to trade this market.'),
@@ -683,6 +692,7 @@ sub _validate_jurisdictional_restrictions {
     my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
     if ($residence && $market_name eq 'synthetic_index' && $countries_instance->synthetic_index_restricted_country($residence)) {
         return Error::Base->cuss(
+            -quiet             => 1,
             -type              => 'RandomRestrictedCountry',
             -mesg              => 'Clients are not allowed to place Volatility Index contracts as their country is restricted.',
             -message_to_client => localize('Sorry, contracts on Synthetic Indices are not available in your country of residence'),
@@ -695,6 +705,7 @@ sub _validate_jurisdictional_restrictions {
         && $countries_instance->financial_binaries_restricted_country($residence))
     {
         return Error::Base->cuss(
+            -quiet             => 1,
             -type              => 'FinancialBinariesRestrictedCountry',
             -mesg              => 'Clients are not allowed to place financial products contracts as their country is restricted.',
             -message_to_client => localize('Sorry, contracts on Financial Products are not available in your country of residence'),
@@ -704,6 +715,7 @@ sub _validate_jurisdictional_restrictions {
     my %legal_allowed_underlyings = map { $_ => 1 } @{$lc->legal_allowed_underlyings};
     if (not $legal_allowed_underlyings{all} and not $legal_allowed_underlyings{$contract->underlying->symbol}) {
         return Error::Base->cuss(
+            -quiet             => 1,
             -type              => 'NotLegalUnderlying',
             -mesg              => 'Clients are not allowed to trade on this underlying as its restricted for this landing company',
             -message_to_client => localize('Please switch accounts to trade this underlying.'),
@@ -730,6 +742,7 @@ sub _validate_client_status {
 
     if ($status->unwelcome or $status->disabled or $status->no_withdrawal_or_trading) {
         return Error::Base->cuss(
+            -quiet             => 1,
             -type              => 'ClientUnwelcome',
             -mesg              => 'your account is not authorised for any further contract purchases.',
             -message_to_client => localize('Sorry, your account is not authorised for any further contract purchases.'),
@@ -751,6 +764,7 @@ sub _validate_client_self_exclusion {
 
     if (my $limit_excludeuntil = $client->get_self_exclusion_until_date) {
         return Error::Base->cuss(
+            -quiet             => 1,
             -type              => 'ClientSelfExcluded',
             -mesg              => 'your account is not authorised for any further contract purchases.',
             -message_to_client => localize(
@@ -769,6 +783,7 @@ sub validate_tnc {
     my ($self, $client) = (shift, shift);
 
     return Error::Base->cuss(
+        -quiet             => 1,
         -type              => 'ASK_TNC_APPROVAL',
         -mesg              => 'Terms and conditions approval is required',
         -message_to_client => localize('Terms and conditions approval is required.'),
@@ -781,6 +796,7 @@ sub compliance_checks {
     my ($self, $client) = (shift, shift);
 
     return Error::Base->cuss(
+        -quiet             => 1,
         -type              => 'FinancialAssessmentRequired',
         -mesg              => 'Please complete the financial assessment form to lift your withdrawal and trading limits.',
         -message_to_client => localize('Please complete the financial assessment form to lift your withdrawal and trading limits.'),
@@ -793,8 +809,9 @@ sub check_tax_information {
     my ($self, $client) = (shift, shift);
 
     return Error::Base->cuss(
-        -type => 'TINDetailsMandatory',
-        -mesg => 'Tax-related information is mandatory for legal and regulatory requirements',
+        -quiet => 1,
+        -type  => 'TINDetailsMandatory',
+        -mesg  => 'Tax-related information is mandatory for legal and regulatory requirements',
         -message_to_client =>
             localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')
     ) unless $client->status->crs_tin_information;
@@ -847,6 +864,7 @@ sub check_authentication_required {
         or ($client->landing_company->short eq 'maltainvest' and not $client->fully_authenticated))
     {
         return Error::Base->cuss(
+            -quiet             => 1,
             -type              => 'PleaseAuthenticate',
             -mesg              => 'Please authenticate your account to continue',
             -message_to_client => localize('Please authenticate your account to continue.'),
@@ -868,6 +886,7 @@ sub check_client_professional {
     return undef unless ($client->landing_company->short eq 'maltainvest');
 
     return Error::Base->cuss(
+        -quiet             => 1,
         -type              => 'NoMFProfessionalClient',
         -mesg              => 'your account is not authorised for any further contract purchases.',
         -message_to_client => localize('Sorry, your account is not authorised for any further contract purchases.'),
