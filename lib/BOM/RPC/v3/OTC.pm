@@ -31,6 +31,13 @@ use BOM::RPC::Registry '-dsl';
 # of orders or offers, but also no value to us in doing so.
 requires_auth();
 
+use constant RESTRICTED_CLIENT_STATUSES => [qw(
+        unwelcome
+        cashier_locked
+        withdrawal_locked
+        no_withdrawal_or_trading
+        )];
+
 # Standard error codes for any OTC calls.
 our %ERROR_MAP = do {
     # `make i18n` wants to see literal strings in `localize()` calls to decide
@@ -51,82 +58,43 @@ our %ERROR_MAP = do {
         NoCurrency       => localize('You have not yet selected a currency for your account'),
         PermissionDenied => localize('You do not have permission for this action'),
         NotRegistered    => localize('You are not yet registered as an OTC agent'),
-        AgentNotActive   => localize('This agent account is not currently active'),
         # Invalid data
         InvalidPaymentMethod => localize('This payment method is invalid'),
         NotFound             => localize('Not found'),
         MinimumNotMet        => localize('The minimum amount requirements are not met'),
         MaximumExceeded      => localize('This is above the maximum limit'),
         AlreadyInProgress    => localize('This cannot be cancelled since the order is already in progress'),
-        # Actions after orders are complete
-        OrderAlreadyComplete => localize('This order is already complete and no changes can be made'),
+
+        InvalidAmount => localize('Invalid amount for creating an order'),
+        # bom-user errors
+        AgentNotFound         => localize('OTC Agent not found'),
+        AgentNotRegistered    => localize('This account is not registered as an OTC agent'),
+        AgentNotActive        => localize('The provided agent ID does not belong to an active agent'),
+        AgentNotAuthenticated => localize('The agent is not authenticated'),
+        OfferNoEditExpired    => localize('The offer is expired and cannot be changed.'),
+        OfferNoEditInactive   => localize('The offer is inactive and cannot be changed.'),
+        OfferNotFound         => localize('Offer not found'),
+        OfferNoEditAmount     => localize('The offer has no available amount and cannot be changed.'),
+        InvalidOfferCurrency  => localize('Invalid offer currency'),
+        OrderNotFound         => localize('Order not found'),
+        InvalidOfferOwn       => localize('You cannot create an order for your own offer.'),
+        InvalidOfferExpired   => localize('The offer has expired.'),
+        # DB errors
+        BI225 => localize('Offer not found'),
+        BI226 => localize('Cannot create order for your own offer'),
+        BI227 => localize('Insufficient funds in account'),
+        BI228 => localize('Order not found'),
+        BI229 => localize('Order cannot be completed in its current state'),
+        BI230 => localize('Order has not been confirmed by agent'),
+        BI231 => localize('Order not found'),
+        BI232 => localize('Order cannot be cancelled in its current state'),
+        BI233 => localize('Order not found'),
+        BI234 => localize('Order cannot be agent confirmed in its current state'),
+        BI235 => localize('Order not found'),
+        BI236 => localize('Order cannot be client confirmed in its current state'),
+        BI237 => localize('Order currency is different from account currency'),
     );
 };
-
-our %MOCK_DATA = (
-    agent => {
-        1 => {
-            name       => 'first agent',
-            login_id   => 'CR100',
-            status     => 'active',
-            statistics => {
-                total_orders    => 15,
-                month_orders    => 15,
-                success_rate    => 0.85,
-                completion_time => 600,
-            }
-        },
-        2 => {
-            name     => 'second agent',
-            status   => 'inactive',
-            login_id => 'CR101',
-        }
-    },
-    offer => [
-        1 => {
-            agent_id  => 1,
-            type      => 'sell',
-            min       => 10,
-            max       => 100,
-            remaining => 75,
-            price     => 5.34,
-            method    => 'cimb',
-            currency  => 'MYR',
-        },
-        2 => {
-            agent_id  => 1,
-            type      => 'sell',
-            min       => 10,
-            max       => 100,
-            remaining => 100,
-            price     => 5.34,
-            method    => 'grabpay',
-            currency  => 'MYR',
-        },
-        3 => {
-            agent_id  => 2,
-            type      => 'sell',
-            min       => 50,
-            max       => 250,
-            remaining => 150,
-            price     => 5.32,
-            method    => 'hsbc',
-            currency  => 'MYR',
-        }
-    ],
-    order => {
-        1 => {
-            login_id => 'CR102',
-            offer_id => 1,
-            amount   => 25,
-        },
-        2 => {
-            login_id => 'CR103',
-            offer_id => 2,
-            amount   => 100,
-        }
-    },
-);
 
 =head2 otc_rpc
 
@@ -175,13 +143,15 @@ sub otc_rpc {
             # functionality should be exposed in the first place. The ->otc->enabled
             # check may be dropped in future once this is stable.
             die "OTCDisabled\n" if $app_config->system->suspend->otc;
-            die "OTCDisabled\n" if $app_config->otc->enabled;
+            die "OTCDisabled\n" unless $app_config->payments->otc->enabled;
 
             # All operations require a valid client with active account
             my $client = $params->{client}
                 or die "NotLoggedIn\n";
 
             die "UnavailableOnVirtual\n" if $client->is_virtual;
+
+            die "PermissionDenied\n" if $client->status->has_any(@{RESTRICTED_CLIENT_STATUSES()});
 
             my $acc = $client->default_account
                 or die "NoCurrency\n";
@@ -194,15 +164,28 @@ sub otc_rpc {
             );
         }
         catch {
-            chomp(my $err = $_);
+            my $err;
+            # db errors come as [ BIxxx, message ]
+            # bom-user errors come as a string "ErrorCode\n"
+            if (ref eq 'ARRAY') {
+                $err = $_->[0];
+            } else {
+                chomp($err = $_);
+            }
             my $otc_prefix = $method =~ tr/_/./;
+
             if (my $message = $ERROR_MAP{$err}) {
                 stats_inc($otc_prefix . '.error', {tags => ['error_code:' . $err]});
+                if ($err =~ /^BI\d\d\d$/) {
+                    warn "OTC $method failed, DB failure: $err, original: " . $_->[1];    # original DB error may have useful details
+                    $err = 'OTCError';                                                    # hide db error codes from user
+                }
                 return BOM::RPC::v3::Utility::create_error({
                         code              => $err,
                         message_to_client => localize($message)});
             } else {
                 # This indicates a bug in the code.
+                warn "Unexpected error in OTC $method: $err, please report as a bug to backend";
                 stats_inc($otc_prefix . '.error', {tags => ['error_code:unknown']});
                 return BOM::RPC::v3::Utility::create_error({
                         code              => 'OTCError',
@@ -221,7 +204,11 @@ Each client is able to have at most one agent account.
 =cut
 
 otc_rpc otc_agent_register => sub {
-    die "PermissionDenied\n";
+    my (%args) = @_;
+    my $client = $args{client};
+    my $name   = $args{params}{args}{name};
+    $client->new_otc_agent($name);
+    return {'otc_agent_status' => 'pending'};
 };
 
 =head2 otc_agent_update
@@ -231,7 +218,9 @@ Update agent details - default comment, name etc.
 =cut
 
 otc_rpc otc_agent_update => sub {
-    die "PermissionDenied\n";
+    my (%args) = @_;
+    my $client = $args{client};
+    return $client->update_otc_agent($args{params}{args}->%*) // die "AgentNotRegistered\n";
 };
 
 =head2 otc_agent_info
@@ -243,15 +232,8 @@ Returns information about the given agent (by ID).
 otc_rpc otc_agent_info => sub {
     my (%args)   = @_;
     my $client   = $args{client};
-    my $agent_id = $args{params}->{agent};
-    ($agent_id) = grep { $MOCK_DATA{agent}{$_}{loginid} eq $client->loginid } values $MOCK_DATA{agent}->%*
-        unless $agent_id;
-
-    # Copy the agent details so that we can inject the ID
-    my $agent = {($MOCK_DATA{agent}{$agent_id} or die "NotFound\n")->%*};
-
-    $agent->{id} = $agent_id;
-    return $agent;
+    my $agent_id = $args{params}{args}{agent};
+    return $client->get_otc_agent_list(id => $agent_id) // die "AgentNotFound\n";
 };
 
 =head2 otc_offer_create
@@ -261,7 +243,9 @@ Attempts to create a new offer.
 =cut
 
 otc_rpc otc_offer_create => sub {
-    die "NotRegistered\n";
+    my (%args) = @_;
+    my $client = $args{client};
+    return $client->create_otc_offer($args{params}{args}->%*);
 };
 
 =head2 otc_offer_info
@@ -272,14 +256,8 @@ Returns information about an offer.
 
 otc_rpc otc_offer_info => sub {
     my (%args) = @_;
-    my $offer_id = $args{params}->{id};
-    my $offer = $MOCK_DATA{offer}{$offer_id} or die "NotFound\n";
-
-    # Copy the offer details so that we can inject the ID
-    my $agent = {$offer->%*};
-
-    $offer->{id} = $offer_id;
-    return $offer;
+    my $client = $args{client};
+    return $client->get_otc_offer($args{params}{args}{id}) // die "OfferNotFound\n";
 };
 
 =head2 otc_method_list
@@ -339,14 +317,10 @@ Returns available offers.
 =cut
 
 otc_rpc otc_offer_list => sub {
-    return [
-        map {
-            ;
-            +{$MOCK_DATA{offer}{$_}->%*, id => $_}
-            } sort {
-            $a <=> $b
-            } keys $MOCK_DATA{offer}->%*;
-    ];
+    my %args = @_;
+
+    my $client = $args{client};
+    return $client->get_otc_offer_list($args{params}{args}->%*);
 };
 
 =head2 otc_offer_edit
@@ -358,7 +332,10 @@ Typically used to cancel or confirm.
 =cut
 
 otc_rpc otc_offer_edit => sub {
-    die "PermissionDenied\n";
+    my %args = @_;
+
+    my $client = $args{client};
+    return $client->update_otc_offer($args{params}{args}->%*) // die "OfferNotFound\n";
 };
 
 =head2 otc_offer_remove
@@ -368,7 +345,13 @@ Removes an offer entirely.
 =cut
 
 otc_rpc otc_offer_remove => sub {
-    die "PermissionDenied\n";
+    my %args = @_;
+
+    my ($client, $params) = @args{qw/client params/};
+    return $client->update_otc_offer(
+        id     => $params->{args}{id},
+        active => 0
+    ) // die "OfferNotFound\n";
 };
 
 =head2 otc_order_create
@@ -378,44 +361,87 @@ Creates a new order for an offer.
 =cut
 
 otc_rpc otc_order_create => sub {
-    die "PermissionDenied\n";
+    my %args = @_;
+
+    my $client = $args{client};
+    my $order  = $client->create_otc_order($args{params}{args}->%*);
+
+    BOM::Platform::Event::Emitter::emit(otc_offer_created => $order);
+
+    return $order;
 };
 
 =head2 otc_order_list
 
 Lists orders.
 
+=over 4
+
+=item * status
+
+=back
+
 =cut
 
 otc_rpc otc_order_list => sub {
-    return [
-        map {
-            ;
-            +{$MOCK_DATA{order}{$_}->%*, id => $_}
-            } sort {
-            $a <=> $b
-            } keys $MOCK_DATA{order}->%*;
-    ];
+    my %args = @_;
+
+    my $client = $args{client};
+
+    return $client->get_order_list(status => $args{params}{status});
 };
 
 =head2 otc_order_confirm
 
 Shortcut for updating order status to C<confirmed>.
 
+=over 4
+
+=item * id - otc order id
+
+=back
+
 =cut
 
 otc_rpc otc_order_confirm => sub {
-    die "PermissionDenied\n";
+    my %args = @_;
+
+    my ($client, $params) = @args{qw/client params/};
+
+    my $order = $client->confirm_otc_order(
+        id     => $params->{args}{id},
+        source => $params->{source});
+
+    BOM::Platform::Event::Emitter::emit(otc_order_updated => $order);
+
+    return $order;
 };
 
 =head2 otc_order_cancel
 
 Shortcut for updating order status to C<cancelled>.
 
+
+=over 4
+
+=item * id - otc order id
+
+=back
+
 =cut
 
 otc_rpc otc_order_cancel => sub {
-    die "PermissionDenied\n";
+    my %args = @_;
+
+    my ($client, $params) = @args{qw/client params/};
+
+    my $order = $client->cancel_otc_order(
+        id     => $params->{args}{id},
+        source => $params->{source});
+
+    BOM::Platform::Event::Emitter::emit(otc_order_updated => $order);
+
+    return $order;
 };
 
 =head2 otc_order_chat
@@ -428,45 +454,4 @@ otc_rpc otc_order_chat => sub {
     die "PermissionDenied\n";
 };
 
-=head2 escrow_for_currency
-
-Helper function to return an escrow account.
-
-TAkes the following parameters:
-
-=over 4
-
-=item * C<$broker> - e.g. C<CR>
-
-=item * C<$currency> - e.g. C<USD>
-
-=back
-
-Returns a L<BOM::User::Client> instance or C<undef> if not found.
-
-=cut
-
-sub escrow_for_currency {
-    my ($broker, $currency) = @_;
-    my $escrow_list = BOM::Config::Runtime->instance->app_config->otc->escrow->@*;
-    while (my $loginid = shift @escrow_list) {
-        my $acc = try {
-            my $escrow_account = BOM::User::Client->new({login_id => $loginid})
-                or return undef;
-
-            return undef unless $escrow_account->broker eq $broker;
-            return undef unless my $acc = $escrow_account->default_account;
-            return undef unless $acc->currency eq $currency;
-
-            return $escrow_account;
-        }
-        catch {
-            return undef;
-        };
-        return $acc if $acc;
-    }
-    return undef;
-}
-
 1;
-
