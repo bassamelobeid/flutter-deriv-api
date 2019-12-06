@@ -189,10 +189,8 @@ sub _pending_expiration {
 
     die "No Escrow account for broker $param->{broker_code} with currency $order_data->{currency}" unless $escrow_account;
 
-    my $res = $client_dbh->selectrow_hashref('SELECT client_trans_id, escrow_trans_id FROM  otc.order_cancel(?, ?, ?, ?)',
+    $client_dbh->selectrow_hashref('SELECT * FROM  otc.order_cancel(?, ?, ?, ?)',
         undef, $order_data->{id}, $escrow_account->loginid, $param->{source}, $param->{staff});
-
-    die "Order $order_data->{id} was cancelled incorrectly" unless $res->{client_trans_id} && $res->{escrow_trans_id};
 
     return ORDER_CANCELLED_STATUS;
 }
