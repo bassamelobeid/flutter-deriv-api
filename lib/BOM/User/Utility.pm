@@ -135,8 +135,8 @@ sub set_gamstop_self_exclusion {
 
 Helper function to return an escrow account.
 
-Escrow account is an account which is hold funds during
-OTC order creation to till it is completed or cancelled.
+Escrow account is an account which hold funds during
+OTC order creation until it is completed or cancelled.
 
 TAkes the following parameters:
 

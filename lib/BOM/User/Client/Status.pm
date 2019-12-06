@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Moo;
 
-use List::Util qw/uniqstr/;
+use List::Util qw/uniqstr any/;
 use namespace::clean;
 use Class::Method::Modifiers qw( install_modifier );
 has client_loginid => (
@@ -196,6 +196,26 @@ sub multi_set_clear {
         });
 
     return 1;
+}
+
+=head2 has_any
+
+Method is a predicate to check client has any of the listed statuses
+
+=over 4
+
+=item * @statuses
+
+=back
+
+=cut
+
+sub has_any {
+    my ($self, @statuses) = @_;
+
+    my %is_required = map { $_ => 1 } @statuses;
+
+    return any { $is_required{$_} } $self->all->@*;
 }
 
 ################################################################################

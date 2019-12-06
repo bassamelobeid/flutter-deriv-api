@@ -157,12 +157,12 @@ subtest 'store & update & fetch check ' => sub {
 subtest 'store & fetch report' => sub {
     my @all_report = $check->reports->as_list->get;
     for my $report (@all_report) {
-        $report->{breakdown} = {};
+        $report->{breakdown}  = {};
         $report->{properties} = {};
         lives_ok { BOM::User::Onfido::store_onfido_report($check, $report) } 'store report ok';
     }
     my $result;
 
     lives_ok { $result = BOM::User::Onfido::get_all_onfido_reports($test_client->binary_user_id, $check->id) } "get report ok";
-    is_deeply([sort keys %$result], [sort map {$_->id} @all_report], 'getting all reports ok');
+    is_deeply([sort keys %$result], [sort map { $_->id } @all_report], 'getting all reports ok');
 };
