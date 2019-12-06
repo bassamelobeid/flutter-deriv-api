@@ -12,6 +12,7 @@ use BOM::Platform::Client::IDAuthentication;
 use BOM::User::Client;
 use Date::Utility;
 use Time::Duration::Concise::Localize;
+use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
 
 use constant HOURS_TO_QUERY => 4;    # This cron runs every hour, but we will pick up clients with `proveid_pending` status set 4 hours in the past.
 
@@ -30,6 +31,7 @@ for my $broker (qw(MX)) {
             )->proveid;
         }
         catch {
+            stats_event('ProveID Failed', 'ProveID Failed, an email should have been sent', {alert_type => 'warning'});
             warn "ProveID failed, $_";
         };
     }
@@ -59,7 +61,9 @@ SELECT client_loginid FROM betonmarkets.client_status
 WHERE status_code = 'proveid_pending' AND last_modified_date >= ?;
 SQL
 
-    return [grep { $_ =~ /$broker/ } map { $_->{client_loginid} } @$result];
+    my $clients = [grep { $_ =~ /$broker/ } map { $_->{client_loginid} } @$result];
+    stats_inc("proveid.cron.request.number_of_clients", scalar @$clients);
+    return $clients;
 }
 
 sub get_client {
