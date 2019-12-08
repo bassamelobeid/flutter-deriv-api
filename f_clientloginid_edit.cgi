@@ -539,7 +539,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
     my $new_residence = delete $input{residence};
 
-    my @clients_to_update;
+    my (@clients_to_update, %clients_updated);
 
     if ($new_residence) {
 
@@ -558,26 +558,20 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
         }
 
-        $_->residence($new_residence) for @user_clients;
-
-        @clients_to_update = @user_clients;
-
-    } else {
-
-        # Two reasons for this check:
-        # 1. If other fields were updated in virtual, we should not saving anything.
-        # 2. In a real account, let's assume that didn't update the residence
-        # but updated other fields (first_name, last_name)
-        # Filter out virtual clients if residence is not updated VR does not have this data; only residence is needed.
-        # Hence: we'll end up making an extra call to VR database when none of the fields were updated
-        @clients_to_update = $client->is_virtual ? () : grep { not $_->is_virtual } @user_clients;
+        do { $_->residence($new_residence); $clients_updated{$_->loginid} = $_ }
+            for @user_clients;
     }
+
+    # Two reasons for this check:
+    # 1. If other fields were updated in virtual, we should not saving anything.
+    # 2. In a real account, let's assume that didn't update the residence
+    # but updated other fields (first_name, last_name)
+    # Filter out virtual clients if residence is not updated VR does not have this data; only residence is needed.
+    # Hence: we'll end up making an extra call to VR database when none of the fields were updated
+    @clients_to_update = $client->is_virtual ? () : grep { not $_->is_virtual } @user_clients;
 
     # Updates that apply to both active client and its corresponding clients
     foreach my $cli (@clients_to_update) {
-
-        # For non-resident changes, we have to update only real accounts
-        next if ($cli->is_virtual || $client->is_virtual);
 
         # Prevent last_name and first_name from being set blank
         foreach (qw/last_name first_name/) {
@@ -591,7 +585,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $cli->set_db('write');
         }
 
-        if (exists $input{pa_withdrawal_explicitly_allowed}) {
+        if (exists $input{pa_withdrawal_explicitly_allowed} && update_needed($client, $cli, 'pa_withdrawal_explicitly_allowed', \%clients_updated)) {
             if ($input{pa_withdrawal_explicitly_allowed}) {
                 $cli->status->set('pa_withdrawal_explicitly_allowed', $clerk, 'allow withdrawal through payment agent');
             } else {
@@ -612,7 +606,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             restricted_ip_address
             salutation
             /;
-        exists $input{$_} && $cli->$_($input{$_}) for @simple_updates;
+        exists $input{$_} && update_needed($client, $cli, $_, \%clients_updated) && $cli->$_($input{$_}) for @simple_updates;
 
         my $tax_residence;
         if (exists $input{tax_residence}) {
@@ -622,14 +616,15 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $tax_residence = join(",", sort grep { length } @tax_residence_multiple);
         }
 
-        if ($input{date_of_birth}) {
+        if ($input{date_of_birth} && update_needed($client, $cli, 'date_of_birth', \%clients_updated)) {
             $cli->date_of_birth($input{date_of_birth});
         }
 
         CLIENT_KEY:
         foreach my $key (keys %input) {
             if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
-                my $val = $input{$key} or next CLIENT_KEY;
+                my $val = $input{$key};
+                next CLIENT_KEY unless $val && update_needed($client, $cli, 'client_authentication_document', \%clients_updated);
                 my ($doc) = grep { $_->id eq $id } $cli->client_authentication_document;    # Rose
                 next CLIENT_KEY unless $doc;
                 my $new_value;
@@ -664,6 +659,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 }
                 next CLIENT_KEY;
             }
+
+            next CLIENT_KEY unless update_needed($client, $cli, $key, \%clients_updated);
             if ($key eq 'secret_answer') {
                 # algorithm provide different encrypted string from the same text based on some randomness
                 # so we update this encrypted field only on value change - we don't want our trigger log trash
@@ -680,37 +677,27 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $cli->secret_answer(BOM::User::Utility::encrypt_secret_answer($input{$key}))
                     if ($input{$key} ne $secret_answer);
 
-                next CLIENT_KEY;
-            }
+            } elsif ($key eq 'age_verification') {
 
-            if (exists $input{'age_verification'}) {
-                foreach my $cli (@user_clients) {
-                    if ($input{'age_verification'} eq 'yes') {
-                        $cli->status->set('age_verification', $clerk, 'No specific reason.') unless $cli->status->age_verification;
-                    } else {
-                        $cli->status->clear_age_verification;
-                    }
+                if ($input{$key} eq 'yes') {
+                    $cli->status->set($key, $clerk, 'No specific reason.') unless $cli->status->age_verification;
+                } else {
+                    $cli->status->clear_age_verification;
                 }
-            }
-
-            if ($key eq 'client_aml_risk_classification') {
+            } elsif ($key eq 'client_aml_risk_classification') {
                 $cli->aml_risk_classification($input{$key});
             }
 
-            if ($input{mifir_id} and $cli->mifir_id eq '' and $broker eq 'MF') {
+            elsif ($key eq 'mifir_id' and $cli->mifir_id eq '' and $broker eq 'MF') {
                 code_exit_BO(
                     "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p>"
-                ) if (length($input{mifir_id}) > 35);
-                $cli->mifir_id($input{mifir_id});
-            }
-
-            if ($key eq 'tax_residence') {
+                ) if (length($input{$key}) > 35);
+                $cli->mifir_id($input{$key});
+            } elsif ($key eq 'tax_residence') {
                 code_exit_BO("<p style=\"color:red; font-weight:bold;\">Tax residence cannot be set empty if value already exists</p>")
                     if ($cli->tax_residence and not $tax_residence);
                 $cli->tax_residence($tax_residence);
-            }
-
-            if ($key eq 'tax_identification_number') {
+            } elsif ($key eq 'tax_identification_number') {
                 code_exit_BO("<p style=\"color:red; font-weight:bold;\">Tax residence cannot be set empty if value already exists</p>")
                     if ($cli->tax_identification_number and not $input{tax_identification_number});
                 $cli->tax_identification_number($input{tax_identification_number});
@@ -719,7 +706,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     }
 
     # Save details for all clients
-    foreach my $cli (@clients_to_update) {
+    foreach my $cli (values %clients_updated) {
         my $sync_error;
 
         if (not $cli->save) {
@@ -1456,5 +1443,39 @@ sub _assemble_dob_input {
 }
 
 code_exit_BO();
+
+=head2 update_needed
+
+Given a key and a sibling client, check if that client should be updated, and update $clients_updated accordingly.
+
+=cut
+
+sub update_needed {
+    my ($client, $client_checked, $key, $clients_updated) = @_;
+    my $result = _check_update_needed($client, $client_checked, $key);
+    if ($result) {
+        $clients_updated->{$client_checked->loginid} = $client_checked;
+    }
+    return $result;
+}
+
+sub _check_update_needed {
+    my ($client, $client_checked, $key) = @_;
+
+    # %sync_scope:
+    # client: the key only apply to the current client
+    # lc: the key will apply to all clients in the same lc
+    # user: the key will aply to all clients of this user
+    # default is user
+    my %sync_scope = (
+        client_aml_risk_classification => 'lc',
+    );
+
+    return 1 if (!exists($sync_scope{$key}) || $sync_scope{$key} eq 'user');
+    return $client_checked->loginid eq $client->loginid if ($sync_scope{$key} eq 'client');
+    return $client_checked->broker eq $client->broker   if ($sync_scope{$key} eq 'lc');
+    die "don't know the scope $sync_scope{$key}";
+
+}
 
 1;

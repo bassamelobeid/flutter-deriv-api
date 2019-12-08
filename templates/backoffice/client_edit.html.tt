@@ -248,18 +248,6 @@ table#client_edit td{
         <td class="small_header" colspan="2">#KYC/IDENTITY VERIFICATION</td>
     </tr>
     <tr>
-        <td class = 'label'>ONFIDO : </td>
-        <td>
-            [% IF onfido_check_result %]
-                <a href="[% onfido_check_url %]" target="_blank">
-                    [% onfido_check_result FILTER upper %]
-                </a>
-            [% ELSE %]
-                Check not performed
-            [% END %]
-        </td>
-    </tr>
-    <tr>
         <td class="label">AML Risk Classification</td>
         [%
             risk_classification_options = [
@@ -298,6 +286,18 @@ table#client_edit td{
         </td>
     </tr>
     [% END %]
+    <tr>
+        <td class = 'label'>ONFIDO : </td>
+        <td>
+            [% IF onfido_check_result %]
+                <a href="[% onfido_check_url %]" target="_blank">
+                    [% onfido_check_result FILTER upper %]
+                </a>
+            [% ELSE %]
+                Check not performed
+            [% END %]
+        </td>
+    </tr>
     <tr>
         <td class="label">ID Authentication</td>
         [%
