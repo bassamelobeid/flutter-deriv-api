@@ -75,6 +75,7 @@ our %ERROR_MAP = do {
         OfferNoEditInactive   => localize('The offer is inactive and cannot be changed.'),
         OfferNotFound         => localize('Offer not found'),
         OfferNoEditAmount     => localize('The offer has no available amount and cannot be changed.'),
+        OfferMaxExceeded      => localize('The maximum limit of active offers reached.'),
         InvalidOfferCurrency  => localize('Invalid offer currency'),
         OrderNotFound         => localize('Order not found'),
         InvalidOfferOwn       => localize('You cannot create an order for your own offer.'),
