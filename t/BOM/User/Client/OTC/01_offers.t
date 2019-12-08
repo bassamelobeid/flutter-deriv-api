@@ -83,20 +83,22 @@ ok $test_client_cr->update_otc_offer(
 )->{is_active}, "reactivate offer";
 cmp_ok $test_client_cr->update_otc_offer(
     id     => $offer->{id},
-    amount => 200
-)->{amount}, '==', 200, "can edit active offer";
+    amount => 80
+)->{amount}, '==', 80, "can edit active offer";
+
+throws_ok { $test_client_cr->update_otc_offer(id => $offer->{id}, amount => 200) } qr/MaximumExceeded/,
 
 BOM::Test::Helper::Client::top_up($test_client_cr, 'USD', 1000);
 BOM::Test::Helper::OTC::create_escrow();
 
 my ($order_client, $order) = BOM::Test::Helper::OTC::create_order(
     offer_id => $offer->{id},
-    amount   => 100
+    amount   => 70
 );
 cmp_ok $test_client_cr->update_otc_offer(
     id     => $offer->{id},
-    amount => 150
-)->{amount}, '==', 150, "can change offer amount within available range";
+    amount => 90
+)->{amount}, '==', 90, "can change offer amount within available range";
 throws_ok { $test_client_cr->update_otc_offer(id => $offer->{id}, amount => 50) } qr/OfferNoEditAmount/,
     "can't change offer amount below available range";
 $order_client->cancel_otc_order(id => $offer->{id});

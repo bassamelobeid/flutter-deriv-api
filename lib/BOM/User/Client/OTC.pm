@@ -11,6 +11,7 @@ use Future::Exception;
 use Carp;
 use List::Util qw(any);
 use Syntax::Keyword::Try;
+use ExchangeRates::CurrencyConverter qw(in_usd);
 
 our @EXPORT_OK = qw(
     new_otc_agent
@@ -28,6 +29,8 @@ our @EXPORT_OK = qw(
     cancel_otc_order
     get_escrow
 );
+
+use constant MAXIMUM_ACTIVE_OFFERS => 10;
 
 =head1 DESCRIPTION
 
@@ -113,6 +116,15 @@ sub create_otc_offer {
     die "AgentNotActive\n" unless $agent_info && $agent_info->{is_active};
     die "AgentNotAuthenticated\n" unless $agent_info->{is_authenticated};
     die "InvalidOfferCurrency\n" if !$param{currency} || uc($param{currency}) ne $client->currency;
+    die "MaximumExceeded\n"
+        if in_usd($param{amount}, uc $param{currency}) > BOM::Config::Runtime->instance->app_config->payments->otc->limits->maximum_offer;
+
+    my $active_offers_count = $client->get_otc_offer_list(
+        loginid         => $client->binary_user_id,
+        active          => 1,
+        include_expired => 0,
+    )->@*;
+    die "OfferMaxExceeded\n" if $active_offers_count >= MAXIMUM_ACTIVE_OFFERS;
 
     $param{country} //= $client->residence;
 
@@ -178,6 +190,9 @@ sub update_otc_offer {
         my $amount = $param{amount} // $offer->{amount};
         die "OfferNoEditAmount\n" unless $amount > $offer->{amount_used};
     }
+    die "MaximumExceeded\n"
+        if $param{amount}
+        && in_usd($param{amount}, $offer->{currency}) > BOM::Config::Runtime->instance->app_config->payments->otc->limits->maximum_offer;
 
     return $client->db->dbic->run(
         fixup => sub {
@@ -212,6 +227,9 @@ sub create_otc_order {
     die "InvalidOfferOwn\n" if $offer_info->{agent_loginid} eq $client->loginid;
 
     die "InvalidAmount\n" unless $amount > 0 && ($offer_info->{amount} - $offer_info->{amount_used}) >= $amount;
+
+    die "MaximumExceeded\n"
+        if in_usd($amount, $offer_info->{currency}) > BOM::Config::Runtime->instance->app_config->payments->otc->limits->maximum_order;
 
     my $agent_info = $client->get_otc_agent_list(id => $offer_info->{agent_id});
     die "OTC Agent isn't found $offer_info->{agent_id}" unless $agent_info;
