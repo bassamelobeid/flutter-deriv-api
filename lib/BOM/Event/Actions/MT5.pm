@@ -5,8 +5,6 @@ use warnings;
 
 no indirect;
 
-use Try::Tiny;
-
 use Log::Any qw($log);
 
 use BOM::Platform::Event::Emitter;

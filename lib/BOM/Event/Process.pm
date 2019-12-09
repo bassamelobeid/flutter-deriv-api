@@ -7,7 +7,7 @@ no indirect;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use JSON::MaybeUTF8 qw(:v1);
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Log::Any qw($log);
 
 use BOM::Event::Actions::Client;
@@ -129,9 +129,10 @@ sub process {
         stats_inc(lc "$queue_name.processed.success");
     }
     catch {
-        $log->errorf("An error occurred processing %s: %s", $event_type, $_);
+        my $e = $@;
+        $log->errorf("An error occurred processing %s: %s", $event_type, $e);
         stats_inc(lc "$queue_name.processed.failure");
-    };
+    }
 
     return $response;
 }

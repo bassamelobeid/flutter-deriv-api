@@ -5,7 +5,7 @@ use warnings;
 
 no indirect;
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Email::Stuffer;
 use Date::Utility;
 use List::UtilsBy qw( rev_nsort_by );
@@ -149,8 +149,9 @@ sub _retrieve_transaction_history {
         });
     }
     catch {
-        $log->warn("error in selling expired contracts\ncaught error: $_");
-    };
+        my $e = $@;
+        $log->warn("error in selling expired contracts\ncaught error: $e");
+    }
 
     my $transactions = get_transaction_history({
         client => $client,
