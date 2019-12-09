@@ -515,6 +515,7 @@ subtest 'test CALL (binary) slippage' => sub {
         subtest 'case 2 fmb row', sub {
             is $fmb->{buy_price} + 0, $contract->ask_price, 'buy_price';
             is $fmb->{payout_price} + 0, $payout, 'payout_price';
+            ok $fmb->{short_code} =~ /$payout/, 'properly saved payout in shortcode';
         };
 
         $payout = financialrounding('price', $contract->currency,
