@@ -231,6 +231,7 @@ sub get_settings_by_group {
                 payments.otc.escrow
                 payments.otc.limits.count_per_day_per_client
                 payments.otc.limits.maximum_offer
+                payments.otc.limits.maximum_order
                 payments.transfer_between_accounts.limits.between_accounts
                 payments.transfer_between_accounts.limits.MT5
                 payments.transfer_between_accounts.exchange_rate_expiry.fiat

@@ -4,6 +4,7 @@
         background-color:white;
         width: 40%;
         font-weight: bold;
+        padding: 10px;
     }
     #saved {
         color:green;
@@ -13,92 +14,109 @@
     }
 
     .settings_form td div span { font-style: italic }
-    
+
     fieldset {
-        margin-bottom: 5px;
+        margin-bottom: 15px;
+        padding-bottom: 0px;
+        border-color: #cca;
     }
-
-    input[type="submit"] {
-        text-transform:uppercase;
-    }
-
-    fieldset legend{
+    fieldset legend {
         font-weight: bold;
-        font-size: 14px;
-        width:100%;
-        text-transform:uppercase;
+        font-size: 12px;
+        width: calc(100% - 10px);
+        text-transform: capitalize;
         font-family: Verdana, Arial, Helvetica, sans-serif;
         text-indent: 10px;
+        border: none;
+        border-radius: 3px;
+        padding: 3px;
+        margin-bottom: 5px;
+        background: #eed;
+        box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
     }
-
+    fieldset legend:hover {
+        background: #ffe;
+    }
+    fieldset legend a:hover {
+        text-decoration: none;
+    }
     fieldset ul {
-        padding-left: 12px;
+        padding-left: 5px;
     }
     fieldset ul li {
-        padding-top:5px;
-        padding-bottom:5px;
         margin: 0;
         list-style: none;
     }
-
-    fieldset ul li .branch{
-    }
-
     fieldset ul li.leaf {
-        min-height: 60px;
-        padding-top:10px;
-        padding-bottom:10px;
-        float: left;
-        width: 100%;
+        display: flex;
+        margin-bottom: 10px;
+        padding: 10px;
+        width: calc(100% - 25px);
+        background-color: #ddd;
     }
-    fieldset ul li.leaf:nth-child(odd) {
-        background-color: #dddddd;
+    fieldset ul li.leaf:hover {
+        background: #eee;
     }
-
-    fieldset ul li.leaf:nth-child(even) {
-        background-color: #bbbbbb;
+    fieldset ul label {
+        color: darkblue;
     }
-
-    fieldset ul label,fieldset ul  textarea {
+    fieldset ul label, fieldset ul  textarea {
         vertical-align:text-top;
         font-size:12px;
         width: 460px;
-        float:left;
         display: block;
         text-align: left;
-
     }
     fieldset ul li.leaf textarea {
         height: 60px;
-        width: 250px;
+        width: 350px;
+        font-size: 10px;
     }
 
-    fieldset ul li input {
+    fieldset ul li input:not([type="checkbox"]) {
         display: block;
-        float: left;
-        width: 250px;
+        width: 350px;
     }
-
-    fieldset ul li div {
-        padding-left: 20px;
-        float: left;
-        width: 250px;
-        display: block; 
+    fieldset ul li.leaf .desc {
+        color: #666;
+        margin-top: 7px;
+        width: 460px;
+    }
+    fieldset ul li div.input_container {
+        padding-left: 10px;
     }
     fieldset ul li.leaf cite {
-        display: block; 
-        float: left;
-        max-width: 250px;
+        display: block;
+        color: #777;
+        margin-top: 3px;
+    }
+    fieldset ul li.leaf cite em {
+        font-family: monospace;
+        font-size: 11px;
+        color: green;
     }
 
     span.close {
         display: none
     }
 
+    .submit_container {
+        text-align: center;
+        margin-top: 10px;
+    }
+    input[type="submit"] {
+        text-transform: uppercase;
+    }
+    input[disabled] {
+        background: #eee;
+    }
 </style>
+
 <div id="wrapper">
     [% INCLUDE settings_form %]
 </div>
+
 <script>
     \$('li label').click(function() {
         \$(this).next().focus();
@@ -106,45 +124,52 @@
 
     \$('form fieldset legend').each(function() {
         var leg_obj = \$(this);
-        leg_obj.html( leg_obj.html().replace("_", " ") );
+        leg_obj.html( leg_obj.html().replace(/_/g, ' ') );
     });
-    \$('form fieldset legend').click(function() {
-        event.preventDefault();
+    \$('form fieldset legend').click(function(e) {
+        e.preventDefault();
         \$(this).next().toggle();
         \$(this).children('a').children('span').toggle();
     });
 </script>
+
 [% BLOCK leaf %]
     <li class="leaf">
-        <label>[% item.name %]</label>
-        [% IF item.type == 'Bool' %]
-            <input type="checkbox" name="[% item.name %]" [% IF item.disabled %] disabled [% END %] [% IF item.value %] checked [% END %] />
-        [% ELSIF item.type == 'json_string' or item.type == 'LongStr' %]
-            <textarea rows="3" cols="30" name="[% item.name %]" placeholder="[% item.default_value %]" [% IF item.disabled %] disabled [% END %]>[% item.value %]</textarea>
-        [% ELSE %]
-            <input type="text" name="[% item.name %]" value="[% item.value %]" size="40" placeholder="[% item.default_value %]" [% IF item.disabled %] disabled [% END %]>
-        [% END %]
         <div>
-            [% item.description %]
-            [% IF item.default %]
-                <strong>[X] </strong> 
-            [% END %]
-            [% IF item.disabled %]
+            <label for="[% item.name %]">[% item.name.replace('^(([\w.]+)\.)([\w]+)$', '$1<strong>$3</strong>') | none %]</label>
+            <div class="desc">
+                [% item.description %]
+                [% IF item.default %]
+                <strong>[&#10004;] </strong>
+                [% END %]
+                [% IF item.disabled %]
                 <strong>Field is static and cannot be changed.</strong>
+                [% END %]
+            </div>
+        </div>
+        <div class="input_container">
+            [% IF item.type == 'Bool' %]
+                <input id="[% item.name %]" type="checkbox" name="[% item.name %]" [% IF item.disabled %] disabled [% END %] [% IF item.value %] checked [% END %] />
+            [% ELSIF item.type == 'json_string' or item.type == 'LongStr' %]
+                <textarea id="[% item.name %]" rows="3" cols="30" name="[% item.name %]" placeholder="[% item.default_value %]" [% IF item.disabled %] disabled [% END %]>[% item.value %]</textarea>
+            [% ELSE %]
+                <input id="[% item.name %]" type="text" name="[% item.name %]" value="[% item.value %]" size="40" placeholder="[% item.default_value %]" [% IF item.disabled %] disabled [% END %]>
             [% END %]
-       </div>
-        <cite>
-            Type: <em>[% item.type %]</em>
-            Default Value:  [% IF item.default_value %] [% item.default_value %] [% ELSE %] [Empty] [% END %]
-        </cite>
+            <cite>
+                <strong>Type:</strong> <em>[% item.type %]</em><br />
+                <strong>Default Value:</strong>  <em>[% IF item.default_value %] [% item.default_value %] [% ELSE %] [Empty] [% END %]</em>
+            </cite>
+        </div>
     </li>
 [% END %]
 
 [% BLOCK branch %]
     <fieldset [% IF NOT config.key %] style="border: 0px" [% END %]>
-        <legend>
-            <a href="">[% IF config.key %]<span class="close">&#8594;</span><span>&#8595;</span> [% config.key %][% END %]</a>
-        </legend>
+        [% IF config.key %]
+            <legend>
+                <a href=""><span class="close">&#10145;</span><span>&#11015;</span> [% config.key %]</a>
+            </legend>
+        [% END %]
         <ul>
             [% FOREACH config IN current_config %]
                 [% IF NOT config.value.leaf  %]
@@ -155,6 +180,12 @@
             [% END %]
         </ul>
     </fieldset>
+[% END %]
+
+[% BLOCK submit_button %]
+    <div class="submit_container">
+        <input type="submit" value="UPDATE [% s.title %]">
+    </div>
 [% END %]
 
 [% BLOCK settings_form %]
@@ -168,12 +199,12 @@
                     <td align="left" style="padding-left: 10px;">
                         <form method="POST" id="global" action="?page=[% s.submitted %]&group=[% s.group %]">
                             <input type="hidden" name="submitted" value="[% s.submitted %]">
-                            <input type="submit" value="UPDATE [% s.title %]">
                             <input type="hidden" name="page" value="[% s.submitted %]">
                             <input type="hidden" name="group" value="[% s.group %]">
                             <input type="hidden" name="revision" value="[% s.setting_revision %]">
-                            [% INCLUDE  branch current_config=s.settings %]
-                            <input type="submit" value="UPDATE [% s.title %]">
+                            [% INCLUDE submit_button %]
+                            [% INCLUDE branch current_config=s.settings %]
+                            [% INCLUDE submit_button %]
                         </form>
                     </td>
                 </tr>
