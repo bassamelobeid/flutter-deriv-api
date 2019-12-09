@@ -19,6 +19,7 @@ use BOM::Transaction;
 use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Config;
@@ -31,6 +32,11 @@ use Test::MockTime qw(set_absolute_time);
 use Test::MockModule;
 
 initialize_realtime_ticks_db();
+
+my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+
+$mock_validation->mock(compliance_checks     => sub { note "mocked Transaction::Validation->compliance_checks returning nothing";     undef });
+$mock_validation->mock(check_tax_information => sub { note "mocked Transaction::Validation->check_tax_information returning nothing"; undef });
 
 #create an empty un-used even so ask_price won't fail preparing market data for pricing engine
 #Because the code to prepare market data is called for all pricings in Contract
@@ -330,6 +336,7 @@ subtest 'valid currency test' => sub {
         my $curr = $contract->currency;
         is($error->get_type, 'InvalidCurrency', 'Invalid currency: _validate_currency - error type');
         like($error->{-message_to_client}, qr/The provided currency $curr is invalid./, 'Invalid currency: _validate_currency - error message');
+        $mock_contract->unmock('currency');
     };
 
     subtest 'not default currency for client' => sub {
@@ -648,6 +655,7 @@ subtest 'BUY - trade pricing adjustment' => sub {
             base_amount => 0.1 + $allowed_move + 0.001,
         });
         $mock_call->mock('ask_probability', sub { $ask_cv });
+        $mock_call->mock('ask_price', sub { 10 });
         $mock_contract->mock('payout', sub { 10 / $ask_cv->amount });
 
         my $contract = produce_contract({

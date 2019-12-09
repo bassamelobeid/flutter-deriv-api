@@ -252,13 +252,19 @@ sub _validate_sell_pricing_adjustment {
 sub _validate_trade_pricing_adjustment {
     my $self = shift;
 
-    my $contract = $self->transaction->contract;
+    my $transaction = $self->transaction;
+    my $contract    = $transaction->contract;
 
     return Error::Base->cuss(
-        -type              => 'BetExpired',
-        -mesg              => 'Bet expired with a new price[' . $self->recomputed_amount . '] (old price[' . $self->amount . '])',
+        -type => 'BetExpired',
+        -mesg => 'Bet expired with a new price[' . $transaction->recomputed_amount . '] (old price[' . $transaction->requestedamount . '])',
         -message_to_client => localize('The contract has expired'),
     ) if $contract->is_expired;
+
+    if ($transaction->request_type eq 'payout') {
+        # This is to avoid buying contract at exorbitant 'price' due to human error
+        $transaction->price($contract->ask_price);
+    }
 
     return $self->_validate_binary_price_adjustment('ask_probability') if $contract->is_binary;
     return $self->_validate_non_binary_price_adjustment();

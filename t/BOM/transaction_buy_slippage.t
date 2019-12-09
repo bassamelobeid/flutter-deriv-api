@@ -561,4 +561,44 @@ subtest 'test CALL (binary) slippage' => sub {
     'survived amount_type=stake';
 };
 
+subtest "high input price" => sub {
+    my $contract = produce_contract({
+        underlying   => create_underlying('R_100'),
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        duration     => '5m',
+        current_tick => $tick,
+        barrier      => 'S0P',
+    });
+
+    # amount_type = payout with high price
+    my $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => 10000,
+        payout        => 100,
+        amount_type   => 'payout',
+        purchase_date => Date::Utility->new(),
+    });
+
+    ok !$txn->buy, 'buy successful without error';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+    is $fmb->{buy_price} + 0,    $contract->ask_price, 'buy_price';
+
+    # amount_type = stake with high price
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => 10000,
+        payout        => 100,
+        amount_type   => 'stake',
+        purchase_date => Date::Utility->new(),
+    });
+
+    ok !$txn->buy, 'buy successful without error';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+    is $fmb->{buy_price} + 0,    $contract->ask_price, 'buy_price';
+};
+
 done_testing();
