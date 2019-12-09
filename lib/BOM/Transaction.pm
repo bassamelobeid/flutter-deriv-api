@@ -1234,6 +1234,7 @@ sub cancel_by_shortcode {
 sub cancel {
     my ($self, %options) = @_;
 
+    $self->action_type('sell');
     my $stats_data = $self->stats_start('cancel');
 
     my ($error_status, $bet_data) = $self->prepare_cancel($options{skip_validation});
