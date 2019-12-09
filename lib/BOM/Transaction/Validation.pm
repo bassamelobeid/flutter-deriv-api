@@ -13,7 +13,7 @@ use Format::Util::Numbers qw/financialrounding/;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Context qw(localize request);
-use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use BOM::Product::ContractFactory qw( produce_contract );
 use Locale::Country::Extra;
 use BOM::Database::ClientDB;
 use Date::Utility;
