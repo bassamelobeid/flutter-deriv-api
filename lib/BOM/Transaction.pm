@@ -101,6 +101,19 @@ sub adjust_amount {
     my ($self, $amount) = @_;
 
     my $type = $self->request_type;
+
+    if ($type eq 'payout') {
+        # We override contract just for the sake of having correct contract shortly.
+        # TODO: improve this by not having to re-create contract for this.
+        my $contract = make_similar_contract(
+            $self->contract,
+            {
+                amount_type => 'payout',
+                amount      => $amount
+            });
+        $self->contract($contract);
+    }
+
     return $self->$type($amount);
 }
 
