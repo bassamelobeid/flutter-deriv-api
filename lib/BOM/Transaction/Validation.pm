@@ -295,6 +295,7 @@ sub _adjust_trade {
     if ($move <= $allowed_move and $move >= -$allowed_move) {
         # We absorbed the price difference here and we want to keep it in our book.
         $transaction->record_slippage($slippage) if $slippage != 0;
+        $transaction->adjust_amount($transaction->requested_amount);
     } elsif ($move > $allowed_move) {
         $transaction->execute_at_better_price(1);
         # We need to keep record of slippage even it is executed at better price
