@@ -1,6 +1,6 @@
 {
   "buy": 1,
-  "price": 10,
+  "price": 10000,
   "parameters": {
     "amount": 10,
     "basis": "[_1]",
