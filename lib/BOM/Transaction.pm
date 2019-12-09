@@ -51,6 +51,118 @@ use BOM::Config::RedisReplicated;
 =cut
 
 my $json = JSON::MaybeXS->new;
+
+=head2 action_type
+
+This can be either 'buy' or 'sell'.
+
+=cut
+
+has action_type => (
+    is       => 'rw',
+    init_arg => undef,
+);
+
+has [qw(requested_amount recomputed_amount)] => (
+    is         => 'ro',
+    init_arg   => undef,
+    lazy_build => 1,
+);
+
+has request_type => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_request_type {
+    my $self = shift;
+
+    # certain contract types do not have payout so we will be comparing stake for these contracts.
+    return 'payout' if ($self->action_type eq 'buy' and $self->amount_type eq 'stake' and $self->contract->is_non_zero_payout);
+    return 'price';
+}
+
+sub _build_requested_amount {
+    my $self = shift;
+
+    my $type = $self->request_type;
+    return $self->$type;
+}
+
+sub _build_recomputed_amount {
+    my $self = shift;
+
+    # certain contract types do not have payout so we will be comparing stake for these contracts.
+    return $self->contract->payout if $self->request_type eq 'payout';
+    return $self->action_type eq 'buy' ? $self->contract->ask_price : $self->contract->bid_price;
+}
+
+sub adjust_amount {
+    my ($self, $amount) = @_;
+
+    my $type = $self->request_type;
+    return $self->$type($amount);
+}
+
+=head2 record_slippage
+
+This function is record slippage amount (price or payout) for a particular contract into $transaction->price_slippage
+attribute in BOM::Transaction object.
+
+slippage amount under different situations could benefit the user or the company. For ease of reporting,
+we will convert slippage amount to reflect the following:
+
+- postive slippage: company's gain
+- negative slippage: company's loss
+
+slippage amount is calculated with the following formula:
+
+$slippage = $requested - $recomputed
+
+Buying a contract:
+
+- When $transaction->request_type eq 'price'
+
+    A positive slippage (in ask price) means profit for the company. For example:
+
+    User requested to buy the contract for 10 USD. When it reaches our server, the recomputed ask price of the contract is now 9 USD. In this case, slippage (10 USD - 9 USD) is 1 USD.
+    The contract is sold at 10USD (theoretically sold at a more expensive price)
+
+    On the other hand, a negative slippage  means loss for the company. The logic is the same, we sold the contract at a cheaper price.
+
+- When $transaction->request_type eq 'payout'
+
+    A positive slippage (in payout price) means loss for the company. For example:
+
+    User wanted to stake 5 USD to win a 10 USD payout. So, the requested payout is 10 USD. When it reaches our server, the recomputed payout of the contract is now 9 USD.
+    In this case, payout slippage (10 USD - 9 USD) is 1 USD. We are giving user 1 USD more than what it should be, hence a company loss.
+
+    On the other hand, a negative payout slippage means profit for the company.
+
+Selling a contract:
+
+When you're selling a contract, the requested and recomputed amount are always going to be in bid price space.
+
+A positive slippage (in bid price) means loss for the company and vice versa.
+
+=cut
+
+sub record_slippage {
+    my ($self, $amount) = @_;
+
+    my $action_type  = $self->action_type;
+    my $request_type = $self->request_type;
+
+    die 'action_type is not defined' unless $action_type;
+
+    # invert slippage amount to reflect company's position
+    if (($action_type eq 'buy' and $request_type eq 'payout') or $action_type eq 'sell') {
+        $amount *= -1;
+    }
+
+    return $self->price_slippage(financialrounding('price', $self->contract->currency, $amount));
+}
+
 has client => (
     is  => 'ro',
     isa => 'BOM::User::Client',
@@ -95,23 +207,17 @@ has price => (
     isa => 'Maybe[Num]',
 );
 
-# price_slippage is the price difference between the requested buy or sell price from the recomputed price.
-# If the slippage is within the acceptable amount, 50% of commission then we will honour the requested price.
+=head2 price_slippage
+
+ positive price slippage means contract was bought or sold to the client in company's favour.
+
+ We absorb price slippage on either side up to 50% of contract commission.
+
+=cut
+
 has price_slippage => (
     is      => 'rw',
     default => 0,
-);
-
-# This is the requested buy or sell price
-has requested_price => (
-    is  => 'rw',
-    isa => 'Maybe[Num]',
-);
-
-# This is the recomputed buy or sell price
-has recomputed_price => (
-    is  => 'rw',
-    isa => 'Maybe[Num]',
 );
 
 has transaction_record => (
@@ -148,6 +254,12 @@ sub _build_payout {
     return $self->contract->payout;
 }
 
+=head2 amount_type
+
+amount_type can either be 'payout' or 'stake'. This works for all existing contract types.
+
+=cut
+
 has amount_type => (
     is         => 'rw',
     isa        => 'Str',
@@ -158,13 +270,20 @@ sub _build_amount_type {
     my $self = shift;
 
     my $param = $self->contract_parameters;
+    my $amount_type;
+    # shortcode is generated internally and not part of buy parameter. When is part of the $self->contract_parameters,
+    # this is an existing contract.
     if ($param->{shortcode}) {
-        return shortcode_to_parameters($param->{shortcode}, $param->{currency})->{amount_type};
+        $amount_type = shortcode_to_parameters($param->{shortcode}, $param->{currency})->{amount_type};
     }
 
-    return 'multiplier' if defined $param->{multiplier};
+    # lookbacks does not require amount_type and amount as it's input, but internally we would
+    # still want to compare the ask price
+    $amount_type = 'payout' unless $self->contract->category->require_basis;
+    die 'amount_type is required' unless defined $amount_type;
+    die 'amount_type can only be stake or payout' unless ($amount_type eq 'stake' or $amount_type eq 'payout');
 
-    die 'amount type is required';
+    return $amount_type;
 }
 
 has comment => (
@@ -586,9 +705,15 @@ sub prepare_buy {
         _build_pricing_comment({
                 contract => $self->contract,
                 price    => $self->price,
-                ($self->requested_price)  ? (requested_price  => $self->requested_price)  : (),
-                ($self->recomputed_price) ? (recomputed_price => $self->recomputed_price) : (),
-                ($self->price_slippage)   ? (price_slippage   => $self->price_slippage)   : (),
+                ($self->requested_amount)
+                ? (requested_price => $self->requested_amount)
+                : (),    # requested_price could be ask price or payout. Since this field is embedded in database schema, I don't want to change it.
+                ($self->recomputed_amount)
+                ? (recomputed_price => $self->recomputed_amount)
+                : (),    # recomputed_price could be ask price or payout. Since this field is embedded in database schema, I don't want to change it.
+                ($self->price_slippage)
+                ? (price_slippage => $self->price_slippage)
+                : (),    # price_slippage is the slippage of ask price or payout price.
                 action => 'buy'
             })) unless (@{$self->comment});
 
@@ -598,6 +723,7 @@ sub prepare_buy {
 sub buy {
     my ($self, %options) = @_;
 
+    $self->action_type('buy');
     my $stats_data = $self->stats_start('buy');
 
     my $client = $self->client;
@@ -719,6 +845,7 @@ sub batch_buy {
     # TODO: shall we allow this operation only if $self->client is real-money?
     #       Or allow virtual $self->client only if all other clients are also
     #       virtual?
+    $self->action_type('buy');
     my $stats_data = $self->stats_start('batch_buy');
 
     my ($error_status, $bet_data) = $self->prepare_buy($options{skip_validation});
@@ -892,9 +1019,15 @@ sub prepare_sell {
         _build_pricing_comment({
                 contract => $self->contract,
                 price    => $self->price,
-                ($self->requested_price)  ? (requested_price  => $self->requested_price)  : (),
-                ($self->recomputed_price) ? (recomputed_price => $self->recomputed_price) : (),
-                ($self->price_slippage)   ? (price_slippage   => $self->price_slippage)   : (),
+                ($self->requested_amount)
+                ? (requested_price => $self->requested_amount)
+                : (),    # requested_price is bid price send by user.
+                ($self->recomputed_amount)
+                ? (recomputed_price => $self->recomputed_amount)
+                : (),    # recomputed_price is recomputed bid price
+                ($self->price_slippage)
+                ? (price_slippage => $self->price_slippage)
+                : (),    # price_slippage is the difference between the requested bid price and the recomputed bid price.
                 action => 'sell'
             })) unless @{$self->comment};
 
@@ -904,6 +1037,7 @@ sub prepare_sell {
 sub sell {
     my ($self, %options) = @_;
 
+    $self->action_type('sell');
     my $stats_data = $self->stats_start('sell');
 
     my ($error_status, $bet_data) = $self->prepare_sell($options{skip_validation});
@@ -981,6 +1115,7 @@ sub sell {
 sub sell_by_shortcode {
     my ($self, %options) = @_;
 
+    $self->action_type('sell');
     my $stats_data = $self->stats_start('sell');
 
     if ($self->contract->category_code eq 'multiplier') {

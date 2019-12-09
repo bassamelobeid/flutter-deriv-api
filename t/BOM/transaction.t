@@ -1941,7 +1941,7 @@ subtest 'transaction slippage' => sub {
         ok !$transaction->sell, 'no error when sell';
         my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $transaction->transaction_id;
         cmp_ok $fmb->{sell_price}, '==', sprintf('%.2f', $price), 'sell at requested price';
-        is $qv1->{price_slippage}, -0.4, 'slippage stored';
+        is $qv1->{price_slippage}, '-0.40', 'slippage stored';
         is $qv1->{requested_price}, $price, 'correct requested price stored';
         is $qv1->{recomputed_price}, $contract->bid_price, 'correct recomputed price stored';
     };
