@@ -113,8 +113,13 @@ payments:
               default: 3
               global: 1
             maximum_offer:
-              isa: Num            
+              isa: Num
               description: 'Maximum amount per offer (in USD)'
+              default: 100
+              global: 1
+            maximum_order:
+              isa: Num
+              description: 'Maximum amount per order (in USD)'
               default: 100
               global: 1
     transfer_between_accounts:
