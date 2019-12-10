@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "Change Password (request)",
-    "description": "Change Password. Note: this call is NOT available when authenticated to a per-app token. It is only available for in-house Binary.com apps.",
+    "description": "Change Password. Note: This call is only available when authenticated using an OAuth token.",
     "hidden": 1,
     "type": "object",
     "additionalProperties": false,
@@ -12,7 +12,7 @@
     ],
     "properties": {
         "change_password": {
-            "description": "Must be 1",
+            "description": "Must be `1`",
             "type": "number",
             "enum": [
                 1
@@ -31,7 +31,7 @@
             "sensitive": 1
         },
         "passthrough": {
-            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the echo_req output field.",
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
             "type": "object"
         },
         "req_id": {
