@@ -7,25 +7,30 @@ no indirect;
 use Test::More;
 use IO::Async::Loop;
 use Log::Any::Adapter qw(Stdout), log_level => $ENV{LOG_LEVEL} // 'info';
-use Future::Utils qw( fmap0 );
 
 use BOM::Test::WebsocketAPI;
 use BOM::Test::WebsocketAPI::Data qw( requests );
+use BOM::Test::WebsocketAPI::Parameters qw( clients );
 
+my ($default_client) = grep { $_->loginid eq 'MLT90000000' } clients()->@*;
+my $default_token = $default_client->token;
 my $loop = IO::Async::Loop->new;
 
 $loop->add(
     my $tester = BOM::Test::WebsocketAPI->new(
-        timeout            => 300,
-        max_response_delay => 10,
+        timeout            => 90,
+        max_response_delay => 3,
         skip_sanity_checks => {
-            website_status => [qw(published check_duplicates)],    # Response can be overlapping between publishes
+            # Response can be overlapping between publishes
+            # website status is not added to the published list ATM
+            website_status => [qw(published check_duplicates)],
+            history        => [qw(check_duplicates)],
         },
-        suite_params => {
-            concurrent => 50,
+        suite_params       => {
+            concurrent => 200,
+            token      => $default_token,
             requests   => requests(
-                #calls => [qw( ticks ticks_history proposal_array proposal website_status )],
-                calls  => [qw( proposal website_status )],
+                calls  => [qw( buy transaction balance ticks ticks_history proposal website_status )],
                 filter => sub {
                     my $params = shift->{params};
                     my $symbol;
@@ -48,15 +53,18 @@ $loop->add(
     ),
 );
 
-subtest 'General subscriptions: proposal, proposal_array & website_status' => sub {
-
+subtest 'General subscriptions: all calls except balance_all' => sub {
     Future->needs_all(
-        $tester->subscribe_multiple_times(count => 10), $tester->subscribe_twice, $tester->subscribe,
-        $tester->subscribe_after_request,     $tester->multiple_subscriptions_forget, $tester->multiple_subscriptions_forget_all,
-        $tester->multiple_connections_forget, $tester->multiple_connections_forget_all,
+        $tester->subscribe_multiple_times(count => 10),
+        $tester->subscribe_twice,
+        $tester->subscribe,
+        $tester->subscribe_after_request,
+        $tester->multiple_connections_forget,
+        $tester->multiple_connections_forget_all,
     )->get;
 
     $tester->run_sanity_checks;
 };
+
 
 done_testing;
