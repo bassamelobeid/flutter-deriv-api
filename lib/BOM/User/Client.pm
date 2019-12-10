@@ -1545,6 +1545,8 @@ Hashref of the input fields
 
 =back
 
+Return undef if there is not need to check for duplicate account or if there is no duplicate account found for the given user information
+
 Return {
     error   => C<error_code>
     details => C<dup_account_details>
@@ -1555,10 +1557,15 @@ Return {
 sub check_duplicate_account {
     my ($client, $args) = @_;
 
-    return undef if $client->is_virtual;
+    # Get target broker code either from $args or client itself
+    my $target_broker = $args->{broker_code} // $client->broker_code;
+
+    # If client is going to update his virtual account there is no need to check for duplicate account
+    return undef if $target_broker =~ BOM::User::VIRTUAL_REGEX();
 
     my @duplicate_check = qw/first_name last_name date_of_birth phone/;
     if (any { $args->{$_} and $args->{$_} ne $client->$_ } @duplicate_check) {
+
         my $dup_details = {
             email          => $client->email,
             exclude_status => ['duplicate_account', 'disabled'],
@@ -1567,7 +1574,7 @@ sub check_duplicate_account {
         #name + dob is one group to check, phone is another independent condition
         #current logic is we only check phone when it is changed
         delete $dup_details->{phone} unless $args->{phone} and $args->{phone} ne $client->phone;
-        my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->get_duplicate_client($dup_details);
+        my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $target_broker})->get_duplicate_client($dup_details);
 
         return {
             error   => 'DuplicateAccount',
