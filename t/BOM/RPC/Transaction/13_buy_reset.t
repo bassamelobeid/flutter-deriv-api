@@ -174,9 +174,9 @@ subtest 'app_markup' => sub {
             "duration_unit" => "s",
             "symbol"        => "R_50",
         },
-        args => {price => 64.03}};
+        args => {price => 63.73}};
     my $payout    = $txn_con->contract->payout;
-    my $ask_price = 64.03;
+    my $ask_price = 63.73;
 
     my $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(
@@ -206,7 +206,7 @@ subtest 'app_markup' => sub {
     );
     $params->{contract_parameters}->{app_markup_percentage} = 1;
 
-    $params->{args}->{price} = 65.03;
+    $params->{args}->{price} = 64.73;
     $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
     is $result->{buy_price}, $ask_price + 1, "buy_price is ask_price plus + app_markup same for payout";
 
