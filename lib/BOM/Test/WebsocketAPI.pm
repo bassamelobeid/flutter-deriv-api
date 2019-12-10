@@ -51,7 +51,16 @@ use Module::Pluggable search_path =>
 Module::Load::load($_) for sort __PACKAGE__->plugins;
 
 use Binary::API::Mapping::Response;
-use Binary::WebSocketAPI;
+
+BEGIN {
+    our $mojo_accept = \&Mojo::IOLoop::Server::_accept;
+    require Binary::WebSocketAPI;
+    {
+        no warnings 'redefine';    ## no critic
+        *Mojo::IOLoop::Server::_accept = $mojo_accept;
+    }
+    Binary::WebSocketAPI->import();
+}
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper qw/launch_redis/;
@@ -59,14 +68,9 @@ use BOM::Test::WebsocketAPI::Contexts;
 use BOM::Test::WebsocketAPI::SanityChecker;
 use BOM::Test::WebsocketAPI::Publisher;
 use BOM::Test::WebsocketAPI::MockRPC;
-use BOM::Test::WebsocketAPI::Data qw( requests );
-use BOM::Test::WebsocketAPI::Parameters qw( clients );
 
-# Take the first client by default
-my $client               = clients()->[0];
 my $default_suite_params = {
-    requests => requests(client => $client),
-    token    => $client->token,
+    requests => [],
 };
 
 sub configure {

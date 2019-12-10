@@ -81,6 +81,7 @@ suite buy_then_sell_contract => sub {
             ok (List::Util::all(sub { $buy_resp->envelope->subscription->id eq $_->envelope->subscription->id; }, @subscriptions), 'Subscription ids are all the same');
         } )
         ->timeout_ok(5, sub { shift->take_latest }, 'There should be no more poc response after selling the contract')
+        ->release
         ->completed
         
     } foreach => [ @buy_requests ], %args{qw(concurrent)}
@@ -133,7 +134,8 @@ suite poc_no_contract_id => sub {
            ok (List::Util::all( sub { !$_->is_sold }, @poc[0..2] ), 'first 3 responses for contract '.($buy+1).' are unsold');
            ok ($poc[3]->is_sold, 'last response for contract '.($buy+1).' is sold');
         }        
-     })
+    })
+    ->release
     ->completed;
 
 };
