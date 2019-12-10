@@ -14,6 +14,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::FinancialAssessment;
 
 use await;
+use Data::Random qw(:all);
 
 ## do not send email
 use Test::MockModule;
@@ -51,6 +52,47 @@ my $mf_details = {
     account_opening_reason  => 'Speculative',
     address_line_1          => 'Test',
     %{BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash()}};
+
+subtest 'trying to create duplicate accounts' => sub {
+    subtest 'create duplicate CR account' => sub {
+        # Create first CR account
+
+        # Create vr account
+        my ($first_vr_client, $user) = create_vr_account({
+            email           => 'unique+email@binary.com',
+            residence       => 'af',
+            client_password => 'abc123',
+        });
+
+        my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $first_vr_client->loginid);
+        $t->await::authorize({authorize => $token});
+
+        my %details = %client_details;
+        $details{first_name} = rand_chars(set => 'loweralpha', size => 15);
+        $details{residence}  = 'af';
+        $details{phone}      = '+4420' . rand_chars(set => 'numeric', size => 8);
+        my $res = $t->await::new_account_real(\%details, { timeout => 10 });
+
+        ok($res->{new_account_real});
+        test_schema('new_account_real', $res);
+
+        # Create duplicate CR account
+        my $second_vr_client;
+        ($second_vr_client, $user) = create_vr_account({
+            email           => 'unique2+email@binary.com',
+            residence       => 'af',
+            client_password => 'abc123',
+        });
+
+        $token = BOM::Database::Model::OAuth->new->store_access_token_only(1, $second_vr_client->loginid);
+        $t->await::authorize({authorize => $token});
+
+        $res = $t->await::new_account_real(\%details, { timeout => 10 });
+
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'DuplicateAccount', "Duplicate account detected correctly");
+    };
+};
 
 subtest 'MLT upgrade to MF account' => sub {
     # create VR acc, authorize
@@ -183,9 +225,9 @@ subtest 'MX client can upgrade to MF' => sub {
 
     subtest 'create MX acc, authorize' => sub {
         my %details = %client_details;
-        $details{first_name} = 'InsufficientDOB';
+        $details{first_name} = rand_chars(set => 'loweralpha', size => 25);
         $details{residence}  = 'gb';
-        $details{phone}      = '+442072343457';
+        $details{phone}      = '+4420' . rand_chars(set => 'numeric', size => 8);
         my $res = $t->await::new_account_real(\%details, { timeout => 10 });
 
         ok($res->{new_account_real});
@@ -219,14 +261,14 @@ subtest 'MX client can upgrade to MF' => sub {
 
 sub create_vr_account {
     my $args = shift;
-    my $acc  = BOM::Platform::Account::Virtual::create_account({
-            details => {
-                email           => $args->{email},
-                client_password => $args->{client_password},
-                residence       => $args->{residence},
-            },
-            email_verified => 1
-        });
+    my $params = {
+        details        => {},
+        email_verified => 1,
+    };
+
+    @{$params->{details}}{keys %$args} = values %$args;
+
+    my $acc  = BOM::Platform::Account::Virtual::create_account($params);
 
     return ($acc->{client}, $acc->{user});
 }
