@@ -35,9 +35,11 @@ while (<STDIN>) {
         _write("indices", $2, $1, $line); # Here Index name is the first match and the second match is the schema name
     } elsif ($line =~ /ALTER TABLE .* "(\w+)"."(\w+)"\n.*ADD CONSTRAINT.*PRIMARY KEY/) {
         _write("tables", $1, $2, $line, 1);
+    } elsif ($line =~ /ALTER TABLE .*"(\w+)"."(\w+)".*CLUSTER ON/) {
+        _write("tables", $1, $2, $line, 1);
     } elsif ($line =~ /ALTER TABLE .* "(\w+)"."(\w+)"\n.*ADD CONSTRAINT.*FOREIGN KEY/) { # pg_dump dump the constraint with a newline in the middle
         _write("fk_constraints", $1, $2, $line, 1);
-    } elsif ($line =~ /ALTER TABLE .* "(\w+)"."(\w+)"\n.*ADD CONSTRAINT/) { 
+    } elsif ($line =~ /ALTER TABLE .*"(\w+)"."(\w+)"\n.*ADD CONSTRAINT/) {
         _write("constraints", $1, $2, $line, 1);
     } elsif ($line =~ /CREATE FUNCTION "(\w+)"."(\w+)"(?:\w|\s|\W)+AS(.*\$)(?:\w|\s|\W)?/) {
         my ($schema, $function_name, $end_pattern) = ($1, $2, $3);
