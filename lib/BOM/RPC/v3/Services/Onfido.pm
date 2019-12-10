@@ -215,7 +215,7 @@ sub _client_onfido_details {
         (map { $_ => $client->$_ } qw(first_name last_name email)),
         title   => $client->salutation,
         dob     => $client->date_of_birth,
-        country => uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3')),
+        country => uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3') // ''),
     };
 
     # Add address info if the required fields not empty
