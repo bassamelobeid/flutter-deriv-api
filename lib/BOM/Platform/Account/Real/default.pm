@@ -67,6 +67,10 @@ sub validate {
             return {error => 'invalid PO Box'};
         }
 
+        # Check for duplicate account
+        my $account_is_duplicate = $from_client->check_duplicate_account($details);
+        return {error => $account_is_duplicate->{error}} if $account_is_duplicate->{error};
+
         my $dob_error = validate_dob($details->{date_of_birth}, $residence);
         return $dob_error if $dob_error;
     }
