@@ -40,6 +40,8 @@
     <br><br>
 <!-- Withdrawal -->
     <button type="submit" name="view_action" value="withdrawals">Withdrawal Transactions</button>
+    <input type="checkbox" id="show_all_pendings" name="show_all_pendings" [% IF show_all_pendings %] checked [% END %]>
+    <label for="show_all_pendings"> Show all pending payouts </label>
     <br>
     <br>
 <!-- Tools -->
