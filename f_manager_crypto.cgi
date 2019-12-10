@@ -8,7 +8,7 @@ use Date::Utility;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 use JSON::MaybeXS;
 use HTML::Entities;
-use List::UtilsBy qw(rev_nsort_by sort_by);
+use List::UtilsBy qw(rev_nsort_by sort_by extract_by);
 use POSIX ();
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use YAML::XS;
@@ -59,6 +59,9 @@ my $view_type = request()->param('view_type') // 'pending';
 # Currently, the controller renders page according to Deposit,
 # Withdrawal and Search actions.
 my $view_action = request()->param('view_action') // '';
+# if show_all_pendings is true, all pending withdrawal transaction will be listed;
+#otherwise, those verified/rejected by the current user will be filtered out.
+my $show_all_pendings = request()->param('show_all_pendings');
 
 code_exit_BO("Invalid currency.")
     if $currency !~ /^[A-Z]{3}$/;
@@ -139,6 +142,7 @@ my $display_transactions = sub {
             controller_url  => request()->url_for('backoffice/f_manager_crypto.cgi'),
             testnet         => BOM::Config::on_qa() ? 1 : 0,
             staff           => $staff,
+            show_all_pendings => $show_all_pendings // '',
         }) || die $tt->error();
 };
 
@@ -149,15 +153,16 @@ my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
     'backoffice/crypto_cashier/crypto_control_panel.html.tt',
     {
-        exchange_rate  => $exchange_rate,
-        controller_url => request()->url_for('backoffice/f_manager_crypto.cgi'),
-        currency       => $currency,
-        all_crypto     => [@crypto_currencies],
-        cmd            => request()->param('command') // '',
-        broker         => $broker,
-        start_date     => $start_date->date_yyyymmdd,
-        end_date       => $end_date->date_yyyymmdd,
-        staff          => $staff,
+        exchange_rate     => $exchange_rate,
+        controller_url    => request()->url_for('backoffice/f_manager_crypto.cgi'),
+        currency          => $currency,
+        all_crypto        => [@crypto_currencies],
+        cmd               => request()->param('command') // '',
+        broker            => $broker,
+        start_date        => $start_date->date_yyyymmdd,
+        end_date          => $end_date->date_yyyymmdd,
+        show_all_pendings => $show_all_pendings,
+        staff             => $staff,
     }) || die $tt2->error();
 
 # Exchange rate should be populated according to supported cryptocurrencies.
@@ -223,7 +228,17 @@ if ($view_action eq 'withdrawals') {
                 $currency, $ctc_status
             );
         });
+
+    unless ($show_all_pendings or $view_type ne 'pending') {
+        #filter pending transactions already audited by the current staff
+        @$trxns = extract_by {
+            not($_->{authorisers} and grep { /^$staff$/ } $_->{authorisers}->@*)
+        }
+        @$trxns;
+    }
+
     $display_transactions->($trxns);
+
 } elsif ($view_action eq 'deposits') {
     Bar("LIST OF TRANSACTIONS - DEPOSITS");
     $view_type ||= 'new';

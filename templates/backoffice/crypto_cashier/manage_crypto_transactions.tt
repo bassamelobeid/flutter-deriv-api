@@ -179,31 +179,32 @@
 [% END %]
 <br/>
 <table>
+    [% url_base = '?broker=' _ broker _ '&currency=' _ currency _ '&show_all_pendings=' _ show_all_pendings _ '&view_action=' _ view_action %]
     [% IF view_action == 'deposits' %]
         <tr>
-            <td><a [% IF view_type == 'new' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=deposits&view_type=new">View new addresses</a></td>
+            <td><a [% IF view_type == 'new' %]class='selected' [% END %]href="[% url_base %]&view_type=new">View new addresses</a></td>
             <td>|</td>
-            <td><a [% IF view_type == 'pending' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=deposits&view_type=pending">View pending transactions</a></td>
+            <td><a [% IF view_type == 'pending' %]class='selected' [% END %]href="?[% url_base %]&view_type=pending">View pending transactions</a></td>
             <td>|</td>
-            <td><a [% IF view_type == 'confirmed' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=deposits&view_type=confirmed">View confirmed transactions</a></td>
+            <td><a [% IF view_type == 'confirmed' %]class='selected' [% END %]href="[% url_base %]&view_type=confirmed">View confirmed transactions</a></td>
             <td>|</td>
-            <td><a [% IF view_type == 'error' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=deposits&view_type=error">View errored transactions</a></td>
+            <td><a [% IF view_type == 'error' %]class='selected' [% END %]href="[% url_base %]&view_type=error">View errored transactions</a></td>
         </tr>
     [% ELSIF view_action == 'withdrawals' %]
         <tr>
-            <td><a [% IF view_type == 'pending' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=withdrawals&view_type=pending">View Pending Transactions</a></td>
+            <td><a [% IF view_type == 'pending' %]class='selected' [% END %]href="[% url_base %]&view_type=pending">View Pending Transactions</a></td>
             <td>|</td>
-            <td><a [% IF view_type == 'verified' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=withdrawals&view_type=verified">View Verified Transactions</a></td>
+            <td><a [% IF view_type == 'verified' %]class='selected' [% END %]href="[% url_base %]&view_type=verified">View Verified Transactions</a></td>
             <td>|</td>
-            <td><a [% IF view_type == 'rejected' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=withdrawals&view_type=rejected">View Rejected Transaction</a></td>
+            <td><a [% IF view_type == 'rejected' %]class='selected' [% END %]href="[% url_base %]&view_type=rejected">View Rejected Transaction</a></td>
             <td>|</td>
-            <td><a [% IF view_type == 'processing' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=withdrawals&view_type=processing">View transactions under processing</a></td>
+            <td><a [% IF view_type == 'processing' %]class='selected' [% END %]href="[% url_base %]&view_type=processing">View transactions under processing</a></td>
             <td>|</td>
-            <td><a [% IF view_type == 'performing_blockchain_txn' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=withdrawals&view_type=performing_blockchain_txn">View transactions listed as performed blockchain</a></td>
+            <td><a [% IF view_type == 'performing_blockchain_txn' %]class='selected' [% END %]href="[% url_base %]&view_type=performing_blockchain_txn">View transactions listed as performed blockchain</a></td>
             <td>|</td>
-            <td><a [% IF view_type == 'sent' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=withdrawals&view_type=sent">View Sent Transactions</a></td>
+            <td><a [% IF view_type == 'sent' %]class='selected' [% END %]href="[% url_base %]&view_type=sent">View Sent Transactions</a></td>
             <td>|</td>
-            <td><a [% IF view_type == 'error' %]class='selected' [% END %]href="?broker=[% broker %]&currency=[% currency %]&view_action=withdrawals&view_type=error">View Errored Out Transactions</a></td>
+            <td><a [% IF view_type == 'error' %]class='selected' [% END %]href="[% url_base %]&view_type=error">View Errored Out Transactions</a></td>
         </tr>
     [% END %]
 </table>
