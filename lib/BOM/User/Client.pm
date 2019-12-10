@@ -1449,7 +1449,7 @@ sub validate_common_account_details {
             _validate_dob($args->{date_of_birth}, $client->residence);
         }
 
-        die "NeedBothSecret\n" if ($args->{secret_answer} xor $args->{secret_question});
+        die "NeedBothSecret\n" if (($args->{secret_answer} // $client->secret_answer) xor($args->{secret_question} // $client->secret_question));
 
         die "InvalidPlaceOfBirth\n" if ($args->{place_of_birth} and not Locale::Country::code2country($args->{place_of_birth}));
 

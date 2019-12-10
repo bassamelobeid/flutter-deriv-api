@@ -13,10 +13,11 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $login_id = 'CR0022';
 
+my $client;
+
 subtest "Client load and saving." => sub {
     plan tests => 43;
     # create client object
-    my $client;
     lives_ok { $client = BOM::User::Client->new({'loginid' => $login_id}); }
     "Can create client object 'BOM::User::Client::get_instance({'loginid' => $login_id})'";
 
@@ -134,6 +135,7 @@ subtest "Client load and saving." => sub {
         'allow_login'     => 1,
         'last_name'       => 'test initialize client obj by hash ref',
         'first_name'      => 'MX client',
+        'residence'       => 'de',
     };
 
     $client = BOM::User::Client->rnew(%$client_details);
@@ -146,3 +148,29 @@ subtest "Client load and saving." => sub {
     is($client->first_name, $client_details->{'first_name'},      'compare first_name between client object instantize with another client hash ref');
 };
 
+subtest "format and validate" => sub {
+
+    my $args = {first_name => ' newname '};
+    is $client->validate_fields_immutable($args)->{details}, 'first_name', 'validate_fields_immutable';
+
+    $client->format_input_details($args);
+    is $args->{first_name}, 'newname', 'trim firstname';
+
+    $args = {phone => 123456};
+    is $client->format_input_details($args)->{error}, 'InvalidPhone', 'InvalidPhone';
+
+    $args = {date_of_birth => '2010-15-15'};
+    is $client->format_input_details($args)->{error}, 'InvalidDateOfBirth', 'InvalidDateOfBirth';
+
+    $args = {date_of_birth => '2010-10-15'};
+    is $client->validate_common_account_details($args)->{error}, 'BelowMinimumAge', 'validate_common_account_details: BelowMinimumAge';
+    $args = {secret_question => 'test'};
+    is $client->validate_common_account_details($args)->{error}, 'NeedBothSecret', 'validate_common_account_details: NeedBothSecret';
+
+    $args = {place_of_birth => 'oo'};
+    is $client->validate_common_account_details($args)->{error}, 'InvalidPlaceOfBirth', 'validate_common_account_details: InvalidPlaceOfBirth';
+
+    $args = {citizen => 'oo'};
+    is $client->validate_common_account_details($args)->{error}, 'InvalidCitizenship', 'validate_common_account_details: InvalidCitizenship';
+
+};
