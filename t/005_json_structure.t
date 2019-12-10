@@ -4,14 +4,21 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::Warnings;
+
+use Getopt::Long;
 use JSON::MaybeUTF8 qw(:v1);
 use JSON::PP;
 use List::Util qw(first);
 use Path::Tiny;
+use Scalar::Util qw(looks_like_number);
 use Term::ANSIColor qw(colored);
 use Text::Diff;
 
 use constant BASE_PATH => 'config/v3/';
+
+GetOptions(
+    fix => \(my $should_fix = 0),
+);
 
 sub read_all_schemas {
     map { chomp && {
@@ -81,9 +88,12 @@ subtest 'general formatting and order' => sub {
         hidden               => 5,
         type                 => 6,
         pattern              => 7,
-        additionalProperties => 8,
-        required             => 9,
-        properties           => 10,
+        default              => 8,
+        enum                 => 9,
+        examples             => 10,
+        additionalProperties => 11,
+        required             => 12,
+        properties           => 13,
         echo_req             => 101,
         msg_type             => 102,
         passthrough          => 103,
@@ -102,7 +112,7 @@ subtest 'general formatting and order' => sub {
             my $node = $params->{$key};
 
             if (ref $node eq 'ARRAY' && ref $node->[0] ne 'HASH' && $key ne 'enum') {
-                $params->{$key} = [sort $node->@*];
+                $params->{$key} = [sort { looks_like_number($a) ? $a <=> $b : $a cmp $b } $node->@*];    # Prevent converting numbers to strings
             } elsif (ref $node eq 'HASH') {
                 sort_arrays($node);
             }
@@ -117,7 +127,13 @@ subtest 'general formatting and order' => sub {
         ok !$diff, 'Schema format and order is correct: ' . $file_name;
 
         if ($diff) {
-            print colored("Schema file is not ordered/formatted properly.\nPlease make the following changes on ", 'red'), $file_name, "\n";
+            print colored('Schema file is not ordered/formatted properly.', 'red'), $file_name, "\n";
+            if ($should_fix) {
+                print colored("The issues will automatically get fixed.\n", 'green');
+            } else {
+                print colored("Please make the following changes to fix the issues.\n", 'red');
+                print colored('You can also run this command to automatically fix the issues: ', 'yellow'), colored('perl t/005_json_structure.t --fix', 'bold'), "\n";
+            }
 
             for (split "\n", $diff) {
                 print /^-/  ? colored($_, 'red')
@@ -136,6 +152,8 @@ subtest 'general formatting and order' => sub {
         test_diff($schema->{json_text}, $sorted, $schema->{formatted_path});
 
         delete $order{$schema->{method_name}};    # cleanup for next
+
+        path($schema->{path})->spew_utf8($sorted) if $should_fix;
     }
 };
 
@@ -145,7 +163,7 @@ subtest 'common properties' => sub {
         send => {
             passthrough => {
                 type        => 'object',
-                description => '[Optional] Used to pass data through the websocket, which may be retrieved via the echo_req output field.',
+                description => '[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.',
             },
             req_id      => {
                 type        => 'integer',
@@ -159,7 +177,7 @@ subtest 'common properties' => sub {
             },
             req_id   => {
                 type        => 'integer',
-                description => 'Optional field sent in request to map to response, present only when request contains req_id.',
+                description => 'Optional field sent in request to map to response, present only when request contains `req_id`.',
             },
             msg_type => {
                 type        => 'string',
@@ -208,7 +226,7 @@ subtest 'type and description' => sub {
         push $errors->{$path}->@*, "$path has type."        unless $node->{type} // $node->{oneOf};
         push $errors->{$path}->@*, "$path has description." unless $node->{description};
         push $errors->{$path}->@*, "$path description starts with capital letter."
-            unless $node->{description} =~ /^((\[|\()[A-Z].*(\]|\)) |)[A-Z0-9]/;
+            unless $node->{description} =~ /^((\[|\()[A-Z].*(\]|\)) |)[A-Z0-9`]/;
 
         for my $prop_node (qw(properties patternProperties)) {
             check_fields($node->{$prop_node}{$_}, "$path->$_", $errors) for keys $node->{$prop_node}->%*;
@@ -237,8 +255,8 @@ subtest 'type and description' => sub {
     }
 };
 
-# Make sure schema titles are consistent
-subtest 'schema titles' => sub {
+# Make sure schema titles are consistent and the main method name is required
+subtest 'schema titles and required' => sub {
     for my $schema (@json_schemas) {
         next unless $schema->{json_type} eq 'send';
 
@@ -251,6 +269,9 @@ subtest 'schema titles' => sub {
         my ($send_title)    = $schema->{json}{title}         =~ /(.*) \(request\)$/;
         my ($receive_title) = $receive_schema->{json}{title} =~ /(.*) \(response\)$/;
         is $receive_title, $send_title, "$method: send & receive titles are similar.";
+
+        my $required_method = first { $_ eq $method } $schema->{json}{required}->@*;
+        is $required_method, $method, "$method: method name is required.";
     }
 };
 
