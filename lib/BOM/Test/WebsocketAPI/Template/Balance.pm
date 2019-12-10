@@ -19,6 +19,7 @@ rpc_request {
         country_code               => 'aq',
         args                       => {
             balance   => 1,
+            account   => 'current',
             req_id    => 3,
             subscribe => 1
         },
