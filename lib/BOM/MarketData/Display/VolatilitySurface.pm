@@ -209,9 +209,12 @@ sub get_forward_vol {
         $implied_vols{$day} = $smile->{$atm_key};
     }
 
+    my $creation_epoch = $volsurface->creation_date->epoch;
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
-        $weights{$i} = $volsurface->weight_on($volsurface->creation_date->epoch + $i * 86400);
+        my $sod = $creation_epoch + $i * 86_400;
+        # From start of day until a second before next
+        $weights{$i} = $volsurface->weight_on($sod, $sod + 86_399);
     }
 
     my $forward_vols;

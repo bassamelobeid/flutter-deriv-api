@@ -47,10 +47,11 @@ if ($broker) {
 
 $landing_company = $lc_registry->short if $lc_registry;
 my $limit_order = request()->param('limit_order');
+my ($shortcode, $currency);
 
 my $bet = do {
     my $contract_object = '';
-    my ($shortcode, $currency) = map { request()->param($_) } qw(shortcode currency);
+    ($shortcode, $currency) = map { request()->param($_) } qw(shortcode currency);
 
     if ($landing_company and $shortcode and $currency) {
         my $contract_parameters = shortcode_to_parameters($shortcode, $currency);
@@ -102,6 +103,10 @@ if ($bet) {
     catch {
         code_exit_BO("<pre>$_</pre>");
     };
+} else {
+    # no contract created
+    code_exit_BO(
+        sprintf("<pre>Could not create contract for shortcode[%s] currency[%s] landing_company[%s] broker[%s] loginid[%s]</pre>",
+            map { $_ // 'undefined' } ($shortcode, $currency, $landing_company, $broker, $loginid)));
 }
-
 code_exit_BO();
