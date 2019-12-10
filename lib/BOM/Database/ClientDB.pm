@@ -4,6 +4,7 @@ use Carp;
 use Moose;
 use File::ShareDir;
 use JSON::MaybeXS;
+use Text::Trim qw(trim);
 use LandingCompany::Registry;
 use Try::Tiny;
 use YAML::XS qw(LoadFile);
@@ -184,7 +185,8 @@ sub get_duplicate_client {
     my $self = shift;
     my $args = shift;
 
-    my @params = (uc $args->{first_name}, uc $args->{last_name}, $args->{date_of_birth}, $args->{email}, $self->broker_code, $args->{phone});
+    my @params =
+        (trim($args->{first_name}), trim($args->{last_name}), $args->{date_of_birth}, $args->{email}, $self->broker_code, $args->{phone});
     push @params, $args->{exclude_status} if $args->{exclude_status};
 
     my $dbic        = $self->db->dbic;
