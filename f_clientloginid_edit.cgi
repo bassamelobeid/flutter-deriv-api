@@ -154,7 +154,7 @@ if ($input{del_document_list}) {
     }
 
     print $full_msg;
-    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
 }
 
 if ($broker eq 'MF') {
@@ -272,7 +272,7 @@ if ($input{whattodo} eq 'uploadID') {
 
         if (not $client->save) {
             print "<p style=\"color:red; font-weight:bold;\">Failed to save client citizenship.</p>";
-            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
         }
 
         my $file_checksum         = Digest::MD5->new->addfile($filetoupload)->hexdigest;
@@ -346,7 +346,7 @@ if ($input{whattodo} eq 'uploadID') {
         }
     }
     print $result;
-    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
 }
 
 # Disabe 2FA if theres is a request for that.
@@ -357,7 +357,7 @@ if ($input{whattodo} eq 'disable_2fa' and $user->is_totp_enabled) {
     );
 
     print "<p style=\"color:#eeee00; font-weight:bold;\">2FA Disabled</p>";
-    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
 }
 
 # PERFORM ON-DEMAND ID CHECKS
@@ -366,13 +366,13 @@ if (my $check_str = $input{do_id_check}) {
         BOM::Platform::Client::IDAuthentication->new(client => $client)->proveid;
         code_exit_BO(
             qq[<p><b>ProveID completed</b></p>
-                 <p><a href="$self_href">&laquo;Return to Client Details<a/></p>]
+                 <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
         );
     }
     catch {
         code_exit_BO(
             qq[<p><b>ProveID failed: $_</b></p>
-                 <p><a href="$self_href">&laquo;Return to Client Details<a/></p>]
+                 <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
         );
     }
 }
@@ -381,7 +381,7 @@ if (my $check_str = $input{do_id_check}) {
 if ($input{delete_existing_192}) {
     code_exit_BO(
         qq[<p><b>Existing Reports Deleted</b></p>
-        <p><a href="$self_href">&laquo;Return to Client Details<a/></p>]
+        <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
     ) if BOM::Platform::ProveID->new(client => $client)->delete_existing_reports();
 }
 
@@ -500,41 +500,29 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     }
 
     # Prior to duplicate check and storing, strip off trailing and leading whitespace
-    foreach (qw/first_name last_name/) {
-        $input{$_} = trim($input{$_}) if exists $input{$_};
-    }
-    if ($input{phone}) {
-        my $phone = BOM::User::Phone::format_phone($input{phone});
-        code_exit_BO('<p style="color:red; font-weight:bold;">ERROR: Phone number is not valid</p>') unless $phone;
-        $input{phone} = $phone;
+
+    my $error = $client->format_input_details(\%input) || $client->validate_common_account_details(\%input);
+    if ($error) {
+        my $message = $error->{error};
+        code_exit_BO("<p style='color:red; font-weight:bold;'>ERROR: $message </p><p><a href='$self_href'>&laquo;Return to Client Details</a></p>");
     }
 
-    if (   ($input{first_name} and $input{first_name} ne $client->first_name)
-        or ($input{last_name}     and $input{last_name} ne $client->last_name)
-        or ($input{phone}         and $input{phone} ne $client->phone)
-        or ($input{date_of_birth} and $input{date_of_birth} ne $client->date_of_birth))
-    {
-        my $duplicate_account_details = _check_duplicates({
-            client => $client,
-            input  => \%input
-        });
+    $error = $client->check_duplicate_account(\%input);
+    if ($error) {
+        my $duplicate_account_details = $error->{details};
+        my $data                      = {
+            loginid       => $duplicate_account_details->[0],
+            first_name    => $duplicate_account_details->[1],
+            last_name     => $duplicate_account_details->[2],
+            date_of_birth => $duplicate_account_details->[3],
+            phone         => $duplicate_account_details->[5],
+            self_link     => $self_href
+        };
 
-        if (@$duplicate_account_details) {
+        BOM::Backoffice::Request::template()->process('backoffice/duplicate_client_details.tt', $data)
+            or die BOM::Backoffice::Request::template()->error();
 
-            my $data = {
-                loginid       => $duplicate_account_details->[0],
-                first_name    => $duplicate_account_details->[1],
-                last_name     => $duplicate_account_details->[2],
-                date_of_birth => $duplicate_account_details->[3],
-                phone         => $duplicate_account_details->[5],
-                self_link     => $self_href
-            };
-
-            BOM::Backoffice::Request::template()->process('backoffice/duplicate_client_details.tt', $data)
-                or die BOM::Backoffice::Request::template()->error();
-
-            code_exit_BO();
-        }
+        code_exit_BO();
     }
 
     my $new_residence = delete $input{residence};
@@ -555,7 +543,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         unless ($valid_change) {
             my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
             print qq{<p style="color:red">Invalid residence change, due to different broker codes or different country restrictions.</p>};
-            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
         }
 
         do { $_->residence($new_residence); $clients_updated{$_->loginid} = $_ }
@@ -1365,27 +1353,6 @@ sub _residence_change_validation {
     return 1;
 }
 
-sub _check_duplicates {
-    my $data = shift;
-
-    my $client = $data->{client};
-
-    return [] if $client->is_virtual;
-
-    my $input = $data->{input};
-
-    my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $input->{broker}})->get_duplicate_client({
-        exclude_status => ['duplicate_account', 'disabled'],
-        first_name    => $input->{first_name}    // $client->first_name,
-        last_name     => $input->{last_name}     // $client->last_name,
-        date_of_birth => $input->{date_of_birth} // $client->date_of_birth,
-        phone         => $input->{phone}         // $client->phone,
-        email         => $client->email
-    });
-
-    return \@dup_account_details;
-}
-
 # Appends date_of_birth to input hashref, assembled from 3 fields and
 # using existing client dob if not is added.
 sub _assemble_dob_input {
@@ -1409,33 +1376,10 @@ sub _assemble_dob_input {
     if (grep { !$_ } values %new_dob) {
         my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
         print qq{<p style="color:red">Error: Date of birth cannot be empty.</p>};
-        code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+        code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
     }
 
     my $combined_new_dob = sprintf("%04d-%02d-%02d", $new_dob{'dob_year'}, $new_dob{'dob_month'}, $new_dob{'dob_day'});
-
-    # Validate the client age
-    my $dob_date = try {
-        Date::Utility->new($combined_new_dob)
-    }
-    catch {
-        code_exit_BO('Invalid Date Of Birth format');
-    };
-
-    my $countries_instance = request()->brand->countries_instance;
-    code_exit_BO('Invalid country') unless $countries_instance;
-
-    my $country = $countries_instance->countries_list->{$client->{residence}};
-    code_exit_BO('Invalid country') unless $country;
-    my $country_name = $country->{name};
-
-    my $min_age      = $country->{minimum_age};
-    my $minimum_date = Date::Utility->new->minus_time_interval($min_age . 'y');
-    if ($dob_date->is_after($minimum_date)) {
-        my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
-        print qq{<p style="color:red">Error: Client age must be $min_age or older for $country_name clients.</p>};
-        code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
-    }
 
     $input->{date_of_birth} = $combined_new_dob;
 
