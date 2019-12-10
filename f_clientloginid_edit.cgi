@@ -262,6 +262,11 @@ if ($input{whattodo} eq 'uploadID') {
 
         next unless $filetoupload;
 
+        if ($expiration_date && $expiration_date ne (eval { Date::Utility->new($expiration_date)->date_yyyymmdd } // '')) {
+            print "<p style=\"color:red; font-weight:bold;\">Expiration date \"$expiration_date\" is not a valid date.</p>";
+            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+        }
+
         if ($docnationality and $docnationality =~ /^[a-z]{2}$/i) {
             $client->citizen($docnationality);
         }

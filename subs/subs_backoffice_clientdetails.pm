@@ -543,7 +543,7 @@ SQL
             };
         }
 
-        my $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
+        my $input = qq{expires on <input type="date" style="width:120px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
         $input .= qq{document id <input type="text" style="width:100px" maxlength="30" name="document_id_$id" value="$document_id" $extra>};
         $input .= qq{comments <input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" $extra>};
 

@@ -39,7 +39,7 @@
     <option value="photo">Photo</option>
   </select>
   <input type="FILE" name="FILE_[% n %]" style="width: 150px" onchange="file_size_validation(this)">
-  Expiration date:<input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD">
+  Expiration date:<input type="date" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD">
   Document ID:<input type="text" size=11 maxlength="30" name="document_id_[% n %]" placeholder="Document ID">
   Comments:<input type="text" size=25 maxlength="255" name="comments_[% n %]" placeholder="optional, up to 255 characters">
     <br>
