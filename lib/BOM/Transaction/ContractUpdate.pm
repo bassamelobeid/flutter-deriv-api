@@ -92,9 +92,7 @@ sub _build_contract {
     my $contract_params = shortcode_to_parameters($fmb->{short_code}, $self->client->currency);
     my $limit_order = BOM::Transaction::extract_limit_orders($fmb);
     $contract_params->{limit_order} = $limit_order if %$limit_order;
-    $contract_params->{is_sold}     = $fmb->{is_sold};
-    $contract_params->{sell_time}   = $fmb->{sell_time} if $fmb->{sell_time};
-    $contract_params->{sell_price}  = $fmb->{sell_price} if $fmb->{sell_price};
+    $contract_params->{is_sold} = $fmb->{is_sold};
 
     return produce_contract($contract_params);
 }
@@ -152,7 +150,6 @@ sub _validate_update_parameter {
             };
             last;
         }
-
         unless ($self->allowed_update->{$order_name}) {
             $error = {
                 code => 'UpdateNotAllowed',
@@ -182,15 +179,6 @@ sub _validate_update_parameter {
             $error = {
                 code              => 'TooFrequentUpdate',
                 message_to_client => localize('Only one update per second is allowed.'),
-            };
-            last;
-        }
-
-        # stop loss cannot be added while deal cancellation is active
-        if ($order_name eq 'stop_loss' and $contract->is_valid_to_cancel) {
-            $error = {
-                code              => 'UpdateStopLossNotAllowed',
-                message_to_client => localize('Stop Loss cannot be updated while deal cancellation option is still active.'),
             };
             last;
         }
