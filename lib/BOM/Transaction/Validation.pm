@@ -245,16 +245,27 @@ sub _validate_trade_pricing_adjustment {
 sub _validate_binary_price_adjustment {
     my ($self, $probability_type) = @_;
 
-    # we're using probability here to handle both cases where amount_type=stake|payout
-    # If amount_type=stake, the payout ($self->transaction->payout) of the contract is calculated
-    # If amount_type=payout, the ask_price ($self->transaction->price) of the contract is calculated
-    my $transaction            = $self->transaction;
-    my $requested_probability  = $transaction->price / $transaction->payout;
-    my $recomputed_probability = $transaction->contract->$probability_type->amount;
+    my $transaction = $self->transaction;
+    my $contract    = $transaction->contract;
 
-    my $move = $requested_probability - $recomputed_probability;
+    my ($move, $allowed_move);
+    if ($transaction->request_type eq 'price') {
+        # for edge cash where the requested payout is close to minimum stake, E.g. 0.37 payout for 0.35 on a DIGITDIFF,
+        # using 0.35/0.37 to estimate the probability introduces too much error. Hence, we will work in price space.
+        my $requested_price = $transaction->price;
+        my $recomputed_price = $transaction->action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
+        $move = $requested_price - $recomputed_price;
+        # convert allowed move to price space
+        $allowed_move = $transaction->contract->allowed_slippage * $contract->payout;
+    } else {
+        my $requested_probability  = $transaction->price / $transaction->payout;
+        my $recomputed_probability = $transaction->contract->$probability_type->amount;
+        $move         = $requested_probability - $recomputed_probability;
+        $allowed_move = $transaction->contract->allowed_slippage;
+    }
+
     $move *= -1 if $transaction->action_type eq 'sell';
-    my $allowed_move = $recomputed_probability == 1 ? 0 : $transaction->contract->allowed_slippage;    # allowed_slippage is in probability space.
+    $allowed_move = 0 if $contract->$probability_type->amount == 1;
 
     return $self->_adjust_trade($move, $allowed_move);
 }
