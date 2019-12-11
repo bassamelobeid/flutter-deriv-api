@@ -304,6 +304,14 @@ sub actions_config {
             }
         ],
         ['exchange_rates', {stash_params => [qw/ exchange_rates base_currency /]}],
+        # P2P cashier
+        [p2p_offer_info   => {require_auth => 'payments'}],
+        [p2p_offer_list   => {require_auth => 'payments'}],
+        [p2p_order_cancel => {require_auth => 'payments'}],
+        [p2p_order_create => {require_auth => 'payments'}],
+        [p2p_order_info   => {require_auth => 'payments'}],
+        [p2p_order_list   => {require_auth => 'payments'}],
+        [p2p_order_update => {require_auth => 'payments'}],
     ];
 }
 
