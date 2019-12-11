@@ -1,4 +1,4 @@
-package BOM::Test::Helper::OTC;
+package BOM::Test::Helper::P2P;
 
 use strict;
 use warnings;
@@ -12,17 +12,17 @@ use Carp;
     sub create_escrow {
         return $current_escrow if $current_escrow;
 
-        $original_escrow = BOM::Config::Runtime->instance->app_config->payments->otc->escrow;
+        $original_escrow = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow;
 
         $current_escrow = BOM::Test::Helper::Client::create_client();
         $current_escrow->account('USD');
-        BOM::Config::Runtime->instance->app_config->payments->otc->escrow([$current_escrow->loginid]);
+        BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([$current_escrow->loginid]);
         return $current_escrow;
     }
 
     sub reset_escrow {
         undef $current_escrow;
-        BOM::Config::Runtime->instance->app_config->payments->otc->escrow($original_escrow);
+        BOM::Config::Runtime->instance->app_config->payments->p2p->escrow($original_escrow);
         return;
     }
 }
@@ -34,7 +34,7 @@ sub create_agent {
 
     my $agent = BOM::Test::Helper::Client::create_client();
 
-    $agent->new_otc_agent;
+    $agent->p2p_agent_create;
 
     $agent->account('USD');
 
@@ -42,7 +42,7 @@ sub create_agent {
         BOM::Test::Helper::Client::top_up($agent, $agent->currency, $balance);
     }
 
-    $agent->update_otc_agent(auth => 1);
+    $agent->p2p_agent_update(auth => 1);
 
     return $agent;
 }
@@ -65,7 +65,7 @@ sub create_offer {
 
     my $agent = create_agent(balance => $amount);
 
-    my $offer = $agent->create_otc_offer(
+    my $offer = $agent->p2p_offer_create(
         amount      => $amount,
         price       => $amount,
         description => $description,
@@ -86,7 +86,7 @@ sub create_order {
 
     my $client = create_client();
 
-    my $order = $client->create_otc_order(
+    my $order = $client->p2p_order_create(
         offer_id    => $offer_id,
         amount      => $amount,
         description => $description
@@ -97,13 +97,13 @@ sub create_order {
 
 sub expire_offer {
     my ($client, $offer_id) = @_;
-    return $client->db->dbic->dbh->do("UPDATE otc.otc_offer SET expire_time = NOW() - INTERVAL '1 day' WHERE id = $offer_id");
+    return $client->db->dbic->dbh->do("UPDATE p2p.p2p_offer SET expire_time = NOW() - INTERVAL '1 day' WHERE id = $offer_id");
 }
 
 sub set_order_status {
     my ($client, $order_id, $new_status) = @_;
 
-    return $client->db->dbic->dbh->do('SELECT * FROM otc.order_update(?, ?)', undef, $order_id, $new_status);
+    return $client->db->dbic->dbh->do('SELECT * FROM p2p.order_update(?, ?)', undef, $order_id, $new_status);
 }
 
 1;
