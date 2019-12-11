@@ -7,22 +7,22 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
-use BOM::RPC::v3::OTC;
-use BOM::Test::Helper::OTC;
+use BOM::RPC::v3::P2P;
+use BOM::Test::Helper::P2P;
 
 cleanup_redis_tokens();
 
-#Test endpoint for testing logic in function otc_rpc
-my $dummy_method = 'test_otc_controller';
-BOM::RPC::v3::OTC::otc_rpc $dummy_method => sub { return {success => 1} };
+#Test endpoint for testing logic in function p2p_rpc
+my $dummy_method = 'test_p2p_controller';
+BOM::RPC::v3::P2P::p2p_rpc $dummy_method => sub { return {success => 1} };
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
-my ($otc_suspend, $otc_enable) = ($app_config->system->suspend->otc, $app_config->payments->otc->enabled);
-$app_config->system->suspend->otc(0);
-$app_config->payments->otc->enabled(1);
+my ($p2p_suspend, $p2p_enable) = ($app_config->system->suspend->p2p, $app_config->payments->p2p->enabled);
+$app_config->system->suspend->p2p(0);
+$app_config->payments->p2p->enabled(1);
 
-my $email_agent  = 'otc_agent@test.com';
-my $email_client = 'otc_client@test.com';
+my $email_agent  = 'p2p_agent@test.com';
+my $email_client = 'p2p_client@test.com';
 
 my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
@@ -70,16 +70,16 @@ subtest 'VR not allowed' => sub {
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('UnavailableOnVirtual', 'error code is UnavailableOnVirtual');
 };
 
-subtest 'OTC suspended' => sub {
-    $app_config->system->suspend->otc(1);
-    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('OTCDisabled', 'error code is OTCDisabled');
-    $app_config->system->suspend->otc(0);
+subtest 'P2P suspended' => sub {
+    $app_config->system->suspend->p2p(1);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('P2PDisabled', 'error code is P2PDisabled');
+    $app_config->system->suspend->p2p(0);
 };
 
-subtest 'OTC payments disabled' => sub {
-    $app_config->payments->otc->enabled(0);
-    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('OTCDisabled', 'error code is OTCDisabled');
-    $app_config->payments->otc->enabled(1);
+subtest 'P2P payments disabled' => sub {
+    $app_config->payments->p2p->enabled(0);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('P2PDisabled', 'error code is P2PDisabled');
+    $app_config->payments->p2p->enabled(1);
 };
 
 subtest 'No account' => sub {
@@ -124,64 +124,64 @@ subtest 'Offers' => sub {
 
     $params->{args} = {name => 'Bond007'};
 
-    $c->call_ok('otc_agent_update', $params)->has_no_system_error->has_error->error_code_is('AgentNotRegistered', 'Update non-existent agent');
+    $c->call_ok('p2p_agent_update', $params)->has_no_system_error->has_error->error_code_is('AgentNotRegistered', 'Update non-existent agent');
 
-    my $res = $c->call_ok('otc_agent_register', $params)->has_no_system_error->has_no_error->result;
-    is $res->{otc_agent_status}, 'pending', 'result has otc_agent_status = pending';
+    my $res = $c->call_ok('p2p_agent_create', $params)->has_no_system_error->has_no_error->result;
+    is $res->{status}, 'pending', 'result has p2p agent status = pending';
 
     $params->{args} = {name => 'SpyvsSpy'};
-    $res = $c->call_ok('otc_agent_update', $params)->has_no_system_error->has_no_error->result;
+    $res = $c->call_ok('p2p_agent_update', $params)->has_no_system_error->has_no_error->result;
     is $res->{name}, $params->{args}{name}, 'update agent name';
 
     $params->{args} = $offer_params;
-    $c->call_ok('otc_offer_create', $params)
+    $c->call_ok('p2p_offer_create', $params)
         ->has_no_system_error->has_error->error_code_is('AgentNotAuthenticated', "unauth agent, create offer error is AgentNotAuthenticated");
 
-    $client_agent->update_otc_agent(
+    $client_agent->p2p_agent_update(
         auth   => 1,
         active => 0
     );
 
     $params->{args} = $offer_params;
-    $c->call_ok('otc_offer_create', $params)
+    $c->call_ok('p2p_offer_create', $params)
         ->has_no_system_error->has_error->error_code_is('AgentNotActive', "inactive agent, create offer error is AgentNotActive");
 
-    $client_agent->update_otc_agent(active => 1);
+    $client_agent->p2p_agent_update(active => 1);
 
-    $params->{args} = {agent => $client_agent->get_otc_agent->{id}};
-    $res = $c->call_ok('otc_agent_info', $params)->has_no_system_error->has_no_error->result;
-    ok $res->{is_authenticated} && $res->{is_active}, 'otc_agent_info returns agent is authenticated and active';
+    $params->{args} = {agent => $client_agent->p2p_agent->{id}};
+    $res = $c->call_ok('p2p_agent_info', $params)->has_no_system_error->has_no_error->result;
+    ok $res->{is_authenticated} && $res->{is_active}, 'p2p_agent_info returns agent is authenticated and active';
 
-    $params->{args} = {agent => 9999};
-    $c->call_ok('otc_agent_info', $params)->has_no_system_error->has_error->error_code_is('AgentNotFound', 'Get info of non-existent agent');
+    $params->{args} = {agent_id => 9999};
+    $c->call_ok('p2p_agent_info', $params)->has_no_system_error->has_error->error_code_is('AgentNotFound', 'Get info of non-existent agent');
 
     $params->{args} = {$offer_params->%*, currency => 'EUR'};
-    $c->call_ok('otc_offer_create', $params)
+    $c->call_ok('p2p_offer_create', $params)
         ->has_no_system_error->has_error->error_code_is('InvalidOfferCurrency', "wrong currency, create offer error is InvalidOfferCurrency");
 
     $params->{args} = $offer_params;
-    $offer = $c->call_ok('otc_offer_create', $params)->has_no_system_error->has_no_error->result;
+    $offer = $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_no_error->result;
     delete $offer->{stash};
     ok $offer->{id}, 'offer has id';
 
     $params->{args} = {};
-    $res = $c->call_ok('otc_offer_list', $params)->has_no_system_error->has_no_error->result;
-    cmp_ok $res->[0]->{id}, '==', $offer->{id}, 'otc_offer_list returns offer';
+    $res = $c->call_ok('p2p_offer_list', $params)->has_no_system_error->has_no_error->result;
+    cmp_ok $res->[0]->{id}, '==', $offer->{id}, 'p2p_offer_list returns offer';
 
     $params->{args} = {
         id          => $offer->{id},
         description => 'new description'
     };
-    $res = $c->call_ok('otc_offer_edit', $params)->has_no_system_error->has_no_error->result;
+    $res = $c->call_ok('p2p_offer_edit', $params)->has_no_system_error->has_no_error->result;
     is $res->{description}, 'new description', 'edit offer ok';
 
     $params->{args} = {id => $offer->{id}};
-    $res = $c->call_ok('otc_offer_info', $params)->has_no_system_error->has_no_error->result;
-    cmp_ok $res->{id}, '==', $offer->{id}, 'otc_offer_info returned correct info';
+    $res = $c->call_ok('p2p_offer_info', $params)->has_no_system_error->has_no_error->result;
+    cmp_ok $res->{id}, '==', $offer->{id}, 'p2p_offer_info returned correct info';
 
     $params->{args} = {id => 9999};
-    $c->call_ok('otc_offer_info', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Get info for non-existent offer');
-    $c->call_ok('otc_offer_edit', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Edit non-existent offer');
+    $c->call_ok('p2p_offer_info', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Get info for non-existent offer');
+    $c->call_ok('p2p_offer_edit', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Edit non-existent offer');
 
 };
 
@@ -195,7 +195,7 @@ subtest 'Create new order' => sub {
         remark   => 'free gift'
     );
 
-    BOM::Test::Helper::OTC::create_escrow();
+    BOM::Test::Helper::P2P::create_escrow();
 
     $params->{args} = {
         offer_id    => $offer->{id},
@@ -203,33 +203,33 @@ subtest 'Create new order' => sub {
         description => 'here is my order'
     };
 
-    my $order = $c->call_ok('otc_order_create', $params)->has_no_system_error->has_no_error->result;
+    my $order = $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_no_error->result;
     ok($order->{id}, 'Order is created');
 
-    BOM::Test::Helper::OTC::reset_escrow();
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Client confirm an order' => sub {
-    BOM::Test::Helper::OTC::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::OTC::create_offer();
-    my ($client, $order) = BOM::Test::Helper::OTC::create_order(offer_id => $offer->{id});
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer();
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(offer_id => $offer->{id});
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
     $params->{args} = {id => $order->{id}};
 
-    my $res = $c->call_ok(otc_order_confirm => $params)->has_no_system_error->has_no_error->result;
+    my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'client-confirmed', 'Order is confirmed';
 
     $params->{args} = {id => 9999};
-    $c->call_ok('otc_order_confirm', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Confirm non-existent order');
+    $c->call_ok('p2p_order_confirm', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Confirm non-existent order');
 
-    BOM::Test::Helper::OTC::reset_escrow();
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Agent confirm' => sub {
-    BOM::Test::Helper::OTC::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::OTC::create_offer();
-    my ($client, $order) = BOM::Test::Helper::OTC::create_order(offer_id => $offer->{id});
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer();
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(offer_id => $offer->{id});
 
     my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
     my $agent_token  = BOM::Platform::Token::API->new->create_token($agent->loginid,  'test token');
@@ -237,21 +237,21 @@ subtest 'Agent confirm' => sub {
     $params->{token} = $client_token;
     $params->{args} = {id => $order->{id}};
 
-    my $res = $c->call_ok(otc_order_confirm => $params)->has_no_system_error->has_no_error->result;
+    my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'client-confirmed', 'Order is client confirmed';
 
     $params->{token} = $agent_token;
     $params->{args} = {id => $order->{id}};
 
-    $res = $c->call_ok(otc_order_confirm => $params)->has_no_system_error->has_no_error->result;
+    $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'completed', 'Order is client confirmed';
-    BOM::Test::Helper::OTC::reset_escrow();
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Client cancellation' => sub {
-    BOM::Test::Helper::OTC::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::OTC::create_offer();
-    my ($client, $order) = BOM::Test::Helper::OTC::create_order(offer_id => $offer->{id});
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer();
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(offer_id => $offer->{id});
 
     my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
     my $agent_token  = BOM::Platform::Token::API->new->create_token($agent->loginid,  'test token');
@@ -259,17 +259,17 @@ subtest 'Client cancellation' => sub {
     $params->{token} = $client_token;
     $params->{args} = {id => $order->{id}};
 
-    my $res = $c->call_ok(otc_order_cancel => $params)->has_no_system_error->has_no_error->result;
+    my $res = $c->call_ok(p2p_order_cancel => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'cancelled', 'Order is cancelled';
 
     $params->{args} = {id => 9999};
-    $c->call_ok('otc_order_cancel', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Cancel non-existent order');
+    $c->call_ok('p2p_order_cancel', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Cancel non-existent order');
 
-    BOM::Test::Helper::OTC::reset_escrow();
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 # restore app config
-$app_config->system->suspend->otc($otc_suspend);
-$app_config->payments->otc->enabled($otc_enable);
+$app_config->system->suspend->p2p($p2p_suspend);
+$app_config->payments->p2p->enabled($p2p_enable);
 
 done_testing();

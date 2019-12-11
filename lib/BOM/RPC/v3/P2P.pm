@@ -1,12 +1,12 @@
-package BOM::RPC::v3::OTC;
+package BOM::RPC::v3::P2P;
 
 =head1 NAME
 
-BOM::RPC::v3::OTC - peer-to-peer "over-the-counter" payment support
+BOM::RPC::v3::P2P - peer-to-peer "over-the-counter" payment support
 
 =head1 DESCRIPTION
 
-The OTC cashier is a system which allows buyers and sellers to handle the details
+The P2P cashier is a system which allows buyers and sellers to handle the details
 of payments outside our system. It acts as a marketplace for offers and orders.
 
 =cut
@@ -14,6 +14,8 @@ of payments outside our system. It acts as a marketplace for offers and orders.
 use strict;
 use warnings;
 
+no indirect;
+use Syntax::Keyword::Try;
 use JSON::MaybeUTF8 qw(:v1);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
@@ -22,9 +24,10 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::User;
-use Try::Tiny;
 
 use BOM::RPC::Registry '-dsl';
+
+use Log::Any qw($log);
 
 # Currently all functionality is restricted to users with
 # valid accounts. There's little harm in allowing a list
@@ -38,7 +41,7 @@ use constant RESTRICTED_CLIENT_STATUSES => [qw(
         no_withdrawal_or_trading
         )];
 
-# Standard error codes for any OTC calls.
+# Standard error codes for any P2P calls.
 our %ERROR_MAP = do {
     # `make i18n` wants to see literal strings in `localize()` calls to decide
     # what to translate. We temporarily provide a no-op version so we can
@@ -49,15 +52,15 @@ our %ERROR_MAP = do {
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
     (
         # System or country limitations
-        OTCDisabled          => localize('The OTC cashier is currently disabled'),
-        RestrictedCountry    => localize('This country is not enabled for OTC cashier functionality'),
-        RestrictedCurrency   => localize('This currency is not enabled for OTC cashier functionality'),
-        UnavailableOnVirtual => localize('OTC cashier functionality is not available on demo accounts'),
+        P2PDisabled          => localize('The P2P cashier is currently disabled'),
+        RestrictedCountry    => localize('This country is not enabled for P2P cashier functionality'),
+        RestrictedCurrency   => localize('This currency is not enabled for P2P cashier functionality'),
+        UnavailableOnVirtual => localize('P2P cashier functionality is not available on demo accounts'),
         # Client status
         NotLoggedIn      => localize('You are not logged in'),
         NoCurrency       => localize('You have not yet selected a currency for your account'),
         PermissionDenied => localize('You do not have permission for this action'),
-        NotRegistered    => localize('You are not yet registered as an OTC agent'),
+        NotRegistered    => localize('You are not yet registered as an P2P agent'),
         # Invalid data
         InvalidPaymentMethod => localize('This payment method is invalid'),
         NotFound             => localize('Not found'),
@@ -67,8 +70,8 @@ our %ERROR_MAP = do {
 
         InvalidAmount => localize('Invalid amount for creating an order'),
         # bom-user errors
-        AgentNotFound         => localize('OTC Agent not found'),
-        AgentNotRegistered    => localize('This account is not registered as an OTC agent'),
+        AgentNotFound         => localize('P2P Agent not found'),
+        AgentNotRegistered    => localize('This account is not registered as an P2P agent'),
         AgentNotActive        => localize('The provided agent ID does not belong to an active agent'),
         AgentNotAuthenticated => localize('The agent is not authenticated'),
         OfferNoEditExpired    => localize('The offer is expired and cannot be changed.'),
@@ -97,15 +100,15 @@ our %ERROR_MAP = do {
     );
 };
 
-=head2 otc_rpc
+=head2 p2p_rpc
 
-Helper function for wrapping error handling around our OTC-related RPC calls.
+Helper function for wrapping error handling around our P2P-related RPC calls.
 
 Takes the following parameters:
 
 =over 4
 
-=item * C<$method> - which method to expose, e.g. C<otc_order_create>
+=item * C<$method> - which method to expose, e.g. C<p2p_order_create>
 
 =item * C<$code> - the coderef to call
 
@@ -127,13 +130,13 @@ C<$code> will be called with the following named parameters:
 
 Example usage:
 
- otc_rpc otc_order_create => sub { create_order($client, $params->{amount}) };
+ p2p_rpc p2p_order_create => sub { create_order($client, $params->{amount}) };
 
 =cut
 
-sub otc_rpc {
+sub p2p_rpc {
     my ($method, $code) = @_;
-    return rpc $method => category => 'otc',
+    return rpc $method => category => 'p2p',
         sub {
         my $params = shift;
         try {
@@ -141,10 +144,10 @@ sub otc_rpc {
 
             # Yes, we have two ways to disable - devops can shut it down if there
             # are problems, and payments/ops/QA can choose whether or not the
-            # functionality should be exposed in the first place. The ->otc->enabled
+            # functionality should be exposed in the first place. The ->p2p->enabled
             # check may be dropped in future once this is stable.
-            die "OTCDisabled\n" if $app_config->system->suspend->otc;
-            die "OTCDisabled\n" unless $app_config->payments->otc->enabled;
+            die "P2PDisabled\n" if $app_config->system->suspend->p2p;
+            die "P2PDisabled\n" unless $app_config->payments->p2p->enabled;
 
             # All operations require a valid client with active account
             my $client = $params->{client}
@@ -165,109 +168,214 @@ sub otc_rpc {
             );
         }
         catch {
+            my ($exception) = $@;
             my $err;
             # db errors come as [ BIxxx, message ]
             # bom-user errors come as a string "ErrorCode\n"
-            if (ref eq 'ARRAY') {
-                $err = $_->[0];
+            if (ref($exception) eq 'ARRAY') {
+                $err = $exception->[0];
             } else {
-                chomp($err = $_);
+                chomp($err = $exception);
             }
-            my $otc_prefix = $method =~ tr/_/./;
+            my $p2p_prefix = $method =~ tr/_/./;
 
             if (my $message = $ERROR_MAP{$err}) {
-                stats_inc($otc_prefix . '.error', {tags => ['error_code:' . $err]});
+                stats_inc($p2p_prefix . '.error', {tags => ['error_code:' . $err]});
                 if ($err =~ /^BI\d\d\d$/) {
-                    warn "OTC $method failed, DB failure: $err, original: " . $_->[1];    # original DB error may have useful details
-                    $err = 'OTCError';                                                    # hide db error codes from user
+                    $log->warnf("P2P %s failed, DB failure: %s, original: %s", $method, $err, $exception->[1])
+                        ;    # original DB error may have useful details
+                    $err = 'P2PError';    # hide db error codes from user
                 }
                 return BOM::RPC::v3::Utility::create_error({
                         code              => $err,
-                        message_to_client => localize($message)});
+                        message_to_client => localize($message)}                     #
+                );
             } else {
                 # This indicates a bug in the code.
-                warn "Unexpected error in OTC $method: $err, please report as a bug to backend";
-                stats_inc($otc_prefix . '.error', {tags => ['error_code:unknown']});
+                $log->warnf("Unexpected error in P2P %s: %s, please report as a bug to backend", $method, $err);
+                stats_inc($p2p_prefix . '.error', {tags => ['error_code:unknown']});
                 return BOM::RPC::v3::Utility::create_error({
-                        code              => 'OTCError',
-                        message_to_client => localize('Sorry, an error occurred.')});
+                    code              => 'P2PError',
+                    message_to_client => localize('Sorry, an error occurred.')    #
+                });
             }
         }
         };
 }
 
-=head2 otc_agent_register
+=head2 p2p_agent_create
 
 Requests registration for an agent account.
 
 Each client is able to have at most one agent account.
 
+Takes the following named parameters:
+
+=over 4
+
+=item * C<name> - the display name to be shown for this agent
+
+=back
+
+Returns a hashref with the following keys:
+
+=over 4
+
+=item * C<status> - usually C<pending>, unless this client is from a landing company
+that does not allow P2P agents yet, or they already have an agent account.
+
+=back
+
 =cut
 
-otc_rpc otc_agent_register => sub {
+p2p_rpc p2p_agent_create => sub {
     my (%args) = @_;
     my $client = $args{client};
     my $name   = $args{params}{args}{name};
-    $client->new_otc_agent($name);
-    return {'otc_agent_status' => 'pending'};
+    $client->p2p_agent_create($name);
+    return {status => 'pending'};
 };
 
-=head2 otc_agent_update
+=head2 p2p_agent_update
 
-Update agent details - default comment, name etc.
+Update agent details.
+
+Takes the following named parameters:
+
+=over 4
+
+=item * C<name> - the display name
+
+=item * C<description> - description text to show on the profile page, this is also used for the
+default note on any future offers created by this agent
+
+=back
+
+Returns a hashref containing the current agent details.
 
 =cut
 
-otc_rpc otc_agent_update => sub {
+p2p_rpc p2p_agent_update => sub {
     my (%args) = @_;
     my $client = $args{client};
-    return $client->update_otc_agent($args{params}{args}->%*) // die "AgentNotRegistered\n";
+    return $client->p2p_agent_update($args{params}{args}->%*) // die "AgentNotRegistered\n";
 };
 
-=head2 otc_agent_info
+=head2 p2p_agent_info
 
 Returns information about the given agent (by ID).
 
+Takes the following named parameters:
+
+=over 4
+
+=item * C<agent_id> - the internal ID of the agent
+
+=back
+
+Returns a hashref containing the following information:
+
+=over 4
+
+=item * C<name>
+
+=item * C<description>
+
+=back
+
 =cut
 
-otc_rpc otc_agent_info => sub {
+p2p_rpc p2p_agent_info => sub {
     my (%args)   = @_;
     my $client   = $args{client};
-    my $agent_id = $args{params}{args}{agent};
-    return $client->get_otc_agent_list(id => $agent_id) // die "AgentNotFound\n";
+    my $agent_id = $args{params}{args}{agent_id};
+    return $client->p2p_agent_list(id => $agent_id)->[0] // die "AgentNotFound\n";
 };
 
-=head2 otc_offer_create
+=head2 p2p_offer_create
 
 Attempts to create a new offer.
 
+Takes the following named parameters:
+
+=over 4
+
+=item * C<agent_id> - the internal ID of the agent (if the client only has one ID, will use that one)
+
+=item * C<min> - minimum amount per order (in C<local_currency>)
+
+=item * C<max> - maximum amount per order (in C<local_currency>)
+
+=item * C<total> - total amount for all orders on this offer (in C<local_currency>)
+
+=item * C<currency> - currency to be credited/debited from the Binary accounts
+
+=item * C<local_currency> - currency the agent/client transaction will be conducted in (outside our system)
+
+=item * C<price> - the price (in C<local_currency>)
+
+=item * C<active> - whether to create it as active or disabled
+
+=item * C<type> - either C<buy> or C<sell>
+
+=back
+
+Returns a hashref which contains the offer ID and the details of the offer (mostly just a repeat of the
+above information).
+
 =cut
 
-otc_rpc otc_offer_create => sub {
+p2p_rpc p2p_offer_create => sub {
     my (%args) = @_;
     my $client = $args{client};
-    return $client->create_otc_offer($args{params}{args}->%*);
+    return $client->p2p_offer_create($args{params}{args}->%*);
 };
 
-=head2 otc_offer_info
+=head2 p2p_offer_info
 
 Returns information about an offer.
 
+Returns a hashref containing the following keys:
+
+=over 4
+
+=item * C<agent_id> - the internal ID of the agent (if the client only has one ID, will use that one)
+
+=item * C<id> - the internal ID of this offer
+
+=item * C<min> - minimum amount per order (in C<local_currency>)
+
+=item * C<max> - maximum amount per order (in C<local_currency>)
+
+=item * C<total> - total amount for all orders on this offer (in C<local_currency>)
+
+=item * C<currency> - currency to be credited/debited from the Binary accounts
+
+=item * C<local_currency> - currency the agent/client transaction will be conducted in (outside our system)
+
+=item * C<price> - the price (in C<local_currency>)
+
+=item * C<active> - true if orders can be created against this offer
+
+=item * C<type> - either C<buy> or C<sell>
+
+=back
+
 =cut
 
-otc_rpc otc_offer_info => sub {
+p2p_rpc p2p_offer_info => sub {
     my (%args) = @_;
     my $client = $args{client};
-    return $client->get_otc_offer($args{params}{args}{id}) // die "OfferNotFound\n";
+    return $client->p2p_offer($args{params}{args}{id}) // die "OfferNotFound\n";
 };
 
-=head2 otc_method_list
+=head2 p2p_method_list
 
 Returns a list of all available payment methods.
 
 =cut
 
-otc_rpc otc_method_list => sub {
+p2p_rpc p2p_method_list => sub {
     return [{
             method       => 'bank',
             name         => 'hsbc',
@@ -311,20 +419,54 @@ otc_rpc otc_method_list => sub {
     ];
 };
 
-=head2 otc_offer_list
+=head2 p2p_offer_list
 
-Returns available offers.
+Takes the following named parameters:
+
+=over 4
+
+=item * C<agent_id> - the internal ID of the agent
+
+=item * C<type> - either C<buy> or C<sell>
+
+=back
+
+Returns available offers as an arrayref containing hashrefs with the following keys:
+
+=over 4
+
+=item * C<agent_id> - the internal ID of the agent (if the client only has one ID, will use that one)
+
+=item * C<id> - the internal ID of this offer
+
+=item * C<min> - minimum amount per order (in C<local_currency>)
+
+=item * C<max> - maximum amount per order (in C<local_currency>)
+
+=item * C<total> - total amount for all orders on this offer (in C<local_currency>)
+
+=item * C<currency> - currency to be credited/debited from the Binary accounts
+
+=item * C<local_currency> - currency the agent/client transaction will be conducted in (outside our system)
+
+=item * C<price> - the price (in C<local_currency>)
+
+=item * C<active> - true if orders can be created against this offer
+
+=item * C<type> - either C<buy> or C<sell>
+
+=back
 
 =cut
 
-otc_rpc otc_offer_list => sub {
+p2p_rpc p2p_offer_list => sub {
     my %args = @_;
 
     my $client = $args{client};
-    return $client->get_otc_offer_list($args{params}{args}->%*);
+    return $client->p2p_offer_list($args{params}{args}->%*);
 };
 
-=head2 otc_offer_edit
+=head2 p2p_offer_edit
 
 Modifies details on an offer.
 
@@ -332,126 +474,138 @@ Typically used to cancel or confirm.
 
 =cut
 
-otc_rpc otc_offer_edit => sub {
+p2p_rpc p2p_offer_edit => sub {
     my %args = @_;
 
     my $client = $args{client};
-    return $client->update_otc_offer($args{params}{args}->%*) // die "OfferNotFound\n";
+    return $client->p2p_offer_update($args{params}{args}->%*) // die "OfferNotFound\n";
 };
 
-=head2 otc_offer_remove
+=head2 p2p_offer_remove
 
 Removes an offer entirely.
 
 =cut
 
-otc_rpc otc_offer_remove => sub {
+p2p_rpc p2p_offer_remove => sub {
     my %args = @_;
 
     my ($client, $params) = @args{qw/client params/};
-    return $client->update_otc_offer(
-        id     => $params->{args}{id},
-        active => 0
-    ) // die "OfferNotFound\n";
+    die 'Missing p2p_offer_remove feature';
 };
 
-=head2 otc_order_create
+=head2 p2p_order_create
 
 Creates a new order for an offer.
 
 =cut
 
-otc_rpc otc_order_create => sub {
+p2p_rpc p2p_order_create => sub {
     my %args = @_;
 
     my $client = $args{client};
-    my $order  = $client->create_otc_order($args{params}{args}->%*);
+    my $order  = $client->p2p_order_create($args{params}{args}->%*);
 
-    BOM::Platform::Event::Emitter::emit(otc_offer_created => $order);
+    BOM::Platform::Event::Emitter::emit(p2p_order_created => $order);
 
     return $order;
 };
 
-=head2 otc_order_list
+=head2 p2p_order_list
 
 Lists orders.
 
+Takes the following named parameters:
+
 =over 4
 
-=item * status
+=item * C<status> - return only records matching the given status
+
+=item * C<agent_id> - lists only for this agent (if not provided, lists orders owned
+by the current client)
+
+=item * C<offer_id> - lists only the orders for the given offer (this is only available
+if the current client owns that offer)
 
 =back
 
 =cut
 
-otc_rpc otc_order_list => sub {
+p2p_rpc p2p_order_list => sub {
     my %args = @_;
 
     my $client = $args{client};
 
-    return $client->get_order_list(status => $args{params}{status});
+    return $client->p2p_order_list(
+        status   => $args{params}{status},
+        agent_id => $args{params}{agent_id},
+        offer_id => $args{params}{offer_id},
+    );
 };
 
-=head2 otc_order_confirm
+=head2 p2p_order_confirm
 
 Shortcut for updating order status to C<confirmed>.
 
+Takes the following named parameters:
+
 =over 4
 
-=item * id - otc order id
+=item * id - p2p order id
 
 =back
 
 =cut
 
-otc_rpc otc_order_confirm => sub {
+p2p_rpc p2p_order_confirm => sub {
     my %args = @_;
 
     my ($client, $params) = @args{qw/client params/};
 
-    my $order = $client->confirm_otc_order(
+    my $order = $client->p2p_order_confirm(
         id     => $params->{args}{id},
         source => $params->{source});
 
-    BOM::Platform::Event::Emitter::emit(otc_order_updated => $order);
+    BOM::Platform::Event::Emitter::emit(p2p_order_updated => $order);
 
     return $order;
 };
 
-=head2 otc_order_cancel
+=head2 p2p_order_cancel
 
 Shortcut for updating order status to C<cancelled>.
 
+Takes the following named parameters:
 
 =over 4
 
-=item * id - otc order id
+=item * id - p2p order id
 
 =back
 
 =cut
 
-otc_rpc otc_order_cancel => sub {
+p2p_rpc p2p_order_cancel => sub {
     my %args = @_;
 
     my ($client, $params) = @args{qw/client params/};
 
-    my $order = $client->cancel_otc_order(
+    my $order = $client->p2p_order_cancel(
         id     => $params->{args}{id},
         source => $params->{source});
 
-    BOM::Platform::Event::Emitter::emit(otc_order_updated => $order);
+    BOM::Platform::Event::Emitter::emit(p2p_order_updated => $order);
 
     return $order;
 };
 
-=head2 otc_order_chat
+=head2 p2p_order_chat
 
 Exchange chat messages.
 
 =cut
 
-otc_rpc otc_order_chat => sub {
+p2p_rpc p2p_order_chat => sub {
     die "PermissionDenied\n";
 };
 
