@@ -256,13 +256,15 @@ sub _validate_binary_price_adjustment {
         my $recomputed_price = $transaction->action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
         $move = $requested_price - $recomputed_price;
         # convert allowed move to price space
-        $allowed_move = max($contract->min_commission_amount * 0.5, $contract->allowed_slippage * $contract->payout);
+        $allowed_move = $contract->allowed_slippage * $contract->payout;
     } else {
-        my $requested_probability  = $transaction->price / $transaction->payout;
-        my $recomputed_probability = $transaction->contract->$probability_type->amount;
-        $move         = $requested_probability - $recomputed_probability;
-        $allowed_move = $transaction->contract->allowed_slippage;
+        my $requested_payout  = $transaction->payout;
+        my $recomputed_payout = $contract->payout;
+        $move         = $requested_payout - $recomputed_payout;
+        $allowed_move = $transaction->contract->allowed_slippage * $requested_payout;
     }
+
+    $allowed_move = max($contract->min_commission_amount * 0.5, $allowed_move);
 
     $move *= -1 if $transaction->action_type eq 'sell';
     $allowed_move = 0 if $contract->$probability_type->amount == 1;
