@@ -8,7 +8,6 @@ use Test::More;
 use Test::Exception;
 
 use BOM::User::Client;
-use BOM::User::Client::Payments;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::User;

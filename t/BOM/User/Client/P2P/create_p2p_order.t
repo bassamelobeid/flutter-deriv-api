@@ -6,24 +6,23 @@ use Test::More;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
-use BOM::Test::Helper::OTC;
+use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
 use Test::Fatal;
-use Data::Dumper;
 
 subtest 'Creating new order' => sub {
     my $amount      = 100;
     my $description = 'Test order';
     my $source      = 1;
 
-    my $escrow = BOM::Test::Helper::OTC::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::OTC::create_offer(amount => $amount);
-    my $client = BOM::Test::Helper::OTC::create_client();
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
+    my $client = BOM::Test::Helper::P2P::create_client();
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
-    my $order_data = $client->create_otc_order(
+    my $order_data = $client->p2p_order_create(
         offer_id    => $offer->{id},
         amount      => 100,
         description => $description
@@ -40,7 +39,7 @@ subtest 'Creating new order' => sub {
     is($order_data->{agent_loginid},  $agent->loginid,  'Agent for new order is correct');
     is($order_data->{description},    $description,     'Description for new order is correct');
 
-    BOM::Test::Helper::OTC::reset_escrow();
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Creating two orders from two clients' => sub {
@@ -48,15 +47,15 @@ subtest 'Creating two orders from two clients' => sub {
     my $description = 'Test order';
     my $source      = 1;
 
-    my $escrow = BOM::Test::Helper::OTC::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::OTC::create_offer(amount => $amount);
-    my $client1 = BOM::Test::Helper::OTC::create_client();
-    my $client2 = BOM::Test::Helper::OTC::create_client();
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
+    my $client1 = BOM::Test::Helper::P2P::create_client();
+    my $client2 = BOM::Test::Helper::P2P::create_client();
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
-    my $order_data1 = $client1->create_otc_order(
+    my $order_data1 = $client1->p2p_order_create(
         offer_id    => $offer->{id},
         amount      => 50,
         description => $description
@@ -73,7 +72,7 @@ subtest 'Creating two orders from two clients' => sub {
     is($order_data1->{agent_loginid},  $agent->loginid,   'Agent for new order is correct');
     is($order_data1->{description},    $description,      'Description for new order is correct');
 
-    my $order_data2 = $client2->create_otc_order(
+    my $order_data2 = $client2->p2p_order_create(
         offer_id    => $offer->{id},
         amount      => 50,
         description => $description
@@ -90,7 +89,7 @@ subtest 'Creating two orders from two clients' => sub {
     is($order_data2->{agent_loginid},  $agent->loginid,   'Agent for new order is correct');
     is($order_data2->{description},    $description,      'Description for new order is correct');
 
-    BOM::Test::Helper::OTC::reset_escrow();
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Creating two orders from one client for two offers' => sub {
@@ -98,16 +97,16 @@ subtest 'Creating two orders from one client for two offers' => sub {
     my $description = 'Test order';
     my $source      = 1;
 
-    my $escrow = BOM::Test::Helper::OTC::create_escrow();
-    my ($agent1, $offer1) = BOM::Test::Helper::OTC::create_offer(amount => $amount);
-    my ($agent2, $offer2) = BOM::Test::Helper::OTC::create_offer(amount => $amount);
-    my $client = BOM::Test::Helper::OTC::create_client();
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my ($agent1, $offer1) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
+    my ($agent2, $offer2) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
+    my $client = BOM::Test::Helper::P2P::create_client();
 
     ok($escrow->account->balance == 0,       'Escrow balance is correct');
     ok($agent1->account->balance == $amount, 'Agent balance is correct');
     ok($agent2->account->balance == $amount, 'Agent balance is correct');
 
-    my $order_data1 = $client->create_otc_order(
+    my $order_data1 = $client->p2p_order_create(
         offer_id    => $offer1->{id},
         amount      => 100,
         description => $description
@@ -124,7 +123,7 @@ subtest 'Creating two orders from one client for two offers' => sub {
     is($order_data1->{agent_loginid},  $agent1->loginid, 'Agent for new order is correct');
     is($order_data1->{description},    $description,     'Description for new order is correct');
 
-    my $order_data2 = $client->create_otc_order(
+    my $order_data2 = $client->p2p_order_create(
         offer_id    => $offer2->{id},
         amount      => 100,
         description => $description
@@ -141,7 +140,7 @@ subtest 'Creating two orders from one client for two offers' => sub {
     is($order_data2->{agent_loginid},  $agent2->loginid, 'Agent for new order is correct');
     is($order_data2->{description},    $description,     'Description for new order is correct');
 
-    BOM::Test::Helper::OTC::reset_escrow();
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Creating two new orders from one client for one offer' => sub {
@@ -149,15 +148,15 @@ subtest 'Creating two new orders from one client for one offer' => sub {
     my $description = 'Test order';
     my $source      = 1;
 
-    my $escrow = BOM::Test::Helper::OTC::create_escrow();
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
 
-    my ($agent, $offer) = BOM::Test::Helper::OTC::create_offer(amount => $amount);
-    my $client = BOM::Test::Helper::OTC::create_client();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
+    my $client = BOM::Test::Helper::P2P::create_client();
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
-    my $order_data = $client->create_otc_order(
+    my $order_data = $client->p2p_order_create(
         offer_id    => $offer->{id},
         amount      => 50,
         description => $description
@@ -175,7 +174,7 @@ subtest 'Creating two new orders from one client for one offer' => sub {
     is($order_data->{description},    $description,     'Description for new order is correct');
 
     my $err = exception {
-        $client->create_otc_order(
+        $client->p2p_order_create(
             offer_id    => $offer->{id},
             amount      => 50,
             description => $description
@@ -184,7 +183,7 @@ subtest 'Creating two new orders from one client for one offer' => sub {
     chomp $err;
     is $err, 'OrderAlreadyExists', 'Got correct error';
 
-    BOM::Test::Helper::OTC::reset_escrow();
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Creating order for agent own order' => sub {
@@ -192,14 +191,14 @@ subtest 'Creating order for agent own order' => sub {
     my $description = 'Test order';
     my $source      = 1;
 
-    my $escrow = BOM::Test::Helper::OTC::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::OTC::create_offer(amount => $amount);
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
     my $err = exception {
-        $agent->create_otc_order(
+        $agent->p2p_order_create(
             offer_id    => $offer->{id},
             amount      => 100,
             description => $description
@@ -212,7 +211,7 @@ subtest 'Creating order for agent own order' => sub {
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
-    BOM::Test::Helper::OTC::reset_escrow();
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Creating order with amount more than avalible' => sub {
@@ -220,15 +219,15 @@ subtest 'Creating order with amount more than avalible' => sub {
     my $description = 'Test order';
     my $source      = 1;
 
-    my $escrow = BOM::Test::Helper::OTC::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::OTC::create_offer(amount => $amount);
-    my $client = BOM::Test::Helper::OTC::create_client();
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
+    my $client = BOM::Test::Helper::P2P::create_client();
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
     my $err = exception {
-        $client->create_otc_order(
+        $client->p2p_order_create(
             offer_id    => $offer->{id},
             amount      => 101,
             description => $description
@@ -241,7 +240,7 @@ subtest 'Creating order with amount more than avalible' => sub {
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
-    BOM::Test::Helper::OTC::reset_escrow();
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Creating order with negative amount' => sub {
@@ -249,15 +248,15 @@ subtest 'Creating order with negative amount' => sub {
     my $description = 'Test order';
     my $source      = 1;
 
-    my $escrow = BOM::Test::Helper::OTC::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::OTC::create_offer(amount => $amount);
-    my $client = BOM::Test::Helper::OTC::create_client();
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
+    my $client = BOM::Test::Helper::P2P::create_client();
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
     my $err = exception {
-        $client->create_otc_order(
+        $client->p2p_order_create(
             offer_id    => $offer->{id},
             amount      => -1,
             description => $description
@@ -270,7 +269,7 @@ subtest 'Creating order with negative amount' => sub {
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
-    BOM::Test::Helper::OTC::reset_escrow();
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Creating order with disabled agent' => sub {
@@ -278,17 +277,17 @@ subtest 'Creating order with disabled agent' => sub {
     my $description = 'Test order';
     my $source      = 1;
 
-    my $escrow = BOM::Test::Helper::OTC::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::OTC::create_offer(amount => $amount);
-    my $client = BOM::Test::Helper::OTC::create_client();
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
+    my $client = BOM::Test::Helper::P2P::create_client();
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
-    $agent->update_otc_agent(active => 0);
+    $agent->p2p_agent_update(active => 0);
 
     my $err = exception {
-        $client->create_otc_order(
+        $client->p2p_order_create(
             offer_id    => $offer->{id},
             amount      => $amount,
             description => $description
@@ -301,7 +300,7 @@ subtest 'Creating order with disabled agent' => sub {
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
-    BOM::Test::Helper::OTC::reset_escrow();
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Creating order without escrow' => sub {
@@ -309,13 +308,13 @@ subtest 'Creating order without escrow' => sub {
     my $description = 'Test order';
     my $source      = 1;
 
-    my ($agent, $offer) = BOM::Test::Helper::OTC::create_offer(amount => $amount);
-    my $client = BOM::Test::Helper::OTC::create_client();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
+    my $client = BOM::Test::Helper::P2P::create_client();
 
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
     my $err = exception {
-        $client->create_otc_order(
+        $client->p2p_order_create(
             offer_id    => $offer->{id},
             amount      => $amount,
             description => $description
@@ -327,20 +326,20 @@ subtest 'Creating order without escrow' => sub {
 
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
-    BOM::Test::Helper::OTC::reset_escrow();
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Creating order for expired offer' => sub {
     my $amount = 100;
 
-    my $escrow = BOM::Test::Helper::OTC::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::OTC::create_offer(amount => $amount);
-    my $client = BOM::Test::Helper::OTC::create_client();
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
+    my $client = BOM::Test::Helper::P2P::create_client();
 
-    BOM::Test::Helper::OTC::expire_offer($agent, $offer->{id});
+    BOM::Test::Helper::P2P::expire_offer($agent, $offer->{id});
 
     my $err = exception {
-        $client->create_otc_order(
+        $client->p2p_order_create(
             offer_id => $offer->{id},
             amount   => $amount
         );
