@@ -87,7 +87,7 @@ subtest 'multiplier - send_ask' => sub {
             'date_start'            => 0,
             'proposal'              => 1,
             'amount'                => '100',
-            'base_commission'       => '0.015',
+            'base_commission'       => '0.012',
             'underlying'            => 'R_100',
             'bet_type'              => 'MULTUP'
         },
@@ -131,7 +131,7 @@ subtest 'multiplier - send_ask' => sub {
             'date_start'            => 0,
             'proposal'              => 1,
             'amount'                => '100',
-            'base_commission'       => '0.015',
+            'base_commission'       => '0.012',
             'underlying'            => 'R_100',
             'bet_type'              => 'MULTUP'
         },
@@ -183,7 +183,7 @@ subtest 'multiplier - send_ask' => sub {
             'date_start'            => 0,
             'proposal'              => 1,
             'amount'                => '100',
-            'base_commission'       => '0.015',
+            'base_commission'       => '0.012',
             'underlying'            => 'R_100',
             'bet_type'              => 'MULTUP'
         },
