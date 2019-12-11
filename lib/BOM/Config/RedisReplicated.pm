@@ -162,14 +162,14 @@ sub redis_auth {
     return _redis('auth', 'read', 10);
 }
 
-sub redis_otc_write {
-    $config->{otc} //= BOM::Config::redis_otc_config();
-    return _redis('otc', 'write', 10);
+sub redis_p2p_write {
+    $config->{p2p} //= BOM::Config::redis_p2p_config();
+    return _redis('p2p', 'write', 10);
 }
 
-sub redis_otc {
-    $config->{otc} //= BOM::Config::redis_otc_config();
-    return _redis('otc', 'read', 10);
+sub redis_p2p {
+    $config->{p2p} //= BOM::Config::redis_p2p_config();
+    return _redis('p2p', 'read', 10);
 }
 
 1;

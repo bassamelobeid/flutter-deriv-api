@@ -79,22 +79,22 @@ payments:
       isa: json_string
       default: '{"jy":"99999"}'
       global: 1
-    otc:
+    p2p:
       description: 'Peer-to-peer payment system'
       isa: section
       contains:
         enabled:
-          description: 'Flag to control whether OTC cashier is active (can be overridden by system.suspend.otc)'
+          description: 'Flag to control whether P2P cashier is active (can be overridden by system.suspend.p2p)'
           isa: Bool
           global: 1
           default: 0
         available:
-          description: 'Flag to control whether OTC cashier is available to all clients (if disabled, only otc.clients are allowed)'
+          description: 'Flag to control whether P2P cashier is available to all clients (if disabled, only p2p.clients are allowed)'
           isa: Bool
           global: 1
           default: 0
         clients:
-          description: 'List of clients allowed to access OTC'
+          description: 'List of clients allowed to access P2P'
           isa: ArrayRef
           global: 1
           default: []
@@ -475,8 +475,8 @@ system:
           isa: Bool
           default: 0
           global: 1
-        otc:
-          description: "Suspend peer-to-peer cashier - this will override payments.otc.enabled"
+        p2p:
+          description: "Suspend peer-to-peer cashier - this will override payments.p2p.enabled"
           isa: Bool
           default: 0
           global: 1
