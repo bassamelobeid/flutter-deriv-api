@@ -454,7 +454,7 @@ subtest 'update stop loss with/without active deal cancellation' => sub {
     my $updater = BOM::Transaction::ContractUpdate->new(
         client        => $cl,
         contract_id   => $fmb->{id},
-        update_params => {stop_loss => -10},
+        update_params => {stop_loss => 10},
     );
 
     ok !$updater->is_valid_to_update, 'not valid to update';
@@ -475,7 +475,7 @@ subtest 'update stop loss with/without active deal cancellation' => sub {
     $updater  = BOM::Transaction::ContractUpdate->new(
         client        => $cl,
         contract_id   => $fmb->{id},
-        update_params => {stop_loss => -10},
+        update_params => {stop_loss => 10},
     );
     # override contract
     $updater->contract($contract);

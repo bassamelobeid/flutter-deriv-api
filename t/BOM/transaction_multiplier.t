@@ -393,7 +393,7 @@ subtest 'buy MULTUP with stop loss', sub {
             amount       => 100,
             amount_type  => 'stake',
             current_tick => $current_tick,
-            limit_order  => {stop_loss => -5},
+            limit_order  => {stop_loss => 5},
         });
 
         my $txn = BOM::Transaction->new({
