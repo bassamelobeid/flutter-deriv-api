@@ -129,7 +129,7 @@ subtest 'contract_update' => sub {
     is $res->{contract_details}{limit_order}->[2], 'take_profit';
 
     delete $update_params->{args}->{limit_order}->{take_profit};
-    $update_params->{args}->{limit_order}->{stop_loss} = -80;
+    $update_params->{args}->{limit_order}->{stop_loss} = 80;
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
     ok $res->{take_profit},      'returns the new take profit value';
     ok $res->{stop_loss},        'returns the new stop loss value';
