@@ -198,7 +198,7 @@ sub get_settings_by_group {
                 system.suspend.transfer_currencies
                 system.suspend.onfido
                 system.suspend.customerio
-                system.suspend.otc
+                system.suspend.p2p
                 system.mt5.suspend.all
                 system.mt5.suspend.deposits
                 system.mt5.suspend.withdrawals
@@ -225,13 +225,13 @@ sub get_settings_by_group {
         ],
         payments => [qw(
                 payments.payment_limits
-                payments.otc.enabled
-                payments.otc.available
-                payments.otc.clients
-                payments.otc.escrow
-                payments.otc.limits.count_per_day_per_client
-                payments.otc.limits.maximum_offer
-                payments.otc.limits.maximum_order
+                payments.p2p.enabled
+                payments.p2p.available
+                payments.p2p.clients
+                payments.p2p.escrow
+                payments.p2p.limits.count_per_day_per_client
+                payments.p2p.limits.maximum_offer
+                payments.p2p.limits.maximum_order
                 payments.transfer_between_accounts.limits.between_accounts
                 payments.transfer_between_accounts.limits.MT5
                 payments.transfer_between_accounts.exchange_rate_expiry.fiat
