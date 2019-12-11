@@ -1,4 +1,4 @@
-package BOM::Event::Actions::OTC;
+package BOM::Event::Actions::P2P;
 
 use strict;
 use warnings;
@@ -9,13 +9,12 @@ use feature 'state';
 
 =head1 NAME
 
-BOM::Event::Actions::OTC - deal with OTC events
+BOM::Event::Actions::P2P - deal with P2P events
 
 =head1 DESCRIPTION
 
-The peer-to-peer cashier feature (or "OTC" for over-the-counter) provides a way for
-buyers and sellers to transfer funds using whichever methods they are able to negotiate
-between themselves directly.
+The peer-to-peer cashier feature provides a way for buyers and sellers to transfer
+funds using whichever methods they are able to negotiate between themselves directly.
 
 =cut
 
@@ -32,14 +31,8 @@ use BOM::User::Utility;
 #TODO: Put here id for special bom-event application
 # May be better to move it to config rather than keep it here.
 use constant {
-    DEFAULT_SOURCE                => 5,
-    DEFAULT_STAFF                 => 'AUTOEXPIRY',
-    ORDER_PENDING_STATUS          => 'pending',
-    ORDER_CLIENT_CONFIRMED_STATUS => 'client-confirmed',
-    ORDER_CANCELLED_STATUS        => 'cancelled',
-    ORDER_COMPLETED_STATUS        => 'completed',
-    ORDER_REFUNDER_STATUS         => 'refunded',
-    ORDER_TIMED_OUT_STATUS        => 'timed-out',
+    DEFAULT_SOURCE => 5,
+    DEFAULT_STAFF  => 'AUTOEXPIRY',
 };
 
 =head2 agent_created
@@ -56,7 +49,7 @@ sub agent_created {
     BOM::Platform::Event::Emitter::emit(
         send_email_generic => {
             to      => 'compliance@binary.com',
-            subject => 'New OTC agent registered',
+            subject => 'New P2P agent registered',
         });
 
     return 1;
@@ -131,43 +124,44 @@ sub order_expired {
     my $data = shift;
 
     # If status was changed, handler should return new status
-    state $EXPIRATION_HANDLERS_FOR = {
-        ORDER_PENDING_STATUS()          => \&_pending_expiration,
-        ORDER_CLIENT_CONFIRMED_STATUS() => \&_client_confirmed_expiration,
-        ORDER_CANCELLED_STATUS()        => sub { },
-        ORDER_COMPLETED_STATUS()        => sub { },
-        ORDER_REFUNDER_STATUS()         => sub { },
-        ORDER_TIMED_OUT_STATUS()        => sub { },
+    state $expiration_handlers_for = {
+        pending            => \&_pending_expiration,
+        'client-confirmed' => \&_client_confirmed_expiration,
+        cancelled          => sub { },
+        completed          => sub { },
+        refunded           => sub { },
+        expired            => sub { },
     };
 
     $data->{$_} or die "Missing required attribute $_" for qw(broker_code order_id);
 
-    my ($broker_code, $order_id) = @{$data}{qw(broker_code order_id)};
+    my ($broker_code, $order_id, $loginid) = @{$data}{qw(broker_code order_id loginid)};
 
-    my $client_dbh = BOM::Database::ClientDB->new({broker_code => $broker_code})->db->dbh;
+    my $client = BOM::User::Client->new({loginid => $loginid});
+    my $client_dbh = $client->db->dbh;
 
     my $order_data = $client_dbh->selectrow_hashref(
-        'SELECT id, status, client_confirmed, offer_currency currency FROM otc.order_list(?,?,?,?)',
+        'SELECT id, status, client_confirmed, offer_currency currency FROM p2p.order_list(?,?,?,?)',
         undef, $order_id, (undef) x 3,
     );
 
     die "Order $order_id isn't found" unless $order_data;
 
     my $status = $order_data->{status};
-    die "Unexpected status $status for order $order_id" unless $EXPIRATION_HANDLERS_FOR->{$status};
+    die "Unexpected status $status for order $order_id" unless $expiration_handlers_for->{$status};
 
     my $param = {
         broker_code => $broker_code,
         source      => $data->{source} // DEFAULT_SOURCE,
         staff       => $data->{staff} // DEFAULT_STAFF,
     };
-    my $new_status = $EXPIRATION_HANDLERS_FOR->{$status}->($client_dbh, $order_data, $param);
+    my $new_status = $expiration_handlers_for->{$status}->($client, $order_data, $param);
 
     return 1 unless $new_status;
 
-    my $redis = BOM::Config::RedisReplicated->redis_otc_write();
+    my $redis = BOM::Config::RedisReplicated->redis_p2p_write();
     $redis->publish(
-        'OTC::ORDER::NOTIFICATION::' . $order_id,
+        'P2P::ORDER::NOTIFICATION::' . $order_id,
         encode_json_utf8({
                 order_id   => $order_id,
                 event      => 'status_changed',
@@ -183,24 +177,26 @@ sub order_expired {
 }
 
 sub _pending_expiration {
-    my ($client_dbh, $order_data, $param) = @_;
+    my ($client, $order_data, $param) = @_;
 
-    my $escrow_account = BOM::User::Utility::escrow_for_currency($param->{broker_code}, $order_data->{currency});
+    my $escrow_account = $client->p2p_escrow;
 
     die "No Escrow account for broker $param->{broker_code} with currency $order_data->{currency}" unless $escrow_account;
 
-    $client_dbh->selectrow_hashref('SELECT * FROM  otc.order_cancel(?, ?, ?, ?)',
+    my $client_dbh = $client->db->dbh;
+    $client_dbh->selectrow_hashref('SELECT * FROM  p2p.order_cancel(?, ?, ?, ?)',
         undef, $order_data->{id}, $escrow_account->loginid, $param->{source}, $param->{staff});
 
-    return ORDER_CANCELLED_STATUS;
+    return 'cancelled';
 }
 
 sub _client_confirmed_expiration {
-    my ($client_dbh, $order_data, $param) = @_;
+    my ($client, $order_data, $param) = @_;
 
-    $client_dbh->do('SELECT * FROM otc.order_update(?, ?)', undef, $order_data->{id}, ORDER_TIMED_OUT_STATUS);
+    my $client_dbh = $client->db->dbh;
+    $client_dbh->do('SELECT * FROM p2p.order_update(?, ?)', undef, $order_data->{id}, 'expired');
 
-    return ORDER_TIMED_OUT_STATUS;
+    return 'expired';
 }
 
 1;

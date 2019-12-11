@@ -18,9 +18,8 @@ use BOM::Event::Actions::Client;
 use BOM::Event::Actions::CryptoSubscription;
 use BOM::Event::Actions::Anonymization;
 use BOM::Event::Actions::Email;
-use BOM::Event::Actions::OTC;
+use BOM::Event::Actions::P2P;
 use BOM::Event::Actions::MyAffiliate;
-use BOM::Event::Actions::OTC;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
 
@@ -63,13 +62,13 @@ my $action_mapping = {
     send_email                  => \&BOM::Event::Actions::Email::send_email_generic,
     affiliate_sync_initiated    => \&BOM::Event::Actions::MyAffiliate::affiliate_sync_initiated,
     withdrawal_limit_reached    => \&BOM::Event::Actions::Client::set_needs_action,
-    otc_offer_created           => \&BOM::Event::Actions::OTC::offer_created,
-    otc_offer_updated           => \&BOM::Event::Actions::OTC::offer_updated,
-    otc_order_created           => \&BOM::Event::Actions::OTC::order_created,
-    otc_order_updated           => \&BOM::Event::Actions::OTC::order_updated,
-    otc_order_expired           => \&BOM::Event::Actions::OTC::order_expired,
-    otc_agent_created           => \&BOM::Event::Actions::OTC::agent_created,
-    otc_agent_updated           => \&BOM::Event::Actions::OTC::agent_updated,
+    p2p_offer_created           => \&BOM::Event::Actions::P2P::offer_created,
+    p2p_offer_updated           => \&BOM::Event::Actions::P2P::offer_updated,
+    p2p_order_created           => \&BOM::Event::Actions::P2P::order_created,
+    p2p_order_updated           => \&BOM::Event::Actions::P2P::order_updated,
+    p2p_order_expired           => \&BOM::Event::Actions::P2P::order_expired,
+    p2p_agent_created           => \&BOM::Event::Actions::P2P::agent_created,
+    p2p_agent_updated           => \&BOM::Event::Actions::P2P::agent_updated,
 };
 
 =head1 METHODS
