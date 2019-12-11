@@ -340,7 +340,7 @@ subtest 'test callputspread slippage' => sub {
         $error = $txn->buy;
         is $error->{-type}, 'PriceMoved';
         is $error->{-message_to_client},
-            'The underlying market has moved too much since you priced the contract. The contract price has changed from USD50.34 to USD50.72.';
+            'The underlying market has moved too much since you priced the contract. The contract price has changed from USD50.26 to USD50.57.';
 
         $txn = BOM::Transaction->new({
             client        => $cl,
@@ -410,7 +410,7 @@ subtest 'test CALL (binary) slippage' => sub {
 
         $error = $txn->buy;
         ok !$error, 'no error';
-        is $txn->price_slippage, '-0.74', 'correct price slippage';
+        is $txn->price_slippage, '-0.59', 'correct price slippage';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
@@ -436,9 +436,8 @@ subtest 'test CALL (binary) slippage' => sub {
         });
 
         $error = $txn->buy;
-        is $error->{-type}, 'PriceMoved';
-        is $error->{-message_to_client},
-            'The underlying market has moved too much since you priced the contract. The contract price has changed from USD50.70 to USD51.46.';
+        is $error->{-type},                'PriceMoved';
+        like $error->{-message_to_client}, qr/The underlying market has moved too much since you priced the contract. The contract price has changed/;
 
         $price = financialrounding('price', $contract->currency,
             ($contract->ask_price / $contract->payout + $contract->allowed_slippage + 0.0001) * $contract->payout);
@@ -455,7 +454,7 @@ subtest 'test CALL (binary) slippage' => sub {
         $error = $txn->buy;
         is $error, undef, 'case 2 no error';
         ok $txn->execute_at_better_price, 'executed at better price';
-        is $txn->price_slippage,          '0.76';
+        is $txn->price_slippage,          '0.61';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
@@ -508,7 +507,7 @@ subtest 'test CALL (binary) slippage' => sub {
 
         $error = $txn->buy;
         ok !$error, 'no error';
-        is $txn->price_slippage, '-1.42', 'correct price slippage';
+        is $txn->price_slippage, '-1.14', 'correct price slippage';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
@@ -530,8 +529,8 @@ subtest 'test CALL (binary) slippage' => sub {
 
         $error = $txn->buy;
         is $error->{-type}, 'PriceMoved';
-        is $error->{-message_to_client},
-            'The underlying market has moved too much since you priced the contract. The contract payout has changed from USD98.62 to USD97.16.';
+        like $error->{-message_to_client},
+            qr/The underlying market has moved too much since you priced the contract. The contract payout has changed from/;
 
         $payout = financialrounding('price', $contract->currency,
             $contract->ask_price / ($contract->ask_price / $contract->payout + $contract->allowed_slippage + 0.0001));
@@ -548,7 +547,7 @@ subtest 'test CALL (binary) slippage' => sub {
         $error = $txn->buy;
         is $error, undef, 'case 2 no error';
         ok $txn->execute_at_better_price, 'executed at better price';
-        is $txn->price_slippage,          '1.41';
+        is $txn->price_slippage,          '1.15';
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
@@ -584,7 +583,7 @@ subtest "high input price" => sub {
 
     ok !$txn->buy, 'buy successful without error';
     ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
-    is $fmb->{buy_price} + 0,    $contract->ask_price, 'buy_price';
+    is $fmb->{buy_price} + 0, $contract->ask_price, 'buy_price';
 
     # amount_type = stake with high price
     $txn = BOM::Transaction->new({
@@ -598,7 +597,7 @@ subtest "high input price" => sub {
 
     ok !$txn->buy, 'buy successful without error';
     ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
-    is $fmb->{buy_price} + 0,    $contract->ask_price, 'buy_price';
+    is $fmb->{buy_price} + 0, $contract->ask_price, 'buy_price';
 };
 
 done_testing();
