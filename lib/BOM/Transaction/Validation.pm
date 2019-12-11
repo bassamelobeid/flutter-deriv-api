@@ -256,7 +256,7 @@ sub _validate_binary_price_adjustment {
         my $recomputed_price = $transaction->action_type eq 'buy' ? $contract->ask_price : $contract->bid_price;
         $move = $requested_price - $recomputed_price;
         # convert allowed move to price space
-        $allowed_move = $transaction->contract->allowed_slippage * $contract->payout;
+        $allowed_move = max($contract->min_commission_amount * 0.5, $contract->allowed_slippage * $contract->payout);
     } else {
         my $requested_probability  = $transaction->price / $transaction->payout;
         my $recomputed_probability = $transaction->contract->$probability_type->amount;
