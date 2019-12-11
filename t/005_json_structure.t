@@ -21,11 +21,7 @@ GetOptions(
 );
 
 sub read_all_schemas {
-    map { chomp && {
-        path      => $_,
-        json_text => path($_)->slurp_utf8,
-        get_path_info($_),
-    }} (qx{git ls-files @{[BASE_PATH]}});
+    map { chomp && {path => $_, json_text => path($_)->slurp_utf8, get_path_info($_),} } (qx{git ls-files @{[BASE_PATH]}});
 }
 
 sub get_path_info {
@@ -72,13 +68,7 @@ This mainly tests to make sure the schemas are correct in terms of:
 subtest 'general formatting and order' => sub {
     my $json = JSON::PP->new;
 
-    $json = $json
-        ->canonical(1)
-        ->pretty(1)
-        ->indent(1)
-        ->indent_length(4)
-        ->space_before(0)
-        ->space_after(1);
+    $json = $json->canonical(1)->pretty(1)->indent(1)->indent_length(4)->space_before(0)->space_after(1);
 
     my %order = (
         '$schema'            => 1,
@@ -131,8 +121,9 @@ subtest 'general formatting and order' => sub {
             if ($should_fix) {
                 print colored("The issues will automatically get fixed.\n", 'green');
             } else {
-                print colored("Please make the following changes to fix the issues.\n", 'red');
-                print colored('You can also run this command to automatically fix the issues: ', 'yellow'), colored('perl t/005_json_structure.t --fix', 'bold'), "\n";
+                print colored("Please make the following changes to fix the issues.\n",          'red');
+                print colored('You can also run this command to automatically fix the issues: ', 'yellow'),
+                    colored('perl t/005_json_structure.t --fix', 'bold'), "\n";
             }
 
             for (split "\n", $diff) {
@@ -165,7 +156,7 @@ subtest 'common properties' => sub {
                 type        => 'object',
                 description => '[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.',
             },
-            req_id      => {
+            req_id => {
                 type        => 'integer',
                 description => '[Optional] Used to map request to response.',
             },
@@ -175,7 +166,7 @@ subtest 'common properties' => sub {
                 type        => 'object',
                 description => 'Echo of the request made.',
             },
-            req_id   => {
+            req_id => {
                 type        => 'integer',
                 description => 'Optional field sent in request to map to response, present only when request contains `req_id`.',
             },
@@ -215,6 +206,7 @@ subtest 'common properties' => sub {
 
 # Make sure every property has type and description
 subtest 'type and description' => sub {
+
     sub check_fields {
         my ($node, $path, $errors) = @_;
 
@@ -223,7 +215,7 @@ subtest 'type and description' => sub {
         # There would be thousands of messages since we're recursively test the
         # properties. Hence, going with this approach to suppress ok messages
         # and report only the errors.
-        push $errors->{$path}->@*, "$path has type."        unless $node->{type} // $node->{oneOf};
+        push $errors->{$path}->@*, "$path has type." unless $node->{type} // $node->{oneOf};
         push $errors->{$path}->@*, "$path has description." unless $node->{description};
         push $errors->{$path}->@*, "$path description starts with capital letter."
             unless $node->{description} =~ /^((\[|\()[A-Z].*(\]|\)) |)[A-Z0-9`]/;
@@ -260,13 +252,13 @@ subtest 'schema titles and required' => sub {
     for my $schema (@json_schemas) {
         next unless $schema->{json_type} eq 'send';
 
-        my $method         = $schema->{method_name};
+        my $method = $schema->{method_name};
         my $receive_schema = first { $_->{method_name} eq $method && $_->{json_type} eq 'receive' } @json_schemas;
 
         like $schema->{json}{title},         qr/ \(request\)$/,  "$method: send.json title is correct.";
         like $receive_schema->{json}{title}, qr/ \(response\)$/, "$method: receive.json title is correct.";
 
-        my ($send_title)    = $schema->{json}{title}         =~ /(.*) \(request\)$/;
+        my ($send_title)    = $schema->{json}{title} =~ /(.*) \(request\)$/;
         my ($receive_title) = $receive_schema->{json}{title} =~ /(.*) \(response\)$/;
         is $receive_title, $send_title, "$method: send & receive titles are similar.";
 

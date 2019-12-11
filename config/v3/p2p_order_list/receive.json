@@ -1,0 +1,91 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "P2P Order List (response)",
+    "description": "All orders matching the requested criteria",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "p2p_order_list": {
+            "title": "p2p_order_list",
+            "description": "P2P order list",
+            "type": "object",
+            "required": [
+                "list"
+            ],
+            "properties": {
+                "list": {
+                    "description": "List of orders.",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "description": "Whether this is a buy or a sell.",
+                                "type": "string",
+                                "enum": [
+                                    "buy",
+                                    "sell"
+                                ]
+                            },
+                            "agent_id": {
+                                "description": "The agent's unique identifier.",
+                                "type": "string"
+                            },
+                            "agent_name": {
+                                "description": "The agent's displayed name.",
+                                "type": "string"
+                            },
+                            "local_currency": {
+                                "description": "Local currency for this order.",
+                                "type": "string"
+                            },
+                            "offer_id": {
+                                "description": "The unique identifier for the offer.",
+                                "type": "string"
+                            },
+                            "order_id": {
+                                "description": "The unique identifier for this order.",
+                                "type": "string"
+                            },
+                            "price": {
+                                "description": "Cost in local currency.",
+                                "type": "number"
+                            },
+                            "status": {
+                                "description": "Current order status.",
+                                "type": "string",
+                                "enum": [
+                                    "pending",
+                                    "client-confirmed",
+                                    "agent-confirmed",
+                                    "cancelled",
+                                    "timed-out",
+                                    "refunded",
+                                    "completed"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "p2p_order_list"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}

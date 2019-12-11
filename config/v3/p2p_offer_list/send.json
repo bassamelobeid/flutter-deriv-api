@@ -1,0 +1,66 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "P2P Offers List (request)",
+    "description": "Returns available offers for use with `p2p_order_create`.",
+    "hidden": true,
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "p2p_offer_list"
+    ],
+    "properties": {
+        "p2p_offer_list": {
+            "description": "Must be 1",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "type": {
+            "description": "Which offers to list - buy or sell.",
+            "type": "string",
+            "default": "buy",
+            "enum": [
+                "buy",
+                "sell"
+            ]
+        },
+        "amount": {
+            "description": "How much to buy or sell, used to calculate prices.",
+            "type": "number"
+        },
+        "country": {
+            "description": "Which country to find offers from.",
+            "type": "string",
+            "pattern": "^[a-zA-Z]{2}"
+        },
+        "currency": {
+            "description": "Target currency, defaults to client account currency.",
+            "type": "string",
+            "pattern": "^[a-zA-Z]{3}"
+        },
+        "limit": {
+            "description": "Used for paging.",
+            "type": "integer",
+            "default": 50
+        },
+        "local_currency": {
+            "description": "Currency to conduct payment transaction in, defaults to the main currency for the client's country.",
+            "type": "string",
+            "pattern": "^[a-zA-Z]{3}"
+        },
+        "offset": {
+            "description": "Used for paging.",
+            "type": "integer",
+            "default": 0
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}
