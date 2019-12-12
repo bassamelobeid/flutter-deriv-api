@@ -184,7 +184,6 @@ sub record_slippage {
     return $self->price_slippage(financialrounding('price', $self->contract->currency, $amount));
 }
 
-
 has client => (
     is  => 'ro',
     isa => 'BOM::User::Client',

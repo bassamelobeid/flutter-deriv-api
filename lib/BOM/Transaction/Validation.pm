@@ -247,8 +247,8 @@ sub _validate_binary_price_adjustment {
 
     my $transaction = $self->transaction;
     my $contract    = $transaction->contract;
-    my $move = $transaction->get_price_move();;
-    my $multiplier = $transaction->request_type eq 'price' ? $contract->payout : $transaction->payout;
+    my $move        = $transaction->get_price_move();
+    my $multiplier  = $transaction->request_type eq 'price' ? $contract->payout : $transaction->payout;
 
     # $allowed_move is in payout currency amount.
     # $contract->min_commission_amount is in payout currency amount.
@@ -263,8 +263,8 @@ sub _validate_non_binary_price_adjustment {
     my $self = shift;
 
     # non_binary only deals in price space and not probability space.
-    my $transaction = $self->transaction;
-    my $move        = $transaction->get_price_move();
+    my $transaction  = $self->transaction;
+    my $move         = $transaction->get_price_move();
     my $allowed_move = $transaction->contract->allowed_slippage;
 
     return $self->_adjust_trade($move, $allowed_move);
