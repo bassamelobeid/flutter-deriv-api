@@ -117,7 +117,7 @@ sub adjust_amount {
     return $self->$type($amount);
 }
 
-=head2 record_slippage
+=head2 get_price_move
 
 This function is record slippage amount (price or payout) for a particular contract into $transaction->price_slippage
 attribute in BOM::Transaction object.
@@ -160,21 +160,30 @@ A positive slippage (in bid price) means loss for the company and vice versa.
 
 =cut
 
-sub record_slippage {
-    my ($self, $amount) = @_;
+sub get_price_move {
+    my $self = shift;
 
     my $action_type  = $self->action_type;
     my $request_type = $self->request_type;
 
     die 'action_type is not defined' unless $action_type;
 
+    my $amount = $self->requested_amount - $self->recomputed_amount;
+
     # invert slippage amount to reflect company's position
     if (($action_type eq 'buy' and $request_type eq 'payout') or $action_type eq 'sell') {
         $amount *= -1;
     }
 
+    return $amount;
+}
+
+sub record_slippage {
+    my ($self, $amount) = @_;
+
     return $self->price_slippage(financialrounding('price', $self->contract->currency, $amount));
 }
+
 
 has client => (
     is  => 'ro',
