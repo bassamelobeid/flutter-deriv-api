@@ -126,7 +126,7 @@ sub order_expired {
     # If status was changed, handler should return new status
     state $expiration_handlers_for = {
         pending            => \&_pending_expiration,
-        'client-confirmed' => \&_client_confirmed_expiration,
+        'client-confirmed' => \&_pending_expiration,
         cancelled          => sub { },
         completed          => sub { },
         refunded           => sub { },

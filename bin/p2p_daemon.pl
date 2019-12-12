@@ -8,6 +8,7 @@ use Future::AsyncAwait;
 use BOM::Platform::Event::Emitter;
 use LandingCompany::Registry;
 use BOM::Database::ClientDB;
+use BOM::Config::Runtime;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
@@ -30,7 +31,6 @@ use constant POLLING_INTERVAL => 60;
 # For now keeping it here,
 # When decided to add new companies better to move it to dynamic configuration.
 use constant ACTIVE_LANDING_COMPANIES => ['svg'];
-use constant ORDER_TIMEOUT => 60 * 45;
 
 my @dbs;
 for my $landing_company (@{ ACTIVE_LANDING_COMPANIES() }) {
@@ -60,9 +60,8 @@ $log->infof('Starting P2P polling');
         for my $cur_db ( @dbs ) {
             # Stop quering db when feature is disabled
             last if $app_config->system->suspend->p2p || !$app_config->payments->p2p->enabled;
-
             my $sth = $cur_db->db->dbh->prepare('SELECT id FROM p2p.order_list_expired(?)');
-            $sth->execute(ORDER_TIMEOUT);
+            $sth->execute($app_config->payments->p2p->order_timeout);
 
             while ( my $order_data = $sth->fetchrow_hashref ) {
                 stats_inc('p2p.order.expired');
@@ -79,7 +78,6 @@ $log->infof('Starting P2P polling');
 
         await Future->wait_any(
             $loop->delay_future(after => POLLING_INTERVAL),
-            $shutdown
-        );
+            $shutdown->without_cancel);
     }
 })->()->get;
