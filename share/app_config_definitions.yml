@@ -93,6 +93,11 @@ payments:
           isa: Bool
           global: 1
           default: 0
+        order_timeout:
+          description: 'Number of seconds to order expiry after creation time'
+          isa: Num
+          global: 1
+          default: 7200
         clients:
           description: 'List of clients allowed to access P2P'
           isa: ArrayRef
@@ -516,4 +521,3 @@ system:
               isa: Bool
               default: 0
               global: 1
-
