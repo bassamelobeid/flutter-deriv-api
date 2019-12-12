@@ -13,6 +13,11 @@
             "description": "P2P offer info",
             "type": "object",
             "properties": {
+                "description": {
+                    "description": "Notes from the agent. Should include contact details and payment instructions.",
+                    "type": "string",
+                    "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
+                },
                 "type": {
                     "description": "Whether this is a buy or a sell.",
                     "type": "string",

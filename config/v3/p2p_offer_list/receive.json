@@ -22,6 +22,11 @@
                     "items": {
                         "type": "object",
                         "properties": {
+                            "description": {
+                                "description": "Notes from the agent. Should include contact details and payment instructions.",
+                                "type": "string",
+                                "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
+                            },
                             "agent_id": {
                                 "description": "The agent's unique identifier.",
                                 "type": "string"

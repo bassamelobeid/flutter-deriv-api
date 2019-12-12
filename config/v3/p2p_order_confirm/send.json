@@ -1,29 +1,25 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "P2P Order Create (request)",
-    "description": "Creates a P2P order.",
+    "title": "P2P Order Confirm (request)",
+    "description": "Confirm a P2P order.",
     "hidden": 1,
     "type": "object",
     "additionalProperties": false,
     "required": [
-        "p2p_order_create"
+        "order_id",
+        "p2p_order_confirm"
     ],
     "properties": {
-        "p2p_order_create": {
+        "p2p_order_confirm": {
             "description": "Must be 1",
             "type": "integer",
             "enum": [
                 1
             ]
         },
-        "amount": {
-            "description": "The amount of order.",
-            "type": "number"
-        },
-        "offer_id": {
-            "description": "The unique identifier for the offer to create an order against.",
-            "type": "string",
-            "pattern": "^([0-9]+)$"
+        "order_id": {
+            "description": "Order identification number.",
+            "type": "string"
         },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
