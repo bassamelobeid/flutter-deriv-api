@@ -833,6 +833,25 @@ sub currency {
     return $self->landing_company->legal_default_currency;
 }
 
+=head2 local_currency
+
+Returns the 3-character currency code matching the client's residence.
+
+=over 4
+
+=item * C<$country> - optional 3-character ISO country code used to override the country
+for the currency mapping, for cases where you want to use citizenship or a specific country
+
+=back
+
+=cut
+
+sub local_currency {
+    my ($self, $country) = @_;
+    require Locale::Object::Currency;
+    return Locale::Object::Currency->new(country_code => $country // $self->residence)->code;
+}
+
 sub has_deposits {
     my $self = shift;
     my $args = shift;
