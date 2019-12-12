@@ -8,6 +8,8 @@ use Try::Tiny;
 use Scalar::Util q(blessed);
 use Time::HiRes qw();
 
+use Log::Any::Adapter qw(Stderr), log_level => 'info';
+
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
 use BOM::RPC::Registry;
@@ -44,6 +46,9 @@ use constant REQUEST_ARGUMENTS_TO_BE_IGNORED => qw (req_id passthrough);
 # TODO(leonerd): this one RPC is unusual, coming from Utility.pm which doesn't
 # contain any other RPCs
 BOM::RPC::Registry::register(longcode => \&BOM::RPC::v3::Utility::longcode);
+
+STDERR->autoflush(1);
+STDOUT->autoflush(1);
 
 sub set_current_context {
     my ($params) = @_;
