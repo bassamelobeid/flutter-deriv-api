@@ -228,6 +228,7 @@ sub get_settings_by_group {
                 payments.p2p.enabled
                 payments.p2p.available
                 payments.p2p.clients
+                payments.p2p.order_timeout
                 payments.p2p.escrow
                 payments.p2p.limits.count_per_day_per_client
                 payments.p2p.limits.maximum_offer
