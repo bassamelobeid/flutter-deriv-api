@@ -17,7 +17,7 @@ use List::MoreUtils qw( all none );
 use BOM::Product::Offerings::DisplayHelper;
 use LandingCompany::Registry;
 
-my $o               = LandingCompany::Registry::get('svg')->basic_offerings({current_revision => 0});
+my $o               = LandingCompany::Registry::get('svg')->basic_offerings({loaded_revision => 0});
 my $expected_levels = 4;
 my $offerings       = new_ok('BOM::Product::Offerings::DisplayHelper' => [{offerings => $o}]);
 

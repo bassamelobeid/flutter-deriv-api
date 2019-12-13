@@ -10,7 +10,7 @@ use Test::FailWarnings;
 use Try::Tiny;
 use BOM::Product::ContractFactory qw(produce_contract);
 
-my $offerings = LandingCompany::Registry::get('svg')->basic_offerings({current_revision => 1});
+my $offerings = LandingCompany::Registry::get('svg')->basic_offerings({loaded_revision => 1});
 my @symbols = $offerings->query({contract_category => 'multiplier'}, ['underlying_symbol']);
 
 subtest 'multiplier range' => sub {
