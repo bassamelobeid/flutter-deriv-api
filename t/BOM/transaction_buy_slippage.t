@@ -191,7 +191,7 @@ subtest 'test lookbacks slippage', sub {
         my $error = $txn->buy;
         is $error, undef, 'case 1 no error';
 
-        ok !$txn->price_slippage, 'no price slippage recorded';
+        is $txn->price_slippage + 0, 0, 'price_slippage = 0';
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
         subtest 'case 2 fmb row', sub {
@@ -300,7 +300,7 @@ subtest 'test callputspread slippage' => sub {
         });
 
         my $error = $txn->buy;
-        ok !$txn->price_slippage, 'no price slippage';
+        is $txn->price_slippage + 0, 0, 'no price slippage';
         ok !$error, 'no error';
 
         my $price = financialrounding('prcie', $contract->currency, $contract->ask_price - $contract->allowed_slippage + 0.01);
@@ -336,11 +336,10 @@ subtest 'test callputspread slippage' => sub {
             amount_type   => 'payout',
             purchase_date => $contract->date_start,
         });
-
         $error = $txn->buy;
         is $error->{-type}, 'PriceMoved';
         is $error->{-message_to_client},
-            'The underlying market has moved too much since you priced the contract. The contract price has changed from USD50.34 to USD50.72.';
+            'The underlying market has moved too much since you priced the contract. The contract price has changed from USD50.26 to USD50.57.';
 
         $txn = BOM::Transaction->new({
             client        => $cl,
@@ -394,11 +393,11 @@ subtest 'test CALL (binary) slippage' => sub {
         });
 
         my $error = $txn->buy;
-        ok !$txn->price_slippage, 'no price slippage';
+        is $txn->price_slippage + 0, 0, 'no price slippage';
         ok !$error, 'no error';
 
-        my $price = financialrounding('price', $contract->currency,
-            ($contract->ask_price / $contract->payout - $contract->allowed_slippage + 0.0001) * $contract->payout);
+        my $price = $contract->ask_price - ($contract->allowed_slippage * $contract->payout - 0.01);
+
         $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
@@ -410,9 +409,9 @@ subtest 'test CALL (binary) slippage' => sub {
 
         $error = $txn->buy;
         ok !$error, 'no error';
-        is $txn->price_slippage, '-0.74', 'correct price slippage';
+        is $txn->price_slippage, '-0.59', 'correct price slippage';
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
         subtest 'case 2 fmb row', sub {
             plan tests => 1;
@@ -424,8 +423,7 @@ subtest 'test CALL (binary) slippage' => sub {
             is $qv1->{trade} + 0, $price, 'trade';
         };
 
-        $price = financialrounding('price', $contract->currency,
-            ($contract->ask_price / $contract->payout - $contract->allowed_slippage - 0.0001) * $contract->payout);
+        $price = $contract->ask_price - ($contract->allowed_slippage * $contract->payout + 0.01);
         $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
@@ -438,10 +436,9 @@ subtest 'test CALL (binary) slippage' => sub {
         $error = $txn->buy;
         is $error->{-type}, 'PriceMoved';
         is $error->{-message_to_client},
-            'The underlying market has moved too much since you priced the contract. The contract price has changed from USD50.70 to USD51.46.';
+            'The underlying market has moved too much since you priced the contract. The contract price has changed from USD50.55 to USD51.16.';
 
-        $price = financialrounding('price', $contract->currency,
-            ($contract->ask_price / $contract->payout + $contract->allowed_slippage + 0.0001) * $contract->payout);
+        $price = $contract->ask_price + ($contract->allowed_slippage * $contract->payout + 0.01);
         $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
@@ -455,9 +452,9 @@ subtest 'test CALL (binary) slippage' => sub {
         $error = $txn->buy;
         is $error, undef, 'case 2 no error';
         ok $txn->execute_at_better_price, 'executed at better price';
-        is $txn->price_slippage,          '0.76';
+        is $txn->price_slippage,          '0.61';
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
         subtest 'case 2 fmb row', sub {
             plan tests => 1;
@@ -476,7 +473,8 @@ subtest 'test CALL (binary) slippage' => sub {
             underlying   => 'R_100',
             bet_type     => 'CALL',
             currency     => 'USD',
-            stake        => 50,
+            amount       => 50,
+            amount_type  => 'stake',
             duration     => '2m',
             current_tick => $tick,
             barrier      => 'S0P',
@@ -492,11 +490,11 @@ subtest 'test CALL (binary) slippage' => sub {
         });
 
         my $error = $txn->buy;
-        ok !$txn->price_slippage, 'no price slippage';
+        is $txn->price_slippage + 0, 0, 'no price slippage';
         ok !$error, 'no error';
 
-        my $payout = financialrounding('price', $contract->currency,
-            $contract->ask_price / ($contract->ask_price / $contract->payout - $contract->allowed_slippage + 0.0001));
+        note('slippage is calculated from requested payout if amount_type=stake');
+        my $payout = $contract->payout - 0.3;
         $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
@@ -508,9 +506,9 @@ subtest 'test CALL (binary) slippage' => sub {
 
         $error = $txn->buy;
         ok !$error, 'no error';
-        is $txn->price_slippage, '-1.42', 'correct price slippage';
+        is $txn->price_slippage, '0.30', 'correct price slippage';
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
         subtest 'case 2 fmb row', sub {
             is $fmb->{buy_price} + 0, $contract->ask_price, 'buy_price';
@@ -518,9 +516,8 @@ subtest 'test CALL (binary) slippage' => sub {
             ok $fmb->{short_code} =~ /$payout/, 'properly saved payout in shortcode';
         };
 
-        $payout = financialrounding('price', $contract->currency,
-            $contract->ask_price / ($contract->ask_price / $contract->payout - $contract->allowed_slippage - 0.0001));
-        $txn = BOM::Transaction->new({
+        $payout = $contract->payout + 0.61;
+        $txn    = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => $contract->ask_price,
@@ -532,11 +529,10 @@ subtest 'test CALL (binary) slippage' => sub {
         $error = $txn->buy;
         is $error->{-type}, 'PriceMoved';
         is $error->{-message_to_client},
-            'The underlying market has moved too much since you priced the contract. The contract payout has changed from USD98.62 to USD97.16.';
+            'The underlying market has moved too much since you priced the contract. The contract payout has changed from USD98.34 to USD97.73.';
 
-        $payout = financialrounding('price', $contract->currency,
-            $contract->ask_price / ($contract->ask_price / $contract->payout + $contract->allowed_slippage + 0.0001));
-        $txn = BOM::Transaction->new({
+        $payout = $contract->payout - 0.61;
+        $txn    = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => $contract->ask_price,
@@ -549,17 +545,157 @@ subtest 'test CALL (binary) slippage' => sub {
         $error = $txn->buy;
         is $error, undef, 'case 2 no error';
         ok $txn->execute_at_better_price, 'executed at better price';
-        is $txn->price_slippage,          '1.41';
+        is $txn->price_slippage,          '0.61';
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
         subtest 'case 2 fmb row', sub {
             is $fmb->{buy_price} + 0,    $contract->ask_price, 'buy_price';
             is $fmb->{payout_price} + 0, $contract->payout,    'payout_price';
+            ok $fmb->{short_code} =~ /97\.73/, 'properly saved payout in shortcode';
         };
 
     }
     'survived amount_type=stake';
+};
+
+subtest 'test (binary) sell slippage' => sub {
+    my $mocked_contract = Test::MockModule->new('BOM::Product::Contract::Call');
+    note('mocking $contract->is_valid_to_sell to return 1.');
+    $mocked_contract->mock('is_valid_to_sell', sub { return 1 });
+    my $contract = produce_contract({
+        underlying   => 'R_100',
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        duration     => '2m',
+        current_tick => $tick,
+        barrier      => 'S0P',
+    });
+
+    my $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        payout        => $contract->payout,
+        amount_type   => 'payout',
+        purchase_date => $contract->date_start,
+    });
+
+    ok !$txn->buy, 'no error in buy';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+
+    my $contract_sell = produce_contract({
+        date_start   => $contract->date_start,
+        date_pricing => $contract->date_start->plus_time_interval('1s'),
+        underlying   => 'R_100',
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        duration     => '2m',
+        current_tick => $tick,
+        barrier      => 'S0P',
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        contract      => $contract_sell,
+        price         => $contract->bid_price,
+        purchase_date => $contract->date_start,
+    });
+
+    ok !$txn->sell, 'sell with no error';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+
+    is $fmb->{sell_price}, $contract_sell->bid_price, 'sell price saved correctly';
+
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        payout        => $contract->payout,
+        amount_type   => 'payout',
+        purchase_date => $contract->date_start,
+    });
+
+    ok !$txn->buy, 'no error in buy';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+
+    note('slippage on sell for binary is based on payout.');
+    my $price = $contract_sell->bid_price - ($contract_sell->allowed_slippage * $contract_sell->payout - 0.01);
+
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        contract      => $contract_sell,
+        price         => $price,
+        purchase_date => $contract->date_start,
+    });
+
+    ok !$txn->sell, 'sell with no error';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+
+    is $fmb->{sell_price} + 0, $price, 'sell price is correct';
+    is $txn->price_slippage, '0.59', 'correct price slippage';
+
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        payout        => $contract->payout,
+        amount_type   => 'payout',
+        purchase_date => $contract->date_start,
+    });
+
+    ok !$txn->buy, 'no error in buy';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+
+    note('slippage on sell for binary is based on payout.');
+    $price = $contract_sell->bid_price + ($contract_sell->allowed_slippage * $contract_sell->payout - 0.01);
+
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        contract      => $contract_sell,
+        price         => $price,
+        purchase_date => $contract->date_start,
+    });
+
+    ok !$txn->sell, 'sell with no error';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+
+    is $fmb->{sell_price} + 0, $price, 'sell price is correct';
+    is $txn->price_slippage, '-0.59', 'correct price slippage';
+
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        payout        => $contract->payout,
+        amount_type   => 'payout',
+        purchase_date => $contract->date_start,
+    });
+
+    ok !$txn->buy, 'no error in buy';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+
+    note('slippage on sell for binary is based on payout.');
+    $price = $contract_sell->bid_price + ($contract_sell->allowed_slippage * $contract_sell->payout + 0.01);
+
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        contract      => $contract_sell,
+        price         => $price,
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $txn->sell;
+    is $error->{-type}, 'PriceMoved', 'error type - PriceMoved';
+    is $error->{-message_to_client},
+        'The underlying market has moved too much since you priced the contract. The contract sell price has changed from USD49.37 to USD48.76.',
+        'error message_to_client - The underlying market has moved too much since you priced the contract. The contract sell price has changed from USD49.37 to USD48.76.';
 };
 
 done_testing();
