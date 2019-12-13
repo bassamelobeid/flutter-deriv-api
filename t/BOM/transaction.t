@@ -1958,9 +1958,9 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
         my $bal;
         is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        note "mocking app_config->current_revision to rand()";
+        note "mocking app_config->loaded_revision to rand()";
         my $mock_appconfig = Test::MockModule->new('App::Config::Chronicle');
-        $mock_appconfig->mock('current_revision', sub { rand });
+        $mock_appconfig->mock('loaded_revision', sub { rand });
 
         my $now      = Date::Utility->new();
         my $contract = produce_contract({
