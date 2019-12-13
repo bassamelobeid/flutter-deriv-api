@@ -183,11 +183,8 @@ sub redis_auth_config {
     return $config;
 }
 
-sub redis_otc_config {
-    state $config = $ENV{BOM_TEST_REDIS_OTC}
-                  ? YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_OTC})
-                  : redis_replicated_config();
-
+sub redis_p2p_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_P2P} // '/etc/rmg/redis-p2p.yml');
     return $config;
 }
 
