@@ -8,7 +8,6 @@ use Test::Exception;
 use Test::Warnings 0.005 qw(:all);
 
 use BOM::User::Client;
-use BOM::User::Client::Payments;
 use BOM::User::Client::PaymentAgent;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

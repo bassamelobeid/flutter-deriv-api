@@ -5,7 +5,6 @@ use Test::Exception;
 use Test::Warnings;
 
 use BOM::User::Client;
-use BOM::User::Client::Payments;
 
 use BOM::Database::DataMapper::Account;
 use BOM::Database::Model::Transaction;
