@@ -273,16 +273,16 @@ sub _validate_trade_pricing_adjustment {
 sub _validate_binary_price_adjustment {
     my ($self, $probability_type) = @_;
 
-    # we're using probability here to handle both cases where amount_type=stake|payout
-    # If amount_type=stake, the payout ($self->transaction->payout) of the contract is calculated
-    # If amount_type=payout, the ask_price ($self->transaction->price) of the contract is calculated
-    my $transaction            = $self->transaction;
-    my $requested_probability  = $transaction->price / $transaction->payout;
-    my $recomputed_probability = $transaction->contract->$probability_type->amount;
+    my $transaction = $self->transaction;
+    my $contract    = $transaction->contract;
+    my $move        = $transaction->get_price_move();
+    my $multiplier  = $transaction->request_type eq 'price' ? $contract->payout : $transaction->payout;
 
-    my $move = $requested_probability - $recomputed_probability;
-    $move *= -1 if $transaction->action_type eq 'sell';
-    my $allowed_move = $recomputed_probability == 1 ? 0 : $transaction->contract->allowed_slippage;    # allowed_slippage is in probability space.
+    # $allowed_move is in payout currency amount.
+    # $contract->min_commission_amount is in payout currency amount.
+    my $allowed_move = max($contract->min_commission_amount * 0.5, $contract->allowed_slippage * $multiplier);
+
+    $allowed_move = 0 if $contract->$probability_type->amount == 1;
 
     return $self->_adjust_trade($move, $allowed_move);
 }
@@ -291,9 +291,8 @@ sub _validate_non_binary_price_adjustment {
     my $self = shift;
 
     # non_binary only deals in price space and not probability space.
-    my $transaction = $self->transaction;
-    my $move        = $transaction->requested_amount - $transaction->recomputed_amount;
-    $move *= -1 if $transaction->action_type eq 'sell';
+    my $transaction  = $self->transaction;
+    my $move         = $transaction->get_price_move();
     my $allowed_move = $transaction->contract->allowed_slippage;
 
     return $self->_adjust_trade($move, $allowed_move);
@@ -304,7 +303,7 @@ sub _adjust_trade {
 
     my $transaction = $self->transaction;
     # if we do not allow slippage
-    if ($allowed_move == 0 and $move != 0) {
+    if ($allowed_move == 0 and $move == 0) {
         $transaction->adjust_amount($transaction->recomputed_amount);
         return undef;
     }
@@ -318,15 +317,14 @@ sub _adjust_trade {
         });
     }
 
-    my $slippage = $transaction->requested_amount - $transaction->recomputed_amount;
-
     if ($move <= $allowed_move and $move >= -$allowed_move) {
         # We absorbed the price difference here and we want to keep it in our book.
-        $transaction->record_slippage($slippage) if $slippage != 0;
+        $transaction->record_slippage($move);
+        $transaction->adjust_amount($transaction->requested_amount);
     } elsif ($move > $allowed_move) {
         $transaction->execute_at_better_price(1);
         # We need to keep record of slippage even it is executed at better price
-        $transaction->record_slippage($slippage);
+        $transaction->record_slippage($move);
         $transaction->adjust_amount($transaction->recomputed_amount);
     }
 
