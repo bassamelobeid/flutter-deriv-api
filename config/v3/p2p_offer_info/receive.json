@@ -1,0 +1,75 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "P2P Offer Information (response)",
+    "description": "Returns information about the given offer ID",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "p2p_offer_info": {
+            "title": "p2p_offer_info",
+            "description": "P2P offer info",
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "Notes from the agent. Should include contact details and payment instructions.",
+                    "type": "string",
+                    "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
+                },
+                "type": {
+                    "description": "Whether this is a buy or a sell.",
+                    "type": "string",
+                    "enum": [
+                        "buy",
+                        "sell"
+                    ]
+                },
+                "agent_id": {
+                    "description": "The agent's unique identifier.",
+                    "type": "string"
+                },
+                "agent_name": {
+                    "description": "The agent's displayed name.",
+                    "type": "string"
+                },
+                "currency": {
+                    "description": "Local currency for this offer.",
+                    "type": "string"
+                },
+                "max": {
+                    "description": "Maximum amount, in local currency.",
+                    "type": "number"
+                },
+                "min": {
+                    "description": "Minimum amount, in local currency.",
+                    "type": "number"
+                },
+                "offer_id": {
+                    "description": "The unique identifier for this offer.",
+                    "type": "string"
+                },
+                "price": {
+                    "description": "Cost in local currency.",
+                    "type": "number"
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "p2p_offer_info"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}

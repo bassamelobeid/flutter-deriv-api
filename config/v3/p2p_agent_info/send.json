@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "P2P Agent Information (request)",
+    "description": "Retrieve information about a P2P agent",
+    "hidden": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "p2p_agent_info"
+    ],
+    "properties": {
+        "p2p_agent_info": {
+            "description": "Must be 1",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "agent_id": {
+            "description": "The unique identifier for this agent. If not provided, returns agent information about the current account.",
+            "type": "string",
+            "pattern": "^[0-9]+$"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}
