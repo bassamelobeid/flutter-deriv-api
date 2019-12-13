@@ -81,8 +81,10 @@ our %ERROR_MAP = do {
         OfferMaxExceeded      => localize('The maximum limit of active offers reached.'),
         InvalidOfferCurrency  => localize('Invalid offer currency'),
         OrderNotFound         => localize('Order not found'),
-        InvalidOfferOwn       => localize('You cannot create an order for your own offer.'),
-        InvalidOfferExpired   => localize('The offer has expired.'),
+        OrderAlreadyExists    => localize(
+            'You have reached the limit of active orders on this account, please cancel or complete existing orders, or wait for them to expire'),
+        InvalidOfferOwn     => localize('You cannot create an order for your own offer.'),
+        InvalidOfferExpired => localize('The offer has expired.'),
         # DB errors
         BI225 => localize('Offer not found'),
         BI226 => localize('Cannot create order for your own offer'),
@@ -181,7 +183,7 @@ sub p2p_rpc {
 
             if (my $message = $ERROR_MAP{$err}) {
                 stats_inc($p2p_prefix . '.error', {tags => ['error_code:' . $err]});
-                if ($err =~ /^BI\d\d\d$/) {
+                if ($err =~ /^BI[0-9]+$/) {
                     $log->warnf("P2P %s failed, DB failure: %s, original: %s", $method, $err, $exception->[1])
                         ;    # original DB error may have useful details
                     $err = 'P2PError';    # hide db error codes from user
@@ -286,10 +288,12 @@ Returns a hashref containing the following information:
 =cut
 
 p2p_rpc p2p_agent_info => sub {
-    my (%args)   = @_;
-    my $client   = $args{client};
-    my $agent_id = $args{params}{args}{agent_id};
-    return $client->p2p_agent_list(id => $agent_id)->[0] // die "AgentNotFound\n";
+    my (%args) = @_;
+    my $client = $args{client};
+    if (exists $args{params}{args}{agent_id}) {
+        return $client->p2p_agent_list(id => $args{params}{args}{agent_id})->[0] // die "AgentNotFound\n";
+    }
+    return $client->p2p_agent;
 };
 
 =head2 p2p_offer_create
@@ -463,7 +467,7 @@ p2p_rpc p2p_offer_list => sub {
     my %args = @_;
 
     my $client = $args{client};
-    return $client->p2p_offer_list($args{params}{args}->%*);
+    return {list => $client->p2p_offer_list($args{params}{args}->%*)};
 };
 
 =head2 p2p_offer_edit
@@ -508,7 +512,11 @@ p2p_rpc p2p_order_create => sub {
 
     BOM::Platform::Event::Emitter::emit(p2p_order_created => $order);
 
-    return $order;
+    return {
+        order_id => $order->{id},
+        type     => $order->{offer_type},
+        %{$order}{qw(amount created_time status)},
+    };
 };
 
 =head2 p2p_order_list
@@ -536,11 +544,29 @@ p2p_rpc p2p_order_list => sub {
 
     my $client = $args{client};
 
-    return $client->p2p_order_list(
-        status   => $args{params}{status},
-        agent_id => $args{params}{agent_id},
-        offer_id => $args{params}{offer_id},
-    );
+    return {list => $client->p2p_order_list(%{$args{params}}{grep { exists $args{params}{$_} } qw(status agent_id offer_id)},)};
+};
+
+=head2 p2p_order_info
+
+Returns information about a specific order.
+
+Takes the following named parameters:
+
+=over 4
+
+=item * C<order_id> - the P2P order ID to look up
+
+=back
+
+=cut
+
+p2p_rpc p2p_order_info => sub {
+    my %args = @_;
+
+    my ($client, $params) = @args{qw/client params/};
+
+    return $client->p2p_order($params->{args}{order_id});
 };
 
 =head2 p2p_order_confirm
@@ -551,7 +577,7 @@ Takes the following named parameters:
 
 =over 4
 
-=item * id - p2p order id
+=item * C<order_id> - p2p order ID
 
 =back
 
@@ -563,7 +589,7 @@ p2p_rpc p2p_order_confirm => sub {
     my ($client, $params) = @args{qw/client params/};
 
     my $order = $client->p2p_order_confirm(
-        id     => $params->{args}{id},
+        id     => $params->{args}{order_id},
         source => $params->{source});
 
     BOM::Platform::Event::Emitter::emit(p2p_order_updated => $order);
@@ -579,7 +605,7 @@ Takes the following named parameters:
 
 =over 4
 
-=item * id - p2p order id
+=item * C<order_id> - p2p order id
 
 =back
 
@@ -591,7 +617,7 @@ p2p_rpc p2p_order_cancel => sub {
     my ($client, $params) = @args{qw/client params/};
 
     my $order = $client->p2p_order_cancel(
-        id     => $params->{args}{id},
+        id     => $params->{args}{order_id},
         source => $params->{source});
 
     BOM::Platform::Event::Emitter::emit(p2p_order_updated => $order);

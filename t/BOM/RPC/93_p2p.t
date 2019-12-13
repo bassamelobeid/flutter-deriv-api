@@ -165,7 +165,7 @@ subtest 'Offers' => sub {
     ok $offer->{id}, 'offer has id';
 
     $params->{args} = {};
-    $res = $c->call_ok('p2p_offer_list', $params)->has_no_system_error->has_no_error->result;
+    $res = $c->call_ok('p2p_offer_list', $params)->has_no_system_error->has_no_error->result->{list};
     cmp_ok $res->[0]->{id}, '==', $offer->{id}, 'p2p_offer_list returns offer';
 
     $params->{args} = {
@@ -204,7 +204,7 @@ subtest 'Create new order' => sub {
     };
 
     my $order = $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_no_error->result;
-    ok($order->{id}, 'Order is created');
+    ok($order->{order_id}, 'Order is created');
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -215,12 +215,12 @@ subtest 'Client confirm an order' => sub {
     my ($client, $order) = BOM::Test::Helper::P2P::create_order(offer_id => $offer->{id});
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-    $params->{args} = {id => $order->{id}};
+    $params->{args} = {order_id => $order->{id}};
 
     my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'client-confirmed', 'Order is confirmed';
 
-    $params->{args} = {id => 9999};
+    $params->{args} = {order_id => 9999};
     $c->call_ok('p2p_order_confirm', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Confirm non-existent order');
 
     BOM::Test::Helper::P2P::reset_escrow();
@@ -235,13 +235,13 @@ subtest 'Agent confirm' => sub {
     my $agent_token  = BOM::Platform::Token::API->new->create_token($agent->loginid,  'test token');
 
     $params->{token} = $client_token;
-    $params->{args} = {id => $order->{id}};
+    $params->{args} = {order_id => $order->{id}};
 
     my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'client-confirmed', 'Order is client confirmed';
 
     $params->{token} = $agent_token;
-    $params->{args} = {id => $order->{id}};
+    $params->{args} = {order_id => $order->{id}};
 
     $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'completed', 'Order is client confirmed';
@@ -257,12 +257,12 @@ subtest 'Client cancellation' => sub {
     my $agent_token  = BOM::Platform::Token::API->new->create_token($agent->loginid,  'test token');
 
     $params->{token} = $client_token;
-    $params->{args} = {id => $order->{id}};
+    $params->{args} = {order_id => $order->{id}};
 
     my $res = $c->call_ok(p2p_order_cancel => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'cancelled', 'Order is cancelled';
 
-    $params->{args} = {id => 9999};
+    $params->{args} = {order_id => 9999};
     $c->call_ok('p2p_order_cancel', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Cancel non-existent order');
 
     BOM::Test::Helper::P2P::reset_escrow();
