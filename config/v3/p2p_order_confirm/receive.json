@@ -1,15 +1,15 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "P2P Order Cancel (response)",
-    "description": "Result of the P2P order cancellation.",
+    "title": "P2P Order Confirm (response)",
+    "description": "Result of the P2P order confirmation.",
     "type": "object",
     "required": [
         "echo_req",
         "msg_type"
     ],
     "properties": {
-        "p2p_order_cancel": {
-            "description": "Cancellation details",
+        "p2p_order_confirm": {
+            "description": "Confirmation details",
             "type": "object"
         },
         "echo_req": {
@@ -20,7 +20,7 @@
             "description": "Action name of the request made.",
             "type": "string",
             "enum": [
-                "p2p_order_cancel"
+                "p2p_order_confirm"
             ]
         },
         "req_id": {

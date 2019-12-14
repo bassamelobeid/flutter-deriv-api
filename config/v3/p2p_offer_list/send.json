@@ -19,11 +19,14 @@
         "type": {
             "description": "Which offers to list - buy or sell.",
             "type": "string",
-            "default": "buy",
             "enum": [
                 "buy",
                 "sell"
             ]
+        },
+        "agent_id": {
+            "description": "Which agent to list offers for.",
+            "type": "string"
         },
         "amount": {
             "description": "How much to buy or sell, used to calculate prices.",
