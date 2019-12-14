@@ -8,7 +8,7 @@ use Date::Utility;
 use File::stat;
 use YAML qw(LoadFile);
 use IO::Async::Loop;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Archive::Zip qw( :ERROR_CODES );
 use Net::Async::Webservice::S3;
 use DataDog::DogStatsd;
@@ -31,9 +31,10 @@ alarm 1800;
 if ($past_date) {
     try {
         Date::Utility->new($past_date);
-    } catch {
+    }
+    catch {
         die 'Invalid date. Please use yyyy-mm-dd format.';
-    };
+    }
 }
 
 $directory //= '';
@@ -53,36 +54,54 @@ path($output_dir)->mkpath if (not -d $output_dir);
 my $output_zip      = "myaffiliates_" . $from_date->date_yyyymmdd . "-" . $to_date->date_yyyymmdd . ".zip";
 my $output_zip_path = path("/tmp/$output_zip");
 my $zip             = Archive::Zip->new();
-
+my @warn_msgs;
 while ($to_date->days_between($processing_date) >= 0) {
     my $output_filename = $output_dir . 'pl_' . $processing_date->date_yyyymmdd . '.csv';
-
+    my $next_date = Date::Utility->new($processing_date->epoch + 86400);
     # check if file exist and is not of size 0
     if (-e $output_filename and stat($output_filename)->size > 0) {
-        $processing_date = Date::Utility->new($processing_date->epoch + 86400);
+        push @warn_msgs,
+              "There is already a file $output_filename with size "
+            . stat($output_filename)->size
+            . " created at "
+            . Date::Utility->new(stat($output_filename)->mtime)->datetime;
+        $processing_date = $next_date;
         next;
     }
     try {
-    my @csv = $reporter->activity_for_date_as_csv($processing_date->date_ddmmmyy);
-
-    # Date, Player, P&L, Deposits, Runbet Turnover, Intraday Turnover, Other Turnover
-    my @lines;
-    foreach my $line (@csv) {
-        chomp $line;
-        push @lines, $line . "\n" if $line;
+        my @csv = $reporter->activity_for_date_as_csv($processing_date->date_ddmmmyy);
+        unless(@csv){
+            $processing_date = $next_date;
+            next;
+        }
+        # Date, Player, P&L, Deposits, Runbet Turnover, Intraday Turnover, Other Turnover
+        my @lines;
+        foreach my $line (@csv) {
+            chomp $line;
+            push @lines, $line . "\n" if $line;
+        }
+        path($output_filename)->spew_utf8(@lines);
+        $zip->addFile($output_filename, path($output_filename)->basename);
     }
-    path($output_filename)->spew_utf8(@lines);
-    $zip->addFile($output_filename, path($output_filename)->basename);
-    } catch {
-         my $error = shift;
-         $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to generate csv files due: $error");
-    };
+    catch {
+        my $error = $@;
+        $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to generate csv files due: $error");
+        push @warn_msgs, "failed to generate report $output_filename due: $error";
+    }
 
-    $processing_date = Date::Utility->new($processing_date->epoch + 86400);
+    $processing_date = $next_date;
+}
+
+unless ($zip->numberOfMembers) {
+    $statsd->event('Failed to generate MyAffiliates PL report', 'MyAffiliates PL report generated an empty zip archive');
+    warn "Generated empty zip file $output_zip_path, the related warnings are: \n", join "\n-", @warn_msgs;
+    exit 1;
 }
 
 unless ($zip->writeToFileNamed($output_zip_path->stringify) == AZ_OK) {
     $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to generate zip archive");
+    warn 'Failed to generate MyAffiliates PL report: ', "MyAffiliates PL report failed to generate zip archive";
+    exit 1;
 }
 
 my $config = LoadFile('/etc/rmg/third_party.yml')->{myaffiliates};
@@ -118,8 +137,9 @@ try {
     });
 }
 catch {
-    my $error = shift;
+    my $error = $@;
     $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to upload to S3 due: $error");
-};
+    warn 'Failed to generate MyAffiliates PL report: ', "MyAffiliates PL report failed to upload to S3 due: $error";
+}
 
 1;
