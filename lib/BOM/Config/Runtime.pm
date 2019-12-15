@@ -58,7 +58,7 @@ sub get_offerings_config {
         suspend_buy            => $runtime->app_config->quants->underlyings->suspend_buy,
         suspend_contract_types => $runtime->app_config->quants->features->suspend_contract_types,
         disabled_markets       => $runtime->app_config->quants->markets->disabled,
-        current_revision       => $runtime->app_config->current_revision // 0,                      # could be undef for some reason
+        loaded_revision        => $runtime->app_config->loaded_revision // 0,
     };
 }
 

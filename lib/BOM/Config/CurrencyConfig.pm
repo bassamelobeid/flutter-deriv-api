@@ -57,11 +57,11 @@ sub transfer_between_accounts_limits {
     my ($force_refresh) = @_;
 
     state $currency_limits_cache = {};
-    my $current_revision = BOM::Config::Runtime->instance->app_config()->current_revision // '';
+    my $loaded_revision = BOM::Config::Runtime->instance->app_config()->loaded_revision // '';
     return $currency_limits_cache
         if (not $force_refresh)
         and $currency_limits_cache->{revision}
-        and ($currency_limits_cache->{revision} eq $current_revision);
+        and ($currency_limits_cache->{revision} eq $loaded_revision);
 
     my $lower_bounds = transfer_between_accounts_lower_bounds();
 
@@ -99,7 +99,7 @@ sub transfer_between_accounts_limits {
         $currency_limits->{$currency}->{'max'} = $max if $max;
     }
 
-    $currency_limits->{revision} = $current_revision;
+    $currency_limits->{revision} = $loaded_revision;
     $currency_limits_cache = $currency_limits;
 
     return $currency_limits;
@@ -115,8 +115,8 @@ a value under payment.transfer_between_accounts.fees.default.* that matches the 
 
 sub transfer_between_accounts_fees {
     state $transfer_fees_cache = {};
-    my $current_revision = BOM::Config::Runtime->instance->app_config()->current_revision // '';
-    return $transfer_fees_cache if $transfer_fees_cache->{revision} and ($transfer_fees_cache->{revision} eq $current_revision);
+    my $loaded_revision = BOM::Config::Runtime->instance->app_config()->loaded_revision // '';
+    return $transfer_fees_cache if $transfer_fees_cache->{revision} and ($transfer_fees_cache->{revision} eq $loaded_revision);
 
     my @all_currencies = LandingCompany::Registry::all_currencies();
 
@@ -159,7 +159,7 @@ sub transfer_between_accounts_fees {
         $currency_config->{$from_currency} = $fees;
     }
 
-    $currency_config->{revision} = $current_revision;
+    $currency_config->{revision} = $loaded_revision;
     $transfer_fees_cache = $currency_config;
     return $currency_config;
 }

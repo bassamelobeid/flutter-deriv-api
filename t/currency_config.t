@@ -33,7 +33,7 @@ $mock_app_config->mock(
         return $fake_config{$key} if ($fake_config{$key});
         return $mock_app_config->original('get')->(@_);
     },
-    'current_revision' => sub {
+    'loaded_revision' => sub {
         return $revision;
     });
 
