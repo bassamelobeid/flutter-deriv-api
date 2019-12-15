@@ -52,7 +52,7 @@ rpc active_symbols => sub {
 
     die 'Could not retrieve offerings for landing_company[' . $landing_company_name . '] product_type[' . $product_type . ']' unless ($offerings_obj);
 
-    my $appconfig_revision = BOM::Config::Runtime->instance->app_config->current_revision;
+    my $appconfig_revision = BOM::Config::Runtime->instance->app_config->loaded_revision;
     my ($namespace, $key) = (
         'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision))
     );
