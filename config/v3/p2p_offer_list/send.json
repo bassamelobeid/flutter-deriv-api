@@ -17,43 +17,43 @@
             ]
         },
         "type": {
-            "description": "Which offers to list - buy or sell.",
+            "description": "[Optional] Filter the offers by type.",
             "type": "string",
             "enum": [
                 "buy",
                 "sell"
             ]
         },
+        "account_currency": {
+            "description": "[Optional] Target currency, defaults to client account currency.",
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+        },
         "agent_id": {
-            "description": "Which agent to list offers for.",
+            "description": "[Optional] Which agent to list offers for.",
             "type": "string"
         },
         "amount": {
-            "description": "How much to buy or sell, used to calculate prices.",
+            "description": "[Optional] How much to buy or sell, used to calculate prices.",
             "type": "number"
         },
         "country": {
-            "description": "Which country to find offers from.",
+            "description": "[Optional] Which country to find offers from.",
             "type": "string",
-            "pattern": "^[a-zA-Z]{2}"
-        },
-        "currency": {
-            "description": "Target currency, defaults to client account currency.",
-            "type": "string",
-            "pattern": "^[a-zA-Z]{3}"
+            "pattern": "^[a-z]{0,2}$"
         },
         "limit": {
-            "description": "Used for paging.",
+            "description": "[Optional] Used for paging.",
             "type": "integer",
             "default": 50
         },
         "local_currency": {
-            "description": "Currency to conduct payment transaction in, defaults to the main currency for the client's country.",
+            "description": "[Optional] Currency to conduct payment transaction in, defaults to the main currency for the client's country.",
             "type": "string",
-            "pattern": "^[a-zA-Z]{3}"
+            "pattern": "^[A-Z]{3}$"
         },
         "offset": {
-            "description": "Used for paging.",
+            "description": "[Optional] Used for paging.",
             "type": "integer",
             "default": 0
         },

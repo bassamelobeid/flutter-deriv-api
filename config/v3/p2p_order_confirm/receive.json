@@ -10,7 +10,21 @@
     "properties": {
         "p2p_order_confirm": {
             "description": "Confirmation details",
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "order_id": {
+                    "description": "The unique identifier for the order.",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "The new status of the order.",
+                    "type": "string",
+                    "enum": [
+                        "client-confirmed",
+                        "completed"
+                    ]
+                }
+            }
         },
         "echo_req": {
             "description": "Echo of the request made.",

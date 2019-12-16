@@ -10,7 +10,20 @@
     "properties": {
         "p2p_order_cancel": {
             "description": "Cancellation details",
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "order_id": {
+                    "description": "The unique identifier for the order.",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "The new status of the order.",
+                    "type": "string",
+                    "enum": [
+                        "cancelled"
+                    ]
+                }
+            }
         },
         "echo_req": {
             "description": "Echo of the request made.",
