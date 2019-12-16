@@ -111,15 +111,15 @@ subtest 'Client restricted statuses' => sub {
 subtest 'Offers' => sub {
 
     my $offer_params = {
-        amount      => 100,
-        description => 'Test offer',
-        type        => 'buy',
-        currency    => 'USD',
-        expiry      => 30,
-        price       => 1.23,
-        min_amount  => 0.1,
-        max_amount  => 10,
-        method      => 'test method'
+        amount           => 100,
+        description      => 'Test offer',
+        type             => 'buy',
+        account_currency => 'USD',
+        expiry           => 30,
+        price            => 1.23,
+        min_amount       => 0.1,
+        max_amount       => 10,
+        method           => 'test method',
     };
 
     $params->{args} = {name => 'Bond007'};
@@ -155,29 +155,29 @@ subtest 'Offers' => sub {
     $params->{args} = {agent_id => 9999};
     $c->call_ok('p2p_agent_info', $params)->has_no_system_error->has_error->error_code_is('AgentNotFound', 'Get info of non-existent agent');
 
-    $params->{args} = {$offer_params->%*, currency => 'EUR'};
+    $params->{args} = {$offer_params->%*, account_currency => 'EUR'};
     $c->call_ok('p2p_offer_create', $params)
         ->has_no_system_error->has_error->error_code_is('InvalidOfferCurrency', "wrong currency, create offer error is InvalidOfferCurrency");
 
     $params->{args} = $offer_params;
     $offer = $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_no_error->result;
     delete $offer->{stash};
-    ok $offer->{id}, 'offer has id';
+    ok $offer->{offer_id}, 'offer has id';
 
     $params->{args} = {};
     $res = $c->call_ok('p2p_offer_list', $params)->has_no_system_error->has_no_error->result->{list};
-    cmp_ok $res->[0]->{id}, '==', $offer->{id}, 'p2p_offer_list returns offer';
+    cmp_ok $res->[0]->{offer_id}, '==', $offer->{offer_id}, 'p2p_offer_list returns offer';
 
     $params->{args} = {
-        id          => $offer->{id},
+        id          => $offer->{offer_id},
         description => 'new description'
     };
     $res = $c->call_ok('p2p_offer_edit', $params)->has_no_system_error->has_no_error->result;
     is $res->{description}, 'new description', 'edit offer ok';
 
-    $params->{args} = {id => $offer->{id}};
+    $params->{args} = {id => $offer->{offer_id}};
     $res = $c->call_ok('p2p_offer_info', $params)->has_no_system_error->has_no_error->result;
-    cmp_ok $res->{id}, '==', $offer->{id}, 'p2p_offer_info returned correct info';
+    cmp_ok $res->{id}, '==', $offer->{offer_id}, 'p2p_offer_info returned correct info';
 
     $params->{args} = {id => 9999};
     $c->call_ok('p2p_offer_info', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Get info for non-existent offer');
@@ -186,16 +186,18 @@ subtest 'Offers' => sub {
 };
 
 subtest 'Create new order' => sub {
-    $client_client->set_default_account('USD');
-    $params->{token} = $token_client;
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer();
+    my $client = BOM::Test::Helper::P2P::create_client();
+    my $params;
+    $client->set_default_account('USD');
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
-    $client_agent->payment_free_gift(
+    $agent->payment_free_gift(
         currency => 'USD',
         amount   => 100,
         remark   => 'free gift'
     );
-
-    BOM::Test::Helper::P2P::create_escrow();
 
     $params->{args} = {
         offer_id    => $offer->{id},
@@ -264,6 +266,63 @@ subtest 'Client cancellation' => sub {
 
     $params->{args} = {order_id => 9999};
     $c->call_ok('p2p_order_cancel', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Cancel non-existent order');
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Getting order list' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($agent,  $offer) = BOM::Test::Helper::P2P::create_offer();
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        offer_id => $offer->{id},
+        amount   => 10
+    );
+
+    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+    my $agent_token  = BOM::Platform::Token::API->new->create_token($agent->loginid,  'test token');
+
+    $params->{token} = $agent_token;
+    $params->{args} = {offer_id => $offer->{id}};
+
+    my $res1 = $c->call_ok(p2p_order_list => $params)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res1->{list}}), '==', 1, 'count of offers is correct';
+
+    my ($client2, $order2) = BOM::Test::Helper::P2P::create_order(
+        offer_id => $offer->{id},
+        amount   => 10
+    );
+
+    my $res2 = $c->call_ok(p2p_order_list => $params)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res2->{list}}), '==', 2, 'count of offers is correct';
+
+    $params->{token} = $client_token;
+    $params->{args} = {offer_id => $offer->{id}};
+
+    my $res3 = $c->call_ok(p2p_order_list => $params)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res3->{list}}), '==', 1, 'count of offers is correct';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Getting order list' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($agent1, $offer1) = BOM::Test::Helper::P2P::create_offer();
+
+    my $agent1_token = BOM::Platform::Token::API->new->create_token($agent1->loginid, 'test token');
+    $params->{token} = $agent1_token;
+    $params->{args} = {agent_id => $agent1->p2p_agent->{id}};
+
+    my $res1 = $c->call_ok(p2p_offer_list => $params)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res1->{list}}), '==', 1, 'count of offers is correct';
+
+    my ($agent2, $offer2) = BOM::Test::Helper::P2P::create_offer();
+
+    my $agent2_token = BOM::Platform::Token::API->new->create_token($agent2->loginid, 'test token');
+    $params->{token} = $agent2_token;
+    $params->{args} = {agent_id => $agent2->p2p_agent->{id}};
+
+    my $res2 = $c->call_ok(p2p_offer_list => $params)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res2->{list}}), '==', 1, 'count of offers is correct';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
