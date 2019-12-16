@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Deep;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -25,6 +26,7 @@ subtest 'Creating new order' => sub {
     my $order_data = $client->p2p_order_create(
         offer_id    => $offer->{id},
         amount      => 100,
+        expiry      => 7200,
         description => $description
     );
 
@@ -40,6 +42,32 @@ subtest 'Creating new order' => sub {
     is($order_data->{description},    $description,     'Description for new order is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
+    
+    cmp_deeply(
+        $client->p2p_order_list,
+        [
+            {   
+                'id' => $order_data->{id},
+                'agent_confirmed' => $order_data->{agent_confirmed},
+                'amount' => $order_data->{amount},
+                'client_confirmed' => $order_data->{client_confirmed},
+                'client_loginid' => $order_data->{client_loginid},
+                'created_time' => $order_data->{created_time},
+                'description' => $order_data->{description},
+                'expire_time' => $order_data->{expire_time},
+                'status' => $order_data->{status},
+                'agent_id' => $agent->p2p_agent->{id},
+                'agent_loginid' => $agent->loginid,
+                'agent_name' => $agent->p2p_agent->{name},                
+                'offer_account_currency' => $offer->{account_currency},
+                'offer_id' => $offer->{id},
+                'offer_local_currency' => $offer->{local_currency},
+                'offer_price' => $offer->{price},
+                'offer_type' => $offer->{type}
+            }
+        ],
+        'order_list() returns correct info'
+    );
 };
 
 subtest 'Creating two orders from two clients' => sub {
@@ -58,6 +86,7 @@ subtest 'Creating two orders from two clients' => sub {
     my $order_data1 = $client1->p2p_order_create(
         offer_id    => $offer->{id},
         amount      => 50,
+        expiry      => 7200,
         description => $description
     );
 
@@ -75,6 +104,7 @@ subtest 'Creating two orders from two clients' => sub {
     my $order_data2 = $client2->p2p_order_create(
         offer_id    => $offer->{id},
         amount      => 50,
+        expiry      => 7200,
         description => $description
     );
 
@@ -109,6 +139,7 @@ subtest 'Creating two orders from one client for two offers' => sub {
     my $order_data1 = $client->p2p_order_create(
         offer_id    => $offer1->{id},
         amount      => 100,
+        expiry      => 7200,
         description => $description
     );
 
@@ -126,6 +157,7 @@ subtest 'Creating two orders from one client for two offers' => sub {
     my $order_data2 = $client->p2p_order_create(
         offer_id    => $offer2->{id},
         amount      => 100,
+        expiry      => 7200,
         description => $description
     );
 
@@ -159,6 +191,7 @@ subtest 'Creating two new orders from one client for one offer' => sub {
     my $order_data = $client->p2p_order_create(
         offer_id    => $offer->{id},
         amount      => 50,
+        expiry      => 7200,
         description => $description
     );
 
@@ -177,6 +210,7 @@ subtest 'Creating two new orders from one client for one offer' => sub {
         $client->p2p_order_create(
             offer_id    => $offer->{id},
             amount      => 50,
+            expiry      => 7200,
             description => $description
         );
     };
@@ -201,6 +235,7 @@ subtest 'Creating order for agent own order' => sub {
         $agent->p2p_order_create(
             offer_id    => $offer->{id},
             amount      => 100,
+            expiry      => 7200,
             description => $description
         );
     };
@@ -230,6 +265,7 @@ subtest 'Creating order with amount more than avalible' => sub {
         $client->p2p_order_create(
             offer_id    => $offer->{id},
             amount      => 101,
+            expiry      => 7200,
             description => $description
         );
     };
@@ -259,6 +295,7 @@ subtest 'Creating order with negative amount' => sub {
         $client->p2p_order_create(
             offer_id    => $offer->{id},
             amount      => -1,
+            expiry      => 7200,
             description => $description
         );
     };
@@ -290,6 +327,7 @@ subtest 'Creating order with disabled agent' => sub {
         $client->p2p_order_create(
             offer_id    => $offer->{id},
             amount      => $amount,
+            expiry      => 7200,
             description => $description
         );
     };
@@ -317,6 +355,7 @@ subtest 'Creating order without escrow' => sub {
         $client->p2p_order_create(
             offer_id    => $offer->{id},
             amount      => $amount,
+            expiry      => 7200,
             description => $description
         );
     };
@@ -327,26 +366,6 @@ subtest 'Creating order without escrow' => sub {
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
-};
-
-subtest 'Creating order for expired offer' => sub {
-    my $amount = 100;
-
-    my $escrow = BOM::Test::Helper::P2P::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
-    my $client = BOM::Test::Helper::P2P::create_client();
-
-    BOM::Test::Helper::P2P::expire_offer($agent, $offer->{id});
-
-    my $err = exception {
-        $client->p2p_order_create(
-            offer_id => $offer->{id},
-            amount   => $amount
-        );
-    };
-
-    chomp($err);
-    is $err, 'InvalidOfferExpired', 'Got correct error code';
 };
 
 done_testing();

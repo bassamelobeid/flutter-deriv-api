@@ -1695,9 +1695,9 @@ sub p2p_offer_create {
     my $agent_info = $client->p2p_agent;
     die "AgentNotActive\n" unless $agent_info && $agent_info->{is_active};
     die "AgentNotAuthenticated\n" unless $agent_info->{is_authenticated};
-    die "InvalidOfferCurrency\n" if !$param{currency} || uc($param{currency}) ne $client->currency;
+    die "InvalidOfferCurrency\n" if !$param{account_currency} || uc($param{account_currency}) ne $client->currency;
     die "MaximumExceeded\n"
-        if in_usd($param{amount}, uc $param{currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer;
+        if in_usd($param{amount}, uc $param{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer;
 
     my $active_offers_count = $client->p2p_offer_list(
         loginid         => $client->binary_user_id,
@@ -1708,10 +1708,13 @@ sub p2p_offer_create {
 
     $param{country} //= $client->residence;
 
+    $param{local_currency} //= $client->local_currency || die "NoLocalCurrency\n";
+
     return $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.offer_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                undef, $agent_info->{id}, @param{qw/type currency expiry amount price min_amount max_amount method description country/});
+                undef, $agent_info->{id},
+                @param{qw/type account_currency local_currency amount price min_amount max_amount method description country/});
         });
 }
 
@@ -1743,9 +1746,9 @@ sub p2p_offer_list {
     return $client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.offer_list(?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.offer_list(?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
-                @param{qw/id currency loginid active type include_expired/});
+                @param{qw/id account_currency agent_id agent_loginid active type limit offset/});
         });
 }
 
@@ -1767,23 +1770,21 @@ sub p2p_offer_update {
     my $offer_id = delete $param{id};
     my $offer = $client->p2p_offer($offer_id) or die "OfferNotFound\n";
 
-    die "OfferNoEditExpired\n" if $offer->{is_expired};
-
     # no edits are allowed when there is no remaining amount, except for deactivate/activate
     if (any { $_ ne 'active' && defined $param{$_} } keys %param) {
         die "OfferNoEditInactive\n" unless $offer->{is_active};
-        my $amount = $param{amount} // $offer->{amount};
-        die "OfferNoEditAmount\n" unless $amount > $offer->{amount_used};
+        die "OfferNoEditAmount\n" if $param{amount} && $param{amount} < ($offer->{amount} - $offer->{remaining});
     }
 
     die "MaximumExceeded\n"
         if $param{amount}
-        && in_usd($param{amount}, $offer->{currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer;
+        && in_usd($param{amount}, $offer->{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer;
 
     return $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.offer_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                undef, $offer_id, @param{qw/active type currency expiry amount price min_amount max_amount method description country/});
+                undef, $offer_id,
+                @param{qw/active type account_currency local_currency amount price min_amount max_amount method description country/});
         });
 }
 
@@ -1804,18 +1805,20 @@ This will move funds from agent to escrow.
 sub p2p_order_create {
     my ($client, %param) = @_;
 
-    my ($offer_id, $amount, $description, $source) = @param{qw/offer_id amount description source/};
+    my ($offer_id, $amount, $expiry, $description, $source) = @param{qw/offer_id amount expiry description source/};
+
+    $expiry //= BOM::Config::Runtime->instance->app_config->payments->p2p->order_timeout;
 
     my $offer_info = $client->p2p_offer($offer_id);
 
     die "OfferIsDisabled\n" unless $offer_info->{is_active};
     die "InvalidOfferExpired\n" if $offer_info->{is_expired};
-    die "InvalidCurrency\n" unless $offer_info->{currency} eq $client->currency;
+    die "InvalidCurrency\n" unless $offer_info->{account_currency} eq $client->currency;
     die "InvalidOfferOwn\n" if $offer_info->{agent_loginid} eq $client->loginid;
-    die "InvalidAmount\n" unless $amount > 0 && ($offer_info->{amount} - $offer_info->{amount_used}) >= $amount;
+    die "InvalidAmount\n" unless $amount > 0 && $amount <= $offer_info->{remaining};
 
     die "MaximumExceeded\n"
-        if in_usd($amount, $offer_info->{currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
+        if in_usd($amount, $offer_info->{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
 
     my ($agent_info) = $client->p2p_agent_list(id => $offer_info->{agent_id})->@*;
     die "AgentNotFound\n" unless $agent_info;
@@ -1835,8 +1838,8 @@ sub p2p_order_create {
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?)',
-                undef, $offer_id, $client->loginid, $escrow->loginid, $amount, $description, $source, $client->loginid);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?)',
+                undef, $offer_id, $client->loginid, $escrow->loginid, $amount, $expiry, $description, $source, $client->loginid);
         });
 }
 
@@ -1868,6 +1871,8 @@ sub p2p_order_list {
     croak 'Invalid status format'
         if defined $param{status}
         && ref $param{status} ne 'ARRAY';
+
+    $param{loginid} = $client->loginid;
 
     return $client->db->dbic->run(
         fixup => sub {

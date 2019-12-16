@@ -25,16 +25,16 @@ my $user = BOM::User->create(
 $user->add_client($test_client_cr);
 
 my %params = (
-    type        => 'buy',
-    currency    => 'usd',
-    expiry      => 30,
-    amount      => 100,
-    price       => 1.23,
-    min_amount  => 0.1,
-    max_amount  => 10,
-    method      => 'camels',
-    description => 'test offer',
-    country     => 'ID'
+    type             => 'buy',
+    account_currency => 'usd',
+    local_currency   => 'myr',
+    amount           => 100,
+    price            => 1.23,
+    min_amount       => 0.1,
+    max_amount       => 10,
+    method           => 'camels',
+    description      => 'test offer',
+    country          => 'ID'
 );
 
 like(
@@ -77,22 +77,48 @@ is(
 cmp_deeply(
     $offer,
     {
-        id           => re('\d+'),
-        currency     => uc($params{currency}),
-        expire_time  => bool(1),
-        is_active    => bool(1),
-        agent_id     => $test_client_cr->p2p_agent->{id},
-        created_time => bool(1),
-        amount       => num($params{amount}),
-        price        => num($params{price}),
-        min_amount   => num($params{min_amount}),
-        max_amount   => num($params{max_amount}),
-        method       => $params{method},
-        type         => $params{type},
-        country      => $params{country},
-        description  => $params{description}
+        id               => re('\d+'),
+        account_currency => uc($params{account_currency}),
+        local_currency   => $params{local_currency},
+        is_active        => bool(1),
+        agent_id         => $test_client_cr->p2p_agent->{id},
+        created_time     => bool(1),
+        amount           => num($params{amount}),
+        remaining        => num($params{amount}),
+        price            => num($params{price}),
+        min_amount       => num($params{min_amount}),
+        max_amount       => num($params{max_amount}),
+        method           => $params{method},
+        type             => $params{type},
+        country          => $params{country},
+        description      => $params{description}
     },
     "offer matches params"
+);
+
+cmp_deeply(
+    $test_client_cr->p2p_offer_list,
+    [{
+            id               => re('\d+'),
+            account_currency => uc($params{account_currency}),
+            local_currency   => $params{local_currency},
+            is_active        => bool(1),
+            agent_id         => $test_client_cr->p2p_agent->{id},
+            created_time     => bool(1),
+            amount           => num($params{amount}),
+            remaining        => num($params{amount}),
+            price            => num($params{price}),
+            min_amount       => num($params{min_amount}),
+            max_amount       => num($params{max_amount}),
+            method           => $params{method},
+            type             => $params{type},
+            country          => $params{country},
+            description      => $params{description},
+            agent_loginid    => $test_client_cr->loginid,
+            agent_name       => 'testing'
+        }
+    ],
+    "p2p_offer_list() returns correct info"
 );
 
 $test_client_cr->set_default_account('USD');
@@ -149,19 +175,8 @@ cmp_ok $test_client_cr->p2p_offer_update(
     id     => $offer->{id},
     amount => 50
 )->{amount}, '==', 50, "available range excludes cancelled orders";
-BOM::Test::Helper::P2P::expire_offer($test_client_cr, $offer->{id});
-like(
-    exception {
-        $test_client_cr->p2p_offer_update(
-            id     => $offer->{id},
-            active => 0
-            )
-    },
-    qr/OfferNoEditExpired/,
-    "can't change expired offer"
-);
 
-$params{currency} = 'EUR';
+$params{account_currency} = 'EUR';
 like(
     exception {
         $test_client_cr->p2p_offer_create(%params)
@@ -169,7 +184,7 @@ like(
     qr/InvalidOfferCurrency/,
     "wrong currency can't create offer"
 );
-$params{currency} = 'USD';
+$params{account_currency} = 'USD';
 
 ok !$test_client_cr->p2p_agent_update(active => 0)->{is_active}, "set agent inactive";
 
