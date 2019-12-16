@@ -60,8 +60,8 @@ $log->infof('Starting P2P polling');
         for my $cur_db ( @dbs ) {
             # Stop quering db when feature is disabled
             last if $app_config->system->suspend->p2p || !$app_config->payments->p2p->enabled;
-            my $sth = $cur_db->db->dbh->prepare('SELECT id FROM p2p.order_list_expired(?)');
-            $sth->execute($app_config->payments->p2p->order_timeout);
+            my $sth = $cur_db->db->dbh->prepare('SELECT id FROM p2p.order_list_expired()');
+            $sth->execute();
 
             while ( my $order_data = $sth->fetchrow_hashref ) {
                 stats_inc('p2p.order.expired');
