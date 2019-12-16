@@ -6,6 +6,7 @@
     "type": "object",
     "additionalProperties": false,
     "required": [
+        "amount",
         "p2p_order_create"
     ],
     "properties": {
@@ -21,7 +22,7 @@
             "type": "number"
         },
         "offer_id": {
-            "description": "The unique identifier for the offer to create an order against.",
+            "description": "[Optional] The unique identifier for the offer to create an order against.",
             "type": "string",
             "pattern": "^([0-9]+)$"
         },

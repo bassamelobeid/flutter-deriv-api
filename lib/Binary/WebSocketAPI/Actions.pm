@@ -313,7 +313,6 @@ sub actions_config {
         [p2p_order_create  => {require_auth => 'payments'}],
         [p2p_order_info    => {require_auth => 'payments'}],
         [p2p_order_list    => {require_auth => 'payments'}],
-        [p2p_order_update  => {require_auth => 'payments'}],
         [p2p_agent_info    => {require_auth => 'payments'}],
     ];
 }

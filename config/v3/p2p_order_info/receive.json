@@ -11,7 +11,78 @@
         "p2p_order_info": {
             "title": "p2p_order_info",
             "description": "The information of P2P order.",
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "type": {
+                    "description": "Whether this is a buy or a sell.",
+                    "type": "string",
+                    "enum": [
+                        "buy",
+                        "sell"
+                    ]
+                },
+                "account_currency": {
+                    "description": "The currency of order.",
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$",
+                    "examples": [
+                        "USD"
+                    ]
+                },
+                "agent_id": {
+                    "description": "The agent's unique identifier.",
+                    "type": "string"
+                },
+                "agent_name": {
+                    "description": "The agent's displayed name.",
+                    "type": "string"
+                },
+                "amount": {
+                    "description": "The amount of the order.",
+                    "type": "string"
+                },
+                "created_time": {
+                    "description": "The epoch time of the order creation.",
+                    "type": "integer"
+                },
+                "expiry_time": {
+                    "description": "The epoch time in which the order will be expired.",
+                    "type": "integer"
+                },
+                "local_currency": {
+                    "description": "Local currency for this order.",
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$",
+                    "examples": [
+                        "USD"
+                    ]
+                },
+                "offer_id": {
+                    "description": "The unique identifier for the offer.",
+                    "type": "string"
+                },
+                "order_id": {
+                    "description": "The unique identifier for this order.",
+                    "type": "string"
+                },
+                "price": {
+                    "description": "Cost in local currency.",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Current order status.",
+                    "type": "string",
+                    "enum": [
+                        "pending",
+                        "client-confirmed",
+                        "agent-confirmed",
+                        "cancelled",
+                        "timed-out",
+                        "refunded",
+                        "completed"
+                    ]
+                }
+            }
         },
         "echo_req": {
             "description": "Echo of the request made.",

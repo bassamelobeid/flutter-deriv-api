@@ -26,6 +26,14 @@
                         "sell"
                     ]
                 },
+                "account_currency": {
+                    "description": "Currency for this offer.",
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$",
+                    "examples": [
+                        "USD"
+                    ]
+                },
                 "agent_id": {
                     "description": "The agent's unique identifier.",
                     "type": "string"
@@ -34,17 +42,53 @@
                     "description": "The agent's displayed name.",
                     "type": "string"
                 },
-                "currency": {
-                    "description": "Local currency for this offer.",
+                "amount": {
+                    "description": "The amount of the offer.",
                     "type": "string"
                 },
-                "max": {
-                    "description": "Maximum amount, in local currency.",
-                    "type": "number"
+                "amount_used": {
+                    "description": "The used amount of the offer's total `amount`. It is only visible for agents.",
+                    "type": "string"
                 },
-                "min": {
+                "country": {
+                    "description": "The target country code of the offer.",
+                    "type": "string",
+                    "pattern": "^[a-z]{0,2}$"
+                },
+                "created_time": {
+                    "description": "The offer creation time in epoch.",
+                    "type": "integer"
+                },
+                "is_active": {
+                    "description": "The activation status of the offer.",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                "local_currency": {
+                    "description": "Local currency for this offer.",
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$",
+                    "examples": [
+                        "USD"
+                    ]
+                },
+                "max_amount": {
+                    "description": "Maximum amount, in local currency.",
+                    "type": "string"
+                },
+                "method": {
+                    "description": "The payment method.",
+                    "type": "string",
+                    "enum": [
+                        "bank_transfer"
+                    ]
+                },
+                "min_amount": {
                     "description": "Minimum amount, in local currency.",
-                    "type": "number"
+                    "type": "string"
                 },
                 "offer_id": {
                     "description": "The unique identifier for this offer.",
@@ -52,7 +96,7 @@
                 },
                 "price": {
                     "description": "Cost in local currency.",
-                    "type": "number"
+                    "type": "string"
                 }
             }
         },

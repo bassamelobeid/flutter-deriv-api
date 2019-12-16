@@ -17,7 +17,7 @@
             ]
         },
         "agent_id": {
-            "description": "The unique identifier for this agent. If not provided, returns agent information about the current account.",
+            "description": "[Optional] The unique identifier for this agent. If not provided, returns agent information about the current account.",
             "type": "string",
             "pattern": "^[0-9]+$"
         },

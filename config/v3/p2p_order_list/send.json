@@ -17,7 +17,7 @@
             ]
         },
         "active": {
-            "description": "Should be 1 to list active, 0 to list inactive (historical).",
+            "description": "[Optional] Should be 1 to list active, 0 to list inactive (historical).",
             "type": "number",
             "default": 1,
             "enum": [
@@ -26,7 +26,7 @@
             ]
         },
         "offer_id": {
-            "description": "If present, lists orders applying to a specific offer.",
+            "description": "[Optional] If present, lists orders applying to a specific offer.",
             "type": "string"
         },
         "passthrough": {

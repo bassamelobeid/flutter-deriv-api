@@ -11,7 +11,44 @@
         "p2p_agent_info": {
             "title": "p2p_agent_info",
             "description": "P2P agent info",
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "description": "The agent's identification number.",
+                    "type": "string"
+                },
+                "agent_name": {
+                    "description": "The agent's displayed name.",
+                    "type": "string"
+                },
+                "client_loginid": {
+                    "description": "The loginid of the agent.",
+                    "type": "string",
+                    "examples": [
+                        "CR12345"
+                    ]
+                },
+                "created_time": {
+                    "description": "The epoch time that the client became an agent.",
+                    "type": "integer"
+                },
+                "is_active": {
+                    "description": "The activation status of the agent.",
+                    "type": "number",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                "is_authenticated": {
+                    "description": "The authentication status of the agent.",
+                    "type": "number",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                }
+            }
         },
         "echo_req": {
             "description": "Echo of the request made.",
