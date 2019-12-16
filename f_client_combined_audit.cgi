@@ -174,39 +174,6 @@ foreach my $table (
     }
 }
 
-$u_db = $dbic->run(
-    fixup => sub {
-        $_->selectall_hashref(
-            "SELECT * FROM audit.login_history WHERE client_loginid='$loginid' and stamp between '$startdate'::TIMESTAMP and '$enddate'::TIMESTAMP order by stamp",
-            'stamp'
-        );
-    });
-
-foreach my $stamp (sort keys %{$u_db}) {
-    $u_db->{$stamp}->{client_addr} = revers_ip($u_db->{$stamp}->{client_addr});
-    my $desc = $u_db->{$stamp}->{stamp} . " [login_history audit table] " . join(' ', map { $u_db->{$stamp}->{$_} } qw( client_addr  ));
-    delete $u_db->{$stamp}->{login_action};
-    delete $u_db->{$stamp}->{operation};
-    delete $u_db->{$stamp}->{id};
-    delete $u_db->{$stamp}->{client_loginid};
-    delete $u_db->{$stamp}->{pg_userid};
-    delete $u_db->{$stamp}->{client_port};
-    delete $u_db->{$stamp}->{client_addr};
-    delete $u_db->{$stamp}->{stamp};
-    delete $u_db->{$stamp}->{login_date};
-
-    foreach my $key (keys %{$u_db->{$stamp}}) {
-        $desc .= " $key  <b>" . $u_db->{$stamp}->{$key} . '</b> ';
-    }
-    my $color = ($u_db->{$stamp}->{login_successful}) ? 'green' : 'orange';
-    push @audit_entries,
-        {
-        timestring  => $stamp,
-        description => "$desc",
-        color       => $color
-        };
-}
-
 #add desk.com entries
 push @audit_entries, _get_desk_com_entries($loginid, $startdate, $enddate);
 push @audit_entries, _get_desk_com_entries($loginid, $startdate, $enddate, 'deleted');
