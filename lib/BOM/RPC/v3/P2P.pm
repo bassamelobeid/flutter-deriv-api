@@ -24,6 +24,8 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::User;
+use ExchangeRates::CurrencyConverter qw(convert_currency);
+use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -56,6 +58,8 @@ our %ERROR_MAP = do {
         RestrictedCountry    => localize('This country is not enabled for P2P cashier functionality'),
         RestrictedCurrency   => localize('This currency is not enabled for P2P cashier functionality'),
         UnavailableOnVirtual => localize('P2P cashier functionality is not available on demo accounts'),
+        NoCountry            => localize('You need to set your residence in order to use this feature'),
+        NoLocalCurrency      => localize('We are unable to determine the local currency for your country'),
         # Client status
         NotLoggedIn      => localize('You are not logged in'),
         NoCurrency       => localize('You have not yet selected a currency for your account'),
@@ -81,10 +85,9 @@ our %ERROR_MAP = do {
         OfferMaxExceeded      => localize('The maximum limit of active offers reached.'),
         InvalidOfferCurrency  => localize('Invalid offer currency'),
         OrderNotFound         => localize('Order not found'),
-        OrderAlreadyExists    => localize(
-            'You have reached the limit of active orders on this account, please cancel or complete existing orders, or wait for them to expire'),
-        InvalidOfferOwn     => localize('You cannot create an order for your own offer.'),
-        InvalidOfferExpired => localize('The offer has expired.'),
+        OrderAlreadyExists    => localize('Too many orders. Please complete your pending orders.'),
+        InvalidOfferOwn       => localize('You cannot create an order for your own offer.'),
+        InvalidOfferExpired   => localize('The offer has expired.'),
         # DB errors
         BI225 => localize('Offer not found'),
         BI226 => localize('Cannot create order for your own offer'),
@@ -193,6 +196,7 @@ sub p2p_rpc {
                         message_to_client => localize($message)}                     #
                 );
             } else {
+                warn $err;
                 # This indicates a bug in the code.
                 $log->warnf("Unexpected error in P2P %s: %s, please report as a bug to backend", $method, $err);
                 stats_inc($p2p_prefix . '.error', {tags => ['error_code:unknown']});
@@ -290,10 +294,23 @@ Returns a hashref containing the following information:
 p2p_rpc p2p_agent_info => sub {
     my (%args) = @_;
     my $client = $args{client};
+    my $agent;
+
     if (exists $args{params}{args}{agent_id}) {
-        return $client->p2p_agent_list(id => $args{params}{args}{agent_id})->[0] // die "AgentNotFound\n";
+        $agent = $client->p2p_agent_list(id => $args{params}{args}{agent_id})->[0] // die "AgentNotFound\n";
+    } else {
+        $agent = $client->p2p_agent // die "AgentNotFound\n";
     }
-    return $client->p2p_agent;
+
+    return +{
+        agent_id         => $agent->{id},
+        agent_name       => $agent->{name},
+        client_loginid   => $agent->{client_loginid},
+        created_time     => Date::Utility->new($_->{created_time})->epoch,
+        is_authenticated => $agent->{is_authenticated},
+        is_active        => $agent->{is_active},
+    };
+
 };
 
 =head2 p2p_offer_create
@@ -332,7 +349,26 @@ above information).
 p2p_rpc p2p_offer_create => sub {
     my (%args) = @_;
     my $client = $args{client};
-    return $client->p2p_offer_create($args{params}{args}->%*);
+    my $offer  = $client->p2p_offer_create($args{params}{args}->%*);
+
+    return +{
+        type             => $offer->{type},
+        account_currency => $offer->{account_currency},
+        description      => $offer->{description},
+        agent_id         => $offer->{agent_id},
+        agent_name       => $offer->{agent_name},
+        amount           => formatnumber('price', $offer->{account_currency}, $offer->{amount}),
+        amount_used      => formatnumber('price', $offer->{account_currency}, $offer->{amount} - $offer->{remaining}),
+        country          => $offer->{country},
+        created_time     => Date::Utility->new($_->{created_time})->epoch,
+        is_active        => $offer->{is_active},
+        local_currency   => $offer->{local_currency},
+        max_amount       => formatnumber('price', $offer->{account_currency}, $offer->{max_amount}),
+        method           => $offer->{method},
+        min_amount       => formatnumber('price', $offer->{account_currency}, $offer->{min_amount}),
+        offer_id         => $offer->{id},
+        price            => formatnumber('price', $offer->{local_currency}, $offer->{price}),
+    };
 };
 
 =head2 p2p_offer_info
@@ -467,7 +503,31 @@ p2p_rpc p2p_offer_list => sub {
     my %args = @_;
 
     my $client = $args{client};
-    return {list => $client->p2p_offer_list($args{params}{args}->%*)};
+
+    my $list   = $client->p2p_offer_list($args{params}{args}->%*);
+    my @offers = map {
+        my $offer = $_;
+        +{
+            type             => $offer->{type},
+            account_currency => $offer->{account_currency},
+            description      => $offer->{description},
+            agent_id         => $offer->{agent_id},
+            agent_name       => $offer->{agent_name},
+            amount           => formatnumber('price', $offer->{account_currency}, $offer->{amount}),
+            amount_used      => formatnumber('price', $offer->{account_currency}, $offer->{amount} - $offer->{remaining}),
+            country          => $offer->{country},
+            created_time     => Date::Utility->new($_->{created_time})->epoch,
+            is_active        => $offer->{is_active},
+            local_currency   => $offer->{local_currency},
+            max_amount       => formatnumber('price', $offer->{account_currency}, $offer->{max_amount}),
+            method           => $offer->{method},
+            min_amount       => formatnumber('price', $offer->{account_currency}, $offer->{min_amount}),
+            offer_id         => $offer->{id},
+            price            => formatnumber('price', $offer->{local_currency}, $offer->{price}),
+            }
+    } @$list;
+
+    return {list => \@offers};
 };
 
 =head2 p2p_offer_edit
@@ -508,14 +568,24 @@ p2p_rpc p2p_order_create => sub {
     my %args = @_;
 
     my $client = $args{client};
-    my $order  = $client->p2p_order_create($args{params}{args}->%*);
+
+    my $offer_id = $args{params}{args}{offer_id};
+    my $order    = $client->p2p_order_create($args{params}{args}->%*);
 
     BOM::Platform::Event::Emitter::emit(p2p_order_created => $order);
-
     return {
-        order_id => $order->{id},
-        type     => $order->{offer_type},
-        %{$order}{qw(amount created_time status)},
+        type             => $order->{offer_type},
+        account_currency => $order->{offer_account_currency},
+        agent_id         => $order->{agent_id},
+        agent_name       => $order->{agent_name},
+        amount           => formatnumber('price', $order->{offer_account_currency}, $order->{amount}),
+        expiry_time      => Date::Utility->new($_->{expiry_time})->epoch,
+        created_time     => Date::Utility->new($_->{created_time})->epoch,
+        local_currency   => $order->{offer_local_currency},
+        offer_id         => $offer_id,
+        order_id         => $order->{id},
+        price            => formatnumber('price', $order->{offer_local_currency}, $order->{offer_price} * $order->{amount}),
+        status           => $order->{status},
     };
 };
 
@@ -544,7 +614,28 @@ p2p_rpc p2p_order_list => sub {
 
     my $client = $args{client};
 
-    return {list => $client->p2p_order_list(%{$args{params}}{grep { exists $args{params}{$_} } qw(status agent_id offer_id)},)};
+    my $list = $client->p2p_order_list(%{$args{params}{args}}{grep { exists $args{params}{args}{$_} } qw(status agent_id offer_id)});
+
+    my @orders = map {
+        my $order = $_;
+        +{
+            type             => $order->{offer_type},
+            account_currency => $order->{offer_account_currency},
+            agent_id         => $order->{agent_id},
+            agent_name       => $order->{agent_name},
+            amount           => formatnumber('price', $order->{offer_account_currency}, $order->{amount}),
+            expiry_time      => Date::Utility->new($_->{expiry_time})->epoch,
+            created_time     => Date::Utility->new($_->{created_time})->epoch,
+            local_currency   => $order->{offer_local_currency},
+            offer_id         => $order->{offer_id},
+            order_id         => $order->{id},
+            price            => formatnumber('price', $order->{offer_local_currency}, $order->{offer_price} * $order->{amount}),
+            status           => $order->{status},
+            }
+
+    } @{$list};
+
+    return {list => \@orders};
 };
 
 =head2 p2p_order_info
@@ -566,7 +657,22 @@ p2p_rpc p2p_order_info => sub {
 
     my ($client, $params) = @args{qw/client params/};
 
-    return $client->p2p_order($params->{args}{order_id});
+    my $order = $client->p2p_order($params->{args}{order_id});
+
+    return {
+        type             => $order->{offer_type},
+        account_currency => $order->{offer_account_currency},
+        agent_id         => $order->{agent_id},
+        agent_name       => $order->{agent_name},
+        amount           => formatnumber('price', $order->{offer_account_currency}, $order->{amount}),
+        expiry_time      => Date::Utility->new($_->{expiry_time})->epoch,
+        created_time     => Date::Utility->new($_->{created_time})->epoch,
+        local_currency   => $order->{offer_local_currency},
+        offer_id         => $order->{offer_id},
+        order_id         => $order->{id},
+        price            => formatnumber('price', $order->{offer_local_currency}, $order->{offer_price} * $order->{amount}),
+        status           => $order->{status},
+    };
 };
 
 =head2 p2p_order_confirm
@@ -588,13 +694,18 @@ p2p_rpc p2p_order_confirm => sub {
 
     my ($client, $params) = @args{qw/client params/};
 
+    my $order_id = $params->{args}{order_id};
+
     my $order = $client->p2p_order_confirm(
         id     => $params->{args}{order_id},
         source => $params->{source});
 
     BOM::Platform::Event::Emitter::emit(p2p_order_updated => $order);
 
-    return $order;
+    return {
+        order_id => $order_id,
+        status   => $order->{status},
+    };
 };
 
 =head2 p2p_order_cancel
@@ -616,13 +727,18 @@ p2p_rpc p2p_order_cancel => sub {
 
     my ($client, $params) = @args{qw/client params/};
 
+    my $order_id = $params->{args}{order_id};
+
     my $order = $client->p2p_order_cancel(
-        id     => $params->{args}{order_id},
+        id     => $order_id,
         source => $params->{source});
 
     BOM::Platform::Event::Emitter::emit(p2p_order_updated => $order);
 
-    return $order;
+    return {
+        order_id => $order_id,
+        status   => $order->{status},
+    };
 };
 
 =head2 p2p_order_chat
