@@ -65,7 +65,7 @@ sub create_client {
         last_name          => '',
         myaffiliates_token => '',
         email              => $email,
-        residence          => 'ID',
+        residence          => 'id',
         address_line_1     => '',
         address_line_2     => '',
         address_city       => '',
@@ -178,7 +178,7 @@ $agent->p2p_agent_update(
 $agent->save;
 $log->infof('Maximum configured is %s', BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer);
 $agent->p2p_offer_create(
-    currency => 'USD',
+    account_currency => 'USD',
     local_currency => 'IDR',
     amount => 100,
     price => 14500,
@@ -188,10 +188,10 @@ $agent->p2p_offer_create(
     max_amount => 100,
     method => 'bank_transfer',
     description => 'Please contact via whatsapp 1234',
-    country => 'ID',
+    country => 'id',
 );
 $agent->p2p_offer_create(
-    currency => 'USD',
+    account_currency => 'USD',
     local_currency => 'IDR',
     amount => 100,
     price => 13500,
@@ -201,5 +201,5 @@ $agent->p2p_offer_create(
     max_amount => 100,
     method => 'bank_transfer',
     description => 'Please contact via whatsapp 1234',
-    country => 'ID',
+    country => 'id',
 );

@@ -57,22 +57,15 @@ sub create_client {
 sub create_offer {
     my %param = @_;
 
-    my $amount      = $param{amount}      // 100;
-    my $description = $param{description} // 'Test offer';
-    my $type        = $param{type}        // 'buy';
-    my $currency    = $param{currency}    // 'USD';
-    my $expiry      = $param{expiry}      // 30;
+    $param{amount}           //= 100;
+    $param{description}      //= 'Test offer';
+    $param{type}             //= 'buy';
+    $param{account_currency} //= 'USD';
+    $param{price}            //= 1;
 
-    my $agent = create_agent(balance => $amount);
+    my $agent = create_agent(balance => $param{amount});
 
-    my $offer = $agent->p2p_offer_create(
-        amount      => $amount,
-        price       => $amount,
-        description => $description,
-        type        => $type,
-        currency    => $currency,
-        expiry      => $expiry
-    );
+    my $offer = $agent->p2p_offer_create(%param);
 
     return $agent, $offer;
 }
@@ -82,6 +75,7 @@ sub create_order {
 
     my $offer_id = $param{offer_id} || croak 'offer_id is required';
     my $amount      = $param{amount}      // 100;
+    my $expiry      = $param{expiry}      // 7200;
     my $description = $param{description} // 'Test order';
 
     my $client = create_client();
@@ -89,6 +83,7 @@ sub create_order {
     my $order = $client->p2p_order_create(
         offer_id    => $offer_id,
         amount      => $amount,
+        expiry      => $expiry,
         description => $description
     );
 
