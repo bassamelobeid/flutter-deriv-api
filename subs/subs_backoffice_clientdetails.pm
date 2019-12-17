@@ -293,6 +293,7 @@ sub print_client_details {
         onfido_check_result                => $onfido_check->{result},
         onfido_check_url                   => $onfido_check->{results_uri} // '',
         onfido_resubmission                => $onfido_allow_resubmission_flag,
+        is_client_in_onfido_country        => is_client_in_onfido_country($client) // 1,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
@@ -880,6 +881,15 @@ sub check_client_login_id {
     my ($loginid) = @_;
 
     return ($loginid =~ m/[A-Z]{2,4}[\d]{4,10}$/) ? 1 : 0;
+}
+
+sub is_client_in_onfido_country {
+    my $client         = shift;
+    my $country        = uc($client->place_of_birth // $client->residence);
+    my $countries_list = BOM::Config::RedisReplicated::redis_events()->get('ONFIDO_SUPPORTED_COUNTRIES');
+    return undef unless $countries_list;
+    $countries_list = decode_json_utf8($countries_list);
+    return ($countries_list->{uc $country} // 0);
 }
 
 1;
