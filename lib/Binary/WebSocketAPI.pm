@@ -233,7 +233,7 @@ sub startup {
         $action_options->{schema_send} = $schema_send;
         $action_options->{stash_params} ||= [];
         push @{$action_options->{stash_params}}, qw( language country_code );
-        push @{$action_options->{stash_params}}, 'token' if $action_options->{require_auth};
+        push @{$action_options->{stash_params}}, 'token' if $schema_send->{auth_required};
 
         $WS_ACTIONS->{$action_name} = $action_options;
     }

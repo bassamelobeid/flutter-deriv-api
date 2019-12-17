@@ -4,6 +4,10 @@
     "description": "List active orders.",
     "hidden": 1,
     "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "payments"
+    ],
     "additionalProperties": false,
     "required": [
         "p2p_order_list"

@@ -4,6 +4,10 @@
     "description": "Returns available offers for use with `p2p_order_create`.",
     "hidden": true,
     "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "payments"
+    ],
     "additionalProperties": false,
     "required": [
         "p2p_offer_list"
