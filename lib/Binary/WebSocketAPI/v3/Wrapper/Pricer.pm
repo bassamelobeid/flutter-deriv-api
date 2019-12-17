@@ -587,21 +587,26 @@ sub get_pricer_args {
     # use residence when available, fall back to IP country
     $hash{country_code} = $c->stash('residence') || $c->stash('country_code');
     $hash{limit_order} = $cache->{limit_order} if $cache->{limit_order};
-    my $id = $hash{contract_id} . '_' . $hash{landing_company};
 
-    return [_serialized_args(\%hash), $id];
+    return _serialized_args(\%hash);
 }
 
 sub pricing_channel_for_proposal_open_contract {
     my ($c, $args, $cache) = @_;
 
-    my $contract_id = $cache->{contract_id};
-    my $pricer_args = get_pricer_args($c, $cache);
-    my %hash        = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
+    my $contract_id     = $cache->{contract_id};
+    my $landing_company = $c->landing_company_name;
+
+    my $redis_channel = join '::', ('CONTRACT_PRICE', $contract_id, $landing_company);
+    my $pricer_args = _serialized_args({
+        contract_id     => $contract_id,
+        landing_company => $landing_company,
+    });
+
+    my %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
     $hash{account_id}     = delete $cache->{account_id};
     $hash{transaction_id} = $cache->{transaction_ids}->{buy};    # transaction is going to be stored
-    my $subchannel    = _serialized_args(\%hash);
-    my $redis_channel = 'CONTRACT_PRICE::' . $contract_id . '_' . $c->landing_company_name;
+    my $subchannel = _serialized_args(\%hash);
 
     return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, 'ProposalOpenContract', $cache);
 }
