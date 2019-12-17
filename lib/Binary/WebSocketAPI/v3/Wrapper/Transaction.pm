@@ -141,7 +141,8 @@ sub store_contract_params {
     my $default_expiry = 86400;
     if ($contract_params->{expiry_time}) {
         my $contract_expiry = Date::Utility->new($contract_params->{expiry_time});
-        $default_expiry = min($default_expiry, $contract_expiry->epoch - time);
+        # 10 seconds after expiry is to cater for sell transaction delay due to settlement conditions.
+        $default_expiry = min($default_expiry, $contract_expiry->epoch - time + 10);
     }
 
     return $redis->set($contract_param_key, $poc_args, 'EX', $default_expiry);
