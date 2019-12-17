@@ -108,4 +108,12 @@ sub app_markup_per_unit {
     return $self->pricing_engine->theo_price * $self->app_markup_percentage / 100;
 }
 
+override allowed_slippage => sub {
+    my $self = shift;
+
+    # Commission is calculated base on ask price for non-binary.
+    # We allow price slippage of up to half of our commission charged per contract.
+    return financialrounding('price', $self->currency, $self->commission_per_unit * $self->multiplier * 0.5);
+};
+
 1;

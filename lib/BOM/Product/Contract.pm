@@ -499,9 +499,8 @@ Ratio of slippage we allow for this contract, where 0.01 is 1%.
 sub allowed_slippage {
     my $self = shift;
 
-    # our commission for volatility indices is 1.5% so we can't let it slipped more than that.
-    return 0.002 if $self->market->name eq 'synthetic_index';
-    return 0.0175;
+    # allowed_slippage for binary is in probability space, 0.01 = 1%
+    return $self->base_commission * 0.5;
 }
 
 # INTERNAL METHODS
@@ -1503,6 +1502,12 @@ sub to_relative_barrier {
     $barrier = $underlying->pipsized_value($barrier) =~ s/[+.]//gr;
 
     return "S${barrier}P";
+}
+
+sub is_non_zero_payout {
+    my $self = shift;
+
+    return $self->payout == 0 ? 0 : 1;
 }
 
 my $underlyings;
