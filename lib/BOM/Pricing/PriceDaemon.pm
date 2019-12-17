@@ -161,8 +161,14 @@ sub run {
 
         my $next = $key->[1];
         next unless $next =~ s/^PRICER_KEYS:://;
-        my $payload       = decode_json_utf8($next);
-        my $params        = {@{$payload}};
+        my $payload = decode_json_utf8($next);
+        my $params  = {@{$payload}};
+
+        # for proposal open_contract, we will fetch contract data with contract id and landing company.
+        if ($params->{contract_id} and $params->{landing_company}) {
+            $params = $self->_fetch_proposal_open_contract_params($redis, $params->{contract_id}, $params->{landing_company});
+        }
+
         my $contract_type = $params->{contract_type};
 
         # If incomplete or invalid keys somehow got into pricer,
@@ -243,6 +249,17 @@ sub run {
         $tv = $tv_now;
     }
     return undef;
+}
+
+sub _fetch_proposal_open_contract_params {
+    my ($self, $redis, $contract_id, $landing_company) = @_;
+
+    my $params_key      = join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company);
+    my $params          = $redis->get($params_key);
+    my $payload         = decode_json_utf8($params);
+    my $contract_params = {@{$payload}};
+
+    return $contract_params;
 }
 
 sub _get_underlying_or_log {
