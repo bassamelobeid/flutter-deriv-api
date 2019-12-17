@@ -9,11 +9,11 @@ use List::Util qw(min max first any);
 use YAML::XS qw(LoadFile);
 use JSON::MaybeXS;
 
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/financialrounding/;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use BOM::Database::Helper::RejectedTrade;
 use BOM::Platform::Context qw(localize request);
-use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use BOM::Product::ContractFactory qw( produce_contract );
 use Locale::Country::Extra;
 use BOM::Database::ClientDB;
 use Date::Utility;
@@ -208,141 +208,96 @@ sub _validate_currency {
 sub _validate_sell_pricing_adjustment {
     my $self = shift;
 
-    my $contract = $self->transaction->contract;
+    my $transaction = $self->transaction;
+    my $contract    = $transaction->contract;
 
-    if (not defined $self->transaction->price) {
-        $self->transaction->price($contract->bid_price);
+    return Error::Base->cuss(
+        -quiet             => 1,
+        -type              => 'BetExpired',
+        -mesg              => 'Contract expired with a new price',
+        -message_to_client => localize('The contract has expired'),
+    ) if $contract->is_expired;
+
+    if (not defined $transaction->price) {
+        $transaction->price($contract->bid_price);
         return undef;
     }
 
-    if ($contract->is_expired) {
-        return Error::Base->cuss(
-            -quiet             => 1,
-            -type              => 'BetExpired',
-            -mesg              => 'Contract expired with a new price',
-            -message_to_client => localize('The contract has expired'),
-        );
-    }
-
-    my $requested = $contract->is_binary ? $self->transaction->price / $self->transaction->payout : $self->transaction->price;
-    my $amount = $self->transaction->price;
-    # We use is_binary here because we only want to fix slippage issue for non binary without messing up with binary contracts.
-    my $recomputed_amount = $contract->is_binary ? $contract->bid_price : formatnumber('price', $contract->currency, $contract->bid_price);
-    # set the requested price and recomputed  price to be store in db
-    ### TODO: move out from validation
-    $self->transaction->requested_price($amount);
-    $self->transaction->recomputed_price($recomputed_amount);
-    my $recomputed      = $contract->is_binary ? $contract->bid_probability->amount : $recomputed_amount;
-    my $non_binary_move = ($requested == 0)    ? $recomputed - $requested           : ($recomputed - $requested) / $requested;
-    my $move            = $contract->is_binary ? $recomputed - $requested           : $non_binary_move;
-    my $slippage        = $recomputed_amount - $amount;
-    my $allowed_move    = $contract->allowed_slippage;
-
-    $allowed_move = 0 if $contract->is_binary and $recomputed == 1;
-
-    return if $move == 0;
-
-    my $final_value;
-    if ($allowed_move == 0 or $slippage == 0) {
-        $final_value = $recomputed_amount;
-    } elsif ($move < -$allowed_move) {
-        return $self->_write_to_rejected({
-            type              => 'slippage',
-            action            => 'sell',
-            amount            => $amount,
-            recomputed_amount => $recomputed_amount
-        });
-    } else {
-        if ($move <= $allowed_move and $move >= -$allowed_move) {
-            $final_value = $amount;
-            # We absorbed the price difference here and we want to keep it in our book.
-            $self->transaction->price_slippage($slippage);
-        } elsif ($move > $allowed_move) {
-            $self->transaction->execute_at_better_price(1);
-            # We need to keep record of slippage even it is executed at better price
-            $self->transaction->price_slippage($slippage);
-            $final_value = $recomputed_amount;
-        }
-    }
-
-    $self->transaction->price($final_value);
-
-    return undef;
+    return $self->_validate_binary_price_adjustment('bid_probability') if $contract->is_binary;
+    return $self->_validate_non_binary_price_adjustment();
 }
 
 sub _validate_trade_pricing_adjustment {
     my $self = shift;
 
-    my $amount_type = $self->transaction->amount_type;
-    my $contract    = $self->transaction->contract;
-
-    my $requested = $contract->is_binary ? $self->transaction->price / $self->transaction->payout : $self->transaction->price;
-    # set the requested price and recomputed price to be store in db
-    $self->transaction->requested_price($self->transaction->price);
-    # We use is_binary here because we only want to fix slippage issue for non binary without messing up with binary contracts.
-    my $recomputed_price = $contract->is_binary ? $contract->ask_price : formatnumber('price', $contract->currency, $contract->ask_price);
-    $self->transaction->recomputed_price($recomputed_price);
-    my $recomputed = $contract->is_binary ? $contract->ask_probability->amount : $recomputed_price;
-    my $move         = ($contract->is_binary or ($requested == 0)) ? $requested - $recomputed : ($requested - $recomputed) / $requested;
-    my $slippage     = $self->transaction->price - $recomputed_price;
-    my $allowed_move = $contract->allowed_slippage;
-
-    $allowed_move = 0 if $contract->is_binary and $recomputed == 1;
-
-    # non-binary where $amount_type is multiplier always work in price space.
-    my ($amount, $recomputed_amount) = (
-               $amount_type eq 'payout'
-            or $amount_type eq 'multiplier'
-    ) ? ($self->transaction->price, $recomputed_price) : ($self->transaction->payout, $contract->payout);
-
-    return if $move == 0;
-
-    my $final_value;
+    my $contract = $self->transaction->contract;
 
     return Error::Base->cuss(
-        -quiet             => 1,
         -type              => 'BetExpired',
-        -mesg              => 'Bet expired with a new price[' . $recomputed_amount . '] (old price[' . $amount . '])',
+        -mesg              => 'Bet expired with a new price[' . $self->recomputed_amount . '] (old price[' . $self->amount . '])',
         -message_to_client => localize('The contract has expired'),
     ) if $contract->is_expired;
 
-    if ($allowed_move == 0 or $slippage == 0) {
-        $final_value = $recomputed_amount;
-    } elsif ($move < -$allowed_move) {
-        return $self->_write_to_rejected({
-            type              => 'slippage',
-            action            => 'buy',
-            amount            => $amount,
-            recomputed_amount => $recomputed_amount
-        });
-    } else {
-        if ($move <= $allowed_move and $move >= -$allowed_move) {
-            $final_value = $amount;
-            # We absorbed the price difference here and we want to keep it in our book.
-            $self->transaction->price_slippage($slippage);
-        } elsif ($move > $allowed_move) {
-            $self->transaction->execute_at_better_price(1);
-            # We need to keep record of slippage even it is executed at better price
-            $self->transaction->price_slippage($slippage);
-            $final_value = $recomputed_amount;
-        }
+    return $self->_validate_binary_price_adjustment('ask_probability') if $contract->is_binary;
+    return $self->_validate_non_binary_price_adjustment();
+}
+
+sub _validate_binary_price_adjustment {
+    my ($self, $probability_type) = @_;
+
+    my $transaction = $self->transaction;
+    my $contract    = $transaction->contract;
+    my $move        = $transaction->get_price_move();
+    my $multiplier  = $transaction->request_type eq 'price' ? $contract->payout : $transaction->payout;
+
+    # $allowed_move is in payout currency amount.
+    # $contract->min_commission_amount is in payout currency amount.
+    my $allowed_move = max($contract->min_commission_amount * 0.5, $contract->allowed_slippage * $multiplier);
+
+    $allowed_move = 0 if $contract->$probability_type->amount == 1;
+
+    return $self->_adjust_trade($move, $allowed_move);
+}
+
+sub _validate_non_binary_price_adjustment {
+    my $self = shift;
+
+    # non_binary only deals in price space and not probability space.
+    my $transaction  = $self->transaction;
+    my $move         = $transaction->get_price_move();
+    my $allowed_move = $transaction->contract->allowed_slippage;
+
+    return $self->_adjust_trade($move, $allowed_move);
+}
+
+sub _adjust_trade {
+    my ($self, $move, $allowed_move) = @_;
+
+    my $transaction = $self->transaction;
+    # if we do not allow slippage
+    if ($allowed_move == 0 and $move == 0) {
+        $transaction->adjust_amount($transaction->recomputed_amount);
+        return undef;
     }
 
-    # For non-binary where $amount_type is always equals to multiplier.
-    # We will non need to consider the case where it is 'payout'.
-    if ($amount_type eq 'payout' or $amount_type eq 'multiplier') {
-        $self->transaction->price($final_value);
-    } else {
-        $self->transaction->payout($final_value);
+    if ($move < -$allowed_move) {
+        return $self->_write_to_rejected({
+            type              => 'slippage',
+            action            => $self->transaction->action_type,
+            amount            => $transaction->requested_amount,
+            recomputed_amount => $transaction->recomputed_amount,
+        });
+    }
 
-        # They are all 'payout'-based when they hit the DB.
-        my $new_contract = make_similar_contract(
-            $contract,
-            {
-                amount_type => 'payout',
-                amount      => $final_value,
-            });
-        $self->transaction->contract($new_contract);
+    if ($move <= $allowed_move and $move >= -$allowed_move) {
+        # We absorbed the price difference here and we want to keep it in our book.
+        $transaction->record_slippage($move);
+        $transaction->adjust_amount($transaction->requested_amount);
+    } elsif ($move > $allowed_move) {
+        $transaction->execute_at_better_price(1);
+        # We need to keep record of slippage even it is executed at better price
+        $transaction->record_slippage($move);
+        $transaction->adjust_amount($transaction->recomputed_amount);
     }
 
     return undef;
@@ -361,8 +316,8 @@ sub _slippage {
         . localize(
         'The contract [_4] has changed from [_1][_2] to [_1][_3].',
         $currency,
-        formatnumber('amount', $currency, $p->{amount}),
-        formatnumber('amount', $currency, $p->{recomputed_amount}),
+        financialrounding('amount', $currency, $p->{amount}),
+        financialrounding('amount', $currency, $p->{recomputed_amount}),
         $what_changed
         );
 
@@ -528,14 +483,14 @@ sub _validate_iom_withdrawal_limit {
         start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
         exclude    => ['currency_conversion_transfer'],
     });
-    $withdrawal_in_days = formatnumber('amount', 'EUR', convert_currency($withdrawal_in_days, $client->currency, 'EUR'));
+    $withdrawal_in_days = financialrounding('amount', 'EUR', convert_currency($withdrawal_in_days, $client->currency, 'EUR'));
 
     # withdrawal since inception
     my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']});
-    $withdrawal_since_inception = formatnumber('amount', 'EUR', convert_currency($withdrawal_since_inception, $client->currency, 'EUR'));
+    $withdrawal_since_inception = financialrounding('amount', 'EUR', convert_currency($withdrawal_since_inception, $client->currency, 'EUR'));
 
     my $remaining_withdrawal_eur =
-        formatnumber('amount', 'EUR', min(($numdayslimit - $withdrawal_in_days), ($lifetimelimit - $withdrawal_since_inception)));
+        financialrounding('amount', 'EUR', min(($numdayslimit - $withdrawal_in_days), ($lifetimelimit - $withdrawal_since_inception)));
 
     if ($remaining_withdrawal_eur <= 0) {
         return Error::Base->cuss(
@@ -568,9 +523,9 @@ sub _validate_stake_limit {
             -message_to_client => localize(
                 "This contract's price is [_1][_2]. Contracts purchased from [_3] must have a purchase price above [_1][_4]. Please accordingly increase the contract amount to meet this minimum stake.",
                 $currency,
-                formatnumber('price', $currency, $contract->ask_price),
+                financialrounding('price', $currency, $contract->ask_price),
                 $landing_company->name,
-                formatnumber('amount', $currency, $stake_limit)
+                financialrounding('amount', $currency, $stake_limit)
             ),
         );
     }
@@ -611,7 +566,10 @@ sub _validate_payout_limit {
                 -mesg              => $client->loginid . ' payout [' . $payout . '] over custom limit[' . $custom_limit . ']',
                 -message_to_client => ($custom_limit == 0)
                 ? localize('This contract is unavailable on this account.')
-                : localize('This contract is limited to [_1] payout on this account.', formatnumber('amount', $contract->currency, $custom_limit)),
+                : localize(
+                    'This contract is limited to [_1] payout on this account.',
+                    financialrounding('amount', $contract->currency, $custom_limit)
+                ),
             );
         }
     }
