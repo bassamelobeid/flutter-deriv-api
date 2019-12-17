@@ -9,6 +9,9 @@
                 <% if (grep { $_ eq 'read' } @$scopes) { %>
                 <li><span><%= l('Read user profile') %></span></li>
                 <% } %>
+                <% if (grep { $_ eq 'trading_information' } @$scopes) { %>
+                <li><span><%= l('Trading Information') %></span></li>
+                <% } %>
                 <% if (grep { $_ eq 'trade' } @$scopes) { %>
                 <li><span><%= l('Trading') %></span></li>
                 <% } %>
