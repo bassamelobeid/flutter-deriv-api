@@ -94,12 +94,17 @@ if (0) {
 if (defined $input{run_onfido_check}) {
     my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
     my $applicant_id   = $applicant_data->{id};
-
+    unless ($applicant_id) {
+        print "<p style=\"color:red; font-weight:bold;\">No corresponding onfido applicant id found for client $loginid.</p>";
+        code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+    }
     BOM::Platform::Event::Emitter::emit(
         ready_for_authentication => {
             loginid      => $loginid,
             applicant_id => $applicant_id,
         });
+    print "<p style=\"color:#eeee00; font-weight:bold;\">Onfido trigger request sent.</p><br/>";
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
 }
 
 my $user = $client->user;
