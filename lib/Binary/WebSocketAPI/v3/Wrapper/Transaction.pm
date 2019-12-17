@@ -4,7 +4,7 @@ package Binary::WebSocketAPI::v3::Wrapper::Transaction;
 use strict;
 use warnings;
 
-use List::Util qw(first);
+use List::Util qw(min);
 
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Subscription::Transaction;
@@ -14,6 +14,9 @@ sub buy_get_single_contract {
 
     $store_last_contract_id //= 1;
     my $contract_details = delete $api_response->{contract_details};
+
+    # this is stored for later use in proposal open contract or sell transaction
+    store_contract_params($c, _get_poc_params($contract_details));
 
     $req_storage->{uuid} = _subscribe_to_contract($c, $contract_details, $req_storage->{call_params}->{args})
         if $req_storage->{call_params}->{args}->{subscribe};
@@ -91,7 +94,7 @@ sub _get_poc_params {
     my $details = shift;
 
     my %params = map { $_ => $details->{$_} }
-        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode);
+        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode expiry_time);
     $params{limit_order} = $details->{limit_order} if $details->{limit_order};
 
     return \%params;
@@ -119,6 +122,35 @@ sub _subscribe_to_contract {
     );
 
     return $uuid;
+}
+
+sub store_contract_params {
+    my ($c, $contract_params) = @_;
+
+    my $contract_id           = $contract_params->{contract_id};
+    my $landing_company_short = $c->landing_company_name;
+
+    return 0 unless ($contract_id and $landing_company_short);
+
+    my $redis              = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager()->redis;
+    my $contract_param_key = get_param_key($contract_id, $landing_company_short);
+    my $poc_args           = Binary::WebSocketAPI::v3::Wrapper::Pricer::get_pricer_args($c, $contract_params);
+
+    # proposal open contract params is set to expire at 10 second after contract expiration time (if available)
+    # max expiry set at 1 day
+    my $default_expiry = 86400;
+    if ($contract_params->{expiry_time}) {
+        my $contract_expiry = Date::Utility->new($contract_params->{expiry_time});
+        $default_expiry = min($default_expiry, $contract_expiry->epoch - time);
+    }
+
+    return $redis->set($contract_param_key, $poc_args, 'EX', $default_expiry);
+}
+
+sub get_param_key {
+    my ($contract_id, $landing_company_short) = @_;
+
+    return join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company_short);
 }
 
 sub buy_store_last_contract_id {
