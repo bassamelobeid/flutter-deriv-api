@@ -38,7 +38,7 @@ use constant {
     TOKEN_LENGTH    => 15,
 };
 
-my %supported_scopes = map { $_ => 1 } ('read', 'trade', 'payments', 'admin');
+my %supported_scopes = map { $_ => 1 } ('read', 'trading_information', 'trade', 'payments', 'admin');
 
 sub create_token {
     my ($self, $loginid, $display_name, $scopes, $ip) = @_;
