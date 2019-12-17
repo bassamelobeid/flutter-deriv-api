@@ -130,8 +130,7 @@ rpc "buy",
 
     my ($source, $contract_parameters, $args, $payout) = @{$params}{qw/source contract_parameters args payout/};
 
-    my $trading_period_start = $contract_parameters->{trading_period_start};
-    my $purchase_date        = time;                                           # Purchase is considered to have happened at the point of request.
+    my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
 
     $contract_parameters = BOM::Pricing::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $client->landing_company->short;
@@ -162,17 +161,14 @@ rpc "buy",
     }
 
     my $trx = BOM::Transaction->new({
-            client              => $client,
-            contract_parameters => $contract_parameters,
-            price               => ($price || 0),
-            (defined $payout)      ? (payout      => $payout)      : (),
-            (defined $amount_type) ? (amount_type => $amount_type) : (),
-            purchase_date => $purchase_date,
-            source        => $source,
-            (defined $trading_period_start)
-            ? (trading_period_start => $trading_period_start)
-            : (),
-        });
+        client              => $client,
+        contract_parameters => $contract_parameters,
+        price               => ($price || 0),
+        (defined $payout)      ? (payout      => $payout)      : (),
+        (defined $amount_type) ? (amount_type => $amount_type) : (),
+        purchase_date => $purchase_date,
+        source        => $source,
+    });
 
     try {
         if (my $err = $trx->buy) {
