@@ -4,6 +4,10 @@
     "description": "List active orders.",
     "hidden": 1,
     "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "payments"
+    ],
     "additionalProperties": false,
     "required": [
         "p2p_order_list"
@@ -17,7 +21,7 @@
             ]
         },
         "active": {
-            "description": "Should be 1 to list active, 0 to list inactive (historical).",
+            "description": "[Optional] Should be 1 to list active, 0 to list inactive (historical).",
             "type": "number",
             "default": 1,
             "enum": [
@@ -26,7 +30,7 @@
             ]
         },
         "offer_id": {
-            "description": "If present, lists orders applying to a specific offer.",
+            "description": "[Optional] If present, lists orders applying to a specific offer.",
             "type": "string"
         },
         "passthrough": {

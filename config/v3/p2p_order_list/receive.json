@@ -30,6 +30,14 @@
                                     "sell"
                                 ]
                             },
+                            "account_currency": {
+                                "description": "The currency of order.",
+                                "type": "string",
+                                "pattern": "^[A-Z]{3}$",
+                                "examples": [
+                                    "USD"
+                                ]
+                            },
                             "agent_id": {
                                 "description": "The agent's unique identifier.",
                                 "type": "string"
@@ -38,9 +46,25 @@
                                 "description": "The agent's displayed name.",
                                 "type": "string"
                             },
+                            "amount": {
+                                "description": "The amount of the order.",
+                                "type": "string"
+                            },
+                            "created_time": {
+                                "description": "The epoch time of the order creation.",
+                                "type": "integer"
+                            },
+                            "expiry_time": {
+                                "description": "The epoch time in which the order will be expired.",
+                                "type": "integer"
+                            },
                             "local_currency": {
                                 "description": "Local currency for this order.",
-                                "type": "string"
+                                "type": "string",
+                                "pattern": "^[A-Z]{3}$",
+                                "examples": [
+                                    "USD"
+                                ]
                             },
                             "offer_id": {
                                 "description": "The unique identifier for the offer.",
@@ -52,7 +76,7 @@
                             },
                             "price": {
                                 "description": "Cost in local currency.",
-                                "type": "number"
+                                "type": "string"
                             },
                             "status": {
                                 "description": "Current order status.",

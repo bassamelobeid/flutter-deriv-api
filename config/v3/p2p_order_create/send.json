@@ -4,8 +4,13 @@
     "description": "Creates a P2P order.",
     "hidden": 1,
     "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "payments"
+    ],
     "additionalProperties": false,
     "required": [
+        "amount",
         "p2p_order_create"
     ],
     "properties": {
@@ -21,7 +26,7 @@
             "type": "number"
         },
         "offer_id": {
-            "description": "The unique identifier for the offer to create an order against.",
+            "description": "[Optional] The unique identifier for the offer to create an order against.",
             "type": "string",
             "pattern": "^([0-9]+)$"
         },

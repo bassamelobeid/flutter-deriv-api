@@ -4,8 +4,13 @@
     "description": "Retrieves the information about a P2P order.",
     "hidden": 1,
     "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "payments"
+    ],
     "additionalProperties": false,
     "required": [
+        "order_id",
         "p2p_order_info"
     ],
     "properties": {
@@ -17,7 +22,7 @@
             ]
         },
         "order_id": {
-            "description": "Order identification number.",
+            "description": "The unique identifier for the order.",
             "type": "string"
         },
         "passthrough": {

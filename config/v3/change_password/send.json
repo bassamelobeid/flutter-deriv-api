@@ -4,6 +4,10 @@
     "description": "Change Password. Note: This call is only available when authenticated using an OAuth token.",
     "hidden": 1,
     "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "admin"
+    ],
     "additionalProperties": false,
     "required": [
         "change_password",

@@ -12,6 +12,24 @@ use Binary::WebSocketAPI::Actions;
 use constant SCHEMA_PATH => 'config/v3/';
 use constant TARGET_PATH => $ARGV[0] // '/tmp/websockets/';
 
+=head1 NAME
+
+    websocket_api_list.pl
+
+=head1 SYNOPSIS
+
+   cd binary-websocket-api
+   perl script/websocket_api_list.pl
+
+=head1 Description
+
+Exports a yml file with with all the API calls sorted in alphabetical order to be used in creating 
+the list for the API Playground.  L< https://developers.binary.com/api/ >
+It removes any calls from the list that have attribute "hidden" in the root of send.json. 
+Needs to be run from the root of C<binary-websocket-api>.
+
+=cut 
+
 my @hidden_methods;
 
 generate_api_list();
@@ -21,9 +39,9 @@ sub generate_api_list {
     my $json = JSON::MaybeXS->new;
 
     my $actions = Binary::WebSocketAPI::Actions::actions_config();
-    my $methods = {};
-
-    for my $call (@$actions) {
+    my @methods;
+    my @sorted_actions = sort { $a->[0] cmp $b->[0] } @$actions; 
+    for my $call (@sorted_actions) {
         my $method_name = $call->[0];
 
         my $send = $json->decode(path(SCHEMA_PATH, $method_name, 'send.json')->slurp_utf8);
@@ -32,37 +50,25 @@ sub generate_api_list {
             next;
         }
 
-        my $scope = $call->[1]->{require_auth} // 'unauthenticated';
-        $scope = 'mt5_admin' if ($method_name =~ /^mt5_/ && $scope eq 'admin');
 
         my $title = $send->{title} =~ s/ \(request\)$//ir;
 
-        push @{$methods->{$scope}},
+        push @methods,
             {
                 name  => $method_name,
                 title => $title
             };
     }
 
-    $methods->{$_} = [sort { $a->{title} cmp $b->{title} } $methods->{$_}->@*] for keys $methods->%*;
 
-    # Groups in the same order that we want to display
-    my @groups = ('unauthenticated', 'read', 'trade', 'admin', 'payments', 'mt5_admin',);
 
-    my @yml = map { {label => make_label($_), methods => $methods->{$_}} } @groups;
+    my @yml = ({label=> 'All Calls', methods=> \@methods});
 
     $YAML::UseHeader = 0;
     path(TARGET_PATH, '_data')->mkpath;
     DumpFile(path(TARGET_PATH, '_data', 'v3.yml'), {groups => [@yml]});
 }
 
-sub make_label {
-    my ($group) = @_;
-    return
-          $group eq 'unauthenticated' ? "Unauthenticated Calls"
-        : $group eq 'mt5_admin'       ? "MT5-related Calls: 'admin' scope"
-        :                               "Authenticated Calls: '$group' scope";
-}
 
 sub remove_hidden_methods {
     path(TARGET_PATH, 'config/v3/', $_)->remove_tree for @hidden_methods;
