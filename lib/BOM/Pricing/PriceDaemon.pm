@@ -261,8 +261,6 @@ sub _fetch_proposal_open_contract_params {
     # This will then fail in validation.
     return {} unless $params;
 
-    return {} unless $params =~ s/PRICER_KEYS:://;
-
     # refreshes the expiry to remaining TTL + 10 seconds
     my $new_ttl = $redis->ttl($params_key) + 10;
     $redis->expire($params_key, $new_ttl);
