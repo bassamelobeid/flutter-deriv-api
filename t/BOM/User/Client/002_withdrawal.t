@@ -92,9 +92,6 @@ my %withdrawal_eur = (%withdrawal, currency => 'EUR');
 my %deposit_btc    = (%deposit,    currency => 'BTC');
 my %withdrawal_btc = (%withdrawal, currency => 'BTC');
 
-my %deposit_bch    = (%deposit,    currency => 'BCH');
-my %withdrawal_bch = (%withdrawal, currency => 'BCH');
-
 my %deposit_ltc    = (%deposit,    currency => 'LTC');
 my %withdrawal_ltc = (%withdrawal, currency => 'LTC');
 
@@ -138,7 +135,7 @@ subtest "withdraw vs Balance" => sub {
 
 # Test for CR withdrawal limits
 subtest 'CR withdrawal' => sub {
-    plan tests => 7;
+    plan tests => 6;
 
     # CR withdrawals in USD
     subtest 'in USD, unauthenticated' => sub {
@@ -199,21 +196,6 @@ subtest 'CR withdrawal' => sub {
         subtest 'perform withdraw' => sub {
             lives_ok { $client->smart_payment(%withdrawal_btc, amount => -0.90909090) } 'first 5k USD withdrawal';
             throws_ok { $client->smart_payment(%withdrawal_btc, amount => -0.91000000) } qr/exceeds withdrawal limit/, 'total withdraw cannot > 10k';
-        };
-    };
-
-    # CR withdrawals in BCH
-    subtest 'in BCH, unauthenticated' => sub {
-        my $client = new_client('BCH');
-        $client->smart_payment(%deposit_bch, amount => 35);
-        throws_ok { $client->validate_payment(%withdrawal_bch, amount => -32) } qr/exceeds withdrawal limit/,
-            'Non-Authed CR withdrawal greater than USD 10K';
-        lives_ok { $client->validate_payment(%withdrawal_bch, amount => -31.25000000) } 'Non-Authed CR withdrawal USD 10K';
-        lives_ok { $client->validate_payment(%withdrawal_bch, amount => -31.24687500) } 'Non-Authed CR withdrawal USD 9999';
-
-        subtest 'perform withdraw' => sub {
-            lives_ok { $client->smart_payment(%withdrawal_bch, amount => -15.62500000) } 'first 5k USD withdrawal';
-            throws_ok { $client->smart_payment(%withdrawal_bch, amount => -15.62812500) } qr/exceeds withdrawal limit/, 'total withdraw cannot > 10k';
         };
     };
 
