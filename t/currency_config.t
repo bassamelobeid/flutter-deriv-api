@@ -107,7 +107,6 @@ subtest 'transfer_between_accounts_lower_bounds old' => sub {
         GBP => 1.5,
         JPY => 0.01,
         BTC => 5000,
-        BCH => 300,
         LTC => 50,
         ETH => 500,
         UST => 1,
@@ -153,7 +152,6 @@ subtest 'transfer_between_accounts_lower_bounds old' => sub {
 
     $min_by_cyrrency = {};
     my $expected_min = {
-        'BCH' => '0.00100000',
         'BTC' => '0.00100000',
         'USD' => '1.00',
         'AUD' => '1.00',
