@@ -2,6 +2,22 @@ package BOM::Platform::Script::NotifyPub;
 
 use strict;
 use warnings;
+
+=head1 NAME
+
+BOM::Platform::Script::NotifyPub - monitor database transactions and pass notifications through Redis
+
+=head1 DESCRIPTION
+
+This script is a critical part of the system for notifying clients and other parts of the code
+when there's a new transaction.
+
+Since it's handling PostgreSQL C<NOTIFY> events, delays here can cause major performance issues
+in other database queries, so it's essential to B<avoid adding any further code> to this file
+without going through careful design and review.
+
+=cut
+
 use 5.010;
 use YAML::XS;
 use DBI;
@@ -88,27 +104,6 @@ sub _msg {
         qw/id account_id action_type referrer_type financial_market_bet_id
             payment_id amount balance_after transaction_time short_code currency_code purchase_time purchase_price sell_time payment_remark/
     } = split(',', $payload, 15);
-
-    # Buy and subscribe require details of child table for multiplier contract.
-    # fetching the child table here.
-    if ($msg{short_code} and $msg{short_code} =~ /MULTUP|MULTDOWN/) {
-        my $hash_ref = $dbh->selectall_hashref("SELECT * FROM bet.multiplier WHERE financial_market_bet_id=$msg{financial_market_bet_id}",
-            'financial_market_bet_id');
-        my $order = $hash_ref->{$msg{financial_market_bet_id}};
-        my @arr;
-        foreach my $order_name (sort qw(stop_out stop_loss take_profit)) {
-            if ($order->{$order_name . '_order_date'}) {
-                my %hash = (
-                    order_type   => $order_name,
-                    basis_spot   => $order->{basis_spot} + 0,
-                    order_amount => formatnumber('price', $msg{currency_code}, $order->{$order_name . '_order_amount'}),
-                    order_date   => int(Date::Utility->new($order->{$order_name . '_order_date'})->epoch),
-                );
-                push @arr, ($order_name, [map { $_, $hash{$_} } sort keys %hash]);
-            }
-        }
-        $msg{limit_order} = \@arr;
-    }
 
     # measuring the potential delay on transaction notification
 
