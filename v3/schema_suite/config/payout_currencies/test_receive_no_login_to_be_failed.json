@@ -16,7 +16,7 @@
          "minItems" : 6,
          "type" : "array",
          "items" : {
-            "pattern" : "^(AUX|EUR|GBP|AUD|BTC|BCH)$",
+            "pattern" : "^(AUX|EUR|GBP|AUD|BTC)$",
             "type" : "string"
          }
       },
