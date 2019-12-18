@@ -5,6 +5,7 @@ use feature qw(state);
 no indirect;
 
 use Binary::WebSocketAPI::v3::Wrapper::Transaction;
+use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Format::Util::Numbers qw(formatnumber);
 use Future;
 use Log::Any qw($log);
@@ -264,6 +265,13 @@ sub _update_transaction {
     }
 
     $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{sell_time} || $payload->{purchase_time})->epoch;
+
+    # we need to fetch something from CONTRACT_PARAMS for multiplier option because transaction stream only streams short_code
+    if ($payload->{short_code} =~ /^(?:MULTUP|MULTDOWN)/) {
+        my $contract_params =
+            Binary::WebSocketAPI::v3::Wrapper::Pricer::get_contract_params($payload->{financial_market_bet_id}, $c->landing_company_name);
+        $payload->{limit_order} = $contract_params->{limit_order};
+    }
 
     $c->call_rpc({
             args        => $args,

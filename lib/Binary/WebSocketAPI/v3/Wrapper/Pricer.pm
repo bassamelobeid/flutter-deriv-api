@@ -520,6 +520,23 @@ sub _process_proposal_open_contract_response {
     return;
 }
 
+sub get_contract_params_key {
+    my ($contract_id, $landing_company_short) = @_;
+
+    return join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company_short);
+}
+
+sub get_contract_params {
+    my ($contract_id, $landing_company_short) = @_;
+
+    my $key         = get_contract_params_key($contract_id, $landing_company_short);
+    my $redis       = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager()->redis;
+    my $params_json = $redis->get($key);
+
+    return {} unless $params_json;
+    return Encode::decode_utf8($params_json);
+}
+
 sub _serialized_args {
     my $copy = {%{+shift}};
     my $args = shift;
@@ -538,7 +555,10 @@ sub _serialized_args {
     foreach my $k (sort keys %$copy) {
         push @arr, ($k, $copy->{$k});
     }
-    return 'PRICER_KEYS::' . Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
+
+    my $string = Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
+    return 'PRICER_KEYS::' . $string if $args->{with_prefix};
+    return $string;
 }
 
 # This function is for Porposal, ProposalArray and ProposalArrayItem
@@ -574,7 +594,7 @@ sub _pricing_channel_for_proposal {
 }
 
 sub get_pricer_args {
-    my ($c, $cache) = @_;
+    my ($c, $cache, $with_prefix) = @_;
 
     my $price_daemon_cmd = 'bid';
     my %hash;
@@ -589,7 +609,7 @@ sub get_pricer_args {
     $hash{country_code} = $c->stash('residence') || $c->stash('country_code');
     $hash{limit_order} = $cache->{limit_order} if $cache->{limit_order};
 
-    return _serialized_args(\%hash);
+    return _serialized_args(\%hash, {with_prefix => $with_prefix // 1});
 }
 
 sub pricing_channel_for_proposal_open_contract {

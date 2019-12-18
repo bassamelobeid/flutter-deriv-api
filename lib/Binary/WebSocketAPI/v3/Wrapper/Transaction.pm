@@ -125,8 +125,9 @@ sub store_contract_params {
     return 0 unless ($contract_id and $landing_company_short);
 
     my $redis              = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager()->redis;
-    my $contract_param_key = get_param_key($contract_id, $landing_company_short);
-    my $poc_args           = Binary::WebSocketAPI::v3::Wrapper::Pricer::get_pricer_args($c, $contract_params);
+    my $contract_param_key = Binary::WebSocketAPI::v3::Wrapper::Pricer::get_contract_params_key($contract_id, $landing_company_short);
+    my $with_prefix        = 0;
+    my $poc_args           = Binary::WebSocketAPI::v3::Wrapper::Pricer::get_pricer_args($c, $contract_params, $with_prefix);
 
     # proposal open contract params is set to expire at 10 second after contract expiration time (if available)
     # max expiry set at 1 day
@@ -138,12 +139,6 @@ sub store_contract_params {
     }
 
     return $redis->set($contract_param_key, $poc_args, 'EX', $default_expiry);
-}
-
-sub get_param_key {
-    my ($contract_id, $landing_company_short) = @_;
-
-    return join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company_short);
 }
 
 sub buy_store_last_contract_id {
