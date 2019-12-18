@@ -8,6 +8,7 @@ use List::Util qw(min);
 
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Subscription::Transaction;
+use Binary::WebSocketAPI::v3::Subscription::Pricer;
 
 sub buy_get_single_contract {
     my ($c, $api_response, $req_storage, $store_last_contract_id) = @_;

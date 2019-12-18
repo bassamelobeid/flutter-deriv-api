@@ -26,6 +26,7 @@ use Variable::Disposition ();
 
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Transaction;
+use Binary::WebSocketAPI::v3::Subscription::Pricer;
 use Binary::WebSocketAPI::v3::Subscription::Pricer::Proposal;
 use Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalOpenContract;
 use Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalArray;
@@ -664,6 +665,11 @@ sub _create_pricer_channel {
 sub send_proposal_open_contract_last_time {
     my ($c, $args, $contract_id, $stash_data) = @_;
     Binary::WebSocketAPI::v3::Subscription->unregister_by_uuid($c, $args->{uuid});
+
+    # delete CONTRACT_PARAMS in redis on sell
+    my $redis = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager()->redis;
+    my $params_key = join '::', ('CONTRACT_PARAMS', $contract_id, $c->landing_company_name);
+    $redis->del($params_key);
 
     $c->call_rpc({
             args        => $stash_data,
