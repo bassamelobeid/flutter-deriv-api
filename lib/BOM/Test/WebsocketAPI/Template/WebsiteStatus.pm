@@ -52,9 +52,6 @@ rpc_response {
         },
         clients_country => 'aq',
         crypto_config   => {
-            BCH => {
-                minimum_withdrawal => 0.021,
-            },
             BTC => {
                 minimum_withdrawal => 0.003,
             },
@@ -82,7 +79,6 @@ rpc_response {
                 stake_default             => 10,
                 transfer_between_accounts => {
                     fees => {
-                        BCH => 1.0,
                         BTC => 1.0,
                         ETH => 1.0,
                         EUR => 1.0,
@@ -97,24 +93,6 @@ rpc_response {
                     },
                 },
                 type => 'fiat',
-            },
-            BCH => {
-                fractional_digits         => 8,
-                is_suspended              => 0,
-                name                      => 'Bitcoin Cash',
-                stake_default             => 0.03,
-                transfer_between_accounts => {
-                    fees => {
-                        AUD => 1.0,
-                        EUR => 1.0,
-                        GBP => 1.0,
-                        USD => 1.0,
-                    },
-                    limits => {
-                        min => 0.002,
-                    },
-                },
-                type => 'crypto',
             },
             BTC => {
                 fractional_digits         => 8,
@@ -160,7 +138,6 @@ rpc_response {
                 transfer_between_accounts => {
                     fees => {
                         AUD => 1.0,
-                        BCH => 1.0,
                         BTC => 1.0,
                         ETH => 1.0,
                         GBP => 1.0,
@@ -183,7 +160,6 @@ rpc_response {
                 transfer_between_accounts => {
                     fees => {
                         AUD => 1.0,
-                        BCH => 1.0,
                         BTC => 1.0,
                         ETH => 1.0,
                         EUR => 1.0,
@@ -260,7 +236,6 @@ rpc_response {
                 transfer_between_accounts => {
                     fees => {
                         AUD => 1.0,
-                        BCH => 1.0,
                         BTC => 1.0,
                         ETH => 1.0,
                         EUR => 1.0,

@@ -8,6 +8,7 @@ use LandingCompany::Registry;
 use Exporter qw( import );
 our @EXPORT_OK = qw( populate_exchange_rates populate_exchange_rates_db);
 # Subroutine for populating exchange rates for tests
+
 my %all_currencies_rates =
     map { $_ => 1 } LandingCompany::Registry::all_currencies();
 my $rates = \%all_currencies_rates;
