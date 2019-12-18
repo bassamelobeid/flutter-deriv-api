@@ -13,7 +13,6 @@ default_stake:
   AUD: 10
   GBP: 10
   BTC: 0.003
-  BCH: 0.03
   ETH: 0.05
   LTC: 0.25
   UST: 10
@@ -30,7 +29,6 @@ bet_limits:
       AUD: 10000
       GBP: 10000
       BTC: 3
-      BCH: 10
       ETH: 10
       LTC: 50
       DAI: 1000
@@ -43,7 +41,6 @@ bet_limits:
       AUD: 30000
       GBP: 30000
       BTC: 10
-      BCH: 50
       ETH: 50
       LTC: 50
       DAI: 5000
@@ -56,7 +53,6 @@ bet_limits:
     AUD: 200
     GBP: 200
     BTC: 0.05
-    BCH: 0.25
     ETH: 0.5
     LTC: 2.5
     UST: 200
@@ -70,7 +66,6 @@ bet_limits:
         AUD: 50000
         GBP: 50000
         BTC: 5
-        BCH: 5
         ETH: 10
         LTC: 50
         UST: 5000
@@ -84,7 +79,6 @@ bet_limits:
         AUD: 0.5
         GBP: 0.5
         BTC: 0.0002
-        BCH: 0.001
         ETH: 0.002
         LTC: 0.01
         UST: 0.5
@@ -96,7 +90,6 @@ bet_limits:
         AUD: 0.35
         GBP: 0.35
         BTC: 0.0002
-        BCH: 0.001
         ETH: 0.002
         LTC: 0.01
         UST: 0.5
@@ -109,7 +102,6 @@ bet_limits:
         AUD: 5
         GBP: 5
         BTC: 0.002
-        BCH: 0.01
         ETH: 0.02
         LTC: 0.1
         UST: 5
@@ -121,7 +113,6 @@ bet_limits:
     AUD: 0.02
     GBP: 0.02
     BTC: 0.000015
-    BCH: 0.000075
     ETH: 0.00015
     LTC: 0.00075
     UST: 0.02
@@ -159,7 +150,6 @@ lookback_limits:
     AUD: 300
     GBP: 300
     BTC: 3
-    BCH: 3
     ETH: 3
     LTC: 3
     UST: 300
@@ -174,7 +164,6 @@ risk_profile:
           AUD: 0
           GBP: 0
           BTC: 0
-          BCH: 0
           ETH: 0
           LTC: 0
           UST: 0
@@ -186,7 +175,6 @@ risk_profile:
           AUD: 0
           GBP: 0
           BTC: 0
-          BCH: 0
           ETH: 0
           LTC: 0
           UST: 0
@@ -199,7 +187,6 @@ risk_profile:
           AUD: 1000
           GBP: 1000
           BTC: 0.2
-          BCH: 1
           ETH: 2
           LTC: 10
           UST: 1000
@@ -211,7 +198,6 @@ risk_profile:
           AUD: 100
           GBP: 100
           BTC: 0.02
-          BCH: 0.1
           ETH: 0.2
           LTC: 1
           UST: 100
@@ -224,7 +210,6 @@ risk_profile:
           AUD: 5000
           GBP: 5000
           BTC: 1
-          BCH: 5
           ETH: 10
           LTC: 50
           UST: 5000
@@ -236,7 +221,6 @@ risk_profile:
           AUD: 1000
           GBP: 1000
           BTC: 0.2
-          BCH: 1
           ETH: 2
           LTC: 10
           UST: 1000
@@ -249,7 +233,6 @@ risk_profile:
           AUD: 50000
           GBP: 50000
           BTC: 5
-          BCH: 10
           ETH: 50
           LTC: 250
           UST: 50000
@@ -261,7 +244,6 @@ risk_profile:
           AUD: 5000
           GBP: 5000
           BTC: 0.5
-          BCH: 2.5
           ETH: 5
           LTC: 50
           UST: 5000
@@ -274,7 +256,6 @@ risk_profile:
           AUD: 100000
           GBP: 100000
           BTC: 15
-          BCH: 10
           ETH: 50
           LTC: 250
           UST: 100000
@@ -286,7 +267,6 @@ risk_profile:
           AUD: 20000
           GBP: 20000
           BTC: 2.5
-          BCH: 2.5
           ETH: 5
           LTC: 50
           UST: 20000
@@ -299,7 +279,6 @@ risk_profile:
           AUD: 500000
           GBP: 500000
           BTC: 30
-          BCH: 20
           ETH: 100
           LTC: 500
           UST: 500000
@@ -311,7 +290,6 @@ risk_profile:
           AUD: 50000
           GBP: 50000
           BTC: 5
-          BCH: 5
           ETH: 10
           LTC: 50
           UST: 50000

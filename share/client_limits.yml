@@ -4,7 +4,6 @@ maximum_daily_turnover:
   AUD: 500000
   GBP: 500000
   BTC: 10
-  BCH: 100
   ETH: 100
   LTC: 500
   UST: 500000
@@ -17,7 +16,6 @@ max_balance:
     AUD: 1000000
     GBP: 1000000
     BTC: 50
-    BCH: 50
     ETH: 200
     LTC: 1000
     UST: 1000000
@@ -29,7 +27,6 @@ max_balance:
     AUD: 300000
     GBP: 300000
     BTC: 50
-    BCH: 100
     ETH: 100
     LTC: 500
     UST: 300000
@@ -41,7 +38,6 @@ max_payout_open_positions:
     AUD: 50000
     GBP: 50000
     BTC: 1
-    BCH: 10
     ETH: 10
     LTC: 50
     UST: 50000

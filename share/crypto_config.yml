@@ -26,20 +26,6 @@ LTC:
     blockchain_url:
         address: https://live.blockcypher.com/ltc/address/
         transaction: https://live.blockcypher.com/ltc/tx/
-BCH:
-    withdrawal:
-        timeout: "3d"
-        min_usd: 5
-        fee_limit_usd: 2
-    confirmation:
-        required_confirmations: 3
-    subscription:
-        rpc_timeout: 100
-    protocol_cost: 0
-    decimal_places: 8
-    blockchain_url:
-        address: https://blockchair.com/bitcoin-cash/address/
-        transaction: https://blockchair.com/bitcoin-cash/transaction/
 ETH:
     withdrawal:
         timeout: "5d"
