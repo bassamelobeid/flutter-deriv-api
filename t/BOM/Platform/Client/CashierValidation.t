@@ -429,9 +429,9 @@ subtest 'Calculate to amount and fees' => sub {
 
     subtest 'Crypto to crypto' => sub {
         throws_ok {
-            $helper->(100, 'BTC', 'BCH', 0, 0, 0, 0, 12, $cr_client, $cr_client_2);
+            $helper->(100, 'BTC', 'ETH', 0, 0, 0, 0, 12, $cr_client, $cr_client_2);
         }
-        qr/No transfer fee found for BTC-BCH/, 'Crypto to crypto dies';
+        qr/No transfer fee found for BTC-ETH/, 'Crypto to crypto dies';
     };
 
     $mock_forex->unmock('convert_currency');
