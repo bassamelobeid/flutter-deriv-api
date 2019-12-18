@@ -21,7 +21,7 @@ use Format::Util::Numbers qw( formatnumber );
 
 my ($Alice, $Alice_id, $Bob, $Bob_id, $test, $test_currency, $test_amount, $dry_run, $testargs, $res);
 
-my @crypto_currencies = qw/ BCH BTC ETH LTC /;    ## ETC not enabled for CR landing company
+my @crypto_currencies = qw/ BTC ETH LTC /;    ## ETC not enabled for CR landing company
 my @fiat_currencies   = qw/ AUD EUR GBP USD /;
 
 ## Things hard-coded into Cashier.pm:

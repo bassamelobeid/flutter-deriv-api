@@ -158,7 +158,7 @@ subtest 'Cannot change currency of crypto account' => sub {
     $params->{token} = $token2;
 
     subtest 'Cannot change crypto -> crypto' => sub {
-        $params->{currency} = 'BCH';
+        $params->{currency} = 'BTC';
         $c->call_ok($method, $params)->has_error->error_message_is('Account currency is set to cryptocurrency. Any change is not allowed.',
             'client can\'t change crypto currency account')->error_code_is('CurrencyTypeNotAllowed', 'error code is correct');
     };
