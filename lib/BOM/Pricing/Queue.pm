@@ -1,13 +1,15 @@
 package BOM::Pricing::Queue;
 use strict;
 use warnings;
+use feature 'state';
 no indirect;
 
 use Moo;
 
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
-use Time::HiRes qw(clock_nanosleep CLOCK_REALTIME);
+use Time::HiRes qw(clock_nanosleep clock_gettime CLOCK_REALTIME);
 use LWP::Simple 'get';
+use List::MoreUtils qw(natatime);
 use List::UtilsBy qw(extract_by);
 use JSON::MaybeUTF8 qw(:v1);
 use Log::Any qw($log);
@@ -32,9 +34,6 @@ B<Normal:> every second will read up to 20k pricer keys and
 add them to the pricer queue if the queue is empty. Otherwise
 wait until the next second and try again.
 
-B<Priority:> subscribes to the high priority price channel and adds
-items to the high priority pricer queue as they are received.
-
 =back
 
 =cut
@@ -46,14 +45,6 @@ Main redis client
 =cut
 
 has redis => (is => 'lazy');
-
-=head2 redis_priority
-
-Secondary redis client, only used in priority mode
-
-=cut
-
-has redis_priority => (is => 'lazy');
 
 =head2 internal_ip
 
@@ -67,24 +58,42 @@ has internal_ip => (
         get("http://169.254.169.254/latest/meta-data/local-ipv4") || '127.0.0.1';
     });
 
-=head2 priority
+=head2 pricing_interval
 
-Priority mode, boolean
+Number of seconds for each pricing cycle. Defaults to 1 second, note that this isn't an integer - expect this to be 0.5 or 0.1 in future.
 
 =cut
 
-has priority => (
-    is       => 'ro',
-    required => 1
+has pricing_interval => (
+    is      => 'ro',
+    default => sub { 1 },
 );
 
-sub BUILD {
-    my $self = shift;
+=head2 jobs_key
 
-    $self->_subscribe_priority_queue() if $self->priority;
+String.  Key into which the queue is to
+push pricing jobs
 
-    return undef;
-}
+Defaults to 'pricer_jobs'
+
+=cut
+
+has jobs_key => (
+    is      => 'ro',
+    default => sub { 'pricer_jobs' });
+
+=head2 stat_tags
+
+Tags for stats collection, defaults to ip
+
+=cut
+
+has stat_tags => (
+    is      => 'ro',
+    default => sub {
+        my $self = shift;
+        return +{tags => ['tag:' . $self->internal_ip]};
+    });
 
 sub _build_redis {
     return try {
@@ -98,17 +107,14 @@ sub _build_redis {
     };
 }
 
-# second redis client used for priority queue subscription
-sub _build_redis_priority {
-    return try {
-        my %config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write}->%*;
-        return RedisDB->new(%config);
-    }
-    catch {
-        sleep(3);
-        die 'Cannot connect to redis_pricer for priority queue: ', $_;
-    };
-}
+has _cached_index => (
+    is       => 'ro',
+    init_arg => undef,
+    default  => sub {
+        my $self = shift;
+        +{map { $_ => $self->score_for_channel_name($_) } $self->channels_from_keys};
+    },
+);
 
 sub run {
     my $self = shift;
@@ -121,27 +127,94 @@ sub run {
 sub process {
     my $self = shift;
 
-    return $self->priority ? $self->_process_priority_queue() : $self->_process_price_queue();
+    return $self->_process_price_queue();
 }
 
-=head2 _sleep_to_next_second
+=head2 _prep_for_next_interval
 
-Used to sleep until the next clock second is reached
+Used to sleep until the next pricing interval is reached
 
 =cut
 
-sub _sleep_to_next_second {
-    my $t = Time::HiRes::time();
-    my $sleep = 1 - ($t - int($t));
-    $log->debugf('sleeping at %s for %s secs...', $t, $sleep);
+sub _prep_for_next_interval {
+    my $self = shift;
+
+    my $sleep = $self->time_in_interval;
+    $log->debugf('sleeping for %s secs...', $sleep);
     clock_nanosleep(CLOCK_REALTIME, $sleep * 1_000_000_000);
 
-    return undef;
+    return;
+}
+
+=head2 short_duration
+
+An attribute which contains a hashref of duration units with values
+reflecting the maximum couunt where they are considered short.
+
+Defaults to C<{'t' => 20, 's' => 60}>
+
+=cut
+
+has short_duration => (
+    is      => 'ro',
+    default => sub { +{'t' => 10, 's' => 60} },
+);
+
+=head2 score_for_parameters
+
+Takes a pricing parameters hashref and produces an integer score
+
+=cut
+
+sub score_for_parameters {
+    my ($self, $params) = @_;
+    return 1 unless (ref($params) // '') eq 'HASH';
+    # Indicate it has been touched, even if we make no further adjustments
+    my $score = 1;
+    # Extant contracts first
+    $score *= 101 if ($params->{contract_id});
+    # Real money accounts first
+    $score *= 11 if ($params->{real_money});
+    # Low total time is faster
+    if (my $short_count = $self->short_duration->{$params->{duration_unit} // ''}) {
+        $score *= 7 if ($params->{duration} // 0) <= $short_count;
+    }
+    # Unvalidated is faster
+    $score *= 2 if ($params->{skips_price_validation});
+
+    return $score;
+}
+
+=head2 score_for_channel_name
+
+Convenience method turns a channel name into a set of parameters and
+returns the L<score_for_parameters> thereof
+
+=cut
+
+sub score_for_channel_name {
+    my ($self, $key) = @_;
+    my ($params) = BOM::Pricing::v3::Utility::extract_from_channel_key($key);
+    return $self->score_for_parameters($params);
+}
+
+=head2 tine_in_interval
+
+Returns a floating point number of seconds remaining in the
+current L<pricing_interval>
+
+=cut
+
+sub time_in_interval {
+    my $self = shift;
+    state $i = $self->pricing_interval;
+    my $t = clock_gettime(CLOCK_REALTIME);
+    return $i - ($t - (int($t / $i) * $i));
 }
 
 =head2 _process_price_queue
 
-Processes the normal priority queue
+Processes the queue
 
 =cut
 
@@ -149,46 +222,47 @@ sub _process_price_queue {
     my $self = shift;
 
     $log->trace('processing price_queue...');
-    _sleep_to_next_second();
-    my $overflow = $self->redis->llen('pricer_jobs');
+    $self->_prep_for_next_interval;
+    my $redis    = $self->redis;
+    my $overflow = $self->active_job_count;
+    my $jobs_key = $self->jobs_key;
 
-    # If we didn't manage to process everything within 1s, we'll allow 1s extra - this will cause price update rates to
-    # be halved on the UI.
+    # If we didn't manage to process everything within a single pricing_interval, we'll allow
+    # one extra pricing_interval - this will cause price update rates to be halved on the UI.
     if ($overflow) {
-        $log->debugf('got pricer_jobs overflow: %s', $overflow);
-        _sleep_to_next_second();
+        $log->debugf('Overflow of %d items on queue %s', $overflow, $jobs_key);
+        $self->_prep_for_next_interval;
     }
 
-    # We prepend short_code where possible, so sorting means we should get similar contracts together,
-    # which should help with portfolio table update synchronisation
-    my @keys = sort @{
-        $self->redis->scan_all(
-            MATCH => 'PRICER_KEYS::*',
-            COUNT => 20000
-        )};
+    # The bookkeeping overhead in maintaining a sorted array for the duration
+    # seems like it would dominate doing a fresh sort on each invocation.
+    # Also note that we might possibly price a contract for one extra interval
+    my @channels = $self->channels_from_index;
 
-    # Take note of keys that were not processed since the last second
+    # Take note of keys that were not processed since the last pricing_interval
     # (which may be the same or not as $overflow, depending on how busy
     # the system gets)
-    my $not_processed = $self->redis->llen('pricer_jobs');
-    $log->debugf('got pricer_jobs not processed: %s', $not_processed) if $not_processed;
+    my $not_processed = $self->active_job_count;
+    $log->debugf('got %s not processed: %s', $jobs_key, $not_processed) if $not_processed;
 
-    $log->trace('pricer_jobs queue updating...');
-    $self->redis->del('pricer_jobs');
-    $self->redis->lpush('pricer_jobs', @keys) if @keys;
-    $log->debug('pricer_jobs queue updated.');
+    $log->tracef('%s queue updating...', $jobs_key);
+    $redis->del($jobs_key);
+    $redis->lpush($jobs_key, @channels) if @channels;
+    $log->debug($jobs_key . ' queue updated.');
 
-    stats_gauge('pricer_daemon.queue.overflow',      $overflow,      {tags => ['tag:' . $self->internal_ip]});
-    stats_gauge('pricer_daemon.queue.size',          0 + @keys,      {tags => ['tag:' . $self->internal_ip]});
-    stats_gauge('pricer_daemon.queue.not_processed', $not_processed, {tags => ['tag:' . $self->internal_ip]});
+    my $channel_count = 0 + @channels;
+
+    stats_gauge('pricer_daemon.queue.overflow',      $overflow,      $self->stat_tags);
+    stats_gauge('pricer_daemon.queue.size',          $channel_count, $self->stat_tags);
+    stats_gauge('pricer_daemon.queue.not_processed', $not_processed, $self->stat_tags);
 
     $log->trace('pricer_daemon_queue_stats updating...');
-    $self->redis->set(
+    $redis->set(
         'pricer_daemon_queue_stats',
         encode_json_utf8({
                 overflow      => $overflow,
                 not_processed => $not_processed,
-                size          => 0 + @keys,
+                size          => $channel_count,
                 updated       => Time::HiRes::time(),
             }));
     $log->debug('pricer_daemon_queue_stats updated.');
@@ -196,61 +270,77 @@ sub _process_price_queue {
     # There might be multiple occurrences of the same 'relative shortcode'
     # to achieve higher performance, we count them first, then update the redis
     my %queued;
-    for my $key (@keys) {
-        my $params = {decode_json_utf8($key =~ s/^PRICER_KEYS:://r)->@*};
+    my $cached  = $self->_cached_index;
+    my $compare = {%$cached};
+    for my $channel ($self->channels_from_keys) {
+        my ($params) = BOM::Pricing::v3::Utility::extract_from_channel_key($channel);
         unless (exists $params->{barriers}) {    # exclude proposal_array
             my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode($params);
             $queued{$relative_shortcode}++;
         }
+        # Now ensure our index is up-to-date and that everything gets processed
+        if (not defined(delete $compare->{$channel}) and %$params) {
+            # This is seemingly valid and new to the index:
+            # Queue straightaway and add it to the index with its score
+            $redis->lpush($jobs_key, $channel);
+            $cached->{$channel} = score_for_parameters($params);
+        }
     }
-    $self->redis->hincrby('PRICE_METRICS::QUEUED', $_, $queued{$_}) for keys %queued;
+    $redis->hincrby('PRICE_METRICS::QUEUED', $_, $queued{$_}) for keys %queued;
+    # Anything left in $compare no longer exists amongst the keys
+    delete $cached->{$_} for keys %$compare;
 
     return undef;
 }
 
-=head2 _subscribe_priority_queue
-
-Subscribes to the high priority price channel and sets the handler sub
-
-=cut
-
-sub _subscribe_priority_queue {
+sub active_job_count {
     my $self = shift;
 
-    $log->trace('subscribing to high_priority_prices channel...');
-    $self->redis_priority->subscribe(
-        high_priority_prices => sub {
-            my (undef, $channel, $pattern, $message) = @_;
-            stats_inc('pricer_daemon.priority_queue.recv', {tags => ['tag:' . $self->internal_ip]});
-            $log->debug('received message, updating pricer_jobs_priority: ', {message => $message});
-            $self->redis->lpush('pricer_jobs_priority', $message);
-            $log->debug('pricer_jobs_priority updated.');
-            stats_inc('pricer_daemon.priority_queue.send', {tags => ['tag:' . $self->internal_ip]});
-        });
-
-    return undef;
+    return $self->redis->llen($self->jobs_key) // 0;
 }
 
-=head2 _process_priority_queue
-
-Blocks until a message arrives on the high priority price channel
-
-=cut
-
-sub _process_priority_queue {
+sub channels_from_keys {
     my $self = shift;
 
-    $log->trace('processing priority price_queue...');
-    try {
-        $self->redis_priority->get_reply();
-    }
-    catch {
-        $log->warnf("Caught error on priority queue subscription: %s", $_);
-        # resubscribe if our $redis handle timed out
-        $self->_subscribe_priority_queue() if /not waiting for reply/;
-    };
+    return (
+        sort @{
+            $self->redis->scan_all(
+                MATCH => 'PRICER_KEYS::*',
+                COUNT => 20000
+            ) // []});
+}
 
-    return undef;
+sub channels_from_index {
+    my $self     = shift;
+    my %qi       = %{$self->_cached_index};
+    my @channels = sort { $qi{$b} <=> $qi{$a} } (keys %qi);
+    return @channels;
+}
+
+sub remove {
+    my ($self, @items) = @_;
+
+    my $count = 0;
+    my $redis = $self->redis;
+    for my $item (@items) {
+        $count += 1 if (defined(delete $self->_cached_index->{$item}));
+        $redis->del($item);
+    }
+    return $count;
+}
+
+sub add {
+    my ($self, @items) = @_;
+
+    my $count = 0;
+    my $redis = $self->redis;
+    for my $item (@items) {
+        $self->_cached_index->{$item} = $self->score_for_channel_name($item);
+        $redis->set($item, 1);
+        $count++;
+    }
+
+    return $count;
 }
 
 1;
