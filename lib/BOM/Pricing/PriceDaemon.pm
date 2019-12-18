@@ -254,8 +254,17 @@ sub run {
 sub _fetch_proposal_open_contract_params {
     my ($self, $redis, $contract_id, $landing_company) = @_;
 
-    my $params_key      = join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company);
-    my $params          = $redis->get($params_key);
+    my $params_key = join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company);
+    my $params = $redis->get($params_key);
+
+    # Returns empty hash reference if could not find contract parameters.
+    # This will then fail in validation.
+    return {} unless $params;
+
+    # refreshes the expiry to remaining TTL + 10 seconds
+    my $new_ttl = $redis->ttl($params_key) + 10;
+    $redis->expire($params_key, $new_ttl);
+
     my $payload         = decode_json_utf8($params);
     my $contract_params = {@{$payload}};
 
