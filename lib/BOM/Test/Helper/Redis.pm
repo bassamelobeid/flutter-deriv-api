@@ -5,7 +5,10 @@ use warnings;
 use Exporter 'import';
 use Test::More;
 
-use constant MAX_REDIS_KEYS => 45;
+# Someone should explain how this is determined
+# I am assuming we want to make sure they aren't growing
+# without bound, but the actual bound doesn't matter tremendously
+use constant MAX_REDIS_KEYS => 50;
 
 our @EXPORT_OK = qw( is_within_threshold );
 
