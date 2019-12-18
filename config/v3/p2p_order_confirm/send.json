@@ -4,6 +4,10 @@
     "description": "Confirm a P2P order.",
     "hidden": 1,
     "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "payments"
+    ],
     "additionalProperties": false,
     "required": [
         "order_id",

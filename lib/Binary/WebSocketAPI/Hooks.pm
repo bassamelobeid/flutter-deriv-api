@@ -291,7 +291,9 @@ sub before_forward {
 
     return reached_limit_check($c, $category, $is_real)->then(
         sub {
-            my $error = _validate_schema_error($req_storage->{schema_send}, $args);
+            my $send_schema = $req_storage->{schema_send};
+
+            my $error = _validate_schema_error($send_schema, $args);
             if ($error) {
                 my $message = $c->l('Input validation failed: ') . join(', ', (keys %{$error->{details}}, @{$error->{general}}));
                 return Future->fail($c->new_error($req_storage->{name}, 'InputValidationFailed', $message, $error->{details}));
@@ -312,14 +314,15 @@ sub before_forward {
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$req_storage->{name}"]});
 
             my $loginid = $c->stash('loginid');
-            if ($req_storage->{require_auth} and not $loginid) {
+            if ($send_schema->{auth_required} and not $loginid) {
                 return Future->fail($c->new_error($req_storage->{name}, 'AuthorizationRequired', $c->l('Please log in.')));
             }
 
-            if ($req_storage->{require_auth} and not(grep { $_ eq $req_storage->{require_auth} } @{$c->stash('scopes') || []})) {
+            if ($send_schema->{auth_required} && !_check_auth($c->stash('scopes'), $send_schema->{auth_scopes})) {
                 return Future->fail(
                     $c->new_error(
-                        $req_storage->{name}, 'PermissionDenied', $c->l('Permission denied, requires [_1] scope.', $req_storage->{require_auth})));
+                        $req_storage->{name}, 'PermissionDenied',
+                        $c->l('Permission denied, requires [_1] scope(s).', join(',', $send_schema->{auth_scopes}->@*))));
             }
 
             if ($loginid) {
@@ -332,6 +335,34 @@ sub before_forward {
         sub {
             Future->fail($c->new_error($category, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $category)));
         });
+}
+
+=head2 _check_auth
+
+Description:  Determines if the token provided  allows this action.  
+Takes the following arguments.
+
+=over 4
+
+=item - $scopes, an Array ref of scopes that the current token has access to. 
+
+=item - $auth_required, a array_ref with the scopes the token must match at least one of.
+
+=back
+
+Returns a Boolean 1  if Authorization successful or 0 if not.
+
+=cut
+
+sub _check_auth {
+    my ($scopes, $auth_required) = @_;
+    my %exists = map { $_ => 1 } $auth_required->@*;
+    foreach my $scope (@$scopes) {
+        if (defined($exists{$scope})) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 sub _rpc_suffix {
