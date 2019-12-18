@@ -542,6 +542,7 @@ sub _serialized_args {
     my $args = shift;
     my @arr  = ();
 
+    $args->{with_prefix} //= 1;
     delete $copy->{req_id};
     delete $copy->{language} unless $args->{keep_language};
 
@@ -609,7 +610,7 @@ sub get_pricer_args {
     $hash{country_code} = $c->stash('residence') || $c->stash('country_code');
     $hash{limit_order} = $cache->{limit_order} if $cache->{limit_order};
 
-    return _serialized_args(\%hash, {with_prefix => $with_prefix // 1});
+    return _serialized_args(\%hash, {with_prefix => $with_prefix});
 }
 
 sub pricing_channel_for_proposal_open_contract {
