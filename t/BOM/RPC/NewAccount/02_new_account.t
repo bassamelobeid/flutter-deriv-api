@@ -356,9 +356,9 @@ subtest $method => sub {
             ->error_code_is('CurrencyTypeNotAllowed', 'error code is CurrencyTypeNotAllowed');
 
         # Delete all params except currency. Info from prior account should be used
-        $params->{args} = {'currency' => 'BCH'};
+        $params->{args} = {'currency' => 'BTC'};
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create crypto currency account, reusing info')
-            ->result_value_is(sub { shift->{currency} }, 'BCH', 'crypto account currency is BCH');
+            ->result_value_is(sub { shift->{currency} }, 'BTC', 'crypto account currency is BTC');
 
         sleep 2;
 
@@ -370,17 +370,17 @@ subtest $method => sub {
 
         is $is_authenticated, 1, 'New client is also authenticated';
 
-        my $cl_bch = BOM::User::Client->new({loginid => $loginid});
+        my $cl_btc = BOM::User::Client->new({loginid => $loginid});
 
-        is($cl_bch->financial_assessment(), undef, 'new client has no financial assessment if previous client has none as well');
+        is($cl_btc->financial_assessment(), undef, 'new client has no financial assessment if previous client has none as well');
 
-        is $client_cr->{$_}, $cl_bch->$_, "$_ is correct on created account" for keys %$client_cr;
+        is $client_cr->{$_}, $cl_btc->$_, "$_ is correct on created account" for keys %$client_cr;
 
-        ok(defined($cl_bch->binary_user_id), 'BCH client has a binary user id');
+        ok(defined($cl_btc->binary_user_id), 'BTC client has a binary user id');
         ok(defined($cl_usd->binary_user_id), 'USD client has a binary_user_id');
-        is $cl_bch->binary_user_id, $cl_usd->binary_user_id, 'Both BCH and USD clients have the same binary user id';
+        is $cl_btc->binary_user_id, $cl_usd->binary_user_id, 'Both BTC and USD clients have the same binary user id';
 
-        $params->{args}->{currency} = 'BCH';
+        $params->{args}->{currency} = 'BTC';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error('cannot create another crypto currency account with same currency')
             ->error_code_is('CurrencyTypeNotAllowed', 'error code is CurrencyTypeNotAllowed');
 

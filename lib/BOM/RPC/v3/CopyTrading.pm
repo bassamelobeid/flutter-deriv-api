@@ -43,7 +43,7 @@ rpc copy_start => sub {
     unless (grep { $_ eq 'read' or $_ eq 'trading_information' } @{$token_details->{scopes}}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'PermissionDenied',
-                message_to_client => localize('Permission denied, requires read or trading_information scopes.')});
+                message_to_client => localize('Permission denied, requires read or [_1] scopes.', 'trading_information')});
     }
     unless ($trader->allow_copiers) {
         return BOM::RPC::v3::Utility::create_error({
