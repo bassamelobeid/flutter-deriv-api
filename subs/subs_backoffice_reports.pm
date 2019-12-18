@@ -22,7 +22,7 @@ sub DailyTurnOverReport {
 
     my $initial_note   = '(BUY-SELL represents the company profit)';
     my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-    my %rates          = map { $_ => in_usd(1, $_) } grep { $_ !~ /^(?:ETC|BCH)$/ } @all_currencies;
+    my %rates          = map { $_ => in_usd(1, $_) } grep { $_ !~ /^(?:ETC)$/ } @all_currencies;
 
     my %template = (
         initial_note => $initial_note,
