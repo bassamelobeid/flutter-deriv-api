@@ -4,11 +4,10 @@ package Binary::WebSocketAPI::v3::Wrapper::Transaction;
 use strict;
 use warnings;
 
-use List::Util qw(min);
-
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Subscription::Transaction;
 use Binary::WebSocketAPI::v3::Subscription::Pricer;
+use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 
 sub buy_get_single_contract {
     my ($c, $api_response, $req_storage, $store_last_contract_id) = @_;
@@ -17,7 +16,7 @@ sub buy_get_single_contract {
     my $contract_details = delete $api_response->{contract_details};
 
     # this is stored for later use in proposal open contract or sell transaction
-    store_contract_params($c, _get_poc_params($contract_details));
+    Binary::WebSocketAPI::v3::Wrapper::Pricer::set_contract_params($c, _get_poc_params($contract_details));
 
     $req_storage->{uuid} = _subscribe_to_contract($c, $contract_details, $req_storage->{call_params}->{args})
         if $req_storage->{call_params}->{args}->{subscribe};
@@ -44,7 +43,7 @@ sub contract_update_handler {
     my $new_poc_params = _get_poc_params(delete $api_response->{contract_details});
 
     # if contract params already exists, it overrides it and set a new expiry to the key
-    store_contract_params($c, $new_poc_params);
+    Binary::WebSocketAPI::v3::Wrapper::Pricer::set_contract_params($c, $new_poc_params);
 
     return undef;
 }
@@ -114,31 +113,6 @@ sub _subscribe_to_contract {
     );
 
     return $uuid;
-}
-
-sub store_contract_params {
-    my ($c, $contract_params) = @_;
-
-    my $contract_id           = $contract_params->{contract_id};
-    my $landing_company_short = $c->landing_company_name;
-
-    return 0 unless ($contract_id and $landing_company_short);
-
-    my $redis              = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager()->redis;
-    my $contract_param_key = Binary::WebSocketAPI::v3::Wrapper::Pricer::get_contract_params_key($contract_id, $landing_company_short);
-    my $with_prefix        = 0;
-    my $poc_args           = Binary::WebSocketAPI::v3::Wrapper::Pricer::get_pricer_args($c, $contract_params, $with_prefix);
-
-    # proposal open contract params is set to expire at 10 second after contract expiration time (if available)
-    # max expiry set at 1 day
-    my $default_expiry = 86400;
-    if ($contract_params->{expiry_time}) {
-        my $contract_expiry = Date::Utility->new($contract_params->{expiry_time});
-        # 10 seconds after expiry is to cater for sell transaction delay due to settlement conditions.
-        $default_expiry = min($default_expiry, $contract_expiry->epoch - time + 10);
-    }
-
-    return $redis->set($contract_param_key, $poc_args, 'EX', $default_expiry);
 }
 
 sub buy_store_last_contract_id {
