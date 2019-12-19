@@ -4,6 +4,9 @@
     "description": "Cancel contract with contract id",
     "type": "object",
     "auth_required": 1,
+    "auth_scopes": [
+        "trade"
+    ],
     "additionalProperties": false,
     "required": [
         "cancel"
