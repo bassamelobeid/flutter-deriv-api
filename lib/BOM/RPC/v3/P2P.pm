@@ -238,7 +238,8 @@ p2p_rpc p2p_agent_create => sub {
     my (%args) = @_;
     my $client = $args{client};
     my $name   = $args{params}{args}{name};
-    $client->p2p_agent_create($name);
+    my $agent  = $client->p2p_agent_create($name);
+    BOM::Platform::Event::Emitter::emit(p2p_agent_created => $agent);
     return {status => 'pending'};
 };
 
@@ -571,8 +572,14 @@ p2p_rpc p2p_order_create => sub {
 
     my $offer_id = $args{params}{args}{offer_id};
     my $order    = $client->p2p_order_create($args{params}{args}->%*);
+    $order->{offer_id} = $offer_id;
 
-    BOM::Platform::Event::Emitter::emit(p2p_order_created => $order);
+    BOM::Platform::Event::Emitter::emit(
+        p2p_order_created => {
+            order       => $order,
+            broker_code => $client->broker,
+        });
+
     return {
         type             => $order->{offer_type},
         account_currency => $order->{offer_account_currency},
@@ -700,7 +707,13 @@ p2p_rpc p2p_order_confirm => sub {
         id     => $params->{args}{order_id},
         source => $params->{source});
 
-    BOM::Platform::Event::Emitter::emit(p2p_order_updated => $order);
+    BOM::Platform::Event::Emitter::emit(
+        p2p_order_updated => {
+            order_id    => $order->{id},
+            broker_code => $client->broker,
+            field       => 'status',
+            new_value   => $order->{status},
+        });
 
     return {
         order_id => $order_id,
@@ -733,7 +746,13 @@ p2p_rpc p2p_order_cancel => sub {
         id     => $order_id,
         source => $params->{source});
 
-    BOM::Platform::Event::Emitter::emit(p2p_order_updated => $order);
+    BOM::Platform::Event::Emitter::emit(
+        p2p_order_updated => {
+            order_id    => $order->{id},
+            broker_code => $client->broker,
+            field       => 'status',
+            new_value   => $order->{status},
+        });
 
     return {
         order_id => $order_id,

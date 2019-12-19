@@ -740,7 +740,17 @@ rpc get_account_status => sub {
 
     push @$status, 'document_' . $id_auth_status if $authentication_in_progress;
 
-    push @$status, 'authenticated' if ($client->fully_authenticated);
+    if ($client->fully_authenticated()) {
+        push @$status, 'authenticated';
+        # we send this status as client is already authenticated
+        # so they can view upload more documents if needed
+        push @$status, 'allow_document_upload';
+    } elsif ($client->landing_company->is_authentication_mandatory
+        or ($client->aml_risk_classification // '') eq 'high'
+        or $client->status->allow_document_upload)
+    {
+        push @$status, 'allow_document_upload';
+    }
 
     my $user = $client->user;
 
@@ -802,7 +812,8 @@ sub _get_authentication {
             status                        => "none",
             further_resubmissions_allowed => 0
         },
-        document => {status => "none"}};
+        document => {status => "none"},
+    };
 
     return $authentication_object if $client->is_virtual;
 
@@ -859,8 +870,9 @@ sub _get_authentication {
         $poa_structure->();
 
         $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
+
         $authentication_object;
-    } if $client->fully_authenticated;
+    } if $client->fully_authenticated();
 
     # proof of identity provided
     return do {
@@ -1296,7 +1308,7 @@ rpc set_settings => sub {
 
         $needs_verify_address_trigger = 1;
 
-        if ($current_client->fully_authenticated) {
+        if ($current_client->fully_authenticated()) {
             $cil_message =
                   'Authenticated client ['
                 . $current_client->loginid

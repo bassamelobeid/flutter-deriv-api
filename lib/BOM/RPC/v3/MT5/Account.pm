@@ -310,8 +310,10 @@ async_rpc "mt5_new_account",
             and not $client->status->crs_tin_information);
     }
 
-    return create_error_future('AuthenticateAccount')
-        if ($account_type ne 'demo' and $company_name eq 'labuan' and not $client->fully_authenticated);
+    if ($account_type ne 'demo' and $company_name eq 'labuan' and not $client->fully_authenticated()) {
+        $client->status->set('allow_document_upload', 'system', 'Allow client to document upload');
+        return create_error_future('AuthenticateAccount');
+    }
 
     # Check if client is throttled before sending MT5 request
     if (_throttle($client->loginid)) {
