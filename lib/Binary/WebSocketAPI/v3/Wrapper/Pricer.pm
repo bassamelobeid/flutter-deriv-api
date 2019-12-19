@@ -782,8 +782,7 @@ sub send_proposal_open_contract_last_time {
 
     # delete CONTRACT_PARAMS in redis on sell
     my $redis = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager()->redis;
-    my $params_key = join '::', ('CONTRACT_PARAMS', $contract_id, $c->landing_company_name);
-    $redis->del($params_key);
+    $redis->del(get_contract_params_key($contract_id, $c->landing_company_name));
 
     $c->call_rpc({
             args        => $stash_data,
