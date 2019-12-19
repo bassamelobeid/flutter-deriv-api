@@ -53,23 +53,22 @@ $loop->watch_signal(INT => sub {
 });
 
 $log->infof('Starting P2P polling');
-
 (async sub {
     $log->infof('Starting P2P polling');
     until($shutdown->is_ready) {
+        $app_config->check_for_update;
         for my $cur_db ( @dbs ) {
             # Stop quering db when feature is disabled
             last if $app_config->system->suspend->p2p || !$app_config->payments->p2p->enabled;
-            my $sth = $cur_db->db->dbh->prepare('SELECT id FROM p2p.order_list_expired()');
+            my $sth = $cur_db->db->dbh->prepare('SELECT id, client_loginid FROM p2p.order_list_expired()');
             $sth->execute();
 
             while ( my $order_data = $sth->fetchrow_hashref ) {
                 stats_inc('p2p.order.expired');
                 BOM::Platform::Event::Emitter::emit(
                     p2p_order_expired => {
-                        broker_code => $cur_db->broker_code,
-                        loginid     => $order_data->{client_loginid},
-                        order_id    => $order_data->{id},
+                        client_loginid => $order_data->{client_loginid},
+                        order_id       => $order_data->{id},
                     }
                 );
             }

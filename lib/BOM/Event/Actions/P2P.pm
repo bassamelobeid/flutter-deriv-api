@@ -27,12 +27,16 @@ use BOM::Config::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Event::Emitter;
 use BOM::User::Utility;
+use BOM::Platform::Email qw(send_email);
+use BOM::User::Client;
+use Syntax::Keyword::Try;
 
 #TODO: Put here id for special bom-event application
 # May be better to move it to config rather than keep it here.
 use constant {
-    DEFAULT_SOURCE => 5,
-    DEFAULT_STAFF  => 'AUTOEXPIRY',
+    DEFAULT_SOURCE       => 5,
+    DEFAULT_STAFF        => 'AUTOEXPIRY',
+    AGENT_PROFILE_FIELDS => [qw(agent_loginid name)],
 };
 
 =head2 agent_created
@@ -46,11 +50,25 @@ Currently there's a placeholder email.
 =cut
 
 sub agent_created {
-    BOM::Platform::Event::Emitter::emit(
-        send_email_generic => {
-            to      => 'compliance@binary.com',
-            subject => 'New P2P agent registered',
-        });
+    my $data = shift;
+
+    my $agent = $data->{agent};
+
+    if (!$agent) {
+        $log->info('Fail to process agent_created, agent data was missing', $data);
+        return 0;
+    }
+
+    my $email_to = BOM::Config::Runtime->instance->app_config->payments->p2p->email_to;
+
+    return 1 unless $email_to;
+
+    send_email({
+        from    => '<no-reply@binary.com>',
+        to      => $email_to,
+        subject => 'New P2P agent registered',
+        message => ['New P2P agent registered.', 'Agent information:', map { "$_ : " . ($agent->{$_} // '') } @{AGENT_PROFILE_FIELDS()},],
+    });
 
     return 1;
 }
@@ -88,6 +106,7 @@ changed.
 =cut
 
 sub offer_updated {
+
     return 1;
 }
 
@@ -98,6 +117,27 @@ An order has been created against an offer.
 =cut
 
 sub order_created {
+    my $data = shift;
+
+    if ((grep { !$data->{$_} } qw(broker_code order)) || !$data->{order}{offer_id}) {
+        $log->info('Fail to procces order_created: Invalid event data', $data);
+        return 0;
+    }
+
+    my ($broker_code, $order) = @{$data}{qw(broker_code order)};
+    my $offer_id = $order->{offer_id};
+
+    my $redis = BOM::Config::RedisReplicated->redis_p2p_write();
+    $redis->publish(
+        "P2P::OFFER::NOTIFICATION::${broker_code}::${offer_id}",
+        encode_json_utf8({
+                offer_id   => $offer_id,
+                event      => 'new_order',
+                event_data => $order,
+            }
+        ),
+    );
+
     return 1;
 }
 
@@ -108,66 +148,31 @@ An existing order has been updated. Typically these would be status updates.
 =cut
 
 sub order_updated {
-    return 1;
-}
-
-=head2 order_expired
-
-An order reached our predefined timeout without being confirmed by both sides or
-cancelled by the client.
-
-We'd want to do something here - perhaps just mark the order as expired.
-
-=cut
-
-sub order_expired {
     my $data = shift;
 
-    # If status was changed, handler should return new status
-    state $expiration_handlers_for = {
-        pending            => \&_pending_expiration,
-        'client-confirmed' => \&_pending_expiration,
-        cancelled          => sub { },
-        completed          => sub { },
-        refunded           => sub { },
-        expired            => sub { },
-    };
+    # list of fields which changes we want to notify about.
+    state $should_notify_about = {status => 1};
 
-    $data->{$_} or die "Missing required attribute $_" for qw(broker_code order_id);
+    my @args = qw(broker_code order_id field new_value);
 
-    my ($broker_code, $order_id, $loginid) = @{$data}{qw(broker_code order_id loginid)};
+    if (grep { !$data->{$_} } @args) {
+        $log->info('Fail to procces order_updated: Invalid event data', $data);
+        return 0;
+    }
 
-    my $client = BOM::User::Client->new({loginid => $loginid});
-    my $client_dbh = $client->db->dbh;
+    my ($broker_code, $order_id, $field, $new_value) = @{$data}{@args};
 
-    my $order_data = $client_dbh->selectrow_hashref(
-        'SELECT id, status, client_confirmed, offer_currency currency FROM p2p.order_list(?,?,?,?)',
-        undef, $order_id, (undef) x 3,
-    );
-
-    die "Order $order_id isn't found" unless $order_data;
-
-    my $status = $order_data->{status};
-    die "Unexpected status $status for order $order_id" unless $expiration_handlers_for->{$status};
-
-    my $param = {
-        broker_code => $broker_code,
-        source      => $data->{source} // DEFAULT_SOURCE,
-        staff       => $data->{staff} // DEFAULT_STAFF,
-    };
-    my $new_status = $expiration_handlers_for->{$status}->($client, $order_data, $param);
-
-    return 1 unless $new_status;
+    return 1 unless $should_notify_about->{$field};
 
     my $redis = BOM::Config::RedisReplicated->redis_p2p_write();
     $redis->publish(
-        'P2P::ORDER::NOTIFICATION::' . $order_id,
+        "P2P::ORDER::NOTIFICATION::${broker_code}::${order_id}",
         encode_json_utf8({
                 order_id   => $order_id,
-                event      => 'status_changed',
+                event      => $field . '_updated',
                 event_data => {
-                    old_status => $status,
-                    new_status => $new_status,
+                    field     => $field,
+                    new_value => $new_value
                 },
             }
         ),
@@ -176,27 +181,47 @@ sub order_expired {
     return 1;
 }
 
-sub _pending_expiration {
-    my ($client, $order_data, $param) = @_;
+=head2 order_expired
 
-    my $escrow_account = $client->p2p_escrow;
+An order reached our predefined timeout without being confirmed by both sides or
+cancelled by the client.
 
-    die "No Escrow account for broker $param->{broker_code} with currency $order_data->{currency}" unless $escrow_account;
+=cut
 
-    my $client_dbh = $client->db->dbh;
-    $client_dbh->selectrow_hashref('SELECT * FROM  p2p.order_cancel(?, ?, ?, ?)',
-        undef, $order_data->{id}, $escrow_account->loginid, $param->{source}, $param->{staff});
+sub order_expired {
+    my $data = shift;
 
-    return 'cancelled';
-}
+    BOM::Config::Runtime->instance->app_config->check_for_update;
 
-sub _client_confirmed_expiration {
-    my ($client, $order_data, $param) = @_;
+    my ($client, $updated_order);
+    try {
+        $data->{$_} or die "Missing required attribute $_" for qw(client_loginid order_id);
+        my ($loginid, $order_id) = @{$data}{qw(client_loginid order_id)};
 
-    my $client_dbh = $client->db->dbh;
-    $client_dbh->do('SELECT * FROM p2p.order_update(?, ?)', undef, $order_data->{id}, 'expired');
+        $client = BOM::User::Client->new({loginid => $loginid});
 
-    return 'expired';
+        my $updated_order = $client->p2p_expire_order(
+            id     => $order_id,
+            source => $data->{source} // DEFAULT_SOURCE,
+            staff  => $data->{staff} // DEFAULT_STAFF,
+        );
+    }
+    catch {
+        my $err = $@;
+        $log->info('Fail to procces order_expired: ' . $err, $data);
+    }
+
+    return 0 unless $updated_order;
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_order_updated => {
+            order_id    => $updated_order->{id},
+            broker_code => $client->broker,
+            field       => 'status',
+            new_value   => $updated_order->{status},
+        });
+
+    return 1;
 }
 
 1;
