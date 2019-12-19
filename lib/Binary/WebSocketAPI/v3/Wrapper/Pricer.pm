@@ -614,7 +614,7 @@ sub _fetch_contract_params_from_databse {
                 contract_id => $contract_id,
             },
             rpc_response_cb => sub {
-                my ($c, $rpc_response, $req_storage) = @_;
+                my ($c, $rpc_response) = @_;
                 save_contract_params_to_redis($c, $rpc_response->{$contract_id});
                 return;
             }
