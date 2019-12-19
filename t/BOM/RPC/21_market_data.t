@@ -36,7 +36,6 @@ subtest 'exchange rates' => sub {
             my $from_currency = shift;
 
             $from_currency eq 'AUD' and return 0.90 * $price;
-            $from_currency eq 'BCH' and return 1200 * $price;
             $from_currency eq 'ETH' and return 500 * $price;
             $from_currency eq 'LTC' and return 120 * $price;
             $from_currency eq 'EUR' and return 1.18 * $price;

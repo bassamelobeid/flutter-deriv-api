@@ -1857,7 +1857,7 @@ rpc api_token => sub {
             }) if $client->payment_agent;
 
         ## for old API calls (we'll make it required on v4)
-        my $scopes = $args->{new_token_scopes} || ['read', 'trade', 'payments', 'admin'];
+        my $scopes = $args->{new_token_scopes} || ['read', 'trading_information', 'trade', 'payments', 'admin'];
         my $token = $m->create_token($client->loginid, $display_name, $scopes, ($args->{valid_for_current_ip_only} ? $client_ip : undef));
 
         if (ref $token eq 'HASH' and my $error = $token->{error}) {

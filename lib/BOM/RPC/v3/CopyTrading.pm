@@ -40,10 +40,10 @@ rpc copy_start => sub {
                 code              => 'InvalidToken',
                 message_to_client => localize('Invalid token')});
     }
-    unless (grep { $_ eq 'read' } @{$token_details->{scopes}}) {
+    unless (grep { $_ eq 'read' or $_ eq 'trading_information' } @{$token_details->{scopes}}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'PermissionDenied',
-                message_to_client => localize('Permission denied, requires read scope.')});
+                message_to_client => localize('Permission denied, requires read or [_1] scopes.', 'trading_information')});
     }
     unless ($trader->allow_copiers) {
         return BOM::RPC::v3::Utility::create_error({
