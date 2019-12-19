@@ -506,8 +506,6 @@ sub _process_proposal_open_contract_response {
             delete $result->{rpc_time};
             delete $result->{account_id};
 
-            # need to restructure limit order for poc response
-            $result->{limit_order} = delete $result->{limit_order_as_hashref} if $result->{limit_order_as_hashref};
             $c->send({
                     json => {
                         msg_type               => 'proposal_open_contract',
@@ -797,8 +795,6 @@ sub send_proposal_open_contract_last_time {
 
                 for my $each_contract (keys %{$rpc_response}) {
                     delete $rpc_response->{$each_contract}->{account_id};
-                    $rpc_response->{$each_contract}->{limit_order} = delete $rpc_response->{$each_contract}->{limit_order_as_hashref}
-                        if $rpc_response->{$each_contract}->{limit_order_as_hashref};
                 }
                 return {
                     proposal_open_contract => $rpc_response->{$contract_id} || {},
