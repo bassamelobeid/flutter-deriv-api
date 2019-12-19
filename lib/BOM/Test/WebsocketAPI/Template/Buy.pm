@@ -95,13 +95,12 @@ rpc_response {
 publish proposal_open_contract => sub {
     my $contract = $_->contract;
     return undef if $contract->is_sold;
-    my $client = $contract->client;
 
-    my $key = sprintf('CONTRACT_PRICE::%s_%s', $contract->contract_id, $client->landing_company_name);
+    my $key = sprintf('CONTRACT_PRICE::%s_%s', $contract->contract_id, $contract->client->landing_company_name);
     return {
         $key => {
             price_daemon_cmd    => 'bid',
-            currency            => $client->currency,
+            currency            => $contract->client->currency,
             rpc_time            => 31.425,
             date_settlement     => $contract->date_expiry,
             is_forward_starting => 0,

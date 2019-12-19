@@ -88,20 +88,20 @@ rpc_response {
 };
 
 publish proposal_array => sub {
-    my $pa     = $_->proposal_array;
-    my $client = $pa->client;
-    my $real   = $client->is_virtual ? 0 : 1;
+    my $pa           = $_->proposal_array;
+    my $symbol       = $pa->underlying->symbol;
+    my $display_name = $pa->underlying->display_name;
     return {
         sprintf(
-            'PRICER_KEYS::["amount","1000","barriers",[%s],"basis","payout","contract_type",[%s],"currency","%s","duration","%s","duration_unit","%s","landing_company","%s","price_daemon_cmd","price","proposal_array","1","real_money","%s","skips_price_validation","1","subscribe","1","symbol","%s"]',
+            'PRICER_KEYS::["amount","1000","barriers",[%s],"basis","payout","contract_type",[%s],"currency","%s","duration","%s","duration_unit","%s","landing_company","%s","price_daemon_cmd","price","proposal_array","1","skips_price_validation","1","subscribe","1","symbol","%s"]',
 
             join(',', map { "\"$_\"" } $pa->barriers->@*),
             join(',', map { "\"$_\"" } $pa->contract_types->@*),
-            $client->currency,
+            $pa->client->currency,
             $pa->duration,
             $pa->duration_unit,
-            $client->landing_company_name, $real,
-            $pa->underlying->symbol,
+            $pa->client->landing_company_name,
+            $pa->underlying->symbol
             ) => {
 
             rpc_time  => 62.07,

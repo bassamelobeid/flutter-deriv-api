@@ -183,12 +183,10 @@ publish proposal_open_contract => sub {
     my $poc;
     for my $contract (values $_->global->{contracts}{$_->client}->%*) {
         next if $contract->is_sold;
-        my $client  = $contract->client;
-        my $real    = $client->is_virtual ? 0 : 1;
         my $payload = {
             sprintf('CONTRACT_PRICE::%s_%s', $contract->contract_id, $contract->client->landing_company_name) => {
                 price_daemon_cmd    => 'bid',
-                currency            => $client->currency,
+                currency            => $contract->client->currency,
                 rpc_time            => 31.425,
                 date_settlement     => 1557791999,
                 is_forward_starting => 0,
