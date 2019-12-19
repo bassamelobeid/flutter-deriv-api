@@ -359,7 +359,7 @@ sub _get_rejected_contract_details {
             ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
             : ($contract->can('barrier') && $contract->barrier) ? (barriers => $contract->barrier->as_absolute)
             : (barriers => ''),
-            $contract->can('available_orders') ? (limit_order => $contract->available_orders)
+            $contract->can('available_orders_for_display') ? (limit_order => $contract->available_orders_for_display)
             : (),
             expiry => $contract->date_expiry->db_timestamp,
             payout => $contract->payout
