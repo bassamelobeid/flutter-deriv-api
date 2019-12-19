@@ -6,7 +6,6 @@ use warnings;
 
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Subscription::Transaction;
-use Binary::WebSocketAPI::v3::Subscription::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 
 sub buy_get_single_contract {

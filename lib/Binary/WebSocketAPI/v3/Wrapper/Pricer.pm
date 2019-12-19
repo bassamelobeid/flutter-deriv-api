@@ -28,7 +28,6 @@ use Variable::Disposition ();
 
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Transaction;
-use Binary::WebSocketAPI::v3::Subscription::Pricer;
 use Binary::WebSocketAPI::v3::Subscription::Pricer::Proposal;
 use Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalOpenContract;
 use Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalArray;
