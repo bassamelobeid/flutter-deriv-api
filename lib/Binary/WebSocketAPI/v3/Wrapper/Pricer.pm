@@ -683,7 +683,6 @@ sub get_pricer_args {
 
     my $price_daemon_cmd = 'bid';
     my %hash;
-    my $contract_id = $cache->{contract_id};
     # get_bid RPC call requires 'short_code' param, not 'shortcode'
     @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(shortcode contract_id currency sell_time)};
     $hash{is_sold} = $cache->{is_sold} + 0;
