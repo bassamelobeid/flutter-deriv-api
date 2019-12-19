@@ -90,6 +90,10 @@ use constant ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX         => 'ONFIDO::DOB::
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
 
+# Redis keys to stop sending new emails in a specific time
+use constant ONFIDO_STOP_SENDING_EMAIL_TIMEOUT => $ENV{ONFIDO_STOP_SENDING_EMAIL_TIMEOUT} // 6 * 60 * 60;
+use constant ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX => 'ONFIDO::POI::EMAIL::NOTIFICATION::SENT::';
+
 # List of document types that we use as proof of address
 use constant POA_DOCUMENTS_TYPE => qw(
     proofaddress payslip bankstatement cardstatement
@@ -981,8 +985,7 @@ async sub _is_supported_country_onfido {
         if ($countries_list) {
             my $redis_events_write = _redis_events_write();
             await $redis_events_write->connect;
-            await $redis_events_write->set(ONFIDO_SUPPORTED_COUNTRIES_KEY, encode_json_utf8($countries_list));
-            await $redis_events_write->expire(ONFIDO_SUPPORTED_COUNTRIES_KEY, ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT);
+            await $redis_events_write->setex(ONFIDO_SUPPORTED_COUNTRIES_KEY, ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT, encode_json_utf8($countries_list));
         }
     }
 
@@ -1350,8 +1353,10 @@ async sub _send_report_automated_age_verification_failed {
     if ($email_status) {
         my $redis_events_write = _redis_events_write();
         await $redis_events_write->connect;
-        await $redis_events_write->set($redis_key, 1);
-        await $redis_events_write->expire($redis_key, ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT);
+        await $redis_events_write->setex($redis_key, ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT, 1);
+
+        # POI email sent, will be valid for 6 hours
+        await $redis_events_write->setex(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id, ONFIDO_STOP_SENDING_EMAIL_TIMEOUT, 1);
     } else {
         $log->warn('failed to send Onfido age verification email.');
         return 0;
@@ -1362,6 +1367,12 @@ async sub _send_report_automated_age_verification_failed {
 
 async sub _send_poa_email {
     my ($client) = @_;
+    my $redis_events_read = _redis_events_read();
+    await $redis_events_read->connect;
+
+    # We should not send any POA notification if we already sent POI notification.
+    return if await $redis_events_read->get(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id);
+
     my $redis_replicated_write = _redis_replicated_write();
     await $redis_replicated_write->connect;
 
@@ -1482,8 +1493,7 @@ async sub _send_email_onfido_unsupported_country_cs {
     if ($email_status) {
         my $redis_events_write = _redis_events_write();
         await $redis_events_write->connect;
-        await $redis_events_write->set($redis_key, 1);
-        await $redis_events_write->expire($redis_key, ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT);
+        await $redis_events_write->setex($redis_key, ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT, 1);
     } else {
         $log->warn('failed to send Onfido unsupported country email.');
         return 0;
@@ -1775,10 +1785,9 @@ async sub _upload_documents {
             BOM::User::Onfido::store_onfido_document($doc, $applicant->id, $client->place_of_birth, $type, $side);
 
             await $redis_events_write->connect;
-            await $redis_events_write->set(ONFIDO_DOCUMENT_ID_PREFIX . $doc->id, $document_entry->{id});
             # Set expiry time for document id key in case of no onfido response due to
             # `applicant_check` is not being called in `ready_for_authentication`
-            await $redis_events_write->expire(ONFIDO_DOCUMENT_ID_PREFIX . $doc->id, ONFIDO_PENDING_REQUEST_TIMEOUT);
+            await $redis_events_write->setex(ONFIDO_DOCUMENT_ID_PREFIX . $doc->id, ONFIDO_PENDING_REQUEST_TIMEOUT, $document_entry->{id});
         }
 
         $log->debugf('Document %s created for applicant %s', $doc->id, $applicant->id,);
@@ -1867,8 +1876,10 @@ async sub _check_applicant {
         await $future_applicant_check;
 
         if (defined $error_type and $error_type eq 'incomplete_checks') {
-            await $redis_events_write->set(ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id, encode_json_utf8($args));
-            await $redis_events_write->expire(ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id, ONFIDO_PENDING_REQUEST_TIMEOUT);
+            await $redis_events_write->setex(
+                ONFIDO_PENDING_REQUEST_PREFIX . $client->binary_user_id,
+                ONFIDO_PENDING_REQUEST_TIMEOUT,
+                encode_json_utf8($args));
         }
 
         DataDog::DogStatsd::Helper::stats_timing(
