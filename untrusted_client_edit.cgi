@@ -153,6 +153,22 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         } elsif ($action eq 'remove_status') {
             $printline = try { $client->status->clear_no_withdrawal_or_trading; $remove_success_msg } catch { $remove_error_msg };
         }
+    } elsif ($client_status_type eq 'allowdocumentupload') {
+        if ($action eq 'insert_data') {
+            $printline = try {
+                $client->status->set('allow_document_upload', $clerk, $reason);
+                $insert_success_msg;
+            }
+            catch { $insert_error_msg };
+        } elsif ($action eq 'remove_status') {
+            $printline = try {
+                $client->status->clear_allow_document_upload;
+                $remove_success_msg;
+            }
+            catch {
+                $remove_error_msg
+            };
+        }
     }
     # print success/fail message
     print $printline;
