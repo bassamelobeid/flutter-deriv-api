@@ -42,29 +42,26 @@ subtest 'Creating new order' => sub {
     is($order_data->{description},    $description,     'Description for new order is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
-    
     cmp_deeply(
         $client->p2p_order_list,
-        [
-            {   
-                'id' => $order_data->{id},
-                'agent_confirmed' => $order_data->{agent_confirmed},
-                'amount' => $order_data->{amount},
-                'client_confirmed' => $order_data->{client_confirmed},
-                'client_loginid' => $order_data->{client_loginid},
-                'created_time' => $order_data->{created_time},
-                'description' => $order_data->{description},
-                'expire_time' => $order_data->{expire_time},
-                'status' => $order_data->{status},
-                'agent_id' => $agent->p2p_agent->{id},
-                'agent_loginid' => $agent->loginid,
-                'agent_name' => $agent->p2p_agent->{name},                
+        [{
+                'id'                     => $order_data->{id},
+                'agent_confirmed'        => $order_data->{agent_confirmed},
+                'amount'                 => $order_data->{amount},
+                'client_confirmed'       => $order_data->{client_confirmed},
+                'client_loginid'         => $order_data->{client_loginid},
+                'created_time'           => $order_data->{created_time},
+                'description'            => $order_data->{description},
+                'expire_time'            => $order_data->{expire_time},
+                'status'                 => $order_data->{status},
+                'agent_id'               => $agent->p2p_agent->{id},
+                'agent_loginid'          => $agent->loginid,
+                'agent_name'             => $agent->p2p_agent->{name},
                 'offer_account_currency' => $offer->{account_currency},
-                'offer_id' => $offer->{id},
-                'offer_local_currency' => $offer->{local_currency},
-                'offer_price' => $offer->{price},
-                'offer_type' => $offer->{type}
-            }
+                'offer_id'               => $offer->{id},
+                'offer_local_currency'   => $offer->{local_currency},
+                'offer_price'            => $offer->{price},
+                'offer_type'             => $offer->{type}}
         ],
         'order_list() returns correct info'
     );

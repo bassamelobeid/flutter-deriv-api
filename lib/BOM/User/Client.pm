@@ -1935,6 +1935,34 @@ sub p2p_order_cancel {
         });
 }
 
+=head2 expire_otc_order
+
+    Expire order in different states.
+    Method returns order data in case if state of orderd was changed.
+
+=cut
+
+sub p2p_expire_order {
+    my ($client, %param) = @_;
+
+    my $order = $client->p2p_order($param{id});
+
+    die 'Order id not found: ' . ($param{id} // 'undefined') unless $order;
+
+    my $status = $order->{status};
+
+    return unless $status =~ /^(pending|client-confirmed)$/;
+
+    my $escrow = $client->p2p_escrow;
+
+    die "No escrow account for " . $client->loginid unless $escrow;
+
+    return $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?)', undef, $order->{id}, $escrow->loginid, $param{source}, $param{staff});
+        });
+}
+
 =head2 p2p_escrow
 
 Gets the configured escrow account for clients currency and landing company.
