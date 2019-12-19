@@ -576,7 +576,7 @@ sub save_contract_params_to_redis {
     # proposal open contract params is set to expire at 10 second after contract expiration time (if available)
     # max expiry set at 1 day
     my $default_expiry = 86400;
-    if (my $expiry = $contract_params->{expiry_time} // $contract_params->{date_expiry}) {
+    if (my $expiry = delete $contract_params->{expiry_time}) {
         my $contract_expiry = Date::Utility->new($contract_params->{expiry_time});
         # 10 seconds after expiry is to cater for sell transaction delay due to settlement conditions.
         $default_expiry = min($default_expiry, $contract_expiry->epoch - time + 10);
