@@ -981,6 +981,78 @@ subtest $method => sub {
             # Revert under review state
             $test_client_cr->aml_risk_classification('low');
             $test_client_cr->save;
+
+            $test_client_cr->status->set('age_verification',      'system', 'age verified');
+            $test_client_cr->status->set('allow_document_upload', 'system', 1);
+            $test_client_cr->save;
+            $result = $c->tcall($method, {token => $token_21});
+            cmp_deeply(
+                $result,
+                {
+                    status                        => superbagof(qw(age_verification allow_document_upload)),
+                    risk_classification           => 'low',
+                    prompt_client_to_authenticate => '0',
+                    authentication                => {
+                        document => {status => "none"},
+                        identity => {
+                            status                          => "verified",
+                            "further_resubmissions_allowed" => 0
+                        },
+                        needs_verification => [],
+                    }
+                },
+                'allow_document_upload flag is set if client is not authenticated and status exists on client'
+            );
+
+            my $mocked_client = Test::MockModule->new(ref($test_client_cr));
+            # mark as fully authenticated
+            $mocked_client->mock('fully_authenticated', sub { return 1 });
+
+            $result = $c->tcall($method, {token => $token_21});
+            cmp_deeply(
+                $result,
+                {
+                    status => superbagof(qw(age_verification authenticated financial_information_not_complete trading_experience_not_complete)),
+                    risk_classification           => 'low',
+                    prompt_client_to_authenticate => '0',
+                    authentication                => {
+                        document => {status => "verified"},
+                        identity => {
+                            status                          => "verified",
+                            "further_resubmissions_allowed" => 0
+                        },
+                        needs_verification => [],
+                    }
+                },
+                'allow_document_upload flag is not send back if client is authenticated and even if status exists on client'
+            );
+
+            $mocked_status->unmock_all;
+            $mocked_client->unmock_all;
+
+            $test_client_cr->status->clear_age_verification();
+            $test_client_cr->status->clear_allow_document_upload();
+            $test_client_cr->save;
+
+            $result = $c->tcall($method, {token => $token_21});
+            cmp_deeply(
+                $result,
+                {
+                    status                        => superbagof(qw()),
+                    risk_classification           => 'low',
+                    prompt_client_to_authenticate => '0',
+                    authentication                => {
+                        document => {status => "none"},
+                        identity => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0
+                        },
+                        needs_verification => [],
+                    }
+                },
+                'test if all manual status has been removed'
+            );
+
         };
 
         subtest 'malta account' => sub {
@@ -991,7 +1063,9 @@ subtest $method => sub {
             cmp_deeply(
                 $result,
                 {
-                    status => superbagof(qw(financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete)),
+                    status => superbagof(
+                        qw(allow_document_upload financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete)
+                    ),
                     risk_classification           => 'high',
                     prompt_client_to_authenticate => '1',
                     authentication                => {
@@ -1013,8 +1087,8 @@ subtest $method => sub {
             cmp_deeply(
                 $result,
                 {
-                    status                        => superbagof(qw(financial_information_not_complete trading_experience_not_complete)),
-                    risk_classification           => 'low',
+                    status              => superbagof(qw(allow_document_upload financial_information_not_complete trading_experience_not_complete)),
+                    risk_classification => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {status => "none"},
@@ -1123,7 +1197,9 @@ subtest $method => sub {
                 cmp_deeply(
                     $result,
                     {
-                        status => superbagof(qw(age_verification authenticated financial_information_not_complete financial_assessment_not_complete)),
+                        status => superbagof(
+                            qw(allow_document_upload age_verification authenticated financial_information_not_complete financial_assessment_not_complete)
+                        ),
                         risk_classification           => 'low',
                         prompt_client_to_authenticate => '0',
                         authentication                => {
