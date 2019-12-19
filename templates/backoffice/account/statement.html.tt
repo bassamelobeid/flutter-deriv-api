@@ -131,11 +131,11 @@
         <div class="grd-grid-4">[% transaction.payment_remark | replace('\s+:\s+', ': ') | html %]</div>
         [% IF transaction.action_type == 'deposit' %]
         <div class="grd-grid-1 right-aligned"></div>
-        <div class="grd-grid-1 right-aligned">[% currency %] [% formatnumber('amount', currency, transaction.amount)
+        <div class="grd-grid-1 right-aligned credit-amount-st">[% currency %] [% formatnumber('amount', currency, transaction.amount)
             %]
         </div>
         [% ELSE %]
-        <div class="grd-grid-1 right-aligned">[% currency %] [% formatnumber('amount', currency, transaction.amount)
+        <div class="grd-grid-1 right-aligned debit-amount-st">[% currency %] [% formatnumber('amount', currency, transaction.amount)
             %]
         </div>
         <div class="grd-grid-1 right-aligned"></div>
@@ -177,5 +177,11 @@
 
             .app-id:hover .app-name {
                 visibility: visible;
+            }
+            .debit-amount-st{
+                color: #EB3322;
+            }
+            .credit-amount-st{
+                color: #377D21;
             }
         </style>
