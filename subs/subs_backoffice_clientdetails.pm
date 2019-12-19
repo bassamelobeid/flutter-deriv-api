@@ -478,7 +478,8 @@ sub get_untrusted_client_reason {
             'Pending proof of age',
             'Others'
         ],
-        Duplicate => ['Duplicate account'],
+        Duplicate      => ['Duplicate account'],
+        DocumentUpload => ['Allow document upload'],
     };
 }
 
@@ -760,6 +761,12 @@ sub get_untrusted_types {
             'comments'    => 'Professional requested',
             'code'        => 'professional_requested',
             'show_reason' => 'no'
+        },
+        {
+            'linktype'    => 'allowdocumentupload',
+            'comments'    => 'Allow client to upload document',
+            'code'        => 'allow_document_upload',
+            'show_reason' => 'yes'
         },
     ];
 }

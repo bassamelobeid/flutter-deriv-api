@@ -428,6 +428,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         if ($auth_method eq 'NEEDS_ACTION') {
             $client->set_authentication('ID_DOCUMENT')->status('needs_action');
+            $client->status->set('allow_document_upload', 'system', 'Allow client to document upload');
             # if client is marked as needs action then we need to inform
             # CS for new POA document hence we need to remove any
             # key set for email already sent for POA
