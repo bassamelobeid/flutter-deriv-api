@@ -50,7 +50,6 @@ struct Client => [qw(
         landing_company_name
         landing_company_fullname
         currency
-        is_virtual
         )];
 
 struct TicksHistory  => [qw( underlying times prices )];
@@ -114,7 +113,6 @@ my @client = (
         landing_company_name     => 'mlt',
         landing_company_fullname => 'Binary (Europe) Ltd',
         currency                 => 'EUR',
-        is_virtual               => 0,
     ),
     Client(
         loginid                  => 'CR90000000',
@@ -127,7 +125,6 @@ my @client = (
         landing_company_name     => 'svg',
         landing_company_fullname => 'Binary (SVG) Ltd.',
         currency                 => 'USD',
-        is_virtual               => 0,
     ),
     Client(
         loginid                  => 'VRTC90000000',
@@ -140,7 +137,6 @@ my @client = (
         landing_company_name     => 'virtual',
         landing_company_fullname => 'Binary Ltd',
         currency                 => 'USD',
-        is_virtual               => 1,
     ),
 );
 
