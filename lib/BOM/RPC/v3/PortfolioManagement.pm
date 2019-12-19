@@ -169,7 +169,7 @@ sub populate_response_proposal_contract {
             landing_company       => $client->landing_company->short,
             account_id            => $fmb->{account_id},
             country_code          => $client->residence,
-            expiry_time           => $fmb->{expiry_time},
+            expiry_time           => 0 + Date::Utility->new($fmb->{expiry_time})->epoch,
         };
 
         $contract->{limit_order} = BOM::Transaction::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';

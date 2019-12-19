@@ -233,7 +233,7 @@ rpc "buy",
         is_sold         => $contract_details->{is_sold},
         transaction_ids => {buy => $transaction_details->{id}},
         longcode        => localize(shortcode_to_longcode($contract_details->{short_code}, $currency)),
-        expiry_time     => $contract_details->{expiry_time},
+        expiry_time     => 0 + Date::Utility->new($contract_details->{expiry_time})->epoch,
     };
 
     # multiplier requires additional parameters to define a contract
