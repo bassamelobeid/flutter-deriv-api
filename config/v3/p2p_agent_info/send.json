@@ -4,6 +4,10 @@
     "description": "Retrieve information about a P2P agent",
     "hidden": 1,
     "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "payments"
+    ],
     "additionalProperties": false,
     "required": [
         "p2p_agent_info"

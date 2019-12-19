@@ -13,7 +13,6 @@ use Path::Tiny;
 use Scalar::Util qw(looks_like_number);
 use Term::ANSIColor qw(colored);
 use Text::Diff;
-
 use constant BASE_PATH => 'config/v3/';
 
 GetOptions(
@@ -77,13 +76,15 @@ subtest 'general formatting and order' => sub {
         deprecated           => 4,
         hidden               => 5,
         type                 => 6,
-        pattern              => 7,
-        default              => 8,
-        enum                 => 9,
-        examples             => 10,
-        additionalProperties => 11,
-        required             => 12,
-        properties           => 13,
+        auth_required        => 7,
+        auth_scopes          => 8,
+        pattern              => 9,
+        default              => 10,
+        enum                 => 11,
+        examples             => 12,
+        additionalProperties => 13,
+        required             => 14,
+        properties           => 15,
         echo_req             => 101,
         msg_type             => 102,
         passthrough          => 103,
@@ -265,6 +266,28 @@ subtest 'schema titles and required' => sub {
         my $required_method = first { $_ eq $method } $schema->{json}{required}->@*;
         is $required_method, $method, "$method: method name is required.";
     }
+};
+
+#make sure auth is set
+subtest 'auth scopes' => sub {
+    for my $schema (@json_schemas) {
+        next unless $schema->{json_type} eq 'send';
+        my $method = $schema->{method_name};
+        like($schema->{json}{auth_required}, qr/^(1|0)$/, "$method: auth_required is set");
+        ok(defined($schema->{json}{auth_scopes}), "$method: auth_scopes is also set when Auth_required is true") if $schema->{json}{auth_required};
+
+        my %valid_scopes = (
+            read                => 1,
+            trade               => 1,
+            trading_information => 1,
+            admin               => 1,
+            payments            => 1
+        );
+        foreach my $schema_scope ($schema->{json}{auth_scopes}->@*) {
+            ok(defined($valid_scopes{$schema_scope}), "$method :  scope $schema_scope is valid");
+        }
+    }
+
 };
 
 done_testing;

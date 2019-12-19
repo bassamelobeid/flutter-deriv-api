@@ -4,6 +4,10 @@
     "description": "Send report to client's registered e-mail",
     "hidden": 1,
     "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "read"
+    ],
     "additionalProperties": false,
     "required": [
         "date_from",
