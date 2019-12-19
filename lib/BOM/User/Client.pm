@@ -319,6 +319,7 @@ sub set_authentication {
             authentication_method_code => $method,
             status                     => 'pending'
         });
+        $self->status->clear_allow_document_upload;
         $self->get_authentication($method);
         }
 }

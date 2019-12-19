@@ -25,7 +25,7 @@ my @status_codes = qw(
     migrated_single_email  duplicate_account  proveid_pending  proveid_requested
     require3ds  skip_3ds  ok  ico_only  allowed_other_card  can_authenticate
     social_signup  trusted pa_withdrawal_explicitly_allowed ukgc_authenticated
-    address_verified no_withdrawal_or_trading
+    address_verified no_withdrawal_or_trading allow_document_upload
 );
 
 for my $code (@status_codes) {
