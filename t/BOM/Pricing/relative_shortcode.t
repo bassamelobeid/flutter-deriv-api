@@ -5,24 +5,24 @@ use warnings;
 use Date::Utility;
 use Test::Exception;
 use Test::MockTime;
-use Test::Most;
+use Test::More;
 use Test::Warnings qw(warnings);
 
 use BOM::Pricing::v3::Utility;
 
+my $create_relative_shortcode = \&BOM::Pricing::v3::Utility::create_relative_shortcode;
+
+my $params = {
+    barrier       => 'S0P',
+    contract_type => 'CALL',
+    duration      => 5,
+    duration_unit => 'm',
+    symbol        => 'R_10',
+};
+
+Test::MockTime::set_absolute_time('2019-09-10T08:00:00Z');
+
 subtest 'relative_shortcode' => sub {
-    my $create_relative_shortcode = \&BOM::Pricing::v3::Utility::create_relative_shortcode;
-
-    my $params = {
-        barrier       => 'S0P',
-        contract_type => 'CALL',
-        duration      => 5,
-        duration_unit => 'm',
-        symbol        => 'R_10',
-    };
-
-    Test::MockTime::set_absolute_time('2019-09-10T08:00:00Z');
-
     is($create_relative_shortcode->($params), 'CALL_R_10_0_300_S0P_0', 'relative duration');
 
     $params->{date_start} = Date::Utility->new('2019-09-10 10:00:00')->epoch;
@@ -57,24 +57,8 @@ subtest 'relative_shortcode' => sub {
 
     $params->{duration_unit} = 't';
     is($create_relative_shortcode->($params, $spot), 'TOUCH_R_10_0_5T_S34430P_0', 'tick duration');
-
-    Test::MockTime::restore_time();
 };
 
-subtest 'extract_from_channel_key' => sub {
-    my $efck = \&BOM::Pricing::v3::Utility::extract_from_channel_key;
-
-    eq_or_diff([$efck->('nonsense')],                 [{}, ''],            'Nonsense keys generate nonsense results');
-    eq_or_diff([$efck->()],                           [{}, ''],            '... similar for sending undef');
-    eq_or_diff([$efck->('PRICER_KEYS::broken_json')], [{}, 'broken_json'], 'Broken JSON is returned for review');
-    eq_or_diff([$efck->('PRICER_KEYS::[]')],          [{}, '[]'],          '... also valid but empty JSON');
-    my $valid_str = '["price_daemon_cmd","bid","real_money","1"]';
-    my $valid_ref = {
-        price_daemon_cmd => 'bid',
-        real_money       => '1'
-    };
-    eq_or_diff([$efck->('PRICER_KEYS::' . $valid_str)], [$valid_ref, $valid_str], 'Foreshortened valid key decodes correctly');
-
-};
+Test::MockTime::restore_time();
 
 done_testing;
