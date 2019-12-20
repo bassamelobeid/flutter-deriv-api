@@ -574,7 +574,7 @@ sub save_contract_params_to_redis {
     # max expiry set at 1 day
     my $default_expiry = 86400;
     if (my $expiry = delete $contract_params->{expiry_time}) {
-        my $contract_expiry = Date::Utility->new($contract_params->{expiry_time});
+        my $contract_expiry = Date::Utility->new($expiry);
         # 10 seconds after expiry is to cater for sell transaction delay due to settlement conditions.
         $default_expiry = min($default_expiry, $contract_expiry->epoch - time + 10);
     }
