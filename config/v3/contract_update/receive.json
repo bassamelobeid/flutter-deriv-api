@@ -13,6 +13,28 @@
             "description": "Contains the update status of the request",
             "type": "object",
             "properties": {
+                "history": {
+                    "description": "Return all historical updates for the contract.",
+                    "type": "array",
+                    "items": {
+                        "description": "Contains the changed parameter.",
+                        "type": "object",
+                        "properties": {
+                            "display_name": {
+                                "description": "Display name of the changed parameter.",
+                                "type": "string"
+                            },
+                            "order_amount": {
+                                "description": "The amount.",
+                                "type": "string"
+                            },
+                            "order_date": {
+                                "description": "The epoch when the changed was done.",
+                                "type": "integer"
+                            }
+                        }
+                    }
+                },
                 "stop_loss": {
                     "description": "The target spot price where the contract will be closed automatically at the loss specified by the user.",
                     "type": "object",

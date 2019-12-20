@@ -25,6 +25,15 @@
             "description": "Internal unique contract identifier.",
             "type": "integer"
         },
+        "history": {
+            "description": "Return all historical updates for the contract if it is set to 1.",
+            "type": "integer",
+            "default": 0,
+            "enum": [
+                1,
+                0
+            ]
+        },
         "limit_order": {
             "description": "Specify limit order to update.",
             "type": "object",
