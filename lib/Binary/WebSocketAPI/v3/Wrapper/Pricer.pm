@@ -559,7 +559,7 @@ sub set_contract_params {
         return save_contract_params_to_redis($c, $contract_params);
     }
 
-    return _fetch_contract_params_from_databse($c, $contract_params);
+    return fetch_contract_params_from_database($c, $contract_params);
 }
 
 sub save_contract_params_to_redis {
@@ -595,10 +595,11 @@ sub _has_required_proposal_open_contract_params {
     return 0;
 }
 
-sub _fetch_contract_params_from_databse {
+sub fetch_contract_params_from_database {
     my ($c, $contract_params) = @_;
 
     my $contract_id = $contract_params->{contract_id};
+    my $params_from_db;
 
     $c->call_rpc({
             args => {
@@ -613,12 +614,13 @@ sub _fetch_contract_params_from_databse {
             },
             rpc_response_cb => sub {
                 my ($c, $rpc_response) = @_;
-                save_contract_params_to_redis($c, $rpc_response->{$contract_id});
+                $params_from_db = $rpc_response->{$contract_id};
+                save_contract_params_to_redis($c, $params_from_db);
                 return;
             }
         });
 
-    return;
+    return $params_from_db;
 }
 
 sub _serialized_args {

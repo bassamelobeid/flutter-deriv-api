@@ -270,6 +270,12 @@ sub _update_transaction {
     if ($payload->{short_code} =~ /^(?:MULTUP|MULTDOWN)/) {
         my $contract_params =
             Binary::WebSocketAPI::v3::Wrapper::Pricer::get_contract_params($payload->{financial_market_bet_id}, $c->landing_company_name);
+
+        unless (%$contract_params) {
+            $contract_params =
+                Binary::WebSocketAPI::v3::Wrapper::Pricer::fetch_contract_params_from_database($c,
+                {contract_id => $payload->{financial_market_bet_id}});
+        }
         $payload->{limit_order} = $contract_params->{limit_order};
     }
 
