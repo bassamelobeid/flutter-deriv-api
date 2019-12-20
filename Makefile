@@ -6,7 +6,7 @@ syntax:
 	@$(PROVE) t/BOM/*.t t/999_redis_keys.t
 
 test:
-	@$(PROVE) $$(ls -1d t/BOM/RPC/) t/999_redis_keys.t
+	@$(PROVE) $$(ls -1d t/BOM/RPC/) t/000_async_await.t t/999_redis_keys.t
 
 json_schemas:
 	@$(PROVE) /home/git/regentmarkets/bom-rpc/t/schema_suite/suite01.t /home/git/regentmarkets/bom-rpc/t/schema_suite/suite02.t
