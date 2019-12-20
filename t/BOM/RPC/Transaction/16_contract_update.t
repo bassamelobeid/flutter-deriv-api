@@ -125,8 +125,8 @@ subtest 'contract_update' => sub {
     ok $res->{take_profit}, 'returns the new take profit value';
     ok !%{$res->{stop_loss}}, 'stop loss is undef';
     ok $res->{contract_details}, 'has contract_details';
-    is $res->{contract_details}{limit_order}->[0], 'stop_out';
-    is $res->{contract_details}{limit_order}->[2], 'take_profit';
+    ok $res->{contract_details}{limit_order}->{stop_out}, 'stop_out';
+    ok $res->{contract_details}{limit_order}->{take_profit}, 'take_profit';
 
     delete $update_params->{args}->{limit_order}->{take_profit};
     $update_params->{args}->{limit_order}->{stop_loss} = -80;
@@ -134,9 +134,9 @@ subtest 'contract_update' => sub {
     ok $res->{take_profit},      'returns the new take profit value';
     ok $res->{stop_loss},        'returns the new stop loss value';
     ok $res->{contract_details}, 'has contract_details';
-    is $res->{contract_details}{limit_order}->[0], 'stop_loss';
-    is $res->{contract_details}{limit_order}->[2], 'stop_out';
-    is $res->{contract_details}{limit_order}->[4], 'take_profit';
+    ok $res->{contract_details}{limit_order}->{stop_loss}, 'stop_loss';
+    ok $res->{contract_details}{limit_order}->{stop_out}, 'stop_out';
+    ok $res->{contract_details}{limit_order}->{take_profit}, 'take_profit';
     # sell_time cannot be equals to purchase_time, hence the sleep.
     sleep 1;
 
