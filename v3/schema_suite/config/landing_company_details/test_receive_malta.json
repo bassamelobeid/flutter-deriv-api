@@ -62,7 +62,8 @@
                      "callputequal",
                      "lookback",
                      "highlowticks",
-                     "reset"
+                     "reset",
+                     "runs"
                   ],
                   "type" : "string"
                },
