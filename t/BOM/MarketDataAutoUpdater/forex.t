@@ -73,8 +73,9 @@ create_underlying({symbol => 'frxGBPINR'})->set_combined_realtime({
 initialize_realtime_ticks_db;
 
 subtest 'Basics.' => sub {
-    my $auf = BOM::MarketDataAutoUpdater::Forex->new(file => ['t/data/bbdl/vol_points/2012-08-13/fx000000.csv']);
+    my $auf = BOM::MarketDataAutoUpdater::Forex->new(update_for => 'all', source => 'BBDL');
     my @symbols = @{$auf->symbols_to_update};
+
     ok(scalar(@symbols), 'symbols_to_update is non-empty by default.');
     cmp_ok(scalar(@symbols), '==', (grep { /^frx/ } @symbols), 'All symbols_to_udpate are FX.');
 };
@@ -110,6 +111,7 @@ my $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 subtest 'more than 4 hours old' => sub {
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
+        update_for         => 'all',
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
         surfaces_from_file => {frxUSDJPY => $fake_surface});
@@ -122,6 +124,7 @@ subtest 'more than 4 hours old' => sub {
 
 subtest 'does not exists' => sub {
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
+	update_for         => 'all',
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
         surfaces_from_file => {frxGBPJPY => $fake_surface});
@@ -159,6 +162,7 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 subtest 'big jump' => sub {
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
+	update_for         => 'all',
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
         surfaces_from_file => {frxUSDJPY => $fake_surface});
@@ -181,6 +185,7 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 subtest 'big difference' => sub {
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
+	update_for         => 'all',
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
         surfaces_from_file => {
@@ -203,6 +208,7 @@ $fake_surface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 subtest 'save identical' => sub {
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
+	update_for         => 'all',
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
         surfaces_from_file => {
@@ -220,6 +226,7 @@ subtest 'save identical' => sub {
     Cache::RedisDB->set_nw('QUANT_EMAIL', 'vol_Forex', time);
 
     $au = BOM::MarketDataAutoUpdater::Forex->new(
+	update_for         => 'all',
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
         surfaces_from_file => {
@@ -238,6 +245,7 @@ subtest 'save valid' => sub {
     my $clone = dclone($fake_surface->surface_data);
     $clone->{14}->{smile}->{25} *= 1.01;
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
+        update_for         => 'all',
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
         surfaces_from_file => {
@@ -253,7 +261,7 @@ subtest 'save valid' => sub {
 subtest "Friday after close, weekend, won't open check." => sub {
     plan tests => 8;
 
-    my $auf = BOM::MarketDataAutoUpdater::Forex->new;
+    my $auf = BOM::MarketDataAutoUpdater::Forex->new(update_for => 'all');
 
     my %test_data = (
         wont_open => {
@@ -305,6 +313,7 @@ subtest 'do not update one hour after rollover' => sub {
     $clone->{14}->{smile}->{25} *= 1.01;
 
     my $au = BOM::MarketDataAutoUpdater::Forex->new(
+	update_for         => 'all',
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
         surfaces_from_file => {
@@ -316,6 +325,7 @@ subtest 'do not update one hour after rollover' => sub {
     lives_ok { $au->run } 'run without dying';
     ok !$au->report->{frxUSDJPY}, 'update skipped';
     $au = BOM::MarketDataAutoUpdater::Forex->new(
+	update_for         => 'all',
         symbols_to_update  => ['frxUSDJPY'],
         _connect_ftp       => 0,
         surfaces_from_file => {

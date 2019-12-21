@@ -6,7 +6,6 @@ BOM::MarketDataAutoUpdater::Indices
 
 =head1 DESCRIPTION
 
-Updates Index vols from a given file.
 
 =cut
 
@@ -22,9 +21,13 @@ use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Config::Runtime;
 use BOM::MarketData qw(create_underlying_db);
-use SuperDerivatives::VolSurface;
+use Bloomberg::VolSurfaces::BVOL;
 
-# We have a bash script on Amazon which is intended to call SD macro to update vol of different underlying on the auto_upload.xls on hourly basis and copy the file to our S3 (bloomberg-files bucket).
+has update_for => (
+    is       => 'ro',
+    required => 1,
+);
+
 has filename => (
     is => 'ro',
 );
@@ -33,13 +36,27 @@ has input_market => (
     is => 'ro',
 );
 
-has uses_binary_spot => (
+has root_path => (
+    is => 'ro',
+
+);
+
+has bloomberg_symbol_mapping => (
     is      => 'ro',
     default => sub {
         {
-            STI      => 1,
-            SZSECOMP => 1,
-            BIST100  => 1,
+            'AEX'  => 'OTC_AEX',
+            'AS51' => 'OTC_AS51',
+            'CAC'  => 'OTC_FCHI',
+            'DAX'  => 'OTC_GDAXI',
+            'HSI'  => 'OTC_HSI',
+            'INDU' => 'OTC_DJI',
+            'NDX'  => 'OTC_NDX',
+            'NKY'  => 'OTC_N225',
+            'SMI'  => 'OTC_SSMI',
+            'SPX'  => 'OTC_SPC',
+            'SX5E' => 'OTC_SX5E',
+            'UKX'  => 'OTC_FTSE'
         };
     },
 );
@@ -50,20 +67,15 @@ has symbols_to_update => (
 );
 
 sub _build_symbols_to_update {
-    my $self      = shift;
-    my $market    = $self->input_market;
+    my $self = shift;
     my %skip_list = map { $_ => 1 } (@{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol});
 
-    my @symbols_to_update;
+    my @indices = grep { !$skip_list{$_} } create_underlying_db->get_symbols_for(
+        market            => ['indices'],
+        contract_category => 'ANY',
+    );
 
-    # We still have some open position on cash indices, hence we need to get the vol update list from the suspend buy list.
-    # We will clean up the code once all the cash indices open positions closed up
-    if ($market eq 'indices') {
-        # These are the cash indices that being disabled
-        @symbols_to_update = grep { not $skip_list{$_} and create_underlying($_)->market->name eq 'indices' }
-            (@{BOM::Config::Runtime->instance->app_config->get('quants.underlyings.suspend_buy')});
-    }
-    return \@symbols_to_update;
+    return \@indices;
 }
 
 has surfaces_from_file => (
@@ -73,34 +85,57 @@ has surfaces_from_file => (
 
 sub _build_surfaces_from_file {
     my $self = shift;
-    return SuperDerivatives::VolSurface->new->parse_data_for($self->filename, $self->symbols_to_update);
+    my $vol_data = Bloomberg::VolSurfaces::BVOL->new->parser($self->update_for, $self->root_path);
+    return $self->process_volsurface($vol_data);
+
+}
+
+sub process_volsurface {
+    my ($self, $data) = @_;
+    my $vol_surface;
+    foreach my $underlying_symbol (keys %$data) {
+        my $system_symbol = $self->bloomberg_symbol_mapping->{$underlying_symbol};
+        if ($data->{$underlying_symbol}->{error}) {
+            $self->report->{$system_symbol} = {
+                success => 0,
+                reason  => $data->{$underlying_symbol}->{error},
+            };
+            next;
+        }
+        my $underlying_raw_data = $data->{$underlying_symbol};
+        my %surface_data =
+            map { $_ => {smile => $underlying_raw_data->{$_}->{smile}, vol_spread => $underlying_raw_data->{$_}->{spread}} }
+            grep { $_ ne 'volupdate_time' } keys %$underlying_raw_data;
+
+        $vol_surface->{$system_symbol} = {
+            surface       => \%surface_data,
+            creation_date => $data->{$underlying_symbol}->{volupdate_time},
+        };
+    }
+
+    return $vol_surface;
 }
 
 sub run {
     my $self               = shift;
     my $surfaces_from_file = $self->surfaces_from_file;
-    my %otc_list =
-        map { $_ => 1 } grep { create_underlying($_)->submarket->is_OTC } create_underlying_db->get_symbols_for(
-        market            => 'indices',
-        contract_category => 'ANY',
-        );
+
+    my $calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
 
     foreach my $symbol (@{$self->symbols_to_update}) {
+        my $underlying = create_underlying($symbol);
         unless ($surfaces_from_file->{$symbol}) {
 
             $self->report->{$symbol} = {
                 success => 0,
                 reason  => 'Surface Information missing from datasource for ' . $symbol,
-            };
+                }
+                if $calendar->is_open($underlying->exchange);
             next;
         }
         try {
-            my $underlying     = create_underlying($symbol);
             my $raw_volsurface = $surfaces_from_file->{$symbol};
-            if ($self->uses_binary_spot->{$symbol}) {
-                $raw_volsurface->{spot_reference} = $underlying->tick_at($raw_volsurface->{creation_date}->epoch, {allow_inconsistent => 1})->quote;
-
-            }
+            $raw_volsurface->{spot_reference} = $underlying->tick_at($raw_volsurface->{creation_date}->epoch, {allow_inconsistent => 1})->quote;
             my $volsurface = Quant::Framework::VolSurface::Moneyness->new({
                 underlying       => $underlying,
                 creation_date    => $raw_volsurface->{creation_date},
@@ -111,13 +146,6 @@ sub run {
             });
             if ($volsurface->is_valid) {
                 if (exists $volsurface->surface->{7}) {
-                    if (exists $otc_list{'OTC_' . $symbol}) {
-                        my $otc         = create_underlying('OTC_' . $symbol);
-                        my $otc_surface = $volsurface->clone({
-                            underlying => $otc,
-                        });
-                        $otc_surface->save;
-                    }
                     $volsurface->save;
                     $self->report->{$symbol}->{success} = 1;
 
@@ -129,7 +157,6 @@ sub run {
                     };
                 }
             } else {
-                my $calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
                 if ($calendar->is_open($underlying->exchange)) {
                     # Ignore all error when exchange is closed.
                     $self->report->{$symbol} = {
