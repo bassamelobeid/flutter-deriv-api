@@ -412,6 +412,22 @@ sub stats_start {
 
         # For a given set of tags these curves should be absolutely flat!
         DataDog::DogStatsd::Helper::stats_gauge("transaction.$what.stack_depth", $stack_depth, $tags);
+
+        if ($stack_depth > 70) {
+            # using this directory is ok according to Tom and Raunak
+            my $fn = '/var/lib/binary/BOM::Transaction';
+            -d $fn or mkdir $fn;
+            if (-d $fn) {
+                $fn .= "/$$.stacktrace";
+                if (open my $fh, '>', $fn) {
+                    $stack_depth = 1;
+                    my ($buf, $pack, $file, $line) = ('');
+                    $buf .= "$pack / $file ($line)\n" while ($pack, $file, $line) = caller $stack_depth++;
+                    print $fh $buf;
+                    close $fh;
+                }
+            }
+        }
     }
     ## End of debugging code.
 
