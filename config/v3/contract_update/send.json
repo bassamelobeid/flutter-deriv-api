@@ -10,8 +10,7 @@
     "additionalProperties": false,
     "required": [
         "contract_id",
-        "contract_update",
-        "limit_order"
+        "contract_update"
     ],
     "properties": {
         "contract_update": {
