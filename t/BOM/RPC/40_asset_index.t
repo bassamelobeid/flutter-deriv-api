@@ -44,6 +44,7 @@ my $first_entry_mlt = [
         ["highlowticks",  "High/Low Ticks",             "5t",  "5t"],
         ["lookback",      "Lookbacks",                  "1m",  "30m"],
         ["callputequal",  "Rise/Fall Equal",            "1t",  "1d"],
+        ["runs",          "Only Ups/Only Downs",        "2t",  "5t"],
     ]];
 my $first_entry_cr = [
     "frxAUDJPY",

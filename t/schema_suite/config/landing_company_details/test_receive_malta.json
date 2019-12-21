@@ -51,7 +51,7 @@
       },
       "legal_allowed_contract_categories" : {
          "items" : {
-            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal|callputspread|reset|highlowticks|lookback)$",
+            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal|callputspread|reset|highlowticks|lookback|runs)$",
             "type" : "string"
          },
          "type" : "array",
