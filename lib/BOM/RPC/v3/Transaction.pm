@@ -238,7 +238,7 @@ rpc "buy",
 
     # multiplier requires additional parameters to define a contract
     if ($contract->category_code eq 'multiplier') {
-        $contract_proposal_details->{limit_order} = $contract->available_orders_for_display;
+        $contract_proposal_details->{limit_order} = $contract->available_orders;
     }
 
     my $tv_interval = 1000 * Time::HiRes::tv_interval($tv);
