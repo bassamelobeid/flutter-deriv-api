@@ -367,7 +367,7 @@ subtest 'multiplier - get_bid' => sub {
         'shortcode'                => ignore(),
         'contract_id'              => '470',
         'longcode'                 => 'Win 10% of your stake for every 1% rise in the market price.',
-        'is_valid_to_sell'         => 1,
+        'is_valid_to_sell'         => 0,
         'is_valid_to_cancel'       => 1,
         'entry_spot_display_value' => '100.00',
         'commission'               => '0.50',
@@ -377,7 +377,9 @@ subtest 'multiplier - get_bid' => sub {
         'deal_cancellation'        => {
             'ask_price'   => 4.35,
             'date_expiry' => ignore(),
-        }};
+        },
+        'validation_error' => 'Cancel the contract to have the stake refunded.',
+    };
     $res = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     cmp_deeply($res, $expected, 'get_bid as expected');
 };
