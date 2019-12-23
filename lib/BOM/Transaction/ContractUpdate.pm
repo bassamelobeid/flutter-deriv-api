@@ -272,7 +272,7 @@ sub build_contract_update_response {
         stop_loss   => $display->{stop_loss}   // {},
         contract_details => {
             %common_details,
-            limit_order => $display,
+            limit_order => $self->contract->available_orders(\%new_orders),
         }};
 }
 
