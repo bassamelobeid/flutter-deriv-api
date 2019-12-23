@@ -632,7 +632,7 @@ rpc contract_update => sub {
                     message_to_client => $history->{message_to_client},
                 });
             } else {
-                $response->{history} = $hitory;
+                $response->{history} = $history;
             }
         }
     }
