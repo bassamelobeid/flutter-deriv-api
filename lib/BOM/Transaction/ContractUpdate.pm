@@ -130,8 +130,9 @@ sub _validate_update_parameter {
     # If no update is allowed for this contract, don't proceed
     unless (keys %{$self->allowed_update}) {
         return {
-            code              => 'UpdateNotAllowed',
-            message_to_client => localize('This contract cannot be updated once you’ve made your purchase. This feature is not available for this contract type.'),
+            code => 'UpdateNotAllowed',
+            message_to_client =>
+                localize('This contract cannot be updated once you’ve made your purchase. This feature is not available for this contract type.'),
         };
     }
 
@@ -191,8 +192,9 @@ sub _validate_update_parameter {
         # stop loss cannot be added while deal cancellation is active
         if ($order_name eq 'stop_loss' and $contract->is_valid_to_cancel) {
             $error = {
-                code              => 'UpdateStopLossNotAllowed',
-                message_to_client => localize('Stop loss will be available only after deal cancellation expires. You may update your stop loss limit then.'),
+                code => 'UpdateStopLossNotAllowed',
+                message_to_client =>
+                    localize('Stop loss will be available only after deal cancellation expires. You may update your stop loss limit then.'),
             };
             last;
         }
@@ -286,7 +288,7 @@ sub build_contract_update_response {
         stop_loss   => $display->{stop_loss}   // {},
         contract_details => {
             %common_details,
-            limit_order => $display,
+            limit_order => $self->contract->available_orders(\%new_orders),
         },
         ($self->request_history ? (history => $self->get_history) : ()),
     };
