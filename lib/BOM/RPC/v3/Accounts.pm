@@ -1790,9 +1790,8 @@ sub send_self_exclusion_notification {
     }
 
     if (@fields_to_email) {
-        my $name = ($client->first_name ? $client->first_name . ' ' : '') . $client->last_name;
         my $statuses = join '/', map { uc $_ } @{$client->status->all};
-        my $client_title = join ', ', $client->loginid, $client->email, ($name || '?'), ($statuses ? "current status: [$statuses]" : '');
+        my $client_title = join ', ', $client->loginid, ($statuses ? "current status: [$statuses]" : '');
 
         my $brand = request()->brand;
 
