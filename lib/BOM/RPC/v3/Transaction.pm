@@ -626,7 +626,7 @@ rpc contract_update => sub {
             }
         } elsif ($updater->request_history) {
             my $history = $updater->get_history();
-            if ($history->{code}) {
+            if (ref $history eq 'HASH' and $history->{code}) {
                 $response = BOM::Pricing::v3::Utility::create_error({
                     code              => $history->{code},
                     message_to_client => $history->{message_to_client},

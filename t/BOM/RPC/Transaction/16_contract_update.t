@@ -104,7 +104,7 @@ subtest 'contract_update' => sub {
     ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
 
     $update_params->{args}->{contract_id} = $buy_res->{contract_id};
-    $update_params->{args}->{limit_order} = ();
+    $update_params->{args}->{limit_order} = (1);
     my $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidUpdateArgument')
         ->error_message_is('Update only accepts hash reference as input parameter.');
 
@@ -137,6 +137,7 @@ subtest 'contract_update' => sub {
     is $res->{contract_details}{limit_order}->[0], 'stop_loss';
     is $res->{contract_details}{limit_order}->[2], 'stop_out';
     is $res->{contract_details}{limit_order}->[4], 'take_profit';
+
     # sell_time cannot be equals to purchase_time, hence the sleep.
     sleep 1;
 
@@ -152,6 +153,14 @@ subtest 'contract_update' => sub {
     is $sell_res->{sold_for}, '99.50', 'sold for 99.50';
     # try to update after it is sold
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('ContractIsSold')->error_message_is('Contract has expired.');
+
+    delete $update_params->{args}->{limit_order};
+    $update_params->{args}->{history} = 1;
+    $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
+    is $res->{history}->[0]->{display_name}, 'Stop Loss';
+    is $res->{history}->[0]->{order_amount}, -80;
+    is $res->{history}->[1]->{display_name}, 'Take Profit';
+    is $res->{history}->[1]->{order_amount}, 10;
 };
 
 done_testing();
