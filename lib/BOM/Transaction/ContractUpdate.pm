@@ -295,9 +295,8 @@ sub get_history {
         return $self->validation_error;
     }
 
-    my $fmb_dm   = $self->_fmb_datamapper;
-    my @allowed  = sort keys %{$self->allowed_update};
-    my $currency = $self->client->currency;
+    my $fmb_dm  = $self->_fmb_datamapper;
+    my @allowed = sort keys %{$self->allowed_update};
 
     my $results = $fmb_dm->get_multiplier_audit_details_by_contract_id($self->contract_id);
     my @history;
