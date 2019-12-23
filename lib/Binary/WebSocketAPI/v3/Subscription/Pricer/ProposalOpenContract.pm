@@ -84,30 +84,4 @@ before DEMOLISH => sub {
     return undef;
 };
 
-=head2 subscribe
-
-Subscribe the channel and store channel to Redis so that pricer_queue script can handle them.
-Also store the pricer_args by contract id for later retrieval for contract update.
-
-=cut
-
-before subscribe => sub {
-    my $self = shift;
-
-    # Having such a long pricer key is not ideal when contract needs to be updated.
-    # Future bug is waiting to happen when we change the order or something is mistakenly converted to string instead of number
-    # or vice versa.
-    my ($pricer_args, $id) = @{$self->pricer_args};
-    my $redis = $self->subscription_manager->redis;
-    # can't use redis->multi & exec here because it is not supported by Mojo::Redis2
-    my $old_key = $redis->get($id);
-    $redis->del($old_key) if $old_key;
-    # for pricer demon
-    $redis->set($pricer_args, $id);
-    # for update retrieval based on id
-    $redis->set($id, $pricer_args);
-
-    return;
-};
-
 1;
