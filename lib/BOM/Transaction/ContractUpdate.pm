@@ -131,14 +131,14 @@ sub _validate_update_parameter {
     unless (keys %{$self->allowed_update}) {
         return {
             code              => 'UpdateNotAllowed',
-            message_to_client => localize('Update is not allowed for this contract.'),
+            message_to_client => localize('This contract cannot be updated once you’ve made your purchase. This feature is not available for this contract type.'),
         };
     }
 
     if (not $self->has_parameters_to_update or ref $self->update_params ne 'HASH') {
         return {
             code              => 'InvalidUpdateArgument',
-            message_to_client => localize('Update only accepts hash reference as input parameter.'),
+            message_to_client => localize('Only a hash reference input is accepted.'),
         };
     }
 
@@ -150,7 +150,7 @@ sub _validate_update_parameter {
         unless (looks_like_number($order_value) or $order_value eq 'null') {
             $error = {
                 code              => 'InvalidUpdateValue',
-                message_to_client => localize('Update value accepts number or null'),
+                message_to_client => localize('Please enter a number or a null value.'),
             };
             last;
         }
@@ -159,7 +159,7 @@ sub _validate_update_parameter {
             $error = {
                 code => 'UpdateNotAllowed',
                 message_to_client =>
-                    localize('Update is not allowed for this contract. Allowed updates [_1]', join(',', @{$contract->category->allowed_update})),
+                    localize('Only updates to these parameters are allowed [_1].', join(',', @{$contract->category->allowed_update})),
             };
             last;
         }
@@ -192,7 +192,7 @@ sub _validate_update_parameter {
         if ($order_name eq 'stop_loss' and $contract->is_valid_to_cancel) {
             $error = {
                 code              => 'UpdateStopLossNotAllowed',
-                message_to_client => localize('Stop Loss cannot be updated while deal cancellation option is still active.'),
+                message_to_client => localize('Stop loss will be available only after deal cancellation expires. You may update your stop loss limit then.'),
             };
             last;
         }
