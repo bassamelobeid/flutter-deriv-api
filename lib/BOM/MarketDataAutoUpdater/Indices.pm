@@ -103,8 +103,9 @@ sub process_volsurface {
             next;
         }
         my $underlying_raw_data = $data->{$underlying_symbol};
+        # Our current pricing only hanlde ATM vol spread for indices, let do not save spread for other moneyness.
         my %surface_data =
-            map { $_ => {smile => $underlying_raw_data->{$_}->{smile}, vol_spread => $underlying_raw_data->{$_}->{spread}} }
+            map { $_ => {smile => $underlying_raw_data->{$_}->{smile}, vol_spread => {100 => $underlying_raw_data->{$_}->{spread}->{100}}} }
             grep { $_ ne 'volupdate_time' } keys %$underlying_raw_data;
 
         $vol_surface->{$system_symbol} = {
