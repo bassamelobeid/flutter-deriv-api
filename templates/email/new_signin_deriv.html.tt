@@ -19,6 +19,12 @@
                         </tr>
                     </table>
                     <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">[% l('If this was you, you can ignore this email.') %]</p>
+                    <p style="font-family: 'IBM Plex Sans', Arial, sans-serif; color: #333333; font-size: 16px; font-weight: 400; line-height: 24px; margin: 16px 0px 0px 0px;">
+                        [% IF is_reset_password_allowed %]
+                            [% SET reset_pass_url = start_url _ '/reset-password/' %]
+                            [% l('If you do not recognize this activity, go to [_1] to reset your password immediately.', '<a href="' _ reset_pass_url _ '">' _ reset_pass_url _ '</a>') %]
+                        [% END %]
+                    </p>
                 </td>
             </tr>
         </table>

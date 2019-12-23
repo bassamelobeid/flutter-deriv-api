@@ -26,6 +26,11 @@
 </table>
 <br/>
 [% l( 'If this was you, you can ignore this email.') %]
+<br />
+[% IF is_reset_password_allowed %]
+    [% SET reset_pass_url = start_url _ '/' _ language _ '/user/lost_passwordws.html' %]
+    [% l('If you do not recognize this activity, go to [_1] to reset your password immediately.', '<a href="' _ reset_pass_url _ '">' _ reset_pass_url _ '</a>') %]
+[% END %]
 <br/><br/>
 Thank you.<br/>
 Team Binary.com

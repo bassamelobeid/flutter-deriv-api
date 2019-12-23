@@ -444,7 +444,10 @@ sub _compare_signin_activity {
             browser => $bd->browser_string,
             app     => $app,
             ip      => $ip_address,
-            l       => \&localize
+            l       => \&localize,
+	    language => lc($c->stash('request')->language),
+	    start_url => 'https://'.lc($c->stash('brand')->website_name),
+        is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
         };
 
         my $tt = Template->new(
@@ -459,7 +462,7 @@ sub _compare_signin_activity {
         }
 
         send_email({
-            from                  => $brand->emails('support'),
+            from                  => $brand->emails('no-reply'),
             to                    => $client->email,
             subject               => localize(get_message_mapping()->{NEW_SIGNIN_SUBJECT}),
             message               => [$message],
