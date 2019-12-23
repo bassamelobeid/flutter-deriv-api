@@ -417,8 +417,6 @@ sub get_bid {
             return;
         }
 
-        my $format_limit_order = ($params->{streaming_params} and $params->{streaming_params}->{format_limit_order}) ? 1 : 0;
-
         $response = _build_bid_response({
             contract           => $contract,
             contract_id        => $contract_id,
@@ -429,7 +427,6 @@ sub get_bid {
             sell_price         => $sell_price,
             sell_time          => $sell_time,
             validation_error   => $valid_to_sell->{validation_error},
-            from_pricer        => $format_limit_order,
         });
 
         my $pen = $contract->pricing_engine_name;
@@ -890,17 +887,9 @@ sub _build_bid_response {
 
     # for multiplier, we want to return the orders and insurance details.
     if ($contract->category_code eq 'multiplier') {
-        # If the caller is not from price daemon, we need:
-        # 1. sorted orders as array reference ($contract->available_orders) for PRICER_KEY
-        # 2. available order for display in the websocket api response ($contract->available_orders_for_display)
         my $display = $contract->available_orders_for_display;
         $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
-        if ($params->{from_pricer}) {
-            $response->{limit_order} = $display;
-        } else {
-            $response->{limit_order}            = $contract->available_orders;
-            $response->{limit_order_as_hashref} = $display;
-        }
+        $response->{limit_order} = $display;
         # commission in payout currency amount
         $response->{commission} = $contract->commission_amount;
         # deal cancellation

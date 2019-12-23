@@ -161,8 +161,14 @@ sub run {
 
         my $next = $key->[1];
         next unless $next =~ s/^PRICER_KEYS:://;
-        my $payload       = decode_json_utf8($next);
-        my $params        = {@{$payload}};
+        my $payload = decode_json_utf8($next);
+        my $params  = {@{$payload}};
+
+        # for proposal open_contract, we will fetch contract data with contract id and landing company.
+        if ($params->{contract_id} and $params->{landing_company}) {
+            $params = $self->_fetch_proposal_open_contract_params($redis, $params->{contract_id}, $params->{landing_company});
+        }
+
         my $contract_type = $params->{contract_type};
 
         # If incomplete or invalid keys somehow got into pricer,
@@ -197,8 +203,8 @@ sub run {
                 {tags => $self->tags('contract_type:' . $contract_type_string, 'currency:' . $params->{currency})});
         }
 
-        # On websocket clients are subscribing to proposal open contract with "CONTRACT_PRICE::123123_virtual" as the key
-        my $redis_channel = $params->{contract_id} ? 'CONTRACT_PRICE::' . $params->{contract_id} . '_' . $params->{landing_company} : $key->[1];
+        # On websocket clients are subscribing to proposal open contract with "CONTRACT_PRICE::123123::virtual" as the key
+        my $redis_channel = $params->{contract_id} ? join('::', 'CONTRACT_PRICE', $params->{contract_id}, $params->{landing_company}) : $key->[1];
         my $subscribers_count = $redis->publish($redis_channel, encode_json_utf8($response));
         # if None was subscribed, so delete the job
         if ($subscribers_count == 0) {
@@ -243,6 +249,25 @@ sub run {
         $tv = $tv_now;
     }
     return undef;
+}
+
+sub _fetch_proposal_open_contract_params {
+    my ($self, $redis, $contract_id, $landing_company) = @_;
+
+    my $params_key = join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company);
+    my $params = $redis->get($params_key);
+
+    # Returns empty hash reference if could not find contract parameters.
+    # This will then fail in validation.
+    return {} unless $params;
+
+    # refreshes the expiry to 10 seconds if TTL is less.
+    $redis->expire($params_key, 10) if $redis->ttl($params_key) < 10;
+
+    my $payload         = decode_json_utf8($params);
+    my $contract_params = {@{$payload}};
+
+    return $contract_params;
 }
 
 sub _get_underlying_or_log {
@@ -297,7 +322,6 @@ sub _process_price {
 sub _process_bid {
     my ($self, $params) = @_;
     $params->{validation_params}->{skip_barrier_validation} = 1;
-    $params->{streaming_params}->{format_limit_order}       = 1;
     return BOM::Pricing::v3::Contract::send_bid($params);
 }
 
