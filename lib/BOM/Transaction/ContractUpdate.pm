@@ -45,8 +45,7 @@ has contract_id => (
 );
 
 has update_params => (
-    is       => 'ro',
-    required => 1,
+    is => 'ro',
 );
 
 has request_history => (
@@ -134,7 +133,7 @@ sub _validate_update_parameter {
         };
     }
 
-    if (ref $self->update_params ne 'HASH') {
+    if (not $self->has_parameters_to_update or ref $self->update_params ne 'HASH') {
         return {
             code              => 'InvalidUpdateArgument',
             message_to_client => localize('Update only accepts hash reference as input parameter.'),
@@ -340,7 +339,7 @@ sub get_history {
         push @history, @entry;
     }
 
-    return \@history;
+    return [reverse @history];
 }
 
 has [qw(take_profit stop_loss)] => (
