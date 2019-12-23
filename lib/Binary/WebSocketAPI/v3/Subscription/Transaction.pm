@@ -268,13 +268,13 @@ sub _update_transaction {
 
     # we need to fetch something from CONTRACT_PARAMS for multiplier option because transaction stream only streams short_code
     if ($payload->{short_code} =~ /^(?:MULTUP|MULTDOWN)/) {
-        my $contract_params =
-            Binary::WebSocketAPI::v3::Wrapper::Pricer::get_contract_params($payload->{financial_market_bet_id}, $c->landing_company_name);
+        my $contract_id     = $payload->{financial_market_bet_id};
+        my $lc              = $c->landing_company_name;
+        my $contract_params = Binary::WebSocketAPI::v3::Wrapper::Pricer::get_contract_params($contract_id, $lc);
 
         unless (%$contract_params) {
-            $contract_params =
-                Binary::WebSocketAPI::v3::Wrapper::Pricer::fetch_contract_params_from_database($c,
-                {contract_id => $payload->{financial_market_bet_id}});
+            Binary::WebSocketAPI::v3::Wrapper::Pricer::fetch_contract_params_from_database($c, {contract_id => $contract_id});
+            $contract_params = Binary::WebSocketAPI::v3::Wrapper::Pricer::get_contract_params($contract_id, $lc);
         }
         $payload->{limit_order} = $contract_params->{limit_order};
     }

@@ -601,7 +601,6 @@ sub fetch_contract_params_from_database {
     my ($c, $contract_params) = @_;
 
     my $contract_id = $contract_params->{contract_id};
-    my $params_from_db;
 
     $c->call_rpc({
             args => {
@@ -616,13 +615,12 @@ sub fetch_contract_params_from_database {
             },
             rpc_response_cb => sub {
                 my ($c, $rpc_response) = @_;
-                $params_from_db = $rpc_response->{$contract_id};
-                save_contract_params_to_redis($c, $params_from_db);
+                save_contract_params_to_redis($c, $rpc_response->{$contract_id});
                 return;
             }
         });
 
-    return $params_from_db;
+    return;
 }
 
 sub _serialized_args {
