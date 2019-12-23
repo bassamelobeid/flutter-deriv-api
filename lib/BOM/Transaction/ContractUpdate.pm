@@ -6,6 +6,8 @@ use BOM::Platform::Context qw(localize);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Helper::FinancialMarketBet;
 
+use Machine::Epsilon;
+use Date::Utility;
 use Scalar::Util qw(looks_like_number);
 use BOM::Transaction;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
@@ -43,8 +45,12 @@ has contract_id => (
 );
 
 has update_params => (
-    is       => 'ro',
-    required => 1,
+    is => 'ro',
+);
+
+has request_history => (
+    is      => 'ro',
+    default => 0,
 );
 
 has [qw(fmb validation_error)] => (
@@ -77,11 +83,7 @@ has contract => (
 sub _build_contract {
     my $self = shift;
 
-    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new(
-        broker_code => $self->client->broker_code,
-        operation   => 'replica',
-    );
-
+    my $fmb_dm = $self->_fmb_datamapper;
     # fmb reference with buy_transantion transaction ids (buy or buy and sell)
     my $fmb = $fmb_dm->get_contract_details_with_transaction_ids($self->contract_id)->[0];
 
@@ -133,7 +135,7 @@ sub _validate_update_parameter {
         };
     }
 
-    if (ref $self->update_params ne 'HASH') {
+    if (not $self->has_parameters_to_update or ref $self->update_params ne 'HASH') {
         return {
             code              => 'InvalidUpdateArgument',
             message_to_client => localize('Update only accepts hash reference as input parameter.'),
@@ -285,7 +287,71 @@ sub build_contract_update_response {
         contract_details => {
             %common_details,
             limit_order => $display,
-        }};
+        },
+        ($self->request_history ? (history => $self->get_history) : ()),
+    };
+}
+
+sub has_parameters_to_update {
+    my $self = shift;
+
+    return 1 if $self->update_params;
+    return 0;
+}
+
+sub get_history {
+    my $self = shift;
+
+    if ($self->validation_error) {
+        return $self->validation_error;
+    }
+
+    my $fmb_dm  = $self->_fmb_datamapper;
+    my @allowed = sort keys %{$self->allowed_update};
+
+    my $results = $fmb_dm->get_multiplier_audit_details_by_contract_id($self->contract_id);
+    my @history;
+    my $prev;
+    for (my $i = 0; $i <= $#$results; $i++) {
+        my $current = $results->[$i];
+        my @entry;
+        foreach my $order_type (@allowed) {
+            next unless $current->{$order_type . '_order_date'};
+            my $order_amount_str = $order_type . '_order_amount';
+            my $display_name = $order_type eq 'take_profit' ? localize('Take Profit') : localize('Stop Loss');
+            unless ($prev) {
+                my $order_amount = $current->{$order_amount_str} ? $current->{$order_amount_str} + 0 : 0;
+                push @entry,
+                    +{
+                    display_name => $display_name,
+                    order_amount => $order_amount,
+                    order_date   => Date::Utility->new($current->{$order_type . '_order_date'})->epoch,
+                    };
+            } else {
+                my $order_amount;
+                if (defined $prev->{$order_amount_str} and defined $current->{$order_amount_str}) {
+                    next if (abs($prev->{$order_amount_str} - $current->{$order_amount_str}) <= machine_epsilon());
+                    $order_amount = $current->{$order_amount_str} + 0;
+                } elsif (defined $prev->{$order_amount_str}) {
+                    $order_amount = 0;
+                } elsif (defined $current->{$order_amount_str}) {
+                    $order_amount = $current->{$order_amount_str} + 0;
+                }
+
+                push @entry,
+                    +{
+                    display_name => $display_name,
+                    order_amount => $order_amount,
+                    order_date   => Date::Utility->new($current->{$order_type . '_order_date'})->epoch,
+                    }
+                    if (defined $order_amount);
+            }
+        }
+        $prev = $current;
+        push @history, @entry;
+    }
+
+    return [reverse @history];
 }
 
 has [qw(take_profit stop_loss)] => (
@@ -326,6 +392,21 @@ sub _requeue_transaction {
         out => $out,
         in  => $in,
     };
+}
+
+has _fmb_datamapper => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_fmb_datamapper',
+);
+
+sub _build_fmb_datamapper {
+    my $self = shift;
+
+    return BOM::Database::DataMapper::FinancialMarketBet->new(
+        broker_code => $self->client->broker_code,
+        operation   => 'replica',
+    );
 }
 
 1;
