@@ -603,24 +603,37 @@ rpc contract_update => sub {
     my $response;
     try {
         my $updater = BOM::Transaction::ContractUpdate->new(
-            client        => $client,
-            contract_id   => $contract_id,
-            update_params => $args->{limit_order},
+            client          => $client,
+            contract_id     => $contract_id,
+            update_params   => $args->{limit_order},
+            request_history => $args->{history},
         );
-        if ($updater->is_valid_to_update) {
-            $response = $updater->update();
-            unless ($response) {
+        if ($updater->has_parameters_to_update) {
+            if ($updater->is_valid_to_update) {
+                $response = $updater->update();
+                unless ($response) {
+                    $response = BOM::Pricing::v3::Utility::create_error({
+                        code              => 'ContractUpdateFailure',
+                        message_to_client => localize('Contract update failed.'),
+                    });
+                }
+            } else {
+                my $error = $updater->validation_error;
                 $response = BOM::Pricing::v3::Utility::create_error({
-                    code              => 'ContractUpdateFailure',
-                    message_to_client => localize('Contract update failed.'),
+                    code              => $error->{code},
+                    message_to_client => $error->{message_to_client},
                 });
             }
-        } else {
-            my $error = $updater->validation_error;
-            $response = BOM::Pricing::v3::Utility::create_error({
-                code              => $error->{code},
-                message_to_client => $error->{message_to_client},
-            });
+        } elsif ($updater->request_history) {
+            my $history = $updater->get_history();
+            if ($history->{code}) {
+                $response = BOM::Pricing::v3::Utility::create_error({
+                    code              => $history->{code},
+                    message_to_client => $history->{message_to_client},
+                });
+            } else {
+                $response->{history} = $hitory;
+            }
         }
     }
     catch {
