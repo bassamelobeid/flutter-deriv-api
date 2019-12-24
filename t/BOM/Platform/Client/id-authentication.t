@@ -275,9 +275,9 @@ subtest 'MX accounts' => sub {
 
         is($emails->{$client_email}, "Documents are required to verify your identity", "Client received email");
     };
-    subtest "Sufficient DOB, Sufficient UKGC" => sub {
+    subtest "Sufficient DOB, Sufficient DATA" => sub {
         my ($vr_client, $mx_client) =
-            @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_highdob_ukgc@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
+            @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_highdob_data@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
 
         $vr_client->status->set('unwelcome', 'system', 'test');
 
@@ -298,16 +298,16 @@ subtest 'MX accounts' => sub {
         ok !$v->client->status->unwelcome, "Not unwelcome due to sufficient FullNameAndAddress Match";
         ok $v->client->status->age_verification, "Age verified due to suffiecient DOB Match";
 
-        cmp_ok($v->client->get_authentication('ID_ONLINE')->status, 'eq', 'pass', "UKGC authenticated due to sufficient FullNameAndAddress Match");
+        cmp_ok($v->client->get_authentication('ID_ONLINE')->status, 'eq', 'pass', "Online Verification authenticated due to sufficient FullNameAndAddress Match");
         ok $v->client->status->proveid_requested, "ProveID requested";
 
         $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
         ok !$vr_client->status->unwelcome, "VR welcomed";
     };
 
-    subtest "Sufficient DOB, Insufficient UKGC" => sub {
+    subtest "Sufficient DOB, Insufficient DATA" => sub {
         my ($vr_client, $mx_client) =
-            @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_highdob_no_ukgc@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
+            @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_highdob_no_data@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
 
         $vr_client->status->set('unwelcome', 'system', 'test');
 
@@ -327,7 +327,7 @@ subtest 'MX accounts' => sub {
         $v->run_validation('signup');
         ok !$v->client->status->disabled, "Not disabled due to Insufficient DOB Match";
         ok $v->client->status->unwelcome, "Unwelcome due to insufficient DOB Match";
-        ok !$v->client->status->ukgc_authenticated, "Not ukgc authenticated due to insufficient FullNameAndAddress match";
+        ok !$v->client->get_authentication('ID_ONLINE'), "Not online verification authenticated due to insufficient FullNameAndAddress match";
         ok $v->client->status->proveid_requested, "ProveID requested";
 
         $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
