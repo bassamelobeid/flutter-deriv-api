@@ -244,6 +244,7 @@ rpc "buy",
     my $tv_interval = 1000 * Time::HiRes::tv_interval($tv);
 
     BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, $tv_interval);
+    BOM::Pricing::v3::Utility::set_contract_parameters($contract_proposal_details, $client);
 
     return {
         transaction_id   => $trx->transaction_id,
@@ -618,6 +619,10 @@ rpc contract_update => sub {
                         message_to_client => localize('Contract update failed.'),
                     });
                 }
+                if (my $contract_proposal_details = $response->{contract_details}) {
+                    BOM::Pricing::v3::Utility::set_contract_parameters($contract_proposal_details, $client);
+                }
+
             } else {
                 my $error = $updater->validation_error;
                 $response = BOM::Pricing::v3::Utility::create_error({
@@ -633,7 +638,7 @@ rpc contract_update => sub {
                     message_to_client => $history->{message_to_client},
                 });
             } else {
-                $response->{history} = $hitory;
+                $response->{history} = $history;
             }
         }
     }
