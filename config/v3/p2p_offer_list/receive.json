@@ -22,11 +22,6 @@
                     "items": {
                         "type": "object",
                         "properties": {
-                            "description": {
-                                "description": "Notes from the agent. Should include contact details and payment instructions.",
-                                "type": "string",
-                                "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
-                            },
                             "type": {
                                 "description": "Whether this is a buy or a sell.",
                                 "type": "string",
@@ -53,10 +48,18 @@
                             },
                             "amount": {
                                 "description": "The amount of the offer.",
+                                "type": "number"
+                            },
+                            "amount_display": {
+                                "description": "The amount of the offer, formatted to appropriate decimal places.",
                                 "type": "string"
                             },
                             "amount_used": {
                                 "description": "The used amount of the offer's total `amount`. It is only visible for agents.",
+                                "type": "number"
+                            },
+                            "amount_used_display": {
+                                "description": "The used amount of the offer's total `amount`, formatted to appropriate decimal places. It is only visible for agents.",
                                 "type": "string"
                             },
                             "country": {
@@ -86,6 +89,10 @@
                             },
                             "max_amount": {
                                 "description": "Maximum amount, in local currency.",
+                                "type": "number"
+                            },
+                            "max_amount_display": {
+                                "description": "Maximum amount, in local currency, formatted to appropriate decimal places.",
                                 "type": "string"
                             },
                             "method": {
@@ -97,7 +104,16 @@
                             },
                             "min_amount": {
                                 "description": "Minimum amount, in local currency.",
+                                "type": "number"
+                            },
+                            "min_amount_display": {
+                                "description": "Minimum amount, in local currency, formatted to appropriate decimal places.",
                                 "type": "string"
+                            },
+                            "offer_description": {
+                                "description": "Notes from the agent. Should include contact details and payment instructions.",
+                                "type": "string",
+                                "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
                             },
                             "offer_id": {
                                 "description": "The unique identifier for this offer.",
@@ -105,6 +121,18 @@
                             },
                             "price": {
                                 "description": "Cost in local currency.",
+                                "type": "number"
+                            },
+                            "price_display": {
+                                "description": "Cost in local currency, formatted to appropriate decimal places.",
+                                "type": "string"
+                            },
+                            "rate": {
+                                "description": "Conversion rate from account currency to local currency.",
+                                "type": "number"
+                            },
+                            "rate_display": {
+                                "description": "Conversion rate from account currency to local currency, formatted to appropriate decimal places.",
                                 "type": "string"
                             }
                         }
