@@ -111,7 +111,7 @@ subtest 'process' => sub {
                 store_mt5_transaction new_mt5_signup anonymize_client
                 document_upload ready_for_authentication account_closure client_verification
                 verify_address social_responsibility_check sync_onfido_details
-                set_pending_transaction authenticated_with_scans qualifying_payment_check payment_deposit
+                set_pending_transaction authenticated_with_scans qualifying_payment_check payment_deposit login
                 p2p_agent_created p2p_agent_updated
                 p2p_offer_created p2p_offer_updated
                 p2p_order_created p2p_order_updated p2p_order_expired

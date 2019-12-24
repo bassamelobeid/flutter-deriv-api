@@ -20,9 +20,23 @@ use Net::Async::HTTP;
 use Net::Async::Redis;
 use WebService::Async::Onfido;
 use WebService::Async::SmartyStreets;
+use WebService::Async::Segment;
 
 use BOM::Config;
 use BOM::Config::RedisReplicated;
+
+sub segment {
+    my ($self) = @_;
+
+    return $self->{segment} //= do {
+        my %args = (
+            write_key => $ENV{SEGMENT_WRITE_KEY} ? $ENV{SEGMENT_WRITE_KEY} : BOM::Config::third_party()->{segment}->{write_key},
+            base_uri  => $ENV{SEGMENT_BASE_URL}  ? $ENV{SEGMENT_BASE_URL}  : BOM::Config::third_party()->{segment}->{base_uri},
+        );
+        $self->add_child(my $service = WebService::Async::Segment->new(%args));
+        $service;
+        }
+}
 
 sub onfido {
     my ($self) = @_;
