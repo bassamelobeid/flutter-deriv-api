@@ -397,6 +397,8 @@ If this argument is not specified, the sub which check for documents which have 
 If this argument is specified, the sub will check for documents whose expiration
 date is earlier than the specified date.
 
+=back
+
 =cut
 
 sub documents_expired {
@@ -916,13 +918,9 @@ Takes the following parameters.
 =item * C<currency> - (optional) A string representing 3 character currency as defined in L<ISO 4217|https://en.wikipedia.org/wiki/ISO_4217>. An account will be created based on the given string, if it does not exist.
 =back
 
-Returns
-
-=over 4
-
-=item * C<Account> - An Account Object of type BOM::User::Client::Account
-
 =back
+
+Returns C<Account> - An Account Object of type BOM::User::Client::Account
 
 =cut
 
@@ -1745,13 +1743,21 @@ Expired offers are excluded by default.
 sub p2p_offer_list {
     my ($client, %param) = @_;
 
-    return $client->db->dbic->run(
+    my $offers = $client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
                 'SELECT * FROM p2p.offer_list(?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{qw/id account_currency agent_id agent_loginid active type limit offset/});
-        });
+        }) // [];
+
+    # Calculating current maximum for offers
+    my $limit_maximum_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
+    for my $offer ($offers->@*) {
+        $offer->{max_amount} =
+            List::Util::min($offer->{remaining}, $offer->{max_amount}, convert_currency($limit_maximum_order, 'USD', $offer->{account_currency}));
+    }
+    return $offers;
 }
 
 =head2 p2p_offer_update
@@ -1813,14 +1819,13 @@ sub p2p_order_create {
 
     my $offer_info = $client->p2p_offer($offer_id);
 
+    die "OfferNotFound\n"   unless $offer_info;
     die "OfferIsDisabled\n" unless $offer_info->{is_active};
     die "InvalidOfferExpired\n" if $offer_info->{is_expired};
     die "InvalidCurrency\n" unless $offer_info->{account_currency} eq $client->currency;
     die "InvalidOfferOwn\n" if $offer_info->{agent_loginid} eq $client->loginid;
-    die "InvalidAmount\n" unless $amount > 0 && $amount <= $offer_info->{remaining};
-
-    die "MaximumExceeded\n"
-        if in_usd($amount, $offer_info->{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
+    die "MaximumExceeded\n" if $amount > $offer_info->{max_amount};
+    die "MinimumNotMet\n"   if $amount < $offer_info->{min_amount};
 
     my ($agent_info) = $client->p2p_agent_list(id => $offer_info->{agent_id})->@*;
     die "AgentNotFound\n" unless $agent_info;
@@ -1923,6 +1928,8 @@ sub p2p_order_cancel {
     my $order_info = $client->p2p_order($param{id});
     die "OrderNotFound\n" unless $order_info;
 
+    die "AlreadyCancelled\n" if $order_info->{status} eq 'cancelled';
+
     my $ownership_type = _order_ownership_type($client, $order_info);
 
     die "PermissionDenied\n" unless $ownership_type eq 'client';
@@ -2010,12 +2017,14 @@ sub _order_ownership_type {
 
 =head2 _client_confirmation
 
-Sets order client confirmed.
+Sets order status to C<client-confirmed>.
 
 =cut
 
 sub _client_confirmation {
     my ($client, $order_info) = @_;
+
+    die "AlreadyConfirmedByClient\n" if $order_info->{status} eq 'client-confirmed';
 
     die "InvalidStateForClientConfirmation\n" if $order_info->{status} ne 'pending';
 
@@ -2027,13 +2036,15 @@ sub _client_confirmation {
 
 =head2 _agent_confirmation
 
-Sets order agent_confirmed and completes the order in a single transcation.
+Sets order status to C<agent_confirmed> and completes the order in a single transaction.
 Completing the order moves funds from escrow to client.
 
 =cut
 
 sub _agent_confirmation {
     my ($client, $order_info, $source) = @_;
+
+    die "AlreadyConfirmedByAgent\n" if $order_info->{status} eq 'agent-confirmed';
 
     die "InvalidStateForAgentConfirmation\n" if $order_info->{status} ne 'client-confirmed';
 

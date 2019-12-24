@@ -42,6 +42,7 @@ subtest 'Creating new order' => sub {
     is($order_data->{description},    $description,     'Description for new order is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
+
     cmp_deeply(
         $client->p2p_order_list,
         [{
@@ -268,7 +269,7 @@ subtest 'Creating order with amount more than avalible' => sub {
     };
 
     chomp($err);
-    is $err, 'InvalidAmount', 'Got correct error code';
+    is $err, 'MaximumExceeded', 'Got correct error code';
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
@@ -298,7 +299,7 @@ subtest 'Creating order with negative amount' => sub {
     };
 
     chomp($err);
-    is $err, 'InvalidAmount', 'Got correct error code';
+    is $err, 'MinimumNotMet', 'Got correct error code';
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
