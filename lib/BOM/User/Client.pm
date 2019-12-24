@@ -1591,14 +1591,15 @@ sub check_duplicate_account {
     # If client is going to update his virtual account there is no need to check for duplicate account
     return undef if $target_broker =~ BOM::User::VIRTUAL_REGEX();
 
-    my @duplicate_check = qw/first_name last_name date_of_birth phone/;
-    if (any { $args->{$_} and $args->{$_} ne $client->$_ } @duplicate_check) {
+    # Get what details we need to check signup has different detail than BO check
+    my $duplicate_check = $args->{checks} // ['first_name', 'last_name', 'date_of_birth', 'phone'];
+    if (any { $args->{$_} and $args->{$_} ne $client->$_ } @$duplicate_check) {
 
         my $dup_details = {
             email          => $client->email,
             exclude_status => ['duplicate_account', 'disabled'],
         };
-        $dup_details->{$_} = $args->{$_} || $client->$_ for @duplicate_check;
+        $dup_details->{$_} = $args->{$_} || $client->$_ for @$duplicate_check;
         #name + dob is one group to check, phone is another independent condition
         #current logic is we only check phone when it is changed
         delete $dup_details->{phone} unless $args->{phone} and $args->{phone} ne $client->phone;
