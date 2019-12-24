@@ -198,6 +198,9 @@ sub populate_response_proposal_contract {
                 $contract->{profit_percentage} = roundcommon(0.01, $contract->{profit} / $contract->{buy_price} * 100);
             }
             $response->{$id} = $contract;
+
+            # if we're subscribing to proposal_open_contract and contract is not sold, then set CONTRACT_PARAMS here
+            BOM::Pricing::v3::Utility::set_contract_parameters($contract, $client) if $params->{args}->{subscribe} and not $is_sold;
         }
     }
 
