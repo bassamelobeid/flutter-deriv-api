@@ -569,7 +569,6 @@ sub _validate_login {
 
         BOM::User::AuditLog::log('system suspend all login', $user->{email});
         return $err_var->("TEMP_DISABLED");
-
     }
 
     # Get last login (this excludes impersonate) before current login to get last record
@@ -640,6 +639,20 @@ sub _validate_login {
 
     return $err_var->("TEMP_DISABLED") if grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins};
     return $err_var->("DISABLED") if ($client->status->is_login_disallowed or $client->status->disabled);
+
+    my $bd           = HTTP::BrowserDetect->new($c->req->headers->header('User-Agent'));
+    my $country_code = uc($c->stash('request')->country_code // '');
+    my $brand        = $c->stash('brand');
+    BOM::Platform::Event::Emitter::emit(
+        'login',
+        {
+            loginid    => $client->loginid,
+            properties => {
+                ip       => $ip,
+                location => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
+                browser  => $bd->browser,
+                device   => $bd->device // $bd->os_string,
+            }});
 
     return {
         filtered_clients => \@filtered_clients,
