@@ -62,6 +62,8 @@ sub create_offer {
     $param{type}             //= 'buy';
     $param{account_currency} //= 'USD';
     $param{price}            //= 1;
+    $param{min_amount}       //= 0.1;
+    $param{max_amount}       //= 100;
 
     my $agent = create_agent(balance => $param{amount});
 
