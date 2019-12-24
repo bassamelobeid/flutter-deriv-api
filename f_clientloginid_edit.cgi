@@ -518,6 +518,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         code_exit_BO("<p style='color:red; font-weight:bold;'>ERROR: $message </p><p><a href='$self_href'>&laquo;Return to Client Details</a></p>");
     }
 
+    # Do not check here for phone duplicate because CS will have to contact the client
+    $input{checks} = ['first_name', 'last_name', 'date_of_birth'];
     $error = $client->check_duplicate_account(\%input);
     if ($error) {
         my $duplicate_account_details = $error->{details};
@@ -526,7 +528,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             first_name    => $duplicate_account_details->[1],
             last_name     => $duplicate_account_details->[2],
             date_of_birth => $duplicate_account_details->[3],
-            phone         => $duplicate_account_details->[5],
             self_link     => $self_href
         };
 
