@@ -13,7 +13,6 @@ use Moo;
 use Carp qw(croak);
 use List::Util qw(any);
 use Scalar::Util qw(blessed);
-use Time::HiRes qw();
 with 'Binary::WebSocketAPI::v3::Subscription';
 
 use namespace::clean;
@@ -273,17 +272,10 @@ sub _update_transaction {
         my $lc              = $c->landing_company_name;
         my $contract_params = Binary::WebSocketAPI::v3::Wrapper::Pricer::get_contract_params($contract_id, $lc);
 
-        # CONTRACT_PARAMS is set in websocket (we've decided not the set it in RPC because we didn't want to introduce
-        # dependency) after every successful buy. This introduces a race condition between transaction streams and
-        # websocket. Hence, implementing a small retry here.
-        my $max_retry_sec = 1;
-        my $start         = 0.1;
-        while (not $contract_params->{limit_order} and $start <= $max_retry_sec) {
-            Time::HiRes::sleep($start);
+        unless (%$contract_params) {
+            Binary::WebSocketAPI::v3::Wrapper::Pricer::fetch_contract_params_from_database($c, {contract_id => $contract_id});
             $contract_params = Binary::WebSocketAPI::v3::Wrapper::Pricer::get_contract_params($contract_id, $lc);
-            $start += 0.1;
         }
-
         $payload->{limit_order} = $contract_params->{limit_order};
     }
 
