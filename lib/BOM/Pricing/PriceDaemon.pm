@@ -266,8 +266,6 @@ sub _fetch_proposal_open_contract_params {
 
     my $payload         = decode_json_utf8($params);
     my $contract_params = {@{$payload}};
-    $contract_params->{contract_id}     = $contract_id;
-    $contract_params->{landing_company} = $landing_company;
 
     return $contract_params;
 }
