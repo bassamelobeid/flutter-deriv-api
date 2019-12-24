@@ -32,10 +32,8 @@ use Log::Any qw($log);
 use List::Util qw(shuffle uniq reduce first);
 use List::MoreUtils qw(first_index);
 use JSON::MaybeUTF8 qw(:v1);
-use Syntax::Keyword::Try;
 use Test::More;
 use curry;
-use Try::Tiny;
 use Future::Utils qw(fmap0);
 
 use BOM::Test;

@@ -33,7 +33,7 @@ use Net::EmptyPort qw/empty_port/;
 use Mojo::Redis2::Server;
 use File::Temp qw/ tempdir /;
 use Path::Tiny;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use Test::MockModule;
 use MojoX::JSON::RPC::Client;
@@ -109,8 +109,8 @@ sub launch_redis {
                     $redis_test_done = 1;
                 }
                 catch {
-                    diag "Could not run ws_redis_master keys test: $_\n";
-                };
+                    diag "Could not run ws_redis_master keys test: $@\n";
+                }
             }
             $orig->(@_);
         };

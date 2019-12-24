@@ -4,7 +4,7 @@ use Moose::Role;
 use Carp;
 use DBI;
 use Path::Tiny;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use DBIx::Migration;
 use BOM::Test;
 use Test::More;
@@ -29,8 +29,8 @@ sub prepare_unit_test_database {
         $self->_post_import_operations;
     }
     catch {
-        Carp::croak '[' . $0 . '] preparing unit test database failed. ' . $_;
-    };
+        Carp::croak '[' . $0 . '] preparing unit test database failed. ' . $@;
+    }
     return 1;
 }
 
@@ -80,15 +80,15 @@ sub _migrate_changesets {
                 #$self->_do_quoted($pooler, 'PAUSE  %s', $b_db);
             }
             catch {
-                print "[pgbouncer] DISABLE $b_db error [$_]";
-            };
+                print "[pgbouncer] DISABLE $b_db error [$@]";
+            }
 
             try {
                 $self->_do_quoted($pooler, 'KILL %s', $b_db);
             }
             catch {
-                print "[pgbouncer] KILL $b_db error [$_]";
-            };
+                print "[pgbouncer] KILL $b_db error [$@]";
+            }
         }
     }
 
@@ -99,15 +99,15 @@ sub _migrate_changesets {
             $self->_do_quoted($pooler, 'ENABLE %s', $b_db);
         }
         catch {
-            print "[pgbouncer] ENABLE $b_db error [$_]";
-        };
+            print "[pgbouncer] ENABLE $b_db error [$@]";
+        }
 
         try {
             $self->_do_quoted($pooler, 'RESUME %s', $b_db);
         }
         catch {
-            print "[pgbouncer] RESUME $b_db error [$_]";
-        };
+            print "[pgbouncer] RESUME $b_db error [$@]";
+        }
     }
 
     return 1;
@@ -226,8 +226,8 @@ sub _restore_dbs_from_template {
         $is_successful = 1;
     }
     catch {
-        note 'Falling back to restoring schemas, because restoring the db template failed for ' . $self->_db_name . ' with error: ' . $_;
-    };
+        note 'Falling back to restoring schemas, because restoring the db template failed for ' . $self->_db_name . ' with error: ' . $@;
+    }
 
     return $is_successful;
 }
@@ -248,8 +248,8 @@ sub _create_template {
         $dbh->disconnect;
     }
     catch {
-        note 'Creating the db template failed for ' . $self->_db_name . ' with error: ' . $_;
-    };
+        note 'Creating the db template failed for ' . $self->_db_name . ' with error: ' . $@;
+    }
     return;
 }
 

@@ -13,7 +13,7 @@ use BOM::CTC::Helper;
 use BOM::CTC::Currency;
 use BOM::Platform::Client::CashierValidation;
 use BOM::Database::ClientDB;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 our @EXPORT_OK = qw( wait_miner deploy_test_contract set_pending );
 
@@ -71,7 +71,7 @@ sub set_pending {
     my $dbic = $clientdb->db->dbic;
     # since we are using bom-events for subscription we need to set
     # the transaction to pending manually here.
-    return try {
+    try {
         return $dbic->run(
             ping => sub {
                 $_->selectrow_array('SELECT payment.ctc_set_deposit_pending(?, ?, ?, ?)', undef, $address, $currency_code, $amount, $transaction);
@@ -79,7 +79,7 @@ sub set_pending {
     }
     catch {
         return 0;
-    };
+    }
 }
 
 =head2 deploy_all_test_contracts

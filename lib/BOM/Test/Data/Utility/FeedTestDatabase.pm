@@ -2,6 +2,7 @@ package BOM::Test::Data::Utility::FeedTestDatabase;
 use strict;
 use warnings;
 
+use Syntax::Keyword::Try;
 use BOM::Test;
 use Cache::RedisDB;
 use MooseX::Singleton;
@@ -9,7 +10,6 @@ use Postgres::FeedDB;
 use Postgres::FeedDB::Spot::Tick;
 use Postgres::FeedDB::Spot::OHLC;
 use File::Basename;
-use Try::Tiny;
 use YAML::XS qw(LoadFile);
 use Sereal::Encoder;
 use BOM::Config::RedisReplicated;
@@ -58,11 +58,16 @@ sub truncate_tables {
     my @tables = qw(tick ohlc_minutely ohlc_hourly ohlc_daily ohlc_status);
 
     my $dbh = $self->db_handler($self->_db_name);
-    try {
-        foreach my $table (@tables) {
+    ## no critic (RequireCheckingReturnValueOfEval)
+    foreach my $table (@tables) {
+        try {
             $dbh->do('truncate table feed.' . $table);
         }
-    };
+        catch {
+            warn "error when truncate table feed.$table: $@";
+        }
+
+    }
 
     return;
 }
