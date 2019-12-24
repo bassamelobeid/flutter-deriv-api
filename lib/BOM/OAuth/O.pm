@@ -44,6 +44,8 @@ use constant BLOCK_TTL_RESET_AFTER => 24 * 60 * 60;
 use constant BLOCK_TRIGGER_COUNT => 10;
 # How much time in seconds with no failed attempts before we reset (expire) the failure count
 use constant BLOCK_TRIGGER_WINDOW => 5 * 60;
+# Redis key prefix for client's previous login attempts
+use constant CLIENT_LOGIN_HISTORY_KEY => "CLIENT_LOGIN_HISTORY::";
 
 sub authorize {
     my $c = shift;
@@ -409,33 +411,57 @@ sub _website_domain {
 
 =head2 _compare_signin_activity
 
-Compare the sign-in activity of the last login environment and the
-new login environment. If there is a difference, send an email to client indicating
-that a login has been successful from a different environment (even if it was
-the client themselves)
+Check the user login attempt device and country against the previous entries
+The entries are stored in Redis hash composed of $country::$device.
+
+if it's the client's first login we will not send an email else update the entry with the current timestamp.
+we expect old entries to be removed by an independent cronjob
 
 =cut
 
 sub _compare_signin_activity {
     my ($args) = @_;
 
-    my $old = delete $args->{old_env};
-    my $new = delete $args->{new_env};
+    my $app                     = delete $args->{app};
+    my $client                  = delete $args->{client};
+    my $c                       = delete $args->{c};
+    my $last_attempt_in_db      = delete $args->{old_env};
+    my $current_attempt_details = delete $args->{new_env};
 
-    foreach my $key (keys %$old) {
+    my $brand = $c->stash('brand');
 
-        next if $old->{$key} eq $new->{$key};
+    my $bd           = HTTP::BrowserDetect->new($c->req->headers->header('User-Agent'));
+    my $country_code = uc($c->stash('request')->country_code // '');
+    my $ip_address   = $c->stash('request')->client_ip // '';
 
-        my $app    = delete $args->{app};
-        my $client = delete $args->{client};
-        my $c      = delete $args->{c};
+    my $new_attempt_device  = $bd->device         || $bd->os_string || 'unknown';
+    my $new_attempt_browser = $bd->browser_string || 'unknown';
+    my $new_attempt_entry   = $country_code . '::' . $new_attempt_device . '::' . $new_attempt_browser;
+    my $new_attempt_time    = time;
 
-        my $brand = $c->stash('brand');
+    my $redis      = BOM::Config::RedisReplicated::redis_auth_write();
+    my $client_key = CLIENT_LOGIN_HISTORY_KEY . $client->user->id;
 
-        my $bd           = HTTP::BrowserDetect->new($c->req->headers->header('User-Agent'));
-        my $country_code = uc($c->stash('request')->country_code // '');
-        my $ip_address   = $c->stash('request')->client_ip // '';
+    my $known_attempt = $redis->hget($client_key, $new_attempt_entry);
 
+    # save/update the attempt information
+    $redis->hset($client_key, $new_attempt_entry, $new_attempt_time);
+
+    if (!$known_attempt) {
+        # first loggin ever
+        if (!$last_attempt_in_db) {
+            return;
+        } else {
+            # to avoid confusion when this feature is released we will do the old check here
+            my $should_send_email = 0;
+            foreach my $key (qw/ip country user_agent/) {
+                if ($last_attempt_in_db->{$key} // '' ne $current_attempt_details->{$key} // '') {
+                    $should_send_email = 1;
+                    last;
+                }
+            }
+            return unless $should_send_email;
+        }
         # Relevant data required
         my $data = {
             client_name => $client->first_name ? ' ' . $client->first_name . ' ' . $client->last_name : '',
@@ -472,8 +498,6 @@ sub _compare_signin_activity {
             skip_text2html        => 1
         });
 
-        # Only one difference is needed for the email to be send
-        last;
     }
 
     return undef;
@@ -507,9 +531,9 @@ sub _validate_login {
     my $r = $c->stash('request');
     my $ip = $r->client_ip || '';
 
-    # Check for blocked IPs early in the process. 
+    # Check for blocked IPs early in the process.
     my $redis = BOM::Config::RedisReplicated::redis_auth_write();
-    if($ip and $redis->get('oauth::blocked_by_ip::' . $ip)) {
+    if ($ip and $redis->get('oauth::blocked_by_ip::' . $ip)) {
         stats_inc('login.authorizer.block.hit');
         return $err_var->("SUSPICIOUS_BLOCKED");
     }
@@ -559,15 +583,15 @@ sub _validate_login {
         app_id          => $app_id
     );
 
-    if(exists $result->{error}) {
+    if (exists $result->{error}) {
         stats_inc('login.authorizer.login_failed');
         # Something went wrong - most probably login failure. Innocent enough in isolation;
         # if we see a pattern of failures from the same address, we would want to discourage
         # further attempts.
-        if($ip) {
+        if ($ip) {
             try {
                 my $k = 'oauth::failure_count_by_ip::' . $ip;
-                if($redis->incr($k) > BLOCK_TRIGGER_COUNT) {
+                if ($redis->incr($k) > BLOCK_TRIGGER_COUNT) {
                     # Note that we don't actively delete the failure count here, since we expect
                     # it to expire before the block does. If it doesn't... well, this only applies
                     # on failed login attempt, if you get the password right first time after the
@@ -581,14 +605,15 @@ sub _validate_login {
                     # to slow down offenders enough that we no longer have to be particularly concerned),
                     # and also apply the block at this stage.
                     $redis->set('oauth::backoff_by_ip::' . $ip, $ttl, EX => BLOCK_TTL_RESET_AFTER);
-                    $redis->set('oauth::blocked_by_ip::' . $ip, 1, EX => $ttl);
+                    $redis->set('oauth::blocked_by_ip::' . $ip, 1,    EX => $ttl);
                     stats_inc('login.authorizer.block.add');
                 } else {
                     # Extend expiry every time there's a failure
                     $redis->expire($k, BLOCK_TRIGGER_WINDOW);
                     stats_inc('login.authorizer.block.fail');
                 }
-            } catch {
+            }
+            catch {
                 $log->errorf('Failure encountered while handling Redis blocklists for failed login: %s', $_);
                 stats_inc('login.authorizer.block.error');
             };
@@ -606,12 +631,12 @@ sub _validate_login {
     my $client = $filtered_clients[0];
 
     _compare_signin_activity({
-            old_env => _get_details_from_environment($last_login->{environment}),
-            new_env => _get_details_from_environment($new_env),
-            client  => $client,
-            c       => $c,
-            app     => $app
-        }) if $last_login;
+        old_env => _get_details_from_environment($last_login->{environment}) // undef,
+        new_env => _get_details_from_environment($new_env),
+        client  => $client,
+        c       => $c,
+        app     => $app
+    });
 
     return $err_var->("TEMP_DISABLED") if grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins};
     return $err_var->("DISABLED") if ($client->status->is_login_disallowed or $client->status->disabled);

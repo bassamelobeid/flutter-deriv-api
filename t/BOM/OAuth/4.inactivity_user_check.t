@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 6;
+use Test::More;
 use Test::Mojo;
 use Test::MockModule;
 use BOM::User::Password;
