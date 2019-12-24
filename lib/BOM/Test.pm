@@ -96,9 +96,11 @@ BEGIN {
         # This port is only valid in QA. In CI, we use the same ports as QA manual testing
         $ENV{DB_TEST_PORT} = 5451;
     }
-    $ENV{TEST_DATABASE}    = 1;                     ## no critic (RequireLocalizedPunctuationVars)
-    $ENV{JOB_QUEUE_PREFIX} = 'TEST_' . uc(env());
-    $ENV{QUEUE_TIMEOUT}    = 2;
+    $ENV{TEST_DATABASE}     = 1;                     ## no critic (RequireLocalizedPunctuationVars)
+    $ENV{JOB_QUEUE_PREFIX}  = 'TEST_' . uc(env());
+    $ENV{QUEUE_TIMEOUT}     = 2;
+    $ENV{SEGMENT_BASE_URL}  = 'http://dummy/';
+    $ENV{SEGMENT_WRITE_KEY} = 'test';
 
     # remove PERL5OPT which could cause confusion when forking to perls
     # different from our own (e.g. from binary-com/perl to /usr/bin/perl)
