@@ -25,7 +25,7 @@ use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::User;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/financialrounding formatnumber/;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -60,11 +60,13 @@ our %ERROR_MAP = do {
         UnavailableOnVirtual => localize('P2P cashier functionality is not available on demo accounts'),
         NoCountry            => localize('You need to set your residence in order to use this feature'),
         NoLocalCurrency      => localize('We are unable to determine the local currency for your country'),
+
         # Client status
         NotLoggedIn      => localize('You are not logged in'),
         NoCurrency       => localize('You have not yet selected a currency for your account'),
         PermissionDenied => localize('You do not have permission for this action'),
         NotRegistered    => localize('You are not yet registered as an P2P agent'),
+
         # Invalid data
         InvalidPaymentMethod => localize('This payment method is invalid'),
         NotFound             => localize('Not found'),
@@ -73,21 +75,29 @@ our %ERROR_MAP = do {
         AlreadyInProgress    => localize('This cannot be cancelled since the order is already in progress'),
 
         InvalidAmount => localize('Invalid amount for creating an order'),
+
         # bom-user errors
-        AgentNotFound         => localize('P2P Agent not found'),
-        AgentNotRegistered    => localize('This account is not registered as an P2P agent'),
-        AgentNotActive        => localize('The provided agent ID does not belong to an active agent'),
-        AgentNotAuthenticated => localize('The agent is not authenticated'),
-        OfferNoEditExpired    => localize('The offer is expired and cannot be changed.'),
-        OfferNoEditInactive   => localize('The offer is inactive and cannot be changed.'),
-        OfferNotFound         => localize('Offer not found'),
-        OfferNoEditAmount     => localize('The offer has no available amount and cannot be changed.'),
-        OfferMaxExceeded      => localize('The maximum limit of active offers reached.'),
-        InvalidOfferCurrency  => localize('Invalid offer currency'),
-        OrderNotFound         => localize('Order not found'),
-        OrderAlreadyExists    => localize('Too many orders. Please complete your pending orders.'),
-        InvalidOfferOwn       => localize('You cannot create an order for your own offer.'),
-        InvalidOfferExpired   => localize('The offer has expired.'),
+        AgentNotFound            => localize('P2P Agent not found'),
+        AgentNotRegistered       => localize('This account is not registered as an P2P agent'),
+        AgentNotActive           => localize('The provided agent ID does not belong to an active agent'),
+        AgentNotAuthenticated    => localize('The agent is not authenticated'),
+        AlreadyConfirmedByAgent  => localize('The order is already confirmed by agent.'),
+        AlreadyConfirmedByClient => localize('The order is already confirmed by client.'),
+        AlreadyCancelled         => localize('The order is already cancelled.'),
+        OfferNoEditExpired       => localize('The offer is expired and cannot be changed.'),
+        OfferNoEditInactive      => localize('The offer is inactive and cannot be changed.'),
+        OfferNotFound            => localize('Offer not found'),
+        OfferNoEditAmount        => localize('The offer has no available amount and cannot be changed.'),
+        OfferMaxExceeded         => localize('The maximum limit of active offers reached.'),
+        InvalidOfferCurrency     => localize('Invalid offer currency'),
+        OrderNotFound            => localize('Order not found'),
+        OrderAlreadyExists       => localize('Too many orders. Please complete your pending orders.'),
+        InvalidOfferOwn          => localize('You cannot create an order for your own offer.'),
+        InvalidOfferExpired      => localize('The offer has expired.'),
+
+        InvalidStateForClientConfirmation => localize('The order cannot be confirmed by client in its current state.'),
+        InvalidStateForAgentConfirmation  => localize('The order cannot be confirmed by agent in its current state.'),
+
         # DB errors
         BI225 => localize('Offer not found'),
         BI226 => localize('Cannot create order for your own offer'),
@@ -314,102 +324,6 @@ p2p_rpc p2p_agent_info => sub {
 
 };
 
-=head2 p2p_offer_create
-
-Attempts to create a new offer.
-
-Takes the following named parameters:
-
-=over 4
-
-=item * C<agent_id> - the internal ID of the agent (if the client only has one ID, will use that one)
-
-=item * C<min> - minimum amount per order (in C<local_currency>)
-
-=item * C<max> - maximum amount per order (in C<local_currency>)
-
-=item * C<total> - total amount for all orders on this offer (in C<local_currency>)
-
-=item * C<currency> - currency to be credited/debited from the Binary accounts
-
-=item * C<local_currency> - currency the agent/client transaction will be conducted in (outside our system)
-
-=item * C<price> - the price (in C<local_currency>)
-
-=item * C<active> - whether to create it as active or disabled
-
-=item * C<type> - either C<buy> or C<sell>
-
-=back
-
-Returns a hashref which contains the offer ID and the details of the offer (mostly just a repeat of the
-above information).
-
-=cut
-
-p2p_rpc p2p_offer_create => sub {
-    my (%args) = @_;
-    my $client = $args{client};
-    my $offer  = $client->p2p_offer_create($args{params}{args}->%*);
-
-    return +{
-        type             => $offer->{type},
-        account_currency => $offer->{account_currency},
-        description      => $offer->{description},
-        agent_id         => $offer->{agent_id},
-        agent_name       => $offer->{agent_name},
-        amount           => formatnumber('price', $offer->{account_currency}, $offer->{amount}),
-        amount_used      => formatnumber('price', $offer->{account_currency}, $offer->{amount} - $offer->{remaining}),
-        country          => $offer->{country},
-        created_time     => Date::Utility->new($_->{created_time})->epoch,
-        is_active        => $offer->{is_active},
-        local_currency   => $offer->{local_currency},
-        max_amount       => formatnumber('price', $offer->{account_currency}, $offer->{max_amount}),
-        method           => $offer->{method},
-        min_amount       => formatnumber('price', $offer->{account_currency}, $offer->{min_amount}),
-        offer_id         => $offer->{id},
-        price            => formatnumber('price', $offer->{local_currency}, $offer->{price}),
-    };
-};
-
-=head2 p2p_offer_info
-
-Returns information about an offer.
-
-Returns a hashref containing the following keys:
-
-=over 4
-
-=item * C<agent_id> - the internal ID of the agent (if the client only has one ID, will use that one)
-
-=item * C<id> - the internal ID of this offer
-
-=item * C<min> - minimum amount per order (in C<local_currency>)
-
-=item * C<max> - maximum amount per order (in C<local_currency>)
-
-=item * C<total> - total amount for all orders on this offer (in C<local_currency>)
-
-=item * C<currency> - currency to be credited/debited from the Binary accounts
-
-=item * C<local_currency> - currency the agent/client transaction will be conducted in (outside our system)
-
-=item * C<price> - the price (in C<local_currency>)
-
-=item * C<active> - true if orders can be created against this offer
-
-=item * C<type> - either C<buy> or C<sell>
-
-=back
-
-=cut
-
-p2p_rpc p2p_offer_info => sub {
-    my (%args) = @_;
-    my $client = $args{client};
-    return $client->p2p_offer($args{params}{args}{id}) // die "OfferNotFound\n";
-};
-
 =head2 p2p_method_list
 
 Returns a list of all available payment methods.
@@ -460,6 +374,87 @@ p2p_rpc p2p_method_list => sub {
     ];
 };
 
+=head2 p2p_offer_create
+
+Attempts to create a new offer.
+
+Takes the following named parameters:
+
+=over 4
+
+=item * C<agent_id> - the internal ID of the agent (if the client only has one ID, will use that one)
+
+=item * C<min> - minimum amount per order (in C<local_currency>)
+
+=item * C<max> - maximum amount per order (in C<local_currency>)
+
+=item * C<total> - total amount for all orders on this offer (in C<local_currency>)
+
+=item * C<currency> - currency to be credited/debited from the Binary accounts
+
+=item * C<local_currency> - currency the agent/client transaction will be conducted in (outside our system)
+
+=item * C<price> - the price (in C<local_currency>)
+
+=item * C<active> - whether to create it as active or disabled
+
+=item * C<type> - either C<buy> or C<sell>
+
+=back
+
+Returns a hashref which contains the offer ID and the details of the offer (mostly just a repeat of the
+above information).
+
+=cut
+
+p2p_rpc p2p_offer_create => sub {
+    my (%args) = @_;
+    my $client = $args{client};
+    my $offer  = $client->p2p_offer_create($args{params}{args}->%*);
+
+    return _offer_details($offer);
+};
+
+=head2 p2p_offer_info
+
+Returns information about an offer.
+
+Returns a hashref containing the following keys:
+
+=over 4
+
+=item * C<agent_id> - the internal ID of the agent (if the client only has one ID, will use that one)
+
+=item * C<id> - the internal ID of this offer
+
+=item * C<min> - minimum amount per order (in C<local_currency>)
+
+=item * C<max> - maximum amount per order (in C<local_currency>)
+
+=item * C<total> - total amount for all orders on this offer (in C<local_currency>)
+
+=item * C<currency> - currency to be credited/debited from the Binary accounts
+
+=item * C<local_currency> - currency the agent/client transaction will be conducted in (outside our system)
+
+=item * C<price> - the price (in C<local_currency>)
+
+=item * C<active> - true if orders can be created against this offer
+
+=item * C<type> - either C<buy> or C<sell>
+
+=back
+
+=cut
+
+p2p_rpc p2p_offer_info => sub {
+    my (%args) = @_;
+    my $client = $args{client};
+    my $offer = $client->p2p_offer($args{params}{args}{offer_id}) // die "OfferNotFound\n";
+
+    return _offer_details($offer);
+};
+
 =head2 p2p_offer_list
 
 Takes the following named parameters:
@@ -504,29 +499,10 @@ p2p_rpc p2p_offer_list => sub {
     my %args = @_;
 
     my $client = $args{client};
+    my $amount = $args{params}{args}{amount} // 1;
 
-    my $list   = $client->p2p_offer_list($args{params}{args}->%*);
-    my @offers = map {
-        my $offer = $_;
-        +{
-            type             => $offer->{type},
-            account_currency => $offer->{account_currency},
-            description      => $offer->{description},
-            agent_id         => $offer->{agent_id},
-            agent_name       => $offer->{agent_name},
-            amount           => formatnumber('price', $offer->{account_currency}, $offer->{amount}),
-            amount_used      => formatnumber('price', $offer->{account_currency}, $offer->{amount} - $offer->{remaining}),
-            country          => $offer->{country},
-            created_time     => Date::Utility->new($_->{created_time})->epoch,
-            is_active        => $offer->{is_active},
-            local_currency   => $offer->{local_currency},
-            max_amount       => formatnumber('price', $offer->{account_currency}, $offer->{max_amount}),
-            method           => $offer->{method},
-            min_amount       => formatnumber('price', $offer->{account_currency}, $offer->{min_amount}),
-            offer_id         => $offer->{id},
-            price            => formatnumber('price', $offer->{local_currency}, $offer->{price}),
-            }
-    } @$list;
+    my $list = $client->p2p_offer_list($args{params}{args}->%*);
+    my @offers = map { _offer_details($_, $amount) } @$list;
 
     return {list => \@offers};
 };
@@ -580,20 +556,7 @@ p2p_rpc p2p_order_create => sub {
             broker_code => $client->broker,
         });
 
-    return {
-        type             => $order->{offer_type},
-        account_currency => $order->{offer_account_currency},
-        agent_id         => $order->{agent_id},
-        agent_name       => $order->{agent_name},
-        amount           => formatnumber('price', $order->{offer_account_currency}, $order->{amount}),
-        expiry_time      => Date::Utility->new($_->{expiry_time})->epoch,
-        created_time     => Date::Utility->new($_->{created_time})->epoch,
-        local_currency   => $order->{offer_local_currency},
-        offer_id         => $offer_id,
-        order_id         => $order->{id},
-        price            => formatnumber('price', $order->{offer_local_currency}, $order->{offer_price} * $order->{amount}),
-        status           => $order->{status},
-    };
+    return _order_details($client, $order);
 };
 
 =head2 p2p_order_list
@@ -623,24 +586,7 @@ p2p_rpc p2p_order_list => sub {
 
     my $list = $client->p2p_order_list(%{$args{params}{args}}{grep { exists $args{params}{args}{$_} } qw(status agent_id offer_id)});
 
-    my @orders = map {
-        my $order = $_;
-        +{
-            type             => $order->{offer_type},
-            account_currency => $order->{offer_account_currency},
-            agent_id         => $order->{agent_id},
-            agent_name       => $order->{agent_name},
-            amount           => formatnumber('price', $order->{offer_account_currency}, $order->{amount}),
-            expiry_time      => Date::Utility->new($_->{expiry_time})->epoch,
-            created_time     => Date::Utility->new($_->{created_time})->epoch,
-            local_currency   => $order->{offer_local_currency},
-            offer_id         => $order->{offer_id},
-            order_id         => $order->{id},
-            price            => formatnumber('price', $order->{offer_local_currency}, $order->{offer_price} * $order->{amount}),
-            status           => $order->{status},
-            }
-
-    } @{$list};
+    my @orders = map { _order_details($client, $_) } @{$list};
 
     return {list => \@orders};
 };
@@ -666,20 +612,7 @@ p2p_rpc p2p_order_info => sub {
 
     my $order = $client->p2p_order($params->{args}{order_id});
 
-    return {
-        type             => $order->{offer_type},
-        account_currency => $order->{offer_account_currency},
-        agent_id         => $order->{agent_id},
-        agent_name       => $order->{agent_name},
-        amount           => formatnumber('price', $order->{offer_account_currency}, $order->{amount}),
-        expiry_time      => Date::Utility->new($_->{expiry_time})->epoch,
-        created_time     => Date::Utility->new($_->{created_time})->epoch,
-        local_currency   => $order->{offer_local_currency},
-        offer_id         => $order->{offer_id},
-        order_id         => $order->{id},
-        price            => formatnumber('price', $order->{offer_local_currency}, $order->{offer_price} * $order->{amount}),
-        status           => $order->{status},
-    };
+    return _order_details($client, $order);
 };
 
 =head2 p2p_order_confirm
@@ -769,5 +702,60 @@ Exchange chat messages.
 p2p_rpc p2p_order_chat => sub {
     die "PermissionDenied\n";
 };
+
+sub _offer_details {
+    my ($offer, $amount) = @_;
+
+    return +{
+        type                => $offer->{type},
+        account_currency    => $offer->{account_currency},
+        offer_description   => $offer->{description},
+        agent_id            => $offer->{agent_id},
+        agent_name          => $offer->{agent_name},
+        amount              => financialrounding('amount', $offer->{account_currency}, $offer->{amount}),
+        amount_display      => formatnumber('amount', $offer->{account_currency}, $offer->{amount}),
+        amount_used         => financialrounding('amount', $offer->{account_currency}, $offer->{amount} - $offer->{remaining}),
+        amount_used_display => formatnumber('amount', $offer->{account_currency}, $offer->{amount} - $offer->{remaining}),
+        country             => $offer->{country},
+        created_time        => Date::Utility->new($_->{created_time})->epoch,
+        is_active           => $offer->{is_active},
+        local_currency      => $offer->{local_currency},
+        max_amount          => financialrounding('amount', $offer->{account_currency}, $offer->{max_amount}),
+        max_amount_display  => formatnumber('amount', $offer->{account_currency}, $offer->{max_amount}),
+        method              => $offer->{method},
+        min_amount          => financialrounding('amount', $offer->{account_currency}, $offer->{min_amount}),
+        min_amount_display  => formatnumber('amount', $offer->{account_currency}, $offer->{min_amount}),
+        offer_id            => $offer->{id},
+        rate                => financialrounding('amount', $offer->{local_currency}, $offer->{price}),
+        rate_display        => formatnumber('amount', $offer->{local_currency}, $offer->{price}),
+        price               => financialrounding('amount', $offer->{local_currency}, $offer->{price} * ($amount // 1)),
+        price_display       => formatnumber('amount', $offer->{local_currency}, $offer->{price} * ($amount // 1)),
+    };
+}
+
+sub _order_details {
+    my ($client, $order) = @_;
+
+    return +{
+        type             => $order->{offer_type},
+        account_currency => $order->{offer_account_currency},
+        agent_id         => $order->{agent_id},
+        agent_name       => $order->{agent_name},
+        amount           => financialrounding('amount', $order->{offer_account_currency}, $order->{amount}),
+        amount_display   => formatnumber('amount', $order->{offer_account_currency}, $order->{amount}),
+        expiry_time      => Date::Utility->new($order->{expire_time})->epoch,
+        created_time     => Date::Utility->new($order->{created_time})->epoch,
+        local_currency   => $order->{offer_local_currency},
+        offer_id         => $order->{offer_id},
+        order_id         => $order->{id},
+        price            => financialrounding('amount', $order->{offer_local_currency}, $order->{offer_price} * $order->{amount}),
+        price_display    => formatnumber('amount', $order->{offer_local_currency}, $order->{offer_price} * $order->{amount}),
+        rate             => financialrounding('amount', $order->{offer_local_currency}, $order->{offer_price}),
+        rate_display     => formatnumber('amount', $order->{offer_local_currency}, $order->{offer_price}),
+        order_description => $order->{description}                                 // '',
+        offer_description => $client->p2p_offer($order->{offer_id})->{description} // '',    #TODO: This should be returned from DB
+        status            => $order->{status},
+    };
+}
 
 1;
