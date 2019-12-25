@@ -39,6 +39,10 @@
                 },
                 "amount": {
                     "description": "The amount of the order.",
+                    "type": "number"
+                },
+                "amount_display": {
+                    "description": "The amount of the order, formatted to appropriate decimal places.",
                     "type": "string"
                 },
                 "created_time": {
@@ -57,9 +61,19 @@
                         "USD"
                     ]
                 },
+                "offer_description": {
+                    "description": "Notes from the agent. Should include contact details and payment instructions.",
+                    "type": "string",
+                    "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
+                },
                 "offer_id": {
                     "description": "The unique identifier for the offer.",
                     "type": "string"
+                },
+                "order_description": {
+                    "description": "Notes from the client.",
+                    "type": "string",
+                    "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{0,500}$"
                 },
                 "order_id": {
                     "description": "The unique identifier for this order.",
@@ -67,6 +81,18 @@
                 },
                 "price": {
                     "description": "Cost in local currency.",
+                    "type": "number"
+                },
+                "price_display": {
+                    "description": "Cost in local currency, formatted to appropriate decimal places.",
+                    "type": "string"
+                },
+                "rate": {
+                    "description": "Conversion rate of the order.",
+                    "type": "number"
+                },
+                "rate_display": {
+                    "description": "Conversion rate of the order, formatted to appropriate decimal places.",
                     "type": "string"
                 },
                 "status": {

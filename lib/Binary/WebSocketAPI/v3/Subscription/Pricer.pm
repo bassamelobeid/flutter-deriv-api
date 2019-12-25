@@ -219,8 +219,9 @@ sub _price_stream_results_adjustment {
     # 3. no adjustment needed. Some contract does not require any pricing adjustment on the websocket layer.
     if (my $theo_price = delete $results->{theo_price}) {
         return $self->_non_binary_price_adjustment($c, $contract_parameters, $results, $theo_price);
-    } elsif (my $theo_probability = delete $results->{theo_probability}) {
-        return $self->_binary_price_adjustment($c, $contract_parameters, $results, $theo_probability);
+    } else {
+        my $theo_probability = delete $results->{theo_probability};
+        return $self->_binary_price_adjustment($c, $contract_parameters, $results, $theo_probability) if defined $theo_probability;
     }
 
     return $results;
