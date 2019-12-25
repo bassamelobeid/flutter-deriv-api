@@ -676,6 +676,9 @@ subtest 'sell failure due to update' => sub {
 };
 
 subtest 'buy multiplier with unsupported underlying' => sub {
+    if (Date::Utility->new->is_a_weekend) {
+        set_relative_time(0 - 2 * 24 * 60 * 60);
+    }
     lives_ok {
         my $contract = produce_contract({
             underlying   => 'frxAUDJPY',
@@ -702,6 +705,7 @@ subtest 'buy multiplier with unsupported underlying' => sub {
         is $error->{-mesg}, 'multiplier commission not defined for frxAUDJPY', 'message is multiplier commission not defined for frxAUDJPY';
         is $error->{-message_to_client}, 'Trading is not offered for this asset.', 'message to client Trading is not offered for this asset.';
     };
+    restore_time();
 };
 
 done_testing();
