@@ -39,6 +39,10 @@
                 },
                 "amount": {
                     "description": "The amount of the order.",
+                    "type": "number"
+                },
+                "amount_display": {
+                    "description": "The amount of the order, formatted to appropriate decimal places.",
                     "type": "string"
                 },
                 "created_time": {
@@ -61,12 +65,29 @@
                     "description": "The unique identifier for the offer.",
                     "type": "string"
                 },
+                "order_description": {
+                    "description": "Notes from the client.",
+                    "type": "string",
+                    "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{0,500}$"
+                },
                 "order_id": {
                     "description": "The unique identifier for this order.",
                     "type": "string"
                 },
                 "price": {
                     "description": "Cost in local currency.",
+                    "type": "number"
+                },
+                "price_display": {
+                    "description": "Cost in local currency, formatted to appropriate decimal places.",
+                    "type": "string"
+                },
+                "rate": {
+                    "description": "Conversion rate of the order.",
+                    "type": "number"
+                },
+                "rate_display": {
+                    "description": "Conversion rate of the order, formatted to appropriate decimal places.",
                     "type": "string"
                 },
                 "status": {

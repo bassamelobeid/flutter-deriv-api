@@ -30,6 +30,11 @@
             "type": "string",
             "pattern": "^([0-9]+)$"
         },
+        "order_description": {
+            "description": "Notes from the client.",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{0,500}$"
+        },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
             "type": "object"
