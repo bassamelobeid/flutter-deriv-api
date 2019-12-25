@@ -3,9 +3,10 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::MockModule;
+use Scalar::Util qw( looks_like_number );
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 use Mojo::IOLoop;
-use Test::MockModule;
 
 use BOM::Config::RedisReplicated;
 
@@ -16,7 +17,7 @@ use BOM::Test::WebsocketAPI::Redis;
 my @queue_requests;
 my @http_requests;
 
-$ENV{QUEUE_TIMEOUT} = 1;
+use constant BOOT_TIMEOUT => 5;
 
 my $mock_queue_backend = Test::MockModule->new('Mojo::WebSocketProxy::Backend::JobAsync');
 $mock_queue_backend->mock(
@@ -57,7 +58,10 @@ subtest 'queue worker service unavailability' => sub {
     is_deeply $res->{args}, $req, 'Request content was correct';
     ok !@http_requests, 'No request caught by http backend';
 
+    my $pid = $rpc_queue->pid;
+    ok looks_like_number($pid), "Valid worker process id: $pid";
     $rpc_queue->stop_script();
+    ok !kill(0, $pid), 'Worker process killed successfully';
     ok $res = await_with_timeout($t, $req, 'states_list'), 'A message is recieved after stopping the queue worker';
     ok $res->{error}, 'There is error in response due to timeout.';
     is $res->{error}->{code}, 'RequestTimeout', 'The expected error code is recieved.';
@@ -68,9 +72,10 @@ subtest 'queue worker service unavailability' => sub {
     is 'job::' . $pending[0], $jobs[0], 'Pending job id is matching';
 
     $rpc_queue->start_script();
+    ok looks_like_number($pid = $rpc_queue->pid), "Valid worker process id: $pid";
 
     my $timeout = 0;
-    my $id = Mojo::IOLoop->timer(2 => sub { ++$timeout });
+    my $id = Mojo::IOLoop->timer(BOOT_TIMEOUT + $ENV{QUEUE_TIMEOUT} => sub { ++$timeout });
     Mojo::IOLoop->one_tick while !($timeout or scalar($t->{messages}->@*));
 
     ok $timeout, 'No message is recieved for the expired request after rpc workers are restarted';
@@ -111,7 +116,7 @@ subtest 'redis connnection loss' => sub {
     ok $res = await_with_timeout($t, $req, 'states_list'), 'Message is recieved after resetting redis connection';
     ok $res->{error}, 'There is an error immediately afterwards';
 
-    for my $i (1 .. 5) {
+    for my $i (0 .. BOOT_TIMEOUT) {
         last unless $res->{error};
         sleep(1);
         note "Waiting for worker and client restart: $i";
@@ -126,7 +131,7 @@ subtest 'redis connnection loss' => sub {
         states_list => 'default',
         id          => 1
     };
-    is_deeply call_instrospection('backend', ['states_list', 'default']), $expected_result, 'Backend swithed back to default';
+    is_deeply call_instrospection('backend', ['states_list', 'default']), $expected_result, 'Backend switched back to default';
     for my $job ($redis->then(sub { shift->keys("job*") })->get->@*) {
         $redis->then(sub { shift->del($job) })->get;
     }
@@ -140,7 +145,7 @@ sub await_with_timeout {
     $t->send_ok({json => $request});
 
     my $timeout = 0;
-    my $id = Mojo::IOLoop->timer(5 => sub { ++$timeout });
+    my $id = Mojo::IOLoop->timer($ENV{QUEUE_TIMEOUT} + 1 => sub { ++$timeout });
     Mojo::IOLoop->one_tick while !($timeout or scalar($t->{messages}->@*));
 
     if ($expected_msg_type) {
