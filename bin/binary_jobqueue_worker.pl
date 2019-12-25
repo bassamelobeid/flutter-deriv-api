@@ -127,7 +127,6 @@ GetOptions(
 
 require Log::Any::Adapter;
 Log::Any::Adapter->import(qw(Stderr), log_level => $log_level);
-
 exit run_worker_process($REDIS) if $FOREGROUND;
 
 # TODO: Should it live in /var/run/bom-daemon? That exists but I don't know
@@ -213,6 +212,8 @@ sub run_coordinator {
     add_worker_process($REDIS) while keys %workers < $WORKERS;
     $log->infof("%d Workers are running, processing queue on: %s", $WORKERS, $REDIS);
 
+    path($PID_FILE)->spew("$$") if $PID_FILE;
+
     $SIG{TERM} = $SIG{INT} = sub {
         $WORKERS = 0;
         $log->info("Terminating workers...");
@@ -221,7 +222,7 @@ sub run_coordinator {
                 $_->shutdown(
                     'TERM',
                     timeout => SHUTDOWN_TIMEOUT,
-                    on_kill => sub { $log->error('Worker terminated forcefully by SIGKILL') },
+                    on_kill => sub { $log->errorf('Worker %d terminated forcefully by SIGKILL', shift->pid) },
                     )
             } values %workers
         )->get;
@@ -389,8 +390,6 @@ sub run_worker_process {
         require BOM::MT5::User::Async;
         no warnings 'once';
         @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
-
-        Path::Tiny->new($PID_FILE)->spew("$$") if $PID_FILE;
     }
 
     $loop->add(
@@ -410,24 +409,26 @@ sub run_worker_process {
                     my $stopping_future = $worker->stop;
                     return $stopping_future if $stopping_future->is_done;
 
-                    $log->debug('Worker failed to stop. Retying in 1 second');
+                    $log->info('Worker is too busy to stop. Retrying in 1 second');
                     return $loop->timeout_future(after => 1);
                 }
-                foreach => [1 .. SHUTDOWN_TIMEOUT],
+                foreach => [0 .. SHUTDOWN_TIMEOUT],
                 until   => sub {
                     shift->is_done;
                 }
                 )->on_fail(
                 sub {
                     $log->errorf('Failed to stop worker gracefully: %s', shift);
+                }
+                )->on_done(
+                sub {
+                    $log->info('RPC queue worker process stopped');
+                    if ($FOREGROUND) {
+                        unlink $PID_FILE if $PID_FILE;
+                        unlink $SOCKETPATH;
+                    }
                 })->block_until_ready;
 
-            if ($FOREGROUND) {
-                unlink $PID_FILE if $PID_FILE;
-                unlink $SOCKETPATH;
-            }
-
-            $log->info('RPC queue worker process stopped');
             exit 0;
         },
     );

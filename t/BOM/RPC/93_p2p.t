@@ -175,11 +175,11 @@ subtest 'Offers' => sub {
     $res = $c->call_ok('p2p_offer_edit', $params)->has_no_system_error->has_no_error->result;
     is $res->{description}, 'new description', 'edit offer ok';
 
-    $params->{args} = {id => $offer->{offer_id}};
+    $params->{args} = {offer_id => $offer->{offer_id}};
     $res = $c->call_ok('p2p_offer_info', $params)->has_no_system_error->has_no_error->result;
-    cmp_ok $res->{id}, '==', $offer->{offer_id}, 'p2p_offer_info returned correct info';
+    cmp_ok $res->{offer_id}, '==', $offer->{offer_id}, 'p2p_offer_info returned correct info';
 
-    $params->{args} = {id => 9999};
+    $params->{args} = {offer_id => 9999};
     $c->call_ok('p2p_offer_info', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Get info for non-existent offer');
     $c->call_ok('p2p_offer_edit', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Edit non-existent offer');
 

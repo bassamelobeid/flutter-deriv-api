@@ -2,6 +2,8 @@
 use strict;
 use warnings;
 
+use Scalar::Util qw( looks_like_number );
+
 use Test::More;
 
 use BOM::Test::Helper qw(build_wsapi_test call_instrospection);
@@ -9,6 +11,8 @@ use BOM::Test::RPC::Client;
 use BOM::Test::RPC::Client::Queue;
 use BOM::Test::Script::RpcQueue;
 use BOM::Test::WebsocketAPI::Redis;
+
+$ENV{QUEUE_TIMEOUT} = 5;
 
 my $c_queue = BOM::Test::RPC::Client::Queue->new();
 my $c_http = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
@@ -29,8 +33,8 @@ subtest 'Method call over rpc queue' => sub {
 
     is_deeply $result1, $result2, 'The same result from queue and http rpc for residence_list';
 
-    is $c_http->_tcall('no_existing_method'), undef, 'No result for invalid method call';
-    $c_queue->call_ok('no_existing_method')->has_no_system_error->has_error->error_code_is('InternalServerError');
+    is $c_http->_tcall('non_existing_method'), undef, 'No result for invalid method call';
+    $c_queue->call_ok('non_existing_method')->has_no_system_error->has_error->error_code_is('InternalServerError');
 };
 
 subtest 'Redis failure recovery' => sub {
@@ -46,21 +50,37 @@ subtest 'Redis failure recovery' => sub {
 
 subtest 'Worker service restart' => sub {
     my $rpc_queue = BOM::Test::Script::RpcQueue::get_script;
-    my $pid       = $rpc_queue->pid;
+    #normal restart
+    my $pid = $rpc_queue->pid;
     $rpc_queue->stop_script();
     ok !kill(0, $pid), 'Worker process is killed successfully';
 
+    ok $rpc_queue->start_script, 'Worker started';
+    ok looks_like_number($pid = $rpc_queue->pid), "Valid process id: $pid";
+    $c_queue->call_ok('residence_list')->has_no_system_error->has_no_error('RPC queue works after normal restart');
+
+    #restart without redis connection
+    $rpc_queue->stop_script();
+    ok !kill(0, $pid), 'Worker process killed successfully in normal conditions';
+    $c_queue->call_ok('residence_list')->has_no_system_error->has_error()->error_code_is('RequestTimeout', 'Client timeout when workers are stopped');
+
     my $mocked_script = Test::MockModule->new('BOM::Test::Script');
     $mocked_script->mock(
-        args => sub { my $script = shift; return $mocked_script->original('args')->($script) . ' --redis redis://127.0.0.1:15004' },
+        args => sub { my $script = shift; return $mocked_script->original('args')->($script) . ' --redis redis://127.0.0.1:80' },
     );
-    $rpc_queue->start_script;
-    $pid = $rpc_queue->pid;
+
+    ok $rpc_queue->start_script, 'Worker started with an invalid uri';
+    ok looks_like_number($pid = $rpc_queue->pid), "Valid process id: $pid";
+    $c_queue->call_ok('residence_list')->has_no_system_error->has_error()
+        ->error_code_is('RequestTimeout', 'Client timeout when the worker is disconnected from resis');
+
     $rpc_queue->stop_script();
     ok !kill(0, $pid), 'Worker process is killed successfully while disconnected from redis';
 
+    #revert to the initial state
     $mocked_script->unmock_all;
-    $rpc_queue->start_script;
+    ok $rpc_queue->start_script, 'Back to the state at the beginning of the subtest';
+    $c_queue->call_ok('residence_list')->has_no_system_error->has_no_error('RPC queue works normally');
 };
 
 done_testing();
