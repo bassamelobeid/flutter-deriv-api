@@ -4,7 +4,7 @@ use 5.014;
 use strict;
 use warnings;
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize);
@@ -249,18 +249,17 @@ rpc app_markup_details => sub {
         $app_ids = $oauth->get_app_ids_by_user_id($user_id);
     }
 
-    my ($time_from, $time_to, $date_format_error);
+    my ($time_from, $time_to);
     try {
         $time_from = Date::Utility->new($args->{date_from})->datetime_yyyymmdd_hhmmss;
         $time_to   = Date::Utility->new($args->{date_to})->datetime_yyyymmdd_hhmmss;
     }
     catch {
-        $date_format_error = 1;
-    };
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidDateFormat',
-            message_to_client => localize('Invalid date format.'),
-        }) if $date_format_error;
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidDateFormat',
+                message_to_client => localize('Invalid date format.'),
+            })
+    }
 
     my $clientdb = BOM::Database::ClientDB->new({
             client_loginid => $client->loginid,

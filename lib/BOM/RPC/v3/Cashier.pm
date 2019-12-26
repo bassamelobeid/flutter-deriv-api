@@ -9,7 +9,7 @@ use Scalar::Util qw( looks_like_number );
 use Data::UUID;
 use Path::Tiny;
 use Date::Utility;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use String::UTF8::MD5;
 use LWP::UserAgent;
 use Log::Any qw($log);
@@ -533,7 +533,7 @@ rpc paymentagent_transfer => sub {
 
     return $rpc_error if $rpc_error;
 
-    my $client_to = try { BOM::User::Client->new({loginid => $loginid_to, db_operation => 'write'}) }
+    my $client_to = eval { BOM::User::Client->new({loginid => $loginid_to, db_operation => 'write'}) }
         or return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
 
     return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
@@ -634,8 +634,8 @@ rpc paymentagent_transfer => sub {
         );
     }
     catch {
-        $error = $_;
-    };
+        $error = $@;
+    }
 
     if ($error) {
         if (ref $error ne 'ARRAY') {
@@ -874,8 +874,8 @@ rpc paymentagent_withdraw => sub {
         });
     }
     catch {
-        $paymentagent_error = $_;
-    };
+        $paymentagent_error = $@;
+    }
     if ($paymentagent_error or not $paymentagent) {
         return $error_sub->(localize('Please enter a valid payment agent ID.'));
     }
@@ -983,8 +983,8 @@ rpc paymentagent_withdraw => sub {
         );
     }
     catch {
-        $withdraw_error = $_;
-    };
+        $withdraw_error = $@;
+    }
 
     if ($withdraw_error) {
         return $error_sub->(
@@ -1045,7 +1045,7 @@ rpc paymentagent_withdraw => sub {
         );
     }
     catch {
-        $error = $_;
+        $error = $@;
     };
 
     if ($error) {
@@ -1351,7 +1351,7 @@ rpc transfer_between_accounts => sub {
     }
     catch {
         $res = _transfer_between_accounts_error();
-    };
+    }
     return $res if $res;
 
     my ($from_currency, $to_currency) =
@@ -1384,8 +1384,8 @@ rpc transfer_between_accounts => sub {
             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $from_currency, $to_currency, $client_from, $client_to);
     }
     catch {
-        $err = $_;
-    };
+        $err = $@;
+    }
 
     if ($err) {
         return $error_audit_sub->($err, localize('Sorry, transfers are currently unavailable. Please try again later.'))
@@ -1435,8 +1435,8 @@ rpc transfer_between_accounts => sub {
         ) || die "validate_payment [$loginid_from]";
     }
     catch {
-        $err = $_;
-    };
+        $err = $@;
+    }
 
     if ($err) {
         my $limit;
@@ -1468,8 +1468,8 @@ rpc transfer_between_accounts => sub {
         ) || die "validate_payment [$loginid_to]";
     }
     catch {
-        $err = $_;
-    };
+        $err = $@;
+    }
     if ($err) {
         my $msg = localize("Transfer validation failed on [_1].", $loginid_to);
         if ($err =~ /Balance would exceed ([\S]+) limit/) {
@@ -1505,9 +1505,9 @@ rpc transfer_between_accounts => sub {
         );
     }
     catch {
-        my $err_str = (ref $_ eq 'ARRAY') ? "@$_" : $_;
+        my $err_str = (ref $@ eq 'ARRAY') ? "@$@" : $@;
         $err = "$err_msg Account Transfer failed [$err_str]";
-    };
+    }
     if ($err) {
         return $error_audit_sub->($err);
     }
