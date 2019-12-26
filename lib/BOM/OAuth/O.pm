@@ -455,7 +455,7 @@ sub _compare_signin_activity {
             # to avoid confusion when this feature is released we will do the old check here
             my $should_send_email = 0;
             foreach my $key (qw/ip country user_agent/) {
-                if ($last_attempt_in_db->{$key} // '' ne $current_attempt_details->{$key} // '') {
+                if (($last_attempt_in_db->{$key} // '') ne ($current_attempt_details->{$key} // '')) {
                     $should_send_email = 1;
                     last;
                 }
@@ -471,9 +471,9 @@ sub _compare_signin_activity {
             app     => $app,
             ip      => $ip_address,
             l       => \&localize,
-	    language => lc($c->stash('request')->language),
-	    start_url => 'https://'.lc($c->stash('brand')->website_name),
-        is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
+            language                  => lc($c->stash('request')->language),
+            start_url                 => 'https://' . lc($c->stash('brand')->website_name),
+            is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
         };
 
         my $tt = Template->new(
