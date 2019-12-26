@@ -8,7 +8,8 @@ use JSON;
 use IPC::Run3;
 use Try::Tiny;
 use Data::UUID;
-
+use Time::HiRes;
+use DataDog::DogStatsd::Helper;
 use IO::Async::Loop;
 # Overrideable in unit tests
 our @MT5_WRAPPER_COMMAND = ('/usr/bin/php', '/home/git/regentmarkets/php-mt5-webapi/lib/binary_mt5.php');
@@ -67,8 +68,9 @@ sub _invoke_mt5 {
     # better than tracking in a local `state` variable since if we happen to fork
     # then we can trust the other IO::Async users to take care of clearing the
     # previous singleton.
-    my $loop = IO::Async::Loop->new;
-    my $f    = $loop->new_future;
+    my $loop          = IO::Async::Loop->new;
+    my $f             = $loop->new_future;
+    my $request_start = [Time::HiRes::gettimeofday];
     $loop->run_child(
         command   => [@MT5_WRAPPER_COMMAND, $cmd],
         stdin     => $in,
@@ -76,6 +78,8 @@ sub _invoke_mt5 {
             my (undef, $exitcode, $out, $err) = @_;
             warn "MT5 PHP call nonzero status: $exitcode\n" if $exitcode;
             warn "MT5 PHP call error: $err from $in\n" if defined($err) && length($err);
+
+            DataDog::DogStatsd::Helper::stats_timing('mt5.call.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => ["mt5:$cmd"]});
 
             if ($exitcode) {
                 return $f->fail(
