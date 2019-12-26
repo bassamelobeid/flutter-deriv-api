@@ -68,7 +68,7 @@
                 <p class='error-oneall center-text'><%= stash('social_error') %></p>
             <% } %>
             <p class="account-text">
-                <%== l('Don’t have an account yet? [_1]Create a new account[_2]', '<a class="account-link" href="https://deriv.com/?signup">', '</a>') %>
+                <%== l('Don’t have an account yet? [_1]Create a new account[_2]', '<a class="account-link" href="https://deriv.com/?action=signup">', '</a>') %>
             </p>
         <% } %>
     </div>
