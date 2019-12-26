@@ -140,6 +140,39 @@ my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 # consecutive tests to fail without a reset.
 BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
+subtest 'new account with invalid main password format' => sub {
+    my $method = 'mt5_new_account';
+    my $wrong_formatted_password = 'abc123';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            email        => $DETAILS{email},
+            name         => $DETAILS{name},
+            account_type => "demo",
+            address => "Dummy address",
+            city => "Valletta",
+            company => "Binary Limited",
+            country => "mt",
+            mainPassword => "abc123",
+            mt5_account_type => "standard",
+            phone => "+6123456789",
+            phonePassword => "AbcDv1234",
+            state => "Valleta",
+            zipCode => "VLT 1117",
+            investPassword => "AbcDv12345",
+            mainPassword => $wrong_formatted_password,
+            leverage     => 100,
+        },
+    };
+
+    $c->call_ok($method, $params)->has_error('error code for mt5_new_account wrong password formatting')
+        ->error_code_is('IncorrectMT5PasswordFormat', 'error code for mt5_new_account wrong password formatting')
+        ->error_message_like(qr/Your password must have/, 'error code for mt5_new_account wrong password formatting');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+};
+
 subtest 'new account with missing signup fields' => sub {
     # only Labuan has the signup (phone) requirement
 
