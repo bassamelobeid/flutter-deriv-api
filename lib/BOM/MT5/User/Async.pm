@@ -30,15 +30,21 @@ my @common_fields = qw(
 
 # the mapping from MT5 doc (need login)
 # https://support.metaquotes.net/en/docs/mt5/api/reference_retcodes
+
+# Note: API returns 3006 for ret_code on two API calls,
+# 1. In mt5_new_account when presented main password formatting is wrong
+# 2. In mt5_check_password when combination of presented username and password is not correct
+# So we have to specify two different keys for this situations.
 my $error_category_mapping = {
-    3     => 'InvalidParameters',
-    7     => 'NetworkError',
-    8     => 'Permissions',
-    12    => 'TooManyRequests',
-    13    => 'NotFound',
-    1002  => 'AccountDisabled',
-    3006  => 'InvalidPassword',
-    10019 => 'NoMoney'
+    3                          => 'InvalidParameters',
+    7                          => 'NetworkError',
+    8                          => 'Permissions',
+    12                         => 'TooManyRequests',
+    13                         => 'NotFound',
+    1002                       => 'AccountDisabled',
+    3006 . "UserPasswordCheck" => 'InvalidPassword',
+    3006 . "UserAdd"           => 'IncorrectMT5PasswordFormat',
+    10019                      => 'NoMoney'
 };
 
 sub _get_error_mapping {
@@ -92,6 +98,11 @@ sub _invoke_mt5 {
             $out =~ s/[\x0D\x0A]//g;
             try {
                 $out = decode_json($out);
+
+                if ($cmd eq 'UserAdd' or $cmd eq 'UserPasswordCheck') {
+                    $out->{ret_code} .= $cmd;
+                }
+
                 if ($out->{error}) {
                     $f->fail(_future_error($out));
                 } else {
