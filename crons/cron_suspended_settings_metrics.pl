@@ -18,17 +18,30 @@ use BOM::Config::Runtime;
 use BOM::DynamicSettings;
 use DataDog::DogStatsd::Helper qw(stats_timing);
 
-my $app_config        = BOM::Config::Runtime->instance->app_config;
-my @suspend_keys_list = BOM::DynamicSettings::get_settings_by_group('shutdown_suspend')->@*;
+my $app_config          = BOM::Config::Runtime->instance->app_config;
+my @suspended_keys_list = BOM::DynamicSettings::get_settings_by_group('shutdown_suspend')->@*;
 
 # Skip local cache and get objects from chronicle
-my @suspend_settings = $app_config->_retrieve_objects_from_chron(\@suspend_keys_list);
+my @suspended_settings = $app_config->_retrieve_objects_from_chron(\@suspended_keys_list);
 
 # Remove all suspend settings that are not set, return a key => settings hash
-my %active_settings = map { $suspend_keys_list[$_] => $suspend_settings[$_] } grep { is_active($suspend_settings[$_]) } 0 .. $#suspend_keys_list;
+my %active_settings =
+    map { $suspended_keys_list[$_] => $suspended_settings[$_] } grep { is_active($suspended_settings[$_]) } 0 .. $#suspended_keys_list;
 
-# _local_rev is the time the value was set
-stats_timing("settings.$_", time - $active_settings{$_}{_local_rev}) for keys %active_settings;
+for my $key (@suspended_keys_list) {
+    if (my $value = $active_settings{$key}) {
+        # If there is no value consider data to be false
+        my $data = ref $value ? $value->{data} : 0;
+        # Sometimes we keep keys in a string separated by ,
+        $data = $data =~ /,/ ? [split ',', $data] : $data;
+        # Sometimes we keep keys in an array
+        my $tag = ref $data eq 'ARRAY' ? {tags => [map { "tag:$_" } $data->@*]} : {};
+        # _local_rev is the time the value was set
+        stats_timing("settings.$key", time - $active_settings{$key}{_local_rev}, $tag);
+    } else {
+        stats_timing("settings.$key", 0);
+    }
+}
 
 =head2 is_active
 
