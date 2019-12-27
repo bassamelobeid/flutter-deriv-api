@@ -47,6 +47,7 @@ use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
 use BOM::Config::RedisReplicated;
 use BOM::Event::Services;
+use BOM::Config::Onfido;
 use Encode qw(decode_utf8 encode_utf8);
 use Time::HiRes;
 use File::Temp;
@@ -958,40 +959,6 @@ async sub _address_verification {
     return;
 }
 
-=head2 _is_supported_country_onfido
-
-Check if the passed country is supported by Onfido.
-
-=over 4
-
-=item * C<$country> - two letter country code to check for Onfido support
-
-=back
-
-=cut
-
-async sub _is_supported_country_onfido {
-    my ($country, $onfido) = @_;
-
-    my $countries_list;
-    my $redis_events_read = _redis_events_read();
-    await $redis_events_read->connect;
-
-    $countries_list = await $redis_events_read->get(ONFIDO_SUPPORTED_COUNTRIES_KEY);
-    if ($countries_list) {
-        $countries_list = decode_json_utf8($countries_list);
-    } else {
-        $countries_list = await $onfido->countries_list();
-        if ($countries_list) {
-            my $redis_events_write = _redis_events_write();
-            await $redis_events_write->connect;
-            await $redis_events_write->setex(ONFIDO_SUPPORTED_COUNTRIES_KEY, ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT, encode_json_utf8($countries_list));
-        }
-    }
-
-    return $countries_list->{uc $country} // 0;
-}
-
 async sub _get_onfido_applicant {
     my (%args) = @_;
 
@@ -1003,7 +970,7 @@ async sub _get_onfido_applicant {
     try {
         my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
-        my $is_supported_country = await _is_supported_country_onfido($country, $onfido);
+        my $is_supported_country = BOM::Config::Onfido::is_country_supported($country);
         unless ($is_supported_country) {
             DataDog::DogStatsd::Helper::stats_inc('onfido.unsupported_country', {tags => [$country]});
             await _send_email_onfido_unsupported_country_cs($client) unless $uploaded_manually_by_staff;
@@ -1646,9 +1613,8 @@ sub _client_onfido_details {
 
     my $details = {
         (map { $_ => $client->$_ } qw(first_name last_name email)),
-        title   => $client->salutation,
-        dob     => $client->date_of_birth,
-        country => uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3')),
+        title => $client->salutation,
+        dob   => $client->date_of_birth,
     };
 
     # Add address info if the required fields not empty
