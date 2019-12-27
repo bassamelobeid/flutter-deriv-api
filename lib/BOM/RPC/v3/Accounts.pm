@@ -810,7 +810,11 @@ sub _get_authentication {
         needs_verification => [],
         identity           => {
             status                        => "none",
-            further_resubmissions_allowed => 0
+            further_resubmissions_allowed => 0,
+            services                      => {
+                onfido => {
+                    is_country_supported => 0,
+                    documents_supported  => []}}
         },
         document => {status => "none"},
     };
@@ -820,6 +824,11 @@ sub _get_authentication {
     my $redis = BOM::Config::RedisReplicated::redis_write();
     $authentication_object->{identity}{further_resubmissions_allowed} =
         $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id) // 0;
+
+    my $country_code = uc($client->place_of_birth // '');
+    $authentication_object->{identity}{services}{onfido}{is_country_supported} = BOM::Config::Onfido::is_country_supported($country_code);
+    $authentication_object->{identity}{services}{onfido}{documents_supported} =
+        BOM::Config::Onfido::supported_documents_for_country($country_code);
 
     my $documents = $client->documents_uploaded();
 
