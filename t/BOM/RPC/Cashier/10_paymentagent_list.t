@@ -4,6 +4,7 @@ use warnings;
 use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
+use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( top_up );
@@ -340,6 +341,107 @@ subtest 'suspend countries' => sub {
 
     delete $params->{token};
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($full_result, "Result is reverted after target country is reset.");
+
+};
+
+subtest 'PAs without currency' => sub {
+    # Normal PA
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+    });
+    $client->set_default_account('GBP');
+    $client->payment_agent({
+        payment_agent_name    => "PA with a currency",
+        url                   => 'http://www.sample2.com/',
+        email                 => 'test@sample.com',
+        phone                 => '+12345678',
+        information           => 'PA has a currency',
+        summary               => "Summary",
+        commission_deposit    => 1,
+        commission_withdrawal => 1,
+        is_authenticated      => 't',
+        currency_code         => 'GBP',
+        target_country        => 'de',
+    });
+    $client->save;
+    my $pa_no_currency_loginid = $client->loginid;
+
+    # PA with no currecy
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+    });
+    $client->set_default_account('GBP');
+    $client->payment_agent({
+        payment_agent_name    => "PA without currency",
+        url                   => 'http://www.sample2.com/',
+        email                 => 'test@sample.com',
+        phone                 => '+12345678',
+        information           => 'Invalid PA',
+        summary               => "Summary",
+        commission_deposit    => 2,
+        commission_withdrawal => 2,
+        is_authenticated      => 't',
+        currency_code         => '',
+        target_country        => 'de',
+    });
+    $client->save;
+    my $client_pa_no_currency_loginid = $client->loginid;
+    my $mlt_token = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {paymentagent_list => 'de'},
+    };
+
+    my $expected_result = {
+        stash => {
+            app_markup_percentage      => 0,
+            valid_source               => 1,
+            source_bypass_verification => 0
+        },
+        'available_countries' => [['id', 'Indonesia',], ['af', 'Afghanistan'], ['de', 'Germany'], ['', undef]],
+        'list' => [{
+                'telephone'             => '+12345678',
+                'supported_banks'       => undef,
+                'name'                  => "PA with a currency",
+                'further_information'   => 'PA has a currency',
+                'deposit_commission'    => '1',
+                'withdrawal_commission' => '1',
+                'currencies'            => 'GBP',
+                'email'                 => 'test@sample.com',
+                'summary'               => "Summary",
+                'url'                   => 'http://www.sample2.com/',
+                'paymentagent_loginid'  => $pa_no_currency_loginid,
+                'max_withdrawal'        => 2000,
+                'min_withdrawal'        => 10,
+            }]};
+
+    my $mock_log = Test::MockModule->new('Log::Any::Proxy');
+    my @log_params;
+    $mock_log->mock('warnf' => sub { @log_params = @_ });
+
+    $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, "Only PAs with account currency are returned");
+
+    is $log_params[1], '%s dropped from PA list. Failed to retrieve limits: %s', 'Correct log message';
+    is $log_params[2], $client_pa_no_currency_loginid, 'Correct skipped PA id';
+    like $log_params[3], qr/No currency is specified/, 'Correct error detail';
+
+    $params->{args}->{currency} = 'USD';
+    my $expected_result2 = {
+        stash => {
+            app_markup_percentage      => 0,
+            valid_source               => 1,
+            source_bypass_verification => 0
+        },
+        'available_countries' => [['id', 'Indonesia',], ['af', 'Afghanistan'], ['de', 'Germany'], ['', undef]],
+        'list' => [],
+    };
+    $c->call_ok($method, $params)
+        ->has_no_error->result_is_deeply($expected_result2,
+        "PAs with a currency will be filtered out when request is sent with a different currency");
+
+    $mock_log->unmock;
 
 };
 

@@ -52,6 +52,8 @@ use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
 requires_auth();
 
+use Log::Any qw($log);
+
 use constant MAX_DESCRIPTION_LENGTH => 250;
 
 my $payment_limits = BOM::Config::payment_limits;
@@ -451,13 +453,21 @@ rpc "paymentagent_list",
     foreach (@available_countries) {
         $_->[1] = Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($_->[0], $language);
     }
-
     my $available_payment_agents = _get_available_payment_agents($target_country, $broker_code, $args->{currency}, $loginid, 1);
 
     my $payment_agent_table_row = [];
     foreach my $loginid (keys %{$available_payment_agents}) {
         my $payment_agent = $available_payment_agents->{$loginid};
-        my $min_max       = BOM::Config::PaymentAgent::get_transfer_min_max($payment_agent->{currency_code});
+        my $currency      = $payment_agent->{currency_code};
+
+        my $min_max;
+        try {
+            $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
+        }
+        catch {
+            $log->warnf('%s dropped from PA list. Failed to retrieve limits: %s', $loginid, $@);
+            next;
+        };
 
         push @{$payment_agent_table_row},
             {
@@ -467,7 +477,7 @@ rpc "paymentagent_list",
             'url'                   => $payment_agent->{url},
             'email'                 => $payment_agent->{email},
             'telephone'             => $payment_agent->{phone},
-            'currencies'            => $payment_agent->{currency_code},
+            'currencies'            => $currency,
             'deposit_commission'    => $payment_agent->{commission_deposit},
             'withdrawal_commission' => $payment_agent->{commission_withdrawal},
             'further_information'   => $payment_agent->{information},
@@ -527,6 +537,7 @@ rpc paymentagent_transfer => sub {
     $rpc_error = _validate_paymentagent_limits(
         error_sub     => $error_sub,
         payment_agent => $payment_agent,
+        pa_loginid    => $client_fm->loginid,
         amount        => $amount,
         currency      => $currency
     );
@@ -898,6 +909,7 @@ rpc paymentagent_withdraw => sub {
     $rpc_error = _validate_paymentagent_limits(
         error_sub     => $error_sub,
         payment_agent => $paymentagent,
+        pa_loginid    => $pa_client->loginid,
         amount        => $amount,
         currency      => $currency
     );
