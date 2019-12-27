@@ -871,6 +871,16 @@ sub is_first_deposit_pending {
     return !$self->is_virtual && !$self->has_deposits({exclude => ['free_gift']});
 }
 
+sub has_mt5_deposits {
+    my $self   = shift;
+    my $mt5_id = shift;
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref("SELECT * from betonmarkets.has_first_mt5_deposit(?);", undef, $mt5_id);
+        })->{has_first_mt5_deposit};
+}
+
 sub first_funded_currency { return shift->_ffd->{first_funded_currency} }
 sub first_funded_amount   { return shift->_ffd->{first_funded_amount} }
 sub first_funded_date     { return shift->_ffd->{first_funded_date} }
