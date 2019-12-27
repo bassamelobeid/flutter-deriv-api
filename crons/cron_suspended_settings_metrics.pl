@@ -28,7 +28,7 @@ my @suspend_settings = $app_config->_retrieve_objects_from_chron(\@suspend_keys_
 my %active_settings = map { $suspend_keys_list[$_] => $suspend_settings[$_] } grep { is_active($suspend_settings[$_]) } 0 .. $#suspend_keys_list;
 
 # _local_rev is the time the value was set
-stats_timing("suspended.settings.$_", time - $active_settings{$_}{_local_rev}) for keys %active_settings;
+stats_timing("settings.$_", time - $active_settings{$_}{_local_rev}) for keys %active_settings;
 
 =head2 is_active
 
