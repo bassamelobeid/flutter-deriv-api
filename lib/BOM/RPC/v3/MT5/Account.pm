@@ -621,12 +621,15 @@ async_rpc "mt5_get_settings",
             return BOM::MT5::User::Async::get_group($settings->{group})->then(
                 sub {
                     my ($group_details) = @_;
+
                     return create_error_future('MT5GetGroupError', {message => $group_details->{error}})
                         if (ref $group_details eq 'HASH' and $group_details->{error});
+
                     $settings->{currency}        = $group_details->{currency};
                     $settings->{landing_company} = $group_details->{company};
                     $settings->{display_balance} = formatnumber('amount', $settings->{currency}, $settings->{balance});
-                    $settings                    = _filter_settings($settings,
+
+                    $settings = _filter_settings($settings,
                         qw/address balance city company country currency email group leverage login name phone phonePassword state zipCode landing_company display_balance/
                     );
                     return Future->done($settings);
@@ -1352,8 +1355,24 @@ sub _mt5_validate_and_get_amount {
             my $mt5_group = $setting->{group};
             my $mt5_lc    = _fetch_mt5_lc($setting);
             return create_error_future('InvalidMT5Group') unless $mt5_lc;
-            my $mt5_currency = $setting->{currency};
 
+            my $requirements = LandingCompany::Registry->new->get($mt5_lc)->requirements->{after_first_deposit}->{financial_assessment} // [];
+            if (
+                    $action eq 'withdrawal'
+                and $authorized_client->has_mt5_deposits($mt5_loginid)
+                and not _is_financial_assessment_complete(
+                    client                            => $authorized_client,
+                    group                             => $mt5_group,
+                    financial_assessment_requirements => $requirements
+                ))
+            {
+                return create_error_future('FinancialAssessmentMandatory', {override_code => $error_code});
+            }
+
+            return create_error_future($setting->{status}->{withdrawal_locked}->{error}, {override_code => $error_code})
+                if ($action eq 'withdrawal' and $setting->{status}->{withdrawal_locked});
+
+            my $mt5_currency = $setting->{currency};
             return create_error_future('CurrencyConflict', {override_code => $error_code})
                 if $currency_check && $currency_check ne $mt5_currency;
 

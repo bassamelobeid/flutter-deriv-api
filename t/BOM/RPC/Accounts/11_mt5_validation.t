@@ -302,17 +302,27 @@ subtest 'CR account types - low risk' => sub {
             account_type     => 'financial',
             mt5_account_type => 'standard'
         });
-    ok $login, 'financial assessment is not required for financial standard account';
+    ok $login, 'standard financial mt5 account is created without authentication and FA';
     is $mt5_account_info->{group}, 'real\svg_standard', 'correct CR standard financial group';
 
-    full_authentication($client);
+    create_mt5_account->(
+        $c, $token, $client,
+        {
+            account_type     => 'financial',
+            mt5_account_type => 'advanced'
+        },
+        'AuthenticateAccount',
+        'authentication is required for advanced mt5 accounts'
+    );
+
+    authenticate($client);
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
             mt5_account_type => 'advanced'
         });
-    ok $login, 'financial account created with full financial assessment';
+    ok $login, 'advanced financial account created without financial assessment';
     is $mt5_account_info->{group}, 'real\labuan_advanced', 'correct CR advanced financial group';
 };
 
@@ -364,7 +374,7 @@ subtest 'CR account types - high risk' => sub {
         $c, $token, $client,
         {account_type => 'gaming'},
         'FinancialAssessmentMandatory',
-        'Financial assessment needed for high risk clients'
+        'Financial assessment is required for high risk clients'
     );
 
     financial_assessment($client, 'financial_info');
@@ -378,17 +388,27 @@ subtest 'CR account types - high risk' => sub {
             account_type     => 'financial',
             mt5_account_type => 'standard'
         });
-    ok $login, 'financial assessment is not required for financial standard account';
+    ok $login, 'standard financial mt5 account is created without authentication';
     is $mt5_account_info->{group}, 'real\svg_standard', 'correct CR standard financial group';
 
-    full_authentication($client);
+    create_mt5_account->(
+        $c, $token, $client,
+        {
+            account_type     => 'financial',
+            mt5_account_type => 'advanced'
+        },
+        'AuthenticateAccount',
+        'authentication is required by labuan'
+    );
+
+    authenticate($client);
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
             mt5_account_type => 'advanced'
         });
-    ok $login, 'financial account created with full financial assessment';
+    ok $login, 'advanced financial account created without full financial assessment';
     is $mt5_account_info->{group}, 'real\labuan_advanced', 'correct CR standard financial group';
 };
 
@@ -501,7 +521,7 @@ subtest 'MLT account types - high risk' => sub {
         $c, $token, $client,
         {account_type => 'gaming'},
         'FinancialAssessmentMandatory',
-        'Financial assessment needed for high risk clients'
+        'Financial assessment required for high risk clients'
     );
 
     financial_assessment($client, 'financial_info');
@@ -1013,13 +1033,11 @@ sub financial_assessment {
 
 }
 
-sub full_authentication {
+sub authenticate {
     my ($client) = shift;
 
     $client->set_authentication('ID_DOCUMENT')->status('pass');
     $client->save();
-    financial_assessment($client, 'full');
-
 }
 
 $mocked_mt5->unmock_all;

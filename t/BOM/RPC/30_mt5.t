@@ -1010,6 +1010,85 @@ subtest 'withdrawal' => sub {
     $demo_account_mock->unmock;
 };
 
+subtest 'labuan withdrawal' => sub {
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type     => 'financial',
+            mt5_account_type => 'advanced',
+            country          => 'af',
+            email            => $DETAILS{email},
+            name             => $DETAILS{name},
+            investPassword   => 'Abcd1234',
+            mainPassword     => $DETAILS{password},
+        },
+    };
+
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword');
+    is($c->result->{login},           $ACCOUNTS{'real\labuan_advanced'}, 'result->{login}');
+    is($c->result->{balance},         0,                                 'Balance is 0 upon creation');
+    is($c->result->{display_balance}, '0.00',                            'Display balance is "0.00" upon creation');
+
+    $test_client->financial_assessment({data => '{}'});
+    $test_client->save();
+
+    $method = "mt5_withdrawal";
+    $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_mt5  => $ACCOUNTS{'real\labuan_advanced'},
+            to_binary => $test_client->loginid,
+            amount    => 50,
+        },
+    };
+
+    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+
+    my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $account_mock->mock('_fetch_mt5_lc', sub { return 'labuan' });
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok($method, $params)->has_no_error('Withdrawal allowed from labuan mt5 without FA before first deposit');
+    cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 50, "Correct balance after withdrawal";
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok(
+        'mt5_deposit',
+        {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                to_mt5      => $ACCOUNTS{'real\labuan_advanced'},
+                from_binary => $test_client->loginid,
+                amount      => 50,
+            },
+        })->has_no_error('Deposit allowed to labuan mt5 account without FA');
+    cmp_ok $test_client->default_account->balance, '==', 820 + 150, "Correct balance after deposit";
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok($method, $params)->has_error('Withdrawal request failed.')->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
+        ->error_message_like(qr/complete your financial assessment/);
+
+    $account_mock->mock('_fetch_mt5_lc', sub { return 'svg' });
+    $params->{args}->{from_mt5} = $ACCOUNTS{'real\svg'};
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok($method, $params)->has_no_error('Withdrawal allowed from svg mt5 account when sibling labuan account is withdrawal-locked');
+    cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 50, "Correct balance after withdrawal";
+
+    $test_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
+    $test_client->save;
+    $account_mock->mock('_fetch_mt5_lc', sub { return 'labuan' });
+    $params->{args}->{from_mt5} = $ACCOUNTS{'real\svg'};
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok($method, $params)->has_no_error('Withdrawal unlocked for labuan mt5 after financial assessment');
+    cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 100, "Correct balance after withdrawal";
+
+    $account_mock->unmock;
+};
+
 subtest 'mf_withdrawal' => sub {
 
     my $test_mf_client = create_client('MF');
