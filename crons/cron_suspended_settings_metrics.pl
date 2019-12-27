@@ -16,22 +16,17 @@ use BOM::Config::Runtime;
 use BOM::DynamicSettings;
 use DataDog::DogStatsd::Helper qw(stats_timing);
 
-my $app_config = BOM::Config::Runtime->instance->app_config;
+my $app_config        = BOM::Config::Runtime->instance->app_config;
 my @suspend_keys_list = BOM::DynamicSettings::get_settings_by_group('shutdown_suspend')->@*;
 
 # Skip local cache and get objects from chronicle
 my @suspend_settings = $app_config->_retrieve_objects_from_chron(\@suspend_keys_list);
 
 # Remove all suspend settings that are not set, return a key => settings hash
-my %active_settings = map {
-    $suspend_keys_list[$_] => $suspend_settings[$_]
-} grep {
-    is_active($suspend_settings[$_])
-} 0..$#suspend_keys_list;
+my %active_settings = map { $suspend_keys_list[$_] => $suspend_settings[$_] } grep { is_active($suspend_settings[$_]) } 0 .. $#suspend_keys_list;
 
 # _local_rev is the time the value was set
-stats_timing("suspended.settings.$_", time - $active_settings{$_}{_local_rev})
-    for keys %active_settings;
+stats_timing("suspended.settings.$_", time - $active_settings{$_}{_local_rev}) for keys %active_settings;
 
 =head2 is_active
 
