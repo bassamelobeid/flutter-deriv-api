@@ -193,4 +193,9 @@ sub mt5_user_rights {
     return $config;
 }
 
+sub onfido_supported_documents {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/onfido_supported_documents.yml');
+    return $config;
+}
+
 1;

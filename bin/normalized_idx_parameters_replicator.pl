@@ -15,7 +15,6 @@ STDOUT->autoflush(1);
 # There is a docker on quants.regentmarkets.com to run the quants's R script to calibrate the parameters and put on S3 server. (On last Saturday of every month)
 # This script will then download the calibration parameters yaml file from S3 and update the redis and chronicle accordingly for the generation. (On first Saturday of every month)
 
-
 my $download_redis = 0;
 my $upload_redis   = 0;
 my $s3_config      = '/etc/rmg/normalized_idx_replicator.yml';
@@ -33,7 +32,7 @@ my $s3   = Net::Async::Webservice::S3->new(
 $loop->add($s3);
 
 my $namespace = 'NORMALIZED_INDEX_COEF';
-my $content   = $s3->get_object(key => $file_name)->get;
+my $content = $s3->get_object(key => $file_name)->get;
 # The content will be as follow:
 #    frxEURUSD => {
 #        start   => '2018-09-25',
@@ -49,6 +48,7 @@ my $content   = $s3->get_object(key => $file_name)->get;
 my $writer    = BOM::Config::Chronicle::get_chronicle_writer();
 my $timestamp = Date::Utility->new;
 my @lines     = split /\n/, $content;
+
 for (my $i = 0; $i < scalar(@lines); $i += 10) {
     my $symbol = $lines[$i];
     $symbol =~ s/://g;
