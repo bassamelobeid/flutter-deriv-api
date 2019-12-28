@@ -12,7 +12,7 @@ use warnings;
 
 use Encode;
 use JSON::MaybeXS;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use WWW::OneAll;
 use Date::Utility;
 use List::Util qw(any sum0 first min uniq);
@@ -496,9 +496,9 @@ rpc account_statistics => sub {
             });
     }
     catch {
-        warn "Error caught : $_\n";
+        warn "Error caught : $@\n";
         return BOM::RPC::v3::Utility::client_error();
-    };
+    }
 
     my $currency_code = $account->currency_code();
     $total_deposits    = formatnumber('amount', $currency_code, $total_deposits);
@@ -810,7 +810,11 @@ sub _get_authentication {
         needs_verification => [],
         identity           => {
             status                        => "none",
-            further_resubmissions_allowed => 0
+            further_resubmissions_allowed => 0,
+            services                      => {
+                onfido => {
+                    is_country_supported => 0,
+                    documents_supported  => []}}
         },
         document => {status => "none"},
     };
@@ -820,6 +824,11 @@ sub _get_authentication {
     my $redis = BOM::Config::RedisReplicated::redis_write();
     $authentication_object->{identity}{further_resubmissions_allowed} =
         $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id) // 0;
+
+    my $country_code = uc($client->place_of_birth // '');
+    $authentication_object->{identity}{services}{onfido}{is_country_supported} = BOM::Config::Onfido::is_country_supported($country_code);
+    $authentication_object->{identity}{services}{onfido}{documents_supported} =
+        BOM::Config::Onfido::supported_documents_for_country($country_code);
 
     my $documents = $client->documents_uploaded();
 
@@ -1669,7 +1678,7 @@ rpc set_self_exclusion => sub {
         }
         catch {
             $exclusion_end_error = 1;
-        };
+        }
         return $error_sub->(localize('Exclusion time conversion error.'), 'max_deposit_end_date') if $exclusion_end_error;
 
         # checking for the exclude until date which must be larger than today's date
@@ -1926,8 +1935,12 @@ rpc tnc_approval => sub {
         if (not $client_tnc_status
             or ($client_tnc_status->{reason} ne $current_tnc_version))
         {
-            try { $client->status->set('tnc_approval', 'system', $current_tnc_version) } catch { $error = BOM::RPC::v3::Utility::client_error() };
-            return $error if $error;
+            try {
+                $client->status->set('tnc_approval', 'system', $current_tnc_version);
+            }
+            catch {
+                return BOM::RPC::v3::Utility::client_error();
+            }
         }
     }
 
@@ -2011,13 +2024,7 @@ rpc account_closure => sub {
     foreach my $mt5_loginid ($user->get_mt5_loginids) {
         $mt5_loginid =~ s/\D//g;
 
-        my $mt5_user;
-        try {
-            $mt5_user = BOM::MT5::User::Async::get_user($mt5_loginid)->get;
-        }
-        catch {
-            $mt5_user = undef;
-        };
+        my $mt5_user = eval { BOM::MT5::User::Async::get_user($mt5_loginid)->get };
 
         # TODO :: Include mt5 currency when we have better access to that data. FE will be mapping that for now (they already make a mt5_login_list API call every page)
         $accounts_with_balance{"MT" . $mt5_loginid} = {
@@ -2049,7 +2056,7 @@ rpc account_closure => sub {
         catch {
             $error = BOM::RPC::v3::Utility::client_error();
             $loginids_disabled_failed .= $client->loginid . ' ';
-        };
+        }
     }
 
     # Return error if NO loginids have been disabled
@@ -2106,7 +2113,7 @@ rpc set_account_currency => sub {
         }
     }
     catch {
-        warn "Error caught in set_account_currency: $_\n";
+        warn "Error caught in set_account_currency: $@\n";
     };
     return {status => $status};
 };

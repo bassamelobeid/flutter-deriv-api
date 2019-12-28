@@ -3,7 +3,7 @@ package BOM::RPC::v3::NewAccount;
 use strict;
 use warnings;
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use List::MoreUtils qw(any);
 use Format::Util::Numbers qw/formatnumber/;
 use Email::Valid;
@@ -339,8 +339,7 @@ rpc new_account_real => sub {
     if ($new_client->residence eq 'gb' or $new_client->landing_company->check_max_turnover_limit_is_set)
     {    # RTS 12 - Financial Limits - UK Clients and MLT Clients
         try { $new_client->status->set('max_turnover_limit_not_set', 'system', 'new GB client or MLT client - have to set turnover limit') }
-        catch { $error = BOM::RPC::v3::Utility::client_error() };
-        return $error if $error;
+        catch { return BOM::RPC::v3::Utility::client_error() };
     }
 
     BOM::User::AuditLog::log("successful login", "$client->email");

@@ -9,7 +9,7 @@ use Scalar::Util qw( looks_like_number );
 use Data::UUID;
 use Path::Tiny;
 use Date::Utility;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use String::UTF8::MD5;
 use LWP::UserAgent;
 use Log::Any qw($log);
@@ -51,6 +51,8 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
 requires_auth();
+
+use Log::Any qw($log);
 
 use constant MAX_DESCRIPTION_LENGTH => 250;
 
@@ -451,13 +453,21 @@ rpc "paymentagent_list",
     foreach (@available_countries) {
         $_->[1] = Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($_->[0], $language);
     }
-
     my $available_payment_agents = _get_available_payment_agents($target_country, $broker_code, $args->{currency}, $loginid, 1);
 
     my $payment_agent_table_row = [];
     foreach my $loginid (keys %{$available_payment_agents}) {
         my $payment_agent = $available_payment_agents->{$loginid};
-        my $min_max       = BOM::Config::PaymentAgent::get_transfer_min_max($payment_agent->{currency_code});
+        my $currency      = $payment_agent->{currency_code};
+
+        my $min_max;
+        try {
+            $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
+        }
+        catch {
+            $log->warnf('%s dropped from PA list. Failed to retrieve limits: %s', $loginid, $@);
+            next;
+        };
 
         push @{$payment_agent_table_row},
             {
@@ -467,7 +477,7 @@ rpc "paymentagent_list",
             'url'                   => $payment_agent->{url},
             'email'                 => $payment_agent->{email},
             'telephone'             => $payment_agent->{phone},
-            'currencies'            => $payment_agent->{currency_code},
+            'currencies'            => $currency,
             'deposit_commission'    => $payment_agent->{commission_deposit},
             'withdrawal_commission' => $payment_agent->{commission_withdrawal},
             'further_information'   => $payment_agent->{information},
@@ -527,13 +537,14 @@ rpc paymentagent_transfer => sub {
     $rpc_error = _validate_paymentagent_limits(
         error_sub     => $error_sub,
         payment_agent => $payment_agent,
+        pa_loginid    => $client_fm->loginid,
         amount        => $amount,
         currency      => $currency
     );
 
     return $rpc_error if $rpc_error;
 
-    my $client_to = try { BOM::User::Client->new({loginid => $loginid_to, db_operation => 'write'}) }
+    my $client_to = eval { BOM::User::Client->new({loginid => $loginid_to, db_operation => 'write'}) }
         or return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
 
     return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
@@ -634,8 +645,8 @@ rpc paymentagent_transfer => sub {
         );
     }
     catch {
-        $error = $_;
-    };
+        $error = $@;
+    }
 
     if ($error) {
         if (ref $error ne 'ARRAY') {
@@ -874,8 +885,8 @@ rpc paymentagent_withdraw => sub {
         });
     }
     catch {
-        $paymentagent_error = $_;
-    };
+        $paymentagent_error = $@;
+    }
     if ($paymentagent_error or not $paymentagent) {
         return $error_sub->(localize('Please enter a valid payment agent ID.'));
     }
@@ -898,6 +909,7 @@ rpc paymentagent_withdraw => sub {
     $rpc_error = _validate_paymentagent_limits(
         error_sub     => $error_sub,
         payment_agent => $paymentagent,
+        pa_loginid    => $pa_client->loginid,
         amount        => $amount,
         currency      => $currency
     );
@@ -983,8 +995,8 @@ rpc paymentagent_withdraw => sub {
         );
     }
     catch {
-        $withdraw_error = $_;
-    };
+        $withdraw_error = $@;
+    }
 
     if ($withdraw_error) {
         return $error_sub->(
@@ -1045,7 +1057,7 @@ rpc paymentagent_withdraw => sub {
         );
     }
     catch {
-        $error = $_;
+        $error = $@;
     };
 
     if ($error) {
@@ -1351,7 +1363,7 @@ rpc transfer_between_accounts => sub {
     }
     catch {
         $res = _transfer_between_accounts_error();
-    };
+    }
     return $res if $res;
 
     my ($from_currency, $to_currency) =
@@ -1384,8 +1396,8 @@ rpc transfer_between_accounts => sub {
             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $from_currency, $to_currency, $client_from, $client_to);
     }
     catch {
-        $err = $_;
-    };
+        $err = $@;
+    }
 
     if ($err) {
         return $error_audit_sub->($err, localize('Sorry, transfers are currently unavailable. Please try again later.'))
@@ -1435,8 +1447,8 @@ rpc transfer_between_accounts => sub {
         ) || die "validate_payment [$loginid_from]";
     }
     catch {
-        $err = $_;
-    };
+        $err = $@;
+    }
 
     if ($err) {
         my $limit;
@@ -1468,8 +1480,8 @@ rpc transfer_between_accounts => sub {
         ) || die "validate_payment [$loginid_to]";
     }
     catch {
-        $err = $_;
-    };
+        $err = $@;
+    }
     if ($err) {
         my $msg = localize("Transfer validation failed on [_1].", $loginid_to);
         if ($err =~ /Balance would exceed ([\S]+) limit/) {
@@ -1505,9 +1517,9 @@ rpc transfer_between_accounts => sub {
         );
     }
     catch {
-        my $err_str = (ref $_ eq 'ARRAY') ? "@$_" : $_;
+        my $err_str = (ref $@ eq 'ARRAY') ? "@$@" : $@;
         $err = "$err_msg Account Transfer failed [$err_str]";
-    };
+    }
     if ($err) {
         return $error_audit_sub->($err);
     }

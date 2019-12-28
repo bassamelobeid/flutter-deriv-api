@@ -617,6 +617,17 @@
                                   }
                                }
                             }
+                        },
+                        "after_first_deposit": {
+                           "type" : "object",
+                            "patternProperties" : {
+                               "^.+$" : {
+                                  "type" : "array",
+                                  "items" : {
+                                     "type" : "string"
+                                  }
+                               }
+                            }
                         }
                      }
                   },
