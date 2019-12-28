@@ -3,7 +3,7 @@ package BOM::RPC::v3::Transaction;
 use strict;
 use warnings;
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Encode;
 use JSON::MaybeXS;
 use Scalar::Util qw(blessed);
@@ -179,17 +179,18 @@ rpc "buy",
         }
     }
     catch {
+        my $exception = $@;
         my $message_to_client;
-        if (blessed($_) && $_->isa('BOM::Product::Exception')) {
-            $message_to_client = $_->message_to_client;
+        if (blessed($exception) && $exception->isa('BOM::Product::Exception')) {
+            $message_to_client = $exception->message_to_client;
         } else {
             $message_to_client = ['Cannot create contract'];
-            warn __PACKAGE__ . " buy failed: '$_', parameters: " . $json->encode($contract_parameters);
+            warn __PACKAGE__ . " buy failed: '$exception', parameters: " . $json->encode($contract_parameters);
         }
         $error = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize(@$message_to_client)});
-    };
+    }
     return $error if $error;
 
     my $contract = $trx->contract;
@@ -209,8 +210,8 @@ rpc "buy",
             });
         }
         catch {
-            warn "Copiers trade buy error: " . $_;
-        };
+            warn "Copiers trade buy error: " . $@;
+        }
     }
 
     # to subscribe to this contract after buy, we need to have the same information that we pass to
@@ -338,19 +339,20 @@ rpc buy_contract_for_multiple_accounts => sub {
         }
     }
     catch {
+        my $exception = $@;
         my $message_to_client;
-        if (blessed($_) && $_->isa('BOM::Product::Exception')) {
-            $message_to_client = $_->message_to_client;
+        if (blessed($exception) && $exception->isa('BOM::Product::Exception')) {
+            $message_to_client = $exception->message_to_client;
         } else {
             $message_to_client = ['Cannot create contract'];
             warn __PACKAGE__
-                . " buy_contract_for_multiple_accounts failed with error [$_], parameters: "
+                . " buy_contract_for_multiple_accounts failed with error [$exception], parameters: "
                 . (eval { $json->encode($contract_parameters) } // 'could not encode, ' . $@);
         }
         $error = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize(@$message_to_client)});
-    };
+    }
     return $error if $error;
 
     for my $el (@{$token_list_res->{result}}) {
@@ -566,8 +568,8 @@ rpc "sell",
             }) if $client->allow_copiers;
     }
     catch {
-        warn "Copiers trade sell error: " . $_;
-    };
+        warn "Copiers trade sell error: " . $@;
+    }
 
     my $trx_rec = $trx->transaction_record;
 
@@ -633,7 +635,7 @@ rpc contract_update => sub {
             code              => 'ContractUpdateError',
             message_to_client => localize("Sorry, an error occurred while processing your request."),
         });
-    };
+    }
 
     return $response;
 };

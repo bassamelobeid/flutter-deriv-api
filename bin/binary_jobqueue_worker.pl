@@ -15,7 +15,6 @@ use Path::Tiny qw(path);
 use Syntax::Keyword::Try;
 use Time::Moment;
 use Text::Trim;
-use Try::Tiny;
 use Time::HiRes qw(alarm);
 use Path::Tiny;
 use Future::Utils qw(try_repeat);

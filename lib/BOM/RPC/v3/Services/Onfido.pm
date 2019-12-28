@@ -28,11 +28,10 @@ use BOM::Config::RedisReplicated;
 use BOM::Platform::Context qw(localize);
 use BOM::RPC::v3::Services;
 use BOM::RPC::v3::Utility;
+use BOM::Config::Onfido;
 
-use constant ONFIDO_APPLICANT_KEY_PREFIX        => 'ONFIDO::APPLICANT::ID::';
-use constant ONFIDO_SUPPORTED_COUNTRIES_KEY     => 'ONFIDO_SUPPORTED_COUNTRIES';
-use constant ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT => $ENV{ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT} // 7 * 86400;    # 1 week
-use constant ONFIDO_ADDRESS_REQUIRED_FIELDS     => qw(address_postcode residence);
+use constant ONFIDO_APPLICANT_KEY_PREFIX    => 'ONFIDO::APPLICANT::ID::';
+use constant ONFIDO_ADDRESS_REQUIRED_FIELDS => qw(address_postcode residence);
 
 my ($loop, $services);
 
@@ -66,41 +65,38 @@ sub onfido_service_token {
     my $country = uc($client->place_of_birth // $client->residence);
     my $loginid = $client->loginid;
 
-    return _is_supported_country_onfido($country, $onfido)->then(
+    my $is_country_supported = BOM::Config::Onfido::is_country_supported($country);
+
+    return Future->done({
+            error => BOM::RPC::v3::Utility::create_error({
+                    code              => 'UnsupportedCountry',
+                    message_to_client => localize('Country "[_1]" is not supported by Onfido.', $country),
+                })}) unless $is_country_supported;
+
+    return _get_onfido_applicant($client, $onfido)->then(
         sub {
-            my $is_supported = shift;
+            my $applicant = shift;
 
             return Future->done({
                     error => BOM::RPC::v3::Utility::create_error({
-                            code              => 'UnsupportedCountry',
-                            message_to_client => localize('Country "[_1]" is not supported by Onfido.', $country),
-                        })}) unless $is_supported;
+                            code              => 'ApplicantError',
+                            message_to_client => localize('Cannot create applicant for [_1].', $loginid),
+                        })}) unless $applicant;
 
-            _get_onfido_applicant($client, $onfido)->then(
+            $onfido->sdk_token(
+                applicant_id => $applicant->id,
+                referrer     => $referrer,
+                )->then(
                 sub {
-                    my $applicant = shift;
+                    my $response = shift;
 
                     return Future->done({
                             error => BOM::RPC::v3::Utility::create_error({
-                                    code              => 'ApplicantError',
-                                    message_to_client => localize('Cannot create applicant for [_1].', $loginid),
-                                })}) unless $applicant;
+                                    code              => 'TokenGeneratingError',
+                                    message_to_client => localize('Cannot generate token for [_1].', $loginid),
+                                })}) unless exists $response->{token};
 
-                    $onfido->sdk_token(
-                        applicant_id => $applicant->id,
-                        referrer     => $referrer,
-                        )->then(
-                        sub {
-                            my $response = shift;
-
-                            return Future->done({
-                                    error => BOM::RPC::v3::Utility::create_error({
-                                            code              => 'TokenGeneratingError',
-                                            message_to_client => localize('Cannot generate token for [_1].', $loginid),
-                                        })}) unless exists $response->{token};
-
-                            return Future->done({token => $response->{token}});
-                        });
+                    return Future->done({token => $response->{token}});
                 });
         }
         )->else(
@@ -111,42 +107,6 @@ sub onfido_service_token {
                             message_to_client => localize('Cannot create applicant for [_1].', $loginid),
                         })});
         });
-}
-
-=head2 _is_supported_country_onfido
-
-Check if the passed country is supported by Onfido.
-
-=over 4
-
-=item * C<country> - two letter country code to check for Onfido support
-
-=item * C<onfido> - C<WebService::Async::Onfido> object instance
-
-=back
-
-=cut
-
-sub _is_supported_country_onfido {
-    my ($country, $onfido) = @_;
-
-    my $countries_list = BOM::Config::RedisReplicated::redis_events()->get(ONFIDO_SUPPORTED_COUNTRIES_KEY);
-    if ($countries_list) {
-        $countries_list = decode_json_utf8($countries_list);
-        return Future->done($countries_list->{uc $country} // 0);
-    } else {
-        return $onfido->countries_list()->then(
-            sub {
-                $countries_list = shift;
-                if ($countries_list) {
-                    BOM::Config::RedisReplicated::redis_events_write()->set(
-                        ONFIDO_SUPPORTED_COUNTRIES_KEY() => encode_json_utf8($countries_list),
-                        EX                               => ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT,
-                    );
-                    return Future->done($countries_list->{uc $country} // 0);
-                }
-            });
-    }
 }
 
 =head2 _get_onfido_applicant
@@ -213,9 +173,8 @@ sub _client_onfido_details {
 
     my $details = {
         (map { $_ => $client->$_ } qw(first_name last_name email)),
-        title   => $client->salutation,
-        dob     => $client->date_of_birth,
-        country => uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3') // ''),
+        title => $client->salutation,
+        dob   => $client->date_of_birth,
     };
 
     # Add address info if the required fields not empty

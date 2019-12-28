@@ -41,11 +41,14 @@ my %category_message_mapping = do {
         MT5AccountLocked  => localize('Your MT5 account is locked. Please contact us for more information.'),
         NoExchangeRates   => localize('Transfers are unavailable on weekends. Please try again anytime from Monday to Friday.'),
         NoTransferFee => localize('Transfers are currently unavailable between [_1] and [_2]. Please use a different currency or try again later.'),
-        AmountNotAllowed => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
-        InvalidMinAmount => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
-        InvalidMaxAmount => localize('The maximum amount for deposits is [_1] [_2]. Please adjust your amount.'),
-        InvalidPassword  => localize('Forgot your password? Please reset your password.'),
-        NoMoney          => localize('Your withdrawal is unsuccessful. Please make sure you have enough funds in your account.'),
+        AmountNotAllowed           => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
+        InvalidMinAmount           => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
+        InvalidMaxAmount           => localize('The maximum amount for deposits is [_1] [_2]. Please adjust your amount.'),
+        InvalidPassword            => localize('Forgot your password? Please reset your password.'),
+        IncorrectMT5PasswordFormat => localize(
+            'Your password must have a minimum of 8 characters. It must also have at least 2 out of the following 3 types of characters: uppercase letters, lowercase letters, and numbers.'
+        ),
+        NoMoney => localize('Your withdrawal is unsuccessful. Please make sure you have enough funds in your account.'),
         HaveOpenPositions =>
             localize('Please withdraw your account balance and close all your open positions before revoking MT5 account manager permissions.'),
         MissingSignupDetails => localize('Your profile appears to be incomplete. Please update your personal details to continue.'),

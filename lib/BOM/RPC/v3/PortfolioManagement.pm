@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Date::Utility;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/formatnumber roundcommon/;
 
 use BOM::RPC::Registry '-dsl';
@@ -116,7 +116,7 @@ sub _sell_expired_contracts {
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'SellExpiredError',
                 message_to_client => localize('There was an error processing the request.')});
-    };
+    }
 
     return $response;
 }

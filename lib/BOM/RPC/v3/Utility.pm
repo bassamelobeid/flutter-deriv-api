@@ -14,7 +14,7 @@ use utf8;
 
 no indirect;
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
 use List::Util qw(any uniqstr shuffle);
@@ -92,7 +92,7 @@ sub validation_checks {
                 -mesg              => 'Internal Error',
                 -message_to_client => localize('Sorry, there is an internal error.'),
             });
-        };
+        }
 
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err->get_type,
@@ -563,13 +563,14 @@ sub _is_currency_allowed {
     return $result unless $client->landing_company->is_currency_legal($currency);
 
     my $error;
-    $error = try {
-        return localize("The provided currency [_1] is not selectable at the moment.", $currency)
+    try {
+        $error = localize("The provided currency [_1] is not selectable at the moment.", $currency)
             if ($type eq 'crypto' and BOM::Platform::Client::CashierValidation::is_crypto_currency_suspended($currency));
     }
     catch {
-        return localize("The provided currency [_1] is not a valid cryptocurrency.", $currency);
-    };
+        $error = localize("The provided currency [_1] is not a valid cryptocurrency.", $currency);
+    }
+
     if ($error) {
         $result->{message} = $error;
         return $result;
@@ -698,9 +699,9 @@ sub _timed(&@) {    ## no critic (ProhibitSubroutinePrototypes)
         $k .= '.success';
     }
     catch {
-        $exception = $_;
+        $exception = $@;
         $k .= '.error';
-    };
+    }
     my $elapsed = 1000.0 * (Time::HiRes::time() - $start);
     stats_timing($k, $elapsed, @args);
     die $exception if $exception;
@@ -740,8 +741,8 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
         }
         catch {
             # we do not want to warn for known error like legacy underlying
-            if ($_ !~ /unknown underlying/) {
-                warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode . ' error: ' . $_;
+            if ($@ !~ /unknown underlying/) {
+                warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode . ' error: ' . $@;
             }
             $longcodes{$shortcode} = localize('No information is available for this contract.');
         }
