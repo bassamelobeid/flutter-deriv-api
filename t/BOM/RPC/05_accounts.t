@@ -781,7 +781,11 @@ subtest $method => sub {
                         document => {status => "none"},
                         identity => {
                             status                          => "none",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => [],
                     }
@@ -806,7 +810,11 @@ subtest $method => sub {
                         document => {status => "none"},
                         identity => {
                             status                          => "none",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -829,7 +837,11 @@ subtest $method => sub {
                         document => {status => "verified"},
                         identity => {
                             status                          => "verified",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => [],
                     }
@@ -850,7 +862,11 @@ subtest $method => sub {
                         document => {status => "verified"},
                         identity => {
                             status                          => "verified",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => [],
                     }
@@ -879,7 +895,11 @@ subtest $method => sub {
                         document => {status => "verified"},
                         identity => {
                             status                          => "verified",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => [],
                     }
@@ -904,7 +924,11 @@ subtest $method => sub {
                         document => {status => "none"},
                         identity => {
                             status                          => "none",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -925,7 +949,11 @@ subtest $method => sub {
                         document => {status => "none"},
                         identity => {
                             status                          => "verified",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => ["document"],
                     }
@@ -947,7 +975,11 @@ subtest $method => sub {
                         document => {status => "none"},
                         identity => {
                             status                          => "none",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => [],
                     }
@@ -970,7 +1002,11 @@ subtest $method => sub {
                         document => {status => "none"},
                         identity => {
                             status                          => "none",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -996,7 +1032,11 @@ subtest $method => sub {
                         document => {status => "none"},
                         identity => {
                             status                          => "verified",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => [],
                     }
@@ -1019,7 +1059,11 @@ subtest $method => sub {
                         document => {status => "verified"},
                         identity => {
                             status                          => "verified",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => [],
                     }
@@ -1045,7 +1089,11 @@ subtest $method => sub {
                         document => {status => "none"},
                         identity => {
                             status                          => "none",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => [],
                     }
@@ -1072,7 +1120,11 @@ subtest $method => sub {
                         document => {status => "none"},
                         identity => {
                             status                          => "none",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -1094,7 +1146,11 @@ subtest $method => sub {
                         document => {status => "none"},
                         identity => {
                             status                          => "none",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => [],
                     }
@@ -1116,7 +1172,11 @@ subtest $method => sub {
                         document => {status => "none"},
                         identity => {
                             status                          => "none",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -1141,7 +1201,11 @@ subtest $method => sub {
                         document => {status => "none"},
                         identity => {
                             status                          => "none",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -1170,7 +1234,11 @@ subtest $method => sub {
                         document => {status => "none"},
                         identity => {
                             status                          => "verified",
-                            "further_resubmissions_allowed" => 0
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => ["document"],
                     }
@@ -1206,7 +1274,11 @@ subtest $method => sub {
                             document => {status => "verified"},
                             identity => {
                                 status                          => "verified",
-                                "further_resubmissions_allowed" => 0
+                                "further_resubmissions_allowed" => 0,
+                                services                        => {
+                                    onfido => {
+                                        is_country_supported => 0,
+                                        documents_supported  => []}}
                             },
                             needs_verification => [],
                         }
@@ -1266,7 +1338,11 @@ subtest $method => sub {
                             identity => {
                                 status                        => "expired",
                                 expiry_date                   => $result->{authentication}{identity}{expiry_date},
-                                further_resubmissions_allowed => 0
+                                further_resubmissions_allowed => 0,
+                                services                      => {
+                                    onfido => {
+                                        is_country_supported => 0,
+                                        documents_supported  => []}}
                             },
                             needs_verification => ["document", "identity"],
                         }
@@ -1301,7 +1377,11 @@ subtest $method => sub {
                             },
                             identity => {
                                 status                        => "verified",
-                                further_resubmissions_allowed => 0
+                                further_resubmissions_allowed => 0,
+                                services                      => {
+                                    onfido => {
+                                        is_country_supported => 0,
+                                        documents_supported  => []}}
                             },
                             needs_verification => ["document"],
                         }
@@ -1347,7 +1427,11 @@ subtest $method => sub {
                                 },
                                 identity => {
                                     status                        => "verified",
-                                    further_resubmissions_allowed => 0
+                                    further_resubmissions_allowed => 0,
+                                    services                      => {
+                                        onfido => {
+                                            is_country_supported => 0,
+                                            documents_supported  => []}}
                                 },
                                 needs_verification => ["document"]}
                         },
@@ -1388,7 +1472,11 @@ subtest $method => sub {
                                 identity => {
                                     status                        => "expired",
                                     expiry_date                   => $result->{authentication}{identity}{expiry_date},
-                                    further_resubmissions_allowed => 0
+                                    further_resubmissions_allowed => 0,
+                                    services                      => {
+                                        onfido => {
+                                            is_country_supported => 0,
+                                            documents_supported  => []}}
                                 },
                                 document => {
                                     status => "none",
@@ -1422,7 +1510,11 @@ subtest $method => sub {
                         },
                         identity => {
                             status                        => "none",
-                            further_resubmissions_allowed => 0
+                            further_resubmissions_allowed => 0,
+                            services                      => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
                         },
                         needs_verification => ["document", "identity"]}
                 },

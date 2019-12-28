@@ -12,6 +12,8 @@ use constant {
     MT_RET_USR_INVALID_PASSWORD => 3006,
 };
 
+use constant SIMPLE_PASSWORD => 'abc123';
+
 # Mocked account details
 
 # %ACCOUNTS and %DETAILS are shared between four files, and should be kept in-sync to avoid test failures
@@ -74,6 +76,11 @@ sub cmd_UserAdd {
     my ($input) = @_;
 
     exists $ACCOUNTS{$input->{group}} or die "UserAdd with unexpected group=$input->{group}\n";
+
+    return {
+        ret_code => MT_RET_USR_INVALID_PASSWORD,
+        error    => 'password formatting is wrong',
+    } if $input->{mainPassword} eq SIMPLE_PASSWORD;
 
     $input->{mainPassword} eq $DETAILS{password}->{main}
         or die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";

@@ -183,7 +183,7 @@ sub p2p_rpc {
             );
         }
         catch {
-            my ($exception) = $@;
+            my $exception = $@;
             my $err;
             # db errors come as [ BIxxx, message ]
             # bom-user errors come as a string "ErrorCode\n"

@@ -9,7 +9,7 @@ use Guard;
 use YAML::XS;
 use Date::Utility;
 use List::Util qw(any first);
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use File::ShareDir;
 use Locale::Country::Extra;
 use WebService::MyAffiliates;
@@ -621,12 +621,15 @@ async_rpc "mt5_get_settings",
             return BOM::MT5::User::Async::get_group($settings->{group})->then(
                 sub {
                     my ($group_details) = @_;
+
                     return create_error_future('MT5GetGroupError', {message => $group_details->{error}})
                         if (ref $group_details eq 'HASH' and $group_details->{error});
+
                     $settings->{currency}        = $group_details->{currency};
                     $settings->{landing_company} = $group_details->{company};
                     $settings->{display_balance} = formatnumber('amount', $settings->{currency}, $settings->{balance});
-                    $settings                    = _filter_settings($settings,
+
+                    $settings = _filter_settings($settings,
                         qw/address balance city company country currency email group leverage login name phone phonePassword state zipCode landing_company display_balance/
                     );
                     return Future->done($settings);
@@ -1064,7 +1067,6 @@ async_rpc "mt5_deposit",
 
             # From the point of view of our system, we're withdrawing
             # money to deposit into MT5
-            my $withdraw_error;
             try {
                 $fm_client->validate_payment(
                     currency => $fm_client->default_account->currency_code(),
@@ -1072,10 +1074,7 @@ async_rpc "mt5_deposit",
                 );
             }
             catch {
-                $withdraw_error = $_;
-            };
-
-            if ($withdraw_error) {
+                my $withdraw_error = $@;
                 return create_error_future(
                     $error_code,
                     {
@@ -1090,7 +1089,7 @@ async_rpc "mt5_deposit",
             my $fees_currency     = $response->{fees_currency};
             my $fees_percent      = $response->{fees_percent};
             my $mt5_currency_code = $response->{mt5_currency_code};
-            my ($txn, $comment, $error);
+            my ($txn, $comment);
             try {
                 my $fee_calculated_by_percent = $response->{calculated_fee};
                 my $min_fee                   = $response->{min_fee};
@@ -1117,10 +1116,9 @@ async_rpc "mt5_deposit",
                 _record_mt5_transfer($fm_client->db->dbic, $txn->payment_id, -$response->{mt5_amount}, $to_mt5, $response->{mt5_currency_code});
             }
             catch {
-                $error = BOM::Transaction->format_error(err => $_);
-            };
-
-            return create_error_future($error_code, {message => $error->{-message_to_client}}) if $error;
+                my $error = BOM::Transaction->format_error(err => $@);
+                return create_error_future($error_code, {message => $error->{-message_to_client}});
+            }
 
             _store_transaction_redis({
                     loginid       => $fm_loginid,
@@ -1230,9 +1228,9 @@ async_rpc "mt5_withdrawal",
 
                     my $to_client = BOM::User::Client->new({loginid => $to_loginid});
 
-                    # TODO(leonerd): This Try::Tiny try block returns a Future in either case.
+                    # TODO(leonerd): This try block returns a Future in either case.
                     #   We might want to consider using Future->try somehow instead.
-                    return try {
+                    try {
                         # deposit to Binary a/c
                         my ($txn) = $to_client->payment_mt5_transfer(
                             amount   => $mt5_amount,
@@ -1258,7 +1256,7 @@ async_rpc "mt5_withdrawal",
                         });
                     }
                     catch {
-                        my $error = BOM::Transaction->format_error(err => $_);
+                        my $error = BOM::Transaction->format_error(err => $@);
                         _send_email(
                             loginid => $to_loginid,
                             mt5_id  => $fm_mt5,
@@ -1267,7 +1265,7 @@ async_rpc "mt5_withdrawal",
                             error   => $error->get_mesg,
                         );
                         return create_error_future($error_code, {message => $error->{-message_to_client}});
-                    };
+                    }
                 });
         });
     };
@@ -1357,8 +1355,24 @@ sub _mt5_validate_and_get_amount {
             my $mt5_group = $setting->{group};
             my $mt5_lc    = _fetch_mt5_lc($setting);
             return create_error_future('InvalidMT5Group') unless $mt5_lc;
-            my $mt5_currency = $setting->{currency};
 
+            my $requirements = LandingCompany::Registry->new->get($mt5_lc)->requirements->{after_first_deposit}->{financial_assessment} // [];
+            if (
+                    $action eq 'withdrawal'
+                and $authorized_client->has_mt5_deposits($mt5_loginid)
+                and not _is_financial_assessment_complete(
+                    client                            => $authorized_client,
+                    group                             => $mt5_group,
+                    financial_assessment_requirements => $requirements
+                ))
+            {
+                return create_error_future('FinancialAssessmentMandatory', {override_code => $error_code});
+            }
+
+            return create_error_future($setting->{status}->{withdrawal_locked}->{error}, {override_code => $error_code})
+                if ($action eq 'withdrawal' and $setting->{status}->{withdrawal_locked});
+
+            my $mt5_currency = $setting->{currency};
             return create_error_future('CurrencyConflict', {override_code => $error_code})
                 if $currency_check && $currency_check ne $mt5_currency;
 
@@ -1402,14 +1416,13 @@ sub _mt5_validate_and_get_amount {
                 });
             }
             catch {
-
-                }
-                or return create_error_future(
-                'InvalidLoginid',
-                {
-                    override_code => $error_code,
-                    params        => $loginid
-                });
+                return create_error_future(
+                    'InvalidLoginid',
+                    {
+                        override_code => $error_code,
+                        params        => $loginid
+                    });
+            }
 
             # Validate the binary client
             my ($err, $params) = _validate_client($client, $mt5_lc);
@@ -1493,9 +1506,9 @@ sub _mt5_validate_and_get_amount {
 
                     catch {
                         # usually we get here when convert_currency() fails to find a rate within $rate_expiry, $mt5_amount is too low, or no transfer fee are defined (invalid currency pair).
-                        $err        = $_;
+                        $err        = $@;
                         $mt5_amount = undef;
-                    };
+                    }
 
                 } elsif ($action eq 'withdrawal') {
 
@@ -1517,8 +1530,8 @@ sub _mt5_validate_and_get_amount {
                     }
                     catch {
                         # same as previous catch
-                        $err = $_;
-                    };
+                        $err = $@;
+                    }
                 }
             }
 

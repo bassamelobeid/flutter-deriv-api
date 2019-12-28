@@ -4,7 +4,7 @@ use strict;
 use warnings;
 no indirect;
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Scalar::Util q(blessed);
 use Time::HiRes qw();
 
@@ -145,30 +145,30 @@ sub wrap_rpc_sub {
 
         my $auth_timing = 1000 * Time::HiRes::tv_interval($tv);
 
-        my @args   = @original_args;
-        my $result = try {
+        my @args = @original_args;
+        my $result;
+        try {
             my $code = $def->code;
             if ($def->is_async) {
-                $code->(@args)->get;
+                $result = $code->(@args)->get;
             } else {
-                $code->(@args);
+                $result = $code->(@args);
             }
         }
         catch {
-
+            my $error = $@;
             #Future->fail()  will raise exception here, in this case error is already formatted
             #otherwise die again, let outer catch handle it.
 
-            if (ref $_ eq 'HASH' and ref $_->{error} eq 'HASH') {
-                $_;
+            if (ref $error eq 'HASH' and ref $error->{error} eq 'HASH') {
+                $result = $error;
             } else {
-
                 # replacing possible objects in $params with strings to avoid error in encode_json function
                 my $params = {$original_args[0] ? %{$original_args[0]} : ()};
                 $params->{client} = blessed($params->{client}) . ' object: ' . $params->{client}->loginid
                     if eval { $params->{client}->can('loginid') };
 
-                my $error = "Exception when handling $method" . (defined $params->{client} ? " for $params->{client}." : '.');
+                my $error_msg = "Exception when handling $method" . (defined $params->{client} ? " for $params->{client}." : '.');
 
                 if (   $ENV{LOG_DETAILED_EXCEPTION}
                     or exists $params->{logging}{all}
@@ -176,15 +176,15 @@ sub wrap_rpc_sub {
                     or exists $params->{logging}{loginid}{$params->{token_details}{loginid} // ''}
                     or exists $params->{logging}{app_id}{$params->{source} // ''})
                 {
-                    $error .= " $_";
+                    $error_msg .= " $error";
                 }
-                warn $error;
+                warn $error_msg;
 
-                BOM::RPC::v3::Utility::create_error({
+                $result = BOM::RPC::v3::Utility::create_error({
                         code              => 'InternalServerError',
                         message_to_client => localize("Sorry, an error occurred while processing your request.")});
             }
-        };
+        }
 
         if ($verify_app_res && ref $result eq 'HASH' && !$result->{error}) {
             $result->{stash} = {%{$result->{stash} // {}}, %{$verify_app_res->{stash}}};

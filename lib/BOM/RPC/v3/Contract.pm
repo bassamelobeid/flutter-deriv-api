@@ -4,7 +4,6 @@ use strict;
 use warnings;
 no indirect;
 
-use Try::Tiny;
 use List::MoreUtils qw(none);
 use Date::Utility;
 use Time::HiRes;

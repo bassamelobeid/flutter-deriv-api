@@ -3,7 +3,7 @@ package BOM::RPC::v3::CopyTrading::Statistics;
 use strict;
 use warnings;
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Performance::Probability qw(get_performance_probability);
 
 use BOM::User::Client;
@@ -23,7 +23,7 @@ rpc copytrading_statistics => sub {
     my $params = shift->{args};
 
     my $trader_id = uc $params->{trader_id};
-    my $trader = try { BOM::User::Client->new({loginid => $trader_id, db_operation => 'replica'}) };
+    my $trader = eval { BOM::User::Client->new({loginid => $trader_id, db_operation => 'replica'}) };
     unless ($trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'WrongLoginID',
@@ -141,7 +141,7 @@ rpc copytrading_statistics => sub {
             or $contract->{bet_type} =~ /^DIGIT/)
         {
             my $c;
-            try { $c = produce_contract($contract->{short_code}, 'USD'); } or next;
+            eval { $c = produce_contract($contract->{short_code}, 'USD'); } or next;
 
             if ($c->exit_tick) {
                 push @{$contract_parameters->{exit_tick_epoch}}, $c->exit_tick->epoch;
@@ -181,7 +181,7 @@ rpc copytrading_statistics => sub {
         }
         catch {
             warn "Performance probability calculation error: $_";
-        };
+        }
     }
 
     # trades average duration

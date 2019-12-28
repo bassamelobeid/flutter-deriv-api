@@ -3,7 +3,6 @@ package BOM::RPC::v3::MarketDiscovery;
 use strict;
 use warnings;
 
-use Try::Tiny;
 use Date::Utility;
 use Cache::RedisDB;
 use Time::Duration::Concise::Localize;
