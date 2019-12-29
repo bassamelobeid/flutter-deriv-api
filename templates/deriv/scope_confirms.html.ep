@@ -25,7 +25,7 @@
             <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
             <div>
                 <button id="btnCancel" class="tertiary" name="cancel_scopes" value="<%= l('Deny this app') %>" type="submit"><%= l('Deny this app') %></button>
-                <button id="btnGrant" class="secondary" name="confirm_scopes" value="<%= l('Authorise this app') %>" type="submit"><%= l('Authorize this app') %></button>
+                <button id="btnGrant" class="secondary" name="confirm_scopes" value="<%= l('Authorise this app') %>" type="submit"><%= l('Authorise this app') %></button>
             </div>
         </form>
     </div>
