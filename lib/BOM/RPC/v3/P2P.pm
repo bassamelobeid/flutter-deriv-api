@@ -92,8 +92,10 @@ our %ERROR_MAP = do {
         InvalidOfferCurrency     => localize('Invalid offer currency'),
         OrderNotFound            => localize('Order not found'),
         OrderAlreadyExists       => localize('Too many orders. Please complete your pending orders.'),
-        InvalidOfferOwn          => localize('You cannot create an order for your own offer.'),
-        InvalidOfferExpired      => localize('The offer has expired.'),
+        OrderMinimumNotMet       => localize('The minimum amount for this offer is [_1] [_2].'),          # minimum won't change during offer lifetime
+        OrderMaximumExceeded => localize('The maximum available amount for this offer is [_1] [_2] at the moment.'),
+        InvalidOfferOwn      => localize('You cannot create an order for your own offer.'),
+        InvalidOfferExpired  => localize('The offer has expired.'),
 
         InvalidStateForClientConfirmation => localize('The order cannot be confirmed by client in its current state.'),
         InvalidStateForAgentConfirmation  => localize('The order cannot be confirmed by agent in its current state.'),
@@ -184,14 +186,17 @@ sub p2p_rpc {
         }
         catch {
             my $exception = $@;
-            my $err;
+            my ($err, $err_params);
             # db errors come as [ BIxxx, message ]
             # bom-user errors come as a string "ErrorCode\n"
-            if (ref($exception) eq 'ARRAY') {
-                $err = $exception->[0];
-            } else {
+            #   or a HASH: {error_code => 'ErrorCode', message_params => ['values for message placeholders']}
+            SWITCH: for (ref $exception) {
+                if (/ARRAY/) { $err = $exception->[0]; last SWITCH; }
+                if (/HASH/) { $err = $exception->{error_code}; $err_params = $exception->{message_params}; last SWITCH; }
+
                 chomp($err = $exception);
             }
+
             my $p2p_prefix = $method =~ tr/_/./;
 
             if (my $message = $ERROR_MAP{$err}) {
@@ -203,7 +208,7 @@ sub p2p_rpc {
                 }
                 return BOM::RPC::v3::Utility::create_error({
                         code              => $err,
-                        message_to_client => localize($message)}                     #
+                        message_to_client => localize($message, (ref($err_params) eq 'ARRAY' ? $err_params : [])->@*)}                     #
                 );
             } else {
                 warn $err;
