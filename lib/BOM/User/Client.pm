@@ -1710,9 +1710,8 @@ sub p2p_offer_create {
         if in_usd($param{amount}, uc $param{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer;
 
     my $active_offers_count = $client->p2p_offer_list(
-        loginid         => $client->binary_user_id,
-        active          => 1,
-        include_expired => 0,
+        agent_loginid => $client->loginid,
+        active        => 1,
     )->@*;
     die "OfferMaxExceeded\n" if $active_offers_count >= MAXIMUM_ACTIVE_OFFERS;
 
@@ -1834,8 +1833,25 @@ sub p2p_order_create {
     die "InvalidOfferExpired\n" if $offer_info->{is_expired};
     die "InvalidCurrency\n" unless $offer_info->{account_currency} eq $client->currency;
     die "InvalidOfferOwn\n" if $offer_info->{agent_loginid} eq $client->loginid;
-    die "MaximumExceeded\n" if $amount > $offer_info->{max_amount};
-    die "MinimumNotMet\n"   if $amount < $offer_info->{min_amount};
+
+    die +{
+        error_code     => 'OrderMaximumExceeded',
+        message_params => [
+            $offer_info->{account_currency},
+            formatnumber('amount', $offer_info->{account_currency}, $offer_info->{max_amount})    #
+            ]                                                                                     #
+        }
+        if ($offer_info->{max_amount} and $amount > $offer_info->{max_amount})
+        or $amount > $offer_info->{amount}
+        or $amount > $offer_info->{remaining};
+
+    die +{
+        error_code     => 'OrderMinimumNotMet',
+        message_params => [
+            $offer_info->{account_currency},
+            formatnumber('amount', $offer_info->{account_currency}, $offer_info->{min_amount})    #
+            ]                                                                                     #
+    } if $amount < ($offer_info->{min_amount} // 0);
 
     my ($agent_info) = $client->p2p_agent_list(id => $offer_info->{agent_id})->@*;
     die "AgentNotFound\n" unless $agent_info;

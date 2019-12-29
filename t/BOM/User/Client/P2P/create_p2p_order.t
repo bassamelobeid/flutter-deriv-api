@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More;
 use Test::Deep;
+use Format::Util::Numbers qw(formatnumber);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -14,7 +15,6 @@ use Test::Fatal;
 subtest 'Creating new order' => sub {
     my $amount      = 100;
     my $description = 'Test order';
-    my $source      = 1;
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
@@ -71,7 +71,6 @@ subtest 'Creating new order' => sub {
 subtest 'Creating two orders from two clients' => sub {
     my $amount      = 100;
     my $description = 'Test order';
-    my $source      = 1;
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
@@ -123,7 +122,6 @@ subtest 'Creating two orders from two clients' => sub {
 subtest 'Creating two orders from one client for two offers' => sub {
     my $amount      = 100;
     my $description = 'Test order';
-    my $source      = 1;
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($agent1, $offer1) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
@@ -176,7 +174,6 @@ subtest 'Creating two orders from one client for two offers' => sub {
 subtest 'Creating two new orders from one client for one offer' => sub {
     my $amount      = 100;
     my $description = 'Test order';
-    my $source      = 1;
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
 
@@ -221,7 +218,6 @@ subtest 'Creating two new orders from one client for one offer' => sub {
 subtest 'Creating order for agent own order' => sub {
     my $amount      = 100;
     my $description = 'Test order';
-    my $source      = 1;
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
@@ -247,10 +243,9 @@ subtest 'Creating order for agent own order' => sub {
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
-subtest 'Creating order with amount more than avalible' => sub {
+subtest 'Creating order with amount more than available' => sub {
     my $amount      = 100;
     my $description = 'Test order';
-    my $source      = 1;
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
@@ -268,8 +263,7 @@ subtest 'Creating order with amount more than avalible' => sub {
         );
     };
 
-    chomp($err);
-    is $err, 'MaximumExceeded', 'Got correct error code';
+    is $err->{error_code}, 'OrderMaximumExceeded', 'Got correct error code';
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
@@ -280,7 +274,6 @@ subtest 'Creating order with amount more than avalible' => sub {
 subtest 'Creating order with negative amount' => sub {
     my $amount      = 100;
     my $description = 'Test order';
-    my $source      = 1;
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
@@ -298,8 +291,55 @@ subtest 'Creating order with negative amount' => sub {
         );
     };
 
-    chomp($err);
-    is $err, 'MinimumNotMet', 'Got correct error code';
+    is $err->{error_code}, 'OrderMinimumNotMet', 'Got correct error code';
+
+    ok($escrow->account->balance == 0,      'Escrow balance is correct');
+    ok($agent->account->balance == $amount, 'Agent balance is correct');
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Creating order outside min-max range' => sub {
+    my $amount      = 100;
+    my $min_amount  = 20;
+    my $max_amount  = 50;
+    my $description = 'Test order';
+
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(
+        amount     => $amount,
+        min_amount => $min_amount,
+        max_amount => $max_amount,
+    );
+    my $account_currency = $agent->account->currency_code;
+    my $client           = BOM::Test::Helper::P2P::create_client();
+
+    ok($escrow->account->balance == 0,      'Escrow balance is correct');
+    ok($agent->account->balance == $amount, 'Agent balance is correct');
+
+    my $err = exception {
+        $client->p2p_order_create(
+            offer_id    => $offer->{id},
+            amount      => $min_amount - 1,
+            expiry      => 7200,
+            description => $description
+        );
+    };
+
+    is $err->{error_code}, 'OrderMinimumNotMet', 'Got correct error code';
+    cmp_bag($err->{message_params}, [$account_currency, formatnumber('amount', $account_currency, $min_amount)], 'Got correct error values');
+
+    $err = exception {
+        $client->p2p_order_create(
+            offer_id    => $offer->{id},
+            amount      => $max_amount + 1,
+            expiry      => 7200,
+            description => $description
+        );
+    };
+
+    is $err->{error_code}, 'OrderMaximumExceeded', 'Got correct error code';
+    cmp_bag($err->{message_params}, [$account_currency, formatnumber('amount', $account_currency, $max_amount)], 'Got correct error values');
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
@@ -310,7 +350,6 @@ subtest 'Creating order with negative amount' => sub {
 subtest 'Creating order with disabled agent' => sub {
     my $amount      = 100;
     my $description = 'Test order';
-    my $source      = 1;
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
@@ -342,7 +381,6 @@ subtest 'Creating order with disabled agent' => sub {
 subtest 'Creating order without escrow' => sub {
     my $amount      = 100;
     my $description = 'Test order';
-    my $source      = 1;
 
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
     my $client = BOM::Test::Helper::P2P::create_client();
