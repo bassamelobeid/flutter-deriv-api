@@ -623,7 +623,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         CLIENT_KEY:
         foreach my $key (keys %input) {
             if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
-                my $val = $input{$key};
+                my $val = ($document_field eq 'expiration_date' && $input{$key} eq '') ? 'clear' : $input{$key};
                 next CLIENT_KEY unless $val && update_needed($client, $cli, 'client_authentication_document', \%clients_updated);
                 my ($doc) = grep { $_->id eq $id } $cli->client_authentication_document;    # Rose
                 next CLIENT_KEY unless $doc;
@@ -648,7 +648,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                     }
                     $new_value = $val;
                 }
-                next CLIENT_KEY if $new_value eq $doc->$document_field();
+                next CLIENT_KEY if $new_value && $new_value eq $doc->$document_field();
                 my $set_success = try {
                     $doc->$document_field($new_value);
                     1;
