@@ -14,8 +14,7 @@ use Carp;
 
         $original_escrow = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow;
 
-        $current_escrow = BOM::Test::Helper::Client::create_client();
-        $current_escrow->account('USD');
+        $current_escrow = create_client();
         BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([$current_escrow->loginid]);
         return $current_escrow;
     }
@@ -32,15 +31,11 @@ sub create_agent {
 
     my $balance = $param{balance} // 0;
 
-    my $agent = BOM::Test::Helper::Client::create_client();
+    my $agent = create_client($balance);
 
     $agent->p2p_agent_create;
 
     $agent->account('USD');
-
-    if ($balance) {
-        BOM::Test::Helper::Client::top_up($agent, $agent->currency, $balance);
-    }
 
     $agent->p2p_agent_update(auth => 1);
 
@@ -48,8 +43,13 @@ sub create_agent {
 }
 
 sub create_client {
+    my $balance = shift // 0;
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('USD');
+
+    if ($balance) {
+        BOM::Test::Helper::Client::top_up($client, $client->currency, $balance);
+    }
 
     return $client;
 }
@@ -61,11 +61,12 @@ sub create_offer {
     $param{description}      //= 'Test offer';
     $param{type}             //= 'buy';
     $param{account_currency} //= 'USD';
-    $param{price}            //= 1;
+    $param{rate}             //= 1;
+    $param{balance}          //= $param{type} eq 'buy' ? $param{amount} : 0;
     $param{min_amount}       //= 0.1;
     $param{max_amount}       //= 100;
 
-    my $agent = create_agent(balance => $param{amount});
+    my $agent = create_agent(balance => $param{balance});
 
     my $offer = $agent->p2p_offer_create(%param);
 
@@ -79,8 +80,9 @@ sub create_order {
     my $amount      = $param{amount}      // 100;
     my $expiry      = $param{expiry}      // 7200;
     my $description = $param{description} // 'Test order';
+    my $balance     = $param{balance};
 
-    my $client = create_client();
+    my $client = create_client($balance);
 
     my $order = $client->p2p_order_create(
         offer_id    => $offer_id,

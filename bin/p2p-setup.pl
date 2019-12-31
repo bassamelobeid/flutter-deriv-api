@@ -162,6 +162,7 @@ $app_config->set({'payments.p2p.available' => 1});
 $app_config->set({'system.suspend.p2p' => 0});
 $app_config->set({'payments.p2p.clients' => [ $agent->loginid, $client->loginid ]});
 $app_config->set({'payments.p2p.escrow' => \@escrow_ids});
+$app_config->set({'payments.p2p.limits.maximum_offer' => 3000});
 $log->infof('App config applied');
 
 unless($agent->p2p_agent) {
@@ -176,12 +177,13 @@ $agent->p2p_agent_update(
     auth => 1,
 );
 $agent->save;
-$log->infof('Maximum configured is %s', BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer);
+$log->infof('Maximum offer configured is %s', BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer);
+$log->infof('Maximum order configured is %s', BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order);
 $agent->p2p_offer_create(
     account_currency => 'USD',
     local_currency => 'IDR',
-    amount => 100,
-    price => 14500,
+    amount => 3000,
+    rate => 14500,
     type => 'buy',
     expiry => 2 * 60 * 60,
     min_amount => 10,
@@ -193,8 +195,8 @@ $agent->p2p_offer_create(
 $agent->p2p_offer_create(
     account_currency => 'USD',
     local_currency => 'IDR',
-    amount => 100,
-    price => 13500,
+    amount => 3000,
+    rate => 13500,
     type => 'sell',
     expiry => 2 * 60 * 60,
     min_amount => 10,
