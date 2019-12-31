@@ -20,7 +20,7 @@
                     "description": "The new status of the order.",
                     "type": "string",
                     "enum": [
-                        "client-confirmed",
+                        "buyer-confirmed",
                         "completed"
                     ]
                 }
