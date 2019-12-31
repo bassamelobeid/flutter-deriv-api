@@ -141,28 +141,28 @@ my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
 subtest 'new account with invalid main password format' => sub {
-    my $method = 'mt5_new_account';
+    my $method                   = 'mt5_new_account';
     my $wrong_formatted_password = 'abc123';
-    my $params = {
+    my $params                   = {
         language => 'EN',
         token    => $token,
         args     => {
-            email        => $DETAILS{email},
-            name         => $DETAILS{name},
-            account_type => "demo",
-            address => "Dummy address",
-            city => "Valletta",
-            company => "Binary Limited",
-            country => "mt",
-            mainPassword => "abc123",
+            email            => $DETAILS{email},
+            name             => $DETAILS{name},
+            account_type     => "demo",
+            address          => "Dummy address",
+            city             => "Valletta",
+            company          => "Binary Limited",
+            country          => "mt",
+            mainPassword     => "abc123",
             mt5_account_type => "standard",
-            phone => "+6123456789",
-            phonePassword => "AbcDv1234",
-            state => "Valleta",
-            zipCode => "VLT 1117",
-            investPassword => "AbcDv12345",
-            mainPassword => $wrong_formatted_password,
-            leverage     => 100,
+            phone            => "+6123456789",
+            phonePassword    => "AbcDv1234",
+            state            => "Valleta",
+            zipCode          => "VLT 1117",
+            investPassword   => "AbcDv12345",
+            mainPassword     => $wrong_formatted_password,
+            leverage         => 100,
         },
     };
 

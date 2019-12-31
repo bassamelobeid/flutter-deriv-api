@@ -116,7 +116,7 @@ subtest 'Offers' => sub {
         type             => 'buy',
         account_currency => 'USD',
         expiry           => 30,
-        price            => 1.23,
+        rate             => 1.23,
         min_amount       => 0.1,
         max_amount       => 10,
         method           => 'test method',
@@ -173,7 +173,7 @@ subtest 'Offers' => sub {
         description => 'new description'
     };
     $res = $c->call_ok('p2p_offer_edit', $params)->has_no_system_error->has_no_error->result;
-    is $res->{description}, 'new description', 'edit offer ok';
+    is $res->{offer_description}, 'new description', 'edit offer ok';
 
     $params->{args} = {offer_id => $offer->{offer_id}};
     $res = $c->call_ok('p2p_offer_info', $params)->has_no_system_error->has_no_error->result;
@@ -200,7 +200,7 @@ subtest 'Create new order' => sub {
     );
 
     $params->{args} = {
-        offer_id    => $offer->{id},
+        offer_id    => $offer->{offer_id},
         amount      => 100,
         description => 'here is my order'
     };
@@ -214,13 +214,13 @@ subtest 'Create new order' => sub {
 subtest 'Client confirm an order' => sub {
     BOM::Test::Helper::P2P::create_escrow();
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer();
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(offer_id => $offer->{id});
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(offer_id => $offer->{offer_id});
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-    $params->{args} = {order_id => $order->{id}};
+    $params->{args} = {order_id => $order->{order_id}};
 
     my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
-    is $res->{status}, 'client-confirmed', 'Order is confirmed';
+    is $res->{status}, 'buyer-confirmed', 'Order is confirmed';
 
     $params->{args} = {order_id => 9999};
     $c->call_ok('p2p_order_confirm', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Confirm non-existent order');
@@ -231,35 +231,35 @@ subtest 'Client confirm an order' => sub {
 subtest 'Agent confirm' => sub {
     BOM::Test::Helper::P2P::create_escrow();
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer();
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(offer_id => $offer->{id});
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(offer_id => $offer->{offer_id});
 
     my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
     my $agent_token  = BOM::Platform::Token::API->new->create_token($agent->loginid,  'test token');
 
     $params->{token} = $client_token;
-    $params->{args} = {order_id => $order->{id}};
+    $params->{args} = {order_id => $order->{order_id}};
 
     my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
-    is $res->{status}, 'client-confirmed', 'Order is client confirmed';
+    is $res->{status}, 'buyer-confirmed', 'Order is buyer confirmed';
 
     $params->{token} = $agent_token;
-    $params->{args} = {order_id => $order->{id}};
+    $params->{args} = {order_id => $order->{order_id}};
 
     $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
-    is $res->{status}, 'completed', 'Order is client confirmed';
+    is $res->{status}, 'completed', 'Order is completed';
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Client cancellation' => sub {
     BOM::Test::Helper::P2P::create_escrow();
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer();
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(offer_id => $offer->{id});
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(offer_id => $offer->{offer_id});
 
     my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
     my $agent_token  = BOM::Platform::Token::API->new->create_token($agent->loginid,  'test token');
 
     $params->{token} = $client_token;
-    $params->{args} = {order_id => $order->{id}};
+    $params->{args} = {order_id => $order->{order_id}};
 
     my $res = $c->call_ok(p2p_order_cancel => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'cancelled', 'Order is cancelled';
@@ -274,7 +274,7 @@ subtest 'Getting order list' => sub {
     BOM::Test::Helper::P2P::create_escrow();
     my ($agent,  $offer) = BOM::Test::Helper::P2P::create_offer();
     my ($client, $order) = BOM::Test::Helper::P2P::create_order(
-        offer_id => $offer->{id},
+        offer_id => $offer->{offer_id},
         amount   => 10
     );
 
@@ -282,13 +282,13 @@ subtest 'Getting order list' => sub {
     my $agent_token  = BOM::Platform::Token::API->new->create_token($agent->loginid,  'test token');
 
     $params->{token} = $agent_token;
-    $params->{args} = {offer_id => $offer->{id}};
+    $params->{args} = {offer_id => $offer->{offer_id}};
 
     my $res1 = $c->call_ok(p2p_order_list => $params)->has_no_system_error->has_no_error->result;
     cmp_ok scalar(@{$res1->{list}}), '==', 1, 'count of offers is correct';
 
     my ($client2, $order2) = BOM::Test::Helper::P2P::create_order(
-        offer_id => $offer->{id},
+        offer_id => $offer->{offer_id},
         amount   => 10
     );
 
@@ -296,7 +296,7 @@ subtest 'Getting order list' => sub {
     cmp_ok scalar(@{$res2->{list}}), '==', 2, 'count of offers is correct';
 
     $params->{token} = $client_token;
-    $params->{args} = {offer_id => $offer->{id}};
+    $params->{args} = {offer_id => $offer->{offer_id}};
 
     my $res3 = $c->call_ok(p2p_order_list => $params)->has_no_system_error->has_no_error->result;
     cmp_ok scalar(@{$res3->{list}}), '==', 1, 'count of offers is correct';
@@ -323,6 +323,38 @@ subtest 'Getting order list' => sub {
 
     my $res2 = $c->call_ok(p2p_offer_list => $params)->has_no_system_error->has_no_error->result;
     cmp_ok scalar(@{$res2->{list}}), '==', 1, 'count of offers is correct';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Sell orders' => sub {
+    my $amount = 100;
+
+    BOM::Test::Helper::P2P::create_escrow();
+
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(
+        amount => $amount,
+        type   => 'sell'
+    );
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        offer_id => $offer->{offer_id},
+        balance  => $amount
+    );
+
+    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+    my $agent_token  = BOM::Platform::Token::API->new->create_token($agent->loginid,  'test token');
+
+    $params->{token} = $agent_token;
+    $params->{args} = {order_id => $order->{order_id}};
+
+    my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
+    is $res->{status}, 'buyer-confirmed', 'Order is buyer confirmed';
+
+    $params->{token} = $client_token;
+    $params->{args} = {order_id => $order->{order_id}};
+
+    $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
+    is $res->{status}, 'completed', 'Order is completed';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
