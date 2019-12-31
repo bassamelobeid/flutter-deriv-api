@@ -1723,7 +1723,7 @@ sub p2p_offer_create {
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.offer_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $agent_info->{id},
-                @param{qw/type account_currency local_currency amount price min_amount max_amount method description country/});
+                @param{qw/type account_currency local_currency amount rate min_amount max_amount method description country/});
         });
 }
 
@@ -1752,7 +1752,7 @@ Expired offers are excluded by default.
 sub p2p_offer_list {
     my ($client, %param) = @_;
 
-    my $offers = $client->db->dbic->run(
+    my $rows = $client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
                 'SELECT * FROM p2p.offer_list(?, ?, ?, ?, ?, ?, ?, ?)',
@@ -1760,13 +1760,30 @@ sub p2p_offer_list {
                 @param{qw/id account_currency agent_id agent_loginid active type limit offset/});
         }) // [];
 
-    # Calculating current maximum for offers
+    my $amount = $param{amount};
+
+    my @offers;
     my $limit_maximum_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
-    for my $offer ($offers->@*) {
-        $offer->{max_amount} =
-            List::Util::min($offer->{remaining}, $offer->{max_amount}, convert_currency($limit_maximum_order, 'USD', $offer->{account_currency}));
+    for my $offer ($rows->@*) {
+        # Calculating current max
+        $offer->{max_amount} = List::Util::min(
+            $offer->{remaining},
+            ($offer->{max_amount} // $offer->{remaining}),
+            convert_currency($limit_maximum_order, 'USD', $offer->{account_currency}));
+
+        next if $amount && $amount > $offer->{max_amount};
+        next if $amount && $amount < $offer->{min_amount};
+
+        #TODO: We need to hide offers which run out of money, but we need to show them for owners,
+        # need to think about how to do it right, especially if we'll filter them in DB
+        next
+            if $offer->{agent_loginid} ne $client->loginid
+            && !$param{id}
+            && $offer->{max_amount} < $offer->{min_amount};
+
+        push @offers, $offer;
     }
-    return $offers;
+    return \@offers;
 }
 
 =head2 p2p_offer_update
@@ -1790,7 +1807,7 @@ sub p2p_offer_update {
     # no edits are allowed when there is no remaining amount, except for deactivate/activate
     if (any { $_ ne 'active' && defined $param{$_} } keys %param) {
         die "OfferNoEditInactive\n" unless $offer->{is_active};
-        die "OfferNoEditAmount\n" if $param{amount} && $param{amount} < ($offer->{amount} - $offer->{remaining});
+        die "OfferNoEditAmount\n" if $param{amount} && $param{amount} < ($offer->{offer_amount} - $offer->{remaining});
     }
 
     die "MaximumExceeded\n"
@@ -1801,7 +1818,7 @@ sub p2p_offer_update {
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.offer_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $offer_id,
-                @param{qw/active type account_currency local_currency amount price min_amount max_amount method description country/});
+                @param{qw/active type account_currency local_currency amount rate min_amount max_amount method description country/});
         });
 }
 
@@ -1836,27 +1853,29 @@ sub p2p_order_create {
 
     die +{
         error_code     => 'OrderMaximumExceeded',
-        message_params => [
-            $offer_info->{account_currency},
-            formatnumber('amount', $offer_info->{account_currency}, $offer_info->{max_amount})    #
-            ]                                                                                     #
-        }
-        if ($offer_info->{max_amount} and $amount > $offer_info->{max_amount})
-        or $amount > $offer_info->{amount}
-        or $amount > $offer_info->{remaining};
+        message_params => [$offer_info->{account_currency}, formatnumber('amount', $offer_info->{account_currency}, $offer_info->{max_amount}),]}
+        if ($offer_info->{max_amount} && $amount > $offer_info->{max_amount})
+        || $amount > $offer_info->{offer_amount}
+        || $amount > $offer_info->{remaining};
 
     die +{
         error_code     => 'OrderMinimumNotMet',
-        message_params => [
-            $offer_info->{account_currency},
-            formatnumber('amount', $offer_info->{account_currency}, $offer_info->{min_amount})    #
-            ]                                                                                     #
-    } if $amount < ($offer_info->{min_amount} // 0);
+        message_params => [$offer_info->{account_currency}, formatnumber('amount', $offer_info->{account_currency}, $offer_info->{min_amount}),]}
+        if $amount < ($offer_info->{min_amount} // 0);
 
     my ($agent_info) = $client->p2p_agent_list(id => $offer_info->{agent_id})->@*;
     die "AgentNotFound\n" unless $agent_info;
 
     die "OfferOwnerNotAuthenticated\n" unless $agent_info->{is_authenticated} && $agent_info->{is_active};
+
+    if ($offer_info->{type} eq 'sell') {
+        die "InsufficientBalance\n" if $client->account->balance < $amount;
+    } elsif ($offer_info->{type} eq 'buy') {
+        my $agent = BOM::User::Client->new({loginid => $offer_info->{agent_loginid}});
+        die "MaximumExceeded\n" if $agent->account->balance < $amount;
+    } else {
+        die 'Invalid offer type ' . ($offer_info->{type} // 'undef') . 'for offer ' . $offer_info->{offer_id};
+    }
 
     my $escrow = $client->p2p_escrow;
 
@@ -1865,7 +1884,7 @@ sub p2p_order_create {
     my $open_orders = $client->p2p_order_list(
         offer_id => $offer_id,
         loginid  => $client->loginid,
-        status => ['pending', 'client-confirmed']);
+        status => ['pending', 'buyer-confirmed']);
 
     die "OrderAlreadyExists\n" if @{$open_orders};
 
@@ -1885,6 +1904,7 @@ Get a single order by $id.
 sub p2p_order {
     my ($client, $id) = @_;
     return undef unless $id;
+
     return $client->p2p_order_list(id => $id)->[0];
 }
 
@@ -1916,35 +1936,36 @@ sub p2p_order_list {
 =head2 p2p_order_confirm
 
 Confirms the order of $param{id} and returns updated order.
-If client is the agent, order will be agent confirmed and order will be completed, moving funds from escrow to client.
-If client is the client, order will be client confirmed.
+Client = client, type = buy: order is buyer-confirmed
+Client = client, type = sell: order is completed
+Client = agent, type = buy: order is completed
+Client = agent, type = sell: order is buyer-confirmed
 Otherwise dies with error code.
 
 =cut
-
-my $confirmation_handlers = {
-    client => \&_client_confirmation,
-    agent  => \&_agent_confirmation,
-};
 
 sub p2p_order_confirm {
     my ($client, %param) = @_;
 
     my $order_info = $client->p2p_order($param{id});
+
     die "OrderNotFound\n" unless $order_info;
 
     my $ownership_type = _order_ownership_type($client, $order_info);
 
-    die "PermissionDenied\n" unless $confirmation_handlers->{$ownership_type};
+    my $method = $client->can('_' . $ownership_type . '_' . $order_info->{offer_type} . '_confirm');
 
-    return $confirmation_handlers->{$ownership_type}->($client, $order_info, $param{source});
+    die "PermissionDenied\n" unless $method;
+
+    return $client->$method($order_info, $param{source});
 }
 
 =head2 p2p_order_cancel
 
 Cancels the order of $param{id}.
-Order must belong to client.
-This will move funds from escrow to agent.
+Order must belong to the buyer.
+Order must be in pending status.
+This will move funds from escrow to seller.
 
 =cut
 
@@ -1954,22 +1975,28 @@ sub p2p_order_cancel {
     my $order_info = $client->p2p_order($param{id});
     die "OrderNotFound\n" unless $order_info;
 
-    die "AlreadyCancelled\n" if $order_info->{status} eq 'cancelled';
+    die "OrderAlreadyCancelled\n" if $order_info->{status} eq 'cancelled';
 
     my $ownership_type = _order_ownership_type($client, $order_info);
 
-    die "PermissionDenied\n" unless $ownership_type eq 'client';
+    die "PermissionDenied\n"
+        unless ($ownership_type eq 'client' and $order_info->{offer_type} eq 'buy')
+        or ($ownership_type eq 'agent' and $order_info->{offer_type} eq 'sell');
+    die "PermissionDenied\n" unless $order_info->{status} eq 'pending';
 
     my $escrow = $client->p2p_escrow;
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?)',
-                undef, $order_info->{id}, $escrow->loginid, $param{source}, $client->loginid);
+            $_->selectrow_hashref(
+                'SELECT * FROM p2p.order_cancel(?, ?, ?, ?)',
+                undef, $order_info->{order_id},
+                $escrow->loginid, $param{source}, $client->loginid
+            );
         });
 }
 
-=head2 expire_otc_order
+=head2 expire_p2p_order
 
     Expire order in different states.
     Method returns order data in case if state of orderd was changed.
@@ -1985,7 +2012,7 @@ sub p2p_expire_order {
 
     my $status = $order->{status};
 
-    return unless $status =~ /^(pending|client-confirmed)$/;
+    return unless $status =~ /^(pending|buyer-confirmed)$/;
 
     my $escrow = $client->p2p_escrow;
 
@@ -1993,7 +2020,8 @@ sub p2p_expire_order {
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?)', undef, $order->{id}, $escrow->loginid, $param{source}, $param{staff});
+            $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?)',
+                undef, $order->{order_id}, $escrow->loginid, $param{source}, $param{staff});
         });
 }
 
@@ -2027,7 +2055,7 @@ sub p2p_escrow {
 
 =head2 _order_ownership_type
 
-Returns whether client is the agent or client of the order.
+Returns whether client is the buyer or seller of the order.
 
 =cut
 
@@ -2041,47 +2069,95 @@ sub _order_ownership_type {
     return '';
 }
 
-=head2 _client_confirmation
+=head2 _client_buy_confirm
 
-Sets order status to C<client-confirmed>.
+Sets order client confirmed = true and status = buyer-confirmed.
 
 =cut
 
-sub _client_confirmation {
+sub _client_buy_confirm {
     my ($client, $order_info) = @_;
 
-    die "AlreadyConfirmedByClient\n" if $order_info->{status} eq 'client-confirmed';
+    die "OrderAlreadyConfirmed\n" if $order_info->{status} =~ /^(buyer-confirmed|completed)$/;
 
-    die "InvalidStateForClientConfirmation\n" if $order_info->{status} ne 'pending';
+    die "InvalidStateForConfirmation\n" if $order_info->{status} ne 'pending';
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order_info->{id}, 1);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order_info->{order_id}, 1);
         });
 }
 
-=head2 _agent_confirmation
+=head2 _agent_buy_confirm
 
-Sets order status to C<agent_confirmed> and completes the order in a single transaction.
+Sets order agent-confirmed = true and completes the order in a single transcation.
 Completing the order moves funds from escrow to client.
 
 =cut
 
-sub _agent_confirmation {
+sub _agent_buy_confirm {
     my ($client, $order_info, $source) = @_;
 
-    die "AlreadyConfirmedByAgent\n" if $order_info->{status} eq 'agent-confirmed';
-
-    die "InvalidStateForAgentConfirmation\n" if $order_info->{status} ne 'client-confirmed';
+    die "OrderAlreadyConfirmed\n" if $order_info->{status} eq 'completed';
+    die "InvalidStateForConfirmation\n" if $order_info->{status} ne 'buyer-confirmed';
 
     my $escrow = $client->p2p_escrow;
 
     return $client->db->dbic->txn(
         fixup => sub {
-            $_->do('SELECT * FROM p2p.order_confirm_agent(?, ?)', undef, $order_info->{id}, 1);
-            return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?)',
-                undef, $order_info->{id}, $escrow->loginid, $source, $client->loginid,);
+            $_->do('SELECT * FROM p2p.order_confirm_agent(?, ?)', undef, $order_info->{order_id}, 1);
+            return $_->selectrow_hashref(
+                'SELECT * FROM p2p.order_complete(?, ?, ?, ?)',
+                undef, $order_info->{order_id},
+                $escrow->loginid, $source, $client->loginid,
+            );
         });
+
+}
+
+=head2 _client_sell_confirm
+
+Sets order client_confirmed = true and completes the order in a single transcation.
+Completing the order moves funds from escrow to agent.
+
+=cut
+
+sub _client_sell_confirm {
+    my ($client, $order_info, $source) = @_;
+
+    die "OrderAlreadyConfirmed\n" if $order_info->{status} eq 'completed';
+    die "InvalidStateForConfirmation\n" if $order_info->{status} ne 'buyer-confirmed';
+
+    my $escrow = $client->p2p_escrow;
+
+    return $client->db->dbic->txn(
+        fixup => sub {
+            $_->do('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order_info->{order_id}, 1);
+            return $_->selectrow_hashref(
+                'SELECT * FROM p2p.order_complete(?, ?, ?, ?)',
+                undef, $order_info->{order_id},
+                $escrow->loginid, $source, $client->loginid,
+            );
+        });
+}
+
+=head2 _agent_sell_confirm
+
+Sets order agent confirmed = true and status = buyer-confirmed
+
+=cut
+
+sub _agent_sell_confirm {
+    my ($client, $order_info) = @_;
+
+    die "OrderAlreadyConfirmed\n" if $order_info->{status} =~ /^(buyer-confirmed|completed)$/;
+    die "InvalidStateForConfirmation\n" if $order_info->{status} ne 'pending';
+
+    return $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_agent(?, ?)', undef, $order_info->{order_id}, 1);
+        });
+
 }
 
 =head1 METHODS - Payments

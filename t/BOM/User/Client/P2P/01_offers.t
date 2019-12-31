@@ -12,6 +12,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $email = 'p2p_offers_test@binary.com';
 
+BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer(100);
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
     email       => $email
@@ -29,7 +30,7 @@ my %offer_params = (
     account_currency => 'usd',
     local_currency   => 'myr',
     amount           => 100,
-    price            => 1.23,
+    rate             => 1.23,
     min_amount       => 0.1,
     max_amount       => 10,
     method           => 'camels',
@@ -112,21 +113,22 @@ subtest 'Creating offer successfully' => sub {
     cmp_deeply(
         $offer,
         {
-            id               => re('\d+'),
-            account_currency => uc($params{account_currency}),
-            local_currency   => $params{local_currency},
-            is_active        => bool(1),
-            agent_id         => $agent->p2p_agent->{id},
-            created_time     => bool(1),
-            amount           => num($params{amount}),
-            remaining        => num($params{amount}),
-            price            => num($params{price}),
-            min_amount       => num($params{min_amount}),
-            max_amount       => num($params{max_amount}),
-            method           => $params{method},
-            type             => $params{type},
-            country          => $params{country},
-            description      => $params{description}
+
+            offer_id          => re('\d+'),
+            account_currency  => uc($params{account_currency}),
+            local_currency    => $params{local_currency},
+            is_active         => bool(1),
+            agent_id          => $agent->p2p_agent->{id},
+            created_time      => bool(1),
+            offer_amount      => num($params{amount}),
+            remaining         => num($params{amount}),
+            rate              => num($params{rate}),
+            min_amount        => num($params{min_amount}),
+            max_amount        => num($params{max_amount}),
+            method            => $params{method},
+            type              => $params{type},
+            country           => $params{country},
+            offer_description => $params{description}
         },
         "offer matches params"
     );
@@ -134,23 +136,23 @@ subtest 'Creating offer successfully' => sub {
     cmp_deeply(
         $agent->p2p_offer_list,
         [{
-                id               => re('\d+'),
-                account_currency => uc($params{account_currency}),
-                local_currency   => $params{local_currency},
-                is_active        => bool(1),
-                agent_id         => $agent->p2p_agent->{id},
-                created_time     => bool(1),
-                amount           => num($params{amount}),
-                remaining        => num($params{amount}),
-                price            => num($params{price}),
-                min_amount       => num($params{min_amount}),
-                max_amount       => num($params{max_amount}),
-                method           => $params{method},
-                type             => $params{type},
-                country          => $params{country},
-                description      => $params{description},
-                agent_loginid    => $agent->loginid,
-                agent_name       => 'testing'
+                offer_id          => re('\d+'),
+                account_currency  => uc($params{account_currency}),
+                local_currency    => $params{local_currency},
+                is_active         => bool(1),
+                agent_id          => $agent->p2p_agent->{id},
+                created_time      => bool(1),
+                offer_amount      => num($params{amount}),
+                remaining         => num($params{amount}),
+                rate              => num($params{rate}),
+                min_amount        => num($params{min_amount}),
+                max_amount        => num($params{max_amount}),
+                method            => $params{method},
+                type              => $params{type},
+                country           => $params{country},
+                offer_description => $params{description},
+                agent_loginid     => $agent->loginid,
+                agent_name        => 'testing'
             }
         ],
         "p2p_offer_list() returns correct info"
@@ -163,18 +165,18 @@ subtest 'Updating offer' => sub {
     ok $offer->{is_active}, 'Offer is active';
 
     ok !$agent->p2p_offer_update(
-        id     => $offer->{id},
+        id     => $offer->{offer_id},
         active => 0
     )->{is_active}, "Deactivate offer";
 
-    ok !$agent->p2p_offer($offer->{id})->{is_active}, "offer is inactive";
+    ok !$agent->p2p_offer($offer->{offer_id})->{is_active}, "offer is inactive";
 
     #TODO: Not sure that, this test case is valid, moving it as is. but we need to check it.
     # I think only not active offers could be updatble.
     like(
         exception {
             $agent->p2p_offer_update(
-                id     => $offer->{id},
+                id     => $offer->{offer_id},
                 amount => 200
                 )
         },
@@ -183,15 +185,17 @@ subtest 'Updating offer' => sub {
     );
 
     ok $agent->p2p_offer_update(
-        id     => $offer->{id},
+        id     => $offer->{offer_id},
         active => 1
     )->{is_active}, "reactivate offer";
     cmp_ok $agent->p2p_offer_update(
-        id     => $offer->{id},
+        id     => $offer->{offer_id},
         amount => 80
-    )->{amount}, '==', 80, "can edit active offer";
+    )->{offer_amount}, '==', 80, "can edit active offer";
 
-    like(exception { $agent->p2p_offer_update(id => $offer->{id}, amount => 200) }, qr/MaximumExceeded/, "Can't update amount more than limit",);
+    like(exception { $agent->p2p_offer_update(id => $offer->{offer_id}, amount => 200) }, qr/MaximumExceeded/, "Can't update amount more than limit",
+    );
+
 };
 
 subtest 'Updating order with avalible range' => sub {
@@ -199,28 +203,29 @@ subtest 'Updating order with avalible range' => sub {
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => 100);
 
     my ($order_client, $order) = BOM::Test::Helper::P2P::create_order(
-        offer_id => $offer->{id},
+
+        offer_id => $offer->{offer_id},
         amount   => 70
     );
     cmp_ok $test_client_cr->p2p_offer_update(
-        id     => $offer->{id},
+        id     => $offer->{offer_id},
         amount => 90
-    )->{amount}, '==', 90, "can change offer amount within available range";
+    )->{offer_amount}, '==', 90, "can change offer amount within available range";
     like(
         exception {
             $test_client_cr->p2p_offer_update(
-                id     => $offer->{id},
+                id     => $offer->{offer_id},
                 amount => 50
                 )
         },
         qr/OfferNoEditAmount/,
         "can't change offer amount below available range"
     );
-    $order_client->p2p_order_cancel(id => $order->{id});
+    $order_client->p2p_order_cancel(id => $order->{order_id});
     cmp_ok $test_client_cr->p2p_offer_update(
-        id     => $offer->{id},
+        id     => $offer->{offer_id},
         amount => 50
-    )->{amount}, '==', 50, "available range excludes cancelled orders";
+    )->{offer_amount}, '==', 50, "available range excludes cancelled orders";
     BOM::Test::Helper::P2P::reset_escrow();
 };
 

@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More;
 use Test::Deep;
+use Test::Warn;
 use Format::Util::Numbers qw(formatnumber);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -24,7 +25,7 @@ subtest 'Creating new order' => sub {
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
     my $order_data = $client->p2p_order_create(
-        offer_id    => $offer->{id},
+        offer_id    => $offer->{offer_id},
         amount      => 100,
         expiry      => 7200,
         description => $description
@@ -36,33 +37,34 @@ subtest 'Creating new order' => sub {
     ok($agent->account->balance == 0,        'Money is withdrawn from Agent account');
 
     is($order_data->{status}, 'pending', 'Status for new order is correct');
-    ok($order_data->{amount} == $amount, 'Amount for new order is correct');
-    is($order_data->{client_loginid}, $client->loginid, 'Client for new order is correct');
-    is($order_data->{agent_loginid},  $agent->loginid,  'Agent for new order is correct');
-    is($order_data->{description},    $description,     'Description for new order is correct');
+    ok($order_data->{order_amount} == $amount, 'Amount for new order is correct');
+    is($order_data->{client_loginid},    $client->loginid, 'Client for new order is correct');
+    is($order_data->{agent_loginid},     $agent->loginid,  'Agent for new order is correct');
+    is($order_data->{order_description}, $description,     'Description for new order is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
 
     cmp_deeply(
         $client->p2p_order_list,
         [{
-                'id'                     => $order_data->{id},
+                'order_id'               => $order_data->{order_id},
                 'agent_confirmed'        => $order_data->{agent_confirmed},
-                'amount'                 => $order_data->{amount},
+                'order_amount'           => $order_data->{order_amount},
                 'client_confirmed'       => $order_data->{client_confirmed},
                 'client_loginid'         => $order_data->{client_loginid},
                 'created_time'           => $order_data->{created_time},
-                'description'            => $order_data->{description},
+                'order_description'      => $order_data->{order_description},
                 'expire_time'            => $order_data->{expire_time},
                 'status'                 => $order_data->{status},
                 'agent_id'               => $agent->p2p_agent->{id},
                 'agent_loginid'          => $agent->loginid,
                 'agent_name'             => $agent->p2p_agent->{name},
                 'offer_account_currency' => $offer->{account_currency},
-                'offer_id'               => $offer->{id},
+                'offer_id'               => $offer->{offer_id},
                 'offer_local_currency'   => $offer->{local_currency},
-                'offer_price'            => $offer->{price},
-                'offer_type'             => $offer->{type}}
+                'offer_rate'             => $offer->{rate},
+                'offer_type'             => $offer->{type},
+                'offer_description'      => $offer->{offer_description}}
         ],
         'order_list() returns correct info'
     );
@@ -81,7 +83,7 @@ subtest 'Creating two orders from two clients' => sub {
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
     my $order_data1 = $client1->p2p_order_create(
-        offer_id    => $offer->{id},
+        offer_id    => $offer->{offer_id},
         amount      => 50,
         expiry      => 7200,
         description => $description
@@ -93,13 +95,13 @@ subtest 'Creating two orders from two clients' => sub {
     ok($agent->account->balance == 50,  'Money is withdrawn from Agent account for first order');
 
     is($order_data1->{status}, 'pending', 'Status for new order is correct');
-    ok($order_data1->{amount} == 50, 'Amount for new order is correct');
-    is($order_data1->{client_loginid}, $client1->loginid, 'Client for new order is correct');
-    is($order_data1->{agent_loginid},  $agent->loginid,   'Agent for new order is correct');
-    is($order_data1->{description},    $description,      'Description for new order is correct');
+    ok($order_data1->{order_amount} == 50, 'Amount for new order is correct');
+    is($order_data1->{client_loginid},    $client1->loginid, 'Client for new order is correct');
+    is($order_data1->{agent_loginid},     $agent->loginid,   'Agent for new order is correct');
+    is($order_data1->{order_description}, $description,      'Description for new order is correct');
 
     my $order_data2 = $client2->p2p_order_create(
-        offer_id    => $offer->{id},
+        offer_id    => $offer->{offer_id},
         amount      => 50,
         expiry      => 7200,
         description => $description
@@ -111,10 +113,10 @@ subtest 'Creating two orders from two clients' => sub {
     ok($agent->account->balance == 0,    'Money is withdrawn from Agent account for second order');
 
     is($order_data2->{status}, 'pending', 'Status for new order is correct');
-    ok($order_data2->{amount} == 50, 'Amount for new order is correct');
-    is($order_data2->{client_loginid}, $client2->loginid, 'Client for new order is correct');
-    is($order_data2->{agent_loginid},  $agent->loginid,   'Agent for new order is correct');
-    is($order_data2->{description},    $description,      'Description for new order is correct');
+    ok($order_data2->{order_amount} == 50, 'Amount for new order is correct');
+    is($order_data2->{client_loginid},    $client2->loginid, 'Client for new order is correct');
+    is($order_data2->{agent_loginid},     $agent->loginid,   'Agent for new order is correct');
+    is($order_data2->{order_description}, $description,      'Description for new order is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -133,7 +135,7 @@ subtest 'Creating two orders from one client for two offers' => sub {
     ok($agent2->account->balance == $amount, 'Agent balance is correct');
 
     my $order_data1 = $client->p2p_order_create(
-        offer_id    => $offer1->{id},
+        offer_id    => $offer1->{offer_id},
         amount      => 100,
         expiry      => 7200,
         description => $description
@@ -145,13 +147,13 @@ subtest 'Creating two orders from one client for two offers' => sub {
     ok($agent1->account->balance == 0,   'Money is withdrawn from Agent account for first order');
 
     is($order_data1->{status}, 'pending', 'Status for new order is correct');
-    ok($order_data1->{amount} == 100, 'Amount for new order is correct');
-    is($order_data1->{client_loginid}, $client->loginid, 'Client for new order is correct');
-    is($order_data1->{agent_loginid},  $agent1->loginid, 'Agent for new order is correct');
-    is($order_data1->{description},    $description,     'Description for new order is correct');
+    ok($order_data1->{order_amount} == 100, 'Amount for new order is correct');
+    is($order_data1->{client_loginid},    $client->loginid, 'Client for new order is correct');
+    is($order_data1->{agent_loginid},     $agent1->loginid, 'Agent for new order is correct');
+    is($order_data1->{order_description}, $description,     'Description for new order is correct');
 
     my $order_data2 = $client->p2p_order_create(
-        offer_id    => $offer2->{id},
+        offer_id    => $offer2->{offer_id},
         amount      => 100,
         expiry      => 7200,
         description => $description
@@ -163,10 +165,10 @@ subtest 'Creating two orders from one client for two offers' => sub {
     ok($agent2->account->balance == 0,   'Money is withdrawn from Agent account for second order');
 
     is($order_data2->{status}, 'pending', 'Status for new order is correct');
-    ok($order_data2->{amount} == 100, 'Amount for new order is correct');
-    is($order_data2->{client_loginid}, $client->loginid, 'Client for new order is correct');
-    is($order_data2->{agent_loginid},  $agent2->loginid, 'Agent for new order is correct');
-    is($order_data2->{description},    $description,     'Description for new order is correct');
+    ok($order_data2->{order_amount} == 100, 'Amount for new order is correct');
+    is($order_data2->{client_loginid},    $client->loginid, 'Client for new order is correct');
+    is($order_data2->{agent_loginid},     $agent2->loginid, 'Agent for new order is correct');
+    is($order_data2->{order_description}, $description,     'Description for new order is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -184,7 +186,7 @@ subtest 'Creating two new orders from one client for one offer' => sub {
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
     my $order_data = $client->p2p_order_create(
-        offer_id    => $offer->{id},
+        offer_id    => $offer->{offer_id},
         amount      => 50,
         expiry      => 7200,
         description => $description
@@ -196,14 +198,14 @@ subtest 'Creating two new orders from one client for one offer' => sub {
     ok($agent->account->balance == 50,  'Money is withdrawn from Agent account for first order');
 
     is($order_data->{status}, 'pending', 'Status for new order is correct');
-    ok($order_data->{amount} == 50, 'Amount for new order is correct');
-    is($order_data->{client_loginid}, $client->loginid, 'Client for new order is correct');
-    is($order_data->{agent_loginid},  $agent->loginid,  'Agent for new order is correct');
-    is($order_data->{description},    $description,     'Description for new order is correct');
+    ok($order_data->{order_amount} == 50, 'Amount for new order is correct');
+    is($order_data->{client_loginid},    $client->loginid, 'Client for new order is correct');
+    is($order_data->{agent_loginid},     $agent->loginid,  'Agent for new order is correct');
+    is($order_data->{order_description}, $description,     'Description for new order is correct');
 
     my $err = exception {
         $client->p2p_order_create(
-            offer_id    => $offer->{id},
+            offer_id    => $offer->{offer_id},
             amount      => 50,
             expiry      => 7200,
             description => $description
@@ -227,7 +229,7 @@ subtest 'Creating order for agent own order' => sub {
 
     my $err = exception {
         $agent->p2p_order_create(
-            offer_id    => $offer->{id},
+            offer_id    => $offer->{offer_id},
             amount      => 100,
             expiry      => 7200,
             description => $description
@@ -256,7 +258,7 @@ subtest 'Creating order with amount more than available' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            offer_id    => $offer->{id},
+            offer_id    => $offer->{offer_id},
             amount      => 101,
             expiry      => 7200,
             description => $description
@@ -284,7 +286,7 @@ subtest 'Creating order with negative amount' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            offer_id    => $offer->{id},
+            offer_id    => $offer->{offer_id},
             amount      => -1,
             expiry      => 7200,
             description => $description
@@ -319,7 +321,7 @@ subtest 'Creating order outside min-max range' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            offer_id    => $offer->{id},
+            offer_id    => $offer->{offer_id},
             amount      => $min_amount - 1,
             expiry      => 7200,
             description => $description
@@ -331,7 +333,7 @@ subtest 'Creating order outside min-max range' => sub {
 
     $err = exception {
         $client->p2p_order_create(
-            offer_id    => $offer->{id},
+            offer_id    => $offer->{offer_id},
             amount      => $max_amount + 1,
             expiry      => 7200,
             description => $description
@@ -362,7 +364,7 @@ subtest 'Creating order with disabled agent' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            offer_id    => $offer->{id},
+            offer_id    => $offer->{offer_id},
             amount      => $amount,
             expiry      => 7200,
             description => $description
@@ -389,7 +391,7 @@ subtest 'Creating order without escrow' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            offer_id    => $offer->{id},
+            offer_id    => $offer->{offer_id},
             amount      => $amount,
             expiry      => 7200,
             description => $description
@@ -402,6 +404,52 @@ subtest 'Creating order without escrow' => sub {
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Sell offers' => sub {
+    my $amount      = 100;
+    my $description = 'Test order';
+    my $source      = 1;
+
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(
+        amount => $amount,
+        type   => 'sell'
+    );
+    my $client = BOM::Test::Helper::P2P::create_client();
+
+    ok($escrow->account->balance == 0, 'Escrow balance is correct');
+    ok($agent->account->balance == 0,  'Agent balance is correct');
+    note $agent->account->balance;
+    my %params = (
+        offer_id    => $offer->{offer_id},
+        amount      => 100,
+        expiry      => 7200,
+        description => $description
+    );
+    my $err = exception {
+        warning_like { $client->p2p_order_create(%params) } qr/check_no_negative_balance/;
+    };
+    like $err, qr/InsufficientBalance/, 'error for insufficient client balance';
+
+    BOM::Test::Helper::Client::top_up($client, $client->currency, $amount);
+
+    my $order_data = $client->p2p_order_create(%params);
+
+    ok($order_data, 'Order is created');
+
+    ok($escrow->account->balance == $amount, 'Money is deposited to Escrow account');
+    ok($client->account->balance == 0,       'Money is withdrawn from Client account');
+
+    is($order_data->{status}, 'pending', 'Status for new order is correct');
+    ok($order_data->{order_amount} == $amount, 'Amount for new order is correct');
+    is($order_data->{client_loginid},    $client->loginid, 'Client for new order is correct');
+    is($order_data->{agent_loginid},     $agent->loginid,  'Agent for new order is correct');
+    is($order_data->{order_description}, $description,     'Description for new order is correct');
+    is($order_data->{offer_type},        'sell',           'offer type is sell');
+
+    BOM::Test::Helper::P2P::reset_escrow();
+
 };
 
 done_testing();
