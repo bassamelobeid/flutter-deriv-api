@@ -21,16 +21,16 @@ subtest pending_order_expiry => sub {
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => 100);
     my ($client, $order) = BOM::Test::Helper::P2P::create_order(
-        offer_id => $offer->{id},
+        offer_id => $offer->{offer_id},
         amount   => 100
     );
 
     BOM::Event::Actions::P2P::order_expired({
         client_loginid => $client->loginid,
-        order_id       => $order->{id},
+        order_id       => $order->{offer_id},
     });
 
-    my $update_order = $client->p2p_order($order->{id});
+    my $update_order = $client->p2p_order($order->{order_id});
     is $update_order->{status}, 'cancelled', "Got expected status";
 
     BOM::Test::Helper::P2P::reset_escrow();
@@ -40,18 +40,18 @@ subtest client_confirmed_order_expiry => sub {
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => 100);
     my ($client, $order) = BOM::Test::Helper::P2P::create_order(
-        offer_id => $offer->{id},
+        offer_id => $offer->{offer_id},
         amount   => 100
     );
 
-    $client->p2p_order_confirm(id => $order->{id});
+    $client->p2p_order_confirm(id => $order->{order_id});
 
     BOM::Event::Actions::P2P::order_expired({
         client_loginid => $client->loginid,
-        order_id       => $order->{id},
+        order_id       => $order->{order_id},
     });
 
-    my $update_order = $client->p2p_order($order->{id});
+    my $update_order = $client->p2p_order($order->{order_id});
 
     is $update_order->{status}, 'cancelled', "Got expected status";
 
@@ -63,18 +63,18 @@ for my $test_status (qw(completed cancelled refunded timed-out)) {
         my $escrow = BOM::Test::Helper::P2P::create_escrow();
         my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => 100);
         my ($client, $order) = BOM::Test::Helper::P2P::create_order(
-            offer_id => $offer->{id},
+            offer_id => $offer->{offer_id},
             amount   => 100
         );
 
-        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $test_status);
+        BOM::Test::Helper::P2P::set_order_status($client, $order->{order_id}, $test_status);
 
         BOM::Event::Actions::P2P::order_expired({
             client_loginid => $client->loginid,
-            order_id       => $order->{id},
+            order_id       => $order->{order_id},
         });
 
-        my $update_order = $client->p2p_order($order->{id});
+        my $update_order = $client->p2p_order($order->{order_id});
 
         is $update_order->{status}, $test_status, "Got expected status";
 
