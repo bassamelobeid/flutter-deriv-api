@@ -1076,50 +1076,7 @@ sub account_closure {
     my $system_email  = $BRANDS->emails('system');
     my $support_email = $BRANDS->emails('support');
 
-    _send_email_account_closure_cs($data, $system_email, $support_email);
-
     _send_email_account_closure_client($data->{loginid}, $support_email);
-
-    return undef;
-}
-
-sub _send_email_account_closure_cs {
-    my ($data, $system_email, $support_email) = @_;
-
-    my $loginid = $data->{loginid};
-    my $user = BOM::User->new(loginid => $loginid);
-
-    my @mt5_loginids = grep { $_ =~ qr/^MT[0-9]+$/ } $user->loginids;
-    my $mt5_loginids_string = @mt5_loginids ? join ",", @mt5_loginids : undef;
-
-    my $data_tt = {
-        loginid               => $loginid,
-        successfully_disabled => $data->{loginids_disabled},
-        failed_disabled       => $data->{loginids_failed},
-        mt5_loginids_string   => $mt5_loginids_string,
-        reasoning             => $data->{closing_reason}};
-
-    my $email_subject = "Account closure done by $loginid";
-
-    # Send email to CS
-    my $tt = Template::AutoFilter->new({
-        ABSOLUTE => 1,
-        ENCODING => 'utf8'
-    });
-
-    try {
-        $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/account_closure.html.tt', $data_tt, \my $html);
-        die "Template error: @{[$tt->error]}" if $tt->error;
-
-        die "failed to send email to CS for Account closure ($loginid)"
-            unless Email::Stuffer->from($system_email)->to($support_email)->subject($email_subject)->html_body($html)->send();
-
-        return undef;
-    }
-    catch {
-        my $e = $@;
-        $log->warn($e);
-    };
 
     return undef;
 }
