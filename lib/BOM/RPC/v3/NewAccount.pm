@@ -109,6 +109,12 @@ rpc "new_account_virtual",
         payment_agent => 0,
     );
 
+    BOM::Platform::Event::Emitter::emit(
+        'signup',
+        {
+            loginid    => $client->loginid,
+            properties => {type => 'virtual'}});
+
     # Welcome email for Binary brand is handled in customer.io
     # we're sending for Deriv here as a temporary solution
     # until customer.io is able to handle multiple domains
@@ -354,6 +360,12 @@ rpc new_account_real => sub {
 
     _send_welcome_email_real_account($user, $new_client);
 
+    BOM::Platform::Event::Emitter::emit(
+        'signup',
+        {
+            loginid    => $new_client->loginid,
+            properties => {type => 'real'}});
+
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $landing_company->name,
@@ -468,6 +480,12 @@ rpc new_account_maltainvest => sub {
     );
 
     _send_welcome_email_real_account($user, $new_client);
+
+    BOM::Platform::Event::Emitter::emit(
+        'signup',
+        {
+            loginid    => $new_client->loginid,
+            properties => {type => 'real'}});
 
     return {
         client_id                 => $new_client->loginid,
