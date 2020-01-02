@@ -770,6 +770,9 @@ sub buy {
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
+    my $clientdb = BOM::Database::ClientDB->new({broker_code => $client->broker_code});
+    $bet_data->{bet_data}{fmb_id} = $clientdb->get_next_fmbid();
+
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
         account_data => {
@@ -777,7 +780,7 @@ sub buy {
             currency_code  => $self->contract->currency,
         },
         limits => $self->limits,
-        db     => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+        db     => $clientdb->db,
     );
 
     my $error = 1;
