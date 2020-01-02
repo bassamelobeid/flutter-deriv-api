@@ -9,9 +9,16 @@ use Syntax::Keyword::Try;
 use BOM::Event::Services;
 use BOM::Platform::Context qw(request);
 use Locale::Country qw(code2country);
-use List::MoreUtils qw(uniq);
 use Time::Moment;
 use Date::Utility;
+use BOM::Platform::Locale qw/get_state_by_id/;
+
+my %GENDER_MAPPING = (
+    MR   => 'male',
+    MRS  => 'female',
+    MISS => 'female',
+    MS   => 'female'
+);
 
 my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
@@ -24,16 +31,14 @@ sub _segment {
 
 =head2 login
 
-It is triggered for each B<track> event emitted, delivering it to Segment.
-Note: As of now it handles B<login> event from Deriv only.
-
+It is triggered for each B<login> event emitted, delivering it to Segment.
 It can be called with the following parameters:
 
 =over
 
-=item * C<loginid> - required. Ligin Id of the user.
+=item * C<loginid> - required. Login Id of the user.
 
-=item * C<properties> - Free-form dictionary of event properties, with B<loginid> and B<currency> automatically added here.
+=item * C<properties> - Free-form dictionary of event properties.
 
 =back
 
@@ -44,19 +49,125 @@ sub login {
     my $loginid = $args->{loginid};
     my $properties = $args->{properties} // {};
 
-    unless (_segment->write_key) {
-        $log->debugf('Write key was not set.');
-        return Future->done;
-    }
-    return Future->done if request->brand->name ne 'deriv';
-    die 'Login tracking triggered without a loginid. Please inform back end team if this continues to occur.' unless $loginid;
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+    $log->debugf('Track login event for client %s', $loginid);
+    _identify($customer);
+    return _track($customer, $properties, 'login');
+}
+
+=head2 signup
+
+It is triggered for each B<signup> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties, with B<loginid> and B<currency> automatically added.
+
+=back
+
+=cut
+
+sub signup {
+    my ($args) = @_;
+    my $loginid = $args->{loginid};
+    my $properties = $args->{properties} // {};
+
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+    $properties->{loginid} = $loginid;
+    # Although we have user profile we also want to have some information on event itself
+    map { $properties->{$_} = $customer->{$_}           if $customer->{$_} } qw/currency landing_company date_joined/;
+    map { $properties->{$_} = $customer->{traits}->{$_} if $customer->{traits}->{$_} } qw/first_name last_name phone address age country/;
+    $log->debugf('Track signup event for client %s', $loginid);
+    _identify($customer);
+    return _track($customer, $properties, 'signup');
+}
+
+=head2 _identify
+
+Send identify for each B<customer>.
+It can be called with the following parameters:
+
+=over
+
+=item * C<customer> - required. Customer object included traits.
+
+=back
+
+=cut
+
+sub _identify {
+    my ($customer) = (@_);
+    my $context = _create_context();
+    return $customer->identify(context => $context);
+}
+
+=head2 _track
+
+Send track for each B<customer>.
+It can be called with the following parameters:
+
+=over
+
+=item * C<customer> - required. Customer object included traits.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=item * C<event> - required. The event name that will be sent to the Segment.
+
+=back
+
+=cut
+
+sub _track {
+    my ($customer, $properties, $event) = (@_);
+    my $context = _create_context();
+    return $customer->track(
+        event      => $event,
+        properties => $properties,
+        context    => $context,
+    );
+}
+
+=head2 _create_context
+
+Dictionary of extra information that provides context about a message.
+
+=cut
+
+sub _create_context {
+    return {
+        locale => request->language,
+        app    => {name => request->brand->name},
+        active => 1
+    };
+}
+
+=head2 _create_customer
+
+Create customer from client information.
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=back
+
+=cut
+
+sub _create_customer {
+    my ($loginid) = @_;
 
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die "Login tracking triggered with an invalid loginid. Please inform back end team if this continues to occur.";
     my @siblings = $client->user->clients(include_disabled => 1);
 
     # Get list of user currencies
-    my @currencies = ();
+    my %currencies = ();
     my $created_at;
     foreach my $sibling (@siblings) {
         my $account = $sibling->account;
@@ -66,10 +177,9 @@ sub login {
             # Skip virtual account currency
             next;
         }
-        push @currencies, $account->currency_code if $account && $account->currency_code;
+        $currencies{$account->currency_code} = 1 if $account && $account->currency_code;
     }
-
-    # We dont have date of birth for virtual account
+    # Check DOB existance as virtual account does not have it
     my $client_age;
     if ($client->date_of_birth) {
         my ($year, $month, $day) = split('-', $client->date_of_birth);
@@ -78,9 +188,10 @@ sub login {
             month => $month,
             day   => $day
         );
-        # If we get delta between now and dob it will be negative so do it vice-versa
+        # If we get delta between now and DOB it will be negative so do it vice-versa
         $client_age = $dob->delta_years(Time::Moment->now_utc);
     }
+
     my $customer = _segment->new_customer(
         user_id => $client->binary_user_id(),
         traits  => {
@@ -88,7 +199,7 @@ sub login {
             address => {
                 street      => $client->address_line_1 . " " . $client->address_line_2,
                 town        => $client->address_city,
-                state       => $client->address_state,
+                state       => $client->state ? BOM::Platform::Locale::get_state_by_id($client->state, $client->residence) : '',
                 postal_code => $client->address_postcode,
                 country     => Locale::Country::code2country($client->residence),
             },
@@ -100,7 +211,7 @@ sub login {
             #description: not_supported,
             email      => $client->email,
             first_name => $client->first_name,
-            #gender: not_supported,
+            gender     => $client->salutation ? $GENDER_MAPPING{uc($client->salutation)} : '',
             #id: not_supported,
             last_name => $client->last_name,
             #name: automatically filled
@@ -111,33 +222,39 @@ sub login {
 
             # Custom traits
             country    => Locale::Country::code2country($client->residence),
-            currencies => join(',', sort(uniq(@currencies))),
+            currencies => join(',', sort(keys %currencies)),
         });
+    # Will use this attributes as properties in some events like signup
+    $customer->{currency} = $client->account ? $client->account->currency_code : '';
+    $customer->{landing_company} = $client->landing_company->short // '';
+    $customer->{date_joined}     = $client->date_joined            // '';
 
-    my $context = create_context();
-
-    $log->debugf('Send login information for client %s', $client->{loginid});
-    return $customer->identify(context => $context)->then(
-        sub {
-            $customer->track(
-                event      => 'login',
-                properties => {%$properties},
-                context    => $context,
-            );
-        });
+    return $customer;
 }
 
-=head2 create_context
+=head2 _validate_params
 
-Dictionary of extra information that provides context about a message.
+Check if required params are valid or not.
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=back
 
 =cut
 
-sub create_context {
-    return {
-        locale => request()->language,
-        app    => {name => request()->brand->name},
-        active => 1
-    };
+sub _validate_params {
+    my ($loginid) = @_;
+
+    unless (_segment->write_key) {
+        $log->debugf('Write key was not set.');
+        return undef;
+    }
+
+    return undef unless request->brand->is_track_enabled;
+    die 'Login tracking triggered without a loginid. Please inform back end team if this continues to occur.' unless $loginid;
+
+    return 1;
 }
 1;
