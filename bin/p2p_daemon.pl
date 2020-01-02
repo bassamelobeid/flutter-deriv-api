@@ -8,9 +8,10 @@ use Future::AsyncAwait;
 use BOM::Platform::Event::Emitter;
 use LandingCompany::Registry;
 use BOM::Database::ClientDB;
-use BOM::Config::Runtime;
+use Time::HiRes;
 
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use Log::Any '$log';
+use BOM::Config::Runtime;
 
 use Log::Any qw($log);
 
@@ -64,11 +65,11 @@ $log->infof('Starting P2P polling');
             $sth->execute();
 
             while ( my $order_data = $sth->fetchrow_hashref ) {
-                stats_inc('p2p.order.expired');
                 BOM::Platform::Event::Emitter::emit(
                     p2p_order_expired => {
                         client_loginid => $order_data->{client_loginid},
                         order_id       => $order_data->{id},
+                        expiry_started =>  [Time::HiRes::gettimeofday],
                     }
                 );
             }

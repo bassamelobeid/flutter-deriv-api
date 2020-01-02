@@ -30,6 +30,7 @@ use BOM::User::Utility;
 use BOM::Platform::Email qw(send_email);
 use BOM::User::Client;
 use Syntax::Keyword::Try;
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 #TODO: Put here id for special bom-event application
 # May be better to move it to config rather than keep it here.
@@ -178,6 +179,10 @@ sub order_updated {
         ),
     );
 
+    if ($field eq 'status') {
+        stats_inc('p2p.order.status.updated.count', {tags => ["status:$new_value"]});
+    }
+
     return 1;
 }
 
@@ -190,6 +195,10 @@ cancelled by the client.
 
 sub order_expired {
     my $data = shift;
+
+    if ($data->{expiry_started}) {
+        stats_timing('p1p.order.expiry.delay', (1000 * Time::HiRes::tv_interval($data->{expiry_started})));
+    }
 
     BOM::Config::Runtime->instance->app_config->check_for_update;
 
@@ -212,6 +221,8 @@ sub order_expired {
     }
 
     return 0 unless $updated_order;
+
+    stats_inc('p2p.order.expired');
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
