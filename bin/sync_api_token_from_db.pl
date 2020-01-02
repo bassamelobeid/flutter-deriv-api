@@ -13,6 +13,7 @@ my $api_obj    = BOM::Platform::Token::API->new;
 foreach my $details (values %$tokens_ref) {
     next if $api_obj->token_exists($details->{token});
     delete $details->{last_used} unless $details->{last_used};
+    $details->{valid_for_ip}  //= '';
     $details->{loginid} = delete $details->{client_loginid};
     $api_obj->save_token_details_to_redis($details);
 }
