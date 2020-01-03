@@ -224,9 +224,23 @@ rpc "buy",
     # if subscription flag is turned on
     my $contract_proposal_details = {
         account_id      => $transaction_details->{account_id},
+        shortcode       => $contract_details->{short_code},
         contract_id     => $contract_details->{id},
+        currency        => $currency,
+        buy_price       => $contract_details->{buy_price},
+        sell_price      => $contract_details->{sell_price},
+        sell_time       => $contract_details->{sell_time},
+        purchase_time   => $trx->purchase_date->epoch,
+        is_sold         => $contract_details->{is_sold},
         transaction_ids => {buy => $transaction_details->{id}},
+        longcode        => localize(shortcode_to_longcode($contract_details->{short_code}, $currency)),
+        expiry_time     => 0 + Date::Utility->new($contract_details->{expiry_time})->epoch,
     };
+
+    # multiplier requires additional parameters to define a contract
+    if ($contract->category_code eq 'multiplier') {
+        $contract_proposal_details->{limit_order} = $contract->available_orders;
+    }
 
     my $tv_interval = 1000 * Time::HiRes::tv_interval($tv);
 
@@ -604,7 +618,7 @@ rpc contract_update => sub {
                     message_to_client => localize('Contract update failed.'),
                 });
             }
-            if (my $contract_proposal_details = delete $response->{contract_details}) {
+            if (my $contract_proposal_details = $response->{contract_details}) {
                 BOM::Transaction::set_contract_parameters($contract_proposal_details, $client);
             }
         } else {
