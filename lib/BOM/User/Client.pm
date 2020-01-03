@@ -2810,4 +2810,85 @@ sub payment_arbitrary_markup {
     return $trx;
 }
 
+=head2 copy_status_to_siblings
+
+Copies the given status from the current client to its siblings that haven't set with it before and returns the loginid of the updated clients.
+
+Returns an arrayref containing the loginids of the clients that have been updated.
+
+=cut
+
+sub copy_status_to_siblings {
+    my ($self, $status_code, $staff_name) = @_;
+
+    $status_code                or die 'No status code provided';
+    $staff_name                 or die 'No staff name provided';
+    $self->status->$status_code or die $self->loginid . ": Can't copy $status_code to its siblings because it hasn't been set yet";
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_arrayref('SELECT betonmarkets.copy_client_status_to_siblings(?,?,?)', undef, $self->loginid, $status_code, $staff_name);
+        })->[0] // [];
+}
+
+=head2 clear_status_and_sync_to_siblings
+
+Removes the given status from the current client and from its siblings, and returns the loginid of the updated clients.
+
+Returns an array containing the loginids of the clients that have been updated.
+
+=cut
+
+sub clear_status_and_sync_to_siblings {
+    my ($self, $status_code) = @_;
+
+    $status_code or die 'No status code provided';
+
+    return $self->db->dbic->run(
+        ping => sub {
+            $_->selectrow_arrayref('SELECT betonmarkets.clear_client_status_sync_all(?,?)', undef, $self->loginid, $status_code);
+        })->[0] // [];
+}
+
+=head2 get_sibling_loginids_without_status
+
+Returns the login id of all landing company siblings of the current client that haven't set with the given status code
+
+=cut
+
+sub get_sibling_loginids_without_status {
+    my ($self, $status_code) = @_;
+
+    $status_code or die 'No status code provided';
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_arrayref('SELECT betonmarkets.get_sibling_loginids_without_client_status(?,?)', undef, $self->loginid, $status_code);
+        })->[0] // [];
+}
+
+=head2 siblings
+
+Returns an array containing all the landing company siblings of the current client. Does NOT include the current one.
+
+=cut
+
+sub siblings {
+    my $self = shift;
+    my @siblings = grep { $_->loginid ne $self->loginid } $self->user->clients_for_landing_company($self->landing_company->short);
+    return \@siblings;
+}
+
+=head2 has_siblings
+
+Returns true if the current client landing company siblings, false otherwise.
+
+=cut
+
+sub has_siblings {
+    my $self = shift;
+
+    return scalar(@{$self->siblings()}) > 0;
+}
+
 1;

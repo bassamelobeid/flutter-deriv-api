@@ -7,7 +7,7 @@ BOM::User::Client - main class, containing methods to manage clients and various
 
 ## SYNOPSIS
 
-```
+```perl
 # A user represents a person, so the first step is to create one of those
 # in the database.
 my $hash_pwd = BOM::Platform::Password::hashpw("Passw0rd");
@@ -76,12 +76,14 @@ Note about terminology:
 * 'BOM::User::Client' means a currency account, e.g. CR12345:USD. In the past we used to allow a Client (loginID) to have more than one currency, but now we impose only one currency per Client.
 
 #### TEST
-    # run all test scripts
-    make test
-    # run one script
-    prove t/BOM/user.t
-    # run one script with perl
-    perl -MBOM::Test t/BOM/user.t
+```bash
+# run all test scripts
+make test
+# run one script
+prove t/BOM/user.t
+# run one script with perl
+perl -MBOM::Test t/BOM/user.t
+```
 
 #### DEPENDENCIES
 
