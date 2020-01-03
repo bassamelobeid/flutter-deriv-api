@@ -237,11 +237,6 @@ rpc "buy",
         expiry_time     => 0 + Date::Utility->new($contract_details->{expiry_time})->epoch,
     };
 
-    # multiplier requires additional parameters to define a contract
-    if ($contract->category_code eq 'multiplier') {
-        $contract_proposal_details->{limit_order} = $contract->available_orders;
-    }
-
     my $tv_interval = 1000 * Time::HiRes::tv_interval($tv);
 
     BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, $tv_interval);
