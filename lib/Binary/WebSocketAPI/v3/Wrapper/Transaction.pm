@@ -73,11 +73,23 @@ sub buy_set_poc_subscription_id {
     };
 }
 
+sub _get_poc_params {
+    my $details = shift;
+
+    my %params = map { $_ => $details->{$_} }
+        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode expiry_time);
+    $params{limit_order} = $details->{limit_order} if $details->{limit_order};
+
+    return \%params;
+}
+
 sub _subscribe_to_contract {
     my ($c, $contract_details, $req_args) = @_;
 
-    my $account_id  = $contract_details->{account_id};
-    my $contract_id = $contract_details->{contract_id};
+    my $contract = _get_poc_params($contract_details);
+
+    my $account_id  = $contract->{account_id};
+    my $contract_id = $contract->{contract_id};
     my $args        = {
         subscribe              => 1,
         contract_id            => $contract_id,
@@ -85,7 +97,7 @@ sub _subscribe_to_contract {
     };
     $args->{req_id} = $req_args->{req_id} if exists $req_args->{req_id};
 
-    my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_proposal_open_contract($c, $args, $contract_details)->{uuid};
+    my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_proposal_open_contract($c, $args, $contract)->{uuid};
     # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
     transaction_channel(
         $c, 'subscribe', $account_id,    # should not go to client
