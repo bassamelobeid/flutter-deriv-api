@@ -245,7 +245,6 @@ rpc "buy",
     my $tv_interval = 1000 * Time::HiRes::tv_interval($tv);
 
     BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, $tv_interval);
-    BOM::Pricing::v3::Utility::set_contract_parameters($contract_proposal_details, $client);
 
     return {
         transaction_id   => $trx->transaction_id,
