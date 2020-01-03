@@ -2126,7 +2126,7 @@ sub _get_info_to_verify_child {
 
 }
 
-sub delete_contract_parametes {
+sub delete_contract_parameters {
     my ($contract_id, $client);
 
     my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer;
