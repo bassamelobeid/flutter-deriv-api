@@ -2127,7 +2127,7 @@ sub _get_info_to_verify_child {
 }
 
 sub delete_contract_parameters {
-    my ($contract_id, $client);
+    my ($contract_id, $client) = @_;
 
     my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer;
     my $redis_key = join '::', ('CONTRACT_PARAMS', $contract_id, $client->landing_company->short);
@@ -2168,7 +2168,7 @@ sub set_contract_parameters {
         $default_expiry = min($default_expiry, $contract_expiry->epoch - time + 10);
     }
 
-    return $redis_pricer->set($redis_key, _serialized_args(\%hash), 'EX', $default_expiry);
+    return $redis_pricer->set($redis_key, _serialized_args(\%hash), 'EX', int($default_expiry));
 }
 
 sub _serialized_args {
