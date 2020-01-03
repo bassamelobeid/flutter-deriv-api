@@ -619,7 +619,7 @@ rpc contract_update => sub {
                 });
             }
             if (my $contract_proposal_details = $response->{contract_details}) {
-                BOM::Pricing::v3::Utility::set_contract_parameters($contract_proposal_details, $client);
+                BOM::Transaction::set_contract_parameters($contract_proposal_details, $client);
             }
         } else {
             my $error = $updater->validation_error;
