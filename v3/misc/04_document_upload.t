@@ -52,7 +52,7 @@ my %generic_req = (
     document_id     => '12456',
     document_format => 'JPEG',
     document_type   => 'passport',
-    expiration_date => '2020-01-01',
+    expiration_date => Date::Utility->today()->plus_time_interval('1d')->date,
 );
 
 use constant {FAIL_TEST_DATA => 'Some text'};
@@ -398,10 +398,10 @@ sub request_upload {
         #   to spoof the size so the upload isn't disallowed at the start.
     };
     my $res = $ws->await::document_upload($req);
+    is $res->{error}, undef, 'No error in response' or diag explain $res->{error};
     is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
-
-    ok $res->{document_upload}, 'Returns document_upload (for none-duplicate files)';
+    ok $res->{document_upload},    'Returns document_upload (for none-duplicate files)';
 
     my $upload_id = $res->{document_upload} ? $res->{document_upload}->{upload_id} : undef;
     my $call_type = $res->{document_upload} ? $res->{document_upload}->{call_type} : undef;
