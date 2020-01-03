@@ -7,12 +7,6 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use BOM::Config::RedisReplicated;
 use BOM::Product::Contract;
-use Encode;
-use JSON::MaybeXS;
-use Date::Utility;
-use List::Util qw(min);
-
-my $json = JSON::MaybeXS->new->allow_blessed;
 
 sub create_error {
     my $args = shift;
@@ -50,49 +44,6 @@ sub update_price_metrics {
     $redis_pricer->hincrbyfloat('PRICE_METRICS::TIMING', $relative_shortcode, $timing);
 
     return;
-}
-
-sub set_contract_parameters {
-    my ($contract_parameter, $client) = @_;
-
-    my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer;
-
-    my %hash = (
-        price_daemon_cmd => 'bid',
-        short_code       => $contract_parameter->{shortcode},
-        contract_id      => $contract_parameter->{contract_id},
-        currency         => $contract_parameter->{currency},
-        sell_time        => $contract_parameter->{sell_time},
-        is_sold          => $contract_parameter->{is_sold} + 0,
-        landing_company  => $client->landing_company->short,
-    );
-
-    $hash{country_code} = $client->residence if $client->residence eq 'cn';
-    $hash{limit_order} = $contract_parameter->{limit_order} if $contract_parameter->{limit_order};
-
-    my $redis_key = join '::', ('CONTRACT_PARAMS', $hash{contract_id}, $hash{landing_company});
-
-    my $default_expiry = 86400;
-    if (my $expiry = delete $contract_parameter->{expiry_time}) {
-        my $contract_expiry = Date::Utility->new($expiry);
-        # 10 seconds after expiry is to cater for sell transaction delay due to settlement conditions.
-        $default_expiry = min($default_expiry, $contract_expiry->epoch - time + 10);
-    }
-
-    return $redis_pricer->set($redis_key, _serialized_args(\%hash), 'EX', $default_expiry);
-}
-
-sub _serialized_args {
-    my $copy = {%{+shift}};
-
-    # We want to handle similar contracts together, so we do this and sort by
-    # key in the price_queue.pl daemon
-    my @arr = ('short_code', delete $copy->{short_code});
-    foreach my $k (sort keys %$copy) {
-        push @arr, ($k, $copy->{$k});
-    }
-
-    return Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
 }
 
 =head2 create_relative_shortcode
