@@ -329,6 +329,52 @@ sub build_client_statement_form {
         . '</FORM>';
 }
 
+sub link_for_remove_status_from_all_siblings {
+    my ($loginid, $status_code, $messages) = @_;
+    my $client                          = BOM::User::Client->new({'loginid' => $loginid});
+    my $sibling_loginids_without_status = $client->get_sibling_loginids_without_status($status_code);
+    my $siblings                        = $client->siblings();
+    $messages //= {};
+
+    return
+          '<span style="color: gray">'
+        . (defined($messages->{disabled}) ? $messages->{disabled} : 'status has not been set to its siblings')
+        . '</span>'
+        if scalar @{$sibling_loginids_without_status} == scalar @{$siblings};
+
+    return '<a href="'
+        . request()->url_for(
+        'backoffice/sync_client_status.cgi',
+        {
+            action      => 'remove',
+            loginid     => $loginid,
+            status_code => $status_code
+        })
+        . '">'
+        . (defined($messages->{enabled}) ? $messages->{enabled} : 'remove from all siblings <i>(including ' . $loginid . ')</i>') . '</a>';
+}
+
+sub link_for_copy_status_status_to_siblings {
+    my ($loginid, $status_code, $messages) = @_;
+    my $client = BOM::User::Client->new({'loginid' => $loginid});
+    my $sibling_loginids_without_status = $client->get_sibling_loginids_without_status($status_code);
+    $messages //= {};
+
+    return '<span style="color: gray">' . (defined($messages->{disabled}) ? $messages->{disabled} : 'status synced among siblings') . '</span>'
+        if scalar @{$sibling_loginids_without_status} == 0;
+
+    return '<a href="'
+        . request()->url_for(
+        'backoffice/sync_client_status.cgi',
+        {
+            action      => 'copy',
+            loginid     => $loginid,
+            status_code => $status_code
+        })
+        . '">'
+        . (defined($messages->{enabled}) ? $messages->{enabled} : 'copy to siblings') . '</a>';
+}
+
 ## build_client_warning_message #######################################
 # Purpose : To obtain the client warning status and return its status
 #           in html form
@@ -372,17 +418,27 @@ sub build_client_warning_message {
     my %client_status = map { $_ => $client->status->$_ } @{$client->status->all};
     foreach my $type (@{get_untrusted_types()}) {
         my $code = $type->{code};
+        my $remove_from_landing_company_accounts_link =
+            $client->has_siblings()
+            ? link_for_remove_status_from_all_siblings($login_id, $code)
+            : '<span style="color: gray">' . "doesn't have siblings" . '</span>';
+        my $copy_to_landing_company_accounts_link =
+            $client->has_siblings()
+            ? link_for_copy_status_status_to_siblings($login_id, $code)
+            : '<span style="color: gray">' . "doesn't have siblings" . '</span>';
         if (my $disabled = $client->status->$code) {
             delete $client_status{$type->{code}};
             push(
                 @output,
                 {
-                    clerk      => $disabled->{staff_name},
-                    reason     => $disabled->{reason},
-                    warning    => 'red',
-                    section    => $type->{comments},
-                    editlink   => $edit_client_with_status->($type->{linktype}),
-                    removelink => $remove_client_from->($type->{linktype}),
+                    clerk                                => $disabled->{staff_name},
+                    reason                               => $disabled->{reason},
+                    warning                              => 'red',
+                    section                              => $type->{comments},
+                    editlink                             => $edit_client_with_status->($type->{linktype}),
+                    removelink                           => $remove_client_from->($type->{linktype}),
+                    remove_from_landing_company_accounts => $remove_from_landing_company_accounts_link,
+                    copy_to_landing_company_accounts     => $copy_to_landing_company_accounts_link
                 });
         }
     }
@@ -394,7 +450,8 @@ sub build_client_warning_message {
         . '<th>REASON/INFO</th>'
         . '<th>STAFF</th>'
         . '<th>EDIT</th>'
-        . '<th>REMOVE</th>' . '</tr>';
+        . '<th colspan="2">REMOVE</th>'
+        . '<th>SYNC</th>' . '</tr>';
 
     if (@output) {
         my $trusted_section;
@@ -420,6 +477,12 @@ sub build_client_warning_message {
                 . '</b></td>'
                 . '<td><b>'
                 . $output_rows->{'removelink'}
+                . '</b></td>'
+                . '<td><b>'
+                . $output_rows->{'remove_from_landing_company_accounts'}
+                . '</b></td>'
+                . '<td><b>'
+                . $output_rows->{'copy_to_landing_company_accounts'}
                 . '</b></td></tr>';
         }
     }
@@ -436,7 +499,7 @@ sub build_client_warning_message {
             . '<td><b>'
             . ($info->{staff_name} // '')
             . '</b></td>'
-            . '<td colspan="2">&nbsp;</td>' . '</tr>';
+            . '<td colspan="4">&nbsp;</td>' . '</tr>';
     }
     $output .= '</table><br>';
 
@@ -769,6 +832,22 @@ sub get_untrusted_types {
             'show_reason' => 'yes'
         },
     ];
+}
+
+sub get_untrusted_type_by_code {
+    my $code = shift;
+
+    my ($untrusted_type) = grep { $_->{code} eq $code } @{get_untrusted_types()};
+
+    return $untrusted_type;
+}
+
+sub get_untrusted_type_by_linktype {
+    my $linktype = shift;
+
+    my ($untrusted_type) = grep { $_->{linktype} eq $linktype } @{get_untrusted_types()};
+
+    return $untrusted_type;
 }
 
 sub get_open_contracts {

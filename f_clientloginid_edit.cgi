@@ -822,6 +822,7 @@ Bar("$loginid STATUSES");
 if (my $statuses = build_client_warning_message($loginid)) {
     print $statuses;
 }
+
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/untrusted_form.html.tt',
     {
