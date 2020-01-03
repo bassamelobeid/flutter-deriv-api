@@ -800,7 +800,19 @@ sub buy {
 
     try {
         $company_limits->add_buys($client);
-        $self->_set_contract_parameters($fmbid, $client) if $fmbid;
+        if ($fmbid) {
+            set_contract_parameters({
+                    shortcode   => $self->contract->shortcode,
+                    contract_id => $fmbid,
+                    currency    => $client->currency,
+                    sell_time   => undef,
+                    is_sold     => 0,
+                    limit_order => $self->contract->available_orders,
+                    expiry_time => $self->contract->date_expiry->epoch,
+                },
+                $client
+            );
+        }
 
         ($fmb, $txn) = $fmb_helper->buy_bet;
         $self->contract_details($fmb);
@@ -2101,31 +2113,40 @@ sub _get_info_to_verify_child {
 
 }
 
-sub _set_contract_parameters {
-    my ($self, $fmbid, $client) = @_;
+=head2 set_contract_parameters
+
+Utility method to set contract parameters when a contract is purchased
+
+=cut
+
+sub set_contract_parameters {
+    my ($contract_params, $client) = @_;
 
     my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer;
-    my $contract     = $self->contract;
 
     my %hash = (
         price_daemon_cmd => 'bid',
-        short_code       => $contract->shortcode,
-        contract_id      => $fmbid,
-        currency         => $client->currency,
-        sell_time        => undef,
-        is_sold          => 0,
+        short_code       => $contract_params->{shortcode},
+        contract_id      => $contract_params->{contract_id},
+        currency         => $contract_params->{currency},
+        sell_time        => $contract_params->{sell_time},
+        is_sold          => $contract_params->{is_sold} + 0,
         landing_company  => $client->landing_company->short,
     );
 
-    $hash{country_code} = $client->residence          if $client->residence eq 'cn';
-    $hash{limit_order}  = $contract->available_orders if $contract->can('available_orders');
+    $hash{country_code} = $client->residence if $client->residence eq 'cn';
+    $hash{limit_order} = $contract_params->{limit_order} if $contract_params->{limit_order};
 
     my $redis_key = join '::', ('CONTRACT_PARAMS', $hash{contract_id}, $hash{landing_company});
 
-    # 10 seconds after expiry is to cater for sell transaction delay due to settlement conditions.
-    my $expiry = min(86400, $contract->remaining_time->seconds + 10);
+    my $default_expiry = 86400;
+    if (my $expiry = delete $contract_params->{expiry_time}) {
+        my $contract_expiry = Date::Utility->new($expiry);
+        # 10 seconds after expiry is to cater for sell transaction delay due to settlement conditions.
+        $default_expiry = min($default_expiry, $contract_expiry->epoch - time + 10);
+    }
 
-    return $redis_pricer->set($redis_key, _serialized_args(\%hash), 'EX', $expiry);
+    return $redis_pricer->set($redis_key, _serialized_args(\%hash), 'EX', $default_expiry);
 }
 
 sub _serialized_args {
