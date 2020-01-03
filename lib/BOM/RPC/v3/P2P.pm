@@ -735,16 +735,18 @@ sub _offer_details {
 sub _order_details {
     my ($client, $order) = @_;
 
-    $order->{type}             = delete $order->{offer_type};
-    $order->{account_currency} = delete $order->{offer_account_currency};
-    $order->{amount}           = financialrounding('amount', $order->{offer_account_currency}, $order->{order_amount});
-    $order->{amount_display}   = formatnumber('amount', $order->{offer_account_currency}, $order->{order_amount});
-    $order->{expiry_time}      = Date::Utility->new($order->{expire_time})->epoch;
-    $order->{created_time}     = Date::Utility->new($order->{created_time})->epoch;
-    $order->{rate}             = financialrounding('amount', $order->{offer_local_currency}, $order->{offer_rate});
-    $order->{rate_display}     = formatnumber('amount', $order->{offer_local_currency}, $order->{offer_rate});
-    $order->{price}            = financialrounding('amount', $order->{offer_local_currency}, $order->{offer_rate} * $order->{order_amount});
-    $order->{price_display}    = formatnumber('amount', $order->{offer_local_currency}, $order->{offer_rate} * $order->{order_amount});
+    $order->{type} = delete $order->{offer_type};
+    $order->{account_currency} //= delete $order->{offer_account_currency};
+    $order->{local_currency}   //= delete $order->{offer_local_currency};
+
+    $order->{amount} = financialrounding('amount', $order->{account_currency}, $order->{order_amount});
+    $order->{amount_display} = formatnumber('amount', $order->{account_currency}, $order->{order_amount});
+    $order->{expiry_time}    = Date::Utility->new($order->{expire_time})->epoch;
+    $order->{created_time}   = Date::Utility->new($order->{created_time})->epoch;
+    $order->{rate}           = financialrounding('amount', $order->{local_currency}, $order->{offer_rate});
+    $order->{rate_display}   = formatnumber('amount', $order->{local_currency}, $order->{offer_rate});
+    $order->{price}          = financialrounding('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
+    $order->{price_display}  = formatnumber('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
     $order->{offer_description} //= '';
     $order->{order_description} //= '';
 

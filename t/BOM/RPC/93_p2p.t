@@ -206,7 +206,9 @@ subtest 'Create new order' => sub {
     };
 
     my $order = $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_no_error->result;
-    ok($order->{order_id}, 'Order is created');
+    ok($order->{order_id},         'Order is created');
+    ok($order->{account_currency}, 'Order has account_currency');
+    ok($order->{local_currency},   'Order has local_currency');
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
