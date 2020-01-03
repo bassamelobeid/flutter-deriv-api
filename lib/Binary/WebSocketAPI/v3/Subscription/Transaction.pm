@@ -382,8 +382,6 @@ sub _create_poc_stream {
                     buy_price   => $payload->{purchase_price},
                     account_id  => $payload->{account_id},
                     longcode => $payload->{longcode} || $payload->{payment_remark},
-                    contract_id     => $payload->{financial_market_bet_id},
-                    account_id      => $payload->{account_id},
                     transaction_ids => {buy => $payload->{id}},
                     purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
                     sell_price      => undef,
