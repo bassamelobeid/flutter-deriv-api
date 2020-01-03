@@ -77,7 +77,7 @@ sub _get_poc_params {
     my $details = shift;
 
     my %params = map { $_ => $details->{$_} }
-        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode expiry_time);
+        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode);
     $params{limit_order} = $details->{limit_order} if $details->{limit_order};
 
     return \%params;
