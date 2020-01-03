@@ -14,9 +14,6 @@ sub buy_get_single_contract {
     $store_last_contract_id //= 1;
     my $contract_details = delete $api_response->{contract_details};
 
-    # this is stored for later use in proposal open contract or sell transaction
-    Binary::WebSocketAPI::v3::Wrapper::Pricer::set_contract_params($c, _get_poc_params($contract_details));
-
     $req_storage->{uuid} = _subscribe_to_contract($c, $contract_details, $req_storage->{call_params}->{args})
         if $req_storage->{call_params}->{args}->{subscribe};
 
@@ -39,10 +36,6 @@ sub contract_update_handler {
 
     # do not send this back
     delete $api_response->{updated_queue};
-    my $new_poc_params = _get_poc_params(delete $api_response->{contract_details});
-
-    # if contract params already exists, it overrides it and set a new expiry to the key
-    Binary::WebSocketAPI::v3::Wrapper::Pricer::set_contract_params($c, $new_poc_params);
 
     return undef;
 }

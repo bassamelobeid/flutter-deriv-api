@@ -483,8 +483,7 @@ sub _process_proposal_open_contract_response {
                 # every get_bid results and sent to client while streaming
                 my $cache =
                     {map { $_ => $contract->{$_} }
-                        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode expiry_time)
-                    };
+                        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
 
                 $cache->{limit_order} = $contract->{limit_order} if $contract->{limit_order};
 
@@ -523,106 +522,15 @@ sub _process_proposal_open_contract_response {
     return;
 }
 
-sub is_exists_contract_params {
-    my ($contract_id, $landing_company) = @_;
-
-    my $params = get_contract_params($contract_id, $landing_company);
-
-    return 1 if %$params;
-    return 0;
-}
-
-sub get_contract_params_key {
-    my ($contract_id, $landing_company_short) = @_;
-
-    return join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company_short);
-}
-
 sub get_contract_params {
     my ($contract_id, $landing_company_short) = @_;
 
-    my $key         = get_contract_params_key($contract_id, $landing_company_short);
+    my $key         = join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company_short);
     my $redis       = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager()->redis;
     my $params_json = $redis->get($key);
 
     return {} unless $params_json;
     return {@{decode_json_utf8($params_json)}};
-}
-
-sub set_contract_params {
-    my ($c, $contract_params) = @_;
-
-    my $contract_id           = $contract_params->{contract_id};
-    my $landing_company_short = $c->landing_company_name;
-
-    return unless ($contract_id and $landing_company_short);
-
-    if (_has_required_proposal_open_contract_params($contract_params)) {
-        return save_contract_params_to_redis($c, $contract_params);
-    }
-
-    return fetch_contract_params_from_database($c, $contract_params);
-}
-
-sub save_contract_params_to_redis {
-    my ($c, $contract_params) = @_;
-
-    my $redis              = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager()->redis;
-    my $contract_param_key = get_contract_params_key($contract_params->{contract_id}, $c->landing_company_name);
-    my $with_prefix        = 0;
-    my $poc_args           = get_pricer_args($c, $contract_params, $with_prefix);
-
-    # proposal open contract params is set to expire at 10 second after contract expiration time (if available)
-    # max expiry set at 1 day
-    my $default_expiry = 86400;
-    if (my $expiry = delete $contract_params->{expiry_time}) {
-        my $contract_expiry = Date::Utility->new($expiry);
-        # 10 seconds after expiry is to cater for sell transaction delay due to settlement conditions.
-        $default_expiry = min($default_expiry, $contract_expiry->epoch - time + 10);
-    }
-
-    return $redis->set($contract_param_key, $poc_args, 'EX', $default_expiry);
-}
-
-sub _has_required_proposal_open_contract_params {
-    my $params = shift;
-
-    return 0 if not $params->{shortcode};
-
-    my @list =
-        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode expiry_time);
-    push @list, 'limit_order' if $params->{shortcode} =~ /^(?:MULTUP|MULTDOWN)/;
-
-    return 1 if all { exists $params->{$_} } @list;
-    return 0;
-}
-
-sub fetch_contract_params_from_database {
-    my ($c, $contract_params) = @_;
-
-    my $contract_id = $contract_params->{contract_id};
-    my $params_from_db;
-
-    $c->call_rpc({
-            args => {
-                proposal_open_contract => 1,
-                contract_id            => $contract_id,
-            },
-            method      => 'proposal_open_contract',
-            msg_type    => 'proposal_open_contract',
-            call_params => {
-                token       => $c->stash('token'),
-                contract_id => $contract_id,
-            },
-            rpc_response_cb => sub {
-                my ($c, $rpc_response) = @_;
-                $params_from_db = $rpc_response->{$contract_id};
-                save_contract_params_to_redis($c, $params_from_db);
-                return;
-            }
-        });
-
-    return $params_from_db;
 }
 
 sub _serialized_args {
@@ -717,14 +625,7 @@ sub pricing_channel_for_proposal_open_contract {
     $hash{transaction_id} = $cache->{transaction_ids}->{buy};    # transaction is going to be stored
     my $subchannel = _serialized_args(\%hash);
 
-    my $pricer_channel = _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, 'ProposalOpenContract', $cache);
-
-    # new subscription
-    if ($pricer_channel->{uuid} and not is_exists_contract_params($contract_id, $landing_company)) {
-        set_contract_params($c, $cache);
-    }
-
-    return $pricer_channel;
+    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, 'ProposalOpenContract', $cache);
 }
 
 # will return a hash {uuid => $subscription->uuid, subscription => $subscription}
@@ -780,10 +681,6 @@ sub _create_pricer_channel {
 sub send_proposal_open_contract_last_time {
     my ($c, $args, $contract_id, $stash_data) = @_;
     Binary::WebSocketAPI::v3::Subscription->unregister_by_uuid($c, $args->{uuid});
-
-    # delete CONTRACT_PARAMS in redis on sell
-    my $redis = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager()->redis;
-    $redis->del(get_contract_params_key($contract_id, $c->landing_company_name));
 
     $c->call_rpc({
             args        => $stash_data,

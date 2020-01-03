@@ -375,18 +375,9 @@ sub _create_poc_stream {
                 $c,
                 $poc_args,
                 {
-                    shortcode   => $payload->{short_code},
-                    currency    => $payload->{currency_code},
-                    is_sold     => $payload->{sell_time} ? 1 : 0,
-                    contract_id => $payload->{financial_market_bet_id},
-                    buy_price   => $payload->{purchase_price},
-                    account_id  => $payload->{account_id},
-                    longcode => $payload->{longcode} || $payload->{payment_remark},
+                    contract_id     => $payload->{financial_market_bet_id},
+                    account_id      => $payload->{account_id},
                     transaction_ids => {buy => $payload->{id}},
-                    purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
-                    sell_price      => undef,
-                    sell_time       => undef,
-                    limit_order     => $payload->{limit_order},
                 })->{uuid};
 
             # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
