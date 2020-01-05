@@ -109,8 +109,7 @@
                                 "type": "string",
                                 "enum": [
                                     "pending",
-                                    "client-confirmed",
-                                    "agent-confirmed",
+                                    "buyer-confirmed",
                                     "cancelled",
                                     "timed-out",
                                     "refunded",
