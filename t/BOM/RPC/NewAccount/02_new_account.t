@@ -140,6 +140,8 @@ subtest $method => sub {
 
     ok $emitted{"register_details_$resp_loginid"}, "register_details event emitted";
 
+    ok $emitted{"signup_$resp_loginid"}, "signup event emitted";
+
     subtest 'European client - de' => sub {
         my $vr_email = 'new_email' . rand(999) . '@binary.com';
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
@@ -153,6 +155,8 @@ subtest $method => sub {
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
         ok $emitted{'register_details_' . $rpc_ct->result->{client_id}}, "register_details event emitted";
+
+        ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
         $user = BOM::User->new(
             email => $vr_email,
@@ -174,6 +178,8 @@ subtest $method => sub {
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
         ok $emitted{'register_details_' . $rpc_ct->result->{client_id}}, "register_details event emitted";
+
+        ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
         $user = BOM::User->new(
             email => $vr_email,
@@ -301,6 +307,7 @@ subtest $method => sub {
             'svg', 'It should return new account data if one of the account is marked as duplicate');
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
+        ok $emitted{"signup_$new_loginid"}, "signup event emitted";
     };
 
     subtest 'Create multiple accounts in CR' => sub {
@@ -596,6 +603,7 @@ subtest $method => sub {
         is $resp_loginid, $new_loginid, 'correct oauth token';
 
         ok $emitted{"register_details_$new_loginid"}, "register_details event emitted";
+        ok $emitted{"signup_$new_loginid"},           "signup event emitted";
     };
 
     my $client_mlt;
@@ -732,6 +740,7 @@ subtest $method => sub {
         isnt(keys %$result, 0, 'MF client has financial assessment set');
 
         ok $emitted{"register_details_$new_loginid"}, "register_details event emitted";
+        ok $emitted{"signup_$new_loginid"},           "signup event emitted";
 
     };
 
@@ -781,6 +790,7 @@ subtest $method => sub {
         ok $result->{client_id}, "Create an MF account after have a MX account";
 
         ok $emitted{'register_details_' . $result->{client_id}}, "register_details event emitted";
+        ok $emitted{'signup_' . $result->{client_id}},           "signup event emitted";
 
         #create a virtual de client
         $email = 'virtual_de_email' . rand(999) . '@binary.com';
@@ -811,6 +821,8 @@ subtest $method => sub {
         ok $result->{client_id}, "Germany users can create MF account from the virtual account";
 
         ok $emitted{'register_details_' . $result->{client_id}}, "register_details event emitted";
+        ok $emitted{'signup_' . $result->{client_id}},           "signup event emitted";
+
     };
 };
 
