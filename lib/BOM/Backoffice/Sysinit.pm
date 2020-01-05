@@ -72,6 +72,7 @@ my $permissions = {
     'ip_search.cgi'                   => ['CS'],
     'show_audit_trail.cgi'            => ['CS'],
     'untrusted_client_edit.cgi'       => ['CS'],
+    'sync_client_status.cgi'          => ['CS'],
     'view_192_raw_response.cgi'       => ['CS'],
     'f_client_deskcom.cgi'            => ['CS'],
     'email_templates.cgi'             => ['CS'],
