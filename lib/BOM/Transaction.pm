@@ -403,9 +403,15 @@ sub stats_start {
     }
     stats_inc("transaction.$what.attempt", $tags);
 
-    ## This is debugging code. If you find this after 2020, please check if it's still needed
-    ## and remove. (Torsten)
-    {
+    # End of 2019 we found out that we are stacking IO loops on top of each other. At the time, the
+    # normal stack depth at this point during a buy transaction was 49. But sometimes we saw stack
+    # depths of up to 600. The following code allows sysadmins to create a directory
+    # (/var/lib/binary/BOM::Transaction) to turn on logging of the stack depth to datadog. If the
+    # directory is also writable and the stack depth exceeds 70, a stack trace is written to a file
+    # in that directory. At the time of this writing, each file uses on average 10kb of disk space.
+    # This code generates at most 1000 files depending on the PID. Older files will be overwritten.
+    # So, the file system needs to provide about 10MB of free space.
+    if (-d (my $fn = '/var/lib/binary/BOM::Transaction')) {
         my $stack_depth = 1;
         1 while defined scalar caller($stack_depth += 10);
         1 until defined scalar caller --$stack_depth;
@@ -413,23 +419,18 @@ sub stats_start {
         # For a given set of tags these curves should be absolutely flat!
         DataDog::DogStatsd::Helper::stats_gauge("transaction.$what.stack_depth", $stack_depth, $tags);
 
-        if ($stack_depth > 70) {
-            # using this directory is ok according to Tom and Raunak
-            my $fn = '/var/lib/binary/BOM::Transaction';
-            -d $fn or mkdir $fn;
-            if (-d $fn) {
-                $fn .= "/$$.stacktrace";
-                if (open my $fh, '>', $fn) {
-                    $stack_depth = 1;
-                    my ($buf, $pack, $file, $line) = ('');
-                    $buf .= "$pack / $file ($line)\n" while ($pack, $file, $line) = caller $stack_depth++;
-                    print $fh $buf;
-                    close $fh;
-                }
+        if ($stack_depth > 70 and -w $fn) {
+            my $basename = $$ % 1000;
+            $fn .= "/$basename.stacktrace";
+            if (open my $fh, '>', $fn) {
+                $stack_depth = 1;
+                my ($buf, $pack, $file, $line) = ('');
+                $buf .= "$pack / $file ($line)\n" while ($pack, $file, $line) = caller $stack_depth++;
+                print $fh $buf;
+                close $fh;
             }
         }
     }
-    ## End of debugging code.
 
     return +{
         start   => [gettimeofday],
