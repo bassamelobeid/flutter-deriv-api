@@ -77,26 +77,28 @@ our %ERROR_MAP = do {
         InvalidAmount => localize('Invalid amount for creating an order'),
 
         # bom-user errors
-        AgentNotFound            => localize('P2P Agent not found'),
-        AgentNotRegistered       => localize('This account is not registered as an P2P agent'),
-        AgentNotActive           => localize('The provided agent ID does not belong to an active agent'),
-        AgentNotAuthenticated    => localize('The agent is not authenticated'),
-        AlreadyConfirmedByAgent  => localize('The order is already confirmed by agent.'),
-        AlreadyConfirmedByClient => localize('The order is already confirmed by client.'),
-        AlreadyCancelled         => localize('The order is already cancelled.'),
-        OfferNoEditExpired       => localize('The offer is expired and cannot be changed.'),
-        OfferNoEditInactive      => localize('The offer is inactive and cannot be changed.'),
-        OfferNotFound            => localize('Offer not found'),
-        OfferNoEditAmount        => localize('The offer has no available amount and cannot be changed.'),
-        OfferMaxExceeded         => localize('The maximum limit of active offers reached.'),
-        InvalidOfferCurrency     => localize('Invalid offer currency'),
-        OrderNotFound            => localize('Order not found'),
-        OrderAlreadyExists       => localize('Too many orders. Please complete your pending orders.'),
-        InvalidOfferOwn          => localize('You cannot create an order for your own offer.'),
-        InvalidOfferExpired      => localize('The offer has expired.'),
+        AgentNotFound               => localize('P2P Agent not found'),
+        AgentNotRegistered          => localize('This account is not registered as an P2P agent'),
+        AgentNotActive              => localize('The provided agent ID does not belong to an active agent'),
+        AgentNotAuthenticated       => localize('The agent is not authenticated'),
+        OrderAlreadyConfirmed       => localize('The order is already confirmed by you.'),
+        OrderAlreadyCancelled       => localize('The order is already cancelled.'),
+        OfferNoEditExpired          => localize('The offer is expired and cannot be changed.'),
+        OfferNoEditInactive         => localize('The offer is inactive and cannot be changed.'),
+        OfferNotFound               => localize('Offer not found'),
+        OfferNoEditAmount           => localize('The offer has no available amount and cannot be changed.'),
+        OfferMaxExceeded            => localize('The maximum limit of active offers reached.'),
+        InvalidOfferCurrency        => localize('Invalid offer currency'),
+        OrderNotFound               => localize('Order not found'),
+        OrderAlreadyExists          => localize('Too many orders. Please complete your pending orders.'),
+        InvalidOfferOwn             => localize('You cannot create an order for your own offer.'),
+        InvalidOfferExpired         => localize('The offer has expired.'),
+        InvalidStateForConfirmation => localize('The order cannot be confirmed in its current state.'),
+        EscrowNotFound              => localize('Offering for the currency is not available at the moment.'),
+        OrderMinimumNotMet => localize('The minimum amount for this offer is [_1] [_2].'),    # minimum won't change during offer lifetime
+        OrderMaximumExceeded => localize('The maximum available amount for this offer is [_1] [_2] at the moment.'),
 
-        InvalidStateForClientConfirmation => localize('The order cannot be confirmed by client in its current state.'),
-        InvalidStateForAgentConfirmation  => localize('The order cannot be confirmed by agent in its current state.'),
+        InsufficientBalance => localize('Your account balance is insufficient to create an order with this amount.'),
 
         # DB errors
         BI225 => localize('Offer not found'),
@@ -184,14 +186,17 @@ sub p2p_rpc {
         }
         catch {
             my $exception = $@;
-            my $err;
+            my ($err, $err_params);
             # db errors come as [ BIxxx, message ]
             # bom-user errors come as a string "ErrorCode\n"
-            if (ref($exception) eq 'ARRAY') {
-                $err = $exception->[0];
-            } else {
+            #   or a HASH: {error_code => 'ErrorCode', message_params => ['values for message placeholders']}
+            SWITCH: for (ref $exception) {
+                if (/ARRAY/) { $err = $exception->[0]; last SWITCH; }
+                if (/HASH/) { $err = $exception->{error_code}; $err_params = $exception->{message_params}; last SWITCH; }
+
                 chomp($err = $exception);
             }
+
             my $p2p_prefix = $method =~ tr/_/./;
 
             if (my $message = $ERROR_MAP{$err}) {
@@ -203,7 +208,7 @@ sub p2p_rpc {
                 }
                 return BOM::RPC::v3::Utility::create_error({
                         code              => $err,
-                        message_to_client => localize($message)}                     #
+                        message_to_client => localize($message, (ref($err_params) eq 'ARRAY' ? $err_params : [])->@*)}                     #
                 );
             } else {
                 warn $err;
@@ -637,12 +642,12 @@ p2p_rpc p2p_order_confirm => sub {
     my $order_id = $params->{args}{order_id};
 
     my $order = $client->p2p_order_confirm(
-        id     => $params->{args}{order_id},
+        id     => $order_id,
         source => $params->{source});
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
-            order_id    => $order->{id},
+            order_id    => $order->{order_id},
             broker_code => $client->broker,
             field       => 'status',
             new_value   => $order->{status},
@@ -706,56 +711,49 @@ p2p_rpc p2p_order_chat => sub {
 sub _offer_details {
     my ($offer, $amount) = @_;
 
-    return +{
-        type                => $offer->{type},
-        account_currency    => $offer->{account_currency},
-        offer_description   => $offer->{description},
-        agent_id            => $offer->{agent_id},
-        agent_name          => $offer->{agent_name},
-        amount              => financialrounding('amount', $offer->{account_currency}, $offer->{amount}),
-        amount_display      => formatnumber('amount', $offer->{account_currency}, $offer->{amount}),
-        amount_used         => financialrounding('amount', $offer->{account_currency}, $offer->{amount} - $offer->{remaining}),
-        amount_used_display => formatnumber('amount', $offer->{account_currency}, $offer->{amount} - $offer->{remaining}),
-        country             => $offer->{country},
-        created_time        => Date::Utility->new($_->{created_time})->epoch,
-        is_active           => $offer->{is_active},
-        local_currency      => $offer->{local_currency},
-        max_amount          => financialrounding('amount', $offer->{account_currency}, $offer->{max_amount}),
-        max_amount_display  => formatnumber('amount', $offer->{account_currency}, $offer->{max_amount}),
-        method              => $offer->{method},
-        min_amount          => financialrounding('amount', $offer->{account_currency}, $offer->{min_amount}),
-        min_amount_display  => formatnumber('amount', $offer->{account_currency}, $offer->{min_amount}),
-        offer_id            => $offer->{id},
-        rate                => financialrounding('amount', $offer->{local_currency}, $offer->{price}),
-        rate_display        => formatnumber('amount', $offer->{local_currency}, $offer->{price}),
-        price               => financialrounding('amount', $offer->{local_currency}, $offer->{price} * ($amount // 1)),
-        price_display       => formatnumber('amount', $offer->{local_currency}, $offer->{price} * ($amount // 1)),
-    };
+    $offer->{amount} = financialrounding('amount', $offer->{account_currency}, $offer->{offer_amount});
+    $offer->{amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{offer_amount});
+    $offer->{amount_used} = financialrounding('amount', $offer->{account_currency}, $offer->{offer_amount} - $offer->{remaining});
+    $offer->{amount_used_display} = formatnumber('amount', $offer->{account_currency}, $offer->{offer_amount} - $offer->{remaining});
+    $offer->{max_amount} = financialrounding('amount', $offer->{account_currency}, $offer->{max_amount});
+    $offer->{max_amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{max_amount});
+    $offer->{min_amount} = financialrounding('amount', $offer->{account_currency}, $offer->{min_amount});
+    $offer->{min_amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{min_amount});
+    $offer->{rate} = financialrounding('amount', $offer->{local_currency}, $offer->{rate});
+    $offer->{rate_display} = formatnumber('amount', $offer->{local_currency}, $offer->{rate});
+    $offer->{price} = financialrounding('amount', $offer->{local_currency}, $offer->{rate} * ($amount // 1));
+    $offer->{price_display} = formatnumber('amount', $offer->{local_currency}, $offer->{rate} * ($amount // 1));
+    $offer->{created_time} = Date::Utility->new($offer->{created_time})->epoch;
+    $offer->{offer_description} //= '';
+
+    delete $offer->{remaining};
+    delete $offer->{offer_amount};
+
+    return $offer;
 }
 
 sub _order_details {
     my ($client, $order) = @_;
 
-    return +{
-        type             => $order->{offer_type},
-        account_currency => $order->{offer_account_currency},
-        agent_id         => $order->{agent_id},
-        agent_name       => $order->{agent_name},
-        amount           => financialrounding('amount', $order->{offer_account_currency}, $order->{amount}),
-        amount_display   => formatnumber('amount', $order->{offer_account_currency}, $order->{amount}),
-        expiry_time      => Date::Utility->new($order->{expire_time})->epoch,
-        created_time     => Date::Utility->new($order->{created_time})->epoch,
-        local_currency   => $order->{offer_local_currency},
-        offer_id         => $order->{offer_id},
-        order_id         => $order->{id},
-        price            => financialrounding('amount', $order->{offer_local_currency}, $order->{offer_price} * $order->{amount}),
-        price_display    => formatnumber('amount', $order->{offer_local_currency}, $order->{offer_price} * $order->{amount}),
-        rate             => financialrounding('amount', $order->{offer_local_currency}, $order->{offer_price}),
-        rate_display     => formatnumber('amount', $order->{offer_local_currency}, $order->{offer_price}),
-        order_description => $order->{description}                                 // '',
-        offer_description => $client->p2p_offer($order->{offer_id})->{description} // '',    #TODO: This should be returned from DB
-        status            => $order->{status},
-    };
+    $order->{type} = delete $order->{offer_type};
+    $order->{account_currency} //= delete $order->{offer_account_currency};
+    $order->{local_currency}   //= delete $order->{offer_local_currency};
+
+    $order->{amount} = financialrounding('amount', $order->{account_currency}, $order->{order_amount});
+    $order->{amount_display} = formatnumber('amount', $order->{account_currency}, $order->{order_amount});
+    $order->{expiry_time}    = Date::Utility->new($order->{expire_time})->epoch;
+    $order->{created_time}   = Date::Utility->new($order->{created_time})->epoch;
+    $order->{rate}           = financialrounding('amount', $order->{local_currency}, $order->{offer_rate});
+    $order->{rate_display}   = formatnumber('amount', $order->{local_currency}, $order->{offer_rate});
+    $order->{price}          = financialrounding('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
+    $order->{price_display}  = formatnumber('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
+    $order->{offer_description} //= '';
+    $order->{order_description} //= '';
+
+    delete $order->{order_amount};
+    delete $order->{offer_rate};
+
+    return $order;
 }
 
 1;
