@@ -241,11 +241,6 @@ rpc "buy",
         expiry_time     => 0 + Date::Utility->new($contract_details->{expiry_time})->epoch,
     };
 
-    # multiplier requires additional parameters to define a contract
-    if ($contract->category_code eq 'multiplier') {
-        $contract_proposal_details->{limit_order} = $contract->available_orders;
-    }
-
     my $tv_interval = 1000 * Time::HiRes::tv_interval($tv);
 
     BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, $tv_interval);
@@ -610,26 +605,20 @@ rpc contract_update => sub {
     my $response;
     try {
         my $updater = BOM::Transaction::ContractUpdate->new(
-            client          => $client,
-            contract_id     => $contract_id,
-            update_params   => $args->{limit_order},
-            request_history => $args->{history},
+            client        => $client,
+            contract_id   => $contract_id,
+            update_params => $args->{limit_order},
         );
-        if ($updater->has_parameters_to_update) {
-            if ($updater->is_valid_to_update) {
-                $response = $updater->update();
-                unless ($response) {
-                    $response = BOM::Pricing::v3::Utility::create_error({
-                        code              => 'ContractUpdateFailure',
-                        message_to_client => localize('Contract update failed.'),
-                    });
-                }
-            } else {
-                my $error = $updater->validation_error;
+        if ($updater->is_valid_to_update) {
+            $response = $updater->update();
+            unless ($response) {
                 $response = BOM::Pricing::v3::Utility::create_error({
-                    code              => $error->{code},
-                    message_to_client => $error->{message_to_client},
+                    code              => 'ContractUpdateFailure',
+                    message_to_client => localize('Contract update failed.'),
                 });
+            }
+            if (my $contract_proposal_details = delete $response->{contract_details}) {
+                BOM::Transaction::set_contract_parameters($contract_proposal_details, $client);
             }
         } elsif ($updater->request_history) {
             my $history = $updater->get_history();
@@ -641,6 +630,12 @@ rpc contract_update => sub {
             } else {
                 $response->{history} = $history;
             }
+        } else {
+            my $error = $updater->validation_error;
+            $response = BOM::Pricing::v3::Utility::create_error({
+                code              => $error->{code},
+                message_to_client => $error->{message_to_client},
+            });
         }
     }
     catch {

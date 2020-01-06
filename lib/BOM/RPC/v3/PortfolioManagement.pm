@@ -169,7 +169,6 @@ sub populate_response_proposal_contract {
             landing_company       => $client->landing_company->short,
             account_id            => $fmb->{account_id},
             country_code          => $client->residence,
-            expiry_time           => 0 + Date::Utility->new($fmb->{expiry_time})->epoch,
         };
 
         $contract->{limit_order} = BOM::Transaction::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
@@ -200,6 +199,9 @@ sub populate_response_proposal_contract {
                 $contract->{profit_percentage} = roundcommon(0.01, $contract->{profit} / $main_contract_price * 100);
             }
             $response->{$id} = $contract;
+
+            # if we're subscribing to proposal_open_contract and contract is not sold, then set CONTRACT_PARAMS here
+            BOM::Transaction::set_contract_parameters($contract, $client) if $params->{args}->{subscribe} and not $is_sold;
         }
     }
 
