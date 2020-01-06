@@ -259,21 +259,22 @@ subtest 'multiplier - get_bid' => sub {
             'source_bypass_verification' => 0,
             'valid_source'               => 1
         },
-        'barrier_count'     => 1,
-        'entry_tick'        => 100,
-        'date_settlement'   => ignore(),
-        'underlying'        => 'R_100',
-        'contract_type'     => 'MULTUP',
-        'is_path_dependent' => '1',
-        'multiplier'        => '10',
-        'current_spot_time' => ignore(),
-        'date_expiry'       => ignore(),
-        'entry_spot'        => 100,
-        'currency'          => 'USD',
-        'limit_order'       => {
+        'barrier_count'          => 1,
+        'entry_tick'             => 100,
+        'date_settlement'        => ignore(),
+        'underlying'             => 'R_100',
+        'contract_type'          => 'MULTUP',
+        'is_path_dependent'      => '1',
+        'multiplier'             => '10',
+        'current_spot_time'      => ignore(),
+        'date_expiry'            => ignore(),
+        'entry_spot'             => 100,
+        'currency'               => 'USD',
+        'limit_order'            => ['stop_out', ['basis_spot', 100, 'order_amount', '-100.00', 'order_date', ignore(), 'order_type', 'stop_out']],
+        'limit_order_as_hashref' => {
             'stop_out' => {
                 'order_amount' => '-100.00',
-                'order_date'   => $now->epoch,
+                'order_date'   => ignore(),
                 'display_name' => 'Stop Out',
                 'value'        => '90.05'
             }
@@ -336,21 +337,22 @@ subtest 'multiplier - get_bid' => sub {
             'source_bypass_verification' => 0,
             'valid_source'               => 1
         },
-        'barrier_count'     => 1,
-        'entry_tick'        => 100,
-        'date_settlement'   => ignore(),
-        'underlying'        => 'R_100',
-        'contract_type'     => 'MULTUP',
-        'is_path_dependent' => '1',
-        'multiplier'        => '10',
-        'current_spot_time' => ignore(),
-        'date_expiry'       => ignore(),
-        'entry_spot'        => 100,
-        'currency'          => 'USD',
-        'limit_order'       => {
+        'barrier_count'          => 1,
+        'entry_tick'             => 100,
+        'date_settlement'        => ignore(),
+        'underlying'             => 'R_100',
+        'contract_type'          => 'MULTUP',
+        'is_path_dependent'      => '1',
+        'multiplier'             => '10',
+        'current_spot_time'      => ignore(),
+        'date_expiry'            => ignore(),
+        'entry_spot'             => 100,
+        'currency'               => 'USD',
+        'limit_order'            => ['stop_out', ['basis_spot', 100, 'order_amount', '-100.00', 'order_date', ignore(), 'order_type', 'stop_out']],
+        'limit_order_as_hashref' => {
             'stop_out' => {
                 'order_amount' => '-100.00',
-                'order_date'   => $now->epoch,
+                'order_date'   => ignore(),
                 'display_name' => 'Stop Out',
                 'value'        => '90.05'
             }
@@ -376,7 +378,8 @@ subtest 'multiplier - get_bid' => sub {
             'ask_price'   => 4.35,
             'date_expiry' => ignore(),
         },
-        'validation_error' => 'Cancel the contract to have the stake refunded.',
+        'validation_error' =>
+            'If we close this contract now, you may lose your stake. Alternatively, you may cancel this contract and you’ll get your stake back without any loss or profit.',
     };
     $res = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     cmp_deeply($res, $expected, 'get_bid as expected');
