@@ -106,37 +106,33 @@ subtest 'contract_update' => sub {
     $update_params->{args}->{contract_id} = $buy_res->{contract_id};
     $update_params->{args}->{limit_order} = (1);
     my $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidUpdateArgument')
-        ->error_message_is('Update only accepts hash reference as input parameter.');
+        ->error_message_is('Only a hash reference input is accepted.');
 
     $update_params->{args}->{limit_order} = {take_profit => 'notanumberornull'};
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidUpdateValue')
-        ->error_message_is('Update value accepts number or null');
+        ->error_message_is('Please enter a number or a null value.');
 
     $update_params->{args}->{limit_order} = {
         something => 1,
     };
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('UpdateNotAllowed')
-        ->error_message_is('Update is not allowed for this contract. Allowed updates take_profit,stop_loss');
+        ->error_message_is('Only updates to these parameters are allowed take_profit,stop_loss.');
     $update_params->{args}->{limit_order} = {take_profit => -0.4};
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidContractUpdate')
-        ->error_message_is('Invalid take profit. Take profit must be higher than 0.');
+        ->error_message_is('Please enter a take profit amount that\'s higher than 0.');
     $update_params->{args}->{limit_order} = {take_profit => 10};
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
     ok $res->{take_profit}, 'returns the new take profit value';
+    is $res->{take_profit}->{order_amount}, 10, 'returns the new take profit order amount';
     ok !%{$res->{stop_loss}}, 'stop loss is undef';
-    ok $res->{contract_details}, 'has contract_details';
-    ok $res->{contract_details}{limit_order}->{stop_out}, 'stop_out';
-    ok $res->{contract_details}{limit_order}->{take_profit}, 'take_profit';
 
     delete $update_params->{args}->{limit_order}->{take_profit};
     $update_params->{args}->{limit_order}->{stop_loss} = 80;
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
     ok $res->{take_profit},      'returns the new take profit value';
+    is $res->{take_profit}->{order_amount}, 10, 'returns the new take profit order amount';
     ok $res->{stop_loss},        'returns the new stop loss value';
-    ok $res->{contract_details}, 'has contract_details';
-    ok $res->{contract_details}{limit_order}->{stop_loss}, 'stop_loss';
-    ok $res->{contract_details}{limit_order}->{stop_out}, 'stop_out';
-    ok $res->{contract_details}{limit_order}->{take_profit}, 'take_profit';
+    is $res->{stop_loss}->{order_amount}, -80, 'returns the new stop loss order amount';
     # sell_time cannot be equals to purchase_time, hence the sleep.
     sleep 1;
 
