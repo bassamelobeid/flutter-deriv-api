@@ -31,7 +31,7 @@ subtest pending_order_expiry => sub {
     });
 
     my $update_order = $client->p2p_order($order->{order_id});
-    is $update_order->{status}, 'cancelled', "Got expected status";
+    is $update_order->{status}, 'timed-out', "Got expected status";
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -53,7 +53,7 @@ subtest client_confirmed_order_expiry => sub {
 
     my $update_order = $client->p2p_order($order->{order_id});
 
-    is $update_order->{status}, 'cancelled', "Got expected status";
+    is $update_order->{status}, 'timed-out', "Got expected status";
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
