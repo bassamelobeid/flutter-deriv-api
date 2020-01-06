@@ -1,0 +1,88 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "P2P Offer Create (request)",
+    "description": "Creates a P2P (Peer to Peer) offer. Can only be used by the agent.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "payments"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "amount",
+        "max_amount",
+        "method",
+        "min_amount",
+        "offer_description",
+        "p2p_offer_create",
+        "rate",
+        "type"
+    ],
+    "properties": {
+        "p2p_offer_create": {
+            "description": "Must be 1",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "type": {
+            "description": "Whether this is a buy or a sell.",
+            "type": "string",
+            "enum": [
+                "buy",
+                "sell"
+            ]
+        },
+        "amount": {
+            "description": "The amount of the offer.",
+            "type": "number"
+        },
+        "country": {
+            "description": "[Optional] The target country code of the offer. If not provided, will use client's residence by default.",
+            "type": "string",
+            "pattern": "^[a-z]{0,2}$"
+        },
+        "local_currency": {
+            "description": "[Optional] Local currency for this offer. If not provided, will use the currency of client's residence by default.",
+            "type": "string",
+            "pattern": "^[a-zA-Z]{3,}$",
+            "examples": [
+                "USD"
+            ]
+        },
+        "max_amount": {
+            "description": "Maximum amount, in local currency.",
+            "type": "number"
+        },
+        "method": {
+            "description": "The payment method.",
+            "type": "string",
+            "enum": [
+                "bank_transfer"
+            ]
+        },
+        "min_amount": {
+            "description": "Minimum amount, in local currency.",
+            "type": "number"
+        },
+        "offer_description": {
+            "description": "Notes from the agent. Should include contact details and payment instructions.",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
+        },
+        "rate": {
+            "description": "Conversion rate from account currency to local currency.",
+            "type": "number"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}
