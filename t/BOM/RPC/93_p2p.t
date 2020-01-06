@@ -109,17 +109,16 @@ subtest 'Client restricted statuses' => sub {
 };
 
 subtest 'Offers' => sub {
-
     my $offer_params = {
-        amount           => 100,
-        description      => 'Test offer',
-        type             => 'buy',
-        account_currency => 'USD',
-        expiry           => 30,
-        rate             => 1.23,
-        min_amount       => 0.1,
-        max_amount       => 10,
-        method           => 'test method',
+        amount            => 100,
+        offer_description => 'Test offer',
+        type              => 'buy',
+        account_currency  => 'USD',
+        expiry            => 30,
+        rate              => 1.23,
+        min_amount        => 0.1,
+        max_amount        => 10,
+        method            => 'test method',
     };
 
     $params->{args} = {name => 'Bond007'};
@@ -132,6 +131,29 @@ subtest 'Offers' => sub {
     $params->{args} = {name => 'SpyvsSpy'};
     $res = $c->call_ok('p2p_agent_update', $params)->has_no_system_error->has_no_error->result;
     is $res->{name}, $params->{args}{name}, 'update agent name';
+
+    $offer_params->{amount} = -1;
+
+    $params->{args} = $offer_params;
+    $c->call_ok('p2p_offer_create', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidAmount', "Amount should be greater than equal to 0");
+
+    $offer_params->{amount} = 0;
+    $params->{args}         = $offer_params;
+    $c->call_ok('p2p_offer_create', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidAmount', "Amount should be greater than equal to 0");
+
+    $offer_params->{amount} = 100;
+    $offer_params->{rate}   = -1;
+
+    $params->{args} = $offer_params;
+    $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_error->error_code_is('InvalidRate', "Rate should be greater than equal to 0");
+
+    $offer_params->{rate} = 0;
+    $params->{args}       = $offer_params;
+    $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_error->error_code_is('InvalidRate', "Rate should be greater than equal to 0");
+
+    $offer_params->{rate} = 1.23;
 
     $params->{args} = $offer_params;
     $c->call_ok('p2p_offer_create', $params)
@@ -155,10 +177,6 @@ subtest 'Offers' => sub {
     $params->{args} = {agent_id => 9999};
     $c->call_ok('p2p_agent_info', $params)->has_no_system_error->has_error->error_code_is('AgentNotFound', 'Get info of non-existent agent');
 
-    $params->{args} = {$offer_params->%*, account_currency => 'EUR'};
-    $c->call_ok('p2p_offer_create', $params)
-        ->has_no_system_error->has_error->error_code_is('InvalidOfferCurrency', "wrong currency, create offer error is InvalidOfferCurrency");
-
     $params->{args} = $offer_params;
     $offer = $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_no_error->result;
     delete $offer->{stash};
@@ -169,8 +187,8 @@ subtest 'Offers' => sub {
     cmp_ok $res->[0]->{offer_id}, '==', $offer->{offer_id}, 'p2p_offer_list returns offer';
 
     $params->{args} = {
-        id          => $offer->{offer_id},
-        description => 'new description'
+        id                => $offer->{offer_id},
+        offer_description => 'new description'
     };
     $res = $c->call_ok('p2p_offer_edit', $params)->has_no_system_error->has_no_error->result;
     is $res->{offer_description}, 'new description', 'edit offer ok';
@@ -200,15 +218,16 @@ subtest 'Create new order' => sub {
     );
 
     $params->{args} = {
-        offer_id    => $offer->{offer_id},
-        amount      => 100,
-        description => 'here is my order'
+        offer_id          => $offer->{offer_id},
+        amount            => 100,
+        order_description => 'here is my order'
     };
 
     my $order = $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_no_error->result;
     ok($order->{order_id},         'Order is created');
     ok($order->{account_currency}, 'Order has account_currency');
     ok($order->{local_currency},   'Order has local_currency');
+    is($order->{order_description}, $params->{args}{order_description}, 'Order description is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
