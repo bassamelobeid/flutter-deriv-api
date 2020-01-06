@@ -295,7 +295,8 @@ subtest 'multiplier - get_bid' => sub {
         'commission'               => '0.50',
         'current_spot'             => 100,
         'date_start'               => $now->epoch,
-        'status'                   => 'open'
+        'status'                   => 'open',
+        expiry_time                => ignore(),
     };
     my $res = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     cmp_deeply($res, $expected, 'get_bid as expected');
@@ -374,6 +375,7 @@ subtest 'multiplier - get_bid' => sub {
         'current_spot'             => 100,
         'date_start'               => $now->epoch,
         'status'                   => 'open',
+        expiry_time                => ignore(),
         'deal_cancellation'        => {
             'ask_price'   => 4.35,
             'date_expiry' => ignore(),
