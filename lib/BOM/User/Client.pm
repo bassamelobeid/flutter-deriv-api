@@ -1702,10 +1702,15 @@ Returns new offer or dies with error code.
 sub p2p_offer_create {
     my ($client, %param) = @_;
 
+    die "InvalidAmount\n" if ($param{amount} // 0) <= 0;
+    die "InvalidRate\n"   if ($param{rate}   // 0) <= 0;
+
     my $agent_info = $client->p2p_agent;
     die "AgentNotActive\n" unless $agent_info && $agent_info->{is_active};
     die "AgentNotAuthenticated\n" unless $agent_info->{is_authenticated};
-    die "InvalidOfferCurrency\n" if !$param{account_currency} || uc($param{account_currency}) ne $client->currency;
+
+    $param{account_currency} = $client->currency;
+
     die "MaximumExceeded\n"
         if in_usd($param{amount}, uc $param{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer;
 
@@ -1723,7 +1728,7 @@ sub p2p_offer_create {
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.offer_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $agent_info->{id},
-                @param{qw/type account_currency local_currency amount rate min_amount max_amount method description country/});
+                @param{qw/type account_currency local_currency amount rate min_amount max_amount method offer_description country/});
         });
 }
 
@@ -1815,7 +1820,7 @@ sub p2p_offer_update {
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.offer_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $offer_id,
-                @param{qw/active type account_currency local_currency amount rate min_amount max_amount method description country/});
+                @param{qw/active type account_currency local_currency amount rate min_amount max_amount method offer_description country/});
         });
 }
 
@@ -1836,7 +1841,7 @@ This will move funds from agent to escrow.
 sub p2p_order_create {
     my ($client, %param) = @_;
 
-    my ($offer_id, $amount, $expiry, $description, $source) = @param{qw/offer_id amount expiry description source/};
+    my ($offer_id, $amount, $expiry, $description, $source) = @param{qw/offer_id amount expiry order_description source/};
 
     $expiry //= BOM::Config::Runtime->instance->app_config->payments->p2p->order_timeout;
 

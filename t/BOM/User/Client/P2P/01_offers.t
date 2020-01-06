@@ -26,16 +26,16 @@ my $user = BOM::User->create(
 $user->add_client($test_client_cr);
 
 my %offer_params = (
-    type             => 'buy',
-    account_currency => 'usd',
-    local_currency   => 'myr',
-    amount           => 100,
-    rate             => 1.23,
-    min_amount       => 0.1,
-    max_amount       => 10,
-    method           => 'camels',
-    description      => 'test offer',
-    country          => 'ID'
+    type              => 'buy',
+    account_currency  => 'usd',
+    local_currency    => 'myr',
+    amount            => 100,
+    rate              => 1.23,
+    min_amount        => 0.1,
+    max_amount        => 10,
+    method            => 'camels',
+    offer_description => 'test offer',
+    country           => 'ID'
 );
 
 my %params = %offer_params;
@@ -128,7 +128,7 @@ subtest 'Creating offer successfully' => sub {
             method            => $params{method},
             type              => $params{type},
             country           => $params{country},
-            offer_description => $params{description}
+            offer_description => $params{offer_description}
         },
         "offer matches params"
     );
@@ -150,7 +150,7 @@ subtest 'Creating offer successfully' => sub {
                 method            => $params{method},
                 type              => $params{type},
                 country           => $params{country},
-                offer_description => $params{description},
+                offer_description => $params{offer_description},
                 agent_loginid     => $agent->loginid,
                 agent_name        => 'testing'
             }
@@ -227,20 +227,6 @@ subtest 'Updating order with avalible range' => sub {
         amount => 50
     )->{offer_amount}, '==', 50, "available range excludes cancelled orders";
     BOM::Test::Helper::P2P::reset_escrow();
-};
-
-subtest 'Creating offer with invalid currency' => sub {
-    my %params = %offer_params;
-    my $agent  = BOM::Test::Helper::P2P::create_agent();
-
-    $params{account_currency} = 'EUR';
-    like(
-        exception {
-            $agent->p2p_offer_create(%params)
-        },
-        qr/InvalidOfferCurrency/,
-        "wrong currency can't create offer"
-    );
 };
 
 subtest 'Creating offer from non active agent' => sub {
