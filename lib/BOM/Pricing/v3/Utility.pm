@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
-
+use JSON::MaybeUTF8 qw(:v1);
 use BOM::Config::RedisReplicated;
 use BOM::Product::Contract;
 
