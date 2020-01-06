@@ -236,8 +236,8 @@ subtest 'update take profit', sub {
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
         is $updater->validation_error->{code}, 'UpdateNotAllowed', 'code - UpdateNotAllowed';
-        is $updater->validation_error->{message_to_client}, 'Update is not allowed for this contract.',
-            'message_to_client - Update is not allowed for this contract.';
+        is $updater->validation_error->{message_to_client}, 'This contract cannot be updated once you’ve made your purchase. This feature is not available for this contract type.',
+            'message_to_client - This contract cannot be updated once you’ve made your purchase. This feature is not available for this contract type.';
 
         delete $args->{duration};
         delete $args->{barrier};
@@ -369,7 +369,7 @@ subtest 'update take profit', sub {
                 client        => $cl,
                 contract_id   => $fmb->{id},
                 update_params => {
-                    stop_loss   => -52,
+                    stop_loss   => 52,
                     take_profit => 11
                 },
                 request_history => 1,
@@ -505,8 +505,8 @@ subtest 'update stop loss with/without active deal cancellation' => sub {
 
     ok !$updater->is_valid_to_update, 'not valid to update';
     is $updater->validation_error->{code}, 'UpdateStopLossNotAllowed', 'code - UpdateStopLossNotAllowed';
-    is $updater->validation_error->{message_to_client}, 'Stop Loss cannot be updated while deal cancellation option is still active.',
-        'message_to_client - Stop Loss cannot be updated while deal cancellation option is still active.';
+    is $updater->validation_error->{message_to_client}, 'Stop loss will be available only after deal cancellation expires. You may update your stop loss limit then.',
+        'message_to_client - Stop loss will be available only after deal cancellation expires. You may update your stop loss limit then.';
 
     $args->{date_start}   = $contract->date_start;
     $args->{date_pricing} = $contract->date_start->plus_time_interval('3601s');
