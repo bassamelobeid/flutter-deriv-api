@@ -1882,8 +1882,9 @@ sub sell_expired_contracts {
     );
 
     my $sold = try {
-        $fmb_helper->batch_sell_bet;
+        my $sold_successful = $fmb_helper->batch_sell_bet;
         delete_contract_parameters($_->{id}, $client) for (@bets_to_sell);
+        $sold_successful;
     }
     catch {
         warn(ref eq 'ARRAY' ? "@$_" : "$_");
