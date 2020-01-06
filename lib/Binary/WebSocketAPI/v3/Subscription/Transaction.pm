@@ -271,11 +271,6 @@ sub _update_transaction {
         my $contract_id     = $payload->{financial_market_bet_id};
         my $lc              = $c->landing_company_name;
         my $contract_params = Binary::WebSocketAPI::v3::Wrapper::Pricer::get_contract_params($contract_id, $lc);
-
-        unless (%$contract_params) {
-            Binary::WebSocketAPI::v3::Wrapper::Pricer::fetch_contract_params_from_database($c, {contract_id => $contract_id});
-            $contract_params = Binary::WebSocketAPI::v3::Wrapper::Pricer::get_contract_params($contract_id, $lc);
-        }
         $payload->{limit_order} = $contract_params->{limit_order};
     }
 
@@ -391,7 +386,6 @@ sub _create_poc_stream {
                     purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
                     sell_price      => undef,
                     sell_time       => undef,
-                    limit_order     => $payload->{limit_order},
                 })->{uuid};
 
             # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
