@@ -166,7 +166,7 @@ sub run {
 
         # for proposal open_contract, we will fetch contract data with contract id and landing company.
         if ($params->{contract_id} and $params->{landing_company}) {
-            $params = $self->_fetch_proposal_open_contract_params($redis, $params->{contract_id}, $params->{landing_company});
+            $params = $self->_get_contract_params($redis, $params->{contract_id}, $params->{landing_company});
         }
 
         my $contract_type = $params->{contract_type};
@@ -251,7 +251,7 @@ sub run {
     return undef;
 }
 
-sub _fetch_proposal_open_contract_params {
+sub _get_contract_params {
     my ($self, $redis, $contract_id, $landing_company) = @_;
 
     my $params_key = join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company);
