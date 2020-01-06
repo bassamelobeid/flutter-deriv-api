@@ -95,7 +95,7 @@ sub create_client {
         remark       => "prefilled balance",
     ) if $balance;
     return $cr;
-}   
+}
 
 sub token_for_client {
     my ($client) = @_;
@@ -189,7 +189,7 @@ $agent->p2p_offer_create(
     min_amount => 10,
     max_amount => 100,
     method => 'bank_transfer',
-    description => 'Please contact via whatsapp 1234',
+    offer_description => 'Please contact via whatsapp 1234',
     country => 'id',
 );
 $agent->p2p_offer_create(
@@ -202,6 +202,6 @@ $agent->p2p_offer_create(
     min_amount => 10,
     max_amount => 100,
     method => 'bank_transfer',
-    description => 'Please contact via whatsapp 1234',
+    offer_description => 'Please contact via whatsapp 1234',
     country => 'id',
 );

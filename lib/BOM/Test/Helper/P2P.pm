@@ -57,14 +57,13 @@ sub create_client {
 sub create_offer {
     my %param = @_;
 
-    $param{amount}           //= 100;
-    $param{description}      //= 'Test offer';
-    $param{type}             //= 'buy';
-    $param{account_currency} //= 'USD';
-    $param{rate}             //= 1;
-    $param{balance}          //= $param{type} eq 'buy' ? $param{amount} : 0;
-    $param{min_amount}       //= 0.1;
-    $param{max_amount}       //= 100;
+    $param{amount}            //= 100;
+    $param{offer_description} //= 'Test offer';
+    $param{type}              //= 'buy';
+    $param{rate}              //= 1;
+    $param{balance}           //= $param{type} eq 'buy' ? $param{amount} : 0;
+    $param{min_amount}        //= 0.1;
+    $param{max_amount}        //= 100;
 
     my $agent = create_agent(balance => $param{balance});
 
@@ -77,18 +76,18 @@ sub create_order {
     my %param = @_;
 
     my $offer_id = $param{offer_id} || croak 'offer_id is required';
-    my $amount      = $param{amount}      // 100;
-    my $expiry      = $param{expiry}      // 7200;
-    my $description = $param{description} // 'Test order';
-    my $balance     = $param{balance};
+    my $amount            = $param{amount}            // 100;
+    my $expiry            = $param{expiry}            // 7200;
+    my $order_description = $param{order_description} // 'Test order';
+    my $balance           = $param{balance};
 
     my $client = create_client($balance);
 
     my $order = $client->p2p_order_create(
-        offer_id    => $offer_id,
-        amount      => $amount,
-        expiry      => $expiry,
-        description => $description
+        offer_id          => $offer_id,
+        amount            => $amount,
+        expiry            => $expiry,
+        order_description => $order_description
     );
 
     return $client, $order;
