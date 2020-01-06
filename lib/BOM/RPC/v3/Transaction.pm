@@ -605,11 +605,12 @@ rpc contract_update => sub {
     my $response;
     try {
         my $updater = BOM::Transaction::ContractUpdate->new(
-            client        => $client,
-            contract_id   => $contract_id,
-            update_params => $args->{limit_order},
+            client          => $client,
+            contract_id     => $contract_id,
+            update_params   => $args->{limit_order},
+            request_history => $args->{history},
         );
-        if ($updater->is_valid_to_update) {
+        if ($updater->has_parameters_to_update and $updater->is_valid_to_update) {
             $response = $updater->update();
             unless ($response) {
                 $response = BOM::Pricing::v3::Utility::create_error({
