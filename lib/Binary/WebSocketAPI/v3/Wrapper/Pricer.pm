@@ -538,7 +538,6 @@ sub _serialized_args {
     my $args = shift;
     my @arr  = ();
 
-    $args->{with_prefix} //= 1;
     delete $copy->{req_id};
     delete $copy->{language} unless $args->{keep_language};
 
@@ -553,9 +552,7 @@ sub _serialized_args {
         push @arr, ($k, $copy->{$k});
     }
 
-    my $string = Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
-    return 'PRICER_KEYS::' . $string if $args->{with_prefix};
-    return $string;
+    return 'PRICER_KEYS::' . Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
 }
 
 # This function is for Porposal, ProposalArray and ProposalArrayItem
@@ -588,24 +585,6 @@ sub _pricing_channel_for_proposal {
 
     # uuid is needed regardless of whether its subscription or not
     return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, $class, $cache, $skip);
-}
-
-sub get_pricer_args {
-    my ($c, $cache, $with_prefix) = @_;
-
-    my $price_daemon_cmd = 'bid';
-    my %hash;
-    # get_bid RPC call requires 'short_code' param, not 'shortcode'
-    @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(shortcode contract_id currency sell_time)};
-    $hash{is_sold} = $cache->{is_sold} + 0;
-    $hash{language}         = $c->stash('language') || 'EN';
-    $hash{price_daemon_cmd} = $price_daemon_cmd;
-    $hash{landing_company}  = $c->landing_company_name;
-    # use residence when available, fall back to IP country
-    $hash{country_code} = $c->stash('residence') || $c->stash('country_code');
-    $hash{limit_order} = $cache->{limit_order} if $cache->{limit_order};
-
-    return _serialized_args(\%hash, {with_prefix => $with_prefix});
 }
 
 sub pricing_channel_for_proposal_open_contract {
