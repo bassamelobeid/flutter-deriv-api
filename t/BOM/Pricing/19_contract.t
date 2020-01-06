@@ -184,6 +184,7 @@ subtest 'get_bid' => sub {
             payout
             reset_time
             stash
+            expiry_time
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 

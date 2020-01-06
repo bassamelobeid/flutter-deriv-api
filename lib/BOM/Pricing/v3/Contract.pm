@@ -829,6 +829,7 @@ sub _build_bid_response {
         is_settleable       => $is_valid_to_settle,
         barrier_count       => $contract->two_barriers ? 2 : 1,
         is_valid_to_cancel  => $params->{is_valid_to_cancel},
+        expiry_time         => $contract->date_expiry->epoch,
     };
     if (!$contract->uses_barrier) {
         $response->{barrier_count} = 0;

@@ -434,6 +434,7 @@ subtest 'get_bid' => sub {
             status
             audit_details
             stash
+            expiry_time
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
     is($result->{status}, 'open', 'get the right status');
@@ -575,6 +576,7 @@ subtest $method => sub {
         'underlying'               => 'frxAUDCAD',
         is_valid_to_sell           => 1,
         'status'                   => 'open',
+        expiry_time                => ingore(),
     };
 
     foreach my $key (keys %$expected_result) {
@@ -628,6 +630,7 @@ subtest $method => sub {
         'shortcode'                => 'CALL_FRXAUDCAD_188.21_1127288260_1127288662_S0P_0',
         'underlying'               => 'frxAUDCAD',
         is_valid_to_sell           => 1,
+        expiry_time                => ignore(),
     };
 
     foreach my $key (keys %$expected_result) {
@@ -666,6 +669,7 @@ subtest $method => sub {
         'underlying'               => 'frxAUDCAD',
         is_valid_to_sell           => 0,
         validation_error           => 'This contract has been sold.',
+        expiry_time                => ignore(),
     };
     foreach my $key (keys %$expected_result) {
         cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
