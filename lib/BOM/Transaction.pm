@@ -4,6 +4,7 @@ use Moose;
 
 no indirect;
 
+use Encode;
 use Data::Dumper;
 use Error::Base;
 use Path::Tiny;
@@ -42,7 +43,6 @@ use BOM::Database::Helper::RejectedTrade;
 use BOM::Database::ClientDB;
 use BOM::Transaction::CompanyLimits;
 use BOM::Transaction::Validation;
-use BOM::Config::RedisReplicated;
 
 =head1 NAME
 
@@ -50,7 +50,7 @@ use BOM::Config::RedisReplicated;
 
 =cut
 
-my $json = JSON::MaybeXS->new;
+my $json = JSON::MaybeXS->new->allow_blessed;
 
 =head2 action_type
 
@@ -770,6 +770,15 @@ sub buy {
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
+    my $clientdb = BOM::Database::ClientDB->new({broker_code => $client->broker_code});
+
+    # only fetch fmbid when necessary
+    my $fmbid;
+    if ($self->contract->category_code eq 'multiplier') {
+        $fmbid = $clientdb->get_next_fmbid();
+        $bet_data->{bet_data}{fmb_id} = $fmbid;
+    }
+
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
         account_data => {
@@ -777,7 +786,7 @@ sub buy {
             currency_code  => $self->contract->currency,
         },
         limits => $self->limits,
-        db     => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+        db     => $clientdb->db,
     );
 
     my $error = 1;
@@ -791,8 +800,30 @@ sub buy {
 
     try {
         $company_limits->add_buys($client);
+        # Some contracts require more information besides shortcode to fully defined the contract.
+        # To avoid race condition between transaction stream and contract parameters setting,
+        # we will set contract parameters before buy.
+        my $contract_params = {
+            shortcode => $self->contract->shortcode,
+            currency  => $client->currency,
+            sell_time => undef,
+            is_sold   => 0,
+            $self->contract->can('available_orders') ? (limit_order => $self->contract->available_orders) : (),
+            expiry_time => $self->contract->date_expiry->epoch,
+        };
+
+        if ($fmbid) {
+            $contract_params->{contract_id} = $fmbid;
+            set_contract_parameters($contract_params, $client);
+        }
 
         ($fmb, $txn) = $fmb_helper->buy_bet;
+
+        unless ($fmbid) {
+            $contract_params->{contract_id} = $fmb->{id};
+            set_contract_parameters($contract_params, $client);
+        }
+
         $self->contract_details($fmb);
         $self->transaction_details($txn);
         $error = 0;
@@ -801,6 +832,8 @@ sub buy {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
         stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
+        my $contract_id = $fmbid // (defined $fmb ? $fmb->{id} : undef);
+        delete_contract_parameters($contract_id, $client) if $contract_id;
         $company_limits->reverse_buys($client);
         $error_status = $self->_recover($_);
     };
@@ -1100,6 +1133,7 @@ sub sell {
     my ($fmb, $txn, $buy_txn_id);
     try {
         ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
+        delete_contract_parameters($fmb->{id}, $client) if $fmb->{id};
         $error = 0;
     }
     catch {
@@ -1947,7 +1981,9 @@ sub sell_expired_contracts {
     );
 
     my $sold = try {
-        $fmb_helper->batch_sell_bet;
+        my $sold_successful = $fmb_helper->batch_sell_bet;
+        delete_contract_parameters($_->{id}, $client) for (@bets_to_sell);
+        $sold_successful;
     }
     catch {
         warn(ref eq 'ARRAY' ? "@$_" : "$_");
@@ -2188,6 +2224,64 @@ sub _get_info_to_verify_child {
 
     return $info;
 
+}
+
+sub delete_contract_parameters {
+    my ($contract_id, $client) = @_;
+
+    my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer;
+    my $redis_key = join '::', ('CONTRACT_PARAMS', $contract_id, $client->landing_company->short);
+
+    return $redis_pricer->del($redis_key);
+}
+
+=head2 set_contract_parameters
+
+Utility method to set contract parameters when a contract is purchased
+
+=cut
+
+sub set_contract_parameters {
+    my ($contract_params, $client) = @_;
+
+    my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer;
+
+    my %hash = (
+        price_daemon_cmd => 'bid',
+        short_code       => $contract_params->{shortcode},
+        contract_id      => $contract_params->{contract_id},
+        currency         => $contract_params->{currency},
+        sell_time        => $contract_params->{sell_time},
+        is_sold          => $contract_params->{is_sold} + 0,
+        landing_company  => $client->landing_company->short,
+    );
+
+    $hash{country_code} = $client->residence if $client->residence eq 'cn';
+    $hash{limit_order} = $contract_params->{limit_order} if $contract_params->{limit_order};
+
+    my $redis_key = join '::', ('CONTRACT_PARAMS', $hash{contract_id}, $hash{landing_company});
+
+    my $default_expiry = 86400;
+    if (my $expiry = delete $contract_params->{expiry_time}) {
+        my $contract_expiry = Date::Utility->new($expiry);
+        # 10 seconds after expiry is to cater for sell transaction delay due to settlement conditions.
+        $default_expiry = min($default_expiry, int($contract_expiry->epoch - time + 10));
+    }
+
+    return $redis_pricer->set($redis_key, _serialized_args(\%hash), 'EX', $default_expiry) if $default_expiry > 0;
+}
+
+sub _serialized_args {
+    my $copy = {%{+shift}};
+
+    # We want to handle similar contracts together, so we do this and sort by
+    # key in the price_queue.pl daemon
+    my @arr = ('short_code', delete $copy->{short_code});
+    foreach my $k (sort keys %$copy) {
+        push @arr, ($k, $copy->{$k});
+    }
+
+    return Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
 }
 
 no Moose;
