@@ -94,9 +94,10 @@ sub create_order {
     return $client, $order;
 }
 
-sub expire_offer {
-    my ($client, $offer_id) = @_;
-    return $client->db->dbic->dbh->do("UPDATE p2p.p2p_offer SET expire_time = NOW() - INTERVAL '1 day' WHERE id = $offer_id");
+sub expire_order {
+    my ($client, $order_id) = @_;
+
+    return $client->db->dbic->dbh->do("UPDATE p2p.p2p_order SET expire_time = NOW() - INTERVAL '1 day' WHERE id = $order_id");
 }
 
 sub set_order_status {
