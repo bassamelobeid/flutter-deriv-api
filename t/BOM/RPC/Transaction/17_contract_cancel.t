@@ -98,7 +98,7 @@ subtest 'contract_update' => sub {
 
     $cancel_params->{args}->{cancel} = $buy_res->{contract_id};
     my $res = $c->call_ok('cancel', $cancel_params)->has_error->error_code_is('CancelFailed')
-        ->error_message_is('Deal cancellation option was not purchased for this contract.');
+        ->error_message_is('Your contract can only be cancelled when you select deal cancellation in your purchase. You may try this with your next purchase.');
 
     $buy_params->{contract_parameters}->{deal_cancellation} = 1;
     $buy_params->{args}->{price}                            = 104.35;
@@ -135,7 +135,7 @@ subtest 'contract_update' => sub {
     sleep 1;
     $cancel_params->{args}->{cancel} = $buy_res->{contract_id};
     $res = $c->call_ok('cancel', $cancel_params)->has_error->error_code_is('CancelFailed')
-        ->error_message_is('Deal cancellation is not supported for this contract.');
+        ->error_message_is('Deal cancellation is not available for this contract.');
 };
 
 done_testing();
