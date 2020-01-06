@@ -817,6 +817,7 @@ sub _build_bid_response {
         bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
         is_settleable       => $is_valid_to_settle,
         barrier_count       => $contract->two_barriers ? 2 : 1,
+        expiry_time         => $contract->date_expiry->epoch,
     };
     if (!$contract->uses_barrier) {
         $response->{barrier_count} = 0;
