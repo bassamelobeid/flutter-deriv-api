@@ -99,7 +99,7 @@ subtest 'cancel' => sub {
         "currency"          => "USD",
         "symbol"            => "R_100",
         "multiplier"        => 10,
-        "deal_cancellation" => 1,
+        "deal_cancellation" => '1h',
     });
 
     $buy_res = $t->await::buy({
