@@ -236,7 +236,8 @@ subtest 'update take profit', sub {
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
         is $updater->validation_error->{code}, 'UpdateNotAllowed', 'code - UpdateNotAllowed';
-        is $updater->validation_error->{message_to_client}, 'This contract cannot be updated once you’ve made your purchase. This feature is not available for this contract type.',
+        is $updater->validation_error->{message_to_client},
+            'This contract cannot be updated once you’ve made your purchase. This feature is not available for this contract type.',
             'message_to_client - This contract cannot be updated once you’ve made your purchase. This feature is not available for this contract type.';
 
         delete $args->{duration};
@@ -505,7 +506,8 @@ subtest 'update stop loss with/without active deal cancellation' => sub {
 
     ok !$updater->is_valid_to_update, 'not valid to update';
     is $updater->validation_error->{code}, 'UpdateStopLossNotAllowed', 'code - UpdateStopLossNotAllowed';
-    is $updater->validation_error->{message_to_client}, 'Stop loss will be available only after deal cancellation expires. You may update your stop loss limit then.',
+    is $updater->validation_error->{message_to_client},
+        'Stop loss will be available only after deal cancellation expires. You may update your stop loss limit then.',
         'message_to_client - Stop loss will be available only after deal cancellation expires. You may update your stop loss limit then.';
 
     $args->{date_start}   = $contract->date_start;
