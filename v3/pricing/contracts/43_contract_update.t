@@ -132,7 +132,7 @@ subtest 'contrcat_update on unsupported contract type' => sub {
             }});
     ok $res->{error}, 'error';
     is $res->{error}->{code}, 'UpdateNotAllowed', 'error code - UpdateNotAllowed';
-    is $res->{error}->{message}, 'Update is not allowed for this contract.', 'error message - Update is not allowed for this contract.';
+    is $res->{error}->{message}, 'This contract cannot be updated once you’ve made your purchase. This feature is not available for this contract type.', 'error message - This contract cannot be updated once you’ve made your purchase. This feature is not available for this contract type.';
 };
 
 done_testing();

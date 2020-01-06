@@ -88,8 +88,8 @@ subtest 'cancel' => sub {
     });
     ok $res->{error}, 'error';
     is $res->{error}->{code}, 'CancelFailed', 'error code - CancelFailed';
-    is $res->{error}->{message}, 'Deal cancellation option was not purchased for this contract.',
-        'error message - Deal cancellation option was not purchased for this contract.';
+    is $res->{error}->{message}, 'Your contract can only be cancelled when you select deal cancellation in your purchase. You may try this with your next purchase.',
+        'error message - Your contract can only be cancelled when you select deal cancellation in your purchase. You may try this with your next purchase.';
 
     $proposal_res = $t->await::proposal({
         "proposal"          => 1,
@@ -141,8 +141,8 @@ subtest 'cancel on unsupported contract type' => sub {
     });
     ok $res->{error}, 'error';
     is $res->{error}->{code}, 'CancelFailed', 'error code - CancelFailed';
-    is $res->{error}->{message}, 'Deal cancellation is not supported for this contract.',
-        'error message - Deal cancellation is not supported for this contract.';
+    is $res->{error}->{message}, 'Deal cancellation is not available for this contract.',
+        'error message - Deal cancellation is not available for this contract.';
 };
 
 done_testing();
