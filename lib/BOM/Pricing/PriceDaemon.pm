@@ -166,7 +166,7 @@ sub run {
 
         # for proposal open_contract, we will fetch contract data with contract id and landing company.
         if ($params->{contract_id} and $params->{landing_company}) {
-            $params = $self->_get_contract_params($redis, $params->{contract_id}, $params->{landing_company});
+            $params = BOM::Pricing::v3::Utility::get_contract_params($redis, $params->{contract_id}, $params->{landing_company});
         }
 
         my $contract_type = $params->{contract_type};
