@@ -83,7 +83,6 @@ our %ERROR_MAP = do {
         AgentNotAuthenticated       => localize('The agent is not authenticated'),
         OrderAlreadyConfirmed       => localize('The order is already confirmed by you.'),
         OrderAlreadyCancelled       => localize('The order is already cancelled.'),
-        OfferNoEditExpired          => localize('The offer is expired and cannot be changed.'),
         OfferNoEditInactive         => localize('The offer is inactive and cannot be changed.'),
         OfferNotFound               => localize('Offer not found'),
         OfferNoEditAmount           => localize('The offer has no available amount and cannot be changed.'),
@@ -92,7 +91,7 @@ our %ERROR_MAP = do {
         OrderNotFound               => localize('Order not found'),
         OrderAlreadyExists          => localize('Too many orders. Please complete your pending orders.'),
         InvalidOfferOwn             => localize('You cannot create an order for your own offer.'),
-        InvalidOfferExpired         => localize('The offer has expired.'),
+        OrderNoEditExpired          => localize('The order has expired and cannot be changed.'),
         InvalidStateForConfirmation => localize('The order cannot be confirmed in its current state.'),
         EscrowNotFound              => localize('Offering for the currency is not available at the moment.'),
         OrderMinimumNotMet => localize('The minimum amount for this offer is [_1] [_2].'),    # minimum won't change during offer lifetime
@@ -686,7 +685,7 @@ p2p_rpc p2p_order_cancel => sub {
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
-            order_id    => $order->{id},
+            order_id    => $order->{order_id},
             broker_code => $client->broker,
             field       => 'status',
             new_value   => $order->{status},
@@ -752,6 +751,7 @@ sub _order_details {
 
     delete $order->{order_amount};
     delete $order->{offer_rate};
+    delete $order->{is_expired};
 
     return $order;
 }
