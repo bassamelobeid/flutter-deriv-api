@@ -1133,7 +1133,6 @@ sub sell {
     my ($fmb, $txn, $buy_txn_id);
     try {
         ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
-        delete_contract_parameters($fmb->{id}, $client) if $fmb->{id};
         $error = 0;
     }
     catch {
@@ -1982,7 +1981,6 @@ sub sell_expired_contracts {
 
     my $sold = try {
         my $sold_successful = $fmb_helper->batch_sell_bet;
-        delete_contract_parameters($_->{id}, $client) for (@bets_to_sell);
         $sold_successful;
     }
     catch {
