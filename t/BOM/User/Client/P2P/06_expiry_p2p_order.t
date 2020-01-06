@@ -33,7 +33,7 @@ my @test_cases = (
             before => 0,
             after  => 100
         },
-        status => 'cancelled',
+        status => 'timed-out',
     },
     {
         test_name      => 'Buy order expire at buyer-confirmed state',
@@ -55,7 +55,7 @@ my @test_cases = (
             before => 0,
             after  => 100
         },
-        status => 'cancelled',
+        status => 'timed-out',
     },
     # Sell orders
     {
@@ -78,7 +78,7 @@ my @test_cases = (
             before => 0,
             after  => 0
         },
-        status => 'cancelled',
+        status => 'timed-out',
     },
     {
         test_name      => 'Sell order expire at buyer-confirmed state',
@@ -100,7 +100,7 @@ my @test_cases = (
             before => 0,
             after  => 0
         },
-        status => 'cancelled',
+        status => 'timed-out',
     },
 );
 

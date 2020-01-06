@@ -1736,10 +1736,7 @@ Get a single offer by $id.
 sub p2p_offer {
     my ($client, $id) = @_;
     return undef unless $id;
-    return $client->p2p_offer_list(
-        id              => $id,
-        include_expired => 1
-    )->[0];
+    return $client->p2p_offer_list(id => $id)->[0];
 }
 
 =head2 p2p_offer_list
@@ -1847,7 +1844,6 @@ sub p2p_order_create {
 
     die "OfferNotFound\n"   unless $offer_info;
     die "OfferIsDisabled\n" unless $offer_info->{is_active};
-    die "InvalidOfferExpired\n" if $offer_info->{is_expired};
     die "InvalidCurrency\n" unless $offer_info->{account_currency} eq $client->currency;
     die "InvalidOfferOwn\n" if $offer_info->{agent_loginid} eq $client->loginid;
 
@@ -1950,6 +1946,7 @@ sub p2p_order_confirm {
     my $order_info = $client->p2p_order($param{id});
 
     die "OrderNotFound\n" unless $order_info;
+    die "OrderNoEditExpired\n" if $order_info->{is_expired};
 
     my $ownership_type = _order_ownership_type($client, $order_info);
 
@@ -1972,34 +1969,32 @@ This will move funds from escrow to seller.
 sub p2p_order_cancel {
     my ($client, %param) = @_;
 
-    my $order_info = $client->p2p_order($param{id});
-    die "OrderNotFound\n" unless $order_info;
+    my $order = $client->p2p_order($param{id});
+    die "OrderNotFound\n" unless $order;
+    die "OrderNoEditExpired\n" if $order->{is_expired};
+    die "OrderAlreadyCancelled\n" if $order->{status} eq 'cancelled';
 
-    die "OrderAlreadyCancelled\n" if $order_info->{status} eq 'cancelled';
-
-    my $ownership_type = _order_ownership_type($client, $order_info);
+    my $ownership_type = _order_ownership_type($client, $order);
 
     die "PermissionDenied\n"
-        unless ($ownership_type eq 'client' and $order_info->{offer_type} eq 'buy')
-        or ($ownership_type eq 'agent' and $order_info->{offer_type} eq 'sell');
-    die "PermissionDenied\n" unless $order_info->{status} eq 'pending';
+        unless ($ownership_type eq 'client' and $order->{offer_type} eq 'buy')
+        or ($ownership_type eq 'agent' and $order->{offer_type} eq 'sell');
+    die "PermissionDenied\n" unless $order->{status} eq 'pending';
 
-    my $escrow = $client->p2p_escrow;
+    my $escrow    = $client->p2p_escrow;
+    my $timed_out = 0;                     # order will have cancelled status
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref(
-                'SELECT * FROM p2p.order_cancel(?, ?, ?, ?)',
-                undef, $order_info->{order_id},
-                $escrow->loginid, $param{source}, $client->loginid
-            );
+            $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?, ?)',
+                undef, $order->{order_id}, $escrow->loginid, $param{source}, $client->loginid, $timed_out);
         });
 }
 
 =head2 expire_p2p_order
 
     Expire order in different states.
-    Method returns order data in case if state of orderd was changed.
+    Method returns order data in case if state of order was changed.
 
 =cut
 
@@ -2007,7 +2002,6 @@ sub p2p_expire_order {
     my ($client, %param) = @_;
 
     my $order = $client->p2p_order($param{id});
-
     die 'Order id not found: ' . ($param{id} // 'undefined') unless $order;
 
     my $status = $order->{status};
@@ -2015,13 +2009,14 @@ sub p2p_expire_order {
     return unless $status =~ /^(pending|buyer-confirmed)$/;
 
     my $escrow = $client->p2p_escrow;
-
     die "No escrow account for " . $client->loginid unless $escrow;
+
+    my $timed_out = 1;    # order will have timed-out status
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?)',
-                undef, $order->{order_id}, $escrow->loginid, $param{source}, $param{staff});
+            $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?, ?)',
+                undef, $order->{order_id}, $escrow->loginid, $param{source}, $param{staff}, $timed_out);
         });
 }
 

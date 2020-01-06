@@ -269,6 +269,41 @@ for my $status (qw(completed timed-out)) {
 
 }
 
+# cancellation on expired orders
+
+for my $status (qw(pending buyer-confirmed completed cancelled timed-out)) {
+    for my $type (qw(sell buy)) {
+        for my $who_cancel (qw(client agent)) {
+            push @test_cases,
+                {
+                test_name      => "$who_cancel cancellation at $status status for expired $type order",
+                type           => $type,
+                expire         => 1,
+                amount         => 100,
+                who_cancel     => $who_cancel,
+                error          => 'OrderNoEditExpired',
+                init_status    => $status,
+                client_balance => $type eq 'buy' ? 0 : 100,
+                agent_balance  => $type eq 'buy' ? 100 : 0,
+                escrow         => {
+                    before => 100,
+                    after  => 100
+                },
+                client => {
+                    before => 0,
+                    after  => 0
+                },
+                agent => {
+                    before => 0,
+                    after  => 0
+                },
+                status => $status,
+                };
+        }
+    }
+
+}
+
 for my $test_case (@test_cases) {
     subtest $test_case->{test_name} => sub {
         my $amount = $test_case->{amount};
@@ -291,6 +326,7 @@ for my $test_case (@test_cases) {
         cmp_ok($client->account->balance, '==', $test_case->{client}{before}, 'Client balance is correct');
 
         BOM::Test::Helper::P2P::set_order_status($client, $order->{order_id}, $test_case->{init_status});
+        BOM::Test::Helper::P2P::expire_order($client, $order->{order_id}) if $test_case->{expire};
 
         my $err = exception {
             if ($test_case->{who_cancel} eq 'client') {
@@ -303,7 +339,7 @@ for my $test_case (@test_cases) {
         };
         chomp($err) if $err;
 
-        is($err, $test_case->{error}, 'Got expected error behavior');
+        is($err, $test_case->{error}, 'Got expected error behavior (' . ($test_case->{error} // 'none') . ')');
 
         cmp_ok($escrow->account->balance, '==', $test_case->{escrow}{after}, 'Escrow balance is correct');
         cmp_ok($agent->account->balance,  '==', $test_case->{agent}{after},  'Agent balance is correct');
