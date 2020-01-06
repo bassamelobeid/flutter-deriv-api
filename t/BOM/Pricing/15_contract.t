@@ -575,7 +575,7 @@ subtest $method => sub {
         'underlying'               => 'frxAUDCAD',
         is_valid_to_sell           => 1,
         'status'                   => 'open',
-        expiry_time                => ingore(),
+        expiry_time                => ignore(),
     };
 
     foreach my $key (keys %$expected_result) {
