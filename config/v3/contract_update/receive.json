@@ -31,6 +31,10 @@
                             "order_date": {
                                 "description": "The epoch when the changed was done.",
                                 "type": "integer"
+                            },
+                            "value": {
+                                "description": "The pip-sized barrier value.",
+                                "type": "string"
                             }
                         }
                     }
