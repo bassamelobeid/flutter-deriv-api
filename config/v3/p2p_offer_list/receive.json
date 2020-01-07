@@ -33,7 +33,7 @@
                             "account_currency": {
                                 "description": "Currency for this offer.",
                                 "type": "string",
-                                "pattern": "^[A-Z]{3}$",
+                                "pattern": "^[a-zA-Z]{3,}$",
                                 "examples": [
                                     "USD"
                                 ]
@@ -82,7 +82,7 @@
                             "local_currency": {
                                 "description": "Local currency for this offer.",
                                 "type": "string",
-                                "pattern": "^[A-Z]{3}$",
+                                "pattern": "^[a-zA-Z]{3,}$",
                                 "examples": [
                                     "USD"
                                 ]

@@ -277,6 +277,7 @@ sub actions_config {
         ],
         ['exchange_rates', {stash_params => [qw/ exchange_rates base_currency /]}],
         # P2P cashier
+        ['p2p_offer_create'],
         ['p2p_offer_info'],
         ['p2p_offer_list'],
         ['p2p_order_cancel'],

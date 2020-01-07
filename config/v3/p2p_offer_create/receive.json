@@ -1,16 +1,16 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "P2P Offer Information (response)",
-    "description": "Returns information about the given offer ID",
+    "title": "P2P Offer Create (response)",
+    "description": "Returns the information of the created  P2P (Peer to Peer) offer.",
     "type": "object",
     "required": [
         "echo_req",
         "msg_type"
     ],
     "properties": {
-        "p2p_offer_info": {
-            "title": "p2p_offer_info",
-            "description": "P2P offer info",
+        "p2p_offer_create": {
+            "title": "p2p_offer_create",
+            "description": "The information of the created P2P offer.",
             "type": "object",
             "properties": {
                 "type": {
@@ -22,7 +22,7 @@
                     ]
                 },
                 "account_currency": {
-                    "description": "Currency for this offer.",
+                    "description": "Currency for this offer. This is the system currency to be transferred between agent and client.",
                     "type": "string",
                     "pattern": "^[a-zA-Z]{3,}$",
                     "examples": [
@@ -71,7 +71,7 @@
                     ]
                 },
                 "local_currency": {
-                    "description": "Local currency for this offer.",
+                    "description": "Local currency for this offer. This is the form of payment to be arranged directly between agent and client.",
                     "type": "string",
                     "pattern": "^[a-zA-Z]{3,}$",
                     "examples": [
@@ -103,19 +103,18 @@
                 },
                 "offer_description": {
                     "description": "Notes from the agent. Should include contact details and payment instructions.",
-                    "type": "string",
-                    "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
+                    "type": "string"
                 },
                 "offer_id": {
                     "description": "The unique identifier for this offer.",
                     "type": "string"
                 },
                 "price": {
-                    "description": "Cost in local currency.",
+                    "description": "Cost of the offer in local currency.",
                     "type": "number"
                 },
                 "price_display": {
-                    "description": "Cost in local currency, formatted to appropriate decimal places.",
+                    "description": "Cost of the offer in local currency, formatted to appropriate decimal places.",
                     "type": "string"
                 },
                 "rate": {
@@ -136,7 +135,7 @@
             "description": "Action name of the request made.",
             "type": "string",
             "enum": [
-                "p2p_offer_info"
+                "p2p_offer_create"
             ]
         },
         "req_id": {
