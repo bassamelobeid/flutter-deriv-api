@@ -54,45 +54,43 @@ our %ERROR_MAP = do {
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
     (
         # System or country limitations
-        P2PDisabled          => localize('The P2P cashier is currently disabled'),
-        RestrictedCountry    => localize('This country is not enabled for P2P cashier functionality'),
-        RestrictedCurrency   => localize('This currency is not enabled for P2P cashier functionality'),
-        UnavailableOnVirtual => localize('P2P cashier functionality is not available on demo accounts'),
-        NoCountry            => localize('You need to set your residence in order to use this feature'),
-        NoLocalCurrency      => localize('We are unable to determine the local currency for your country'),
+        P2PDisabled          => localize('The P2P cashier is currently disabled.'),
+        RestrictedCountry    => localize('This country is not enabled for P2P cashier functionality.'),
+        RestrictedCurrency   => localize('This currency is not enabled for P2P cashier functionality.'),
+        UnavailableOnVirtual => localize('P2P cashier functionality is not available on demo accounts.'),
+        NoCountry            => localize('You need to set your residence in order to use this feature.'),
+        NoLocalCurrency      => localize('We are unable to determine the local currency for your country.'),
 
         # Client status
-        NotLoggedIn      => localize('You are not logged in'),
-        NoCurrency       => localize('You have not yet selected a currency for your account'),
-        PermissionDenied => localize('You do not have permission for this action'),
-        NotRegistered    => localize('You are not yet registered as an P2P agent'),
+        NotLoggedIn      => localize('You are not logged in.'),
+        NoCurrency       => localize('You have not yet selected a currency for your account.'),
+        PermissionDenied => localize('You do not have permission for this action.'),
+        NotRegistered    => localize('You are not yet registered as an P2P agent.'),
 
         # Invalid data
-        InvalidPaymentMethod => localize('This payment method is invalid'),
-        NotFound             => localize('Not found'),
-        MinimumNotMet        => localize('The minimum amount requirements are not met'),
-        MaximumExceeded      => localize('This is above the maximum limit'),
-        AlreadyInProgress    => localize('This cannot be cancelled since the order is already in progress'),
-
-        InvalidAmount => localize('Invalid amount for creating an order'),
+        InvalidPaymentMethod => localize('This payment method is invalid.'),
+        NotFound             => localize('Not found.'),
+        MinimumNotMet        => localize('The minimum amount requirements are not met.'),
+        MaximumExceeded      => localize('This is above the maximum limit.'),
+        AlreadyInProgress    => localize('This cannot be cancelled since the order is already in progress.'),
+        InvalidAmount        => localize('Invalid amount for creating an order.'),
+        InvalidRate          => localize('Invalid rate for creating an order.'),
 
         # bom-user errors
-        AgentNotFound               => localize('P2P Agent not found'),
-        AgentNotRegistered          => localize('This account is not registered as an P2P agent'),
-        AgentNotActive              => localize('The provided agent ID does not belong to an active agent'),
-        AgentNotAuthenticated       => localize('The agent is not authenticated'),
+        AgentNotFound               => localize('P2P Agent not found.'),
+        AgentNotRegistered          => localize('This account is not registered as an P2P agent.'),
+        AgentNotActive              => localize('The provided agent ID does not belong to an active agent.'),
+        AgentNotAuthenticated       => localize('The agent is not authenticated.'),
         OrderAlreadyConfirmed       => localize('The order is already confirmed by you.'),
         OrderAlreadyCancelled       => localize('The order is already cancelled.'),
-        OfferNoEditExpired          => localize('The offer is expired and cannot be changed.'),
         OfferNoEditInactive         => localize('The offer is inactive and cannot be changed.'),
         OfferNotFound               => localize('Offer not found'),
         OfferNoEditAmount           => localize('The offer has no available amount and cannot be changed.'),
         OfferMaxExceeded            => localize('The maximum limit of active offers reached.'),
-        InvalidOfferCurrency        => localize('Invalid offer currency'),
         OrderNotFound               => localize('Order not found'),
         OrderAlreadyExists          => localize('Too many orders. Please complete your pending orders.'),
         InvalidOfferOwn             => localize('You cannot create an order for your own offer.'),
-        InvalidOfferExpired         => localize('The offer has expired.'),
+        OrderNoEditExpired          => localize('The order has expired and cannot be changed.'),
         InvalidStateForConfirmation => localize('The order cannot be confirmed in its current state.'),
         EscrowNotFound              => localize('Offering for the currency is not available at the moment.'),
         OrderMinimumNotMet => localize('The minimum amount for this offer is [_1] [_2].'),    # minimum won't change during offer lifetime
@@ -101,19 +99,19 @@ our %ERROR_MAP = do {
         InsufficientBalance => localize('Your account balance is insufficient to create an order with this amount.'),
 
         # DB errors
-        BI225 => localize('Offer not found'),
-        BI226 => localize('Cannot create order for your own offer'),
+        BI225 => localize('Offer not found.'),
+        BI226 => localize('Cannot create order for your own offer.'),
         BI227 => localize('Insufficient funds in account'),
-        BI228 => localize('Order not found'),
-        BI229 => localize('Order cannot be completed in its current state'),
-        BI230 => localize('Order has not been confirmed by agent'),
-        BI231 => localize('Order not found'),
-        BI232 => localize('Order cannot be cancelled in its current state'),
-        BI233 => localize('Order not found'),
-        BI234 => localize('Order cannot be agent confirmed in its current state'),
-        BI235 => localize('Order not found'),
-        BI236 => localize('Order cannot be client confirmed in its current state'),
-        BI237 => localize('Order currency is different from account currency'),
+        BI228 => localize('Order not found.'),
+        BI229 => localize('Order cannot be completed in its current state.'),
+        BI230 => localize('Order has not been confirmed by agent.'),
+        BI231 => localize('Order not found.'),
+        BI232 => localize('Order cannot be cancelled in its current state.'),
+        BI233 => localize('Order not found.'),
+        BI234 => localize('Order cannot be agent confirmed in its current state.'),
+        BI235 => localize('Order not found.'),
+        BI236 => localize('Order cannot be client confirmed in its current state.'),
+        BI237 => localize('Order currency is different from account currency.'),
     );
 };
 
@@ -414,6 +412,7 @@ above information).
 
 p2p_rpc p2p_offer_create => sub {
     my (%args) = @_;
+
     my $client = $args{client};
     my $offer  = $client->p2p_offer_create($args{params}{args}->%*);
 
@@ -686,7 +685,7 @@ p2p_rpc p2p_order_cancel => sub {
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
-            order_id    => $order->{id},
+            order_id    => $order->{order_id},
             broker_code => $client->broker,
             field       => 'status',
             new_value   => $order->{status},
@@ -752,6 +751,7 @@ sub _order_details {
 
     delete $order->{order_amount};
     delete $order->{offer_rate};
+    delete $order->{is_expired};
 
     return $order;
 }
