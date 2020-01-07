@@ -225,6 +225,7 @@ sub _close_proposal_open_contract_stream {
         $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
         $payload->{uuid}      = $uuid;
 
+        Binary::WebSocketAPI::v3::Wrapper::Pricer::delete_contract_params($contract_id, $c->landing_company_name);
         Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $args);
     }
     return;
@@ -293,8 +294,11 @@ sub _update_transaction {
                     Binary::WebSocketAPI::v3::Subscription->unregister_by_uuid($c, $id) if $id;
                     return $c->new_error('transaction', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                 } else {
-                    $details->{transaction}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
-                        if ($payload->{action_type} eq 'sell');
+                    if ($payload->{action_type} eq 'sell') {
+                        $details->{transaction}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch;
+                        Binary::WebSocketAPI::v3::Wrapper::Pricer::delete_contract_params($payload->{financial_market_bet_id},
+                            $c->landing_company_name);
+                    }
                     $details->{transaction}->{longcode}     = $rpc_response->{longcode};
                     $details->{transaction}->{symbol}       = $rpc_response->{symbol};
                     $details->{transaction}->{display_name} = $rpc_response->{display_name};
