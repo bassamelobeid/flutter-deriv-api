@@ -1881,10 +1881,10 @@ sub sell_expired_contracts {
         quants_bet_variables => \@quants_bet_variables,
     );
 
-    my $sold = try {
-        my $sold_successful = $fmb_helper->batch_sell_bet;
+    my $sold;
+    try {
+        $sold = $fmb_helper->batch_sell_bet;
         delete_contract_parameters($_->{id}, $client) for (@bets_to_sell);
-        $sold_successful;
     }
     catch {
         warn(ref eq 'ARRAY' ? "@$_" : "$_");
@@ -2170,6 +2170,7 @@ sub set_contract_parameters {
     }
 
     return $redis_pricer->set($redis_key, _serialized_args(\%hash), 'EX', $default_expiry) if $default_expiry > 0;
+    return;
 }
 
 sub _serialized_args {
