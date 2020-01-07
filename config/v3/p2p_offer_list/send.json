@@ -31,7 +31,7 @@
         "account_currency": {
             "description": "[Optional] Target currency, defaults to client account currency.",
             "type": "string",
-            "pattern": "^[A-Z]{3}$"
+            "pattern": "^[A-Z]{3,}$"
         },
         "agent_id": {
             "description": "[Optional] Which agent to list offers for.",
@@ -54,7 +54,7 @@
         "local_currency": {
             "description": "[Optional] Currency to conduct payment transaction in, defaults to the main currency for the client's country.",
             "type": "string",
-            "pattern": "^[A-Z]{3}$"
+            "pattern": "^[A-Z]{3,}$"
         },
         "offset": {
             "description": "[Optional] Used for paging.",
