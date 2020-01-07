@@ -2133,7 +2133,11 @@ sub delete_contract_parameters {
     my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer;
     my $redis_key = join '::', ('CONTRACT_PARAMS', $contract_id, $client->landing_company->short);
 
-    return $redis_pricer->del($redis_key);
+    # we don't delete this right away because some service like pricing queue or transaction stream might still rely
+    # on the contract parameters. We will give additional 10 seconds for this to be done.
+    $redis_pricer->expire($redis_key, 10);
+
+    return;
 }
 
 =head2 set_contract_parameters
