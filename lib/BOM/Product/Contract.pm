@@ -1061,7 +1061,9 @@ sub audit_details {
                 name               => [$GENERIC_MAPPING->{exit_spot}],
                 flag               => 'highlight_tick',
             }];
-    } elsif ($self->expiry_daily) {
+    } elsif ($self->expiry_daily
+        or $self->date_expiry->is_same_as($self->trading_calendar->closing_on($self->underlying->exchange, $self->date_expiry)))
+    {
         my $closing_tick = $self->underlying->closing_tick_on($self->date_expiry->date);
         $details->{contract_end} = [{
                 epoch              => 0 + $closing_tick->epoch,

@@ -167,4 +167,30 @@ subtest 'path dependent expires unhit' => sub {
     is_deeply($c->audit_details, $expected, 'audit details as expected');
 };
 
+subtest 'intraday expiring at end of day' => sub {
+    my $ds     = $now->truncate_to_day->plus_time_interval('23h55m');
+    my $de     = $ds->plus_time_interval('4m59s');
+    my $symbol = 'R_100';
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [100, $ds->epoch,     $symbol],
+        [101, $ds->epoch + 1, $symbol],
+        [99,  $de->epoch - 1, $symbol],
+        [98,  $de->epoch + 1, $symbol]);
+    my $c = produce_contract({
+        bet_type     => 'CALL',
+        underlying   => $symbol,
+        date_start   => $ds,
+        date_pricing => $de->plus_time_interval(1),
+        date_expiry  => $de,
+        currency     => 'USD',
+        payout       => 10,
+        barrier      => 'S0P',
+    });
+    ok $c->is_expired, 'expired';
+
+    my $expected = $json->decode('{"contract_start":[{"name":["Start Time"],"tick":"100","flag":"highlight_time","epoch":1507679700,"tick_display_value":"100.00"},{"name":["Entry Spot"],"tick":"101","flag":"highlight_tick","epoch":1507679701,"tick_display_value":"101.00"},{"epoch":1507679998,"tick_display_value":"99.00","tick":"99"},{"epoch":1507680000,"tick_display_value":"98.00","tick":"98"}],"contract_end":[{"name":["Closing Spot"],"flag":"highlight_tick","epoch":1507679999,"tick_display_value":"99.00","tick":"99"}]}');
+
+    is_deeply($c->audit_details, $expected, 'audit details as expected');
+};
+
 done_testing();
