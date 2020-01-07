@@ -441,8 +441,6 @@ async sub client_verification {
             # this is to cater the case where CS/Compliance perform manual check in Onfido dashboard
             my $new_applicant_flag = await check_or_store_onfido_applicant($loginid, $applicant_id);
 
-            my $dbic = BOM::Database::UserDB::rose_db()->dbic;
-
             $new_applicant_flag ? BOM::User::Onfido::store_onfido_check($applicant_id, $check) : BOM::User::Onfido::update_onfido_check($check);
 
             my @all_report = await $check->reports->as_list;
@@ -618,17 +616,15 @@ Gets the client's documents from Onfido and store in DB
 
 async sub _store_applicant_documents {
     my ($applicant_id, $client, $all_report) = @_;
-    my $loop   = IO::Async::Loop->new;
     my $onfido = _onfido();
 
     my @documents = await $onfido->document_list(applicant_id => $applicant_id)->as_list;
-    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
     my $existing_onfido_docs = BOM::User::Onfido::get_onfido_document($client->binary_user_id);
 
     foreach my $doc (@documents) {
 
-        my (undef, $type, $side, $file_type) = split /\./, $doc->file_name;
+        my (undef, $type, $side) = split /\./, $doc->file_name;
         $type = $doc->type;
         $side = $doc->side;
         $type = 'live_photo' if $side eq 'photo';
@@ -696,7 +692,6 @@ async sub _sync_onfido_bo_document {
 
     my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
 
-    my $loop   = IO::Async::Loop->new;
     my $onfido = _onfido();
     my $doc_type;
     my $page_type = '';
@@ -810,8 +805,6 @@ async sub sync_onfido_details {
 
         my $loginid = $data->{loginid} or die 'No loginid supplied';
         my $client = BOM::User::Client->new({loginid => $loginid});
-
-        my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
         my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
         my $applicant_id   = $applicant_data->{id};
@@ -968,8 +961,6 @@ async sub _get_onfido_applicant {
 
     my $country = $client->place_of_birth // $client->residence;
     try {
-        my $dbic = BOM::Database::UserDB::rose_db()->dbic;
-
         my $is_supported_country = BOM::Config::Onfido::is_country_supported($country);
         unless ($is_supported_country) {
             DataDog::DogStatsd::Helper::stats_inc('onfido.unsupported_country', {tags => [$country]});
@@ -1073,7 +1064,6 @@ Send email to CS that a client has closed their accounts.
 sub account_closure {
     my $data = shift;
 
-    my $system_email  = $BRANDS->emails('system');
     my $support_email = $BRANDS->emails('support');
 
     _send_email_account_closure_client($data->{loginid}, $support_email);
@@ -1209,7 +1199,7 @@ sub _send_email_account_closure_client {
 }
 
 sub _send_email_underage_disable_account {
-    my ($client, $support_email) = @_;
+    my ($client) = @_;
 
     my $website_name = ucfirst BOM::Config::domain()->{default_domain};
     my $email_subject = localize('We closed your [_1] account', $website_name);
@@ -1630,11 +1620,10 @@ async sub _get_document_s3 {
 async sub _upload_documents {
     my (%args) = @_;
 
-    my $onfido                     = $args{onfido};
-    my $client                     = $args{client};
-    my $document_entry             = $args{document_entry};
-    my $file_data                  = $args{file_data};
-    my $uploaded_manually_by_staff = $args{uploaded_manually_by_staff};
+    my $onfido         = $args{onfido};
+    my $client         = $args{client};
+    my $document_entry = $args{document_entry};
+    my $file_data      = $args{file_data};
 
     try {
         my $applicant;
@@ -1654,7 +1643,7 @@ async sub _upload_documents {
         $log->debugf('Applicant created: %s, uploading %d bytes for document', $applicant->id, length($file_data));
 
         # NOTE that this is very dependent on our current filename format
-        my (undef, $type, $side, $file_type) = split /\./, $document_entry->{file_name};
+        my (undef, $type, $side) = split /\./, $document_entry->{file_name};
 
         $type = $ONFIDO_DOCUMENT_TYPE_MAPPING{$type} // 'unknown';
         $side =~ s{^\d+_?}{};
@@ -1698,8 +1687,6 @@ async sub _upload_documents {
 
         DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.upload.triggered.elapse ", Time::HiRes::time() - $start_time);
 
-        my $clientdb           = BOM::Database::ClientDB->new({broker_code => $client->broker});
-        my $dbic               = BOM::Database::UserDB::rose_db()->dbic;
         my $redis_events_write = _redis_events_write();
 
         if ($type eq 'live_photo') {
@@ -1772,7 +1759,7 @@ async sub _check_applicant {
             type => 'express',
             )->on_fail(
             sub {
-                my ($type, $message, $response, $request) = @_;
+                my (undef, undef, $response) = @_;
 
                 $error_type = ($response and $response->content) ? decode_json_utf8($response->content)->{error}->{type} : '';
 
@@ -1787,8 +1774,6 @@ async sub _check_applicant {
             )->on_done(
             sub {
                 my ($check) = @_;
-
-                my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
                 BOM::User::Onfido::store_onfido_check($applicant_id, $check);
 
@@ -2054,8 +2039,6 @@ async sub check_or_store_onfido_applicant {
     my ($loginid, $applicant_id) = @_;
     #die if client not exists
     my $client = BOM::User::Client->new({loginid => $loginid}) or die "$loginid does not exists.";
-
-    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
     # gets all the applicant record for the user
     my $user_applicant = BOM::User::Onfido::get_all_user_onfido_applicant($client->binary_user_id);

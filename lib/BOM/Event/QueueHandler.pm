@@ -110,7 +110,7 @@ This will connect to the Redis server and start the job handling.
 =cut
 
 sub _add_to_loop {
-    my ($self, $loop) = @_;
+    my ($self) = @_;
     # Initiate connection and processing as soon as we're added to the loop
     return $self->redis->connect->then($self->curry::weak::process_loop)->retain;
 }

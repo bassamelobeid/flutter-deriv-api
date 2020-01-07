@@ -101,7 +101,6 @@ sub sync_info {
         sub {
             my $error = shift;
             $log->warn("Failed to sync client $data->{loginid} information to MT5: $error");
-            my $brand = request()->brand();
             my $tried_times = $data->{tried_times} // 0;
             $tried_times++;
             # if that error cannot recoverable
@@ -129,7 +128,6 @@ sub redis_record_mt5_transfer {
     my $loginid    = $input_data->{loginid};
     my $mt5_id     = $input_data->{mt5_id};
     my $redis_key  = $mt5_id . "_" . $input_data->{action};
-    my $data;
 
     # check if the mt5 id exists in redis
     if ($redis->get($redis_key)) {
