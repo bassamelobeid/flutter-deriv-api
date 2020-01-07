@@ -266,14 +266,6 @@ sub _update_transaction {
 
     $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{sell_time} || $payload->{purchase_time})->epoch;
 
-    # we need to fetch something from CONTRACT_PARAMS for multiplier option because transaction stream only streams short_code
-    if ($payload->{short_code} =~ /^(?:MULTUP|MULTDOWN)/) {
-        my $contract_params =
-            Binary::WebSocketAPI::v3::Wrapper::Pricer::get_contract_params($payload->{financial_market_bet_id}, $c->landing_company_name);
-
-        $payload->{limit_order} = $contract_params->{limit_order};
-    }
-
     $c->call_rpc({
             args        => $args,
             msg_type    => 'transaction',
@@ -284,7 +276,7 @@ sub _update_transaction {
                 currency        => $payload->{currency_code},
                 language        => $c->stash('language'),
                 landing_company => $c->landing_company_name,
-                ($payload->{limit_order} ? (limit_order => $payload->{limit_order}) : ()),
+                contract_id     => $payload->{financial_market_bet_id},
             },
             rpc_response_cb => sub {
                 my ($c, $rpc_response) = @_;
