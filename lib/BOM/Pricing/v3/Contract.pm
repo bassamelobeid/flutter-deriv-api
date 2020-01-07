@@ -28,6 +28,7 @@ use BOM::Product::ContractFinder;
 use Finance::Contract::Longcode qw( shortcode_to_parameters);
 use LandingCompany::Registry;
 use BOM::Pricing::v3::Utility;
+use BOM::Config::RedisReplicated;
 use Scalar::Util qw(looks_like_number);
 use feature "state";
 
@@ -526,6 +527,11 @@ sub get_contract_details {
     try {
         $bet_params =
             shortcode_to_parameters($params->{short_code}, $params->{currency});
+        if ($bet_params->{bet_type} =~ /^(?:MULTUP|MULTDOWN)$/) {
+            my $pricer_redis = BOM::Config::RedisReplicate::redis_pricer();
+            my $contract_params = BOM::Pricing::v3::Utility::get_contract_params($pricer_redis, $params->{contract_id}, $params->{landing_company});
+            $bet_params->{limit_order} = $contract_params->{limit_order};
+        }
     }
     catch {
         warn __PACKAGE__ . " get_contract_details shortcode_to_parameters failed: $params->{short_code}, currency: $params->{currency}";
