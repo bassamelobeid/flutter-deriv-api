@@ -320,7 +320,7 @@ sub get_history {
         foreach my $order_type (@allowed) {
             next unless $current->{$order_type . '_order_date'};
             my $order_amount_str = $order_type . '_order_amount';
-            my $display_name = $order_type eq 'take_profit' ? localize('Take Profit') : localize('Stop Loss');
+            my $display_name = $order_type eq 'take_profit' ? localize('Take profit') : localize('Stop loss');
             unless ($prev) {
                 my $order_amount = $current->{$order_amount_str} ? $current->{$order_amount_str} + 0 : 0;
                 push @entry,
@@ -345,6 +345,7 @@ sub get_history {
                     display_name => $display_name,
                     order_amount => $order_amount,
                     order_date   => Date::Utility->new($current->{$order_type . '_order_date'})->epoch,
+                    value        => $self->contract->new_order({$order_type => $order_amount})->barrier_value,
                     }
                     if (defined $order_amount);
             }
