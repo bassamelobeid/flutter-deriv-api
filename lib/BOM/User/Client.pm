@@ -1847,9 +1847,9 @@ sub p2p_order_create {
 
     my $offer_info = $client->p2p_offer($offer_id);
 
-    die "OfferNotFound\n"   unless $offer_info;
-    die "OfferIsDisabled\n" unless $offer_info->{is_active};
-    die "InvalidCurrency\n" unless $offer_info->{account_currency} eq $client->currency;
+    die "OfferNotFound\n"        unless $offer_info;
+    die "OfferIsDisabled\n"      unless $offer_info->{is_active};
+    die "InvalidOrderCurrency\n" unless $offer_info->{account_currency} eq $client->currency;
     die "InvalidOfferOwn\n" if $offer_info->{agent_loginid} eq $client->loginid;
 
     die +{

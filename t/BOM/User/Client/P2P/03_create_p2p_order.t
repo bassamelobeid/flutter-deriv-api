@@ -398,6 +398,33 @@ subtest 'Creating order without escrow' => sub {
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
+subtest 'Creating order with wrong currency' => sub {
+    my $amount      = 100;
+    my $description = 'Test order';
+
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
+    
+    my $client = BOM::Test::Helper::Client::create_client();
+    $client->account('EUR');
+
+    my $err = exception {
+        $client->p2p_order_create(
+            offer_id    => $offer->{offer_id},
+            amount      => $amount,
+            expiry      => 7200,
+            description => $description
+        );
+    };
+
+    chomp($err);
+    is $err, 'InvalidOrderCurrency', 'Got correct error code';
+
+    ok($agent->account->balance == $amount, 'Agent balance is correct');
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
 subtest 'Sell offers' => sub {
     my $amount = 100;
 
