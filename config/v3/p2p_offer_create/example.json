@@ -1,0 +1,10 @@
+{
+    "p2p_offer_create": 1,
+    "type": "buy",
+    "amount": 100,
+    "max_amount": 50,
+    "method": "bank_transfer",
+    "min_amount": 20,
+    "offer_description": "Please transfer to account number 1234",
+    "rate": 4.25
+}

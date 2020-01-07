@@ -533,6 +533,15 @@ sub get_contract_params {
     return {@{decode_json_utf8($params_json)}};
 }
 
+sub delete_contract_params {
+    my ($contract_id, $landing_company_short) = @_;
+
+    my $key         = join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company_short);
+    my $redis       = Binary::WebSocketAPI::v3::Subscription::Pricer::subscription_manager()->redis;
+
+    return $redis->del($key);
+}
+
 sub _serialized_args {
     my $copy = {%{+shift}};
     my $args = shift;
