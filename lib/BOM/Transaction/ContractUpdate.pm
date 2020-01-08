@@ -307,16 +307,10 @@ sub get_history {
             next unless $current->{$order_type . '_order_date'};
             my $order_amount_str = $order_type . '_order_amount';
             my $display_name = $order_type eq 'take_profit' ? localize('Take profit') : localize('Stop loss');
+            my $order_amount;
             unless ($prev) {
-                my $order_amount = $current->{$order_amount_str} ? $current->{$order_amount_str} + 0 : 0;
-                push @entry,
-                    +{
-                    display_name => $display_name,
-                    order_amount => $order_amount,
-                    order_date   => Date::Utility->new($current->{$order_type . '_order_date'})->epoch,
-                    };
+                $order_amount = $current->{$order_amount_str} ? $current->{$order_amount_str} + 0 : 0;
             } else {
-                my $order_amount;
                 if (defined $prev->{$order_amount_str} and defined $current->{$order_amount_str}) {
                     next if (abs($prev->{$order_amount_str} - $current->{$order_amount_str}) <= machine_epsilon());
                     $order_amount = $current->{$order_amount_str} + 0;
@@ -325,16 +319,16 @@ sub get_history {
                 } elsif (defined $current->{$order_amount_str}) {
                     $order_amount = $current->{$order_amount_str} + 0;
                 }
-
-                push @entry,
-                    +{
-                    display_name => $display_name,
-                    order_amount => $order_amount,
-                    order_date   => Date::Utility->new($current->{$order_type . '_order_date'})->epoch,
-                    value        => $self->contract->new_order({$order_type => $order_amount})->barrier_value,
-                    }
-                    if (defined $order_amount);
             }
+
+            push @entry,
+                +{
+                display_name => $display_name,
+                order_amount => $order_amount,
+                order_date   => Date::Utility->new($current->{$order_type . '_order_date'})->epoch,
+                value        => $self->contract->new_order({$order_type => $order_amount})->barrier_value,
+                }
+                if (defined $order_amount);
         }
         $prev = $current;
         push @history, @entry;
