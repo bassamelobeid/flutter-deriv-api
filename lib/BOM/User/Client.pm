@@ -1702,8 +1702,15 @@ Returns new offer or dies with error code.
 sub p2p_offer_create {
     my ($client, %param) = @_;
 
-    die "InvalidAmount\n" if ($param{amount} // 0) <= 0;
-    die "InvalidRate\n"   if ($param{rate}   // 0) <= 0;
+    if (my @invalid_fields = grep { ($param{$_} // 0) <= 0 } (qw(amount max_amount min_amount rate))) {
+        die +{
+            error_code => 'InvalidNumericValue',
+            details    => {fields => \@invalid_fields},
+        };
+    }
+
+    die "InvalidMinOrMaxAmount\n" unless $param{min_amount} <= $param{max_amount};
+    die "InvalidOfferAmount\n"    unless $param{max_amount} <= $param{amount};
 
     my $agent_info = $client->p2p_agent;
     die "AgentNotActive\n" unless $agent_info && $agent_info->{is_active};

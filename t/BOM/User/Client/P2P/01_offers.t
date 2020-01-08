@@ -56,7 +56,7 @@ subtest 'Agent Registration' => sub {
     cmp_ok $client->p2p_agent->{name}, 'eq', 'agent1', "agent name";
 };
 
-subtest 'Dublicate Agent Registration' => sub {
+subtest 'Duplicate Agent Registration' => sub {
     my $agent = BOM::Test::Helper::P2P::create_agent();
 
     like(
@@ -88,20 +88,58 @@ subtest 'Updating agent fields' => sub {
     is $agent->p2p_agent->{name},             '', 'Agent is authenticated';
     ok $agent->p2p_agent->{is_active},        'Agent is active';
 
-    ok !($agent->p2p_agent_update(auth => 0)->{is_authenticated}), 'Disable authentucation';
+    ok !($agent->p2p_agent_update(auth => 0)->{is_authenticated}), 'Disable authentication';
     is $agent->p2p_agent_update(name => 'test')->{name}, 'test', 'Changing name';
     ok !($agent->p2p_agent_update(active => 0)->{is_active}), 'Switch flag active to false';
 
-    ok $agent->p2p_agent_update(auth   => 1)->{is_authenticated}, 'Enabling authentucation';
+    ok $agent->p2p_agent_update(auth   => 1)->{is_authenticated}, 'Enabling authentication';
     ok $agent->p2p_agent_update(active => 1)->{is_active},        'Switch flag active to true';
 };
 
-subtest 'Creating offer successfully' => sub {
+subtest 'Creating offer' => sub {
     my %params = %offer_params;
     my $agent  = BOM::Test::Helper::P2P::create_agent();
     $agent->p2p_agent_update(name => 'testing');
 
     my $offer;
+
+    for my $numeric_field (qw(amount max_amount min_amount rate)) {
+        %params = %offer_params;
+
+        $params{$numeric_field} = -1;
+        cmp_deeply(
+            exception {
+                $offer = $agent->p2p_offer_create(%params);
+            },
+            {
+                error_code => 'InvalidNumericValue',
+                details    => {fields => [$numeric_field]},
+            },
+            "Error when numeric field '$numeric_field' is not greater than 0"
+        );
+    }
+
+    %params = %offer_params;
+    $params{min_amount} = $params{max_amount} + 1;
+    like(
+        exception {
+            $offer = $agent->p2p_offer_create(%params);
+        },
+        qr/InvalidMinOrMaxAmount/,
+        'Error when max_amount is less than min_amount'
+    );
+
+    %params = %offer_params;
+    $params{amount} = $params{max_amount} - 1;
+    like(
+        exception {
+            $offer = $agent->p2p_offer_create(%params);
+        },
+        qr/InvalidOfferAmount/,
+        'Error when offer amount is less than max_amount'
+    );
+
+    %params = %offer_params;
     is(
         exception {
             $offer = $agent->p2p_offer_create(%params);
@@ -198,7 +236,7 @@ subtest 'Updating offer' => sub {
 
 };
 
-subtest 'Updating order with avalible range' => sub {
+subtest 'Updating order with available range' => sub {
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => 100);
 
