@@ -200,7 +200,7 @@ sub print_client_details {
 
         if ($show_uploaded_documents) {
             my $confirm_box = qq{javascript:return get_checked_files()};
-            $show_uploaded_documents .= qq{<button onclick="$confirm_box">Delete Checked Files</button>};
+            $show_uploaded_documents .= qq{<button name="delete_checked_documents" value = "1" onclick="$confirm_box">Delete Checked Files</button>};
         }
     }
 

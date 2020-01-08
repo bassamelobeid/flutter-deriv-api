@@ -123,7 +123,7 @@ my $broker          = $client->broker;
 my $encoded_broker  = encode_entities($broker);
 my $clerk           = BOM::Backoffice::Auth0::get_staffname();
 
-if ($input{del_document_list}) {
+if ($input{delete_checked_documents} and $input{del_document_list}) {
     my $documents = $input{del_document_list};
     my @documents = ref $documents ? @$documents : ($documents);
     my $full_msg  = "";
