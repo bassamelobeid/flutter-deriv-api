@@ -50,7 +50,7 @@ use BOM::Transaction::Validation;
 
 =cut
 
-my $json = JSON::MaybeXS->new->allow_blessed;
+my $json = JSON::MaybeXS->new;
 
 =head2 action_type
 
