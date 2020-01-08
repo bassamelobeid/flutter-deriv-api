@@ -45,7 +45,6 @@ Returns version 4 schema
 
 sub _load_schema {
     my ($request_type, $direction) = @_;
-
     return if $request_type eq 'error';
     $direction //= 'receive';
     my $schema;
@@ -166,7 +165,6 @@ sub add_req_data {
     my ($c, $req_storage, $api_response) = @_;
     # api_response being a string means error happened.
     die "api_response is not hashref: $api_response" unless ref($api_response) eq 'HASH';
-
     my $args = {};
     if ($req_storage) {
         $args = $req_storage->{origin_args} || $req_storage->{args};
@@ -684,7 +682,6 @@ Attributes marked with "sensitive" is in the send schema will be redacted.
 
 sub _sanitize_echo {
     my ($params, $msg_type) = @_;
-
     my $schema = _load_schema($msg_type, 'send');
     filter_sensitive_fields($schema, $params);
 

@@ -23,7 +23,8 @@
         },
         "order_id": {
             "description": "The unique identifier for this order.",
-            "type": "string"
+            "type": "string",
+            "pattern": "^[0-9]+$"
         },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",

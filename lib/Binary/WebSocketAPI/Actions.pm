@@ -12,6 +12,7 @@ use Binary::WebSocketAPI::v3::Wrapper::Cashier;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Wrapper::App;
+use Binary::WebSocketAPI::v3::Wrapper::P2P;
 
 sub actions_config {
     return [[
@@ -283,8 +284,18 @@ sub actions_config {
         ['p2p_offer_list'],
         ['p2p_order_cancel'],
         ['p2p_order_confirm'],
-        ['p2p_order_create'],
-        ['p2p_order_info'],
+        [
+            'p2p_order_create',
+            {
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_order,
+            }
+        ],
+        [
+            'p2p_order_info',
+            {
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_order,
+            }
+        ],
         ['p2p_order_list'],
         ['p2p_agent_info'],
     ];
