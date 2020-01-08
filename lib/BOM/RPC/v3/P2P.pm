@@ -84,12 +84,12 @@ our %ERROR_MAP = do {
         OrderAlreadyConfirmed       => localize('The order is already confirmed by you.'),
         OrderAlreadyCancelled       => localize('The order is already cancelled.'),
         OfferNoEditInactive         => localize('The offer is inactive and cannot be changed.'),
-        OfferNotFound               => localize('Offer not found'),
+        OfferNotFound               => localize('Offer not found.'),
         OfferNoEditAmount           => localize('The offer has no available amount and cannot be changed.'),
         OfferMaxExceeded            => localize('The maximum limit of active offers reached.'),
-        InvalidOfferCurrency        => localize('Invalid offer currency'),
+        InvalidOfferCurrency        => localize('Invalid offer currency.'),
         InvalidOrderCurrency        => localize('You cannot create an order with a different currency than your account.'),
-        OrderNotFound               => localize('Order not found'),
+        OrderNotFound               => localize('Order not found.'),
         OrderAlreadyExists          => localize('Too many orders. Please complete your pending orders.'),
         InvalidOfferOwn             => localize('You cannot create an order for your own offer.'),
         OrderNoEditExpired          => localize('The order has expired and cannot be changed.'),
@@ -211,7 +211,6 @@ sub p2p_rpc {
                         message_to_client => localize($message, (ref($err_params) eq 'ARRAY' ? $err_params : [])->@*)}                     #
                 );
             } else {
-                warn $err;
                 # This indicates a bug in the code.
                 $log->warnf("Unexpected error in P2P %s: %s, please report as a bug to backend", $method, $err);
                 stats_inc($p2p_prefix . '.error', {tags => ['error_code:unknown']});
@@ -561,8 +560,12 @@ p2p_rpc p2p_order_create => sub {
             order       => $order,
             broker_code => $client->broker,
         });
+    my $order_response = _order_details($client, $order);
+    # We need to have broker code to subscribe to order information.
+    # This field will be removed from responce at websocket hook.
+    $order_response->{P2P_SUBSCIPTION_BROKER_CODE} = $client->broker;
 
-    return _order_details($client, $order);
+    return $order_response;
 };
 
 =head2 p2p_order_list
@@ -618,7 +621,13 @@ p2p_rpc p2p_order_info => sub {
 
     my $order = $client->p2p_order($params->{args}{order_id});
 
-    return _order_details($client, $order);
+    my $order_response = _order_details($client, $order);
+
+    # We need to have broker code to subscribe to order information.
+    # This field will be removed from responce at websocket hook.
+    $order_response->{P2P_SUBSCIPTION_BROKER_CODE} = $client->broker;
+
+    return $order_response;
 };
 
 =head2 p2p_order_confirm
@@ -648,10 +657,8 @@ p2p_rpc p2p_order_confirm => sub {
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
-            order_id    => $order->{order_id},
-            broker_code => $client->broker,
-            field       => 'status',
-            new_value   => $order->{status},
+            client_loginid => $client->loginid,
+            order_id       => $order->{order_id},
         });
 
     return {
@@ -687,10 +694,8 @@ p2p_rpc p2p_order_cancel => sub {
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
-            order_id    => $order->{order_id},
-            broker_code => $client->broker,
-            field       => 'status',
-            new_value   => $order->{status},
+            client_loginid => $client->loginid,
+            order_id       => $order->{order_id},
         });
 
     return {
