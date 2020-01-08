@@ -49,6 +49,11 @@ my $servers = {
         config   => '/etc/rmg/redis-queue.yml',
         user     => 'write',
         override => 'BOM_TEST_REDIS_QUEUE'
+    },
+    redis_p2p => {
+        config   => '/etc/rmg/redis-p2p.yml',
+        user     => 'read',
+        override => 'BOM_TEST_REDIS_P2P',
     }};
 
 # We export (on demand) all Redis names and a helper function.
