@@ -68,13 +68,14 @@ our %ERROR_MAP = do {
         NotRegistered    => localize('You are not yet registered as an P2P agent.'),
 
         # Invalid data
-        InvalidPaymentMethod => localize('This payment method is invalid.'),
-        NotFound             => localize('Not found.'),
-        MinimumNotMet        => localize('The minimum amount requirements are not met.'),
-        MaximumExceeded      => localize('This is above the maximum limit.'),
-        AlreadyInProgress    => localize('This cannot be cancelled since the order is already in progress.'),
-        InvalidAmount        => localize('Invalid amount for creating an order.'),
-        InvalidRate          => localize('Invalid rate for creating an order.'),
+        InvalidPaymentMethod  => localize('This payment method is invalid.'),
+        NotFound              => localize('Not found.'),
+        MinimumNotMet         => localize('The minimum amount requirements are not met.'),
+        MaximumExceeded       => localize('This is above the maximum limit.'),
+        AlreadyInProgress     => localize('This cannot be cancelled since the order is already in progress.'),
+        InvalidNumericValue   => localize('Numeric value should be greater than 0.'),
+        InvalidMinOrMaxAmount => localize('The minimum amount should be less than or equal to maximum amount.'),
+        InvalidOfferAmount    => localize('The offer amount should be greater than or equal to maximum amount.'),
 
         # bom-user errors
         AgentNotFound               => localize('P2P Agent not found.'),
@@ -87,7 +88,6 @@ our %ERROR_MAP = do {
         OfferNotFound               => localize('Offer not found.'),
         OfferNoEditAmount           => localize('The offer has no available amount and cannot be changed.'),
         OfferMaxExceeded            => localize('The maximum limit of active offers reached.'),
-        InvalidOfferCurrency        => localize('Invalid offer currency.'),
         InvalidOrderCurrency        => localize('You cannot create an order with a different currency than your account.'),
         OrderNotFound               => localize('Order not found.'),
         OrderAlreadyExists          => localize('Too many orders. Please complete your pending orders.'),
@@ -186,13 +186,18 @@ sub p2p_rpc {
         }
         catch {
             my $exception = $@;
-            my ($err, $err_params);
+            my ($err, $err_params, $err_details);
             # db errors come as [ BIxxx, message ]
             # bom-user errors come as a string "ErrorCode\n"
             #   or a HASH: {error_code => 'ErrorCode', message_params => ['values for message placeholders']}
             SWITCH: for (ref $exception) {
                 if (/ARRAY/) { $err = $exception->[0]; last SWITCH; }
-                if (/HASH/) { $err = $exception->{error_code}; $err_params = $exception->{message_params}; last SWITCH; }
+                if (/HASH/) {
+                    $err         = $exception->{error_code};
+                    $err_params  = $exception->{message_params};
+                    $err_details = $exception->{details};
+                    last SWITCH;
+                }
 
                 chomp($err = $exception);
             }
@@ -207,9 +212,10 @@ sub p2p_rpc {
                     $err = 'P2PError';    # hide db error codes from user
                 }
                 return BOM::RPC::v3::Utility::create_error({
-                        code              => $err,
-                        message_to_client => localize($message, (ref($err_params) eq 'ARRAY' ? $err_params : [])->@*)}                     #
-                );
+                    code              => $err,
+                    message_to_client => localize($message, (ref($err_params) eq 'ARRAY' ? $err_params : [])->@*),
+                    (ref($err_details) eq 'HASH' ? (details => $err_details) : ()),
+                });
             } else {
                 # This indicates a bug in the code.
                 $log->warnf("Unexpected error in P2P %s: %s, please report as a bug to backend", $method, $err);
