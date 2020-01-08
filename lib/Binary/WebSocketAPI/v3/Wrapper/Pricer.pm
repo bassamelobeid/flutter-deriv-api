@@ -19,7 +19,6 @@ use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
 use List::Util qw(min);
 use Scalar::Util qw(weaken);
-use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 use Future::Mojo          ();
 use Future::Utils         ();

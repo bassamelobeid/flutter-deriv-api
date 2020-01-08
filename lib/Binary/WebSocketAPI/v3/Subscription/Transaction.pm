@@ -285,9 +285,8 @@ sub _update_transaction {
                     Binary::WebSocketAPI::v3::Subscription->unregister_by_uuid($c, $id) if $id;
                     return $c->new_error('transaction', $rpc_response->{error}->{code}, $rpc_response->{error}->{message_to_client});
                 } else {
-                    if ($payload->{action_type} eq 'sell') {
-                        $details->{transaction}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch;
-                    }
+                    $details->{transaction}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
+                        if ($payload->{action_type} eq 'sell');
                     $details->{transaction}->{longcode}     = $rpc_response->{longcode};
                     $details->{transaction}->{symbol}       = $rpc_response->{symbol};
                     $details->{transaction}->{display_name} = $rpc_response->{display_name};
