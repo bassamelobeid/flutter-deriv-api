@@ -36,17 +36,39 @@ sub subscribe_offer {
 }
 
 sub subscribe_order {
-    my ($c, $req_storage) = @_;
-    my $args = $req_storage->{args};
-    my $sub  = Binary::WebSocketAPI::v3::Subscription::P2P::Order->new(
-        c    => $c,
-        type => 'p2p_order',
-        args => $args,
+    my ($c, $rpc_response, $req_storage) = @_;
+
+    my $args     = $req_storage->{args};
+    my $msg_type = $req_storage->{msg_type};
+
+    if ($rpc_response->{error}) {
+        return $c->new_error($msg_type, $rpc_response->{error}{code}, $rpc_response->{error}{message_to_client});
+    }
+
+    my $brocker = delete $rpc_response->{P2P_SUBSCIPTION_BROKER_CODE};
+
+    my $result = {
+        msg_type  => $msg_type,
+        $msg_type => $rpc_response,
+        defined $args->{req_id} ? (req_id => $args->{req_id}) : (),
+    };
+    return $result unless $args->{subscribe};
+
+    my $sub = Binary::WebSocketAPI::v3::Subscription::P2P::Order->new(
+        c        => $c,
+        args     => $args,
+        broker   => $brocker,
+        order_id => $rpc_response->{order_id},
     );
+
+    if ($sub->already_registered) {
+        return $c->new_error($msg_type, 'AlreadySubscribed', $c->l('You are already subscribed to p2p order id [_1].', $rpc_response->{order_id}));
+    }
+
     $sub->register;
     $sub->subscribe;
-    $req_storage->{p2p_order_channel_id} = $sub->uuid;
-    return undef;
+    $result->{subscription}{id} = $sub->uuid;
+    return $result;
 }
 
 sub subscribe_agent {

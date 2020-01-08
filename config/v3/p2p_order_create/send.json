@@ -35,6 +35,13 @@
             "type": "string",
             "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{0,500}$"
         },
+        "subscribe": {
+            "description": "[Optional] If set to 1, will send updates whenever there is an update to order",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
             "type": "object"

@@ -109,6 +109,20 @@
                 }
             }
         },
+        "subscription": {
+            "title": "Subscription information",
+            "description": "For subscription requests only",
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "description": "A per-connection unique identifier. Can be passed to the forget API call to unsubscribe.",
+                    "type": "string"
+                }
+            }
+        },
         "echo_req": {
             "description": "Echo of the request made.",
             "type": "object"
