@@ -1904,9 +1904,9 @@ Get a single order by $id.
 
 sub p2p_order {
     my ($client, $id) = @_;
-    return undef unless $id;
+    die "OrderNotFound\n" unless $id;
 
-    return $client->p2p_order_list(id => $id)->[0];
+    return $client->p2p_order_list(id => $id)->[0] || die "OrderNotFound\n";
 }
 
 =head2 p2p_order_list
