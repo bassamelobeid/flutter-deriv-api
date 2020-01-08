@@ -30,6 +30,8 @@ use BOM::User::Utility;
 use BOM::Platform::Email qw(send_email);
 use BOM::User::Client;
 use Syntax::Keyword::Try;
+use Format::Util::Numbers qw/financialrounding formatnumber/;
+use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 #TODO: Put here id for special bom-event application
@@ -150,38 +152,25 @@ An existing order has been updated. Typically these would be status updates.
 
 sub order_updated {
     my $data = shift;
-
-    # list of fields which changes we want to notify about.
-    state $should_notify_about = {status => 1};
-
-    my @args = qw(broker_code order_id field new_value);
+    my @args = qw(client_loginid order_id);
 
     if (grep { !$data->{$_} } @args) {
         $log->info('Fail to procces order_updated: Invalid event data', $data);
         return 0;
     }
+    my ($loginid, $order_id) = @{$data}{@args};
 
-    my ($broker_code, $order_id, $field, $new_value) = @{$data}{@args};
+    my $client = BOM::User::Client->new({loginid => $loginid});
+    my $order = $client->p2p_order($order_id);
 
-    return 1 unless $should_notify_about->{$field};
+    my $order_response = _order_details($client, $order);
 
     my $redis = BOM::Config::RedisReplicated->redis_p2p_write();
-    $redis->publish(
-        "P2P::ORDER::NOTIFICATION::${broker_code}::${order_id}",
-        encode_json_utf8({
-                order_id   => $order_id,
-                event      => $field . '_updated',
-                event_data => {
-                    field     => $field,
-                    new_value => $new_value
-                },
-            }
-        ),
-    );
 
-    if ($field eq 'status') {
-        stats_inc('p2p.order.status.updated.count', {tags => ["status:$new_value"]});
-    }
+    my $broker_code = $client->broker;
+    $redis->publish("P2P::ORDER::NOTIFICATION::${broker_code}::${order_id}", encode_json_utf8($order_response),);
+
+    stats_inc('p2p.order.status.updated.count', {tags => ["status:$order->{status}"]});
 
     return 1;
 }
@@ -209,7 +198,7 @@ sub order_expired {
 
         $client = BOM::User::Client->new({loginid => $loginid});
 
-        my $updated_order = $client->p2p_expire_order(
+        $updated_order = $client->p2p_expire_order(
             id     => $order_id,
             source => $data->{source} // DEFAULT_SOURCE,
             staff  => $data->{staff} // DEFAULT_STAFF,
@@ -226,13 +215,35 @@ sub order_expired {
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
-            order_id    => $updated_order->{id},
-            broker_code => $client->broker,
-            field       => 'status',
-            new_value   => $updated_order->{status},
+            client_loginid => $client->loginid,
+            order_id       => $updated_order->{order_id},
         });
 
     return 1;
+}
+
+sub _order_details {
+    my ($client, $order) = @_;
+
+    $order->{type} = delete $order->{offer_type};
+    $order->{account_currency} //= delete $order->{offer_account_currency};
+    $order->{local_currency}   //= delete $order->{offer_local_currency};
+
+    $order->{amount} = financialrounding('amount', $order->{account_currency}, $order->{order_amount});
+    $order->{amount_display} = formatnumber('amount', $order->{account_currency}, $order->{order_amount});
+    $order->{expiry_time}    = Date::Utility->new($order->{expire_time})->epoch;
+    $order->{created_time}   = Date::Utility->new($order->{created_time})->epoch;
+    $order->{rate}           = financialrounding('amount', $order->{local_currency}, $order->{offer_rate});
+    $order->{rate_display}   = formatnumber('amount', $order->{local_currency}, $order->{offer_rate});
+    $order->{price}          = financialrounding('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
+    $order->{price_display}  = formatnumber('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
+    $order->{offer_description} //= '';
+    $order->{order_description} //= '';
+
+    delete $order->{order_amount};
+    delete $order->{offer_rate};
+
+    return $order;
 }
 
 1;

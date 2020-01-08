@@ -12,8 +12,18 @@ use BOM::Database::ClientDB;
 use BOM::Config::RedisReplicated;
 use BOM::Test::Helper::P2P;
 use BOM::Event::Process;
+use Date::Utility;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);
+
+my $escrow = BOM::Test::Helper::P2P::create_escrow();
+my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => 100);
+my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    offer_id => $offer->{offer_id},
+    amount   => 100
+);
 
 my @data_for_notification_tests = ({
         event => 'p2p_order_created',
@@ -31,31 +41,11 @@ my @data_for_notification_tests = ({
     {
         event => 'p2p_order_updated',
         data  => {
-            broker_code => 'CR',
-            order_id    => 1,
-            field       => 'status',
-            new_value   => 'cancelled'
+            client_loginid => $client->loginid,
+            order_id    => $order->{order_id},
         },
-        channel  => 'P2P::ORDER::NOTIFICATION::CR::1',
-        expected => {
-            event      => "status_updated",
-            event_data => {
-                field     => 'status',
-                new_value => 'cancelled'
-            },
-            order_id => 1
-        },
-    },
-    {
-        event => 'p2p_order_updated',
-        data  => {
-            broker_code => 'CR',
-            order_id    => 1,
-            field       => 'description',
-            new_value   => 'some order description'
-        },
-        channel  => 'P2P::ORDER::NOTIFICATION::CR::1',
-        expected => undef,
+        channel  => 'P2P::ORDER::NOTIFICATION::' . $client->broker . '::' . $order->{order_id},
+        expected => BOM::Event::Actions::P2P::_order_details($client, $client->p2p_order($order->{order_id})),
     },
 );
 
@@ -79,9 +69,10 @@ for my $test_data (@data_for_notification_tests) {
         eval { $p2p_redis->get_reply };
 
         my $notification = eval { $got_notification && decode_json_utf8($got_notification) };
-
         is_deeply($notification, $test_data->{expected}, 'No notification abount an order');
     };
 }
+
+BOM::Test::Helper::P2P::reset_escrow();
 
 done_testing()
