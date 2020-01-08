@@ -292,7 +292,7 @@ sub mt5_logins {
 
 =head2 mt5_logins_with_group
 
-get mt5 loginis with group for the user
+get mt5 logins with group for the user
 
 =over 4
 
