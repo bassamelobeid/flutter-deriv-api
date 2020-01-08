@@ -124,22 +124,27 @@ sub publish_methods { return keys $publish_methods->%* }
 
 =head2 requests
 
-Returns a list of all requests based on the C<filter>, C<calls> and C<client>.
+Returns a list of all requests based on the C<filter>, C<calls>, C<exclude_calls> and C<client>.
 C<filter> needs to return true to include a request, C<calls> includes all the
 calls by default. C<client> is the first client returned by the C<clients> call
 from the C<Parameters> module.
+C<exclude_calls> has more priority rather than C<calls>, for example if you pass
+the same call name to C<exclude_calls> and C<calls> this call name will be excluded.
 
 =cut
 
 sub requests {
     my (%args) = @_;
 
-    my $filter = $args{filter} // sub { 1 };
-    my $calls  = $args{calls}  // [keys $requests->%*];
-    my $client = $args{client} // clients()->[0];
+    my $filter  = $args{filter}        // sub { 1 };
+    my $calls   = $args{calls}         // [keys $requests->%*];
+    my $client  = $args{client}        // clients()->[0];
+    my $exclude = $args{exclude_calls} // [];
 
     my @requests;
     for my $call ($calls->@*) {
+        next if grep { $_ eq $call } $exclude->@*;
+
         for my $req_item ($requests->{$call}->@*) {
             my $params     = $req_item->{params};
             my $req_client = $params->client;

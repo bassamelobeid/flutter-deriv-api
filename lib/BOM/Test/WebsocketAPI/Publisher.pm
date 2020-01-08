@@ -38,7 +38,7 @@ use Future::Utils qw(fmap0);
 
 use BOM::Test;
 use Binary::API::Mapping::Response;
-use BOM::Test::WebsocketAPI::Redis qw/redis_feed_master ws_redis_master redis_transaction/;
+use BOM::Test::WebsocketAPI::Redis qw/redis_feed_master ws_redis_master redis_transaction redis_p2p/;
 use BOM::Test::WebsocketAPI::Data qw( publish_data publish_methods );
 use BOM::Test::WebsocketAPI::Parameters qw( test_params );
 
@@ -198,6 +198,18 @@ handler tick => sub {
     return $self->publish($key, $type => $tick) if $tick;
 
     return undef;
+};
+
+=head2 p2p handler
+
+The code that handles publishing p2p related notifications into redis.
+
+=cut
+
+handler p2p => sub {
+    my ($self, $key, $type, $payload) = @_;
+
+    return $self->publish($key, $type, $payload, redis_p2p());
 };
 
 =head2 transaction handler

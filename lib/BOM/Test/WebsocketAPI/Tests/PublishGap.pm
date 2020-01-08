@@ -23,6 +23,7 @@ suite publish_gap => sub {
         my $published_method = $method;
         $published_method = 'proposal_open_contract' if $method eq 'buy';
         return Future->done if $method eq 'ticks_history';
+        $published_method = 'p2p' if $method eq 'p2p_order_info';
         $published_method = 'tick' if $method eq 'ticks';
 
         $context

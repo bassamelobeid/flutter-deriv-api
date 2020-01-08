@@ -37,6 +37,7 @@ struct ParamLists => [qw(
         proposal_array
         client
         contract
+        p2p_order
         )];
 
 struct Client => [qw(
@@ -50,6 +51,7 @@ struct Client => [qw(
         landing_company_name
         landing_company_fullname
         currency
+        broker
         )];
 
 struct TicksHistory  => [qw( underlying times prices )];
@@ -93,6 +95,26 @@ struct Contract => [qw(
         entry_tick
         )];
 
+struct P2POrder => [qw(
+        rate_display
+        offer_id
+        offer_description
+        expiry_time
+        amount
+        rate
+        agent_name
+        agent_id
+        status
+        local_currency
+        order_id
+        amount_display
+        price
+        created_time
+        price_display
+        order_description
+        type
+        )];
+
 my $history_count = 10;
 my $barrier_count = 2;
 my $tx_id;
@@ -113,6 +135,7 @@ my @client = (
         landing_company_name     => 'mlt',
         landing_company_fullname => 'Binary (Europe) Ltd',
         currency                 => 'EUR',
+        broker                   => 'MLT',
     ),
     Client(
         loginid                  => 'CR90000000',
@@ -125,6 +148,7 @@ my @client = (
         landing_company_name     => 'svg',
         landing_company_fullname => 'Binary (SVG) Ltd.',
         currency                 => 'USD',
+        broker                   => 'CR',
     ),
     Client(
         loginid                  => 'VRTC90000000',
@@ -137,6 +161,7 @@ my @client = (
         landing_company_name     => 'virtual',
         landing_company_fullname => 'Binary Ltd',
         currency                 => 'USD',
+        broker                   => 'VRTC',
     ),
 );
 
@@ -229,6 +254,37 @@ for my $ul (@underlying) {
     }
 }
 
+my (@p2p_orders, $order_id, $offer_id);
+for my $type (qw(buy sell)) {
+    $offer_id++;
+    for my $status (qw(pending buyer-confirmed cancelled completed)) {
+        $order_id++;
+        my $rate   = 1 + 10 * rand;
+        my $amount = 10 + 10 * rand;
+        my $price  = $rate * $amount;
+        push @p2p_orders,
+            P2POrder(
+            rate_display      => "$rate",
+            offer_id          => "$offer_id",
+            offer_description => 'Please contact via whatsapp 1234',
+            expiry_time       => (time + 30),
+            amount            => $amount,
+            rate              => $rate,
+            agent_name        => 'name',
+            agent_id          => '1',
+            status            => $status,
+            local_currency    => 'IDR',
+            order_id          => $order_id,
+            amount_display    => "$amount",
+            price             => $price,
+            created_time      => (time - 30),
+            price_display     => "$price",
+            order_description => '',
+            type              => $type,
+            );
+    }
+}
+
 our $parameters = {
     underlying     => \@underlying,
     ticks_history  => \@ticks_history,
@@ -236,6 +292,7 @@ our $parameters = {
     proposal_array => \@proposal_array,
     client         => \@client,
     contract       => \@contract,
+    p2p_order      => \@p2p_orders,
 };
 $parameters->{param_lists} = [ParamLists($parameters->%*)];
 
@@ -318,6 +375,8 @@ sub permutations {
     }
 
     my $values = delete $options{$key};
+    use Data::Dumper;
+    do { warn Dumper \%options; warn $key } unless $values;
 
     if ($values->@* == 1) {      # permutations(a => [1], b => [qw(x)])
         return [
