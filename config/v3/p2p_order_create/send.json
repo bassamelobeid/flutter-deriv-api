@@ -11,6 +11,7 @@
     "additionalProperties": false,
     "required": [
         "amount",
+        "offer_id",
         "p2p_order_create"
     ],
     "properties": {
@@ -22,16 +23,16 @@
             ]
         },
         "amount": {
-            "description": "The amount of order.",
+            "description": "The amount of currency to be bought or sold.",
             "type": "number"
         },
         "offer_id": {
-            "description": "[Optional] The unique identifier for the offer to create an order against.",
+            "description": "The unique identifier for the offer to create an order against.",
             "type": "string",
             "pattern": "^([0-9]+)$"
         },
         "order_description": {
-            "description": "Notes from the client.",
+            "description": "[Optional] Notes from the client.",
             "type": "string",
             "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{0,500}$"
         },
