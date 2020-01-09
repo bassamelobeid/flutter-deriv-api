@@ -2161,6 +2161,8 @@ sub set_contract_parameters {
         landing_company  => $client->landing_company->short,
     );
 
+    # country code is needed in parameters for china because
+    # we have special offerings conditions.
     $hash{country_code} = $client->residence if $client->residence eq 'cn';
     $hash{limit_order} = $contract_params->{limit_order} if $contract_params->{limit_order};
 
