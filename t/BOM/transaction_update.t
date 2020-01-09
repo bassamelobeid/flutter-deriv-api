@@ -357,11 +357,11 @@ subtest 'update take profit', sub {
             );
             my $history = $updater->get_history();
             is scalar(@$history), 3, 'has three entries';
-            is $history->[0]->{display_name}, 'Take Profit';
+            is $history->[0]->{display_name}, 'Take profit';
             is $history->[0]->{order_amount}, 0;
-            is $history->[1]->{display_name}, 'Take Profit';
+            is $history->[1]->{display_name}, 'Take profit';
             is $history->[1]->{order_amount}, 15;
-            is $history->[2]->{display_name}, 'Take Profit';
+            is $history->[2]->{display_name}, 'Take profit';
             is $history->[2]->{order_amount}, 10;
 
             sleep 1;
@@ -376,15 +376,15 @@ subtest 'update take profit', sub {
             );
             ok $updater->is_valid_to_update, 'valid to update';
             $res = $updater->update;
-            is $res->{history}->[0]->{display_name}, 'Take Profit';
+            is $res->{history}->[0]->{display_name}, 'Take profit';
             is $res->{history}->[0]->{order_amount}, 11;
-            is $res->{history}->[1]->{display_name}, 'Stop Loss';
+            is $res->{history}->[1]->{display_name}, 'Stop loss';
             is $res->{history}->[1]->{order_amount}, -52;
-            is $res->{history}->[2]->{display_name}, 'Take Profit';
+            is $res->{history}->[2]->{display_name}, 'Take profit';
             is $res->{history}->[2]->{order_amount}, 0;
-            is $res->{history}->[3]->{display_name}, 'Take Profit';
+            is $res->{history}->[3]->{display_name}, 'Take profit';
             is $res->{history}->[3]->{order_amount}, 15;
-            is $res->{history}->[4]->{display_name}, 'Take Profit';
+            is $res->{history}->[4]->{display_name}, 'Take profit';
             is $res->{history}->[4]->{order_amount}, 10;
         };
 
