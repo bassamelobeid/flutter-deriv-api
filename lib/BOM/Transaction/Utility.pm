@@ -85,5 +85,4 @@ sub _serialized_args {
     return Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
 }
 
-
 1;
