@@ -69,7 +69,7 @@ sub BUILD {
     unless ($contract) {
         $self->validation_error({
             code              => 'ContractNotFound',
-            message_to_client => localize('Contract not found for contract id: [_1].', $self->contract_id),
+            message_to_client => localize('No open contract found for contract id: [_1].', $self->contract_id),
         });
     }
 
