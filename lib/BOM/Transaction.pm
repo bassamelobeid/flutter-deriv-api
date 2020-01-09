@@ -774,7 +774,7 @@ sub buy {
 
     # only fetch fmbid when necessary
     my $fmbid;
-    if ($self->contract->category_code eq 'multiplier') {
+    if ($self->contract->require_contract_id) {
         $fmbid = $clientdb->get_next_fmbid();
         $bet_data->{bet_data}{fmb_id} = $fmbid;
     }
