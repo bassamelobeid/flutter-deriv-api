@@ -17,6 +17,7 @@ use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::Transaction;
+use BOM::Transaction::Utility;
 use BOM::Platform::Context qw (localize request);
 use BOM::Config::Runtime;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -619,7 +620,7 @@ rpc contract_update => sub {
                 });
             }
             if (my $contract_proposal_details = delete $response->{contract_details}) {
-                BOM::Transaction::set_contract_parameters($contract_proposal_details, $client);
+                BOM::Transaction::Utility::set_contract_parameters($contract_proposal_details, $client);
             }
         } elsif ($updater->request_history) {
             my $history = $updater->get_history();
