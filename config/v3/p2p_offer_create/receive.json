@@ -38,7 +38,7 @@
                     "type": "string"
                 },
                 "amount": {
-                    "description": "The amount of the offer.",
+                    "description": "The total amount of the offer, in agent's `account_currency`.",
                     "type": "number"
                 },
                 "amount_display": {
@@ -79,11 +79,11 @@
                     ]
                 },
                 "max_amount": {
-                    "description": "Maximum amount, in local currency.",
+                    "description": "Maximum allowed amount for the orders of this offer, in agent's `account_currency`.",
                     "type": "number"
                 },
                 "max_amount_display": {
-                    "description": "Maximum amount, in local currency, formatted to appropriate decimal places.",
+                    "description": "Maximum amount, in `account_currency`, formatted to appropriate decimal places.",
                     "type": "string"
                 },
                 "method": {
@@ -94,11 +94,11 @@
                     ]
                 },
                 "min_amount": {
-                    "description": "Minimum amount, in local currency.",
+                    "description": "Minimum allowed amount for the orders of this offer, in agent's `account_currency`.",
                     "type": "number"
                 },
                 "min_amount_display": {
-                    "description": "Minimum amount, in local currency, formatted to appropriate decimal places.",
+                    "description": "Minimum amount, in `account_currency`, formatted to appropriate decimal places.",
                     "type": "string"
                 },
                 "offer_description": {

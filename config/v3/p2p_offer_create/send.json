@@ -36,7 +36,7 @@
             ]
         },
         "amount": {
-            "description": "The amount of the offer.",
+            "description": "The total amount of the offer, in agent's account currency.",
             "type": "number"
         },
         "country": {
@@ -53,7 +53,7 @@
             ]
         },
         "max_amount": {
-            "description": "Maximum amount, in local currency.",
+            "description": "Maximum allowed amount for the orders of this offer, in agent's `account_currency`. Should be less than or equal to total `amount` of the offer.",
             "type": "number"
         },
         "method": {
@@ -64,7 +64,7 @@
             ]
         },
         "min_amount": {
-            "description": "Minimum amount, in local currency.",
+            "description": "Minimum allowed amount for the orders of this offer, in agent's `account_currency`. Should be less than `max_amount`.",
             "type": "number"
         },
         "offer_description": {
@@ -73,7 +73,7 @@
             "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
         },
         "rate": {
-            "description": "Conversion rate from account currency to local currency.",
+            "description": "Conversion rate from agent's account currency to `local_currency`.",
             "type": "number"
         },
         "passthrough": {
