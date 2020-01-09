@@ -75,13 +75,13 @@ subtest 'new MX real account' => sub {
 
     # create real acc
     my %details = %client_details;
-    $details{residence} = 'gb';
-    $details{citizen}   = 'gb';
+    $details{residence}  = 'gb';
+    $details{citizen}    = 'gb';
     $details{first_name} = 'Valid';
-    $details{phone} = '+442072343456';
+    $details{phone}      = '+442072343456';
 
     subtest 'UK client - invalid postcode' => sub {
-        my $res = $t->await::new_account_real({%details, address_postcode => ''}, { timeout => 10 });
+        my $res = $t->await::new_account_real({%details, address_postcode => ''}, {timeout => 10});
 
         is($res->{error}->{code}, 'InsufficientAccountDetails', 'UK client must have postcode');
         is_deeply($res->{error}->{details}, {missing => ['address_postcode']});
@@ -90,7 +90,7 @@ subtest 'new MX real account' => sub {
     };
 
     subtest 'new MX account' => sub {
-        my $res = $t->await::new_account_real(\%details, { timeout => 10 });
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
         ok($res->{new_account_real});
         test_schema('new_account_real', $res);
 
@@ -112,10 +112,10 @@ subtest 'new MLT real account' => sub {
 
     # create real acc
     my %details = %client_details;
-    $details{residence} = 'nl';
+    $details{residence}  = 'nl';
     $details{first_name} = 'first\'name';
-    $details{citizen} = 'nl';
-    $details{phone}   = '+31205551111';
+    $details{citizen}    = 'nl';
+    $details{phone}      = '+31205551111';
 
     my $res = $t->await::new_account_real(\%details);
     ok($res->{new_account_real});

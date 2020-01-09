@@ -53,10 +53,10 @@ $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $res->{error}->{code}, 'PermissionDenied', 'PermissionDenied b/c it is read';
 
 subtest multiscope => sub {
-    #testing with static token, 
-    
-    # Balance is allowed for both read and trading_information scopes. 
-    
+    #testing with static token,
+
+    # Balance is allowed for both read and trading_information scopes.
+
     # No scope access to balance
     my $token = BOM::Platform::Token::API->new->create_token($cr_1, 'Test', ['admin', 'trade']);
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
@@ -67,35 +67,35 @@ subtest multiscope => sub {
 
     # Trading_information token for balance
     my $token_trading_info = BOM::Platform::Token::API->new->create_token($cr_1, 'trading_info', ['trading_information']);
-    $t = $t->send_ok({json => {authorize => $token_trading_info}})->message_ok;
+    $t         = $t->send_ok({json => {authorize => $token_trading_info}})->message_ok;
     $authorize = $json->decode(Encode::decode_utf8($t->message->[1]));
-    $t = $t->send_ok({json => {balance => 1}})->message_ok;
-    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-    is $res->{error}->{code}, undef , 'Balance OK with trading_information scope';
+    $t         = $t->send_ok({json => {balance => 1}})->message_ok;
+    $res       = $json->decode(Encode::decode_utf8($t->message->[1]));
+    is $res->{error}->{code}, undef, 'Balance OK with trading_information scope';
 
     #token read for balance
     my $token_read = BOM::Platform::Token::API->new->create_token($cr_1, 'read_only', ['read']);
-    $t = $t->send_ok({json => {authorize => $token_read}})->message_ok;
+    $t         = $t->send_ok({json => {authorize => $token_read}})->message_ok;
     $authorize = $json->decode(Encode::decode_utf8($t->message->[1]));
-    $t = $t->send_ok({json => {balance => 1}})->message_ok;
-    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-    is $res->{error}->{code}, undef , 'Balance OK with read  scope';
+    $t         = $t->send_ok({json => {balance => 1}})->message_ok;
+    $res       = $json->decode(Encode::decode_utf8($t->message->[1]));
+    is $res->{error}->{code}, undef, 'Balance OK with read  scope';
 
     #Both read and trading_information
     my $token_read_info = BOM::Platform::Token::API->new->create_token($cr_1, 'read_and_info', ['read', 'trading_information']);
-    $t = $t->send_ok({json => {authorize => $token_read_info}})->message_ok;
+    $t         = $t->send_ok({json => {authorize => $token_read_info}})->message_ok;
     $authorize = $json->decode(Encode::decode_utf8($t->message->[1]));
-    $t = $t->send_ok({json => {balance => 1}})->message_ok;
-    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-    is $res->{error}->{code}, undef , 'Balance OK with read and trading_informaton scope';
-   
-    #One valid and 1 invalid scope for balance.  
+    $t         = $t->send_ok({json => {balance => 1}})->message_ok;
+    $res       = $json->decode(Encode::decode_utf8($t->message->[1]));
+    is $res->{error}->{code}, undef, 'Balance OK with read and trading_informaton scope';
+
+    #One valid and 1 invalid scope for balance.
     my $token_read_trade = BOM::Platform::Token::API->new->create_token($cr_1, 'read_and_trade', ['read', 'trade']);
-    $t = $t->send_ok({json => {authorize => $token_read_trade}})->message_ok;
+    $t         = $t->send_ok({json => {authorize => $token_read_trade}})->message_ok;
     $authorize = $json->decode(Encode::decode_utf8($t->message->[1]));
-    $t = $t->send_ok({json => {balance => 1}})->message_ok;
-    $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-    is $res->{error}->{code}, undef , 'Balance OK with read and trade scope';
+    $t         = $t->send_ok({json => {balance => 1}})->message_ok;
+    $res       = $json->decode(Encode::decode_utf8($t->message->[1]));
+    is $res->{error}->{code}, undef, 'Balance OK with read and trade scope';
 };
 
 $t->finish_ok;

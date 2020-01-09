@@ -13,8 +13,8 @@ use BOM::Test::WebsocketAPI::Data qw( requests );
 use BOM::Test::WebsocketAPI::Parameters qw( clients );
 
 my ($default_client) = grep { $_->loginid eq 'MLT90000000' } clients()->@*;
-my $default_token = $default_client->token;
-my $loop = IO::Async::Loop->new;
+my $default_token    = $default_client->token;
+my $loop             = IO::Async::Loop->new;
 
 $loop->add(
     my $tester = BOM::Test::WebsocketAPI->new(
@@ -26,11 +26,11 @@ $loop->add(
             website_status => [qw(published check_duplicates)],
             history        => [qw(check_duplicates)],
         },
-        suite_params       => {
+        suite_params => {
             concurrent => 200,
             token      => $default_token,
             requests   => requests(
-                calls  => [qw( buy transaction balance ticks ticks_history proposal website_status )],
+                calls  => [qw( buy transaction balance ticks ticks_history proposal website_status p2p_order_info)],
                 filter => sub {
                     my $params = shift->{params};
                     my $symbol;
@@ -56,8 +56,7 @@ $loop->add(
 subtest 'General subscriptions: all calls except balance_all' => sub {
     Future->needs_all(
         $tester->subscribe_multiple_times(count => 10),
-        $tester->subscribe_twice,
-        $tester->subscribe,
+        $tester->subscribe_twice, $tester->subscribe,
         $tester->subscribe_after_request,
         $tester->multiple_connections_forget,
         $tester->multiple_connections_forget_all,
@@ -65,6 +64,5 @@ subtest 'General subscriptions: all calls except balance_all' => sub {
 
     $tester->run_sanity_checks;
 };
-
 
 done_testing;

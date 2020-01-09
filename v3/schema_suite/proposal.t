@@ -184,14 +184,19 @@ test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receiv
     'ContractBuyValidationError', 'Multiplier is not in acceptable range. Accepts 10,20,30,50,100.';
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_multiplier.json', 'MULTUP', 'R_100', 'stake', '10',
     'Win 10% of your stake for every 1% rise in the market price.', '100.00', '100', '65258.19', 'Stop Out', '58765.26', '', '';
-test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake', '10',
+test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake',
+    '10',
     'something', '1', 'InputValidationFailed', 'Input validation failed: limit_order';
-test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake', '10',
+test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake',
+    '10',
     'take_profit', '-1', 'ContractBuyValidationError', 'Please enter a take profit amount that\'s higher than 0.00.';
-test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake', '10',
+test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake',
+    '10',
     'stop_loss', '-1', 'ContractBuyValidationError', "Invalid stop loss. Stop loss must be higher than commission";
-test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_multiplier_limit_order.json', 'MULTUP', 'R_100', 'stake', '10',
-    'stop_loss', '1', 'Win 10% of your stake for every 1% rise in the market price.', '100.00', '100', '65258.19', 'Stop Out', '58765.26', 'Stop Loss', '65225.82';
+test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_multiplier_limit_order.json', 'MULTUP', 'R_100',
+    'stake',     '10',
+    'stop_loss', '1', 'Win 10% of your stake for every 1% rise in the market price.', '100.00', '100', '65258.19', 'Stop Out', '58765.26',
+    'Stop Loss', '65225.82';
 
 # multiplier
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'payout', '10',
@@ -202,14 +207,19 @@ test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receiv
     'ContractBuyValidationError', 'Multiplier is not in acceptable range. Accepts 10,20,30,50,100.';
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_multiplier.json', 'MULTUP', 'R_100', 'stake', '10',
     'Win 10% of your stake for every 1% rise in the market price.', '100.00', '100', '65258.19', 'Stop Out', '58765.26', '', '';
-test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake', '10',
+test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake',
+    '10',
     'something', '1', 'InputValidationFailed', 'Input validation failed: limit_order';
-test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake', '10',
+test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake',
+    '10',
     'take_profit', '-1', 'ContractBuyValidationError', 'Please enter a take profit amount that\'s higher than 0.00.';
-test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake', '10',
+test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_limit_order_error.json', 'MULTUP', 'R_100', 'stake',
+    '10',
     'stop_loss', '-1', 'ContractBuyValidationError', "Invalid stop loss. Stop loss must be higher than commission";
-test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_multiplier_limit_order.json', 'MULTUP', 'R_100', 'stake', '10',
-    'stop_loss', '1', 'Win 10% of your stake for every 1% rise in the market price.', '100.00', '100', '65258.19', 'Stop Out', '58765.26', 'Stop Loss', '65225.82';
+test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal/test_receive_multiplier_limit_order.json', 'MULTUP', 'R_100',
+    'stake',     '10',
+    'stop_loss', '1', 'Win 10% of your stake for every 1% rise in the market price.', '100.00', '100', '65258.19', 'Stop Out', '58765.26',
+    'Stop Loss', '65225.82';
 
 #subscription
 test_sendrecv_params 'proposal/test_send_subscribe.json', 'proposal/test_receive_subscribe.json',
