@@ -212,6 +212,10 @@ rpc authorize => sub {
         push @account_list, $_get_account_details->($clnt, $currency);
     }
 
+    my $precisions = Format::Util::Numbers->get_precision_config;
+    my %local_currencies =
+        map { ($_ => {fractional_digits => $precisions->{amount}{$_} // 2}) } $client->local_currency;
+
     my $account = $client->default_account;
     return {
         fullname => $client->full_name,
@@ -219,8 +223,9 @@ rpc authorize => sub {
         loginid  => $client->loginid,
         balance  => $account ? formatnumber('amount', $account->currency_code(), $account->balance) : '0.00',
         currency => ($account ? $account->currency_code() : ''),
-        email    => $client->email,
-        country  => $client->residence,
+        local_currencies         => \%local_currencies,
+        email                    => $client->email,
+        country                  => $client->residence,
         landing_company_name     => $lc->short,
         landing_company_fullname => $lc->name,
         scopes                   => $scopes,

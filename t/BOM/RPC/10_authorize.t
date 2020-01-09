@@ -110,6 +110,7 @@ subtest $method => sub {
             'is_virtual'               => '0'
         },
         'currency'                      => '',
+        'local_currencies'              => {IDR => {fractional_digits => 2}},
         'email'                         => 'dummy@binary.com',
         'scopes'                        => ['read', 'admin', 'trade', 'payments'],
         'balance'                       => '0.00',

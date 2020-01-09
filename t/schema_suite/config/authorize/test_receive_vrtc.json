@@ -14,7 +14,8 @@
       "stash",
       "account_list",
       "upgradeable_landing_companies",
-      "user_id"
+      "user_id",
+      "local_currencies"
    ],
    "additionalProperties" : false,
    "title" : null,
@@ -80,6 +81,23 @@
       "landing_company_name" : {
          "type" : "string",
          "pattern" : "^virtual$"
+      },
+      "local_currencies": {
+          "type": "object",
+          "minProperties": 1,
+          "patternProperties": {
+              "^[A-Z]{3,4}$": {
+                  "type": "object",
+                  "required": [
+                      "fractional_digits"
+                  ],
+                  "properties": {
+                      "fractional_digits": {
+                          "type": "number"
+                      }
+                  }
+              }
+          }
       },
       "loginid" : {
          "pattern" : "^VRTC",
