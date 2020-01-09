@@ -172,6 +172,7 @@ sub _validate_update_parameter {
             if ($contract->$order_name) {
                 my $new_order = $contract->new_order({$order_name => undef});
                 $self->$order_name($new_order);
+                $self->requeue_stop_out(1) if $order_name eq 'stop_loss';
             }
             next;
         }
@@ -356,6 +357,12 @@ has [qw(take_profit stop_loss)] => (
     init_arg => undef,
 );
 
+has requeue_stop_out => (
+    is        => 'rw',
+    default   => 0,
+    init_args => undef,
+);
+
 ### PRIVATE ###
 
 sub _requeue_transaction {
@@ -364,17 +371,17 @@ sub _requeue_transaction {
     my $fmb      = $self->fmb;
     my $contract = $self->contract;
 
+    my $expiry_queue_params = {
+        purchase_price        => $fmb->{buy_price},
+        transaction_reference => $fmb->{buy_transaction_id},
+        contract_id           => $fmb->{id},
+        symbol                => $fmb->{underlying_symbol},
+        in_currency           => $self->client->currency,
+        held_by               => $self->client->loginid,
+    };
+
     my ($in, $out);
     foreach my $order_type (keys %{$self->update_params}) {
-        my $expiry_queue_params = {
-            purchase_price        => $fmb->{buy_price},
-            transaction_reference => $fmb->{buy_transaction_id},
-            contract_id           => $fmb->{id},
-            symbol                => $fmb->{underlying_symbol},
-            in_currency           => $self->client->currency,
-            held_by               => $self->client->loginid,
-        };
-
         my $which_side = $order_type . '_side';
         my $key = $contract->$which_side eq 'lower' ? 'down_level' : 'up_level';
 
@@ -383,6 +390,13 @@ sub _requeue_transaction {
         delete $expiry_queue_params->{$key};
         $expiry_queue_params->{$key} = $self->$order_type->barrier_value if $self->$order_type;
         $in = enqueue_open_contract($expiry_queue_params) // 0;
+    }
+
+    # when stop loss is cancelled, we need to requeue stop out
+    if ($self->requeue_stop_out) {
+        my $key = $contract->stop_out_side eq 'lower' ? 'down_level' : 'up_level';
+        $expiry_queue_params->{$key} = $contract->stop_out->barrier_value;
+        enqueue_open_contract($expiry_queue_params);
     }
 
     return {
