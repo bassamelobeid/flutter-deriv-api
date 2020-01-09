@@ -404,7 +404,7 @@ subtest 'Creating order with wrong currency' => sub {
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
-    
+
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('EUR');
 

@@ -851,8 +851,12 @@ for the currency mapping, for cases where you want to use citizenship or a speci
 
 sub local_currency {
     my ($self, $country) = @_;
+    $country //= $self->residence;
+
+    return unless $country;
+
     require Locale::Object::Currency;
-    return Locale::Object::Currency->new(country_code => $country // $self->residence)->code;
+    return Locale::Object::Currency->new(country_code => $country)->code;
 }
 
 sub has_deposits {
