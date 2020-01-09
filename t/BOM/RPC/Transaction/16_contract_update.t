@@ -157,9 +157,9 @@ subtest 'contract_update' => sub {
     delete $update_params->{args}->{limit_order};
     $update_params->{args}->{history} = 1;
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
-    is $res->{history}->[0]->{display_name}, 'Stop Loss';
+    is $res->{history}->[0]->{display_name}, 'Stop loss';
     is $res->{history}->[0]->{order_amount}, -80;
-    is $res->{history}->[1]->{display_name}, 'Take Profit';
+    is $res->{history}->[1]->{display_name}, 'Take profit';
     is $res->{history}->[1]->{order_amount}, 10;
 };
 
