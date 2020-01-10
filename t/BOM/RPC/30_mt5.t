@@ -234,6 +234,88 @@ subtest 'new account' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
+subtest 'new account dry_run' => sub {
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'gaming',
+            country      => 'mt',
+            email        => $DETAILS{email},
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password},
+            leverage     => 100,
+            dry_run      => 1
+        },
+    };
+    $c->call_ok($method, $params)->has_no_error('mt5 new account dry run only runs validations');
+    is($c->result->{login},           'dry_run_login', 'dry run result->{login}');
+    is($c->result->{balance},         0,               'Balance is 0 upon dry run');
+    is($c->result->{display_balance}, '0.00',          'Display balance is "0.00" upon dry run');
+    is($c->result->{currency},        'USD',           'Currency is "USD" upon dry run');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+};
+
+subtest 'new account dry_run using invalid arguments' => sub {
+    my $method = 'mt5_new_account';
+
+    # Invalid account type
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'an_invalid_account_type',
+            country      => 'mt',
+            email        => $DETAILS{email},
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password},
+            leverage     => 100,
+            dry_run      => 1
+        },
+    };
+    $c->call_ok($method, $params)->has_error('invalid account_type on dry run')
+        ->error_code_is('InvalidAccountType', 'invalid account_type entered on dry run')
+        ->error_message_like(qr/We can't find this account/, 'error message for invalid account_type entered on dry run');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+    # Invalid sub account type
+    $params->{args}->{account_type}     = 'financial';
+    $params->{args}->{mt5_account_type} = 'invalid_account_type';
+
+    $c->call_ok($method, $params)->has_error('invalid mt5_account_type on dry run')
+        ->error_code_is('InvalidSubAccountType', 'invalid mt5_account_type entered on dry run')
+        ->error_message_like(qr/We can't find this account/, 'error message for invalid mt5_account_type entered on dry run');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+};
+
+subtest 'new account dry_run on a client with no account currency' => sub {
+    my $test_client_with_no_currency = create_client('CR');
+    my $method                       = 'mt5_new_account';
+    my $params                       = {
+        language => 'EN',
+        token    => $m->create_token($test_client_with_no_currency->loginid, 'test token'),
+        args     => {
+            account_type => 'gaming',
+            country      => 'mt',
+            email        => $DETAILS{email},
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password},
+            leverage     => 100,
+            dry_run      => 1
+        },
+    };
+
+    $c->call_ok($method, $params)->has_error('no currency set for the account')
+        ->error_code_is('SetExistingAccountCurrency', 'provided client has no default currency on dry run')
+        ->error_message_like(qr/Please set your account currency./, 'error message for client with no default currency on dry run');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+};
+
 subtest 'new account with switching' => sub {
     my $method = 'mt5_new_account';
     my $params = {
@@ -473,6 +555,17 @@ subtest 'VRTC to MLT and MF account switching' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
     $c->call_ok($method, $params)->has_error('cannot create gaming account for VRTC only users')
         ->error_code_is('RealAccountMissing', 'error should be permission denied');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
+
+    # Add dry_run test, we should get exact result like previous test
+    $params->{args}->{dry_run} = 1;
+    $c->call_ok($method, $params)->has_error('cannot create gaming account for VRTC only users even on dry_run')
+        ->error_code_is('RealAccountMissing', 'error should be permission denied on dry_run');
+
+    # Reset params after dry_run test
+    $params->{args}->{dry_run} = 0;
+    BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
 
     $switch_user->add_client($mlt_switch_client);
 
