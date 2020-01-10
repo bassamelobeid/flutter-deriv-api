@@ -83,7 +83,7 @@ subtest 'contract_update' => sub {
     };
 
     $c->call_ok('contract_update', $update_params)->has_error->error_code_is('ContractNotFound')
-        ->error_message_is('Contract not found for contract id: 123.');
+        ->error_message_is('No open contract found for contract id: 123.');
 
     my $buy_params = {
         client_ip           => '127.0.0.1',
