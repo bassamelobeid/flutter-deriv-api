@@ -381,7 +381,7 @@ subtest 'multiplier - get_bid' => sub {
             'date_expiry' => ignore(),
         },
         'validation_error' =>
-            'If we close this contract now, you may lose your stake. Alternatively, you may cancel this contract and you’ll get your stake back without any loss or profit.',
+            'If we close this contract now, you may lose your stake. Alternatively, you may cancel this contract and you\'ll get your stake back without any loss or profit.',
     };
     $res = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     cmp_deeply($res, $expected, 'get_bid as expected');
