@@ -4,6 +4,7 @@ use Moo;
 
 use BOM::Platform::Context qw(localize);
 use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Database::ClientDB;
 use BOM::Database::Helper::FinancialMarketBet;
 
 use Machine::Epsilon;
@@ -13,6 +14,7 @@ use BOM::Transaction;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::Product::ContractFactory qw(produce_contract);
 use ExpiryQueue qw(enqueue_open_contract dequeue_open_contract);
+use List::Util qw(first);
 
 =head1 NAME
 
@@ -67,7 +69,7 @@ sub BUILD {
     unless ($contract) {
         $self->validation_error({
             code              => 'ContractNotFound',
-            message_to_client => localize('Contract not found for contract id: [_1].', $self->contract_id),
+            message_to_client => localize('No open contract found for contract id: [_1].', $self->contract_id),
         });
     }
 
@@ -83,9 +85,13 @@ has contract => (
 sub _build_contract {
     my $self = shift;
 
-    my $fmb_dm = $self->_fmb_datamapper;
-    # fmb reference with buy_transantion transaction ids (buy or buy and sell)
-    my $fmb = $fmb_dm->get_contract_details_with_transaction_ids($self->contract_id)->[0];
+    my $client   = $self->client;
+    my $clientdb = BOM::Database::ClientDB->new({
+        client_loginid => $client->loginid,
+        operation      => 'replica',
+    });
+    my $fmb = first { $_->{id} == $self->contract_id }
+    @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false'])};
 
     return undef unless $fmb;
 
@@ -309,7 +315,10 @@ sub get_history {
         return $self->validation_error;
     }
 
-    my $fmb_dm  = $self->_fmb_datamapper;
+    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new(
+        broker_code => $self->client->broker_code,
+        operation   => 'replica',
+    );
     my @allowed = sort keys %{$self->allowed_update};
 
     my $results = $fmb_dm->get_multiplier_audit_details_by_contract_id($self->contract_id);
@@ -403,21 +412,6 @@ sub _requeue_transaction {
         out => $out,
         in  => $in,
     };
-}
-
-has _fmb_datamapper => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_fmb_datamapper',
-);
-
-sub _build_fmb_datamapper {
-    my $self = shift;
-
-    return BOM::Database::DataMapper::FinancialMarketBet->new(
-        broker_code => $self->client->broker_code,
-        operation   => 'replica',
-    );
 }
 
 1;
