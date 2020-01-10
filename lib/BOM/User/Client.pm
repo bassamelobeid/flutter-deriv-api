@@ -402,10 +402,50 @@ date is earlier than the specified date.
 =cut
 
 sub documents_expired {
-    my ($self, $date_limit) = @_;
-    $date_limit //= Date::Utility->new();
+    my $self = shift;
 
     return 0 if $self->is_virtual;
+
+    return 0 unless $self->is_document_expiry_check_required();
+
+    return 0 + !!($self->_get_documents_expiry_by_date());
+}
+
+=head2 is_any_document_expiring_by_date
+
+Returns a boolean indicating if this client (or any related clients)
+have any POI documents (passport, proofid, driverslicense, vf_id, vf_face_id) which
+have expired or the expiration is before a specific date.
+
+Takes one argument:
+
+=over 4
+
+=item * $date_limit
+
+If this argument is not specified, the sub which check for documents which have expired
+(i.e. have an expiration date yesterday or earlier).
+If this argument is specified, the sub will check for documents whose expiration
+date is earlier than the specified date.
+
+=back
+
+=cut
+
+sub is_any_document_expiring_by_date {
+    my ($self, $date_limit) = @_;
+
+    return 0 if $self->is_virtual;
+
+    $date_limit //= Date::Utility->new();
+
+    return 0 + !!($self->_get_documents_expiry_by_date($date_limit));
+}
+
+sub _get_documents_expiry_by_date {
+    my ($self, $date_limit) = @_;
+
+    $date_limit //= Date::Utility->new();
 
     my @query_params = ($self->loginid, $date_limit->db_timestamp);
     my $dbic_code = sub {
@@ -414,7 +454,7 @@ sub documents_expired {
         return $query->fetchrow_arrayref();
     };
 
-    return 0 + !!($self->db->dbic->run(fixup => $dbic_code));
+    return $self->db->dbic->run(fixup => $dbic_code);
 }
 
 =head2 documents_uploaded
@@ -1377,8 +1417,26 @@ sub is_verification_required {
     return 1 if $self->landing_company->short eq 'maltainvest';
 
     # we need to check if mt5 group is for
-    # labuan, if yes then it needs authentication
-    return 1 if (any { defined && /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_standard|_advanced)/ } values %{$self->user->mt5_logins_with_group('real')});
+    # labuan - regulated one, if yes then it needs authentication
+    return 1 if $self->user->has_mt5_regulated_account();
+
+    return 0;
+}
+
+=head2 is_document_expiry_check_required
+
+Check if we need to validate for expired documents
+
+=cut
+
+sub is_document_expiry_check_required {
+    my $self = shift;
+
+    return 1 if $self->landing_company->documents_expiration_check_required();
+
+    return 1 if ($self->aml_risk_classification // '') eq 'high';
+
+    return 1 if $self->user->has_mt5_regulated_account();
 
     return 0;
 }

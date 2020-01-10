@@ -329,6 +329,20 @@ sub get_last_successful_login_history {
     return $self->dbic->run(fixup => sub { $_->selectrow_hashref('SELECT * FROM users.get_last_successful_login_history(?)', undef, $self->{id}) });
 }
 
+=head2 has_mt5_regulated_account
+
+Check if user has any mt5 regulated account - currently its only Labuan
+
+=cut
+
+sub has_mt5_regulated_account {
+    my $self = shift;
+
+    return 1 if (any { defined && /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_standard|_advanced)/ } values %{$self->mt5_logins_with_group('real')});
+
+    return 0;
+}
+
 =head2 get_clients_in_sorted_order
 
 Return an ARRAY reference that is a list of clients in following order
