@@ -23,6 +23,7 @@ $client->payment_legacy_payment(
     payment_type     => 'credit_debit_card',
     transaction_time => $day_one,
     payment_time     => $day_one,
+    source           => 1,
 );
 
 $client->payment_legacy_payment(
@@ -32,6 +33,7 @@ $client->payment_legacy_payment(
     payment_type     => 'credit_debit_card',
     transaction_time => $day_one,
     payment_time     => $day_one,
+    source           => 1,
 );
 
 $client->payment_legacy_payment(
@@ -41,6 +43,7 @@ $client->payment_legacy_payment(
     payment_type     => 'credit_debit_card',
     transaction_time => $day_two,
     payment_time     => $day_two,
+    source           => 1,
 );
 
 my $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
@@ -52,6 +55,7 @@ my $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
     transaction_time => $day_one,
     start_time       => $day_one,
     expiry_time      => $day_one,
+    source           => 1,
 });
 
 my $account_data = {
@@ -87,6 +91,7 @@ $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
     transaction_time => $day_one,
     start_time       => $day_one,
     expiry_time      => $day_two,
+    source           => 1,
 });
 
 $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new({
@@ -112,15 +117,16 @@ $fmb_helper->sell_bet;
 subtest 'Activity report for specific date' => sub {
     plan tests => 2;
 
-    my $reporter = BOM::MyAffiliates::ActivityReporter->new;
+    my $reporter = BOM::MyAffiliates::ActivityReporter->new(
+        brand => Brands->new(name => 'binary'),
+        processing_date => Date::Utility->new(substr($day_one, 0, 10)));
 
-    my @csv = $reporter->activity_for_date_as_csv(substr($day_one, 0, 10));
+    my @csv = $reporter->activity();
     @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out
 
     is(@csv, 1, 'Check if there is only one entry for our client on the report');
     chomp $csv[0];
-    diag
-        "Date, Client Loginid, company profit/loss from client, deposits, turnover_runbets, intraday turnover, other turnover, first funded date, withdrawals, first funded amount";
+    diag $reporter->headers_data();
     is(
         $csv[0],
         '2011-03-08,' . $client->loginid . ',1165.00,9098.00,0.00,912.00,1578.00,2011-03-08,987.00,9098.00',
@@ -142,6 +148,7 @@ subtest 'Not funded account with transaction (bonus?)' => sub {
         amount       => 5000,
         remark       => 'here is money',
         payment_type => 'credit_debit_card',
+        source       => 1,
     );
 
     $client->payment_legacy_payment(
@@ -149,6 +156,7 @@ subtest 'Not funded account with transaction (bonus?)' => sub {
         amount       => 800,
         remark       => 'here is money',
         payment_type => 'credit_debit_card',
+        source       => 1,
     );
 
     BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
@@ -160,9 +168,14 @@ subtest 'Not funded account with transaction (bonus?)' => sub {
         transaction_time => $day_one,
         start_time       => $day_one,
         expiry_time      => $day_two,
+        source           => 1,
     });
 
-    my @csv = BOM::MyAffiliates::ActivityReporter->new->activity_for_date_as_csv(substr($day_one, 0, 10));
+    my $reporter = BOM::MyAffiliates::ActivityReporter->new(
+        brand => Brands->new(name => 'binary'),
+        processing_date => Date::Utility->new(substr($day_one, 0, 10)));
+
+    my @csv = $reporter->activity();
     @csv = grep { my $id = $client->loginid; /$id/ } @csv;
     is(@csv, 1, 'Client is on the list');
 };
@@ -183,9 +196,14 @@ subtest 'Virtual clients are not reported' => sub {
         payment_type     => 'credit_debit_card',
         transaction_time => $day_two,
         payment_time     => $day_two,
+        source           => 1,
     );
 
-    my @csv = BOM::MyAffiliates::ActivityReporter->new->activity_for_date_as_csv(substr($day_one, 0, 10));
+    my $reporter = BOM::MyAffiliates::ActivityReporter->new(
+        brand => Brands->new(name => 'binary'),
+        processing_date => Date::Utility->new(substr($day_one, 0, 10)));
+
+    my @csv = $reporter->activity();
     @csv = grep { /VRTC/ } @csv;    # Filters only VRTC clients
     is(@csv, 0, 'No Virtual client is not on the list');
 };

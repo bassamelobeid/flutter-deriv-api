@@ -3,7 +3,10 @@ use warnings;
 
 use Test::More;
 use Test::Warnings;
+use Date::Utility;
 use Format::Util::Numbers qw/financialrounding/;
+
+use Brands;
 
 use BOM::MyAffiliates::TurnoverReporter;
 use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
@@ -20,6 +23,7 @@ $client->payment_free_gift(
     currency => 'USD',
     amount   => 1000,
     remark   => 'free gift',
+    source   => 1,
 );
 
 my $date       = Date::Utility->new('2017-09-01 00:01:01');
@@ -34,6 +38,7 @@ BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
     start_time       => $start_date,
     expiry_time      => $end_date,
     settlement_time  => $end_date,
+    source           => 1,
 });
 
 my $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
@@ -41,13 +46,20 @@ my $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
     currency_code  => $account->currency_code
 });
 
-my $reporter = BOM::MyAffiliates::TurnoverReporter->new;
+my $reporter = BOM::MyAffiliates::TurnoverReporter->new(
+    brand           => Brands->new(name => 'binary'),
+    processing_date => Date::Utility->new('2017-09-01'));
 
-my @csv = BOM::MyAffiliates::TurnoverReporter->new->activity_for_date_as_csv('2017-09-01');
+my @csv = $reporter->activity();
 
 ok scalar @csv, 'got some records';
 
-my @row = split ',', $csv[0];
+chomp $csv[0];
+my @header_row = split ',', $csv[0];
+
+is_deeply([sort @header_row], [qw/Date Loginid PayoutPrice Probability ReferenceId Stake /], 'first row is header row - got correct header');
+
+my @row = split ',', $csv[1];
 is $row[0], '2017-09-01', 'got correct transaction time';
 is $row[1], $client->loginid, 'got correct loginid';
 

@@ -13,58 +13,56 @@ profit and loss, deposits and withdrawals.
 
     use BOM::MyAffiliates::ActivityReporter;
 
-    my $date = '18-Aug-10';
+    my $reporter = BOM::MyAffiliates::ActivityReporter->new(
+        brand           => Brands->new(),
+        processing_date => Date::Utility->new('18-Aug-10'));
 
-    my $reporter = BOM::MyAffiliates::ActivityReporter->new;
-    $reporter->activity_for_date_as_csv($date);
+    $reporter->activity();
 
 =cut
 
 use Moose;
+extends 'BOM::MyAffiliates::Reporter';
+
 use Text::CSV;
 use Date::Utility;
 use File::SortedSeek qw(numeric get_between);
 use Format::Util::Numbers qw(formatnumber);
 use ExchangeRates::CurrencyConverter qw(in_usd);
 
-use BOM::Database::DataMapper::MyAffiliates;
+use constant HEADERS => qw(
+    date client_loginid company_profit_loss deposits turnover_ticktrade intraday_turnover other_turnover first_funded_date withdrawals first_funded_amount
+);
 
-=head2 activity_for_date_as_csv
+has '+include_headers' => (
+    default => 0,
+);
 
-    $reporter->activity_for_date_as_csv('8-Sep-10');
+=head2 activity
+
+    $reporter->activity();
 
     Produce a nicely formatted CSV output adjusted to USD.
-
-    Result is formatted to this form:
-
-    Date, Client Loginid, company profit/loss from client, deposits,
-    turnover_ticktrade, intraday turnover, other turnover, first funded date,
-    withdrawals, first funded amount
-
 =cut
 
-sub activity_for_date_as_csv {
-    my ($self, $date_selection) = @_;
+sub activity {
+    my $self = shift;
 
-    return _generate_csv_output($date_selection);
-}
+    my $when = $self->processing_date;
 
-sub _generate_csv_output {
-    my $date_selected = shift;
-
-    my $when = Date::Utility->new($date_selected);
-
-    my $myaffiliates_data_mapper = BOM::Database::DataMapper::MyAffiliates->new({
-        'broker_code' => 'FOG',
-        'operation'   => 'collector',
+    my $apps_by_brand = $self->get_apps_by_brand();
+    my $activity      = $self->database_mapper()->get_clients_activity({
+        date              => $when,
+        only_authenticate => 'false',
+        broker_code       => undef,
+        include_apps      => $apps_by_brand->{include_apps},
+        exclude_apps      => $apps_by_brand->{exclude_apps},
     });
 
-    $myaffiliates_data_mapper->db->dbic->run(ping => sub { $_->do("SET statement_timeout TO " . 900_000) });
-
-    my $activity = $myaffiliates_data_mapper->get_clients_activity({'date' => $when});
-
-    my @output;
+    my @output          = ();
     my %conversion_hash = ();
+
+    push @output, $self->headers_data() if ($self->include_headers and keys %{$activity});
 
     foreach my $loginid (sort keys %{$activity}) {
         my $currency = $activity->{$loginid}->{currency};
@@ -102,10 +100,18 @@ sub _generate_csv_output {
         }
 
         $csv->combine(@output_fields);
-        push @output, $csv->string;
+        push @output, $self->format_data($csv->string);
     }
 
     return @output;
+}
+
+sub output_file_prefix {
+    return 'pl_';
+}
+
+sub headers {
+    return HEADERS;
 }
 
 no Moose;

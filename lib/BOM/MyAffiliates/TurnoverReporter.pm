@@ -15,24 +15,29 @@ and contract reference id
 
     use BOM::MyAffiliates::TurnoverReporter;
 
-    my $date = '18-Aug-10';
+    my $reporter = BOM::MyAffiliates::TurnoverReporter->new(
+        brand           => Brands->new(),
+        processing_date => Date::Utility->new('18-Aug-10'));
 
-    my $reporter = BOM::MyAffiliates::TurnoverReporter->new;
-    $reporter->activity_for_date_as_csv($date);
+    $reporter->activity();
 
 =cut
 
+use Moose;
+extends 'BOM::MyAffiliates::Reporter';
+
 use Date::Utility;
+use Text::CSV;
 use File::SortedSeek qw/numeric get_between/;
 use Format::Util::Numbers qw/financialrounding/;
-use Moose;
-use Text::CSV;
 
-use BOM::Database::DataMapper::MyAffiliates;
+use constant HEADERS => qw(
+    Date Loginid Stake PayoutPrice Probability ReferenceId
+);
 
-=head2 activity_for_date_as_csv
+=head2 activity
 
-    $reporter->activity_for_date_as_csv('8-Sep-10');
+    $reporter->activity();
 
     Produce a nicely formatted CSV output adjusted into USD
     for the requested date formatted as follows:
@@ -42,23 +47,22 @@ use BOM::Database::DataMapper::MyAffiliates;
 
 =cut
 
-sub activity_for_date_as_csv {
-    my ($self, $date_selection) = @_;
-    my $when = Date::Utility->new({datetime => $date_selection});
+sub activity {
+    my $self = shift;
 
-    my $myaffiliates_data_mapper = BOM::Database::DataMapper::MyAffiliates->new({
-        'broker_code' => 'FOG',
-        'operation'   => 'collector',
+    my $apps_by_brand = $self->get_apps_by_brand();
+    my $activity      = $self->database_mapper()->get_trading_activity({
+        date         => $self->processing_date,
+        include_apps => $apps_by_brand->{include_apps},
+        exclude_apps => $apps_by_brand->{exclude_apps},
     });
 
-    $myaffiliates_data_mapper->db->dbh->do("SET statement_timeout TO " . 900_000);
+    my @output = ();
+    push @output, $self->format_data($self->headers_data()) if ($self->include_headers and scalar @$activity);
 
-    my $activity = $myaffiliates_data_mapper->get_trading_activity({'date' => $when});
-
-    my (@output, @output_fields, $csv);
     foreach my $obj (@$activity) {
-        $csv           = Text::CSV->new;
-        @output_fields = (
+        my $csv           = Text::CSV->new;
+        my @output_fields = (
             # transaction date
             Date::Utility->new($obj->[0])->date_yyyymmdd,
             # loginid
@@ -72,24 +76,18 @@ sub activity_for_date_as_csv {
             # contract reference id
             $obj->[5]);
         $csv->combine(@output_fields);
-        push @output, $csv->string;
+        push @output, $self->format_data($csv->string);
     }
 
     return @output;
 }
 
-=head2 get_headers_for_csv
+sub output_file_prefix {
+    return 'turnover_';
+}
 
-    BOM::MyAffiliates::TurnoverReporter::get_headers_for_csv
-
-    Headers for turnover csv
-
-=cut
-
-sub get_headers_for_csv {
-    my $csv = Text::CSV->new;
-    $csv->combine(qw/Date Loginid Stake PayoutPrice Probability ReferenceId/);
-    return $csv->string;
+sub headers {
+    return HEADERS;
 }
 
 no Moose;
