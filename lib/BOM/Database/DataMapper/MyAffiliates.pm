@@ -20,13 +20,16 @@ sub get_clients_activity {
     my $dbic = $self->db->dbic;
 
     my $sql = q{
-        SELECT * FROM get_myaffiliate_clients_activity($1, $2, $3)
+        SELECT * FROM get_myaffiliate_clients_activity($1, $2, $3, $4, $5)
     };
 
     return $dbic->run(
         fixup => sub {
             my $sth = $_->prepare($sql);
-            $sth->execute($args->{'date'}->date_yyyymmdd, $args->{only_authenticate} || 'false', $args->{broker_code});
+            $sth->execute(
+                $args->{'date'}->date_yyyymmdd,
+                $args->{only_authenticate} || 'false',
+                $args->{broker_code}, $args->{include_apps}, $args->{exclude_apps});
 
             return $sth->fetchall_hashref('loginid');
         });
@@ -43,13 +46,13 @@ sub get_trading_activity {
     my $dbic = $self->db->dbic;
 
     my $sql = q{
-        SELECT * FROM get_myaffiliate_clients_trading_activity($1)
+        SELECT * FROM get_myaffiliate_clients_trading_activity($1, $2, $3)
     };
 
     return $dbic->run(
         sub {
             my $sth = $_->prepare($sql);
-            $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ);
+            $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ, $args->{include_apps}, $args->{exclude_apps});
 
             return $sth->fetchall_arrayref;
         });
