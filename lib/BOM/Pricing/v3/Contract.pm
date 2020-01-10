@@ -528,7 +528,7 @@ sub get_contract_details {
         $bet_params =
             shortcode_to_parameters($params->{short_code}, $params->{currency});
         if ($bet_params->{bet_type} =~ /^(?:MULTUP|MULTDOWN)$/) {
-            my $pricer_redis = BOM::Config::RedisReplicate::redis_pricer();
+            my $pricer_redis = BOM::Config::RedisReplicated::redis_pricer();
             my $contract_params = BOM::Pricing::v3::Utility::get_contract_params($pricer_redis, $params->{contract_id}, $params->{landing_company});
             $bet_params->{limit_order} = $contract_params->{limit_order};
         }
