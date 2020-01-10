@@ -119,9 +119,6 @@ my $payment_agent_exclusion_list = BOM::Config::Runtime->instance->app_config->p
 my $payment_withdrawal_limits = BOM::Config->payment_limits()->{withdrawal_limits};
 my $payment_transfer_limits   = BOM::Config::payment_agent()->{transaction_limits}->{transfer};
 
-## Global binary_user_id
-my $bid = 12345;
-
 ##
 ## Test of 'rpc paymentagent_transfer' in Cashier.pm
 ##
@@ -189,7 +186,16 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
     my $amount_boost = (grep { $_ eq $test_currency } @crypto_currencies) ? '0.001' : 100;
     my $precision    = (grep { $_ eq $test_currency } @crypto_currencies) ? 8       : 2;
 
-    ## Create brand new clients for each loop
+    my $email    = 'abc1' . rand . '@binary.com';
+    my $password = 'jskjd8292922';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+
+    my $user = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+
+    # Create brand new clients for each loop
     my $broker = 'CR';
     $Alice = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => $broker,
@@ -198,12 +204,22 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
     $Alice_id = $Alice->loginid;
     $Alice->set_default_account($test_currency);
 
+    $user->add_client($Alice);
+
+    $email = 'abc2' . rand . '@binary.com';
+    $user  = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+
     $Bob = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => $broker,
         first_name  => 'Bob'
     });
     $Bob_id = $Bob->loginid;
     $Bob->set_default_account($test_currency);
+
+    $user->add_client($Bob);
 
     diag "Transfer currency is $test_currency. Created Alice as $Alice_id and Bob as $Bob_id";
 
@@ -814,19 +830,35 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
     $test_amount = (grep { $_ eq $test_currency } @crypto_currencies) ? 0.003 : 101;
     $dry_run = 1;
 
+    my $email    = 'abc3' . rand . '@binary.com';
+    my $password = 'jskjd8292922';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+
+    my $user = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+
     my $broker = 'CR';
     $Alice = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => $broker,
-        binary_user_id => $bid++,
+        broker_code => $broker,
     });
     $Alice_id = $Alice->loginid;
 
-    $Bob = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => $broker,
+    $user->add_client($Alice);
 
-            binary_user_id => $bid++,
+    $email = 'abc4' . rand . '@binary.com';
+    $user  = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+
+    $Bob = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => $broker,
     });
     $Bob_id = $Bob->loginid;
+
+    $user->add_client($Bob);
 
     diag "Withdraw currency is $test_currency. Created Alice as $Alice_id and Bob as $Bob_id";
 
@@ -997,8 +1029,10 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $auth_document_args->{expiration_date} = '1999-12-31';
         my ($doc) = $Alice->add_client_authentication_document($auth_document_args);
         $Alice->save;
+        $mock_user_client->mock('is_document_expiry_check_required', sub { 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/documents have expired/, $test);
+        $mock_user_client->unmock('is_document_expiry_check_required');
 
         $test = 'Withdraw fails if payment agent status = disabled';
         my $clientdbh   = $Alice->dbh;
@@ -1034,8 +1068,10 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $auth_document_args->{expiration_date} = '1999-02-24';
         ($doc) = $Bob->add_client_authentication_document($auth_document_args);
         $Bob->save;
+        $mock_user_client->mock('is_document_expiry_check_required', sub { 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/documents have expired/, $test);
+        $mock_user_client->unmock('is_document_expiry_check_required');
         $sth_doc_exp->execute('2999-02-25', $Bob_id);
         ## Need Rose to pick the DB changes up
         $Bob  = BOM::User::Client->new({loginid => $Bob_id});

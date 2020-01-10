@@ -70,6 +70,8 @@ use constant POI_DOCUMENTS_TYPE => qw(
     proofid driverslicense passport
 );
 
+use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
+
 my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers/;
 my $email_field_labels         = {
     exclude_until          => 'Exclude from website until',
@@ -766,11 +768,13 @@ rpc get_account_status => sub {
 
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
-    # check if the user's documents are expired or expiring soon
-    if ($client->documents_expired()) {
-        push(@$status, 'document_expired');
-    } elsif ($client->documents_expired(Date::Utility->new()->plus_time_interval('1mo'))) {
-        push(@$status, 'document_expiring_soon');
+    if ($client->is_document_expiry_check_required()) {
+        # check if the user's documents are expired or expiring soon
+        if ($client->documents_expired()) {
+            push(@$status, 'document_expired');
+        } elsif ($client->is_any_document_expiring_by_date(Date::Utility->new()->plus_time_interval(DOCUMENT_EXPIRING_SOON_INTERVAL))) {
+            push(@$status, 'document_expiring_soon');
+        }
     }
 
     return {
@@ -839,12 +843,13 @@ sub _get_authentication {
 
     my %needs_verification_hash = ();
 
-    my $poi_structure = sub {
-        $authentication_object->{identity}{expiry_date} = $poi_minimum_expiry_date if $poi_minimum_expiry_date;
+    my $is_expiry_check_required = $client->is_document_expiry_check_required();
+    my $poi_structure            = sub {
+        $authentication_object->{identity}{expiry_date} = $poi_minimum_expiry_date if $poi_minimum_expiry_date and $is_expiry_check_required;
 
         $authentication_object->{identity}{status} = 'pending' if $is_poi_pending;
         # check for expiry
-        if ($is_poi_already_expired) {
+        if ($is_poi_already_expired and $is_expiry_check_required) {
             $authentication_object->{identity}{status} = 'expired';
             $needs_verification_hash{identity} = 'identity';
         }
@@ -853,10 +858,10 @@ sub _get_authentication {
     };
 
     my $poa_structure = sub {
-        $authentication_object->{document}{expiry_date} = $poa_minimum_expiry_date if $poa_minimum_expiry_date;
+        $authentication_object->{document}{expiry_date} = $poa_minimum_expiry_date if $poa_minimum_expiry_date and $is_expiry_check_required;
 
         # check for expiry
-        if ($is_poa_already_expired) {
+        if ($is_poa_already_expired and $is_expiry_check_required) {
             $authentication_object->{document}{status} = 'expired';
             $needs_verification_hash{document} = 'document';
         }
