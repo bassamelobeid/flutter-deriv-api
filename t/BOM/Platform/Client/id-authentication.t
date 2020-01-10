@@ -298,7 +298,8 @@ subtest 'MX accounts' => sub {
         ok !$v->client->status->unwelcome, "Not unwelcome due to sufficient FullNameAndAddress Match";
         ok $v->client->status->age_verification, "Age verified due to suffiecient DOB Match";
 
-        cmp_ok($v->client->get_authentication('ID_ONLINE')->status, 'eq', 'pass', "Online Verification authenticated due to sufficient FullNameAndAddress Match");
+        cmp_ok($v->client->get_authentication('ID_ONLINE')->status,
+            'eq', 'pass', "Online Verification authenticated due to sufficient FullNameAndAddress Match");
         ok $v->client->status->proveid_requested, "ProveID requested";
 
         $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});

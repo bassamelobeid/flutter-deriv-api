@@ -83,16 +83,25 @@ my $MX_SIBLINGS_2 =
     [create_client('MX', undef, {binary_user_id => 5}), create_client('MX', undef, {binary_user_id => 5})];
 my $MLT_SIBLINGS_2 =
     [create_client('MLT', undef, {binary_user_id => 6}), create_client('MLT', undef, {binary_user_id => 6})];
-my %clients_2 = (
-    CR  => $CR_SIBLINGS_2,
+my %clients_with_expired_check_mandatory = (
     MX  => $MX_SIBLINGS_2,
     MLT => $MLT_SIBLINGS_2,
 );
 
+$user_client_cr->add_client($_) foreach @$CR_SIBLINGS_2;
+$user_client_cr->add_client($_) foreach @$MX_SIBLINGS_2;
+$user_client_cr->add_client($_) foreach @$MLT_SIBLINGS_2;
+
+my %clients_with_expired_check_not_mandatory = (
+    CR => $CR_SIBLINGS_2,
+);
+
+my %all_clients = (%clients_with_expired_check_not_mandatory, %clients_with_expired_check_mandatory);
+
 # expire the first client in the group
-foreach my $broker_code (keys %clients_2) {
+foreach my $broker_code (keys %all_clients) {
     # expire first client
-    my $client = $clients_2{$broker_code}[0];
+    my $client = $all_clients{$broker_code}[0];
     my ($doc) = $client->add_client_authentication_document({
         file_name                  => $client->loginid . '.passport.' . Date::Utility->new('2008-02-03')->epoch . '.pdf',
         document_type              => "passport",
@@ -109,10 +118,18 @@ foreach my $broker_code (keys %clients_2) {
 # if one sibling client expire, the rest of the siblings of that client should expire as well
 subtest 'Documents expiry test' => sub {
     plan tests => 3;
-    foreach my $broker (keys %clients_2) {
+    foreach my $broker (keys %clients_with_expired_check_mandatory) {
         subtest "$broker client" => sub {
-            foreach my $client ($clients_2{$broker}->@*) {
+            foreach my $client ($clients_with_expired_check_mandatory{$broker}->@*) {
                 ok $client->documents_expired, "Documents Expired";
+            }
+        };
+    }
+
+    foreach my $broker (keys %clients_with_expired_check_not_mandatory) {
+        subtest "$broker client" => sub {
+            foreach my $client ($clients_with_expired_check_not_mandatory{$broker}->@*) {
+                is $client->documents_expired, 0, "Documents Expiry Does Not Matter";
             }
         };
     }

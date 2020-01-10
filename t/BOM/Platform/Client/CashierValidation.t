@@ -21,41 +21,49 @@ my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_2, $cr_cli
 
 subtest prepare => sub {
     $new_email = 'test' . rand . '@binary.com';
+    my $user_client = BOM::User->create(
+        email          => $new_email,
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
+
     $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
         email       => $new_email,
     });
 
-    $new_email = 'test' . rand . '@binary.com';
     $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $new_email,
         binary_user_id => 1,
     });
-    $new_email   = 'test' . rand . '@binary.com';
     $cr_client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
         email          => $new_email,
         binary_user_id => 1,
     });
 
-    $new_email  = 'test' . rand . '@binary.com';
     $mlt_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MLT',
         email       => $new_email,
     });
 
-    $new_email = 'test' . rand . '@binary.com';
     $mf_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
         email       => $new_email,
     });
 
-    $new_email = 'test' . rand . '@binary.com';
     $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MX',
         email       => $new_email,
     });
+
+    $user_client->add_client($vr_client);
+    $user_client->add_client($cr_client);
+    $user_client->add_client($cr_client_2);
+    $user_client->add_client($mlt_client);
+    $user_client->add_client($mf_client);
+    $user_client->add_client($mx_client);
 
     pass "Prepration successful";
 };
@@ -125,10 +133,18 @@ subtest 'Cashier validation common' => sub {
     $cr_client->save;
 
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code for expired documents';
+    is $res->{error}->{code}, undef, 'Correct error code for expired documents but expired check not required';
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->mock(is_document_expiry_check_required => sub { note "mocked Client->is_document_expiry_check_required returning true"; 1 });
+
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+    diag $res;
+    is $res->{error}->{code}, 'CashierForwardError', 'Correct error code for expired documents with expired check required';
     is $res->{error}->{message_to_client},
         'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to support@binary.com to unlock your cashier.',
-        'Correct error message for expired documents';
+        'Correct error message for expired documents with expired check required';
+    $mock_client->unmock_all();
 
     my $new_expiration_date = Date::Utility->new()->plus_time_interval('1d')->date;
     $cr_client->client_authentication_document->[0]->expiration_date($new_expiration_date);
