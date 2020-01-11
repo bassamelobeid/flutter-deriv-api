@@ -62,8 +62,18 @@ sub onfido_service_token {
     $loop->add($services = BOM::RPC::v3::Services->new) unless $services;
 
     my $onfido  = $services->onfido();
-    my $country = uc($client->place_of_birth // $client->residence);
+    my $country = uc($client->place_of_birth || $client->residence);
     my $loginid = $client->loginid;
+
+    return Future->done({
+            error => BOM::RPC::v3::Utility::create_error({
+                    code              => 'MissingPersonalDetails',
+                    message_to_client => localize('Update your personal details.'),
+                    details           => {
+                        place_of_birth => "is missing and it is required",
+                        residence      => "is missing and it is required",
+                    },
+                })}) unless $country;
 
     my $is_country_supported = BOM::Config::Onfido::is_country_supported($country);
 
