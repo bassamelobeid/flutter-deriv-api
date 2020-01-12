@@ -25,7 +25,6 @@ use Quant::Framework::ImpliedRate;
 use Quant::Framework::InterestRate;
 use Quant::Framework::Asset;
 use Bloomberg::CurrencyConfig;
-use Try::Tiny;
 
 sub script_run {
     my $self = shift;

@@ -32,7 +32,7 @@ use BOM::Config::RedisReplicated;
 use Quant::Framework::EconomicEventCalendar;
 use LandingCompany::Registry;
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use namespace::autoclean;
 use JSON::MaybeXS;
 use List::Util qw(first);
@@ -84,9 +84,9 @@ sub iterate {
                 $self->_perform_checks($json->decode($message));
             }
             catch {
-                warn "exception caught while performing feed jump checks for $_";
+                warn "exception caught while performing feed jump checks for $@";
                 stats_inc('bom.marketdata.feedjump.exception');
-            };
+            }
         });
 
     return;
