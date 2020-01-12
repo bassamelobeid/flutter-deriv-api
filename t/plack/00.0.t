@@ -17,4 +17,3 @@ if ($ENV{SKIP_TESTDB_INIT}) {
 }
 
 done_testing();
-

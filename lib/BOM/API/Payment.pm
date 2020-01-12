@@ -11,7 +11,7 @@ use Plack::Response;
 use Encode;
 use JSON::MaybeXS;
 use Scalar::Util qw/blessed/;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Log::Dispatch::File;
 use Log::Dispatch::Screen;
 use Data::Dumper;
@@ -236,9 +236,13 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
 sub authen_cb {
     my ($username, $password, $env) = @_;
 
-    my $client = try {
-        BOM::User::Client->new({loginid => $username});
-    } || return;
+    my $client = undef;
+    try {
+        $client = BOM::User::Client->new({loginid => $username});
+    }
+    catch {
+        return;
+    }
     return unless Digest::SHA::sha256_hex($password) eq $client->client_password;
     $env->{BOM_USER} = $client;
     return 1;

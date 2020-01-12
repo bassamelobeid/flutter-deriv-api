@@ -6,7 +6,7 @@ use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
 use Guard;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Date::Utility;
 use Data::Dumper;
 
@@ -134,7 +134,6 @@ sub validate_as_payment {
     my $signed_amount = $c->request_parameters->{amount};
     $signed_amount *= -1 if $action eq 'withdraw';
 
-    my $err;
     try {
         $client->set_default_account($currency);
         $client->validate_payment(
@@ -144,9 +143,10 @@ sub validate_as_payment {
         );
     }
     catch {
-        $err = $_;
-    };
-    return $c->throw(403, $err) if $err;
+        my $err = $@;
+
+        return $c->throw(403, $err) if $err;
+    }
 
     $log->debug("$action validation passed");
 

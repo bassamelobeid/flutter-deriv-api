@@ -5,7 +5,6 @@ package BOM::API::Payment::DoughFlow;
 use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
-use Try::Tiny;
 use Scalar::Util qw/blessed/;
 use BOM::API::Payment::DoughFlow::Backend;
 use BOM::Database::DataMapper::Payment;

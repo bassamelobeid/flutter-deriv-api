@@ -5,7 +5,6 @@ package BOM::API::Payment::Client;
 use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
-use Try::Tiny;
 use Data::Dumper;
 
 sub client_GET {
