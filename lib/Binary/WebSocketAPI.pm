@@ -33,7 +33,7 @@ use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 use URI;
 use List::Util qw( first );
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 # to block apps from certain operations_domains (red, green etc ) enter the color/name of the domain to the list
 # with the associated list of app_id's
@@ -389,7 +389,8 @@ sub startup {
                     $backend_setup_finished = 1;
                 }
                 catch {
-                    $log->error("Error applying backends from master: $@");
+                    my $e = $@;
+                    $log->error("Error applying backends from master: $e");
                 };
             } else {    # there is nothing saved in redis yet.
                 $backend_setup_finished = 1;

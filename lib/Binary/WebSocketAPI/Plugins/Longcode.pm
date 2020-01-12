@@ -19,7 +19,7 @@ See the L</longcode> documentation for details.
 =cut
 
 no indirect;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use List::Util qw(shuffle);
 use Cache::LRU;
 use Future;

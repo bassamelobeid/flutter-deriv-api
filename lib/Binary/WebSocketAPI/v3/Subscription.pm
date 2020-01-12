@@ -23,7 +23,7 @@ use JSON::MaybeUTF8 qw(:v1);
 use Binary::WebSocketAPI::v3::SubscriptionManager;
 use Scalar::Util qw(blessed weaken);
 use Log::Any qw($log);
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_dec);
 use Moo::Role;
 
@@ -104,15 +104,17 @@ Decode, and handle incoming redis messages.
 
 sub process {
     my ($self, $message) = @_;
-    return try {
+
+    try {
         my $data = decode_json_utf8($message);
         $data = $self->handle_error($data->{error}, $message, $data) if exists $data->{error};
         return undef unless $data;
         return $self->handle_message($data);
     }
     catch {
-        $log->errorf("Failure processing Redis subscription message:  %s from original message %s, module %s, channel %s",
-            $_, $message, $self->class, $self->channel);
+        my $e = $@;
+        $log->errorf("Failure processing Redis subscription message: %s from original message %s, module %s, channel %s",
+            $e, $message, $self->class, $self->channel);
     }
 }
 
@@ -221,8 +223,10 @@ sub subscribe {
             $callback->($self);
         }
         catch {
-            $log->warnf("callback invocation error during redis subscription to class %s, channel %s: $_", $self->class, $self->channel);
-        };
+            my $e = $@;
+
+            $log->warnf("callback invocation error during redis subscription to class %s, channel %s: %s", $self->class, $self->channel, $e);
+        }
     };
     $self->status->on_done($self->$curry::weak($wrapped_cb));
     $log->warnf("Too many callbacks in class %s channel %s queue, possible redis connection issue", $self->class, $self->channel)

@@ -9,7 +9,6 @@ use Future;
 use JSON::MaybeXS;
 use Mojo::IOLoop;
 use Path::Tiny;
-use Try::Tiny;
 use Data::Dumper;
 use JSON::Validator;
 use Clone;
