@@ -31,7 +31,7 @@ use BOM::Database::Model::FinancialMarketBet::CallputSpread;
 use BOM::Database::Model::FinancialMarketBet::Runs;
 use BOM::Database::Model::FinancialMarketBet::Multiplier;
 use Date::Utility;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 extends 'BOM::Database::DataMapper::AccountBase';
 
@@ -61,7 +61,7 @@ sub get_sold_bets_of_account {
             AND is_sold = true
     };
     my @binds = ($self->account->id);
-    if ($before and $before = try { Date::Utility->new($before) }) {
+    if ($before and $before = eval { Date::Utility->new($before) }) {
         $sql .= ' AND purchase_time < ?';
         ## If we were passed in a date (but not an epoch or full timestamp)
         ## add in one day, so that 2018-04-07 grabs the entire day by doing
@@ -74,7 +74,7 @@ sub get_sold_bets_of_account {
         }
         push @binds, $before->datetime_yyyymmdd_hhmmss;
     }
-    if ($after and $after = try { Date::Utility->new($after) }) {
+    if ($after and $after = eval { Date::Utility->new($after) }) {
         $sql .= ' AND purchase_time >= ?';
         push @binds, $after->datetime_yyyymmdd_hhmmss;
     }
@@ -263,8 +263,8 @@ sub get_sold_contracts {
     my $last_purchase_time  = $args{last_purchase_time} || 'tomorrow';
     my $dbic                = $self->db->dbic;
 
-    my $sold_contracts = try {
-        $dbic->run(
+    try {
+        return $dbic->run(
             fixup => sub {
                 my $statement = "SELECT * FROM betonmarkets.get_client_sold_contracts_v2(?, ?, ?, ?, ?, ?)";
                 my @bind_values = ($self->account->id, $first_purchase_time, $last_purchase_time, $order_type, $limit, $offset);
@@ -274,9 +274,8 @@ sub get_sold_contracts {
     }
     catch {
         die "Database Error: Unable to fetch the sold contracts\n";
-    };
+    }
 
-    return $sold_contracts;
 }
 
 # we need to get buy sell transactions id for particular contract

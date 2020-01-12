@@ -3,8 +3,6 @@ package BOM::Database::Rose::DB::Object::AutoBase1;
 use strict;
 use warnings;
 
-use Try::Tiny;
-
 use base 'Rose::DB::Object';
 use Rose::DB::Object::Util qw(:get_state);
 

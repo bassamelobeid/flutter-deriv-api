@@ -2,7 +2,7 @@ package BOM::Database::Rose::DB::Cache;
 
 use strict;
 use warnings;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use parent 'Rose::DB::Cache';
 
@@ -26,8 +26,8 @@ sub finish_request_cycle {
                 $dbh->disconnect;
             }
             catch {
-                warn __PACKAGE__ . ": while disconnecting from database: $_";
-            };
+                warn __PACKAGE__ . ": while disconnecting from database: $@";
+            }
         }
     }
 

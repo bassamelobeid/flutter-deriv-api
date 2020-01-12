@@ -21,7 +21,6 @@ use BOM::Database::Model::Constants;
 use BOM::Database::Model::Transaction;
 use BOM::Database::Model::Constants;
 use Date::Utility;
-use Try::Tiny;
 use Carp;
 extends 'BOM::Database::DataMapper::AccountBase';
 

@@ -2,7 +2,6 @@ package BOM::Database::Model::OAuth;
 
 use Moose;
 use Date::Utility;
-use Try::Tiny;
 use BOM::Database::AuthDB;
 
 has 'dbic' => (

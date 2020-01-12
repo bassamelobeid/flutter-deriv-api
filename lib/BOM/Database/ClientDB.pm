@@ -6,7 +6,7 @@ use File::ShareDir;
 use JSON::MaybeXS;
 use Text::Trim qw(trim);
 use LandingCompany::Registry;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use YAML::XS qw(LoadFile);
 use BOM::Config;
 
@@ -157,8 +157,8 @@ sub getall_arrayref {
         @result = map { $decoder->decode($_->[0]) } @$result;
     }
     catch {
-        die "Result must be always rows of JSON : $_";
-    };
+        die "Result must be always rows of JSON : $@";
+    }
 
     return \@result;
 }

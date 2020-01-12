@@ -45,7 +45,7 @@ use Scalar::Util qw(looks_like_number);
 use List::Util qw(uniq all);
 use YAML::XS qw(LoadFile);
 use Finance::Underlying;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use LandingCompany::Registry;
 
@@ -269,14 +269,15 @@ sub set_global_limit {
                                 }
                             }
                             catch {
-                                if ($_) {
-                                    ## Catch known date/time errors
-                                    if ($_ =~ /field value out of range|invalid input syntax/) {
-                                        die "Sorry, that is not a valid time.\n";
-                                    }
-                                    die $_;
+                                #The $error should always has value, but just for safe use 'UNKNOW_ERROR' as default
+                                my $error = $@ || 'UNKNOW_ERROR';
+                                ## Catch known date/time errors
+                                if ($error =~ /field value out of range|invalid input syntax/) {
+                                    die "Sorry, that is not a valid time.\n";
                                 }
-                            };
+                                die $error;
+
+                            }
                         }
                     }
                 }
