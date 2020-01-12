@@ -6,7 +6,7 @@ use warnings;
 use Moo;
 
 use Date::Utility;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 use JSON::MaybeXS;
 use Finance::Asset;
@@ -167,7 +167,7 @@ sub _recover_correlation_matrix {
     }
     catch {
         push @{$self->_exceptions}, 'Exception thrown while recovering correlation_matrices::indices';
-    };
+    }
 
     return;
 }
@@ -193,7 +193,7 @@ sub _recover_holiday {
     }
     catch {
         push @{$self->_exceptions}, 'Exception thrown while recovering holidays';
-    };
+    }
 
     return;
 }
@@ -217,7 +217,7 @@ sub _recover_dividend {
         }
         catch {
             push @{$self->_exceptions}, 'Exception thrown while recovering ' . $name . '::' . $symbol;
-        };
+        }
     }
 
     return;
@@ -243,7 +243,7 @@ sub _recover_interest_rate {
         }
         catch {
             push @{$self->_exceptions}, 'Exception thrown while recovering ' . $name . '::' . $symbol;
-        };
+        }
     }
 
     return;
@@ -276,7 +276,7 @@ sub _recover_volsurface {
         }
         catch {
             push @{$self->_exceptions}, 'Exception thrown while recovering ' . $name . '::' . $symbol;
-        };
+        }
     }
 
     return;

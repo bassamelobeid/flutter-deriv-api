@@ -12,7 +12,7 @@ use DataDog::DogStatsd::Helper qw(stats_gauge);
 use JSON::MaybeXS;
 use Path::Tiny;
 use BOM::Config::Chronicle;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use List::Util qw(first uniq max);
 use Sys::Info;
 use Quant::Framework::EconomicEventCalendar;
@@ -47,8 +47,9 @@ sub run {
         print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.\n";
     }
     catch {
-        print 'Error occured while saving events: ' . $_ . "\n";
-    };
+        my $e = $@;
+        print 'Error occured while saving events: ' . $e . "\n";
+    }
 
     my $num_events_saved = scalar(@$consolidate_events);
 
@@ -67,19 +68,15 @@ sub get_events_from_forex_factory {
 
     # reads 3 weeks of economic events data
     my $starting_date = Date::Utility->today;
-    my (@multiweek_events, $errors);
+    my @multiweek_events;
     try {
         @multiweek_events =
             map { @{$parser->extract_economic_events($_->[1], $starting_date->plus_time_interval($_->[0] * 7 . 'd'))} } ([0, 1], [2, 0]);
     }
     catch {
-        $errors = $_;
-    };
-
-    if ($errors) {
         return \@multiweek_events;
-
     }
+
     my $events_received = \@multiweek_events;
 
     stats_gauge('economic_events_updates', scalar(@$events_received), {tags => ['tag: ff']});
@@ -97,7 +94,7 @@ sub get_events_from_forex_factory {
 sub get_events_from_bloomberg_data_license {
 
     my $parser = Bloomberg::EconomicEvents->new();
-    my ($events_received, $errors);
+    my $events_received;
     try {
         my @files = Bloomberg::FileDownloader->new->grab_files({
             file_type => 'economic_events',
@@ -107,10 +104,6 @@ sub get_events_from_bloomberg_data_license {
         ($events_received, $err) = $parser->parse_data_for($files[0], 3, Date::Utility->new()->minus_time_interval('4d'));
     }
     catch {
-        $errors = $_;
-
-    };
-    if ($errors) {
         return $events_received;
 
     }

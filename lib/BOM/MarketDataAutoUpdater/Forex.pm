@@ -23,7 +23,6 @@ use LandingCompany::Registry;
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 use Quant::Framework;
-use Try::Tiny;
 
 use BOM::MarketData qw(create_underlying create_underlying_db);
 use BOM::MarketData::Fetcher::VolSurface;

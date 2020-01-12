@@ -13,7 +13,7 @@ use Moose;
 extends 'BOM::MarketDataAutoUpdater';
 
 use Mojo::UserAgent;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 no indirect;
 
 use Quant::Framework::VolSurface::Moneyness;
@@ -149,9 +149,7 @@ sub run {
                 if (exists $volsurface->surface->{7}) {
                     $volsurface->save;
                     $self->report->{$symbol}->{success} = 1;
-
                 } else {
-
                     $self->report->{$symbol} = {
                         success => 0,
                         reason  => 'Term 7 is missing from datasource for ' . $symbol,
@@ -170,11 +168,12 @@ sub run {
         }
         catch {
             # if it dies, catch it here.
+            my $e = $@;
             $self->report->{$symbol} = {
                 success => 0,
-                reason  => $_,
+                reason  => $e,
             };
-        };
+        }
     }
     $self->SUPER::run();
     return 1;
