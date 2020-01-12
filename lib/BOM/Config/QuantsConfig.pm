@@ -27,7 +27,7 @@ use LandingCompany::Registry;
 use List::Util qw(first);
 use Scalar::Util qw(looks_like_number);
 use Finance::Contract::Category;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use YAML::XS qw(LoadFile);
 
 use BOM::Config::Runtime;
@@ -75,14 +75,14 @@ sub _commission {
     die 'start_time is required' unless $args{start_time};
     die 'end_time is required'   unless $args{end_time};
 
-    for (qw(start_time end_time)) {
-        $args{$_} =~ s/^\s+|\s+$//g;
-        $args{$_} = try {
-            Date::Utility->new($args{$_})->epoch;
+    for my $time_name (qw(start_time end_time)) {
+        $args{$time_name} =~ s/^\s+|\s+$//g;
+        try {
+            $args{$time_name} = Date::Utility->new($args{$time_name})->epoch;
         }
         catch {
-            die "Invalid $_ format";
-        };
+            die "Invalid $time_name format";
+        }
     }
 
     die "start time must be before end time" if $args{start_time} >= $args{end_time};

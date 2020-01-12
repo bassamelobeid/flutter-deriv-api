@@ -19,7 +19,7 @@ use warnings;
 
 use YAML::XS;
 use RedisDB;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use BOM::Config;
 
@@ -39,9 +39,9 @@ sub _redis {
             $connections->{$key}->ping();
         }
         catch {
-            warn "RedisReplicated::_redis $key died: $_, reconnecting";
+            warn "RedisReplicated::_redis $key died: $@, reconnecting";
             $connections->{$key} = undef;
-        };
+        }
     }
     $connections->{$key} //= RedisDB->new(
         $timeout ? (timeout => $timeout) : (),

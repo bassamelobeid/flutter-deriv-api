@@ -15,7 +15,7 @@ use warnings;
 use feature 'state';
 no indirect;
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use JSON::MaybeUTF8;
 use Log::Any qw($log);
 use Format::Util::Numbers qw(get_min_unit financialrounding);
@@ -88,12 +88,10 @@ sub transfer_between_accounts_limits {
             $min = $lower_bound;
         }
 
-        my $max = try {
-            return 0 +
-                financialrounding('amount', $currency,
+        my $max = eval {
+            0 + financialrounding('amount', $currency,
                 convert_currency($configs->{'payments.transfer_between_accounts.maximum.default'}, 'USD', $currency));
-        }
-        catch { return undef; };
+        };
 
         $currency_limits->{$currency}->{min} = 0 + financialrounding('amount', $currency, $min);
         $currency_limits->{$currency}->{'max'} = $max if $max;
@@ -196,7 +194,7 @@ sub transfer_between_accounts_lower_bounds {
             }
             catch {
                 $log->tracef("No exchange rate for the currency pair %s-%s.", $target_currency, $to_currency);
-            };
+            }
         }
 
         my $rounded = financialrounding('amount', $target_currency, $result->{$target_currency});
