@@ -8,7 +8,7 @@ no indirect;
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use JSON::MaybeUTF8 qw(:v1);
 use RedisDB;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use YAML::XS qw(LoadFile);
 
 use BOM::Platform::Context qw(request);
@@ -96,7 +96,7 @@ sub emit {
     }
     catch {
         die "Invalid data format: cannot convert to json";
-    };
+    }
 
     if ($event_data) {
         my $queue_name = _queue_name($type);
@@ -140,7 +140,7 @@ sub get {
         }
         catch {
             stats_inc(lc "$queue_name.invalid_data");
-        };
+        }
     }
 
     return $decoded_data;
@@ -153,7 +153,7 @@ sub _write_connection {
         }
         catch {
             $connections->{write} = undef;
-        };
+        }
     }
 
     return _get_connection_by_type('write');

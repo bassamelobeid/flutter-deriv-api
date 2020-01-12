@@ -3,8 +3,7 @@ package BOM::Platform::Account::Virtual;
 use strict;
 use warnings;
 
-use Try::Tiny;
-
+use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 
 use BOM::User;
@@ -37,7 +36,7 @@ sub create_account {
     # date_first_contact is used by marketing to record when users first touched a binary.com site.
     # it must be passed in in GMT time to match the server timezone.
     if (defined $date_first_contact) {
-        my $valid_date = try {
+        try {
             my $contact_date = Date::Utility->new($date_first_contact);
             #Any dates older than 30 days set to 30 days old
             if ($contact_date->is_before(Date::Utility->today->minus_time_interval('30d'))) {
@@ -48,12 +47,12 @@ sub create_account {
         }
         catch {
             $date_first_contact = Date::Utility->today->date_yyyymmdd;
-        };
+        }
     } else {
         $date_first_contact = Date::Utility->today->date_yyyymmdd;
     }
 
-    my ($user, $client, $error, $error_msg);
+    my ($user, $client);
     my $source            = $details->{source};
     my $utm_source        = $details->{utm_source};
     my $utm_medium        = $details->{utm_medium};
@@ -103,10 +102,7 @@ sub create_account {
 
     }
     catch {
-        $error = $_;
-    };
-    if ($error) {
-        warn("Virtual: create_client err [$error]");
+        warn("Virtual: create_client err [$@]");
         return {error => 'invalid'};
     }
     $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));

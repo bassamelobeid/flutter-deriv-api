@@ -7,7 +7,7 @@ use YAML::XS;
 use DBI;
 use DBD::Pg;
 use IO::Select;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use RedisDB;
 use JSON::MaybeXS;
 use BOM::Platform::Email qw(send_email);
@@ -176,9 +176,9 @@ sub run {
 
             }
             catch {
-                warn "$0 ($$): saw exception: $_";
+                warn "$0 ($$): saw exception: $@";
                 sleep 1;
-            };
+            }
         }
         exit;
     }

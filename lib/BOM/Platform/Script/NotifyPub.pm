@@ -23,7 +23,7 @@ use YAML::XS;
 use DBI;
 use DBD::Pg;
 use IO::Select;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use RedisDB;
 use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
@@ -64,9 +64,9 @@ sub run {
                     }
                 }
                 catch {
-                    warn "$0 ($$): saw exception: $_";
+                    warn "$0 ($$): saw exception: $@";
                     sleep 1;
-                };
+                }
             }
             exit;
         }

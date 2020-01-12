@@ -1,7 +1,7 @@
 package BOM::Platform::Client::IDAuthentication;
 
 use Moo;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use List::Util qw( first );
 
 use BOM::User::Client;
@@ -58,8 +58,8 @@ sub run_validation {
             $self->$mapped_action();
         }
         catch {
-            $error_info{$action} = $_;
-        };
+            $error_info{$action} = $@;
+        }
     }
 
     warn "$loginid $event validation $_ fail: " . $error_info{$_} for keys %error_info;
@@ -119,9 +119,9 @@ sub proveid {
             $matches->{$tag} = $credit_reference_summary->findnodes($tag . "Match")->[0]->textContent() || 0;
         }
         catch {
+            warn $@;
             $matches->{$tag} = 0;
-            warn $_;
-        };
+        }
     }
 
     my @invalid_matches = grep { $matches->{$_} > 0 } keys %$matches;
@@ -213,7 +213,7 @@ sub _fetch_proveid {
         $result = BOM::Platform::ProveID->new(client => $self->client)->get_result;
     }
     catch {
-        my $error = $_;
+        my $error = $@;
 
         # ErrorCode 500 and 501 are Search Errors according to Appendix B of https://github.com/regentmarkets/third_party_API_docs/blob/master/AML/20160520%20Experian%20ID%20Search%20XML%20API%20v1.22.pdf
         if ($error =~ /50[01]/) {
@@ -239,7 +239,7 @@ EOM
                 message => [$message]});
 
         die 'Failed to contact the ProveID server';
-    };
+    }
 
     # On successful requests, we clear this status so the cron job will not retry ProveID requests on this account
     $client->status->clear_proveid_pending;
@@ -285,7 +285,7 @@ You can <a href="[_3]">authenticate your account</a> now if you have those docum
 
 Thank you for choosing [_2]!
 
-Sincerely,  
+Sincerely,
 Team [_2]
 
 EOM

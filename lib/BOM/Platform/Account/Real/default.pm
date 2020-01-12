@@ -4,8 +4,8 @@ use strict;
 use warnings;
 use feature 'state';
 use Date::Utility;
-use Try::Tiny;
 use Locale::Country;
+use Syntax::Keyword::Try;
 use List::MoreUtils qw(any);
 use Text::Trim qw(trim);
 
@@ -187,8 +187,8 @@ sub add_details_to_desk {
             $desk_api->upload($copy);
         }
         catch {
-            warn "Unable to add loginid " . $client->loginid . "(" . $client->email . ") to desk.com API: $_";
-        };
+            warn "Unable to add loginid " . $client->loginid . "(" . $client->email . ") to desk.com API:" . $@;
+        }
     }
 
     return;
@@ -371,7 +371,7 @@ otherwise return error hash
 sub validate_dob {
     my ($dob, $residence) = @_;
 
-    my $dob_date = try { Date::Utility->new($dob) };
+    my $dob_date = eval { Date::Utility->new($dob) };
     return {error => 'InvalidDateOfBirth'} unless $dob_date;
 
     my $countries_instance = request()->brand->countries_instance;

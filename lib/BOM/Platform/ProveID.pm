@@ -11,7 +11,7 @@ use BOM::Config;
 use BOM::Platform::S3Client;
 use Locale::Country;
 use Path::Tiny;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Mojo::UserAgent;
 use Mojo::UserAgent::CookieJar;
 use XML::Simple;
@@ -48,7 +48,7 @@ An interface to Experian's ID Authentication Service. Handles connecting to expe
 =head2 client
 
 The client object used to populate the details for the request to Experian
-    
+
 =cut
 
 has client => (
@@ -69,7 +69,7 @@ has search_option => (
 
 =head2 xml_result
 
-The XML result received from the Experian request. 
+The XML result received from the Experian request.
 
 =cut
 
@@ -273,7 +273,7 @@ has pdf_url => (
 
 =head2 new(client => $client, key => value)
 
-Contructor. Client key/value pair is required, other key/value pairs are optional. 
+Contructor. Client key/value pair is required, other key/value pairs are optional.
 
   my $obj = Experian->new(client => $client);
   my $obj = Experian->new(client => $client, username => $username, password => $password);
@@ -283,7 +283,7 @@ Contructor. Client key/value pair is required, other key/value pairs are optiona
 =head2 get_result
 
   my $xml_result = $experian_obj->get_result();
-  
+
 
 Full wrapping function that makes the XML request, saves the XML result, saves the pdf result and returns the XML result.
 
@@ -298,8 +298,8 @@ sub get_result {
         $self->get_pdf_result;
     }
     catch {
-        warn "$_";
-    };
+        warn $@;
+    }
 
     return $self->xml_result;
 }
@@ -357,8 +357,8 @@ sub get_xml_result {
         $som = $soap->search(SOAP::Data->type('xml' => $request), $self->_2fa_header);
     }
     catch {
-        die "Connection error\n";    ## Do not echo $_ here, as it can contain a path
-    };
+        die "Connection error\n";    ## Do not echo $@ here, as it can contain a path
+    }
 
     die "Encountered SOAP Fault when sending XML request : " . $som->faultcode . " : " . $som->faultstring if $som->fault;
 
@@ -393,7 +393,7 @@ sub _upload_file {
 
 =head2 _save_xml_result
 
-Called as part of C<get_result>. Saves the XML result into C<xml_folder>. 
+Called as part of C<get_result>. Saves the XML result into C<xml_folder>.
 
 =cut
 
@@ -709,7 +709,12 @@ sub _build_xml_result {
     my ($result) = $self->s3client->download($self->_xml_file_name)->else(sub { $s3_error = shift; Future->done('') })->get;
 
     # for back compatible
-    $result ||= try { $self->_old_xml_file ? $self->_old_xml_file->slurp_utf8 : '' } catch { return '' };
+    try {
+        $result ||= $self->_old_xml_file ? $self->_old_xml_file->slurp_utf8 : '';
+    }
+    catch {
+        $result = '';
+    }
 
     warn "There is no such experian document on either local dir or S3. Maybe S3 has problem: $s3_error" unless $result;
     return $result;
@@ -760,4 +765,3 @@ sub _build_pdf_url {
 }
 
 1;
-

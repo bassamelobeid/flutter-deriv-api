@@ -18,7 +18,6 @@ use Date::Utility;
 use Scalar::Util qw(looks_like_number);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
 use Format::Util::Numbers qw/get_min_unit financialrounding/;
-use Try::Tiny;
 use List::Util qw(any);
 
 use BOM::User::Client;
