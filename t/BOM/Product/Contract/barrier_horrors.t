@@ -8,7 +8,7 @@ use Test::Exception;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
-use Try::Tiny;
+use Test::Fatal;
 
 subtest 'single contract' => sub {
     my $args = {
@@ -17,34 +17,33 @@ subtest 'single contract' => sub {
         currency   => 'USD',
         payout     => 100,
     };
-
     foreach my $bet_type (qw(CALL CALLE ONETOUCH RESETCALL RUNHIGH)) {
+
         $args->{bet_type} = $bet_type;
-        try { produce_contract($args) }
-        catch {
-            isa_ok $_, 'BOM::Product::Exception';
-            is $_->message_to_client->[0], 'Invalid barrier (Single barrier input is expected).', 'no barrier for ' . $bet_type;
-        };
+        my $error = exception { produce_contract($args) };
+        isa_ok $error, 'BOM::Product::Exception';
+        is $error->message_to_client->[0], 'Invalid barrier (Single barrier input is expected).', 'no barrier for ' . $bet_type;
+
     }
 
     foreach my $bet_type (qw(EXPIRYMISS RANGE CALLSPREAD)) {
+
         $args->{bet_type} = $bet_type;
-        try { produce_contract($args) }
-        catch {
-            isa_ok $_, 'BOM::Product::Exception';
-            is $_->message_to_client->[0], 'Invalid barrier (Double barrier input is expected).', 'no barrier for ' . $bet_type;
-        };
+        my $error = exception { produce_contract($args) };
+        isa_ok $error, 'BOM::Product::Exception';
+        is $error->message_to_client->[0], 'Invalid barrier (Double barrier input is expected).', 'no barrier for ' . $bet_type;
+
     }
 
     #barrier for the unexpected
     $args->{barrier} = 'S0P';
     foreach my $bet_type (qw(ASIANU DIGITEVEN TICKHIGH LBFLOATCALL)) {
+
         $args->{bet_type} = $bet_type;
-        try { produce_contract($args) }
-        catch {
-            isa_ok $_, 'BOM::Product::Exception';
-            is $_->message_to_client->[0], 'Barrier is not allowed for this contract type.', 'pass in barrier for ' . $bet_type;
-        };
+        my $error = exception { produce_contract($args) };
+        isa_ok $error, 'BOM::Product::Exception';
+        is $error->message_to_client->[0], 'Barrier is not allowed for this contract type.', 'pass in barrier for ' . $bet_type;
+
     }
 
     #double barrier for the single
@@ -53,23 +52,19 @@ subtest 'single contract' => sub {
     $args->{low_barrier}  = 'S-10P';
     $args->{bet_type}     = 'CALL';
 
-    try { produce_contract($args) }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier (Single barrier input is expected).', 'double barrier for CALL';
-    };
+    my $error = exception { produce_contract($args) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid barrier (Single barrier input is expected).', 'double barrier for CALL';
 
     #single barrier for the double
     delete $args->{high_barrier};
     delete $args->{low_barrier};
     $args->{barrier}  = 'S0P';
     $args->{bet_type} = 'RANGE';
+    $error = exception { produce_contract($args) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid barrier (Double barrier input is expected).', 'single barrier for RANGE';
 
-    try { produce_contract($args) }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier (Double barrier input is expected).', 'single barrier for RANGE';
-    };
 };
 
 subtest 'batch contract' => sub {
@@ -81,18 +76,15 @@ subtest 'batch contract' => sub {
         bet_type   => 'CALL',
     };
 
-    try { produce_batch_contract($args) }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier.', 'no barriers for CALL';
-    };
+    my $error = exception { produce_batch_contract($args) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid barrier.', 'no barriers for CALL';
 
     $args->{barriers} = [{barrier => 'S0P'}, {barrier2 => 'S10P'}];
-    try { produce_batch_contract($args) }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier (Single barrier input is expected).', 'barrier2 for CALL';
-    };
+    $error = exception { produce_batch_contract($args) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid barrier (Single barrier input is expected).', 'barrier2 for CALL';
+
 };
 
 subtest 'zero relative & absolute barriers' => sub {
@@ -105,11 +97,9 @@ subtest 'zero relative & absolute barriers' => sub {
         barrier    => 0
     };
 
-    try { produce_contract($args) }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Barrier cannot be zero.', 'zero barrier for CALL';
-    };
+    my $error = exception { produce_contract($args) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Barrier cannot be zero.', 'zero barrier for CALL';
 
     lives_ok { produce_contract({%$args, barrier => '+0'}) } '+0 barrier lives';
     lives_ok { produce_contract({%$args, barrier => '-0'}) } '-0 barrier lives';
@@ -118,18 +108,14 @@ subtest 'zero relative & absolute barriers' => sub {
     delete $args->{barrier};
     $args->{high_barrier} = 0;
     $args->{low_barrier}  = 100;
-    try { produce_contract($args) }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Barrier cannot be zero.', 'zero high_barrier for RANGE';
-    };
+    $error = exception { produce_contract($args) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Barrier cannot be zero.', 'zero high_barrier for RANGE';
 
     $args->{high_barrier} = '+0';
-    try { produce_contract($args) }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier (Contract can have only one type of barrier).', 'mixed barrier for RANGE';
-    };
+    $error = exception { produce_contract($args) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid barrier (Contract can have only one type of barrier).', 'mixed barrier for RANGE';
 
     $args->{current_tick} = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',

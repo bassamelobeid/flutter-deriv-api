@@ -12,8 +12,6 @@ The base Moose class for all Greeks calcuations.
 
 use Moose;
 
-use Try::Tiny;
-
 # Use list of static routines in the same package scope to price greeks:
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Gamma;
@@ -123,11 +121,9 @@ sub _build_formulae {
 sub get_greeks {
     my $self = shift;
 
-    my $gamma = 0;
-
     # PELSSER GAMMA conditions giving problems. And besides
     # we don't really use gamma.
-    try { $gamma = $self->gamma; };
+    my $gamma = eval { $self->gamma; } || 0;
 
     return {
         delta => $self->delta,

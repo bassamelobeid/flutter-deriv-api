@@ -10,7 +10,7 @@ use Test::MockModule;
 use File::Spec;
 use File::Slurp;
 
-use Try::Tiny;
+use Test::Fatal;
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::Runtime;
@@ -191,19 +191,16 @@ subtest 'asian' => sub {
     }
     'build from shortcode';
 
-    try {
+    my $error = exception {
         produce_contract('ASIANU_R_50_100_1466496619_5T_S5P_0', 'USD')
-    }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Barrier is not allowed for this contract type.', 'throws an exception if barrier is not allowed';
     };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Barrier is not allowed for this contract type.', 'throws an exception if barrier is not allowed';
 
-    try {
+    $error = exception {
         produce_contract('ASIANU_R_50_100_1466496590_5T_1002000000_0', 'USD')
-    }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Barrier is not allowed for this contract type.', 'throws an exception if barrier is not allowed';
     };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Barrier is not allowed for this contract type.', 'throws an exception if barrier is not allowed';
+
 };

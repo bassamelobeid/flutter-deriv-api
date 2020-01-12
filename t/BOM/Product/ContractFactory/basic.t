@@ -6,7 +6,7 @@ use Test::Warnings qw/warning/;
 use Test::Exception;
 use Test::MockModule;
 use File::Spec;
-use Try::Tiny;
+use Test::Fatal;
 use JSON;
 
 use Postgres::FeedDB::Spot::Tick;
@@ -94,14 +94,12 @@ subtest 'produce_contract exception' => sub {
         [{underlying => undef}, 'Missing required contract parameters ([_1]).'],
         [{currency   => undef}, 'Missing required contract parameters ([_1]).'])
     {
-        try {
+
+        my $error = exception {
             produce_contract({%$contract_params, %{$undef->[0]}});
-        }
-        catch {
-            isa_ok $_, 'BOM::Product::Exception';
-            my $missing = (keys %{$undef->[0]})[0];
-            is $_->message_to_client->[0], $undef->[1];
-        }
+        };
+        isa_ok $error, 'BOM::Product::Exception';
+        is $error->message_to_client->[0], $undef->[1];
     }
 };
 

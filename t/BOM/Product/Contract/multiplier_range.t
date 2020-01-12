@@ -7,7 +7,6 @@ use Test::More;
 use Test::Exception;
 use Test::FailWarnings;
 
-use Try::Tiny;
 use BOM::Product::ContractFactory qw(produce_contract);
 
 my $offerings = LandingCompany::Registry::get('svg')->basic_offerings({loaded_revision => 1});

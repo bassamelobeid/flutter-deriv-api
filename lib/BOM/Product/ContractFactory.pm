@@ -9,7 +9,6 @@ use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use YAML::XS qw(LoadFile);
 use File::ShareDir;
-use Try::Tiny;
 
 use Postgres::FeedDB::Spot::Tick;
 use LandingCompany::Registry;

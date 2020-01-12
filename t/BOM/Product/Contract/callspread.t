@@ -6,7 +6,6 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::FailWarnings;
-use Try::Tiny;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);

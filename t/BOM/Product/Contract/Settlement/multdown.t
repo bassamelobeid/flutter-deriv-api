@@ -12,7 +12,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
-use Try::Tiny;
 
 my $now = Date::Utility->new;
 

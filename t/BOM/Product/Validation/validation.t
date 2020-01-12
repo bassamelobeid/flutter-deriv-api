@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Try::Tiny;
+use Test::Fatal;
 use Time::HiRes;
 use Test::MockTime qw/:all/;
 use Test::Most qw(-Test::Deep);
@@ -429,14 +429,13 @@ subtest 'invalid barriers knocked down for great justice' => sub {
 
     $bet_params->{low_barrier} = -100;      # Fine, we'll set our low barrier like you want.
     $bet = produce_contract($bet_params);
-    try {
+
+    my $error = exception {
         $bet->is_valid_to_buy;
-    }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->message_to_client->[0], 'Invalid barrier ([_1]).';
-        like $_->message_to_client->[1], qr/Barrier type must be the same for double-barrier contracts./, 'correct error args';
     };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid barrier ([_1]).';
+    like $error->message_to_client->[1], qr/Barrier type must be the same for double-barrier contracts./, 'correct error args';
 
     $bet_params->{low_barrier} = 111;       # Sigh, ok, then, what about this one?
     $bet = produce_contract($bet_params);
@@ -1173,14 +1172,14 @@ subtest 'invalid digits barrier' => sub {
         payout       => 10,
     };
     my $c = produce_contract($params);
-    try {
+
+    my $error = exception {
         $c->is_valid_to_buy;
-    }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        like($_->message_to_client->[0], qr/Missing required contract parameters/, "correct error message");
-        like($_->error_code, qr/MissingRequiredDigit/, "correct error code");
     };
+    isa_ok $error, 'BOM::Product::Exception';
+    like($error->message_to_client->[0], qr/Missing required contract parameters/, "correct error message");
+    like($error->error_code, qr/MissingRequiredDigit/, "correct error code");
+
     $params->{barrier} = 0;
     $c = produce_contract($params);
     ok $c->is_valid_to_buy, 'valid to buy';

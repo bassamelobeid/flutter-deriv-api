@@ -1,7 +1,7 @@
 package BOM::Product::Categorizer;
 
 use Moose;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 no indirect;
 
 =head1 NAME
@@ -334,7 +334,7 @@ sub _initialize_other_parameters {
                 BOM::Product::Exception->throw(
                     error_code => 'TradingDurationNotAllowed',
                     details    => {field => 'duration'});
-            };
+            }
             if (my ($tick_count) = $duration =~ /^([0-9]+)t$/) {
                 $params->{tick_expiry} = 1;
                 $params->{tick_count}  = $tick_count;

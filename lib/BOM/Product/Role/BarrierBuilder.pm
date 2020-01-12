@@ -1,7 +1,6 @@
 package BOM::Product::Role::BarrierBuilder;
 
 use Moose::Role;
-use Try::Tiny;
 use List::Util qw(max);
 use Scalar::Util::Numeric qw(isint);
 use VolSurface::Utils qw( get_strike_for_spot_delta );

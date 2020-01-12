@@ -15,7 +15,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
-use Try::Tiny;
+use Test::Fatal;
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -124,31 +124,27 @@ subtest 'RUNLOW - shortcode & longcode' => sub {
 
 subtest 'passing in barrier' => sub {
     $args->{barrier} = 'S1000P';
-    my $output = try { produce_contract($args) }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        $_->error_code;
-    };
-    is $output, "InvalidBarrier";
+
+    my $error = exception { produce_contract($args) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->error_code, "InvalidBarrier";
+
     $args->{barrier} = '+0.001';
-    $output = try { produce_contract($args) }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        $_->error_code;
-    };
-    is $output, "InvalidBarrier";
+    $error = exception { produce_contract($args) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->error_code, "InvalidBarrier";
+
 };
 
 subtest 'passing in non-tick duration' => sub {
     $args->{barrier}  = 'S0P';
     $args->{duration} = '5m';
     my $c = produce_contract($args);
-    my $output = try { $c->ask_price }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        $_->error_code;
-    };
-    is $output, "TradingDurationNotAllowed";
+
+    my $error = exception { $c->ask_price };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->error_code, "TradingDurationNotAllowed";
+
 };
 
 sub _create_ticks {

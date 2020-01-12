@@ -10,7 +10,7 @@ use List::Util qw(min);
 use Scalar::Util qw(looks_like_number);
 use Format::Util::Numbers qw(formatnumber);
 use Format::Util::Numbers qw/financialrounding/;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
@@ -86,7 +86,7 @@ sub _build_payout {
     }
     catch {
         if (
-            $_ =~ /Illegal division by zero/
+            $@ =~ /Illegal division by zero/
             and (
                 (defined $self->supplied_barrier and looks_like_number($self->supplied_barrier) and $self->supplied_barrier == 0)
                 or (    defined $self->supplied_high_barrier
@@ -98,7 +98,7 @@ sub _build_payout {
             $payout = 0;
         }
 
-    };
+    }
 
     return $payout;
 }

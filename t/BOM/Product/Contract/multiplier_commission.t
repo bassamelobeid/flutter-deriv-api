@@ -8,7 +8,6 @@ use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use LandingCompany::Registry;
-use Try::Tiny;
 
 my $offerings = LandingCompany::Registry::get('svg')->basic_offerings({loaded_revision => 1});
 my @symbols = $offerings->query({contract_category => 'multiplier'}, ['underlying_symbol']);

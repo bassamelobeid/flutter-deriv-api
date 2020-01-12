@@ -15,7 +15,7 @@ use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use Try::Tiny;
+use Test::Fatal;
 
 use Test::MockModule;
 use Postgres::FeedDB::Spot::Tick;
@@ -53,22 +53,14 @@ my $bet_params = {
 
 subtest 'invalid start and expiry time' => sub {
     $bet_params->{date_start} = $bet_params->{date_expiry} = $now;
-    my $exception = try {
+    my $exception = exception {
         produce_contract($bet_params);
-    }
-    catch {
-        blessed($_);
-        $_;
     };
     is $exception->error_code, 'SameExpiryStartTime', 'throws exception if start time == expiry time';
     $bet_params->{date_start}  = $now;
     $bet_params->{date_expiry} = $now->epoch - 1;
-    $exception                 = try {
+    $exception                 = exception {
         produce_contract($bet_params);
-    }
-    catch {
-        blessed($_);
-        $_;
     };
     is $exception->error_code, 'PastExpiryTime', 'throws exception if start time > expiry time';
     $bet_params->{date_start}   = $now;
@@ -321,13 +313,11 @@ subtest 'missing trading_period_start' => sub {
     lives_ok { $c->ask_price } 'create a multi_barrier contract without exception';
 
     delete $bet_params->{trading_period_start};
-    try {
-        $c = produce_contract($bet_params);
-    }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->error_code, "MissingTradingPeriodStart", 'error code is MissingTradingPeriodStart';
+    my $exception = exception {
+        produce_contract($bet_params);
     };
+    isa_ok $exception, 'BOM::Product::Exception';
+    is $exception->error_code, "MissingTradingPeriodStart", 'error code is MissingTradingPeriodStart';
 
 };
 

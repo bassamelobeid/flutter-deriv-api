@@ -9,7 +9,7 @@ use Test::Exception;
 use Date::Utility;
 use Format::Util::Numbers qw/roundcommon/;
 
-use Try::Tiny;
+use Test::Fatal;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -119,11 +119,10 @@ subtest 'touch' => sub {
             barrier      => '0',
         };
 
-        try { produce_contract($args_err) }
-        catch {
-            isa_ok $_, 'BOM::Product::Exception';
-            is $_->message_to_client->[0], 'Barrier cannot be zero.', 'throws exception when absolute barrier is zero';
-        };
+        my $error = exception { produce_contract($args_err) };
+        isa_ok $error, 'BOM::Product::Exception';
+        is $error->message_to_client->[0], 'Barrier cannot be zero.', 'throws exception when absolute barrier is zero';
+
     }
     'zero barrier error';
 };

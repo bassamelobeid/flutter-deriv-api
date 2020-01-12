@@ -12,7 +12,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
-use Try::Tiny;
+use Test::Fatal;
 use Test::MockModule;
 
 initialize_realtime_ticks_db();
@@ -99,13 +99,10 @@ subtest 'lbfloatcall' => sub {
 
     #Permissible input
     $args->{barrier} = '+100';
-    try {
-        $c = produce_contract($args);
-    }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->error_code, "BarrierNotAllowed";
-    };
+
+    my $error = exception { produce_contract($args) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->error_code, "BarrierNotAllowed";
 
     delete $args->{barrier};
 };
@@ -177,16 +174,13 @@ subtest 'lbhighlow' => sub {
 subtest 'invalid amount_type' => sub {
     $args->{amount_type} = 'unkown';
     $args->{amount}      = 1;
-    try {
-        produce_contract($args);
-    }
-    catch {
-        isa_ok $_, 'BOM::Product::Exception';
-        is $_->error_code, 'InvalidInput', 'correct error code';
-        is $_->message_to_client->[0], '[_1] is not a valid input for contract type [_2].';
-        is $_->message_to_client->[1], 'basis';
-        is $_->message_to_client->[2], 'LBHIGHLOW';
-    };
+
+    my $error = exception { produce_contract($args); };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->error_code, 'InvalidInput', 'correct error code';
+    is $error->message_to_client->[0], '[_1] is not a valid input for contract type [_2].';
+    is $error->message_to_client->[1], 'basis';
+    is $error->message_to_client->[2], 'LBHIGHLOW';
 };
 
 subtest 'spot_min and spot_max checks' => sub {

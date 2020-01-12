@@ -46,7 +46,7 @@ use Time::Duration::Concise;
 use Format::Util::Numbers qw/formatnumber/;
 use POSIX qw(ceil);
 use IO::Socket::IP;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Encode;
 
 use Quant::Framework;
@@ -1385,8 +1385,8 @@ sub _publish {
         $self->_socket->send($csv);
     }
     catch {
-        warn "Failed to publish price for " . $self->shortcode . ': ' . $_;
-    };
+        warn "Failed to publish price for " . $self->shortcode . ': ' . $@;
+    }
 
     return;
 }
