@@ -8,7 +8,7 @@ use BOM::Config;
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
 use BOM::Database::Rose::DB;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 sub startup {
     my $app = shift;
@@ -61,7 +61,12 @@ sub startup {
 
     $app->hook(
         after_dispatch => sub {
-            try { BOM::Database::Rose::DB->db_cache->finish_request_cycle; } catch { warn "->finish_request_cycle: $_\n" };
+            try {
+                BOM::Database::Rose::DB->db_cache->finish_request_cycle;
+            }
+            catch {
+                warn "->finish_request_cycle: $@\n";
+            }
         });
 
     my $r = $app->routes;

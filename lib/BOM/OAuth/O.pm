@@ -7,7 +7,7 @@ no indirect;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Date::Utility;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Digest::MD5 qw(md5_hex);
 use Email::Valid;
 use List::Util qw(any first min);
@@ -107,7 +107,7 @@ sub authorize {
     );
 
     my $date_first_contact = $c->param('date_first_contact') // '';
-    try {
+    eval {
         return unless $date_first_contact =~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
         return if Date::Utility->new($date_first_contact)->is_after(Date::Utility->today);
         $c->session(date_first_contact => Date::Utility->new->date_yyyymmdd);
@@ -613,9 +613,9 @@ sub _validate_login {
                 }
             }
             catch {
-                $log->errorf('Failure encountered while handling Redis blocklists for failed login: %s', $_);
+                $log->errorf('Failure encountered while handling Redis blocklists for failed login: %s', $@);
                 stats_inc('login.authorizer.block.error');
-            };
+            }
         }
         return $err_var->($result->{error});
     }

@@ -7,7 +7,6 @@ use BOM::Config;
 use BOM::Database::Model::UserConnect;
 use BOM::User;
 use BOM::Platform::Account::Virtual;
-use Try::Tiny;
 use URI::QueryParam;
 use BOM::OAuth::Helper;
 use BOM::Platform::Context qw(localize);
@@ -41,9 +40,7 @@ sub callback {
         private_key => BOM::Config::third_party()->{"oneall"}->{$brand_name}->{private_key},
     );
 
-    my $data = try {
-        return $oneall->connection($connection_token);
-    };
+    my $data = eval { $oneall->connection($connection_token); };
 
     # redirect client to auth page for connection error or when we receive
     # bad status code from oneall, wrong pub/private keys can be a reason
@@ -71,9 +68,7 @@ sub callback {
         return $c->redirect_to($redirect_uri);
     }
 
-    my $user = try {
-        BOM::User->new(email => $email)
-    };
+    my $user = eval { BOM::User->new(email => $email) };
     my $user_connect = BOM::Database::Model::UserConnect->new;
     if ($user) {
         # Registered users who have email/password based account are forbidden
