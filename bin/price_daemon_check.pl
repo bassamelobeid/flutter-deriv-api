@@ -11,7 +11,7 @@ use JSON::MaybeXS;
 use Date::Utility;
 use Time::HiRes ();
 use Mojo::UserAgent;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 my $redis = BOM::Config::RedisReplicated::redis_pricer;
 
@@ -30,7 +30,7 @@ for (
     }
     catch {
         $e = 1;
-    };
+    }
     next if $e;
     $pricers_on_ip{$entry{ip}} = [] unless exists $pricers_on_ip{$entry{ip}};
     $entry{'diff'}             = time - $entry{time};
