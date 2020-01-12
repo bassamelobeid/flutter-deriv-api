@@ -6,7 +6,7 @@ use warnings;
 no indirect;
 
 use Path::Tiny;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Date::Utility;
 use Log::Any qw($log);
 use Getopt::Long 'GetOptions';
@@ -37,7 +37,7 @@ if ($past_date) {
     }
     catch {
         die 'Invalid date. Please use yyyy-mm-dd format.';
-    };
+    }
 }
 
 my $statsd          = DataDog::DogStatsd->new;
@@ -50,7 +50,6 @@ my @csv;
 my $output_filepath;
 try {
     @csv = $reporter->activity();
-
     $log->infof('No CSV data for affiliate turnover report for %s', $processing_date->date_yyyymmdd) unless @csv;
     die "No CSV data for " . $processing_date->date_yyyymmdd unless @csv;
 
@@ -64,9 +63,9 @@ try {
     $log->debugf('Data file name %s created.', $output_filepath);
 }
 catch {
-    my $error = shift;
+    my $error = $@;
     $statsd->event('Affiliate Turnover Report Failed', "TurnoverReporter failed to generate csv files due: $error");
-};
+}
 
 try {
     $log->debugf('Sending email for affiliate turnover report');
@@ -77,8 +76,8 @@ try {
     );
 }
 catch {
-    my $error = shift;
+    my $error = $@;
     $statsd->event('Affiliate Turnover Report Failed', "TurnoverReporter failed to send the csv files due: $error");
-};
+}
 
 1;

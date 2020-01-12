@@ -16,7 +16,7 @@ use Moose;
 use Archive::Zip qw(:ERROR_CODES);
 use Path::Tiny;
 use IO::File;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Data::Dumper qw( Dumper );
 use Text::CSV;
 use Text::Trim;
@@ -141,8 +141,8 @@ sub _write_csv_files {
                     print $fh _get_csv_line_from_txn($transaction);
                 }
                 catch {
-                    push @parse_errors, $_;
-                };
+                    push @parse_errors, $@;
+                }
             }
             close $fh;
         }
