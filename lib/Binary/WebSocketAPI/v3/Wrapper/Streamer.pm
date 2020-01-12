@@ -5,7 +5,6 @@ use warnings;
 
 no indirect;
 
-use Try::Tiny;
 use Date::Utility;
 use Encode;
 use Time::HiRes qw(gettimeofday);

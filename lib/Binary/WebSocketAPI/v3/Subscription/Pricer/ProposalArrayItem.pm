@@ -4,7 +4,7 @@ use warnings;
 no indirect;
 
 use Log::Any qw($log);
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Moo;
 with 'Binary::WebSocketAPI::v3::Subscription::Pricer';
 use namespace::clean;
@@ -46,13 +46,14 @@ sub do_handle_message {
     for my $contract_type (keys %{$message->{proposals}}) {
         $proposals{$contract_type} = (my $barriers = []);
         for my $price (@{$message->{proposals}{$contract_type}}) {
-            my $result = try {
+            my $result = undef;
+            try {
                 if (my $invalid = $self->_is_response_or_self_invalid($type, $message, ['contract_type'])) {
                     $log->warnf('%s process_proposal_array_event: _get_validation_for_type failed, results: %s',
                         $self->class, encode_json_text($invalid));
-                    return $invalid;
+                    $result = $invalid;
                 } elsif (exists $price->{error}) {
-                    return $price;
+                    $result = $price;
                 } else {
                     my $barrier_key      = Binary::WebSocketAPI::v3::Wrapper::Pricer::make_barrier_key($price);
                     my $theo_probability = delete $price->{theo_probability};
@@ -68,12 +69,13 @@ sub do_handle_message {
                     my $copy = {contract_parameters => {%{$stashed_contract_parameters->{contract_parameters}}}};
                     my $res = $self->_price_stream_results_adjustment($c, $copy, $price, $theo_probability);
                     $res->{longcode} = $c->l($res->{longcode}) if $res->{longcode};
-                    return $res;
+                    $result = $res;
                 }
             }
             catch {
-                $log->warnf('%s Failed to apply price - $s - with a price struc containing %s', $self->class, $_, Dumper($price));
-                return +{
+                my $e = $@;
+                $log->warnf('%s Failed to apply price - $s - with a price struc containing %s', $self->class, $e, Dumper($price));
+                $result = +{
                     error => {
                         message_to_client => $c->l('Sorry, an error occurred while processing your request.'),
                         code              => 'ContractValidationError',
@@ -82,7 +84,7 @@ sub do_handle_message {
                             (exists $price->{barrier2} ? (barrier2 => $price->{barrier2}) : ()),
                         },
                     }};
-            };
+            }
 
             if (exists $result->{error}) {
                 $result->{error}{details}{barrier} //= $price->{barrier};
