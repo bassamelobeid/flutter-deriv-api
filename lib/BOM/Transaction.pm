@@ -12,7 +12,7 @@ use Time::HiRes qw(tv_interval gettimeofday time);
 use JSON::MaybeXS;
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
 
 use Brands;
@@ -713,7 +713,7 @@ sub prepare_buy {
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
-            my $c = try { BOM::User::Client->new({loginid => $m->{loginid}}) };
+            my $c = eval { BOM::User::Client->new({loginid => $m->{loginid}}) };
             unless ($c) {
                 $m->{code}  = 'InvalidLoginid';
                 $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
@@ -800,10 +800,11 @@ sub buy {
     catch {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
+        my $e = $@;
         stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
         $company_limits->reverse_buys($client);
-        $error_status = $self->_recover($_);
-    };
+        $error_status = $self->_recover($e);
+    }
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     return $self->stats_stop(
@@ -963,12 +964,12 @@ sub batch_buy {
             enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
         }
         catch {
-            warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
+            warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $@;    # log it
 
             for my $el (@$list) {
                 @{$el}{qw/code error/} = @general_error unless $el->{code} or $el->{fmb};
             }
-        };
+        }
     }
 
     $self->stats_stop($stats_data, undef, \%stat);
@@ -1022,7 +1023,7 @@ sub prepare_sell {
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
-            my $c = try { BOM::User::Client->new({loginid => $m->{loginid}}) };
+            my $c = eval { BOM::User::Client->new({loginid => $m->{loginid}}) };
             unless ($c) {
                 $m->{code}  = 'InvalidLoginid';
                 $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
@@ -1100,8 +1101,8 @@ sub sell {
     catch {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
-        $error_status = $self->_recover($_);
-    };
+        $error_status = $self->_recover($@);
+    }
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     return $self->stats_stop(
@@ -1233,12 +1234,12 @@ sub sell_by_shortcode {
             $stat{$broker}->{success} = $success;
         }
         catch {
-            warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $_;    # log it
+            warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $@;    # log it
             for my $el (@$list) {
                 @{$el}{qw/code error/} = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'))
                     unless $el->{code} or $el->{fmb};
             }
-        };
+        }
     }
 
     $self->stats_stop($stats_data, undef, \%stat);
@@ -1614,7 +1615,7 @@ sub format_error {
     my $type          = $args{type} // 'InternalError';             # maybe caller know the type. If the err cannot be parsed, then we use this value
     my $msg           = Dumper($err);
     my $msg_to_client = $args{msg_to_client} // 'Internal Error';
-    return try {
+    try {
         return $self->_recover($err, $client);
     }
     catch {
@@ -1707,7 +1708,6 @@ sub sell_expired_contracts {
 
     for my $bet (@$bets) {
         my $contract;
-        my $error;
         my $failure = {fmb_id => $bet->{id}};
         try {
             my $bet_params = shortcode_to_parameters($bet->{short_code}, $currency);
@@ -1717,8 +1717,7 @@ sub sell_expired_contracts {
             }
             $contract = produce_contract($bet_params);
         }
-        catch { $error = 1; };
-        if ($error) {
+        catch {
             $failure->{reason} = 'Could not instantiate contract object';
             push @{$result->{failures}}, $failure;
             next;
@@ -1805,7 +1804,7 @@ sub sell_expired_contracts {
             }
         }
         catch {
-            my $err = $_;
+            my $err = $@;
             if ($err =~ /^Requesting for historical period data without a valid DB connection/) {
                 # seems an issue in /Quant/Framework/EconomicEventCalendar.pm get_latest_events_for_period:
                 # live pricing condition was not ok and get_for_period was called for
@@ -1813,7 +1812,7 @@ sub sell_expired_contracts {
                 $err .= "Data::Chronicle::Reader get_for_period call without dbic: Details: contract shortcode: " . $contract->shortcode . "\n";
             }
             warn 'SellExpiredContract Exception: ' . __PACKAGE__ . ':(' . __LINE__ . '): ' . $err;    # log it
-        };
+        }
     }
 
     my $broker    = lc($client->broker_code);
@@ -1847,13 +1846,15 @@ sub sell_expired_contracts {
         quants_bet_variables => \@quants_bet_variables,
     );
 
-    my $sold = try {
-        $fmb_helper->batch_sell_bet;
+    my $sold;
+    try {
+        $sold = $fmb_helper->batch_sell_bet;
     }
     catch {
-        warn(ref eq 'ARRAY' ? "@$_" : "$_");
-        return [];
-    };
+        my $e = $@;
+        warn(ref $e eq 'ARRAY' ? "@$e" : "$e");
+        $sold = [];
+    }
 
     if (not $sold or @bets_to_sell > @$sold) {
         # We missed some, let's figure out which ones they are.

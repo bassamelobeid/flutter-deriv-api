@@ -9,7 +9,6 @@ use DataDog::DogStatsd::Helper qw/stats_timing/;
 
 use List::Util qw(max);
 use Time::HiRes;
-use Try::Tiny;
 
 use BOM::User::Client;
 use BOM::Transaction;
@@ -51,7 +50,7 @@ sub _daemon_run {
         my $iterator  = dequeue_expired_contract();
         # Outer `while` to live through possible redis disconnects/restarts
         while (my $info = $iterator->()) {            # Blocking for next available.
-            try {
+           eval {
                 my @processing_start = Time::HiRes::time;
                 my $contract_id      = $info->{contract_id};
                 my $client           = BOM::User::Client->new({
