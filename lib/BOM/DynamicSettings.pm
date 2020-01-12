@@ -8,7 +8,7 @@ use Encode;
 use HTML::Entities;
 use JSON::MaybeXS;
 use Text::CSV;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use feature 'state';
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber/;
@@ -84,9 +84,9 @@ sub save_settings {
                 catch {
                     $message .= join('',
                         '<div id="error">Invalid value, could not set ',
-                        encode_entities($s), ' to ', $settings->{$s}, ' because ', encode_entities($_), '</div>');
+                        encode_entities($s), ' to ', $settings->{$s}, ' because ', encode_entities($@), '</div>');
                     $has_errors = 1;
-                };
+                }
             }
 
             if ($has_errors) {
@@ -108,8 +108,8 @@ sub save_settings {
                     $message .= '<div id="saved">Saved global settings to environment, offerings updated</div>';
                 }
                 catch {
-                    $message .= "<div id=\"error\">Could not save global settings to environment: $_</div>";
-                };
+                    $message .= "<div id=\"error\">Could not save global settings to environment: $@</div>";
+                }
             }
         } else {
             $message .= "<div id=\"error\">Invalid 'submitted' value " . encode_entities($submitted) . "</div>";

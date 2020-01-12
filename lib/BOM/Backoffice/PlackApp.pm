@@ -5,8 +5,7 @@ use strict;
 use warnings;
 binmode STDERR, ':encoding(UTF-8)';
 
-use Try::Tiny::Except ();    # preload: see BOM::Backoffice::Sysinit
-use Email::Address::UseXS;   # preload
+use Email::Address::UseXS;    # preload
 use Plack::Builder;
 use Plack::App::CGIBin::Streaming;
 use Time::HiRes ();
@@ -72,8 +71,7 @@ use strict;
 use warnings;
 use parent 'Plack::App::CGIBin::Streaming';
 
-use Try::Tiny;
-
+use Syntax::Keyword::Try;
 # The control flow is a bit difficult to understand here. Hence, ...
 # Plack::App::CGIBin::Streaming takes a script and compiles it into
 # a subroutine using CGI::Compile. That sub is then passed to mkapp().
@@ -82,7 +80,7 @@ use Try::Tiny;
 #
 # In our case we:
 #
-# 1) configure Try::Tiny to pass through a special exception used by
+# 1) configure Syntax::Keyword::Try to pass through a special exception used by
 #    CGI::Compile to signal exit of the script.
 # 2) catch exceptions thrown by the script.
 
@@ -91,13 +89,14 @@ sub mkapp {
 
     my $sub = sub {
         try {
-            local $Try::Tiny::Except::always_propagate = sub {
-                ref eq 'ARRAY' and @$_ == 2 and $_->[0] eq "EXIT\n";
-            };
-
             $real->();
         }
         catch {
+            my $error = $@;
+            # CGI::Compile will wrap the function 'exit' into a `die "EXIT\n" $errcode`
+            # we should make it pass-through
+            # please refer to perldoc of CGI::Compile and Try::Tiny::Except
+            die $error if ref($error) eq 'ARRAY' and @$error == 2 and $error->[0] eq "EXIT\n";
             # log the error unless it is a reference. This avoids stuff
             # like ARRAY(0x17fb998) in the logs and also provides a way
             # for the sender of the exception to log the issue where it
@@ -106,13 +105,13 @@ sub mkapp {
             # overloads '""', like Mojo::Exception. In that case the
             # exception could also be handled in an intermediate stack
             # frame as if it were a normal string.
-            warn($_) unless ref;
+            warn($@) unless ref($@);
 
             # in many cases the HTTP status seen by the client cannot
             # be changed anymore. But we still can set it for our own
             # accounting in case we write a log.
             ${Plack::App::CGIBin::Streaming::R}->status(500);
-        };
+        }
     };
 
     return $self->SUPER::mkapp($sub);

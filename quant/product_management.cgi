@@ -13,7 +13,6 @@ use LandingCompany::Registry;
 use List::Util qw(first all);
 use Text::Trim qw(trim);
 use f_brokerincludeall;
-use Try::Tiny;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );

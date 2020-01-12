@@ -4,7 +4,7 @@ use warnings;
 
 use open qw[ :encoding(UTF-8) ];
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Spreadsheet::ParseExcel;
 use Format::Util::Numbers qw(roundcommon);
 use Date::Utility;
@@ -70,8 +70,8 @@ sub save_dividends {
             $dividends->save;
         }
         catch {
-            print " We are having error for $symbol: $_";
-        };
+            print " We are having error for $symbol: $@";
+        }
     }
     return;
 }
@@ -129,8 +129,8 @@ sub read_discrete_forecasted_dividend_from_excel_files {
                 $spot = $underlying->spot // create_underlying('OTC_' . $symbol)->spot;
             }
             catch {
-                print "<p style=\"color:red; font-weight:bold;\">$_</p>";
-            };
+                print "<p style=\"color:red; font-weight:bold;\">$@</p>";
+            }
 
         }
         unless ($spot) {

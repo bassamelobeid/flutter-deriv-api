@@ -18,7 +18,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use Finance::Asset::Market::Registry;
 use BOM::ContractInfo;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Transaction;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
@@ -99,12 +99,12 @@ my $sold_contracts = [];
     limit  => $limit,
     offset => $offset
 );
-$sold_contracts = try {
-    $financial_market_data_mapper->get_sold_contracts(%params)
+try {
+    $sold_contracts = $financial_market_data_mapper->get_sold_contracts(%params)
 }
 catch {
-    $error = $_;
-};
+    $error = $@;
+}
 
 ##Handle pagination
 my $has_newer_page      = ($page > 1) ? 1 : 0;
@@ -149,12 +149,12 @@ if (defined $do_calculation && $sold_contracts_size) {
             or $contract->{bet_type} =~ /^DIGIT/)
         {
 
-            my $c = try {
+            my $c = eval {
                 my $contract_parameters = shortcode_to_parameters($contract->{short_code}, 'USD');
                 $contract_parameters->{limit_order} = BOM::Transaction::extract_limit_orders($contract) if $contract->{bet_class} eq 'multiplier';
-                produce_contract($contract_parameters)
-            }
-            catch { undef };
+                produce_contract($contract_parameters);
+            };
+
             next unless $c;
 
             if ($c->exit_tick) {

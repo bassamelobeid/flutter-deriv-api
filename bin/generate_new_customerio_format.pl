@@ -6,7 +6,7 @@ use BOM::User::Client;
 use JSON::MaybeUTF8 qw(:v1);
 use Locale::Country;
 use Text::CSV;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 use Getopt::Long;
 use Path::Tiny;
@@ -57,14 +57,15 @@ for my $broker (@real_brokers) {
                 $ok_count++;
             }
             catch {
-                $failed_ids{$loginid} = $_;
+                my $error = $@;
+                $failed_ids{$loginid} = $error;
                 $fail_count++;
                 if ($fail_count > MAX_FAIL_COUNT) {
                     $log->error("Max Fail Count " . MAX_FAIL_COUNT . " exceeded. Process stopped.");
                     $log->error($_ . " : " . $failed_ids{$_}) for keys %failed_ids;
                     die;
                 }
-            };
+            }
         }
     }
 }

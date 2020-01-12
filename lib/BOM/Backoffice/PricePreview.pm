@@ -7,7 +7,7 @@ use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::MarketData qw(create_underlying);
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Format::Util::Numbers qw(roundcommon);
 use LandingCompany::Registry;
 use Volatility::EconomicEvents;
@@ -38,12 +38,13 @@ sub generate_form {
 sub update_price_preview {
     my $args = shift;
 
-    my $prices = try {
-        calculate_prices($args)
+    my $prices;
+    try {
+        $prices = calculate_prices($args)
     }
     catch {
-        +{error => 'Exception thrown while calculating prices: ' . $_};
-    };
+        $prices = {error => 'Exception thrown while calculating prices: ' . $@};
+    }
 
     return $prices if $prices->{error};
     return {} unless %$prices;

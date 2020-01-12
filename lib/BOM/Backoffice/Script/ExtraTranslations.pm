@@ -3,7 +3,6 @@ package BOM::Backoffice::Script::ExtraTranslations;
 use Moose;
 with 'App::Base::Script';
 
-use Try::Tiny;
 use IO::File;
 use File::ShareDir;
 use Module::Load::Conditional qw( can_load );

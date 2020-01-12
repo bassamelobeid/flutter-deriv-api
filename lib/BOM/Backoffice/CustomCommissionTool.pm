@@ -7,7 +7,7 @@ use BOM::Backoffice::Request;
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 use JSON::MaybeXS;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use List::Util qw(max);
 use Scalar::Util qw(looks_like_number);
 use Date::Utility;
@@ -53,14 +53,15 @@ sub save_commission {
     my ($start, $end);
 
     return _err("Both starting time and ending time should present") unless $args->{start_time} and $args->{end_time};
-    my $error = try {
+    my $error;
+    try {
         $start = Date::Utility->new($args->{start_time});
         $end   = Date::Utility->new($args->{end_time});
-        _err("Start time and end time should not be in the past") if $start->is_before($now) or $end->is_before($now);
+        $error = _err("Start time and end time should not be in the past") if $start->is_before($now) or $end->is_before($now);
     }
     catch {
-        _err("Invalid date format") unless $start and $end;
-    };
+        $error = _err("Invalid date format") unless $start and $end;
+    }
 
     return _err($error->{error}) if defined $error and defined $error->{error};
 
@@ -70,28 +71,24 @@ sub save_commission {
         }
     }
 
-    my $result = try {
-        my $config = _get_info(_qc()->save_config('commission', $args));
-        $config;
+    try {
+        return _get_info(_qc()->save_config('commission', $args));
     }
     catch {
-        _err($_);
-    };
-
-    return $result;
+        return _err($@);
+    }
 }
 
 sub delete_commission {
     my $name = shift;
 
-    my $result = try {
-        _qc()->delete_config('commission', $name);
+    try {
+        return _qc()->delete_config('commission', $name);
     }
     catch {
-        _err($_);
-    };
+        return _err($@);
+    }
 
-    return $result;
 }
 
 sub _err {

@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use Scalar::Util 'looks_like_number';
+use Syntax::Keyword::Try;
 use JSON::MaybeXS;
 use Date::Utility;
 
@@ -115,7 +116,7 @@ sub _validation_errors {
     }
     catch {
         push @errors, "Start/Expiry date must be in the following format: YYYY-MM-DD";
-    };
+    }
 
     # any more complex validation should go here..
     push @errors, "MINUMUM TURNOVER is only for FREE_BET promotions"

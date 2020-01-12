@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 no indirect;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use List::Util qw(sum shuffle);
 
 use Postgres::FeedDB;
@@ -128,8 +128,8 @@ sub run {
                         }
                     }
                     catch {
-                        warn "Failed to price with parameters " . Dumper($args) . " - $_\n";
-                    };
+                        warn "Failed to price with parameters " . Dumper($args) . " - $@\n";
+                    }
                     if ($step_unit eq 't') {
                         $idx += $step_amount;
                     } elsif ($step_unit eq 's') {
@@ -146,8 +146,8 @@ sub run {
         $pm->wait_all_children;
     }
     catch {
-        warn "Failed to run - $_";
-    };
+        warn "Failed to run - $@";
+    }
     alarm(0);
     {
         my $elapsed = Time::HiRes::time - $script_start_time;

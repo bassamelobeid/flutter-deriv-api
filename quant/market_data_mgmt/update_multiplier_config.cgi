@@ -15,13 +15,15 @@ use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 use Date::Utility;
 use BOM::Backoffice::Request qw(request);
+use Syntax::Keyword::Try;
 
 BOM::Backoffice::Sysinit::init();
 my $staff = BOM::Backoffice::Auth0::get_staffname();
 my $r     = request();
 
 if ($r->param('save_multiplier_config')) {
-    my $output = try {
+    my $output;
+    try {
         my $multiplier_config = decode_json_utf8($r->param('multiplier_config_json'));
         my $new_config;
         foreach my $c (@$multiplier_config) {
@@ -34,11 +36,11 @@ if ($r->param('save_multiplier_config')) {
             chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
         )->save_config('multiplier_config', $new_config);
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeMultiplierConfig", $new_config);
-        {success => 1};
+        $output = {success => 1};
     }
     catch {
-        {error => 1};
-    };
+        $output = {error => 1};
+    }
 
     print encode_json_utf8($output);
 }

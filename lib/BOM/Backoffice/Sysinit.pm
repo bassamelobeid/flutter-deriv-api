@@ -19,9 +19,6 @@ use BOM::Backoffice::Request::Base;
 use BOM::Config::Chronicle;
 use BOM::Config;
 
-use Try::Tiny::Except ();    # should be preloaded as early as possible
-                             # this statement here is merely a comment.
-
 my $permissions = {
     'f_broker_login.cgi'   => ['ALL'],
     'login.cgi'            => ['ALL'],

@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use Path::Tiny;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Date::Utility;
 use HTML::Entities;
 use Format::Util::Numbers qw/formatnumber/;
@@ -146,7 +146,15 @@ read_csv_row_and_callback(
             }
 
             unless ($skip_validation) {
-                try { $client->validate_payment(currency => $currency, amount => $signed_amount) } catch { $error = $_ };
+                try {
+                    $client->validate_payment(
+                        currency => $currency,
+                        amount   => $signed_amount
+                    );
+                }
+                catch {
+                    $error = $@;
+                }
                 last if $error;
             }
 
@@ -204,8 +212,9 @@ read_csv_row_and_callback(
             my $signed_amount = $amount;
             $signed_amount *= -1 if $action eq 'debit';
             my $err;
-            my $trx = try {
-                $client->smart_payment(
+            my $trx;
+            try {
+                $trx = $client->smart_payment(
                     currency          => $currency,
                     amount            => $signed_amount,
                     payment_type      => $payment_type,
@@ -217,18 +226,17 @@ read_csv_row_and_callback(
                 );
             }
             catch {
-                $err = $_;
-            };
-            if ($err) {
-                $client_account_table .= construct_row_line(%row, error => "Transaction Error: $err");
+                $client_account_table .= construct_row_line(%row, error => "Transaction Error: $@");
                 return;
-            } elsif ($action eq 'credit' and $payment_type =~ /^bank_money_transfer|external_cashier$/) {
+            }
+
+            if ($action eq 'credit' and $payment_type =~ /^bank_money_transfer|external_cashier$/) {
                 try {
                     $client->status->clear_pa_withdrawal_explicitly_allowed;
                 }
                 catch {
                     warn "Not able to unset payment agent explicity allowed flag for " . $client->loginid;
-                };
+                }
             }
             $row{remark} = sprintf "OK transaction reference id: %d", $trx->{id};
         } else {

@@ -13,7 +13,7 @@ use Date::Utility;
 use YAML::XS;
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use Format::Util::Numbers qw(formatnumber);
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 
 use BOM::User::Client;
@@ -110,9 +110,9 @@ if (defined $action && $action eq "gross_transactions") {
             $total_withdrawals = formatnumber('amount', $currency, $total_withdrawals);
         }
         catch {
-            warn "Error caught : $_\n";
+            warn "Error caught : $@\n";
             print "<div style='color:red' class='center-aligned'>Error: Unable to fetch total deposits/withdrawals </div>";
-        };
+        }
     } else {
         print "<div style='color:red' class='center-aligned'>Error: Client $loginID does not have currency set. </div>";
     }
@@ -205,12 +205,13 @@ if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
 }
 
 if (@trxns) {
-    my $exchange_rate = try {
-        in_usd(1.0, $currency);
+    my $exchange_rate;
+    try {
+        $exchange_rate = in_usd(1.0, $currency);
     }
     catch {
-        code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.")->();
-    };
+        code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.");
+    }
 
     my $currency_url    = BOM::Config::crypto()->{$currency}{blockchain_url};
     my $transaction_uri = URI->new($currency_url->{transaction});

@@ -9,7 +9,7 @@ Getopt::Long::Configure qw( gnu_getopt );
 
 use POSIX;
 use Template;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Path::Tiny;
 use Date::Utility;
 use Email::Address::UseXS;
@@ -86,8 +86,14 @@ for my $broker (@brokers) {
             });
 
             # Skip any inactive clients
-            return $log->infof('Skipping %s due to unwelcome status', $loginid) if $client->status->unwelcome;
-            return $log->infof('Skipping %s due to disabled status',  $loginid) if $client->status->disabled;
+            if ($client->status->unwelcome) {
+                $log->infof('Skipping %s due to unwelcome status', $loginid);
+                next;
+            }
+            if ($client->status->disabled) {
+                $log->infof('Skipping %s due to disabled status', $loginid);
+                next;
+            }
 
             if ($send_emails) {
                 $params->{loginid} = $client->loginid;
@@ -98,7 +104,7 @@ for my $broker (@brokers) {
                 if $show_clients;
         }
         catch {
-            $log->errorf('Failed to process quarterly statement for client [%s] - %s', $loginid, $_);
+            $log->errorf('Failed to process quarterly statement for client [%s] - %s', $loginid, $@);
         }
     }
 

@@ -3,7 +3,6 @@ package main;
 use strict;
 use warnings;
 
-use Try::Tiny;
 use HTML::Entities;
 use Scalar::Util qw(looks_like_number);
 

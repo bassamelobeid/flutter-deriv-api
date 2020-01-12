@@ -17,7 +17,7 @@ use POSIX qw( floor );
 use namespace::autoclean;
 use List::MoreUtils qw(uniq);
 use List::Util qw(max);
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use BOM::Config::Runtime;
 use BOM::Backoffice::Request;
@@ -115,12 +115,16 @@ sub debug_link {
         },
     ];
 
-    my $volsurface = try {
-        ($self->bet->underlying->volatility_surface_type eq 'moneyness')
+    my $volsurface;
+    try {
+        $volsurface =
+            ($self->bet->underlying->volatility_surface_type eq 'moneyness')
             ? $self->_get_moneyness_surface()
             : $self->_get_volsurface();
     }
-    catch { 'Surface display error:' . $_ };
+    catch {
+        $volsurface = 'Surface display error:' . $@;
+    }
     push @{$tabs_content},
         {
         label   => 'Vol Surface',
@@ -207,8 +211,8 @@ sub _get_moneyness_surface {
         });
     }
     catch {
-        warn("caught error in _get_moneyness_surface: $_");
-    };
+        warn("caught error in _get_moneyness_surface: $@");
+    }
 
     my @unique_dates   = uniq(@$dates);
     my $master_vol_url = 'mv';
@@ -259,8 +263,8 @@ sub _get_volsurface {
         });
     }
     catch {
-        warn "Failed to fetch historical surface data (usually just a timeout): $_";
-    };
+        warn "Failed to fetch historical surface data (usually just a timeout): $@";
+    }
 
     # master vol surface
     my $master_vol_url         = 'mv';

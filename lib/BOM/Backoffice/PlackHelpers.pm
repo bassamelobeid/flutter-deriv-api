@@ -13,7 +13,7 @@ use warnings;
 use CGI;
 use CGI::Util;
 use CGI::Cookie;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request);
@@ -41,9 +41,9 @@ sub http_redirect {
         );
     }
     catch {
-        /too late to set a HTTP header/ and warn($_);
-        die $_;
-    };
+        $@ =~ /too late to set a HTTP header/ and warn($@);
+        die $@;
+    }
     $http_handler->status(302);    #Moved
     return;
 }
@@ -152,9 +152,9 @@ sub PrintContentType_JSON {
         $http_handler->print_header('Cache-control' => "private, no-cache, must-revalidate");
     }
     catch {
-        /too late to set a HTTP header/ and warn($_);
-        die $_;
-    };
+        $@ =~ /too late to set a HTTP header/ and warn($@);
+        die $@;
+    }
     $http_handler->status(200);
     return;
 }

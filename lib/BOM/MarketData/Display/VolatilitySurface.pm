@@ -11,7 +11,6 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use List::Util qw(uniq);
-use Try::Tiny;
 use Quant::Framework;
 use BOM::Config::Chronicle;
 use Scalar::Util qw(looks_like_number);

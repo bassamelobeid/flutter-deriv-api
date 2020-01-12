@@ -303,6 +303,11 @@ sub vk_BObottomPRES {
     return;
 }
 
+# CGI::Compile will wrap the function 'exit' into a `die "EXIT\n" $errcode`
+# So please don't use it in `try` block. Otherwise it will be caught.
+# If you still want to do, please throw it again in the catch block.
+# please refer to perldoc of CGI::Compile and Try::Tiny::Except
+
 sub code_exit_BO {
     my ($message) = @_;
     print $message if $message;

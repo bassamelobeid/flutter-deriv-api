@@ -11,7 +11,7 @@ use BOM::Config::Chronicle;
 use Finance::Underlying;
 use LandingCompany::Registry;
 use Finance::Contract::Category;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use YAML::XS qw(LoadFile);
 use List::Util qw(uniq);
 use BOM::Backoffice::Auth0;
@@ -43,7 +43,7 @@ sub save_limit {
         defined $args->{$_} and $args->{$_} ne ''
         } keys %$args;
 
-    my $limits = try {
+    try {
         my $qc = BOM::Database::QuantsConfig->new();
         # if the specified market group is not currently tied to any underlying symbol and we have a selected time period defined,
         # then we need to store these information into another table.
@@ -69,20 +69,18 @@ sub save_limit {
 
         my $decorated_limit = decorate_for_display($qc->get_all_global_limit(['default']));
         my $pending_group   = decorate_for_pending_market_group($qc->get_pending_market_group(['default']));
-        +{
+        return {
             limit        => $decorated_limit,
             market_group => $pending_group,
         };
 
     }
     catch {
-        my $error = ref $_ eq 'Mojo::Exception' ? $_->message : $_;
+        my $error = ref $@ eq 'Mojo::Exception' ? $@->message : $@;
         ## Postgres error messages are too verbose to show the whole thing:
         $error =~ s/(DETAIL|CONTEXT|HINT):.*//s;
-        +{error => $error};
-    };
-
-    return $limits;
+        return {error => $error};
+    }
 }
 
 sub delete_limit {
@@ -91,7 +89,8 @@ sub delete_limit {
 
     my $deleted = 0;
 
-    my $limits = try {
+    my $limits;
+    try {
         my $qc             = BOM::Database::QuantsConfig->new();
         my $decorated_data = decorate_for_display($qc->get_all_global_limit(['default']));
         my $records_len    = scalar(@{$decorated_data->{records}});
@@ -102,14 +101,14 @@ sub delete_limit {
 
         $deleted = $records_len - scalar(@{$decorated_data->{records}});
 
-        +{
+        $limits = {
             data    => $decorated_data,
             deleted => $deleted
         };
     }
     catch {
-        +{error => $_};
-    };
+        $limits = {error => $@};
+    }
 
     my $args_content = join(q{, }, map { qq{$_ => $args->{$_}} } keys %$args);
     BOM::Backoffice::QuantsAuditLog::log($staff, "deletegloballimit", $args_content);
@@ -125,7 +124,7 @@ sub update_contract_group {
     my $contract_group = $args->{contract_group};
     my $duration       = $app_config->quants->ultra_short_duration;
 
-    my $output = try {
+    try {
         my $dbs = BOM::Database::QuantsConfig->new->_db_list('default');
         foreach my $db (@$dbs) {
             my $dbic = $db->dbic;
@@ -140,22 +139,19 @@ sub update_contract_group {
                 );
             }
         }
-        +{success => 1};
+        return {success => 1};
     }
     catch {
-        my $error = {error => 'Error while updating contract group'};
-        warn 'Exception thrown while updating contract group: ' . $_;
-        $error;
-    };
-
-    return $output;
+        warn 'Exception thrown while updating contract group: ' . $@;
+        return {error => 'Error while updating contract group'};
+    }
 }
 
 sub rebuild_aggregate_tables {
 
     my $duration = shift // $app_config->quants->ultra_short_duration;
 
-    my $output = try {
+    try {
         foreach my $method (qw(rebuild_open_contract_aggregates rebuild_global_aggregates)) {
             my $dbs = BOM::Database::QuantsConfig->new->_db_list('default');
             foreach my $db (@$dbs) {
@@ -167,15 +163,12 @@ sub rebuild_aggregate_tables {
                 );
             }
         }
-        +{successful => 1};
+        return {successful => 1};
     }
     catch {
-        my $error = {error => 'Error while rebuilding aggregate tables.'};
-        warn 'Exception thrown while rebuilding aggregate tables: ' . $_;
-        $error;
-    };
-
-    return $output;
+        warn 'Exception thrown while rebuilding aggregate tables: ' . $@;
+        return {error => 'Error while rebuilding aggregate tables.'};
+    }
 }
 
 sub decorate_for_display {
@@ -302,24 +295,24 @@ sub update_ultra_short {
     }
 
     $duration = Time::Duration::Concise->new(interval => $duration);
-    my $err = try {
-        +{error => 'Ultra short span should not be greater than 30 minutes.'} if ($duration->minutes() > 30)
+    try {
+        return {error => 'Ultra short span should not be greater than 30 minutes.'} if ($duration->minutes() > 30)
     }
     catch {
-        +{error => 'Invalid format.'}
-    };
-    return $err if $err;
+        return {error => 'Invalid format.'}
+    }
 
     my $key_name = 'quants.' . $args->{limit_type};
-    my $output   = try {
+    my $output;
+    try {
         $app_config->set({$key_name => $duration->seconds()});
         rebuild_aggregate_tables($duration->seconds());
-        +{result => $duration->as_string()};
+        $output = {result => $duration->as_string()};
     }
     catch {
-        warn $_;
-        +{error => 'Failed to set the duration. Please check log.'}
-    };
+        warn $@;
+        $output = {error => 'Failed to set the duration. Please check log.'}
+    }
 
     BOM::Backoffice::QuantsAuditLog::log($staff, "updateultrashortduration", "$key_name new duration[$duration->as_string]");
 
@@ -342,18 +335,19 @@ sub save_threshold {
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
     my $key_name = 'quants.' . $args->{limit_type} . '_alert_threshold';
-    my $output   = try {
+    my $output;
+    try {
         $app_config->set({$key_name => $amount});
-        +{
+        $output = {
             id     => $args->{limit_type},
             amount => $amount,
             }
 
     }
     catch {
-        warn $_;
-        +{error => 'Failed setting threshold. Please check log.'}
-    };
+        warn $@;
+        $output = {error => 'Failed setting threshold. Please check log.'}
+    }
 
     BOM::Backoffice::QuantsAuditLog::log($staff, "updategloballimitthreshold", "threshold[$key_name] new amount[$amount]");
 
@@ -373,14 +367,15 @@ sub update_config_switch {
     my $key_name   = 'quants.' . 'enable_' . $type;
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
-    my $output = try {
+    my $output;
+    try {
         $app_config->set({$key_name => $switch});
-        return +{status => $switch};
+        $output = {status => $switch};
     }
     catch {
-        warn $_;
-        +{error => 'Failed to update config status. Please check log.'}
-    };
+        warn $@;
+        $output = {error => 'Failed to update config status. Please check log.'}
+    }
 
     BOM::Backoffice::QuantsAuditLog::log($staff, "updategloballimitconfigswitch", "content: app_config[$key_name] new_status[$switch]");
 
@@ -458,37 +453,32 @@ sub update_market_group {
         return {error => 'do not allow more than one submarket_group.'};
     }
 
-    my $output = try {
+    try {
         BOM::Database::QuantsConfig->new->update_market_group($args);
-        +{success => 1};
+        return {success => 1};
     }
     catch {
-        my $error = {error => 'Error while updating market group'};
-        warn 'Exception thrown while updating market group: ' . $_;
-        $error;
-    };
-
-    return $output;
+        warn 'Exception thrown while updating market group: ' . $@;
+        return {error => 'Error while updating market group'};
+    }
 }
 
 sub delete_market_group {
     my $args = shift;
 
-    my $groups = try {
+    try {
         my $qc = BOM::Database::QuantsConfig->new();
         $qc->delete_market_group($args);
         my $market_group = decorate_for_pending_market_group($qc->get_pending_market_group(['default']));
         my $limit        = decorate_for_display($qc->get_all_global_limit(['default']));
-        +{
+        return {
             limit        => $limit,
             market_group => $market_group
         };
     }
     catch {
-        +{error => $_};
-    };
-
-    return $groups;
+        return {error => $@};
+    }
 }
 
 sub get_global_config_status {

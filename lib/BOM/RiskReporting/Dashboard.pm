@@ -18,7 +18,7 @@ use List::Util qw(max first sum reduce sum0);
 use List::UtilsBy qw(rev_nsort_by);
 use JSON::MaybeXS;
 use Moose;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Math::BigFloat;
 use Cache::RedisDB;
 use Date::Utility;
@@ -234,7 +234,12 @@ sub _open_bets_report {
             interval => max(0, $seconds_to_expiry),
             locale   => BOM::Backoffice::Request::request()->language
         );
-        $bet_details->{longcode} = try { BOM::Backoffice::Request::localize($bet->longcode) } catch { 'Description unavailable' };
+        try {
+            $bet_details->{longcode} = BOM::Backoffice::Request::localize($bet->longcode);
+        }
+        catch {
+            $bet_details->{longcode} = 'Description unavailable';
+        }
         $bet_details->{expires_in} =
             ($til_expiry->seconds > 0) ? $til_expiry->as_string(1) : 'expired';
         my $currency      = $bet_details->{currency_code};

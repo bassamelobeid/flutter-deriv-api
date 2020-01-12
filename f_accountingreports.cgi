@@ -8,7 +8,7 @@ no warnings 'uninitialized';    ## no critic (ProhibitNoWarnings) # TODO fix the
 use HTML::Entities;
 
 use List::MoreUtils qw(any);
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use f_brokerincludeall;
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -95,7 +95,7 @@ foreach my $pair (@$currency_pairs) {
         print "<li>" . $pair_name . " : " . $underlying_spot . "</li>";
     }
     catch {
-        warn "Failed to get exchange rate for $pair_name - $_\n";
+        warn "Failed to get exchange rate for $pair_name - $@\n";
         print '<li>' . $pair_name . ': <span style="color:red;">ERROR</span></li>';
     }
 
@@ -122,7 +122,7 @@ foreach my $currency_symbol (qw(AUD GBP EUR USD HKD)) {
             . '%</td></tr>';
     }
     catch {
-        warn "Failed to get currency interest rates for $currency_symbol - $_\n";
+        warn "Failed to get currency interest rates for $currency_symbol - $@\n";
         print '<tr><td>' . $currency_symbol . '</td><td colspan="2" style="color:red;">ERROR</td></tr>';
 
     }
