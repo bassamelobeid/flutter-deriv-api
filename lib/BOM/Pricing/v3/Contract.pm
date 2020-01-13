@@ -612,7 +612,7 @@ sub contracts_for {
     my $args            = $params->{args};
     my $symbol          = $args->{contracts_for};
     my $currency        = $args->{currency} || 'USD';
-    my $landing_company = $args->{landing_company} // 'svg';
+    my $landing_company = $args->{landing_company} // 'virtual';
     my $product_type    = $args->{product_type};
     my $country_code    = $params->{country_code} // '';
 
@@ -713,7 +713,7 @@ sub _validate_offerings {
     }
 
     try {
-        my $landing_company = LandingCompany::Registry::get($args_copy->{landing_company} // 'svg');
+        my $landing_company = LandingCompany::Registry::get($args_copy->{landing_company} // 'virtual');
         my $method = $contract->is_parameters_predefined ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
         my $offerings_obj = $landing_company->$method(delete $args_copy->{country_code} // '', BOM::Config::Runtime->instance->get_offerings_config);
 
