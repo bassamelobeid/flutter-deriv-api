@@ -103,7 +103,7 @@ subtest 'multiplier - send_ask' => sub {
         'limit_order' => {
             'stop_out' => {
                 'value'        => '90.05',
-                'display_name' => 'Stop Out',
+                'display_name' => 'Stop out',
                 'order_date'   => ignore(),
                 'order_amount' => -100
             }
@@ -147,12 +147,12 @@ subtest 'multiplier - send_ask' => sub {
         'limit_order' => {
             'stop_out' => {
                 'value'        => '90.05',
-                'display_name' => 'Stop Out',
+                'display_name' => 'Stop out',
                 'order_date'   => ignore(),
                 'order_amount' => -100
             },
             'take_profit' => {
-                'display_name' => 'Take Profit',
+                'display_name' => 'Take profit',
                 'order_amount' => 10,
                 'order_date'   => ignore(),
                 'value'        => 101.05,
@@ -178,7 +178,7 @@ subtest 'multiplier - send_ask' => sub {
             'multiplier'            => 10,
             'currency'              => 'USD',
             'deep_otm_threshold'    => '0.025',
-            'deal_cancellation'     => 1,
+            'deal_cancellation'     => '1h',
             'limit_order'           => {'take_profit' => 10},
             'date_start'            => 0,
             'proposal'              => 1,
@@ -199,12 +199,12 @@ subtest 'multiplier - send_ask' => sub {
         'limit_order' => {
             'stop_out' => {
                 'value'        => '90.05',
-                'display_name' => 'Stop Out',
+                'display_name' => 'Stop out',
                 'order_date'   => ignore(),
                 'order_amount' => -100
             },
             'take_profit' => {
-                'display_name' => 'Take Profit',
+                'display_name' => 'Take profit',
                 'order_amount' => 10,
                 'order_date'   => ignore(),
                 'value'        => 101.05,
@@ -219,7 +219,7 @@ subtest 'multiplier - send_ask' => sub {
             'date_expiry' => ignore(),
         },
     };
-    $args->{deal_cancellation} = 1;
+    $args->{deal_cancellation} = '1h';
     $res = $c->call_ok('send_ask', $params)->has_no_error->result;
     cmp_deeply($res, $expected, 'send_ask output as expected');
 };
@@ -275,7 +275,7 @@ subtest 'multiplier - get_bid' => sub {
             'stop_out' => {
                 'order_amount' => '-100.00',
                 'order_date'   => ignore(),
-                'display_name' => 'Stop Out',
+                'display_name' => 'Stop out',
                 'value'        => '90.05'
             }
         },
@@ -318,7 +318,7 @@ subtest 'multiplier - get_bid' => sub {
                     basis_spot   => 100
                 }
             },
-            deal_cancellation => 1,
+            deal_cancellation => '1h',
         });
     $params = {
         short_code      => $contract->shortcode,
@@ -354,7 +354,7 @@ subtest 'multiplier - get_bid' => sub {
             'stop_out' => {
                 'order_amount' => '-100.00',
                 'order_date'   => ignore(),
-                'display_name' => 'Stop Out',
+                'display_name' => 'Stop out',
                 'value'        => '90.05'
             }
         },
