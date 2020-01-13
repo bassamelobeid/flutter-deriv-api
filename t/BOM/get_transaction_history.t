@@ -18,7 +18,6 @@ use BOM::Transaction::Validation;
 use Date::Utility;
 use Data::Dumper;
 
-use Try::Tiny;
 use Test::MockModule;
 use Test::More;
 use Test::Warn;
