@@ -11,7 +11,7 @@ use LWP::Simple 'get';
 use List::UtilsBy qw(extract_by);
 use JSON::MaybeUTF8 qw(:v1);
 use Log::Any qw($log);
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use YAML::XS;
 use RedisDB;
 
@@ -87,27 +87,30 @@ sub BUILD {
 }
 
 sub _build_redis {
-    return try {
-        BOM::Config::RedisReplicated::redis_pricer();
+    try {
+        return BOM::Config::RedisReplicated::redis_pricer();
     }
     catch {
+        my $e = $@;
         # delay a bit so that process managers like supervisord can
         # restart this processor gracefully in case of connection issues
         sleep(3);
-        die 'Cannot connect to redis_pricer: ', $_;
-    };
+        die 'Cannot connect to redis_pricer: ', $e;
+    }
 }
 
 # second redis client used for priority queue subscription
 sub _build_redis_priority {
-    return try {
+    try {
         my %config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write}->%*;
+
         return RedisDB->new(%config);
     }
     catch {
+        my $e = $@;
         sleep(3);
-        die 'Cannot connect to redis_pricer for priority queue: ', $_;
-    };
+        die 'Cannot connect to redis_pricer for priority queue: ', $e;
+    }
 }
 
 sub run {
@@ -249,10 +252,11 @@ sub _process_priority_queue {
         $self->redis_priority->get_reply();
     }
     catch {
-        $log->warnf("Caught error on priority queue subscription: %s", $_);
+        my $e = $@;
+        $log->warnf("Caught error on priority queue subscription: %s", $e);
         # resubscribe if our $redis handle timed out
         $self->_subscribe_priority_queue() if /not waiting for reply/;
-    };
+    }
 
     return undef;
 }

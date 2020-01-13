@@ -17,7 +17,7 @@ no indirect;
 
 use Date::Utility;
 use Time::Duration::Concise::Localize;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use List::MoreUtils qw(uniq);
 
 use BOM::User::Client;
@@ -111,13 +111,14 @@ sub trading_times {
     if ($params->{args}->{trading_times} eq 'today') {
         $date = Date::Utility->new;
     } else {
-        $date = try { Date::Utility->new($params->{args}->{trading_times}) };
-    }
-
-    unless ($date) {
-        return BOM::Pricing::v3::Utility::create_error({
-                code              => 'InvalidDateFormat',
-                message_to_client => localize('Invalid date format.')});
+        try {
+            $date = Date::Utility->new($params->{args}->{trading_times});
+        }
+        catch {
+            return BOM::Pricing::v3::Utility::create_error({
+                    code              => 'InvalidDateFormat',
+                    message_to_client => localize('Invalid date format.')});
+        }
     }
 
     my $language = $params->{language} // 'en';

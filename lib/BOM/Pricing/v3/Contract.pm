@@ -5,7 +5,7 @@ use warnings;
 no indirect;
 
 use Scalar::Util qw(blessed);
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use List::MoreUtils qw(none);
 use JSON::MaybeXS;
 use Date::Utility;
@@ -116,31 +116,31 @@ sub _get_ask {
         $contract = $args_copy->{proposal_array} ? produce_batch_contract($args_copy) : produce_contract($args_copy);
     }
     catch {
-        my $message_to_client = _get_error_message($_, $args_copy);
-        my $details = _get_error_details($_);
-        $response = BOM::Pricing::v3::Utility::create_error({
+        my $e                 = $@;
+        my $message_to_client = _get_error_message($e, $args_copy);
+        my $details           = _get_error_details($e);
+        return BOM::Pricing::v3::Utility::create_error({
             code              => 'ContractCreationFailure',
             message_to_client => localize(@$message_to_client),
             $details ? (details => $details) : (),
         });
-    };
-    return $response if $response;
+    }
 
     if ($contract->isa('BOM::Product::Contract::Batch')) {
-        my $batch_response = try {
-            handle_batch_contract($contract, $args_copy);
+        try {
+            return handle_batch_contract($contract, $args_copy);
         }
         catch {
-            my $message_to_client = _get_error_message($_, $args_copy);
-            my $details = _get_error_details($_);
-            BOM::Pricing::v3::Utility::create_error({
+            my $e                 = $@;
+            my $message_to_client = _get_error_message($e, $args_copy);
+            my $details           = _get_error_details($e);
+
+            return BOM::Pricing::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => localize(@$message_to_client),
                 $details ? (details => $details) : (),
             });
-        };
-
-        return $batch_response;
+        }
     }
 
     $response = _validate_offerings($contract, $args_copy);
@@ -243,12 +243,14 @@ sub _get_ask {
         stats_timing('compute_price.buy.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
     }
     catch {
-        my $message_to_client = _get_error_message($_, $args_copy, 1);
-        $response = BOM::Pricing::v3::Utility::create_error({
+        my $e = $@;
+        my $message_to_client = _get_error_message($e, $args_copy, 1);
+
+        return BOM::Pricing::v3::Utility::create_error({
             message_to_client => localize(@$message_to_client),
             code              => "ContractCreationFailure"
         });
-    };
+    }
 
     return $response;
 }
@@ -270,7 +272,13 @@ sub handle_batch_contract {
     # when only $offerings_error is true, we generate error message using ask_price
     # when $offerings_error is false but ask_price has error -- in theory that shouldn't happen -- we die to jump out
     # of the current function. That error will be handled by the caller.
-    my $ask_prices = try { $batch_contract->ask_prices } catch { die $_ if !$offerings_error; undef };
+    my $ask_prices;
+    try {
+        $ask_prices = $batch_contract->ask_prices;
+    }
+    catch {
+        die $@ if !$offerings_error;
+    }
     # I know here $offerings_error must be true when no ask_prices, but this format of condition should be more intuitive.
     return $offerings_error if $offerings_error && !$ask_prices;
 
@@ -367,18 +375,19 @@ sub get_bid {
         )
         = @{$params}{qw/short_code contract_id currency is_sold is_expired sell_time sell_price app_markup_percentage landing_company country_code/};
 
-    my ($response, $contract, $bet_params);
+    my ($contract, $bet_params);
     try {
         $bet_params = shortcode_to_parameters($short_code, $currency);
         $bet_params->{limit_order} = $params->{limit_order} if $params->{limit_order};
     }
     catch {
         warn __PACKAGE__ . " get_bid shortcode_to_parameters failed: $short_code, currency: $currency";
-        $response = BOM::Pricing::v3::Utility::create_error({
+
+        return BOM::Pricing::v3::Utility::create_error({
                 code              => 'GetProposalFailure',
                 message_to_client => localize('Cannot create contract')});
-    };
-    return $response if $response;
+    }
+
     try {
         $bet_params->{is_sold}               = $is_sold;
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
@@ -389,11 +398,11 @@ sub get_bid {
     }
     catch {
         warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . $json->encode($bet_params);
-        $response = BOM::Pricing::v3::Utility::create_error({
+
+        return BOM::Pricing::v3::Utility::create_error({
                 code              => 'GetProposalFailure',
                 message_to_client => localize('Cannot create contract')});
-    };
-    return $response if $response;
+    }
 
     if ($contract->is_legacy) {
         return BOM::Pricing::v3::Utility::create_error({
@@ -403,6 +412,7 @@ sub get_bid {
     }
 
     my $tv = [Time::HiRes::gettimeofday()];
+    my $response;
     try {
         $params->{validation_params}->{landing_company} = $landing_company;
 
@@ -411,40 +421,42 @@ sub get_bid {
         # we want to return immediately with a complete response in case of a data disruption because
         # we might now have a valid entry and exit tick.
         if (not $valid_to_sell->{is_valid_to_sell} and $contract->require_manual_settlement) {
+            # can't just return the value when using Syntax::Keyword::Try, it breaks some tests
+            # the response should be returned from outside of the try block
             $response = BOM::Pricing::v3::Utility::create_error({
                 code              => "GetProposalFailure",
                 message_to_client => $valid_to_sell->{validation_error},
             });
-            return;
+        } else {
+            my $format_limit_order = ($params->{streaming_params} and $params->{streaming_params}->{format_limit_order}) ? 1 : 0;
+
+            $response = _build_bid_response({
+                contract           => $contract,
+                contract_id        => $contract_id,
+                is_valid_to_sell   => $valid_to_sell->{is_valid_to_sell},
+                is_valid_to_cancel => $contract->is_valid_to_cancel,
+                is_sold            => $is_sold,
+                is_expired         => $is_expired,
+                sell_price         => $sell_price,
+                sell_time          => $sell_time,
+                validation_error   => $valid_to_sell->{validation_error},
+                from_pricer        => $format_limit_order,
+            });
+
+            my $pen = $contract->pricing_engine_name;
+            $pen =~ s/::/_/g;
+            stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
         }
-
-        my $format_limit_order = ($params->{streaming_params} and $params->{streaming_params}->{format_limit_order}) ? 1 : 0;
-
-        $response = _build_bid_response({
-            contract           => $contract,
-            contract_id        => $contract_id,
-            is_valid_to_sell   => $valid_to_sell->{is_valid_to_sell},
-            is_valid_to_cancel => $contract->is_valid_to_cancel,
-            is_sold            => $is_sold,
-            is_expired         => $is_expired,
-            sell_price         => $sell_price,
-            sell_time          => $sell_time,
-            validation_error   => $valid_to_sell->{validation_error},
-            from_pricer        => $format_limit_order,
-        });
-
-        my $pen = $contract->pricing_engine_name;
-        $pen =~ s/::/_/g;
-        stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
     }
     catch {
-        _log_exception(get_bid => $_);
-        $response = BOM::Pricing::v3::Utility::create_error({
+        my $e = $@;
+        _log_exception(get_bid => $e);
+
+        return BOM::Pricing::v3::Utility::create_error({
             message_to_client => localize('Sorry, an error occurred while processing your request.'),
             code              => "GetProposalFailure"
         });
-    };
-
+    }
     return $response;
 }
 
@@ -461,11 +473,10 @@ sub localize_template_params {
 }
 
 sub send_bid {
-    my $params = shift;
+    my $params   = shift;
+    my $tv       = [Time::HiRes::gettimeofday];
+    my $response = undef;
 
-    my $tv = [Time::HiRes::gettimeofday];
-
-    my $response;
     try {
         $response = get_bid($params);
     }
@@ -474,11 +485,14 @@ sub send_bid {
         # all the useful code, so unless the error creation or localize steps
         # fail, there's not much else that can go wrong. We therefore log and
         # report anyway.
-        _log_exception(send_bid => "$_ (and it should be impossible for this to happen)");
+        my $e = $@;
+
+        _log_exception(send_bid => "$e (and it should be impossible for this to happen)");
+
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'pricing error',
                 message_to_client => localize('Unable to price the contract.')});
-    };
+    }
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
 
@@ -510,15 +524,17 @@ sub send_ask {
         });
     }
 
-    my $response = try {
-        _get_ask(prepare_ask($params->{args}), $params->{app_markup_percentage});
+    my $response;
+    try {
+        $response = _get_ask(prepare_ask($params->{args}), $params->{app_markup_percentage});
     }
     catch {
-        _log_exception(send_ask => $_);
-        BOM::Pricing::v3::Utility::create_error({
+        my $e = $@;
+        _log_exception(send_ask => $e);
+        $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'pricing error',
                 message_to_client => localize('Unable to price the contract.')});
-    };
+    }
 
     $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
 
@@ -546,11 +562,11 @@ sub get_contract_details {
     }
     catch {
         warn __PACKAGE__ . " get_contract_details shortcode_to_parameters failed: $params->{short_code}, currency: $params->{currency}";
-        $response = BOM::Pricing::v3::Utility::create_error({
+
+        return BOM::Pricing::v3::Utility::create_error({
                 code              => 'GetContractDetails',
                 message_to_client => localize('Cannot create contract')});
-    };
-    return $response if $response;
+    }
 
     try {
         $bet_params->{app_markup_percentage} = $params->{app_markup_percentage} // 0;
@@ -560,11 +576,11 @@ sub get_contract_details {
     }
     catch {
         warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . $json->encode($bet_params);
-        $response = BOM::Pricing::v3::Utility::create_error({
+
+        return BOM::Pricing::v3::Utility::create_error({
                 code              => 'GetContractDetails',
                 message_to_client => localize('Cannot create contract')});
-    };
-    return $response if $response;
+    }
 
     $response = {
         longcode     => localize($contract->longcode),
@@ -684,8 +700,6 @@ sub _get_error_message {
 sub _validate_offerings {
     my ($contract, $args_copy) = @_;
 
-    my $response;
-
     my $token_details = $args_copy->{token_details};
 
     if ($token_details and exists $token_details->{loginid}) {
@@ -706,7 +720,8 @@ sub _validate_offerings {
         die 'Could not find offerings for ' . $args_copy->{country_code} unless $offerings_obj;
         if (my $error = $offerings_obj->validate_offerings($contract->metadata($args_copy->{action}))) {
             my $details = _get_error_details($error);
-            $response = BOM::Pricing::v3::Utility::create_error({
+
+            return BOM::Pricing::v3::Utility::create_error({
                 code              => 'OfferingsValidationError',
                 message_to_client => localize(@{$error->{message_to_client}}),
                 $details ? (details => $details) : (),
@@ -714,17 +729,16 @@ sub _validate_offerings {
         }
     }
     catch {
-        my $message_to_client = _get_error_message($_, $args_copy);
-        my $details = _get_error_details($_);
-        $response = BOM::Pricing::v3::Utility::create_error({
+        my $e                 = $@;
+        my $message_to_client = _get_error_message($e, $args_copy);
+        my $details           = _get_error_details($e);
+
+        return BOM::Pricing::v3::Utility::create_error({
             code              => 'OfferingsValidationFailure',
             message_to_client => localize(@$message_to_client),
             $details ? (details => $details) : (),
         });
-    };
-
-    return $response;
-
+    }
 }
 
 =head2 _is_valid_to_sell
