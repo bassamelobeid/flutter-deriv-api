@@ -88,25 +88,25 @@ if ($bet) {
                 date_pricing    => $start,
                 landing_company => $landing_company
             });
-        BOM::Backoffice::Request::template()->process(
-            'backoffice/bpot.html.tt',
-            {
-                longcode => $bet      ? localize($bet->longcode)     : '',
-                bet      => $bet,
-                start    => $start    ? $start->datetime             : '',
-                end      => $end      ? $end->datetime               : '',
-                timestep => $timestep ? $timestep->as_concise_string : '',
-                defined $limit_order ? (limit_order => $limit_order) : (),
-                debug_link => $bet->category_code ne 'multiplier' ? BOM::PricingDetails->new({bet => $start_bet})->debug_link : undef,
-            }) || die BOM::Backoffice::Request::template()->error;
+
+        $debug_link = BOM::PricingDetails->new({bet => $start_bet})->debug_link;
+
     }
     catch {
         code_exit_BO("<pre>$_</pre>");
     };
-} else {
-    # no contract created
-    code_exit_BO(
-        sprintf("<pre>Could not create contract for shortcode[%s] currency[%s] landing_company[%s] broker[%s] loginid[%s]</pre>",
-            map { $_ // 'undefined' } ($shortcode, $currency, $landing_company, $broker, $loginid)));
 }
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/bpot.html.tt',
+    {
+        longcode => $bet      ? localize($bet->longcode)     : '',
+        bet      => $bet,
+        start    => $start    ? $start->datetime             : '',
+        end      => $end      ? $end->datetime               : '',
+        timestep => $timestep ? $timestep->as_concise_string : '',
+        defined $limit_order ? (limit_order => $limit_order) : (),
+        debug_link => ($bet and $bet->category_code ne 'multiplier') ? $debug_link : undef,
+    }) || die BOM::Backoffice::Request::template()->error;
+
 code_exit_BO();

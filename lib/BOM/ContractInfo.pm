@@ -3,7 +3,7 @@ package BOM::ContractInfo;
 use strict;
 use warnings;
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Backoffice::Request;
 
@@ -33,7 +33,7 @@ sub get_info {
         }
         catch {
             $info->{is_legacy} = 1;
-        };
+        }
     }
 
     my $description;

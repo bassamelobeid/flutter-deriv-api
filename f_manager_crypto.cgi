@@ -14,7 +14,7 @@ use ExchangeRates::CurrencyConverter qw(in_usd);
 use YAML::XS;
 use Math::BigFloat;
 use Math::BigInt;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use Bitcoin::RPC::Client;
 use Ethereum::RPC::Client;
@@ -103,7 +103,7 @@ try {
 }
 catch {
     code_exit_BO('Invalid dates, please check the dates and try again');
-};
+}
 
 if ($end_date->is_before($start_date)) {
     code_exit_BO("Invalid dates, the end date must be after the initial date");
@@ -175,10 +175,10 @@ try {
     $currency_wrapper->get_info();
 }
 catch {
-    warn "Failed to load $currency currency info: $_";
+    warn "Failed to load $currency currency info: $@";
     print "<p style='color:red'><strong>ERROR: Failed to load $currency currency info. Please contact IT. </strong></p>";
     code_exit_BO();
-};
+}
 
 if ($view_action eq 'withdrawals') {
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");

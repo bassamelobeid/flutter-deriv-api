@@ -11,6 +11,7 @@ use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use JSON::MaybeUTF8 qw(:v1);
 use LandingCompany::Registry;
+use Syntax::Keyword::Try;
 
 use BOM::Transaction;
 use BOM::Config;
@@ -217,8 +218,8 @@ sub print_client_details {
     }
     catch {
         $can_decode_secret_answer = 0;
-        warn "ERROR: Loginid: " . $client->loginid . " - $_";
-    };
+        warn "ERROR: Loginid: " . $client->loginid . " - $@";
+    }
 
     # MARKETING SECTION
     my $promo_code_access = BOM::Backoffice::Auth0::has_authorisation(['Marketing']);

@@ -6,7 +6,7 @@ use warnings;
 use Encode;
 use JSON::MaybeXS;
 use Date::Utility;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Data::Dumper;
 use HTML::Entities;
 
@@ -87,5 +87,5 @@ try {
 }
 catch {
     print "Desk.com response is " . encode_entities(Dumper($response)) . "</br></br>";
-    print "Error is " . encode_entities($_);
-};
+    print "Error is " . encode_entities($@);
+}

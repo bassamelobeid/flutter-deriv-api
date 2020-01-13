@@ -6,7 +6,7 @@ use warnings;
 use BOM::Backoffice::PlackHelpers qw( http_redirect PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::StaffPages;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use Exporter qw(import export_to_level);
 
@@ -49,7 +49,7 @@ sub redirect_login {
 </script>
 EOF
 
-    };
+    }
     main::code_exit_BO();
     return;
 }

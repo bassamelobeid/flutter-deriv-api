@@ -6,7 +6,7 @@
 use strict;
 use warnings;
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use BOM::Backoffice::ExperianBalance;
 use BOM::Config;
@@ -30,8 +30,8 @@ try {
         BOM::Config::third_party()->{proveid}->{password});
 }
 catch {
-    warn "An error occurred: $_";
-};
+    warn "An error occurred: $@";
+}
 
 unless ($used && $limit) {
     DataDog::DogStatsd::Helper::stats_inc('service.experian.failures', {tags => ["balance_check"]});

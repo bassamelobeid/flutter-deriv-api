@@ -6,7 +6,7 @@ use warnings;
 
 use Scalar::Util qw(looks_like_number);
 use Path::Tiny;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use HTML::Entities;
 use Scope::Guard;
 
@@ -275,7 +275,7 @@ if ($ttype eq 'TRANSFER') {
 
 # NEW PAYMENT HANDLERS ..
 
-my ($leave, $client_pa_exp);
+my ($client_pa_exp);
 try {
     my $fdp = $client->is_first_deposit_pending;
 
@@ -331,12 +331,16 @@ try {
     }
 }
 catch {
-    print "<p>TRANSACTION ERROR: This payment violated a fundamental database rule.  Details:<br/>$_</p>";
-    $leave = 1;
-    printf STDERR "Error: $_\n";
-};
+    my $error = $@;
+    # CGI::Compile will wrap the function 'exit' into a `die "EXIT\n" $errcode`
+    # we should make it pass-through
+    # please refer to perldoc of CGI::Compile and Try::Tiny::Except
+    die $error if ref($error) eq 'ARRAY' and @$error == 2 and $error->[0] eq "EXIT\n";
+    print "<p>TRANSACTION ERROR: This payment violated a fundamental database rule.  Details:<br/>$error</p>";
+    printf STDERR "Error: $error\n";
+    code_exit_BO();
+}
 
-code_exit_BO() if $leave;
 my $today = Date::Utility->today;
 if ($ttype eq 'CREDIT' and $is_internal_payment) {
     # unset pa_withdrawal_explicitly_allowed for bank_wire and doughflow mannual deposit
@@ -345,7 +349,7 @@ if ($ttype eq 'CREDIT' and $is_internal_payment) {
     }
     catch {
         warn "Not able to unset payment agent explicity allowed flag for " . $client_pa_exp->loginid;
-    };
+    }
 }
 my $now = Date::Utility->new;
 # Logging
@@ -421,8 +425,8 @@ if ($informclient) {
         });
     }
     catch {
-        code_exit_BO("Transaction was performed, please check client statement but an error occured while sending email. Error details $_");
-    };
+        code_exit_BO("Transaction was performed, please check client statement but an error occured while sending email. Error details $@");
+    }
 }
 
 code_exit_BO();

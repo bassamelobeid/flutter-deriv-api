@@ -5,7 +5,7 @@ use Moose;
 use Date::Utility;
 use Path::Tiny;
 use IO::File;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::Database::ClientDB;
@@ -97,12 +97,11 @@ sub _generate_report {
                         try {
                             my $contract = produce_contract($bet->{short_code}, $currency);
                             $theo = $contract->is_binary ? $contract->theo_price : $contract->theo_price * $contract->multiplier;
-                            return 0;
                         }
                         catch {
-                            warn("theo price error[$_], bet_id[" . $bet_id . "], account_id[$account_id], end_of_day_balance_id[" . $eod_id[0] . "]");
-                            return 1;
-                        } and next;
+                            warn("theo price error[$@], bet_id[" . $bet_id . "], account_id[$account_id], end_of_day_balance_id[" . $eod_id[0] . "]");
+                            next;
+                        }
 
                         my $open_position_sql = q{
                 INSERT INTO accounting.end_of_day_open_positions

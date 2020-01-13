@@ -6,7 +6,7 @@ use warnings;
 
 use BOM::User::Client;
 use HTML::Entities;
-
+use Syntax::Keyword::Try;
 use BOM::Platform::Token::API;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
@@ -83,59 +83,124 @@ foreach my $login_id (split(/\s+/, $clientID)) {
             if (@{get_open_contracts($client)}) {
                 $printline = $open_trades_error_msg;
             } else {
-                $printline =
-                    try { $client->status->set('disabled', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
+                try {
+                    $client->status->set('disabled', $clerk, $reason);
+                    $printline = $insert_success_msg;
+                }
+                catch {
+                    $printline = $insert_error_msg;
+                }
             }
         }
         # remove client from $broker.disabledlogins
         elsif ($action eq 'remove_status') {
-            $printline = try { $client->status->clear_disabled; $remove_success_msg } catch { $remove_error_msg };
+            try {
+                $client->status->clear_disabled;
+                $printline = $remove_success_msg;
+            }
+            catch {
+                $printline = $remove_error_msg;
+            }
         }
     }
     # LOCK CASHIER LOGIN
     elsif ($client_status_type eq 'lockcashierlogins') {
         if ($action eq 'insert_data') {
-            $printline =
-                try { $client->status->set('cashier_locked', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
+            try {
+                $client->status->set('cashier_locked', $clerk, $reason);
+                $printline = $insert_success_msg;
+            }
+            catch {
+                $printline = $insert_error_msg;
+            }
         } elsif ($action eq 'remove_status') {
-            $printline = try { $client->status->clear_cashier_locked; $remove_success_msg } catch { $remove_error_msg };
+            try {
+                $client->status->clear_cashier_locked;
+                $printline = $remove_success_msg;
+            }
+            catch {
+                $printline = $remove_error_msg;
+            }
         }
     }
     # UNWELCOME LOGIN
     elsif ($client_status_type eq 'unwelcomelogins') {
         if ($action eq 'insert_data') {
-            $printline =
-                try { $client->status->set('unwelcome', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
+            try {
+                $client->status->set('unwelcome', $clerk, $reason);
+                $printline = $insert_success_msg;
+            }
+            catch {
+                $printline = $insert_error_msg;
+            }
         } elsif ($action eq 'remove_status') {
-            $printline = try { $client->status->clear_unwelcome; $remove_success_msg } catch { $remove_error_msg };
+            try {
+                $client->status->clear_unwelcome;
+                $printline = $remove_success_msg;
+            }
+            catch {
+                $printline = $remove_error_msg;
+            }
         }
     } elsif ($client_status_type eq 'lockwithdrawal') {
         if ($action eq 'insert_data') {
-            $printline = try { $client->status->set('withdrawal_locked', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
+            try {
+                $client->status->set('withdrawal_locked', $clerk, $reason);
+                $printline = $insert_success_msg;
+            }
+            catch {
+                $printline = $insert_error_msg;
+            }
         } elsif ($action eq 'remove_status') {
-            $printline = try { $client->status->clear_withdrawal_locked; $remove_success_msg } catch { $remove_error_msg };
+            try {
+                $client->status->clear_withdrawal_locked;
+                $printline = $remove_success_msg;
+            }
+            catch {
+                $printline = $remove_error_msg;
+            }
         }
     } elsif ($client_status_type eq 'lockmt5withdrawal') {
         if ($action eq 'insert_data') {
-            $printline = try { $client->status->set('mt5_withdrawal_locked', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
+            try {
+                $client->status->set('mt5_withdrawal_locked', $clerk, $reason);
+                $printline = $insert_success_msg;
+            }
+            catch {
+                $printline = $insert_error_msg;
+            }
         } elsif ($action eq 'remove_status') {
-            $printline = try { $client->status->clear_mt5_withdrawal_locked; $remove_success_msg } catch { $remove_error_msg };
+            try {
+                $client->status->clear_mt5_withdrawal_locked;
+                $printline = $remove_success_msg;
+            }
+            catch {
+                $printline = $remove_error_msg;
+            }
         }
     } elsif ($client_status_type eq 'duplicateaccount') {
         if ($action eq 'insert_data') {
-            $printline = try {
+            try {
                 $client->status->set('duplicate_account', $clerk, $reason);
                 my $m = BOM::Platform::Token::API->new;
                 $m->remove_by_loginid($client->loginid);
-                $insert_success_msg;
+                $printline = $insert_success_msg;
             }
-            catch { $insert_error_msg };
+            catch {
+                $printline = $insert_error_msg;
+            }
         } elsif ($action eq 'remove_status') {
-            $printline = try { $client->status->clear_duplicate_account; $remove_success_msg } catch { $remove_error_msg };
+            try {
+                $client->status->clear_duplicate_account;
+                $printline = $remove_success_msg;
+            }
+            catch {
+                $printline = $remove_error_msg;
+            }
         }
     } elsif ($client_status_type eq 'professionalrequested') {
         if ($action eq 'remove_status') {
-            $printline = try {
+            try {
                 $client->status->multi_set_clear({
                     set        => ['professional_rejected'],
                     clear      => ['professional_requested'],
@@ -143,31 +208,47 @@ foreach my $login_id (split(/\s+/, $clientID)) {
                     reason     => 'Professional request rejected'
                 });
 
-                $remove_success_msg
+                $printline = $remove_success_msg;
             }
-            catch { $remove_error_msg };
+            catch {
+                $printline = $remove_error_msg;
+            }
         }
     } elsif ($client_status_type eq 'nowithdrawalortrading') {
         if ($action eq 'insert_data') {
-            $printline = try { $client->status->set('no_withdrawal_or_trading', $clerk, $reason); $insert_success_msg } catch { $insert_error_msg };
+            try {
+                $client->status->set('no_withdrawal_or_trading', $clerk, $reason);
+                $printline = $insert_success_msg;
+            }
+            catch {
+                $printline = $insert_error_msg;
+            }
         } elsif ($action eq 'remove_status') {
-            $printline = try { $client->status->clear_no_withdrawal_or_trading; $remove_success_msg } catch { $remove_error_msg };
+            try {
+                $client->status->clear_no_withdrawal_or_trading;
+                $printline = $remove_success_msg;
+            }
+            catch {
+                $printline = $remove_error_msg;
+            }
         }
     } elsif ($client_status_type eq 'allowdocumentupload') {
         if ($action eq 'insert_data') {
-            $printline = try {
+            try {
                 $client->status->set('allow_document_upload', $clerk, $reason);
-                $insert_success_msg;
-            }
-            catch { $insert_error_msg };
-        } elsif ($action eq 'remove_status') {
-            $printline = try {
-                $client->status->clear_allow_document_upload;
-                $remove_success_msg;
+                $printline = $insert_success_msg;
             }
             catch {
-                $remove_error_msg
-            };
+                $printline = $insert_error_msg;
+            }
+        } elsif ($action eq 'remove_status') {
+            try {
+                $client->status->clear_allow_document_upload;
+                $printline = $remove_success_msg;
+            }
+            catch {
+                $printline = $remove_error_msg;
+            }
         }
     }
     # print success/fail message

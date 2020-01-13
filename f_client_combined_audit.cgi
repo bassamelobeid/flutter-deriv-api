@@ -10,7 +10,7 @@ use Encode;
 use JSON::MaybeXS;
 use Data::Dumper;
 use Date::Utility;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use HTML::Entities;
 use URI;
 use Mojo::UserAgent;
@@ -46,8 +46,8 @@ try {
     $enddate   = Date::Utility->new($enddate)->date;
 }
 catch {
-    code_exit_BO("Cannot parse dates: $startdate or $enddate: $_");
-};
+    code_exit_BO("Cannot parse dates: $startdate or $enddate: $@");
+}
 
 my $currency = $client->currency;
 
@@ -143,7 +143,7 @@ foreach my $table (
                 }
                 catch {
                     $new->{secret_answer} = 'Unable to extract secret answer. Client secret answer is outdated or invalid.';
-                };
+                }
             }
             if ($key eq 'client_addr') {
                 $old->{client_addr} = revers_ip($old->{client_addr});
@@ -294,7 +294,7 @@ sub _get_desk_com_entries {
             description => Date::Utility::today()->datetime . ' Error occurred while accessing desk.com',
             color       => $color
             };
-    };
+    }
 
     return @desk_entries;
 }

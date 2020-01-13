@@ -7,7 +7,7 @@ use open qw[ :encoding(UTF-8) ];
 use Text::Trim;
 use File::Copy;
 use HTML::Entities;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Digest::MD5;
 use Media::Type::Simple;
 use Date::Utility;
@@ -73,7 +73,7 @@ eval { BrokerPresentation("$encoded_loginid CLIENT DETAILS") };    ## no critic 
 
 my $well_formatted = $loginid =~ m/^[A-Z]{2,4}[\d]{4,10}$/;
 my $client;
-$client = try { return BOM::User::Client->new({loginid => $loginid}) } if $well_formatted;
+$client = eval { BOM::User::Client->new({loginid => $loginid}) } if $well_formatted;
 my $error_message = $well_formatted ? "Client [$encoded_loginid] not found." : "Invalid loginid provided.";
 code_exit_BO(
     qq[<p>ERROR: $error_message </p>
@@ -293,7 +293,6 @@ if ($input{whattodo} eq 'uploadID') {
         # try to get file extension from mime type, else get it from filename
         my $docformat = lc($mts->ext_from_type($mime_type) // $file_ext);
 
-        my $err;
         my $upload_info;
         try {
             $upload_info = $client->db->dbic->run(
@@ -304,14 +303,10 @@ if ($input{whattodo} eq 'uploadID') {
                         $document_id, $file_checksum, $comments, $page_type || '',
                     );
                 });
-            $err = 'Document already exists.' unless $upload_info;
+            die 'Document already exists.' unless $upload_info;
         }
         catch {
-            $err = $_;
-        };
-
-        if ($err) {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error Uploading File $i: $err</p><br />";
+            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error Uploading File $i: $@</p><br />";
             next;
         }
 
@@ -329,8 +324,8 @@ if ($input{whattodo} eq 'uploadID') {
                 }
                 catch {
                     $err = 'Document upload failed on finish';
-                    warn $err . $_;
-                };
+                    warn $err . $@;
+                }
                 return Future->fail("Database Falure: " . $err) if $err;
                 BOM::Platform::Event::Emitter::emit(
                     'document_upload',
@@ -374,17 +369,17 @@ if ($input{whattodo} eq 'disable_2fa' and $user->is_totp_enabled) {
 if (my $check_str = $input{do_id_check}) {
     try {
         BOM::Platform::Client::IDAuthentication->new(client => $client)->proveid;
-        code_exit_BO(
-            qq[<p><b>ProveID completed</b></p>
-                 <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
-        );
     }
     catch {
         code_exit_BO(
-            qq[<p><b>ProveID failed: $_</b></p>
+            qq[<p><b>ProveID failed: $@</b></p>
                  <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
         );
     }
+    code_exit_BO(
+        qq[<p><b>ProveID completed</b></p>
+                 <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
+    );
 }
 
 # DELETE EXISTING EXPERIAN RESULTS
@@ -437,7 +432,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     }
 
     if (exists $input{professional_client}) {
-        my $result;
         try {
             if ($input{professional_client}) {
 
@@ -457,10 +451,9 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             }
         }
         catch {
-            $result = "<p>Failed to update professional status of client: $loginid</p>";
-        };
-        # Print clients that were not updated
-        print $result if $result;
+            # Print clients that were not updated
+            print "<p>Failed to update professional status of client: $loginid</p>";
+        }
     }
 
     # TODO: Remove this once the transition is done from redis to client object
@@ -631,15 +624,12 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 if ($document_field eq 'expiration_date') {
                     try {
                         $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
-                        # indicate success
-                        1
                     }
                     catch {
-                        my $err = (split "\n", $_)[0];                                      #handle Date::Utility's confess() call
+                        my $err = (split "\n", $@)[0];                                      #handle Date::Utility's confess() call
                         print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
-                        # indicate failure so we skip to the next key
-                        0
-                    } or next CLIENT_KEY;
+                        next CLIENT_KEY;
+                    }
                 } else {
                     my $maxLength = ($document_field eq 'document_id') ? 30 : ($document_field eq 'comments') ? 255 : 0;
                     if (length($val) > $maxLength) {
@@ -649,13 +639,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                     $new_value = $val;
                 }
                 next CLIENT_KEY if $new_value && $new_value eq $doc->$document_field();
-                my $set_success = try {
+                try {
                     $doc->$document_field($new_value);
-                    1;
-                };
-                if (not $set_success) {
-                    print qq{<p style="color:red">ERROR: Could not set $document_field for doc $id with $val: $_</p>};
-                    next CLIENT_KEY;
+                }
+                catch {
+                    print qq{<p style="color:red">ERROR: Could not set $document_field for doc $id with $val: $@</p>};
                 }
                 next CLIENT_KEY;
             }
@@ -672,7 +660,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 catch {
                     print qq{<p style="color:red">ERROR: Unable to extract secret answer. Client secret answer is outdated or invalid.</p>};
                     $secret_answer = '';
-                };
+                }
 
                 $cli->secret_answer(BOM::User::Utility::encrypt_secret_answer($input{$key}))
                     if ($input{$key} ne $secret_answer);

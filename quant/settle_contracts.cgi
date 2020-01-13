@@ -9,7 +9,7 @@ use f_brokerincludeall;
 use HTML::Entities;
 
 use List::Util qw( first );
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use BOM::User::Client;
 
@@ -85,8 +85,8 @@ if (request()->param('perform_actions')) {
         }
     }
     catch {
-        print '<h1>ERROR! Could not complete ' . encode_entities($_) . '</h1>';
-    };
+        print '<h1>ERROR! Could not complete ' . encode_entities($@) . '</h1>';
+    }
 }
 
 my $cancel_info = {};

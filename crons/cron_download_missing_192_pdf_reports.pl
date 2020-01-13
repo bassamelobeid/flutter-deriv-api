@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Path::Tiny;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use BOM::Platform::ProveID;
 use BOM::Config::Runtime;
@@ -32,8 +32,8 @@ for my $broker (qw(MX)) {
         }
         catch {
             stats_event('ProveID Failed', 'ProveID Failed, an email should have been sent', {alert_type => 'warning'});
-            warn "ProveID failed, $_";
-        };
+            warn "ProveID failed, $@";
+        }
     }
 }
 
@@ -69,13 +69,13 @@ SQL
 sub get_client {
     my $loginid = shift;
 
-    return try {
-        BOM::User::Client->new({
+    try {
+        return BOM::User::Client->new({
             loginid      => $loginid,
             db_operation => 'replica'
         });
     }
     catch {
-        die "Error: can't identify client $loginid: $_";
-    };
+        die "Error: can't identify client $loginid: $@";
+    }
 }

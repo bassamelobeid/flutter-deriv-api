@@ -23,7 +23,7 @@ extends 'BOM::RiskReporting::Base';
 use JSON::MaybeXS;
 use File::Temp;
 use POSIX qw(strftime);
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use Email::Address::UseXS;
 use Email::Stuffer;
@@ -174,8 +174,8 @@ sub generate {
                     }
                     catch {
                         $error_count++;
-                        push @mail_content, "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", $_ ]";
-                    };
+                        push @mail_content, "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", $@ ]";
+                    }
                 }
 
                 $dbh->do(
@@ -199,9 +199,9 @@ sub generate {
             });
     }
     catch {
-        my $errmsg = ref $_ ? $_->trace : $_;
+        my $errmsg = ref $@ ? $@->trace : $@;
         warn('Updating realtime book transaction aborted while processing bet [' . $last_fmb_id . '] because ' . $errmsg);
-    };
+    }
 
     $self->cache_daily_turnover($pricing_date);
 
@@ -297,7 +297,7 @@ sub sell_expired_contracts {
                     . $client->loginid
                     . " - IDs were "
                     . join(',', @fmb_ids_to_be_sold)
-                    . " and error was $_\n";
+                    . " and error was $@\n";
             }
         }
     }

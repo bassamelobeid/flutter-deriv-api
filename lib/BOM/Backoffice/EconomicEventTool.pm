@@ -7,7 +7,7 @@ use Date::Utility;
 use JSON::MaybeXS;
 use List::Util qw(first);
 use Quant::Framework::EconomicEventCalendar;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Volatility::Seasonality;
 use LandingCompany::Registry;
 use BOM::Config::RedisReplicated;
@@ -150,7 +150,6 @@ sub update_by_id {
 sub save_new_event {
     my $args  = shift;
     my $staff = shift;
-    my $error;
 
     if (not $args->{release_date}) {
         return _err('Must specify announcement date for economic events');
@@ -159,9 +158,8 @@ sub save_new_event {
         $args->{release_date} = Date::Utility->new($args->{release_date})->epoch if $args->{release_date};
     }
     catch {
-        $error = (split "\n", $_)[0];    #handle Date::Utility's confess() call
-    };
-    return _err($error) if $error;
+        return _err(split "\n", $@);    #handle Date::Utility's confess() call
+    }
 
     my $eec   = _eec();
     my $added = $eec->add_event($args);

@@ -221,7 +221,7 @@ foreach my $client (@clients) {
            $client->status->disabled
         || $client->status->cashier_locked
         || $client->status->unwelcome
-        || $client->documents_expired;
+        || not $client->has_valid_documents();
     my $color = $dodgy ? 'red' : '';
     my $disabled = $dodgy ? 'disabled="disabled"' : '';
     my $client_name          = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
@@ -302,11 +302,11 @@ foreach my $client (@clients) {
         }) . '" target=_blank>statement</a>';
 
     my $check_account =
-          $client->status->disabled       ? 'account disabled'
-        : $client->status->cashier_locked ? 'cashier locked'
-        : $client->status->unwelcome      ? 'unwelcome login'
-        : $client->documents_expired      ? 'documents expired'
-        :                                   '';
+          $client->status->disabled          ? 'account disabled'
+        : $client->status->cashier_locked    ? 'cashier locked'
+        : $client->status->unwelcome         ? 'unwelcome login'
+        : not $client->has_valid_documents() ? 'no documents/documents expired'
+        :                                      '';
 
     $table_elements .= qq[
         <tr>
@@ -324,7 +324,7 @@ foreach my $client (@clients) {
             <td><font color="$color">$total_turnover</font></td>
             <td><font color="$color">$account_age</font></td>
             <td><font color="$color">$client_authenticated</font></td>
-            <td><font color="$color">$check_account</font</td>
+            <td><font color="$color">$check_account</font></td>
             <td><center><input name="${client_login}_notify" type="checkbox" checked="checked"></center></td>
             <td>$clientdetail_link, $statement_link</td>
         </tr>

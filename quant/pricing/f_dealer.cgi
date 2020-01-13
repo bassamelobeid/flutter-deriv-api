@@ -8,7 +8,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/regentmarkets/bom/cgi);
 use f_brokerincludeall;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Path::Tiny;
 use File::ReadBackwards;
 use HTML::Entities;
@@ -64,7 +64,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
     catch {
         print "Cannot get client instance with loginid " . $encoded_loginID;
         code_exit_BO();
-    };
+    }
 
     my $ttype = 'CREDIT';
 

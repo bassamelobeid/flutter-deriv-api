@@ -6,7 +6,7 @@ no indirect;
 
 use Digest::MD5;
 use Path::Tiny;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Fcntl qw/:flock O_RDWR O_CREAT/;
 use BOM::MyAffiliates::PaymentToAccountManager;
 use BOM::Config;
@@ -62,7 +62,7 @@ try {
     }
     catch {
         die "Upload failed for @{[ $zip->basename ]}: $!";
-    };
+    }
 
     my @message =
         ('"To BOM Account" affiliate payment CSVs zip archive is linked below for review and upload into the affiliate payment backoffice tool.');
@@ -88,11 +88,11 @@ try {
     print "Fetch Myaffiliates payment triggered, info will be emailed soon to " . $brand->emails('affiliates');
 }
 catch {
-    my $error = $_;
+    my $error = $@;
 
     warn "Error: $error";
     $error =~ s/at .*$//;
     print "An error has occurred -- $error\n";
-};
+}
 
 code_exit_BO();

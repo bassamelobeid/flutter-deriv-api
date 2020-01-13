@@ -3,7 +3,7 @@ package main;
 use strict;
 use warnings;
 use open qw[ :encoding(UTF-8) ];
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Email::Valid;
 use List::MoreUtils qw( uniq any firstval );
 use HTML::Entities;
@@ -124,9 +124,9 @@ if ($email ne $new_email) {
         }
     }
     catch {
-        print "Update email for user $encoded_email failed, reason: [" . encode_entities($_) . "]";
+        print "Update email for user $encoded_email failed, reason: [" . encode_entities($@) . "]";
         code_exit_BO();
-    };
+    }
 
     my $msg =
           $now->datetime . " "

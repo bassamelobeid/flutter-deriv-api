@@ -11,7 +11,6 @@ use SuperDerivatives::Correlation qw( upload_and_process_correlations );
 use subs::subs_dividend_from_excel_file;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config::Chronicle;
-use Try::Tiny;
 BOM::Backoffice::Sysinit::init();
 use BOM::Config;
 

@@ -9,7 +9,7 @@ use BOM::Config::Runtime;
 use BOM::RiskReporting::Dashboard;
 use BOM::RiskReporting::MarkedToModel;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use constant INTERVAL => 37;
 
@@ -45,8 +45,8 @@ sub run {
             $self->send_log('MTM');
         }
         catch {
-            warn "Failure in BOM::RiskReporting::MarkedToModel: $_\n";
-        };
+            warn "Failure in BOM::RiskReporting::MarkedToModel: $@\n";
+        }
         $self->rest;
 
         try {
@@ -54,8 +54,8 @@ sub run {
             $self->send_log('Dashboard');
         }
         catch {
-            warn "Failure in BOM::RiskReporting::Dashboard: $_\n";
-        };
+            warn "Failure in BOM::RiskReporting::Dashboard: $@\n";
+        }
         $self->rest;
     }
 

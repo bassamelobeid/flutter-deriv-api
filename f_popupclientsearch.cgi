@@ -2,7 +2,6 @@
 package main;
 use strict;
 use warnings;
-use Try::Tiny;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::CollectorReporting;
