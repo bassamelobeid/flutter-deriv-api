@@ -530,4 +530,45 @@ subtest 'update stop loss with/without active deal cancellation' => sub {
     ok $updater->is_valid_to_update, 'valid to update';
 };
 
+subtest 'update contract of another account' => sub {
+    my $args = {
+        underlying        => $underlying,
+        bet_type          => 'MULTUP',
+        currency          => 'USD',
+        multiplier        => 10,
+        amount            => 100,
+        amount_type       => 'stake',
+        current_tick      => $current_tick,
+        deal_cancellation => '1h',
+    };
+    my $contract = produce_contract($args);
+
+    my $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => 104.35,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $txn->buy;
+    ok !$error, 'buy without error';
+
+    my (undef, $fmb) = get_transaction_from_db multiplier => $txn->transaction_id;
+
+    my $cl2 = create_client;
+    top_up $cl2, 'USD', 5000;
+    my $updater = BOM::Transaction::ContractUpdate->new(
+        client        => $cl2,
+        contract_id   => $fmb->{id},
+        update_params => {stop_loss => 10},
+    );
+    ok !$updater->is_valid_to_update, 'invalid to update';
+    is $updater->validation_error->{code}, 'ContractNotFound', 'code - ContractNotFound';
+    is $updater->validation_error->{message_to_client}, 'This contract was not found among your open positions.',
+        'message to client - This contract was not found among your open positions.';
+};
+
 done_testing();
