@@ -479,7 +479,7 @@ subtest 'update stop loss with/without active deal cancellation' => sub {
         amount            => 100,
         amount_type       => 'stake',
         current_tick      => $current_tick,
-        deal_cancellation => 1,
+        deal_cancellation => '1h',
     };
     my $contract = produce_contract($args);
 
