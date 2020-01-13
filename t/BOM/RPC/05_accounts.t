@@ -874,8 +874,9 @@ subtest $method => sub {
                 'correct account status returned for document expired, please note that this test for status key, authentication expiry structure is tested later'
             );
 
+            $mocked_client->mock('documents_expired', sub { return 0 });
             $mocked_client->mock(
-                'documents_expired',
+                'is_any_document_expiring_by_date',
                 sub {
                     my ($self, $date) = @_;
                     return 0 unless $date;
@@ -1350,6 +1351,82 @@ subtest $method => sub {
                     'correct authenication object for authenticated client with expired documents'
                 );
 
+            };
+
+            subtest "check for expired documents if landing company required that" => sub {
+                $mocked_client->mock(
+                    'documents_uploaded',
+                    sub {
+                        return {
+                            proof_of_address => {
+                                documents => {
+                                    $test_client->loginid
+                                        . '_bankstatement' => {
+                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                        type        => 'bankstatement',
+                                        format      => 'pdf',
+                                        id          => 1,
+                                        status      => 'uploaded'
+                                        },
+                                },
+                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired          => 1,
+                            },
+                            proof_of_identity => {
+                                documents => {
+                                    $test_client->loginid
+                                        . '_passport' => {
+                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                        type        => 'passport',
+                                        format      => 'pdf',
+                                        id          => 2,
+                                        status      => 'uploaded'
+                                        },
+                                },
+                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired          => 1,
+                            },
+                        };
+                    });
+
+                for my $is_required (1, 0) {
+                    $mocked_client->mock(
+                        'is_document_expiry_check_required',
+                        sub {
+                            return $is_required;
+                        });
+
+                    my $method_response = $c->tcall($method, {token => $token1});
+
+                    my $expected_result = {
+                        document => {
+                            status => "verified",
+                        },
+                        identity => {
+                            status                        => "verified",
+                            further_resubmissions_allowed => 0,
+                            services                      => {
+                                onfido => {
+                                    documents_supported  => [],
+                                    is_country_supported => 0
+                                },
+                            },
+                        },
+                        needs_verification => [],
+                    };
+
+                    if ($is_required) {
+                        $expected_result->{identity}->{status}      = "expired";
+                        $expected_result->{identity}->{expiry_date} = $method_response->{authentication}{identity}{expiry_date};
+                        $expected_result->{document}->{status}      = "expired";
+                        $expected_result->{document}->{expiry_date} = $method_response->{authentication}{document}{expiry_date};
+                        push(@{$expected_result->{needs_verification}}, 'document');
+                        push(@{$expected_result->{needs_verification}}, 'identity');
+                    }
+
+                    my $result = $method_response->{authentication};
+                    cmp_deeply($result, $expected_result, "correct authenication object for authenticated client with expired documents");
+                }
             };
             $mocked_status->unmock_all;
             $mocked_client->unmock_all;
@@ -3059,6 +3136,24 @@ subtest $method => sub {
 
     is $result->{all}[0]{total}{real}{currency}, 'EUR', 'fiat account currency used for total balance';
 
+};
+
+$method = 'service_token';
+subtest 'onfido service_token validation' => sub {
+    $test_client->place_of_birth('');
+    $test_client->residence('');
+    $test_client->save;
+    my $args = {service => 'onfido', referrer => 'https://www.binary.com/'};
+    # Tokens
+    my $token = $m->create_token($test_client->loginid, 'test token');
+
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        });
+    is($res->{error}->{code}, 'MissingPersonalDetails', "Validation for Place of birth & residence passed.");
 };
 
 # Recursively get values from nested hashes
