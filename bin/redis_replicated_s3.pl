@@ -12,7 +12,7 @@ use IO::Async::Loop;
 use JSON;
 use Net::Async::Webservice::S3;
 use Path::Tiny;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use YAML qw(LoadFile);
 
 STDOUT->autoflush(1);
@@ -75,8 +75,8 @@ sub upload_redis {
         )->get;
     }
     catch {
-        die "Failed to upload redis dump data to S3. Error is $_.";
-    };
+        die "Failed to upload redis dump data to S3. Error is $@.";
+    }
 }
 
 sub download_redis {
