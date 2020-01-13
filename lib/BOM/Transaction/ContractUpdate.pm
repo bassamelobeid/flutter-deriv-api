@@ -85,7 +85,7 @@ sub _build_contract {
 
     my $fmb_dm = $self->_fmb_datamapper;
     # fmb reference with buy_transantion transaction ids (buy or buy and sell)
-    my $fmb = $fmb_dm->get_multiplier_contract_by_account_id_contract_id($self->client->default_account->id, $self->contract_id)->[0];
+    my $fmb = $fmb_dm->get_contract_by_account_id_contract_id($self->client->default_account->id, $self->contract_id)->[0];
 
     return undef unless $fmb;
 
