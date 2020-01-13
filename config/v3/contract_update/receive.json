@@ -35,8 +35,8 @@
                             "value": {
                                 "description": "The pip-sized barrier value.",
                                 "type": [
-                                    "string",
-                                    "null"
+                                    "null",
+                                    "string"
                                 ]
                             }
                         }

@@ -36,7 +36,6 @@ sub contract_update_handler {
 
     # do not send this back
     delete $api_response->{updated_queue};
-
     return undef;
 }
 
