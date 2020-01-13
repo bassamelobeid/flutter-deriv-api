@@ -100,7 +100,7 @@ subtest 'contract_update' => sub {
     my $res = $c->call_ok('cancel', $cancel_params)->has_error->error_code_is('CancelFailed')
         ->error_message_is('Your contract can only be cancelled when you select deal cancellation in your purchase. You may try this with your next purchase.');
 
-    $buy_params->{contract_parameters}->{deal_cancellation} = 1;
+    $buy_params->{contract_parameters}->{deal_cancellation} = '1h';
     $buy_params->{args}->{price}                            = 104.35;
     $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
 
