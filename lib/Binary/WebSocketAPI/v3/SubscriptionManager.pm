@@ -9,7 +9,6 @@ use Moo;
 use curry;
 use curry::weak;
 use Future::Mojo;
-use Try::Tiny;
 use Log::Any qw($log);
 use Scalar::Util qw(refaddr weaken);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_dec);

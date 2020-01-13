@@ -3,7 +3,7 @@ package Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use strict;
 use warnings;
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Digest::MD5;
 use Net::Async::Webservice::S3;
 use Future;
@@ -77,9 +77,10 @@ sub document_upload {
         upload_chunk($c, $upload_info);
     }
     catch {
-        warn "UploadError (app_id: " . $c->app_id . "): $_";
+        my $e = $@;
+        warn "UploadError (app_id: " . $c->app_id . "): $e";
         send_upload_failure($c, $upload_info, 'unknown');
-    };
+    }
 
     return;
 }

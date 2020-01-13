@@ -7,7 +7,7 @@ no indirect;
 
 use feature qw(state);
 use curry;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Data::Dumper;
 use Encode;
 use JSON::MaybeXS;
@@ -342,11 +342,12 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                     $c->send($res) if $c and $c->tx;    # connection could be gone
                 }
                 catch {
-                    warn "proposal_array exception - $_";
+                    my $e = $@;
+                    warn "proposal_array exception - $e";
                     $c->send(
                         {json => $c->wsp_error($msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))})
                         if $c and $c->tx;
-                };
+                }
             }));
 
 # Send nothing back to the client yet. We'll push a response

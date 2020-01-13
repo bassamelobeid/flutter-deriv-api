@@ -12,7 +12,7 @@ use Encode;
 use Mojo::IOLoop;
 use Future;
 use Future::Mojo;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use POSIX qw(strftime);
 
 use JSON::MaybeXS;
@@ -110,16 +110,18 @@ sub handle_command {
         );
     }
 
-    my $rslt = try {
-        $self->$command($app, @args);
+    my $rslt = undef;
+    try {
+        $rslt = $self->$command($app, @args);
     }
     catch {
-        Future->fail(
-            $_,
+        my $e = $@;
+        $rslt = Future->fail(
+            $e,
             introspection => $command,
             @args
         );
-    };
+    }
     # Allow deferred results
     $rslt = Future->done($rslt) unless blessed($rslt) && $rslt->isa('Future');
     return Future->wait_any($rslt, Future::Mojo->new_timer(MAX_REQUEST_SECONDS)->then(sub { Future->fail('Timeout') }),)->on_done(

@@ -14,7 +14,7 @@ Provides a container for dealing with all internal Redis connections.
 =cut
 
 no indirect;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use YAML::XS qw(LoadFile);
 use Exporter qw(import);
@@ -113,6 +113,7 @@ sub check_connections {
             $server->ping() if $server;
         }
         catch {
+            my $e = $@;
             if ($server) {
                 # Clear current_config from server if server ping fails
                 delete $servers->{$server_name}->{current_config};
@@ -121,9 +122,9 @@ sub check_connections {
                     . ", port: "
                     . (eval { $server->url->port } // "(failed - $@)")
                     . ", reason: "
-                    . $_;
+                    . $e;
             } else {
-                die "$server_name is not available: " . $_;
+                die "$server_name is not available: " . $e;
             }
         }
     }
