@@ -83,7 +83,7 @@ subtest 'contract_update' => sub {
     };
 
     $c->call_ok('contract_update', $update_params)->has_error->error_code_is('ContractNotFound')
-        ->error_message_is('Contract not found for contract id: 123.');
+        ->error_message_is('No open contract found for contract id: 123.');
 
     my $buy_params = {
         client_ip           => '127.0.0.1',
@@ -152,9 +152,9 @@ subtest 'contract_update' => sub {
     delete $update_params->{args}->{limit_order};
     $update_params->{args}->{history} = 1;
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
-    is $res->{history}->[0]->{display_name}, 'Stop Loss';
+    is $res->{history}->[0]->{display_name}, 'Stop loss';
     is $res->{history}->[0]->{order_amount}, -80;
-    is $res->{history}->[1]->{display_name}, 'Take Profit';
+    is $res->{history}->[1]->{display_name}, 'Take profit';
     is $res->{history}->[1]->{order_amount}, 10;
 };
 
