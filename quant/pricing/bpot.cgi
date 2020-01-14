@@ -15,6 +15,7 @@ package main;
 use strict;
 use warnings;
 
+use Syntax::Keyword::Try;
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
 
@@ -93,8 +94,8 @@ if ($bet) {
 
     }
     catch {
-        code_exit_BO("<pre>$_</pre>");
-    };
+        code_exit_BO("<pre>$@</pre>");
+    }
 }
 
 BOM::Backoffice::Request::template()->process(
