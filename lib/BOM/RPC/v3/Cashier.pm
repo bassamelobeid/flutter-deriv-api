@@ -871,11 +871,12 @@ rpc paymentagent_withdraw => sub {
     return $error_sub->(localize('You are not authorized for withdrawals via payment agents.'))
         unless ($source_bypass_verification or BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client));
 
+    my $validation = BOM::Platform::Client::CashierValidation::validate($client_loginid, 'withdraw');
+    return BOM::RPC::v3::Utility::create_error($validation->{error}) if exists $validation->{error};
+
     return $error_sub->(localize('You cannot withdraw funds to the same account.')) if $client_loginid eq $paymentagent_loginid;
 
     return $error_sub->(localize('You cannot perform this action, please set your residence.')) unless $client->residence;
-
-    return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.')) if $client->status->disabled;
 
     my ($paymentagent, $paymentagent_error);
     try {
@@ -922,14 +923,9 @@ rpc paymentagent_withdraw => sub {
     # check that both the client payment agent cashier is not locked
     return $error_sub->(localize('Your account cashier is locked. Please contact us for more information.')) if $client->status->cashier_locked;
 
-    return $error_sub->(localize('You cannot perform this action, as your account is withdrawal locked.'))
-        if $client->status->withdrawal_locked;
-
     if (my @missing_requirements = $client->missing_requirements('withdrawal')) {
         return BOM::RPC::v3::Utility::missing_details_error(details => \@missing_requirements);
     }
-
-    return $error_sub->(localize('You cannot perform this action, as your verification documents have expired.')) if $client->documents_expired;
 
     return $error_sub->(
         localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is disabled.", $pa_client->loginid))

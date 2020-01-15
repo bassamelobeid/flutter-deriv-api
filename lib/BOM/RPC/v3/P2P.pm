@@ -327,7 +327,7 @@ p2p_rpc p2p_agent_info => sub {
         agent_id         => $agent->{id},
         agent_name       => $agent->{name},
         client_loginid   => $agent->{client_loginid},
-        created_time     => Date::Utility->new($_->{created_time})->epoch,
+        created_time     => Date::Utility->new($agent->{created_time})->epoch,
         is_authenticated => $agent->{is_authenticated},
         is_active        => $agent->{is_active},
     };
@@ -561,15 +561,13 @@ p2p_rpc p2p_order_create => sub {
     my $order    = $client->p2p_order_create($args{params}{args}->%*);
     $order->{offer_id} = $offer_id;
 
+    my $order_response = _order_details($client, $order);
+
     BOM::Platform::Event::Emitter::emit(
         p2p_order_created => {
-            order       => $order,
-            broker_code => $client->broker,
+            client_loginid => $client->loginid,
+            order_id       => $order->{order_id},
         });
-    my $order_response = _order_details($client, $order);
-    # We need to have broker code to subscribe to order information.
-    # This field will be removed from responce at websocket hook.
-    $order_response->{P2P_SUBSCIPTION_BROKER_CODE} = $client->broker;
 
     return $order_response;
 };
@@ -628,10 +626,6 @@ p2p_rpc p2p_order_info => sub {
     my $order = $client->p2p_order($params->{args}{order_id});
 
     my $order_response = _order_details($client, $order);
-
-    # We need to have broker code to subscribe to order information.
-    # This field will be removed from responce at websocket hook.
-    $order_response->{P2P_SUBSCIPTION_BROKER_CODE} = $client->broker;
 
     return $order_response;
 };
@@ -738,8 +732,7 @@ sub _offer_details {
     $offer->{created_time} = Date::Utility->new($offer->{created_time})->epoch;
     $offer->{offer_description} //= '';
 
-    delete $offer->{remaining};
-    delete $offer->{offer_amount};
+    delete @$offer{qw(remaining offer_amount)};
 
     return $offer;
 }
@@ -762,9 +755,9 @@ sub _order_details {
     $order->{offer_description} //= '';
     $order->{order_description} //= '';
 
-    delete $order->{order_amount};
-    delete $order->{offer_rate};
-    delete $order->{is_expired};
+    delete @$order{
+        qw(order_amount offer_rate is_expired client_balance client_confirmed client_loginid client_trans_id escrow_trans_id offer_remaining expire_time)
+    };
 
     return $order;
 }
