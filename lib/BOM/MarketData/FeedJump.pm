@@ -28,7 +28,7 @@ use Moo;
 
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use Quant::Framework::EconomicEventCalendar;
 use LandingCompany::Registry;
 
@@ -74,7 +74,7 @@ sub run {
 
 sub iterate {
     my $self  = shift;
-    my $redis = BOM::Config::RedisReplicated::redis_feed();
+    my $redis = BOM::Config::Redis::redis_feed();
 
     $redis->subscription_loop(
         psubscribe       => ['FEED_LATEST_TICK::*'],
