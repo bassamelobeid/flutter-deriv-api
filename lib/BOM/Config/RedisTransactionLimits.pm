@@ -58,7 +58,7 @@ sub _get_redis_transaction_server {
             $connections->{$redis_key}->ping();
         }
         catch {
-            warn "RedisReplicated::_redis $redis_key died: $_, reconnecting";
+            warn "RedisTransactionLimits::_redis $redis_key died: $_, reconnecting";
             $connections->{$redis_key} = undef;
         };
     }

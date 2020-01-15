@@ -73,7 +73,7 @@ use warnings;
 
 use DBIx::Connector::Pg;
 use Date::Utility;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
 use Data::Chronicle::Reader;
 use Data::Chronicle::Writer;
@@ -81,7 +81,7 @@ use Data::Chronicle::Writer;
 sub get_chronicle_writer {
     return Data::Chronicle::Writer->new(
         publish_on_set => 1,
-        cache_writer   => BOM::Config::RedisReplicated::redis_write(),
+        cache_writer   => BOM::Config::Redis::redis_replicated_write(),
         dbic           => dbic(),
     );
 }
@@ -89,7 +89,7 @@ sub get_chronicle_writer {
 sub get_chronicle_reader {
     #if for_date is specified, then this chronicle_reader will be used for historical data fetching, so it needs a database connection
     my $for_date = shift;
-    my $redis    = BOM::Config::RedisReplicated::redis_read();
+    my $redis    = BOM::Config::Redis::redis_replicated_read();
 
     if ($for_date) {
         return Data::Chronicle::Reader->new(

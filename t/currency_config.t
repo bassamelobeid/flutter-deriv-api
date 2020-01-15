@@ -10,7 +10,7 @@ use List::Util qw(max);
 
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Runtime;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
 my %all_currencies_rates =
     map { $_ => 1 } LandingCompany::Registry::all_currencies();
@@ -19,7 +19,7 @@ my $rates = \%all_currencies_rates;
 sub populate_exchange_rates {
     my $local_rates = shift || $rates;
     $local_rates = {%$rates, %$local_rates};
-    my $redis = BOM::Config::RedisReplicated::redis_exchangerates_write();
+    my $redis = BOM::Config::Redis::redis_exchangerates_write();
     $redis->hmset(
         'exchange_rates::' . $_ . '_USD',
         quote => $local_rates->{$_},
