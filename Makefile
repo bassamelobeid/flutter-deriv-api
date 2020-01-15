@@ -17,6 +17,9 @@ pricing:
 misc:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/misc t/999_redis_keys.t
 
+p2p:
+	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/p2p t/999_redis_keys.t
+
 structure:
 	@$(PROVE) t
 
@@ -26,7 +29,7 @@ schema:
 subscriptions:
 	@$(PROVE) --norc /home/git/regentmarkets/bom-websocket-tests/v3/subscriptions
 
-test: structure schema accounts security pricing misc
+test: structure schema accounts security pricing misc p2p
 
 tidy:
 	find . -name '*.p?.bak' -delete
