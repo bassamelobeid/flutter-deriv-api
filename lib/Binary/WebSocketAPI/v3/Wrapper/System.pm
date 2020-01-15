@@ -32,7 +32,7 @@ sub forget_after_logout {
     _forget_all_pricing_subscriptions($c, 'proposal_open_contract');
     # TODO I suspect this line is not correct. Is there a feed subscription with the type 'proposal_open_contract' ?
     _forget_feed_subscription($c, 'proposal_open_contract');
-    _forget_p2p_subscription($c, 'p2p_order_info');
+    _forget_p2p_subscription($c);
     return;
 }
 
@@ -45,8 +45,18 @@ sub forget_all {
         $types = [$types] unless ref($types) eq 'ARRAY';
         # since we accept array, syntax check should be done here
         # TODO: move this to anyOf in JSON schema after anyOf usage in schema is fixed
-        my $accepted_types =
-            qr/^(ticks|candles|proposal|proposal_open_contract|balance|transaction|proposal_array|website_status|p2p_order_info|p2p_order_create)$/;
+        my @accepted_types = qw(
+            ticks
+            candles
+            proposal
+            proposal_open_contract
+            balance
+            transaction
+            proposal_array
+            website_status
+            p2p_order
+        );
+        my $accepted_types = qr/^${\join q{|} => @accepted_types}$/;
         my @failed_types = grep { !/$accepted_types/ } @$types;
         return $c->new_error('forget_all', 'InputValidationFailed', $c->l('Input validation failed: ') . join(', ', @failed_types)) if @failed_types;
 
@@ -68,8 +78,8 @@ sub forget_all {
                 _forget_transaction_subscription($c, 'sell');
             } elsif ($type eq 'proposal' or $type eq 'proposal_array') {
                 @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
-            } elsif ($type eq 'p2p_order_info' or $type eq 'p2p_order_create') {
-                @removed_ids{@{_forget_p2p_subscription($c, $type)}} = ();
+            } elsif ($type eq 'p2p_order') {
+                @removed_ids{@{_forget_p2p_subscription($c)}} = ();
             }
             #TODO why we check 'proposal_open_contract' here ?
             if ($type ne 'proposal_open_contract') {

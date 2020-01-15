@@ -29,12 +29,28 @@ has broker => (
         die "brocker can only be a string which contains 2-4 chars: $_[0]" unless $_[0] =~ /^\w{2,4}$/;
     });
 
-has order_id => (
+has loginid => (
+    is       => 'ro',
+    required => 1,
+);
+
+has currency => (
     is       => 'ro',
     required => 1,
     isa      => sub {
-        die "order_id can only be a positive int: $_[0]" unless $_[0] =~ m/^\d+$/ && $_[0] > 0;
+        ;
+        die "currency can only be a string which contains 3 chars: $_[0]" unless $_[0] =~ /^\w{3,}$/;
     });
+
+has country => (
+    is       => 'ro',
+    required => 1,
+    isa      => sub {
+        ;
+        die "country can only be a string which contains 2 chars: $_[0]" unless $_[0] =~ /^\w{2}$/;
+    });
+
+has order_id => (is => 'ro');
 
 sub subscription_manager {
     return Binary::WebSocketAPI::v3::SubscriptionManager->redis_p2p_manager();
@@ -42,12 +58,15 @@ sub subscription_manager {
 
 sub _build_channel {
     my $self = shift;
-    return 'P2P::ORDER::NOTIFICATION::' . $self->broker . "::" . $self->order_id;
+    return join q{::} => map { uc($_) } ('P2P::ORDER::NOTIFICATION', $self->broker, $self->country, $self->currency);
 }
 
 # This method is used to find a subscription.
 # Class name + _unique_key will be a unique per context index of the subscription objects.
-sub _unique_key { return shift->channel }
+sub _unique_key {
+    my $self = shift;
+    return join q{::} => ($self->channel, $self->order_id // '');
+}
 
 sub handle_message {
     my ($self, $payload) = @_;
@@ -56,6 +75,12 @@ sub handle_message {
         $self->unregister;
         return;
     }
+
+    return if $payload->{agent_loginid} ne $self->loginid && $payload->{client_loginid} ne $self->loginid;
+
+    delete @{$payload}{qw(agent_loginid client_loginid)};
+
+    return if $self->order_id && $self->order_id ne $payload->{order_id};
 
     my $args = $self->args;
     $c->send({

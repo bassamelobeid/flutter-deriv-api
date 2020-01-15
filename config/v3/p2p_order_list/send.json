@@ -33,6 +33,13 @@
             "description": "[Optional] If present, lists orders applying to a specific offer.",
             "type": "string"
         },
+        "subscribe": {
+            "description": "[Optional] If set to 1, will send updates whenever there is a change to any order belonging to you.",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
             "type": "object"

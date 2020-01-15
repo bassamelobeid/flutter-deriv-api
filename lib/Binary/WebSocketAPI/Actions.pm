@@ -286,16 +286,21 @@ sub actions_config {
         [
             'p2p_order_create',
             {
-                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_order,
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_orders,
             }
         ],
         [
             'p2p_order_info',
             {
-                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_order,
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_orders,
             }
         ],
-        ['p2p_order_list'],
+        [
+            'p2p_order_list',
+            {
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_orders,
+            }
+        ],
         ['p2p_agent_info'],
     ];
 }
