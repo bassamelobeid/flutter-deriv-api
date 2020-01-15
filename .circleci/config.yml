@@ -70,6 +70,27 @@ jobs:
         name: Uncategorised tests
     - store_test_results:
         path: /var/tmp/test-output
+  p2p:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - run:
+        background: true
+        command: perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1
+          | grep -Ev '(connection has been closed unexpectedly)|(terminating connection
+          due to administrator)'
+        name: inotify dÃ¦mon    
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make p2p
+        name: Run P2P tests
+    - store_test_results:
+        path: /var/tmp/test-output
   pricing:
     <<: *6
     steps:
@@ -180,6 +201,8 @@ workflows:
         context: perl
     - misc:
         context: perl
+    - p2p:
+        context: perl        
     - schema:
         context: perl
     - subscriptions:
@@ -202,6 +225,8 @@ workflows:
         context: perl
     - misc:
         context: perl
+    - p2p:
+        context: perl        
     - schema:
         context: perl
     - subscriptions:
@@ -252,6 +277,13 @@ workflows:
             ignore: /.*/
           tags:
             only: /^V\d+_.*/
+    - p2p:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/            
     - schema:
         context: perl
         filters:
