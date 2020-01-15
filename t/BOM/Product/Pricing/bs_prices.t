@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 217;
+use Test::More tests => 325;
 use Test::Warnings;
 use Test::Exception;
 use Date::Utility;
@@ -31,7 +31,7 @@ my %skip_category = (
 );
 
 my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/bs_config.yml');
-my @underlying_symbols = ('RDBEAR', 'RDBULL', 'R_100', 'R_25');
+my @underlying_symbols = ('RDBEAR', 'RDBULL', 'R_100', 'R_25', '1HZ100V', '1HZ10V');
 my $payout_currency    = 'USD';
 my $spot               = 100;
 
