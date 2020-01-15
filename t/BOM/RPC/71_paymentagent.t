@@ -924,6 +924,14 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         like($res->{error}{message_to_client}, qr/agent facilities are not available/, $test);
         reset_withdraw_testargs();
 
+        $test = 'withdrawal fails if no_withdrawal_or_trading status is set';
+        $Alice->status->set('no_withdrawal_or_trading', 'Testy McTestington', 'Just running some tests');
+        $Alice->save;
+        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        like($res->{error}{message_to_client}, qr/Your account is restricted to deposits only/, $test);
+        $Alice->status->clear_no_withdrawal_or_trading;
+        $Alice->save;
+
         $test                                   = 'Withdraw fails if both sides are the same account';
         $testargs->{args}{paymentagent_loginid} = $Alice_id;
         $res                                    = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
@@ -947,7 +955,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->status->set('disabled', 'Testy McTestington', 'Just running some tests');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/account is currently disabled/, $test);
+        like($res->{error}{message_to_client}, qr/Your account is disabled/, $test);
         $Alice->status->clear_disabled;
         $Alice->save;
 
@@ -1012,7 +1020,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->status->set('withdrawal_locked', 'Testy McTestington', 'Just running some tests');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/your account is withdrawal locked/, $test);
+        like($res->{error}{message_to_client}, qr/Your account is locked for withdrawals/, $test);
         $Alice->status->clear_withdrawal_locked;
         $Alice->save;
 
@@ -1031,7 +1039,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->save;
         $mock_user_client->mock('is_document_expiry_check_required', sub { 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/documents have expired/, $test);
+        like($res->{error}{message_to_client}, qr/Your identity documents have passed their expiration date/, $test);
         $mock_user_client->unmock('is_document_expiry_check_required');
 
         $test = 'Withdraw fails if payment agent status = disabled';

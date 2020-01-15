@@ -3143,7 +3143,10 @@ subtest 'onfido service_token validation' => sub {
     $test_client->place_of_birth('');
     $test_client->residence('');
     $test_client->save;
-    my $args = {service => 'onfido', referrer => 'https://www.binary.com/'};
+    my $args = {
+        service  => 'onfido',
+        referrer => 'https://www.binary.com/'
+    };
     # Tokens
     my $token = $m->create_token($test_client->loginid, 'test token');
 
