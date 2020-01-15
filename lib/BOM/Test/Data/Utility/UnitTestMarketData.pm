@@ -26,7 +26,6 @@ use List::Util qw(uniq);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Config::Chronicle;
-use BOM::Config::RedisReplicated;
 use BOM::Test;
 
 use Quant::Framework::VolSurface::Delta;

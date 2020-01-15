@@ -5,7 +5,7 @@ use warnings;
 
 use Exporter qw(import);
 use BOM::Test;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Platform::Token::API;
 
 our @EXPORT_OK = qw(cleanup_redis_tokens generate_token);
@@ -15,7 +15,7 @@ Basically cleans up keys 'TOKEN*' in replicated redis
 =cut
 
 sub cleanup_redis_tokens {
-    my $writer = BOM::Config::RedisReplicated::redis_auth_write();
+    my $writer = BOM::Config::Redis::redis_auth_write();
     $writer->del($_) foreach @{$writer->keys('TOKEN*')};
     return;
 }
