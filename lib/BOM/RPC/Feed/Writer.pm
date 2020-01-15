@@ -33,7 +33,7 @@ use Net::Async::Redis;
 use Future::AsyncAwait;
 
 use JSON::MaybeUTF8 qw(:v1);
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use Finance::Underlying;
 use Path::Tiny;
 use Fcntl qw(:seek);
@@ -70,7 +70,7 @@ async sub subscribe_to_redis {
     my ($self, $symbol, $pip_size) = @_;
 
     $log->debugf('subscribing to redis %s', $self->redis_source);
-    my $cfg = BOM::Config::RedisReplicated::redis_config(feed => $self->redis_source);
+    my $cfg = BOM::Config::Redis::redis_config(feed => $self->redis_source);
     $self->add_child(
         my $redis = Net::Async::Redis->new(
             uri  => $cfg->{uri},
