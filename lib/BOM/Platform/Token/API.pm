@@ -28,7 +28,7 @@ use BOM::Database::Model::AccessToken;
 use Bytes::Random::Secure;
 use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use Log::Any ();
 use BOM::Platform::Context qw (localize);
 
@@ -276,11 +276,11 @@ has _redis_write => (
 );
 
 sub _build_redis_read {
-    return BOM::Config::RedisReplicated::redis_auth();
+    return BOM::Config::Redis::redis_auth();
 }
 
 sub _build_redis_write {
-    return BOM::Config::RedisReplicated::redis_auth_write();
+    return BOM::Config::Redis::redis_auth_write();
 }
 
 sub _make_key {
