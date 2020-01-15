@@ -611,16 +611,24 @@ rpc contract_update => sub {
             update_params   => $args->{limit_order},
             request_history => $args->{history},
         );
-        if ($updater->has_parameters_to_update and $updater->is_valid_to_update) {
-            $response = $updater->update();
-            unless ($response) {
+        if ($updater->has_parameters_to_update) {
+            if ($updater->is_valid_to_update) {
+                $response = $updater->update();
+                unless ($response) {
+                    $response = BOM::Pricing::v3::Utility::create_error({
+                        code              => 'ContractUpdateFailure',
+                        message_to_client => localize('Contract update failed.'),
+                    });
+                }
+                if (my $contract_proposal_details = delete $response->{contract_details}) {
+                    BOM::Transaction::Utility::set_contract_parameters($contract_proposal_details, $client);
+                }
+            } else {
+                my $error = $updater->validation_error;
                 $response = BOM::Pricing::v3::Utility::create_error({
-                    code              => 'ContractUpdateFailure',
-                    message_to_client => localize('Contract update failed.'),
+                    code              => $error->{code},
+                    message_to_client => $error->{message_to_client},
                 });
-            }
-            if (my $contract_proposal_details = delete $response->{contract_details}) {
-                BOM::Transaction::Utility::set_contract_parameters($contract_proposal_details, $client);
             }
         } elsif ($updater->request_history) {
             my $history = $updater->get_history();
@@ -633,10 +641,9 @@ rpc contract_update => sub {
                 $response->{history} = $history;
             }
         } else {
-            my $error = $updater->validation_error;
             $response = BOM::Pricing::v3::Utility::create_error({
-                code              => $error->{code},
-                message_to_client => $error->{message_to_client},
+                code              => 'ContractUpdateFailure',
+                message_to_client => localize('Please specify either history or limit_order.'),
             });
         }
     }
