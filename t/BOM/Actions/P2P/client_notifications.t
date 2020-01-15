@@ -28,23 +28,19 @@ my ($client, $order) = BOM::Test::Helper::P2P::create_order(
 my @data_for_notification_tests = ({
         event => 'p2p_order_created',
         data  => {
-            broker_code => 'CR',
-            order       => {offer_id => 1}
+            client_loginid => $client->loginid,
+            order_id       => $order->{order_id},
         },
-        channel  => 'P2P::OFFER::NOTIFICATION::CR::1',
-        expected => {
-            event      => "new_order",
-            event_data => {offer_id => 1},
-            offer_id   => 1
-        },
+        channel => join(q{::} => ('P2P::ORDER::NOTIFICATION', uc($client->broker), uc($client->residence), uc($client->currency))),
+        expected => BOM::Event::Actions::P2P::_order_details($client, $client->p2p_order($order->{order_id})),
     },
     {
         event => 'p2p_order_updated',
         data  => {
             client_loginid => $client->loginid,
-            order_id    => $order->{order_id},
+            order_id       => $order->{order_id},
         },
-        channel  => 'P2P::ORDER::NOTIFICATION::' . $client->broker . '::' . $order->{order_id},
+        channel => join(q{::} => ('P2P::ORDER::NOTIFICATION', uc($client->broker), uc($client->residence), uc($client->currency))),
         expected => BOM::Event::Actions::P2P::_order_details($client, $client->p2p_order($order->{order_id})),
     },
 );

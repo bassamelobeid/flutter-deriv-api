@@ -121,25 +121,25 @@ An order has been created against an offer.
 
 sub order_created {
     my $data = shift;
+    my @args = qw(client_loginid order_id);
 
-    if ((grep { !$data->{$_} } qw(broker_code order)) || !$data->{order}{offer_id}) {
+    if (grep { !$data->{$_} } @args) {
         $log->info('Fail to procces order_created: Invalid event data', $data);
         return 0;
     }
 
-    my ($broker_code, $order) = @{$data}{qw(broker_code order)};
-    my $offer_id = $order->{offer_id};
+    my ($loginid, $order_id) = @{$data}{@args};
+
+    my $client = BOM::User::Client->new({loginid => $loginid});
+
+    my $order = $client->p2p_order($order_id);
+
+    my $order_response = _order_details($client, $order);
+
+    my $redis_key = _get_order_channel_name($client);
 
     my $redis = BOM::Config::RedisReplicated->redis_p2p_write();
-    $redis->publish(
-        "P2P::OFFER::NOTIFICATION::${broker_code}::${offer_id}",
-        encode_json_utf8({
-                offer_id   => $offer_id,
-                event      => 'new_order',
-                event_data => $order,
-            }
-        ),
-    );
+    $redis->publish($redis_key, encode_json_utf8($order_response));
 
     return 1;
 }
@@ -167,8 +167,8 @@ sub order_updated {
 
     my $redis = BOM::Config::RedisReplicated->redis_p2p_write();
 
-    my $broker_code = $client->broker;
-    $redis->publish("P2P::ORDER::NOTIFICATION::${broker_code}::${order_id}", encode_json_utf8($order_response),);
+    my $redis_key = _get_order_channel_name($client);
+    $redis->publish($redis_key, encode_json_utf8($order_response));
 
     stats_inc('p2p.order.status.updated.count', {tags => ["status:$order->{status}"]});
 
@@ -222,9 +222,15 @@ sub order_expired {
     return 1;
 }
 
+sub _get_order_channel_name {
+    my $client = shift;
+
+    return join q{::} => map { uc($_) } ("P2P::ORDER::NOTIFICATION", $client->broker, $client->residence, $client->currency,);
+}
+
 sub _order_details {
     my ($client, $order) = @_;
-
+    #DON'T REMOVE agent_loginid and client_loginid, we relay on these fields in subscriptions code
     $order->{type} = delete $order->{offer_type};
     $order->{account_currency} //= delete $order->{offer_account_currency};
     $order->{local_currency}   //= delete $order->{offer_local_currency};
@@ -242,6 +248,7 @@ sub _order_details {
 
     delete $order->{order_amount};
     delete $order->{offer_rate};
+    delete $order->{is_expired};
 
     return $order;
 }
