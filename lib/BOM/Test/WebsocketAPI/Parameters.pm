@@ -257,7 +257,7 @@ for my $ul (@underlying) {
 my (@p2p_orders, $order_id, $offer_id);
 for my $type (qw(buy sell)) {
     $offer_id++;
-    for my $status (qw(pending buyer-confirmed cancelled completed)) {
+    for my $status (qw(pending)) {
         $order_id++;
         my $rate   = 1 + 10 * rand;
         my $amount = 10 + 10 * rand;

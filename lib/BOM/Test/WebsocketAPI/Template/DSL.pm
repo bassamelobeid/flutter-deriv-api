@@ -247,6 +247,7 @@ sub req_key {
         ua_fingerprint
         source
         client_ip
+        broker
     );
 
     return key($request);

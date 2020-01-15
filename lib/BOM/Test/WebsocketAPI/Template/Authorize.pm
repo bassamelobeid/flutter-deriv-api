@@ -42,7 +42,8 @@ rpc_response sub {
             email                      => $client->email,
             scopes                     => ['read', 'admin', 'trade', 'payments'],
             country                    => $client->country,
-            account_id                 => $client->account_id
+            account_id                 => $client->account_id,
+            broker                     => $client->broker,
         },
         country      => $client->country,
         balance      => $client->balance,

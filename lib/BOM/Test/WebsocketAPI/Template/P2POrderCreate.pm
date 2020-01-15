@@ -60,8 +60,9 @@ rpc_response {
 publish p2p => sub {
     return {
               "P2P::ORDER::NOTIFICATION::"
-            . $_->client->broker . '::'
-            . $_->p2p_order->order_id => {
+            . uc($_->client->broker) . '::'
+            . uc($_->client->country) . '::'
+            . uc($_->client->currency) => {
             rate_display      => $_->p2p_order->rate_display,
             offer_id          => $_->p2p_order->offer_id,
             offer_description => $_->p2p_order->offer_description,
@@ -80,6 +81,8 @@ publish p2p => sub {
             price_display     => $_->p2p_order->price_display,
             order_description => $_->p2p_order->order_description,
             type              => $_->p2p_order->type,
+            client_loginid    => $_->client->loginid,
+            agent_loginid     => $_->client->loginid,
             },
     };
 };
