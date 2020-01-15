@@ -327,7 +327,7 @@ p2p_rpc p2p_agent_info => sub {
         agent_id         => $agent->{id},
         agent_name       => $agent->{name},
         client_loginid   => $agent->{client_loginid},
-        created_time     => Date::Utility->new($_->{created_time})->epoch,
+        created_time     => Date::Utility->new($agent->{created_time})->epoch,
         is_authenticated => $agent->{is_authenticated},
         is_active        => $agent->{is_active},
     };
@@ -732,8 +732,7 @@ sub _offer_details {
     $offer->{created_time} = Date::Utility->new($offer->{created_time})->epoch;
     $offer->{offer_description} //= '';
 
-    delete $offer->{remaining};
-    delete $offer->{offer_amount};
+    delete @$offer{qw(remaining offer_amount)};
 
     return $offer;
 }
@@ -756,9 +755,9 @@ sub _order_details {
     $order->{offer_description} //= '';
     $order->{order_description} //= '';
 
-    delete $order->{order_amount};
-    delete $order->{offer_rate};
-    delete $order->{is_expired};
+    delete @$order{
+        qw(order_amount offer_rate is_expired client_balance client_confirmed client_loginid client_trans_id escrow_trans_id offer_remaining expire_time)
+    };
 
     return $order;
 }
