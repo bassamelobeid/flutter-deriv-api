@@ -134,7 +134,7 @@ sub _validate_update_parameter {
         return {
             code => 'UpdateNotAllowed',
             message_to_client =>
-                localize('This contract cannot be updated once you’ve made your purchase. This feature is not available for this contract type.'),
+                localize('This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.'),
         };
     }
 

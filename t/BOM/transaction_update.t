@@ -237,8 +237,8 @@ subtest 'update take profit', sub {
         ok !$updater->is_valid_to_update, 'not valid to update';
         is $updater->validation_error->{code}, 'UpdateNotAllowed', 'code - UpdateNotAllowed';
         is $updater->validation_error->{message_to_client},
-            'This contract cannot be updated once you’ve made your purchase. This feature is not available for this contract type.',
-            'message_to_client - This contract cannot be updated once you’ve made your purchase. This feature is not available for this contract type.';
+            'This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.',
+            'message_to_client - This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.';
 
         delete $args->{duration};
         delete $args->{barrier};
