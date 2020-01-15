@@ -44,6 +44,7 @@ subtest 'Creating new order' => sub {
     is($order_data->{order_description}, $order_description, 'Description for new order is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
+    
     cmp_deeply(
         $client->p2p_order_list,
         [{
@@ -60,9 +61,9 @@ subtest 'Creating new order' => sub {
                 'agent_id'               => $agent->p2p_agent->{id},
                 'agent_loginid'          => $agent->loginid,
                 'agent_name'             => $agent->p2p_agent->{name},
-                'offer_account_currency' => $offer->{account_currency},
+                'account_currency'       => $offer->{account_currency},
                 'offer_id'               => $offer->{offer_id},
-                'offer_local_currency'   => $offer->{local_currency},
+                'local_currency'         => $offer->{local_currency},
                 'offer_rate'             => $offer->{rate},
                 'offer_type'             => $offer->{type},
                 'offer_description'      => $offer->{offer_description}}

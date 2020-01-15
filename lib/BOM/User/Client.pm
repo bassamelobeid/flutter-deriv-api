@@ -1958,11 +1958,17 @@ sub p2p_order_create {
 
     die "OrderAlreadyExists\n" if @{$open_orders};
 
-    return $client->db->dbic->run(
+    my $order = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $offer_id, $client->loginid, $escrow->loginid, $amount, $expiry, $description, $source, $client->loginid);
         });
+
+    # Temporary field renaming to be removed after https://trello.com/c/WScG2dl5 is released
+    $order->{account_currency} //= delete $order->{offer_account_currency};
+    $order->{local_currency}   //= delete $order->{offer_local_currency};
+    return $order;
+
 }
 
 =head2 p2p_order
@@ -1997,10 +2003,18 @@ sub p2p_order_list {
 
     $param{loginid} = $client->loginid;
 
-    return $client->db->dbic->run(
+    my $orders = $client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref('SELECT * FROM p2p.order_list(?, ?, ?, ?)', {Slice => {}}, @param{qw/id offer_id loginid status/});
         }) // [];
+
+    # Temporary field renaming to be removed after https://trello.com/c/WScG2dl5 is released
+    for my $order (@$orders) {
+        $order->{account_currency} //= delete $order->{offer_account_currency};
+        $order->{local_currency}   //= delete $order->{offer_local_currency};
+    }
+
+    return $orders;
 }
 
 =head2 p2p_order_confirm
