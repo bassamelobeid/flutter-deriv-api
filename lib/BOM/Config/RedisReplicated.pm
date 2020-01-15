@@ -17,6 +17,7 @@ here, so better always call needed function to get working connection.
 use strict;
 use warnings;
 
+use Carp;
 use YAML::XS;
 use RedisDB;
 use Syntax::Keyword::Try;
@@ -66,11 +67,13 @@ sub redis_config {
 }
 
 sub redis_write {
+    carp 'redis_write is DEPRECATED in favor of BOM::Config::Redis::redis_replicated_write';
     $config->{replicated} //= BOM::Config::redis_replicated_config();
     return _redis('replicated', 'write', 10);
 }
 
 sub redis_read {
+    carp 'redis_read is DEPRECATED in favor of BOM::Config::Redis::redis_replicated_read';
     $config->{replicated} //= BOM::Config::redis_replicated_config();
     return _redis('replicated', 'read', 10);
 }
