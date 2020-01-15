@@ -561,15 +561,13 @@ p2p_rpc p2p_order_create => sub {
     my $order    = $client->p2p_order_create($args{params}{args}->%*);
     $order->{offer_id} = $offer_id;
 
+    my $order_response = _order_details($client, $order);
+
     BOM::Platform::Event::Emitter::emit(
         p2p_order_created => {
-            order       => $order,
-            broker_code => $client->broker,
+            client_loginid => $client->loginid,
+            order_id       => $order->{order_id},
         });
-    my $order_response = _order_details($client, $order);
-    # We need to have broker code to subscribe to order information.
-    # This field will be removed from responce at websocket hook.
-    $order_response->{P2P_SUBSCIPTION_BROKER_CODE} = $client->broker;
 
     return $order_response;
 };
@@ -628,10 +626,6 @@ p2p_rpc p2p_order_info => sub {
     my $order = $client->p2p_order($params->{args}{order_id});
 
     my $order_response = _order_details($client, $order);
-
-    # We need to have broker code to subscribe to order information.
-    # This field will be removed from responce at websocket hook.
-    $order_response->{P2P_SUBSCIPTION_BROKER_CODE} = $client->broker;
 
     return $order_response;
 };

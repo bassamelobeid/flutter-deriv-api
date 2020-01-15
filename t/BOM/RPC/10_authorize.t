@@ -107,7 +107,8 @@ subtest $method => sub {
             'account_id'               => '',
             'currency'                 => '',
             'landing_company_name'     => $landing_company,
-            'is_virtual'               => '0'
+            'is_virtual'               => '0',
+            'broker'                   => 'CR',
         },
         'currency'                      => '',
         'local_currencies'              => {IDR => {fractional_digits => 2}},

@@ -243,6 +243,7 @@ rpc authorize => sub {
             currency             => ($account ? $account->currency_code() : ''),
             landing_company_name => $lc->short,
             is_virtual           => ($client->is_virtual ? 1 : 0),
+            broker               => $client->broker,
         },
     };
 };
