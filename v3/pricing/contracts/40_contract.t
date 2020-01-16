@@ -264,6 +264,15 @@ $res         = $t->await::buy({
 });
 is $res->{buy}->{buy_price}, 1.00;
 
+$contractParameters{contract_type} = 'TEST';
+$res = $t->await::buy({
+    buy        => 1,
+    price      => 0,
+    parameters => \%contractParameters,
+});
+is $res->{error}->{code}, 'InputValidationFailed', 'Invalid contract_type';
+$contractParameters{contract_type} = 'CALL';
+
 $contractParameters{duration} = 100000000;
 $res = $t->await::buy({
     buy        => 1,
