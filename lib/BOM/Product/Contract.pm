@@ -422,7 +422,7 @@ The expiry type of a contract (daily, tick or intraday).
 sub expiry_type {
     my $self = shift;
 
-    return 'no_expiry' unless $self->category->has_user_defined_expiry;
+    return 'no_expiry' unless $self->category && $self->category->has_user_defined_expiry;
     return ($self->tick_expiry) ? 'tick' : ($self->expiry_daily) ? 'daily' : 'intraday';
 }
 
