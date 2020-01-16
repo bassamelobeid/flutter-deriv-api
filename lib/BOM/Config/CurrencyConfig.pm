@@ -27,6 +27,8 @@ use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use Finance::Exchange;
 use Quant::Framework;
+use Locale::Object::Currency;
+use Locale::Country;
 
 use constant MAX_TRANSFER_FEE => 7;
 require Exporter;
@@ -38,6 +40,30 @@ my $_app_config;
 sub app_config {
     $_app_config = BOM::Config::Runtime->instance->app_config() unless $_app_config;
     return $_app_config;
+}
+
+=head2 currency_for_country
+
+Method returns currency code for requested country code.
+
+=cut
+
+#We're loading mapping at startup time to avoid interation with my SQLlite at runtime.
+
+our %LOCAL_CURRENCY_FOR_COUNTRY = do {
+    # Locale::Object::Currency emits warnings for any countries it does not have configured, since the source for
+    # those countries is different from its database we need to silence those here
+    local $SIG{__WARN__} = sub { };
+
+    map {
+        $_ => eval{Locale::Object::Currency->new(country_code => $_)->code} // undef
+    }  Locale::Country::all_country_codes();
+};
+
+sub local_currency_for_country {
+    my ($country_code) = @_;
+    return undef unless $country_code;
+    return $LOCAL_CURRENCY_FOR_COUNTRY{lc($country_code)};
 }
 
 =head2 transfer_between_accounts_limits
