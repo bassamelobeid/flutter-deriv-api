@@ -31,7 +31,7 @@
                     "order_type": {
                         "description": "The contract parameter updated.",
                         "type": "string"
-                    }
+                    },
                     "value": {
                         "description": "The pip-sized barrier value.",
                         "type": [
