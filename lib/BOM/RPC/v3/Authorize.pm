@@ -214,7 +214,8 @@ rpc authorize => sub {
 
     my $precisions = Format::Util::Numbers->get_precision_config;
     my %local_currencies =
-        map { ($_ => {fractional_digits => $precisions->{amount}{$_} // 2}) } $client->local_currency;
+        map { ($_ => {fractional_digits => $precisions->{amount}{$_} // 2}) }
+        grep { defined $_ } ($client->local_currency);
 
     my $account = $client->default_account;
     return {
