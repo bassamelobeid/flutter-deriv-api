@@ -176,8 +176,8 @@ sub asset_index {
         ($landing_company_name, $country_code) = _get_info_from_token($token_details);
     }
 
-    # Default to svg, which returns the entire asset index, if no arg and not logged in
-    $landing_company_name //= 'svg';
+    # Default to virtual, which returns the entire asset index, if no arg and not logged in
+    $landing_company_name //= 'virtual';
 
     return generate_asset_index($country_code, $landing_company_name, $language);
 }
@@ -194,7 +194,7 @@ sub trading_durations {
         ($landing_company_name, $country_code) = _get_info_from_token($token_details);
     }
 
-    $landing_company_name //= 'svg';
+    $landing_company_name //= 'virtual';
 
     my $offerings = _get_offerings($country_code, $landing_company_name);
 
@@ -285,7 +285,7 @@ Returns a hashref containing the following:
 sub generate_trading_times {
     my $date = shift;
 
-    my $offerings = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my $tree      = BOM::Product::Offerings::DisplayHelper->new(
         date      => $date,
         offerings => $offerings
