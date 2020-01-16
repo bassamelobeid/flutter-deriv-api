@@ -307,7 +307,7 @@ sub _initialize_other_parameters {
     }
 
     #TODO: remove this
-    $params->{landing_company} //= 'svg';
+    $params->{landing_company} //= 'virtual';
     $params->{payout_currency_type} //= LandingCompany::Registry::get_currency_type($params->{currency});
 
     if (defined $params->{duration}) {

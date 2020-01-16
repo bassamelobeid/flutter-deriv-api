@@ -191,8 +191,8 @@ sub _validate_input_parameters {
         ) if $expiry->is_before($start);
     }
 
-    # hard-coded svg because that's the widest offerings range we have.
-    my $lc        = LandingCompany::Registry::get('svg');
+    # hard-coded virtual because that's the widest offerings range we have.
+    my $lc        = LandingCompany::Registry::get('virtual');
     my $offerings = $lc->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config());
 
     my $us = $params->{underlying}->symbol;
