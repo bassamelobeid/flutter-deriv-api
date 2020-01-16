@@ -137,6 +137,7 @@ sub actions_config {
                 success => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::contract_update_handler,
             }
         ],
+        ['contract_update_history'],
         ['sell'],
         [
             'buy',
