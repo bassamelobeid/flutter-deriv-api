@@ -276,6 +276,9 @@ Divide the contracts based on their duration, and market.
 
 sub _update_contract_stats {
     my ($self, $contract_stats, $epoch, $params) = @_;
+
+    # will handle PRICER_KEYS with shortcode later
+    return unless $params->{symbol};
     my $market = Finance::Asset->instance->get_parameters_for($params->{symbol})->{market};
     # duration is one of 'ticks', 'upto_15m', and 'over_15m'
     my $duration;
