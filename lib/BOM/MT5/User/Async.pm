@@ -6,7 +6,7 @@ no indirect;
 
 use JSON;
 use IPC::Run3;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Data::UUID;
 use Time::HiRes;
 use DataDog::DogStatsd::Helper;
@@ -110,10 +110,10 @@ sub _invoke_mt5 {
                 }
             }
             catch {
-                my $e = $_;
+                my $e = $@;
                 chomp $e;
                 $f->fail($e, mt5 => $cmd);
-            };
+            }
 
         },
     );

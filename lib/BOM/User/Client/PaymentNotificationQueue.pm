@@ -16,7 +16,7 @@ send information to adwords/analytics/facebook.
 
 no indirect;
 
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use Encode;
 use JSON::MaybeXS;
@@ -69,27 +69,26 @@ sub add {
     }
     catch {
         stats_inc('payment.' . $args{type} . '.user_lookup.failure', {tag => ['source:' . $args{source}]});
-    };
+    }
 
     # No need to convert the currency if we're in USD already
     $args{amount_usd} //= $args{amount} if $args{currency} eq 'USD';
 
     # If we don't have rates, that's not worth causing anything else to fail: just tell datadog and bail out.
-    return unless try {
+    try {
         $args{amount_usd} //= $args{amount} ? in_usd($args{amount} => $args{currency}) : 0.0;
-        1
     }
     catch {
         stats_inc('payment.' . $args{type} . '.usd_conversion.failure', {tag => ['source:' . $args{source}]});
-        return 0;
+        return;
     };
 
     try {
         $class->publish(\%args);
     }
     catch {
-        warn "Failed to publish - $_";
-    };
+        warn "Failed to publish - $@";
+    }
 
     # Rescale by 100x to ensure we send integers (all amounts in USD)
     stats_timing('payment.' . $args{type} . '.usd', abs(int(100.0 * $args{amount_usd})), {tags => ['source:' . $args{source}]});

@@ -13,7 +13,7 @@ use DateTime;
 use Date::Utility;
 use Encode;
 use Encode::Detect::Detector;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Webservice::GAMSTOP;
 use Email::Address::UseXS;
 use Email::Stuffer;
@@ -54,8 +54,8 @@ sub decrypt_secret_answer {
         }
     }
     catch {
-        die "Not able to decode secret answer! $_";
-    };
+        die "Not able to decode secret answer! $@";
+    }
 
     return $secret_answer;
 }
@@ -102,8 +102,8 @@ sub set_gamstop_self_exclusion {
         stats_inc('GAMSTOP_RESPONSE', {tags => ['EXCLUSION:' . ($gamstop_response->get_exclusion() // 'NA'), "landing_company:$lc"]});
     }
     catch {
-        stats_inc('GAMSTOP_CONNECT_FAILURE') if /^Error/;
-    };
+        stats_inc('GAMSTOP_CONNECT_FAILURE') if $@ =~ /^Error/;
+    }
 
     return undef unless $gamstop_response;
 
@@ -123,8 +123,8 @@ sub set_gamstop_self_exclusion {
             ->send_or_die;
     }
     catch {
-        warn "An error occurred while setting client exclusion: $_";
-    };
+        warn "An error occurred while setting client exclusion: $@";
+    }
 
     return undef;
 }

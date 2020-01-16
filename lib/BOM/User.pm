@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use feature 'state';
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use Date::Utility;
 use List::Util qw(first any all);
 use Scalar::Util qw(blessed looks_like_number);
@@ -378,16 +378,17 @@ sub accounts_by_category {
 
     my (@enabled_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts);
     foreach my $loginid (sort @$loginid_list) {
-        my $cl = try {
-            BOM::User::Client->new({
+        my $cl;
+        try {
+            $cl = BOM::User::Client->new({
                 loginid      => $loginid,
                 db_operation => 'replica'
             });
         }
         catch {
             # try master if replica is down
-            BOM::User::Client->new({loginid => $loginid});
-        };
+            $cl = BOM::User::Client->new({loginid => $loginid});
+        }
 
         next unless $cl;
 

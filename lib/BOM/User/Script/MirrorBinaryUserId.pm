@@ -39,7 +39,7 @@ use BOM::Database::ClientDB;
 
 use DBI;
 use IO::Select;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 use POSIX qw/strftime/;
 
 our $DEBUG;    ## no critic
@@ -72,7 +72,7 @@ sub update_clientdb {
     my ($binary_user_id, $loginid) = @$row;
 
     log_msg 2, "setting binary_user_id=" . ($binary_user_id // "NULL") . " for $loginid";
-    return try {
+    try {
         my $dbh = BOM::Database::ClientDB->new({
                 client_loginid => $loginid,
             })->db->dbh;
@@ -82,16 +82,16 @@ SQL
         unless ($res[0]) {
             log_msg 0, "loginid $loginid has binary_user_id " . ($binary_user_id // "NULL") . " but does not exist in clientdb";
         }
-        1;
+        return 1;
     }
     catch {
         # Certain loginids (like MT...) don't have a clientdb.
-        if (/^No such domain with the broker code /) {
-            1;
+        if ($@ =~ /^No such domain with the broker code /) {
+            return 1;
         } else {
-            0;
+            return 0;
         }
-    };
+    }
 }
 
 sub do_one {
@@ -163,9 +163,9 @@ sub run {
             }
         }
         catch {
-            log_msg 0, "saw exception: $_";
+            log_msg 0, "saw exception: $@";
             sleep TMOUT;
-        };
+        }
     }
 
     return;
