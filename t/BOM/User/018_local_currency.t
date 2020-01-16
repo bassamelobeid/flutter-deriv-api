@@ -15,6 +15,8 @@ my %mapping = (
     ID => 'IDR',
     NG => 'NGN',
     BR => 'BRL',
+    AX => undef,
+    '' => undef,
 );
 
 for my $country (sort keys %mapping) {
