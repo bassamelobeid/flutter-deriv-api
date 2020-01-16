@@ -22,6 +22,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Platform::Event::Emitter;
 use IO::Async::Loop;
 use BOM::Event::Services;
+use List::Util qw(all);
 
 initialize_events_redis();
 
@@ -155,6 +156,19 @@ subtest "change_address_status" => sub {
     is_deeply $new_transaction_event->{details}, $transaction, 'Event found after emit it again';
 
     $mock_subscription->unmock_all();
+
+    $rows = $dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare(q{SELECT * FROM payment.cryptocurrency where currency_code = ? and blockchain_txn = ?});
+            $sth->execute('BTC', $transaction->{hash});
+            return $sth->fetchall_arrayref({});
+        });
+
+    my $is_transacton_inserted = all { $_->{status} eq 'NEW' and $_->{address} eq $transaction->{address} } $rows->@*;
+    ok $is_transacton_inserted, "Transaction has been inserted with status NEW";
+
+    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response, 1, "Update the transaction status to pending after emitting it again";
 
     # These are one of the few transactions we had failing in production we are adding
     # them to test to make sure we are not really not failing to insert them in the database

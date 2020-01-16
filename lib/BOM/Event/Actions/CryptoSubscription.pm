@@ -83,7 +83,7 @@ sub set_pending_transaction {
         for my $address (keys %rows_ref) {
             my @payment = $rows_ref{$address}->@*;
             # transaction already confirmed by subscription
-            if (any { $_->{blockchain_txn} && $_->{blockchain_txn} eq $transaction->{hash} } @payment) {
+            if (any { $_->{blockchain_txn} && $_->{blockchain_txn} eq $transaction->{hash} && $_->{status} ne 'NEW' } @payment) {
                 $log->debugf("Address already confirmed by subscription for transaction: %s", $transaction->{hash});
                 return undef;
             }
