@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Update Contract History(request)",
+    "title": "Update Contract History (request)",
     "description": "Request for contract update history.",
     "type": "object",
     "auth_required": 1,
