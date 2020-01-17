@@ -41,6 +41,16 @@ scope_guard { restore_time() };
 # unlimit daily transfer
 BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts(999);
 
+my $emit_data;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock(
+    'emit',
+    sub {
+        my ($type, $data) = @_;
+        $emit_data->{$type}{count}++;
+        $emit_data->{$type}{last} = $data;
+    });
+
 subtest 'Initialization' => sub {
     lives_ok {
         $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
@@ -1378,7 +1388,11 @@ subtest 'MT5' => sub {
     # real -> MT5
     $params->{args}{account_from} = $test_client->loginid;
     $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\svg_standard'};
+
+    _test_events_prepare();
     $rpc_ct->call_ok($method, $params)->has_no_error("Real account -> real MT5 ok");
+    _test_events_tba(1, $test_client, $params->{args}{account_to});
+
     cmp_deeply(
         $rpc_ct->result,
         {
@@ -1411,7 +1425,18 @@ subtest 'MT5' => sub {
     $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\svg_standard'};
     $params->{args}{account_to}   = $test_client->loginid;
     $params->{args}{amount}       = 150;                                     # this is the only withdrawal amount allowed by mock MT5
+
+    _test_events_prepare();
     $rpc_ct->call_ok($method, $params)->has_no_error("Real MT5 -> real account ok");
+    _test_events_tba(
+        0,
+        $test_client,
+        $params->{args}{account_from},
+        (
+            to_amount   => 150,
+            from_amount => 150
+        ));
+
     cmp_deeply(
         $rpc_ct->result,
         {
@@ -1490,6 +1515,49 @@ subtest 'MT5' => sub {
 sub _get_unique_display_name {
     my @a = ('A' .. 'Z', 'a' .. 'z');
     return join '', map { $a[int(rand($#a))] } (1 .. 3);
+}
+
+sub _test_events_prepare {
+    undef $emit_data;
+}
+
+sub _test_events_tba {
+    my ($is_deposit_to_mt5, $client, $mt5, %optional) = @_;
+
+    my $to_currency = $optional{to_currency} // 'USD';
+    my $to_amount   = $optional{to_amount}   // '180';
+    my $from_amount = $optional{from_amount} // '180';
+    my $fees        = $optional{fees}        // 0;
+
+    my $to_account   = $is_deposit_to_mt5 ? $mt5               : $client->{loginid};
+    my $from_account = $is_deposit_to_mt5 ? $client->{loginid} : $mt5;
+    my $remark       = $is_deposit_to_mt5 ? 'Client>MT5'       : 'MT5>Client';
+
+    is $emit_data->{transfer_between_accounts}{count}, 1, "transfer_between_accounts event emitted only once";
+
+    my $response = $emit_data->{transfer_between_accounts}{last};
+
+    is_deeply(
+        $response,
+        {
+            loginid    => $client->{loginid},
+            properties => {
+                fees               => $fees,
+                from_account       => $from_account,
+                from_amount        => $from_amount,
+                from_currency      => "USD",
+                gateway_code       => "mt5_transfer",
+                source             => 1,
+                to_account         => $to_account,
+                to_amount          => $to_amount,
+                to_currency        => $to_currency,
+                is_from_account_pa => 0,
+                is_to_account_pa   => 0,
+                id                 => $response->{properties}->{id},
+                time               => $response->{properties}->{time}}
+        },
+        "transfer_between_accounts event provides data properly. ($remark)"
+    );
 }
 
 done_testing();
