@@ -1209,15 +1209,6 @@ rpc set_settings => sub {
             return BOM::RPC::v3::Utility::create_error_by_code($error->{error}, override_code => $override_code);
         }
 
-        if ($current_client->residence eq 'gb' and defined $args->{address_postcode} and $args->{address_postcode} eq '') {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'InputValidationFailed',
-                    message_to_client => localize("Input validation failed: [_1]", 'address_postcode'),
-                    details           => {
-                        address_postcode => "is missing and it is required",
-                    },
-                });
-        }
     }
 
     return BOM::RPC::v3::Utility::permission_error()
