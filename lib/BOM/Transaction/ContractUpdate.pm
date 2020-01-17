@@ -191,13 +191,13 @@ sub _validate_update_parameter {
                 $error = {
                     code => 'UpdateStopLossNotAllowed',
                     message_to_client =>
-                        localize('Stop loss will be available only after deal cancellation expires. You may update your stop loss limit then.'),
+                        localize('You may update your stop loss amount after deal cancellation has expired.'),
                 };
             } elsif ($order_name eq 'take_profit') {
                 $error = {
                     code              => 'UpdateTakeProfitNotAllowed',
                     message_to_client => localize(
-                        'Take profit update will be available only after deal cancellation expires. You may update your take profit limit then.'),
+                        'You may update your take profit amount after deal cancellation has expired.'),
                 };
             }
             last;
