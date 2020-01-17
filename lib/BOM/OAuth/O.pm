@@ -44,8 +44,6 @@ use constant BLOCK_TTL_RESET_AFTER => 24 * 60 * 60;
 use constant BLOCK_TRIGGER_COUNT => 10;
 # How much time in seconds with no failed attempts before we reset (expire) the failure count
 use constant BLOCK_TRIGGER_WINDOW => 5 * 60;
-# Redis key prefix for client's previous login attempts
-use constant CLIENT_LOGIN_HISTORY_KEY => "CLIENT_LOGIN_HISTORY::";
 
 sub authorize {
     my $c = shift;
@@ -422,11 +420,10 @@ we expect old entries to be removed by an independent cronjob
 sub _compare_signin_activity {
     my ($args) = @_;
 
-    my $app                     = delete $args->{app};
-    my $client                  = delete $args->{client};
-    my $c                       = delete $args->{c};
-    my $last_attempt_in_db      = delete $args->{old_env};
-    my $current_attempt_details = delete $args->{new_env};
+    my $app            = delete $args->{app};
+    my $client         = delete $args->{client};
+    my $c              = delete $args->{c};
+    my $known_location = delete $args->{known_location};
 
     my $brand = $c->stash('brand');
 
@@ -434,73 +431,44 @@ sub _compare_signin_activity {
     my $country_code = uc($c->stash('request')->country_code // '');
     my $ip_address   = $c->stash('request')->client_ip // '';
 
-    my $new_attempt_device  = $bd->device         || $bd->os_string || 'unknown';
-    my $new_attempt_browser = $bd->browser_string || 'unknown';
-    my $new_attempt_entry   = $country_code . '::' . $new_attempt_device . '::' . $new_attempt_browser;
-    my $new_attempt_time    = time;
+    return if $known_location;
 
-    my $redis      = BOM::Config::RedisReplicated::redis_auth_write();
-    my $client_key = CLIENT_LOGIN_HISTORY_KEY . $client->user->id;
+    # Relevant data required
+    my $data = {
+        client_name => $client->first_name ? ' ' . $client->first_name . ' ' . $client->last_name : '',
+        country => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
+        device  => $bd->device                                                             // $bd->os_string,
+        browser => $bd->browser_string,
+        app     => $app,
+        ip      => $ip_address,
+        l       => \&localize,
+        language                  => lc($c->stash('request')->language),
+        start_url                 => 'https://' . lc($c->stash('brand')->website_name),
+        is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
+    };
 
-    my $known_attempt = $redis->hget($client_key, $new_attempt_entry);
+    my $tt = Template->new(
+        ABSOLUTE => 1,
+        ENCODING => 'utf8'
+    );
+    $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/new_signin_' . $brand->name . '.html.tt', $data, \my $message);
 
-    # save/update the attempt information
-    $redis->hset($client_key, $new_attempt_entry, $new_attempt_time);
-
-    if (!$known_attempt) {
-        # first loggin ever
-        if (!$last_attempt_in_db) {
-            return;
-        } else {
-            # to avoid confusion when this feature is released we will do the old check here
-            my $should_send_email = 0;
-            foreach my $key (qw/ip country user_agent/) {
-                if (($last_attempt_in_db->{$key} // '') ne ($current_attempt_details->{$key} // '')) {
-                    $should_send_email = 1;
-                    last;
-                }
-            }
-            return unless $should_send_email;
-        }
-        # Relevant data required
-        my $data = {
-            client_name => $client->first_name ? ' ' . $client->first_name . ' ' . $client->last_name : '',
-            country => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
-            device  => $bd->device                                                             // $bd->os_string,
-            browser => $bd->browser_string,
-            app     => $app,
-            ip      => $ip_address,
-            l       => \&localize,
-            language                  => lc($c->stash('request')->language),
-            start_url                 => 'https://' . lc($c->stash('brand')->website_name),
-            is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
-        };
-
-        my $tt = Template->new(
-            ABSOLUTE => 1,
-            ENCODING => 'utf8'
-        );
-        $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/new_signin_' . $brand->name . '.html.tt', $data, \my $message);
-
-        if ($tt->error) {
-            warn "Template error: " . $tt->error;
-            return;
-        }
-
-        send_email({
-            from                  => $brand->emails('no-reply'),
-            to                    => $client->email,
-            subject               => localize(get_message_mapping()->{NEW_SIGNIN_SUBJECT}),
-            message               => [$message],
-            template_loginid      => $client->loginid,
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            skip_text2html        => 1
-        });
-
+    if ($tt->error) {
+        warn "Template error: " . $tt->error;
+        return;
     }
 
-    return undef;
+    send_email({
+        from                  => $brand->emails('no-reply'),
+        to                    => $client->email,
+        subject               => localize(get_message_mapping()->{NEW_SIGNIN_SUBJECT}),
+        message               => [$message],
+        template_loginid      => $client->loginid,
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        skip_text2html        => 1
+    });
+
 }
 
 =head2 _validate_login
@@ -572,8 +540,8 @@ sub _validate_login {
     }
 
     # Get last login (this excludes impersonate) before current login to get last record
-    my $new_env    = $c->_login_env();
-    my $last_login = $user->get_last_successful_login_history();
+    my $new_env        = $c->_login_env();
+    my $known_location = $user->logged_in_before_from_same_location($new_env);
 
     my $result = $user->login(
         password        => $password,
@@ -630,11 +598,10 @@ sub _validate_login {
     my $client = $filtered_clients[0];
 
     _compare_signin_activity({
-        old_env => _get_details_from_environment($last_login->{environment}) // undef,
-        new_env => _get_details_from_environment($new_env),
-        client  => $client,
-        c       => $c,
-        app     => $app
+        known_location => $known_location,
+        client         => $client,
+        c              => $c,
+        app            => $app
     });
 
     return $err_var->("TEMP_DISABLED") if grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins};
