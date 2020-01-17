@@ -166,15 +166,13 @@ $app_config->set({'payments.p2p.limits.maximum_offer' => 3000});
 $log->infof('App config applied');
 
 unless($agent->p2p_agent) {
-    $agent->p2p_agent_create(
-        name => 'example agent',
-    );
+    $agent->p2p_agent_create('example agent');
 }
 $log->infof('Agent info: %s', $agent->p2p_agent);
 $log->infof('Agents: %s', $agent->p2p_agent_list);
 $agent->p2p_agent_update(
-    active => 1,
-    auth => 1,
+    is_active        => 1,
+    is_authenticated => 1,
 );
 $agent->save;
 $log->infof('Maximum offer configured is %s', BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer);
