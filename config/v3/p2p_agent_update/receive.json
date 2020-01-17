@@ -1,16 +1,16 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "P2P Agent Information (response)",
-    "description": "Returns information about the given agent ID",
+    "title": "P2P Agent Update (response)",
+    "description": "Returns latest information of the agent.",
     "type": "object",
     "required": [
         "echo_req",
         "msg_type"
     ],
     "properties": {
-        "p2p_agent_info": {
-            "title": "p2p_agent_info",
-            "description": "P2P agent info",
+        "p2p_agent_update": {
+            "title": "p2p_agent_update",
+            "description": "P2P agent update",
             "type": "object",
             "properties": {
                 "agent_id": {
@@ -58,7 +58,7 @@
             "description": "Action name of the request made.",
             "type": "string",
             "enum": [
-                "p2p_agent_info"
+                "p2p_agent_update"
             ]
         },
         "req_id": {

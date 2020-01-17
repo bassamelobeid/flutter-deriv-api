@@ -302,6 +302,7 @@ sub actions_config {
             }
         ],
         ['p2p_agent_info'],
+        ['p2p_agent_update'],
     ];
 }
 
