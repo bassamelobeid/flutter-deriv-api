@@ -18,19 +18,19 @@ PrintContentType();
 
 my $input = request()->params();
 
-my $from_date = trim($input->{from});
-my $to_date   = trim($input->{to});
+trim($input->{from});
+trim($input->{to});
 
 # format to expect for regex checking
 my $date_format = qr/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
-if (!$from_date || !$to_date || $from_date !~ m/$date_format/ || $to_date !~ m/$date_format/) {
-    print "Invalid from date or to date format!<p>" . "Please enter the format in the form of (yyyy-mm-dd HH:MM:SS) example: 2012-01-25 01:20:30";
+my $from_date = eval { Date::Utility->new($input->{from})->epoch() };
+my $to_date   = eval { Date::Utility->new($input->{to})->epoch() };
+
+if (!$input->{from} || !$input->{to} || $input->{from} !~ m/$date_format/ || $input->{to} !~ m/$date_format/ || !$from_date || !$to_date) {
+    print "Invalid from date or to date!<p>" . "Please enter the format in the form of (yyyy-mm-dd HH:MM:SS) example: 2012-01-25 01:20:30";
     code_exit_BO();
 }
-
-$from_date = Date::Utility->new($input->{from})->epoch();
-$to_date   = Date::Utility->new($input->{to})->epoch();
 
 unless ($to_date > $from_date) {
     print "From date must be before To date for sending statement";

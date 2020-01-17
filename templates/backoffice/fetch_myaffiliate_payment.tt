@@ -1,9 +1,15 @@
 <form method="post" action="[% action %]" id="fetch_aff_payment">
     <label for="from">From Date (eg: 2014-12-01)</label>
-    <input type="text" name="from" id="from">
+    <input type="text" name="from" id="from" class="datepick" required pattern="\d{4}-\d{2}-\d{2}">
 
     <label for="to">To Date (eg: 2014-12-31)</label>
-    <input type="text" name="to" id="to">
+    <input type="text" name="to" id="to" class="datepick" required pattern="\d{4}-\d{2}-\d{2}">
 
     <input type="submit" value="fetch">
 </form>
+
+<script type="text/javascript" language="javascript">
+\$(document).ready(function() {
+      \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+});
+</script>

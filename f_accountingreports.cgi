@@ -34,15 +34,18 @@ my $lastmonth      = $now->months_ahead(-1);
 # Daily Turnover Report
 Bar("DAILY TURNOVER REPORT");
 
-print "<form action=\"" . request()->url_for('backoffice/f_dailyturnoverreport.cgi') . "\" method=post>";
+print '<form action="' . request()->url_for('backoffice/f_dailyturnoverreport.cgi') . '" method="post" onsubmit="return validate_month()">';
 print "<input type=hidden name=broker value=$encoded_broker>";
-print 'Month: <input type=text size=12 name=month value="' . $now->months_ahead(0) . '">';
+my $today = Date::Utility->today;
+my $month = $today->year . '-' . sprintf("%02d", $today->month);
+
+print 'Month: <input type=text size=12 name=month value="' . $month . '" required pattern="\d{4}-\d{2}">';
 print "<br /><input type=\"submit\" value=\"Daily Turnover Report\"> CLICK ONLY ONCE! Be patient if slow to respond.";
 print "</form>";
 
 Bar("Monthly Client Reports");
 {
-    my $yyyymm = Date::Utility->new->plus_time_interval('1mo')->date_yyyymmdd;
+    my $yyyymm = Date::Utility->new->date_yyyymmdd;
     $yyyymm =~ s/-..$//;
 
     BOM::Backoffice::Request::template()->process('backoffice/account/monthly_client_report.tt', {yyyymm => $yyyymm})
@@ -137,5 +140,22 @@ print '<form action="'
     . '<br/>Run this only on master server.'
     . ' <input type=submit value="Generate">'
     . '</form>';
+
+print <<QQ;
+<script type="text/javascript" language="javascript">
+function validate_month(){
+    var get_value = function(elm_name) {
+        return (document.getElementsByName(elm_name)[0] || {}).value;
+    }
+    var month = get_value('month');
+    var month_obj = new Date(month);
+    if(/^0000/.test(month) || month_obj == 'Invalid Date'){
+        alert("Invalid month or year entered.");
+        return false;
+    }
+    return true;
+}
+</script>
+QQ
 
 code_exit_BO();

@@ -11,7 +11,7 @@ use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
-
+BrokerPresentation('Client Search', undef, 1);
 my $broker        = request()->param('broker')        // "";
 my $partialfname  = request()->param('partialfname')  // "";
 my $partiallname  = request()->param('partiallname')  // "";

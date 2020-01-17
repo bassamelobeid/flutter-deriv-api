@@ -16,7 +16,7 @@ use BOM::Config::Runtime;
 sub DailyTurnOverReport {
     my ($args, $options) = @_;
 
-    if ($args->{month} !~ /^\w{3}-\d{2}$/) {
+    if ($args->{month} !~ /^\d{4}-\d{2}$/) {
         code_exit_BO("<p>Invalid month $args->{month}</p>");
     }
 
@@ -40,9 +40,9 @@ sub DailyTurnOverReport {
 
     my $now         = Date::Utility->new;
     my $month_to_do = $args->{month};
-    my $this_month  = ($now->date_ddmmmyy =~ /$month_to_do/) ? 1 : 0;    # A rather inelegant way to see if we are doing this month.
+    my $this_month  = ($now->date =~ /$month_to_do/) ? 1 : 0;    # A rather inelegant way to see if we are doing this month.
 
-    my $currdate = Date::Utility->new('1-' . $args->{'month'});
+    my $currdate = Date::Utility->new($args->{'month'} . '-' . '01');
 
     my (%allbuys, %allsells);
     my ($allUSDsells, $allUSDbuys, $allpl);
@@ -50,7 +50,7 @@ sub DailyTurnOverReport {
     # get latest timestamp in redis cache
     my $cache_prefix = 'DAILY_TURNOVER';
     # TODO: we should rename the method `keys` of Cache::RedisDB, otherwise perlcritic will report DeprecatedFeatures error
-    my $redis_time = Cache::RedisDB->keys($cache_prefix);                ## no critic (DeprecatedFeatures)
+    my $redis_time = Cache::RedisDB->keys($cache_prefix);        ## no critic (DeprecatedFeatures)
 
     my $latest_time;
     foreach my $time (@{$redis_time}) {
@@ -83,7 +83,7 @@ sub DailyTurnOverReport {
 
     my $days_in_month = $currdate->days_in_month;
     foreach my $day (1 .. $days_in_month) {
-        my $date = $day . '-' . $args->{'month'};
+        my $date = $args->{'month'} . '-' . $day;
         my $when = Date::Utility->new($date);
         next if $when->epoch > Date::Utility->new->epoch;
         my %tday = (
@@ -165,7 +165,7 @@ sub DailyTurnOverReport {
     $template{agg_bets_diff}     = int $aggbetsdiff;
     $template{all_prev_agg_bets} = $allprevaggbets;
 
-    my $start_of_month   = Date::Utility->new('1-' . $month_to_do);
+    my $start_of_month   = Date::Utility->new($month_to_do . '-01');
     my $end_of_month     = $start_of_month->plus_time_interval($days_in_month . 'd')->minus_time_interval('1s');
     my $month_completed  = min(1, max(1e-5, ($latest_time->epoch - $start_of_month->epoch) / ($end_of_month->epoch - $start_of_month->epoch)));
     my $projection_ratio = 1 / $month_completed;

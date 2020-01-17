@@ -1,7 +1,7 @@
 <div>
     <p>View Daily Turnover Report</p>
-    <form action="[% request.url_for('backoffice/f_dailyturnoverreport.cgi') | none %]" method="post">
-        Month: <input type="text" size="12" name="month" value="[% this_month %]"></input>
+    <form action="[% request.url_for('backoffice/f_dailyturnoverreport.cgi') | none %]" method="post" onsubmit="return validate_month()">
+        Month: <input type="text" size="12" name="month" value="[% this_month %]" required pattern="\d{4}-\d{2}"></input>
         <br/><br/>
         <input type="submit" value="View Daily Turnover Report"></input>
     </form>
@@ -94,4 +94,20 @@
 #summary td { text-align: right; font-weight: bold; font-size: medium; padding: 5px;}
 #summary td.shared { text-align: center;}
 #summary caption { caption-side: bottom; font-size: small;  }
+
 </style>
+
+<script type="text/javascript" language="javascript">
+function validate_month(){
+    var get_value = function(elm_name) {
+        return (document.getElementsByName(elm_name)[0] || {}).value;
+    }
+    var month = get_value('month');
+    var month_obj = new Date(month);
+    if(/^0000/.test(month) || month_obj == 'Invalid Date'){
+        alert("Invalid month or year entered.");
+        return false;
+    }
+    return true;
+}
+</script>

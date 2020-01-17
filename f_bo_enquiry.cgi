@@ -27,7 +27,7 @@ if ($broker ne 'FOG') {
     print
         "<hr>Note : This function shows the client portfolio in exactly the same way as the client sees them on the client Website.  Therefore, in the Portfolio, 'Sale Prices' of contracts include the Company markup fee.<p>";
     print "<FORM ACTION=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" METHOD=\"POST\">";
-    print "Check Portfolio of LoginID : <input id='portfolio_loginID' name=loginID type=text size=10 value='$encoded_broker'>";
+    print "Check Portfolio of LoginID  <input id='portfolio_loginID' name=loginID type=text size=10 value='$encoded_broker'>";
     print "<input type=hidden name=outputtype value=table>";
     print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
     print "<INPUT type=hidden name=\"l\" value=\"EN\">";
@@ -37,22 +37,34 @@ if ($broker ne 'FOG') {
     # Client Credit/Debit Statement
     print build_client_statement_form($broker);
 
-    print "<hr/><FORM ACTION=\"" . request()->url_for('backoffice/f_profit_table.cgi') . "\" METHOD=\"POST\">";
+    print "<hr/><FORM ACTION=\""
+        . request()->url_for('backoffice/f_profit_table.cgi')
+        . "\" METHOD=\"POST\" onsubmit='return validate_month(\"profit_table\")' >";
     print
         "<span style=\"color:red;\"><b>Show All Transaction</b>, may fail for clients with huge number of transaction, so use this feature only when required.</span><br/>";
     print "Check Profit Table of LoginID : <input id='profit_check_loginID' name=loginID type=text size=10 value='$encoded_broker'>";
-    print "From : <input name='first_purchase_time' type='text' size='10' value='" . Date::Utility->today()->minus_time_interval('30d')->date . "'/>";
-    print "To : <input name='last_purchase_time' type='text' size='10' value='" . Date::Utility->today()->date . "'/>";
+    print "From : <input name='first_purchase_time' type='text' size='10' value='"
+        . Date::Utility->today()->_minus_months(1)->date
+        . "' required pattern='\\d{4}-\\d{2}-\\d{2}' class='datepick' id='profit_table_startdate'/>";
+    print "To : <input name='last_purchase_time' type='text' size='10' value='"
+        . Date::Utility->today()->date
+        . "' required pattern='\\d{4}-\\d{2}-\\d{2}' class='datepick' id='profit_table_enddate'/>";
     print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
     print "<INPUT type=hidden name=\"l\" value=\"EN\">";
     print "<INPUT type=checkbox name=\"all_in_one_page\">Show All Transactions</INPUT>";
     print "<INPUT type=\"submit\" value=\"Client Profit Table\">";
     print "</FORM>";
 
-    print "<hr/><FORM ACTION=\"" . request()->url_for('backoffice/f_profit_check.cgi') . "\" METHOD=\"POST\">";
+    print "<hr/><FORM ACTION=\""
+        . request()->url_for('backoffice/f_profit_check.cgi')
+        . "\" METHOD=\"POST\" onsubmit=\"return validate_month('profit')\">";
     print "Check Profit of LoginID : <input id='profit_check_loginID' name=loginID type=text size=10 value='$encoded_broker'>";
-    print "From : <input name=startdate type=text size=10 value='" . Date::Utility->today()->minus_time_interval('30d')->date . "'/>";
-    print "To : <input name=enddate type=text size=10 value='" . Date::Utility->today()->date . "'/>";
+    print "From : <input name=startdate type=text size=10 value='"
+        . Date::Utility->today()->_minus_months(1)->date
+        . "' required pattern='\\d{4}-\\d{2}-\\d{2}' class='datepick' id='profit_startdate'/>";
+    print "To : <input name=enddate type=text size=10 value='"
+        . Date::Utility->today()->date
+        . "' required pattern='\\d{4}-\\d{2}-\\d{2}' class='datepick' id='profit_enddate'/>";
     print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
     print "<INPUT type=hidden name=\"l\" value=\"EN\">";
     print "<INPUT type=\"submit\" value=\"Client Profit\">";
@@ -72,7 +84,37 @@ if ($broker ne 'FOG') {
     print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
     print "<input type=submit value='LIST CLIENT WITHDRAWAL LIMITS'>";
     print "</form>";
+    print q{
+<script type="text/javascript" language="javascript">
+function validate_month(name){
+    var start_date;
+    var end_date;
+    if(name == 'statement'){
+        start_date = $('#statement_startdate').val();
+        end_date  = $('#statement_enddate').val();
+    }
+    else if(name == 'profit_table'){
+       start_date = $('#profit_table_startdate').val();
+       end_date = $('#profit_table_enddate').val();
+    }
+    else if(name == 'profit'){
+       start_date = $('#profit_startdate').val();
+       end_date = $('#profit_enddate').val();
+    }
+    start_date = new Date(start_date);
+    end_date = new Date(end_date);
+    if(start_date == 'Invalid Date' || end_date == 'Invalid Date') {
+       alert('Wrong date entered');
+       return false;
+    }
+    return true;
+}
 
+$(document).ready(function() {
+      $('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+});
+</script>
+};
 }
 
 code_exit_BO();

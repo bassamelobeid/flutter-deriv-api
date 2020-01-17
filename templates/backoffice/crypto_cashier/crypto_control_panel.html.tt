@@ -18,8 +18,8 @@
     <input type="hidden" name="broker" value="[% broker %]">
 <!-- Recon -->
         <button type="submit" name="view_action" value="reconcil">Reconciliation</button>
-        <input type="text" name="start_date" class="datepick" value="[% start_date %]">
-        <input type="text" name="end_date" class="datepick" value="[% end_date %]">
+        <input type="text" name="start_date" class="datepick" value="[% start_date %]" required pattern="\d{4}-\d{2}-\d{2}">
+        <input type="text" name="end_date" class="datepick" value="[% end_date %]" required pattern="\d{4}-\d{2}-\d{2}">
         <input type="checkbox" name="include_new"><label for="include_new">Show new addresses</label>
     <br><br>
 <!-- Search -->
@@ -53,3 +53,9 @@
         </select>
     <br>
 </form>
+
+<script type="text/javascript" language="javascript">
+  \$(document).ready(function() {
+      \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+  });
+</script>

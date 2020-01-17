@@ -24,7 +24,10 @@ BrokerPresentation('Myaffiliate Payment');
 
 Bar('Myaffiliate Payment Info');
 
-unless (request()->param('from') and request()->param('to')) {
+my $from = eval { Date::Utility->new(request()->param('from')) };
+my $to   = eval { Date::Utility->new(request()->param('to')) };
+
+unless (request()->param('from') and request()->param('to') and $from and $to) {
     print "Invalid FROM / TO date";
     code_exit_BO();
 }
@@ -45,9 +48,7 @@ flock $lock, LOCK_EX | LOCK_NB or do {
 };
 
 try {
-    my $from = Date::Utility->new(request()->param('from'));
-    my $to   = Date::Utility->new(request()->param('to'));
-    my $zip  = path(
+    my $zip = path(
         BOM::MyAffiliates::PaymentToAccountManager->new(
             from    => $from,
             to      => $to,

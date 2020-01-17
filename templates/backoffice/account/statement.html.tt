@@ -36,8 +36,8 @@
         <form action="[% self_post %]" method="get">
             <span>Quick jump to see another statement:</span>
             <input name="loginID" type="text" size=15 value="[% loginid %]">
-            <input name="startdate" type="text" size=15 value="[% startdate %]" placeholder="2016-12-20">
-            <input name="enddate" type="text" size=15 value="[% enddate %]" placeholder="2017-01-20">
+            <input name="startdate" type="text" size=15 value="[% startdate %]" placeholder="2016-12-20" class='datepick'>
+            <input name="enddate" type="text" size=15 value="[% enddate %]" placeholder="2017-01-20" class='datepick'>
             <input name="broker" type=hidden value="[% broker %]">
             <input name="currency" type="hidden" value="[% currency %]">
             <div style = "padding-left: 195px;">

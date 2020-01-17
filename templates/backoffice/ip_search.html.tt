@@ -9,8 +9,8 @@
 <b>Get accounts logged in with the same IPs</b>
 <form action="[% ip_search_url %]" method="post">
 <input type=text size=50 maxlength=50 name=loginid value='[% loginid %]' placeholder="CR12345 -or- user@binary.com" required><br>
-<input type="date" name="date_from" placeholder="2016-01-01" value='[% date_from %]' required pattern="\d{4}-\d{2}-\d{2}">
-<input type="date" name="date_to" placeholder="2017-01-01" value='[% date_to %]' required pattern="\d{4}-\d{2}-\d{2}">
+<input type="text" name="date_from" placeholder="2016-01-01" value='[% date_from %]' required pattern="\d{4}-\d{2}-\d{2}" class="datepick">
+<input type="text" name="date_to" placeholder="2017-01-01" value='[% date_to %]' required pattern="\d{4}-\d{2}-\d{2}" class="datepick">
 <input type="submit" value="Search for evidences">
 <input type="hidden" name="search_type" value="client">
 </form>
@@ -56,3 +56,8 @@ No clients have logged in from [% date_from %] to [% date_to %] from the same IP
 [% END %]
 [% END %]
 
+<script type="text/javascript" language="javascript">
+  \$(document).ready(function() {
+      \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+  });
+</script>

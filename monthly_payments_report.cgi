@@ -4,6 +4,7 @@ package main;
 use strict;
 use warnings;
 
+use Syntax::Keyword::Try;
 use Date::Utility;
 use Text::CSV;
 use Syntax::Keyword::Try;
@@ -33,6 +34,7 @@ try {
 catch {
     code_exit_BO("Date $yyyymm was not parsed as YYYY-MM, check it");
 }
+
 my $until_date = $start_date->plus_time_interval("${months}mo");
 
 my ($payment_filter, $csv_name);
