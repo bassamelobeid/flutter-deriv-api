@@ -2565,6 +2565,33 @@ sub payment_account_transfer {
     }
 
     $to_amount = financialrounding('amount', $to_curr, $to_amount);
+
+    my $emit_transfer_event = sub {
+        my $args = shift;
+
+        my $event_properties = {
+            from_account       => $fmClient->loginid,
+            is_from_account_pa => 0 + !!($fmClient->is_pa_and_authenticated),
+            to_account         => $toClient->loginid,
+            is_to_account_pa   => 0 + !!($toClient->is_pa_and_authenticated),
+            from_currency      => $from_curr,
+            to_currency        => $to_curr,
+            from_amount        => $amount,
+            to_amount          => $to_amount,
+            source             => $source,
+            fees               => $fees,
+            gateway_code       => $gateway_code,
+            id                 => $args->{id},
+            time               => $args->{transaction_time}};
+
+        BOM::Platform::Event::Emitter::emit(
+            'transfer_between_accounts',
+            {
+                loginid    => $fmClient->loginid,
+                properties => $event_properties
+            });
+    };
+
     my $dbic = $fmClient->db->dbic;
     unless ($inter_db_transfer) {
         # here we rely on ->set_default_account above
@@ -2574,7 +2601,9 @@ sub payment_account_transfer {
             # Error handling for code below is tricky; it returns a string for normal DB  errors,
             # and an array ref for custom DB errors (starts with "BI").
             ping => sub {
-                my $sth = $_->prepare('SELECT (v_from_trans).id FROM payment.payment_account_transfer(?,?,?,?,?,?,?, ?,?,?,?,?,?, ?,?,?)');
+                my $sth = $_->prepare(
+                    'SELECT (v_from_trans).id, (v_from_trans).transaction_time FROM payment.payment_account_transfer(?,?,?,?,?,?,?, ?,?,?,?,?,?, ?,?,?)'
+                );
                 $sth->execute(
                     $fmClient->loginid,  $toClient->loginid, $currency,    $amount, $to_amount, $fmStaff,
                     $toStaff,            $fmRemark,          $toRemark,    $source, $fees,      $gateway_code,
@@ -2584,7 +2613,10 @@ sub payment_account_transfer {
             });
         if (scalar @{$records}) {
             $response->{transaction_id} = $records->[0]->{id};
+
+            $emit_transfer_event->($records->[0]);
         }
+
         return $response;
     }
 
@@ -2618,6 +2650,8 @@ sub payment_account_transfer {
         staff_loginid        => $toStaff,
         source               => $source,
     });
+
+    $emit_transfer_event->($fmTrx);
 
     return {transaction_id => $fmTrx->transaction_id};
 }
