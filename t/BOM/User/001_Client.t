@@ -7,12 +7,11 @@ use warnings;
 use Test::MockTime;
 use Test::More qw( no_plan );
 use Test::Exception;
-
+use Test::MockModule;
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-
+use Date::Utility;
 my $login_id = 'CR0022';
-
 my $client;
 
 subtest "Client load and saving." => sub {
@@ -146,6 +145,42 @@ subtest "Client load and saving." => sub {
     is($client->email,      $client_details->{'email'},           'compare email between client object instantize with client another hash ref');
     is($client->last_name,  $client_details->{'last_name'},       'compare last_name between client object instantize with another client hash ref');
     is($client->first_name, $client_details->{'first_name'},      'compare first_name between client object instantize with another client hash ref');
+};
+
+subtest 'validate_dob' => sub {
+    my $age          = 23;
+    my $mock_request = Test::MockModule->new('Brands::Countries');
+    $mock_request->mock('minimum_age_for_country', sub { return $age });
+    my $dob_result;
+
+    my $minimum_date   = Date::Utility->new->_minus_years($age);
+    my $specific_date  = Date::Utility->new('2016-02-29');
+    my %data_dob_valid = (
+        $minimum_date->date_yyyymmdd                                   => undef,
+        $specific_date->minus_time_interval($age . 'y')->date_yyyymmdd => undef,
+        $minimum_date->minus_time_interval(1 . 'y')->date_yyyymmdd     => undef,
+        $minimum_date->minus_time_interval(30 . 'd')->date_yyyymmdd    => undef,
+        $minimum_date->minus_time_interval(1 . 'd')->date_yyyymmdd     => undef
+    );
+    my %data_dob_invalid = (
+        "13-03-21"                                                 => {error => 'InvalidDateOfBirth'},
+        "1913-03-00"                                               => {error => 'InvalidDateOfBirth'},
+        "1993-13-11"                                               => {error => 'InvalidDateOfBirth'},
+        "1923-04-32"                                               => {error => 'InvalidDateOfBirth'},
+        $minimum_date->plus_time_interval(1 . 'y')->date_yyyymmdd  => {error => 'BelowMinimumAge'},
+        $minimum_date->plus_time_interval(30 . 'd')->date_yyyymmdd => {error => 'BelowMinimumAge'},
+        $minimum_date->plus_time_interval(1 . 'd')->date_yyyymmdd  => {error => 'BelowMinimumAge'});
+
+    foreach my $key (keys %data_dob_valid) {
+        $dob_result = $client->validate_common_account_details({date_of_birth => $key});
+        my $value = $data_dob_valid{$key};
+        is($dob_result, $value, "Successfully validate_dob $key");
+    }
+    foreach my $key (keys %data_dob_invalid) {
+        my $dob_result_hash = $client->validate_common_account_details({date_of_birth => $key});
+        my $value_hash = $data_dob_invalid{$key};
+        is($dob_result_hash->{error}, $value_hash->{error}, "validate_dob gets error $key");
+    }
 };
 
 subtest "format and validate" => sub {

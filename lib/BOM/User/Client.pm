@@ -1513,8 +1513,7 @@ sub format_input_details {
     }
     catch {
         chomp(my $err = $@);
-        return {error => $err} if $err =~ /^[A-Za-z]+$/;
-        return {error => 'UnknownError'};
+        return {error => $err || 'UnknownError'};
     }
 }
 
@@ -1542,9 +1541,10 @@ Return {
 sub validate_common_account_details {
     my ($client, $args) = @_;
 
+    my $residence = $client->residence;
     try {
         if ($args->{date_of_birth}) {
-            _validate_dob($args->{date_of_birth}, $client->residence);
+            _validate_dob($args->{date_of_birth}, $residence);
         }
 
         die "NeedBothSecret\n" if (($args->{secret_answer} // $client->secret_answer) xor($args->{secret_question} // $client->secret_question));
@@ -1555,12 +1555,18 @@ sub validate_common_account_details {
 
         die "InvalidCitizenship\n"
             if ($args->{'citizen'} && !defined $brand->countries_instance->countries->country_from_code($args->{'citizen'}));
+
+        die "invalid UK postcode\n" if ($residence eq 'gb' and not($args->{address_postcode} // $client->address_postcode));
+
+        die "invalid PO Box\n"
+            if (($args->{address_line_1} || '') =~ /p[\.\s]+o[\.\s]+box/i
+            or ($args->{address_line_2} || '') =~ /p[\.\s]+o[\.\s]+box/i);
         return undef;
     }
     catch {
         chomp(my $err = $@);
-        return {error => $err} if $err =~ /^[A-Za-z]+$/;
-        return {error => 'UnknownError'};
+
+        return {error => $err || 'UnknownError'};
     }
 }
 
