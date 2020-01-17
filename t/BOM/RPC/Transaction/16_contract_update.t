@@ -150,12 +150,11 @@ subtest 'contract_update' => sub {
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('ContractIsSold')->error_message_is('Contract has expired.');
 
     delete $update_params->{args}->{limit_order};
-    $update_params->{args}->{history} = 1;
-    $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
-    is $res->{history}->[0]->{display_name}, 'Stop loss';
-    is $res->{history}->[0]->{order_amount}, -80;
-    is $res->{history}->[1]->{display_name}, 'Take profit';
-    is $res->{history}->[1]->{order_amount}, 10;
+    $res = $c->call_ok('contract_update_history', $update_params)->has_no_error->result;
+    is $res->[0]->{display_name}, 'Stop loss';
+    is $res->[0]->{order_amount}, -80;
+    is $res->[1]->{display_name}, 'Take profit';
+    is $res->[1]->{order_amount}, 10;
 };
 
 done_testing();
