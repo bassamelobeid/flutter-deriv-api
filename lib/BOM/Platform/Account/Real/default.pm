@@ -21,68 +21,9 @@ use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Client::Sanctions;
 
-sub validate {
-    my $args = shift;
-    my ($from_client, $user) = @{$args}{'from_client', 'user'};
-
-    my $details;
-    my ($broker, $residence) = ('', '');
-    if ($details = $args->{details}) {
-        ($broker, $residence) = @{$details}{'broker_code', 'residence'};
-    }
-
-    my $msg = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], residence[$residence], error: ";
-
-    if (BOM::Config::Runtime->instance->app_config->system->suspend->new_accounts) {
-        warn $msg . ' - new account opening suspended';
-        return {error => 'invalid'};
-    }
-    unless ($user->{email_verified}) {
-        return {error => 'email unverified'};
-    }
-    unless ($from_client->residence) {
-        return {error => 'no residence'};
-    }
-
-    if ($details) {
-        my $countries_instance = request()->brand->countries_instance;
-
-        if ($details->{citizen}
-            && !defined $countries_instance->countries->country_from_code($details->{citizen}))
-        {
-            return {error => 'InvalidCitizenship'};
-        }
-        if (   $countries_instance->restricted_country($residence)
-            or $from_client->residence ne $residence
-            or not defined $countries_instance->countries->country_from_code($residence))
-        {
-            return {error => 'invalid residence'};
-        }
-        if ($residence eq 'gb' and not $details->{address_postcode}) {
-            return {error => 'invalid UK postcode'};
-        }
-        if (   ($details->{address_line_1} || '') =~ /p[\.\s]+o[\.\s]+box/i
-            or ($details->{address_line_2} || '') =~ /p[\.\s]+o[\.\s]+box/i)
-        {
-            return {error => 'invalid PO Box'};
-        }
-
-        # Check for duplicate account
-        my $account_is_duplicate = $from_client->check_duplicate_account($details);
-        return {error => $account_is_duplicate->{error}} if $account_is_duplicate->{error};
-
-        my $dob_error = validate_dob($details->{date_of_birth}, $residence);
-        return $dob_error if $dob_error;
-    }
-    return undef;
-}
-
 sub create_account {
     my $args = shift;
     my ($user, $details) = @{$args}{'user', 'details'};
-
-    my $error = validate($args);
-    return $error if $error;
 
     my $client = eval { $user->create_client(%$details) };
 
@@ -202,6 +143,7 @@ sub validate_account_details {
         $client = (sort { $b->date_joined cmp $a->date_joined } grep { not $_->is_virtual } $client->user->clients(include_disabled => 0))[0]
             // $client;
     }
+    $args->{broker_code} = $broker;
 
     my $details = {
         broker_code                   => $broker,
@@ -217,24 +159,7 @@ sub validate_account_details {
     $affiliate_token = delete $args->{affiliate_token} if (exists $args->{affiliate_token});
     $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
 
-    if ($args->{date_of_birth}) {
-        $args->{date_of_birth} = format_date($args->{date_of_birth});
-        return {error => 'InvalidDateOfBirth'} unless $args->{date_of_birth};
-        my $error = validate_dob($args->{date_of_birth}, $client->residence);
-        return $error if $error;
-    }
-
-    if ($args->{secret_answer} xor $args->{secret_question}) {
-        return {
-            error             => 'PermissionDenied',
-            message_to_client => localize("Need both secret question and secret answer.")};
-    }
-
-    return {error => 'InvalidPlaceOfBirth'}
-        if ($args->{place_of_birth} and not Locale::Country::code2country($args->{place_of_birth}));
-
     my $lc = LandingCompany::Registry->get_by_broker($broker);
-
     unless ($client->is_virtual) {
         for my $field (fields_to_duplicate()) {
             if ($field eq "secret_answer") {
@@ -273,6 +198,16 @@ sub validate_account_details {
         }
     }
 
+    my $error = $client->format_input_details($args) || $client->validate_common_account_details($args) || $client->check_duplicate_account($args);
+    if ($error) {
+        #keep original message for create new account
+        $error->{error} = 'too young' if $error->{error} eq 'BelowMinimumAge';
+        #No need return duplicated account info to client, it needed in backoffice
+        delete $error->{details} if $error->{error} eq 'DuplicateAccount';
+
+        return $error;
+    }
+
     $args->{secret_answer} = BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) if $args->{secret_answer};
 
     # This exist to accommodate some rules in our database (mostly NOT NULL and NULL constraints). Should change to be more consistent. Also used to filter the args to return for new account creation.
@@ -302,15 +237,6 @@ sub validate_account_details {
 
     for my $field (keys %default_values) {
         $details->{$field} = $args->{$field} // $default_values{$field};
-    }
-
-    $details->{$_} = trim($details->{$_}) foreach (qw/first_name last_name/);
-    if ($details->{phone}) {
-        # This validation + formatting is performed here (as oppose to above as other validations)
-        # because to we do not want to modify the args hashref
-        my $phone = BOM::User::Phone::format_phone($details->{phone});
-        return {error => 'InvalidPhone'} unless $phone;
-        $details->{phone} = $phone;
     }
 
     return {details => $details};
@@ -348,52 +274,7 @@ Note: Currently only used for citizen but will expand it's use after refactoring
 =cut
 
 sub fields_cannot_change {
-    return qw(citizen place_of_birth);
-}
-
-=head2 validate_dob
-
-check if client's date of birth is valid, meaning the client is older than residence's minimum age
-
-=over 4
-
-=item * C<dob> - client's date of birth in format of date_yyyymmdd means 1988-02-12
-
-=item * C<residence> - client's residence
-
-=back
-
-return undef if client is older than residence's minimum age
-otherwise return error hash
-
-=cut
-
-sub validate_dob {
-    my ($dob, $residence) = @_;
-
-    my $dob_date = eval { Date::Utility->new($dob) };
-    return {error => 'InvalidDateOfBirth'} unless $dob_date;
-
-    my $countries_instance = request()->brand->countries_instance;
-    return {error => 'invalid country'} if !defined $countries_instance;
-
-    # Get the minimum age from the client's residence
-    my $min_age = $countries_instance->minimum_age_for_country($residence);
-    return {error => 'invalid residence'} unless $min_age;
-    my $minimum_date = Date::Utility->new->minus_time_interval($min_age . 'y');
-    return {error => 'too young'} if $dob_date->is_after($minimum_date);
-    return undef;
-}
-
-sub format_date {
-    my $date = shift;
-    try {
-        return Date::Utility->new($date)->date;
-    }
-    catch {
-        return undef;
-    };
-
+    return qw(citizen place_of_birth residence);
 }
 
 1;
