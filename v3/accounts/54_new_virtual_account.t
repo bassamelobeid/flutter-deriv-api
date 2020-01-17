@@ -6,7 +6,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client reconnect/;
 use BOM::Platform::Token;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use List::Util qw(first);
 
 use await;
@@ -139,7 +139,7 @@ subtest 'insufficient data' => sub {
 };
 
 sub _get_token {
-    my $redis = BOM::Config::RedisReplicated::redis_read;
+    my $redis = BOM::Config::Redis::redis_replicated_read();
     my $tokens = $redis->execute('keys', 'VERIFICATION_TOKEN::*');
 
     my $code;

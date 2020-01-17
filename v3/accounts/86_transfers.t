@@ -9,7 +9,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
 use BOM::Platform::Token::API;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::User::Password;
 use BOM::User;
 
@@ -231,7 +231,7 @@ sub check_last_statement {
 
 sub find_verification_token {
     my $email  = shift;
-    my $redis  = BOM::Config::RedisReplicated::redis_read();
+    my $redis  = BOM::Config::Redis::redis_replicated_read();
     my $tokens = $redis->execute('keys', 'VERIFICATION_TOKEN::*');
 
     my $json = JSON::MaybeXS->new;
