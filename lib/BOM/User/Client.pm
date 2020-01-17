@@ -1747,9 +1747,17 @@ sub p2p_agent_update {
 
     my $agent_info = $client->p2p_agent // return;
 
+    die "AgentNotAuthenticated\n" unless $agent_info->{is_authenticated} or ($param{is_authenticated} // 0) == 1;
+
+    $agent_info->{agent_name} = $agent_info->{name};
+
+    # Return the current information of the agent if nothing changed
+    return $agent_info unless grep { exists $agent_info->{$_} and $param{$_} ne $agent_info->{$_} } keys %param;
+
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.agent_update(?, ?, ?, ?)', undef, $agent_info->{id}, @param{qw/auth active name/});
+            $_->selectrow_hashref('SELECT * FROM p2p.agent_update(?, ?, ?, ?)',
+                undef, $agent_info->{id}, @param{qw/is_authenticated is_active agent_name/});
         });
 }
 

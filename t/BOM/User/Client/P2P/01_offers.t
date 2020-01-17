@@ -70,7 +70,7 @@ subtest 'Duplicate Agent Registration' => sub {
 
 subtest 'Creating offer from not authenticated agent' => sub {
     my $agent = BOM::Test::Helper::P2P::create_agent();
-    $agent->p2p_agent_update(auth => 0);
+    $agent->p2p_agent_update(is_authenticated => 0);
 
     like(
         exception {
@@ -88,18 +88,26 @@ subtest 'Updating agent fields' => sub {
     is $agent->p2p_agent->{name},             '', 'Agent is authenticated';
     ok $agent->p2p_agent->{is_active},        'Agent is active';
 
-    ok !($agent->p2p_agent_update(auth => 0)->{is_authenticated}), 'Disable authentication';
-    is $agent->p2p_agent_update(name => 'test')->{name}, 'test', 'Changing name';
-    ok !($agent->p2p_agent_update(active => 0)->{is_active}), 'Switch flag active to false';
+    is $agent->p2p_agent_update(agent_name => 'test')->{name}, 'test', 'Changing name';
+    ok !($agent->p2p_agent_update(is_active => 0)->{is_active}), 'Switch flag active to false';
 
-    ok $agent->p2p_agent_update(auth   => 1)->{is_authenticated}, 'Enabling authentication';
-    ok $agent->p2p_agent_update(active => 1)->{is_active},        'Switch flag active to true';
+    ok !($agent->p2p_agent_update(is_authenticated => 0)->{is_authenticated}), 'Disable authentication';
+    like(
+        exception {
+            $agent->p2p_agent_update(is_active => 1);
+        },
+        qr/AgentNotAuthenticated/,
+        'Error when agent is not authenticated'
+    );
+
+    ok $agent->p2p_agent_update(is_authenticated => 1)->{is_authenticated}, 'Enabling authentication';
+    ok $agent->p2p_agent_update(is_active        => 1)->{is_active},        'Switch flag active to true';
 };
 
 subtest 'Creating offer' => sub {
     my %params = %offer_params;
     my $agent  = BOM::Test::Helper::P2P::create_agent();
-    $agent->p2p_agent_update(name => 'testing');
+    $agent->p2p_agent_update(agent_name => 'testing');
 
     my $offer;
 
@@ -270,7 +278,7 @@ subtest 'Updating order with available range' => sub {
 subtest 'Creating offer from non active agent' => sub {
     my %params = %offer_params;
     my $agent  = BOM::Test::Helper::P2P::create_agent();
-    ok !$agent->p2p_agent_update(active => 0)->{is_active}, "set agent inactive";
+    ok !$agent->p2p_agent_update(is_active => 0)->{is_active}, "set agent inactive";
 
     like(
         exception {

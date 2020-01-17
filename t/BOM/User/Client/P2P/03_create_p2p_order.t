@@ -354,7 +354,7 @@ subtest 'Creating order with disabled agent' => sub {
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
-    $agent->p2p_agent_update(active => 0);
+    $agent->p2p_agent_update(is_active => 0);
 
     my $err = exception {
         $client->p2p_order_create(
