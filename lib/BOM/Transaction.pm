@@ -28,7 +28,6 @@ use BOM::Config::Chronicle;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Platform::Context qw(localize request);
-use BOM::Config::RedisReplicated;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
