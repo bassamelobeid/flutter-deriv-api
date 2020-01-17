@@ -18,6 +18,7 @@ use Webservice::GAMSTOP;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use YAML::XS qw(LoadFile);
+
 use BOM::Platform::Context qw(request);
 use BOM::Config::Runtime;
 
@@ -127,6 +128,35 @@ sub set_gamstop_self_exclusion {
     }
 
     return undef;
+}
+
+=head2 login_details_identifier
+
+Take an environment string from the "login_history" and return an identifier for this entry.
+
+The identifier is a mix from the country, device (Android, Linux), and browser.
+
+If one of these three pieces of information is missing it will be replaced with "unknown".
+
+=cut
+
+sub login_details_identifier {
+    # This is a heavy module so we will only included it here
+    require HTTP::BrowserDetect;
+
+    my $enviroment_string = shift;
+    return "" unless $enviroment_string;
+    my ($country) = $enviroment_string =~ /IP_COUNTRY=(\w{1,2})/i;
+
+    my ($user_agent) = $enviroment_string =~ /User_AGENT(.+(?=\sLANG))/i;
+    $user_agent =~ s/User_AGENT=//i if $user_agent;
+
+    my $browser_info = HTTP::BrowserDetect->new($user_agent);
+
+    my $device = $browser_info->device || $browser_info->os_string || 'unknown';
+    my $browser = $browser_info->browser_string || 'unknown';
+
+    return ($country || 'unknown') . '::' . $device . '::' . $browser;
 }
 
 1;

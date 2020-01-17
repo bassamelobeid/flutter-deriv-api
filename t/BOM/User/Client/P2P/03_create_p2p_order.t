@@ -45,29 +45,29 @@ subtest 'Creating new order' => sub {
     is($order_data->{order_description}, $order_description, 'Description for new order is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
-    
+
     cmp_deeply(
         $client->p2p_order_list,
         [{
-                'order_id'               => $order_data->{order_id},
-                'agent_confirmed'        => $order_data->{agent_confirmed},
-                'order_amount'           => $order_data->{order_amount},
-                'client_confirmed'       => $order_data->{client_confirmed},
-                'client_loginid'         => $order_data->{client_loginid},
-                'created_time'           => $order_data->{created_time},
-                'order_description'      => $order_data->{order_description},
-                'expire_time'            => $order_data->{expire_time},
-                'is_expired'             => bool(0),
-                'status'                 => $order_data->{status},
-                'agent_id'               => $agent->p2p_agent->{id},
-                'agent_loginid'          => $agent->loginid,
-                'agent_name'             => $agent->p2p_agent->{name},
-                'account_currency'       => $offer->{account_currency},
-                'offer_id'               => $offer->{offer_id},
-                'local_currency'         => $offer->{local_currency},
-                'offer_rate'             => $offer->{rate},
-                'offer_type'             => $offer->{type},
-                'offer_description'      => $offer->{offer_description}}
+                'order_id'          => $order_data->{order_id},
+                'agent_confirmed'   => $order_data->{agent_confirmed},
+                'order_amount'      => $order_data->{order_amount},
+                'client_confirmed'  => $order_data->{client_confirmed},
+                'client_loginid'    => $order_data->{client_loginid},
+                'created_time'      => $order_data->{created_time},
+                'order_description' => $order_data->{order_description},
+                'expire_time'       => $order_data->{expire_time},
+                'is_expired'        => bool(0),
+                'status'            => $order_data->{status},
+                'agent_id'          => $agent->p2p_agent->{id},
+                'agent_loginid'     => $agent->loginid,
+                'agent_name'        => $agent->p2p_agent->{name},
+                'account_currency'  => $offer->{account_currency},
+                'offer_id'          => $offer->{offer_id},
+                'local_currency'    => $offer->{local_currency},
+                'offer_rate'        => $offer->{rate},
+                'offer_type'        => $offer->{type},
+                'offer_description' => $offer->{offer_description}}
         ],
         'order_list() returns correct info'
     );

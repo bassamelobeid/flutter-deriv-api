@@ -9,6 +9,7 @@ use Date::Utility;
 use List::Util qw(first any all);
 use Scalar::Util qw(blessed looks_like_number);
 use Carp qw(croak carp);
+use Log::Any qw($log);
 
 use BOM::MT5::User::Async;
 use BOM::Database::UserDB;
@@ -22,6 +23,11 @@ use BOM::Config::Runtime;
 use LandingCompany::Registry;
 use Exporter qw( import );
 our @EXPORT_OK = qw( is_payment_agents_suspended_in_country );
+
+# Backoffice Application Id used in some login cases
+use constant BACKOFFICE_APP_ID => 4;
+# Redis key prefix for client's previous login attempts
+use constant CLIENT_LOGIN_HISTORY_KEY => "CLIENT_LOGIN_HISTORY::";
 
 sub dbic {
     #not caching this as the handle is cached at a lower level and
@@ -183,6 +189,8 @@ sub login {
             $_->do('select users.record_login_history(?,?,?,?,?)', undef, $self->{id}, $error ? 'f' : 't', $log_as_failed, $environment, $app_id);
         });
     return {error => $error_mapping->{$error}} if $error;
+    # store this login attempt in redis
+    $self->_save_login_detail_redis($environment);
 
     # gamstop is applicable for UK residence only
     my $gamstop_client = first { $_->residence eq 'gb' and $_->landing_company->short =~ /^(?:malta|iom)$/ } @clients;
@@ -469,7 +477,7 @@ sub add_login_history {
     my ($self, %args) = @_;
     $args{binary_user_id} = $self->{id};
 
-    if ($args{app_id} eq '4') {
+    if ($args{app_id} == BACKOFFICE_APP_ID) {
 
         # Key format: binary user id, epoch
         my $key   = $self->{id} . '-' . $args{token};
@@ -484,6 +492,9 @@ sub add_login_history {
         } else {
             $redis->del($key);
         }
+    } elsif ($args{successful} && $args{action} eq 'login') {
+        # register successful attempt in redis to be compared later
+        $self->_save_login_detail_redis($args{environment});
     }
 
     my @history_fields = qw(binary_user_id action environment successful ip country app_id);
@@ -577,6 +588,51 @@ In our system, this means all sub accounts have disabled status.
 sub is_closed {
     my $self = shift;
     return all { $_->status->disabled } $self->clients;
+}
+
+sub _save_login_detail_redis {
+    my ($self, $environment) = @_;
+
+    my $key        = CLIENT_LOGIN_HISTORY_KEY . $self->id;
+    my $entry      = BOM::User::Utility::login_details_identifier($environment);
+    my $entry_time = time;
+
+    my $auth_redis = BOM::Config::RedisReplicated::redis_auth_write();
+    try {
+        $auth_redis->hset($key, $entry, $entry_time);
+    }
+    catch {
+        $log->warnf("Failed to store user login entry in redis, error: %s", shift);
+    };
+}
+
+sub logged_in_before_from_same_location {
+    my ($self, $new_env) = @_;
+
+    my $key   = CLIENT_LOGIN_HISTORY_KEY . $self->id;
+    my $entry = BOM::User::Utility::login_details_identifier($new_env);
+
+    my $auth_redis    = BOM::Config::RedisReplicated::redis_auth();
+    my $attempt_known = undef;
+    try {
+        $attempt_known = $auth_redis->hget($key, $entry);
+        if (!$attempt_known) {
+            # for backward compatibility with users who never changed their login.
+            my $last_attempt_in_db = $self->get_last_successful_login_history();
+            if (!$last_attempt_in_db) {
+                $attempt_known = 1;
+                return;
+            }
+
+            my $last_attempt_entry = BOM::User::Utility::login_details_identifier($last_attempt_in_db->{environment});
+            $attempt_known = 1 if $last_attempt_entry eq $entry;
+        }
+    }
+    catch {
+        $log->warnf("Failed to get user login entry from redis, error: %s", shift);
+    };
+
+    return $attempt_known;
 }
 
 1;
