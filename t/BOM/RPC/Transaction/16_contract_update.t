@@ -123,20 +123,16 @@ subtest 'contract_update' => sub {
     $update_params->{args}->{limit_order} = {take_profit => 10};
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
     ok $res->{take_profit}, 'returns the new take profit value';
+    is $res->{take_profit}->{order_amount}, 10, 'correct take profit order_amount';
     ok !%{$res->{stop_loss}}, 'stop loss is undef';
-    ok $res->{contract_details}, 'has contract_details';
-    is $res->{contract_details}{limit_order}->[0], 'stop_out';
-    is $res->{contract_details}{limit_order}->[2], 'take_profit';
 
     delete $update_params->{args}->{limit_order}->{take_profit};
     $update_params->{args}->{limit_order}->{stop_loss} = -80;
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
     ok $res->{take_profit},      'returns the new take profit value';
+    is $res->{take_profit}->{order_amount}, 10, 'correct take profit order_amount';
     ok $res->{stop_loss},        'returns the new stop loss value';
-    ok $res->{contract_details}, 'has contract_details';
-    is $res->{contract_details}{limit_order}->[0], 'stop_loss';
-    is $res->{contract_details}{limit_order}->[2], 'stop_out';
-    is $res->{contract_details}{limit_order}->[4], 'take_profit';
+    is $res->{stop_loss}->{order_amount}, -80, 'correct stop loss order_amount';
     # sell_time cannot be equals to purchase_time, hence the sleep.
     sleep 1;
 
