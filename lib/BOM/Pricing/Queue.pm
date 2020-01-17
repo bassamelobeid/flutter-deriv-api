@@ -298,6 +298,8 @@ sub _update_contract_stats {
         $duration = $duration_unit_in_seconds * $params->{duration} <= 15 * 60 ? 'upto_15m' : 'over_15m';
     }
 
+    return unless defined $duration;
+
     $contract_stats->{$market . '.' . $duration}++;
 }
 
