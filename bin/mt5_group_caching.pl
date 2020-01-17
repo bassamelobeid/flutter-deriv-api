@@ -19,7 +19,7 @@ use Net::Async::Redis;
 use Future::Utils qw(try_repeat);
 
 use BOM::Config::Runtime;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::MT5::User::Async;
 
 use Log::Any qw($log);
@@ -31,7 +31,7 @@ use constant COOLDOWN => 1;
 my $loop = IO::Async::Loop->new;
 $loop->add(
     my $redis = Net::Async::Redis->new(
-        uri => BOM::Config::RedisReplicated::redis_config('mt5_user', 'write')->{uri},
+        uri => BOM::Config::Redis::redis_config('mt5_user', 'write')->{uri},
     ));
 
 sub is_mt5_suspended {

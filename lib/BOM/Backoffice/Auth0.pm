@@ -6,7 +6,7 @@ use JSON::MaybeUTF8 qw(:v1);
 use BOM::Config::Runtime;
 use BOM::Config;
 use BOM::User::AuditLog;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
 use BOM::Backoffice::Utility;
 
@@ -49,8 +49,8 @@ sub login {
     my $user = BOM::Backoffice::Auth0::user_by_access_token($access_token);
     if ($user) {
         $user->{token} = $access_token;
-        BOM::Config::RedisReplicated::redis_write()->set("BINARYBOLOGIN::" . $access_token, encode_json_utf8($user));
-        BOM::Config::RedisReplicated::redis_write()->expire("BINARYBOLOGIN::" . $access_token, 24 * 3600);
+        BOM::Config::Redis::redis_replicated_write()->set("BINARYBOLOGIN::" . $access_token, encode_json_utf8($user));
+        BOM::Config::Redis::redis_replicated_write()->expire("BINARYBOLOGIN::" . $access_token, 24 * 3600);
 
         return $user;
     }
@@ -60,7 +60,7 @@ sub login {
 sub logout {
     my $staff = get_staff();
 
-    if ($staff and BOM::Config::RedisReplicated::redis_write()->del("BINARYBOLOGIN::" . $staff->{token})) {
+    if ($staff and BOM::Config::Redis::redis_replicated_write()->del("BINARYBOLOGIN::" . $staff->{token})) {
         print 'you are logged out.';
     }
     print 'no login found.';
@@ -98,7 +98,7 @@ sub check_staff {
 
     return undef unless $auth_token;
 
-    my $cache = BOM::Config::RedisReplicated::redis_read()->get("BINARYBOLOGIN::" . $auth_token);
+    my $cache = BOM::Config::Redis::redis_replicated_read()->get("BINARYBOLOGIN::" . $auth_token);
 
     return undef unless $cache;
 

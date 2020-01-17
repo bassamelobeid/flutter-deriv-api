@@ -20,7 +20,7 @@ use JSON::MaybeXS qw{decode_json};
 use Date::Utility;
 use LandingCompany::Registry;
 use BOM::Config;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::User::Client;
 use BOM::User;
 use Cache::RedisDB;
@@ -29,7 +29,7 @@ use BOM::Backoffice::Sysinit ();
 
 BOM::Backoffice::Sysinit::init();
 
-my $redis = BOM::Config::RedisReplicated::redis_write;
+my $redis = BOM::Config::Redis::redis_replicated_write;
 use constant REDIS_MASTERKEY     => 'IP_COUNTRY_MISMATCH';
 use constant REDIS_TRACK_CHECKED => 'CHECKED_ID';
 my %ip_mismatch_data = @{$redis->hgetall(REDIS_MASTERKEY)};
