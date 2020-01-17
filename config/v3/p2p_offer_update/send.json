@@ -1,0 +1,62 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "P2P Offer Update (request)",
+    "description": "Updates a P2P offer. Can only be used by the agent.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "payments"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "offer_id",
+        "p2p_offer_update"
+    ],
+    "properties": {
+        "p2p_offer_update": {
+            "description": "Must be 1",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "amount": {
+            "description": "[Optional] Sets the total amount of the offer, in `account_currency`.",
+            "type": "number"
+        },
+        "is_active": {
+            "description": "[Optional] Activate or deactivate the offer.",
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ]
+        },
+        "max_amount": {
+            "description": "[Optional] Sets the maximum amount, in `account_currency`.",
+            "type": "number"
+        },
+        "min_amount": {
+            "description": "[Optional] Sets the minimum amount, in `account_currency`",
+            "type": "number"
+        },
+        "offer_description": {
+            "description": "[Optional] Sets notes from the agent.",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
+        },
+        "offer_id": {
+            "description": "The unique identifier for this offer.",
+            "type": "string"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}

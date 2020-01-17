@@ -1,0 +1,147 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "P2P Offer Update (response)",
+    "description": "Returns information about the updated offer.",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "p2p_offer_update": {
+            "title": "p2p_offer_update",
+            "description": "P2P updated offer info",
+            "type": "object",
+            "properties": {
+                "type": {
+                    "description": "Whether this is a buy or a sell.",
+                    "type": "string",
+                    "enum": [
+                        "buy",
+                        "sell"
+                    ]
+                },
+                "account_currency": {
+                    "description": "Currency for this offer.",
+                    "type": "string",
+                    "pattern": "^[a-zA-Z]{3,}$",
+                    "examples": [
+                        "USD"
+                    ]
+                },
+                "agent_id": {
+                    "description": "The agent's unique identifier.",
+                    "type": "string"
+                },
+                "agent_name": {
+                    "description": "The agent's displayed name.",
+                    "type": "string"
+                },
+                "amount": {
+                    "description": "The total amount of the offer, in agent's `account_currency`.",
+                    "type": "number"
+                },
+                "amount_display": {
+                    "description": "The amount of the offer, formatted to appropriate decimal places.",
+                    "type": "string"
+                },
+                "amount_used": {
+                    "description": "The used amount of the offer's total `amount`. It is only visible for agents.",
+                    "type": "number"
+                },
+                "amount_used_display": {
+                    "description": "The used amount of the offer's total `amount`, formatted to appropriate decimal places. It is only visible for agents.",
+                    "type": "string"
+                },
+                "country": {
+                    "description": "The target country code of the offer.",
+                    "type": "string",
+                    "pattern": "^[a-z]{0,2}$"
+                },
+                "created_time": {
+                    "description": "The offer creation time in epoch.",
+                    "type": "integer"
+                },
+                "is_active": {
+                    "description": "The activation status of the offer.",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                },
+                "local_currency": {
+                    "description": "Local currency for this offer.",
+                    "type": "string",
+                    "pattern": "^[a-zA-Z]{3,}$",
+                    "examples": [
+                        "USD"
+                    ]
+                },
+                "max_amount": {
+                    "description": "Maximum allowed amount for the orders of this offer, in agent's `account_currency`.",
+                    "type": "number"
+                },
+                "max_amount_display": {
+                    "description": "Maximum amount, in `account_currency`, formatted to appropriate decimal places.",
+                    "type": "string"
+                },
+                "method": {
+                    "description": "The payment method.",
+                    "type": "string",
+                    "enum": [
+                        "bank_transfer"
+                    ]
+                },
+                "min_amount": {
+                    "description": "Minimum allowed amount for the orders of this offer, in agent's `account_currency`.",
+                    "type": "number"
+                },
+                "min_amount_display": {
+                    "description": "Minimum amount, in `account_currency`, formatted to appropriate decimal places.",
+                    "type": "string"
+                },
+                "offer_description": {
+                    "description": "Notes from the agent. Should include contact details and payment instructions.",
+                    "type": "string",
+                    "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
+                },
+                "offer_id": {
+                    "description": "The unique identifier for this offer.",
+                    "type": "string"
+                },
+                "price": {
+                    "description": "Cost in local currency.",
+                    "type": "number"
+                },
+                "price_display": {
+                    "description": "Cost in local currency, formatted to appropriate decimal places.",
+                    "type": "string"
+                },
+                "rate": {
+                    "description": "Conversion rate from account currency to local currency.",
+                    "type": "number"
+                },
+                "rate_display": {
+                    "description": "Conversion rate from account currency to local currency, formatted to appropriate decimal places.",
+                    "type": "string"
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "p2p_offer_update"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}
