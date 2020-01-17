@@ -139,7 +139,7 @@ subtest "change_address_status" => sub {
 
     $mock_platform->mock(
         _write_connection => sub {
-            my $config = BOM::Config::RedisReplicated::redis_config('events', 'write');
+            my $config = BOM::Config::Redis::redis_config('events', 'write');
             return RedisDB->new(
                 host => $config->{host},
                 port => $config->{port},

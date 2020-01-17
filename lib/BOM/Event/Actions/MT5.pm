@@ -12,7 +12,7 @@ use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::User::Client;
 use BOM::MT5::User::Async;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Config;
 use BOM::Event::Services::Track;
 
@@ -43,7 +43,7 @@ use constant SECONDS_IN_DAY => 86400;
     sub _redis_mt5user_write {
         return $redis_mt5user //= do {
             my $loop = IO::Async::Loop->new;
-            $loop->add(my $redis = Net::Async::Redis->new(uri => BOM::Config::RedisReplicated::redis_config('mt5_user', 'write')->{uri}));
+            $loop->add(my $redis = Net::Async::Redis->new(uri => BOM::Config::Redis::redis_config('mt5_user', 'write')->{uri}));
             $redis;
             }
     }
@@ -123,7 +123,7 @@ sub sync_info {
 
 sub redis_record_mt5_transfer {
     my $input_data = shift;
-    my $redis      = BOM::Config::RedisReplicated::redis_mt5_user_write();
+    my $redis      = BOM::Config::Redis::redis_mt5_user_write();
     my $loginid    = $input_data->{loginid};
     my $mt5_id     = $input_data->{mt5_id};
     my $redis_key  = $mt5_id . "_" . $input_data->{action};
@@ -204,13 +204,13 @@ sub new_mt5_signup {
     my $id = $data->{mt5_login_id};
 
     my $cache_key  = "MT5_USER_GROUP::" . $id;
-    my $group      = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
+    my $group      = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'group');
     my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
 
     my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
 
     if ($group->[0]) {
-        my $status = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'rights');
+        my $status = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'rights');
 
         my %rights;
 
@@ -223,7 +223,7 @@ sub new_mt5_signup {
         # ... and if we don't, queue up the request. This may lead to a few duplicates
         # in the queue - that's fine, we check each one to see if it's already
         # been processed.
-        BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
+        BOM::Config::Redis::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
     }
 
     return 1;

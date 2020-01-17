@@ -12,7 +12,6 @@ use BOM::Test::Helper::Client;
 use BOM::Config::Runtime;
 use Data::Dumper;
 use BOM::Database::ClientDB;
-use BOM::Config::RedisReplicated;
 use BOM::Test::Helper::P2P;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);

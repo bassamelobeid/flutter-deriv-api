@@ -22,7 +22,7 @@ use Log::Any qw($log);
 
 use BOM::Database::ClientDB;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Event::Emitter;
@@ -158,7 +158,7 @@ sub order_updated {
     my $order = $client->_p2p_orders(id => $order_id)->[0];
     my $order_response = $client->_order_details([$order])->[0];
 
-    my $redis     = BOM::Config::RedisReplicated->redis_p2p_write();
+    my $redis     = BOM::Config::Redis->redis_p2p_write();
     my $redis_key = _get_order_channel_name($client);
     for my $client_type (qw(advertiser_loginid client_loginid)) {
         my $cur_client = $client;

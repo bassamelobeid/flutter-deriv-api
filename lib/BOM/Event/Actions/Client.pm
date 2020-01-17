@@ -45,7 +45,7 @@ use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
 use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Event::Services;
 use BOM::Event::Services::Track;
 use BOM::Config::Onfido;
@@ -1468,7 +1468,7 @@ sub social_responsibility_check {
 
     my $loginid = $data->{loginid};
 
-    my $redis = BOM::Config::RedisReplicated::redis_events();
+    my $redis = BOM::Config::Redis::redis_events();
 
     my $hash_key   = 'social_responsibility';
     my $event_name = $loginid . '_sr_check';
@@ -1894,7 +1894,7 @@ sub qualifying_payment_check {
 
     my $loginid = $data->{loginid};
 
-    my $redis = BOM::Config::RedisReplicated::redis_events();
+    my $redis = BOM::Config::Redis::redis_events();
 
     # Event is taking place, so no need to keep in redis
     $redis->del($loginid . '_qualifying_payment_check');

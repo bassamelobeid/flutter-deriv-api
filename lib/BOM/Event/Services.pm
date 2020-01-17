@@ -23,7 +23,7 @@ use WebService::Async::SmartyStreets;
 use WebService::Async::Segment;
 
 use BOM::Config;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
 sub segment {
     my ($self) = @_;
@@ -82,7 +82,7 @@ sub redis_mt5user {
     my ($self) = @_;
 
     return $self->{redis_mt5user} //= do {
-        $self->add_child(my $service = Net::Async::Redis->new(uri => BOM::Config::RedisReplicated::redis_config('mt5_user', 'read')->{uri}));
+        $self->add_child(my $service = Net::Async::Redis->new(uri => BOM::Config::Redis::redis_config('mt5_user', 'read')->{uri}));
         $service;
         }
 }
@@ -91,7 +91,7 @@ sub redis_events_write {
     my ($self) = @_;
 
     return $self->{redis_events_write} //= do {
-        my $redis_config = BOM::Config::RedisReplicated::redis_config('events', 'write');
+        my $redis_config = BOM::Config::Redis::redis_config('events', 'write');
         $self->add_child(
             my $service = Net::Async::Redis->new(
                 uri  => $redis_config->{uri},
@@ -104,7 +104,7 @@ sub redis_events_read {
     my ($self) = @_;
 
     return $self->{redis_events_read} //= do {
-        my $redis_config = BOM::Config::RedisReplicated::redis_config('events', 'read');
+        my $redis_config = BOM::Config::Redis::redis_config('events', 'read');
         $self->add_child(
             my $service = Net::Async::Redis->new(
                 uri  => $redis_config->{uri},
@@ -117,7 +117,7 @@ sub redis_replicated_write {
     my ($self) = @_;
 
     return $self->{redis_replicated_write} //= do {
-        my $redis_config = BOM::Config::RedisReplicated::redis_config('replicated', 'write');
+        my $redis_config = BOM::Config::Redis::redis_config('replicated', 'write');
         $self->add_child(
             my $service = Net::Async::Redis->new(
                 uri  => $redis_config->{uri},
