@@ -9,6 +9,7 @@ BTC:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
+    minimum_safe_amount: 10
     blockchain_url:
         address: https://blockstream.info/address/
         transaction: https://blockstream.info/tx/
@@ -23,6 +24,7 @@ LTC:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
+    minimum_safe_amount: 30
     blockchain_url:
         address: https://live.blockcypher.com/ltc/address/
         transaction: https://live.blockcypher.com/ltc/tx/
@@ -37,6 +39,7 @@ ETH:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 18
+    minimum_safe_amount: 60
     blockchain_url:
         address: https://etherscan.io/address/
         transaction: https://etherscan.io/tx/
@@ -58,6 +61,7 @@ UST:
         rpc_timeout: 100
     protocol_cost: 0.00000546
     decimal_places: 8
+    minimum_safe_amount: 6500
     property_id: 2147484941
     blockchain_url:
         address: https://omniexplorer.info/tx/
