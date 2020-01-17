@@ -373,20 +373,20 @@ subtest 'update take profit', sub {
                     stop_loss   => 52,
                     take_profit => 11
                 },
-                request_history => 1,
             );
             ok $updater->is_valid_to_update, 'valid to update';
-            $res = $updater->update;
-            is $res->{history}->[0]->{display_name}, 'Take profit';
-            is $res->{history}->[0]->{order_amount}, 11;
-            is $res->{history}->[1]->{display_name}, 'Stop loss';
-            is $res->{history}->[1]->{order_amount}, -52;
-            is $res->{history}->[2]->{display_name}, 'Take profit';
-            is $res->{history}->[2]->{order_amount}, 0;
-            is $res->{history}->[3]->{display_name}, 'Take profit';
-            is $res->{history}->[3]->{order_amount}, 15;
-            is $res->{history}->[4]->{display_name}, 'Take profit';
-            is $res->{history}->[4]->{order_amount}, 10;
+            $updater->update;
+            $res = $updater->get_history;
+            is $res->[0]->{display_name}, 'Take profit';
+            is $res->[0]->{order_amount}, 11;
+            is $res->[1]->{display_name}, 'Stop loss';
+            is $res->[1]->{order_amount}, -52;
+            is $res->[2]->{display_name}, 'Take profit';
+            is $res->[2]->{order_amount}, 0;
+            is $res->[3]->{display_name}, 'Take profit';
+            is $res->[3]->{order_amount}, 15;
+            is $res->[4]->{display_name}, 'Take profit';
+            is $res->[4]->{order_amount}, 10;
         };
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;

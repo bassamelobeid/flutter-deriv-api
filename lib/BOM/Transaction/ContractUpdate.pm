@@ -44,14 +44,7 @@ has contract_id => (
     required => 1,
 );
 
-has update_params => (
-    is => 'ro',
-);
-
-has request_history => (
-    is      => 'ro',
-    default => 0,
-);
+has update_params => (is => 'ro');
 
 has [qw(fmb validation_error)] => (
     is       => 'rw',
@@ -96,6 +89,7 @@ sub _build_contract {
     my $contract_params = shortcode_to_parameters($fmb->{short_code}, $self->client->currency);
     my $limit_order = BOM::Transaction::extract_limit_orders($fmb);
     $contract_params->{limit_order} = $limit_order if %$limit_order;
+
     $contract_params->{is_sold}     = $fmb->{is_sold};
     $contract_params->{sell_time}   = $fmb->{sell_time} if $fmb->{sell_time};
     $contract_params->{sell_price}  = $fmb->{sell_price} if $fmb->{sell_price};
@@ -132,13 +126,12 @@ sub _validate_update_parameter {
     # If no update is allowed for this contract, don't proceed
     unless (keys %{$self->allowed_update}) {
         return {
-            code => 'UpdateNotAllowed',
-            message_to_client =>
-                localize('This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.'),
+            code              => 'UpdateNotAllowed',
+            message_to_client => localize('This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.'),
         };
     }
 
-    if (not $self->has_parameters_to_update or ref $self->update_params ne 'HASH') {
+    if (ref $self->update_params ne 'HASH') {
         return {
             code              => 'InvalidUpdateArgument',
             message_to_client => localize('Only a hash reference input is accepted.'),
@@ -157,7 +150,6 @@ sub _validate_update_parameter {
             };
             last;
         }
-
         unless ($self->allowed_update->{$order_name}) {
             $error = {
                 code => 'UpdateNotAllowed',
@@ -292,24 +284,16 @@ sub build_contract_update_response {
         contract_details => {
             %common_details,
             limit_order => $self->contract->available_orders(\%new_orders),
-        },
-        ($self->request_history ? (history => $self->get_history) : ()),
-    };
+        }};
 }
 
-sub has_parameters_to_update {
-    my $self = shift;
-
-    return 1 if $self->update_params;
-    return 0;
-}
+has [qw(take_profit stop_loss)] => (
+    is       => 'rw',
+    init_arg => undef,
+);
 
 sub get_history {
     my $self = shift;
-
-    if ($self->validation_error) {
-        return $self->validation_error;
-    }
 
     my $fmb_dm  = $self->_fmb_datamapper;
     my @allowed = sort keys %{$self->allowed_update};
@@ -344,6 +328,7 @@ sub get_history {
                 order_amount => $order_amount,
                 order_date   => Date::Utility->new($current->{$order_type . '_order_date'})->epoch,
                 value        => $self->contract->new_order({$order_type => $order_amount})->barrier_value,
+                order_type   => $order_type,
                 }
                 if (defined $order_amount);
         }
@@ -353,11 +338,6 @@ sub get_history {
 
     return [reverse @history];
 }
-
-has [qw(take_profit stop_loss)] => (
-    is       => 'rw',
-    init_arg => undef,
-);
 
 has requeue_stop_out => (
     is        => 'rw',
