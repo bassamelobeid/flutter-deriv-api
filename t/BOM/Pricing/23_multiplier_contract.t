@@ -98,7 +98,7 @@ subtest 'multiplier - send_ask' => sub {
             'valid_source'               => 1,
             'app_markup_percentage'      => '0'
         },
-        'commission'  => '0.0504',
+        'commission'  => '0.0503664904346249',
         'spot_time'   => ignore(),
         'limit_order' => {
             'stop_out' => {
@@ -142,7 +142,7 @@ subtest 'multiplier - send_ask' => sub {
             'valid_source'               => 1,
             'app_markup_percentage'      => '0'
         },
-        'commission'  => '0.0504',
+        'commission'  => '0.0503664904346249',
         'spot_time'   => ignore(),
         'limit_order' => {
             'stop_out' => {
@@ -188,13 +188,13 @@ subtest 'multiplier - send_ask' => sub {
             'bet_type'              => 'MULTUP'
         },
         'auth_time'     => ignore(),
-        'display_value' => '104.35',
+        'display_value' => '103.99',
         'stash'         => {
             'source_bypass_verification' => 0,
             'valid_source'               => 1,
             'app_markup_percentage'      => '0'
         },
-        'commission'  => '0.0504',
+        'commission'  => '0.0503664904346249',
         'spot_time'   => ignore(),
         'limit_order' => {
             'stop_out' => {
@@ -212,10 +212,10 @@ subtest 'multiplier - send_ask' => sub {
         },
         'payout'            => '0',
         'rpc_time'          => ignore(),
-        'ask_price'         => '104.35',
+        'ask_price'         => '103.99',
         'multiplier'        => 10,
         'deal_cancellation' => {
-            'ask_price'   => 4.35,
+            'ask_price'   => 3.99,
             'date_expiry' => ignore(),
         },
     };
@@ -247,7 +247,7 @@ subtest 'multiplier - get_bid' => sub {
         currency        => 'USD',
         is_sold         => 0,
         country_code    => 'cr',
-        landing_company => 'svg',
+        landing_company => 'virtual',
         limit_order     => $contract->available_orders,
     };
 
@@ -326,7 +326,7 @@ subtest 'multiplier - get_bid' => sub {
         currency        => 'USD',
         is_sold         => 0,
         country_code    => 'cr',
-        landing_company => 'svg',
+        landing_company => 'virtual',
         limit_order     => $contract->available_orders,
     };
 
@@ -377,7 +377,7 @@ subtest 'multiplier - get_bid' => sub {
         'status'                   => 'open',
         expiry_time                => ignore(),
         'deal_cancellation'        => {
-            'ask_price'   => 4.35,
+            'ask_price'   => '4.10',
             'date_expiry' => ignore(),
         },
         'validation_error' =>
