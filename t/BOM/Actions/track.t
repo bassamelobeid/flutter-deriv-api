@@ -315,6 +315,84 @@ subtest 'signup event' => sub {
 
 };
 
+subtest 'transfer between accounts event' => sub {
+    my $user = BOM::User->create(
+        email    => rand() . '_tba@binary.com',
+        password => BOM::User::Password::hashpw('AaSs123!@#'));
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'test2@bin.com',
+    });
+
+    $segment_response = Future->done(1);
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'id'
+    );
+    request($req);
+
+    undef @track_args;
+
+    my $args = {
+        loginid    => $client->loginid,
+        properties => {
+            from_account       => $client->loginid,
+            to_account         => 'CR000',
+            from_currency      => 'USD',
+            to_currency        => 'BTC',
+            from_amount        => 2,
+            to_amount          => 1,
+            source             => '16303',
+            fees               => 0.02,
+            remark             => 'test remark',
+            gateway_code       => 'account_transfer',
+            is_from_account_pa => 0,
+            is_to_account_pa   => 0,
+            id                 => 10,
+            time               => '2020-01-09 10:00:00.000'
+        }};
+
+    ok BOM::Event::Actions::Track::transfer_between_accounts($args)->get, 'transfer_between_accounts triggered successfully';
+    my ($customer, %args) = @track_args;
+
+    test_segment_customer($customer, $client, 'EUR', $client->date_joined);
+
+    is_deeply(
+        \%args,
+        {
+            context => {
+                active => 1,
+                app    => {name => "deriv"},
+                locale => "id"
+            },
+            event      => "transfer_between_accounts",
+            properties => {
+                currency           => "USD",
+                fees               => 0.02,
+                from_account       => "CR10002",
+                from_amount        => 2,
+                from_currency      => "USD",
+                gateway_code       => "account_transfer",
+                remark             => "test remark",
+                revenue            => -2,
+                source             => 16303,
+                to_account         => "CR000",
+                to_amount          => 1,
+                to_currency        => "BTC",
+                value              => 2,
+                is_from_account_pa => 0,
+                is_to_account_pa   => 0,
+                id                 => 10,
+                time               => '2020-01-09T10:00:00Z'
+            },
+        },
+        'identify context is properly set for transfer_between_account'
+    );
+
+};
+
 sub test_segment_customer {
     my ($customer, $test_client, $currencies, $created_at) = @_;
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';

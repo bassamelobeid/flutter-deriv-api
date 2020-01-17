@@ -87,6 +87,34 @@ sub signup {
     return _track($customer, $properties, 'signup');
 }
 
+=head2 transfer_between_accounts
+It is triggered for each B<transfer_between_accounts> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+=over
+=item * C<loginid> - required. Login Id of the user.
+=item * C<properties> - Free-form dictionary of event properties.
+=back
+=cut
+
+sub transfer_between_accounts {
+    my ($args) = @_;
+    my $loginid = $args->{loginid};
+    my $properties = $args->{properties} // {};
+
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+
+    $properties->{revenue} = -($properties->{from_amount} // die('required from_account'));
+    $properties->{currency} = $properties->{from_currency} // die('required from_currency');
+    $properties->{value}    = $properties->{from_amount}   // die('required from_amount');
+
+    $properties->{time} = _time_to_iso_8601($properties->{time} // die('required time'));
+
+    $log->debugf('Track transfer_between_accounts event for client %s', $loginid);
+    _identify($customer);
+    return _track($customer, $properties, 'transfer_between_accounts');
+}
+
 =head2 _identify
 
 Send identify for each B<customer>.
@@ -150,6 +178,7 @@ sub _create_context {
 =head2 _create_customer
 
 Create customer from client information.
+Arguments:
 
 =over
 
@@ -235,6 +264,7 @@ sub _create_customer {
 =head2 _validate_params
 
 Check if required params are valid or not.
+Arguments:
 
 =over
 
@@ -257,4 +287,25 @@ sub _validate_params {
 
     return 1;
 }
+
+=head2 _time_to_iso_8601 
+
+Convert the format of the database time to iso 8601 time that is sutable for Segment
+Arguments:
+
+=over
+
+=item * C<time> - required. Database time.
+
+=back
+
+=cut
+
+sub _time_to_iso_8601 {
+    my $time = shift;
+
+    return Time::Moment->from_epoch(Date::Utility->new($time)->epoch)->to_string;
+}
+
 1;
+

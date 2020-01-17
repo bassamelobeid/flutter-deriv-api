@@ -55,6 +55,7 @@ my $action_mapping = {
     verify_address              => \&BOM::Event::Actions::Client::verify_address,
     login                       => \&BOM::Event::Actions::Track::login,
     signup                      => \&BOM::Event::Actions::Track::signup,
+    transfer_between_accounts   => \&BOM::Event::Actions::Track::transfer_between_accounts,
     account_closure             => \&BOM::Event::Actions::Client::account_closure,
     social_responsibility_check => \&BOM::Event::Actions::Client::social_responsibility_check,
     set_pending_transaction     => \&BOM::Event::Actions::CryptoSubscription::set_pending_transaction,
