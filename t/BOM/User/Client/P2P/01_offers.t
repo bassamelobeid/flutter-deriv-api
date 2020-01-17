@@ -129,13 +129,23 @@ subtest 'Creating offer' => sub {
     }
 
     %params = %offer_params;
+    $params{amount} = 200;
+    like(
+        exception {
+            $offer = $agent->p2p_offer_create(%params);
+        },
+        qr/MaximumExceeded/,
+        'Error when amount exceeds BO offer limit'
+    );
+
+    %params = %offer_params;
     $params{min_amount} = $params{max_amount} + 1;
     like(
         exception {
             $offer = $agent->p2p_offer_create(%params);
         },
-        qr/InvalidMinOrMaxAmount/,
-        'Error when max_amount is less than min_amount'
+        qr/InvalidMinMaxAmount/,
+        'Error when min_amount is more than max_amount'
     );
 
     %params = %offer_params;
@@ -144,8 +154,8 @@ subtest 'Creating offer' => sub {
         exception {
             $offer = $agent->p2p_offer_create(%params);
         },
-        qr/InvalidOfferAmount/,
-        'Error when offer amount is less than max_amount'
+        qr/InvalidMaxAmount/,
+        'Error when max_amount is more than amount'
     );
 
     %params = %offer_params;
@@ -210,38 +220,69 @@ subtest 'Updating offer' => sub {
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(max_amount => 80, amount => 100);
     ok $offer->{is_active}, 'Offer is active';
 
+    my $client = BOM::Test::Helper::P2P::create_client();
+    like(exception { $client->p2p_offer_update(offer_id => $offer->{offer_id}, is_active => 0) }, qr/PermissionDenied/, "Other client cannot edit offer");
+
     ok !$agent->p2p_offer_update(
-        id     => $offer->{offer_id},
-        active => 0
+        offer_id  => $offer->{offer_id},
+        is_active => 0
     )->{is_active}, "Deactivate offer";
 
     ok !$agent->p2p_offer($offer->{offer_id})->{is_active}, "offer is inactive";
 
-    #TODO: Not sure that, this test case is valid, moving it as is. but we need to check it.
-    # I think only not active offers could be updatble.
+    ok $agent->p2p_offer_update(
+        offer_id  => $offer->{offer_id},
+        is_active => 1
+    )->{is_active}, "reactivate offer";
+    
+    cmp_ok $agent->p2p_offer_update(
+        offer_id   => $offer->{offer_id},
+        max_amount => 80,
+        amount     => 80
+    )->{offer_amount}, '==', 80, "Update amount";
+
+    for my $numeric_field (qw(amount max_amount min_amount rate)) {
+        cmp_deeply(
+            exception {
+                $agent->p2p_offer_update(offer_id => $offer->{offer_id}, $numeric_field => -1);
+            },
+            {
+                error_code => 'InvalidNumericValue',
+                details    => {fields => [$numeric_field]},
+            },
+            "Error when numeric field '$numeric_field' is not greater than 0"
+        );
+    }
+
     like(
         exception {
-            $agent->p2p_offer_update(
-                id     => $offer->{offer_id},
-                amount => 200
-                )
+            $agent->p2p_offer_update(offer_id => $offer->{offer_id}, amount => 200);
         },
-        qr/OfferNoEditInactive/,
-        "can't edit inactive offer"
+        qr/MaximumExceeded/,
+        'Error when amount exceeds BO offer limit'
     );
 
-    ok $agent->p2p_offer_update(
-        id     => $offer->{offer_id},
-        active => 1
-    )->{is_active}, "reactivate offer";
-    cmp_ok $agent->p2p_offer_update(
-        id     => $offer->{offer_id},
-        amount => 80
-    )->{offer_amount}, '==', 80, "can edit active offer";
-
-    like(exception { $agent->p2p_offer_update(id => $offer->{offer_id}, amount => 200) }, qr/MaximumExceeded/, "Can't update amount more than limit",
+    like(
+        exception {
+            $agent->p2p_offer_update(offer_id => $offer->{offer_id}, min_amount => 20, max_amount => 10);
+        },
+        qr/InvalidMinMaxAmount/,
+        'Error when min_amount is more than max_amount'
     );
 
+    %params = %offer_params;
+    $params{amount} = $params{max_amount} - 1;
+    like(
+        exception {
+            $agent->p2p_offer_update(offer_id => $offer->{offer_id}, max_amount => 100); # offer amount is currently 80
+        },
+        qr/InvalidMaxAmount/,
+        'Error when max_amount is more than amount'
+    );
+
+    my $empty_update = $agent->p2p_offer_update(offer_id => $offer->{offer_id});
+    delete $empty_update->{amount};
+    cmp_deeply($empty_update, $agent->p2p_offer($offer->{offer_id}), 'empty update');
 };
 
 subtest 'Updating order with available range' => sub {
@@ -256,25 +297,27 @@ subtest 'Updating order with available range' => sub {
         offer_id => $offer->{offer_id},
         amount   => 35
     );
-    cmp_ok $test_client_cr->p2p_offer_update(
-        id     => $offer->{offer_id},
-        amount => 90
+    cmp_ok $agent->p2p_offer_update(
+        offer_id => $offer->{offer_id},
+        amount   => 90,
+        max_amount => 10,
     )->{offer_amount}, '==', 90, "can change offer amount within available range";
     like(
         exception {
-            $test_client_cr->p2p_offer_update(
-                id     => $offer->{offer_id},
-                amount => 50
+            $agent->p2p_offer_update(
+                offer_id => $offer->{offer_id},
+                amount   => 50
                 )
         },
-        qr/OfferNoEditAmount/,
+        qr/OfferInsufficientAmount/,
         "can't change offer amount below available range"
     );
     $order_client->p2p_order_cancel(id => $order->{order_id});
-    cmp_ok $test_client_cr->p2p_offer_update(
-        id     => $offer->{offer_id},
-        amount => 50
+    cmp_ok $agent->p2p_offer_update(
+        offer_id => $offer->{offer_id},
+        amount   => 50
     )->{offer_amount}, '==', 50, "available range excludes cancelled orders";
+    
     BOM::Test::Helper::P2P::reset_escrow();
 };
 

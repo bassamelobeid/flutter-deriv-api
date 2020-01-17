@@ -21,7 +21,7 @@ is $client->p2p_offer_list(amount => 101)->@*, 0, 'Filter out >amount';
 is $client->p2p_offer_list(amount => 99)->@*,  1, 'Not filter out <amount';
 
 $agent->p2p_offer_update(
-    id         => $offer->{offer_id},
+    offer_id   => $offer->{offer_id},
     max_amount => 90
 );
 is $client->p2p_offer_list(amount => 91)->@*, 0, 'Filter out >max';

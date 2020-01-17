@@ -1772,24 +1772,13 @@ Returns new offer or dies with error code.
 sub p2p_offer_create {
     my ($client, %param) = @_;
 
-    if (my @invalid_fields = grep { ($param{$_} // 0) <= 0 } (qw(amount max_amount min_amount rate))) {
-        die +{
-            error_code => 'InvalidNumericValue',
-            details    => {fields => \@invalid_fields},
-        };
-    }
-
-    die "InvalidMinOrMaxAmount\n" unless $param{min_amount} <= $param{max_amount};
-    die "InvalidOfferAmount\n"    unless $param{max_amount} <= $param{amount};
-
     my $agent_info = $client->p2p_agent;
     die "AgentNotActive\n" unless $agent_info && $agent_info->{is_active};
     die "AgentNotAuthenticated\n" unless $agent_info->{is_authenticated};
 
     $param{account_currency} = $client->currency;
 
-    die "MaximumExceeded\n"
-        if in_usd($param{amount}, uc $param{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer;
+    _validate_offer_amounts(%param);
 
     my $active_offers_count = $client->p2p_offer_list(
         agent_loginid => $client->loginid,
@@ -1809,6 +1798,39 @@ sub p2p_offer_create {
         });
 }
 
+=head2 p2p_offer_update
+
+Updates the offer of $param{offer_id} with fields in %param.
+
+Returns latest offer info or dies with error code.
+
+=cut
+
+sub p2p_offer_update {
+    my ($client, %param) = @_;
+
+    my $offer_id = delete $param{offer_id};
+    my $offer = $client->p2p_offer($offer_id) or die "OfferNotFound\n";
+
+    die "PermissionDenied\n" if $offer->{agent_loginid} ne $client->loginid;
+
+    $offer->{amount} = $offer->{offer_amount};    # field from p2p_offer is named differently
+
+    return $offer unless grep { exists $offer->{$_} and $param{$_} ne $offer->{$_} } keys %param;
+
+    _validate_offer_amounts($offer->%*, %param);    # keys in %param will replace $offer keys
+
+    # Amount already used in an offer is (amount - remaining). New amount cannot be less than the amount used.
+    die "OfferInsufficientAmount\n" if $param{amount} && $param{amount} < ($offer->{amount} - $offer->{remaining});
+
+    return $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM p2p.offer_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                undef, $offer_id,
+                @param{qw/is_active type account_currency local_currency amount rate min_amount max_amount method offer_description country/});
+        });
+}
+
 =head2 p2p_offer
 
 Get a single offer by $id.
@@ -1818,13 +1840,17 @@ Get a single offer by $id.
 sub p2p_offer {
     my ($client, $id) = @_;
     return undef unless $id;
-    return $client->p2p_offer_list(id => $id)->[0];
+    return $client->p2p_offer_list(
+        id        => $id,
+        no_filter => 1
+    )->[0];
 }
 
 =head2 p2p_offer_list
 
 Get offers filtered by %param.
 Expired offers are excluded by default.
+no_filter will show all results with no amount filtering or adjustment.
 
 =cut
 
@@ -1838,6 +1864,8 @@ sub p2p_offer_list {
                 {Slice => {}},
                 @param{qw/id account_currency agent_id agent_loginid active type limit offset/});
         }) // [];
+
+    return $rows if $param{no_filter};
 
     my $amount = $param{amount};
 
@@ -1863,42 +1891,6 @@ sub p2p_offer_list {
         push @offers, $offer;
     }
     return \@offers;
-}
-
-=head2 p2p_offer_update
-
-Updates the offer of $param{id} with fields in %param.
-
-Expired offers cannot be updated.
-
-If the sum of all outstanding order exceeds the offer amount, no fields can be changed except for is_active.
-
-Returns latest offer info or dies with error code.
-
-=cut
-
-sub p2p_offer_update {
-    my ($client, %param) = @_;
-
-    my $offer_id = delete $param{id};
-    my $offer = $client->p2p_offer($offer_id) or die "OfferNotFound\n";
-
-    # no edits are allowed when there is no remaining amount, except for deactivate/activate
-    if (any { $_ ne 'active' && defined $param{$_} } keys %param) {
-        die "OfferNoEditInactive\n" unless $offer->{is_active};
-        die "OfferNoEditAmount\n" if $param{amount} && $param{amount} < ($offer->{offer_amount} - $offer->{remaining});
-    }
-
-    die "MaximumExceeded\n"
-        if $param{amount}
-        && in_usd($param{amount}, $offer->{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer;
-
-    return $client->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.offer_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                undef, $offer_id,
-                @param{qw/active type account_currency local_currency amount rate min_amount max_amount method offer_description country/});
-        });
 }
 
 =head2 p2p_order_create
@@ -2142,7 +2134,7 @@ sub p2p_escrow {
     return undef;
 }
 
-=head1 Private methods
+=head1 METHODS - P2P
 
 =head2 _order_ownership_type
 
@@ -2249,6 +2241,29 @@ sub _agent_sell_confirm {
             $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_agent(?, ?)', undef, $order_info->{order_id}, 1);
         });
 
+}
+
+=head2 _validate_offer_amounts
+
+Validates offer amounts for p2p_offer_create and p2p_offer_update.
+
+=cut
+
+sub _validate_offer_amounts {
+    my %param = @_;
+
+    if (my @invalid_fields = grep { ($param{$_} // 0) <= 0 } (qw(amount max_amount min_amount rate))) {
+        die +{
+            error_code => 'InvalidNumericValue',
+            details    => {fields => \@invalid_fields},
+        };
+    }
+
+    die "MaximumExceeded\n"
+        if in_usd($param{amount}, uc $param{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer;
+
+    die "InvalidMinMaxAmount\n" unless $param{min_amount} <= $param{max_amount};
+    die "InvalidMaxAmount\n"    unless $param{max_amount} <= $param{amount};
 }
 
 =head1 METHODS - Payments

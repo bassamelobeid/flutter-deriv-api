@@ -378,6 +378,9 @@ subtest 'Creating order with disabled agent' => sub {
 subtest 'Creating order without escrow' => sub {
     my $amount = 100;
 
+    my $original_escrow = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow;
+    BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
+    
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
     my $client = BOM::Test::Helper::P2P::create_client();
 
@@ -397,7 +400,7 @@ subtest 'Creating order without escrow' => sub {
 
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
-    BOM::Test::Helper::P2P::reset_escrow();
+    BOM::Config::Runtime->instance->app_config->payments->p2p->escrow($original_escrow);
 };
 
 subtest 'Creating order with wrong currency' => sub {
