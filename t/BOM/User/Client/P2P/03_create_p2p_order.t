@@ -14,6 +14,7 @@ use BOM::Config::Runtime;
 use Test::Fatal;
 
 my $order_description = 'Test order';
+BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
 
 subtest 'Creating new order' => sub {
     my $amount = 100;

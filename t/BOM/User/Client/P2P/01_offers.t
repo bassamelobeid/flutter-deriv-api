@@ -13,6 +13,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 my $email = 'p2p_offers_test@binary.com';
 
 BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer(100);
+BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
     email       => $email
@@ -206,8 +207,7 @@ subtest 'Creating offer' => sub {
 };
 
 subtest 'Updating offer' => sub {
-    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => 100);
-
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(max_amount => 80, amount => 100);
     ok $offer->{is_active}, 'Offer is active';
 
     ok !$agent->p2p_offer_update(
@@ -246,12 +246,15 @@ subtest 'Updating offer' => sub {
 
 subtest 'Updating order with available range' => sub {
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => 100);
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(max_amount => 50, amount => 100);
 
     my ($order_client, $order) = BOM::Test::Helper::P2P::create_order(
-
         offer_id => $offer->{offer_id},
-        amount   => 70
+        amount   => 35
+    );
+    BOM::Test::Helper::P2P::create_order(
+        offer_id => $offer->{offer_id},
+        amount   => 35
     );
     cmp_ok $test_client_cr->p2p_offer_update(
         id     => $offer->{offer_id},
