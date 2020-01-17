@@ -19,7 +19,7 @@ use HTTP::BrowserDetect;
 use Brands;
 
 use BOM::Config::Runtime;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::User;
 use BOM::User::Client;
 use BOM::User::TOTP;
@@ -483,7 +483,7 @@ sub _validate_login {
     my $ip = $r->client_ip || '';
 
     # Check for blocked IPs early in the process.
-    my $redis = BOM::Config::RedisReplicated::redis_auth_write();
+    my $redis = BOM::Config::Redis::redis_auth_write();
     if ($ip and $redis->get('oauth::blocked_by_ip::' . $ip)) {
         stats_inc('login.authorizer.block.hit');
         return $err_var->("SUSPICIOUS_BLOCKED");
