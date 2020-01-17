@@ -1,9 +1,9 @@
 use strict;
 use warnings;
 
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
-my $redis_replicated = BOM::Config::RedisReplicated::redis_write();
+my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
 $redis_replicated->del('social_responsibility');
 
 # Move MT5 transfers back to replicated redis
