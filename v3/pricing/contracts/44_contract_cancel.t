@@ -88,8 +88,8 @@ subtest 'cancel' => sub {
     });
     ok $res->{error}, 'error';
     is $res->{error}->{code}, 'CancelFailed', 'error code - CancelFailed';
-    is $res->{error}->{message}, 'Your contract can only be cancelled when you select deal cancellation in your purchase. You may try this with your next purchase.',
-        'error message - Your contract can only be cancelled when you select deal cancellation in your purchase. You may try this with your next purchase.';
+    is $res->{error}->{message}, 'This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.',
+        'error message - This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.';
 
     $proposal_res = $t->await::proposal({
         "proposal"          => 1,
