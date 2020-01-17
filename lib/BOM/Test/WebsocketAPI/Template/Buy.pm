@@ -96,7 +96,7 @@ publish proposal_open_contract => sub {
     my $contract = $_->contract;
     return undef if $contract->is_sold;
 
-    my $key = sprintf('CONTRACT_PRICE::%s_%s', $contract->contract_id, $contract->client->landing_company_name);
+    my $key = sprintf('CONTRACT_PRICE::%s::%s', $contract->contract_id, $contract->client->landing_company_name);
     return {
         $key => {
             price_daemon_cmd    => 'bid',
