@@ -154,11 +154,11 @@ subtest 'Offers' => sub {
     $params->{args} = {$offer_params->%*};
     $params->{args}{min_amount} = $params->{args}{max_amount} + 1;
     $c->call_ok('p2p_offer_create', $params)
-        ->has_no_system_error->has_error->error_code_is('InvalidMinOrMaxAmount', 'min_amount cannot be greater than max_amount');
+        ->has_no_system_error->has_error->error_code_is('InvalidMinMaxAmount', 'min_amount cannot be greater than max_amount');
 
     $params->{args}{max_amount} = $params->{args}{amount} + 1;
     $c->call_ok('p2p_offer_create', $params)
-        ->has_no_system_error->has_error->error_code_is('InvalidOfferAmount', 'Offer amount cannot be less than max_amount');
+        ->has_no_system_error->has_error->error_code_is('InvalidMaxAmount', 'Offer amount cannot be less than max_amount');
 
     $client_agent->p2p_agent_update(is_authenticated => 0);
     $params->{args} = $offer_params;
@@ -183,6 +183,30 @@ subtest 'Offers' => sub {
     $params->{args} = {agent_id => 9999};
     $c->call_ok('p2p_agent_info', $params)->has_no_system_error->has_error->error_code_is('AgentNotFound', 'Get info of non-existent agent');
 
+    for my $numeric_field (qw(amount max_amount min_amount rate)) {
+        $params->{args} = {$offer_params->%*};
+
+        $params->{args}{$numeric_field} = -1;
+        $c->call_ok('p2p_offer_create', $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidNumericValue', "Value of '$numeric_field' should be greater than 0")
+            ->error_details_is({fields => [$numeric_field]}, 'Error details is correct.');
+
+        $params->{args}{$numeric_field} = 0;
+        $c->call_ok('p2p_offer_create', $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidNumericValue', "Value of '$numeric_field' should be greater than 0")
+            ->error_details_is({fields => [$numeric_field]}, 'Error details is correct.');
+    }
+
+    $params->{args} = {$offer_params->%*};
+    $params->{args}{min_amount} = $params->{args}{max_amount} + 1;
+    $c->call_ok('p2p_offer_create', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidMinMaxAmount', 'min_amount cannot be greater than max_amount');
+
+    $params->{args} = {$offer_params->%*};
+    $params->{args}{max_amount} = $params->{args}{amount} + 1;
+    $c->call_ok('p2p_offer_create', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidMaxAmount', 'Offer amount cannot be less than max_amount');
+
     $params->{args} = $offer_params;
     $offer = $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_no_error->result;
     delete $offer->{stash};
@@ -193,10 +217,10 @@ subtest 'Offers' => sub {
     cmp_ok $res->[0]->{offer_id}, '==', $offer->{offer_id}, 'p2p_offer_list returns offer';
 
     $params->{args} = {
-        id                => $offer->{offer_id},
+        offer_id          => $offer->{offer_id},
         offer_description => 'new description'
     };
-    $res = $c->call_ok('p2p_offer_edit', $params)->has_no_system_error->has_no_error->result;
+    $res = $c->call_ok('p2p_offer_update', $params)->has_no_system_error->has_no_error->result;
     is $res->{offer_description}, 'new description', 'edit offer ok';
 
     $params->{args} = {offer_id => $offer->{offer_id}};
@@ -204,8 +228,10 @@ subtest 'Offers' => sub {
     cmp_ok $res->{offer_id}, '==', $offer->{offer_id}, 'p2p_offer_info returned correct info';
 
     $params->{args} = {offer_id => 9999};
-    $c->call_ok('p2p_offer_info', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Get info for non-existent offer');
-    $c->call_ok('p2p_offer_edit', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Edit non-existent offer');
+    $c->call_ok('p2p_offer_info',   $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Get info for non-existent offer');
+    $c->call_ok('p2p_offer_update', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Edit non-existent offer');
+
+    note explain $client_agent->p2p_offer($offer->{offer_id});
 
 };
 
