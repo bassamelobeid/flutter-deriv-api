@@ -222,8 +222,8 @@ subtest 'test cancel functionality', sub {
         ok $error, 'cancel failed with error';
         is $error->{-mesg}, 'Deal cancellation not purchased', 'message - Deal cancellation not purchased';
         is $error->{-message_to_client},
-            'Your contract can only be cancelled when you select deal cancellation in your purchase. You may try this with your next purchase.',
-            'message to client - Your contract can only be cancelled when you select deal cancellation in your purchase. You may try this with your next purchase.';
+            'This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.',
+            'message to client - This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.';
     };
 
     subtest 'cancel after deal cancellation expires' => sub {
@@ -253,8 +253,8 @@ subtest 'test cancel functionality', sub {
         ok $error, 'cancel failed with error';
         is $error->{-mesg}, 'Deal cancellation expired', 'message - Deal cancellation expired';
         is $error->{-message_to_client},
-            'Deal cancellation has expired. Your contract can only be cancelled while deal cancellation is active. You may try this with your next purchase.',
-            'message to client - Deal cancellation has expired. Your contract can only be cancelled while deal cancellation is active. You may try this with your next purchase.';
+            'Deal cancellation period has expired. Your contract can only be cancelled while deal cancellation is active.',
+            'message to client - Deal cancellation period has expired. Your contract can only be cancelled while deal cancellation is active.';
     };
 
     subtest 'cancel and get back stake' => sub {
