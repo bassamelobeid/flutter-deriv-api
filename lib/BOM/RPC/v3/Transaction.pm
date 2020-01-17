@@ -606,50 +606,69 @@ rpc contract_update => sub {
     my $response;
     try {
         my $updater = BOM::Transaction::ContractUpdate->new(
-            client          => $client,
-            contract_id     => $contract_id,
-            update_params   => $args->{limit_order},
-            request_history => $args->{history},
+            client        => $client,
+            contract_id   => $contract_id,
+            update_params => $args->{limit_order},
         );
-        if ($updater->has_parameters_to_update) {
-            if ($updater->is_valid_to_update) {
-                $response = $updater->update();
-                unless ($response) {
-                    $response = BOM::Pricing::v3::Utility::create_error({
-                        code              => 'ContractUpdateFailure',
-                        message_to_client => localize('Contract update failed.'),
-                    });
-                }
-                if (my $contract_proposal_details = delete $response->{contract_details}) {
-                    BOM::Transaction::Utility::set_contract_parameters($contract_proposal_details, $client);
-                }
-            } else {
-                my $error = $updater->validation_error;
+        if ($updater->is_valid_to_update) {
+            $response = $updater->update();
+            unless ($response) {
                 $response = BOM::Pricing::v3::Utility::create_error({
-                    code              => $error->{code},
-                    message_to_client => $error->{message_to_client},
+                    code              => 'ContractUpdateFailure',
+                    message_to_client => localize('Contract update failed.'),
                 });
-            }
-        } elsif ($updater->request_history) {
-            my $history = $updater->get_history();
-            if (ref $history eq 'HASH' and $history->{code}) {
-                $response = BOM::Pricing::v3::Utility::create_error({
-                    code              => $history->{code},
-                    message_to_client => $history->{message_to_client},
-                });
-            } else {
-                $response->{history} = $history;
             }
         } else {
+            my $error = $updater->validation_error;
             $response = BOM::Pricing::v3::Utility::create_error({
-                code              => 'ContractUpdateFailure',
-                message_to_client => localize('Please specify either history or limit_order.'),
+                code              => $error->{code},
+                message_to_client => $error->{message_to_client},
             });
         }
     }
     catch {
         $response = BOM::Pricing::v3::Utility::create_error({
             code              => 'ContractUpdateError',
+            message_to_client => localize("Sorry, an error occurred while processing your request."),
+        });
+    }
+
+    return $response;
+};
+
+rpc contract_update_history => sub {
+    my $params = shift;
+
+    my $args        = $params->{args};
+    my $contract_id = $args->{contract_id};
+
+    unless ($contract_id) {
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => 'MissingContractId',
+            message_to_client => localize('Contract id is required to update contract'),
+        });
+    }
+
+    my $client = $params->{client};
+    unless ($client) {
+        # since this is an authenticated call, we can't proceed
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => 'AuthorizationRequired',
+            message_to_client => localize('Please log in.'),
+        });
+    }
+
+    my $response;
+    try {
+        my $updater = BOM::Transaction::ContractUpdate->new(
+            client      => $client,
+            contract_id => $contract_id,
+        );
+        $response = $updater->get_history;
+    }
+    catch {
+        $response = BOM::Pricing::v3::Utility::create_error({
+            code              => 'ContractUpdateHistoryError',
             message_to_client => localize("Sorry, an error occurred while processing your request."),
         });
     }
