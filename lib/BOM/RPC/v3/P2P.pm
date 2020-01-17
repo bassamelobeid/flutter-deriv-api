@@ -271,10 +271,9 @@ Takes the following named parameters:
 
 =over 4
 
-=item * C<name> - the display name
+=item * C<agent_name> - The agent's display name
 
-=item * C<description> - description text to show on the profile page, this is also used for the
-default note on any future offers created by this agent
+=item * C<is_active> - The activation status of the agent
 
 =back
 
@@ -285,7 +284,10 @@ Returns a hashref containing the current agent details.
 p2p_rpc p2p_agent_update => sub {
     my (%args) = @_;
     my $client = $args{client};
-    return $client->p2p_agent_update($args{params}{args}->%*) // die "AgentNotRegistered\n";
+
+    my $agent = $client->p2p_agent_update($args{params}{args}->%*) // die "AgentNotRegistered\n";
+
+    return _agent_details($agent);
 };
 
 =head2 p2p_agent_info
@@ -296,7 +298,7 @@ Takes the following named parameters:
 
 =over 4
 
-=item * C<agent_id> - the internal ID of the agent
+=item * C<agent_id> - The internal ID of the agent
 
 =back
 
@@ -304,9 +306,17 @@ Returns a hashref containing the following information:
 
 =over 4
 
-=item * C<name>
+=item * C<agent_id> - The agent's identification number
 
-=item * C<description>
+=item * C<agent_name> - The agent's displayed name
+
+=item * C<client_loginid> - The loginid of the agent
+
+=item * C<created_time> - The epoch time that the client became an agent
+
+=item * C<is_active> - The activation status of the agent
+
+=item * C<is_authenticated> - The authentication status of the agent
 
 =back
 
@@ -323,15 +333,7 @@ p2p_rpc p2p_agent_info => sub {
         $agent = $client->p2p_agent // die "AgentNotFound\n";
     }
 
-    return +{
-        agent_id         => $agent->{id},
-        agent_name       => $agent->{name},
-        client_loginid   => $agent->{client_loginid},
-        created_time     => Date::Utility->new($agent->{created_time})->epoch,
-        is_authenticated => $agent->{is_authenticated},
-        is_active        => $agent->{is_active},
-    };
-
+    return _agent_details($agent);
 };
 
 =head2 p2p_method_list
@@ -713,6 +715,19 @@ Exchange chat messages.
 p2p_rpc p2p_order_chat => sub {
     die "PermissionDenied\n";
 };
+
+sub _agent_details {
+    my ($agent) = @_;
+
+    return +{
+        agent_id         => $agent->{id},
+        agent_name       => $agent->{name},
+        client_loginid   => $agent->{client_loginid},
+        created_time     => Date::Utility->new($agent->{created_time})->epoch,
+        is_active        => $agent->{is_active},
+        is_authenticated => $agent->{is_authenticated},
+    };
+}
 
 sub _offer_details {
     my ($offer, $amount) = @_;

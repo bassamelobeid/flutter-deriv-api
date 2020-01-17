@@ -121,14 +121,19 @@ subtest 'Offers' => sub {
         method            => 'test method',
     };
 
-    $params->{args} = {name => 'Bond007'};
+    $params->{args} = {agent_name => 'Bond007'};
 
     $c->call_ok('p2p_agent_update', $params)->has_no_system_error->has_error->error_code_is('AgentNotRegistered', 'Update non-existent agent');
 
     my $res = $c->call_ok('p2p_agent_create', $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'pending', 'result has p2p agent status = pending';
 
-    $params->{args} = {name => 'SpyvsSpy'};
+    $params->{args} = {agent_name => 'SpyvsSpy'};
+    $c->call_ok('p2p_agent_update', $params)
+        ->has_no_system_error->has_error->error_code_is('AgentNotAuthenticated',
+        'Cannot update the agent information when agent is not authenticated');
+
+    $client_agent->p2p_agent_update(is_authenticated => 1);
     $res = $c->call_ok('p2p_agent_update', $params)->has_no_system_error->has_no_error->result;
     is $res->{name}, $params->{args}{name}, 'update agent name';
 
@@ -155,20 +160,21 @@ subtest 'Offers' => sub {
     $c->call_ok('p2p_offer_create', $params)
         ->has_no_system_error->has_error->error_code_is('InvalidOfferAmount', 'Offer amount cannot be less than max_amount');
 
+    $client_agent->p2p_agent_update(is_authenticated => 0);
     $params->{args} = $offer_params;
     $c->call_ok('p2p_offer_create', $params)
         ->has_no_system_error->has_error->error_code_is('AgentNotAuthenticated', "unauth agent, create offer error is AgentNotAuthenticated");
 
     $client_agent->p2p_agent_update(
-        auth   => 1,
-        active => 0
+        is_authenticated => 1,
+        is_active        => 0
     );
 
     $params->{args} = $offer_params;
     $c->call_ok('p2p_offer_create', $params)
         ->has_no_system_error->has_error->error_code_is('AgentNotActive', "inactive agent, create offer error is AgentNotActive");
 
-    $client_agent->p2p_agent_update(active => 1);
+    $client_agent->p2p_agent_update(is_active => 1);
 
     $params->{args} = {agent => $client_agent->p2p_agent->{id}};
     $res = $c->call_ok('p2p_agent_info', $params)->has_no_system_error->has_no_error->result;
