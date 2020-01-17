@@ -186,12 +186,20 @@ sub _validate_update_parameter {
         }
 
         # stop loss cannot be added while deal cancellation is active
-        if ($order_name eq 'stop_loss' and $contract->is_valid_to_cancel) {
-            $error = {
-                code => 'UpdateStopLossNotAllowed',
-                message_to_client =>
-                    localize('Stop loss will be available only after deal cancellation expires. You may update your stop loss limit then.'),
-            };
+        if ($contract->is_valid_to_cancel) {
+            if ($order_name eq 'stop_loss') {
+                $error = {
+                    code => 'UpdateStopLossNotAllowed',
+                    message_to_client =>
+                        localize('Stop loss will be available only after deal cancellation expires. You may update your stop loss limit then.'),
+                };
+            } elsif ($order_name eq 'take_profit') {
+                $error = {
+                    code              => 'UpdateTakeProfitNotAllowed',
+                    message_to_client => localize(
+                        'Take profit update will be available only after deal cancellation expires. You may update your take profit limit then.'),
+                };
+            }
             last;
         }
 

@@ -510,6 +510,17 @@ subtest 'update stop loss with/without active deal cancellation' => sub {
         'Stop loss will be available only after deal cancellation expires. You may update your stop loss limit then.',
         'message_to_client - Stop loss will be available only after deal cancellation expires. You may update your stop loss limit then.';
 
+    $updater = BOM::Transaction::ContractUpdate->new(
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        update_params => {take_profit => 10},
+    );
+    ok !$updater->is_valid_to_update, 'not valid to update';
+    is $updater->validation_error->{code}, 'UpdateTakeProfitNotAllowed', 'code - UpdateTakeProfitNotAllowed';
+    is $updater->validation_error->{message_to_client},
+        'Take profit update will be available only after deal cancellation expires. You may update your take profit limit then.',
+        'message_to_client - Take profit update will be available only after deal cancellation expires. You may update your take profit limit then.';
+
     $args->{date_start}   = $contract->date_start;
     $args->{date_pricing} = $contract->date_start->plus_time_interval('3601s');
     $args->{limit_order}  = {
