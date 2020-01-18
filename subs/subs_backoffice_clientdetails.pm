@@ -310,14 +310,16 @@ sub build_client_statement_form {
     return
           '<hr><FORM ACTION="'
         . request()->url_for('backoffice/f_manager_history.cgi')
-        . '" METHOD="POST">'
+        . '" METHOD="POST" onsubmit="return validate_month(\'statement\')">'
         . '<span style="color:red;"><b>Show All Transaction</b>, may fail for clients with huge number of transaction, so use this feature only when required.</span><br/>'
         . 'Check Statement of LoginID : <input id="statement_loginID" name="loginID" type="text" size="10" value="'
         . $broker . '"/>'
         . 'From : <input name="startdate" type="text" size="10" value="'
-        . Date::Utility->today()->_minus_months(1)->date . ' "/>'
+        . Date::Utility->today()->_minus_months(1)->date
+        . '" required pattern="\d{4}-\d{2}-\d{2}" class="datepick" id="statement_startdate"/>'
         . 'To : <input name="enddate" type="text" size="10" value="'
-        . Date::Utility->today()->date . ' "/>'
+        . Date::Utility->today()->date
+        . '" required pattern="\d{4}-\d{2}-\d{2}" class="datepick" id="statement_enddate"/>'
         . '<input type="hidden" name="broker" value="'
         . $broker . '">'
         . '<SELECT name="currency_dropdown"><option value="default">client\'s default currency</option>'
@@ -609,7 +611,8 @@ SQL
             };
         }
 
-        my $input = qq{expires on <input type="date" style="width:120px" maxlength="15" name="expiration_date_$id" value="$date" $extra>};
+        my $input =
+            qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" required pattern="\\d{4}-\\d{2}-\\d{2}" class = "datepick" $extra>};
         $input .= qq{document id <input type="text" style="width:100px" maxlength="30" name="document_id_$id" value="$document_id" $extra>};
         $input .= qq{comments <input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" $extra>};
 

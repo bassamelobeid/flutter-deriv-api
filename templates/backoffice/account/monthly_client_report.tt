@@ -17,7 +17,7 @@
             <option value="debit">All Debits and Contract-Buys</option>
             <option value="credit">All Credits and Contract-Sells</option>
         </select>
-        Run Month: <input size="8" name="yyyymm" value="$yyyymm"/> e.g. 2014-12
+        Run Month: <input size="8" name="yyyymm" value="$yyyymm" required pattern="\d{4}-\d{2}/> e.g. 2014-12
         &nbsp;&nbsp;&nbsp;
         <input type="submit" value="Download CSV File"/>
         All Currencies for Broker code [%request.broker_code%] will be included.
@@ -60,7 +60,7 @@
             <label for="all_payment_types" title="(including obsolete types)">ALL</label>
         </div>
         <br/><br/>
-        Run Month: <input size="8" name="yyyymm" value="$yyyymm"/> e.g. 2014-12
+        Run Month: <input size="8" name="yyyymm" value="$yyyymm" required pattern="\d{4}-\d{2}"/> e.g. 2014-12
 , duration: <select name="months">
 [% FOR i IN [1..6]%]
     <option value="[% i %]">[% i %]</option>

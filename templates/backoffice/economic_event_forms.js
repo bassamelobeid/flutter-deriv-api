@@ -115,9 +115,14 @@
         var el = \$('table#economic_event_form');
         if (el) {
             var result = \$("td.save_result");
-            result.text('processing ...');
+            result.text('processing ...').css('color', 'black');
             var name = el.find('input[name="event_name"]').val();
             var release_date = el.find('input[name="release_date"]').val();
+            var date_re = /^(\d{10}|\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?)\$/;
+            if(!date_re.test(release_date)){
+                result.text("Invaild DateTime entered").css('color', 'red');
+                return true;
+            }
             var symbol = el.find('input[name="symbol"]').val();
             var event_source = el.find('input[name="source"]').val();
             \$.ajax({

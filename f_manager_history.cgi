@@ -42,13 +42,20 @@ if ($from_date && $to_date && $from_date =~ m/^\d{4}-\d{2}-\d{2}$/ && $to_date =
     $from_date .= ' 00:00:00';
     $to_date   .= ' 23:59:59';
 }
-$to_date   = ($to_date)   ? Date::Utility->new($to_date)   : undef;
-$from_date = ($from_date) ? Date::Utility->new($from_date) : undef;
 
-my $overview_from_date =
-    request()->param('overview_fm_date') ? Date::Utility->new(request()->param('overview_fm_date')) : Date::Utility->new()->_minus_months(6);
-my $overview_to_date =
-    request()->param('overview_to_date') ? Date::Utility->new(request()->param('overview_to_date')) : Date::Utility->new();
+my ($overview_from_date, $overview_to_date);
+try {
+    $to_date   = ($to_date)   ? Date::Utility->new($to_date)   : undef;
+    $from_date = ($from_date) ? Date::Utility->new($from_date) : undef;
+    $overview_from_date =
+        request()->param('overview_fm_date') ? Date::Utility->new(request()->param('overview_fm_date')) : Date::Utility->new()->_minus_months(6);
+    $overview_to_date =
+        request()->param('overview_to_date') ? Date::Utility->new(request()->param('overview_to_date')) : Date::Utility->new();
+}
+catch {
+    print 'Error : Wrong date entered';
+    code_exit_BO();
+}
 
 $overview_from_date = Date::Utility->new($overview_from_date->date_yyyymmdd() . " 00:00:00");
 $overview_to_date   = Date::Utility->new($overview_to_date->date_yyyymmdd() . " 23:59:59");

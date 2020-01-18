@@ -14,8 +14,8 @@
 
 <table id='custom_commission_form'>
     <tr><td>Name</td><td> : <input type="text" name="name"></td><td>Accepts only words and integers (required)</td></tr>
-    <tr><td>Start Time</td><td> : <input type="text" name="start_time"></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
-    <tr><td>End Time</td><td> : <input type="text" name="end_time"></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
+    <tr><td>Start Time</td><td> : <input type="text" name="start_time" id="custom_commission_start_time"></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
+    <tr><td>End Time</td><td> : <input type="text" name="end_time" id="custom_commission_end_time"></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
     <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol"></td></tr>
     <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol"></td></tr>
     <tr><td>Bias</td><td> : <input type="text" name="bias"></td><td>Leave it empty if bias is not intended. Accepts values long or short</td></tr>
@@ -40,6 +40,14 @@
         var el = \$('table#custom_commission_form');
         var result = el.find('.result');
         result.text('processing...');
+        var start_time = \$('#custom_commission_start_time').val();
+        var end_time = \$('#custom_commission_end_time').val();
+        var date_re = /^(\d{10}|\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?)\$/;
+        if(!date_re.test(start_time) || !date_re.test(end_time)){
+            result.text("Invaild DateTime entered").css('color', 'red');
+            return true;
+        }
+
         \$.ajax({
                 url: "[% upload_url | none %]",
                 data: {

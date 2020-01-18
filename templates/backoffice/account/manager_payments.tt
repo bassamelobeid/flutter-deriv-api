@@ -1,4 +1,14 @@
 <script>
+    function validate_date(){
+        var date = \$('#date_received').val();
+        date = new Date(date);
+        if(date == 'Invalid Date'){
+            alert("Invalid Date entered");
+            return false;
+        }
+        return true;
+    }
+
     \$(document).ready(function() {
         \$('.datepick').datepicker({dateFormat: "yy-mm-dd"}).datepicker('setDate', new Date());
         \$('#ui-datepicker-div').hide();
@@ -26,7 +36,7 @@
 
 <h3>Confirm a client DEBIT OR CREDIT</h3>
 
-<form action="[%request.url_for('backoffice/f_manager_confodeposit.cgi') | none %]" method="POST" class="bo_form_with_files">
+<form action="[%request.url_for('backoffice/f_manager_confodeposit.cgi') | none %]" method="POST" class="bo_form_with_files" onsubmit="return validate_date()">
 
 <p>
 <input type="radio" name="ttype" value="CREDIT" id="mdc_credit" checked="1" /><label for="mdc_credit">CREDIT this Client</label>
@@ -65,7 +75,7 @@
         </select>
     </td>
     <td><input type="text" name="DCcode" placeholder="required"/></td>
-    <td><input type="text" name="date_received" required class="datepick" placeholder="required"/></td>
+    <td><input type="text" name="date_received" id="date_received" required class="datepick" placeholder="required" pattern="\d{4}-\d{2}-\d{2}"/></td>
 </tr>
 </table>
 

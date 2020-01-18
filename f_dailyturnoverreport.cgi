@@ -14,8 +14,9 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
 my $args = request()->params;
-$args->{broker}   ||= 'FOG';
-$args->{month}    ||= Date::Utility->today->months_ahead(0);
+$args->{broker} ||= 'FOG';
+my $today = Date::Utility->today;
+$args->{month} ||= $today->year . '-' . sprintf("%02d", $today->month);
 $args->{whattodo} ||= 'TURNOVER';
 
 $args->{month} = encode_entities($args->{month});

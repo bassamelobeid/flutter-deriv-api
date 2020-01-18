@@ -17,50 +17,61 @@ sub script_run {
         pretty    => 1,
         canonical => 1
     );
-    my %new_limit;
+
     my $quants_config = BOM::Config::Runtime->instance->app_config;
     $quants_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
     my $current                  = $quants_config->get('quants.custom_product_profiles');
     my $current_product_profiles = $json->decode($current);
-    my ($todo, $risk_profile, $to_remove, $between);
-    my $now = Date::Utility->new;
-    my $cut_off_hour = $now->is_dst_in_zone('Europe/London') ? '06' : '07';
 
-    if ($now->hour == 00) {
-        $todo         = 'set extreme_risk_fx_tick_trade';
-        $to_remove    = 'set high_risk_fx_tick_trade';
-        $risk_profile = 'extreme_risk';
-        $between      = "00 to " . $cut_off_hour . 'GMT';
+    #Adding ultra_short to the list to protect us from Ukranian clients.
+    #As of Jan 17th, we have 104 Ukranian clients hitting our profit
+    #using 1 minute contract.
 
-    } elsif ($now->hour == $cut_off_hour) {
-        $todo         = 'set high_risk_fx_tick_trade';
-        $to_remove    = 'set extreme_risk_fx_tick_trade';
-        $risk_profile = 'high_risk';
-        $between      = $cut_off_hour . ' to 00GMT';
-    } else {
-        return 1;
+    foreach my $duration (qw(tick ultra_short)) {
+
+        my ($todo, $risk_profile, $to_remove, $between);
+        my $now = Date::Utility->new;
+        my $cut_off_hour = $now->is_dst_in_zone('Europe/London') ? '06' : '07';
+
+        if ($now->hour == 00) {
+            $todo         = 'set extreme_risk_fx_' . $duration . '_trade';
+            $to_remove    = 'set high_risk_fx_' . $duration . '_trade';
+            $risk_profile = 'extreme_risk';
+            $between      = "00 to " . $cut_off_hour . 'GMT';
+
+        } elsif ($now->hour == $cut_off_hour) {
+            $todo         = 'set high_risk_fx_' . $duration . '_trade';
+            $to_remove    = 'set extreme_risk_fx_' . $duration . '_trade';
+            $risk_profile = 'high_risk';
+            $between      = $cut_off_hour . ' to 00GMT';
+        } else {
+            next;
+
+        }
+        my $uniq_key = substr(md5_hex('new' . $todo), 0, 16);
+
+        #removing old limit (tick trade/ ultra short duration)
+        map { delete $current_product_profiles->{$_} }
+            grep { $current_product_profiles->{$_}->{updated_by} eq 'cron job' and $current_product_profiles->{$_}->{name} eq $to_remove }
+            keys %$current_product_profiles;
+
+        $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
+
+        #imposing new limit on forex (tick trade/ ultra short duration)
+        my %new_limit = (
+            risk_profile => $risk_profile,
+            market       => 'forex',
+            expiry_type  => $duration,
+            name         => $todo,
+            updated_by   => 'cron job',
+            updated_on   => Date::Utility->new->datetime,
+        );
+
+        $current_product_profiles->{$uniq_key} = \%new_limit;
+        $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
+        send_notification_email(\%new_limit, $todo . ' for forex tick trade between ' . $between);
 
     }
-    my $uniq_key = substr(md5_hex('new' . $todo), 0, 16);
-
-    #removing old limit on forex tick trade
-    map { delete $current_product_profiles->{$_} }
-        grep { $current_product_profiles->{$_}->{updated_by} eq 'cron job' and $current_product_profiles->{$_}->{name} eq $to_remove }
-        keys %$current_product_profiles;
-
-    $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
-
-    #imposing new limit on forex tick trade
-    $new_limit{risk_profile} = $risk_profile;
-    $new_limit{market}       = 'forex';
-    $new_limit{expiry_type}  = 'tick';
-    $new_limit{name}         = $todo;
-    $new_limit{updated_by}   = 'cron job';
-    $new_limit{updated_on}   = Date::Utility->new->datetime;
-
-    $current_product_profiles->{$uniq_key} = \%new_limit;
-    $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
-    send_notification_email(\%new_limit, $todo . ' for forex tick trade between ' . $between);
 
     return 1;
 }

@@ -39,7 +39,7 @@
     <option value="photo">Photo</option>
   </select>
   <input type="FILE" name="FILE_[% n %]" style="width: 150px" onchange="file_size_validation(this)">
-  Expiration date:<input type="date" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD">
+  Expiration date:<input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick">
   Document ID:<input type="text" size=11 maxlength="30" name="document_id_[% n %]" placeholder="Document ID">
   Comments:<input type="text" size=25 maxlength="255" name="comments_[% n %]" placeholder="optional, up to 255 characters">
     <br>
@@ -64,7 +64,6 @@ function file_size_validation(file) {
 }
 
 function validate_document_info() {
-  
   var get_value = function(elm_name) {
     return (document.getElementsByName(elm_name)[0] || {}).value;
   }
@@ -120,10 +119,13 @@ function validate_document_info() {
     
     if(expiry_date) {
       expiry_date = new Date(expiry_date);
-      
-      if(expiry_date === 'Invalid Date' || (expiry_date <= new Date())) {
-        file_comments_errors += "Invalid expiry date entered.\n"
+        if(expiry_date == 'Invalid Date'){
+            file_comments_errors += "Invalid Expiry date. Please match the requested format.\n"
+        }
+        else if(expiry_date <= new Date()) {
+        file_comments_errors += "Expiry date must be a future date.\n"
       }
+
     }
     
     if (doc_id.length > 30) {
@@ -151,4 +153,8 @@ function validate_document_info() {
   
   return true;
 }
+
+\$(document).ready(function() {
+      \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+});
 </script>

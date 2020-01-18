@@ -1,6 +1,6 @@
 <p>Update user specific limits: </p>
 [% IF update_error %]<p style="color: red;">[% update_error %]</p>[% END %]
-<form action="[% url | none %]" method="POST">
+<form action="[% url | none %]" method="POST" onsubmit="return validate_date()">
     <table>
         <tr>
             <td>Client Login ID: </td>
@@ -29,7 +29,7 @@
         </tr>
         <tr>
             <td>Expiry: </td>
-            <td><input type="text" name="expiry"></input></td>
+            <td><input type="text" name="expiry" id="expiry_date"></input></td>
             <td> Expiry of the limit. Accepts epoch or '2018-11-25 10:10:20' format</td>
         </tr>
         <tr>
@@ -37,6 +37,28 @@
         </tr>
     </table>
 </form>
+
+<script>
+  function validate_date(){
+      var date = \$('#expiry_date').val();
+      if(date == ''){
+          return true;
+      }
+      var date_re = /^(\d{10}|\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?)\$/;
+      if(!date_re.test(date)){
+          alert('Invalid expiry date entered');
+          return false;
+      }
+      else if(/^(\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?)\$/.test(date)){
+          date = new Date(date);
+          if(date == 'Invalid Date'){
+              alert('Invalid expiry date entered');
+              return false;
+          }
+      }
+      return true;
+  }
+</script>
 
 <p>Delete user specific limit: </p>
 
