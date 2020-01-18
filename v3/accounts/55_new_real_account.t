@@ -10,7 +10,6 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Account::Virtual;
 use BOM::Database::Model::OAuth;
-
 use await;
 
 ## do not send email
@@ -85,7 +84,6 @@ subtest 'new MX real account' => sub {
 
         is($res->{error}->{code}, 'InsufficientAccountDetails', 'UK client must have postcode');
         is_deeply($res->{error}->{details}, {missing => ['address_postcode']});
-
         is($res->{new_account_real}, undef, 'NO account created');
     };
 
@@ -162,7 +160,7 @@ subtest 'create account failed' => sub {
 
         my $res = $t->await::new_account_real(\%details);
 
-        is($res->{error}->{code}, 'invalid residence', 'cannot create real account');
+        is($res->{error}->{code}, 'InvalidResidence', 'cannot create real account');
         is($res->{new_account_real}, undef, 'NO account created');
     };
 
@@ -247,7 +245,6 @@ subtest 'new_real_account with currency provided' => sub {
         residence       => 'au',
     });
     my %details = %client_details;
-    use Data::Dumper;
 
     my $compiled_checks = sub {
         my ($res, $details) = @_;
