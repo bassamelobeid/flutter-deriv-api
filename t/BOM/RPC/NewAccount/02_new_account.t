@@ -500,6 +500,11 @@ subtest $method => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token} = $auth_token;
 
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
+            ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
+
+        $user->update_email_fields(email_verified => 1);
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
         is $result->{error}->{code}, 'InvalidAccount', 'It should return error if client residense does not fit for maltainvest';
 
@@ -541,16 +546,11 @@ subtest $method => sub {
         $params->{args}->{citizen} = 'at';
 
         $client->save;
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
-            ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
-
-        $user->update_email_fields(email_verified => 1);
 
         $params->{args}->{residence} = 'id';
 
         $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('invalid residence', 'It should return error if residence does not fit with maltainvest')
+            ->has_no_system_error->has_error->error_code_is('InvalidResidence', 'It should return error if residence does not fit with maltainvest')
             ->error_message_is(
             'Sorry, our service is not available for your country of residence.',
             'It should return error if residence does not fit with maltainvest'
@@ -645,14 +645,14 @@ subtest $method => sub {
         mailbox_clear();
 
         # call with totally random values - our client still should have correct one
-        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
+        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
         $params->{args}->{phone}         = '+62 21 12345678';
         $params->{args}->{date_of_birth} = '1990-09-09';
 
         # We have to delete these fields here as our test helper function creates clients with different fields than what is declared above in this file. Should change this.
         delete $params->{args}->{secret_question};
         delete $params->{args}->{secret_answer};
-
+        delete $params->{args}->{residence};
         my $result = $rpc_ct->call_ok($method, $params)->result;
         my $new_loginid = $result->{client_id};
 
@@ -710,7 +710,7 @@ subtest $method => sub {
         $params->{args}->{residence}   = 'gb';
 
         # call with totally random values - our client still should have correct one
-        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
+        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
         $params->{args}->{phone}         = '+62 21 12345678';
         $params->{args}->{date_of_birth} = '1990-09-09';
 
@@ -767,7 +767,7 @@ subtest $method => sub {
         $params->{args}->{residence}   = 'gb';
 
         # call with totally random values - our client still should have correct one
-        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
+        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
         $params->{args}->{phone}         = '+62 21 12345678';
         $params->{args}->{date_of_birth} = '1990-09-09';
 
@@ -795,7 +795,7 @@ subtest $method => sub {
         #create a virtual de client
         $email = 'virtual_de_email' . rand(999) . '@binary.com';
         # call with totally random values - our client still should have correct one
-        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name residence address_city/;
+        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
         $params->{args}->{phone}         = '+62 21 12345999';
         $params->{args}->{date_of_birth} = '1990-09-09';
 

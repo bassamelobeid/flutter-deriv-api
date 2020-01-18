@@ -618,6 +618,9 @@ rpc contract_update => sub {
                     message_to_client => localize('Contract update failed.'),
                 });
             }
+            if (my $contract_proposal_details = delete $response->{contract_details}) {
+                BOM::Transaction::Utility::set_contract_parameters($contract_proposal_details, $client);
+            }
         } else {
             my $error = $updater->validation_error;
             $response = BOM::Pricing::v3::Utility::create_error({

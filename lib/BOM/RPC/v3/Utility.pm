@@ -314,6 +314,7 @@ sub error_map {
         'email unverified'    => localize('Your email address is unverified.'),
         'no residence'        => localize('Your account has no country of residence.'),
         'invalid'             => localize('Sorry, account opening is unavailable.'),
+        'InvalidAccount'      => localize('Sorry, account opening is unavailable.'),
         'invalid residence'   => localize('Sorry, our service is not available for your country of residence.'),
         'invalid UK postcode' => localize('Postcode is required for UK residents.'),
         'invalid PO Box'      => localize('P.O. Box is not accepted in address.'),
@@ -340,6 +341,11 @@ sub error_map {
         'NeedBothSecret'             => localize('Need both secret question and secret answer.'),
         'DuplicateAccount' => localize('Sorry, an account already exists with those details. Only one real money account is allowed per client.'),
         'BelowMinimumAge'  => localize('Value of date of birth is below the minimum age required.'),
+        'FinancialAccountExists'     => localize('You already have a financial money account. Please switch accounts to trade financial products.'),
+        'NewAccountLimitReached'     => localize('You have created all accounts available to you.'),
+        'NoResidence'                => localize('Please set your country of residence.'),
+        'SetExistingAccountCurrency' => localize('Please set the currency for your existing account [_1], in order to create more accounts.'),
+
     };
 }
 
@@ -405,22 +411,24 @@ sub validate_make_new_account {
     return permission_error() if (not $account_type and $account_type !~ /^(?:real|financial)$/);
 
     my $residence = $client->residence;
-    return create_error({
-            code              => 'NoResidence',
-            message_to_client => localize('Please set your country of residence.')}) unless $residence;
+    my $loginid   = $client->loginid;
+    if (BOM::Config::Runtime->instance->app_config->system->suspend->new_accounts) {
+        warn "acc opening err: from_loginid:$loginid, account_type:$account_type, residence:$residence, error: - new account opening suspended";
+        return create_error_by_code('InvalidAccount');
+    }
+    unless ($client->user->{email_verified}) {
+        return create_error_by_code('email unverified');
+    }
+    return create_error_by_code('NoResidence') unless $residence;
+    return create_error_by_code('InvalidResidence') if ($request_data->{residence} and $residence ne $request_data->{residence});
 
     my $countries_instance = request()->brand->countries_instance;
     my $gaming_company     = $countries_instance->gaming_company_for_country($residence);
     my $financial_company  = $countries_instance->financial_company_for_country($residence);
 
-    my $error_map = error_map();
-    return create_error({
-            code              => 'InvalidAccount',
-            message_to_client => $error_map->{'invalid'}}) unless ($gaming_company or $financial_company);
+    return create_error_by_code('InvalidAccount') unless ($gaming_company or $financial_company);
 
-    return create_error({
-            code              => 'InvalidResidence',
-            message_to_client => $error_map->{'invalid residence'}}) if ($countries_instance->restricted_country($residence));
+    return create_error_by_code('InvalidResidence') if ($countries_instance->restricted_country($residence));
 
     if ($client->is_virtual && $account_type eq 'financial' && $gaming_company && ($financial_company // '') eq 'maltainvest') {
         # if the gaming_company is none this means that the user can create an maltainvest account without
@@ -438,13 +446,9 @@ sub validate_make_new_account {
         if ($account_type eq 'real') {
             return undef if $gaming_company;
             # send error as account opening for maltainvest has separate call
-            return create_error({
-                    code              => 'InvalidAccount',
-                    message_to_client => $error_map->{'invalid'}}) if ($financial_company and $financial_company eq 'maltainvest');
+            return create_error_by_code('InvalidAccount') if ($financial_company and $financial_company eq 'maltainvest');
         } elsif ($account_type eq 'financial' and ($financial_company and $financial_company ne 'maltainvest')) {
-            return create_error({
-                    code              => 'InvalidAccount',
-                    message_to_client => $error_map->{'invalid'}});
+            return create_error_by_code('InvalidAccount');
         }
 
         # some countries don't have gaming company like Singapore
@@ -453,21 +457,24 @@ sub validate_make_new_account {
     }
 
     my $landing_company_name = $client->landing_company->short;
-
+    if ($account_type eq 'financial') {
+        #moved from Platform::Account::Real::maltainvest::_validate
+        # also allow MLT UK client to open MF account
+        unless ($financial_company eq 'maltainvest' or ($client->residence eq 'gb' and $landing_company_name eq 'malta')) {
+            warn "maltainvest acc opening err: loginid:$loginid, residence:$residence, financial_company:$financial_company";
+            return create_error_by_code('InvalidAccount');
+        }
+    }
     # as maltainvest can be opened in few ways, upgrade from malta,
     # directly from virtual for Germany as residence, from iom
     # or from maltainvest itself as we support multiple account now
     # so upgrade is only allow once
     if (($account_type and $account_type eq 'financial') and $landing_company_name =~ /^(?:malta|iom)$/) {
         # return error if client already has maltainvest account
-        return create_error({
-                code              => 'FinancialAccountExists',
-                message_to_client => localize('You already have a financial money account. Please switch accounts to trade financial products.')}
-        ) if (grep { $siblings->{$_}->{landing_company_name} eq 'maltainvest' } keys %$siblings);
+        return create_error_by_code('FinancialAccountExists')
+            if (grep { $siblings->{$_}->{landing_company_name} eq 'maltainvest' } keys %$siblings);
 
-        return create_error({
-                code              => 'UnwelcomeAccount',
-                message_to_client => $error_map->{'UnwelcomeAccount'}}) if $client->status->unwelcome;
+        return create_error_by_code('UnwelcomeAccount') if $client->status->unwelcome;
 
         # if from malta and account type is maltainvest, assign
         # maltainvest to landing company as client is upgrading
@@ -499,10 +506,7 @@ sub validate_make_new_account {
 
     # return if any one real client has not set account currency
     if (my ($loginid_no_curr) = grep { not $siblings->{$_}->{currency} } keys %$siblings) {
-        return create_error({
-                code => 'SetExistingAccountCurrency',
-                message_to_client =>
-                    localize('Please set the currency for your existing account [_1], in order to create more accounts.', $loginid_no_curr)});
+        return create_error_by_code('SetExistingAccountCurrency', params => $loginid_no_curr);
     }
 
     if ($request_data->{currency}) {
@@ -511,10 +515,7 @@ sub validate_make_new_account {
     }
 
     # Check if client can create anymore accounts, if currency is available. Otherwise, return error
-    return create_error({
-            code              => 'NewAccountLimitReached',
-            message_to_client => localize('You have created all accounts available to you.')}
-    ) unless get_available_currencies($siblings, $landing_company_name);
+    return create_error_by_code('NewAccountLimitReached') unless get_available_currencies($siblings, $landing_company_name);
 
     return undef;
 }
@@ -868,8 +869,12 @@ sub create_error_by_code {
     my ($error_code, %options) = @_;
 
     my $message = error_map()->{$error_code};
-
     return BOM::RPC::v3::Utility::permission_error() unless $message;
+
+    if ($options{params}) {
+        my @params = ref $options{params} eq 'ARRAY' ? @{$options{params}} : ($options{params});
+        $message = localize($message, @params);
+    }
 
     return BOM::RPC::v3::Utility::create_error({
             code => $options{override_code} ? $options{override_code} : $error_code,

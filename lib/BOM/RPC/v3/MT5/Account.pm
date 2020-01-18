@@ -1125,6 +1125,25 @@ async_rpc "mt5_deposit",
                 );
 
                 _record_mt5_transfer($fm_client->db->dbic, $txn->payment_id, -$response->{mt5_amount}, $to_mt5, $response->{mt5_currency_code});
+
+                BOM::Platform::Event::Emitter::emit(
+                    'transfer_between_accounts',
+                    {
+                        loginid    => $fm_client->loginid,
+                        properties => {
+                            from_account       => $fm_loginid,
+                            is_from_account_pa => 0 + !!($fm_client->is_pa_and_authenticated),
+                            to_account         => 'MT' . $to_mt5,
+                            is_to_account_pa   => 0 + !!($fm_client->is_pa_and_authenticated),
+                            from_currency      => $fm_client->currency,
+                            to_currency        => $mt5_currency_code,
+                            from_amount        => $amount,
+                            to_amount          => $response->{mt5_amount},
+                            source             => $source,
+                            fees               => $fees,
+                            gateway_code       => 'mt5_transfer',
+                            id                 => $txn->{id},
+                            time               => $txn->{transaction_time}}});
             }
             catch {
                 my $error = BOM::Transaction->format_error(err => $@);
@@ -1253,6 +1272,25 @@ async_rpc "mt5_withdrawal",
                         );
 
                         _record_mt5_transfer($to_client->db->dbic, $txn->payment_id, $amount, $fm_mt5, $mt5_currency_code);
+
+                        BOM::Platform::Event::Emitter::emit(
+                            'transfer_between_accounts',
+                            {
+                                loginid    => $to_client->loginid,
+                                properties => {
+                                    from_account       => 'MT' . $fm_mt5,
+                                    is_from_account_pa => 0 + !!($to_client->is_pa_and_authenticated),
+                                    to_account         => $to_loginid,
+                                    is_to_account_pa   => 0 + !!($to_client->is_pa_and_authenticated),
+                                    from_currency      => $mt5_currency_code,
+                                    to_currency        => $to_client->currency,
+                                    from_amount        => abs $amount,
+                                    to_amount          => $mt5_amount,
+                                    source             => $source,
+                                    fees               => $fees,
+                                    gateway_code       => 'mt5_transfer',
+                                    id                 => $txn->{id},
+                                    time               => $txn->{transaction_time}}});
 
                         _store_transaction_redis({
                                 loginid       => $to_loginid,

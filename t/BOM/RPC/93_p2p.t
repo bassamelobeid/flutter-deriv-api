@@ -121,14 +121,19 @@ subtest 'Offers' => sub {
         method            => 'test method',
     };
 
-    $params->{args} = {name => 'Bond007'};
+    $params->{args} = {agent_name => 'Bond007'};
 
     $c->call_ok('p2p_agent_update', $params)->has_no_system_error->has_error->error_code_is('AgentNotRegistered', 'Update non-existent agent');
 
     my $res = $c->call_ok('p2p_agent_create', $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'pending', 'result has p2p agent status = pending';
 
-    $params->{args} = {name => 'SpyvsSpy'};
+    $params->{args} = {agent_name => 'SpyvsSpy'};
+    $c->call_ok('p2p_agent_update', $params)
+        ->has_no_system_error->has_error->error_code_is('AgentNotAuthenticated',
+        'Cannot update the agent information when agent is not authenticated');
+
+    $client_agent->p2p_agent_update(is_authenticated => 1);
     $res = $c->call_ok('p2p_agent_update', $params)->has_no_system_error->has_no_error->result;
     is $res->{name}, $params->{args}{name}, 'update agent name';
 
@@ -149,26 +154,27 @@ subtest 'Offers' => sub {
     $params->{args} = {$offer_params->%*};
     $params->{args}{min_amount} = $params->{args}{max_amount} + 1;
     $c->call_ok('p2p_offer_create', $params)
-        ->has_no_system_error->has_error->error_code_is('InvalidMinOrMaxAmount', 'min_amount cannot be greater than max_amount');
+        ->has_no_system_error->has_error->error_code_is('InvalidMinMaxAmount', 'min_amount cannot be greater than max_amount');
 
     $params->{args}{max_amount} = $params->{args}{amount} + 1;
     $c->call_ok('p2p_offer_create', $params)
-        ->has_no_system_error->has_error->error_code_is('InvalidOfferAmount', 'Offer amount cannot be less than max_amount');
+        ->has_no_system_error->has_error->error_code_is('InvalidMaxAmount', 'Offer amount cannot be less than max_amount');
 
+    $client_agent->p2p_agent_update(is_authenticated => 0);
     $params->{args} = $offer_params;
     $c->call_ok('p2p_offer_create', $params)
         ->has_no_system_error->has_error->error_code_is('AgentNotAuthenticated', "unauth agent, create offer error is AgentNotAuthenticated");
 
     $client_agent->p2p_agent_update(
-        auth   => 1,
-        active => 0
+        is_authenticated => 1,
+        is_active        => 0
     );
 
     $params->{args} = $offer_params;
     $c->call_ok('p2p_offer_create', $params)
         ->has_no_system_error->has_error->error_code_is('AgentNotActive', "inactive agent, create offer error is AgentNotActive");
 
-    $client_agent->p2p_agent_update(active => 1);
+    $client_agent->p2p_agent_update(is_active => 1);
 
     $params->{args} = {agent => $client_agent->p2p_agent->{id}};
     $res = $c->call_ok('p2p_agent_info', $params)->has_no_system_error->has_no_error->result;
@@ -176,6 +182,30 @@ subtest 'Offers' => sub {
 
     $params->{args} = {agent_id => 9999};
     $c->call_ok('p2p_agent_info', $params)->has_no_system_error->has_error->error_code_is('AgentNotFound', 'Get info of non-existent agent');
+
+    for my $numeric_field (qw(amount max_amount min_amount rate)) {
+        $params->{args} = {$offer_params->%*};
+
+        $params->{args}{$numeric_field} = -1;
+        $c->call_ok('p2p_offer_create', $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidNumericValue', "Value of '$numeric_field' should be greater than 0")
+            ->error_details_is({fields => [$numeric_field]}, 'Error details is correct.');
+
+        $params->{args}{$numeric_field} = 0;
+        $c->call_ok('p2p_offer_create', $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidNumericValue', "Value of '$numeric_field' should be greater than 0")
+            ->error_details_is({fields => [$numeric_field]}, 'Error details is correct.');
+    }
+
+    $params->{args} = {$offer_params->%*};
+    $params->{args}{min_amount} = $params->{args}{max_amount} + 1;
+    $c->call_ok('p2p_offer_create', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidMinMaxAmount', 'min_amount cannot be greater than max_amount');
+
+    $params->{args} = {$offer_params->%*};
+    $params->{args}{max_amount} = $params->{args}{amount} + 1;
+    $c->call_ok('p2p_offer_create', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidMaxAmount', 'Offer amount cannot be less than max_amount');
 
     $params->{args} = $offer_params;
     $offer = $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_no_error->result;
@@ -187,10 +217,10 @@ subtest 'Offers' => sub {
     cmp_ok $res->[0]->{offer_id}, '==', $offer->{offer_id}, 'p2p_offer_list returns offer';
 
     $params->{args} = {
-        id                => $offer->{offer_id},
+        offer_id          => $offer->{offer_id},
         offer_description => 'new description'
     };
-    $res = $c->call_ok('p2p_offer_edit', $params)->has_no_system_error->has_no_error->result;
+    $res = $c->call_ok('p2p_offer_update', $params)->has_no_system_error->has_no_error->result;
     is $res->{offer_description}, 'new description', 'edit offer ok';
 
     $params->{args} = {offer_id => $offer->{offer_id}};
@@ -198,8 +228,10 @@ subtest 'Offers' => sub {
     cmp_ok $res->{offer_id}, '==', $offer->{offer_id}, 'p2p_offer_info returned correct info';
 
     $params->{args} = {offer_id => 9999};
-    $c->call_ok('p2p_offer_info', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Get info for non-existent offer');
-    $c->call_ok('p2p_offer_edit', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Edit non-existent offer');
+    $c->call_ok('p2p_offer_info',   $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Get info for non-existent offer');
+    $c->call_ok('p2p_offer_update', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Edit non-existent offer');
+
+    note explain $client_agent->p2p_offer($offer->{offer_id});
 
 };
 

@@ -68,14 +68,14 @@ our %ERROR_MAP = do {
         NotRegistered    => localize('You are not yet registered as an P2P agent.'),
 
         # Invalid data
-        InvalidPaymentMethod  => localize('This payment method is invalid.'),
-        NotFound              => localize('Not found.'),
-        MinimumNotMet         => localize('The minimum amount requirements are not met.'),
-        MaximumExceeded       => localize('This is above the maximum limit.'),
-        AlreadyInProgress     => localize('This cannot be cancelled since the order is already in progress.'),
-        InvalidNumericValue   => localize('Numeric value should be greater than 0.'),
-        InvalidMinOrMaxAmount => localize('The minimum amount should be less than or equal to maximum amount.'),
-        InvalidOfferAmount    => localize('The offer amount should be greater than or equal to maximum amount.'),
+        InvalidPaymentMethod => localize('This payment method is invalid.'),
+        NotFound             => localize('Not found.'),
+        MinimumNotMet        => localize('The minimum amount requirements are not met.'),
+        MaximumExceeded      => localize('The amount exceeds the maximum limit.'),
+        AlreadyInProgress    => localize('This cannot be cancelled since the order is already in progress.'),
+        InvalidNumericValue  => localize('Numeric value should be greater than 0.'),
+        InvalidMinMaxAmount  => localize('The minimum amount should be less than or equal to maximum amount.'),
+        InvalidMaxAmount     => localize('The maximum amount should be less than or equal to the offer amount.'),
 
         # bom-user errors
         AgentNotFound               => localize('P2P Agent not found.'),
@@ -86,7 +86,8 @@ our %ERROR_MAP = do {
         OrderAlreadyCancelled       => localize('The order is already cancelled.'),
         OfferNoEditInactive         => localize('The offer is inactive and cannot be changed.'),
         OfferNotFound               => localize('Offer not found.'),
-        OfferNoEditAmount           => localize('The offer has no available amount and cannot be changed.'),
+        OfferIsDisabled             => localize('Offer is inactive.'),
+        OfferInsufficientAmount     => localize('The new amount cannot be less than the value of current orders against this offer.'),
         OfferMaxExceeded            => localize('The maximum limit of active offers reached.'),
         InvalidOrderCurrency        => localize('You cannot create an order with a different currency than your account.'),
         OrderNotFound               => localize('Order not found.'),
@@ -271,10 +272,9 @@ Takes the following named parameters:
 
 =over 4
 
-=item * C<name> - the display name
+=item * C<agent_name> - The agent's display name
 
-=item * C<description> - description text to show on the profile page, this is also used for the
-default note on any future offers created by this agent
+=item * C<is_active> - The activation status of the agent
 
 =back
 
@@ -285,7 +285,10 @@ Returns a hashref containing the current agent details.
 p2p_rpc p2p_agent_update => sub {
     my (%args) = @_;
     my $client = $args{client};
-    return $client->p2p_agent_update($args{params}{args}->%*) // die "AgentNotRegistered\n";
+
+    my $agent = $client->p2p_agent_update($args{params}{args}->%*) // die "AgentNotRegistered\n";
+
+    return _agent_details($agent);
 };
 
 =head2 p2p_agent_info
@@ -296,7 +299,7 @@ Takes the following named parameters:
 
 =over 4
 
-=item * C<agent_id> - the internal ID of the agent
+=item * C<agent_id> - The internal ID of the agent
 
 =back
 
@@ -304,9 +307,17 @@ Returns a hashref containing the following information:
 
 =over 4
 
-=item * C<name>
+=item * C<agent_id> - The agent's identification number
 
-=item * C<description>
+=item * C<agent_name> - The agent's displayed name
+
+=item * C<client_loginid> - The loginid of the agent
+
+=item * C<created_time> - The epoch time that the client became an agent
+
+=item * C<is_active> - The activation status of the agent
+
+=item * C<is_authenticated> - The authentication status of the agent
 
 =back
 
@@ -323,15 +334,7 @@ p2p_rpc p2p_agent_info => sub {
         $agent = $client->p2p_agent // die "AgentNotFound\n";
     }
 
-    return +{
-        agent_id         => $agent->{id},
-        agent_name       => $agent->{name},
-        client_loginid   => $agent->{client_loginid},
-        created_time     => Date::Utility->new($agent->{created_time})->epoch,
-        is_authenticated => $agent->{is_authenticated},
-        is_active        => $agent->{is_active},
-    };
-
+    return _agent_details($agent);
 };
 
 =head2 p2p_method_list
@@ -518,32 +521,18 @@ p2p_rpc p2p_offer_list => sub {
     return {list => \@offers};
 };
 
-=head2 p2p_offer_edit
+=head2 p2p_offer_update
 
 Modifies details on an offer.
 
-Typically used to cancel or confirm.
-
 =cut
 
-p2p_rpc p2p_offer_edit => sub {
+p2p_rpc p2p_offer_update => sub {
     my %args = @_;
 
     my $client = $args{client};
-    return $client->p2p_offer_update($args{params}{args}->%*) // die "OfferNotFound\n";
-};
-
-=head2 p2p_offer_remove
-
-Removes an offer entirely.
-
-=cut
-
-p2p_rpc p2p_offer_remove => sub {
-    my %args = @_;
-
-    my ($client, $params) = @args{qw/client params/};
-    die 'Missing p2p_offer_remove feature';
+    my $offer = $client->p2p_offer_update($args{params}{args}->%*) // die "OfferNotFound\n";
+    return _offer_details($offer);
 };
 
 =head2 p2p_order_create
@@ -557,9 +546,7 @@ p2p_rpc p2p_order_create => sub {
 
     my $client = $args{client};
 
-    my $offer_id = $args{params}{args}{offer_id};
-    my $order    = $client->p2p_order_create($args{params}{args}->%*);
-    $order->{offer_id} = $offer_id;
+    my $order = $client->p2p_order_create($args{params}{args}->%*, source => $args{params}{source});
 
     my $order_response = _order_details($client, $order);
 
@@ -713,6 +700,19 @@ Exchange chat messages.
 p2p_rpc p2p_order_chat => sub {
     die "PermissionDenied\n";
 };
+
+sub _agent_details {
+    my ($agent) = @_;
+
+    return +{
+        agent_id         => $agent->{id},
+        agent_name       => $agent->{name},
+        client_loginid   => $agent->{client_loginid},
+        created_time     => Date::Utility->new($agent->{created_time})->epoch,
+        is_active        => $agent->{is_active},
+        is_authenticated => $agent->{is_authenticated},
+    };
+}
 
 sub _offer_details {
     my ($offer, $amount) = @_;
