@@ -14,7 +14,7 @@ use Time::HiRes;
 use Time::Duration::Concise::Localize;
 use BOM::User::Client;
 
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber roundcommon/;
 use Scalar::Util::Numeric qw(isint);
 
 use BOM::MarketData qw(create_underlying);
@@ -228,7 +228,7 @@ sub _get_ask {
                 my $display = $contract->available_orders_for_display;
                 $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
                 $response->{limit_order} = $display;
-                $response->{commission} = $contract->commission * 100;    # commission in percentage term
+                $response->{commission} = roundcommon(0.0001, $contract->commission * 100);    # commission in percentage term
 
                 if ($contract->deal_cancellation) {
                     $response->{deal_cancellation} = {
