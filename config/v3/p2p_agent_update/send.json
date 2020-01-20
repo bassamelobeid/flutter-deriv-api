@@ -1,0 +1,44 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "P2P Agent Update (request)",
+    "description": "Update the information of the P2P agent for the current account. Can only be used by an authenticated agent.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "payments"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "p2p_agent_update"
+    ],
+    "properties": {
+        "p2p_agent_update": {
+            "description": "Must be 1",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "agent_name": {
+            "description": "[Optional] The agent's displayed name.",
+            "type": "string"
+        },
+        "is_active": {
+            "description": "[Optional] The activation status of the agent.",
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ]
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}
