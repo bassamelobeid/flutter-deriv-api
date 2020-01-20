@@ -11,12 +11,34 @@ use BOM::Test::Email;
 use BOM::Database::UserDB;
 use BOM::User;
 use BOM::Test::Script::OnfidoMock;
+use BOM::Platform::Context qw(request);
 
 use WebService::Async::Onfido;
 use BOM::Event::Actions::Client;
+
+my (@identify_args, @track_args);
+my $segment_response = Future->fail(1);
+my $mock_segment     = new Test::MockModule('WebService::Async::Segment::Customer');
+$mock_segment->redefine(
+    'identify' => sub {
+        @identify_args = @_;
+        return $segment_response;
+    },
+    'track' => sub {
+        @track_args = @_;
+        return $segment_response;
+    });
+my $mock_brands = Test::MockModule->new('Brands');
+$mock_brands->mock(
+    'is_track_enabled' => sub {
+        my $self = shift;
+        return ($self->name eq 'deriv');
+    });
+
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+$test_client->set_default_account('USD');
 
 my $test_user = BOM::User->create(
     email          => $test_client->email,
@@ -305,6 +327,267 @@ subtest 'sync_onfido_details' => sub {
     ok(1);
 
 };
+
+subtest 'signup event' => sub {
+
+    # Data sent for virtual signup should be loginid, country and landing company. Other values are not defined for virtual
+    my $virtual_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code      => 'VRTC',
+        email            => 'test2@bin.com',
+        first_name       => '',
+        last_name        => '',
+        date_of_birth    => undef,
+        phone            => '',
+        address_line_1   => '',
+        address_line_2   => '',
+        address_city     => '',
+        address_state    => '',
+        address_postcode => '',
+    });
+    my $email = $virtual_client2->email;
+
+    my $user2 = BOM::User->create(
+        email          => $virtual_client2->email,
+        password       => "hello",
+        email_verified => 1,
+    );
+
+    $user2->add_client($virtual_client2);
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'id'
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+    my $args = {
+        loginid => $virtual_client2->loginid,
+    };
+    $virtual_client2->set_default_account('USD');
+    ok BOM::Event::Actions::Client::signup($args), 'signup triggered with virtual loginid';
+
+    my ($customer, %args) = @identify_args;
+    is $args{first_name}, undef, 'test first name';
+    is_deeply \%args,
+        {
+        'context' => {
+            'active' => 1,
+            'app'    => {'name' => 'deriv'},
+            'locale' => 'id'
+        }
+        },
+        'context is properly set for signup';
+
+    ($customer, %args) = @track_args;
+    is_deeply \%args,
+        {
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'id'
+        },
+        event      => 'signup',
+        properties => {
+            loginid         => $virtual_client2->loginid,
+            currency        => $virtual_client2->currency,
+            landing_company => $virtual_client2->landing_company->short,
+            country         => Locale::Country::code2country($virtual_client2->residence),
+            date_joined     => $virtual_client2->date_joined,
+            'address'       => {
+                street      => ' ',
+                town        => '',
+                state       => '',
+                postal_code => '',
+                country     => Locale::Country::code2country($virtual_client2->residence),
+            },
+        }
+        },
+        'properties is properly set for virtual account signup';
+
+    my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'test2@bin.com',
+    });
+    $args->{loginid} = $test_client2->loginid;
+
+    $user2->add_client($test_client2);
+
+    undef @identify_args;
+    undef @track_args;
+
+    $segment_response = Future->done(1);
+    my $result = BOM::Event::Actions::Client::signup($args);
+    is $result, 1, 'Success signup result';
+    ($customer, %args) = @identify_args;
+    test_segment_customer($customer, $test_client2, '', $virtual_client2->date_joined);
+
+    is_deeply \%args,
+        {
+        'context' => {
+            'active' => 1,
+            'app'    => {'name' => 'deriv'},
+            'locale' => 'id'
+        }
+        },
+        'identify context is properly set for signup';
+
+    ($customer, %args) = @track_args;
+    test_segment_customer($customer, $test_client2, '', $virtual_client2->date_joined);
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    my ($year, $month, $day) = split('-', $test_client2->date_of_birth);
+    is_deeply \%args, {
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'id'
+        },
+        event      => 'signup',
+        properties => {
+            # currency => is not set yet
+            loginid         => $test_client2->loginid,
+            date_joined     => $test_client2->date_joined,
+            first_name      => $test_client2->first_name,
+            last_name       => $test_client2->last_name,
+            phone           => $test_client2->phone,
+            country         => Locale::Country::code2country($test_client2->residence),
+            landing_company => $test_client2->landing_company->short,
+            age             => (
+                Time::Moment->new(
+                    year  => $year,
+                    month => $month,
+                    day   => $day
+                )->delta_years(Time::Moment->now_utc)
+            ),
+            'address' => {
+                street      => $test_client->address_line_1 . " " . $test_client->address_line_2,
+                town        => $test_client->address_city,
+                state       => BOM::Platform::Locale::get_state_by_id($test_client->state, $test_client->residence) // '',
+                postal_code => $test_client->address_postcode,
+                country     => Locale::Country::code2country($test_client->residence),
+            },
+        }
+        },
+        'properties is set properly for real account signup event';
+
+    $test_client2->set_default_account('EUR');
+
+    ok BOM::Event::Actions::Client::signup($args), 'successful login track after setting currency';
+    ($customer, %args) = @track_args;
+    test_segment_customer($customer, $test_client2, 'EUR', $virtual_client2->date_joined);
+
+};
+
+subtest 'transfer between accounts event' => sub {
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'id'
+    );
+    request($req);
+
+    undef @track_args;
+    undef @identify_args;
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            from_account       => $test_client->loginid,
+            to_account         => 'CR000',
+            from_currency      => 'USD',
+            to_currency        => 'BTC',
+            from_amount        => 2,
+            to_amount          => 1,
+            source             => '16303',
+            fees               => 0.02,
+            remark             => 'test remark',
+            gateway_code       => 'account_transfer',
+            is_from_account_pa => 0,
+            is_to_account_pa   => 0,
+            id                 => 10,
+            time               => '2020-01-09 10:00:00.000'
+        }};
+
+    ok BOM::Event::Actions::Client::transfer_between_accounts($args), 'transfer_between_accounts triggered successfully';
+    my ($customer, %args) = @track_args;
+    is scalar(@identify_args), 0, 'identify is not called';
+
+    is_deeply(
+        \%args,
+        {
+            context => {
+                active => 1,
+                app    => {name => "deriv"},
+                locale => "id"
+            },
+            event      => "transfer_between_accounts",
+            properties => {
+                currency           => $test_client->currency,
+                fees               => 0.02,
+                from_account       => $test_client->loginid,
+                from_amount        => 2,
+                from_currency      => "USD",
+                gateway_code       => "account_transfer",
+                remark             => "test remark",
+                revenue            => -2,
+                source             => 16303,
+                to_account         => "CR000",
+                to_amount          => 1,
+                to_currency        => "BTC",
+                value              => 2,
+                is_from_account_pa => 0,
+                is_to_account_pa   => 0,
+                id                 => 10,
+                time               => '2020-01-09T10:00:00Z'
+            },
+        },
+        'identify context is properly set for transfer_between_account'
+    );
+
+};
+
+sub test_segment_customer {
+    my ($customer, $test_client, $currencies, $created_at) = @_;
+
+    my %GENDER_MAPPING = (
+        MR   => 'male',
+        MRS  => 'female',
+        MISS => 'female',
+        MS   => 'female'
+    );
+
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    is $customer->user_id, $test_client->binary_user_id, 'User id is binary user id';
+    my ($year, $month, $day) = split('-', $test_client->date_of_birth);
+
+    is_deeply $customer->traits,
+        {
+        'email'      => $test_client->email,
+        'first_name' => $test_client->first_name,
+        'last_name'  => $test_client->last_name,
+        'birthday'   => $test_client->date_of_birth,
+        'age'        => (
+            Time::Moment->new(
+                year  => $year,
+                month => $month,
+                day   => $day
+            )->delta_years(Time::Moment->now_utc)
+        ),
+        'phone'      => $test_client->phone,
+        'created_at' => Date::Utility->new($created_at)->datetime_iso8601,
+        'gender'     => $GENDER_MAPPING{uc($test_client->salutation)},
+        'address'    => {
+            street      => $test_client->address_line_1 . " " . $test_client->address_line_2,
+            town        => $test_client->address_city,
+            state       => BOM::Platform::Locale::get_state_by_id($test_client->state, $test_client->residence) // '',
+            postal_code => $test_client->address_postcode,
+            country     => Locale::Country::code2country($test_client->residence),
+        },
+        'currencies' => $currencies,
+        'country'    => Locale::Country::code2country($test_client->residence),
+        },
+        'Customer traits are set correctly';
+}
 
 done_testing();
 

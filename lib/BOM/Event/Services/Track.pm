@@ -1,4 +1,4 @@
-package BOM::Event::Actions::Track;
+package BOM::Event::Services::Track;
 
 use strict;
 use warnings;
@@ -13,13 +13,6 @@ use Time::Moment;
 use Date::Utility;
 use BOM::Platform::Locale qw/get_state_by_id/;
 
-my %GENDER_MAPPING = (
-    MR   => 'male',
-    MRS  => 'female',
-    MISS => 'female',
-    MS   => 'female'
-);
-
 my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
 
@@ -28,6 +21,13 @@ $loop->add(my $services = BOM::Event::Services->new);
 sub _segment {
     return $services->segment();
 }
+
+my %GENDER_MAPPING = (
+    MR   => 'male',
+    MRS  => 'female',
+    MISS => 'female',
+    MS   => 'female'
+);
 
 =head2 login
 
@@ -87,13 +87,50 @@ sub signup {
     return _track($customer, $properties, 'signup');
 }
 
+=head2 new_mt5_signup
+
+It is triggered for each B<new mt5 signup> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+    
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub new_mt5_signup {
+    my ($args) = @_;
+    my $loginid = $args->{loginid};
+    my $properties = $args->{properties} // {};
+
+    delete $properties->{cs_email};
+    $properties->{mt5_login_id} = "MT" . $properties->{mt5_login_id};
+
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+
+    $log->debugf('Track new mt5 signup event for client %s', $loginid);
+    _identify($customer);
+    return _track($customer, $properties, 'mt5 signup');
+}
+
 =head2 transfer_between_accounts
+
 It is triggered for each B<transfer_between_accounts> event emitted, delivering it to Segment.
 It can be called with the following parameters:
+    
 =over
+
 =item * C<loginid> - required. Login Id of the user.
+
 =item * C<properties> - Free-form dictionary of event properties.
+
 =back
+
 =cut
 
 sub transfer_between_accounts {
@@ -111,8 +148,38 @@ sub transfer_between_accounts {
     $properties->{time} = _time_to_iso_8601($properties->{time} // die('required time'));
 
     $log->debugf('Track transfer_between_accounts event for client %s', $loginid);
-    _identify($customer);
     return _track($customer, $properties, 'transfer_between_accounts');
+}
+
+=head2 _time_to_iso_8601 
+
+Convert the format of the database time to iso 8601 time that is sutable for Segment
+Arguments:
+    
+=over
+
+=item * C<time> - required. Database time.
+
+=back
+
+=cut
+
+sub _time_to_iso_8601 {
+    my $time = shift;
+
+    my ($y_m_d, $h_m_s) = split(' ', $time);
+    my ($year, $month,  $day)    = split('-', $y_m_d);
+    my ($hour, $minute, $second) = split(':', $h_m_s);
+    return Time::Moment->from_epoch(
+        Time::Moment->new(
+            year   => $year,
+            month  => $month,
+            day    => $day,
+            hour   => $hour,
+            minute => $minute,
+            second => $second
+        )->epoch
+    )->to_string;
 }
 
 =head2 _identify
@@ -282,29 +349,13 @@ sub _validate_params {
         return undef;
     }
 
-    return undef unless request->brand->is_track_enabled;
+    unless (request->brand->is_track_enabled) {
+        $log->debugf('Event tracking is not enabled for brand %s', request->brand->name);
+        return undef;
+    }
     die 'Login tracking triggered without a loginid. Please inform back end team if this continues to occur.' unless $loginid;
 
     return 1;
-}
-
-=head2 _time_to_iso_8601 
-
-Convert the format of the database time to iso 8601 time that is sutable for Segment
-Arguments:
-
-=over
-
-=item * C<time> - required. Database time.
-
-=back
-
-=cut
-
-sub _time_to_iso_8601 {
-    my $time = shift;
-
-    return Time::Moment->from_epoch(Date::Utility->new($time)->epoch)->to_string;
 }
 
 1;

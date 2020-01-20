@@ -14,6 +14,7 @@ use BOM::User::Client;
 use BOM::MT5::User::Async;
 use BOM::Config::RedisReplicated;
 use BOM::Config;
+use BOM::Event::Services::Track;
 
 use Email::Stuffer;
 use YAML::XS;
@@ -197,6 +198,11 @@ sub new_mt5_signup {
     my $client = BOM::User::Client->new({loginid => $data->{loginid}});
     return unless $client;
 
+    BOM::Event::Services::Track::new_mt5_signup({
+            loginid    => $data->{loginid},
+            properties => $data
+        })->retain;
+
     my $id         = $data->{mt5_login_id};
     my $cache_key  = "MT5_USER_GROUP::$id";
     my $group      = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
@@ -221,7 +227,7 @@ sub new_mt5_signup {
         BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
     }
 
-    return undef;
+    return 1;
 }
 
 1;

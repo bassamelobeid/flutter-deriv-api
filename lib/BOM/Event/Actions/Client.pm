@@ -47,6 +47,7 @@ use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
 use BOM::Config::RedisReplicated;
 use BOM::Event::Services;
+use BOM::Event::Services::Track;
 use BOM::Config::Onfido;
 use Encode qw(decode_utf8 encode_utf8);
 use Time::HiRes;
@@ -2054,6 +2055,52 @@ async sub check_or_store_onfido_applicant {
 
     return 1;
 
+}
+
+=head2 signup
+
+It is triggered for each B<signup> event emitted.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties, with B<loginid> and B<currency> automatically added.
+
+=back
+
+=cut
+
+sub signup {
+    my @args = @_;
+
+    BOM::Event::Services::Track::signup(@args)->retain;
+
+    return 1;
+}
+
+=head2 transfer_between_accounts
+
+It is triggered for each B<transfer_between_accounts> event emitted.
+It is called with the following parameters:
+    
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub transfer_between_accounts {
+    my @args = @_;
+
+    BOM::Event::Services::Track::transfer_between_accounts(@args)->retain;
+
+    return 1;
 }
 
 1;

@@ -20,7 +20,7 @@ use BOM::Event::Actions::Anonymization;
 use BOM::Event::Actions::Email;
 use BOM::Event::Actions::P2P;
 use BOM::Event::Actions::MyAffiliate;
-use BOM::Event::Actions::Track;
+use BOM::Event::Actions::User;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
 
@@ -53,9 +53,9 @@ my $action_mapping = {
     ready_for_authentication    => \&BOM::Event::Actions::Client::ready_for_authentication,
     client_verification         => \&BOM::Event::Actions::Client::client_verification,
     verify_address              => \&BOM::Event::Actions::Client::verify_address,
-    login                       => \&BOM::Event::Actions::Track::login,
-    signup                      => \&BOM::Event::Actions::Track::signup,
-    transfer_between_accounts   => \&BOM::Event::Actions::Track::transfer_between_accounts,
+    login                       => \&BOM::Event::Actions::User::login,
+    signup                      => \&BOM::Event::Actions::Client::signup,
+    transfer_between_accounts   => \&BOM::Event::Actions::Client::transfer_between_accounts,
     account_closure             => \&BOM::Event::Actions::Client::account_closure,
     social_responsibility_check => \&BOM::Event::Actions::Client::social_responsibility_check,
     set_pending_transaction     => \&BOM::Event::Actions::CryptoSubscription::set_pending_transaction,
