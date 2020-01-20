@@ -12,6 +12,7 @@
             "title": "p2p_offer_update",
             "description": "P2P updated offer info",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "type": {
                     "description": "Whether this is a buy or a sell.",

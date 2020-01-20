@@ -12,6 +12,7 @@
             "title": "p2p_offer_create",
             "description": "The information of the created P2P offer.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "type": {
                     "description": "Whether this is a buy or a sell.",
