@@ -76,6 +76,8 @@ our %ERROR_MAP = do {
         InvalidNumericValue  => localize('Numeric value should be greater than 0.'),
         InvalidMinMaxAmount  => localize('The minimum amount should be less than or equal to maximum amount.'),
         InvalidMaxAmount     => localize('The maximum amount should be less than or equal to the offer amount.'),
+        InvalidListLimit     => localize("Invalid value for list limit"),
+        InvalidListOffset    => localize("Invalid value for list offset"),
 
         # bom-user errors
         AgentNotFound               => localize('P2P Agent not found.'),
@@ -575,6 +577,10 @@ by the current client)
 =item * C<offer_id> - lists only the orders for the given offer (this is only available
 if the current client owns that offer)
 
+=item * C<limit> - limit number of items returned in list
+
+=item * C<offset> - set offset for list
+
 =back
 
 =cut
@@ -584,7 +590,7 @@ p2p_rpc p2p_order_list => sub {
 
     my $client = $args{client};
 
-    my $list = $client->p2p_order_list(%{$args{params}{args}}{grep { exists $args{params}{args}{$_} } qw(status agent_id offer_id)});
+    my $list = $client->p2p_order_list(%{$args{params}{args}}{grep { exists $args{params}{args}{$_} } qw(status agent_id offer_id limit offset)});
 
     my @orders = map { _order_details($client, $_) } @{$list};
 
