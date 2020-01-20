@@ -152,6 +152,7 @@ subtest 'update agent' => sub {
 };
 
 subtest 'create offer' => sub {
+    $cl_agent->p2p_agent_update(is_authenticated => 1);
     $resp = $t->await::p2p_offer_create({
         p2p_offer_create => 1,
         %offer_params
@@ -205,7 +206,6 @@ subtest 'create order' => sub {
 
     is $order->{account_currency}, $cl_agent->account->currency_code, 'account currency';
     is $order->{agent_id}, $agent->{agent_id}, 'agent id';
-    is $order->{agent_loginid}, $cl_agent->loginid, 'agent loginid';
     is $order->{agent_name}, $agent_name, 'agent name';
     ok $order->{amount} == $amount && $order->{amount_display} == $amount, 'amount';
     ok $order->{expiry_time},    'expiry time';
