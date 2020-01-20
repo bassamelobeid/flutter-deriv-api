@@ -635,4 +635,44 @@ rpc contract_update => sub {
     return $response;
 };
 
+rpc contract_update_history => sub {
+    my $params = shift;
+
+    my $args        = $params->{args};
+    my $contract_id = $args->{contract_id};
+
+    unless ($contract_id) {
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => 'MissingContractId',
+            message_to_client => localize('Contract id is required to update contract'),
+        });
+    }
+
+    my $client = $params->{client};
+    unless ($client) {
+        # since this is an authenticated call, we can't proceed
+        return BOM::Pricing::v3::Utility::create_error({
+            code              => 'AuthorizationRequired',
+            message_to_client => localize('Please log in.'),
+        });
+    }
+
+    my $response;
+    try {
+        my $updater = BOM::Transaction::ContractUpdate->new(
+            client      => $client,
+            contract_id => $contract_id,
+        );
+        $response = $updater->get_history;
+    }
+    catch {
+        $response = BOM::Pricing::v3::Utility::create_error({
+            code              => 'ContractUpdateHistoryError',
+            message_to_client => localize("Sorry, an error occurred while processing your request."),
+        });
+    }
+
+    return $response;
+};
+
 1;
