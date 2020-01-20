@@ -29,9 +29,19 @@
                 1
             ]
         },
+        "limit": {
+            "description": "[Optional] Used for paging.",
+            "type": "integer",
+            "default": 50
+        },
         "offer_id": {
             "description": "[Optional] If present, lists orders applying to a specific offer.",
             "type": "string"
+        },
+        "offset": {
+            "description": "[Optional] Used for paging.",
+            "type": "integer",
+            "default": 0
         },
         "subscribe": {
             "description": "[Optional] If set to 1, will send updates whenever there is a change to any order belonging to you.",
