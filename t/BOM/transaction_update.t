@@ -198,8 +198,8 @@ subtest 'update take profit', sub {
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
         is $updater->validation_error->{code}, 'ContractNotFound', 'code - ContractNotFound';
-        is $updater->validation_error->{message_to_client}, 'Contract not found for contract id: 123.',
-            'message_to_client - Contract not found for contract id: [_1].';
+        is $updater->validation_error->{message_to_client}, 'No open contract found for contract id: 123.',
+            'message_to_client - No open contract found for contract id: [_1].';
 
         my $args = {
             underlying   => $underlying,
@@ -349,6 +349,46 @@ subtest 'update take profit', sub {
         ok $audit_details->[0], 'audit cancel populated';
         ok $audit_details->[1], 'audit update populated';
         cmp_ok $audit_details->[1][9], "lt", $audit_details->[0][9], "timestamp are in order";
+
+        subtest "get update history for $fmb->{id}" => sub {
+            $updater = BOM::Transaction::ContractUpdate->new(
+                client      => $cl,
+                contract_id => $fmb->{id},
+            );
+            my $history = $updater->get_history();
+            is scalar(@$history), 3, 'has three entries';
+            is $history->[0]->{display_name}, 'Take profit';
+            is $history->[0]->{order_amount}, 0;
+            is $history->[1]->{display_name}, 'Take profit';
+            is $history->[1]->{order_amount}, 15;
+            is $history->[2]->{display_name}, 'Take profit';
+            is $history->[2]->{order_amount}, 10;
+
+            sleep 1;
+            $updater = BOM::Transaction::ContractUpdate->new(
+                client        => $cl,
+                contract_id   => $fmb->{id},
+                update_params => {
+                    stop_loss   => -52,
+                    take_profit => 11
+                },
+            );
+            ok $updater->is_valid_to_update, 'valid to update';
+            $updater->update;
+            $res = $updater->get_history();
+            is $res->[0]->{display_name}, 'Take profit';
+            is $res->[0]->{order_amount}, 11;
+            is $res->[1]->{display_name}, 'Stop loss';
+            is $res->[1]->{order_amount}, -52;
+            is $res->[2]->{display_name}, 'Take profit';
+            is $res->[2]->{order_amount}, 0;
+            is $res->[3]->{display_name}, 'Take profit';
+            is $res->[3]->{order_amount}, 15;
+            is $res->[4]->{display_name}, 'Take profit';
+            is $res->[4]->{order_amount}, 10;
+        };
+
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
     };
 
     subtest 'update take profit on a sold contract' => sub {
@@ -385,6 +425,12 @@ subtest 'update take profit', sub {
                             order_type   => 'take_profit',
                             order_amount => $last_updated_record->{take_profit_order_amount},
                             order_date   => $last_updated_record->{take_profit_order_date},
+                            basis_spot   => $last_updated_record->{basis_spot},
+                        },
+                        stop_loss => {
+                            order_type   => 'stop_loss',
+                            order_amount => $last_updated_record->{stop_loss_order_amount},
+                            order_date   => $last_updated_record->{stop_loss_order_date},
                             basis_spot   => $last_updated_record->{basis_spot},
                         },
                     },
