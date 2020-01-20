@@ -7,7 +7,11 @@ no indirect;
 use BOM::Test::WebsocketAPI::Template::DSL;
 
 request p2p_order_list => sub {
-    return p2p_order_list => {p2p_order_list => 1};
+    return p2p_order_list => {
+        p2p_order_list => 1,
+        limit          => 10,
+        offset         => 0,
+    };
     },
     qw(p2p_order);
 
@@ -22,6 +26,8 @@ rpc_request {
             p2p_order_list => 1,
             subscribe      => 1,
             active         => 1,
+            limit          => 10,
+            offset         => 0,
         },
         source  => '1',
         logging => {},
