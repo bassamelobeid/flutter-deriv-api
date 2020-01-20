@@ -1863,6 +1863,10 @@ no_filter will show all results with no amount filtering or adjustment.
 sub p2p_offer_list {
     my ($client, %param) = @_;
 
+    my ($limit, $offset) = @param{qw/limit offset/};
+    die "InvalidListLimit\n"  if defined $limit  && $limit <= 0;
+    die "InvalidListOffset\n" if defined $offset && $offset < 0;
+
     my $rows = $client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
@@ -2009,9 +2013,17 @@ sub p2p_order_list {
 
     $param{loginid} = $client->loginid;
 
+    my ($limit, $offset) = @param{qw/limit offset/};
+    die "InvalidListLimit\n"  if defined $limit  && $limit <= 0;
+    die "InvalidListOffset\n" if defined $offset && $offset < 0;
+
     my $orders = $client->db->dbic->run(
+
         fixup => sub {
-            $_->selectall_arrayref('SELECT * FROM p2p.order_list(?, ?, ?, ?)', {Slice => {}}, @param{qw/id offer_id loginid status/});
+            $_->selectall_arrayref(
+                'SELECT * FROM p2p.order_list(?, ?, ?, ?, ?, ?)',
+                {Slice => {}},
+                @param{qw/id offer_id loginid status limit offset/});
         }) // [];
 
     # Temporary field renaming to be removed after https://trello.com/c/WScG2dl5 is released
