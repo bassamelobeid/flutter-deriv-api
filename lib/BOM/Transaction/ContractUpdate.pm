@@ -336,7 +336,7 @@ sub get_history {
                 display_name => $display_name,
                 order_amount => $order_amount,
                 order_date   => Date::Utility->new($current->{$order_type . '_order_date'})->epoch,
-                value        => $self->contract->new_order({$order_type => $order_amount})->barrier_value,
+                value        => $self->contract->new_order({$order_type => abs($order_amount)})->barrier_value,
                 order_type   => $order_type,
                 }
                 if (defined $order_amount);
