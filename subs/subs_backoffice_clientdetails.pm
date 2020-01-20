@@ -424,11 +424,11 @@ sub build_client_warning_message {
         my $remove_from_landing_company_accounts_link =
             $client->has_siblings()
             ? link_for_remove_status_from_all_siblings($login_id, $code)
-            : '<span style="color: gray">' . "doesn't have siblings" . '</span>';
+            : '<span style="color: gray">' . "doesn't have siblings across the same landing company" . '</span>';
         my $copy_to_landing_company_accounts_link =
             $client->has_siblings()
             ? link_for_copy_status_status_to_siblings($login_id, $code)
-            : '<span style="color: gray">' . "doesn't have siblings" . '</span>';
+            : '<span style="color: gray">' . "doesn't have siblings across the same landing company" . '</span>';
         if (my $disabled = $client->status->$code) {
             delete $client_status{$type->{code}};
             push(
