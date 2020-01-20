@@ -360,6 +360,8 @@ sub get_transactions_ws {
                         AND transaction_time < ?
                         AND transaction_time >= ?
                         ##ACTION_TYPE##
+	         -- We may have two transactions at exactly the same time so it's better to include the `id DESC` in `ORDER BY` clause.
+		 -- But we don't have index support for ordering by the `time` and `id`.
                     ORDER BY transaction_time DESC
                     LIMIT ?
                     OFFSET ?
@@ -372,7 +374,7 @@ sub get_transactions_ws {
                     ON (t.payment_id = p.id)
                 LEFT JOIN bet.multiplier m
                     ON (b.id = m.financial_market_bet_id)
-                ORDER BY t.transaction_time DESC
+            ORDER BY t.transaction_time DESC
     };
 
     my $limit  = $args->{limit};
