@@ -230,7 +230,7 @@ sub _get_order_channel_name {
 
 sub _order_details {
     my ($client, $order) = @_;
-    #DON'T REMOVE agent_loginid and client_loginid, we relay on these fields in subscriptions code
+
     $order->{type} = delete $order->{offer_type};
     $order->{account_currency} //= delete $order->{offer_account_currency};
     $order->{local_currency}   //= delete $order->{offer_local_currency};
@@ -246,9 +246,19 @@ sub _order_details {
     $order->{offer_description} //= '';
     $order->{order_description} //= '';
 
-    delete $order->{order_amount};
-    delete $order->{offer_rate};
-    delete $order->{is_expired};
+    #DON'T REMOVE agent_loginid and client_loginid, we relay on these fields in subscriptions code
+    delete @$order{qw(
+            order_amount
+            offer_rate
+            is_expired
+            client_balance
+            client_confirmed
+            client_trans_id
+            escrow_trans_id
+            offer_remaining
+            expire_time
+            agent_confirmed
+            )};
 
     return $order;
 }
