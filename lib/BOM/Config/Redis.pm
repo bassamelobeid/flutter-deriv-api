@@ -22,6 +22,7 @@ function to get working connection.
 use strict;
 use warnings;
 
+use Carp;
 use YAML::XS;
 use RedisDB;
 use Syntax::Keyword::Try;
@@ -107,9 +108,38 @@ sub redis_replicated_write {
 Returns a read-only L<RedisDB> handle to our standard Redis service with replication enabled.
 
 =cut
+
 sub redis_replicated_read {
     $config->{replicated} //= BOM::Config::redis_replicated_config();
     return _redis('replicated', 'read', 10);
+}
+
+=head2 redis_write
+
+    my $redis = BOM::Config::Redis::redis_write();
+
+B<Deprecated>.  Returns a writable L<RedisDB> handle to our standard
+Redis service with replication enabled.
+
+=cut
+
+sub redis_write {
+    carp 'redis_write is DEPRECATED in favor of BOM::Config::Redis::redis_replicated_write';
+    return redis_replicated_write();
+}
+
+=head2 redis_read
+
+    my $redis = BOM::Config::Redis::redis_read();
+
+B<Deprecated>.  Returns a read-only L<RedisDB> handle to our standard
+Redis service with replication enabled.
+
+=cut
+
+sub redis_read {
+    carp 'redis_read is DEPRECATED in favor of BOM::Config::Redis::redis_replicated_read';
+    return redis_replicated_read();
 }
 
 =head2 redis_pricer
