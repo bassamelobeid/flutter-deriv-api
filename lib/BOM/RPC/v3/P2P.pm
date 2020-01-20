@@ -738,7 +738,7 @@ sub _offer_details {
     $offer->{created_time} = Date::Utility->new($offer->{created_time})->epoch;
     $offer->{offer_description} //= '';
 
-    delete @$offer{qw(remaining offer_amount)};
+    delete @$offer{qw(remaining offer_amount agent_loginid)};
 
     return $offer;
 }
@@ -761,9 +761,20 @@ sub _order_details {
     $order->{offer_description} //= '';
     $order->{order_description} //= '';
 
-    delete @$order{
-        qw(order_amount offer_rate is_expired client_balance client_confirmed client_loginid client_trans_id escrow_trans_id offer_remaining expire_time)
-    };
+    delete @$order{qw(
+            order_amount
+            offer_rate
+            is_expired
+            client_balance
+            client_confirmed
+            client_loginid
+            client_trans_id
+            escrow_trans_id
+            offer_remaining
+            expire_time
+            agent_confirmed
+            agent_loginid
+            )};
 
     return $order;
 }
