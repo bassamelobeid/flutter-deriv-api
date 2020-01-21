@@ -4,7 +4,8 @@ package main;
 use strict;
 use warnings;
 
-use Syntax::Keyword::Try;
+no indirect;
+
 use Date::Utility;
 use Text::CSV;
 use Syntax::Keyword::Try;
