@@ -357,6 +357,39 @@ subtest 'Getting order list' => sub {
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
+subtest 'Order list pagination' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer();
+
+    BOM::Test::Helper::P2P::create_order(
+        offer_id => $offer->{offer_id},
+        amount   => 10
+    ) for (1 .. 2);
+
+    my $param = {};
+    $param->{token} = BOM::Platform::Token::API->new->create_token($agent->loginid, 'test token');
+
+    my $res1 = $c->call_ok(p2p_order_list => $param)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res1->{list}}), '==', 2, 'Got 2 orders in a list';
+
+    my ($first_order, $second_order) = @{$res1->{list}};
+
+    $param->{args} = {limit => 1};
+    my $res2 = $c->call_ok(p2p_order_list => $param)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res2->{list}}), '==', 1, 'got 1 order with limit 1';
+    cmp_ok $res2->{list}[0]{order_id}, 'eq', $first_order->{order_id}, 'got correct order id with limit 1';
+
+    $param->{args} = {
+        limit  => 1,
+        offset => 1
+    };
+    my $res3 = $c->call_ok(p2p_order_list => $param)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res3->{list}}), '==', 1, 'got 1 order with limit 1 and offest 1';
+    cmp_ok $res3->{list}[0]{order_id}, 'eq', $second_order->{order_id}, 'got correct order id with limit 1 and offset 1';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
 subtest 'Getting order list' => sub {
     BOM::Test::Helper::P2P::create_escrow();
     my ($agent1, $offer1) = BOM::Test::Helper::P2P::create_offer();
