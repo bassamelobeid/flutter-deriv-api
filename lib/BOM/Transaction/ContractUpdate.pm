@@ -189,15 +189,13 @@ sub _validate_update_parameter {
         if ($contract->is_valid_to_cancel) {
             if ($order_name eq 'stop_loss') {
                 $error = {
-                    code => 'UpdateStopLossNotAllowed',
-                    message_to_client =>
-                        localize('You may update your stop loss amount after deal cancellation has expired.'),
+                    code              => 'UpdateStopLossNotAllowed',
+                    message_to_client => localize('You may update your stop loss amount after deal cancellation has expired.'),
                 };
             } elsif ($order_name eq 'take_profit') {
                 $error = {
                     code              => 'UpdateTakeProfitNotAllowed',
-                    message_to_client => localize(
-                        'You may update your take profit amount after deal cancellation has expired.'),
+                    message_to_client => localize('You may update your take profit amount after deal cancellation has expired.'),
                 };
             }
             last;
