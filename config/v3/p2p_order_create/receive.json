@@ -12,6 +12,7 @@
             "title": "p2p_order_create",
             "description": "Create a P2P offer.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "type": {
                     "description": "Type of the order.",
@@ -60,6 +61,11 @@
                     "examples": [
                         "USD"
                     ]
+                },
+                "offer_description": {
+                    "description": "Notes from the agent. Should include contact details and payment instructions.",
+                    "type": "string",
+                    "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
                 },
                 "offer_id": {
                     "description": "The unique identifier for the offer.",

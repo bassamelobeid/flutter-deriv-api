@@ -12,6 +12,7 @@
             "title": "p2p_agent_info",
             "description": "P2P agent info",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "agent_id": {
                     "description": "The agent's identification number.",

@@ -12,6 +12,7 @@
             "title": "p2p_order_info",
             "description": "The information of P2P order.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "type": {
                     "description": "Whether this is a buy or a sell.",

@@ -12,6 +12,7 @@
             "title": "p2p_order_list",
             "description": "P2P order list",
             "type": "object",
+            "additionalProperties": false,
             "required": [
                 "list"
             ],

@@ -11,6 +11,7 @@
         "p2p_order_confirm": {
             "description": "Confirmation details",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "order_id": {
                     "description": "The unique identifier for the order.",
