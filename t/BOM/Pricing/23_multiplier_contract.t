@@ -98,7 +98,7 @@ subtest 'multiplier - send_ask' => sub {
             'valid_source'               => 1,
             'app_markup_percentage'      => '0'
         },
-        'commission'  => '0.0503664904346249',
+        'commission'  => '0.0504',
         'spot_time'   => ignore(),
         'limit_order' => {
             'stop_out' => {
@@ -142,7 +142,7 @@ subtest 'multiplier - send_ask' => sub {
             'valid_source'               => 1,
             'app_markup_percentage'      => '0'
         },
-        'commission'  => '0.0503664904346249',
+        'commission'  => '0.0504',
         'spot_time'   => ignore(),
         'limit_order' => {
             'stop_out' => {
@@ -188,13 +188,13 @@ subtest 'multiplier - send_ask' => sub {
             'bet_type'              => 'MULTUP'
         },
         'auth_time'     => ignore(),
-        'display_value' => '103.99',
+        'display_value' => '104.11',
         'stash'         => {
             'source_bypass_verification' => 0,
             'valid_source'               => 1,
             'app_markup_percentage'      => '0'
         },
-        'commission'  => '0.0503664904346249',
+        'commission'  => '0.0504',
         'spot_time'   => ignore(),
         'limit_order' => {
             'stop_out' => {
@@ -212,10 +212,10 @@ subtest 'multiplier - send_ask' => sub {
         },
         'payout'            => '0',
         'rpc_time'          => ignore(),
-        'ask_price'         => '103.99',
+        'ask_price'         => '104.11',
         'multiplier'        => 10,
         'deal_cancellation' => {
-            'ask_price'   => 3.99,
+            'ask_price'   => 4.11,
             'date_expiry' => ignore(),
         },
     };
@@ -377,7 +377,7 @@ subtest 'multiplier - get_bid' => sub {
         'status'                   => 'open',
         expiry_time                => ignore(),
         'deal_cancellation'        => {
-            'ask_price'   => '4.10',
+            'ask_price'   => '4.22',
             'date_expiry' => ignore(),
         },
         'validation_error' =>
