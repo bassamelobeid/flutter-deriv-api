@@ -18,6 +18,7 @@ no indirect;
 use Syntax::Keyword::Try;
 use JSON::MaybeUTF8 qw(:v1);
 use DataDog::DogStatsd::Helper qw(stats_inc);
+use List::Util qw (any);
 
 use BOM::User::Client;
 use BOM::Platform::Context qw (localize request);
@@ -161,24 +162,11 @@ sub p2p_rpc {
         my $params = shift;
         try {
             my $app_config = BOM::Config::Runtime->instance->app_config;
+            my $client     = $params->{client};
 
-            # Yes, we have two ways to disable - devops can shut it down if there
-            # are problems, and payments/ops/QA can choose whether or not the
-            # functionality should be exposed in the first place. The ->p2p->enabled
-            # check may be dropped in future once this is stable.
-            die "P2PDisabled\n" if $app_config->system->suspend->p2p;
-            die "P2PDisabled\n" unless $app_config->payments->p2p->enabled;
+            _check_client_access($client, $app_config);
 
-            # All operations require a valid client with active account
-            my $client = $params->{client}
-                or die "NotLoggedIn\n";
-
-            die "UnavailableOnVirtual\n" if $client->is_virtual;
-
-            die "PermissionDenied\n" if $client->status->has_any(@{RESTRICTED_CLIENT_STATUSES()});
-
-            my $acc = $client->default_account
-                or die "NoCurrency\n";
+            my $acc = $client->default_account;
 
             return $code->(
                 client     => $client,
@@ -738,7 +726,7 @@ sub _offer_details {
     $offer->{created_time} = Date::Utility->new($offer->{created_time})->epoch;
     $offer->{offer_description} //= '';
 
-    delete @$offer{qw(remaining offer_amount)};
+    delete @$offer{qw(remaining offer_amount agent_loginid)};
 
     return $offer;
 }
@@ -761,11 +749,47 @@ sub _order_details {
     $order->{offer_description} //= '';
     $order->{order_description} //= '';
 
-    delete @$order{
-        qw(order_amount offer_rate is_expired client_balance client_confirmed client_loginid client_trans_id escrow_trans_id offer_remaining expire_time)
-    };
+    delete @$order{qw(
+            order_amount
+            offer_rate
+            is_expired
+            client_balance
+            client_confirmed
+            client_loginid
+            client_trans_id
+            escrow_trans_id
+            offer_remaining
+            expire_time
+            agent_confirmed
+            agent_loginid
+            )};
 
     return $order;
+}
+
+# Check to see if the client can has access to p2p API calls or not?
+# Does nothing if client has access or die
+sub _check_client_access {
+    my ($client, $app_config) = @_;
+
+    # Yes, we have two ways to disable - devops can shut it down if there
+    # are problems, and payments/ops/QA can choose whether or not the
+    # functionality should be exposed in the first place. The ->p2p->enabled
+    # check may be dropped in future once this is stable.
+    die "P2PDisabled\n" if $app_config->system->suspend->p2p;
+    die "P2PDisabled\n" unless $app_config->payments->p2p->enabled;
+
+    # All operations require a valid client with active account
+    $client // die "NotLoggedIn\n";
+
+    die "UnavailableOnVirtual\n" if $client->is_virtual;
+
+    die "PermissionDenied\n" if $client->status->has_any(@{RESTRICTED_CLIENT_STATUSES()});
+
+    # Allow user to pass if payments.p2p.available is checked or client login id is in payments.p2p.clients
+    die "PermissionDenied\n" unless $app_config->payments->p2p->available || any { $_ eq $client->loginid } $app_config->payments->p2p->clients->@*;
+
+    die "NoCurrency\n" unless $client->default_account;
 }
 
 1;

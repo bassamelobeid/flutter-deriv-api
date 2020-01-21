@@ -20,6 +20,7 @@ my $app_config = BOM::Config::Runtime->instance->app_config;
 my ($p2p_suspend, $p2p_enable) = ($app_config->system->suspend->p2p, $app_config->payments->p2p->enabled);
 $app_config->system->suspend->p2p(0);
 $app_config->payments->p2p->enabled(1);
+$app_config->payments->p2p->available(1);
 
 my $email_agent  = 'p2p_agent@test.com';
 my $email_client = 'p2p_client@test.com';
@@ -107,6 +108,19 @@ subtest 'Client restricted statuses' => sub {
 
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('No errors with valid client & args');
 };
+
+$app_config->payments->p2p->available(0);
+subtest 'P2P is not available to anyone' => sub {
+    $c->call_ok($dummy_method, $params)
+        ->has_no_system_error->has_error->error_code_is('PermissionDenied',
+        "error code is PermissionDenied, because payments.p2p.available is unchecked");
+};
+
+subtest 'P2P is available for only one client' => sub {
+    $app_config->payments->p2p->clients([$client_agent->loginid]);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error("P2P is available for whitelisted client");
+};
+$app_config->payments->p2p->available(1);
 
 subtest 'Offers' => sub {
     my $offer_params = {
