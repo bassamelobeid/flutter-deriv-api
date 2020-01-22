@@ -1,8 +1,5 @@
 use strict;
 use warnings;
-use FindBin qw/$Bin/;
-use lib "$Bin/lib";
-use TestHelper qw/create_test_user/;
 use Test::More;
 use Test::Mojo;
 use Test::MockModule;
@@ -17,6 +14,7 @@ use BOM::Platform::Token::API;
 use Email::Stuffer::TestLinks;
 use BOM::Platform::Copier;
 use BOM::Database::DataMapper::Copier;
+use BOM::Test::Helper qw/create_test_user/;
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 use BOM::Database::Model::AccessToken;
 
