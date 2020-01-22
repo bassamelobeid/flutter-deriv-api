@@ -1,6 +1,7 @@
 ## no critic (RequireExplicitPackage)
 use strict;
 use warnings;
+no indirect;
 
 use Encode;
 use Date::Utility;
@@ -10,6 +11,7 @@ use Finance::MIFIR::CONCAT qw(mifir_concat);
 use LWP::UserAgent;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use JSON::MaybeUTF8 qw(:v1);
+use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 use Syntax::Keyword::Try;
 
@@ -28,6 +30,12 @@ use BOM::Backoffice::Config;
 use BOM::Backoffice::Request qw(request);
 use BOM::Database::Model::HandoffToken;
 use BOM::Config::RedisReplicated;
+
+=head1 subs_backoffice_clientdetails
+
+A spot to place subroutines that might be useful for various client related operations
+
+=cut
 
 use constant ONFIDO_REPORT_KEY_PREFIX             => 'ONFIDO::REPORT::ID::';
 use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
@@ -76,25 +84,25 @@ sub allow_uplift_self_exclusion {
         $after_exclusion_date = Date::Utility::today()->is_after($exclude_until_date);
     }
 
-    # If exclude_until date is unset, Customer Support and Compliance team can insert the exclude_until date
+# If exclude_until date is unset, Customer Support and Compliance team can insert the exclude_until date
     return 1 unless $exclude_until_date;
 
-    # If exclude_until date has expired, Customer Support and Compliance team can remove the exclude_until date
+# If exclude_until date has expired, Customer Support and Compliance team can remove the exclude_until date
     return 1 if ($after_exclusion_date and not $form_exclude_until_date);
 
-    # If exclude_until date has not expired and client is under Binary (SVG) Ltd.,
-    # then Customer Support and Compliance team can amend or remove the exclude_until date
+# If exclude_until date has not expired and client is under Binary (SVG) Ltd.,
+# then Customer Support and Compliance team can amend or remove the exclude_until date
     return 1 if ($client->landing_company->short eq 'svg');
 
-    # If exclude_until date has not expired and client is under Binary (Europe) Ltd, Binary (IOM) Ltd,
-    # or Binary Investments (Europe) Ltd, then only Compliance team can amend or remove the exclude_until date
+# If exclude_until date has not expired and client is under Binary (Europe) Ltd, Binary (IOM) Ltd,
+# or Binary Investments (Europe) Ltd, then only Compliance team can amend or remove the exclude_until date
     return 1 if (BOM::Backoffice::Auth0::has_authorisation(['Compliance']));
 
     # Default value (no uplifting allowed)
     return 0;
 }
 
-=head2
+=head2 get_professional_status
 
 This sub returns any of the four: Pending, Approved, Rejected, None
 In terms of priority, rejected has higher priority than approved, and approved has higher priority than pending.
@@ -126,6 +134,7 @@ sub print_client_details {
     # Extract year/month/day if we have them
     # after client->save we have T00:00:00 in date_of_birth, so handle this
     my ($dob_year, $dob_month, $dob_day) = ($client->date_of_birth // '') =~ /^(\d\d\d\d)-(\d\d)-(\d\d)/;
+
     # make dob_day as numeric values because there is no prefix '0' in dob_daylist
     $dob_day += 0;
 
@@ -134,8 +143,8 @@ sub print_client_details {
     $dob_day_options .= qq|<option value="$_->{value}">$_->{value}</option>| for @$dob_day_optionlist;
     $dob_day_options = set_selected_item($dob_day, $dob_day_options);
     my @month_names = (undef, qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec));
-    my $dob_month_options = set_selected_item($dob_month,
-        join "", map { "<option value=\"" . ($_ ? sprintf("%02s", $_) : "") . "\">" . ($month_names[$_] || "") . "</option>" } (0 .. $#month_names));
+    my $dob_month_options = set_selected_item($dob_month, join "",
+        map { "<option value=\"" . ($_ ? sprintf("%02s", $_) : "") . "\">" . ($month_names[$_] || "") . "</option>" } (0 .. $#month_names));
     my $dob_year_optionlist = BOM::Backoffice::FormAccounts::DOB_YearList($dob_year);
     my $dob_year_options    = '<option value=""></option>';
     $dob_year_options .= qq|<option value="$_->{value}">$_->{value}</option>| for @$dob_year_optionlist;
@@ -153,7 +162,9 @@ sub print_client_details {
     my $user = $client->user;
 
     # User should be accessable from client by loginid
-    print "<p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>" and die unless $user;
+    print "<p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>"
+        and die
+        unless $user;
 
     my $client_for_prove = undef;
 
@@ -167,15 +178,19 @@ sub print_client_details {
             search_option => 'ProveID_KYC'
         );
 
-        # If client is under Binary Investments (Europe) Ltd and there is no ProveID_KYC,
-        # check whether there is ProveID_KYC under Binary (IOM) Ltd.
-        if ($client->landing_company->short eq 'maltainvest' && !$client->status->proveid_requested) {
+# If client is under Binary Investments (Europe) Ltd and there is no ProveID_KYC,
+# check whether there is ProveID_KYC under Binary (IOM) Ltd.
+        if ($client->landing_company->short eq 'maltainvest'
+            && !$client->status->proveid_requested)
+        {
             for my $client_iom ($user->clients_for_landing_company('iom')) {
                 my $prove = BOM::Platform::ProveID->new(
                     client        => $client_iom,
                     search_option => 'ProveID_KYC'
                 );
-                if (($client_iom->status->proveid_requested && !$client->status->proveid_pending) || $prove->has_saved_xml) {
+                if (($client_iom->status->proveid_requested && !$client->status->proveid_pending)
+                    || $prove->has_saved_xml)
+                {
                     $client_for_prove = $client_iom;
                     $proveID          = $prove;
                     last;
@@ -253,23 +268,25 @@ sub print_client_details {
     my $onfido_allow_resubmission_flag = $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
     my $template_param = {
-        client                => $client,
-        client_phone_country  => $client_phone_country,
-        client_tnc_version    => $tnc_status ? $tnc_status->{reason} : '',
-        countries             => \@countries,
-        country_codes         => $country_codes,
-        crs_tin_information   => $crs_tin_status ? $crs_tin_status->{last_modified_date} : '',
-        dob_day_options       => $dob_day_options,
-        dob_month_options     => $dob_month_options,
-        dob_year_options      => $dob_year_options,
-        financial_risk_status => $client->status->financial_risk_approval,
-        has_social_signup     => $user->{has_social_signup},
-        lang                  => request()->language,
-        language_options      => \@language_options,
-        mifir_config          => $Finance::MIFIR::CONCAT::config,
-        promo_code_access     => $promo_code_access,
-        currency_type => (LandingCompany::Registry::get_currency_type($client->currency) // ''),
-        proveID => $proveID,
+        client               => $client,
+        client_phone_country => $client_phone_country,
+        client_tnc_version   => $tnc_status ? $tnc_status->{reason} : '',
+        countries            => \@countries,
+        country_codes        => $country_codes,
+        crs_tin_information  => $crs_tin_status
+        ? $crs_tin_status->{last_modified_date}
+        : '',
+        dob_day_options                   => $dob_day_options,
+        dob_month_options                 => $dob_month_options,
+        dob_year_options                  => $dob_year_options,
+        financial_risk_status             => $client->status->financial_risk_approval,
+        has_social_signup                 => $user->{has_social_signup},
+        lang                              => request()->language,
+        language_options                  => \@language_options,
+        mifir_config                      => $Finance::MIFIR::CONCAT::config,
+        promo_code_access                 => $promo_code_access,
+        currency_type                     => (LandingCompany::Registry::get_currency_type($client->currency) // ''),
+        proveID                           => $proveID,
         client_for_prove                  => $client_for_prove,
         salutation_options                => \@salutation_options,
         secret_answer                     => $secret_answer,
@@ -384,8 +401,9 @@ sub link_for_copy_status_status_to_siblings {
 ######################################################################
 sub build_client_warning_message {
     my $login_id = shift;
-    my $client   = BOM::User::Client->new({'loginid' => $login_id}) || return "<p>The Client's details can not be found [$login_id]</p>";
-    my $broker   = $client->broker;
+    my $client = BOM::User::Client->new({'loginid' => $login_id})
+        || return "<p>The Client's details can not be found [$login_id]</p>";
+    my $broker = $client->broker;
     my @output;
 
     my $edit_client_with_status = sub {
@@ -418,7 +436,8 @@ sub build_client_warning_message {
     ###############################################
     ## UNTRUSTED SECTION
     ###############################################
-    my %client_status = map { $_ => $client->status->$_ } @{$client->status->all};
+    my %client_status =
+        map { $_ => $client->status->$_ } @{$client->status->all};
     foreach my $type (@{get_untrusted_types()}) {
         my $code = $type->{code};
         my $remove_from_landing_company_accounts_link =
@@ -459,7 +478,9 @@ sub build_client_warning_message {
     if (@output) {
         my $trusted_section;
         foreach my $output_rows (@output) {
-            if ($output_rows->{'editlink'} =~ /trusted_action_type=(\w+)/ or $output_rows->{'removelink'} =~ /trusted_action_type=(\w+)/) {
+            if (   $output_rows->{'editlink'} =~ /trusted_action_type=(\w+)/
+                or $output_rows->{'removelink'} =~ /trusted_action_type=(\w+)/)
+            {
                 $trusted_section = $1;
             }
 
@@ -572,7 +593,7 @@ sub show_client_id_docs {
 
     my $docs = $dbic->run(
         fixup => sub {
-            $_->selectall_arrayref(<<'SQL', undef, $loginid);
+            $_->selectall_arrayref( <<'SQL', undef, $loginid);
 SELECT id,
        file_name,
        expiration_date,
@@ -616,8 +637,9 @@ SQL
         $input .= qq{document id <input type="text" style="width:100px" maxlength="30" name="document_id_$id" value="$document_id" $extra>};
         $input .= qq{comments <input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" $extra>};
 
-        my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
-        my $url       = $s3_client->get_s3_url($file_name);
+        my $s3_client =
+            BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
+        my $url = $s3_client->get_s3_url($file_name);
 
         $links .= qq{<tr><td><a href="$url">$file_name</a></td>$age_display<td>$input};
 
@@ -633,7 +655,8 @@ SQL
 sub get_onfido_check_latest {
     my ($client) = @_;
 
-    my $dbic = BOM::Database::UserDB::rose_db()->dbic or die "[$0] cannot create connection";
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic
+        or die "[$0] cannot create connection";
 
     my $latest_check_result = $dbic->run(
         fixup => sub {
@@ -674,11 +697,14 @@ sub client_statement_summary {
         my $payment_system = $transaction->{payment_type} // '(unknown)';
 
         # DoughFlow
-        $payment_system = $1 if $transaction->{payment_remark} =~ /payment_processor=(\S+)/;
+        $payment_system = $1
+            if $transaction->{payment_remark} =~ /payment_processor=(\S+)/;
 
         # bank wire
-        $payment_system = $1 if $transaction->{payment_remark} =~ /Wire\s+payment\s+from\s+([\S]+\s[\d\-]+) on/;
-        $payment_system = $1 if $transaction->{payment_remark} =~ /Wire\s+deposit\s+.+\s+Recieved\s+by\s+([\S]+\s[\d\-]+)/;
+        $payment_system = $1
+            if $transaction->{payment_remark} =~ /Wire\s+payment\s+from\s+([\S]+\s[\d\-]+) on/;
+        $payment_system = $1
+            if $transaction->{payment_remark} =~ /Wire\s+deposit\s+.+\s+Recieved\s+by\s+([\S]+\s[\d\-]+)/;
 
         $summary->{$k}{$payment_system} += $transaction->{amount};
     }
@@ -708,14 +734,18 @@ sub client_statement_summary {
                 undef, $account_id, $client->currency, $client->date_joined, Date::Utility->new->datetime);
         });
 
-    $summary->{pnl} = $pnl_summary->{get_close_trades_profit_or_loss} ? $pnl_summary->{get_close_trades_profit_or_loss} : '0.00';
+    $summary->{pnl} =
+          $pnl_summary->{get_close_trades_profit_or_loss}
+        ? $pnl_summary->{get_close_trades_profit_or_loss}
+        : '0.00';
 
     return $summary;
 }
 
 sub client_statement_for_backoffice {
     my $args = shift;
-    my ($client, $before, $after, $max_number_of_lines) = @{$args}{'client', 'before', 'after', 'max_number_of_lines'};
+    my ($client, $before, $after, $max_number_of_lines) =
+        @{$args}{'client', 'before', 'after', 'max_number_of_lines'};
 
     if (not $max_number_of_lines) {
         $max_number_of_lines = 200;
@@ -759,7 +789,8 @@ sub client_statement_for_backoffice {
             $transaction->{amount}      = abs($transaction->{amount});
             $transaction->{remark}      = $transaction->{bet_remark};
             $transaction->{limit_order} = encode_json_utf8(BOM::Transaction::extract_limit_orders($transaction))
-                if defined $transaction->{bet_class} and $transaction->{bet_class} eq 'multiplier';
+                if defined $transaction->{bet_class}
+                and $transaction->{bet_class} eq 'multiplier';
         }
     }
 
@@ -869,7 +900,8 @@ sub sync_to_doughflow {
 
     return "No currency selected for account." unless $client->default_account;
 
-    return "Sync to doughflow is not available for virtual clients." if $client->is_virtual;
+    return "Sync to doughflow is not available for virtual clients."
+        if $client->is_virtual;
 
     return "Only fiat currency accounts are allowed to sync to doughflow."
         unless LandingCompany::Registry::get_currency_type($client->default_account->currency_code) eq 'fiat';
@@ -879,7 +911,8 @@ sub sync_to_doughflow {
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $loginid});
     my $currency = $df_client->doughflow_currency;
 
-    return 'Sync not allowed as the client has never deposited using doughflow.' unless $currency;
+    return 'Sync not allowed as the client has never deposited using doughflow.'
+        unless $currency;
 
     # create handoff token
     my $client_db = BOM::Database::ClientDB->new({
@@ -896,7 +929,8 @@ sub sync_to_doughflow {
     );
     $handoff_token->save;
 
-    my $doughflow_loc  = BOM::Config::third_party()->{doughflow}->{request()->brand->name};
+    my $doughflow_loc =
+        BOM::Config::third_party()->{doughflow}->{request()->brand->name};
     my $doughflow_pass = BOM::Config::third_party()->{doughflow}->{passcode};
     my $url            = $doughflow_loc . '/CreateCustomer.asp';
 
@@ -961,7 +995,8 @@ Instance of all available countries for a brand
 sub get_client_phone_country {
     my ($client, $countries_instance) = @_;
     my $client_phone_country;
-    $client_phone_country = join(", ", ($countries_instance->codes_from_phone($client->phone) || [])->@*) if $client->phone;
+    $client_phone_country = join(", ", ($countries_instance->codes_from_phone($client->phone) || [])->@*)
+        if $client->phone;
     $client_phone_country = 'Unknown' unless $client_phone_country;
 
     return $client_phone_country;
@@ -971,6 +1006,182 @@ sub check_client_login_id {
     my ($loginid) = @_;
 
     return ($loginid =~ m/[A-Z]{2,4}[\d]{4,10}$/) ? 1 : 0;
+}
+
+=head2 get_client_details
+
+Description:  Works out all the client details required for more than 1 page. 
+Takes the following arguments 
+
+=over 4
+
+=item -  %input,  Hash, The input paramters from the page submission
+
+=item - $url, the url of the page being rendered.  
+
+=back
+
+Returns  a Hash with 
+ (
+ client, L<BOM::User::Client>
+ user, L<BOM::User>
+ encoded_loginid, encoded version of the loginid
+ mt_logins, mt5 logins for this user ArrayRef of loginid strings. 
+ user_clients, all the clients for this user ArrayRef of L<BOM::User::Clients>
+ broker, The broker for this client (string)
+ encoded_broker, encoded Broker string j
+ is_virtual_only, if this client only has  virtual accounts
+ clerk,  The logged in staff members user id
+ self_post, URL to use for posting  to itself
+ self_href URL to use for referencing itself (postfixed with the client loginid)
+)
+
+=cut
+
+sub get_client_details {
+    my ($input, $url) = @_;
+    my $loginid   = $input->{loginID};
+    my $self_post = request()->url_for($url);
+    my $self_href = request()->url_for($url, {loginID => $loginid});
+    if (not $loginid) {
+
+        BrokerPresentation("CLIENT DETAILS");
+        code_exit_BO(
+            qq[<p>Login Id is required</p>
+            <form action="$self_post" method="get">
+            Login ID: <input type="text" name="loginID" ></input>
+            </form>]
+        );
+    }
+    $loginid = trim(uc $loginid);
+    my $encoded_loginid = encode_entities($loginid);
+
+# given a bad-enough loginID, BrokerPresentation can die, leaving an unformatted screen..
+# let the client-check offer a chance to retry.
+    try { BrokerPresentation("$encoded_loginid CLIENT DETAILS") } catch {}
+
+        my $well_formatted = $loginid =~ m/^[A-Z]{2,4}[\d]{4,10}$/;
+    my $client;
+    try {
+        $client = BOM::User::Client->new({loginid => $loginid}) if $well_formatted;
+    }
+    catch {}
+
+        if (!$client) {
+        my $error_message =
+            $well_formatted
+            ? "Client [$encoded_loginid] not found."
+            : "Invalid loginid provided.";
+
+        code_exit_BO(
+            qq[<p>ERROR: $error_message </p>
+            <form action="$self_post" method="get">
+            Try Again: <input type="text" name="loginID" value="$encoded_loginid"></input>
+            </form>]
+        );
+    }
+
+    my $user = $client->user;
+    my @user_clients;
+    push @user_clients, $client;
+    foreach my $login_id ($user->bom_loginids) {
+        next if ($login_id eq $client->loginid);
+
+        push @user_clients, BOM::User::Client->new({loginid => $login_id});
+    }
+
+    my @mt_logins = sort grep { /^MT\d+$/ } $user->loginids;
+    my $is_virtual_only = (@user_clients == 1 and @mt_logins == 0 and $client->is_virtual);
+    my $broker          = $client->broker;
+    my $encoded_broker  = encode_entities($broker);
+    my $clerk           = BOM::Backoffice::Auth0::get_staffname();
+
+    return (
+        client          => $client,
+        user            => $user,
+        encoded_loginid => $encoded_loginid,
+        mt_logins       => \@mt_logins,
+        user_clients    => \@user_clients,
+        broker          => $broker,
+        encoded_broker  => $encoded_broker,
+        is_virtual_only => $is_virtual_only,
+        clerk           => $clerk,
+        self_post       => $self_post,
+        self_href       => $self_href,
+    );
+}
+
+=head2 client_navigation
+
+Description: Builds the previous next client navigation display
+
+=over 4
+
+=item - $client L<BOM::User::Client>
+
+=item - $self_post  string,  url that the links should point to. 
+
+=back
+
+Returns  undef
+
+=cut
+
+sub client_navigation {
+    my ($client, $self_post) = @_;
+    Bar("NAVIGATION");
+    print qq[<style>
+    div.flat { display: inline-block }
+    </style>
+    ];
+
+# find next and prev real clients but give up after a few tries in each direction.
+    my $attempts = 3;
+    my ($prev_client, $next_client, $prev_loginid, $next_loginid);
+    my $client_broker = $client->broker;
+    (my $number = $client->loginid) =~ s/$client_broker//;
+    my $len = length($number);
+    for (1 .. $attempts) {
+        $prev_loginid = sprintf "$client_broker%0*d", $len, $number - $_;
+        last
+            if $prev_client = BOM::User::Client->new({loginid => $prev_loginid});
+    }
+
+    for (1 .. $attempts) {
+        $next_loginid = sprintf "$client_broker%0*d", $len, $number + $_;
+        last
+            if $next_client = BOM::User::Client->new({loginid => $next_loginid});
+    }
+
+    my $encoded_prev_loginid = encode_entities($prev_loginid);
+    my $encoded_next_loginid = encode_entities($next_loginid);
+
+    if ($prev_client) {
+        print qq{
+        <div class="flat">
+        <form action="$self_post" method="get">
+        <input type="hidden" name="loginID" value="$encoded_prev_loginid">
+        <input type="submit" value="Previous Client ($encoded_prev_loginid)">
+        </form>
+        </div>
+        }
+    } else {
+        print qq{<div class="flat">(No Client down to $encoded_prev_loginid)</div>};
+    }
+
+    if ($next_client) {
+        print qq{
+        <div class="flat">
+        <form action="$self_post" method="get">
+        <input type="hidden" name="loginID" value="$encoded_next_loginid">
+        <input type="submit" value="Next client ($encoded_next_loginid)">
+        </form>
+        </div>
+        }
+    } else {
+        print qq{<div class="flat">(No client up to $encoded_next_loginid)</div>};
+    }
+    return undef;
 }
 
 sub is_client_in_onfido_country {

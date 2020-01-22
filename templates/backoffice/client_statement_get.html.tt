@@ -1,0 +1,25 @@
+
+<br/>
+<div class="flat">
+    <form action="[% self_post %]" method="get">
+        <input type="text" size="15" maxlength="15" name="loginID" value="[% encoded_loginid %]">
+    </form>
+</div>
+
+<div class="flat">
+    <form action="[% statmnt_url %]" method="get">
+        <input type="hidden" name="loginID" value="[% encoded_loginid %]">
+        <input type="submit" value="View $encoded_loginid Portfolio">
+        <input type="hidden" name="broker" value="[% encoded_broker %]">
+        <input type="hidden" name="currency" value="default">
+    </form>
+</div>
+
+<div class="flat">
+    <form action="[% history_url %]" method="get">
+        <input type="hidden" name="loginID" value="[% encoded_loginid %]">
+        <input type="submit" value="View [% encoded_loginid %] statement">
+        <input type="checkbox" value="yes" [% checked %] name="">Deposits and Withdrawals only
+    </form>
+</div>
+
