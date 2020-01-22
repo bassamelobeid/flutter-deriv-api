@@ -412,7 +412,7 @@ sub _initialize_other_parameters {
 
         BOM::Product::Exception->throw(
             error_code => 'InvalidStake',
-            details    => {field => 'amount'}) if $params->{amount} and $params->{amount} < 0;
+            details    => {field => 'amount'}) if exists $params->{amount} and $params->{amount} <= 0;
 
         my @allowed = @{$params->{category}->supported_amount_type};
         if (not any { $params->{amount_type} eq $_ } @allowed) {

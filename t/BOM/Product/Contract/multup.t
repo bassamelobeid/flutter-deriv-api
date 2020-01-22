@@ -65,10 +65,11 @@ subtest 'pricing new - general' => sub {
         'take_profit' => 0,
     };
     $c = produce_contract($args);
-    my $error = exception { $c->take_profit };
-#gonna fix in https://trello.com/c/NTep4G41
-    #isa_ok $error, 'BOM::Product::Exception';
-    #is $error->message_to_client->[0], 'Take profit must be greater than zero.', 'take profit must be greater than 0';
+    my $take_profit = $c->take_profit;
+    is $take_profit->initialization_error->{message}, 'order amount is zero for take_profit', 'order amount is zero for take_profit';
+    is $take_profit->validation_error, undef, 'validation error is undef';
+    $take_profit->is_valid;
+    is $take_profit->validation_error->{message}, 'order amount is zero for take_profit', 'order amount is zero for take_profit';
 
 };
 
@@ -162,11 +163,9 @@ subtest 'minmum stake' => sub {
     is $c->primary_validation_error->message_to_client->[1], 'USD';
 
     $args->{amount} = 0;
-    $c = produce_contract($args);
-    ok !$c->is_valid_to_buy, 'invalid to buy';
-    is $c->primary_validation_error->message, 'multiplier stake lower than minimum', 'message - multiplier stake lower than minimum';
-    is $c->primary_validation_error->message_to_client->[0], 'Stake must be at least [_1] 1.', 'message to client - Stake must be at least [_1] 1.';
-    is $c->primary_validation_error->message_to_client->[1], 'USD';
+    my $error = exception { produce_contract($args) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero amount not valid';
 };
 
 subtest 'take profit cap and precision' => sub {

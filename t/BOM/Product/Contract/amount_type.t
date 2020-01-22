@@ -77,21 +77,20 @@ subtest 'zero amount' => sub {
     };
 
     my $error = exception { produce_contract({%$args, payout => 0}) };
-    #gonna fix those in https://trello.com/c/NTep4G41
-    #isa_ok $error, 'BOM::Product::Exception';
-    #is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero payout not valid';
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero payout not valid';
 
     $error = exception { produce_contract({%$args, stake => 0}) };
-    #isa_ok $error, 'BOM::Product::Exception';
-    #is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero stake not valid';
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero stake not valid';
 
     $error = exception { produce_contract({%$args, amount_type => 'payout', amount => 0}) };
-    #isa_ok $error, 'BOM::Product::Exception';
-    #is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero stake not valid';
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero stake not valid';
 
     $error = exception { produce_contract({%$args, amount_type => 'stake', amount => 0}) };
-    #isa_ok $error, 'BOM::Product::Exception';
-    #is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero stake not valid';
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero stake not valid';
 
     delete $args->{barrier};
     $args->{bet_type}   = 'LBFLOATCALL';
