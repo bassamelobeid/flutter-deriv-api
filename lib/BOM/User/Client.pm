@@ -1796,12 +1796,16 @@ sub p2p_offer_create {
 
     $param{local_currency} //= $client->local_currency || die "NoLocalCurrency\n";
 
-    return $client->db->dbic->run(
+    my $offer = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.offer_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $agent_info->{id},
                 @param{qw/type account_currency local_currency amount rate min_amount max_amount method offer_description country/});
         });
+
+    # temporary field renaming to be removed when https://trello.com/c/VbsTXB1F is merged
+    $offer->{offer_amount} //= delete $offer->{amount};
+    return $offer;
 }
 
 =head2 p2p_offer_update
@@ -1829,12 +1833,16 @@ sub p2p_offer_update {
     # Amount already used in an offer is (amount - remaining). New amount cannot be less than the amount used.
     die "OfferInsufficientAmount\n" if $param{amount} && $param{amount} < ($offer->{amount} - $offer->{remaining});
 
-    return $client->db->dbic->run(
+    my $update = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.offer_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $offer_id,
                 @param{qw/is_active type account_currency local_currency amount rate min_amount max_amount method offer_description country/});
         });
+
+    # temporary field renaming to be removed when https://trello.com/c/VbsTXB1F is merged
+    $update->{offer_amount} //= delete $update->{amount};
+    return $update;
 }
 
 =head2 p2p_offer
@@ -1874,6 +1882,9 @@ sub p2p_offer_list {
                 {Slice => {}},
                 @param{qw/id account_currency agent_id agent_loginid active type limit offset/});
         }) // [];
+
+    # temporary field renaming to be removed when https://trello.com/c/VbsTXB1F is merged
+    $_->{offer_amount} //= delete $_->{amount} for @$rows;
 
     return $rows if $param{no_filter};
 
@@ -1977,6 +1988,7 @@ sub p2p_order_create {
     # Temporary field renaming to be removed after https://trello.com/c/WScG2dl5 is released
     $order->{account_currency} //= delete $order->{offer_account_currency};
     $order->{local_currency}   //= delete $order->{offer_local_currency};
+    delete $order->{offer_method};
     return $order;
 
 }
@@ -2030,6 +2042,7 @@ sub p2p_order_list {
     for my $order (@$orders) {
         $order->{account_currency} //= delete $order->{offer_account_currency};
         $order->{local_currency}   //= delete $order->{offer_local_currency};
+        delete $order->{offer_method};
     }
 
     return $orders;
