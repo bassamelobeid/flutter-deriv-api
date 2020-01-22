@@ -768,7 +768,8 @@ rpc get_account_status => sub {
 
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
-    if ($client->is_document_expiry_check_required()) {
+    my $is_document_expiry_check_required = $client->is_document_expiry_check_required_mt5();
+    if ($is_document_expiry_check_required) {
         # check if the user's documents are expired or expiring soon
         if ($client->documents_expired()) {
             push(@$status, 'document_expired');
@@ -781,7 +782,10 @@ rpc get_account_status => sub {
         status                        => $status,
         risk_classification           => $client->risk_level(),
         prompt_client_to_authenticate => $client->is_verification_required(check_authentication_status => 1),
-        authentication                => _get_authentication($client),
+        authentication                => _get_authentication(
+            client                            => $client,
+            is_document_expiry_check_required => $is_document_expiry_check_required
+        ),
     };
 };
 
@@ -808,7 +812,10 @@ rpc get_account_status => sub {
 =cut
 
 sub _get_authentication {
-    my $client = shift;
+    my %args = @_;
+
+    my $client                            = $args{client};
+    my $is_document_expiry_check_required = $args{is_document_expiry_check_required};
 
     my $authentication_object = {
         needs_verification => [],
@@ -843,13 +850,12 @@ sub _get_authentication {
 
     my %needs_verification_hash = ();
 
-    my $is_expiry_check_required = $client->is_document_expiry_check_required();
-    my $poi_structure            = sub {
-        $authentication_object->{identity}{expiry_date} = $poi_minimum_expiry_date if $poi_minimum_expiry_date and $is_expiry_check_required;
+    my $poi_structure = sub {
+        $authentication_object->{identity}{expiry_date} = $poi_minimum_expiry_date if $poi_minimum_expiry_date and $is_document_expiry_check_required;
 
         $authentication_object->{identity}{status} = 'pending' if $is_poi_pending;
         # check for expiry
-        if ($is_poi_already_expired and $is_expiry_check_required) {
+        if ($is_poi_already_expired and $is_document_expiry_check_required) {
             $authentication_object->{identity}{status} = 'expired';
             $needs_verification_hash{identity} = 'identity';
         }
@@ -858,10 +864,10 @@ sub _get_authentication {
     };
 
     my $poa_structure = sub {
-        $authentication_object->{document}{expiry_date} = $poa_minimum_expiry_date if $poa_minimum_expiry_date and $is_expiry_check_required;
+        $authentication_object->{document}{expiry_date} = $poa_minimum_expiry_date if $poa_minimum_expiry_date and $is_document_expiry_check_required;
 
         # check for expiry
-        if ($is_poa_already_expired and $is_expiry_check_required) {
+        if ($is_poa_already_expired and $is_document_expiry_check_required) {
             $authentication_object->{document}{status} = 'expired';
             $needs_verification_hash{document} = 'document';
         }

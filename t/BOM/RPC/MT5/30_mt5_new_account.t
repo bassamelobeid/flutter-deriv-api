@@ -20,8 +20,8 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::
 
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
-my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
-my %DETAILS = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
+my %ACCOUNTS       = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
+my %DETAILS        = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
 
 # Setup a test user

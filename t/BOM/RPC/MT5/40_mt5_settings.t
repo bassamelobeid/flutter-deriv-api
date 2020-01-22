@@ -12,6 +12,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Email qw(:no_event);
 
+use LandingCompany::Registry;
 use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;
@@ -23,7 +24,7 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
 my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
-my %DETAILS = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
+my %DETAILS  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 
 # Setup a test user
 my $test_client = create_client('CR');
@@ -267,7 +268,7 @@ subtest 'investor password reset' => sub {
     mailbox_clear();
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'svg' });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     my $code = BOM::Platform::Token->new({
             email       => $DETAILS{email},

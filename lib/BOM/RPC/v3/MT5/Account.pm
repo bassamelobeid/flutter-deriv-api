@@ -1405,7 +1405,7 @@ sub _mt5_validate_and_get_amount {
             my $mt5_lc    = _fetch_mt5_lc($setting);
             return create_error_future('InvalidMT5Group') unless $mt5_lc;
 
-            my $requirements = LandingCompany::Registry->new->get($mt5_lc)->requirements->{after_first_deposit}->{financial_assessment} // [];
+            my $requirements = $mt5_lc->requirements->{after_first_deposit}->{financial_assessment} // [];
             if (
                     $action eq 'withdrawal'
                 and $authorized_client->has_mt5_deposits($mt5_loginid)
@@ -1647,10 +1647,13 @@ sub _fetch_mt5_lc {
         $lc_short = $1;
     }
 
-    # check if lc exists
-    return $lc_short if $lc_short and LandingCompany::Registry::get($lc_short);
-    return undef;
+    return undef unless $lc_short;
 
+    my $landing_company = LandingCompany::Registry::get($lc_short);
+
+    return undef unless $landing_company;
+
+    return $landing_company;
 }
 
 sub _mt5_has_open_positions {
@@ -1749,10 +1752,12 @@ sub _validate_client {
     # - transfers between maltainvest and malta
     # - svg, vanuatu, and labuan
 
-    unless (($lc eq 'svg' and ($mt5_lc eq 'vanuatu' or $mt5_lc eq 'labuan'))
-        or ($lc eq 'maltainvest' and $mt5_lc eq 'malta')
-        or ($lc eq 'malta'       and $mt5_lc eq 'maltainvest')
-        or $mt5_lc eq $lc)
+    my $mt5_lc_short = $mt5_lc->short;
+
+    unless (($lc eq 'svg' and ($mt5_lc_short eq 'vanuatu' or $mt5_lc_short eq 'labuan'))
+        or ($lc eq 'maltainvest' and $mt5_lc_short eq 'malta')
+        or ($lc eq 'malta'       and $mt5_lc_short eq 'maltainvest')
+        or $mt5_lc_short eq $lc)
     {
         # Otherwise, Financial accounts should not be able to deposit to, or withdraw from, gaming MT5
         return 'SwitchAccount';
@@ -1765,7 +1770,20 @@ sub _validate_client {
     return ('AccountDisabled', $loginid) if ($client_obj->status->disabled);
 
     return ('CashierLocked', $loginid)
-        if ($client_obj->status->cashier_locked || $client_obj->documents_expired);
+        if ($client_obj->status->cashier_locked);
+
+    # check if binary client expired documents
+    # documents_expired check internaly if landing company
+    # needs expired documents check or not
+    return ('ExpiredDocuments', request()->brand->emails('support')) if ($client_obj->documents_expired());
+
+    # if mt5 financial accounts is used for deposit or withdraw
+    # then check if client has valid documents or not
+    # valid documents don't have additional landing companies check
+    # that we have in documents_expired
+    # TODO: Remove this once we have async mt5 in place
+    return ('ExpiredDocuments', request()->brand->emails('support'))
+        if ($mt5_lc->documents_expiration_check_required() and not $client_obj->has_valid_documents());
 
     my $client_currency = $client_obj->account ? $client_obj->account->currency_code() : undef;
     return ('SetExistingAccountCurrency', $loginid) unless $client_currency;

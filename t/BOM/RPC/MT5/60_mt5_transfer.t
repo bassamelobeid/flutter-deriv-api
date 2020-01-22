@@ -5,6 +5,8 @@ use Test::Mojo;
 use Test::MockModule;
 use Format::Util::Numbers qw/financialrounding get_min_unit/;
 use JSON::MaybeUTF8;
+
+use LandingCompany::Registry;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -39,7 +41,7 @@ $manager_module->mock(
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
 my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
-my %DETAILS = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
+my %DETAILS  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 
 # Setup a test user
 my $test_client = create_client('CR');
@@ -113,7 +115,7 @@ subtest 'multi currency transfers' => sub {
     my $usd_test_amount = 100;
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'svg' });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     my $deposit_params = {
         language => 'EN',
@@ -389,7 +391,7 @@ subtest 'Transfers Limits' => sub {
     };
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'svg' });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     $c->call_ok('mt5_deposit', $deposit_params)->has_error('Transfers should have been stopped')
         ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
@@ -446,7 +448,7 @@ subtest 'Suspended Transfers Currencies' => sub {
     $user->add_client($client_cr_btc);
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return 'svg' });
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     subtest 'it should stop transfer from suspended currency' => sub {
         my $deposit_params = {

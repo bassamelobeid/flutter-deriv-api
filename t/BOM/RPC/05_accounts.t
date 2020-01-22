@@ -1392,7 +1392,7 @@ subtest $method => sub {
 
                 for my $is_required (1, 0) {
                     $mocked_client->mock(
-                        'is_document_expiry_check_required',
+                        'is_document_expiry_check_required_mt5',
                         sub {
                             return $is_required;
                         });
@@ -2776,7 +2776,7 @@ subtest 'get and set self_exclusion' => sub {
     ok(!$msg, 'No email for MLT client limits without MT5 accounts');
 
     my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
-    my %DETAILS = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
+    my %DETAILS  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
     my $mt5_params = {

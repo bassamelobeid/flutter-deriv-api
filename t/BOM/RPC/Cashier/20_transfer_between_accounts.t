@@ -1243,7 +1243,7 @@ subtest 'MT5' => sub {
     $email = 'mt5_user_for_transfer@test.com';
 
     my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
-    my %DETAILS = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
+    my %DETAILS  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 
     $user = BOM::User->create(
         email          => $email,
@@ -1442,9 +1442,26 @@ subtest 'MT5' => sub {
     cmp_ok $test_client->default_account->balance, '==', 970, 'real money account balance increased';
 
     $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\labuan_advanced'};
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+        ->error_message_like(qr/Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to/,
+        'Error message returned from inner MT5 sub when regulated account has expired documents');
+
+    $mock_client->mock(documents_expired => sub { return 0 });
+
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+        ->error_message_like(
+        qr/Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to/,
+        'Error message returned from inner MT5 sub when regulated binary has no expired documents but does not have valid documents'
+        );
+
+    $mock_client->mock(has_valid_documents => sub { return 1 });
+
     $mock_client->mock(fully_authenticated => sub { return 0 });
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_like(qr/authenticate/, 'Error message returned from inner MT5 sub');
+        ->error_message_like(
+        qr/You haven't authenticated your account. Please contact us for more information./,
+        'Error message returned from inner MT5 sub as advanced account needs to be authenticated'
+        );
     $mock_client->mock(fully_authenticated => sub { return 1 });
 
     $params->{args}{account_from} = $test_client->loginid;
