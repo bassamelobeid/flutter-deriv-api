@@ -14,7 +14,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Database::Model::OAuth;
 
 my $t    = build_wsapi_test();
-my $cr_1 = create_test_user();
+my $cr_1 = create_test_user()->loginid;
 my $json = JSON::MaybeXS->new;
 # cleanup
 my $oauth = BOM::Database::Model::OAuth->new();
