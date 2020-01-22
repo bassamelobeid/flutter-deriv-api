@@ -43,7 +43,8 @@
     <input type="checkbox" id="show_all_pendings" name="show_all_pendings" [% IF show_all_pendings %] checked [% END %]>
     <label for="show_all_pendings"> Show all pending payouts </label>
     <br>
-    <br>
+    <button type="submit" name="view_action" value="auto_reject_insufficient">Auto-reject withdrawals with insufficient balance</button>
+    <br><br>
 <!-- Tools -->
         <button type="submit" name="view_action" value="run">Run</button>
         <select name="command">

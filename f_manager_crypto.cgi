@@ -239,6 +239,37 @@ if ($view_action eq 'withdrawals') {
 
     $display_transactions->($trxns);
 
+} elsif ($view_action eq 'auto_reject_insufficient') {
+    my $trxns = $dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                "SELECT * FROM payment.ctc_bo_get_withdrawal(NULL, NULL, ?, ?::payment.CTC_STATUS, NULL, NULL)",
+                {Slice => {}},
+                $currency, 'LOCKED'
+            );
+        });
+
+    my $count = 0;
+    for my $trxn (@$trxns) {
+        if ($trxn->{balance} < $trxn->{amount}) {
+            my ($error) = $dbic->run(
+                ping => sub {
+                    $_->selectrow_array(
+                        'SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)',
+                        undef, $trxn->{address},
+                        $trxn->{currency_code},
+                        'Insufficient balance'
+                    );
+                });
+
+            code_exit_BO(sprintf("ERROR: %s. Failed to auto-reject a withdrawal. %d were rejected so far.", $error, $count))
+                if $error;
+
+            $count++;
+        }
+    }
+    print sprintf("<p><b>%d withdrawals rejected</b></p>", $count);
+
 } elsif ($view_action eq 'deposits') {
     Bar("LIST OF TRANSACTIONS - DEPOSITS");
     $view_type ||= 'new';
