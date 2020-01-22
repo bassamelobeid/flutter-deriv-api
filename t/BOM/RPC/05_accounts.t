@@ -33,6 +33,7 @@ use BOM::Platform::Email;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
+use Test::BOM::RPC::Accounts;
 
 package MojoX::JSON::RPC::Client;
 use Test::More;    # import ok again into this namespace
@@ -2774,25 +2775,8 @@ subtest 'get and set self_exclusion' => sub {
     );
     ok(!$msg, 'No email for MLT client limits without MT5 accounts');
 
-    # Mocked MT5 account details
-    # %ACCOUNTS and %DETAILS are shared between four files, and should be kept in-sync to avoid test failures
-    #   t/BOM/RPC/30_mt5.t
-    #   t/BOM/RPC/05_accounts.t
-    #   t/BOM/RPC/Cashier/20_transfer_between_accounts.t
-    #   t/lib/mock_binary_mt5.pl
-
-    my %ACCOUNTS = (
-        'real\malta' => '00000010',
-    );
-
-    my %DETAILS = (
-        password => 'Efgh4567',
-        email    => 'test.account@binary.com',
-        name     => 'Meta traderman',
-        group    => 'real\svg',
-        country  => 'Malta',
-        balance  => '1234',
-    );
+    my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
+    my %DETAILS = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
     my $mt5_params = {
@@ -2804,7 +2788,7 @@ subtest 'get and set self_exclusion' => sub {
             email          => $DETAILS{email},
             name           => $DETAILS{name},
             investPassword => 'Abcd1234',
-            mainPassword   => $DETAILS{password},
+            mainPassword   => $DETAILS{password}{main},
             leverage       => 100,
         },
     };

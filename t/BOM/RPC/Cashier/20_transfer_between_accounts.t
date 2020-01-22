@@ -26,6 +26,7 @@ use Email::Stuffer::TestLinks;
 use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
 use BOM::Config::CurrencyConfig;
+use Test::BOM::RPC::Accounts;
 
 use utf8;
 
@@ -1241,36 +1242,12 @@ subtest 'MT5' => sub {
 
     $email = 'mt5_user_for_transfer@test.com';
 
-    # Mocked MT5 account details
-    # %ACCOUNTS and %DETAILS are shared between four files, and should be kept in-sync to avoid test failures
-    #   t/BOM/RPC/30_mt5.t
-    #   t/BOM/RPC/05_accounts.t
-    #   t/BOM/RPC/Cashier/20_transfer_between_accounts.t
-    #   t/lib/mock_binary_mt5.pl
-
-    my %ACCOUNTS = (
-        'demo\svg_standard'             => '00000001',
-        'demo\svg_advanced'             => '00000002',
-        'demo\labuan_standard'          => '00000003',
-        'demo\labuan_advanced'          => '00000004',
-        'real\malta'                    => '00000010',
-        'real\maltainvest_standard'     => '00000011',
-        'real\maltainvest_standard_GBP' => '00000012',
-        'real\svg'                      => '00000013',
-        'real\svg_standard'             => '00000014',
-        'real\labuan_advanced'          => '00000015',
-    );
-
-    my %DETAILS = (
-        password       => 'Efgh4567',
-        investPassword => 'Abcd1234',
-        name           => 'Meta traderman',
-        balance        => '1234',
-    );
+    my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
+    my %DETAILS = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 
     $user = BOM::User->create(
         email          => $email,
-        password       => $DETAILS{password},
+        password       => $DETAILS{password}{main},
         email_verified => 1
     );
 
@@ -1312,7 +1289,7 @@ subtest 'MT5' => sub {
             account_type     => 'demo',
             mt5_account_type => 'standard',
             investPassword   => $DETAILS{investPassword},
-            mainPassword     => $DETAILS{password},
+            mainPassword     => $DETAILS{password}{main},
         },
     };
     $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for demo mt5_new_account');
