@@ -30,6 +30,7 @@
     <option value="payslip">Payslip</option>
     <option value="tax_receipt">Tax Receipt</option>
     <option value="employment_contract">Employment Contract</option>
+    <option value="code_of_conduct">Code of Conduct</option>
     <option value="other">Other</option>
   </select>
   <select name="page_type_[% n %]">
