@@ -137,6 +137,7 @@ my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
     alldocs                                      => 'unknown',
     professional_eu_qualified_investor           => 'unknown',
     misc                                         => 'unknown',
+    code_of_conduct                              => 'unknown',
     other                                        => 'unknown',
 );
 
