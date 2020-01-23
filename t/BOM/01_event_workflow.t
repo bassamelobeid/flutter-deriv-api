@@ -103,9 +103,9 @@ subtest 'emit' => sub {
 };
 
 subtest 'process' => sub {
-
+    my $action_mappings = BOM::Event::Process::get_action_mappings();
     is_deeply(
-        [sort keys %{BOM::Event::Process::get_action_mappings()}],
+        [sort keys %$action_mappings],
         [
             sort qw/email_consent register_details email_statement sync_user_to_MT5 send_email
                 store_mt5_transaction new_mt5_signup anonymize_client
@@ -115,10 +115,14 @@ subtest 'process' => sub {
                 p2p_agent_created p2p_agent_updated
                 p2p_offer_created p2p_offer_updated
                 p2p_order_created p2p_order_updated p2p_order_expired
-                affiliate_sync_initiated withdrawal_limit_reached/
+                affiliate_sync_initiated withdrawal_limit_reached
+                app_registered app_updated app_deleted
+                /
         ],
         'Correct number of actions that can be emitted'
     );
+
+    is(ref($action_mappings->{$_}), 'CODE', 'event handler is a code reference') for keys %$action_mappings;
 
     BOM::Event::Process::process({}, QUEUE_NAME);
     $log->contains_ok(qr/no function mapping found for event <unknown> from queue GENERIC_EVENTS_QUEUE/, 'Empty message not processed');

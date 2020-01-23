@@ -23,6 +23,7 @@ use BOM::Event::Actions::MyAffiliate;
 use BOM::Event::Actions::User;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
+use BOM::Event::Actions::App;
 
 use Scalar::Util qw(blessed);
 
@@ -74,6 +75,9 @@ my $action_mapping = {
     p2p_order_expired           => \&BOM::Event::Actions::P2P::order_expired,
     p2p_agent_created           => \&BOM::Event::Actions::P2P::agent_created,
     p2p_agent_updated           => \&BOM::Event::Actions::P2P::agent_updated,
+    app_registered              => \&BOM::Event::Actions::App::app_registered,
+    app_updated                 => \&BOM::Event::Actions::App::app_updated,
+    app_deleted                 => \&BOM::Event::Actions::App::app_deleted,
 };
 
 =head1 METHODS

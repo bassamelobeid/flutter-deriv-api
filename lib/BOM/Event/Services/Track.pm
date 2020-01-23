@@ -193,6 +193,57 @@ sub transfer_between_accounts {
     return _track($customer, $properties, 'transfer_between_accounts');
 }
 
+=head2 app_registered
+
+It is triggered for each B<app_registered> event emitted, delivering it to Segment.
+
+=cut
+
+sub app_registered {
+    my ($args) = @_;
+    my $loginid = $args->{loginid};
+
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+
+    $log->debugf('Track app_register event for client %s', $loginid);
+    return _track($customer, $args, 'app_registered');
+}
+
+=head2 app_updated
+
+It is triggered for each B<app_updated> event emitted, delivering it to Segment.
+
+=cut
+
+sub app_updated {
+    my ($args) = @_;
+    my $loginid = $args->{loginid};
+
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+
+    $log->debugf('Track app_update event for client %s', $loginid);
+    return _track($customer, $args, 'app_updated');
+}
+
+=head2 app_deleted
+
+It is triggered for each B<app_deleted> event emitted, delivering it to Segment.
+
+=cut
+
+sub app_deleted {
+    my ($args) = @_;
+    my $loginid = $args->{loginid};
+
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+
+    $log->debugf('Track app_delete event for client %s', $loginid);
+    return _track($customer, $args, 'app_deleted');
+}
+
 =head2 _time_to_iso_8601 
 
 Convert the format of the database time to iso 8601 time that is sutable for Segment
