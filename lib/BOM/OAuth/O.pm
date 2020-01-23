@@ -431,7 +431,7 @@ sub _compare_signin_activity {
     my $country_code = uc($c->stash('request')->country_code // '');
     my $ip_address   = $c->stash('request')->client_ip // '';
 
-    return if $known_location;
+    return 0 if $known_location;
 
     # Relevant data required
     my $data = {
@@ -455,7 +455,7 @@ sub _compare_signin_activity {
 
     if ($tt->error) {
         warn "Template error: " . $tt->error;
-        return;
+        return 0;
     }
 
     send_email({
@@ -469,6 +469,7 @@ sub _compare_signin_activity {
         skip_text2html        => 1
     });
 
+    return 1;
 }
 
 =head2 _validate_login
@@ -597,7 +598,7 @@ sub _validate_login {
 
     my $client = $filtered_clients[0];
 
-    _compare_signin_activity({
+    my $new_signin_activity = _compare_signin_activity({
         known_location => $known_location,
         client         => $client,
         c              => $c,
@@ -615,10 +616,11 @@ sub _validate_login {
         {
             loginid    => $client->loginid,
             properties => {
-                ip       => $ip,
-                location => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
-                browser  => $bd->browser,
-                device   => $bd->device // $bd->os_string,
+                ip                  => $ip,
+                location            => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
+                browser             => $bd->browser,
+                device              => $bd->device // $bd->os_string,
+                new_signin_activity => $new_signin_activity ? 1 : 0,
             }});
 
     return {
