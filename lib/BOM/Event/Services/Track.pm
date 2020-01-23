@@ -87,6 +87,25 @@ sub signup {
     return _track($customer, $properties, 'signup');
 }
 
+=head2 account_closure
+
+It is triggered for each B<account_closure> event emitted, delivering the data to Segment.
+
+=cut
+
+sub account_closure {
+    my ($args)     = @_;
+    my $loginid    = $args->{loginid};
+    my $properties = {%$args};
+
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+    $properties->{landing_company} = $customer->{landing_company};
+
+    $log->debugf('Track account_closure event for client %s', $loginid);
+    return _track($customer, $properties, 'account_closure');
+}
+
 =head2 new_mt5_signup
 
 It is triggered for each B<new mt5 signup> event emitted, delivering it to Segment.
@@ -122,7 +141,7 @@ sub new_mt5_signup {
 
 It is triggered for each B<transfer_between_accounts> event emitted, delivering it to Segment.
 It can be called with the following parameters:
-    
+
 =over
 
 =item * C<loginid> - required. Login Id of the user.
@@ -148,6 +167,7 @@ sub transfer_between_accounts {
     $properties->{time} = _time_to_iso_8601($properties->{time} // die('required time'));
 
     $log->debugf('Track transfer_between_accounts event for client %s', $loginid);
+
     return _track($customer, $properties, 'transfer_between_accounts');
 }
 

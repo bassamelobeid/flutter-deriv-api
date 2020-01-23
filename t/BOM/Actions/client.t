@@ -478,8 +478,61 @@ subtest 'signup event' => sub {
 
 };
 
-subtest 'transfer between accounts event' => sub {
+subtest 'account closure' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'id'
+    );
+    request($req);
 
+    undef @identify_args;
+    undef @track_args;
+
+    my $loginid = $test_client->loginid;
+
+    $segment_response = Future->done(1);
+    my $call_args = {
+        closing_reason    => 'There is no reason',
+        loginid           => $loginid,
+        loginids_disabled => [$loginid],
+        loginids_failed   => []};
+    my $result = BOM::Event::Actions::Client::account_closure($call_args)->get;
+    is $result, 1, 'Success result';
+
+    is scalar @identify_args, 0, 'No identify event is triggered';
+
+    my ($customer, %args) = @track_args;
+    is_deeply \%args, {
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'id'
+        },
+        event      => 'account_closure',
+        properties => {
+            closing_reason    => 'There is no reason',
+            loginid           => $loginid,
+            loginids_disabled => [$loginid],
+            loginids_failed   => [],
+            landing_company   => 'svg',
+
+        },
+        },
+        'track context and properties are correct.';
+    undef @track_args;
+
+    $req = BOM::Platform::Context::Request->new(
+        brand_name => 'binary',
+        language   => 'id'
+    );
+    request($req);
+    $result = BOM::Event::Actions::Client::account_closure($call_args)->get;
+    is $result, undef, 'Empty result';
+    is scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
+    is scalar @track_args,    0, 'No track event is triggered when brand is binary';
+};
+
+subtest 'transfer between accounts event' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
         language   => 'id'
@@ -543,7 +596,6 @@ subtest 'transfer between accounts event' => sub {
         },
         'identify context is properly set for transfer_between_account'
     );
-
 };
 
 sub test_segment_customer {

@@ -1070,7 +1070,7 @@ sub account_closure {
 
     _send_email_account_closure_client($data->{loginid}, $support_email);
 
-    return undef;
+    return BOM::Event::Services::Track::account_closure($data);
 }
 
 =head2 _email_client_age_verified
