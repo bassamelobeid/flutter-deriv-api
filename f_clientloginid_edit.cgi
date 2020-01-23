@@ -73,7 +73,7 @@ my $encoded_broker  = $details{encoded_broker};
 my $is_virtual_only = $details{is_virtual_only};
 my $clerk           = $details{clerk};
 my $self_post       = $details{self_post};
-my $self_href       = $details{self_post};
+my $self_href       = $details{self_href};
 my $loginid         = $client->loginid;
 
 # Disabled for now
