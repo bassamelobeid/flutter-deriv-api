@@ -96,13 +96,16 @@ subtest 'login event' => sub {
     });
     $user->add_client($virtual_client);
     $segment_response = Future->done(1);
+    my $new_signin_activity = 0;
+
     my $args = {
         loginid    => $test_client->loginid,
         properties => {
-            browser  => 'chrome',
-            device   => 'Mac OS X',
-            ip       => '127.0.0.1',
-            location => 'Germany'
+            browser             => 'chrome',
+            device              => 'Mac OS X',
+            ip                  => '127.0.0.1',
+            location            => 'Germany',
+            new_signin_activity => $new_signin_activity,
         }};
     my $result = BOM::Event::Actions::User::login($args);
     is $result, 1, 'Success track result';
@@ -131,10 +134,11 @@ subtest 'login event' => sub {
         },
         event      => 'login',
         properties => {
-            browser  => 'chrome',
-            device   => 'Mac OS X',
-            ip       => '127.0.0.1',
-            location => 'Germany'
+            browser             => 'chrome',
+            device              => 'Mac OS X',
+            ip                  => '127.0.0.1',
+            location            => 'Germany',
+            new_signin_activity => $new_signin_activity,
         }
         },
         'identify context and properties is properly set.';
@@ -152,7 +156,7 @@ subtest 'login event' => sub {
 
     ($customer, %args) = @identify_args;
     test_segment_customer($customer, $virtual_client, 'EUR', $virtual_client->date_joined);
-
+    
     is_deeply \%args,
         {
         'context' => {
@@ -162,6 +166,39 @@ subtest 'login event' => sub {
         }
         },
         'identify context is properly set';
+
+    my $new_signin_activity_args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            browser             => 'firefox',
+            device              => 'Mac OS X',
+            ip                  => '127.0.0.1',
+            location            => 'Germany',
+            new_signin_activity => $new_signin_activity,
+        }};
+    $new_signin_activity = 1 if $args->{properties}->{browser} ne $new_signin_activity_args->{properties}->{browser};
+    $new_signin_activity_args->{properties}->{new_signin_activity} = $new_signin_activity;
+    undef @track_args;
+    $result = BOM::Event::Actions::User::login($new_signin_activity_args);
+    is $result, 1, 'Success track result';
+    ($customer, %args) = @track_args;
+    is_deeply \%args,
+        {
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'id'
+        },
+        event      => 'login',
+        properties => {
+            browser             => 'firefox',
+            device              => 'Mac OS X',
+            ip                  => '127.0.0.1',
+            location            => 'Germany',
+            new_signin_activity => $new_signin_activity,
+        }
+        },
+        'idenify context and properties is properly set after new signin activity.';
 };
 
 subtest 'user profile change event' => sub {

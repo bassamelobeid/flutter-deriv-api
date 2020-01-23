@@ -208,7 +208,6 @@ Arguments:
 
 sub _time_to_iso_8601 {
     my $time = shift;
-
     my ($y_m_d, $h_m_s) = split(' ', $time);
     my ($year, $month,  $day)    = split('-', $y_m_d);
     my ($hour, $minute, $second) = split(':', $h_m_s);
