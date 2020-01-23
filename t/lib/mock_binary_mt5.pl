@@ -8,7 +8,8 @@ use List::Util qw(pairgrep);
 use JSON::MaybeXS;
 
 use constant {
-    MT_RET_OK => 0,
+    MT_RET_OK          => 0,
+    MT_RET_ERR_TIMEOUT => 9,
 };
 
 # Mocked account details
@@ -42,7 +43,13 @@ if (my $code = main->can("cmd_$cmd")) {
 }
 
 sub cmd_UserAdd {
-    # Not used by any bom-user tests
+    # We want to assume that this is always timing out for the sake of testing.
+    my ($input) = @_;
+    return {
+        ret_code => MT_RET_ERR_TIMEOUT,
+        error    => 'ConnectionTimeout',
+    };
+
 }
 
 sub cmd_UserDepositChange {

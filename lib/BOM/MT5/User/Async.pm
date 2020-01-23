@@ -39,6 +39,8 @@ my $error_category_mapping = {
     3                          => 'InvalidParameters',
     7                          => 'NetworkError',
     8                          => 'Permissions',
+    9                          => 'ConnectionTimeout',
+    10                         => 'NoConnection',
     12                         => 'TooManyRequests',
     13                         => 'NotFound',
     1002                       => 'AccountDisabled',
@@ -46,6 +48,12 @@ my $error_category_mapping = {
     3006 . "UserAdd"           => 'IncorrectMT5PasswordFormat',
     10019                      => 'NoMoney'
 };
+
+my $FAILCOUNT_KEY     = 'system.mt5.connection_fail_count';
+my $LOCK_KEY          = 'system.mt5.connection_status';
+my $TRIAL_FLAG        = 'system.mt5.connection_check';
+my $BACKOFF_THRESHOLD = 20;
+my $BACKOFF_TTL       = 60;
 
 sub _get_error_mapping {
     my $error_code = shift;
@@ -77,6 +85,48 @@ sub _invoke_mt5 {
     my $loop          = IO::Async::Loop->new;
     my $f             = $loop->new_future;
     my $request_start = [Time::HiRes::gettimeofday];
+    my $redis         = BOM::Config::RedisReplicated::redis_mt5_user_write();
+    my $failcount     = $redis->get($FAILCOUNT_KEY) // 0;
+    my $lock          = $redis->get($LOCK_KEY) // 0;
+    my $trying        = 0;
+    # Backoff if we have tried 20 without being able to connect.
+    if ($failcount >= $BACKOFF_THRESHOLD) {
+        $redis->set($LOCK_KEY, 1);
+        DataDog::DogStatsd::Helper::stats_inc('mt5.call.blocked', {tags => ["mt5:$cmd"]});
+        return $f->fail(
+            _future_error({
+                    ret_code => 10,
+                    error    => "no connection"
+                }));
+    } elsif ($lock) {
+        my $is_worker_checking = $redis->get($TRIAL_FLAG) // 0;
+        if ($is_worker_checking) {
+            DataDog::DogStatsd::Helper::stats_inc('mt5.call.blocked', {tags => ["mt5:$cmd"]});
+            return $f->fail(
+                _future_error({
+                        ret_code => 10,
+                        error    => "no connection"
+                    }));
+        } else {
+            # Set trial flag, so only one worker checks if we are able to connect.
+            # Make sure flag has TTL so its removed in case worker dies mid call.
+            my $flag_set = $redis->set(
+                $TRIAL_FLAG => 1,
+                EX          => 30,
+                "NX"
+            ) // 0;
+            # in case Flag was already set, we will get 0 so prevent call since a worker already trying to.
+            unless ($flag_set) {
+                DataDog::DogStatsd::Helper::stats_inc('mt5.call.blocked', {tags => ["mt5:$cmd"]});
+                return $f->fail(
+                    _future_error({
+                            ret_code => 10,
+                            error    => "no connection"
+                        }));
+            }
+            $trying = 1;
+        }
+    }
     $loop->run_child(
         command   => [@MT5_WRAPPER_COMMAND, $cmd],
         stdin     => $in,
@@ -99,13 +149,27 @@ sub _invoke_mt5 {
             try {
                 $out = decode_json($out);
 
-                if ($cmd eq 'UserAdd' or $cmd eq 'UserPasswordCheck') {
-                    $out->{ret_code} .= $cmd;
-                }
-
                 if ($out->{error}) {
+                    # Update connection trials counter in Redis, with 1 minute TTL
+                    # code 10 is 'no connection' & 9 'connection timeout'
+                    if ($out->{ret_code} == 10 || $out->{ret_code} == 9) {
+                        DataDog::DogStatsd::Helper::stats_inc('mt5.call.connection_fail');
+                        if ($lock) {
+                            # If our last try was failed also, set key to threshold straight away.
+                            $redis->setex($FAILCOUNT_KEY, $BACKOFF_TTL, $BACKOFF_THRESHOLD);
+                        } else {
+                            $redis->incr($FAILCOUNT_KEY);
+                            $redis->expire($FAILCOUNT_KEY, $BACKOFF_TTL);
+                        }
+                    }
+                    # needed as both of them return same code for different reason.
+                    if (($cmd eq 'UserAdd' or $cmd eq 'UserPasswordCheck') and $out->{ret_code} == 3006) {
+                        $out->{ret_code} .= $cmd;
+                    }
                     $f->fail(_future_error($out));
                 } else {
+                    # Unset Lock since we got a success call.
+                    $redis->set($LOCK_KEY, 0) if $lock;
                     $f->done($out);
                 }
             }
@@ -114,6 +178,7 @@ sub _invoke_mt5 {
                 chomp $e;
                 $f->fail($e, mt5 => $cmd);
             }
+            $redis->del($TRIAL_FLAG) if $trying;
 
         },
     );
