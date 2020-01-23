@@ -10,6 +10,7 @@ use BOM::RPC::v3::Utility;
 use BOM::Platform::Context qw (localize);
 use BOM::Database::Model::OAuth;
 use BOM::Database::ClientDB;
+use BOM::Platform::Event::Emitter;
 use Date::Utility;
 use DataDog::DogStatsd::Helper;
 
@@ -50,7 +51,7 @@ rpc app_register => sub {
     return $error_sub->(localize('The name is taken.'))
         if $oauth->is_name_taken($user_id, $name);
 
-    my $app = $oauth->create_app({
+    my $payload = {
         user_id               => $user_id,
         name                  => $name,
         scopes                => $scopes,
@@ -61,7 +62,14 @@ rpc app_register => sub {
         redirect_uri          => $redirect_uri,
         verification_uri      => $verification_uri,
         app_markup_percentage => $app_markup_percentage
-    });
+    };
+    my $app = $oauth->create_app($payload);
+
+    delete $payload->{user_id};
+    $payload->{loginid} = $client->loginid;
+    $payload->{app_id}  = $app->{app_id};
+
+    BOM::Platform::Event::Emitter::emit('app_registered', $payload);
 
     return $app;
 };
@@ -107,18 +115,28 @@ rpc app_update => sub {
             if $oauth->is_name_taken($user_id, $name);
     }
 
-    $app = $oauth->update_app(
-        $app_id,
+    my $payload = {
+        name                  => $name,
+        scopes                => $scopes,
+        homepage              => $homepage,
+        github                => $github,
+        appstore              => $appstore,
+        googleplay            => $googleplay,
+        redirect_uri          => $redirect_uri,
+        verification_uri      => $verification_uri,
+        app_markup_percentage => $app_markup_percentage
+    };
+
+    my @updated_fields = grep { defined($args->{$_}) and ($args->{$_} ne $app->{$_} // '') } keys %$payload;
+
+    $app = $oauth->update_app($app_id, $payload);
+
+    BOM::Platform::Event::Emitter::emit(
+        'app_updated',
         {
-            name                  => $name,
-            scopes                => $scopes,
-            homepage              => $homepage,
-            github                => $github,
-            appstore              => $appstore,
-            googleplay            => $googleplay,
-            redirect_uri          => $redirect_uri,
-            verification_uri      => $verification_uri,
-            app_markup_percentage => $app_markup_percentage
+            $payload->%{@updated_fields},
+            loginid => $client->loginid,
+            app_id  => $app_id,
         });
 
     return $app;
@@ -174,6 +192,13 @@ rpc app_delete => sub {
     my $oauth  = BOM::Database::Model::OAuth->new;
     my $app_id = $params->{args}->{app_delete};
     my $status = $oauth->block_app($app_id, $user_id);
+
+    BOM::Platform::Event::Emitter::emit(
+        'app_deleted',
+        {
+            loginid => $client->loginid,
+            app_id  => $app_id
+        }) if $status;
 
     return $status ? 1 : 0;
 };
