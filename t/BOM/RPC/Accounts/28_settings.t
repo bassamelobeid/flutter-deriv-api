@@ -556,6 +556,9 @@ subtest 'set settings' => sub {
     # setting account settings for one client updates for all clients with the same landing company
     $params->{token} = $token_cr_2;
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    delete $params->{args}->{place_of_birth};
+    ok($emitted->{profile_change}, 'profile_change emit exist');
+    is_deeply $emitted->{profile_change}->{properties}->{updated_fields}, $params->{args}, "updated fields are correctly sent to track event";
     is($c->tcall('get_settings', {token => $token_cr})->{address_line_1}, "address line 1", "Was able to set settings correctly for CR client");
     is(
         $c->tcall('get_settings', {token => $token_cr_2})->{address_line_1},

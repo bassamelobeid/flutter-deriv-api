@@ -1165,6 +1165,10 @@ rpc set_settings => sub {
         @{$params}{qw/website_name client_ip user_agent language args/};
     $user_agent //= '';
 
+    # This function used to find the fields updated to send them as properties to track event
+    # TODO Please rename this to updated_fields once you refactor this function to remove deriv set settings email.
+    my $updated_fields_for_track = _find_updated_fields($params);
+
     my $brand = request()->brand;
     my ($residence, $allow_copiers) =
         ($args->{residence}, $args->{allow_copiers});
@@ -1414,6 +1418,7 @@ rpc set_settings => sub {
             });
         }
     }
+
     # Send request to update onfido details
     BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $current_client->loginid});
     BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $current_client->loginid}) if $needs_verify_address_trigger;
@@ -1474,6 +1479,11 @@ rpc set_settings => sub {
                 website_name   => $website_name,
             },
         });
+    BOM::Platform::Event::Emitter::emit(
+        'profile_change',
+        {
+            loginid    => $current_client->loginid,
+            properties => {updated_fields => $updated_fields_for_track}}) if $updated_fields_for_track;
     BOM::User::AuditLog::log('Your settings have been updated successfully', $current_client->loginid);
     BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $current_client->loginid});
 
@@ -1486,6 +1496,35 @@ rpc get_self_exclusion => sub {
     my $client = $params->{client};
     return _get_self_exclusion_details($client);
 };
+
+sub _find_updated_fields {
+    my $params = shift;
+    my ($client, $args) = @{$params}{qw/client args/};
+    my $updated_fields;
+    my @required_fields =
+        qw/account_opening_reason address_city address_line_1 address_line_2 address_postcode address_state allow_copiers citizen date_of_birth first_name last_name phone
+        place_of_birth residence salutation secret_answer secret_question tax_identification_number tax_residence/;
+
+    foreach my $field (@required_fields) {
+        $updated_fields->{$field} = $args->{$field} if defined($args->{$field}) and $args->{$field} ne ($client->$field // '');
+    }
+    my $user = $client->user;
+
+    # email consent is per user whereas other settings are per client
+    # so need to save it separately
+    if (defined($args->{email_consent} and $user->email_consent) and $user->email_consent ne $args->{email_consent}) {
+        $updated_fields->{email_consent} = $args->{email_consent};
+    }
+
+    if (defined $args->{request_professional_status}) {
+        if (not $client->status->professional_requested) {
+            $updated_fields->{request_professional_status} = 0;
+        } else {
+            $updated_fields->{request_professional_status} = 1;
+        }
+    }
+    return $updated_fields;
+}
 
 sub _get_self_exclusion_details {
     my $client = shift;
