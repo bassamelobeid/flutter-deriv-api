@@ -238,7 +238,6 @@ subtest 'client_verification after upload document himself' => sub {
         first_name => $test_client2->first_name,
         last_name  => $test_client2->last_name,
         email      => $test_client2->email,
-        gender     => $test_client2->gender,
         dob        => '1980-01-22',
         country    => 'GBR',
         addresses  => [{
@@ -601,13 +600,6 @@ subtest 'transfer between accounts event' => sub {
 sub test_segment_customer {
     my ($customer, $test_client, $currencies, $created_at) = @_;
 
-    my %GENDER_MAPPING = (
-        MR   => 'male',
-        MRS  => 'female',
-        MISS => 'female',
-        MS   => 'female'
-    );
-
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     is $customer->user_id, $test_client->binary_user_id, 'User id is binary user id';
     my ($year, $month, $day) = split('-', $test_client->date_of_birth);
@@ -627,7 +619,6 @@ sub test_segment_customer {
         ),
         'phone'      => $test_client->phone,
         'created_at' => Date::Utility->new($created_at)->datetime_iso8601,
-        'gender'     => $GENDER_MAPPING{uc($test_client->salutation)},
         'address'    => {
             street      => $test_client->address_line_1 . " " . $test_client->address_line_2,
             town        => $test_client->address_city,

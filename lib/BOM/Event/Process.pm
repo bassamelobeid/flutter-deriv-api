@@ -53,6 +53,7 @@ my $action_mapping = {
     ready_for_authentication    => \&BOM::Event::Actions::Client::ready_for_authentication,
     client_verification         => \&BOM::Event::Actions::Client::client_verification,
     verify_address              => \&BOM::Event::Actions::Client::verify_address,
+    profile_change              => \&BOM::Event::Actions::User::profile_change,
     login                       => \&BOM::Event::Actions::User::login,
     signup                      => \&BOM::Event::Actions::Client::signup,
     transfer_between_accounts   => \&BOM::Event::Actions::Client::transfer_between_accounts,

@@ -40,4 +40,27 @@ sub login {
     return 1;
 }
 
+=head2 profile_change
+
+It is triggered for each B<changing in user profile> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties, including all fields that has been updated from Backoffice or set_settings API call.
+
+=back
+
+=cut
+
+sub profile_change {
+    my @args = @_;
+
+    BOM::Event::Services::Track::profile_change(@args)->retain;
+
+    return 1;
+}
+
 1;

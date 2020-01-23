@@ -164,15 +164,93 @@ subtest 'login event' => sub {
         'identify context is properly set';
 };
 
+subtest 'user profile change event' => sub {
+    my $virtual_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => 'test3@bin.com',
+    });
+    my $user = BOM::User->create(
+        email          => $virtual_client->email,
+        password       => "hello",
+        email_verified => 1,
+    );
+    $user->add_client($virtual_client);
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'test3@bin.com',
+    });
+
+    $user->add_client($test_client);
+    $test_client->city('Ambon');
+    $test_client->phone('+15417541233');
+    $test_client->address_state('BAL');
+    $test_client->address_line_1('street 1');
+    $test_client->citizen('af');
+    $test_client->place_of_birth('af');
+    $test_client->residence('af');
+    $test_client->save();
+
+    my $args = {
+        loginid    => $test_client->loginid,
+        properties => {
+            loginid          => $test_client->loginid,
+            'updated_fields' => {
+                'address_line_1' => 'street 1',
+                'address_city'   => 'Ambon',
+                'address_state'  => "BAL",
+                'phone'          => '+15417541233',
+                'citizen'        => 'af',
+                'place_of_birth' => 'af',
+                'residence'      => 'af'
+            },
+        }};
+    undef @identify_args;
+    undef @track_args;
+    my $result = BOM::Event::Actions::User::profile_change($args);
+    is $result, 1, 'Success profile_change result';
+    my ($customer, %args) = @identify_args;
+    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
+
+    is_deeply \%args,
+        {
+        'context' => {
+            'active' => 1,
+            'app'    => {'name' => 'deriv'},
+            'locale' => 'id'
+        }
+        },
+        'identify context is properly set for profile change';
+
+    ($customer, %args) = @track_args;
+    test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
+    ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+    is_deeply \%args,
+        {
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'id'
+        },
+        event      => 'profile change',
+        properties => {
+            loginid          => $test_client->loginid,
+            'updated_fields' => {
+                'address_line_1' => 'street 1',
+                'address_city'   => 'Ambon',
+                'address_state'  => "Balkh",
+                'phone'          => '+15417541233',
+                'citizen'        => 'Afghanistan',
+                'place_of_birth' => 'Afghanistan',
+                'residence'      => 'Afghanistan'
+            },
+        }
+        },
+        'properties are set properly for user profile change event';
+
+};
+
 sub test_segment_customer {
     my ($customer, $test_client, $currencies, $created_at) = @_;
-
-    my %GENDER_MAPPING = (
-        MR   => 'male',
-        MRS  => 'female',
-        MISS => 'female',
-        MS   => 'female'
-    );
 
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     is $customer->user_id, $test_client->binary_user_id, 'User id is binary user id';
@@ -193,7 +271,6 @@ sub test_segment_customer {
         ),
         'phone'      => $test_client->phone,
         'created_at' => Date::Utility->new($created_at)->datetime_iso8601,
-        'gender'     => $GENDER_MAPPING{uc($test_client->salutation)},
         'address'    => {
             street      => $test_client->address_line_1 . " " . $test_client->address_line_2,
             town        => $test_client->address_city,

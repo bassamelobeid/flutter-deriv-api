@@ -22,13 +22,6 @@ sub _segment {
     return $services->segment();
 }
 
-my %GENDER_MAPPING = (
-    MR   => 'male',
-    MRS  => 'female',
-    MISS => 'female',
-    MS   => 'female'
-);
-
 =head2 login
 
 It is triggered for each B<login> event emitted, delivering it to Segment.
@@ -52,8 +45,7 @@ sub login {
     return Future->done unless _validate_params($loginid);
     my $customer = _create_customer($loginid);
     $log->debugf('Track login event for client %s', $loginid);
-    _identify($customer);
-    return _track($customer, $properties, 'login');
+    return Future->needs_all(_identify($customer), _track($customer, $properties, 'login'));
 }
 
 =head2 signup
@@ -83,8 +75,7 @@ sub signup {
     map { $properties->{$_} = $customer->{$_}           if $customer->{$_} } qw/currency landing_company date_joined/;
     map { $properties->{$_} = $customer->{traits}->{$_} if $customer->{traits}->{$_} } qw/first_name last_name phone address age country/;
     $log->debugf('Track signup event for client %s', $loginid);
-    _identify($customer);
-    return _track($customer, $properties, 'signup');
+    return Future->needs_all(_identify($customer), _track($customer, $properties, 'signup'));
 }
 
 =head2 account_closure
@@ -133,8 +124,39 @@ sub new_mt5_signup {
     my $customer = _create_customer($loginid);
 
     $log->debugf('Track new mt5 signup event for client %s', $loginid);
-    _identify($customer);
     return _track($customer, $properties, 'mt5 signup');
+}
+
+=head2 profile_change
+
+It is triggered for each B<changing in user profile> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub profile_change {
+    my ($args) = @_;
+    my $loginid = $args->{loginid};
+    my $properties = $args->{properties} // {};
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+    $properties->{loginid} = $loginid;
+    # Modify some properties to be more readable in segment
+    $properties->{updated_fields}->{address_state} = $customer->{traits}->{address}->{state} if $properties->{updated_fields}->{address_state};
+    foreach my $field (qw /citizen residence place_of_birth/) {
+        $properties->{updated_fields}->{$field} = Locale::Country::code2country($properties->{updated_fields}->{$field})
+            if (defined $properties->{updated_fields}->{$field} and $properties->{updated_fields}->{$field} ne '');
+    }
+    $log->debugf('Track profile_change event for client %s', $loginid);
+    return Future->needs_all(_identify($customer), _track($customer, $properties, 'profile change'));
 }
 
 =head2 transfer_between_accounts
@@ -327,7 +349,7 @@ sub _create_customer {
             #description: not_supported,
             email      => $client->email,
             first_name => $client->first_name,
-            gender     => $client->salutation ? $GENDER_MAPPING{uc($client->salutation)} : '',
+            #gender     => not_supported for Deriv,
             #id: not_supported,
             last_name => $client->last_name,
             #name: automatically filled
