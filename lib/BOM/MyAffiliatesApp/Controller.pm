@@ -37,7 +37,7 @@ sub __send_file {
         $file_name = $reporter->output_file_name();
         $file_path = $reporter->output_file_path();
     } elsif ($type eq 'registration') {
-        $file_name = 'registrations' . Date::Utility->new({datetime => $date})->date_yyyymmdd . '.csv';
+        $file_name = 'registrations_' . Date::Utility->new({datetime => $date})->date_yyyymmdd . '.csv';
         $file_path = BOM::Config::Runtime->instance->app_config->system->directory->db . '/myaffiliates/' . $file_name;
     } elsif ($type eq 'turnover_report') {
         my $reporter = BOM::MyAffiliates::TurnoverReporter->new(

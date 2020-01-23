@@ -53,7 +53,7 @@ my @warn_msgs;
 
 my $reporter = BOM::MyAffiliates::ActivityReporter->new(
     processing_date => $processing_date,
-    brand           => $brand_object
+    brand           => $brand_object,
 );
 
 my $output_dir = $reporter->directory_path();
@@ -85,6 +85,7 @@ while ($to_date->days_between($processing_date) >= 0) {
         my @csv = $reporter->activity();
         unless (@csv) {
             $log->infof('No CSV data for affiliate turnover report for %s', $processing_date->date_yyyymmdd) unless @csv;
+            push @warn_msgs, 'No CSV data for affiliate turnover report for ' . $processing_date->date_yyyymmdd unless @csv;
             $processing_date = $next_date;
             next;
         }
@@ -115,7 +116,8 @@ try {
         warn 'Failed to generate MyAffiliates PL report: ', "MyAffiliates PL report failed to generate zip archive";
         exit 1;
     }
-} catch {
+}
+catch {
     my $error = $@;
     $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to generate zip archive with $error");
     warn 'Failed to generate MyAffiliates PL report: ', "MyAffiliates PL report failed to generate zip archive with $error";
@@ -131,7 +133,11 @@ try {
 
     $log->debugf('Sending email for affiliate profit and loss report');
     $reporter->send_report(
-        subject => 'CRON generate_affiliate_PL_daily: ' . ' for date range ' . $from_date->date_yyyymmdd . ' - ' . $to_date->date_yyyymmdd,
+        subject => 'CRON generate_affiliate_PL_daily ('
+            . $brand_object->name
+            . ') for date range '
+            . $from_date->date_yyyymmdd . ' - '
+            . $to_date->date_yyyymmdd,
         message => ["Find links to download CSV that was generated:\n" . $download_url],
     );
 }
@@ -139,6 +145,7 @@ catch {
     my $error = $@;
     $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to upload to S3 due: $error");
     warn 'Failed to generate MyAffiliates PL report: ', "MyAffiliates PL report failed to upload to S3 due: $error";
+    exit 1;
 }
 
 1;
