@@ -228,6 +228,33 @@ subtest 'password change' => sub {
         'It looks like you have already made the request. Please try again later.',
         'change password hits rate limit'
     );
+     # reset throller, test for password limit
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $params->{args}->{new_password} = '12345678';
+
+    $c->call_ok($method, $params)->has_no_system_error->has_error('error for mt5_password_change invalid password')
+        ->error_code_is('IncorrectMT5PasswordFormat', 'error code is IncorrectMT5PasswordFormat')
+        ->error_message_like(qr/Your password must have/, 'error message is correct');
+    is(BOM::RPC::v3::Utility::_validate_mt5_password({password => '12345678bc'}),   '', 'validated correct password with atleast two combinations');
+    is(BOM::RPC::v3::Utility::_validate_mt5_password({password => '@12345678BCc'}), '', 'validated correct password with special characters');
+    is(BOM::RPC::v3::Utility::_validate_mt5_password({password => 'waterloo'}),     1,  'only alphabets',);
+    is(BOM::RPC::v3::Utility::_validate_mt5_password({password => '@@@###!!!'}),    1,  'only special characters',);
+    is(
+        BOM::RPC::v3::Utility::_validate_mt5_password({
+                password => 'jkl6789Ijkl6789Ijkl678l673',
+            }
+        ),
+        1,
+        'too long.',
+    );
+    is(
+        BOM::RPC::v3::Utility::_validate_mt5_password({
+                password => 'pa$5A',
+            }
+        ),
+        1,
+        'too short.',
+    );
 };
 
 subtest 'password reset' => sub {
@@ -260,6 +287,19 @@ subtest 'password reset' => sub {
         subject => qr/\Q$subject\E/
     );
     ok($msg, "email received");
+    $code = BOM::Platform::Token->new({
+            email       => $DETAILS{email},
+            expires_in  => 3600,
+            created_for => 'mt5_password_reset'
+        })->token;
+    $params->{args}->{verification_code} = $code;
+    $params->{args}->{new_password}      = '12345678';
+
+    $c->call_ok($method, $params)->has_no_system_error->has_error('error for mt5_password_reset invalid password')
+        ->error_code_is('IncorrectMT5PasswordFormat', 'error code is IncorrectMT5PasswordFormat')->error_message_is(
+        'Your password must have a minimum of 8 characters. It must also have at least 2 out of the following 3 types of characters: uppercase letters, lowercase letters, and numbers.',
+        'error message is correct'
+        );
 
 };
 

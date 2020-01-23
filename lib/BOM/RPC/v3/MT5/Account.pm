@@ -218,6 +218,13 @@ async_rpc "mt5_new_account",
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
     $mt5_account_type = '' if $account_type eq 'gaming';
+
+    if (BOM::RPC::v3::Utility::_validate_mt5_password({password => $args->{mainPassword}})) {
+        return create_error_future('IncorrectMT5PasswordFormat');
+    }
+    if ($args->{investPassword} && BOM::RPC::v3::Utility::_validate_mt5_password({password => $args->{investPassword}})) {
+        return create_error_future('IncorrectMT5PasswordFormat');
+    }
     $args->{investPassword} = _generate_password($args->{mainPassword}) unless $args->{investPassword};
 
     return create_error_future('MT5SamePassword') if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
@@ -848,6 +855,10 @@ async_rpc "mt5_password_change",
         return create_error_future('Throttle', {override_code => 'MT5PasswordChangeError'});
     }
 
+    if (BOM::RPC::v3::Utility::_validate_mt5_password({password => $args->{new_password}})) {
+        return create_error_future('IncorrectMT5PasswordFormat');
+    }
+
     return BOM::MT5::User::Async::password_check({
             login    => $login,
             password => $args->{old_password},
@@ -965,6 +976,10 @@ async_rpc "mt5_password_reset",
     # MT5 login not belongs to user
     return create_error_future('permission')
         unless _check_logins($client, ['MT' . $login]);
+
+    if (BOM::RPC::v3::Utility::_validate_mt5_password({password => $args->{new_password}})) {
+        return create_error_future('IncorrectMT5PasswordFormat');
+    }
 
     return BOM::MT5::User::Async::password_change({
             login        => $login,

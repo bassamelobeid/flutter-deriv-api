@@ -65,7 +65,7 @@ my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 # consecutive tests to fail without a reset.
 BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
-subtest 'new account with invalid main password format' => sub {
+subtest 'new account with invalid main or investor password format' => sub {
     my $method                   = 'mt5_new_account';
     my $wrong_formatted_password = 'abc123';
     my $params                   = {
@@ -94,6 +94,14 @@ subtest 'new account with invalid main password format' => sub {
     $c->call_ok($method, $params)->has_error('error code for mt5_new_account wrong password formatting')
         ->error_code_is('IncorrectMT5PasswordFormat', 'error code for mt5_new_account wrong password formatting')
         ->error_message_like(qr/Your password must have/, 'error code for mt5_new_account wrong password formatting');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    
+    $params->{args}->{mainPassword}   = 'ABCDE123';
+    $params->{args}->{investPassword} = 'ABCDEFGE';
+    $c->call_ok($method, $params)->has_error('error code for mt5_new_account wrong investor password formatting')
+        ->error_code_is('IncorrectMT5PasswordFormat', 'error code for mt5_new_account wrong investor password formatting')
+        ->error_message_like(qr/Your password must have/, 'error code for mt5_new_account wrong investor password formatting');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };

@@ -172,12 +172,12 @@ subtest 'new account' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $params->{args}->{account_type}   = 'demo';
-    $params->{args}->{mainPassword}   = 'Abc123';
-    $params->{args}->{investPassword} = 'Abc123';
+    $params->{args}->{mainPassword}   = 'Abcd1234';
+    $params->{args}->{investPassword} = 'Abcd1234';
     $c->call_ok($method, $params)->has_error->error_message_is('Please use different passwords for your investor and main accounts.',
         'Correct error message for same password');
 
-    $params->{args}->{investPassword}   = 'Abc1234';
+    $params->{args}->{investPassword}   = 'Abc12345';
     $params->{args}->{mt5_account_type} = 'dummy';
     $c->call_ok($method, $params)->has_error->error_code_is('InvalidSubAccountType', 'Invalid sub account type error message');
 
