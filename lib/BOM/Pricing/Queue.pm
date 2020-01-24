@@ -11,7 +11,6 @@ use LWP::Simple 'get';
 use List::UtilsBy qw(extract_by);
 use JSON::MaybeUTF8 qw(:v1);
 use Log::Any qw($log);
-use Finance::Asset;
 use Syntax::Keyword::Try;
 use YAML::XS;
 use RedisDB;
@@ -140,7 +139,7 @@ sub _sleep_to_next_second {
     $log->debugf('sleeping at %s for %s secs...', $t, $sleep);
     clock_nanosleep(CLOCK_REALTIME, $sleep * 1_000_000_000);
 
-    return int($t) + 1;
+    return undef;
 }
 
 =head2 _process_price_queue
@@ -153,14 +152,14 @@ sub _process_price_queue {
     my $self = shift;
 
     $log->trace('processing price_queue...');
-    my $epoch    = _sleep_to_next_second();
+    _sleep_to_next_second();
     my $overflow = $self->redis->llen('pricer_jobs');
 
     # If we didn't manage to process everything within 1s, we'll allow 1s extra - this will cause price update rates to
     # be halved on the UI.
     if ($overflow) {
         $log->debugf('got pricer_jobs overflow: %s', $overflow);
-        $epoch = _sleep_to_next_second();
+        _sleep_to_next_second();
     }
 
     # We prepend short_code where possible, so sorting means we should get similar contracts together,
@@ -200,8 +199,6 @@ sub _process_price_queue {
     # There might be multiple occurrences of the same 'relative shortcode'
     # to achieve higher performance, we count them first, then update the redis
     my %queued;
-    # stats for market and duration, used by quants to narrow down pricing queue issues.
-    my %contract_stats;
     for my $key (@keys) {
         my $params = {decode_json_utf8($key =~ s/^PRICER_KEYS:://r)->@*};
         if ($params->{contract_id} and $params->{landing_company}) {
@@ -212,10 +209,6 @@ sub _process_price_queue {
             my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode($params);
             $queued{$relative_shortcode}++;
         }
-        $self->_update_contract_stats(\%contract_stats, $epoch, $params);
-    }
-    for my $key (keys %contract_stats) {
-        stats_gauge('pricer_daemon.queue.size.' . $key, $contract_stats{$key}, {tags => ['tag:' . $self->internal_ip]});
     }
     $self->redis->hincrby('PRICE_METRICS::QUEUED', $_, $queued{$_}) for keys %queued;
 
@@ -266,36 +259,6 @@ sub _process_priority_queue {
     }
 
     return undef;
-}
-
-=head2 _process_priority_queue
-
-Divide the contracts based on their duration, and market.
-
-=cut
-
-sub _update_contract_stats {
-    my ($self, $contract_stats, $epoch, $params) = @_;
-    my $market = Finance::Asset->instance->get_parameters_for($params->{symbol})->{market};
-    # duration is one of 'ticks', 'upto_15m', and 'over_15m'
-    my $duration;
-    if ($params->{duration_unit} and $params->{duration_unit} eq 't') {
-        $duration = 'ticks';
-    } elsif ($params->{date_expiry}) {
-        my $date_expiry = $params->{date_expiry};
-        my $date_start = $params->{date_start} || $epoch;
-        $duration = ($date_expiry - $date_start <= 15 * 60) ? 'upto_15m' : 'over_15m';
-    } elsif ($params->{duration}) {
-        my $duration_unit_in_seconds = {
-            's' => 1,
-            'm' => 60,
-            'h' => 3600,
-            'd' => 86400
-        }->{$params->{duration_unit}};
-        $duration = $duration_unit_in_seconds * $params->{duration} <= 15 * 60 ? 'upto_15m' : 'over_15m';
-    }
-
-    $contract_stats->{$market . '.' . $duration}++;
 }
 
 1;
