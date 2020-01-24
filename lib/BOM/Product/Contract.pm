@@ -1522,10 +1522,6 @@ sub _get_underlying_instance {
     return $underlyings->{$symbol};
 }
 
-sub require_contract_id {
-    return 0;
-}
-
 # Don't mind me, I just need to make sure my attributes are available.
 with 'BOM::Product::Role::Reportable';
 
