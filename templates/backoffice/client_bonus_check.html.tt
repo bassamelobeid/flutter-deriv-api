@@ -1,0 +1,310 @@
+<style type="text/css">
+table#client_edit{
+    width:100%;
+}
+table#client_edit td{
+    padding-top:4px;
+}
+.label{
+    width:20%;
+    text-align:right;
+    text-transform:uppercase;
+    vertical-align:top;
+}
+.small_header{
+    background:#ffffff;
+    text-transform:uppercase;
+    font-weight:bold;
+}
+.poa_header {
+    font-size:14px;
+    color:red;
+}
+.lspace {
+    width: 80px;
+    margin-left: 6px;
+    font-weight: bold;
+    display: inline-block;
+}
+.llspace {
+    width: 160px;
+    margin-left: 6px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.highlight {
+    background-color:lightgreen;
+    font-weight: bold;
+}
+
+.warning {
+    background-color:lightsalmon;
+    font-weight: bold;
+}
+
+.danger {
+    color :white;
+    background-color:crimson;
+    font-weight: bold;
+}
+.rcorner {
+  background: #228B22;
+  border-radius: 25px;
+  margin: 8px;
+  padding: 4px;
+  align: center;
+  width: fit-content;
+  color: white;
+  border-bottom: 1px black;
+}
+
+#statement-table {
+    background : white;
+    height : 300px;
+    overflow :auto;
+}
+</style>
+
+
+<table border="0" width="100%" id="client_edit">
+
+    <tr>
+        <td class="small_header" colspan="2">#Client Details</td>
+    </tr>
+        [% in_dubious_country = bonus_dubious_countries.grep(country_residence) %]
+        [% IF in_dubious_country.size > 0 %] 
+        <tr>
+            <td colspan="2" class="warning">
+             <b>This client's country means thorough checks should be performed before granting Bonus</b>
+             </td>
+        </tr>
+        [% END %]
+    <tr>
+        <td class="label">Salutation</td>
+        <td>:
+                [% client.salutation %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label">First Name </td>
+        <td>  [% client.first_name %]</td>
+    </tr>
+    <tr>
+        <td class="label">Last Name</td>
+        <td> [% client.last_name %]</td>
+    </tr>
+    <tr>
+        <td class="label">Email</td>
+        <td>: <b>[% client.email %]</b> </td>
+    </tr>
+    <tr>
+        <td class="label">Residence</td>
+        <td>: <b>[% country_residence %]</b>
+         </td>
+
+    </tr>
+    <tr>
+        <td class="label">BROKER</td>
+        <td>: <b>[% client.broker %]</b> <input type="hidden" name="edit_client_loginid" value="[% client.loginid %]"></td>
+    </tr>
+    <tr>
+        <td class="label">Currency</td>
+        <td>: <b>[% client.default_account.currency_code || '<span class="danger"> NO CURRENCY HAS BEEN SET BY CLIENT </span>'  %]</b></td>
+    </tr>
+    <tr>
+     <td class="label">Date Joined [% bonus_sign_up_age %]</td>
+     [% joined_days_ago = join_date.days_between(today) * -1 %]
+
+      [% age_class = '' %]
+     [% IF joined_days_ago <= bonus_sign_up_age %]
+        [% age_class = 'highlight' %]
+     [% ELSIF  joined_days_ago >= bonus_sign_up_age  and joined_days_ago <= bonus_sign_up_age + 30 %]
+        [% age_class = 'warning' %]
+     [% ELSE  %]
+        [% age_class = 'danger' %]
+     [% END %]
+
+        <td>: <b>[% client.date_joined %] </b><span class="[% age_class %]">
+       [% SWITCH joined_days_ago %] 
+       [% CASE  0 %]
+        ( Today )
+       [% CASE 1 %]     
+        ( Yesterday )
+       [% CASE %]
+         ([% joined_days_ago %] Days Ago )
+       [% END %] 
+        </span>
+       </td>
+    </tr>
+
+    <tr>
+    <tr>
+        <td class="small_header" colspan="2">#AFFILIATE INFO</td>
+    </tr>
+    <tr>
+        <td class="label">&nbsp;</td>
+    </tr>
+    <tr>
+        <td class="label">Affiliate Token</td>
+        <td>:
+        [% IF client.myaffiliates_token %]
+            [% client.myaffiliates_token %] (This is the token <strong>currently registered</strong> with MyAffiliates )<br>
+        [% ELSE %]
+            None
+        [% END %]
+        </td>
+    </tr>
+
+    <tr>
+        <td class="label">Deposit Bonus Promo Code</td>
+
+
+[% IF affiliate_promo %]
+        <td>:
+                Deposit Bonus promo code. <b>[% affiliate_promo.code %]</b>.
+        </td>
+
+    <tr>
+        <td class="label">Bonus Currency</td>
+        <td>:
+            [% IF affiliate_promo.config.currency  == client.account.currency_code or affiliate_promo.config.currency == 'ALL' %]
+                 <span class="highlight"><b>[% affiliate_promo.config.currency %]</b></span>
+            [% ELSE %]
+                <span class="danger"><b>Clients currency [% client.account.currency_code %] does not match promotion currency [% affiliate_promo.config.currency %]</b></span>
+            [% END %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Bonus Country</td>
+        <td>:
+            [% IF client_country_matches_promo %]
+                 <span class="highlight"><b>[% affiliate_promo.config.country %]</b></span>
+            [% ELSE %]
+                <span class="danger"><b>Clients country [% client.residence %] does not match promotion country(s) [% affiliate_promo.config.country %]</b></span>
+            [% END %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Bonus Description</td>
+        <td>:
+                 <b>[% affiliate_promo.description %]</b>.
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Start Date</td>
+        <td>:
+                <span [%IF affiliate_promo.start_date.days_between(today) > 0 %] class="danger" [% END %] <b>[% affiliate_promo.start_date.date_ddmmmyyyy %]</b>.</span>
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Expiry Date</td>
+        <td>:
+                  
+                <span [%IF affiliate_promo.expiry_date.days_between(today) < 0 %] class="danger" [% END %] <b>[% affiliate_promo.expiry_date.date_ddmmmyyyy %]</b>.</span>
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Amount</td>
+        <td>:
+                  
+                <b>[% affiliate_promo.config.amount %]</b>
+        </td>
+    </tr>
+[% ELSE %]
+      <td>No Deposit Bonus promo code present in MyAffiliates.</td>
+    </tr>
+    <tr> 
+        <td class="label">Note:</td>
+
+       <td>
+                If the client did not register through an affiliate but you think the bonus request is valid, you can refer to the
+                <a href="https://docs.google.com/spreadsheets/d/1fr3b-ec2kjApQUUEtgCX5QnJLfndcTyoIN1nHFPTvzE" target="_blank">Active Bonus List</a>
+        </td>
+    </tr>
+    <form name="bonus_code" method="post">
+        <tr>
+            <td class="label">Input Bonus Code</td>
+            <td><input name ="apply_bonus_code" type="text"/>
+        </tr>
+        <tr>
+            <td class="label">Apply Bonus Code</td>
+            <td><button type="submit" name="loginID" value="[% client.loginid %]">Apply Bonus Code </button></td>
+        </tr>
+   </form>
+ [% END %]
+    
+    <tr>
+        <td class="label">&nbsp;</td>
+    </tr>
+    [% IF affiliate_promo %]
+    <tr>
+        <td class="small_header" colspan="2">#Approve Reject</td>
+    </tr>
+        [% IF claimed_already %]
+        <tr><td colspan=2 class="danger">Bonus has already been  [% claimed_already %]ED </td><tr>
+        [% ELSE %]
+        <tr>
+        <form id="approve_reject" method="post" action="[% request.url_for('backoffice/f_promotional_processing.cgi') %]" >
+        <input type="hidden" value="[% request.url_for('backoffice/f_client_bonus_check.cgi') %]" name="back_url" /> 
+            <td class="label">Notify Client </td>
+            <td> <input type="checkbox" name="notify" checked /> </td>
+            <tr>
+            <td class="label">Approve or Reject Bonus</td>
+                
+            <td>
+                    <input type="hidden" name="loginid" value="[% client.loginid %]">
+                    
+                    <button  type="submit" value="[% affiliate_promo.code %]" name="bonus_approve" onclick="return confirm('Approve Bonus for [% client.loginid %]?')"> Approve </button>
+                    <button  type="submit" value="[% affiliate_promo.code %]"  name="bonus_reject" onclick="return confirm('Reject  Bonus for [% client.loginid %]?')"> Reject </button>
+                   
+            </td>
+           </tr> 
+        </form>
+        </tr>
+        [% END %]
+    [% END  %]
+    <tr>
+        <td class="small_header" colspan="2">#CLIENT STATEMENT</td>
+    </tr>
+    
+    <tr>
+    
+    <td colspan="2">
+[% IF transactions.size == 0 %]
+ <p>[% l('There are no items during this period') %]</p>
+[% ELSE %]
+ <table id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
+     <thead>
+         <th>Date</th>
+         <th></th>
+         <th>Staff</th>
+         <th>Debit</th>
+         <th>Credit</th>
+         <th>Balance</th>
+     </thead>
+
+     [% FOREACH transaction IN transactions %]
+     [% days_ago = transaction.date.days_between(today) * -1 %]
+     <tr [% IF transaction.amount >= bonus_deposit_amount and days_ago <= bonus_deposit_age %] class="highlight" [% END %]
+         [% IF transaction.amount >= bonus_deposit_amount and days_ago > bonus_deposit_age and days_ago < bonus_deposit_age + 30 %] class="warning" [% END %]
+         [% IF transaction.amount >= bonus_deposit_amount and days_ago > bonus_deposit_age + 30 %] class="danger" [% END %]
+         >
+         <td>[% transaction.date.date %]</td>
+         <td>[% IF days_ago == 0  %]Today [% ELSIF days_ago == 1 %]Yesterday [% ELSE %] [% days_ago %] Days Ago [% END %]</td>
+         <td>[% transaction.staff_loginid %]</td>
+         [% IF transaction.action_type == 'deposit' %]
+            <td></td>
+            <td > [% currency %] <b>[% formatnumber('amount', currency, transaction.amount) %]</b> </td>
+         [% ELSE %]
+            <td>[% currency %] [% formatnumber('amount', currency, transaction.amount) %] </td> 
+            <td></td>
+         [% END %]
+         <td>[% currency %] [% formatnumber('amount', currency, transaction.balance_after) %] </td>
+     </tr>
+    [% END %]
+
+ </table>
+[% END %]
+
+

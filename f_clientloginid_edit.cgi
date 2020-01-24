@@ -59,28 +59,22 @@ if (open my $mime_defs, '<', '/etc/mime.types') {
     $mts = Media::Type::Simple->new();
 }
 
-my $dbloc   = BOM::Config::Runtime->instance->app_config->system->directory->db;
-my $loginid = $input{loginID};
-if (not $loginid) { print "<p> Empty loginID.</p>"; code_exit_BO(); }
-$loginid = trim(uc $loginid);
-my $encoded_loginid = encode_entities($loginid);
-my $self_post       = request()->url_for('backoffice/f_clientloginid_edit.cgi');
-my $self_href       = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $loginid});
+my $dbloc = BOM::Config::Runtime->instance->app_config->system->directory->db;
 
-# given a bad-enough loginID, BrokerPresentation can die, leaving an unformatted screen..
-# let the client-check offer a chance to retry.
-eval { BrokerPresentation("$encoded_loginid CLIENT DETAILS") };    ## no critic (RequireCheckingReturnValueOfEval)
+my %details = get_client_details(\%input, 'backoffice/f_clientloginid_edit.cgi');
 
-my $well_formatted = $loginid =~ m/^[A-Z]{2,4}[\d]{4,10}$/;
-my $client;
-$client = eval { BOM::User::Client->new({loginid => $loginid}) } if $well_formatted;
-my $error_message = $well_formatted ? "Client [$encoded_loginid] not found." : "Invalid loginid provided.";
-code_exit_BO(
-    qq[<p>ERROR: $error_message </p>
-            <form action="$self_post" method="get">
-                Try Again: <input type="text" name="loginID" value="$encoded_loginid"></input>
-            </form>]
-) unless $client;
+my $client          = $details{client};
+my $user            = $details{user};
+my $encoded_loginid = $details{encoded_loginid};
+my $mt_logins       = $details{mt_logins};
+my $user_clients    = $details{user_clients};
+my $broker          = $details{broker};
+my $encoded_broker  = $details{encoded_broker};
+my $is_virtual_only = $details{is_virtual_only};
+my $clerk           = $details{clerk};
+my $self_post       = $details{self_post};
+my $self_href       = $details{self_href};
+my $loginid         = $client->loginid;
 
 # Disabled for now
 # to enable, replace condition with 'defined $input{allow_onfido_resubmission}'
@@ -107,22 +101,6 @@ if (defined $input{run_onfido_check}) {
     code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
 }
 
-my $user = $client->user;
-
-my @user_clients;
-push @user_clients, $client;
-foreach my $lid ($user->bom_loginids) {
-    next if ($lid eq $client->loginid);
-
-    push @user_clients, BOM::User::Client->new({loginid => $lid});
-}
-
-my @mt_logins = sort grep { /^MT\d+$/ } $user->loginids;
-my $is_virtual_only = (@user_clients == 1 and @mt_logins == 0 and $client->is_virtual);
-my $broker          = $client->broker;
-my $encoded_broker  = encode_entities($broker);
-my $clerk           = BOM::Backoffice::Auth0::get_staffname();
-
 if ($input{delete_checked_documents} and $input{del_document_list}) {
     my $documents = $input{del_document_list};
     my @documents = ref $documents ? @$documents : ($documents);
@@ -131,13 +109,16 @@ if ($input{delete_checked_documents} and $input{del_document_list}) {
     my $client;
 
     for my $document (@documents) {
-        # if the checkbox is checked and unchecked, the EventListener will still send input value as 0.
-        # this line is to escape this case.
+
+# if the checkbox is checked and unchecked, the EventListener will still send input value as 0.
+# this line is to escape this case.
         next unless $document;
         my @tokens          = split(/\./, $document);
         my $current_loginid = $tokens[0];
         my ($doc_id)        = $tokens[2] =~ m{(\d+)};
-        if ((not defined $client) or ($client->loginid ne $current_loginid)) {
+        if (   (not defined $client)
+            or ($client->loginid ne $current_loginid))
+        {
             $client = BOM::User::Client::get_instance({loginid => $current_loginid});
         }
         if ($client) {
@@ -159,6 +140,13 @@ if ($input{delete_checked_documents} and $input{del_document_list}) {
     }
 
     print $full_msg;
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
+}
+
+if (!$client->is_virtual && $input{whattodo} =~ 'p2p.') {
+    Bar('P2P Agent');
+    print p2p_process_action($client, $input{whattodo});
+    my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
     code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
 }
 
@@ -217,8 +205,10 @@ if ($input{whattodo} eq 'delete_copier_tokens') {
     $trader_ids = [$trader_ids] if ref($trader_ids) ne 'ARRAY';
     my $db           = $client->db;
     my $delete_count = 0;
-    $delete_count = _delete_copiers($copier_ids, 'copier', $loginid, $db) if defined $copier_ids->[0];
-    $delete_count += _delete_copiers($trader_ids, 'trader', $loginid, $db) if defined $trader_ids->[0];
+    $delete_count = _delete_copiers($copier_ids, 'copier', $loginid, $db)
+        if defined $copier_ids->[0];
+    $delete_count += _delete_copiers($trader_ids, 'trader', $loginid, $db)
+        if defined $trader_ids->[0];
 
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_edit_msg.tt',
@@ -229,6 +219,7 @@ if ($input{whattodo} eq 'delete_copier_tokens') {
     ) || die BOM::Backoffice::Request::template()->error();
     code_exit_BO();
 }
+
 # sync authentication status to MT5
 if ($input{whattodo} eq 'sync_to_MT5') {
     BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $loginid});
@@ -256,7 +247,8 @@ if ($input{whattodo} eq 'uploadID') {
     my $result         = "";
 
     my @futures;
-    my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
+    my $s3_client =
+        BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
     foreach my $i (1 .. 4) {
         my $doctype         = $cgi->param('doctype_' . $i);
         my $filetoupload    = $cgi->upload('FILE_' . $i);
@@ -267,7 +259,9 @@ if ($input{whattodo} eq 'uploadID') {
 
         next unless $filetoupload;
 
-        if ($expiration_date && $expiration_date ne (eval { Date::Utility->new($expiration_date)->date_yyyymmdd } // '')) {
+        if (   $expiration_date
+            && $expiration_date ne (eval { Date::Utility->new($expiration_date)->date_yyyymmdd } // ''))
+        {
             print "<p style=\"color:red; font-weight:bold;\">Expiration date \"$expiration_date\" is not a valid date.</p>";
             code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
         }
@@ -310,7 +304,8 @@ if ($input{whattodo} eq 'uploadID') {
             next;
         }
 
-        my ($file_id, $new_file_name) = @{$upload_info}{qw/file_id file_name/};
+        my ($file_id, $new_file_name) =
+            @{$upload_info}{qw/file_id file_name/};
 
         my $future = $s3_client->upload($new_file_name, $abs_path_to_temp_file, $file_checksum)->then(
             sub {
@@ -320,7 +315,8 @@ if ($input{whattodo} eq 'uploadID') {
                         ping => sub {
                             $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $file_id);
                         });
-                    $err = 'Db returned unexpected file id on finish' unless $finish_upload_result == $file_id;
+                    $err = 'Db returned unexpected file id on finish'
+                        unless $finish_upload_result == $file_id;
                 }
                 catch {
                     $err = 'Document upload failed on finish';
@@ -407,23 +403,34 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         # Remove existing status to make the auth methods mutually exclusive
         $_->delete for @{$client->client_authentication_method};
 
-        $client->set_authentication('ID_NOTARIZED')->status('pass') if $auth_method eq 'ID_NOTARIZED';
-        my $already_passed_id_document = $client->get_authentication('ID_DOCUMENT') ? $client->get_authentication('ID_DOCUMENT')->status : '';
-        if ($auth_method eq 'ID_DOCUMENT' && !($already_passed_id_document eq 'pass'))
+        $client->set_authentication('ID_NOTARIZED')->status('pass')
+            if $auth_method eq 'ID_NOTARIZED';
+        my $already_passed_id_document =
+              $client->get_authentication('ID_DOCUMENT')
+            ? $client->get_authentication('ID_DOCUMENT')->status
+            : '';
+        if ($auth_method eq 'ID_DOCUMENT'
+            && !($already_passed_id_document eq 'pass'))
         {    #Authenticated with scans, front end lets this get run again even if already set.
 
             $client->set_authentication('ID_DOCUMENT')->status('pass');
             BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $loginid});
         }
 
-        my $already_passed_id_online = $client->get_authentication('ID_ONLINE') ? $client->get_authentication('ID_ONLINE')->status : '';
-        if ($auth_method eq 'ID_ONLINE' && !($already_passed_id_online eq 'pass')) {
+        my $already_passed_id_online =
+              $client->get_authentication('ID_ONLINE')
+            ? $client->get_authentication('ID_ONLINE')->status
+            : '';
+        if ($auth_method eq 'ID_ONLINE'
+            && !($already_passed_id_online eq 'pass'))
+        {
             $client->set_authentication('ID_ONLINE')->status('pass');
         }
 
         if ($auth_method eq 'NEEDS_ACTION') {
             $client->set_authentication('ID_DOCUMENT')->status('needs_action');
             $client->status->set('allow_document_upload', 'system', 'Allow client to document upload');
+
             # if client is marked as needs action then we need to inform
             # CS for new POA document hence we need to remove any
             # key set for email already sent for POA
@@ -478,39 +485,42 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
 
             if (my $promo_code = uc $input{promo_code}) {
-                if ((LandingCompany::Registry::get_currency_type($client->currency) // '') eq 'crypto') {
-                    code_exit_BO('<p style="color:red; font-weight:bold;">ERROR: Promo code cannot be added to crypto currency accounts</p>');
-                } else {
-                    my $encoded_promo_code = encode_entities($promo_code);
-                    my %pcargs             = (
-                        code   => $promo_code,
-                        broker => $broker
-                    );
-                    if (!BOM::Database::AutoGenerated::Rose::PromoCode->new(%pcargs)->load(speculative => 1)) {
-                        code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR: invalid promocode $encoded_promo_code</p>");
-                    }
-                    # add or update client promo code
+                my $encoded_promo_code = encode_entities($promo_code);
+                my %pcargs             = (
+                    code   => $promo_code,
+                    broker => $broker
+                );
+
+                # add or update client promo code
+                try {
                     $client->promo_code($promo_code);
-                    $client->promo_code_status($input{promo_code_status} || 'NOT_CLAIM');
                 }
+                catch {
+                    code_exit_BO(sprintf('<p style="color:red; font-weight:bold;">ERROR: %s</p>', $_));
+                };
+                $client->promo_code_status($input{promo_code_status} || 'NOT_CLAIM');
+
             } elsif ($client->promo_code) {
                 $client->set_promotion->delete;
             }
         }
     }
+
     # status change for existing promo code
     if (exists $input{promo_code_status} and not exists $input{promo_code}) {
         $client->promo_code_status($input{promo_code_status});
     }
 
-    # Prior to duplicate check and storing, strip off trailing and leading whitespace
+# Prior to duplicate check and storing, strip off trailing and leading whitespace
 
-    my $error = $client->format_input_details(\%input) || $client->validate_common_account_details(\%input);
+    my $error = $client->format_input_details(\%input)
+        || $client->validate_common_account_details(\%input);
     if ($error) {
         my $message = $error->{error};
         code_exit_BO("<p style='color:red; font-weight:bold;'>ERROR: $message </p><p><a href='$self_href'>&laquo;Return to Client Details</a></p>");
     }
 
+    $error = $client->check_duplicate_account(\%input);
     # Do not check here for phone duplicate because CS will have to contact the client
     $input{checks} = ['first_name', 'last_name', 'date_of_birth'];
     $error = $client->check_duplicate_account(\%input);
@@ -540,9 +550,9 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         my $valid_change = _residence_change_validation({
             old_residence   => $client->residence,
             new_residence   => $new_residence,
-            all_clients     => \@user_clients,
+            all_clients     => $user_clients,
             is_virtual_only => $is_virtual_only,
-            has_mt5_logins  => @mt_logins ? 1 : 0
+            has_mt5_logins  => $mt_logins->@* ? 1 : 0
         });
 
         unless ($valid_change) {
@@ -551,17 +561,20 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
         }
 
-        do { $_->residence($new_residence); $clients_updated{$_->loginid} = $_ }
-            for @user_clients;
+        do {
+            $_->residence($new_residence);
+            $clients_updated{$_->loginid} = $_;
+            }
+            for $user_clients->@*;
     }
 
-    # Two reasons for this check:
-    # 1. If other fields were updated in virtual, we should not saving anything.
-    # 2. In a real account, let's assume that didn't update the residence
-    # but updated other fields (first_name, last_name)
-    # Filter out virtual clients if residence is not updated VR does not have this data; only residence is needed.
-    # Hence: we'll end up making an extra call to VR database when none of the fields were updated
-    @clients_to_update = $client->is_virtual ? () : grep { not $_->is_virtual } @user_clients;
+# Two reasons for this check:
+# 1. If other fields were updated in virtual, we should not saving anything.
+# 2. In a real account, let's assume that didn't update the residence
+# but updated other fields (first_name, last_name)
+# Filter out virtual clients if residence is not updated VR does not have this data; only residence is needed.
+# Hence: we'll end up making an extra call to VR database when none of the fields were updated
+    @clients_to_update = $client->is_virtual ? () : grep { not $_->is_virtual } $user_clients->@*;
 
     # Updates that apply to both active client and its corresponding clients
     foreach my $cli (@clients_to_update) {
@@ -578,7 +591,9 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $cli->set_db('write');
         }
 
-        if (exists $input{pa_withdrawal_explicitly_allowed} && update_needed($client, $cli, 'pa_withdrawal_explicitly_allowed', \%clients_updated)) {
+        if (exists $input{pa_withdrawal_explicitly_allowed}
+            && update_needed($client, $cli, 'pa_withdrawal_explicitly_allowed', \%clients_updated))
+        {
             if ($input{pa_withdrawal_explicitly_allowed}) {
                 $cli->status->set('pa_withdrawal_explicitly_allowed', $clerk, 'allow withdrawal through payment agent');
             } else {
@@ -599,17 +614,25 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             restricted_ip_address
             salutation
             /;
-        exists $input{$_} && update_needed($client, $cli, $_, \%clients_updated) && $cli->$_($input{$_}) for @simple_updates;
+        exists $input{$_}
+            && update_needed($client, $cli, $_, \%clients_updated)
+            && $cli->$_($input{$_})
+            for @simple_updates;
 
         my $tax_residence;
         if (exists $input{tax_residence}) {
+
             # Filter keys for tax residence
             my @tax_residence_multiple =
-                ref $input{tax_residence} eq 'ARRAY' ? @{$input{tax_residence}} : ($input{tax_residence});
+                ref $input{tax_residence} eq 'ARRAY'
+                ? @{$input{tax_residence}}
+                : ($input{tax_residence});
             $tax_residence = join(",", sort grep { length } @tax_residence_multiple);
         }
 
-        if ($input{date_of_birth} && update_needed($client, $cli, 'date_of_birth', \%clients_updated)) {
+        if ($input{date_of_birth}
+            && update_needed($client, $cli, 'date_of_birth', \%clients_updated))
+        {
             $cli->date_of_birth($input{date_of_birth});
         }
 
@@ -631,7 +654,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                         next CLIENT_KEY;
                     }
                 } else {
-                    my $maxLength = ($document_field eq 'document_id') ? 30 : ($document_field eq 'comments') ? 255 : 0;
+                    my $maxLength =
+                          ($document_field eq 'document_id') ? 30
+                        : ($document_field eq 'comments')    ? 255
+                        :                                      0;
                     if (length($val) > $maxLength) {
                         print qq{<p style="color:red">ERROR: $document_field is too long. </p>};
                         next CLIENT_KEY;
@@ -648,10 +674,12 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 next CLIENT_KEY;
             }
 
-            next CLIENT_KEY unless update_needed($client, $cli, $key, \%clients_updated);
+            next CLIENT_KEY
+                unless update_needed($client, $cli, $key, \%clients_updated);
             if ($key eq 'secret_answer') {
-                # algorithm provide different encrypted string from the same text based on some randomness
-                # so we update this encrypted field only on value change - we don't want our trigger log trash
+
+# algorithm provide different encrypted string from the same text based on some randomness
+# so we update this encrypted field only on value change - we don't want our trigger log trash
 
                 my $secret_answer;
                 try {
@@ -668,7 +696,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             } elsif ($key eq 'age_verification') {
 
                 if ($input{$key} eq 'yes') {
-                    $cli->status->set($key, $clerk, 'No specific reason.') unless $cli->status->age_verification;
+                    $cli->status->set($key, $clerk, 'No specific reason.')
+                        unless $cli->status->age_verification;
                 } else {
                     $cli->status->clear_age_verification;
                 }
@@ -676,7 +705,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $cli->aml_risk_classification($input{$key});
             }
 
-            elsif ($key eq 'mifir_id' and $cli->mifir_id eq '' and $broker eq 'MF') {
+            elsif ( $key eq 'mifir_id'
+                and $cli->mifir_id eq ''
+                and $broker eq 'MF')
+            {
                 code_exit_BO(
                     "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p>"
                 ) if (length($input{$key}) > 35);
@@ -687,7 +719,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $cli->tax_residence($tax_residence);
             } elsif ($key eq 'tax_identification_number') {
                 code_exit_BO("<p style=\"color:red; font-weight:bold;\">Tax residence cannot be set empty if value already exists</p>")
-                    if ($cli->tax_identification_number and not $input{tax_identification_number});
+                    if ($cli->tax_identification_number
+                    and not $input{tax_identification_number});
                 $cli->tax_identification_number($input{tax_identification_number});
             }
         }
@@ -700,7 +733,9 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         if (not $cli->save) {
             code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid</p></p>");
 
-        } elsif (!$client->is_virtual && ($auth_method =~ /^(?:ID_NOTARIZED|ID_DOCUMENT$)/)) {
+        } elsif (!$client->is_virtual
+            && ($auth_method =~ /^(?:ID_NOTARIZED|ID_DOCUMENT$)/))
+        {
             # sync to doughflow once we authenticate real client
             # need to do after client save so that all information is upto date
 
@@ -710,7 +745,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         print "<p style=\"color:#eeee00; font-weight:bold;\">Client " . $cli->loginid . " saved</p>";
         print "<p style=\"color:#eeee00;\">$sync_error</p>" if $sync_error;
 
-        BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $cli->loginid}) if ($cli->loginid eq $loginid);
+        BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $cli->loginid})
+            if ($cli->loginid eq $loginid);
     }
 
     # Sync onfido with latest updates
@@ -720,84 +756,25 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         if (any { exists $input{$_} } qw(address_1 address_2 city state postcode));
 }
 
-Bar("NAVIGATION");
-print qq[<style>
-        div.flat { display: inline-block }
-    </style>
-];
-
-# find next and prev real clients but give up after a few tries in each direction.
-my $attempts = 3;
-my ($prev_client, $next_client, $prev_loginid, $next_loginid);
-my $client_broker = $client->broker;
-(my $number = $loginid) =~ s/$client_broker//;
-my $len = length($number);
-for (1 .. $attempts) {
-    $prev_loginid = sprintf "$client_broker%0*d", $len, $number - $_;
-    last if $prev_client = BOM::User::Client->new({loginid => $prev_loginid});
-}
-
-for (1 .. $attempts) {
-    $next_loginid = sprintf "$client_broker%0*d", $len, $number + $_;
-    last if $next_client = BOM::User::Client->new({loginid => $next_loginid});
-}
-
-my $encoded_prev_loginid = encode_entities($prev_loginid);
-my $encoded_next_loginid = encode_entities($next_loginid);
-
-if ($prev_client) {
-    print qq{
-        <div class="flat">
-            <form action="$self_post" method="get">
-                <input type="hidden" name="loginID" value="$encoded_prev_loginid">
-                <input type="submit" value="Previous Client ($encoded_prev_loginid)">
-            </form>
-        </div>
-    }
-} else {
-    print qq{<div class="flat">(No Client down to $encoded_prev_loginid)</div>};
-}
-
-if ($next_client) {
-    print qq{
-        <div class="flat">
-            <form action="$self_post" method="get">
-                <input type="hidden" name="loginID" value="$encoded_next_loginid">
-                <input type="submit" value="Next client ($encoded_next_loginid)">
-            </form>
-        </div>
-    }
-} else {
-    print qq{<div class="flat">(No client up to $encoded_next_loginid)</div>};
-}
+client_navigation($client, $self_post);
 
 # view client's statement/portfolio/profit table
 my $history_url     = request()->url_for('backoffice/f_manager_history.cgi');
 my $statmnt_url     = request()->url_for('backoffice/f_manager_statement.cgi');
 my $impersonate_url = request()->url_for('backoffice/client_impersonate.cgi');
-print qq{<br/>
-    <div class="flat">
-    <form action="$self_post" method="get">
-        <input type="text" size="15" maxlength="15" name="loginID" value="$encoded_loginid">
-    </form>
-    </div>
 
-    <div class="flat">
-    <form action="$statmnt_url" method="get">
-        <input type="hidden" name="loginID" value="$encoded_loginid">
-        <input type="submit" value="View $encoded_loginid Portfolio">
-        <input type="hidden" name="broker" value="$encoded_broker">
-        <input type="hidden" name="currency" value="default">
-    </form>
-    </div>
-    <div class="flat">
-    <form action="$history_url" method="get">
-    <input type="hidden" name="loginID" value="$encoded_loginid">
-    <input type="submit" value="View $encoded_loginid statement">
-    <input type="checkbox" value="yes" name="depositswithdrawalsonly">Deposits and Withdrawals only
-    </form>
-    </div>
+BOM::Backoffice::Request::template()->process(
+    'backoffice/client_statement_get.html.tt',
+    {
+        history_url     => request()->url_for('backoffice/f_manager_history.cgi'),
+        statmnt_url     => request()->url_for('backoffice/f_manager_statement.cgi'),
+        self_post       => $self_post,
+        encoded_loginid => $encoded_loginid,
+        encoded_broker  => $encoded_broker,
+        checked         => ''
+    });
 
+print qq{
 <div  style="float: right">
 <form action="$impersonate_url" method="get">
 <input type='hidden' size=30 name="impersonate_loginid" value="$encoded_loginid">
@@ -890,12 +867,15 @@ if ($link_acc) {
 print "<p>Corresponding accounts: </p><ul>";
 
 # show all BOM loginids for user, include disabled acc
-foreach my $lid (@user_clients) {
+foreach my $lid ($user_clients->@*) {
     next if ($lid->loginid eq $client->loginid);
 
     # get BOM loginids for the user, and get instance of each loginid's currency
     my $client = BOM::User::Client->new({loginid => $lid->loginid});
-    my $currency = $client->default_account ? $client->default_account->currency_code : 'No currency selected';
+    my $currency =
+          $client->default_account
+        ? $client->default_account->currency_code
+        : 'No currency selected';
 
     my $link_href = request()->url_for(
         'backoffice/f_clientloginid_edit.cgi',
@@ -913,9 +893,10 @@ foreach my $lid (@user_clients) {
 }
 
 # show MT5 a/c
-foreach my $mt_ac (@mt_logins) {
+foreach my $mt_ac ($mt_logins->@*) {
     my ($id) = $mt_ac =~ /^MT(\d+)$/;
     print "<li>" . encode_entities($mt_ac);
+
     # If we have group information, display it
     my $cache_key  = "MT5_USER_GROUP::$id";
     my $group      = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
@@ -935,7 +916,9 @@ foreach my $mt_ac (@mt_logins) {
         # Example: status (483 => 1E3)
         $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
 
-        if (sum0(@rights{qw(enabled api)}) == 2 and not $rights{trade_disabled}) {
+        if (sum0(@rights{qw(enabled api)}) == 2
+            and not $rights{trade_disabled})
+        {
             print " ( Enabled )";
         } else {
             print " ( Disabled )";
@@ -1052,7 +1035,7 @@ Bar("$loginid Tokens");
 my $token_db = BOM::Database::Model::AccessToken->new();
 my (@all_tokens, @deleted_tokens);
 
-foreach my $l (@user_clients) {
+foreach my $l ($user_clients->@*) {
     foreach my $t (@{$token_db->get_all_tokens_by_loginid($l->loginid)}) {
         $t->{loginid} = $l->loginid;
         $t->{token}   = obfuscate_token($t->{token});
@@ -1111,6 +1094,7 @@ print 'Email consent for marketing: ' . ($user->{email_consent} ? 'Yes' : 'No');
 print '<br/><br/>';
 
 if (not $client->is_virtual) {
+
     #upload new ID doc
     Bar("Upload new ID document");
     BOM::Backoffice::Request::template()->process(
@@ -1136,7 +1120,9 @@ client's financial assessment information.
 
 my $is_compliance = BOM::Backoffice::Auth0::has_authorisation(['Compliance']);
 my %fa_updated;
-if ($is_compliance && $input{whattodo} =~ /^(trading_experience|financial_information)$/) {
+if (   $is_compliance
+    && $input{whattodo} =~ /^(trading_experience|financial_information)$/)
+{
     update_fa($client, $input{whattodo});
     $fa_updated{$input{whattodo}} = 1;
 }
@@ -1144,12 +1130,14 @@ if ($is_compliance && $input{whattodo} =~ /^(trading_experience|financial_inform
 sub update_fa {
     my ($client, $section_name) = @_;
     my $config = BOM::Config::financial_assessment_fields();
-    my $args = +{map { $_ => request()->param($_) } grep { request()->param($_) } keys $config->{$section_name}->%*};
+    my $args   = +{
+        map { $_ => request()->param($_) }
+        grep { request()->param($_) } keys $config->{$section_name}->%*
+    };
     return BOM::User::FinancialAssessment::update_financial_assessment($client->user, $args);
 }
 
-my $built_fa =
-    BOM::User::FinancialAssessment::build_financial_assessment(BOM::User::FinancialAssessment::decode_fa($client->financial_assessment()));
+my $built_fa = BOM::User::FinancialAssessment::build_financial_assessment(BOM::User::FinancialAssessment::decode_fa($client->financial_assessment()));
 my $fa_score = $built_fa->{scores};
 
 for my $section_name (qw(trading_experience financial_information)) {
@@ -1161,10 +1149,12 @@ for my $section_name (qw(trading_experience financial_information)) {
     Bar($title);
 
     print_fa_table($section_name, $self_href, $is_compliance, $built_fa->{$section_name}->%*);
-    print "<strong style='color: #060;'>$title updated.</strong>" if $fa_updated{$section_name};
+    print "<strong style='color: #060;'>$title updated.</strong>"
+        if $fa_updated{$section_name};
 
     print "<p>$title score: <strong>" . $fa_score->{$section_name} . '</strong></p>';
-    print '<p>CFD Score: <strong>' . $fa_score->{cfd_score} . '</strong></p>' if ($section_name eq 'trading_experience');
+    print '<p>CFD Score: <strong>' . $fa_score->{cfd_score} . '</strong></p>'
+        if ($section_name eq 'trading_experience');
 }
 
 sub print_fa_table {
@@ -1179,12 +1169,17 @@ sub print_fa_table {
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
     for my $key (sort keys %section) {
-        my $answer           = $section{$key}->{answer};
-        my @possible_answers = sort keys $config->{$section_name}->{$key}->{possible_answer}->%*;
+        my $answer = $section{$key}->{answer};
+        my @possible_answers =
+            sort keys $config->{$section_name}->{$key}->{possible_answer}->%*;
         print '<tr><td>'
             . $section{$key}->{label}
             . '</td><td>'
-            . ($is_editable ? dropdown($key, $answer, @possible_answers) : $answer // 'Client did not answer this question.')
+            . (
+            $is_editable
+            ? dropdown($key, $answer, @possible_answers)
+            : $answer // 'Client did not answer this question.'
+            )
             . '</td><td>'
             . $section{$key}->{score}
             . '</td></tr>';
@@ -1204,6 +1199,16 @@ sub dropdown {
     $ddl .= '</select>';
 
     return $ddl;
+}
+
+if (!$client->is_virtual) {
+    Bar('P2P Agent');
+
+    if ($client->p2p_agent) {
+        BOM::Backoffice::Request::template()->process('backoffice/p2p/p2p_agent_edit_form.tt', {client => $client});
+    } else {
+        BOM::Backoffice::Request::template()->process('backoffice/p2p/p2p_agent_register_form.tt', {loginid => $client->loginid});
+    }
 }
 
 Bar($user->{email} . " Login history");
@@ -1256,8 +1261,12 @@ sub _delete_copiers {
     my $delete_count = 0;
     foreach my $client_token (@$list) {
         my ($client_id, $token) = split('::', $client_token);
+
         # switch around ids depending if they are a copier or trader.
-        my ($trader_id, $copier_id) = $type eq 'copier' ? ($loginid, $client_id) : ($client_id, $loginid);
+        my ($trader_id, $copier_id) =
+            $type eq 'copier'
+            ? ($loginid, $client_id)
+            : ($client_id, $loginid);
         $delete_count += $copiers_data_mapper->delete_copiers({
             trader_id => $trader_id,
             copier_id => $copier_id,
@@ -1318,7 +1327,7 @@ sub _residence_change_validation {
     my @new_lc = $get_lc->($new_residence);
     return undef unless @new_lc;
 
-    # NOTE: GB residents are marked as unwelcome in their virtual, as per regulations
+# NOTE: GB residents are marked as unwelcome in their virtual, as per regulations
     if ($data->{is_virtual_only}) {
         my $client = $all_clients[0];
 
@@ -1335,8 +1344,8 @@ sub _residence_change_validation {
     my @current_lc;
     push @current_lc, $_->landing_company->short for grep { !$_->is_virtual } @all_clients;
 
-    # Since we exclude VR clients, so if they don't have a real account but have a MT5
-    # account, we need to get the landing companies in a different way
+# Since we exclude VR clients, so if they don't have a real account but have a MT5
+# account, we need to get the landing companies in a different way
     @current_lc = $get_lc->($data->{old_residence}) unless @current_lc;
 
     # There is no need for repeated checks
@@ -1344,10 +1353,12 @@ sub _residence_change_validation {
         return undef unless any { $_ eq $broker } @new_lc;
     }
 
-    # If the client has MT5 accounts but the new residence does not allow mt5 trading
-    # The change should not happen (Regulations)
+# If the client has MT5 accounts but the new residence does not allow mt5 trading
+# The change should not happen (Regulations)
     if ($data->{has_mt5_logins}) {
-        return undef unless ($allowed_to_trade_mt5->('standard') || $allowed_to_trade_mt5->('advanced'));
+        return undef
+            unless ($allowed_to_trade_mt5->('standard')
+            || $allowed_to_trade_mt5->('advanced'));
     }
 
     # If the loop above passes, then it is valid to change
@@ -1417,8 +1428,10 @@ sub _check_update_needed {
     );
 
     return 1 if (!exists($sync_scope{$key}) || $sync_scope{$key} eq 'user');
-    return $client_checked->loginid eq $client->loginid if ($sync_scope{$key} eq 'client');
-    return $client_checked->broker eq $client->broker   if ($sync_scope{$key} eq 'lc');
+    return $client_checked->loginid eq $client->loginid
+        if ($sync_scope{$key} eq 'client');
+    return $client_checked->broker eq $client->broker
+        if ($sync_scope{$key} eq 'lc');
     die "don't know the scope $sync_scope{$key}";
 
 }

@@ -12,6 +12,7 @@ use BOM::Platform::Locale;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
+use Syntax::Keyword::Try;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -19,33 +20,108 @@ BrokerPresentation('PROMOTIONAL TOOLS');
 Bar('PROMO CODE APPROVAL TOOL');
 
 my %input = %{request->params};
+# A single request for a Bonus Approval this skips the processing  workflow and goes straight to approved or rejected.
+if ($input{bonus_approve} or $input{bonus_reject}) {
+    my $loginid = $input{loginid};
 
-my $clerk = BOM::Backoffice::Auth0::get_staffname();
+    my $client = BOM::User::Client->new({loginid => $loginid})
+        || code_exit_BO(sprintf('<p style="color:red; font-weight:bold;">ERROR: %s</p>', $@));
 
-my @approved = grep { /_promo$/ && $input{$_} eq 'A' } keys %input;
-my @rejected = grep { /_promo$/ && $input{$_} eq 'R' } keys %input;
-s/_promo$// for (@approved, @rejected);
+    my $promo_code = $input{bonus_approve} // $input{bonus_reject};
 
-my $tac_url = 'https://www.binary.com/en/terms-and-conditions.html?anchor=free-bonus#legal-binary';
+    if ($client->promo_code eq $promo_code and $client->promo_code_status =~ /^(CLAIM|REJECT)$/) {
+        code_exit_BO(
+            '<p style="color:red; font-weight:bold;">ERROR: Bonus for ' . $promo_code . ' Already ' . $client->promo_code_status . 'ED. </p>');
+    }
+    my $encoded_promo_code = encode_entities(uc $promo_code);
 
-my $json = JSON::MaybeXS->new;
-CLIENT:
-foreach my $loginid (@approved, @rejected) {
+    my $notify = $input{"notify"} ? 1 : 0;
+    my $status;
 
-    my $client      = BOM::User::Client->new({loginid => $loginid}) || die "bad loginid $loginid";
-    my $approved    = $input{"${loginid}_promo"} eq 'A';
+    try {
+        $client->promo_code($encoded_promo_code);
+    }
+    catch {
+        code_exit_BO(sprintf('<p style="color:red; font-weight:bold;">ERROR: %s</p>', $@));
+    };
+    $client->promo_code_status('APPROVAL');
+    if ($input{bonus_approve}) {
+        process_bonus_claim($client, 1, $notify);
+        $status = "Approved";
+    } elsif ($input{bonus_reject}) {
+        process_bonus_claim($client, 0, $notify);
+        $status = "Rejected";
+    }
+
+    print '<br/>';
+
+    print '<b>' . $status . ' : bonus for </b>', $loginid, '<br/><br/>';
+
+    print qq[<p>Check Another Bonus</p>
+            <form action="$input{back_url}" method="get">
+            Login ID: <input type="text" name="loginID" ></input>
+            </form>]
+} else {    #bulk Approval.
+
+    my @approved = grep { /_promo$/ && $input{$_} eq 'A' } keys %input;
+    my @rejected = grep { /_promo$/ && $input{$_} eq 'R' } keys %input;
+    s/_promo$// for (@approved, @rejected);
+
+    my $json = JSON::MaybeXS->new;
+    CLIENT:
+    foreach my $loginid (@approved, @rejected) {
+
+        my $client = BOM::User::Client->new({loginid => $loginid})
+            || die "bad loginid $loginid";
+        my $approved = $input{"${loginid}_promo"} eq 'A';
+        my $notify = $input{"${loginid}_notify"} ? 1 : 0;
+        process_bonus_claim($client, $approved, $notify);
+    }
+    print '<br/>';
+
+    print '<b>Approved : </b>', join(' ', map { encode_entities($_) } @approved), '<br/><br/>';
+    print '<b>Rejected : </b>', join(' ', map { encode_entities($_) } @rejected), '<br/><br/>';
+}
+
+code_exit_BO();
+
+=head2 process_bonus_claim
+
+Description: Process the Bonus either approval or rejection
+Takes the following arguments 
+
+=over 4
+
+=item - $client C< BOM::User::Client >
+
+=item - $approved Boolean true if Bonus is approved, false if rejected
+
+=back
+
+Returns undef
+
+=cut
+
+sub process_bonus_claim {
+    my ($client, $approved, $notify) = @_;
+    my $json        = JSON::MaybeXS->new();
+    my $clerk       = BOM::Backoffice::Auth0::get_staffname();
+    my $tac_url     = 'https://www.binary.com/en/terms-and-conditions.html?anchor=free-bonus#legal-binary';
     my $client_name = ucfirst join(' ', (BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name));
-    my $email_subject = localize("Your bonus request - [_1]", $loginid);
+    my $email_subject = localize("Your bonus request - [_1]", $client->loginid);
     my $email_content;
 
     if ($approved) {
 
-        my $cpc = $client->client_promo_code || die "no promocode for client $client";
+        my $cpc = $client->client_promo_code
+            || die "no promocode for client $client";
         my $pc = $cpc->promotion;
         $pc->{_json} = eval { $json->decode($pc->promo_code_config) } || {};
 
-        my $amount   = $pc->{_json}->{amount}   || die "no amount for promocode $pc";
-        my $currency = $pc->{_json}->{currency} || die "no currency for promocode $pc";
+        my $amount = $pc->{_json}->{amount}
+            || die "no amount for promocode $pc";
+        my $currency = $pc->{_json}->{currency}
+            || die "no currency for promocode $pc";
         if ($currency eq 'ALL') {
             $currency = $client->currency;
         }
@@ -53,6 +129,7 @@ foreach my $loginid (@approved, @rejected) {
         if ($client->promo_code_status eq 'APPROVAL') {
             $client->promo_code_status('CLAIM');
             $client->save();
+
             # credit with free gift
             $client->payment_free_gift(
                 currency => $currency,
@@ -95,24 +172,18 @@ foreach my $loginid (@approved, @rejected) {
         ) || die "rejecting promocode for $client: " . BOM::Backoffice::Request::template()->error;
     }
 
-    if ($input{"${loginid}_notify"}) {
+    if ($notify) {
         send_email({
             from                  => request()->brand->emails('support'),
             to                    => $client->email,
             subject               => $email_subject,
             message               => [$email_content],
-            template_loginid      => $loginid,
+            template_loginid      => $client->loginid,
             email_content_is_html => 1,
             use_email_template    => 1,
         });
     }
+    return undef;
 }
-
-print '<br/>';
-
-print '<b>Approved : </b>', join(' ', map { encode_entities($_) } @approved), '<br/><br/>';
-print '<b>Rejected : </b>', join(' ', map { encode_entities($_) } @rejected), '<br/><br/>';
-
-code_exit_BO();
 
 1;

@@ -490,6 +490,10 @@ table#client_edit td{
                 [% IF maybe_auth_msg %]<font color="red"><b>[% maybe_auth_msg %]</b></font>[% END %]
             </td>
         </tr>
+        <tr>
+            <td class="label">Check/Approve Bonus</td>
+            <td><a href="[% request.url_for('backoffice/f_client_bonus_check.cgi') %]?loginID=[% client.loginid %]"><b>check/approve bonus</b></a> </td>
+        </tr>
     [% ELSE %]
         <tr>
          <td colspan=2>Not applicable for crypto account</td>

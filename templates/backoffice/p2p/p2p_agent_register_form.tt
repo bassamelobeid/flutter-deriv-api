@@ -1,0 +1,10 @@
+<p><b>[% loginid %] is not registered as a P2P Agent yet.</b><p>
+
+<form action="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {loginID => loginid, whattodo => 'p2p.agent.register'}) %]" method="post">
+    <div>
+        <label>Name : </label>
+        <input type="text" name="agent_name" value="" required/>
+    </div>
+    <br/>
+    <button type="submit">Register</button>
+</form>

@@ -1,0 +1,53 @@
+[% IF user %]
+    [% IF history %]
+        [% IF limit == '0'%]
+            <p color="red">Showing ALL records</p>
+        [% ELSIF limit AND history.size >= limit %]
+            <p color="red">Showing last [% limit %] records only,
+            <form method="POST" action="[%request.url_for('backoffice/f_viewloginhistory.cgi') | none %]" style="display:inline">
+            <input name="email" value="[%user.email%]" type="hidden">
+            <input name="limit" value="0" type="hidden">
+            <input type="submit" value="view all">
+            </form>
+            </p>
+        [% END %]
+        <table class="BlackCandy collapsed hover" border="1">
+            <tr>
+                <th>Date and Time</th>
+                <th>Action</th>
+                <th>Status</th>
+                <th>IP Address</th>
+                <th>Company IP?</th>
+                <th>Country</th>
+                <th>Environment Info</th>
+                <th>App ID</th>
+            </tr>
+[%       FOREACH l IN history.reverse;
+            date = l.history_date;
+            status = l.successful ? 'ok' : 'failed';
+            env = l.environment;
+            matches = env.match('IP=([0-9a-z\.:]+) IP_COUNTRY=([A-Z]{1,3}) ')
+            ip = matches.0;
+            cc = matches.1
+            env = env.remove('.+User_AGENT=');
+            is_company_ip = l.app_id == 4 ? 'Yes' : 'No';
+%]
+            <tr>
+                <td width='150'>[% date %] GMT</td>
+                <td>[% l.action %]</td>
+                <td>[% status %]</td>
+                <td><a href="./ip_search.cgi?ip=[% ip %]&search_type=ip&lastndays=100">[% ip %]</td>
+                <td>[% is_company_ip %]</td>
+                <td>[% cc %]</td>
+                <td>[% env %]</td>
+                <td>[% l.app_id || 'N/A' %]</td>
+            </tr>
+
+        [% END %]
+        </table>
+    [% ELSE %]
+        <p>No login history</p>
+    [% END %]
+[% ELSE %]
+    <p>User not found</p>
+[% END %]
