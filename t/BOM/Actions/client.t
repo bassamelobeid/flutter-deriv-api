@@ -597,6 +597,109 @@ subtest 'transfer between accounts event' => sub {
     );
 };
 
+subtest 'api token create' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'id'
+    );
+    request($req);
+
+    undef @identify_args;
+    undef @track_args;
+
+    my $loginid = $test_client->loginid;
+
+    $segment_response = Future->done(1);
+    my $call_args = {
+        loginid => $loginid,
+        name    => [$loginid],
+        scopes  => ['read', 'payment']};
+    my $result = BOM::Event::Actions::Client::api_token_created($call_args)->get;
+    is $result, 1, 'Success result';
+
+    is scalar @identify_args, 0, 'No identify event is triggered';
+
+    my ($customer, %args) = @track_args;
+    is_deeply \%args,
+        {
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'id'
+        },
+        event      => 'api_token_created',
+        properties => {
+            loginid         => $loginid,
+            name            => [$loginid],
+            scopes          => ['read', 'payment'],
+            landing_company => $test_client->landing_company->short,
+        },
+        },
+        'track context and properties are correct.';
+    undef @track_args;
+
+    $req = BOM::Platform::Context::Request->new(
+        brand_name => 'binary',
+        language   => 'id'
+    );
+    request($req);
+    $result = BOM::Event::Actions::Client::api_token_created($call_args)->get;
+    is $result, undef, 'Empty result (not emitted)';
+    is scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
+    is scalar @track_args,    0, 'No track event is triggered when brand is binary';
+};
+
+subtest 'api token delete' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'id'
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+
+    my $loginid = $test_client->loginid;
+
+    $segment_response = Future->done(1);
+    my $call_args = {
+        loginid => $loginid,
+        name    => [$loginid],
+        scopes  => ['read', 'payment']};
+    my $result = BOM::Event::Actions::Client::api_token_deleted($call_args)->get;
+    is $result, 1, 'Success result';
+
+    is scalar @identify_args, 0, 'No identify event is triggered';
+
+    my ($customer, %args) = @track_args;
+    is_deeply \%args, {
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'id'
+        },
+        event      => 'api_token_deleted',
+        properties => {
+            loginid         => $loginid,
+            name            => [$loginid],
+            scopes          => ['read', 'payment'],
+            landing_company => $test_client->landing_company->short,
+
+        },
+        },
+        'track context and properties are correct.';
+    undef @track_args;
+
+    $req = BOM::Platform::Context::Request->new(
+        brand_name => 'binary',
+        language   => 'id'
+    );
+    request($req);
+    $result = BOM::Event::Actions::Client::api_token_deleted($call_args)->get;
+    is $result, undef, 'Empty result (not emitted)';
+    is scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
+    is scalar @track_args,    0, 'No track event is triggered when brand is binary';
+};
+
 sub test_segment_customer {
     my ($customer, $test_client, $currencies, $created_at) = @_;
 

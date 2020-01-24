@@ -2104,4 +2104,28 @@ sub transfer_between_accounts {
     return 1;
 }
 
+=head2 api_token_created
+
+It is triggered for each B<api_token_create> event emitted.
+
+=cut
+
+sub api_token_created {
+    my @args = @_;
+
+    return BOM::Event::Services::Track::api_token_created(@args);
+}
+
+=head2 api_token_delete
+
+It is triggered for each B<api_token_delete> event emitted.
+
+=cut
+
+sub api_token_deleted {
+    my @args = @_;
+
+    return BOM::Event::Services::Track::api_token_deleted(@args);
+}
+
 1;

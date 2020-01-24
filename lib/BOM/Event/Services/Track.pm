@@ -78,6 +78,42 @@ sub signup {
     return Future->needs_all(_identify($customer), _track($customer, $properties, 'signup'));
 }
 
+=head2 api_token_created
+
+It is triggered for each B<signup> event emitted, delivering it to Segment.
+
+=cut
+
+sub api_token_created {
+    my ($args) = @_;
+    my $loginid = $args->{loginid};
+
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+    $args->{landing_company} = $customer->{landing_company};
+
+    $log->debugf('Track api_token_create event for client %s', $loginid);
+    return _track($customer, $args, 'api_token_created');
+}
+
+=head2 api_token_deleted
+
+It is triggered for each B<api_token_delete> event emitted, delivering it to Segment.
+
+=cut
+
+sub api_token_deleted {
+    my ($args) = @_;
+    my $loginid = $args->{loginid};
+
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+    $args->{landing_company} = $customer->{landing_company};
+
+    $log->debugf('Track api_token_delete event for client %s', $loginid);
+    return _track($customer, $args, 'api_token_deleted');
+}
+
 =head2 account_closure
 
 It is triggered for each B<account_closure> event emitted, delivering the data to Segment.
@@ -425,6 +461,7 @@ sub _create_customer {
 Check if required params are valid or not.
 Arguments:
 
+
 =over
 
 =item * C<loginid> - required. Login Id of the user.
@@ -451,4 +488,3 @@ sub _validate_params {
 }
 
 1;
-

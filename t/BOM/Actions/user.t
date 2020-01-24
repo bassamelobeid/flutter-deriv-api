@@ -156,7 +156,7 @@ subtest 'login event' => sub {
 
     ($customer, %args) = @identify_args;
     test_segment_customer($customer, $virtual_client, 'EUR', $virtual_client->date_joined);
-    
+
     is_deeply \%args,
         {
         'context' => {
