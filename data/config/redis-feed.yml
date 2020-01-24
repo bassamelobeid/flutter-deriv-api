@@ -14,3 +14,7 @@ read:
   host: 127.0.1.2
   port: 6385
   password:
+local:
+  host: 127.0.0.1
+  port: 6379
+  password:
