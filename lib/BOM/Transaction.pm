@@ -42,13 +42,15 @@ use BOM::Database::Helper::RejectedTrade;
 use BOM::Database::ClientDB;
 use BOM::Transaction::CompanyLimits;
 use BOM::Transaction::Validation;
-use BOM::Transaction::Utility;
+use BOM::Config::RedisReplicated;
 
 =head1 NAME
 
     BOM::Transaction
 
 =cut
+
+my $json = JSON::MaybeXS->new;
 
 =head2 action_type
 
@@ -768,15 +770,6 @@ sub buy {
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
-    my $clientdb = BOM::Database::ClientDB->new({broker_code => $client->broker_code});
-
-    # only fetch fmbid when necessary
-    my $fmbid;
-    if ($self->contract->require_contract_id) {
-        $fmbid = $clientdb->get_next_fmbid();
-        $bet_data->{bet_data}{fmb_id} = $fmbid;
-    }
-
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
         account_data => {
@@ -784,7 +777,7 @@ sub buy {
             currency_code  => $self->contract->currency,
         },
         limits => $self->limits,
-        db     => $clientdb->db,
+        db     => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
     );
 
     my $error = 1;
@@ -798,30 +791,8 @@ sub buy {
 
     try {
         $company_limits->add_buys($client);
-        # Some contracts require more information besides shortcode to fully defined the contract.
-        # To avoid race condition between transaction stream and contract parameters setting,
-        # we will set contract parameters before buy.
-        my $contract_params = {
-            shortcode => $self->contract->shortcode,
-            currency  => $client->currency,
-            sell_time => undef,
-            is_sold   => 0,
-            $self->contract->can('available_orders') ? (limit_order => $self->contract->available_orders) : (),
-            expiry_time => $self->contract->date_expiry->epoch,
-        };
-
-        if ($fmbid) {
-            $contract_params->{contract_id} = $fmbid;
-            BOM::Transaction::Utility::set_contract_parameters($contract_params, $client);
-        }
 
         ($fmb, $txn) = $fmb_helper->buy_bet;
-
-        unless ($fmbid) {
-            $contract_params->{contract_id} = $fmb->{id};
-            BOM::Transaction::Utility::set_contract_parameters($contract_params, $client);
-        }
-
         $self->contract_details($fmb);
         $self->transaction_details($txn);
         $error = 0;
@@ -831,8 +802,6 @@ sub buy {
         # otherwise the function re-throws the exception
         my $e = $@;
         stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
-        my $contract_id = $fmbid // (defined $fmb ? $fmb->{id} : undef);
-        BOM::Transaction::Utility::delete_contract_parameters($contract_id, $client) if $contract_id;
         $company_limits->reverse_buys($client);
         $error_status = $self->_recover($e);
     }
@@ -1127,7 +1096,6 @@ sub sell {
     my ($fmb, $txn, $buy_txn_id);
     try {
         ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
-        BOM::Transaction::Utility::delete_contract_parameters($fmb->{id}, $client) if $fmb->{id};
         $error = 0;
     }
     catch {
@@ -1881,7 +1849,6 @@ sub sell_expired_contracts {
     my $sold;
     try {
         $sold = $fmb_helper->batch_sell_bet;
-        BOM::Transaction::Utility::delete_contract_parameters($_->{id}, $client) for (@bets_to_sell);
     }
     catch {
         my $e = $@;
