@@ -143,6 +143,13 @@ if ($input{delete_checked_documents} and $input{del_document_list}) {
     code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
 }
 
+if (!$client->is_virtual && $input{whattodo} =~ 'p2p.') {
+    Bar('P2P Agent');
+    print p2p_process_action($client, $input{whattodo});
+    my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
+}
+
 if ($broker eq 'MF') {
     if ($input{view_action} eq "mifir_reset") {
         $client->mifir_id('');
@@ -1192,6 +1199,16 @@ sub dropdown {
     $ddl .= '</select>';
 
     return $ddl;
+}
+
+if (!$client->is_virtual) {
+    Bar('P2P Agent');
+
+    if ($client->p2p_agent) {
+        BOM::Backoffice::Request::template()->process('backoffice/p2p/p2p_agent_edit_form.tt', {client => $client});
+    } else {
+        BOM::Backoffice::Request::template()->process('backoffice/p2p/p2p_agent_register_form.tt', {loginid => $client->loginid});
+    }
 }
 
 Bar($user->{email} . " Login history");
