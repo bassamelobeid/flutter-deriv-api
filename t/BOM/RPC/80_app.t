@@ -34,6 +34,13 @@ my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
 # need to mock it as to access api token we need token beforehand
 $mock_utility->mock('get_token_details', sub { return {loginid => $test_loginid} });
 
+my @emit_args;
+my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_emitter->mock(
+    'emit' => sub {
+        @emit_args = @_;
+    });
+
 # create new api token
 my $res = $c->call_ok(
     'api_token',
@@ -67,6 +74,17 @@ is $app1->{redirect_uri},     'https://www.example.com/',       'redirect_uri is
 is $app1->{verification_uri}, 'https://www.example.com/verify', 'verification_uri is right';
 is $app1->{homepage},         'https://www.homepage.com/',      'homepage is right';
 
+my $expected_event_payload = {
+    $app1->%{
+        qw(app_id name scopes redirect_uri verification_uri homepage
+            github appstore googleplay app_markup_percentage)
+    },
+    loginid => $test_loginid
+};
+is $emit_args[0], 'app_registered', 'emitted event name is correct';
+is_deeply $emit_args[1], $expected_event_payload, 'emitted event payload is correct';
+undef @emit_args;
+
 $app1 = $c->call_ok(
     'app_update',
     {
@@ -85,6 +103,19 @@ is_deeply([sort @{$app1->{scopes}}], ['admin', 'read', 'trade'], 'scopes are upd
 is $app1->{redirect_uri},     'https://www.example.com/callback',       'redirect_uri is updated';
 is $app1->{verification_uri}, 'https://www.example.com/verify_updated', 'redirect_uri is updated';
 is $app1->{homepage},         'https://www.homepage2.com/',             'homepage is updated';
+
+$expected_event_payload = {
+    loginid          => $test_loginid,
+    scopes           => ['read', 'trade', 'admin'],
+    redirect_uri     => 'https://www.example.com/callback',
+    verification_uri => 'https://www.example.com/verify_updated',
+    homepage         => 'https://www.homepage2.com/',
+    app_id           => $app1->{app_id},
+
+};
+is $emit_args[0], 'app_updated', 'emitted event name is correct';
+is_deeply $emit_args[1], $expected_event_payload, 'emitted event payload is correct';
+undef @emit_args;
 
 my $get_app = $c->call_ok(
     'app_get',
@@ -106,6 +137,7 @@ $res = $c->call_ok(
         },
     })->has_no_system_error->has_error->result;
 ok $res->{error}->{message_to_client} =~ /The name is taken/, 'The name is taken';
+is scalar @emit_args, 0, 'no event emitted';
 
 my $app2 = $c->call_ok(
     'app_register',
@@ -147,6 +179,7 @@ my $get_apps = $c->call_ok(
 $get_apps = [grep { $_->{app_id} ne '1' } @$get_apps];
 is_deeply($get_apps, [$app1, $app2], 'list ok');
 
+undef @emit_args;
 my $delete_st = $c->call_ok(
     'app_delete',
     {
@@ -156,6 +189,13 @@ my $delete_st = $c->call_ok(
         },
     })->has_no_system_error->result;
 ok $delete_st;
+is $emit_args[0], 'app_deleted', 'event name is correct';
+is_deeply $emit_args[1],
+    {
+    loginid => $test_loginid,
+    app_id  => $app2->{app_id}
+    },
+    'event payload is correct';
 
 $get_apps = $c->call_ok(
     'app_list',

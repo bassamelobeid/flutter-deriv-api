@@ -283,6 +283,19 @@ sub _check_password {
     return;
 }
 
+=head2 _validate_mt5_password
+    Validates the mt5 password must be of 8-25 characters long. 
+    It must also have at least 2 out of the following 3 types of characters: uppercase letters, lowercase letters, and numbers.
+    Returns true if a check fails else false.
+=cut
+
+sub _validate_mt5_password {
+    my $args     = shift;
+    my $password = $args->{password};
+
+    return $password !~ /^(?=.*[a-zA-Z])(?=.*[a-z0-9])(?=.*[A-Z0-9])[ -~]{8,25}$/;
+}
+
 sub login_env {
     my $params = shift;
 

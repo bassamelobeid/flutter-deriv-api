@@ -19,7 +19,7 @@ subtest 'Extract landing company short' => sub {
     for my $each_mt5_group (keys %account_lc_short) {
 
         is(
-            BOM::RPC::v3::MT5::Account::_fetch_mt5_lc({group => $each_mt5_group}),
+            BOM::RPC::v3::MT5::Account::_fetch_mt5_lc({group => $each_mt5_group})->short,
             $account_lc_short{$each_mt5_group},
             "Correct lc_short for $each_mt5_group"
         );

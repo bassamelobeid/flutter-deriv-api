@@ -768,7 +768,8 @@ rpc get_account_status => sub {
 
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
-    if ($client->is_document_expiry_check_required()) {
+    my $is_document_expiry_check_required = $client->is_document_expiry_check_required_mt5();
+    if ($is_document_expiry_check_required) {
         # check if the user's documents are expired or expiring soon
         if ($client->documents_expired()) {
             push(@$status, 'document_expired');
@@ -781,7 +782,10 @@ rpc get_account_status => sub {
         status                        => $status,
         risk_classification           => $client->risk_level(),
         prompt_client_to_authenticate => $client->is_verification_required(check_authentication_status => 1),
-        authentication                => _get_authentication($client),
+        authentication                => _get_authentication(
+            client                            => $client,
+            is_document_expiry_check_required => $is_document_expiry_check_required
+        ),
     };
 };
 
@@ -808,7 +812,10 @@ rpc get_account_status => sub {
 =cut
 
 sub _get_authentication {
-    my $client = shift;
+    my %args = @_;
+
+    my $client                            = $args{client};
+    my $is_document_expiry_check_required = $args{is_document_expiry_check_required};
 
     my $authentication_object = {
         needs_verification => [],
@@ -843,13 +850,12 @@ sub _get_authentication {
 
     my %needs_verification_hash = ();
 
-    my $is_expiry_check_required = $client->is_document_expiry_check_required();
-    my $poi_structure            = sub {
-        $authentication_object->{identity}{expiry_date} = $poi_minimum_expiry_date if $poi_minimum_expiry_date and $is_expiry_check_required;
+    my $poi_structure = sub {
+        $authentication_object->{identity}{expiry_date} = $poi_minimum_expiry_date if $poi_minimum_expiry_date and $is_document_expiry_check_required;
 
         $authentication_object->{identity}{status} = 'pending' if $is_poi_pending;
         # check for expiry
-        if ($is_poi_already_expired and $is_expiry_check_required) {
+        if ($is_poi_already_expired and $is_document_expiry_check_required) {
             $authentication_object->{identity}{status} = 'expired';
             $needs_verification_hash{identity} = 'identity';
         }
@@ -858,10 +864,10 @@ sub _get_authentication {
     };
 
     my $poa_structure = sub {
-        $authentication_object->{document}{expiry_date} = $poa_minimum_expiry_date if $poa_minimum_expiry_date and $is_expiry_check_required;
+        $authentication_object->{document}{expiry_date} = $poa_minimum_expiry_date if $poa_minimum_expiry_date and $is_document_expiry_check_required;
 
         # check for expiry
-        if ($is_poa_already_expired and $is_expiry_check_required) {
+        if ($is_poa_already_expired and $is_document_expiry_check_required) {
             $authentication_object->{document}{status} = 'expired';
             $needs_verification_hash{document} = 'document';
         }
@@ -1159,6 +1165,10 @@ rpc set_settings => sub {
         @{$params}{qw/website_name client_ip user_agent language args/};
     $user_agent //= '';
 
+    # This function used to find the fields updated to send them as properties to track event
+    # TODO Please rename this to updated_fields once you refactor this function to remove deriv set settings email.
+    my $updated_fields_for_track = _find_updated_fields($params);
+
     my $brand = request()->brand;
     my ($residence, $allow_copiers) =
         ($args->{residence}, $args->{allow_copiers});
@@ -1408,6 +1418,7 @@ rpc set_settings => sub {
             });
         }
     }
+
     # Send request to update onfido details
     BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $current_client->loginid});
     BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $current_client->loginid}) if $needs_verify_address_trigger;
@@ -1468,6 +1479,11 @@ rpc set_settings => sub {
                 website_name   => $website_name,
             },
         });
+    BOM::Platform::Event::Emitter::emit(
+        'profile_change',
+        {
+            loginid    => $current_client->loginid,
+            properties => {updated_fields => $updated_fields_for_track}}) if $updated_fields_for_track;
     BOM::User::AuditLog::log('Your settings have been updated successfully', $current_client->loginid);
     BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $current_client->loginid});
 
@@ -1480,6 +1496,35 @@ rpc get_self_exclusion => sub {
     my $client = $params->{client};
     return _get_self_exclusion_details($client);
 };
+
+sub _find_updated_fields {
+    my $params = shift;
+    my ($client, $args) = @{$params}{qw/client args/};
+    my $updated_fields;
+    my @required_fields =
+        qw/account_opening_reason address_city address_line_1 address_line_2 address_postcode address_state allow_copiers citizen date_of_birth first_name last_name phone
+        place_of_birth residence salutation secret_answer secret_question tax_identification_number tax_residence/;
+
+    foreach my $field (@required_fields) {
+        $updated_fields->{$field} = $args->{$field} if defined($args->{$field}) and $args->{$field} ne ($client->$field // '');
+    }
+    my $user = $client->user;
+
+    # email consent is per user whereas other settings are per client
+    # so need to save it separately
+    if (defined($args->{email_consent} and $user->email_consent) and $user->email_consent ne $args->{email_consent}) {
+        $updated_fields->{email_consent} = $args->{email_consent};
+    }
+
+    if (defined $args->{request_professional_status}) {
+        if (not $client->status->professional_requested) {
+            $updated_fields->{request_professional_status} = 0;
+        } else {
+            $updated_fields->{request_professional_status} = 1;
+        }
+    }
+    return $updated_fields;
+}
 
 sub _get_self_exclusion_details {
     my $client = shift;
@@ -1838,6 +1883,7 @@ rpc api_token => sub {
     my $m = BOM::Platform::Token::API->new;
     my $rtn;
     if (my $token = $args->{delete_token}) {
+        my $token_details = $m->get_token_details($token);
         # When a token is deleted from authdb, it need to be deleted from clientdb betonmarkets.copiers
         BOM::Database::DataMapper::Copier->new({
                 broker_code => $client->broker_code,
@@ -1848,7 +1894,6 @@ rpc api_token => sub {
                 trader_id => $client->loginid,
                 token     => $token
             });
-
         $m->remove_by_token($token, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
@@ -1863,6 +1908,12 @@ rpc api_token => sub {
                                 token      => $token,
                                 account_id => $params->{account_id}}})));
         }
+        BOM::Platform::Event::Emitter::emit(
+            'api_token_deleted',
+            {
+                loginid => $client->loginid,
+                name    => $token_details->{display_name},
+                scopes  => $token_details->{scopes}});
     }
     if (my $display_name = $args->{new_token}) {
         # Block any payment agent from creating API tokens since we only expect them
@@ -1883,6 +1934,13 @@ rpc api_token => sub {
             });
         }
         $rtn->{new_token} = 1;
+        BOM::Platform::Event::Emitter::emit(
+            'api_token_created',
+            {
+                loginid => $client->loginid,
+                name    => $display_name,
+                scopes  => $scopes
+            });
     }
 
     $rtn->{tokens} = $m->get_tokens_by_loginid($client->loginid);

@@ -18,6 +18,13 @@ use BOM::Test::Helper qw/create_test_user/;
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 use BOM::Database::Model::AccessToken;
 
+my @emit_args;
+my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_emitter->mock(
+    'emit' => sub {
+        @emit_args = @_;
+    });
+
 # cleanup
 cleanup_redis_tokens();
 BOM::Database::Model::AccessToken->new->dbic->dbh->do("
@@ -33,6 +40,7 @@ my $res = BOM::RPC::v3::Accounts::api_token({
     args   => {},
 });
 is_deeply($res, {tokens => []}, 'empty token list');
+is scalar @emit_args, 0, 'no event emitted';
 
 $res = BOM::RPC::v3::Accounts::api_token({
         client => $client,
@@ -45,6 +53,15 @@ ok $res->{new_token};
 is scalar(@{$res->{tokens}}), 1, '1 token created';
 my $test_token = $res->{tokens}->[0];
 is $test_token->{display_name}, 'Test Token';
+is $emit_args[0], 'api_token_created', 'correct event name';
+is_deeply $emit_args[1],
+    {
+    loginid => $client->loginid,
+    name    => 'Test Token',
+    scopes  => ['read'],
+    },
+    'event args are correct';
+undef @emit_args;
 
 my $copiers_data_mapper = create_test_copier($client, $test_token->{token});
 my $traders_tokens = $copiers_data_mapper->get_traders_tokens_all({copier_id => 'CR10001'});
@@ -59,6 +76,14 @@ $res = BOM::RPC::v3::Accounts::api_token({
     });
 ok $res->{delete_token};
 is_deeply($res->{tokens}, [], 'empty');
+is $emit_args[0], 'api_token_deleted', 'correct event name';
+is_deeply $emit_args[1],
+    {
+    loginid => $client->loginid,
+    name    => 'Test Token',
+    scopes  => ['read'],
+    },
+    'event args are correct';
 
 $traders_tokens = $copiers_data_mapper->get_traders_tokens_all({copier_id => 'CR10001'});
 is_deeply $traders_tokens , [], 'traders tokens also deleted';
