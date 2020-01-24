@@ -1883,6 +1883,7 @@ rpc api_token => sub {
     my $m = BOM::Platform::Token::API->new;
     my $rtn;
     if (my $token = $args->{delete_token}) {
+        my $token_details = $m->get_token_details($token);
         # When a token is deleted from authdb, it need to be deleted from clientdb betonmarkets.copiers
         BOM::Database::DataMapper::Copier->new({
                 broker_code => $client->broker_code,
@@ -1893,7 +1894,6 @@ rpc api_token => sub {
                 trader_id => $client->loginid,
                 token     => $token
             });
-
         $m->remove_by_token($token, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
@@ -1908,6 +1908,12 @@ rpc api_token => sub {
                                 token      => $token,
                                 account_id => $params->{account_id}}})));
         }
+        BOM::Platform::Event::Emitter::emit(
+            'api_token_deleted',
+            {
+                loginid => $client->loginid,
+                name    => $token_details->{display_name},
+                scopes  => $token_details->{scopes}});
     }
     if (my $display_name = $args->{new_token}) {
         # Block any payment agent from creating API tokens since we only expect them
@@ -1928,6 +1934,13 @@ rpc api_token => sub {
             });
         }
         $rtn->{new_token} = 1;
+        BOM::Platform::Event::Emitter::emit(
+            'api_token_created',
+            {
+                loginid => $client->loginid,
+                name    => $display_name,
+                scopes  => $scopes
+            });
     }
 
     $rtn->{tokens} = $m->get_tokens_by_loginid($client->loginid);
