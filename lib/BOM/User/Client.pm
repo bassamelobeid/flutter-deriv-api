@@ -1751,10 +1751,14 @@ sub p2p_agent_create {
 
     die "AlreadyRegistered\n" if $client->p2p_agent;
 
-    return $client->db->dbic->run(
+    my $agent = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.agent_create(?, ?)', undef, $client->loginid, $agent_name // '');
         });
+
+    # temporary renaming for https://trello.com/c/VzqXLoPk
+    $agent->{is_authenticated} //= delete $agent->{is_approved};
+    return $agent;
 }
 
 =head2 p2p_agent
@@ -1777,10 +1781,14 @@ Returns a list of agents filtered by id and/or loginid.
 sub p2p_agent_list {
     my ($client, %param) = @_;
 
-    return $client->db->dbic->run(
+    my $rows = $client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref('SELECT * FROM p2p.agent_list(?, ?)', {Slice => {}}, @param{qw/id loginid/});
         });
+
+    # temporary renaming for https://trello.com/c/VzqXLoPk
+    $_->{is_authenticated} //= delete $_->{is_approved} for @$rows;
+    return $rows;
 }
 
 =head2 p2p_agent_update
@@ -1800,14 +1808,21 @@ sub p2p_agent_update {
 
     $agent_info->{agent_name} = $agent_info->{name};
 
+    # temporary renaming for https://trello.com/c/VzqXLoPk
+    $agent_info->{is_authenticated} //= delete $agent_info->{is_approved};
+
     # Return the current information of the agent if nothing changed
     return $agent_info unless grep { exists $agent_info->{$_} and $param{$_} ne $agent_info->{$_} } keys %param;
 
-    return $client->db->dbic->run(
+    my $update = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.agent_update(?, ?, ?, ?)',
                 undef, $agent_info->{id}, @param{qw/is_authenticated is_active agent_name/});
         });
+
+    # temporary renaming for https://trello.com/c/VzqXLoPk
+    $update->{is_authenticated} //= delete $update->{is_approved};
+    return $update;
 }
 
 =head2 p2p_offer_create
