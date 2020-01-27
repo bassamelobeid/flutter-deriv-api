@@ -58,9 +58,7 @@ It can be called with the following parameters:
 sub profile_change {
     my @args = @_;
 
-    BOM::Event::Services::Track::profile_change(@args)->retain;
-
-    return 1;
+    return BOM::Event::Services::Track::profile_change(@args);
 }
 
 1;

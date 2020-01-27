@@ -153,14 +153,43 @@ sub new_mt5_signup {
     my $loginid = $args->{loginid};
     my $properties = $args->{properties} // {};
 
-    delete $properties->{cs_email};
-    $properties->{mt5_login_id} = "MT" . $properties->{mt5_login_id};
+    $properties->{mt5_login_id} = "MT" . ($properties->{mt5_login_id} // die('mt5 loginid is required'));
+    delete $properties->{cs_email} if $properties->{cs_email};
 
     return Future->done unless _validate_params($loginid);
     my $customer = _create_customer($loginid);
 
     $log->debugf('Track new mt5 signup event for client %s', $loginid);
     return _track($customer, $properties, 'mt5 signup');
+}
+
+=head2 mt5_password_changed
+
+It is triggered for each B<mt5_password_changed> event emitted, delivering it to Segment.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub mt5_password_changed {
+    my ($args) = @_;
+    my $loginid = $args->{loginid};
+    my $properties = $args->{properties} // {};
+
+    $properties->{mt5_loginid} = "MT" . ($properties->{mt5_loginid} // die('mt5 loginid is required'));
+
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+
+    $log->debugf('Track mt5 password change event for client %s', $loginid);
+    return _track($customer, $properties, 'mt5 password change');
 }
 
 =head2 profile_change

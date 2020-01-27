@@ -49,6 +49,7 @@ my $action_mapping = {
     sync_user_to_MT5            => \&BOM::Event::Actions::MT5::sync_info,
     store_mt5_transaction       => \&BOM::Event::Actions::MT5::redis_record_mt5_transfer,
     new_mt5_signup              => \&BOM::Event::Actions::MT5::new_mt5_signup,
+    mt5_password_changed        => \&BOM::Event::Actions::MT5::mt5_password_changed,
     anonymize_client            => \&BOM::Event::Actions::Anonymization::anonymize_client,
     document_upload             => \&BOM::Event::Actions::Client::document_upload,
     ready_for_authentication    => \&BOM::Event::Actions::Client::ready_for_authentication,

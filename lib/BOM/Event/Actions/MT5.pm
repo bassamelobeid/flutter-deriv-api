@@ -230,4 +230,26 @@ sub new_mt5_signup {
     return 1;
 }
 
+=head2 mt5_password_changed
+
+It is triggered for each B<mt5_password_changed> event emitted.
+It can be called with the following parameters:
+
+=over
+
+=item * C<args> - required. Including the login Id of the user with required properties.
+
+=back
+
+=cut
+
+sub mt5_password_changed {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::mt5_password_changed({
+        loginid    => $args->{loginid},
+        properties => $args
+    });
+
+}
 1;

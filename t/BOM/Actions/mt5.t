@@ -11,7 +11,7 @@ use DataDog::DogStatsd::Helper;
 use BOM::Platform::Context qw(request);
 
 my (@identify_args, @track_args);
-my $segment_response = Future->done();
+my $segment_response = Future->done(1);
 my $mock_segment     = new Test::MockModule('WebService::Async::Segment::Customer');
 $mock_segment->redefine(
     'identify' => sub {
@@ -142,4 +142,51 @@ subtest 'new mt5 sinup track event' => sub {
         'properties are set properly for new mt5 account event';
 
 };
+
+subtest 'mt5 password change track event' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'id'
+    );
+    request($req);
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'test1@bin.com',
+    });
+
+    my $user = BOM::User->create(
+        email          => $test_client->email,
+        password       => "hello",
+        email_verified => 1,
+    );
+    $user->add_client($test_client);
+
+    my $args = {
+        loginid       => $test_client->loginid,
+        'mt5_loginid' => '90000',
+    };
+    undef @track_args;
+
+    my $result = BOM::Event::Actions::MT5::mt5_password_changed($args)->get;
+    is $result, 1, 'Success mt5 password change result';
+
+    my ($customer, %args) = @track_args;
+    is_deeply \%args,
+        {
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'id'
+        },
+        event      => 'mt5 password change',
+        properties => {
+            loginid       => $test_client->loginid,
+            'mt5_loginid' => 'MT90000',
+        }
+        },
+        'properties are set properly for mt5 password change event';
+
+};
+
 done_testing();
