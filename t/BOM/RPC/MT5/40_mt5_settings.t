@@ -26,6 +26,15 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::
 my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
 my %DETAILS  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 
+my %emitted;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock(
+    'emit',
+    sub {
+        my ($type, $data) = @_;
+        $emitted{$type}++;
+    });
+
 # Setup a test user
 my $test_client = create_client('CR');
 $test_client->email($DETAILS{email});
@@ -206,13 +215,19 @@ subtest 'password change' => sub {
             password_type => 'main'
         },
     };
+    $params->{args}{login} = "MTwrong";
+    $c->call_ok($method, $params)->has_error('error for mt5_password_change wrong login')
+        ->error_code_is('PermissionDenied', 'error code for mt5_password_change wrong login');
+
+    is $emitted{"mt5_password_changed"}, undef, "mt5 password change event should not be emitted";
+
+    $params->{args}{login} = $ACCOUNTS{'real\svg'};
+
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
     # This call yields a truth integer directly, not a hash
     is($c->result, 1, 'result');
 
-    $params->{args}{login} = "MTwrong";
-    $c->call_ok($method, $params)->has_error('error for mt5_password_change wrong login')
-        ->error_code_is('PermissionDenied', 'error code for mt5_password_change wrong login');
+    ok $emitted{"mt5_password_changed"}, "mt5 password change event emitted";
 
     # reset throller, test for password limit
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);

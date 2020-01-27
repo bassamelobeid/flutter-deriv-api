@@ -18,7 +18,6 @@ use Format::Util::Numbers qw/financialrounding formatnumber/;
 use JSON::MaybeXS;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Digest::SHA qw(sha384_hex);
-
 use LandingCompany::Registry;
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
 
@@ -36,6 +35,7 @@ use BOM::MT5::User::Async;
 use BOM::Database::ClientDB;
 use BOM::Config::Runtime;
 use BOM::Platform::Email;
+use BOM::Platform::Event::Emitter;
 use BOM::Transaction;
 use BOM::User::FinancialAssessment qw(is_section_complete decode_fa);
 
@@ -877,7 +877,21 @@ async_rpc "mt5_password_change",
                     new_password => $args->{new_password},
                     type         => $args->{password_type} // 'main',
                 })->then_done(1);
-        })->catch($error_handler);
+        }
+        )->then(
+        sub {
+            BOM::Platform::Event::Emitter::emit(
+                'mt5_password_changed',
+                {
+                    loginid     => $client->loginid,
+                    mt5_loginid => $login
+                });
+            return Future->done(1);
+        },
+        sub {
+            my $err = shift;
+            &$error_handler($err);
+        });
     };
 
 =head2 mt5_password_reset
