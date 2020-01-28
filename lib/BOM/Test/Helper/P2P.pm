@@ -37,7 +37,7 @@ sub create_agent {
 
     $agent->account('USD');
 
-    $agent->p2p_agent_update(auth => 1);
+    $agent->p2p_agent_update(is_authenticated => 1);
 
     return $agent;
 }

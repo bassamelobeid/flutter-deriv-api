@@ -214,14 +214,13 @@ sub create_test_user {
     $client_cr->set_default_account('USD');
     $client_cr->email($email);
     $client_cr->save;
-    my $cr_1 = $client_cr->loginid;
     my $user = BOM::User->create(
         email    => $email,
         password => $hash_pwd
     );
     $user->add_client($client_cr);
 
-    return $cr_1;
+    return $client_cr;
 }
 
 sub call_mocked_client {

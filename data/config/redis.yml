@@ -1,4 +1,8 @@
-rand_server:
-  fqdn: 127.0.1.4
+read:
+  host: 127.0.1.4
+  port: 6385
+  password:
+write:
+  host: 127.0.1.4
   port: 6385
   password:

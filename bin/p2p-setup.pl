@@ -37,9 +37,12 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::Platform::Token::API;
 use Time::Moment;
-
+use Getopt::Long;
 use Log::Any::Adapter qw(Stdout), log_level => 'debug';
 use Log::Any qw($log);
+
+# File calling arguments
+GetOptions ("r|reset-clients"  => \(my $reset_clients = 0));
 
 sub create_client {
     my (%args) = @_;
@@ -156,25 +159,28 @@ $log->infof('Agent is %s token %s', $agent->loginid, token_for_client($agent));
 my $client = create_client(
     email => 'client+' . $idx . '@binary.com',
 );
+
+my $all_clients = $app_config->payments->p2p->clients;
+my $new_clients = [$agent->loginid, $client->loginid];
+push(@$all_clients, @$new_clients);
+
 $log->infof('Client is %s token %s', $client->loginid, token_for_client($client));
 $app_config->set({'payments.p2p.enabled' => 1});
 $app_config->set({'payments.p2p.available' => 1});
 $app_config->set({'system.suspend.p2p' => 0});
-$app_config->set({'payments.p2p.clients' => [ $agent->loginid, $client->loginid ]});
+$app_config->set({'payments.p2p.clients' => $reset_clients ? $new_clients : $all_clients });
 $app_config->set({'payments.p2p.escrow' => \@escrow_ids});
 $app_config->set({'payments.p2p.limits.maximum_offer' => 3000});
 $log->infof('App config applied');
 
 unless($agent->p2p_agent) {
-    $agent->p2p_agent_create(
-        name => 'example agent',
-    );
+    $agent->p2p_agent_create('example agent');
 }
 $log->infof('Agent info: %s', $agent->p2p_agent);
 $log->infof('Agents: %s', $agent->p2p_agent_list);
 $agent->p2p_agent_update(
-    active => 1,
-    auth => 1,
+    is_active        => 1,
+    is_authenticated => 1,
 );
 $agent->save;
 $log->infof('Maximum offer configured is %s', BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer);
