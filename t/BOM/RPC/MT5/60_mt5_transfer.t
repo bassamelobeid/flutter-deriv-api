@@ -218,18 +218,24 @@ subtest 'multi currency transfers' => sub {
             financialrounding('amount', 'EUR', $prev_bal + ($usd_test_amount / $EUR_USD * $after_fiat_fee)),
             'Correct forex fee for USD<->EUR';
 
+        # Expiry date for exchange rates is different in holidays and regular days.
+        my $reader   = BOM::Config::Chronicle::get_chronicle_reader;
+        my $calendar = Quant::Framework->new->trading_calendar($reader);
+        my $exchange = Finance::Exchange->create_exchange('FOREX');
+        my $fiat_key = $calendar->is_open($exchange) ? 'fiat' : 'fiat_holidays';
+        my $available_hours =
+            BOM::Config::Runtime->instance->app_config()->get('payments.transfer_between_accounts.exchange_rate_expiry.' . $fiat_key);
         $redis->hmset(
             'exchange_rates::EUR_USD',
             quote => $EUR_USD,
-            epoch => time - (3600 * 25));
+            epoch => time - ((3600 * $available_hours) + 1));
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        $c->call_ok('mt5_deposit', $deposit_params)->has_error("deposit EUR->USD with >" . $available_hours . " hours old rate - has error")
+            ->error_code_is('MT5DepositError', "deposit EUR->USD with >" . $available_hours . " hours old rate - correct error code");
 
         BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-        $c->call_ok('mt5_deposit', $deposit_params)->has_error('deposit EUR->USD with >1 day old rate - has error')
-            ->error_code_is('MT5DepositError', 'deposit EUR->USD with >1 day old rate - correct error code');
-
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('withdraw USD->EUR with >1 day old rate - has error')
-            ->error_code_is('MT5WithdrawalError', 'withdraw USD->EUR with >1 day old rate - correct error code');
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error("withdraw USD->EUR with >" . $available_hours . " hours old rate - has error")
+            ->error_code_is('MT5WithdrawalError', "withdraw USD->EUR with >" . $available_hours . " hours old rate - correct error code");
     };
 
     subtest 'BTC tests' => sub {
@@ -334,7 +340,6 @@ subtest 'multi currency transfers' => sub {
             quote => $UST_USD,
             epoch => time - 3595
         );
-
         BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit UST->USD with older rate <1 hour - no error');
         ok(defined $c->result->{binary_transaction_id}, 'deposit UST->USD with older rate <1 hour - has transaction id');
