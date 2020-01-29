@@ -574,12 +574,49 @@ subtest 'transfer between accounts event' => sub {
             },
             event      => "transfer_between_accounts",
             properties => {
+                currency      => $test_client->currency,
+                fees          => 0.02,
+                from_account  => $test_client->loginid,
+                from_amount   => 2,
+                from_currency => "USD",
+                gateway_code  => "account_transfer",
+                remark        => "test remark",
+                revenue       => -2,
+                source        => 16303,
+                to_account    => "CR000",
+                to_amount     => 1,
+                to_currency   => "BTC",
+                value         => 2,
+                id            => 10,
+                time          => '2020-01-09T10:00:00Z'
+            },
+        },
+        'identify context is properly set for transfer_between_account'
+    );
+
+    # Calling with `payment_agent_transfer` gateway should contain PaymentAgent fields
+    $args->{properties}->{gateway_code} = 'payment_agent_transfer';
+
+    ok BOM::Event::Actions::Client::transfer_between_accounts($args), 'transfer_between_accounts triggered successfully';
+    ($customer, %args) = @track_args;
+    is scalar(@identify_args), 0, 'identify is not called';
+
+    is_deeply(
+        \%args,
+        {
+            context => {
+                active => 1,
+                app    => {name => "deriv"},
+                locale => "id"
+            },
+            event      => "transfer_between_accounts",
+            properties => {
                 currency           => $test_client->currency,
                 fees               => 0.02,
                 from_account       => $test_client->loginid,
                 from_amount        => 2,
                 from_currency      => "USD",
-                gateway_code       => "account_transfer",
+                gateway_code       => "payment_agent_transfer",
                 remark             => "test remark",
                 revenue            => -2,
                 source             => 16303,

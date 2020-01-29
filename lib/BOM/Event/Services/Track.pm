@@ -242,7 +242,9 @@ It can be called with the following parameters:
 sub transfer_between_accounts {
     my ($args) = @_;
     my $loginid = $args->{loginid};
-    my $properties = $args->{properties} // {};
+
+    # Deref and ref, So we don't modify the main properties that is passed as an argument
+    my $properties = {($args->{properties} // {})->%*};
 
     return Future->done unless _validate_params($loginid);
     my $customer = _create_customer($loginid);
@@ -252,6 +254,12 @@ sub transfer_between_accounts {
     $properties->{value}    = $properties->{from_amount}   // die('required from_amount');
 
     $properties->{time} = _time_to_iso_8601($properties->{time} // die('required time'));
+
+    # Do not send PaymentAgent fields to Segment when it's not a payment agent transfer
+    if ($properties->{gateway_code} ne 'payment_agent_transfer') {
+        delete $properties->{is_to_account_pa};
+        delete $properties->{is_from_account_pa};
+    }
 
     $log->debugf('Track transfer_between_accounts event for client %s', $loginid);
 
