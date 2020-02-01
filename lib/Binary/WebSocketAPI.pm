@@ -311,6 +311,17 @@ sub startup {
             # Skip check sanity to password fields
             skip_check_sanity => qr/password/,
             backends          => $WS_BACKENDS,
+            rpc_failure_cb    => sub {
+                my ($c, $res, $req_storage, $error) = @_;
+                my $details = 'URL: ' . ($req_storage->{req_url} // 'n/a');
+                if ($error) {
+                    $details .= ', code: ' . ($error->{code} // 'n/a') . ', response: ' . $error->{message};
+                }
+                $log->info(($error->{type} // '') . " [" . $req_storage->{msg_type} . "], details: $details");
+                DataDog::DogStatsd::Helper::stats_inc("bom_websocket_api.rpc_error.count",
+                    {tags => ["rpc:" . $req_storage->{msg_type}, 'error_type:' . ($error->{type} // '')]});
+                return undef;
+            },
         });
 
     my $redis = ws_redis_master();

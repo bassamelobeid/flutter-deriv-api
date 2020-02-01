@@ -40,7 +40,7 @@ sub generate_api_list {
 
     my $actions = Binary::WebSocketAPI::Actions::actions_config();
     my @methods;
-    my @sorted_actions = sort { $a->[0] cmp $b->[0] } @$actions; 
+    my @sorted_actions = sort { $a->[0] cmp $b->[0] } @$actions;
     for my $call (@sorted_actions) {
         my $method_name = $call->[0];
 
@@ -50,25 +50,24 @@ sub generate_api_list {
             next;
         }
 
-
         my $title = $send->{title} =~ s/ \(request\)$//ir;
 
         push @methods,
             {
-                name  => $method_name,
-                title => $title
+            name  => $method_name,
+            title => $title
             };
     }
 
-
-
-    my @yml = ({label=> 'All Calls', methods=> \@methods});
+    my @yml = ({
+        label   => 'All Calls',
+        methods => \@methods
+    });
 
     $YAML::UseHeader = 0;
     path(TARGET_PATH, '_data')->mkpath;
     DumpFile(path(TARGET_PATH, '_data', 'v3.yml'), {groups => [@yml]});
 }
-
 
 sub remove_hidden_methods {
     path(TARGET_PATH, 'config/v3/', $_)->remove_tree for @hidden_methods;
