@@ -11,6 +11,7 @@ use Test::More;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Platform::Event::Emitter;
 use BOM::Event::Process;
+use BOM::Platform::Context;
 
 initialize_events_redis();
 
@@ -204,6 +205,40 @@ subtest 'process' => sub {
         0, 'If internal method die then process should just return false not die';
 
     $mock_process->unmock('get_action_mappings');
+};
+
+subtest 'request in process' => sub {
+    my $mock_process = Test::MockModule->new('BOM::Event::Process');
+    $mock_process->mock(
+        'get_action_mappings' => sub {
+            return {
+                get_request => sub {
+                    return BOM::Platform::Context::request();
+                }
+            };
+        });
+    my $request = BOM::Event::Process::process({
+            type    => 'get_request',
+            details => {}
+        },
+        QUEUE_NAME
+    );
+    is($request->brand_name, 'binary', 'default brand name is binary');
+    is($request->language,   'EN',     'default language is EN');
+
+    $request = BOM::Event::Process::process({
+            type    => 'get_request',
+            details => {},
+            context => {
+                brand_name => 'deriv',
+                language   => 'CN'
+            }
+        },
+        QUEUE_NAME
+    );
+    is($request->brand_name, 'deriv', 'now brand name is deriv');
+    is($request->language,   'CN',    'now language is CN');
+
 };
 
 done_testing();
