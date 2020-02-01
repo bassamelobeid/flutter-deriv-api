@@ -107,8 +107,6 @@ my $warn_string;
     local $SIG{'__WARN__'} = sub { $warn_string = shift; };
     $res = $t->await::website_status({website_status => 1});
 }
-like $warn_string, qr/error/, 'Should make warning if RPC response is_error method is true';
-
 is $res->{error}->{code}, 'CallError', 'Should make timing if returns CallError';
 
 is $timing->[0]->[0], 'bom_websocket_api.v_3.rpc.call.timing';
@@ -131,7 +129,6 @@ $rpc_client_mock->mock('call', sub { shift; return $_[2]->('') });
     local $SIG{'__WARN__'} = sub { $warn_string = shift; };
     $res = $t->await::website_status({website_status => 1});
 }
-like $warn_string, qr/WrongResponse/, 'Should make warning if RPC response is empty';
 
 is $res->{error}->{code}, 'WrongResponse', 'Should make timing if returns WrongResponse';
 

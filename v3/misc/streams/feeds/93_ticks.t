@@ -169,11 +169,8 @@ subtest 'ticks_history_fail_rpc' => sub {
             "req_id"        => 100,
             "subscribe"     => 1,
         };
-        my $warning = warning {    #callback throws a warning on bad rpc response
-            $res = $t->await::ticks_history($req2);
-        };
+	$res = $t->await::ticks_history($req2);
 
-        like($warning, qr\^WrongResponse\, "warning thrown on bad RPC result");
         cmp_ok $res->{error}->{message}, 'eq', 'Sorry, an error occurred while processing your request.',
             "Recived tick history error when RPC failed";
     }
