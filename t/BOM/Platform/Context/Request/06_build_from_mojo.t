@@ -12,7 +12,7 @@ use BOM::Platform::Context::Request;
 
 subtest 'base build' => sub {
     my $request = BOM::Platform::Context::Request::from_mojo();
-    ok !$request, "Unable to build with out mojo_request";
+    ok !$request, "Unable to build without mojo_request";
 
     $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com")});
     ok $request, "Able to build request";
@@ -121,7 +121,7 @@ sub mock_request_for {
     my $method  = shift || 'GET';
 
     my $url_mock = Mojo::URL->new($for_url);
-    $url_mock->query->param(%$param) if keys %$param;
+    $url_mock->query(%$param) if keys %$param;
 
     my $header_mock = Test::MockObject->new();
     $header_mock->mock('header', sub { return; });
