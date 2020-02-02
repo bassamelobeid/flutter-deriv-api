@@ -15,6 +15,7 @@ use BOM::Platform::Context qw(request);
 
 use WebService::Async::Onfido;
 use BOM::Event::Actions::Client;
+use BOM::Event::Process;
 
 my (@identify_args, @track_args);
 my $segment_response = Future->fail(1);
@@ -771,6 +772,51 @@ sub test_segment_customer {
         },
         'Customer traits are set correctly';
 }
+
+subtest 'segment document upload' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'id'
+    );
+    request($req);
+
+    $args = {
+        document_type     => 'national_identity_card',
+        document_format   => 'PNG',
+        document_id       => '1234',
+        expiration_date   => '1900-01-01',
+        expected_checksum => '123456',
+        page_type         => undef,
+    };
+
+    my $upload_info = $test_client->db->dbic->run(
+        ping => sub {
+            $_->selectrow_hashref(
+                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)', undef,
+                $test_client->loginid,                                                      $args->{document_type},
+                $args->{document_format}, $args->{expiration_date} || undef,
+                $args->{document_id} || '', $args->{expected_checksum},
+                '', $args->{page_type} || '',
+            );
+        });
+
+    $test_client->db->dbic->run(
+        ping => sub {
+            $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
+        });
+
+    undef @track_args;
+    my $action_handler = BOM::Event::Process::get_action_mappings()->{document_upload};
+    $action_handler->({
+            loginid => $test_client->loginid,
+            file_id => $upload_info->{file_id}})->get;
+
+    my ($customer, %args) = @track_args;
+
+    is $args{event}, 'document_upload', 'track event is document_upload';
+    is $args{properties}->{document_type}, 'national_identity_card', 'document type is correct';
+    is $args{properties}->{uploaded_manually_by_staff}, 0, 'uploaded_manually_by_staff is correct';
+};
 
 done_testing();
 

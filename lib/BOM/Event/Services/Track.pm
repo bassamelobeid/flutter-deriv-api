@@ -266,6 +266,40 @@ sub transfer_between_accounts {
     return _track($customer, $properties, 'transfer_between_accounts');
 }
 
+=head2 document_upload
+
+It is triggered for each B<document_upload>, delivering it to Segment.
+It can be called with the following parameters:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub document_upload {
+    my ($args) = @_;
+    my $loginid = $args->{loginid};
+    my $properties = $args->{properties} // {};
+
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+
+    delete $properties->{comments};
+    delete $properties->{document_id};
+    $properties->{upload_date} = _time_to_iso_8601($properties->{upload_date} // die('required time'));
+    $properties->{uploaded_manually_by_staff} //= 0;
+    $properties->{loginid} = $loginid;
+
+    $log->debugf('Track document_upload event for client %s', $loginid);
+
+    return _track($customer, $properties, 'document_upload');
+}
+
 =head2 app_registered
 
 It is triggered for each B<app_registered> event emitted, delivering it to Segment.

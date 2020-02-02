@@ -228,10 +228,8 @@ information to process this client.
 
 async sub document_upload {
     my ($args) = @_;
-
     BOM::Config::Runtime->instance->app_config->check_for_update();
     return if (BOM::Config::Runtime->instance->app_config->system->suspend->onfido);
-
     try {
         my $loginid = $args->{loginid}
             or die 'No client login ID supplied?';
@@ -251,12 +249,18 @@ async sub document_upload {
             loginid => $loginid,
             file_id => $file_id
         );
+
+        await BOM::Event::Services::Track::document_upload({
+                loginid    => $loginid,
+                properties => {
+                    uploaded_manually_by_staff => $uploaded_manually_by_staff,
+                    %$document_entry
+                }});
         # don't sync documents to onfido if its not in allowed types
         unless ($allowed_synchronizable_documents_type{$document_entry->{document_type}}) {
             $log->debugf('Can not sync documents to Onfido as it is not in allowed types for client %s', $loginid);
             return;
         }
-
         die 'Expired document ' . $document_entry->{expiration_date}
             if $document_entry->{expiration_date} and Date::Utility->new($document_entry->{expiration_date})->is_before(Date::Utility->today);
 
@@ -282,7 +286,6 @@ async sub document_upload {
                 )
 
         );
-
     }
     catch {
         my $e = $@;
@@ -781,6 +784,15 @@ async sub _sync_onfido_bo_document {
                 });
             die "Db returned unexpected file_id on finish. Expected $file_id but got $finish_upload_result. Please check the record"
                 unless $finish_upload_result == $file_id;
+
+            my $document_info = _get_document_details(
+                loginid => $client->loginid,
+                file_id => $file_id
+            );
+            await BOM::Event::Services::Track::document_upload({
+                loginid    => $client->loginid,
+                properties => $document_info
+            });
         }
         catch {
             my $error = $@;
