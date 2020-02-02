@@ -151,29 +151,6 @@ subtest 'Offers' => sub {
     $res = $c->call_ok('p2p_agent_update', $params)->has_no_system_error->has_no_error->result;
     is $res->{name}, $params->{args}{name}, 'update agent name';
 
-    for my $numeric_field (qw(amount max_amount min_amount rate)) {
-        $params->{args} = {$offer_params->%*};
-
-        $params->{args}{$numeric_field} = -1;
-        $c->call_ok('p2p_offer_create', $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidNumericValue', "Value of '$numeric_field' should be greater than 0")
-            ->error_details_is({fields => [$numeric_field]}, 'Error details is correct.');
-
-        $params->{args}{$numeric_field} = 0;
-        $c->call_ok('p2p_offer_create', $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidNumericValue', "Value of '$numeric_field' should be greater than 0")
-            ->error_details_is({fields => [$numeric_field]}, 'Error details is correct.');
-    }
-
-    $params->{args} = {$offer_params->%*};
-    $params->{args}{min_amount} = $params->{args}{max_amount} + 1;
-    $c->call_ok('p2p_offer_create', $params)
-        ->has_no_system_error->has_error->error_code_is('InvalidMinMaxAmount', 'min_amount cannot be greater than max_amount');
-
-    $params->{args}{max_amount} = $params->{args}{amount} + 1;
-    $c->call_ok('p2p_offer_create', $params)
-        ->has_no_system_error->has_error->error_code_is('InvalidMaxAmount', 'Offer amount cannot be less than max_amount');
-
     $client_agent->p2p_agent_update(is_authenticated => 0);
     $params->{args} = $offer_params;
     $c->call_ok('p2p_offer_create', $params)
@@ -200,15 +177,12 @@ subtest 'Offers' => sub {
     for my $numeric_field (qw(amount max_amount min_amount rate)) {
         $params->{args} = {$offer_params->%*};
 
-        $params->{args}{$numeric_field} = -1;
-        $c->call_ok('p2p_offer_create', $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidNumericValue', "Value of '$numeric_field' should be greater than 0")
-            ->error_details_is({fields => [$numeric_field]}, 'Error details is correct.');
-
-        $params->{args}{$numeric_field} = 0;
-        $c->call_ok('p2p_offer_create', $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidNumericValue', "Value of '$numeric_field' should be greater than 0")
-            ->error_details_is({fields => [$numeric_field]}, 'Error details is correct.');
+        for (-1, 0) {
+            $params->{args}{$numeric_field} = $_;
+            $c->call_ok('p2p_offer_create', $params)
+                ->has_no_system_error->has_error->error_code_is('InvalidNumericValue', "Value of '$numeric_field' should be greater than 0")
+                ->error_details_is({fields => [$numeric_field]}, 'Error details is correct.');
+        }
     }
 
     $params->{args} = {$offer_params->%*};
@@ -216,10 +190,16 @@ subtest 'Offers' => sub {
     $c->call_ok('p2p_offer_create', $params)
         ->has_no_system_error->has_error->error_code_is('InvalidMinMaxAmount', 'min_amount cannot be greater than max_amount');
 
-    $params->{args} = {$offer_params->%*};
+    $params->{args}             = {$offer_params->%*};
+    $params->{args}{amount}     = 80;
     $params->{args}{max_amount} = $params->{args}{amount} + 1;
     $c->call_ok('p2p_offer_create', $params)
         ->has_no_system_error->has_error->error_code_is('InvalidMaxAmount', 'Offer amount cannot be less than max_amount');
+
+    $params->{args} = {$offer_params->%*};
+    $params->{args}{max_amount} = $app_config->payments->p2p->limits->maximum_order + 1;
+    $c->call_ok('p2p_offer_create', $params)
+        ->has_no_system_error->has_error->error_code_is('MaxPerOrderExceeded', 'Offer max_amount cannot be more than maximum_order amount config');
 
     $params->{args} = $offer_params;
     $offer = $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_no_error->result;

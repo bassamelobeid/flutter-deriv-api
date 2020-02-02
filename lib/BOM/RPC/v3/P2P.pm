@@ -73,6 +73,7 @@ our %ERROR_MAP = do {
         NotFound             => localize('Not found.'),
         MinimumNotMet        => localize('The minimum amount requirements are not met.'),
         MaximumExceeded      => localize('The amount exceeds the maximum limit.'),
+        MaxPerOrderExceeded  => localize('The maximum amount exceeds the maximum amount per order ([_1] [_2]). Please adjust the value.'),
         AlreadyInProgress    => localize('This cannot be cancelled since the order is already in progress.'),
         InvalidNumericValue  => localize('Numeric value should be greater than 0.'),
         InvalidMinMaxAmount  => localize('The minimum amount should be less than or equal to maximum amount.'),
