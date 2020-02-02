@@ -30,7 +30,6 @@ use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
 use LandingCompany::Registry;
-use ExchangeRates::CurrencyConverter qw(convert_currency);
 
 use BOM::Platform::Account::Real::default;
 use BOM::Database::ClientDB;
@@ -213,7 +212,7 @@ sub landing_company {
 =head2 set_promotion
 
 Description: Sets or Gets the promotion object. Linked to the table betonmarkets.client_promo_code
-If the client does not have a promo_code object it will be created otherwise the existing one will be returned. 
+If the client does not have a promo_code object it will be created otherwise the existing one will be returned.
 Takes no Arguments
 
 
@@ -2350,6 +2349,14 @@ sub _validate_offer_amounts {
 
     die "MaximumExceeded\n"
         if in_usd($param{amount}, uc $param{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer;
+
+    my $maximum_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
+    if (in_usd($param{max_amount}, uc $param{account_currency}) > $maximum_order) {
+        die +{
+            error_code     => 'MaxPerOrderExceeded',
+            message_params => [$param{account_currency}, convert_currency($maximum_order, 'USD', $param{account_currency})],
+        };
+    }
 
     die "InvalidMinMaxAmount\n" unless $param{min_amount} <= $param{max_amount};
     die "InvalidMaxAmount\n"    unless $param{max_amount} <= $param{amount};

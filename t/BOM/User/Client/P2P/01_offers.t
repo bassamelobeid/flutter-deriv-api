@@ -139,6 +139,20 @@ subtest 'Creating offer' => sub {
     );
 
     %params = %offer_params;
+    my $maximum_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
+    $params{max_amount} = $maximum_order + 1;
+    cmp_deeply(
+        exception {
+            $agent->p2p_offer_create(%params);
+        },
+        {
+            error_code     => 'MaxPerOrderExceeded',
+            message_params => [uc $params{account_currency}, $maximum_order],
+        },
+        'Error when max_amount exceeds BO order limit'
+    );
+
+    %params = %offer_params;
     $params{min_amount} = $params{max_amount} + 1;
     like(
         exception {
@@ -234,7 +248,7 @@ subtest 'Updating offer' => sub {
         offer_id  => $offer->{offer_id},
         is_active => 1
     )->{is_active}, "reactivate offer";
-    
+
     cmp_ok $agent->p2p_offer_update(
         offer_id   => $offer->{offer_id},
         max_amount => 80,
@@ -317,7 +331,7 @@ subtest 'Updating order with available range' => sub {
         offer_id => $offer->{offer_id},
         amount   => 50
     )->{offer_amount}, '==', 50, "available range excludes cancelled orders";
-    
+
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
