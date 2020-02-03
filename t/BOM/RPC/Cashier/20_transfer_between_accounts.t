@@ -920,7 +920,8 @@ subtest 'transfer with fees' => sub {
         is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
 
         cmp_ok $client_cr_ust->account->balance, '==', $previous_amount_ust - $amount, 'From account deducted correctly';
-        cmp_ok $client_cr_usd->account->balance, '==', $previous_amount_usd + $expected_transfer_amount, 'To account credited correctly';
+        my $amount_after_transaction = financialrounding('amount', 'USD', $previous_amount_usd + $expected_transfer_amount);
+        cmp_ok $client_cr_usd->account->balance, '==', $amount_after_transaction, 'To account credited correctly';
     };
 
     $mock_fees->unmock_all();
