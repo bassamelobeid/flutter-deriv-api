@@ -250,6 +250,18 @@ subtest 'documents uploaded' => sub {
     $documents = $client->documents_uploaded();
     cmp_deeply($documents, $document_hash, 'correct structure for client documents with authentication status as under_review');
 
+    subtest 'siblings are considered for documents expiry' => sub {
+        my $dbh            = $client_mlt->db->dbic->dbh;
+        my $SQL            = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ?';
+        my $sth_doc_update = $dbh->prepare($SQL);
+        $sth_doc_update->execute('yesterday');
+
+        my $client_mf = create_client('MF');
+        $user_client->add_client($client_mf);
+        my $test = 'BOM::User::Client->documents_expired returns 1 if there are no documents for client but its sibling has an expired one';
+        is($client_mf->documents_expired(), 1, $test);
+    };
+
     $module->unmock_all();
 };
 

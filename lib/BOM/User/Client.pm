@@ -406,32 +406,24 @@ sub is_financial_assessment_complete {
 =head2 documents_expired
 
 documents_expired returns a boolean indicating if this client (or any related clients)
-have any POI documents (passport, proofid, driverslicense, vf_id, vf_face_id) which
-have expired, or the expiration is before a specific date.
-
-Takes one argument:
-
-=over 4
-
-=item * $date_limit
-
-If this argument is not specified, the sub which check for documents which have expired
-(i.e. have an expiration date yesterday or earlier).
-If this argument is specified, the sub will check for documents whose expiration
-date is earlier than the specified date.
-
-=back
+have any POI documents (passport, proofid, driverslicense, vf_id, vf_face_id) which have expired.
 
 =cut
 
 sub documents_expired {
     my $self = shift;
 
-    return 0 if $self->is_virtual;
+    my @siblings = $self->user->clients(include_disabled => 1);
 
-    return 0 unless $self->is_document_expiry_check_required();
+    for my $sibling (@siblings) {
 
-    return 0 + !!($self->_get_documents_expiry_by_date());
+        next if $sibling->is_virtual;
+
+        next if !($sibling->is_document_expiry_check_required());
+
+        return 1 if $sibling->_get_documents_expiry_by_date();
+    }
+    return 0;
 }
 
 =head2 is_any_document_expiring_by_date
