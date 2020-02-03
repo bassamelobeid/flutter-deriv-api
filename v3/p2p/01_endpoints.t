@@ -19,8 +19,8 @@ cleanup_redis_tokens();
 my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 
-$app_config->set({'payments.p2p.enabled' => 1});
-$app_config->set({'system.suspend.p2p' => 0});
+$app_config->set({'payments.p2p.enabled'   => 1});
+$app_config->set({'system.suspend.p2p'     => 0});
 $app_config->set({'payments.p2p.available' => 1});
 
 my $t = build_wsapi_test();
@@ -133,6 +133,13 @@ subtest 'update agent' => sub {
     is $resp->{code}, 'AgentNotAuthenticated', 'Unauthenticated agent cannot update the information';
 
     $cl_agent->p2p_agent_update(is_authenticated => 1);
+
+    $resp = $t->await::p2p_agent_update({
+            p2p_agent_update => 1,
+            agent_name       => ' ',
+        })->{error};
+    ok $resp->{code} eq 'InputValidationFailed' && $resp->{message} =~ /agent_name/, 'Agent name cannot be blank';
+
     $agent = $t->await::p2p_agent_update({
             p2p_agent_update => 1,
             agent_name       => $new_agent_name,
