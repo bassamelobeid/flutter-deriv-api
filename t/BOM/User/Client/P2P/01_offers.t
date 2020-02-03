@@ -83,12 +83,20 @@ subtest 'Creating offer from not authenticated agent' => sub {
 };
 
 subtest 'Updating agent fields' => sub {
-    my $agent = BOM::Test::Helper::P2P::create_agent();
+    my $agent_name = 'agent name';
+    my $agent = BOM::Test::Helper::P2P::create_agent(agent_name => $agent_name);
 
     ok $agent->p2p_agent->{is_authenticated}, 'Agent is authenticated';
-    is $agent->p2p_agent->{name},             '', 'Agent is authenticated';
+    is $agent->p2p_agent->{name},             $agent_name, 'Agent name is correct';
     ok $agent->p2p_agent->{is_active},        'Agent is active';
 
+    like(
+        exception {
+            $agent->p2p_agent_update(agent_name => ' ');
+        },
+        qr/AgentNameRequired/,
+        'Error when agent name is blank'
+    );
     is $agent->p2p_agent_update(agent_name => 'test')->{name}, 'test', 'Changing name';
     ok !($agent->p2p_agent_update(is_active => 0)->{is_active}), 'Switch flag active to false';
 

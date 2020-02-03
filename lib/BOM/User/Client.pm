@@ -1750,6 +1750,9 @@ sub p2p_agent_create {
 
     die "AlreadyRegistered\n" if $client->p2p_agent;
 
+    $agent_name = trim($agent_name);
+    die "AgentNameRequired\n" unless $agent_name;
+
     my $agent = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.agent_create(?, ?)', undef, $client->loginid, $agent_name // '');
@@ -1804,6 +1807,11 @@ sub p2p_agent_update {
     my $agent_info = $client->p2p_agent // return;
 
     die "AgentNotAuthenticated\n" unless $agent_info->{is_authenticated} or ($param{is_authenticated} // 0) == 1;
+
+    if (exists $param{agent_name}) {
+        $param{agent_name} = trim($param{agent_name});
+        die "AgentNameRequired\n" unless $param{agent_name};
+    }
 
     $agent_info->{agent_name} = $agent_info->{name};
 
