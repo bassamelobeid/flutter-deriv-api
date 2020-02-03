@@ -50,7 +50,7 @@ sub _set_cache {
             value  => $value,
         },
         Date::Utility->new(),
-        0,
+        0, 0,
         $cache_time,
     );
     return;
