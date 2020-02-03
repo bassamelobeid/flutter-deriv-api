@@ -280,15 +280,6 @@ sub _initialize_other_parameters {
         $params->{date_start} = Date::Utility->new($params->{date_start});
     }
 
-    # if both are present, we will throw an error
-    if (exists $params->{duration} and exists $params->{date_expiry}) {
-        BOM::Product::Exception->throw(
-            error_code => 'MissingEither',
-            error_args => ['duration', 'date_expiry'],
-            details    => {field => ''},
-        );
-    }
-
     if (defined $params->{date_expiry}) {
         # to support legacy shortcode where expiry date is date string in dd-mmm-yy format
         if (Date::Utility::is_ddmmmyy($params->{date_expiry})) {
@@ -311,7 +302,7 @@ sub _initialize_other_parameters {
     $params->{payout_currency_type} //= LandingCompany::Registry::get_currency_type($params->{currency});
 
     if (defined $params->{duration}) {
-        my $duration = delete $params->{duration};
+        my $duration = $params->{duration};
         if ($duration !~ /[0-9]+(t|m|d|s|h)/) {
             BOM::Product::Exception->throw(
                 error_code => 'TradingDurationNotAllowed',

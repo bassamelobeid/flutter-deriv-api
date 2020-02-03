@@ -91,24 +91,9 @@ subtest 'inefficient period' => sub {
 
     note('set duration to five ticks.');
     $bet_params->{duration} = '5t';
-    my $mock = Test::MockModule->new('BOM::Market::DataDecimate');
+    my $mock = Test::MockModule->new('Quant::Framework::Underlying');
     $mock->mock(
-        'decimate_cache_get',
-        sub {
-            my $dp = $bet_params->{date_pricing}->epoch;
-            [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
-        });
-
-    my $mock2 = Test::MockModule->new('BOM::Market::DataDecimate');
-    $mock2->mock(
-        'tick_cache_get',
-        sub {
-            my $dp = $bet_params->{date_pricing}->epoch;
-            [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];
-        });
-
-    $mock2->mock(
-        'tick_cache_get_num_ticks',
+        'ticks_in_between_end_limit',
         sub {
             my $dp = $bet_params->{date_pricing}->epoch;
             [map { {quote => 100 + rand(1), epoch => $_} } ($dp .. $dp + 19)];

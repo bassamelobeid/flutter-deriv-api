@@ -128,7 +128,7 @@ jobs:
           name: Validation test
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make unit_test_syntax
+            make unit_test_validation
       - store_test_results:
           path: /var/tmp/test-output
   pricing:

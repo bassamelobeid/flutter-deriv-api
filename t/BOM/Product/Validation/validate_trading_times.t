@@ -272,7 +272,7 @@ subtest 'too many holiday for multiday indices contracts' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     like($c->primary_validation_error->message, qr/Not enough trading days for calendar days/, 'throws error');
-    is_deeply $c->primary_validation_error->{details}, {field => 'date_expiry'}, 'error detials is not correct';
+    is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
     $bet_params->{barrier} = 'S0P';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';

@@ -165,7 +165,7 @@ subtest 'date start blackouts' => sub {
             }));
     ok !$c->is_valid_to_buy, 'invalid to buy at one second before 30-Mar-16 close';
 
-    my $friday_close                     = Date::Utility->new('2016-04-01 21:00:00');
+    my $friday_close                     = Date::Utility->new('2016-04-01 20:55:00');
     my $ten_minute_before_friday_close   = $friday_close->minus_time_interval('10m');
     my $three_minute_before_friday_close = $friday_close->minus_time_interval('3m');
 
@@ -192,8 +192,8 @@ subtest 'date start blackouts' => sub {
     $bet_params->{current_tick} = $usdjpy_friday_three_minute_before_tick;
     $c                          = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy at 3 mins before friday close';
-    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '20:55:00', '21:00:00']);
-    is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '20:50:00', '20:55:00']);
+    is_deeply $c->primary_validation_error->{details}, {field => 'date_start'}, 'error detials is not correct';
 
     note('Testing date_start blackouts for frxAUDUSD on Monday ');
 
@@ -202,7 +202,7 @@ subtest 'date start blackouts' => sub {
     $c                        = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy at 10 mins forward starting of forex on Monday morning';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '00:00:00', '00:10:00']);
-    is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
+    is_deeply $c->primary_validation_error->{details}, {field => 'date_start'}, 'error detials is not correct';
 
     $bet_params->{underlying} = 'R_100';
     $c = produce_contract($bet_params);
@@ -238,7 +238,7 @@ subtest 'date start blackouts' => sub {
     $c                          = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '01:30:00', '01:40:00']);
-    is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
+    is_deeply $c->primary_validation_error->{details}, {field => 'date_start'}, 'error detials is not correct';
     $bet_params->{date_pricing} = $hsi_open->plus_time_interval('1m');
     $bet_params->{date_start}   = $hsi_open->epoch + 600;
     $bet_params->{duration}     = '1h';
@@ -256,7 +256,7 @@ subtest 'date start blackouts' => sub {
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '07:25:00', '07:40:00']);
-    is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
+    is_deeply $c->primary_validation_error->{details}, {field => 'date_start'}, 'error detials is not correct';
 
     note('Multiday contract on HSI');
     my $new_day = $weekday->plus_time_interval('1d');

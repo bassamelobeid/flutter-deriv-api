@@ -166,7 +166,8 @@ subtest 'FOREX settlement check on Wednesday' => sub {
     ok $bet_2->is_after_settlement, 'is not pass settlement time';
     is($bet_2->exit_tick->quote, '109.5',      'exit tick is 109.5');
     is($bet_2->exit_tick->epoch, '1202947199', 'the exit tick is the one at 23:59:59');
-    cmp_ok($bet_2->bid_price, '==', 1, 'Indicative outcome is 1 as the high is 109.5');
+    ok !$bet_2->hit_tick, 'there is no hit tick since contract expires at 21:00:00';
+    cmp_ok($bet_2->bid_price, '==', 0, 'Indicative outcome is 0 as the high is 108 and barrier is at 109');
 
 };
 subtest 'FOREX settlement check on Friday' => sub {
@@ -265,7 +266,7 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok $bet->is_after_expiry,     'is after expiry';
     ok $bet->is_after_settlement, 'is pass settlement time';
     is($bet->exit_tick->quote, '108',        'exit tick is 108');
-    is($bet->exit_tick->epoch, '1203109200', 'the exit tick is the one at 21:00');
+    is($bet->exit_tick->epoch, '1203108900', 'the exit tick is the one at 20:55');
     cmp_ok($bet->bid_price, '==', 0, 'Correct expiration with zero price as the exit tick is 108');
 
     $bet_params_2->{date_pricing} = Date::Utility->new('2008-02-18 00:00:00');    #No touch contract on Monday morning
@@ -275,7 +276,7 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok $bet_2->is_after_expiry,     'is after expiry';
     ok $bet_2->is_after_settlement, 'is pass settlement time';
     is($bet_2->exit_tick->quote, '108',        'exit tick is 108');
-    is($bet_2->exit_tick->epoch, '1203109200', 'the exit tick is the one at 21:00');
+    is($bet_2->exit_tick->epoch, '1203108900', 'the exit tick is the one at 20:55');
     cmp_ok($bet_2->bid_price, '==', 1, 'Correct expiration with full payout as the high is 110');
 };
 
@@ -475,7 +476,7 @@ subtest 'Path dependent contracts settlement check' => sub {
     ok $bet_3->is_after_expiry,     'is after expiry';
     ok $bet_3->is_after_settlement, 'is pass settlement time';
     is($bet_3->exit_tick->quote, '110',        'exit tick is 110');
-    is($bet_3->exit_tick->epoch, '1204318800', 'the exit tick is the one at 21:00');
+    is($bet_3->exit_tick->epoch, '1204318500', 'the exit tick is the one at 20:55');
     cmp_ok($bet_3->bid_price, '==', 1, 'Correct expiration with full payout as barrier not touch');
 
 };

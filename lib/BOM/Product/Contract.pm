@@ -687,6 +687,8 @@ sub _build_opposite_contract {
 
     # Start by making a copy of the parameters we used to build this bet.
     my %opp_parameters = %{$self->build_parameters};
+    # Opposite contract would have the same date_expir
+    delete $opp_parameters{duration};
     # Always switch out the bet type for the other side.
     $opp_parameters{'bet_type'} = $self->other_side_code;
     # Don't set the shortcode, as it will change between these.

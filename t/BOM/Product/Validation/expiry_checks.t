@@ -49,15 +49,11 @@ test_with_feed(
             109    => 0,
         );
 
-        foreach my $barrier (keys %barrier_win_map) {
+        foreach my $barrier (sort { $a <=> $b } keys %barrier_win_map) {
             $bet_params->{barrier} = $barrier;
             my $bet = produce_contract($bet_params);
             is($bet->is_expired, 1, 'Past end of bet, so it is expired.');
             is($bet->value, $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
-
-            my $opposite = $bet->opposite_contract_for_sale;
-            $opposite->is_expired;
-            is($opposite->value, int(not $barrier_win_map{$barrier}), 'Correct expiration for strike of ' . $barrier . ' on opposite bet.');
         }
 
         # On the nail.
@@ -65,9 +61,6 @@ test_with_feed(
         my $bet = produce_contract($bet_params);
         is($bet->is_expired, 1, 'Past end of bet, so it is expired.');
         is($bet->value,      0, 'Expiration for on-the-nail strike.');
-        my $opposite = $bet->opposite_contract_for_sale;
-        is($opposite->is_expired, 1, 'Past end of opposite, on-the-nail bet.');
-        is($opposite->value,      0, 'Expiration for on-the-nail strike, opposite bet.');
 
         $bet_params->{date_pricing} = '19-Jan-08';
         $bet = produce_contract($bet_params);
@@ -585,7 +578,7 @@ test_with_feed([
             currency    => 'GBP',
         };
 
-        my $bet = produce_contract($bet_params);
+        my $bet;
 
         # LOSE TEST
         # The high/low during this period is [63948.31, 64324.91]
@@ -1641,10 +1634,10 @@ test_with_feed([
             payout     => 100,
             date_start => $starting,
             duration   => '5t',
-            barrier    => 1,
         );
         foreach my $bt (sort keys %expectations) {
-            my $bet = produce_contract({%shared_params, bet_type => $bt});
+            my %barrier = $bt =~ /DIGITEVEN|DIGITODD/ ? () : (barrier => 1);
+            my $bet = produce_contract({%shared_params, %barrier, bet_type => $bt});
             ok($bet->is_expired, $bt . ' contract is expired');
             cmp_ok($bet->exit_tick->quote, '==', 1000.5,             'numeric comparison of the exit tick works without trailing 0');
             cmp_ok($bet->value,            '==', $expectations{$bt}, '...but we need the correct full-width to settle the ' . $bt);

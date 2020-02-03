@@ -15,7 +15,6 @@ use Postgres::FeedDB::Spot::Tick;
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Config::Runtime;
 use Math::Util::CalculatedValue;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -323,7 +322,7 @@ subtest 'invalid bet types are dull' => sub {
 };
 
 subtest 'invalid contract stake evokes sympathy' => sub {
-    plan tests => 6;
+    plan tests => 7;
 
     my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
@@ -388,13 +387,13 @@ subtest 'invalid contract stake evokes sympathy' => sub {
 
     $bet_params->{amount_type} = 'stake';
     $bet_params->{amount}      = 0;
-    $bet                       = produce_contract($bet_params);
-    $expected_reasons          = [qr/Empty or zero stake/];
-    test_error_list('buy', $bet, $expected_reasons);
+    my $error = exception { produce_contract($bet_params) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid stake/payout.';
 };
 
 subtest 'invalid barriers knocked down for great justice' => sub {
-    plan tests => 6;
+    plan tests => 9;
 
     my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
@@ -427,15 +426,10 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     $expected_reasons = [qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{low_barrier} = -100;      # Fine, we'll set our low barrier like you want.
-    $bet = produce_contract($bet_params);
-
-    my $error = exception {
-        $bet->is_valid_to_buy;
-    };
+    $bet_params->{low_barrier} = -100;    # Fine, we'll set our low barrier like you want.
+    my $error = exception { produce_contract($bet_params) };
     isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'Invalid barrier ([_1]).';
-    like $error->message_to_client->[1], qr/Barrier type must be the same for double-barrier contracts./, 'correct error args';
+    is $error->message_to_client->[0], 'Invalid barrier (Contract can have only one type of barrier).';
 
     $bet_params->{low_barrier} = 111;       # Sigh, ok, then, what about this one?
     $bet = produce_contract($bet_params);
@@ -443,10 +437,10 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{high_barrier} = 110;
-    $bet_params->{low_barrier}  = 110;                             # Surely this must be ok.
-    $bet                        = produce_contract($bet_params);
-    $expected_reasons = [qr/barriers must be different/, qr/straddle.*spot/, qr/stake.*same as.*payout/];
-    test_error_list('buy', $bet, $expected_reasons);
+    $bet_params->{low_barrier}  = 110;      # Surely this must be ok.
+    $error = exception { produce_contract($bet_params) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'High barrier must be higher than low barrier.';
 
     $bet_params->{high_barrier} = 110;                             # Ok, I think I get it now.
     $bet_params->{low_barrier}  = 90;
@@ -784,6 +778,7 @@ subtest 'invalid expiry times' => sub {
     my $expected_reasons = [qr/^Exchange is closed on expiry date/];
     test_error_list('buy', $bet, $expected_reasons);
 
+    delete $bet_params->{date_expiry};
     $bet_params->{duration} = '3d';
     $bet = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we are open at the end, validates just fine.');
@@ -1107,14 +1102,10 @@ subtest 'contract must be held' => sub {
     $args->{_date_pricing_milliseconds} = $oft_used_date->epoch + 0.1;
     $args->{date_pricing}               = $oft_used_date->epoch;
     $c                                  = produce_contract($args);
-    ok !$c->pricing_new, 'not pricing_new if it is 0.1 second from start';
-    ok $c->is_valid_to_sell, 'valid to sell right after buy';
-    delete $args->{$_} for qw(date_pricing _date_pricing_milliseconds);
-    # we set pricing_new to true if date_start is not provided.
-    delete $args->{date_start};
-    $c = produce_contract($args);
-    ok $c->pricing_new, 'is pricing_new when date_pricing == date_start';
-    ok $c->date_pricing->epoch == $c->date_start->epoch, 'date_pricing == date_start when pricing_new is set';
+    ok !$c->pricing_new,      'not pricing_new if it is 0.1 second from start';
+    ok !$c->is_valid_to_sell, 'invalid to sell right after buy';
+    is $c->primary_validation_error->message, 'wait for next second after start time';
+    is $c->primary_validation_error->message_to_client->[0], 'Contract cannot be sold at this time. Please try again.';
 };
 
 subtest 'zero payout' => sub {
@@ -1131,26 +1122,25 @@ subtest 'zero payout' => sub {
                     event_name   => 'FOMC',
                 }]});
 
-    lives_ok {
-        my $fake_tick = Postgres::FeedDB::Spot::Tick->new({
-            underlying => 'R_100',
-            epoch      => time,
-            quote      => 100,
-        });
-        my $c = produce_contract({
-            bet_type     => 'CALL',
-            underlying   => 'R_100',
-            barrier      => 'S0P',
-            currency     => 'USD',
-            payout       => 0,
-            duration     => '15m',
-            current_tick => $fake_tick,
-            entry_tick   => $fake_tick,
-        });
-        ok !$c->is_valid_to_buy, 'not valid to buy';
-        like($c->primary_validation_error->{message}, qr/Empty or zero stake/, 'throws error');
-    }
-    'does not die if payout is zero';
+    my $fake_tick = Postgres::FeedDB::Spot::Tick->new({
+        underlying => 'R_100',
+        epoch      => time,
+        quote      => 100,
+    });
+    my $error = exception {
+        produce_contract({
+                bet_type     => 'CALL',
+                underlying   => 'R_100',
+                barrier      => 'S0P',
+                currency     => 'USD',
+                payout       => 0,
+                duration     => '15m',
+                current_tick => $fake_tick,
+                entry_tick   => $fake_tick,
+            })
+    };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid stake/payout.';
 };
 
 my $now       = Date::Utility->new;

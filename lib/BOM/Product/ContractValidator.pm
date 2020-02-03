@@ -767,7 +767,7 @@ sub _validate_volsurface {
     } elsif ($self->market->name eq 'indices'
         and $surface_age > 24
         and not $self->is_atm_bet
-        and not $self->trading_calendar->is_holiday($self->underlying->exchange, $now->minus_time_interval('1d'))
+        and not $self->trading_calendar->is_holiday_for($self->underlying->exchange, $now->minus_time_interval('1d'))
         and not $self->trading_calendar->closes_early_on($self->underlying->exchange, $now->minus_time_interval('1d')))
     {
         $exceeded = '24h';

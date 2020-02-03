@@ -107,8 +107,14 @@ subtest 'invalid start and expiry time' => sub {
     like($c->primary_validation_error->{message}, qr/daily expiry must expire at close/, 'daily contract closed at end');
     $bet_params->{for_sale} = 1;
     $c = produce_contract($bet_params);
-    ok $c->is_valid_to_sale, ' valid to sale';
+    ok !$c->is_valid_to_sell, 'invalid to sell';
+    is $c->primary_validation_error->{message}, 'wait for next second after start time', 'message - wait for next second after start time';
+    is $c->primary_validation_error->{message_to_client}->[0], 'Contract cannot be sold at this time. Please try again.',
+        'message_to_client - Contract cannot be sold at this time. Please try again.';
 
+    $bet_params->{date_pricing} = $now->epoch + 1;
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_sell, 'valid to sell';
 };
 
 $fake_tick = Postgres::FeedDB::Spot::Tick->new({
@@ -174,10 +180,13 @@ subtest 'absolute barrier for a non-intraday contract' => sub {
                 },
             }});
 
-    my $c = produce_contract($bet_params2);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/Absolute barrier cannot be zero/, 'Absolute barrier cannot be zero');
-    is $c->primary_validation_error->{details}->{field}, 'barrier', 'error detials is not correct';
+    use Try::Tiny;
+
+    my $error = exception {
+        produce_contract($bet_params2)
+    };
+    is $error->message_to_client->[0], 'Barrier cannot be zero.', 'message_to_client - Barrier cannot be zero.';
+    is $error->details->{field}, 'barrier', 'correct error details';
 
     $bet_params2->{barrier} = 101;
     $c = produce_contract($bet_params2);
@@ -201,7 +210,7 @@ subtest 'invalid barrier for tick expiry' => sub {
     $bet_params->{barrier} = 'S10P';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
-    $bet_params->{barrier}  = 100;
+    delete $bet_params->{barrier};
     $bet_params->{bet_type} = 'ASIANU';
     $c                      = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for asian';
@@ -211,6 +220,7 @@ subtest 'invalid barrier for tick expiry' => sub {
     $c                        = produce_contract($bet_params);
     ok $c->is_valid_to_sell, 'valid to sell for asian';
 
+    $bet_params->{bet_type}     = 'CALL';
     $bet_params->{underlying}   = 'frxUSDJPY';
     $bet_params->{barrier}      = 100;
     $bet_params->{date_pricing} = $now;
@@ -220,7 +230,7 @@ subtest 'invalid barrier for tick expiry' => sub {
     ok $c->tick_expiry, 'tick expiry';
     ok !$c->is_valid_to_buy, 'invalid to buy for frxUSDJPY';
     like($c->primary_validation_error->{message}, qr/Intend to buy tick expiry contract/, 'tick expiry barrier check');
-    is $c->primary_validation_error->{details}->{field}, 'barrier', 'error detials is not correct';
+    is $c->primary_validation_error->{details}->{field}, 'barrier2', 'error detials is not correct';
 };
 
 subtest 'invalid barrier type' => sub {
@@ -245,7 +255,7 @@ subtest 'invalid barrier type' => sub {
         qr/barrier should be absolute for multi-day contracts/,
         'multi-day non ATM barrier must be absolute'
     );
-    is $c->primary_validation_error->{details}->{field}, 'barrier', 'error detials is not correct';
+    is $c->primary_validation_error->{details}->{field}, 'barrier', 'error detials is correct';
     $bet_params->{duration} = '1h';
     $bet_params->{barrier}  = 100;
     $c                      = produce_contract($bet_params);
@@ -266,13 +276,11 @@ subtest 'invalid payout currency' => sub {
     };
     my $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid multi-day ATM contract with relative barrier.';
-    ok !$c->invalid_user_input;
     $bet_params->{currency} = 'BDT';
     $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'invalid to buy';
-    ok $c->invalid_user_input, 'invalid input set to true';
-    like($c->primary_validation_error->{message}, qr/payout currency not supported/, 'payout currency not supported');
-    is $c->primary_validation_error->{details}->{field}, 'currency', 'error detials is not correct';
+    my $error = exception {$c->is_valid_to_buy};
+    is $error->message_to_client->[0], 'Invalid payout currency', 'message_to_client - Invalid payout currency';
+    is $error->details->{field}, 'currency', 'error details is correct';
 };
 
 subtest 'stable crypto as payout currency' => sub {

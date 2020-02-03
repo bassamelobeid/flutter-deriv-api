@@ -175,8 +175,10 @@ sub _get_barrier {
         };
     } elsif ($type =~ /(ASIAN|SPREAD)/) {
         return {tick => [{}]};
-    } elsif ($type =~ /DIGIT/) {
+    } elsif ($type =~ /DIGIT(?:MATCH|DIFF|OVER|UNDER)/) {
         return {tick => [{barrier => 5}]};    # should work for all DIGITS
+    } else {
+        return {tick => [{}]};
     }
 }
 

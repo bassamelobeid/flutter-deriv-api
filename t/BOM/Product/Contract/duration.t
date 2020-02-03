@@ -22,9 +22,9 @@ subtest 'everything about duration/date_expiry' => sub {
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'Please specify either [_1] or [_2].', 'not duration or date_expiry specified';
 
-    $error = exception { produce_contract({%$args, date_start => '30-Dec-18', duration => 0, date_expiry => '2030-01-01'}) };
-    isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'Please specify either [_1] or [_2].', 'not duration or date_expiry specified';
+    my $bet;
+    lives_ok { $bet = produce_contract({%$args, date_start => '30-Dec-18', duration => '1h', date_expiry => '2030-01-01'}) };
+    ok $bet->date_expiry->epoch == $bet->date_start->plus_time_interval('1h')->epoch;
 
     $args->{date_expiry} = '05-JAN-19';
     $error = exception { produce_contract($args) };

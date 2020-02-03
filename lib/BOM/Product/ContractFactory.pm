@@ -266,10 +266,6 @@ sub make_similar_contract {
     }
     delete $changes->{priced_at};
 
-    # since we are only allowing either, we will remove $build_parameters{date_expiry}
-    if ($changes->{duration} and $build_parameters{date_expiry}) {
-        delete $build_parameters{date_expiry};
-    }
     # Sooner or later this should have some more knowledge of what can and
     # should be built, but for now we use this naive parameter switching.
     foreach my $key (keys %$changes) {
