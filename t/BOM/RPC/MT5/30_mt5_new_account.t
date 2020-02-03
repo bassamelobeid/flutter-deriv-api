@@ -191,6 +191,47 @@ subtest 'new account dry_run' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
+subtest 'status allow_document_upload is added upon mt5 create account dry_run advanced' => sub {
+    my $ID_DOCUMENT = $test_client->get_authentication('ID_DOCUMENT')->status;
+
+    $test_client->set_authentication('ID_DOCUMENT')->status('needs_action');
+    $test_client->tax_residence('mt');
+    $test_client->tax_identification_number('111222333');
+    $test_client->save;
+    ok !$test_client->fully_authenticated, 'Not fully authenticated';
+
+    my $method = 'get_account_status';
+    my $params = {token => $token};
+    $c->call_ok($method, $params);
+    my $status = $c->result->{status};
+    ok(!grep(/^allow_document_upload$/, @$status), "There's no allow_document_upload");
+
+    $method = 'mt5_new_account';
+    $params = {
+        token    => $token,
+        args     => {
+            account_type     => 'financial',
+            country          => 'mt',
+            email            => $DETAILS{email},
+            name             => $DETAILS{name},
+            mainPassword     => $DETAILS{password},
+            leverage         => 100,
+            dry_run          => 1,
+            mt5_account_type => 'advanced',
+        },
+    };
+    $c->call_ok($method, $params)->has_error('You haven\'t authenticated your account. Please contact us for more information.');
+
+    $method = 'get_account_status';
+    $params = {token => $token};
+    $c->call_ok($method, $params);
+    $status = $c->result->{status};
+    ok(grep(/^allow_document_upload$/, @$status), "There's a allow_document_upload");
+
+    $test_client->set_authentication('ID_DOCUMENT')->status($ID_DOCUMENT);
+    $test_client->save;
+};
+
 subtest 'new account dry_run using invalid arguments' => sub {
     my $method = 'mt5_new_account';
 
