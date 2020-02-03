@@ -350,7 +350,7 @@ sub get_transactions_ws {
                 b.payout_price,
                 b.bet_class,
                 p.payment_time,
-                p.remark AS payment_remark,
+                COALESCE(p.remark, CASE WHEN t.action_type = 'escrow' THEN t.remark ELSE '' END) AS payment_remark,
                 t1.id AS buy_tr_id
             FROM
                 (
@@ -529,7 +529,7 @@ sub get_transactions {
                 b.is_sold,
                 b.remark AS bet_remark,
                 b.bet_class,
-                p.remark AS payment_remark
+                COALESCE(p.remark, CASE WHEN t.action_type = 'escrow' THEN t.remark ELSE '' END) AS payment_remark
             FROM
                 (
                     SELECT * FROM TRANSACTION.TRANSACTION
