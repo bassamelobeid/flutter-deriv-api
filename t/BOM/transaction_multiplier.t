@@ -16,6 +16,7 @@ use BOM::Test::Helper::Client qw(top_up);
 use Guard;
 use Crypt::NamedKeys;
 use Date::Utility;
+use List::Util qw(any);
 
 use BOM::User::Client;
 use BOM::User::Password;
@@ -676,8 +677,10 @@ subtest 'sell failure due to update' => sub {
 };
 
 subtest 'buy multiplier with unsupported underlying' => sub {
-    if (Date::Utility->new->is_a_weekend) {
-        set_relative_time(0 - 2 * 24 * 60 * 60);
+    # because the market of frxAUDJPY will be closed after Friday 20:55, we move back 3 days for safe
+    # if it is on Friday or weekend.
+    if (any { Date::Utility->new->day_of_week == $_ } (5, 6, 0)) {
+        set_relative_time(0 - 3 * 24 * 60 * 60);
     }
     lives_ok {
         my $contract = produce_contract({
