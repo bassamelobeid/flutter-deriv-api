@@ -151,6 +151,10 @@ subtest 'Offers' => sub {
     $res = $c->call_ok('p2p_agent_update', $params)->has_no_system_error->has_no_error->result;
     is $res->{name}, $params->{args}{name}, 'update agent name';
 
+    $params->{args} = {agent_name => ' '};
+    $c->call_ok('p2p_agent_update', $params)
+        ->has_no_system_error->has_error->error_code_is('AgentNameRequired', 'Cannot update the agent name to blank');
+
     $client_agent->p2p_agent_update(is_authenticated => 0);
     $params->{args} = $offer_params;
     $c->call_ok('p2p_offer_create', $params)

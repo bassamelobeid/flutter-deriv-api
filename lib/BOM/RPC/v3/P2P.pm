@@ -86,6 +86,7 @@ our %ERROR_MAP = do {
         AgentNotRegistered          => localize('This account is not registered as an P2P agent.'),
         AgentNotActive              => localize('The provided agent ID does not belong to an active agent.'),
         AgentNotAuthenticated       => localize('The agent is not authenticated.'),
+        AgentNameRequired           => localize('The agent name cannot be blank.'),
         OrderAlreadyConfirmed       => localize('The order is already confirmed by you.'),
         OrderAlreadyCancelled       => localize('The order is already cancelled.'),
         OfferNoEditInactive         => localize('The offer is inactive and cannot be changed.'),
@@ -249,7 +250,7 @@ that does not allow P2P agents yet, or they already have an agent account.
 p2p_rpc p2p_agent_create => sub {
     my (%args) = @_;
     my $client = $args{client};
-    my $name   = $args{params}{args}{name};
+    my $name   = $args{params}{args}{agent_name};
     my $agent  = $client->p2p_agent_create($name);
     BOM::Platform::Event::Emitter::emit(p2p_agent_created => $agent);
     return {status => 'pending'};
