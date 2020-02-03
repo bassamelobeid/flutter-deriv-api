@@ -33,7 +33,7 @@ sub create_agent {
 
     my $agent = create_client($balance);
 
-    $agent->p2p_agent_create;
+    $agent->p2p_agent_create($param{agent_name} // 'test agent');
 
     $agent->account('USD');
 
