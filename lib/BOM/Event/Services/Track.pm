@@ -351,6 +351,24 @@ sub app_deleted {
     return _track($customer, $args, 'app_deleted');
 }
 
+=head2 set_financial_assessment
+
+It is triggered for each B<set_financial_assessment> event emitted, delivering it to Segment.
+
+=cut
+
+sub set_financial_assessment {
+    my ($args) = @_;
+    my $loginid = $args->{loginid};
+
+    return Future->done unless _validate_params($loginid);
+    my $customer = _create_customer($loginid);
+
+    $log->debugf('Track set_financial_assessment event for client %s', $loginid);
+
+    return _track($customer, $args, 'set_financial_assessment');
+}
+
 =head2 _time_to_iso_8601 
 
 Convert the format of the database time to iso 8601 time that is sutable for Segment

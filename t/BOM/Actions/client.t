@@ -773,13 +773,57 @@ sub test_segment_customer {
         'Customer traits are set correctly';
 }
 
-subtest 'segment document upload' => sub {
+subtest 'set financial assessment segment' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
         language   => 'id'
     );
     request($req);
 
+    undef @track_args;
+
+    my $action_handler = BOM::Event::Process::get_action_mappings()->{set_financial_assessment};
+    my $loginid        = $test_client->loginid;
+    my $args           = {
+        'params' => {
+            'set_financial_assessment'             => 1,
+            'binary_options_trading_frequency'     => '6-10 transactions in the past 12 months',
+            'net_income'                           => '$100,001 - $500,000',
+            'education_level'                      => 'Primary',
+            'cfd_trading_experience'               => 'Over 3 years',
+            'binary_options_trading_experience'    => 'Over 3 years',
+            'other_instruments_trading_experience' => '0-1 year',
+            'forex_trading_experience'             => '0-1 year',
+            'employment_industry'                  => 'Finance',
+            'income_source'                        => 'Self-Employed',
+            'occupation'                           => 'Managers',
+            'account_turnover'                     => '$100,001 - $500,000',
+            'cfd_trading_frequency'                => '6-10 transactions in the past 12 months',
+            'employment_status'                    => 'Employed',
+            'source_of_wealth'                     => 'Company Ownership',
+            'estimated_worth'                      => '$500,001 - $1,000,000',
+            'forex_trading_frequency'              => '11-39 transactions in the past 12 months',
+            'other_instruments_trading_frequency'  => '11-39 transactions in the past 12 months'
+        },
+        'loginid' => $loginid,
+    };
+
+    $action_handler->($args)->get;
+    my ($customer, %returned_args) = @track_args;
+    is_deeply($args, $returned_args{properties}, 'track properties are properly set for set_financial_assessment');
+    is $returned_args{event}, 'set_financial_assessment', 'track event name is set correctly';
+};
+
+subtest 'segment document upload' => sub {
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'id'
+    );
+    request($req);
+
+    undef @track_args;
+    
     $args = {
         document_type     => 'national_identity_card',
         document_format   => 'PNG',

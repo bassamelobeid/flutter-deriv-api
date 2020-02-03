@@ -81,6 +81,7 @@ my $action_mapping = {
     app_registered              => \&BOM::Event::Actions::App::app_registered,
     app_updated                 => \&BOM::Event::Actions::App::app_updated,
     app_deleted                 => \&BOM::Event::Actions::App::app_deleted,
+    set_financial_assessment    => \&BOM::Event::Actions::Client::set_financial_assessment,
 };
 
 =head1 METHODS

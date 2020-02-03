@@ -2140,4 +2140,16 @@ sub api_token_deleted {
     return BOM::Event::Services::Track::api_token_deleted(@args);
 }
 
+=head2 set_financial_assessment
+
+It is triggered for each B<set_financial_assessment> event emitted.
+
+=cut
+
+sub set_financial_assessment {
+    my @args = @_;
+
+    return BOM::Event::Services::Track::set_financial_assessment(@args);
+}
+
 1;
