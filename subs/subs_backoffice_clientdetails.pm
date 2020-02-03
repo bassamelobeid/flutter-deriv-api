@@ -786,6 +786,7 @@ sub client_statement_for_backoffice {
         });
 
         foreach my $transaction (@{$transactions}) {
+            $transaction->{orig_amount} = $transaction->{amount};
             $transaction->{amount}      = abs($transaction->{amount});
             $transaction->{remark}      = $transaction->{bet_remark};
             $transaction->{limit_order} = encode_json_utf8(BOM::Transaction::extract_limit_orders($transaction))
