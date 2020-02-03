@@ -12,6 +12,7 @@ use Locale::Country qw(code2country);
 use Time::Moment;
 use Date::Utility;
 use BOM::Platform::Locale qw/get_state_by_id/;
+use Storable qw(dclone);
 
 my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
@@ -149,8 +150,8 @@ It can be called with the following parameters:
 =cut
 
 sub new_mt5_signup {
-    my ($args) = @_;
-    my $loginid = $args->{loginid};
+    my $args       = dclone(shift());
+    my $loginid    = $args->{loginid};
     my $properties = $args->{properties} // {};
 
     $properties->{mt5_login_id} = "MT" . ($properties->{mt5_login_id} // die('mt5 loginid is required'));
