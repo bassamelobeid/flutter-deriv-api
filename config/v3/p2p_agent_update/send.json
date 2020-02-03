@@ -22,7 +22,8 @@
         },
         "agent_name": {
             "description": "[Optional] The agent's displayed name.",
-            "type": "string"
+            "type": "string",
+            "pattern": "\\w+"
         },
         "is_active": {
             "description": "[Optional] The activation status of the agent.",
