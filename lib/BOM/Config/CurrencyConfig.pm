@@ -89,13 +89,11 @@ sub transfer_between_accounts_limits {
         and $currency_limits_cache->{revision}
         and ($currency_limits_cache->{revision} eq $loaded_revision);
 
-    my $lower_bounds = transfer_between_accounts_lower_bounds();
-
     my @all_currencies = LandingCompany::Registry::all_currencies();
 
     my $configs = app_config()->get([
-        'payments.transfer_between_accounts.minimum.default.fiat', 'payments.transfer_between_accounts.minimum.default.crypto',
-        'payments.transfer_between_accounts.minimum.by_currency',  'payments.transfer_between_accounts.maximum.default'
+        'payments.transfer_between_accounts.minimum.default', 'payments.transfer_between_accounts.minimum.by_currency',
+        'payments.transfer_between_accounts.maximum.default'
     ]);
 
     my $configs_json = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.minimum.by_currency'});
@@ -103,23 +101,17 @@ sub transfer_between_accounts_limits {
     my $currency_limits = {};
     foreach my $currency (@all_currencies) {
         my $type = LandingCompany::Registry::get_currency_type($currency);
-        $type = 'fiat' if (LandingCompany::Registry::get_currency_definition($currency)->{stable});
 
-        my $min = $configs_json->{$currency} // $configs->{"payments.transfer_between_accounts.minimum.default.$type"};
-        my $lower_bound = $lower_bounds->{$currency};
+        my $min = $configs_json->{$currency} // $configs->{"payments.transfer_between_accounts.minimum.default"};
 
-        if ($min < $lower_bound) {
-            $log->tracef("The %s transfer minimum of %d in app_config->payements.transfer_between_accounts.minimum was too low. Raised to %d",
-                $currency, $min, $lower_bound);
-            $min = $lower_bound;
-        }
+        $min = eval { financialrounding('amount', $currency, convert_currency($min, 'USD', $currency)); };
 
         my $max = eval {
             0 + financialrounding('amount', $currency,
                 convert_currency($configs->{'payments.transfer_between_accounts.maximum.default'}, 'USD', $currency));
         };
 
-        $currency_limits->{$currency}->{min} = 0 + financialrounding('amount', $currency, $min);
+        $currency_limits->{$currency}->{min} = financialrounding('amount', $currency, $min);
         $currency_limits->{$currency}->{'max'} = $max if $max;
     }
 
@@ -186,51 +178,6 @@ sub transfer_between_accounts_fees {
     $currency_config->{revision} = $loaded_revision;
     $transfer_fees_cache = $currency_config;
     return $currency_config;
-}
-
-=head2 transfer_between_accounts_lower_bounds
-
-Calculates the minimum amount acceptable for all available currencies. 
-It should be guaranteed that tranfering any amount higher than the lower bound
-will not lead to depositing an amount less than the minimum unit for any receiving currency. 
-Reversing the calculations of BOM_Platform_Client_CashierValidation::calculate_to_amount_with_fees 
-it computes the amount of a source currency that would deposit at least a minmum unit of any receiving currency,
-considering the exchange rates and transfer fees (the maximum of which is %7) involved.
-It doesn't have any input arg and returns:
-
-=over4
-
-=item * A hash-ref containing the lower bounds of currencies, like: {USD => 0.03, EUR => 0.02, ... }
-
-=back
-
-=cut
-
-sub transfer_between_accounts_lower_bounds {
-    my @all_currencies = sort(LandingCompany::Registry::all_currencies());
-    my $result         = {};
-    for my $target_currency (@all_currencies) {
-        $result->{$target_currency} = 0;
-        for my $to_currency (@all_currencies) {
-            try {
-                my $amount = get_min_unit($to_currency);
-                $amount = convert_currency($amount, $to_currency, $target_currency) unless $target_currency eq $to_currency;
-                $amount = max($amount * 100 / (100 - MAX_TRANSFER_FEE), $amount + get_min_unit($target_currency));
-                $result->{$target_currency} = $amount if $result->{$target_currency} < $amount;
-            }
-            catch {
-                $log->tracef("No exchange rate for the currency pair %s-%s.", $target_currency, $to_currency);
-            }
-        }
-
-        my $rounded = financialrounding('amount', $target_currency, $result->{$target_currency});
-        my $min_unit = get_min_unit($target_currency);
-        # increase by min_unit is if the value is truncated by financial rounding
-        $rounded = financialrounding('amount', $target_currency, $rounded + $min_unit) if $result->{$target_currency} - $rounded > $min_unit / 10.0;
-        $result->{$target_currency} = $rounded;
-    }
-
-    return $result;
 }
 
 =head2 rate_expiry

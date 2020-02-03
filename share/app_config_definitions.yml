@@ -207,24 +207,15 @@ payments:
           description: 'Transfer minimum amount'
           contains:
             by_currency:
-              description: 'Minimum amount for individual currencies; example: {"UST":1, "GBP":1.8}'
+              description: 'Minimum amount for individual currencies (in USD); example: {"UST":1, "GBP":1.8}'
               isa: json_string
               default: '{"UST":1}'
               global: 1
             default:
-              isa: section
-              description: 'Default values'
-              contains:
-                fiat:
-                  isa: Num
-                  description: 'Default fiat and stable-coin transfer minimum'
-                  default: 1
-                  global: 1
-                crypto:
-                  description: 'Default crypto transfer minimum'
-                  isa: Num
-                  default: 0.002
-                  global: 1
+              isa: Num
+              description: 'Default transfer minimum (in USD)'
+              default: 1
+              global: 1
         maximum:
           isa: section
           description: 'Transfer maximum amount'
