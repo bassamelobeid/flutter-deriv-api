@@ -2187,6 +2187,8 @@ rpc set_financial_assessment => sub {
             message_to_client => localize("The financial assessment is not complete")}
     ) unless ($client->landing_company->short eq "maltainvest" ? $is_TE_complete && $is_FI_complete : $is_FI_complete);
 
+    my $old_financial_assessment = decode_fa($client->financial_assessment());
+
     update_financial_assessment($client->user, $params->{args});
 
     # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
@@ -2195,6 +2197,20 @@ rpc set_financial_assessment => sub {
     $response->{financial_information_score} = delete $response->{financial_information};
     $response->{trading_score}               = delete $response->{trading_experience};
 
+    my %changed_items;
+    foreach my $key (keys %{$params->{args}}) {
+        if (!exists($old_financial_assessment->{$key}) || $params->{args}->{$key} ne $old_financial_assessment->{$key}) {
+            $changed_items{$key} = $params->{args}->{$key};
+        }
+    }
+    delete $changed_items{set_financial_assessment};
+
+    BOM::Platform::Event::Emitter::emit(
+        'set_financial_assessment',
+        {
+            loginid => $client->loginid,
+            params  => \%changed_items,
+        });
     return $response;
 };
 
