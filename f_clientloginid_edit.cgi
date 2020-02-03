@@ -1134,6 +1134,24 @@ sub update_fa {
         map { $_ => request()->param($_) }
         grep { request()->param($_) } keys $config->{$section_name}->%*
     };
+
+    # track changed financial assessment items
+    my $old_financial_assessment = BOM::User::FinancialAssessment::decode_fa($client->financial_assessment());
+    my %changed_items;
+
+    foreach my $key (keys %{$args}) {
+        if (!exists($old_financial_assessment->{$key}) || $args->{$key} ne $old_financial_assessment->{$key}) {
+            $changed_items{$key} = $args->{$key};
+        }
+    }
+
+    BOM::Platform::Event::Emitter::emit(
+        'set_financial_assessment',
+        {
+            loginid => $client->loginid,
+            params  => \%changed_items,
+        });
+
     return BOM::User::FinancialAssessment::update_financial_assessment($client->user, $args);
 }
 
