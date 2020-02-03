@@ -23,6 +23,15 @@ use BOM::Config::Chronicle;
 use BOM::Config::CurrencyConfig;
 use BOM::Backoffice::Request qw(request);
 
+# Limiting minimum amount transferable to 1 USD so it would not hit lowerbound
+#The background of this (or lower bound) is to cater for the scenario below:
+#
+# If someones tries to transfer 0.02 USD to EUR, we impose a transfer fee
+# of 0.01 (or 1%, whichever is higher) to it. So the transferable amount
+# left is 0.01 USD. And when converted, it is 0.008 EUR, which is lower
+# than the minimum unit of EUR, and this will cause an error.
+use constant MINIMUM_ALLOWABLE_USD_AMOUNT => 1;
+
 sub textify_obj {
     my $type  = shift;
     my $value = shift;
@@ -238,8 +247,7 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.exchange_rate_expiry.fiat
                 payments.transfer_between_accounts.exchange_rate_expiry.fiat_holidays
                 payments.transfer_between_accounts.exchange_rate_expiry.crypto
-                payments.transfer_between_accounts.minimum.default.fiat
-                payments.transfer_between_accounts.minimum.default.crypto
+                payments.transfer_between_accounts.minimum.default
                 payments.transfer_between_accounts.minimum.by_currency
                 payments.transfer_between_accounts.maximum.default
                 payments.experimental_currencies_allowed
@@ -345,8 +353,7 @@ sub get_extra_validation {
     state $setting_validators = {
         'cgi.terms_conditions_version'                               => \&validate_tnc_string,
         'payments.transfer_between_accounts.minimum.by_currency'     => \&_validate_transfer_min_by_currency,
-        'payments.transfer_between_accounts.minimum.default.fiat'    => \&_validate_transfer_min_default,
-        'payments.transfer_between_accounts.minimum.default.crypto'  => \&_validate_transfer_min_default,
+        'payments.transfer_between_accounts.minimum.default'         => \&_validate_transfer_min_default,
         'payments.transfer_between_accounts.limits.between_accounts' => \&_validate_positive_number,
         'payments.transfer_between_accounts.limits.MT5'              => \&_validate_positive_number,
         'payments.transfer_between_accounts.maximum.default'         => \&_validate_positive_number,
@@ -374,26 +381,10 @@ sub _validate_transfer_min_default {
 
     _validate_positive_number($new_value);
 
-    return unless $key =~ /^payments.transfer_between_accounts.minimum.default.(.*)$/;
-    my $type = $1;
+    return unless $key eq 'payments.transfer_between_accounts.minimum.default';
 
-    my @currencies = LandingCompany::Registry::all_currencies();
-    @currencies = grep {
-        LandingCompany::Registry::get_currency_definition($_)->{type} eq 'crypto'
-            and (not LandingCompany::Registry::get_currency_definition($_)->{stable})
-        } @currencies
-        if $type eq 'crypto';
-    @currencies = grep {
-               LandingCompany::Registry::get_currency_definition($_)->{type} eq 'fiat'
-            or LandingCompany::Registry::get_currency_definition($_)->{stable}
-        } @currencies
-        if $type eq 'fiat';
-
-    my $lower_bounds    = BOM::Config::CurrencyConfig::transfer_between_accounts_lower_bounds();
-    my @matching_bounds = map { $lower_bounds->{$_} } @currencies;
-    my $lower_bound     = List::Util::max(@matching_bounds);
-
-    die "The value $new_value is lower than the lower bound $lower_bound." if ($new_value < $lower_bound);
+    die "The value $new_value is lower than the minimum amount allowed by the system " . MINIMUM_ALLOWABLE_USD_AMOUNT . " USD."
+        if ($new_value < MINIMUM_ALLOWABLE_USD_AMOUNT);
 
     return 1;
 }
@@ -420,7 +411,7 @@ sub _validate_payment_min_by_staff {
 
 Validates json string containing the minimum transfer amount per currency.
 It validates currency codes (hash keys) to be supported within the system; also
-validates the minimum values to be well-frmatted for displaying.
+validates the minimum values to be well-formatted for displaying.
 
 =cut
 
@@ -442,8 +433,7 @@ sub _validate_transfer_min_by_currency {
             if length($amount) > 12
             or (sprintf('%0.010f', $rounded_amount) ne sprintf('%0.010f', $amount));
 
-        my $lower_bound = BOM::Config::CurrencyConfig::transfer_between_accounts_lower_bounds()->{$currency};
-        die "The value $amount for $currency is lower than the lower bound $lower_bound" if $amount < $lower_bound;
+        die "The value $amount for $currency is lower " . MINIMUM_ALLOWABLE_USD_AMOUNT . " USD." if $amount < MINIMUM_ALLOWABLE_USD_AMOUNT;
     }
     return 1;
 }
