@@ -2206,17 +2206,16 @@ sub p2p_escrow {
     my ($client) = @_;
     my ($broker, $currency) = ($client->broker_code, $client->currency);
     my @escrow_list = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow->@*;
-    for my $loginid (@escrow_list) {
+
+    foreach my $loginid (@escrow_list) {
         try {
-            my $escrow_account = BOM::User::Client->new({loginid => $loginid});
-            return undef unless $escrow_account;
-            return undef unless $escrow_account->broker eq $broker;
-            return undef unless $escrow_account->currency eq $currency;
-            return $escrow_account;
+            my $escrow = BOM::User::Client->new({loginid => $loginid});
+
+            return $escrow if $escrow && $escrow->broker eq $broker && $escrow->currency eq $currency;
         }
         catch {
-            return undef;
-        };
+            next;    # TODO: ideally, we should never have an error here, we should maybe log it?
+        }
     }
 
     return undef;
