@@ -582,7 +582,7 @@ sub show_client_id_docs {
 
     return unless $loginid;
 
-    return '' if $loginid =~ /^MT/;
+    return '' if $loginid =~ /^MT[DR]?/;
 
     my $dbic = BOM::Database::ClientDB->new({
             client_loginid => $loginid,
@@ -1096,7 +1096,7 @@ sub get_client_details {
         push @user_clients, BOM::User::Client->new({loginid => $login_id});
     }
 
-    my @mt_logins = sort grep { /^MT\d+$/ } $user->loginids;
+    my @mt_logins       = sort $user->get_mt5_loginids;
     my $is_virtual_only = (@user_clients == 1 and @mt_logins == 0 and $client->is_virtual);
     my $broker          = $client->broker;
     my $encoded_broker  = encode_entities($broker);

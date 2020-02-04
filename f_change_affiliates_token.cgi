@@ -14,6 +14,7 @@ and required DCC Token to approve the create or edit of the affiliate token
 use strict;
 use warnings;
 use f_brokerincludeall;
+use BOM::User;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -35,7 +36,7 @@ my $self_post = request()->url_for('backoffice/f_change_affiliates_token.cgi');
 BrokerPresentation("AFFILIATE TOKEN DCC");
 
 # Not available for Virtual Accounts
-if (($loginid =~ /^VR/) || ($loginid =~ /^MT\d+$/)) {
+if (($loginid =~ BOM::User->VIRTUAL_REGEX) || ($loginid =~ BOM::User->MT5_REGEX)) {
     Bar("CHANGE Client AFFILIATE TOKEN DCC");
     print '<p class="aligncenter">We\'re sorry but the Affiliate Token is not available for this type of Accounts.</p>';
     code_exit_BO();
@@ -65,7 +66,7 @@ if ($input->{EditAffiliatesToken}) {
     my $ClientLoginid  = trim(uc $input->{ClientLoginid});
     my $well_formatted = check_client_login_id($ClientLoginid);
     code_exit_BO(_get_display_error_message("ERROR: Invalid loginid provided!")) unless $well_formatted;
-    if (($ClientLoginid =~ /^VR/) || ($ClientLoginid =~ /^MT\d+$/)) {
+    if (($ClientLoginid =~ /^VR/) || ($ClientLoginid =~ /^MT[DR]?\d+$/)) {
         code_exit_BO(_get_display_error_message("ERROR: Affiliate Token is not available for this type of Accounts.!"));
     }
 
@@ -91,9 +92,6 @@ if ($input->{EditAffiliatesToken}) {
 
     # Updates that apply to both active client and its corresponding clients
     foreach my $cli (@clients_to_update) {
-        # Exclude metatrader clients
-        next if ($cli->loginid =~ /^MT\d+$/);
-
         # Update myaffiliates_token
         $cli->myaffiliates_token($affiliate_token);
 

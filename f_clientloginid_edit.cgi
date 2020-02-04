@@ -894,11 +894,10 @@ foreach my $lid ($user_clients->@*) {
 
 # show MT5 a/c
 foreach my $mt_ac ($mt_logins->@*) {
-    my ($id) = $mt_ac =~ /^MT(\d+)$/;
     print "<li>" . encode_entities($mt_ac);
 
     # If we have group information, display it
-    my $cache_key  = "MT5_USER_GROUP::$id";
+    my $cache_key  = "MT5_USER_GROUP::$mt_ac";
     my $group      = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
     my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
 
@@ -928,7 +927,7 @@ foreach my $mt_ac ($mt_logins->@*) {
         # ... and if we don't, queue up the request. This may lead to a few duplicates
         # in the queue - that's fine, we check each one to see if it's already
         # been processed.
-        BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
+        BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $mt_ac, time));
         print ' (<span title="Try refreshing in a minute or so">no group info yet</span>)';
     }
     print "</li>";

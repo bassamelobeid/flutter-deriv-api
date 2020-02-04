@@ -55,7 +55,7 @@ if (not $user) {
     code_exit_BO();
 }
 
-my @mt_logins_ids = sort grep { /^MT\d+$/ } $user->loginids;
+my @mt_logins_ids = $user->get_mt5_loginids;
 my @bom_login_ids = $user->bom_loginids();
 my @bom_logins;
 
@@ -116,8 +116,7 @@ if ($email ne $new_email) {
 
         $user->update_email_fields(email => $new_email);
 
-        foreach my $lid ($user->loginids) {
-            next unless $lid !~ /^MT\d+$/;
+        foreach my $lid ($user->bom_loginids) {
             my $client_obj = BOM::User::Client->new({loginid => $lid});
             $client_obj->email($new_email);
             $client_obj->save;
