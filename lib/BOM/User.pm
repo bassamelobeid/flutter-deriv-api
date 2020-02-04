@@ -52,7 +52,7 @@ for my $k (@fields) {
 }
 
 use constant {
-    MT5_REGEX     => qr/^MT[0-9]+$/,
+    MT5_REGEX     => qr/^MT[DR]?(?=\d+$)/,
     VIRTUAL_REGEX => qr/^VR/,
 };
 
@@ -321,9 +321,7 @@ sub mt5_logins_with_group {
     my $mt5_logins_with_group = {};
 
     for my $login (sort $self->get_mt5_loginids()) {
-        my $group = BOM::MT5::User::Async::get_user(
-            do { $login =~ /(\d+)/; $1 }
-        )->else(sub { Future->done({}); })->get->{group} // '';
+        my $group = BOM::MT5::User::Async::get_user($login)->else(sub { Future->done({}); })->get->{group} // '';
 
         $mt5_logins_with_group->{$login} = $group if (not $filter or $group =~ /^$filter/);
     }
@@ -575,7 +573,25 @@ sub is_payment_agents_suspended_in_country {
 
 sub get_mt5_loginids {
     my $self = shift;
-    return grep { $_ =~ MT5_REGEX } $self->loginids;
+    return (sort grep { $_ =~ MT5_REGEX } $self->loginids);
+}
+
+=head2 get_loginid_for_mt5_id
+
+Method returns mt5 login with prefix for mt5 numeric user id.
+
+=cut
+
+sub get_loginid_for_mt5_id {
+    my ($self, $mt5_id) = @_;
+
+    my @logins = grep { $mt5_id eq s/${\MT5_REGEX}//r } $self->get_mt5_loginids;
+
+    return undef unless @logins;
+
+    return $logins[0] if @logins == 1;
+
+    die "User " . $self->id . " has several mt5 logins with same id: " . join q{, } => @logins;
 }
 
 =head2 is_closed

@@ -20,12 +20,12 @@ subtest 'MT5 Timeout logic handle' => sub {
         code  => 'ConnectionTimeout'
     };
     my $blocked_return = {
-        error => 'no connection',
+        error =>  undef,
         code  => 'NoConnection'
     };
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
-    my $details = {};
-    my $redis   = BOM::Config::RedisReplicated::redis_mt5_user_write();
+    my $details = {group => 'real//svg_standard'};
+    my $redis = BOM::Config::RedisReplicated::redis_mt5_user_write();
     # reset all redis keys.
     $redis->del($FAILCOUNT_KEY);
     $redis->del($LOCK_KEY);
@@ -56,7 +56,7 @@ subtest 'MT5 Timeout logic handle' => sub {
     is $redis->get($LOCK_KEY), 1, 'lock has been set';
     try {
         # This call will be blocked.
-        BOM::MT5::User::Async::get_user(1000)->get;
+        BOM::MT5::User::Async::get_user('MTR1000')->get;
         is 1, 0, 'This wont be executed';
     }
     catch {
@@ -81,8 +81,8 @@ subtest 'MT5 Timeout logic handle' => sub {
     $redis->expire($FAILCOUNT_KEY, 0);
     # Do a successful call
     is $redis->get($LOCK_KEY), 1, 'lock has been set';
-    my $first_success = BOM::MT5::User::Async::get_user(1000)->get;
-    is $first_success->{login}, 1000, 'Return is correct';
+    my $first_success = BOM::MT5::User::Async::get_user('MTR1000')->get;
+    is $first_success->{login}, 'MTR1000', 'Return is correct';
     # Flags should be reset.
     is $redis->get($LOCK_KEY), 0, 'lock has been reset';
 

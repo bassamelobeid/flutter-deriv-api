@@ -11,6 +11,8 @@ use Data::UUID;
 use Time::HiRes;
 use DataDog::DogStatsd::Helper;
 use IO::Async::Loop;
+use Log::Any qw($log);
+
 # Overrideable in unit tests
 our @MT5_WRAPPER_COMMAND = ('/usr/bin/php', '/home/git/regentmarkets/php-mt5-webapi/lib/binary_mt5.php');
 
@@ -73,10 +75,69 @@ sub _get_update_user_fields {
     return (@common_fields, qw/login rights agent/);
 }
 
+=head2 _get_server_type_by_prefix
+
+Method detects server type by prefix.
+
+=cut
+
+sub _get_server_type_by_prefix {
+    my $prefix = shift;
+
+    return 'real' if $prefix eq 'MT' || $prefix eq 'MTR';
+
+    return 'demo' if $prefix eq 'MTD';
+
+    die "Unexpected prefix $prefix";
+}
+
+=head2 _get_prefix
+
+Method extracts loginid prefix from request params.
+
+=cut
+
+sub _get_prefix {
+    my ($param) = @_;
+
+    if ($param->{login}) {
+        return 'MT'  if $param->{login} =~ /^MT\d+$/;
+        return 'MTR' if $param->{login} =~ /^MTR\d+$/;
+        return 'MTD' if $param->{login} =~ /^MTD\d+$/;
+
+        die "Unexpected login id format $param->{login}";
+    }
+
+    if ($param->{group}) {
+        return 'MTR' if $param->{group} =~ /^real/;
+        return 'MTD' if $param->{group} =~ /^demo/;
+
+        die "Unexpected group format $param->{group}";
+    }
+
+    die "Unexpected request params: " . join q{, } => keys %$param;
+
+}
+
+=head2 _prepare_params
+
+Method prepares params for sending to mt5 server.
+It removes login id prefixes form login and agent fields
+
+=cut
+
+sub _prepare_params {
+    my %param = @_;
+
+    $param{$_} && $param{$_} =~ s/^MT[DR]?// for (qw(login agent));
+
+    return \%param;
+}
+
 sub _invoke_mt5 {
     my ($cmd, $param) = @_;
 
-    my $in = encode_json($param);
+    my $in = encode_json(_prepare_params(%$param));
 
     # IO::Async keeps this around as a singleton, so it's safe to call ->new, and
     # better than tracking in a local `state` variable since if we happen to fork
@@ -93,20 +154,12 @@ sub _invoke_mt5 {
     if ($failcount >= $BACKOFF_THRESHOLD) {
         $redis->set($LOCK_KEY, 1);
         DataDog::DogStatsd::Helper::stats_inc('mt5.call.blocked', {tags => ["mt5:$cmd"]});
-        return $f->fail(
-            _future_error({
-                    ret_code => 10,
-                    error    => "no connection"
-                }));
+        return $f->fail(_future_error({ret_code => 10}));
     } elsif ($lock) {
         my $is_worker_checking = $redis->get($TRIAL_FLAG) // 0;
         if ($is_worker_checking) {
             DataDog::DogStatsd::Helper::stats_inc('mt5.call.blocked', {tags => ["mt5:$cmd"]});
-            return $f->fail(
-                _future_error({
-                        ret_code => 10,
-                        error    => "no connection"
-                    }));
+            return $f->fail(_future_error({ret_code => 10}));
         } else {
             # Set trial flag, so only one worker checks if we are able to connect.
             # Make sure flag has TTL so its removed in case worker dies mid call.
@@ -118,17 +171,23 @@ sub _invoke_mt5 {
             # in case Flag was already set, we will get 0 so prevent call since a worker already trying to.
             unless ($flag_set) {
                 DataDog::DogStatsd::Helper::stats_inc('mt5.call.blocked', {tags => ["mt5:$cmd"]});
-                return $f->fail(
-                    _future_error({
-                            ret_code => 10,
-                            error    => "no connection"
-                        }));
+                return $f->fail(_future_error({ret_code => 10}));
             }
             $trying = 1;
         }
     }
+    my ($srv_type, $prefix);
+    try {
+        $prefix   = _get_prefix($param);
+        $srv_type = _get_server_type_by_prefix($prefix);
+    }
+    catch {
+        $log->infof('Error in proccessing mt5 request: %s', $@);
+        return _future_error({code => 'General'});
+    }
+
     $loop->run_child(
-        command   => [@MT5_WRAPPER_COMMAND, $cmd],
+        command   => [@MT5_WRAPPER_COMMAND, $cmd, $srv_type],
         stdin     => $in,
         on_finish => sub {
             my (undef, $exitcode, $out, $err) = @_;
@@ -168,6 +227,13 @@ sub _invoke_mt5 {
                     }
                     $f->fail(_future_error($out));
                 } else {
+                    # Append login prefixes for mt5 used id.
+                    if ($out->{user} && $out->{user}{login}) {
+                        $out->{user}{login} = $prefix . $out->{user}{login};
+                    } elsif ($out->{login}) {
+                        $out->{login} = $prefix . $out->{login};
+                    }
+
                     # Unset Lock since we got a success call.
                     $redis->set($LOCK_KEY, 0) if $lock;
                     $f->done($out);

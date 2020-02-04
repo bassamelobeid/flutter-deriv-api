@@ -42,6 +42,7 @@ lives_ok {
 
     $vr_1 = $client_vr->loginid;
     $cr_1 = $client_cr->loginid;
+
 }
 'creating clients';
 
@@ -320,18 +321,18 @@ subtest 'MT5 logins' => sub {
     #   t/BOM/user.t
     #   t/lib/mock_binary_mt5.pl
     my %DETAILS_REAL = (
-        login => '1000',
+        login => 'MTR1000',
         group => 'real\something',
     );
 
     my %DETAILS_DEMO = (
-        login => '2000',
+        login => 'MTD2000',
         group => 'demo\something',
     );
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
-    my $loginid_real = 'MT' . $DETAILS_REAL{login};
-    my $loginid_demo = 'MT' . $DETAILS_DEMO{login};
+    my $loginid_real = $DETAILS_REAL{login};
+    my $loginid_demo = $DETAILS_DEMO{login};
 
     $user->add_loginid($loginid_real);
     my @mt5_logins = $user->mt5_logins;
@@ -339,7 +340,7 @@ subtest 'MT5 logins' => sub {
 
     $user->add_loginid($loginid_demo);
     @mt5_logins = $user->mt5_logins;
-    cmp_deeply(\@mt5_logins, [$loginid_real, $loginid_demo], 'MT5 logins match');
+    cmp_deeply(\@mt5_logins, [$loginid_demo, $loginid_real], 'MT5 logins match');
 
     @mt5_logins = $user->mt5_logins('real');
     cmp_deeply(\@mt5_logins, [$loginid_real], 'MT5 logins match');
@@ -347,7 +348,7 @@ subtest 'MT5 logins' => sub {
     @mt5_logins = $user->mt5_logins('demo');
     cmp_deeply(\@mt5_logins, [$loginid_demo], 'MT5 logins match');
 
-    ok $_->loginid !~ /^MT\d+$/, 'should not include MT logins-' . $_->loginid for ($user->clients);
+    ok $_->loginid !~ /^MT[DR]?\d+$/, 'should not include MT logins-' . $_->loginid for ($user->clients);
 };
 
 subtest 'Champion fx users' => sub {
@@ -513,7 +514,7 @@ CONF
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';
 
     for my $el (@$queue) {
-        if ($el->[1] =~ /^MT/) {
+        if ($el->[1] =~ /^MT[DR]?/) {
             ok 1, "survived MT account $el->[1]";
         } else {
             my $client = BOM::User::Client->new({loginid => $el->[1]});

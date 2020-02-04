@@ -380,7 +380,7 @@ subtest 'Creating order without escrow' => sub {
 
     my $original_escrow = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow;
     BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
-    
+
     my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => $amount);
     my $client = BOM::Test::Helper::P2P::create_client();
 
