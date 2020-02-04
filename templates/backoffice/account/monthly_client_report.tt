@@ -17,8 +17,7 @@
             <option value="debit">All Debits and Contract-Buys</option>
             <option value="credit">All Credits and Contract-Sells</option>
         </select>
-        Run Month: <input size="8" name="yyyymm" value="$yyyymm" required pattern="\d{4}-\d{2}/> e.g. 2014-12
-        &nbsp;&nbsp;&nbsp;
+        Run Month: <input size="8" name="yyyymm" value="$yyyymm" required pattern="\d{4}-\d{2}" /> e.g. 2014-12
         <input type="submit" value="Download CSV File"/>
         All Currencies for Broker code [%request.broker_code%] will be included.
     </form>
