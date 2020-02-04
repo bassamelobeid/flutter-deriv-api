@@ -58,199 +58,66 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         code_exit_BO();
     }
 
-    my $encoded_login_id =
-          '<a href="'
-        . request()->url_for("backoffice/f_clientloginid_edit.cgi", {loginID => encode_entities($login_id)}) . '">'
-        . encode_entities($login_id) . '</a>';
-    my $encoded_reason = encode_entities($reason);
-    my $encoded_clerk  = encode_entities($clerk);
-    # BUILD MESSAGE TO PRINT TO SCREEN
-    my $insert_error_msg =
-        "<font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved to  <b>$file_name</b>";
-    my $insert_success_msg =
-        "<font color=green><b>SUCCESS :</font></b>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been saved to  <b>$file_name</b>";
-    my $remove_error_msg =
-        "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to enable this client <b>$encoded_login_id</b>. Please try again.";
-    my $remove_success_msg =
-        "<font color=green><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been removed from  <b>$file_name</b>";
-    my $open_trades_error_msg =
-        "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Account <b>$encoded_login_id</b> cannot be marked as disabled as account has open positions. Please check account portfolio.";
+    my %common_args_for_execute_method = (
+        client    => $client,
+        clerk     => $clerk,
+        reason    => $reason,
+        file_name => $file_name
+    );
 
     # DISABLED/CLOSED CLIENT LOGIN
     if ($client_status_type eq 'disabledlogins') {
         if ($action eq 'insert_data') {
             #should check portfolio
             if (@{get_open_contracts($client)}) {
-                $printline = $open_trades_error_msg;
+                my $encoded_login_id = link_for_clientloginid_edit($login_id);
+                $printline =
+                    "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Account <b>$encoded_login_id</b> cannot be marked as disabled as account has open positions. Please check account portfolio.";
             } else {
-                try {
-                    $client->status->set('disabled', $clerk, $reason);
-                    $printline = $insert_success_msg;
-                }
-                catch {
-                    $printline = $insert_error_msg;
-                }
+                $printline = execute_set_status({%common_args_for_execute_method, status_code => 'disabled'});
             }
         }
         # remove client from $broker.disabledlogins
         elsif ($action eq 'remove_status') {
-            try {
-                $client->status->clear_disabled;
-                $printline = $remove_success_msg;
-            }
-            catch {
-                $printline = $remove_error_msg;
-            }
-        }
-    }
-    # LOCK CASHIER LOGIN
-    elsif ($client_status_type eq 'lockcashierlogins') {
-        if ($action eq 'insert_data') {
-            try {
-                $client->status->set('cashier_locked', $clerk, $reason);
-                $printline = $insert_success_msg;
-            }
-            catch {
-                $printline = $insert_error_msg;
-            }
-        } elsif ($action eq 'remove_status') {
-            try {
-                $client->status->clear_cashier_locked;
-                $printline = $remove_success_msg;
-            }
-            catch {
-                $printline = $remove_error_msg;
-            }
-        }
-    }
-    # UNWELCOME LOGIN
-    elsif ($client_status_type eq 'unwelcomelogins') {
-        if ($action eq 'insert_data') {
-            try {
-                $client->status->set('unwelcome', $clerk, $reason);
-                $printline = $insert_success_msg;
-            }
-            catch {
-                $printline = $insert_error_msg;
-            }
-        } elsif ($action eq 'remove_status') {
-            try {
-                $client->status->clear_unwelcome;
-                $printline = $remove_success_msg;
-            }
-            catch {
-                $printline = $remove_error_msg;
-            }
-        }
-    } elsif ($client_status_type eq 'lockwithdrawal') {
-        if ($action eq 'insert_data') {
-            try {
-                $client->status->set('withdrawal_locked', $clerk, $reason);
-                $printline = $insert_success_msg;
-            }
-            catch {
-                $printline = $insert_error_msg;
-            }
-        } elsif ($action eq 'remove_status') {
-            try {
-                $client->status->clear_withdrawal_locked;
-                $printline = $remove_success_msg;
-            }
-            catch {
-                $printline = $remove_error_msg;
-            }
-        }
-    } elsif ($client_status_type eq 'lockmt5withdrawal') {
-        if ($action eq 'insert_data') {
-            try {
-                $client->status->set('mt5_withdrawal_locked', $clerk, $reason);
-                $printline = $insert_success_msg;
-            }
-            catch {
-                $printline = $insert_error_msg;
-            }
-        } elsif ($action eq 'remove_status') {
-            try {
-                $client->status->clear_mt5_withdrawal_locked;
-                $printline = $remove_success_msg;
-            }
-            catch {
-                $printline = $remove_error_msg;
-            }
+            $printline = execute_remove_status({%common_args_for_execute_method, status_code => 'disabled'});
         }
     } elsif ($client_status_type eq 'duplicateaccount') {
         if ($action eq 'insert_data') {
-            try {
-                $client->status->set('duplicate_account', $clerk, $reason);
-                my $m = BOM::Platform::Token::API->new;
-                $m->remove_by_loginid($client->loginid);
-                $printline = $insert_success_msg;
-            }
-            catch {
-                $printline = $insert_error_msg;
-            }
+            $printline = execute_set_status({
+                    %common_args_for_execute_method,
+                    override => sub {
+                        $client->status->set('duplicate_account', $clerk, $reason);
+                        my $m = BOM::Platform::Token::API->new;
+                        $m->remove_by_loginid($client->loginid);
+                    }
+                });
         } elsif ($action eq 'remove_status') {
-            try {
-                $client->status->clear_duplicate_account;
-                $printline = $remove_success_msg;
-            }
-            catch {
-                $printline = $remove_error_msg;
-            }
+            $printline = execute_remove_status->({%common_args_for_execute_method, status_code => 'duplicate_account'});
         }
     } elsif ($client_status_type eq 'professionalrequested') {
         if ($action eq 'remove_status') {
-            try {
-                $client->status->multi_set_clear({
-                    set        => ['professional_rejected'],
-                    clear      => ['professional_requested'],
-                    staff_name => $clerk,
-                    reason     => 'Professional request rejected'
+            $printline = execute_remove_status({
+                    %common_args_for_execute_method,
+                    override => sub {
+                        $client->status->multi_set_clear({
+                            set        => ['professional_rejected'],
+                            clear      => ['professional_requested'],
+                            staff_name => $clerk,
+                            reason     => 'Professional request rejected'
+                        });
+                    }
                 });
+        }
+    } else {
+        my $status_code = get_untrusted_type_by_linktype($client_status_type)->{code};
 
-                $printline = $remove_success_msg;
-            }
-            catch {
-                $printline = $remove_error_msg;
-            }
-        }
-    } elsif ($client_status_type eq 'nowithdrawalortrading') {
         if ($action eq 'insert_data') {
-            try {
-                $client->status->set('no_withdrawal_or_trading', $clerk, $reason);
-                $printline = $insert_success_msg;
-            }
-            catch {
-                $printline = $insert_error_msg;
-            }
+            $printline = execute_set_status({%common_args_for_execute_method, status_code => $status_code});
         } elsif ($action eq 'remove_status') {
-            try {
-                $client->status->clear_no_withdrawal_or_trading;
-                $printline = $remove_success_msg;
-            }
-            catch {
-                $printline = $remove_error_msg;
-            }
-        }
-    } elsif ($client_status_type eq 'allowdocumentupload') {
-        if ($action eq 'insert_data') {
-            try {
-                $client->status->set('allow_document_upload', $clerk, $reason);
-                $printline = $insert_success_msg;
-            }
-            catch {
-                $printline = $insert_error_msg;
-            }
-        } elsif ($action eq 'remove_status') {
-            try {
-                $client->status->clear_allow_document_upload;
-                $printline = $remove_success_msg;
-            }
-            catch {
-                $printline = $remove_error_msg;
-            }
+            $printline = execute_remove_status({%common_args_for_execute_method, status_code => $status_code});
         }
     }
+
     # print success/fail message
     print $printline;
 
@@ -285,3 +152,63 @@ if (scalar @invalid_logins > 0) {
 }
 
 code_exit_BO();
+
+sub link_for_clientloginid_edit {
+    my $login_id = shift;
+
+    return
+          '<a href="'
+        . request()->url_for("backoffice/f_clientloginid_edit.cgi", {loginID => encode_entities($login_id)}) . '">'
+        . encode_entities($login_id) . '</a>';
+}
+
+sub execute_set_status {
+    my $params = shift;
+    my $client = $params->{client};
+
+    my $encoded_login_id = link_for_clientloginid_edit($client->loginid);
+    my $encoded_reason   = encode_entities($params->{reason});
+    my $encoded_clerk    = encode_entities($params->{clerk});
+    my $file_name        = $params->{file_name};
+
+    try {
+        if ($params->{override}) {
+            $params->{override}->();
+        } else {
+            $client->status->set($params->{status_code}, $params->{clerk}, $params->{reason});
+        }
+
+        return
+            "<font color=green><b>SUCCESS :</font></b>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been saved to  <b>$file_name</b>";
+    }
+    catch {
+        return
+            "<font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved to  <b>$file_name</b>";
+    }
+}
+
+sub execute_remove_status {
+    my $params = shift;
+    my $client = $params->{client};
+
+    my $encoded_login_id = link_for_clientloginid_edit($client->loginid);
+    my $encoded_reason   = encode_entities($params->{reason});
+    my $encoded_clerk    = encode_entities($params->{clerk});
+    my $file_name        = $params->{file_name};
+
+    try {
+        if ($params->{override}) {
+            $params->{override}->();
+        } else {
+            my $client_status_cleaner_method_name = 'clear_' . $params->{status_code};
+
+            $client->status->$client_status_cleaner_method_name;
+        }
+
+        return
+            "<font color=green><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been removed from  <b>$file_name</b>";
+    }
+    catch {
+        return "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to enable this client <b>$encoded_login_id</b>. Please try again.";
+    }
+}

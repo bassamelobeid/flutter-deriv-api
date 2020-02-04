@@ -567,7 +567,7 @@ sub get_untrusted_client_reason {
         ],
         Duplicate      => ['Duplicate account'],
         DocumentUpload => ['Allow document upload'],
-    };
+        Internal       => ['Internal client used for testing & learning']};
 }
 
 ## show_client_id_docs #######################################
@@ -867,7 +867,12 @@ sub get_untrusted_types {
             'code'        => 'allow_document_upload',
             'show_reason' => 'yes'
         },
-    ];
+        {
+            'linktype'    => 'internalclient',
+            'comments'    => 'Internal Client',
+            'code'        => 'internal_client',
+            'show_reason' => 'yes'
+        }];
 }
 
 sub get_untrusted_type_by_code {
