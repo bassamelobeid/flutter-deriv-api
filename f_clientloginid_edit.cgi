@@ -979,6 +979,14 @@ print qq[
         }
     </style>
     <script>
+        \$(function() {
+            \$('.datepick').datepicker( {
+                onSelect: function(date) {
+                    \$(this).addClass('data-changed')
+                },
+                dateFormat: 'yy-mm-dd',
+             });
+        });
         clientInfoForm.querySelectorAll('$INPUT_SELECTOR,select').forEach(input => {
             input.addEventListener('change', ev => ev.target.classList.add('data-changed'));
         });

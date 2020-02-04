@@ -633,7 +633,7 @@ SQL
         }
 
         my $input =
-            qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" required pattern="\\d{4}-\\d{2}-\\d{2}" class = "datepick" $extra>};
+            qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" pattern="\\d{4}-\\d{2}-\\d{2}" class = "datepick" $extra>};
         $input .= qq{document id <input type="text" style="width:100px" maxlength="30" name="document_id_$id" value="$document_id" $extra>};
         $input .= qq{comments <input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" $extra>};
 
