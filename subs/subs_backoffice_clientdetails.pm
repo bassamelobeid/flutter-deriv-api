@@ -567,7 +567,7 @@ sub get_untrusted_client_reason {
         ],
         Duplicate      => ['Duplicate account'],
         DocumentUpload => ['Allow document upload'],
-    };
+        Internal       => ['Internal client used for testing & learning']};
 }
 
 ## show_client_id_docs #######################################
@@ -582,7 +582,7 @@ sub show_client_id_docs {
 
     return unless $loginid;
 
-    return '' if $loginid =~ /^MT/;
+    return '' if $loginid =~ /^MT[DR]?/;
 
     my $dbic = BOM::Database::ClientDB->new({
             client_loginid => $loginid,
@@ -633,7 +633,7 @@ SQL
         }
 
         my $input =
-            qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" required pattern="\\d{4}-\\d{2}-\\d{2}" class = "datepick" $extra>};
+            qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" pattern="\\d{4}-\\d{2}-\\d{2}" class = "datepick" $extra>};
         $input .= qq{document id <input type="text" style="width:100px" maxlength="30" name="document_id_$id" value="$document_id" $extra>};
         $input .= qq{comments <input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" $extra>};
 
@@ -786,6 +786,7 @@ sub client_statement_for_backoffice {
         });
 
         foreach my $transaction (@{$transactions}) {
+            $transaction->{orig_amount} = $transaction->{amount};
             $transaction->{amount}      = abs($transaction->{amount});
             $transaction->{remark}      = $transaction->{bet_remark};
             $transaction->{limit_order} = encode_json_utf8(BOM::Transaction::extract_limit_orders($transaction))
@@ -866,7 +867,12 @@ sub get_untrusted_types {
             'code'        => 'allow_document_upload',
             'show_reason' => 'yes'
         },
-    ];
+        {
+            'linktype'    => 'internalclient',
+            'comments'    => 'Internal Client',
+            'code'        => 'internal_client',
+            'show_reason' => 'yes'
+        }];
 }
 
 sub get_untrusted_type_by_code {
@@ -1090,7 +1096,7 @@ sub get_client_details {
         push @user_clients, BOM::User::Client->new({loginid => $login_id});
     }
 
-    my @mt_logins = sort grep { /^MT\d+$/ } $user->loginids;
+    my @mt_logins       = sort $user->get_mt5_loginids;
     my $is_virtual_only = (@user_clients == 1 and @mt_logins == 0 and $client->is_virtual);
     my $broker          = $client->broker;
     my $encoded_broker  = encode_entities($broker);

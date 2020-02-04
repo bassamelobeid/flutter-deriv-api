@@ -220,8 +220,7 @@ foreach my $client (@clients) {
     my $dodgy =
            $client->status->disabled
         || $client->status->cashier_locked
-        || $client->status->unwelcome
-        || not $client->has_valid_documents();
+        || $client->status->unwelcome;
     my $color = $dodgy ? 'red' : '';
     my $disabled = $dodgy ? 'disabled="disabled"' : '';
     my $client_name          = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;

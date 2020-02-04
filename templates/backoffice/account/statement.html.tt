@@ -93,11 +93,11 @@
     <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding" style="min-width:1000px">
         <div class="grd-grid-1">[% transaction.date.datetime %]</div>
         <div class="grd-grid-1">[% transaction.staff_loginid %]</div>
-        [% IF transaction.financial_market_bet_id.defined %]
         [% id = transaction.source %]
         <div class="grd-grid-1 app-id">[% id %]
             <span class="app-name">[% apps.$id %]</span>
         </div>
+        [% IF transaction.financial_market_bet_id.defined %]
         <div class="grd-grid-1">
             <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, limit_order => transaction.limit_order, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid}) | none %]">[%
                 transaction.id %]</a>
@@ -125,11 +125,10 @@
         <div class="grd-grid-1 right-aligned"></div>
         [% END %]
         [% ELSE %]
-        <div class="grd-grid-1"></div>
         <div class="grd-grid-1">[% transaction.id %]</div>
         <div class="grd-grid-1"></div>
         <div class="grd-grid-4">[% transaction.payment_remark | replace('\s+:\s+', ': ') | html %]</div>
-        [% IF transaction.action_type == 'deposit' %]
+        [% IF transaction.action_type == 'deposit' OR ( transaction.action_type == 'escrow' AND transaction.orig_amount > 0 ) %]
         <div class="grd-grid-1 right-aligned"></div>
         <div class="grd-grid-1 right-aligned credit-amount-st">[% currency %] [% formatnumber('amount', currency, transaction.amount)
             %]

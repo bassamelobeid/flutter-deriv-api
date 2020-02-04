@@ -71,17 +71,17 @@ my $connection_lost = 1;
                     return Future->done;
                 }
                 my ($queue, $job) = @{$_[0]};
-                my ($id, $queued) = split /:/, $job;
+                my ($loginid, $queued) = split /:/, $job;
 
-                $log->debugf('Processing pending ID [%s]', $id);
+                $log->debugf('Processing pending ID [%s]', $loginid);
 
-                my $cache_key = 'MT5_USER_GROUP::' . $id;
+                my $cache_key = 'MT5_USER_GROUP::' . $loginid;
                 $redis->hgetall($cache_key)->then(
                     sub {
                         my ($data) = @_;
                         my $group = $data->[0];
                         if ($group) {
-                            $log->debugf('Details found for ID [%s] - %s', $id, $group);
+                            $log->debugf('Details found for ID [%s] - %s', $loginid, $group);
                             stats_inc('mt5.group_populator.item_cached', 1);
                             return Future->done;
                         }
@@ -89,9 +89,10 @@ my $connection_lost = 1;
                         # a bit - no need to burn through the queue
                         # too quickly if it's only down temporarily
                         return $loop->delay_future(after => 60) if is_mt5_suspended();
-                        return BOM::MT5::User::Async::get_user($id)->else(
+
+                        return BOM::MT5::User::Async::get_user($loginid)->else(
                             sub {
-                                $log->errorf('Failure when retrieving group for [%s] - %s', $id, [@_]);
+                                $log->errorf('Failure when retrieving group for [%s] - %s', $loginid, [@_]);
                                 stats_inc('mt5.group_populator.item_failed', 1);
                                 Future->done({});
                             }
@@ -118,12 +119,11 @@ my $connection_lost = 1;
 
                                 $redis->hmset($cache_key, %$mt5_details)->then(
                                     sub {
-
                                         $redis->expire($cache_key, $ttl);
                                     }
                                     )->on_done(
                                     sub {
-                                        $log->debugf('Cached ID [%s] group [%s]', $id, $group);
+                                        $log->debugf('Cached ID [%s] group [%s]', $loginid, $group);
                                     });
                             });
                     });

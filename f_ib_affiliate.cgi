@@ -18,7 +18,7 @@ use Digest::SHA qw(sha256_hex);
 use BOM::Platform::Event::Emitter;
 use BOM::MyAffiliates;
 use Data::Dumper;
-
+use BOM::User::Client;
 use constant SALT_FOR_CSRF_TOKEN => 'emDWVx1SH68JE5N1ba9IGz5fb';
 
 BOM::Backoffice::Sysinit::init();
@@ -67,6 +67,7 @@ if (request()->http_method eq 'POST') {
 
     code_exit_BO(_get_display_error_message('Client isn\'t an affiliate')) unless @affiliates;
 
+    my $mt5_account_id;
     for my $affiliate (@affiliates) {
         $affiliate_id = $affiliate->{ID};
 
@@ -75,9 +76,14 @@ if (request()->http_method eq 'POST') {
             ? @{$affiliate->{USER_VARIABLES}{VARIABLE}}
             : ();
 
-        ($mt5_login) = map { $_->{VALUE} } grep { $_->{NAME} eq 'mt5_account' } @user_variables;
+        ($mt5_account_id) = map { $_->{VALUE} } grep { $_->{NAME} eq 'mt5_account' } @user_variables;
 
         last if $mt5_login;
+    }
+
+    if ($mt5_account_id) {
+        my $client = BOM::User::Client->new({loginid => $loginid});
+        $mt5_login = $client->user->get_loginid_for_mt5_id($mt5_account_id);
     }
 }
 

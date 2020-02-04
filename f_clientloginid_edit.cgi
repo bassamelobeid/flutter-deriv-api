@@ -795,7 +795,7 @@ BOM::Backoffice::Request::template()->process(
         reasons  => get_untrusted_client_reason(),
         broker   => $broker,
         clientid => $loginid,
-        actions  => get_untrusted_types(),
+        actions  => [sort { $a->{comments} cmp $b->{comments} } @{get_untrusted_types()}],
     }) || die BOM::Backoffice::Request::template()->error();
 
 # Show Self-Exclusion link
@@ -894,11 +894,10 @@ foreach my $lid ($user_clients->@*) {
 
 # show MT5 a/c
 foreach my $mt_ac ($mt_logins->@*) {
-    my ($id) = $mt_ac =~ /^MT(\d+)$/;
     print "<li>" . encode_entities($mt_ac);
 
     # If we have group information, display it
-    my $cache_key  = "MT5_USER_GROUP::$id";
+    my $cache_key  = "MT5_USER_GROUP::$mt_ac";
     my $group      = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
     my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
 
@@ -928,7 +927,7 @@ foreach my $mt_ac ($mt_logins->@*) {
         # ... and if we don't, queue up the request. This may lead to a few duplicates
         # in the queue - that's fine, we check each one to see if it's already
         # been processed.
-        BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
+        BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $mt_ac, time));
         print ' (<span title="Try refreshing in a minute or so">no group info yet</span>)';
     }
     print "</li>";
@@ -979,6 +978,14 @@ print qq[
         }
     </style>
     <script>
+        \$(function() {
+            \$('.datepick').datepicker( {
+                onSelect: function(date) {
+                    \$(this).addClass('data-changed')
+                },
+                dateFormat: 'yy-mm-dd',
+             });
+        });
         clientInfoForm.querySelectorAll('$INPUT_SELECTOR,select').forEach(input => {
             input.addEventListener('change', ev => ev.target.classList.add('data-changed'));
         });
@@ -1134,6 +1141,24 @@ sub update_fa {
         map { $_ => request()->param($_) }
         grep { request()->param($_) } keys $config->{$section_name}->%*
     };
+
+    # track changed financial assessment items
+    my $old_financial_assessment = BOM::User::FinancialAssessment::decode_fa($client->financial_assessment());
+    my %changed_items;
+
+    foreach my $key (keys %{$args}) {
+        if (!exists($old_financial_assessment->{$key}) || $args->{$key} ne $old_financial_assessment->{$key}) {
+            $changed_items{$key} = $args->{$key};
+        }
+    }
+
+    BOM::Platform::Event::Emitter::emit(
+        'set_financial_assessment',
+        {
+            loginid => $client->loginid,
+            params  => \%changed_items,
+        });
+
     return BOM::User::FinancialAssessment::update_financial_assessment($client->user, $args);
 }
 
