@@ -10,7 +10,7 @@ my $t = build_wsapi_test();
 
 my $req = {
     "mt5_password_check" => 1,
-    "login"              => "1000",
+    "login"              => "MTD1000",
     "password"           => "abc1234",
     "password_type"      => "main"
 };
