@@ -1347,7 +1347,7 @@ async sub _send_email_notification_for_poa {
         return undef;
     }
 
-    my @mt_loginid_keys = map { /^MT(\d+)$/ ? "MT5_USER_GROUP::$1" : () } $client->user->loginids;
+    my @mt_loginid_keys = map { "MT5_USER_GROUP::$_" } $client->user->get_mt5_loginids;
 
     return undef unless scalar(@mt_loginid_keys);
 

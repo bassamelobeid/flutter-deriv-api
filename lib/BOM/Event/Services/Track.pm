@@ -154,7 +154,7 @@ sub new_mt5_signup {
     my $loginid    = $args->{loginid};
     my $properties = $args->{properties} // {};
 
-    $properties->{mt5_login_id} = "MT" . ($properties->{mt5_login_id} // die('mt5 loginid is required'));
+    die 'mt5 loginid is required' unless $properties->{mt5_login_id};
     delete $properties->{cs_email} if $properties->{cs_email};
 
     return Future->done unless _validate_params($loginid);

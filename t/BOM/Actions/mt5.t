@@ -103,13 +103,13 @@ subtest 'new mt5 sinup track event' => sub {
         email_verified => 1,
     );
     $user->add_client($test_client);
-
+    $user->add_loginid('MTR90000');
     my $args = {
         loginid            => $test_client->loginid,
         'account_type'     => 'gaming',
         'language'         => 'EN',
         'mt5_group'        => 'real\\svg',
-        'mt5_login_id'     => '90000',
+        'mt5_login_id'     => 'MTR90000',
         'language'         => 'EN',
         'cs_email'         => 'test_cs@bin.com',
         'sub_account_type' => 'standard'
@@ -135,7 +135,7 @@ subtest 'new mt5 sinup track event' => sub {
             'account_type'     => 'gaming',
             'language'         => 'EN',
             'mt5_group'        => 'real\\svg',
-            'mt5_login_id'     => 'MT90000',
+            'mt5_login_id'     => 'MTR90000',
             'sub_account_type' => 'standard'
         }
         },

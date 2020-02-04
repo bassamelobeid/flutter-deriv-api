@@ -101,15 +101,14 @@ async sub _populate_mt5_affiliate_to_client {
 async sub _set_affiliate_for_mt5 {
     my ($mt5_login, $affiliate_mt5_login) = @_;
 
-    my $mt5_login_id = $mt5_login =~ s/^MT//r;
-    my $user_details = await BOM::MT5::User::Async::get_user($mt5_login_id);
+    my $user_details = await BOM::MT5::User::Async::get_user($mt5_login);
 
     return 0 if $user_details->{group} =~ /^demo/;
     return 0 if $user_details->{agent};
 
     await BOM::MT5::User::Async::update_user({
         %{$user_details},
-        login => $mt5_login_id,
+        login => $mt5_login,
         agent => $affiliate_mt5_login
     });
 

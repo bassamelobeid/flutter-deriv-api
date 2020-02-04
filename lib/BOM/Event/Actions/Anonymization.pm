@@ -63,7 +63,7 @@ sub anonymize_client {
         # Anonymize data for all clients;
         foreach my $cli (@buid) {
             # Skip mt5 because we dont want to anonymize third parties yet
-            next if $cli->{v_loginid} =~ /^MT/;
+            next if $cli->{v_loginid} =~ /^MT[DR]?/;
             my $client = BOM::User::Client->new({loginid => $cli->{v_loginid}});
             unless ($client) {
                 $log->warnf("Anonymize client getting client object failed for %s", $cli->{v_loginid});

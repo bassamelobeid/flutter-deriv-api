@@ -76,16 +76,14 @@ sub sync_info {
 
     # If user is disabled MT5 will re-enable it again
     # we have to access MT5 and get the previous user status
-    for my $mt_login (sort grep { /^MT\d+$/ } $user->loginids) {
-        my ($login) = $mt_login =~ /(\d+)/
-            or die 'could not extract login information';
-        my $operation = BOM::MT5::User::Async::get_user($login)->then(
+    for my $mt_login (sort $user->get_mt5_loginids) {
+        my $operation = BOM::MT5::User::Async::get_user($mt_login)->then(
             sub {
                 my $mt_user = shift;
                 # BOM::MT5::User::Async doesn't ->fail a future on MT5 errors
                 return Future->fail($mt_user->{error}) if $mt_user->{error};
                 return BOM::MT5::User::Async::update_user({
-                        login  => $login,
+                        login  => $mt_login,
                         rights => $mt_user->{rights},
                         %{$client->get_mt5_details()}});
             }
@@ -203,8 +201,9 @@ sub new_mt5_signup {
             properties => $data
         })->retain;
 
-    my $id         = $data->{mt5_login_id};
-    my $cache_key  = "MT5_USER_GROUP::$id";
+    my $id = $data->{mt5_login_id};
+
+    my $cache_key  = "MT5_USER_GROUP::" . $id;
     my $group      = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
     my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
 
