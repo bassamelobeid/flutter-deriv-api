@@ -52,4 +52,3 @@ our %FINANCIAL_DATA = (
     "employment_status"                    => "Self-Employed",
     "source_of_wealth"                     => "Company Ownership",
 );
-

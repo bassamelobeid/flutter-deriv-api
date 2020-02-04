@@ -70,7 +70,7 @@ $mocked_mt5->mock(
     'create_user' => sub {
         state $count = 1000;
         $mt5_account_info = {shift->%*};
-        return Future->done({login => $count++});
+        return Future->done({login => 'MTD' . $count++});
     },
     'deposit' => sub {
         return Future->done({status => 1});

@@ -122,7 +122,7 @@ subtest 'multi currency transfers' => sub {
         token    => $token,
         args     => {
             from_binary => $client_eur->loginid,
-            to_mt5      => $ACCOUNTS{'real\svg'},
+            to_mt5      => 'MTR' . $ACCOUNTS{'real\svg'},
             amount      => $eur_test_amount,
         },
     };
@@ -131,7 +131,7 @@ subtest 'multi currency transfers' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => $ACCOUNTS{'real\svg'},
+            from_mt5  => 'MTR' . $ACCOUNTS{'real\svg'},
             to_binary => $client_eur->loginid,
             amount    => $usd_test_amount,
         },
@@ -390,7 +390,7 @@ subtest 'Transfers Limits' => sub {
         token    => $token,
         args     => {
             from_binary => $client->loginid,
-            to_mt5      => $ACCOUNTS{'real\svg'},
+            to_mt5      => 'MTR' . $ACCOUNTS{'real\svg'},
             amount      => 1
         },
     };
@@ -425,7 +425,7 @@ subtest 'Transfers Limits' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => $ACCOUNTS{'real\svg'},
+            from_mt5  => 'MTR' . $ACCOUNTS{'real\svg'},
             to_binary => $client->loginid,
             amount    => 0.5,
         },
@@ -454,7 +454,7 @@ subtest 'Suspended Transfers Currencies' => sub {
             token    => $token,
             args     => {
                 from_binary => $client_cr_btc->loginid,
-                to_mt5      => $ACCOUNTS{'real\svg'},
+                to_mt5      => 'MTR' . $ACCOUNTS{'real\svg'},
                 amount      => 1
             },
         };

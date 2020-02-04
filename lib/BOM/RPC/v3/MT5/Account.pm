@@ -139,8 +139,7 @@ sub get_mt5_logins {
     $user ||= $client->user;
 
     my $f = fmap1 {
-        shift =~ /^MT(\d+)$/;
-        my $login = $1;
+        my $login = shift;
         return mt5_get_settings({
                 client => $client,
                 args   => {login => $login}}
@@ -349,7 +348,7 @@ async_rpc "mt5_new_account",
                 # as client have only one of
                 # real\vanuatu_standard and real\svg_standard
                 my ($group_account_type, $group_mt5_account_type);
-                ($group_account_type, $group_mt5_account_type) = $group =~ /^([a-z]+)\\[a-z]+_([a-z]+)$/ if $mt5_account_type;
+                ($group_account_type, $group_mt5_account_type) = $group =~ /^([a-z]+)\\[a-z]+_([a-z]+)(?:_[A-Z]+)?$/ if $mt5_account_type;
 
                 if ($login_group eq $group or ($mt5_account_type and $login_group =~ /^$group_account_type\\[a-z]+_$group_mt5_account_type$/)) {
                     my $login = $_->{login};
@@ -405,9 +404,7 @@ async_rpc "mt5_new_account",
                         return create_error_future($error_code, {message => $status->{error}});
                     }
                     my $mt5_login = $status->{login};
-
-                    # eg: MT5 login: 1000, we store MT1000
-                    $user->add_loginid('MT' . $mt5_login);
+                    $user->add_loginid($mt5_login);
 
                     BOM::Platform::Event::Emitter::emit(
                         'new_mt5_signup',
@@ -531,7 +528,6 @@ sub _is_financial_assessment_complete {
 sub _check_logins {
     my ($client, $logins) = @_;
     my $user = $client->user;
-
     foreach my $login (@{$logins}) {
         return unless (any { $login eq $_ } ($user->loginids));
     }
@@ -617,7 +613,7 @@ async_rpc "mt5_get_settings",
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return create_error_future('permission') unless _check_logins($client, ['MT' . $login]);
+    return create_error_future('permission') unless _check_logins($client, [$login]);
 
     return BOM::MT5::User::Async::get_user($login)->then(
         sub {
@@ -742,7 +738,7 @@ async_rpc "mt5_password_check",
     my $login  = $args->{login};
 
     # MT5 login not belongs to user
-    return create_error_future('permission') unless _check_logins($client, ['MT' . $login]);
+    return create_error_future('permission') unless _check_logins($client, [$login]);
 
     return BOM::MT5::User::Async::password_check({
             login    => $args->{login},
@@ -849,7 +845,7 @@ async_rpc "mt5_password_change",
 
     return create_error_future('MT5PasswordChangeError') if $args->{old_password} and ($args->{new_password} eq $args->{old_password});
     # MT5 login not belongs to user
-    return create_error_future('permission') unless _check_logins($client, ['MT' . $login]);
+    return create_error_future('permission') unless _check_logins($client, [$login]);
 
     if (_throttle($client->loginid)) {
         return create_error_future('Throttle', {override_code => 'MT5PasswordChangeError'});
@@ -989,7 +985,7 @@ async_rpc "mt5_password_reset",
 
     # MT5 login not belongs to user
     return create_error_future('permission')
-        unless _check_logins($client, ['MT' . $login]);
+        unless _check_logins($client, [$login]);
 
     if (BOM::RPC::v3::Utility::_validate_mt5_password({password => $args->{new_password}})) {
         return create_error_future('IncorrectMT5PasswordFormat');
@@ -1030,12 +1026,13 @@ async_rpc "mt5_password_reset",
 
 sub _send_email {
     my %args = @_;
-    my ($loginid, $mt5_id, $amount, $action, $error) = @args{qw(loginid mt5_id amount action error)};
+    my ($loginid, $mt5_id, $amount, $action, $error, $acc_type) = @args{qw(loginid mt5_id amount action error account_type)};
     my $brand = Brands->new(name => request()->brand);
     my $message =
         $action eq 'deposit'
         ? "Error happened when doing MT5 deposit after withdrawal from client account:"
         : "Error happened when doing deposit to client account after withdrawal from MT5 account:";
+
     return BOM::Platform::Email::send_email({
         from                  => $brand->emails('system'),
         to                    => $brand->emails('payments'),
@@ -1043,7 +1040,7 @@ sub _send_email {
         message               => [$message, "Client login id: $loginid", "MT5 login: $mt5_id", "Amount: $amount", "error: $error"],
         use_email_template    => 1,
         email_content_is_html => 1,
-        template_loginid      => $loginid,
+        template_loginid      => $acc_type . ' ' . $loginid =~ s/${\BOM::User->MT5_REGEX}//r,
     });
 }
 
@@ -1070,6 +1067,7 @@ async_rpc "mt5_deposit",
             my ($response) = @_;
             return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
 
+            my $account_type;
             if ($response->{top_up_virtual}) {
 
                 my $amount_to_topup = 10000;
@@ -1086,6 +1084,8 @@ async_rpc "mt5_deposit",
 
                         return Future->done({status => 1});
                     });
+            } else {
+                $account_type = 'real';
             }
 
             # withdraw from Binary a/c
@@ -1133,8 +1133,8 @@ async_rpc "mt5_deposit",
             try {
                 my $fee_calculated_by_percent = $response->{calculated_fee};
                 my $min_fee                   = $response->{min_fee};
-
-                $comment = "Transfer from $fm_loginid to MT5 account $to_mt5.";
+                my $mt5_login_id              = $to_mt5 =~ s/${\BOM::User->MT5_REGEX}//r;
+                $comment = "Transfer from $fm_loginid to MT5 account $account_type $mt5_login_id";
                 my $additional_comment = BOM::RPC::v3::Cashier::get_transfer_fee_remark(
                     fees                      => $fees,
                     fee_percent               => $fees_percent,
@@ -1162,7 +1162,7 @@ async_rpc "mt5_deposit",
                         properties => {
                             from_account       => $fm_loginid,
                             is_from_account_pa => 0 + !!($fm_client->is_pa_and_authenticated),
-                            to_account         => 'MT' . $to_mt5,
+                            to_account         => $to_mt5,
                             is_to_account_pa   => 0 + !!($fm_client->is_pa_and_authenticated),
                             from_currency      => $fm_client->currency,
                             to_currency        => $mt5_currency_code,
@@ -1197,11 +1197,12 @@ async_rpc "mt5_deposit",
 
                     if ($status->{error}) {
                         _send_email(
-                            loginid => $fm_loginid,
-                            mt5_id  => $to_mt5,
-                            amount  => $amount,
-                            action  => 'deposit',
-                            error   => $status->{error},
+                            loginid      => $fm_loginid,
+                            mt5_id       => $to_mt5,
+                            amount       => $amount,
+                            action       => 'deposit',
+                            error        => $status->{error},
+                            account_type => $account_type
                         );
                         return create_error_future($status->{code});
                     }
@@ -1238,6 +1239,7 @@ async_rpc "mt5_withdrawal",
         sub {
             my ($response) = @_;
             return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
+            my $account_type = 'real';    # withdrawal is not allowed for demo accounts
 
             my $to_client_db = BOM::Database::ClientDB->new({
                 client_loginid => $to_loginid,
@@ -1263,7 +1265,8 @@ async_rpc "mt5_withdrawal",
             my $fee_calculated_by_percent = $response->{calculated_fee};
             my $min_fee                   = $response->{min_fee};
 
-            my $comment            = "Transfer from MT5 account $fm_mt5 to $to_loginid.";
+            my $mt5_login_id       = $fm_mt5 =~ s/${\BOM::User->MT5_REGEX}//r;
+            my $comment            = "Transfer from MT5 account $account_type $mt5_login_id to $to_loginid.";
             my $additional_comment = BOM::RPC::v3::Cashier::get_transfer_fee_remark(
                 fees                      => $fees,
                 fee_percent               => $fees_percent,
@@ -1307,7 +1310,7 @@ async_rpc "mt5_withdrawal",
                             {
                                 loginid    => $to_client->loginid,
                                 properties => {
-                                    from_account       => 'MT' . $fm_mt5,
+                                    from_account       => $fm_mt5,
                                     is_from_account_pa => 0 + !!($to_client->is_pa_and_authenticated),
                                     to_account         => $to_loginid,
                                     is_to_account_pa   => 0 + !!($to_client->is_pa_and_authenticated),
@@ -1336,11 +1339,12 @@ async_rpc "mt5_withdrawal",
                     catch {
                         my $error = BOM::Transaction->format_error(err => $@);
                         _send_email(
-                            loginid => $to_loginid,
-                            mt5_id  => $fm_mt5,
-                            amount  => $amount,
-                            action  => 'withdraw',
-                            error   => $error->get_mesg,
+                            loginid      => $to_loginid,
+                            mt5_id       => $fm_mt5,
+                            amount       => $amount,
+                            action       => 'withdraw',
+                            error        => $error->get_mesg,
+                            account_type => $account_type,
                         );
                         return create_error_future($error_code, {message => $error->{-message_to_client}});
                     }
@@ -1408,7 +1412,7 @@ sub _mt5_validate_and_get_amount {
         if ($app_config->system->suspend->payments);
 
     # MT5 login or binary loginid not belongs to user
-    my @loginids_list = ('MT' . $mt5_loginid);
+    my @loginids_list = ($mt5_loginid);
     push @loginids_list, $loginid if $loginid;
 
     return create_error_future('permission') unless _check_logins($authorized_client, \@loginids_list);

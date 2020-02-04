@@ -1879,7 +1879,6 @@ rpc api_token => sub {
     my $params = shift;
 
     my ($client, $args, $client_ip) = @{$params}{qw/client args client_ip/};
-
     my $m = BOM::Platform::Token::API->new;
     my $rtn;
     if (my $token = $args->{delete_token}) {
@@ -2075,13 +2074,11 @@ rpc account_closure => sub {
             ),
             details => {accounts => \%accounts_with_positions}}) if %accounts_with_positions;
 
-    foreach my $mt5_loginid ($user->get_mt5_loginids) {
-        $mt5_loginid =~ s/\D//g;
-
-        my $mt5_user = eval { BOM::MT5::User::Async::get_user($mt5_loginid)->get };
+    foreach my $loginid ($user->get_mt5_loginids) {
+        my $mt5_user = eval { BOM::MT5::User::Async::get_user($loginid)->get };
 
         # TODO :: Include mt5 currency when we have better access to that data. FE will be mapping that for now (they already make a mt5_login_list API call every page)
-        $accounts_with_balance{"MT" . $mt5_loginid} = {
+        $accounts_with_balance{$loginid} = {
             balance  => $mt5_user->{balance},
             currency => ""
             }

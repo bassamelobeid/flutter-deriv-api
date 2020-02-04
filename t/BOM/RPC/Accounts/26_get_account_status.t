@@ -34,7 +34,7 @@ my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client_vr->email($email);
 $test_client_vr->save;
 
-my $user         = BOM::User->create(
+my $user = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
