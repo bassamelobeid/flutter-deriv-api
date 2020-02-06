@@ -68,6 +68,41 @@ sub brand {
     return Brands->new(name => $self->brand_name);
 }
 
+=head2 login_env
+
+Get the environment of the current user.
+It can be called with an optional HASH ref containing the following parameters to overwrite the values:
+
+=over
+
+=item * C<client_ip> - Optional.
+
+=item * C<country_code> - Optional.
+
+=item * C<language> - Optional.
+
+=item * C<user_agent> - Optional.
+
+=back
+
+=cut
+
+sub login_env {
+    my ($self, $params) = @_;
+
+    my $now = Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
+
+    my $ip_address = $params->{client_ip} || $self->client_ip || '';
+    my $ip_address_country = uc($params->{country_code} || $self->country_code || '');
+    my $lang               = uc($params->{language}     || $self->language     || '');
+
+    my $ua = $params->{user_agent} || '';
+
+    my $environment = "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
+
+    return $environment;
+}
+
 sub _build_params {
     my $self = shift;
 
