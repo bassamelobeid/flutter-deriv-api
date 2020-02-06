@@ -897,4 +897,42 @@ sub create_error_by_code {
 
 }
 
+=head2 verify_cashier_suspended
+
+Check if the cashier is suspended for withdrawal or deposit.
+
+=over 4
+
+=item * C<currency>
+
+The currency code.
+
+=item * C<action>
+
+String and the possible values are: deposit, withdrawal 
+
+=back
+
+Returns 1 if suspended and 0 if not.
+
+=cut
+
+sub verify_cashier_suspended {
+    my ($currency, $action) = @_;
+
+    return 1 if BOM::Platform::Client::CashierValidation::is_payment_suspended;
+
+    my $is_cryptocurrency = LandingCompany::Registry::get_currency_type($currency) eq 'crypto';
+
+    if ($is_cryptocurrency) {
+        return 1
+            if BOM::Platform::Client::CashierValidation::is_crypto_currency_suspended($currency, $action);
+    } else {
+        return 1
+            if BOM::Platform::Client::CashierValidation::is_cashier_suspended();
+    }
+
+    return 0;
+}
+
 1;

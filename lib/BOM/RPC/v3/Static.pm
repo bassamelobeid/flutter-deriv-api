@@ -150,10 +150,12 @@ sub _currencies_config {
 
     my %currencies_config = map {
         $_ => {
-            fractional_digits         => $amt_precision->{$_},
-            type                      => LandingCompany::Registry::get_currency_type($_),
-            stake_default             => $default_stakes->{$_},
-            is_suspended              => $suspended_currencies->{$_} ? 1 : 0,
+            fractional_digits => $amt_precision->{$_},
+            type              => LandingCompany::Registry::get_currency_type($_),
+            stake_default     => $default_stakes->{$_},
+            is_suspended      => $suspended_currencies->{$_} ? 1 : 0,
+            is_deposit_suspended      => BOM::RPC::v3::Utility::verify_cashier_suspended($_, 'deposit'),
+            is_withdrawal_suspended   => BOM::RPC::v3::Utility::verify_cashier_suspended($_, 'withdrawal'),
             name                      => LandingCompany::Registry::get_currency_definition($_)->{name},
             transfer_between_accounts => {
                 limits => $transfer_limits->{$_},
