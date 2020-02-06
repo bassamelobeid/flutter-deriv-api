@@ -13,6 +13,11 @@ BTC:
     blockchain_url:
         address: https://blockstream.info/address/
         transaction: https://blockstream.info/tx/
+    sweep:
+        min_transfer: 1
+        max_transfer: 100
+        reserve_balance: 20
+        address: 1QEdWqpiEfWMCGLHmmABLFqym8SSeib8Ks
 LTC:
     withdrawal:
         timeout: "3d"
@@ -28,6 +33,11 @@ LTC:
     blockchain_url:
         address: https://live.blockcypher.com/ltc/address/
         transaction: https://live.blockcypher.com/ltc/tx/
+    sweep:
+        min_transfer: 1
+        max_transfer: 100
+        reserve_balance: 500
+        address: MN42N4FdC6scDQzAW1W3kUJeawcjECDRvB
 ETH:
     withdrawal:
         timeout: "5d"
