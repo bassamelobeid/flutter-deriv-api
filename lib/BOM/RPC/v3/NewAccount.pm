@@ -95,7 +95,7 @@ rpc "new_account_virtual",
 
     $user->add_login_history(
         action      => 'login',
-        environment => BOM::RPC::v3::Utility::login_env($params),
+        environment => request()->login_env($params),
         successful  => 't',
         app_id      => $params->{source});
 
@@ -335,7 +335,7 @@ rpc new_account_real => sub {
 
     $user->add_login_history(
         action      => 'login',
-        environment => BOM::RPC::v3::Utility::login_env($params),
+        environment => request()->login_env($params),
         successful  => 't',
         app_id      => $params->{source});
 
@@ -460,7 +460,7 @@ rpc new_account_maltainvest => sub {
 
     $user->add_login_history(
         action      => 'login',
-        environment => BOM::RPC::v3::Utility::login_env($params),
+        environment => request()->login_env($params),
         successful  => 't',
         app_id      => $params->{source});
 

@@ -296,22 +296,6 @@ sub _validate_mt5_password {
     return $password !~ /^(?=.*[a-zA-Z])(?=.*[a-z0-9])(?=.*[A-Z0-9])[ -~]{8,25}$/;
 }
 
-sub login_env {
-    my $params = shift;
-
-    my $now = Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
-
-    my $ip_address = $params->{client_ip} || '';
-
-    my $ip_address_country = $params->{country_code} ? uc $params->{country_code} : '';
-
-    my $lang = $params->{language} ? uc $params->{language} : '';
-    my $ua = $params->{user_agent} || '';
-
-    my $environment = "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
-    return $environment;
-}
-
 sub mask_app_id {
     my ($id, $time) = @_;
 

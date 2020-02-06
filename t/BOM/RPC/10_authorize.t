@@ -295,10 +295,11 @@ subtest 'logout' => sub {
         client_ip    => '1.1.1.1',
         country_code => 'id',
         language     => 'EN',
-        ua           => 'firefox',
+        user_agent   => '',
         token_type   => 'oauth_token',
         token        => $token
     };
+
     $c->call_ok('logout', $params)->has_no_error->result_is_deeply({
             status => 1,
             stash  => {
@@ -315,7 +316,7 @@ subtest 'logout' => sub {
             token => $new_token,
             args  => {limit => 1}})->has_no_error->result->{records};
     is($history_records->[0]{action}, 'logout', 'the last history is logout');
-    like($history_records->[0]{environment}, qr/IP=1.1.1.1 IP_COUNTRY=ID User_AGENT= LANG=EN/, 'environment is correct');
+    like($history_records->[0]{environment}, qr/IP=1.1.1.1 IP_COUNTRY=ID User_AGENT= LANG=EN/, "environment is correct");
 
     $c->call_ok(
         'authorize',
@@ -337,7 +338,7 @@ subtest 'logout' => sub {
             token => $logout_token,
             args  => {limit => 1}})->has_no_error->result->{records};
     is($history_records->[0]{action}, 'logout', 'the last history is logout, api_token will not create login history entry until flag is set');
-    like($history_records->[0]{environment}, qr/IP=1.1.1.1 IP_COUNTRY=ID User_AGENT= LANG=EN/, 'environment is correct');
+    like($history_records->[0]{environment}, qr/IP=1.1.1.1 IP_COUNTRY=ID User_AGENT= LANG=EN/, "environment is correct");
 
     $params->{token}      = $logout_token;
     $params->{token_type} = 'api_token';
