@@ -630,4 +630,16 @@ subtest 'is_region_eu' => sub {
 
 };
 
+subtest 'fail if mt5 api return empty login' => sub {
+    my $mock = Test::MockModule->new('BOM::MT5::User::Async');
+    $mock->mock('_invoke_mt5', sub { Future->done({login => ''}) });
+    my $f = BOM::MT5::User::Async::create_user({
+        mainPassword   => 'password',
+        investPassword => 'password',
+        agent          => undef,
+        group          => 'real/something'
+    });
+    like($f->failure, qr/Empty login returned/, 'MT5 create_user failed, no/empty login returned');
+};
+
 done_testing;

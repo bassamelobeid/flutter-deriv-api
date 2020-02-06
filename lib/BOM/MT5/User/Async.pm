@@ -262,6 +262,7 @@ sub create_user {
     return _invoke_mt5('UserAdd', $param)->then(
         sub {
             my ($response) = @_;
+            return Future->fail('Empty login returned from MT5 UserAdd') unless $response->{login};
             return Future->done({login => $response->{login}});
         });
 }
