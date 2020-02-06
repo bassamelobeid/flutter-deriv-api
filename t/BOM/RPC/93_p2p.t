@@ -215,11 +215,11 @@ subtest 'Offers' => sub {
     cmp_ok $res->[0]->{offer_id}, '==', $offer->{offer_id}, 'p2p_offer_list returns offer';
 
     $params->{args} = {
-        offer_id          => $offer->{offer_id},
-        offer_description => 'new description'
+        offer_id  => $offer->{offer_id},
+        is_active => 0,
     };
     $res = $c->call_ok('p2p_offer_update', $params)->has_no_system_error->has_no_error->result;
-    is $res->{offer_description}, 'new description', 'edit offer ok';
+    is $res->{is_active}, 0, 'edit offer ok';
 
     $params->{args} = {offer_id => $offer->{offer_id}};
     $res = $c->call_ok('p2p_offer_info', $params)->has_no_system_error->has_no_error->result;
