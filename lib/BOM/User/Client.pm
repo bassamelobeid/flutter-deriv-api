@@ -1923,16 +1923,13 @@ sub p2p_offer_update {
     # return current offer details if nothing changed
     return $client->_offer_details([$offer])->[0] unless grep { exists $offer->{$_} and $param{$_} ne $offer->{$_} } keys %param;
 
-    _validate_offer_amounts($offer->%*, %param);    # keys in %param will replace $offer keys
-
     # Amount already used in an offer is (amount - remaining). New amount cannot be less than the amount used.
     die "OfferInsufficientAmount\n" if $param{amount} && $param{amount} < ($offer->{amount} - $offer->{remaining});
 
     my $update = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.offer_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                undef, $offer_id,
-                @param{qw/is_active type account_currency local_currency amount rate min_amount max_amount method offer_description country/});
+                undef, $offer_id, $param{is_active}, map { undef } (1 .. 10));
         });
 
     return $client->_offer_details([$update])->[0];
@@ -2448,7 +2445,7 @@ sub _order_details {
 
 =head2 _validate_offer_amounts
 
-Validates offer amounts for p2p_offer_create and p2p_offer_update.
+Validates offer amounts for p2p_offer_create.
 
 =cut
 

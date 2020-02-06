@@ -88,7 +88,7 @@ subtest 'Updating agent fields' => sub {
     my $agent = BOM::Test::Helper::P2P::create_agent(agent_name => $agent_name);
 
     my $agent_info = $agent->p2p_agent_info;
- 
+
     ok $agent_info->{is_approved},      'Agent is approved';
     is $agent_info->{agent_name},       $agent_name, 'Agent name';
     ok $agent_info->{is_active},        'Agent is active';
@@ -102,7 +102,7 @@ subtest 'Updating agent fields' => sub {
     );
 
     is $agent->p2p_agent_update(agent_name => 'test')->{agent_name}, 'test', 'Changing name';
-  
+
     ok !($agent->p2p_agent_update(is_active => 0)->{is_active}), 'Switch flag active to false';
 
     ok !($agent->p2p_agent_update(is_approved => 0)->{is_approved}), 'Disable approval';
@@ -207,17 +207,17 @@ subtest 'Creating offer' => sub {
         remaining_amount         => num($params{amount}),
         remaining_amount_display => num($params{amount}),
         rate                     => num($params{rate}),
-        rate_display             => num($params{rate}),           
+        rate_display             => num($params{rate}),
         price                    => num($params{rate}),
-        price_display            => num($params{rate}),               
+        price_display            => num($params{rate}),
         min_amount               => num($params{min_amount}),
-        min_amount_display       => num($params{min_amount}),            
+        min_amount_display       => num($params{min_amount}),
         max_amount               => num($params{max_amount}),
-        max_amount_display       => num($params{max_amount}),            
+        max_amount_display       => num($params{max_amount}),
         min_amount_limit         => num($params{min_amount}),
-        min_amount_limit_display => num($params{min_amount}),            
+        min_amount_limit_display => num($params{min_amount}),
         max_amount_limit         => num($params{max_amount}),
-        max_amount_limit_display => num($params{max_amount}),   
+        max_amount_limit_display => num($params{max_amount}),
         method                   => $params{method},
         type                     => $params{type},
         country                  => $params{country},
@@ -235,7 +235,7 @@ subtest 'Creating offer' => sub {
         $expected_offer,
         "offer_info returns expected fields"
     );
-    
+
     cmp_deeply(
         $agent->p2p_offer_list,
         [ $expected_offer ],
@@ -246,7 +246,7 @@ subtest 'Creating offer' => sub {
         $agent->p2p_agent_offers,
         [ $expected_offer ],
         "p2p_agent_offers returns expected fields"
-    );    
+    );
 
     # Fields that should only be visible to offer owner
     delete @$expected_offer{ qw( amount amount_display max_amount max_amount_display min_amount min_amount_display remaining_amount remaining_amount_display) };
@@ -255,7 +255,7 @@ subtest 'Creating offer' => sub {
         $test_client_cr->p2p_offer_list,
         [ $expected_offer ],
         "p2p_offer_list returns less fields for client"
-    );    
+    );
 
     cmp_deeply(
         $test_client_cr->p2p_offer_info(offer_id => $offer->{offer_id}),
@@ -269,8 +269,8 @@ subtest 'Creating offer' => sub {
         },
         qr/AgentNotRegistered/,
         "client gets error for p2p_agent_offers"
-    );    
-    
+    );
+
     cmp_ok $test_client_cr->p2p_offer_list(amount => 23)->[0]{price}, '==', $params{rate} * 23, 'Price is adjusted by amount param in offer list';
 };
 
@@ -297,107 +297,8 @@ subtest 'Updating offer' => sub {
         is_active => 1
     )->{is_active}, "reactivate offer";
 
-    cmp_ok $agent->p2p_offer_update(
-        offer_id   => $offer->{offer_id},
-        max_amount => 80,
-        amount     => 80
-    )->{amount}, '==', 80, "Update amount";
-
-    for my $numeric_field (qw(amount max_amount min_amount rate)) {
-        cmp_deeply(
-            exception {
-                $agent->p2p_offer_update(
-                    offer_id       => $offer->{offer_id},
-                    $numeric_field => -1
-                );
-            },
-            {
-                error_code => 'InvalidNumericValue',
-                details    => {fields => [$numeric_field]},
-            },
-            "Error when numeric field '$numeric_field' is not greater than 0"
-        );
-    }
-
-    like(
-        exception {
-            $agent->p2p_offer_update(
-                offer_id => $offer->{offer_id},
-                amount   => 200
-            );
-        },
-        qr/MaximumExceeded/,
-        'Error when amount exceeds BO offer limit'
-    );
-
-    like(
-        exception {
-            $agent->p2p_offer_update(
-                offer_id   => $offer->{offer_id},
-                min_amount => 20,
-                max_amount => 10
-            );
-        },
-        qr/InvalidMinMaxAmount/,
-        'Error when min_amount is more than max_amount'
-    );
-
-    %params = %offer_params;
-    $params{amount} = $params{max_amount} - 1;
-    like(
-        exception {
-            $agent->p2p_offer_update(
-                offer_id   => $offer->{offer_id},
-                max_amount => 100
-            );    # offer amount is currently 80
-        },
-        qr/InvalidMaxAmount/,
-        'Error when max_amount is more than amount'
-    );
-
     my $empty_update = $agent->p2p_offer_update(offer_id => $offer->{offer_id});
     cmp_deeply($empty_update, $agent->p2p_offer_info(offer_id => $offer->{offer_id}), 'empty update');
-};
-
-subtest 'Updating order with available range' => sub {
-    my $escrow = BOM::Test::Helper::P2P::create_escrow();
-
-    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(
-        max_amount => 50,
-        amount     => 100
-    );
-    my ($order_client, $order) = BOM::Test::Helper::P2P::create_order(
-        offer_id => $offer->{offer_id},
-        amount   => 35
-    );
-    BOM::Test::Helper::P2P::create_order(
-        offer_id => $offer->{offer_id},
-        amount   => 35
-    );
-
-    cmp_ok $agent->p2p_offer_update(
-        offer_id   => $offer->{offer_id},
-        amount     => 90,
-        max_amount => 10,
-    )->{amount}, '==', 90, "can change offer amount within available range";
-    like(
-        exception {
-            $agent->p2p_offer_update(
-                offer_id => $offer->{offer_id},
-                amount   => 50
-                )
-        },
-        qr/OfferInsufficientAmount/,
-        "can't change offer amount below available range"
-    );
-
-    $order_client->p2p_order_cancel(order_id => $order->{order_id});
-    cmp_ok $agent->p2p_offer_update(
-        offer_id => $offer->{offer_id},
-        amount   => 50
-    )->{amount}, '==', 50, "available range excludes cancelled orders";
-    
-    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Creating offer from non active agent' => sub {

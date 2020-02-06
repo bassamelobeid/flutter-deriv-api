@@ -26,9 +26,9 @@ subtest 'agent offers' => sub {
         qr/AgentNotRegistered/,
         "non agent gets error"
     );
-    
+
     $agent2->p2p_agent_update(is_active => 0);
-    
+
     is $agent1->p2p_agent_offers()->[0]{offer_id}, $offer1->{offer_id}, 'agent 1 (active) gets offer';
     is $agent1->p2p_agent_offers()->@*, 1, 'agent 1 got one';
     is $agent2->p2p_agent_offers()->[0]{offer_id}, $offer2->{offer_id}, 'agent 2 (inactive) gets offer';
@@ -42,26 +42,25 @@ subtest 'amount filter' => sub {
     is $client->p2p_offer_list()->@*, 1, 'No filter gets offer';
     is $client->p2p_offer_list(amount => 101)->@*, 0, 'Filter out >amount';
     is $client->p2p_offer_list(amount => 99)->@*,  1, 'Not filter out <amount';
-    
+
     $agent1->p2p_offer_update(
         offer_id   => $offer1->{offer_id},
         max_amount => 90
     );
     is $client->p2p_offer_list(amount => 91)->@*, 0, 'Filter out >max';
     is $client->p2p_offer_list(amount => 89)->@*, 1, 'Not filter out <max';
-    
+
     BOM::Test::Helper::P2P::create_order(
         offer_id => $offer1->{offer_id},
         amount   => 20
     );    # offer remaining is now 80
     is $client->p2p_offer_list(amount => 81)->@*, 0, 'Filter out >remaining';
     is $client->p2p_offer_list(amount => 79)->@*, 1, 'Not filter out <remaining';
-    
+
     $app_config->payments->p2p->limits->maximum_order(70);
     is $client->p2p_offer_list(amount => 71)->@*, 0, 'Filter out >config max';
     is $client->p2p_offer_list(amount => 69)->@*, 1, 'Not filter out <config max';
 };
-
 
 BOM::Test::Helper::P2P::reset_escrow();
 
