@@ -43,7 +43,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         events        => [{
                 symbol       => 'USD',
                 release_date => $now->epoch,
-                event_name   => 'Construction Spending m/m',
+                event_name   => 'Non-Farm Employment Change',
                 vol_change   => 0.5,
             }]
     },
