@@ -30,10 +30,20 @@ subtest 'verify_email' => sub {
         verify_email => $email,
         type         => 'some_garbage_value'
     });
-
     is($res->{msg_type}, 'verify_email');
     is($res->{error}->{code}, 'InputValidationFailed', 'verify_email failed');
     is($res->{msg_type},      'verify_email',          'Message type is correct in case of error');
+    test_schema('verify_email', $res);
+
+    $res = $t->await::verify_email({
+        verify_email => 'test@binary.com(<svg/onload=alert(1)>)',
+        type         => 'account_opening'
+    });
+    is($res->{msg_type}, 'verify_email');
+    is($res->{error}->{code}, 'InputValidationFailed', 'verify_email failed');
+    like($res->{error}->{details}{verify_email}, qr/String does not match/, 'validation of email address failed');
+    like($res->{error}->{message},               qr/verify_email/,          'error message contains the problematic field');
+    is($res->{msg_type}, 'verify_email', 'Message type is correct in case of error');
     test_schema('verify_email', $res);
 
     $res = $t->await::verify_email({
@@ -124,8 +134,6 @@ subtest 'insufficient data' => sub {
     delete $create_vr->{residence};
 
     my $res = $t->await::new_account_virtual($create_vr);
-    note explain $res;
-
     is($res->{error}->{code}, 'InputValidationFailed', 'insufficient input');
     is($res->{new_account_virtual}, undef, 'NO account created');
 };
