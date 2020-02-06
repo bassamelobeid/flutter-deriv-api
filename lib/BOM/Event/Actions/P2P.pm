@@ -132,9 +132,10 @@ sub order_created {
 
     my $client = BOM::User::Client->new({loginid => $loginid});
 
-    my $order = $client->p2p_order($order_id);
-
-    my $order_response = _order_details($client, $order);
+    my $order = $client->_p2p_orders(id => $order_id)->[0];
+    my $order_response = $client->_order_details([$order])->[0];
+    # we need these fields in subscriptions code
+    $order_response->{$_} = $order->{$_} for qw/agent_loginid client_loginid/;
 
     my $redis_key = _get_order_channel_name($client);
 
@@ -161,9 +162,11 @@ sub order_updated {
     my ($loginid, $order_id) = @{$data}{@args};
 
     my $client = BOM::User::Client->new({loginid => $loginid});
-    my $order = $client->p2p_order($order_id);
 
-    my $order_response = _order_details($client, $order);
+    my $order = $client->_p2p_orders(id => $order_id)->[0];
+    my $order_response = $client->_order_details([$order])->[0];
+    # we need these fields in subscriptions code
+    $order_response->{$_} = $order->{$_} for qw/agent_loginid client_loginid/;
 
     my $redis = BOM::Config::RedisReplicated->redis_p2p_write();
 
@@ -199,9 +202,9 @@ sub order_expired {
         $client = BOM::User::Client->new({loginid => $loginid});
 
         $updated_order = $client->p2p_expire_order(
-            id     => $order_id,
-            source => $data->{source} // DEFAULT_SOURCE,
-            staff  => $data->{staff} // DEFAULT_STAFF,
+            order_id => $order_id,
+            source   => $data->{source} // DEFAULT_SOURCE,
+            staff    => $data->{staff} // DEFAULT_STAFF,
         );
     }
     catch {
@@ -226,41 +229,6 @@ sub _get_order_channel_name {
     my $client = shift;
 
     return join q{::} => map { uc($_) } ("P2P::ORDER::NOTIFICATION", $client->broker, $client->residence, $client->currency,);
-}
-
-sub _order_details {
-    my ($client, $order) = @_;
-
-    $order->{type} = delete $order->{offer_type};
-    $order->{account_currency} //= delete $order->{offer_account_currency};
-    $order->{local_currency}   //= delete $order->{offer_local_currency};
-
-    $order->{amount} = financialrounding('amount', $order->{account_currency}, $order->{order_amount});
-    $order->{amount_display} = formatnumber('amount', $order->{account_currency}, $order->{order_amount});
-    $order->{expiry_time}    = Date::Utility->new($order->{expire_time})->epoch;
-    $order->{created_time}   = Date::Utility->new($order->{created_time})->epoch;
-    $order->{rate}           = financialrounding('amount', $order->{local_currency}, $order->{offer_rate});
-    $order->{rate_display}   = formatnumber('amount', $order->{local_currency}, $order->{offer_rate});
-    $order->{price}          = financialrounding('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
-    $order->{price_display}  = formatnumber('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
-    $order->{offer_description} //= '';
-    $order->{order_description} //= '';
-
-    #DON'T REMOVE agent_loginid and client_loginid, we relay on these fields in subscriptions code
-    delete @$order{qw(
-            order_amount
-            offer_rate
-            is_expired
-            client_balance
-            client_confirmed
-            client_trans_id
-            escrow_trans_id
-            offer_remaining
-            expire_time
-            agent_confirmed
-            )};
-
-    return $order;
 }
 
 1;

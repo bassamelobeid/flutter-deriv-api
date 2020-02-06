@@ -30,7 +30,7 @@ subtest pending_order_expiry => sub {
         order_id       => $order->{offer_id},
     });
 
-    my $update_order = $client->p2p_order($order->{order_id});
+    my $update_order = $client->p2p_order_info(order_id => $order->{order_id});
     is $update_order->{status}, 'timed-out', "Got expected status";
 
     BOM::Test::Helper::P2P::reset_escrow();
@@ -44,15 +44,14 @@ subtest client_confirmed_order_expiry => sub {
         amount   => 100
     );
 
-    $client->p2p_order_confirm(id => $order->{order_id});
+    $client->p2p_order_confirm(order_id => $order->{order_id});
 
     BOM::Event::Actions::P2P::order_expired({
         client_loginid => $client->loginid,
         order_id       => $order->{order_id},
     });
 
-    my $update_order = $client->p2p_order($order->{order_id});
-
+    my $update_order = $client->p2p_order_info(order_id => $order->{order_id});
     is $update_order->{status}, 'timed-out', "Got expected status";
 
     BOM::Test::Helper::P2P::reset_escrow();
@@ -74,8 +73,7 @@ for my $test_status (qw(completed cancelled refunded timed-out)) {
             order_id       => $order->{order_id},
         });
 
-        my $update_order = $client->p2p_order($order->{order_id});
-
+        my $update_order = $client->p2p_order_info(order_id => $order->{order_id});
         is $update_order->{status}, $test_status, "Got expected status";
 
         BOM::Test::Helper::P2P::reset_escrow();
