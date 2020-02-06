@@ -21,6 +21,7 @@ use BOM::Event::Actions::Email;
 use BOM::Event::Actions::P2P;
 use BOM::Event::Actions::MyAffiliate;
 use BOM::Event::Actions::User;
+use BOM::Event::Actions::Trade;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
 use BOM::Event::Actions::App;
@@ -76,6 +77,8 @@ my $action_mapping = {
     p2p_order_expired           => \&BOM::Event::Actions::P2P::order_expired,
     p2p_agent_created           => \&BOM::Event::Actions::P2P::agent_created,
     p2p_agent_updated           => \&BOM::Event::Actions::P2P::agent_updated,
+    buy                         => \&BOM::Event::Actions::Trade::buy,
+    sell                        => \&BOM::Event::Actions::Trade::sell,
     api_token_created           => \&BOM::Event::Actions::Client::api_token_created,
     api_token_deleted           => \&BOM::Event::Actions::Client::api_token_deleted,
     app_registered              => \&BOM::Event::Actions::App::app_registered,

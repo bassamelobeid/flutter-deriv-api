@@ -12,6 +12,7 @@ use BOM::Database::UserDB;
 use BOM::User;
 use BOM::Test::Script::OnfidoMock;
 use BOM::Platform::Context qw(request);
+use BOM::Event::Process;
 
 use WebService::Async::Onfido;
 use BOM::Event::Actions::Client;
@@ -371,6 +372,7 @@ subtest 'signup event' => sub {
                 date_first_contact => '2019-11-28'
             }}};
     $virtual_client2->set_default_account('USD');
+
     my $handler = BOM::Event::Process::get_action_mappings()->{signup};
     my $result  = $handler->($vr_args)->get;
     is $result, 1, 'Success result';
@@ -429,7 +431,6 @@ subtest 'signup event' => sub {
     undef @track_args;
 
     $result = $handler->($real_args)->get;
-
     is $result, 1, 'Success signup result';
     ($customer, %args) = @identify_args;
     test_segment_customer($customer, $test_client2, '', $virtual_client2->date_joined);
@@ -510,13 +511,15 @@ subtest 'account closure' => sub {
         loginid           => $loginid,
         loginids_disabled => [$loginid],
         loginids_failed   => []};
-    my $result = BOM::Event::Actions::Client::account_closure($call_args)->get;
+    my $handler = BOM::Event::Process::get_action_mappings()->{account_closure};
+    my $result  = $handler->($call_args)->get;
     is $result, 1, 'Success result';
 
     is scalar @identify_args, 0, 'No identify event is triggered';
 
     my ($customer, %args) = @track_args;
-    is_deeply \%args, {
+    is_deeply \%args,
+        {
         context => {
             active => 1,
             app    => {name => 'deriv'},
@@ -528,8 +531,6 @@ subtest 'account closure' => sub {
             loginid           => $loginid,
             loginids_disabled => [$loginid],
             loginids_failed   => [],
-            landing_company   => 'svg',
-
         },
         },
         'track context and properties are correct.';
@@ -540,7 +541,7 @@ subtest 'account closure' => sub {
         language   => 'id'
     );
     request($req);
-    $result = BOM::Event::Actions::Client::account_closure($call_args)->get;
+    $result = $handler->($call_args)->get;
     is $result, undef, 'Empty result';
     is scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
     is scalar @track_args,    0, 'No track event is triggered when brand is binary';
@@ -574,8 +575,8 @@ subtest 'transfer between accounts event' => sub {
             id                 => 10,
             time               => '2020-01-09 10:00:00.000'
         }};
-
-    ok BOM::Event::Actions::Client::transfer_between_accounts($args), 'transfer_between_accounts triggered successfully';
+    my $handler = BOM::Event::Process::get_action_mappings()->{transfer_between_accounts};
+    is $handler->($args)->get, 1, 'transfer_between_accounts triggered successfully';
     my ($customer, %args) = @track_args;
     is scalar(@identify_args), 0, 'identify is not called';
 
@@ -666,7 +667,8 @@ subtest 'api token create' => sub {
         loginid => $loginid,
         name    => [$loginid],
         scopes  => ['read', 'payment']};
-    my $result = BOM::Event::Actions::Client::api_token_created($call_args)->get;
+    my $handler = BOM::Event::Process::get_action_mappings()->{api_token_created};
+    my $result  = $handler->($call_args)->get;
     is $result, 1, 'Success result';
 
     is scalar @identify_args, 0, 'No identify event is triggered';
@@ -681,10 +683,9 @@ subtest 'api token create' => sub {
         },
         event      => 'api_token_created',
         properties => {
-            loginid         => $loginid,
-            name            => [$loginid],
-            scopes          => ['read', 'payment'],
-            landing_company => $test_client->landing_company->short,
+            loginid => $loginid,
+            name    => [$loginid],
+            scopes  => ['read', 'payment'],
         },
         },
         'track context and properties are correct.';
@@ -695,7 +696,7 @@ subtest 'api token create' => sub {
         language   => 'id'
     );
     request($req);
-    $result = BOM::Event::Actions::Client::api_token_created($call_args)->get;
+    $result = $handler->($call_args)->get;
     is $result, undef, 'Empty result (not emitted)';
     is scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
     is scalar @track_args,    0, 'No track event is triggered when brand is binary';
@@ -717,7 +718,8 @@ subtest 'api token delete' => sub {
         loginid => $loginid,
         name    => [$loginid],
         scopes  => ['read', 'payment']};
-    my $result = BOM::Event::Actions::Client::api_token_deleted($call_args)->get;
+    my $handler = BOM::Event::Process::get_action_mappings()->{api_token_deleted};
+    my $result  = $handler->($call_args)->get;
     is $result, 1, 'Success result';
 
     is scalar @identify_args, 0, 'No identify event is triggered';
@@ -731,10 +733,9 @@ subtest 'api token delete' => sub {
         },
         event      => 'api_token_deleted',
         properties => {
-            loginid         => $loginid,
-            name            => [$loginid],
-            scopes          => ['read', 'payment'],
-            landing_company => $test_client->landing_company->short,
+            loginid => $loginid,
+            name    => [$loginid],
+            scopes  => ['read', 'payment'],
 
         },
         },
@@ -746,7 +747,7 @@ subtest 'api token delete' => sub {
         language   => 'id'
     );
     request($req);
-    $result = BOM::Event::Actions::Client::api_token_deleted($call_args)->get;
+    $result = $handler->($call_args)->get;
     is $result, undef, 'Empty result (not emitted)';
     is scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
     is scalar @track_args,    0, 'No track event is triggered when brand is binary';
@@ -863,7 +864,7 @@ subtest 'segment document upload' => sub {
     request($req);
 
     undef @track_args;
-    
+
     $args = {
         document_type     => 'national_identity_card',
         document_format   => 'PNG',

@@ -35,9 +35,7 @@ It can be called with the following parameters:
 sub login {
     my @args = @_;
 
-    BOM::Event::Services::Track::login(@args)->retain;
-
-    return 1;
+    return BOM::Event::Services::Track::login(@args);
 }
 
 =head2 profile_change
