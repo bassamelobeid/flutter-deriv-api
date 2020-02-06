@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "P2P Offer Create (request)",
-    "description": "Creates a P2P (Peer to Peer) offer. Can only be used by the agent.",
+    "description": "Creates a P2P (Peer to Peer) offer. Can only be used by an approved P2P agent.",
     "hidden": 1,
     "type": "object",
     "auth_required": 1,

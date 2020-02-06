@@ -1,8 +1,8 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "P2P Agent Update (request)",
-    "description": "Update the information of the P2P agent for the current account. Can only be used by an approved P2P agent.",
-    "hidden": 1,
+    "title": "P2P Agent Offers (request)",
+    "description": "Returns all P2P offers created by the authorized client. Can only be used by a registered P2P agent.",
+    "hidden": true,
     "type": "object",
     "auth_required": 1,
     "auth_scopes": [
@@ -10,28 +10,25 @@
     ],
     "additionalProperties": false,
     "required": [
-        "p2p_agent_update"
+        "p2p_agent_offers"
     ],
     "properties": {
-        "p2p_agent_update": {
+        "p2p_agent_offers": {
             "description": "Must be 1",
             "type": "integer",
             "enum": [
                 1
             ]
         },
-        "agent_name": {
-            "description": "[Optional] The agent's displayed name.",
-            "type": "string",
-            "pattern": "\\w+"
-        },
-        "is_active": {
-            "description": "[Optional] The activation status of the agent.",
+        "limit": {
+            "description": "[Optional] Used for paging.",
             "type": "integer",
-            "enum": [
-                0,
-                1
-            ]
+            "default": 50
+        },
+        "offset": {
+            "description": "[Optional] Used for paging.",
+            "type": "integer",
+            "default": 0
         },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
