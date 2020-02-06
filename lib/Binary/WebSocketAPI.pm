@@ -317,7 +317,11 @@ sub startup {
                 if ($error) {
                     $details .= ', code: ' . ($error->{code} // 'n/a') . ', response: ' . $error->{message};
                 }
-                $log->info(($error->{type} // '') . " [" . $req_storage->{msg_type} . "], details: $details");
+                # we don't log WrongResponse as we have metrics for them
+                # this exception should be removed when we have properly
+                # handled WrongResponse
+                $log->info(($error->{type} // '') . " [" . $req_storage->{msg_type} . "], details: $details")
+                    unless ($error->{type} // '') eq 'WrongResponse';
                 DataDog::DogStatsd::Helper::stats_inc("bom_websocket_api.rpc_error.count",
                     {tags => ["rpc:" . $req_storage->{msg_type}, 'error_type:' . ($error->{type} // '')]});
                 return undef;
