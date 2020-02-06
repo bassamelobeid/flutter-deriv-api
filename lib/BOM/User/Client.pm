@@ -1732,7 +1732,6 @@ use constant MAXIMUM_ACTIVE_OFFERS => 10;
 =head2 p2p_agent_create
 
 Attempts to register client as an agent.
-
 Returns the agent info or dies with error code.
 
 =cut
@@ -1740,55 +1739,40 @@ Returns the agent info or dies with error code.
 sub p2p_agent_create {
     my ($client, $agent_name) = @_;
 
-    die "AlreadyRegistered\n" if $client->p2p_agent;
+    die "AlreadyRegistered\n" if $client->_p2p_agents(loginid => $client->loginid)->[0];
 
     $agent_name = trim($agent_name);
     die "AgentNameRequired\n" unless $agent_name;
 
-    my $agent = $client->db->dbic->run(
+    return $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.agent_create(?, ?)', undef, $client->loginid, $agent_name // '');
         });
-
-    # temporary renaming for https://trello.com/c/VzqXLoPk
-    $agent->{is_authenticated} //= delete $agent->{is_approved};
-    return $agent;
 }
 
-=head2 p2p_agent
+=head2 p2p_agent_info
 
-Returns agent info of client.
+Returns agent info of param{agent_id} otherwise current client.
 
 =cut
 
-sub p2p_agent {
-    my $client = shift;
-    return $client->p2p_agent_list(loginid => $client->loginid)->[0];
-}
-
-=head2 p2p_agent_list
-
-Returns a list of agents filtered by id and/or loginid.
-
-=cut
-
-sub p2p_agent_list {
+sub p2p_agent_info {
     my ($client, %param) = @_;
 
-    my $rows = $client->db->dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref('SELECT * FROM p2p.agent_list(?, ?)', {Slice => {}}, @param{qw/id loginid/});
-        });
+    my $agent;
+    if (exists $param{agent_id}) {
+        $agent = $client->_p2p_agents(id => $param{agent_id})->[0];
+    } else {
+        $agent = $client->_p2p_agents(loginid => $client->loginid)->[0];
+    }
 
-    # temporary renaming for https://trello.com/c/VzqXLoPk
-    $_->{is_authenticated} //= delete $_->{is_approved} for @$rows;
-    return $rows;
+    return unless $agent;
+    return $client->_agent_details($agent);
 }
 
 =head2 p2p_agent_update
 
 Updates the client agent info with fields in %param.
-
 Returns latest agent info.
 
 =cut
@@ -1796,38 +1780,54 @@ Returns latest agent info.
 sub p2p_agent_update {
     my ($client, %param) = @_;
 
-    my $agent_info = $client->p2p_agent // return;
-
-    die "AgentNotAuthenticated\n" unless $agent_info->{is_authenticated} or ($param{is_authenticated} // 0) == 1;
+    my $agent_info = $client->p2p_agent_info;
+    die "AgentNotRegistered\n" unless $agent_info;
+    die "AgentNotApproved\n" unless $agent_info->{is_approved} or defined $param{is_approved};
 
     if (exists $param{agent_name}) {
         $param{agent_name} = trim($param{agent_name});
         die "AgentNameRequired\n" unless $param{agent_name};
     }
 
-    $agent_info->{agent_name} = $agent_info->{name};
-
-    # temporary renaming for https://trello.com/c/VzqXLoPk
-    $agent_info->{is_authenticated} //= delete $agent_info->{is_approved};
-
     # Return the current information of the agent if nothing changed
     return $agent_info unless grep { exists $agent_info->{$_} and $param{$_} ne $agent_info->{$_} } keys %param;
 
     my $update = $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.agent_update(?, ?, ?, ?)',
-                undef, $agent_info->{id}, @param{qw/is_authenticated is_active agent_name/});
+            $_->selectrow_hashref(
+                'SELECT * FROM p2p.agent_update(?, ?, ?, ?)',
+                undef,
+                $agent_info->{agent_id},
+                @param{qw/is_approved is_active agent_name/});
         });
 
-    # temporary renaming for https://trello.com/c/VzqXLoPk
-    $update->{is_authenticated} //= delete $update->{is_approved};
-    return $update;
+    return $client->_agent_details($update);
+}
+
+=head2 p2p_agent_offers
+
+Returns a list of offers belonging to current client
+
+=cut
+
+sub p2p_agent_offers {
+    my ($client, %param) = @_;
+
+    my $agent_info = $client->_p2p_agents(loginid => $client->loginid)->[0];
+    die "AgentNotRegistered\n" unless $agent_info;
+
+    my ($limit, $offset) = @param{qw/limit offset/};
+    die "InvalidListLimit\n"  if defined $limit  && $limit <= 0;
+    die "InvalidListOffset\n" if defined $offset && $offset < 0;
+
+    my $list = $client->_p2p_offers(%param, agent_id => $agent_info->{id});
+
+    return $client->_offer_details($list);
 }
 
 =head2 p2p_offer_create
 
 Creates an offer with %param with client as agent.
-
 Returns new offer or dies with error code.
 
 =cut
@@ -1835,15 +1835,15 @@ Returns new offer or dies with error code.
 sub p2p_offer_create {
     my ($client, %param) = @_;
 
-    my $agent_info = $client->p2p_agent;
+    my $agent_info = $client->_p2p_agents(loginid => $client->loginid)->[0];
     die "AgentNotActive\n" unless $agent_info && $agent_info->{is_active};
-    die "AgentNotAuthenticated\n" unless $agent_info->{is_authenticated};
+    die "AgentNotApproved\n" unless $agent_info->{is_approved};
 
     $param{account_currency} = $client->currency;
 
     _validate_offer_amounts(%param);
 
-    my $active_offers_count = $client->p2p_offer_list(
+    my $active_offers_count = $client->_p2p_offers(
         agent_loginid => $client->loginid,
         active        => 1,
     )->@*;
@@ -1860,15 +1860,54 @@ sub p2p_offer_create {
                 @param{qw/type account_currency local_currency amount rate min_amount max_amount method offer_description country/});
         });
 
-    # temporary field renaming to be removed when https://trello.com/c/VbsTXB1F is merged
-    $offer->{offer_amount} //= delete $offer->{amount};
-    return $offer;
+    $offer->{agent_loginid} = $agent_info->{client_loginid};
+    $offer->{agent_name}    = $agent_info->{name};
+
+    return $client->_offer_details([$offer])->[0];
+}
+
+=head2 p2p_offer_info
+
+Get a single offer by $id.
+
+=cut
+
+sub p2p_offer_info {
+    my ($client, %param) = @_;
+    my $id = $param{offer_id} // return;
+    my $list = $client->_p2p_offers(id => $id);
+    return $client->_offer_details($list)->[0];
+}
+
+=head2 p2p_offer_list
+
+Get offers for client view.
+Inactive offers, inactive or unauthorized agents, and remaining < min are excluded.
+
+=cut
+
+sub p2p_offer_list {
+    my ($client, %param) = @_;
+
+    my ($limit, $offset) = @param{qw/limit offset/};
+    die "InvalidListLimit\n"  if defined $limit  && $limit <= 0;
+    die "InvalidListOffset\n" if defined $offset && $offset < 0;
+
+    my $list = $client->_p2p_offers(
+        %param,
+        is_active           => 1,
+        can_order           => 1,
+        agent_active        => 1,
+        agent_authenticated => 1,
+    );
+    return $client->_offer_details($list, $param{amount});
 }
 
 =head2 p2p_offer_update
 
 Updates the offer of $param{offer_id} with fields in %param.
-
+Client must be offer owner.
+Amount cannot be reduced below amount of outstanding orders.
 Returns latest offer info or dies with error code.
 
 =cut
@@ -1876,14 +1915,13 @@ Returns latest offer info or dies with error code.
 sub p2p_offer_update {
     my ($client, %param) = @_;
 
-    my $offer_id = delete $param{offer_id};
-    my $offer = $client->p2p_offer($offer_id) or die "OfferNotFound\n";
+    my $offer_id = delete $param{offer_id} or die "OfferNotFound\n";
+    my $offer = $client->_p2p_offers(id => $offer_id)->[0] or die "OfferNotFound\n";
 
     die "PermissionDenied\n" if $offer->{agent_loginid} ne $client->loginid;
 
-    $offer->{amount} = $offer->{offer_amount};    # field from p2p_offer is named differently
-
-    return $offer unless grep { exists $offer->{$_} and $param{$_} ne $offer->{$_} } keys %param;
+    # return current offer details if nothing changed
+    return $client->_offer_details([$offer])->[0] unless grep { exists $offer->{$_} and $param{$_} ne $offer->{$_} } keys %param;
 
     _validate_offer_amounts($offer->%*, %param);    # keys in %param will replace $offer keys
 
@@ -1897,90 +1935,15 @@ sub p2p_offer_update {
                 @param{qw/is_active type account_currency local_currency amount rate min_amount max_amount method offer_description country/});
         });
 
-    # temporary field renaming to be removed when https://trello.com/c/VbsTXB1F is merged
-    $update->{offer_amount} //= delete $update->{amount};
-    return $update;
-}
-
-=head2 p2p_offer
-
-Get a single offer by $id.
-
-=cut
-
-sub p2p_offer {
-    my ($client, $id) = @_;
-    return undef unless $id;
-    return $client->p2p_offer_list(
-        id        => $id,
-        no_filter => 1
-    )->[0];
-}
-
-=head2 p2p_offer_list
-
-Get offers filtered by %param.
-Expired offers are excluded by default.
-no_filter will show all results with no amount filtering or adjustment.
-
-=cut
-
-sub p2p_offer_list {
-    my ($client, %param) = @_;
-
-    my ($limit, $offset) = @param{qw/limit offset/};
-    die "InvalidListLimit\n"  if defined $limit  && $limit <= 0;
-    die "InvalidListOffset\n" if defined $offset && $offset < 0;
-
-    my $rows = $client->db->dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref(
-                'SELECT * FROM p2p.offer_list(?, ?, ?, ?, ?, ?, ?, ?)',
-                {Slice => {}},
-                @param{qw/id account_currency agent_id agent_loginid active type limit offset/});
-        }) // [];
-
-    # temporary field renaming to be removed when https://trello.com/c/VbsTXB1F is merged
-    $_->{offer_amount} //= delete $_->{amount} for @$rows;
-
-    return $rows if $param{no_filter};
-
-    my $amount = $param{amount};
-
-    my @offers;
-    my $limit_maximum_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
-    for my $offer ($rows->@*) {
-        # Calculating current max
-        $offer->{max_amount} = List::Util::min(
-            $offer->{remaining},
-            ($offer->{max_amount} // $offer->{remaining}),
-            convert_currency($limit_maximum_order, 'USD', $offer->{account_currency}));
-
-        next if $amount && $amount > $offer->{max_amount};
-        next if $amount && $amount < $offer->{min_amount};
-
-        #TODO: We need to hide offers which run out of money, but we need to show them for owners,
-        # need to think about how to do it right, especially if we'll filter them in DB
-        next
-            if $offer->{agent_loginid} ne $client->loginid
-            && !$param{id}
-            && $offer->{max_amount} < $offer->{min_amount};
-
-        push @offers, $offer;
-    }
-    return \@offers;
+    return $client->_offer_details([$update])->[0];
 }
 
 =head2 p2p_order_create
 
 Creates an order for offer $param{offer_id} with %param for client.
-
-Offer and agent must be valid.
-
+Offer must be active. Agent must be active and authenticated.
 Only one active order per offer per client is allowed.
-
 Returns new order or dies with error code.
-
 This will move funds from agent to escrow.
 
 =cut
@@ -1992,7 +1955,7 @@ sub p2p_order_create {
 
     $expiry //= BOM::Config::Runtime->instance->app_config->payments->p2p->order_timeout;
 
-    my $offer_info = $client->p2p_offer($offer_id);
+    my $offer_info = $client->_p2p_offers(id => $offer_id)->[0];
 
     die "OfferNotFound\n"        unless $offer_info;
     die "OfferIsDisabled\n"      unless $offer_info->{is_active};
@@ -2003,7 +1966,7 @@ sub p2p_order_create {
         error_code     => 'OrderMaximumExceeded',
         message_params => [$offer_info->{account_currency}, formatnumber('amount', $offer_info->{account_currency}, $offer_info->{max_amount}),]}
         if ($offer_info->{max_amount} && $amount > $offer_info->{max_amount})
-        || $amount > $offer_info->{offer_amount}
+        || $amount > $offer_info->{amount}
         || $amount > $offer_info->{remaining};
 
     die +{
@@ -2011,10 +1974,10 @@ sub p2p_order_create {
         message_params => [$offer_info->{account_currency}, formatnumber('amount', $offer_info->{account_currency}, $offer_info->{min_amount}),]}
         if $amount < ($offer_info->{min_amount} // 0);
 
-    my ($agent_info) = $client->p2p_agent_list(id => $offer_info->{agent_id})->@*;
-    die "AgentNotFound\n" unless $agent_info;
-
-    die "OfferOwnerNotAuthenticated\n" unless $agent_info->{is_authenticated} && $agent_info->{is_active};
+    my $agent_info = $client->_p2p_agents(id => $offer_info->{agent_id})->[0];
+    die "AgentNotFound\n"    unless $agent_info;
+    die "AgentNotActive\n"   unless $agent_info->{is_active};
+    die "AgentNotApproved\n" unless $agent_info->{is_approved};
 
     if ($offer_info->{type} eq 'sell') {
         die "InsufficientBalance\n" if $client->account->balance < $amount;
@@ -2029,7 +1992,7 @@ sub p2p_order_create {
 
     die "EscrowNotFound\n" unless $escrow;
 
-    my $open_orders = $client->p2p_order_list(
+    my $open_orders = $client->_p2p_orders(
         offer_id => $offer_id,
         loginid  => $client->loginid,
         status => ['pending', 'buyer-confirmed']);
@@ -2042,43 +2005,31 @@ sub p2p_order_create {
                 undef, $offer_id, $client->loginid, $escrow->loginid, $amount, $expiry, $description, $source, $client->loginid);
         });
 
-    # Temporary field renaming to be removed after https://trello.com/c/WScG2dl5 is released
-    $order->{account_currency} //= delete $order->{offer_account_currency};
-    $order->{local_currency}   //= delete $order->{offer_local_currency};
-    delete $order->{offer_method};
-    return $order;
-
+    return $client->_order_details([$order])->[0];
 }
 
-=head2 p2p_order
+=head2 p2p_order_info
 
-Get a single order by $id.
+Return a single order of $param{order_id}
 
 =cut
 
-sub p2p_order {
-    my ($client, $id) = @_;
-    die "OrderNotFound\n" unless $id;
+sub p2p_order_info {
+    my ($client, %param) = @_;
 
-    return $client->p2p_order_list(id => $id)->[0] || die "OrderNotFound\n";
+    my $id = $param{order_id} // return;
+    my $list = $client->_p2p_orders(id => $id);
+    return $client->_order_details($list)->[0];
 }
 
 =head2 p2p_order_list
 
 Get orders filtered by %param.
 
-$param{loginid} will match on offer agent loginid or order client loginid.
-
-$param{status} if provided must by an arrayref.
-
 =cut
 
 sub p2p_order_list {
     my ($client, %param) = @_;
-
-    croak 'Invalid status format'
-        if defined $param{status}
-        && ref $param{status} ne 'ARRAY';
 
     $param{loginid} = $client->loginid;
 
@@ -2086,28 +2037,13 @@ sub p2p_order_list {
     die "InvalidListLimit\n"  if defined $limit  && $limit <= 0;
     die "InvalidListOffset\n" if defined $offset && $offset < 0;
 
-    my $orders = $client->db->dbic->run(
-
-        fixup => sub {
-            $_->selectall_arrayref(
-                'SELECT * FROM p2p.order_list(?, ?, ?, ?, ?, ?)',
-                {Slice => {}},
-                @param{qw/id offer_id loginid status limit offset/});
-        }) // [];
-
-    # Temporary field renaming to be removed after https://trello.com/c/WScG2dl5 is released
-    for my $order (@$orders) {
-        $order->{account_currency} //= delete $order->{offer_account_currency};
-        $order->{local_currency}   //= delete $order->{offer_local_currency};
-        delete $order->{offer_method};
-    }
-
-    return $orders;
+    my $list = $client->_p2p_orders(%param);
+    return $client->_order_details($list);
 }
 
 =head2 p2p_order_confirm
 
-Confirms the order of $param{id} and returns updated order.
+Confirms the order of $param{order_id} and returns updated order.
 Client = client, type = buy: order is buyer-confirmed
 Client = client, type = sell: order is completed
 Client = agent, type = buy: order is completed
@@ -2119,7 +2055,8 @@ Otherwise dies with error code.
 sub p2p_order_confirm {
     my ($client, %param) = @_;
 
-    my $order_info = $client->p2p_order($param{id});
+    my $order_id = $param{order_id} // die "OrderNotFound\n";
+    my $order_info = $client->_p2p_orders(id => $order_id)->[0];
 
     die "OrderNotFound\n" unless $order_info;
     die "OrderNoEditExpired\n" if $order_info->{is_expired};
@@ -2135,7 +2072,7 @@ sub p2p_order_confirm {
 
 =head2 p2p_order_cancel
 
-Cancels the order of $param{id}.
+Cancels the order of $param{order_id}.
 Order must belong to the buyer.
 Order must be in pending status.
 This will move funds from escrow to seller.
@@ -2145,7 +2082,9 @@ This will move funds from escrow to seller.
 sub p2p_order_cancel {
     my ($client, %param) = @_;
 
-    my $order = $client->p2p_order($param{id});
+    my $order_id = $param{order_id} // die "OrderNotFound\n";
+    my $order = $client->_p2p_orders(id => $order_id)->[0];
+
     die "OrderNotFound\n" unless $order;
     die "OrderNoEditExpired\n" if $order->{is_expired};
     die "OrderAlreadyCancelled\n" if $order->{status} eq 'cancelled';
@@ -2163,7 +2102,7 @@ sub p2p_order_cancel {
     return $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?, ?)',
-                undef, $order->{order_id}, $escrow->loginid, $param{source}, $client->loginid, $timed_out);
+                undef, $order_id, $escrow->loginid, $param{source}, $client->loginid, $timed_out);
         });
 }
 
@@ -2177,8 +2116,9 @@ sub p2p_order_cancel {
 sub p2p_expire_order {
     my ($client, %param) = @_;
 
-    my $order = $client->p2p_order($param{id});
-    die 'Order id not found: ' . ($param{id} // 'undefined') unless $order;
+    my $order_id = $param{order_id} // die "no order_id provided to p2p_expire_order";
+    my $order = $client->_p2p_orders(id => $order_id)->[0];
+    die "Order id not found: $order_id" unless $order;
 
     my $status = $order->{status};
 
@@ -2221,7 +2161,72 @@ sub p2p_escrow {
     return undef;
 }
 
-=head1 METHODS - P2P
+=head1 Private P2P methods
+
+=head2 _p2p_agents
+
+Returns a list of agents filtered by id and/or loginid.
+
+=cut
+
+sub _p2p_agents {
+    my ($client, %param) = @_;
+
+    return $client->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT * FROM p2p.agent_list(?, ?)', {Slice => {}}, @param{qw/id loginid/});
+        });
+}
+
+=head2 _p2p_offers
+
+Gets offers from DB
+
+=cut
+
+sub _p2p_offers {
+    my ($client, %param) = @_;
+
+    my ($limit, $offset) = @param{qw/limit offset/};
+    die "InvalidListLimit\n"  if defined $limit  && $limit <= 0;
+    die "InvalidListOffset\n" if defined $offset && $offset < 0;
+
+    $client->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                'SELECT * FROM p2p.offer_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                {Slice => {}},
+                @param{qw/id account_currency agent_id agent_loginid is_active type can_order agent_active agent_authenticated limit offset/});
+        }) // [];
+}
+
+=head2 _p2p_orders
+
+Gets orders from DB.
+$param{loginid} will match on offer agent loginid or order client loginid.
+$param{status} if provided must by an arrayref.
+
+=cut
+
+sub _p2p_orders {
+    my ($client, %param) = @_;
+
+    croak 'Invalid status format'
+        if defined $param{status}
+        && ref $param{status} ne 'ARRAY';
+
+    my ($limit, $offset) = @param{qw/limit offset/};
+    die "InvalidListLimit\n"  if defined $limit  && $limit <= 0;
+    die "InvalidListOffset\n" if defined $offset && $offset < 0;
+
+    return $client->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                'SELECT * FROM p2p.order_list(?, ?, ?, ?, ?, ?)',
+                {Slice => {}},
+                @param{qw/id offer_id loginid status limit offset/});
+        }) // [];
+}
 
 =head2 _order_ownership_type
 
@@ -2328,6 +2333,117 @@ sub _agent_sell_confirm {
             $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_agent(?, ?)', undef, $order_info->{order_id}, 1);
         });
 
+}
+
+=head2 _agent_details
+
+Prepares agent fields for client display.
+Takes and returns single agent.
+
+=cut
+
+sub _agent_details {
+    my ($client, $agent) = @_;
+
+    return +{
+        agent_id       => $agent->{id},
+        agent_name     => $agent->{name},
+        client_loginid => $agent->{client_loginid},
+        created_time   => Date::Utility->new($agent->{created_time})->epoch,
+        is_active      => $agent->{is_active},
+        is_approved    => $agent->{is_approved},
+    };
+}
+
+=head2 _offer_details
+
+Prepares offer fields for client display.
+Takes and returns an arrayref of offers.
+
+=cut
+
+sub _offer_details {
+    my ($client, $list, $amount) = @_;
+
+    my @results;
+    my $max_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
+
+    for my $offer (@$list) {
+
+        my $result;
+        my $effective_max =
+            List::Util::min($offer->{remaining}, $offer->{max_amount}, convert_currency($max_order, 'USD', $offer->{account_currency}));
+
+        $result->{$_} = $offer->{$_}
+            for qw/type account_currency agent_id agent_name country is_active local_currency method offer_description offer_id/;
+
+        $result->{offer_description} //= '';
+
+        $result->{rate} = financialrounding('amount', $offer->{local_currency}, $offer->{rate});
+        $result->{rate_display} = formatnumber('amount', $offer->{local_currency}, $offer->{rate});
+        $result->{price} = financialrounding('amount', $offer->{local_currency}, $offer->{rate} * ($amount // 1));
+        $result->{price_display} = formatnumber('amount', $offer->{local_currency}, $offer->{rate} * ($amount // 1));
+        $result->{min_amount_limit} = financialrounding('amount', $offer->{account_currency}, $offer->{min_amount});
+        $result->{min_amount_limit_display} = formatnumber('amount', $offer->{account_currency}, $offer->{min_amount});
+        $result->{max_amount_limit} = financialrounding('amount', $offer->{account_currency}, $effective_max);
+        $result->{max_amount_limit_display} = formatnumber('amount', $offer->{account_currency}, $effective_max);
+        $result->{created_time} = Date::Utility->new($offer->{created_time})->epoch;
+
+        # only offer owner can see these fields
+        if ($client->loginid eq $offer->{agent_loginid}) {
+            $result->{amount} = financialrounding('amount', $offer->{account_currency}, $offer->{amount});
+            $result->{amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{amount});
+            $result->{remaining_amount} = financialrounding('amount', $offer->{account_currency}, $offer->{remaining});
+            $result->{remaining_amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{remaining});
+            $result->{min_amount} = financialrounding('amount', $offer->{account_currency}, $offer->{min_amount});
+            $result->{min_amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{min_amount});
+            $result->{max_amount} = financialrounding('amount', $offer->{account_currency}, $offer->{max_amount});
+            $result->{max_amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{max_amount});
+        }
+
+        push @results, $result;
+    }
+
+    return \@results;
+}
+
+=head2 _order_details
+
+Prepares order fields for client display.
+Takes and returns an arrayref of orders.
+
+=cut
+
+sub _order_details {
+    my ($client, $list) = @_;
+
+    my @results;
+
+    for my $order (@$list) {
+        my $result;
+        $result->{$_} = $order->{$_}
+            for qw/offer_type account_currency agent_id agent_name local_currency offer_description order_description offer_id order_id status/;
+
+        # Temporary, to be removed by https://trello.com/c/DC2zrIKR
+        delete $result->{offer_method};
+
+        $result->{type} = delete $result->{offer_type};
+        $result->{offer_description} //= '';
+        $result->{order_description} //= '';
+
+        $result->{amount} = financialrounding('amount', $order->{account_currency}, $order->{order_amount});
+        $result->{amount_display} = formatnumber('amount', $order->{account_currency}, $order->{order_amount});
+        $result->{expiry_time}    = Date::Utility->new($order->{expire_time})->epoch;
+        $result->{created_time}   = Date::Utility->new($order->{created_time})->epoch;
+        $result->{rate}           = financialrounding('amount', $order->{local_currency}, $order->{offer_rate});
+        $result->{rate_display}   = formatnumber('amount', $order->{local_currency}, $order->{offer_rate});
+        $result->{price}          = financialrounding('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
+        $result->{price_display}  = formatnumber('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
+
+        push @results, $result;
+    }
+
+    return \@results;
 }
 
 =head2 _validate_offer_amounts

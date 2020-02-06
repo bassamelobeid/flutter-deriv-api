@@ -305,6 +305,7 @@ for my $status (qw(pending buyer-confirmed completed cancelled timed-out)) {
 }
 
 for my $test_case (@test_cases) {
+    #next unless $test_case->{test_name} eq 'Client confirmation at pending state for buy order';
     subtest $test_case->{test_name} => sub {
         my $amount = $test_case->{amount};
         my $source = 1;
@@ -315,6 +316,7 @@ for my $test_case (@test_cases) {
             type    => $test_case->{type},
             balance => $test_case->{agent_balance},
         );
+
         my ($client, $order) = BOM::Test::Helper::P2P::create_order(
             offer_id => $offer->{offer_id},
             amount   => $amount,
@@ -327,12 +329,13 @@ for my $test_case (@test_cases) {
 
         BOM::Test::Helper::P2P::set_order_status($client, $order->{order_id}, $test_case->{init_status});
         BOM::Test::Helper::P2P::expire_order($client, $order->{order_id}) if $test_case->{expire};
-
+    
+        my $resp;
         my $err = exception {
             if ($test_case->{who_confirm} eq 'client') {
-                $client->p2p_order_confirm(id => $order->{order_id});
+                $resp = $client->p2p_order_confirm(order_id => $order->{order_id});
             } elsif ($test_case->{who_confirm} eq 'agent') {
-                $agent->p2p_order_confirm(id => $order->{order_id});
+                $resp = $agent->p2p_order_confirm(order_id => $order->{order_id});
             } else {
                 die 'Invalid who_confirm value: ' . $test_case->{who_confirm};
             }
@@ -345,13 +348,11 @@ for my $test_case (@test_cases) {
         cmp_ok($agent->account->balance,  '==', $test_case->{agent}{after},  'Agent balance is correct');
         cmp_ok($client->account->balance, '==', $test_case->{client}{after}, 'Client balance is correct');
 
-        my $order_data = $client->p2p_order($order->{order_id});
+        my $order_data = $client->p2p_order_info(order_id=>$order->{order_id});
 
         is($order_data->{status}, $test_case->{status}, 'Status for new order is correct');
-        cmp_ok($order_data->{order_amount}, '==', $amount, 'Amount for new order is correct');
-        is($order_data->{client_loginid}, $client->loginid,   'Client for new order is correct');
-        is($order_data->{agent_loginid},  $agent->loginid,    'Agent for new order is correct');
-        is($order_data->{offer_type},     $test_case->{type}, 'Offer type is correct');
+        cmp_ok($order_data->{amount}, '==', $amount, 'Amount for new order is correct');
+        is($order_data->{type},     $test_case->{type}, 'Offer type is correct');
 
         BOM::Test::Helper::P2P::reset_escrow();
     };

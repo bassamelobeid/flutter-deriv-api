@@ -186,7 +186,7 @@ for my $test_case (@test_cases) {
 
         my $err = exception {
             $client->p2p_expire_order(
-                id     => $order->{order_id},
+                order_id     => $order->{order_id},
                 source => 5,
                 staff  => 'AUTOEXPIRY',
             );
@@ -200,13 +200,11 @@ for my $test_case (@test_cases) {
         cmp_ok($agent->account->balance,  '==', $test_case->{agent}{after},  'Agent balance is correct');
         cmp_ok($client->account->balance, '==', $test_case->{client}{after}, 'Client balance is correct');
 
-        my $order_data = $client->p2p_order($order->{order_id}) // die;
+        my $order_data = $client->p2p_order_info(order_id => $order->{order_id}) // die;
 
         is($order_data->{status}, $test_case->{status}, 'Status for new order is correct');
-        cmp_ok($order_data->{order_amount}, '==', $amount, 'Amount for new order is correct');
-        is($order_data->{client_loginid}, $client->loginid,   'Client for new order is correct');
-        is($order_data->{agent_loginid},  $agent->loginid,    'Agent for new order is correct');
-        is($order_data->{offer_type},     $test_case->{type}, 'Description for new order is correct');
+        cmp_ok($order_data->{amount}, '==', $amount, 'Amount for new order is correct');
+        is($order_data->{type},     $test_case->{type}, 'Description for new order is correct');
 
         BOM::Test::Helper::P2P::reset_escrow();
     };
