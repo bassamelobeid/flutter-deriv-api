@@ -108,12 +108,19 @@ rpc "new_account_virtual",
         amount        => 0,
         payment_agent => 0,
     );
+    my $utm_tags = {};
 
+    foreach my $tag (qw( utm_source utm_medium utm_campaign gclid_url date_first_contact signup_device )) {
+        $utm_tags->{$tag} = $args->{$tag} if $args->{$tag};
+    }
     BOM::Platform::Event::Emitter::emit(
         'signup',
         {
             loginid    => $client->loginid,
-            properties => {type => 'virtual'}});
+            properties => {
+                type     => 'virtual',
+                utm_tags => $utm_tags
+            }});
 
     return {
         client_id => $client->loginid,
