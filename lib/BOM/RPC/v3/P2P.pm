@@ -85,7 +85,7 @@ our %ERROR_MAP = do {
         AgentNotFound               => localize('P2P Agent not found.'),
         AgentNotRegistered          => localize('This account is not registered as an P2P agent.'),
         AgentNotActive              => localize('The provided agent ID does not belong to an active agent.'),
-        AgentNotAuthenticated       => localize('The agent is not authenticated.'),
+        AgentNotApproved            => localize('The agent is not approved.'),
         AgentNameRequired           => localize('The agent name cannot be blank.'),
         OrderAlreadyConfirmed       => localize('The order is already confirmed by you.'),
         OrderAlreadyCancelled       => localize('The order is already cancelled.'),
@@ -276,11 +276,9 @@ Returns a hashref containing the current agent details.
 
 p2p_rpc p2p_agent_update => sub {
     my (%args) = @_;
+
     my $client = $args{client};
-
-    my $agent = $client->p2p_agent_update($args{params}{args}->%*) // die "AgentNotRegistered\n";
-
-    return _agent_details($agent);
+    return $client->p2p_agent_update($args{params}{args}->%*);
 };
 
 =head2 p2p_agent_info
@@ -317,16 +315,15 @@ Returns a hashref containing the following information:
 
 p2p_rpc p2p_agent_info => sub {
     my (%args) = @_;
+
     my $client = $args{client};
-    my $agent;
+    return $client->p2p_agent_info($args{params}{args}->%*) // die "AgentNotFound\n";
+};
 
-    if (exists $args{params}{args}{agent_id}) {
-        $agent = $client->p2p_agent_list(id => $args{params}{args}{agent_id})->[0] // die "AgentNotFound\n";
-    } else {
-        $agent = $client->p2p_agent // die "AgentNotFound\n";
-    }
-
-    return _agent_details($agent);
+p2p_rpc p2p_agent_offers => sub {
+    my (%args) = @_;
+    my $client = $args{client};
+    return {list => $client->p2p_agent_offers($args{params}{args}->%*)};
 };
 
 =head2 p2p_method_list
@@ -416,9 +413,7 @@ p2p_rpc p2p_offer_create => sub {
     my (%args) = @_;
 
     my $client = $args{client};
-    my $offer  = $client->p2p_offer_create($args{params}{args}->%*);
-
-    return _offer_details($offer);
+    return $client->p2p_offer_create($args{params}{args}->%*);
 };
 
 =head2 p2p_offer_info
@@ -455,10 +450,9 @@ Returns a hashref containing the following keys:
 
 p2p_rpc p2p_offer_info => sub {
     my (%args) = @_;
-    my $client = $args{client};
-    my $offer = $client->p2p_offer($args{params}{args}{offer_id}) // die "OfferNotFound\n";
 
-    return _offer_details($offer);
+    my $client = $args{client};
+    return $client->p2p_offer_info($args{params}{args}->%*) // die "OfferNotFound\n";
 };
 
 =head2 p2p_offer_list
@@ -505,12 +499,7 @@ p2p_rpc p2p_offer_list => sub {
     my %args = @_;
 
     my $client = $args{client};
-    my $amount = $args{params}{args}{amount} // 1;
-
-    my $list = $client->p2p_offer_list($args{params}{args}->%*);
-    my @offers = map { _offer_details($_, $amount) } @$list;
-
-    return {list => \@offers};
+    return {list => $client->p2p_offer_list($args{params}{args}->%*)};
 };
 
 =head2 p2p_offer_update
@@ -523,8 +512,7 @@ p2p_rpc p2p_offer_update => sub {
     my %args = @_;
 
     my $client = $args{client};
-    my $offer = $client->p2p_offer_update($args{params}{args}->%*) // die "OfferNotFound\n";
-    return _offer_details($offer);
+    return $client->p2p_offer_update($args{params}{args}->%*) // die "OfferNotFound\n";
 };
 
 =head2 p2p_order_create
@@ -538,9 +526,8 @@ p2p_rpc p2p_order_create => sub {
 
     my $client = $args{client};
 
+    my $offer_id = $args{params}{args}{offer_id};
     my $order = $client->p2p_order_create($args{params}{args}->%*, source => $args{params}{source});
-
-    my $order_response = _order_details($client, $order);
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_created => {
@@ -548,7 +535,7 @@ p2p_rpc p2p_order_create => sub {
             order_id       => $order->{order_id},
         });
 
-    return $order_response;
+    return $order;
 };
 
 =head2 p2p_order_list
@@ -579,12 +566,7 @@ p2p_rpc p2p_order_list => sub {
     my %args = @_;
 
     my $client = $args{client};
-
-    my $list = $client->p2p_order_list(%{$args{params}{args}}{grep { exists $args{params}{args}{$_} } qw(status agent_id offer_id limit offset)});
-
-    my @orders = map { _order_details($client, $_) } @{$list};
-
-    return {list => \@orders};
+    return {list => $client->p2p_order_list($args{params}{args}->%*)};
 };
 
 =head2 p2p_order_info
@@ -605,12 +587,7 @@ p2p_rpc p2p_order_info => sub {
     my %args = @_;
 
     my ($client, $params) = @args{qw/client params/};
-
-    my $order = $client->p2p_order($params->{args}{order_id});
-
-    my $order_response = _order_details($client, $order);
-
-    return $order_response;
+    return $client->p2p_order_info($args{params}{args}->%*) // die "OrderNotFound\n";
 };
 
 =head2 p2p_order_confirm
@@ -635,17 +612,17 @@ p2p_rpc p2p_order_confirm => sub {
     my $order_id = $params->{args}{order_id};
 
     my $order = $client->p2p_order_confirm(
-        id     => $order_id,
-        source => $params->{source});
+        order_id => $order_id,
+        source   => $params->{source});
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
             client_loginid => $client->loginid,
-            order_id       => $order->{order_id},
+            order_id       => $order_id,
         });
 
     return {
-        order_id => $order_id,
+        order_id => $order->{order_id},
         status   => $order->{status},
     };
 };
@@ -672,13 +649,13 @@ p2p_rpc p2p_order_cancel => sub {
     my $order_id = $params->{args}{order_id};
 
     my $order = $client->p2p_order_cancel(
-        id     => $order_id,
-        source => $params->{source});
+        order_id => $order_id,
+        source   => $params->{source});
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
             client_loginid => $client->loginid,
-            order_id       => $order->{order_id},
+            order_id       => $order_id,
         });
 
     return {
@@ -696,78 +673,6 @@ Exchange chat messages.
 p2p_rpc p2p_order_chat => sub {
     die "PermissionDenied\n";
 };
-
-sub _agent_details {
-    my ($agent) = @_;
-
-    return +{
-        agent_id         => $agent->{id},
-        agent_name       => $agent->{name},
-        client_loginid   => $agent->{client_loginid},
-        created_time     => Date::Utility->new($agent->{created_time})->epoch,
-        is_active        => $agent->{is_active},
-        is_authenticated => $agent->{is_authenticated},
-    };
-}
-
-sub _offer_details {
-    my ($offer, $amount) = @_;
-
-    $offer->{amount} = financialrounding('amount', $offer->{account_currency}, $offer->{offer_amount});
-    $offer->{amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{offer_amount});
-    $offer->{amount_used} = financialrounding('amount', $offer->{account_currency}, $offer->{offer_amount} - $offer->{remaining});
-    $offer->{amount_used_display} = formatnumber('amount', $offer->{account_currency}, $offer->{offer_amount} - $offer->{remaining});
-    $offer->{max_amount} = financialrounding('amount', $offer->{account_currency}, $offer->{max_amount});
-    $offer->{max_amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{max_amount});
-    $offer->{min_amount} = financialrounding('amount', $offer->{account_currency}, $offer->{min_amount});
-    $offer->{min_amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{min_amount});
-    $offer->{rate} = financialrounding('amount', $offer->{local_currency}, $offer->{rate});
-    $offer->{rate_display} = formatnumber('amount', $offer->{local_currency}, $offer->{rate});
-    $offer->{price} = financialrounding('amount', $offer->{local_currency}, $offer->{rate} * ($amount // 1));
-    $offer->{price_display} = formatnumber('amount', $offer->{local_currency}, $offer->{rate} * ($amount // 1));
-    $offer->{created_time} = Date::Utility->new($offer->{created_time})->epoch;
-    $offer->{offer_description} //= '';
-
-    delete @$offer{qw(remaining offer_amount agent_loginid)};
-
-    return $offer;
-}
-
-sub _order_details {
-    my ($client, $order) = @_;
-
-    $order->{type} = delete $order->{offer_type};
-    $order->{account_currency} //= delete $order->{offer_account_currency};
-    $order->{local_currency}   //= delete $order->{offer_local_currency};
-
-    $order->{amount} = financialrounding('amount', $order->{account_currency}, $order->{order_amount});
-    $order->{amount_display} = formatnumber('amount', $order->{account_currency}, $order->{order_amount});
-    $order->{expiry_time}    = Date::Utility->new($order->{expire_time})->epoch;
-    $order->{created_time}   = Date::Utility->new($order->{created_time})->epoch;
-    $order->{rate}           = financialrounding('amount', $order->{local_currency}, $order->{offer_rate});
-    $order->{rate_display}   = formatnumber('amount', $order->{local_currency}, $order->{offer_rate});
-    $order->{price}          = financialrounding('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
-    $order->{price_display}  = formatnumber('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
-    $order->{offer_description} //= '';
-    $order->{order_description} //= '';
-
-    delete @$order{qw(
-            order_amount
-            offer_rate
-            is_expired
-            client_balance
-            client_confirmed
-            client_loginid
-            client_trans_id
-            escrow_trans_id
-            offer_remaining
-            expire_time
-            agent_confirmed
-            agent_loginid
-            )};
-
-    return $order;
-}
 
 # Check to see if the client can has access to p2p API calls or not?
 # Does nothing if client has access or die
