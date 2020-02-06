@@ -74,7 +74,9 @@ rpc_response {
         currencies_config => {
             AUD => {
                 fractional_digits         => 2,
+                is_deposit_suspended      => 0,
                 is_suspended              => 0,
+                is_withdrawal_suspended   => 0,
                 name                      => 'Dollar',
                 stake_default             => 10,
                 transfer_between_accounts => {
@@ -96,7 +98,9 @@ rpc_response {
             },
             BTC => {
                 fractional_digits         => 8,
+                is_deposit_suspended      => 0,
                 is_suspended              => 0,
+                is_withdrawal_suspended   => 0,
                 name                      => 'Bitcoin',
                 stake_default             => 0.003,
                 transfer_between_accounts => {
@@ -114,7 +118,9 @@ rpc_response {
             },
             ETH => {
                 fractional_digits         => 8,
+                is_deposit_suspended      => 0,
                 is_suspended              => 0,
+                is_withdrawal_suspended   => 0,
                 name                      => 'Ether',
                 stake_default             => 0.05,
                 transfer_between_accounts => {
@@ -132,7 +138,9 @@ rpc_response {
             },
             EUR => {
                 fractional_digits         => 2,
+                is_deposit_suspended      => 0,
                 is_suspended              => 0,
+                is_withdrawal_suspended   => 0,
                 name                      => 'Euro',
                 stake_default             => 10,
                 transfer_between_accounts => {
@@ -154,7 +162,9 @@ rpc_response {
             },
             GBP => {
                 fractional_digits         => 2,
+                is_deposit_suspended      => 0,
                 is_suspended              => 0,
+                is_withdrawal_suspended   => 0,
                 name                      => 'Pound',
                 stake_default             => 10,
                 transfer_between_accounts => {
@@ -176,7 +186,9 @@ rpc_response {
             },
             IDK => {
                 fractional_digits         => 0,
+                is_deposit_suspended      => 0,
                 is_suspended              => 0,
+                is_withdrawal_suspended   => 0,
                 name                      => 'IDK',
                 stake_default             => 150,
                 transfer_between_accounts => {
@@ -194,7 +206,9 @@ rpc_response {
             },
             LTC => {
                 fractional_digits         => 8,
+                is_deposit_suspended      => 0,
                 is_suspended              => 0,
+                is_withdrawal_suspended   => 0,
                 name                      => 'Litecoin',
                 stake_default             => 0.25,
                 transfer_between_accounts => {
@@ -212,7 +226,9 @@ rpc_response {
             },
             USB => {
                 fractional_digits         => 2,
+                is_deposit_suspended      => 0,
                 is_suspended              => 0,
+                is_withdrawal_suspended   => 0,
                 name                      => 'Binary Coin',
                 stake_default             => 10,
                 transfer_between_accounts => {
@@ -230,7 +246,9 @@ rpc_response {
             },
             USD => {
                 fractional_digits         => 2,
+                is_deposit_suspended      => 0,
                 is_suspended              => 0,
+                is_withdrawal_suspended   => 0,
                 name                      => 'Dollar',
                 stake_default             => 10,
                 transfer_between_accounts => {
@@ -253,7 +271,9 @@ rpc_response {
             },
             UST => {
                 fractional_digits         => 2,
+                is_deposit_suspended      => 0,
                 is_suspended              => 0,
+                is_withdrawal_suspended   => 0,
                 name                      => 'Tether',
                 stake_default             => 10,
                 transfer_between_accounts => {
