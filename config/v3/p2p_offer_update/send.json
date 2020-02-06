@@ -21,10 +21,6 @@
                 1
             ]
         },
-        "amount": {
-            "description": "[Optional] Sets the total amount of the offer, in `account_currency`.",
-            "type": "number"
-        },
         "is_active": {
             "description": "[Optional] Activate or deactivate the offer.",
             "type": "integer",
@@ -32,19 +28,6 @@
                 0,
                 1
             ]
-        },
-        "max_amount": {
-            "description": "[Optional] Sets the maximum amount, in `account_currency`.",
-            "type": "number"
-        },
-        "min_amount": {
-            "description": "[Optional] Sets the minimum amount, in `account_currency`",
-            "type": "number"
-        },
-        "offer_description": {
-            "description": "[Optional] Sets notes from the agent.",
-            "type": "string",
-            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
         },
         "offer_id": {
             "description": "The unique identifier for this offer.",
