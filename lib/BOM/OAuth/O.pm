@@ -27,7 +27,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Database::Model::OAuth;
 use BOM::OAuth::Helper;
 use BOM::User::AuditLog;
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 use BOM::OAuth::Static qw(get_message_mapping);
 
 use Log::Any qw($log);
@@ -308,24 +308,6 @@ sub _oauth_model {
     return BOM::Database::Model::OAuth->new;
 }
 
-sub _login_env {
-    my $c = shift;
-    my $r = $c->stash('request');
-
-    my $now = Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
-
-    my $ip_address = $r->client_ip || '';
-
-    my $ip_address_country = uc $r->country_code || '';
-
-    my $ua = $c->req->headers->header('User-Agent') || '';
-    my $lang = uc $r->language || '';
-
-    my $environment = "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
-
-    return $environment;
-}
-
 sub _get_client {
     my $c      = shift;
     my $app_id = shift;
@@ -541,7 +523,7 @@ sub _validate_login {
     }
 
     # Get last login (this excludes impersonate) before current login to get last record
-    my $new_env        = $c->_login_env();
+    my $new_env        = request()->login_env({user_agent => $c->req->headers->header('User-Agent')});
     my $known_location = $user->logged_in_before_from_same_location($new_env);
 
     my $result = $user->login(
