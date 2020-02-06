@@ -18,7 +18,7 @@ use BOM::Event::Actions::Client;
 use BOM::Event::Process;
 
 my (@identify_args, @track_args);
-my $segment_response = Future->fail(1);
+my $segment_response = Future->done(1);
 my $mock_segment     = new Test::MockModule('WebService::Async::Segment::Customer');
 $mock_segment->redefine(
     'identify' => sub {
@@ -361,14 +361,21 @@ subtest 'signup event' => sub {
     request($req);
     undef @identify_args;
     undef @track_args;
-    my $args = {
-        loginid => $virtual_client2->loginid,
-    };
+    my $vr_args = {
+        loginid    => $virtual_client2->loginid,
+        properties => {
+            type     => 'virtual',
+            utm_tags => {
+                utm_source         => 'direct',
+                signup_device      => 'desktop',
+                date_first_contact => '2019-11-28'
+            }}};
     $virtual_client2->set_default_account('USD');
-    ok BOM::Event::Actions::Client::signup($args), 'signup triggered with virtual loginid';
+    my $handler = BOM::Event::Process::get_action_mappings()->{signup};
+    my $result  = $handler->($vr_args)->get;
+    is $result, 1, 'Success result';
 
     my ($customer, %args) = @identify_args;
-    is $args{first_name}, undef, 'test first name';
     is_deeply \%args,
         {
         'context' => {
@@ -390,6 +397,7 @@ subtest 'signup event' => sub {
         event      => 'signup',
         properties => {
             loginid         => $virtual_client2->loginid,
+            type            => 'virtual',
             currency        => $virtual_client2->currency,
             landing_company => $virtual_client2->landing_company->short,
             country         => Locale::Country::code2country($virtual_client2->residence),
@@ -404,20 +412,24 @@ subtest 'signup event' => sub {
         }
         },
         'properties is properly set for virtual account signup';
+    test_segment_customer($customer, $virtual_client2, '', $virtual_client2->date_joined);
 
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => 'test2@bin.com',
     });
-    $args->{loginid} = $test_client2->loginid;
-
+    my $real_args = {
+        loginid    => $test_client2->loginid,
+        properties => {
+            type => 'real',
+        }};
     $user2->add_client($test_client2);
 
     undef @identify_args;
     undef @track_args;
 
-    $segment_response = Future->done(1);
-    my $result = BOM::Event::Actions::Client::signup($args);
+    $result = $handler->($real_args)->get;
+
     is $result, 1, 'Success signup result';
     ($customer, %args) = @identify_args;
     test_segment_customer($customer, $test_client2, '', $virtual_client2->date_joined);
@@ -466,13 +478,15 @@ subtest 'signup event' => sub {
                 postal_code => $test_client->address_postcode,
                 country     => Locale::Country::code2country($test_client->residence),
             },
+            type => 'real',
         }
         },
         'properties is set properly for real account signup event';
 
     $test_client2->set_default_account('EUR');
 
-    ok BOM::Event::Actions::Client::signup($args), 'successful login track after setting currency';
+    ok $handler->($real_args)->get, 'successful signup track after setting currency';
+
     ($customer, %args) = @track_args;
     test_segment_customer($customer, $test_client2, 'EUR', $virtual_client2->date_joined);
 
@@ -743,34 +757,60 @@ sub test_segment_customer {
 
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     is $customer->user_id, $test_client->binary_user_id, 'User id is binary user id';
-    my ($year, $month, $day) = split('-', $test_client->date_of_birth);
+    if ($test_client->is_virtual) {
+        is_deeply $customer->traits,
+            {
+            'email'      => $test_client->email,
+            'first_name' => $test_client->first_name,
+            'last_name'  => $test_client->last_name,
+            'phone'      => $test_client->phone,
+            'country'    => Locale::Country::code2country($test_client->residence),
+            'created_at' => Date::Utility->new($created_at)->datetime_iso8601,
+            'currencies' => $currencies,
+            'address'    => {
+                street      => ' ',
+                town        => '',
+                state       => '',
+                postal_code => '',
+                country     => Locale::Country::code2country($test_client->residence),
+            },
+            'birthday'           => undef,
+            'age'                => undef,
+            'signup_device'      => 'desktop',
+            'utm_source'         => 'direct',
+            'date_first_contact' => '2019-11-28'
+            },
+            'Customer traits are set correctly for virtual account';
+    } else {
+        my ($year, $month, $day) = split('-', $test_client->date_of_birth);
 
-    is_deeply $customer->traits,
-        {
-        'email'      => $test_client->email,
-        'first_name' => $test_client->first_name,
-        'last_name'  => $test_client->last_name,
-        'birthday'   => $test_client->date_of_birth,
-        'age'        => (
-            Time::Moment->new(
-                year  => $year,
-                month => $month,
-                day   => $day
-            )->delta_years(Time::Moment->now_utc)
-        ),
-        'phone'      => $test_client->phone,
-        'created_at' => Date::Utility->new($created_at)->datetime_iso8601,
-        'address'    => {
-            street      => $test_client->address_line_1 . " " . $test_client->address_line_2,
-            town        => $test_client->address_city,
-            state       => BOM::Platform::Locale::get_state_by_id($test_client->state, $test_client->residence) // '',
-            postal_code => $test_client->address_postcode,
-            country     => Locale::Country::code2country($test_client->residence),
-        },
-        'currencies' => $currencies,
-        'country'    => Locale::Country::code2country($test_client->residence),
-        },
-        'Customer traits are set correctly';
+        is_deeply $customer->traits,
+            {
+            'email'      => $test_client->email,
+            'first_name' => $test_client->first_name,
+            'last_name'  => $test_client->last_name,
+            'birthday'   => $test_client->date_of_birth,
+            'age'        => (
+                Time::Moment->new(
+                    year  => $year,
+                    month => $month,
+                    day   => $day
+                )->delta_years(Time::Moment->now_utc)
+            ),
+            'phone'      => $test_client->phone,
+            'created_at' => Date::Utility->new($created_at)->datetime_iso8601,
+            'address'    => {
+                street      => $test_client->address_line_1 . " " . $test_client->address_line_2,
+                town        => $test_client->address_city,
+                state       => BOM::Platform::Locale::get_state_by_id($test_client->state, $test_client->residence) // '',
+                postal_code => $test_client->address_postcode,
+                country     => Locale::Country::code2country($test_client->residence),
+            },
+            'currencies' => $currencies,
+            'country'    => Locale::Country::code2country($test_client->residence),
+            },
+            'Customer traits are set correctly';
+    }
 }
 
 subtest 'set financial assessment segment' => sub {

@@ -68,7 +68,6 @@ sub signup {
     my ($args) = @_;
     my $loginid = $args->{loginid};
     my $properties = $args->{properties} // {};
-
     return Future->done unless _validate_params($loginid);
     my $customer = _create_customer($loginid);
     $properties->{loginid} = $loginid;
@@ -76,6 +75,10 @@ sub signup {
     map { $properties->{$_} = $customer->{$_}           if $customer->{$_} } qw/currency landing_company date_joined/;
     map { $properties->{$_} = $customer->{traits}->{$_} if $customer->{traits}->{$_} } qw/first_name last_name phone address age country/;
     $log->debugf('Track signup event for client %s', $loginid);
+    if ($properties->{utm_tags}) {
+        @{$customer->{traits}}{keys $properties->{utm_tags}->%*} = values $properties->{utm_tags}->%*;
+        delete $properties->{utm_tags};
+    }
     return Future->needs_all(_identify($customer), _track($customer, $properties, 'signup'));
 }
 

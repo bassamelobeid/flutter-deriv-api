@@ -2088,9 +2088,7 @@ It can be called with the following parameters:
 sub signup {
     my @args = @_;
 
-    BOM::Event::Services::Track::signup(@args)->retain;
-
-    return 1;
+    return BOM::Event::Services::Track::signup(@args);
 }
 
 =head2 transfer_between_accounts
