@@ -52,7 +52,7 @@ sub activity {
 
     my $apps_by_brand = $self->get_apps_by_brand();
     my $activity      = $self->database_mapper()->get_trading_activity({
-        date         => $self->processing_date,
+        date         => $self->processing_date->date_yyyymmdd,
         include_apps => $apps_by_brand->{include_apps},
         exclude_apps => $apps_by_brand->{exclude_apps},
     });

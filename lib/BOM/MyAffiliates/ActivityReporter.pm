@@ -52,7 +52,7 @@ sub activity {
 
     my $apps_by_brand = $self->get_apps_by_brand();
     my $activity      = $self->database_mapper()->get_clients_activity({
-        date              => $when,
+        date              => $when->date_yyyymmdd,
         only_authenticate => 'false',
         broker_code       => undef,
         include_apps      => $apps_by_brand->{include_apps},
