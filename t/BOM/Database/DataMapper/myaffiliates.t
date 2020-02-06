@@ -21,7 +21,7 @@ lives_ok {
 'Expect to initialize the myaffilaites data mapper';
 
 my $activities;
-$activities = $myaff_data_mapper->get_clients_activity({'date' => Date::Utility->new('2011-03-09')});
+$activities = $myaff_data_mapper->get_clients_activity({'date' => Date::Utility->new('2011-03-09')->date_yyyymmdd});
 
 cmp_ok($activities->{'MX1001'}->{'withdrawals'},        '==', 100,          'Check if activity withdrawals is correct for myaffiliate');
 cmp_ok($activities->{'MX1001'}->{'deposits'},           '==', 4200,         'Check if activity deposits is correct for myaffiliate');
@@ -30,7 +30,7 @@ cmp_ok($activities->{'MX1001'}->{'turnover_others'},    '==', 0,            'Che
 cmp_ok($activities->{'MX1001'}->{'turnover_intradays'}, '==', 0,            'Check if turnover_intradays factors is correct for myaffiliate');
 cmp_ok($activities->{'MX1001'}->{'first_funded_date'},  'eq', '2011-03-09', 'Check if activity first_funded_date is correct for myaffiliate');
 
-$activities = $myaff_data_mapper->get_clients_activity({'date' => Date::Utility->new('2017-03-09')});
+$activities = $myaff_data_mapper->get_clients_activity({'date' => Date::Utility->new('2017-03-09')->date_yyyymmdd});
 
 cmp_ok($activities->{'MX1001'}->{'withdrawals'},        '==', 0,            'Check if activity withdrawals is correct for myaffiliate');
 cmp_ok($activities->{'MX1001'}->{'deposits'},           '==', 0,            'Check if activity deposits is correct for myaffiliate');

@@ -116,10 +116,8 @@ my $multiplier_by_orm_object = BOM::Database::Model::FinancialMarketBet::Multipl
     'financial_market_bet_open_record' => $fmb_records->[0],
     'db'                               => $connection_builder->db
 });
-cmp_ok($multiplier_by_orm_object->multiplier_record->basis_spot,
-    '==', $basis_spot, 'Check the child params to see if they are laoded properly');
-cmp_ok($multiplier_by_orm_object->multiplier_record->multiplier,
-    '==', $multiplier, 'Check prediction to see if the object was loaded properly');
+cmp_ok($multiplier_by_orm_object->multiplier_record->basis_spot, '==', $basis_spot, 'Check the child params to see if they are laoded properly');
+cmp_ok($multiplier_by_orm_object->multiplier_record->multiplier, '==', $multiplier, 'Check prediction to see if the object was loaded properly');
 cmp_ok($multiplier_by_orm_object->financial_market_bet_open_record->payout_price,
     '==', $payout_price, 'Check the parent parent to see if they are loaded properly');
 
@@ -174,9 +172,13 @@ is($multiplier_bet->financial_market_bet_open_record->bet_class,          $bet_c
 is($multiplier_bet->financial_market_bet_open_record->bet_type,           $bet_type,           'bet_type');
 is($multiplier_bet->financial_market_bet_open_record->short_code,         $short_code,         'short_code');
 
-is($multiplier_bet->multiplier_record->basis_spot, $basis_spot, 'basis_spot');
-is($multiplier_bet->multiplier_record->multiplier, $multiplier, 'multiplier');
-is($multiplier_bet->multiplier_record->stop_out_order_amount,       $stop_out_order_amount,       'stop_out_order_amount');
-is($multiplier_bet->multiplier_record->stop_out_order_date,       $stop_out_order_date->date_yyyymmdd . 'T' .$stop_out_order_date->time_hhmmss,       'stop_out_order_date');
+is($multiplier_bet->multiplier_record->basis_spot,            $basis_spot,            'basis_spot');
+is($multiplier_bet->multiplier_record->multiplier,            $multiplier,            'multiplier');
+is($multiplier_bet->multiplier_record->stop_out_order_amount, $stop_out_order_amount, 'stop_out_order_amount');
+is(
+    $multiplier_bet->multiplier_record->stop_out_order_date,
+    $stop_out_order_date->date_yyyymmdd . 'T' . $stop_out_order_date->time_hhmmss,
+    'stop_out_order_date'
+);
 
 done_testing();

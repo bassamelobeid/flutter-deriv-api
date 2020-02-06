@@ -26,10 +26,7 @@ sub get_clients_activity {
     return $dbic->run(
         fixup => sub {
             my $sth = $_->prepare($sql);
-            $sth->execute(
-                $args->{'date'}->date_yyyymmdd,
-                $args->{only_authenticate} || 'false',
-                $args->{broker_code}, $args->{include_apps}, $args->{exclude_apps});
+            $sth->execute($args->{date}, $args->{only_authenticate} || 'false', $args->{broker_code}, $args->{include_apps}, $args->{exclude_apps});
 
             return $sth->fetchall_hashref('loginid');
         });
@@ -52,7 +49,7 @@ sub get_trading_activity {
     return $dbic->run(
         sub {
             my $sth = $_->prepare($sql);
-            $sth->execute($args->{'date'}->datetime_yyyymmdd_hhmmss_TZ, $args->{include_apps}, $args->{exclude_apps});
+            $sth->execute($args->{date}, $args->{include_apps}, $args->{exclude_apps});
 
             return $sth->fetchall_arrayref;
         });
