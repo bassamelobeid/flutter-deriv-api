@@ -1879,7 +1879,6 @@ rpc api_token => sub {
     my $params = shift;
 
     my ($client, $args, $client_ip) = @{$params}{qw/client args client_ip/};
-
     my $m = BOM::Platform::Token::API->new;
     my $rtn;
     if (my $token = $args->{delete_token}) {
@@ -2075,13 +2074,11 @@ rpc account_closure => sub {
             ),
             details => {accounts => \%accounts_with_positions}}) if %accounts_with_positions;
 
-    foreach my $mt5_loginid ($user->get_mt5_loginids) {
-        $mt5_loginid =~ s/\D//g;
-
-        my $mt5_user = eval { BOM::MT5::User::Async::get_user($mt5_loginid)->get };
+    foreach my $loginid ($user->get_mt5_loginids) {
+        my $mt5_user = eval { BOM::MT5::User::Async::get_user($loginid)->get };
 
         # TODO :: Include mt5 currency when we have better access to that data. FE will be mapping that for now (they already make a mt5_login_list API call every page)
-        $accounts_with_balance{"MT" . $mt5_loginid} = {
+        $accounts_with_balance{$loginid} = {
             balance  => $mt5_user->{balance},
             currency => ""
             }
@@ -2187,6 +2184,8 @@ rpc set_financial_assessment => sub {
             message_to_client => localize("The financial assessment is not complete")}
     ) unless ($client->landing_company->short eq "maltainvest" ? $is_TE_complete && $is_FI_complete : $is_FI_complete);
 
+    my $old_financial_assessment = decode_fa($client->financial_assessment());
+
     update_financial_assessment($client->user, $params->{args});
 
     # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
@@ -2195,6 +2194,20 @@ rpc set_financial_assessment => sub {
     $response->{financial_information_score} = delete $response->{financial_information};
     $response->{trading_score}               = delete $response->{trading_experience};
 
+    my %changed_items;
+    foreach my $key (keys %{$params->{args}}) {
+        if (!exists($old_financial_assessment->{$key}) || $params->{args}->{$key} ne $old_financial_assessment->{$key}) {
+            $changed_items{$key} = $params->{args}->{$key};
+        }
+    }
+    delete $changed_items{set_financial_assessment};
+
+    BOM::Platform::Event::Emitter::emit(
+        'set_financial_assessment',
+        {
+            loginid => $client->loginid,
+            params  => \%changed_items,
+        });
     return $response;
 };
 

@@ -122,7 +122,7 @@ subtest 'multi currency transfers' => sub {
         token    => $token,
         args     => {
             from_binary => $client_eur->loginid,
-            to_mt5      => $ACCOUNTS{'real\svg'},
+            to_mt5      => 'MTR' . $ACCOUNTS{'real\svg'},
             amount      => $eur_test_amount,
         },
     };
@@ -131,7 +131,7 @@ subtest 'multi currency transfers' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => $ACCOUNTS{'real\svg'},
+            from_mt5  => 'MTR' . $ACCOUNTS{'real\svg'},
             to_binary => $client_eur->loginid,
             amount    => $usd_test_amount,
         },
@@ -390,7 +390,7 @@ subtest 'Transfers Limits' => sub {
         token    => $token,
         args     => {
             from_binary => $client->loginid,
-            to_mt5      => $ACCOUNTS{'real\svg'},
+            to_mt5      => 'MTR' . $ACCOUNTS{'real\svg'},
             amount      => 1
         },
     };
@@ -419,28 +419,21 @@ subtest 'Transfers Limits' => sub {
         ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
         ->error_message_like(qr/minimum amount for transfers is EUR $expected_eur_min/, 'Transfers minimum - correct error message');
 
-    $EUR_USD = 1000;
-    $redis->hmset(
-        'exchange_rates::EUR_USD',
-        quote => $EUR_USD,
-        epoch => time
-    );
     my $expected_usd_min = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{USD}->{min};
-    cmp_ok $expected_usd_min, '>', 10, 'USD-EUR transfer minimum limit elevated to lower bounds by changing exchange rate to $EUR_USD';
 
     my $withdraw_params = {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => $ACCOUNTS{'real\svg'},
+            from_mt5  => 'MTR' . $ACCOUNTS{'real\svg'},
             to_binary => $client->loginid,
-            amount    => 1,
+            amount    => 0.5,
         },
     };
 
     $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('Transfers should have been stopped')
-        ->error_code_is('MT5WithdrawalError', 'Lower bound - correct error code')
-        ->error_message_like(qr/minimum amount for transfers is $expected_usd_min USD/, 'Lower bound - correct error message');
+        ->error_code_is('MT5WithdrawalError', 'Less than minimum amount - correct error code')
+        ->error_message_like(qr/minimum amount for transfers is USD $expected_usd_min/, 'InvalidMinAmount - correct error message');
 
     $demo_account_mock->unmock;
 };
@@ -461,7 +454,7 @@ subtest 'Suspended Transfers Currencies' => sub {
             token    => $token,
             args     => {
                 from_binary => $client_cr_btc->loginid,
-                to_mt5      => $ACCOUNTS{'real\svg'},
+                to_mt5      => 'MTR' . $ACCOUNTS{'real\svg'},
                 amount      => 1
             },
         };

@@ -31,7 +31,7 @@ my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client_vr->email($email);
 $test_client_vr->save;
 
-my $user         = BOM::User->create(
+my $user = BOM::User->create(
     email    => $email,
     password => $hash_pwd
 );
@@ -128,6 +128,13 @@ my $token_mf   = $m->create_token($test_client_mf->loginid, 'test token');
 
 my $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
 my $c = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+
+my @emit_args;
+my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_emitter->mock(
+    'emit' => sub {
+        @emit_args = @_;
+    });
 
 my $method = 'get_financial_assessment';
 subtest 'get financial assessment' => sub {
@@ -287,6 +294,14 @@ subtest $method => sub {
             token => $token
         });
     is($c->tcall('get_financial_assessment', {token => $token})->{forex_trading_experience}, "1-2 years", "forex_trading_experience changed");
+
+    is $emit_args[0], 'set_financial_assessment', 'correct event name';
+    is_deeply $emit_args[1],
+        {
+        'params'  => {'forex_trading_experience' => '1-2 years'},
+        'loginid' => 'MF90000000'
+        },
+        'event args are correct';
 
     my $msg = mailbox_search(
         email   => 'compliance@binary.com',

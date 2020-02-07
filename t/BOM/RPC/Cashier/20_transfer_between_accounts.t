@@ -920,7 +920,8 @@ subtest 'transfer with fees' => sub {
         is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
 
         cmp_ok $client_cr_ust->account->balance, '==', $previous_amount_ust - $amount, 'From account deducted correctly';
-        cmp_ok $client_cr_usd->account->balance, '==', $previous_amount_usd + $expected_transfer_amount, 'To account credited correctly';
+        my $amount_after_transaction = financialrounding('amount', 'USD', $previous_amount_usd + $expected_transfer_amount);
+        cmp_ok $client_cr_usd->account->balance, '==', $amount_after_transaction, 'To account credited correctly';
     };
 
     $mock_fees->unmock_all();
@@ -1318,14 +1319,14 @@ subtest 'MT5' => sub {
     );
 
     my @mt5_accounts = ({
-            loginid      => 'MT' . $ACCOUNTS{'real\svg_standard'},
+            loginid      => 'MTR' . $ACCOUNTS{'real\svg_standard'},
             balance      => num($DETAILS{balance}),
             currency     => 'USD',
             account_type => 'mt5',
             mt5_group    => 'real\\svg_standard'
         },
         {
-            loginid      => 'MT' . $ACCOUNTS{'real\labuan_advanced'},
+            loginid      => 'MTR' . $ACCOUNTS{'real\labuan_advanced'},
             balance      => num($DETAILS{balance}),
             currency     => 'USD',
             account_type => 'mt5',
@@ -1348,15 +1349,15 @@ subtest 'MT5' => sub {
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(0);
 
     $params->{args} = {
-        account_from => 'MT' . $ACCOUNTS{'real\svg_standard'},
-        account_to   => 'MT' . $ACCOUNTS{'real\labuan_advanced'},
+        account_from => 'MTR' . $ACCOUNTS{'real\svg_standard'},
+        account_to   => 'MTR' . $ACCOUNTS{'real\labuan_advanced'},
         currency     => "USD",
-        amount       => 180                                         # this is the only deposit amount allowed by mock MT5
+        amount       => 180                                          # this is the only deposit amount allowed by mock MT5
     };
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5->MT5 transfer error code')
         ->error_message_is('Transfer between two MT5 accounts is not allowed.', 'MT5->MT5 transfer error message');
 
-    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'demo\svg_standard'};
+    $params->{args}{account_from} = 'MTD' . $ACCOUNTS{'demo\svg_standard'};
     $params->{args}{account_to}   = $test_client->loginid;
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5 demo -> real account transfer error code')
@@ -1364,7 +1365,7 @@ subtest 'MT5' => sub {
 
     # real -> MT5
     $params->{args}{account_from} = $test_client->loginid;
-    $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\svg_standard'};
+    $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\svg_standard'};
 
     _test_events_prepare();
     $rpc_ct->call_ok($method, $params)->has_no_error("Real account -> real MT5 ok");
@@ -1379,7 +1380,7 @@ subtest 'MT5' => sub {
             client_to_loginid   => $params->{args}{account_to},
             stash               => ignore(),
             accounts            => bag({
-                    loginid      => 'MT' . $ACCOUNTS{'real\svg_standard'},
+                    loginid      => 'MTR' . $ACCOUNTS{'real\svg_standard'},
                     balance      => num($DETAILS{balance}),
                     currency     => 'USD',
                     account_type => 'mt5',
@@ -1399,9 +1400,9 @@ subtest 'MT5' => sub {
     # MT5 -> real
     $mock_client->mock(fully_authenticated => sub { return 0 });
 
-    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\svg_standard'};
+    $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\svg_standard'};
     $params->{args}{account_to}   = $test_client->loginid;
-    $params->{args}{amount}       = 150;                                     # this is the only withdrawal amount allowed by mock MT5
+    $params->{args}{amount}       = 150;                                      # this is the only withdrawal amount allowed by mock MT5
 
     _test_events_prepare();
     $rpc_ct->call_ok($method, $params)->has_no_error("Real MT5 -> real account ok");
@@ -1423,7 +1424,7 @@ subtest 'MT5' => sub {
             client_to_loginid   => $params->{args}{account_to},
             stash               => ignore(),
             accounts            => bag({
-                    loginid      => 'MT' . $ACCOUNTS{'real\svg_standard'},
+                    loginid      => 'MTR' . $ACCOUNTS{'real\svg_standard'},
                     balance      => num($DETAILS{balance}),
                     currency     => 'USD',
                     account_type => 'mt5',
@@ -1441,7 +1442,7 @@ subtest 'MT5' => sub {
 
     cmp_ok $test_client->default_account->balance, '==', 970, 'real money account balance increased';
 
-    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\labuan_advanced'};
+    $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\labuan_advanced'};
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_like(qr/Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to/,
         'Error message returned from inner MT5 sub when regulated account has expired documents');
@@ -1465,12 +1466,12 @@ subtest 'MT5' => sub {
     $mock_client->mock(fully_authenticated => sub { return 1 });
 
     $params->{args}{account_from} = $test_client->loginid;
-    $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\labuan_advanced'};
+    $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\labuan_advanced'};
     $params->{args}{currency}     = 'EUR';
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for real account_from');
 
-    $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\labuan_advanced'};
+    $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\labuan_advanced'};
     $params->{args}{account_to}   = $test_client->loginid;
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for MT5 account_from');
@@ -1481,7 +1482,7 @@ subtest 'MT5' => sub {
 
         $params->{args}{amount}       = 180;
         $params->{args}{account_from} = $test_client->loginid;
-        $params->{args}{account_to}   = 'MT' . $ACCOUNTS{'real\svg_standard'};
+        $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\svg_standard'};
 
         $params->{token_type} = 'oauth_token';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('with oauth token, ok if account_from is not the authenticated client');
@@ -1492,7 +1493,7 @@ subtest 'MT5' => sub {
         );
 
         $params->{args}{amount}       = 150;
-        $params->{args}{account_from} = 'MT' . $ACCOUNTS{'real\svg_standard'};
+        $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\svg_standard'};
         $params->{args}{account_to}   = $test_client->loginid;
 
         $params->{token_type} = 'oauth_token';

@@ -1234,14 +1234,15 @@ rpc transfer_between_accounts => sub {
     if (not $loginid_from or not $loginid_to) {
         if (($args->{accounts} // '') eq 'all' and not(BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all)) {
             my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->get;
-            push @accounts,
-                {
-                loginid      => 'MT' . $_->{login},
-                balance      => $_->{display_balance},
-                account_type => 'mt5',
-                mt5_group    => $_->{group},
-                currency     => $_->{currency}}
-                for grep { $_->{group} !~ /^demo/ } @mt5_accounts;
+            for my $mt5_acc (grep { $_->{group} !~ /^demo/ } @mt5_accounts) {
+                push @accounts,
+                    {
+                    loginid      => $mt5_acc->{login},
+                    balance      => $mt5_acc->{display_balance},
+                    account_type => 'mt5',
+                    mt5_group    => $mt5_acc->{group},
+                    currency     => $mt5_acc->{currency}};
+            }
         }
 
         return {
@@ -1289,7 +1290,7 @@ rpc transfer_between_accounts => sub {
 
             $method = \&BOM::RPC::v3::MT5::Account::mt5_deposit;
             $params->{args}{from_binary} = $binary_login = $loginid_from;
-            $params->{args}{to_mt5}      = $mt5_login    = $loginid_to =~ s/^MT//r;
+            $params->{args}{to_mt5}      = $mt5_login    = $loginid_to;
             $params->{args}{return_mt5_details} = 1;    # to get MT5 account holder name
         }
 
@@ -1301,7 +1302,7 @@ rpc transfer_between_accounts => sub {
 
             $method = \&BOM::RPC::v3::MT5::Account::mt5_withdrawal;
             $params->{args}{to_binary} = $binary_login = $loginid_to;
-            $params->{args}{from_mt5}  = $mt5_login    = $loginid_from =~ s/^MT//r;
+            $params->{args}{from_mt5}  = $mt5_login    = $loginid_from;
             $params->{args}{currency_check} = $currency;    # this makes mt5_withdrawal() check that MT5 account currency matches $currency
         }
 
@@ -1332,7 +1333,7 @@ rpc transfer_between_accounts => sub {
                         my ($setting) = @_;
                         push @{$resp->{accounts}},
                             {
-                            loginid      => 'MT' . $mt5_login,
+                            loginid      => $mt5_login,
                             balance      => $setting->{display_balance},
                             currency     => $setting->{currency},
                             account_type => 'mt5',

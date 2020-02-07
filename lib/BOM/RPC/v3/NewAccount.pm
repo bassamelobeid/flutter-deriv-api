@@ -95,7 +95,7 @@ rpc "new_account_virtual",
 
     $user->add_login_history(
         action      => 'login',
-        environment => BOM::RPC::v3::Utility::login_env($params),
+        environment => request()->login_env($params),
         successful  => 't',
         app_id      => $params->{source});
 
@@ -108,12 +108,19 @@ rpc "new_account_virtual",
         amount        => 0,
         payment_agent => 0,
     );
+    my $utm_tags = {};
 
+    foreach my $tag (qw( utm_source utm_medium utm_campaign gclid_url date_first_contact signup_device )) {
+        $utm_tags->{$tag} = $args->{$tag} if $args->{$tag};
+    }
     BOM::Platform::Event::Emitter::emit(
         'signup',
         {
             loginid    => $client->loginid,
-            properties => {type => 'virtual'}});
+            properties => {
+                type     => 'virtual',
+                utm_tags => $utm_tags
+            }});
 
     return {
         client_id => $client->loginid,
@@ -328,7 +335,7 @@ rpc new_account_real => sub {
 
     $user->add_login_history(
         action      => 'login',
-        environment => BOM::RPC::v3::Utility::login_env($params),
+        environment => request()->login_env($params),
         successful  => 't',
         app_id      => $params->{source});
 
@@ -453,7 +460,7 @@ rpc new_account_maltainvest => sub {
 
     $user->add_login_history(
         action      => 'login',
-        environment => BOM::RPC::v3::Utility::login_env($params),
+        environment => request()->login_env($params),
         successful  => 't',
         app_id      => $params->{source});
 

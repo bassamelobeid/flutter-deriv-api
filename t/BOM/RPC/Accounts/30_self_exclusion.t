@@ -365,7 +365,7 @@ subtest 'get and set self_exclusion' => sub {
         }};
 
     my $mt5_loginid = $c->tcall('mt5_new_account', $mt5_params)->{login};
-    is($mt5_loginid, $ACCOUNTS{'real\malta'}, 'MT5 loginid is correct: ' . $mt5_loginid);
+    is($mt5_loginid, 'MTR' . $ACCOUNTS{'real\malta'}, 'MT5 loginid is correct: ' . $mt5_loginid);
 
     ## Verify an email was sent after opening an MT5 account, since user has
     ##  limits currently in place.
@@ -375,7 +375,7 @@ subtest 'get and set self_exclusion' => sub {
     );
     ok($msg, 'Email for MLT client limits with MT5 accounts');
     is_deeply($msg->{to}, ['compliance@binary.com', 'marketing@binary.com', 'x-acc@binary.com'], 'email to address ok');
-    like($msg->{body}, qr/MT$mt5_loginid/, 'email content is ok');
+    like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
 
     ## Set some limits again, and another email should be sent to compliance listing
     ##  the new limitations since an MT5 account is open.
@@ -387,7 +387,7 @@ subtest 'get and set self_exclusion' => sub {
     );
     ok($msg, 'Email for MLT client limits with MT5 accounts');
     is_deeply($msg->{to}, ['compliance@binary.com', 'marketing@binary.com', 'x-acc@binary.com'], 'email to address ok');
-    like($msg->{body}, qr/MT$mt5_loginid/, 'email content is ok');
+    like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
 };
 
 done_testing();

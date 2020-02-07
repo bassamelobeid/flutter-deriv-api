@@ -77,13 +77,13 @@ subtest 'get settings' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login => $ACCOUNTS{'real\svg'},
+            login => 'MTR' . $ACCOUNTS{'real\svg'},
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_get_settings');
-    is($c->result->{login},   $ACCOUNTS{'real\svg'}, 'result->{login}');
-    is($c->result->{balance}, $DETAILS{balance},     'result->{balance}');
-    is($c->result->{country}, "mt",                  'result->{country}');
+    is($c->result->{login},   'MTR' . $ACCOUNTS{'real\svg'}, 'result->{login}');
+    is($c->result->{balance}, $DETAILS{balance},             'result->{balance}');
+    is($c->result->{country}, "mt",                          'result->{country}');
 
     $params->{args}{login} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_get_settings wrong login')
@@ -100,12 +100,12 @@ subtest 'login list' => sub {
     $c->call_ok($method, $params)->has_no_error('no error for mt5_login_list');
 
     my @accounts = map { $_->{login} } @{$c->result};
-    cmp_bag(\@accounts, [$ACCOUNTS{'real\svg'}], "mt5_login_list result");
+    cmp_bag(\@accounts, ['MTR' . $ACCOUNTS{'real\svg'}], "mt5_login_list result");
 };
 
 subtest 'login list partly successfull result' => sub {
     my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('mt5_logins', sub { return qw(MT00000013 MT00000014) });
+    $bom_user_mock->mock('mt5_logins', sub { return qw(MTR00000013 MTR00000014) });
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mt5_acc_mock->mock(
@@ -114,7 +114,7 @@ subtest 'login list partly successfull result' => sub {
             my $login = shift->{args}{login};
 
             #result one login should have error msg
-            return BOM::RPC::v3::MT5::Account::create_error_future('General') if $login eq '00000014';
+            return BOM::RPC::v3::MT5::Account::create_error_future('General') if $login eq 'MTR00000014';
 
             return Future->done({some => 'valid data'});
         });
@@ -131,7 +131,7 @@ subtest 'login list partly successfull result' => sub {
 
 subtest 'login list without success results' => sub {
     my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('mt5_logins', sub { return qw(MT00000013 MT00000014) });
+    $bom_user_mock->mock('mt5_logins', sub { return qw(MTR00000013 MTR00000014) });
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mt5_acc_mock->mock(
@@ -167,7 +167,7 @@ subtest 'create new account fails, when we get error during getting login list' 
     };
 
     my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('mt5_logins', sub { return qw(MT00000013 MT00000014) });
+    $bom_user_mock->mock('mt5_logins', sub { return qw(MTR00000013 MTR00000014) });
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mt5_acc_mock->mock(
@@ -186,7 +186,7 @@ subtest 'password check' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login    => $ACCOUNTS{'real\svg'},
+            login    => 'MTR' . $ACCOUNTS{'real\svg'},
             password => $DETAILS{password}{main},
             type     => 'main',
         },
@@ -209,7 +209,7 @@ subtest 'password change' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login         => $ACCOUNTS{'real\svg'},
+            login         => 'MTR' . $ACCOUNTS{'real\svg'},
             old_password  => $DETAILS{password}{main},
             new_password  => 'Ijkl6789',
             password_type => 'main'
@@ -221,7 +221,7 @@ subtest 'password change' => sub {
 
     is $emitted{"mt5_password_changed"}, undef, "mt5 password change event should not be emitted";
 
-    $params->{args}{login} = $ACCOUNTS{'real\svg'};
+    $params->{args}{login} = 'MTR' . $ACCOUNTS{'real\svg'};
 
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
     # This call yields a truth integer directly, not a hash
@@ -231,7 +231,7 @@ subtest 'password change' => sub {
 
     # reset throller, test for password limit
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $params->{args}->{login}        = $ACCOUNTS{'real\svg'};
+    $params->{args}->{login}        = 'MTR' . $ACCOUNTS{'real\svg'};
     $params->{args}->{old_password} = $DETAILS{password}{main};
     $params->{args}->{new_password} = 'Ijkl6789';
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
@@ -243,7 +243,7 @@ subtest 'password change' => sub {
         'It looks like you have already made the request. Please try again later.',
         'change password hits rate limit'
     );
-     # reset throller, test for password limit
+    # reset throller, test for password limit
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $params->{args}->{new_password} = '12345678';
 
@@ -286,7 +286,7 @@ subtest 'password reset' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login             => $ACCOUNTS{'real\svg'},
+            login             => 'MTR' . $ACCOUNTS{'real\svg'},
             new_password      => 'Ijkl6789',
             password_type     => 'main',
             verification_code => $code
@@ -335,7 +335,7 @@ subtest 'investor password reset' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login             => $ACCOUNTS{'real\svg'},
+            login             => 'MTR' . $ACCOUNTS{'real\svg'},
             new_password      => 'Abcd1234',
             password_type     => 'investor',
             verification_code => $code
@@ -361,7 +361,7 @@ subtest 'password check investor' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login         => $ACCOUNTS{'real\svg'},
+            login         => 'MTR' . $ACCOUNTS{'real\svg'},
             password      => 'Abcd1234',
             password_type => 'investor'
         },

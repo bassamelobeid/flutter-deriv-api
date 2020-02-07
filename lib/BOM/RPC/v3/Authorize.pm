@@ -158,7 +158,7 @@ rpc authorize => sub {
         # add to login history for api token only as oauth login already creates an entry
         if ($params->{args}->{add_to_login_history} && $user) {
             $user->add_login_history(
-                environment => BOM::RPC::v3::Utility::login_env($params),
+                environment => request()->login_env($params),
                 successful  => 't',
                 action      => 'login',
                 app_id      => $app_id
@@ -174,7 +174,7 @@ rpc authorize => sub {
         # App ID 4 comes from Backoffice, when client account is impersonated
         if ($app_id eq '4') {
             $user->add_login_history(
-                environment => BOM::RPC::v3::Utility::login_env($params),
+                environment => request()->login_env($params),
                 successful  => 't',
                 action      => 'login',
                 app_id      => $app_id,
@@ -284,7 +284,7 @@ rpc logout => sub {
                 }
 
                 $user->add_login_history(
-                    environment => BOM::RPC::v3::Utility::login_env($params),
+                    environment => request()->login_env($params),
                     successful  => 't',
                     action      => 'logout',
                     app_id      => $app_id // $params->{source},
