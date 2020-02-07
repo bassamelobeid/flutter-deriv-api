@@ -78,19 +78,19 @@ subtest 'Age Verified' => sub {
 };
 
 my $CR_SIBLINGS_2 =
-    [create_client('CR', undef, {binary_user_id => 4}), create_client('CR', undef, {binary_user_id => 4})];
+    [create_client('CR'), create_client('CR')];
 my $MX_SIBLINGS_2 =
-    [create_client('MX', undef, {binary_user_id => 5}), create_client('MX', undef, {binary_user_id => 5})];
+    [create_client('MX'), create_client('MX')];
 my $MLT_SIBLINGS_2 =
-    [create_client('MLT', undef, {binary_user_id => 6}), create_client('MLT', undef, {binary_user_id => 6})];
+    [create_client('MLT'), create_client('MLT')];
 my %clients_with_expired_check_mandatory = (
     MX  => $MX_SIBLINGS_2,
     MLT => $MLT_SIBLINGS_2,
 );
 
-$user_client_cr->add_client($_) foreach @$CR_SIBLINGS_2;
-$user_client_cr->add_client($_) foreach @$MX_SIBLINGS_2;
-$user_client_cr->add_client($_) foreach @$MLT_SIBLINGS_2;
+$user_client_cr->add_client($_)  foreach @$CR_SIBLINGS_2;
+$user_client_mx->add_client($_)  foreach @$MX_SIBLINGS_2;
+$user_client_mlt->add_client($_) foreach @$MLT_SIBLINGS_2;
 
 my %clients_with_expired_check_not_mandatory = (
     CR => $CR_SIBLINGS_2,
