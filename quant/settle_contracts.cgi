@@ -22,6 +22,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Cookie;
+use BOM::Transaction::Utility qw(track_event);
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -52,9 +53,10 @@ if (request()->param('perform_actions')) {
             my $bet_info = first { $_->{fmb_id} == $fmb_id } @$expired_unsold;
             die $fmb_id . '  cannot be settled with this tool.' unless $bet_info;
 
-            BOM::Database::Helper::FinancialMarketBet->new({
+            my ($fmb, $txn, $buy_txn_id, $buy_source) = BOM::Database::Helper::FinancialMarketBet->new({
                     transaction_data => {
                         staff_loginid => $staff_name,
+                        source        => 4,             # backoffice app_id
                     },
                     bet_data => {
                         id         => $fmb_id,
@@ -69,6 +71,15 @@ if (request()->param('perform_actions')) {
                     },
                     db => $broker_db
                 })->sell_bet;
+
+            track_event(
+                event       => 'sell',
+                loginid     => $bet_info->{loginid},
+                transaction => $txn,
+                fmb         => $fmb,
+                contract    => produce_contract($fmb->{short_code}, $bet_info->{currency}),
+                buy_source  => $buy_source,
+            );
 
             if ($action eq 'cancel') {
                 # For cancelled bets, now adjust their account for the purchase price
