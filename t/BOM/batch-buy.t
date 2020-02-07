@@ -23,6 +23,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Transaction::Validation;
 use BOM::Transaction;
+use BOM::Transaction::Utility qw(TRACK_FMB_ATTR TRACK_CONTRACT_ATTR TRACK_TIME_ATTR);
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -62,6 +63,51 @@ sub check_datadog {
         return;
     }
     cmp_deeply($item, any(@datadog_actions), "found datadog action: @{[$item->{action_name}]}");
+}
+
+my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+my @emitted;
+$mock_emitter->mock(
+    'emit',
+    sub {
+        push @emitted, [@_];
+    });
+
+sub check_emitted_event {
+    my %args    = @_;
+    my @clients = $args{clients}->@*;
+
+    is scalar @emitted, scalar @clients, 'client and event lists have the same length';
+    my %emitted_hash = map { $_->[1]->{contract_id} => $_ } @emitted;
+
+    for my $i (0 .. @clients - 1) {
+        my $loginid = $clients[$i]->loginid;
+        my $txn     = $args{txn}->[$i]->{txn};
+        my $fmb     = $args{txn}->[$i]->{fmb};
+
+        my ($name, $payload) = $emitted_hash{$fmb->{id}}->@*;
+
+        is $args{event}, $name, 'event name is correct';
+
+        is $payload->{loginid}, $loginid, 'correct loginid';
+
+        my $expected_payload = {$fmb->%{TRACK_FMB_ATTR->@*}, $args{contract}->%{TRACK_CONTRACT_ATTR->@*},};
+        $expected_payload->{loginid}           = $loginid;
+        $expected_payload->{contract_id}       = $fmb->{id};
+        $expected_payload->{balance_after}     = $txn->{balance_after};
+        $expected_payload->{contract_category} = $args{contract}->category_code;
+        $expected_payload->{contract_type}     = $args{contract}->code;
+        $expected_payload->{source}            = $txn->{source};
+        $expected_payload->{transaction_id}    = $txn->{id};
+        for (qw/copy_trading auto_expired buy_source/) { $expected_payload->{$_} = $args{$_} if $args{$_} }
+
+        for my $attr (TRACK_TIME_ATTR->@*) {
+            $expected_payload->{$attr} = Date::Utility->new($expected_payload->{$attr})->epoch if $expected_payload->{$attr};
+            $payload->{$attr}          = Date::Utility->new($payload->{$attr})->epoch          if $payload->{$attr};
+        }
+
+        is_deeply $payload, $expected_payload, 'event proporties matches the fmb record';
+    }
 }
 
 my $now = Date::Utility->new;
@@ -171,7 +217,7 @@ sub check_one_result {
 ####################################################################
 
 subtest 'batch-buy success + multisell', sub {
-    plan tests => 12;
+    plan tests => 22;
     lives_ok {
         my $clm = create_client;    # manager
         my $cl1 = create_client;
@@ -213,6 +259,7 @@ subtest 'batch-buy success + multisell', sub {
             amount_type   => 'payout',
             multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}, {loginid => $cl2->loginid},],
             purchase_date => $contract->date_start,
+            source        => 10,
         });
 
         subtest 'check limits' => sub {
@@ -263,9 +310,18 @@ subtest 'batch-buy success + multisell', sub {
             ready_to_sell  => 0,    # obviously
         };
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
+        check_emitted_event(
+            event        => 'buy',
+            txn          => [$m->[0], $m->[2], $m->[3]],
+            contract     => $contract,
+            clients      => [$cl2, $cl1, $cl2],
+            copy_trading => 1,
+        );
+        undef @emitted;
+
         sleep 1;
         subtest "sell_by_shortcode", sub {
-            plan tests => 8;
+            plan tests => 18;
             my $contract_parameters = shortcode_to_parameters($contract->shortcode, $clm->currency);
             $contract_parameters->{landing_company} = $clm->landing_company->short;
             $contract = produce_contract($contract_parameters);
@@ -307,6 +363,16 @@ subtest 'batch-buy success + multisell', sub {
             check_one_result 'result for client #1', $cl1, $acc1, $m->[2], 4960;
             check_one_result 'result for client #2', $cl2, $acc2, $m->[0], 4910;
             check_one_result 'result for client #3', $cl2, $acc2, $m->[3], 4920;
+
+            check_emitted_event(
+                event      => 'sell',
+                txn        => [$m->[0], $m->[2], $m->[3]],
+                contract   => $contract,
+                master     => $clm,
+                clients    => [$cl2, $cl1, $cl2],
+                buy_source => 10
+            );
+            undef @emitted;
         };
     }
     'survived';
@@ -814,5 +880,7 @@ subtest 'batch_buy multiplier contract' => sub {
     }
     'survived';
 };
+
+$mock_emitter->unmock_all;
 
 done_testing;
