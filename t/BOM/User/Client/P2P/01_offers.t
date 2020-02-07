@@ -88,9 +88,9 @@ subtest 'Updating agent fields' => sub {
 
     my $agent_info = $agent->p2p_agent_info;
 
-    ok $agent_info->{is_approved},      'Agent is approved';
-    is $agent_info->{agent_name},       $agent_name, 'Agent name';
-    ok $agent_info->{is_active},        'Agent is active';
+    ok $agent_info->{is_approved}, 'Agent is approved';
+    is $agent_info->{agent_name},  $agent_name, 'Agent name';
+    ok $agent_info->{is_active},   'Agent is active';
 
     ok $agent_info->{is_approved}, 'Agent is approved';
     is $agent_info->{agent_name},  $agent_name, 'Agent name';
@@ -228,33 +228,17 @@ subtest 'Creating offer' => sub {
 
     cmp_deeply($offer, $expected_offer, "offer_create returns expected fields");
 
-    cmp_deeply(
-        $agent->p2p_offer_info(offer_id => $offer->{offer_id}),
-        $expected_offer,
-        "offer_info returns expected fields"
-    );
+    cmp_deeply($agent->p2p_offer_info(offer_id => $offer->{offer_id}), $expected_offer, "offer_info returns expected fields");
 
-    cmp_deeply(
-        $agent->p2p_offer_list,
-        [ $expected_offer ],
-        "p2p_offer_list returns expected fields"
-    );
+    cmp_deeply($agent->p2p_offer_list, [$expected_offer], "p2p_offer_list returns expected fields");
 
-    cmp_deeply(
-        $agent->p2p_agent_offers,
-        [ $expected_offer ],
-        "p2p_agent_offers returns expected fields"
-    );
+    cmp_deeply($agent->p2p_agent_offers, [$expected_offer], "p2p_agent_offers returns expected fields");
 
     # Fields that should only be visible to offer owner
     delete @$expected_offer{
         qw( amount amount_display max_amount max_amount_display min_amount min_amount_display remaining_amount remaining_amount_display)};
 
-    cmp_deeply(
-        $test_client_cr->p2p_offer_list,
-        [ $expected_offer ],
-        "p2p_offer_list returns less fields for client"
-    );
+    cmp_deeply($test_client_cr->p2p_offer_list, [$expected_offer], "p2p_offer_list returns less fields for client");
 
     cmp_deeply($test_client_cr->p2p_offer_info(offer_id => $offer->{offer_id}), $expected_offer, "offer_info returns less fields for client");
 

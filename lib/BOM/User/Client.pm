@@ -1996,10 +1996,11 @@ sub p2p_order_create {
 
     die +{error_code => 'OrderAlreadyExists'} if @{$open_orders};
 
-    my $order = $client->db->dbic->run(
+    my $txn_time = Date::Utility->new->datetime;
+    my $order    = $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?)',
-                undef, $offer_id, $client->loginid, $escrow->loginid, $amount, $expiry, $description, $source, $client->loginid);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                undef, $offer_id, $client->loginid, $escrow->loginid, $amount, $expiry, $description, $source, $client->loginid, undef, $txn_time);
         });
 
     return $client->_order_details([$order])->[0];
@@ -2096,10 +2097,11 @@ sub p2p_order_cancel {
     my $escrow    = $client->p2p_escrow;
     my $timed_out = 0;                     # order will have cancelled status
 
+    my $txn_time = Date::Utility->new->datetime;
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?, ?)',
-                undef, $order_id, $escrow->loginid, $param{source}, $client->loginid, $timed_out);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?, ?, ?)',
+                undef, $order_id, $escrow->loginid, $param{source}, $client->loginid, $timed_out, $txn_time);
         });
 }
 
@@ -2124,12 +2126,13 @@ sub p2p_expire_order {
     my $escrow = $client->p2p_escrow;
     die +{error_code => 'EscrowNotFound'} unless $escrow;
 
-    my $timed_out = 1;    # order will have timed-out status
+    my $txn_time  = Date::Utility->new->datetime;
+    my $timed_out = 1;                              # order will have timed-out status
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?, ?)',
-                undef, $order->{order_id}, $escrow->loginid, $param{source}, $param{staff}, $timed_out);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?, ?, ?)',
+                undef, $order->{order_id}, $escrow->loginid, $param{source}, $param{staff}, $timed_out, $txn_time);
         });
 }
 
@@ -2273,15 +2276,15 @@ sub _agent_buy_confirm {
     die +{error_code => 'OrderAlreadyConfirmed'}       if $order_info->{status} eq 'completed';
     die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} ne 'buyer-confirmed';
 
-    my $escrow = $client->p2p_escrow;
-
+    my $escrow   = $client->p2p_escrow;
+    my $txn_time = Date::Utility->new->datetime;
     return $client->db->dbic->txn(
         fixup => sub {
             $_->do('SELECT * FROM p2p.order_confirm_agent(?, ?)', undef, $order_info->{order_id}, 1);
             return $_->selectrow_hashref(
-                'SELECT * FROM p2p.order_complete(?, ?, ?, ?)',
+                'SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?)',
                 undef, $order_info->{order_id},
-                $escrow->loginid, $source, $client->loginid,
+                $escrow->loginid, $source, $client->loginid, $txn_time
             );
         });
 
@@ -2300,15 +2303,15 @@ sub _client_sell_confirm {
     die +{error_code => 'OrderAlreadyConfirmed'}       if $order_info->{status} eq 'completed';
     die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} ne 'buyer-confirmed';
 
-    my $escrow = $client->p2p_escrow;
-
+    my $escrow   = $client->p2p_escrow;
+    my $txn_time = Date::Utility->new->datetime;
     return $client->db->dbic->txn(
         fixup => sub {
             $_->do('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order_info->{order_id}, 1);
             return $_->selectrow_hashref(
-                'SELECT * FROM p2p.order_complete(?, ?, ?, ?)',
+                'SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?)',
                 undef, $order_info->{order_id},
-                $escrow->loginid, $source, $client->loginid,
+                $escrow->loginid, $source, $client->loginid, $txn_time
             );
         });
 }

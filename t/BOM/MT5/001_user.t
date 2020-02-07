@@ -20,7 +20,7 @@ subtest 'MT5 Timeout logic handle' => sub {
         code  => 'ConnectionTimeout'
     };
     my $blocked_return = {
-        error =>  undef,
+        error => undef,
         code  => 'NoConnection'
     };
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');

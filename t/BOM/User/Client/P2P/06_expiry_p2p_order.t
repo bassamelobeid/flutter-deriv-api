@@ -186,9 +186,9 @@ for my $test_case (@test_cases) {
 
         my $err = exception {
             $client->p2p_expire_order(
-                order_id     => $order->{order_id},
-                source => 5,
-                staff  => 'AUTOEXPIRY',
+                order_id => $order->{order_id},
+                source   => 5,
+                staff    => 'AUTOEXPIRY',
             );
         };
         is($err->{error_code}, $test_case->{error}, 'Got expected error behavior');
@@ -201,7 +201,7 @@ for my $test_case (@test_cases) {
 
         is($order_data->{status}, $test_case->{status}, 'Status for new order is correct');
         cmp_ok($order_data->{amount}, '==', $amount, 'Amount for new order is correct');
-        is($order_data->{type},     $test_case->{type}, 'Description for new order is correct');
+        is($order_data->{type}, $test_case->{type}, 'Description for new order is correct');
 
         BOM::Test::Helper::P2P::reset_escrow();
     };

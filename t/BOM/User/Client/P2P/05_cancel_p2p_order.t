@@ -347,7 +347,7 @@ for my $test_case (@test_cases) {
 
         is($order_data->{status}, $test_case->{status}, 'Status for new order is correct');
         cmp_ok($order_data->{amount}, '==', $amount, 'Amount for new order is correct');
-        is($order_data->{type},     $test_case->{type}, 'Offer type is correct');
+        is($order_data->{type}, $test_case->{type}, 'Offer type is correct');
 
         BOM::Test::Helper::P2P::reset_escrow();
     };

@@ -329,7 +329,7 @@ for my $test_case (@test_cases) {
 
         BOM::Test::Helper::P2P::set_order_status($client, $order->{order_id}, $test_case->{init_status});
         BOM::Test::Helper::P2P::expire_order($client, $order->{order_id}) if $test_case->{expire};
-    
+
         my $resp;
         my $err = exception {
             if ($test_case->{who_confirm} eq 'client') {
@@ -346,11 +346,11 @@ for my $test_case (@test_cases) {
         cmp_ok($agent->account->balance,  '==', $test_case->{agent}{after},  'Agent balance is correct');
         cmp_ok($client->account->balance, '==', $test_case->{client}{after}, 'Client balance is correct');
 
-        my $order_data = $client->p2p_order_info(order_id=>$order->{order_id});
+        my $order_data = $client->p2p_order_info(order_id => $order->{order_id});
 
         is($order_data->{status}, $test_case->{status}, 'Status for new order is correct');
         cmp_ok($order_data->{amount}, '==', $amount, 'Amount for new order is correct');
-        is($order_data->{type},     $test_case->{type}, 'Offer type is correct');
+        is($order_data->{type}, $test_case->{type}, 'Offer type is correct');
 
         BOM::Test::Helper::P2P::reset_escrow();
     };
