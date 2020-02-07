@@ -88,7 +88,7 @@ sub create {
     # fix it now. Given that in the redis_transaction, we send it by
     # RedisDB, that will generate an error 'wide character' when we decode
     # message twice. So we disable it now
-    $redis->encoding(undef) if $name =~ /^redis_transaction$/;
+    $redis->encoding(undef) if $name =~ /^redis_(?:transaction|p2p)$/;
     $redis->on(
         connection => sub {
             stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.connections');
