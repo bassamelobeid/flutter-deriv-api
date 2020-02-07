@@ -173,14 +173,14 @@ $app_config->set({'payments.p2p.escrow' => \@escrow_ids});
 $app_config->set({'payments.p2p.limits.maximum_offer' => 3000});
 $log->infof('App config applied');
 
-unless($agent->p2p_agent) {
+unless($agent->p2p_agent_info) {
     $agent->p2p_agent_create('example agent');
 }
-$log->infof('Agent info: %s', $agent->p2p_agent);
-$log->infof('Agents: %s', $agent->p2p_agent_list);
+$log->infof('Agent info: %s', $agent->p2p_agent_info);
+
 $agent->p2p_agent_update(
     is_active        => 1,
-    is_authenticated => 1,
+    is_approved      => 1,
 );
 $agent->save;
 $log->infof('Maximum offer configured is %s', BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer);
