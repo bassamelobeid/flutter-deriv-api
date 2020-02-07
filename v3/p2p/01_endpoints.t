@@ -19,8 +19,8 @@ cleanup_redis_tokens();
 my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 
-$app_config->set({'payments.p2p.enabled' => 1});
-$app_config->set({'system.suspend.p2p' => 0});
+$app_config->set({'payments.p2p.enabled'   => 1});
+$app_config->set({'system.suspend.p2p'     => 0});
 $app_config->set({'payments.p2p.available' => 1});
 
 my $t = build_wsapi_test();
@@ -110,14 +110,14 @@ subtest 'create agent' => sub {
     $agent = $resp->{p2p_agent_info};
     is $agent->{agent_name}, $agent_name, 'agent name';
     ok $agent->{agent_id} > 0, 'agent id';
-    ok !$agent->{is_authenticated}, 'agent not authenticated';
+    ok !$agent->{is_approved}, 'agent not approved';
     ok $agent->{is_active}, 'agent active';
 
     $resp = $t->await::p2p_offer_create({
             p2p_offer_create => 1,
             %offer_params
         })->{error};
-    is $resp->{code}, 'AgentNotAuthenticated', 'Unauthenticated agent';
+    is $resp->{code}, 'AgentNotApproved', 'Unapproved agent';
 };
 
 subtest 'update agent' => sub {
@@ -130,9 +130,16 @@ subtest 'update agent' => sub {
             p2p_agent_update => 1,
             agent_name       => $new_agent_name,
         })->{error};
-    is $resp->{code}, 'AgentNotAuthenticated', 'Unauthenticated agent cannot update the information';
+    is $resp->{code}, 'AgentNotApproved', 'Unapproved agent cannot update the information';
 
-    $cl_agent->p2p_agent_update(is_authenticated => 1);
+    $cl_agent->p2p_agent_update(is_approved => 1);
+
+    $resp = $t->await::p2p_agent_update({
+            p2p_agent_update => 1,
+            agent_name       => ' ',
+        })->{error};
+    ok $resp->{code} eq 'InputValidationFailed' && $resp->{message} =~ /agent_name/, 'Agent name cannot be blank';
+
     $agent = $t->await::p2p_agent_update({
             p2p_agent_update => 1,
             agent_name       => $new_agent_name,
@@ -153,7 +160,7 @@ subtest 'update agent' => sub {
 };
 
 subtest 'create offer' => sub {
-    $cl_agent->p2p_agent_update(is_authenticated => 1);
+    $cl_agent->p2p_agent_update(is_approved => 1);
     $resp = $t->await::p2p_offer_create({
         p2p_offer_create => 1,
         %offer_params
@@ -164,7 +171,7 @@ subtest 'create offer' => sub {
     is $offer->{account_currency}, $cl_agent->account->currency_code, 'account currency';
     is $offer->{agent_id}, $agent->{agent_id}, 'agent id';
     ok $offer->{amount} == $offer_params{amount} && $offer->{amount_display} == $offer_params{amount}, 'amount';
-    ok $offer->{amount_used} == 0 && $offer->{amount_used_display} == 0, 'amount';
+    ok $offer->{remaining_amount} == $offer_params{amount} && $offer->{remaining_amount_display} == $offer_params{amount}, 'remaining';
     is $offer->{country}, $cl_agent->residence, 'country';
     ok $offer->{is_active}, 'is active';
     is $offer->{local_currency}, $offer_params{local_currency}, 'local currency';
@@ -177,18 +184,17 @@ subtest 'create offer' => sub {
 
     $resp = $t->await::p2p_offer_list({p2p_offer_list => 1});
     test_schema('p2p_offer_list', $resp);
-    my $listed_offer = $resp->{p2p_offer_list}{list}[0];
+    cmp_deeply($resp->{p2p_offer_list}{list}[0], $offer, 'Offer list item matches offer create');
 
     $resp = $t->await::p2p_offer_info({
             p2p_offer_info => 1,
             offer_id       => $offer->{offer_id}});
     test_schema('p2p_offer_info', $resp);
-    my $offer_info = $resp->{p2p_offer_info};
-
-    cmp_deeply($offer_info, $listed_offer, 'Offer info matches offer list');
-
-    delete @$listed_offer{qw(agent_name agent_loginid)};    # these are not present in offer create
-    cmp_deeply($listed_offer, $offer, 'Offer list matches offer create');
+    cmp_deeply($resp->{p2p_offer_info}, $offer, 'Offer info matches offer create');
+    
+    $resp = $t->await::p2p_agent_offers({p2p_agent_offers => 1});
+    test_schema('p2p_agent_offers', $resp);
+    cmp_deeply($resp->{p2p_agent_offers}{list}[0], $offer, 'Agent offers item matches offer create');
 };
 
 subtest 'create order' => sub {
