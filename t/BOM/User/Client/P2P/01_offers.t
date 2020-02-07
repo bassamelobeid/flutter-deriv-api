@@ -45,8 +45,7 @@ subtest 'Creating offer from non-agent' => sub {
     my %params = %offer_params;
 
     my $client = BOM::Test::Helper::P2P::create_client();
-    like(exception { $client->p2p_offer_create(%params) }, qr/AgentNotActive/, "non agent can't create offer");
-
+    cmp_deeply(exception { $client->p2p_offer_create(%params) }, {error_code => 'AgentNotActive'}, "non agent can't create offer");
 };
 
 subtest 'Agent Registration' => sub {
@@ -61,11 +60,11 @@ subtest 'Agent Registration' => sub {
 subtest 'Duplicate Agent Registration' => sub {
     my $agent = BOM::Test::Helper::P2P::create_agent();
 
-    like(
+    cmp_deeply(
         exception {
             $agent->p2p_agent_create('agent1')
         },
-        qr/AlreadyRegistered/,
+        {error_code => 'AlreadyRegistered'},
         "duplicate agent request not allowed"
     );
 };
@@ -74,11 +73,11 @@ subtest 'Creating offer from not approved agent' => sub {
     my $agent = BOM::Test::Helper::P2P::create_agent();
     $agent->p2p_agent_update(is_approved => 0);
 
-    like(
+    cmp_deeply(
         exception {
             $agent->p2p_offer_create(%params)
         },
-        qr/AgentNotApproved/,
+        {error_code => 'AgentNotApproved'},
         "non approved can't create offer"
     );
 };
@@ -93,11 +92,15 @@ subtest 'Updating agent fields' => sub {
     is $agent_info->{agent_name},       $agent_name, 'Agent name';
     ok $agent_info->{is_active},        'Agent is active';
 
-    like(
+    ok $agent_info->{is_approved}, 'Agent is approved';
+    is $agent_info->{agent_name},  $agent_name, 'Agent name';
+    ok $agent_info->{is_active},   'Agent is active';
+
+    cmp_deeply(
         exception {
             $agent->p2p_agent_update(agent_name => ' ');
         },
-        qr/AgentNameRequired/,
+        {error_code => 'AgentNameRequired'},
         'Error when agent name is blank'
     );
 
@@ -106,16 +109,16 @@ subtest 'Updating agent fields' => sub {
     ok !($agent->p2p_agent_update(is_active => 0)->{is_active}), 'Switch flag active to false';
 
     ok !($agent->p2p_agent_update(is_approved => 0)->{is_approved}), 'Disable approval';
-    like(
+    cmp_deeply(
         exception {
             $agent->p2p_agent_update(is_active => 1);
         },
-        qr/AgentNotApproved/,
+        {error_code => 'AgentNotApproved'},
         'Error when agent is not approved'
     );
 
-    ok $agent->p2p_agent_update(is_approved => 1)->{is_approved},   'Enabling approval';
-    ok $agent->p2p_agent_update(is_active        => 1)->{is_active},        'Switch flag active to true';
+    ok $agent->p2p_agent_update(is_approved => 1)->{is_approved}, 'Enabling approval';
+    ok $agent->p2p_agent_update(is_active   => 1)->{is_active},   'Switch flag active to true';
 };
 
 subtest 'Creating offer' => sub {
@@ -143,11 +146,11 @@ subtest 'Creating offer' => sub {
 
     %params = %offer_params;
     $params{amount} = 200;
-    like(
+    cmp_deeply(
         exception {
             $offer = $agent->p2p_offer_create(%params);
         },
-        qr/MaximumExceeded/,
+        {error_code => 'MaximumExceeded'},
         'Error when amount exceeds BO offer limit'
     );
 
@@ -167,21 +170,21 @@ subtest 'Creating offer' => sub {
 
     %params = %offer_params;
     $params{min_amount} = $params{max_amount} + 1;
-    like(
+    cmp_deeply(
         exception {
             $offer = $agent->p2p_offer_create(%params);
         },
-        qr/InvalidMinMaxAmount/,
+        {error_code => 'InvalidMinMaxAmount'},
         'Error when min_amount is more than max_amount'
     );
 
     %params = %offer_params;
     $params{amount} = $params{max_amount} - 1;
-    like(
+    cmp_deeply(
         exception {
             $offer = $agent->p2p_offer_create(%params);
         },
-        qr/InvalidMaxAmount/,
+        {error_code => 'InvalidMaxAmount'},
         'Error when max_amount is more than amount'
     );
 
@@ -221,14 +224,9 @@ subtest 'Creating offer' => sub {
         method                   => $params{method},
         type                     => $params{type},
         country                  => $params{country},
-        offer_description        => $params{offer_description}
-    };
+        offer_description        => $params{offer_description}};
 
-    cmp_deeply(
-        $offer,
-        $expected_offer,
-        "offer_create returns expected fields"
-    );
+    cmp_deeply($offer, $expected_offer, "offer_create returns expected fields");
 
     cmp_deeply(
         $agent->p2p_offer_info(offer_id => $offer->{offer_id}),
@@ -249,7 +247,8 @@ subtest 'Creating offer' => sub {
     );
 
     # Fields that should only be visible to offer owner
-    delete @$expected_offer{ qw( amount amount_display max_amount max_amount_display min_amount min_amount_display remaining_amount remaining_amount_display) };
+    delete @$expected_offer{
+        qw( amount amount_display max_amount max_amount_display min_amount min_amount_display remaining_amount remaining_amount_display)};
 
     cmp_deeply(
         $test_client_cr->p2p_offer_list,
@@ -257,17 +256,13 @@ subtest 'Creating offer' => sub {
         "p2p_offer_list returns less fields for client"
     );
 
-    cmp_deeply(
-        $test_client_cr->p2p_offer_info(offer_id => $offer->{offer_id}),
-        $expected_offer,
-        "offer_info returns less fields for client"
-    );
+    cmp_deeply($test_client_cr->p2p_offer_info(offer_id => $offer->{offer_id}), $expected_offer, "offer_info returns less fields for client");
 
-    like(
+    cmp_deeply(
         exception {
             $test_client_cr->p2p_agent_offers,
         },
-        qr/AgentNotRegistered/,
+        {error_code => 'AgentNotRegistered'},
         "client gets error for p2p_agent_offers"
     );
 
@@ -282,11 +277,14 @@ subtest 'Updating offer' => sub {
     ok $offer->{is_active}, 'Offer is active';
 
     my $client = BOM::Test::Helper::P2P::create_client();
-    like(exception { $client->p2p_offer_update(offer_id => $offer->{offer_id}, is_active => 0) },
-        qr/PermissionDenied/, "Other client cannot edit offer");
+    cmp_deeply(
+        exception { $client->p2p_offer_update(offer_id => $offer->{offer_id}, is_active => 0) },
+        {error_code => 'PermissionDenied'},
+        "Other client cannot edit offer"
+    );
 
     ok !$agent->p2p_offer_update(
-        offer_id => $offer->{offer_id},
+        offer_id  => $offer->{offer_id},
         is_active => 0
     )->{is_active}, "Deactivate offer";
 
@@ -306,11 +304,11 @@ subtest 'Creating offer from non active agent' => sub {
     my $agent  = BOM::Test::Helper::P2P::create_agent();
     ok !$agent->p2p_agent_update(is_active => 0)->{is_active}, "set agent inactive";
 
-    like(
+    cmp_deeply(
         exception {
             $agent->p2p_offer_create(%params)
         },
-        qr/AgentNotActive/,
+        {error_code => 'AgentNotActive'},
         "inactive agent can't create offer"
     );
 };

@@ -191,10 +191,7 @@ for my $test_case (@test_cases) {
                 staff  => 'AUTOEXPIRY',
             );
         };
-
-        chomp($err) if $err;
-
-        is($err, $test_case->{error}, 'Got expected error behavior');
+        is($err->{error_code}, $test_case->{error}, 'Got expected error behavior');
 
         cmp_ok($escrow->account->balance, '==', $test_case->{escrow}{after}, 'Escrow balance is correct');
         cmp_ok($agent->account->balance,  '==', $test_case->{agent}{after},  'Agent balance is correct');

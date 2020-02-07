@@ -43,40 +43,32 @@ subtest 'Creating new order' => sub {
     is($order_data->{order_description}, $order_description, 'Description for new order is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
-    
+
     my $expected_order = {
-        'order_id'           => $order_data->{order_id},
-        'amount'             => num($order_data->{amount}),
-        'amount_display'     => num($order_data->{amount}),
-        'price'              => num($order_data->{rate} * $order_data->{amount}),
-        'price_display'      => num($order_data->{rate} * $order_data->{amount}),
-        'rate'               => num($order_data->{rate}),
-        'rate_display'       => num($order_data->{rate}),                     
-        'created_time'       => re('\d+'),
-        'expiry_time'        => re('\d+'),
-        'order_description'  => $order_data->{order_description},
-        'offer_description'  => $offer->{offer_description},
-        'status'             => $order_data->{status},
-        'agent_id'           => $agent->p2p_agent_info->{agent_id},
-        'agent_name'         => $agent->p2p_agent_info->{agent_name},
-        'account_currency'   => $offer->{account_currency},
-        'offer_id'           => $offer->{offer_id},
-        'local_currency'     => $offer->{local_currency},
-        'type'               => $offer->{type},
+        'order_id'          => $order_data->{order_id},
+        'amount'            => num($order_data->{amount}),
+        'amount_display'    => num($order_data->{amount}),
+        'price'             => num($order_data->{rate} * $order_data->{amount}),
+        'price_display'     => num($order_data->{rate} * $order_data->{amount}),
+        'rate'              => num($order_data->{rate}),
+        'rate_display'      => num($order_data->{rate}),
+        'created_time'      => re('\d+'),
+        'expiry_time'       => re('\d+'),
+        'order_description' => $order_data->{order_description},
+        'offer_description' => $offer->{offer_description},
+        'status'            => $order_data->{status},
+        'agent_id'          => $agent->p2p_agent_info->{agent_id},
+        'agent_name'        => $agent->p2p_agent_info->{agent_name},
+        'account_currency'  => $offer->{account_currency},
+        'offer_id'          => $offer->{offer_id},
+        'local_currency'    => $offer->{local_currency},
+        'type'              => $offer->{type},
     };
-   
-    cmp_deeply(
-        $client->p2p_order_list,
-        [ $expected_order ],
-        'order_list() returns correct info'
-    );
-    
-    cmp_deeply(
-        $client->p2p_order_info(order_id => $order_data->{order_id}),
-        $expected_order,
-        'order_info() returns correct info'
-    );
-    
+
+    cmp_deeply($client->p2p_order_list, [$expected_order], 'order_list() returns correct info');
+
+    cmp_deeply($client->p2p_order_info(order_id => $order_data->{order_id}), $expected_order, 'order_info() returns correct info');
+
 };
 
 subtest 'Creating two orders from two clients' => sub {
@@ -207,8 +199,7 @@ subtest 'Creating two new orders from one client for one offer' => sub {
             order_description => $order_description
         );
     };
-    chomp $err;
-    is $err, 'OrderAlreadyExists', 'Got correct error';
+    is $err->{error_code}, 'OrderAlreadyExists', 'Got correct error';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -230,9 +221,7 @@ subtest 'Creating order for agent own order' => sub {
             order_description => $order_description
         );
     };
-    chomp($err);
-    note explain $err;
-    is $err, 'InvalidOfferOwn', 'Got correct error code';
+    is $err->{error_code}, 'InvalidOfferOwn', 'Got correct error code';
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
@@ -258,7 +247,6 @@ subtest 'Creating order with amount more than available' => sub {
             order_description => $order_description
         );
     };
-
     is $err->{error_code}, 'OrderMaximumExceeded', 'Got correct error code';
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
@@ -285,7 +273,6 @@ subtest 'Creating order with negative amount' => sub {
             order_description => $order_description
         );
     };
-
     is $err->{error_code}, 'OrderMinimumNotMet', 'Got correct error code';
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
@@ -319,7 +306,6 @@ subtest 'Creating order outside min-max range' => sub {
             order_description => $order_description
         );
     };
-
     is $err->{error_code}, 'OrderMinimumNotMet', 'Got correct error code';
     cmp_bag($err->{message_params}, [$account_currency, formatnumber('amount', $account_currency, $min_amount)], 'Got correct error values');
 
@@ -331,7 +317,6 @@ subtest 'Creating order outside min-max range' => sub {
             order_description => $order_description
         );
     };
-
     is $err->{error_code}, 'OrderMaximumExceeded', 'Got correct error code';
     cmp_bag($err->{message_params}, [$account_currency, formatnumber('amount', $account_currency, $max_amount)], 'Got correct error values');
 
@@ -361,9 +346,7 @@ subtest 'Creating order with disabled agent' => sub {
             order_description => $order_description
         );
     };
-
-    chomp($err);
-    is $err, 'AgentNotActive', 'Got correct error code';
+    is $err->{error_code}, 'AgentNotActive', 'Got correct error code';
 
     ok($escrow->account->balance == 0,      'Escrow balance is correct');
     ok($agent->account->balance == $amount, 'Agent balance is correct');
@@ -390,9 +373,7 @@ subtest 'Creating order without escrow' => sub {
             order_description => $order_description
         );
     };
-
-    chomp($err);
-    is $err, 'EscrowNotFound', 'Got correct error code';
+    is $err->{error_code}, 'EscrowNotFound', 'Got correct error code';
 
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
@@ -417,9 +398,7 @@ subtest 'Creating order with wrong currency' => sub {
             description => $description
         );
     };
-
-    chomp($err);
-    is $err, 'InvalidOrderCurrency', 'Got correct error code';
+    is $err->{error_code}, 'InvalidOrderCurrency', 'Got correct error code';
 
     ok($agent->account->balance == $amount, 'Agent balance is correct');
 
@@ -448,7 +427,7 @@ subtest 'Sell offers' => sub {
     my $err = exception {
         warning_like { $client->p2p_order_create(%params) } qr/check_no_negative_balance/;
     };
-    like $err, qr/InsufficientBalance/, 'error for insufficient client balance';
+    is $err->{error_code}, 'InsufficientBalance', 'error for insufficient client balance';
 
     BOM::Test::Helper::Client::top_up($client, $client->currency, $amount);
 
@@ -462,10 +441,9 @@ subtest 'Sell offers' => sub {
     is($order_data->{status}, 'pending', 'Status for new order is correct');
     ok($order_data->{amount} == $amount, 'Amount for new order is correct');
     is($order_data->{order_description}, $order_description, 'Description for new order is correct');
-    is($order_data->{type},        'sell',             'offer type is sell');
+    is($order_data->{type},              'sell',             'offer type is sell');
 
     BOM::Test::Helper::P2P::reset_escrow();
-
 };
 
 done_testing();

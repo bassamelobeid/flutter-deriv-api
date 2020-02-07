@@ -1739,10 +1739,10 @@ Returns the agent info or dies with error code.
 sub p2p_agent_create {
     my ($client, $agent_name) = @_;
 
-    die "AlreadyRegistered\n" if $client->_p2p_agents(loginid => $client->loginid)->[0];
+    die +{error_code => 'AlreadyRegistered'} if $client->_p2p_agents(loginid => $client->loginid)->[0];
 
     $agent_name = trim($agent_name);
-    die "AgentNameRequired\n" unless $agent_name;
+    die +{error_code => 'AgentNameRequired'} unless $agent_name;
 
     return $client->db->dbic->run(
         fixup => sub {
@@ -1781,12 +1781,12 @@ sub p2p_agent_update {
     my ($client, %param) = @_;
 
     my $agent_info = $client->p2p_agent_info;
-    die "AgentNotRegistered\n" unless $agent_info;
-    die "AgentNotApproved\n" unless $agent_info->{is_approved} or defined $param{is_approved};
+    die +{error_code => 'AgentNotRegistered'} unless $agent_info;
+    die +{error_code => 'AgentNotApproved'} unless $agent_info->{is_approved} or defined $param{is_approved};
 
     if (exists $param{agent_name}) {
         $param{agent_name} = trim($param{agent_name});
-        die "AgentNameRequired\n" unless $param{agent_name};
+        die +{error_code => 'AgentNameRequired'} unless $param{agent_name};
     }
 
     # Return the current information of the agent if nothing changed
@@ -1814,11 +1814,11 @@ sub p2p_agent_offers {
     my ($client, %param) = @_;
 
     my $agent_info = $client->_p2p_agents(loginid => $client->loginid)->[0];
-    die "AgentNotRegistered\n" unless $agent_info;
+    die +{error_code => 'AgentNotRegistered'} unless $agent_info;
 
     my ($limit, $offset) = @param{qw/limit offset/};
-    die "InvalidListLimit\n"  if defined $limit  && $limit <= 0;
-    die "InvalidListOffset\n" if defined $offset && $offset < 0;
+    die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
+    die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
     my $list = $client->_p2p_offers(%param, agent_id => $agent_info->{id});
 
@@ -1836,8 +1836,8 @@ sub p2p_offer_create {
     my ($client, %param) = @_;
 
     my $agent_info = $client->_p2p_agents(loginid => $client->loginid)->[0];
-    die "AgentNotActive\n" unless $agent_info && $agent_info->{is_active};
-    die "AgentNotApproved\n" unless $agent_info->{is_approved};
+    die +{error_code => 'AgentNotActive'} unless $agent_info && $agent_info->{is_active};
+    die +{error_code => 'AgentNotApproved'} unless $agent_info->{is_approved};
 
     $param{account_currency} = $client->currency;
 
@@ -1847,11 +1847,11 @@ sub p2p_offer_create {
         agent_loginid => $client->loginid,
         active        => 1,
     )->@*;
-    die "OfferMaxExceeded\n" if $active_offers_count >= MAXIMUM_ACTIVE_OFFERS;
+    die +{error_code => 'OfferMaxExceeded'} if $active_offers_count >= MAXIMUM_ACTIVE_OFFERS;
 
     $param{country} //= $client->residence;
 
-    $param{local_currency} //= $client->local_currency || die "NoLocalCurrency\n";
+    $param{local_currency} //= $client->local_currency || die +{error_code => 'NoLocalCurrency'};
 
     my $offer = $client->db->dbic->run(
         fixup => sub {
@@ -1890,8 +1890,8 @@ sub p2p_offer_list {
     my ($client, %param) = @_;
 
     my ($limit, $offset) = @param{qw/limit offset/};
-    die "InvalidListLimit\n"  if defined $limit  && $limit <= 0;
-    die "InvalidListOffset\n" if defined $offset && $offset < 0;
+    die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
+    die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
     my $list = $client->_p2p_offers(
         %param,
@@ -1915,16 +1915,16 @@ Returns latest offer info or dies with error code.
 sub p2p_offer_update {
     my ($client, %param) = @_;
 
-    my $offer_id = delete $param{offer_id} or die "OfferNotFound\n";
-    my $offer = $client->_p2p_offers(id => $offer_id)->[0] or die "OfferNotFound\n";
+    my $offer_id = delete $param{offer_id} or die +{error_code => 'OfferNotFound'};
+    my $offer = $client->_p2p_offers(id => $offer_id)->[0] or die +{error_code => 'OfferNotFound'};
 
-    die "PermissionDenied\n" if $offer->{agent_loginid} ne $client->loginid;
+    die +{error_code => 'PermissionDenied'} if $offer->{agent_loginid} ne $client->loginid;
 
     # return current offer details if nothing changed
     return $client->_offer_details([$offer])->[0] unless grep { exists $offer->{$_} and $param{$_} ne $offer->{$_} } keys %param;
 
     # Amount already used in an offer is (amount - remaining). New amount cannot be less than the amount used.
-    die "OfferInsufficientAmount\n" if $param{amount} && $param{amount} < ($offer->{amount} - $offer->{remaining});
+    die +{error_code => 'OfferInsufficientAmount'} if $param{amount} && $param{amount} < ($offer->{amount} - $offer->{remaining});
 
     my $update = $client->db->dbic->run(
         fixup => sub {
@@ -1954,10 +1954,10 @@ sub p2p_order_create {
 
     my $offer_info = $client->_p2p_offers(id => $offer_id)->[0];
 
-    die "OfferNotFound\n"        unless $offer_info;
-    die "OfferIsDisabled\n"      unless $offer_info->{is_active};
-    die "InvalidOrderCurrency\n" unless $offer_info->{account_currency} eq $client->currency;
-    die "InvalidOfferOwn\n" if $offer_info->{agent_loginid} eq $client->loginid;
+    die +{error_code => 'OfferNotFound'}        unless $offer_info;
+    die +{error_code => 'OfferIsDisabled'}      unless $offer_info->{is_active};
+    die +{error_code => 'InvalidOrderCurrency'} unless $offer_info->{account_currency} eq $client->currency;
+    die +{error_code => 'InvalidOfferOwn'} if $offer_info->{agent_loginid} eq $client->loginid;
 
     die +{
         error_code     => 'OrderMaximumExceeded',
@@ -1972,29 +1972,29 @@ sub p2p_order_create {
         if $amount < ($offer_info->{min_amount} // 0);
 
     my $agent_info = $client->_p2p_agents(id => $offer_info->{agent_id})->[0];
-    die "AgentNotFound\n"    unless $agent_info;
-    die "AgentNotActive\n"   unless $agent_info->{is_active};
-    die "AgentNotApproved\n" unless $agent_info->{is_approved};
+    die +{error_code => 'AgentNotFound'}    unless $agent_info;
+    die +{error_code => 'AgentNotActive'}   unless $agent_info->{is_active};
+    die +{error_code => 'AgentNotApproved'} unless $agent_info->{is_approved};
 
     if ($offer_info->{type} eq 'sell') {
-        die "InsufficientBalance\n" if $client->account->balance < $amount;
+        die +{error_code => 'InsufficientBalance'} if $client->account->balance < $amount;
     } elsif ($offer_info->{type} eq 'buy') {
         my $agent = BOM::User::Client->new({loginid => $offer_info->{agent_loginid}});
-        die "MaximumExceeded\n" if $agent->account->balance < $amount;
+        die +{error_code => 'MaximumExceeded'} if $agent->account->balance < $amount;
     } else {
         die 'Invalid offer type ' . ($offer_info->{type} // 'undef') . 'for offer ' . $offer_info->{offer_id};
     }
 
     my $escrow = $client->p2p_escrow;
 
-    die "EscrowNotFound\n" unless $escrow;
+    die +{error_code => 'EscrowNotFound'} unless $escrow;
 
     my $open_orders = $client->_p2p_orders(
         offer_id => $offer_id,
         loginid  => $client->loginid,
         status => ['pending', 'buyer-confirmed']);
 
-    die "OrderAlreadyExists\n" if @{$open_orders};
+    die +{error_code => 'OrderAlreadyExists'} if @{$open_orders};
 
     my $order = $client->db->dbic->run(
         fixup => sub {
@@ -2031,8 +2031,8 @@ sub p2p_order_list {
     $param{loginid} = $client->loginid;
 
     my ($limit, $offset) = @param{qw/limit offset/};
-    die "InvalidListLimit\n"  if defined $limit  && $limit <= 0;
-    die "InvalidListOffset\n" if defined $offset && $offset < 0;
+    die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
+    die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
     my $list = $client->_p2p_orders(%param);
     return $client->_order_details($list);
@@ -2052,17 +2052,17 @@ Otherwise dies with error code.
 sub p2p_order_confirm {
     my ($client, %param) = @_;
 
-    my $order_id = $param{order_id} // die "OrderNotFound\n";
+    my $order_id = $param{order_id} // die +{error_code => 'OrderNotFound'};
     my $order_info = $client->_p2p_orders(id => $order_id)->[0];
 
-    die "OrderNotFound\n" unless $order_info;
-    die "OrderNoEditExpired\n" if $order_info->{is_expired};
+    die +{error_code => 'OrderNotFound'} unless $order_info;
+    die +{error_code => 'OrderNoEditExpired'} if $order_info->{is_expired};
 
     my $ownership_type = _order_ownership_type($client, $order_info);
 
     my $method = $client->can('_' . $ownership_type . '_' . $order_info->{offer_type} . '_confirm');
 
-    die "PermissionDenied\n" unless $method;
+    die +{error_code => 'PermissionDenied'} unless $method;
 
     return $client->$method($order_info, $param{source});
 }
@@ -2079,19 +2079,19 @@ This will move funds from escrow to seller.
 sub p2p_order_cancel {
     my ($client, %param) = @_;
 
-    my $order_id = $param{order_id} // die "OrderNotFound\n";
+    my $order_id = $param{order_id} // die +{error_code => 'OrderNotFound'};
     my $order = $client->_p2p_orders(id => $order_id)->[0];
 
-    die "OrderNotFound\n" unless $order;
-    die "OrderNoEditExpired\n" if $order->{is_expired};
-    die "OrderAlreadyCancelled\n" if $order->{status} eq 'cancelled';
+    die +{error_code => 'OrderNotFound'} unless $order;
+    die +{error_code => 'OrderNoEditExpired'}    if $order->{is_expired};
+    die +{error_code => 'OrderAlreadyCancelled'} if $order->{status} eq 'cancelled';
 
     my $ownership_type = _order_ownership_type($client, $order);
 
-    die "PermissionDenied\n"
+    die +{error_code => 'PermissionDenied'}
         unless ($ownership_type eq 'client' and $order->{offer_type} eq 'buy')
         or ($ownership_type eq 'agent' and $order->{offer_type} eq 'sell');
-    die "PermissionDenied\n" unless $order->{status} eq 'pending';
+    die +{error_code => 'PermissionDenied'} unless $order->{status} eq 'pending';
 
     my $escrow    = $client->p2p_escrow;
     my $timed_out = 0;                     # order will have cancelled status
@@ -2115,14 +2115,14 @@ sub p2p_expire_order {
 
     my $order_id = $param{order_id} // die "no order_id provided to p2p_expire_order";
     my $order = $client->_p2p_orders(id => $order_id)->[0];
-    die "Order id not found: $order_id" unless $order;
+    die +{error_code => 'OrderNotFound'} unless $order;
 
     my $status = $order->{status};
 
     return unless $status =~ /^(pending|buyer-confirmed)$/;
 
     my $escrow = $client->p2p_escrow;
-    die "No escrow account for " . $client->loginid unless $escrow;
+    die +{error_code => 'EscrowNotFound'} unless $escrow;
 
     my $timed_out = 1;    # order will have timed-out status
 
@@ -2185,8 +2185,8 @@ sub _p2p_offers {
     my ($client, %param) = @_;
 
     my ($limit, $offset) = @param{qw/limit offset/};
-    die "InvalidListLimit\n"  if defined $limit  && $limit <= 0;
-    die "InvalidListOffset\n" if defined $offset && $offset < 0;
+    die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
+    die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
     $client->db->dbic->run(
         fixup => sub {
@@ -2213,8 +2213,8 @@ sub _p2p_orders {
         && ref $param{status} ne 'ARRAY';
 
     my ($limit, $offset) = @param{qw/limit offset/};
-    die "InvalidListLimit\n"  if defined $limit  && $limit <= 0;
-    die "InvalidListOffset\n" if defined $offset && $offset < 0;
+    die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
+    die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
     return $client->db->dbic->run(
         fixup => sub {
@@ -2250,9 +2250,9 @@ Sets order client confirmed = true and status = buyer-confirmed.
 sub _client_buy_confirm {
     my ($client, $order_info) = @_;
 
-    die "OrderAlreadyConfirmed\n" if $order_info->{status} =~ /^(buyer-confirmed|completed)$/;
+    die +{error_code => 'OrderAlreadyConfirmed'} if $order_info->{status} =~ /^(buyer-confirmed|completed)$/;
 
-    die "InvalidStateForConfirmation\n" if $order_info->{status} ne 'pending';
+    die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} ne 'pending';
 
     return $client->db->dbic->run(
         fixup => sub {
@@ -2270,8 +2270,8 @@ Completing the order moves funds from escrow to client.
 sub _agent_buy_confirm {
     my ($client, $order_info, $source) = @_;
 
-    die "OrderAlreadyConfirmed\n" if $order_info->{status} eq 'completed';
-    die "InvalidStateForConfirmation\n" if $order_info->{status} ne 'buyer-confirmed';
+    die +{error_code => 'OrderAlreadyConfirmed'}       if $order_info->{status} eq 'completed';
+    die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} ne 'buyer-confirmed';
 
     my $escrow = $client->p2p_escrow;
 
@@ -2297,8 +2297,8 @@ Completing the order moves funds from escrow to agent.
 sub _client_sell_confirm {
     my ($client, $order_info, $source) = @_;
 
-    die "OrderAlreadyConfirmed\n" if $order_info->{status} eq 'completed';
-    die "InvalidStateForConfirmation\n" if $order_info->{status} ne 'buyer-confirmed';
+    die +{error_code => 'OrderAlreadyConfirmed'}       if $order_info->{status} eq 'completed';
+    die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} ne 'buyer-confirmed';
 
     my $escrow = $client->p2p_escrow;
 
@@ -2322,8 +2322,8 @@ Sets order agent confirmed = true and status = buyer-confirmed
 sub _agent_sell_confirm {
     my ($client, $order_info) = @_;
 
-    die "OrderAlreadyConfirmed\n" if $order_info->{status} =~ /^(buyer-confirmed|completed)$/;
-    die "InvalidStateForConfirmation\n" if $order_info->{status} ne 'pending';
+    die +{error_code => 'OrderAlreadyConfirmed'}       if $order_info->{status} =~ /^(buyer-confirmed|completed)$/;
+    die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} ne 'pending';
 
     return $client->db->dbic->run(
         fixup => sub {
@@ -2459,7 +2459,7 @@ sub _validate_offer_amounts {
         };
     }
 
-    die "MaximumExceeded\n"
+    die +{error_code => 'MaximumExceeded'}
         if in_usd($param{amount}, uc $param{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer;
 
     my $maximum_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
@@ -2470,8 +2470,8 @@ sub _validate_offer_amounts {
         };
     }
 
-    die "InvalidMinMaxAmount\n" unless $param{min_amount} <= $param{max_amount};
-    die "InvalidMaxAmount\n"    unless $param{max_amount} <= $param{amount};
+    die +{error_code => 'InvalidMinMaxAmount'} unless $param{min_amount} <= $param{max_amount};
+    die +{error_code => 'InvalidMaxAmount'}    unless $param{max_amount} <= $param{amount};
 }
 
 =head1 METHODS - Payments

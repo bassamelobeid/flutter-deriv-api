@@ -340,9 +340,7 @@ for my $test_case (@test_cases) {
                 die 'Invalid who_confirm value: ' . $test_case->{who_confirm};
             }
         };
-        chomp($err) if $err;
-
-        is($err, $test_case->{error}, 'Got expected error behavior (' . ($test_case->{error} // 'none') . ')');
+        is($err->{error_code}, $test_case->{error}, 'Got expected error behavior (' . ($test_case->{error} // 'none') . ')');
 
         cmp_ok($escrow->account->balance, '==', $test_case->{escrow}{after}, 'Escrow balance is correct');
         cmp_ok($agent->account->balance,  '==', $test_case->{agent}{after},  'Agent balance is correct');

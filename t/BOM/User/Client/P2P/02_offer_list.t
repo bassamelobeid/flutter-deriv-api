@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More;
 use Test::Fatal;
+use Test::Deep;
 
 use BOM::User::Client;
 use BOM::Test::Helper::P2P;
@@ -19,11 +20,11 @@ my ($agent2, $offer2) = BOM::Test::Helper::P2P::create_offer(amount => 100);
 my $client = BOM::Test::Helper::P2P::create_client();
 
 subtest 'agent offers' => sub {
-    like(
+    cmp_deeply(
         exception {
             $client->p2p_agent_offers()
         },
-        qr/AgentNotRegistered/,
+        {error_code => 'AgentNotRegistered'},
         "non agent gets error"
     );
 
@@ -34,7 +35,6 @@ subtest 'agent offers' => sub {
     is $agent2->p2p_agent_offers()->[0]{offer_id}, $offer2->{offer_id}, 'agent 2 (inactive) gets offer';
     is $agent2->p2p_agent_offers()->@*, 1, 'agent 2 got one';
 };
-
 
 subtest 'amount filter' => sub {
     plan skip_all => "We don't filter offer list for now, but might do later";
