@@ -13,7 +13,7 @@ use Parallel::ForkManager;
 use Sys::Info;
 use Path::Tiny;
 use Volatility::LinearCache;
-
+use Log::Any::Adapter qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
 use BOM::Pricing::PriceDaemon;
 
 # Since this is only available in AWS, default to localhost for other environments
@@ -45,7 +45,7 @@ $SIG{TERM} = sub {
     kill KILL => @running_forks;
     exit 1;
 };
-    
+
 # tune cache: up to 2s
 $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE} = 2;    ## nocritic
 my $pm = Parallel::ForkManager->new($workers);
@@ -84,7 +84,7 @@ while (1) {
     my $daemon = BOM::Pricing::PriceDaemon->new(tags => ['tag:' . $internal_ip]);
     # Allow graceful shutdown
     $SIG{TERM} = sub {
-        $daemon->stop
+        $daemon->stop;
     };
     $daemon->run(
         queues     => [split /,/, $queues],
