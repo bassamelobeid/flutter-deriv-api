@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "P2P Agent Update (request)",
-    "description": "Update the information of the P2P agent for the current account. Can only be used by an authenticated agent.",
+    "description": "Update the information of the P2P agent for the current account. Can only be used by an approved P2P agent.",
     "hidden": 1,
     "type": "object",
     "auth_required": 1,
@@ -22,7 +22,8 @@
         },
         "agent_name": {
             "description": "[Optional] The agent's displayed name.",
-            "type": "string"
+            "type": "string",
+            "pattern": "\\w+"
         },
         "is_active": {
             "description": "[Optional] The activation status of the agent.",

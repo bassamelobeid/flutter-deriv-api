@@ -92,12 +92,30 @@ sub create {
     $redis->on(
         connection => sub {
             stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.connections');
-        },
+        });
+    $redis->on(
         error => sub {
             my ($self, $err) = @_;
             warn("Redis $name error: $err");
-
             stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.errors');
+            # When redis connection is lost wait until redis server become
+            # available then terminate the service so that hypnotoad will
+            # restart it.
+            return if ($err ne 'Connection refused');
+            my $ping_redis;
+            $ping_redis = sub {
+                Mojo::IOLoop->timer(
+                    1 => sub {
+                        try {
+                            $self->ping;
+                            exit;
+                        }
+                        catch {
+                            $ping_redis->();
+                        }
+                    });
+            };
+            $ping_redis->();
         });
 
     return $redis;

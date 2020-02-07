@@ -41,8 +41,8 @@
                         1
                     ]
                 },
-                "is_authenticated": {
-                    "description": "The authentication status of the agent.",
+                "is_approved": {
+                    "description": "The approval status of the agent.",
                     "type": "integer",
                     "enum": [
                         0,
