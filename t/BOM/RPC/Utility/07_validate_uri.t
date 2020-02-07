@@ -6,17 +6,15 @@ use BOM::RPC::v3::Utility;
 use utf8;
 
 subtest 'URI scheme should be valid' => sub {
-    isnt BOM::RPC::v3::Utility::validate_uri('httphttp:://example.com'),             undef, 'Bad URL httphttp';
     isnt BOM::RPC::v3::Utility::validate_uri('http:://example.com'),                 undef, 'Bad URL ::';
     isnt BOM::RPC::v3::Utility::validate_uri('http:///example.com'),                 undef, 'Bad URL //';
     isnt BOM::RPC::v3::Utility::validate_uri('http://username:passwordexample.com'), undef, 'URL with password without @';
     isnt BOM::RPC::v3::Utility::validate_uri('//example.com'),                       undef, 'URL without scheme';
-
 };
 
-subtest 'URI scheme should be http(s)' => sub {
+subtest 'URI scheme should be valid' => sub {
     isnt BOM::RPC::v3::Utility::validate_uri('example.com'),       undef, 'URL without slash';
-    isnt BOM::RPC::v3::Utility::validate_uri('ftp://example.com'), undef, 'URL with ftp scheme';
+    isnt BOM::RPC::v3::Utility::validate_uri('a@2://example.com'), undef, 'URL with invalid scheme';
 };
 
 subtest 'URI should not have port' => sub {
@@ -67,6 +65,8 @@ subtest 'Healthy URL' => sub {
     is BOM::RPC::v3::Utility::validate_uri('http://example.com/example/subdir'),           undef, 'Healthy http URL with two subdir';
     is BOM::RPC::v3::Utility::validate_uri('http://xn--c1yn36f.com/'),                     undef, 'Healthy punycode URL';
     is BOM::RPC::v3::Utility::validate_uri('http://example.com/%D9%86%D8%A7%D9%85%D9%87'), undef, 'Healthy encoded Unicode subdir';
+    is BOM::RPC::v3::Utility::validate_uri('app://example.com'),                           undef, 'Healthy URL having a custom scheme';
+    is BOM::RPC::v3::Utility::validate_uri('my-scheme+v0.2://example.com'),                undef, 'Healthy URL having another custom scheme';
 };
 
 done_testing();
