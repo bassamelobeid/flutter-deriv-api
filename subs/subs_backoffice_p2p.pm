@@ -40,9 +40,9 @@ sub p2p_agent_update {
     try {
         if (
             $client->p2p_agent_update(
-                agent_name       => request->param('agent_name'),
-                is_authenticated => request->param('authenticated'),
-                is_active        => request->param('active'),
+                agent_name  => request->param('agent_name'),
+                is_approved => request->param('approved'),
+                is_active   => request->param('active'),
             ))
         {
             return {
@@ -56,8 +56,8 @@ sub p2p_agent_update {
 
         if ($error_code =~ 'AgentNameRequired') {
             $error_msg = 'P2P Agent name is required.';
-        } elsif ($error_code =~ 'AgentNotAuthenticated') {
-            $error_msg = 'P2P Agent for ' . $client->loginid . ' should be authenticated in order to update its details.';
+        } elsif ($error_code =~ 'AgentNotApproved') {
+            $error_msg = 'P2P Agent for ' . $client->loginid . ' should be approved in order to update its details.';
         } else {
             $error_msg = 'P2P Agent for ' . $client->loginid . ' could not be updated. Error code: ' . $error_code;
         }

@@ -4,11 +4,11 @@ table.p2p_agent_edit td{
 }
 </style>
 
-[% agent_name = client.p2p_agent && client.p2p_agent.name || '' %]
-[% is_active = client.p2p_agent && client.p2p_agent.is_active %]
-[% is_authenticated = (client.p2p_agent && client.p2p_agent.is_authenticated) %]
+[% agent_name = agent_info.agent_name || '' %]
+[% is_active = agent_info.is_active %]
+[% is_approved = agent_info.is_approved %]
 
-<form action="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {loginID => client.loginid, whattodo => 'p2p.agent.update'}) %]" method="post">
+<form action="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {loginID => loginid, whattodo => 'p2p.agent.update'}) %]" method="post">
     <table border="0" width="100%" id="p2p_agent_edit">
         <tr>
             <td class="label">Name : </td>
@@ -18,13 +18,13 @@ table.p2p_agent_edit td{
         </tr>
         [% IF whattodo != 'register' %]
             <tr>
-                <td class="label">Authenticated : </td>
+                <td class="label">Approved : </td>
                 <td>
-                    <select name="authenticated">
-                        <option value="1" [% is_authenticated && 'selected' %]>YES</option>
-                        <option value="0" [% !is_authenticated && 'selected' %]>NO</option>
+                    <select name="approved">
+                        <option value="1" [% is_approved && 'selected' %]>YES</option>
+                        <option value="0" [% !is_approved && 'selected' %]>NO</option>
                     </select>
-                    [% IF is_authenticated %]
+                    [% IF is_approved %]
                         <strong style="color: green">YES</strong>
                     [% ELSE %]
                         <strong style="color: red">NO</strong>
