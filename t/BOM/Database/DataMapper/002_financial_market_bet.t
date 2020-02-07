@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More (tests => 32);
+use Test::More (tests => 33);
 use Test::Warnings;
 
 use Test::Exception;
@@ -15,6 +15,7 @@ use BOM::Database::Model::FinancialMarketBet::TouchBet;
 use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Helper::Client qw( create_client top_up );
 use BOM::Database::ClientDB;
 use Date::Utility;
 
@@ -23,6 +24,7 @@ my $account;
 
 sub buy {
     my $bet_data = shift;
+    my $transaction_data = shift // {};
 
     return BOM::Database::Helper::FinancialMarketBet->new({
             account_data => {
@@ -32,6 +34,7 @@ sub buy {
             transaction_data => {
                 transaction_time => scalar $bet_data->{transaction_time},
                 staff_loginid    => scalar $bet_data->{staff_loginid},
+                %$transaction_data,
             },
             bet_data => $bet_data,
             db       => $connection_builder->db,
@@ -39,23 +42,80 @@ sub buy {
 }
 
 sub sell {
-    my $bet_data = shift;
+    my $bet_data         = shift;
+    my $transaction_data = shift;
 
-    return BOM::Database::Helper::FinancialMarketBet->new({
+    my $helper = BOM::Database::Helper::FinancialMarketBet->new({
             account_data => {
                 client_loginid => $account->client_loginid,
                 currency_code  => $account->currency_code,
-            },
-            transaction_data => {
-                transaction_time => scalar $bet_data->{transaction_time},
-                staff_loginid    => scalar $bet_data->{staff_loginid},
             },
             bet_data => +{
                 sell_time => Date::Utility::today()->db_timestamp,
                 %$bet_data
             },
             db => $connection_builder->db,
-        })->sell_bet;
+        });
+
+    $helper->transaction_data($transaction_data) if $transaction_data;
+
+    return $helper->sell_bet;
+}
+
+sub buy_multiple_bets {
+    my ($acc, $bet_data, $transaction_data) = @_;
+
+    my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
+            account_data     => [map { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
+            bet_data         => $bet_data,
+            transaction_data => {
+                transaction_time => scalar $bet_data->{transaction_time},
+                staff_loginid    => scalar $bet_data->{staff_loginid},
+                %$transaction_data,
+            },
+            db => $connection_builder->db,
+        });
+    return $fmb->batch_buy_bet;
+}
+
+sub sell_by_shortcode {
+    my ($shortcode, $acc, $bet_data, $transaction_data) = @_;
+
+    my $now = Date::Utility->new->plus_time_interval('1s');
+
+    my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
+            bet_data         => $bet_data,
+            account_data     => [map { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
+            transaction_data => {
+                transaction_time => scalar $bet_data->{transaction_time},
+                staff_loginid    => scalar $bet_data->{staff_loginid},
+            },
+            db => $connection_builder->db,
+        });
+
+    $fmb->transaction_data($transaction_data) if $transaction_data;
+    return $fmb->sell_by_shortcode($shortcode);
+}
+
+sub batch_sell {
+    my $bet_ids          = shift;
+    my $transaction_data = shift;
+
+    my @bets_to_sell =
+        map { {id => $_, quantity => 1, sell_price => 30, sell_time => Date::Utility->new->plus_time_interval('1s')->db_timestamp,} } @$bet_ids;
+
+    my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
+            account_data => {
+                client_loginid => $account->client_loginid,
+                currency_code  => $account->currency_code,
+            },
+            bet_data => \@bets_to_sell,
+            db       => $connection_builder->db,
+        });
+
+    $fmb->transaction_data([map { $transaction_data } @$bet_ids]) if $transaction_data;
+
+    return $fmb->batch_sell_bet;
 }
 
 lives_ok {
@@ -373,6 +433,117 @@ subtest 'digits' => sub {
                 '==', 1, 'check qty open bet = 0');
         };
     }
+};
+
+subtest buy_sell_return_values => sub {
+    my $bet_info = {
+        'underlying_symbol' => 'R_25',
+        'payout_price'      => 3,
+        'buy_price'         => 1.55,
+        'remark'            => 'test remark',
+        'purchase_time'     => '2011-07-25 14:48:02',
+        'start_time'        => '2011-07-25 14:48:02',
+        'expiry_time'       => '2011-07-25 22:48:02',
+        'bet_class'         => 'digit_bet',
+        'bet_type'          => 'CALL',
+        'last_digit'        => 7,
+        'prediction'        => 'match',
+        'short_code'        => 'EXPIRYMISS_R_25_3_1311605282_1311634082_S7147P_S-7148P',
+        'quantity'          => 1,
+    };
+
+    my $buy_txn_info = {
+        source => 1000,
+    };
+    my $sell_txn_info = {
+        source => 10,
+    };
+
+    my $cl1 = create_client;
+    my $cl2 = create_client;
+
+    top_up $cl1, 'USD', 5000;
+    top_up $cl2, 'USD', 1000;
+
+    my $acc1 = $cl1->account;
+    my $acc2 = $cl2->account;
+
+    subtest 'buy_bet and sell_bet' => sub {
+        my ($buy_fmb, $buy_txn) = buy($bet_info, $buy_txn_info);
+        is $buy_txn->{source}, $buy_txn_info->{source}, 'buy source is set correctly';
+
+        my ($sell_fmb, $sell_txn, $buy_txn_id, $buy_source) = sell({
+                id         => $buy_fmb->{id},
+                sell_price => 2.5,
+                quantity   => 1,
+            },
+            $sell_txn_info
+        );
+
+        is $sell_txn->{source}, $sell_txn_info->{source}, 'sell source is correctly set';
+        is $buy_txn_id, $buy_txn->{id},     'correct buy txn id returned';
+        is $buy_source, $buy_txn->{source}, 'correct buy source returned';
+    };
+
+    subtest 'multiple buy_bet / batch_sell' => sub {
+        my @buys;
+
+        push @buys, [buy($bet_info, $buy_txn_info)];
+        push @buys, [buy($bet_info, $buy_txn_info)];
+        push @buys, [buy($bet_info, $buy_txn_info)];
+
+        my $res = batch_sell([map { $_->[0]->{id} } @buys], $sell_txn_info);
+        is scalar @$res, scalar @buys, 'Correct number of contracts sold';
+
+        my %sell_res = map { $_->{buy_txn_id} => $_ } @$res;
+
+        for my $i (0 .. @buys - 1) {
+            my ($buy_fmb, $buy_txn) = $buys[$i]->@*;
+
+            is $buy_txn->{source}, $buy_txn_info->{source}, 'buy source is correctly set';
+            ok my $sell_data = $sell_res{$buy_txn->{id}}, "buy txn id $buy_txn->{id} found in sells";
+
+            is $sell_data->{txn}->{source}, $sell_txn_info->{source}, 'sell source is correctly set';
+            is $sell_data->{buy_txn_id}, $buy_txn->{id},     "correct buy txn id $buy_txn->{id} returned by sell";
+            is $sell_data->{buy_source}, $buy_txn->{source}, 'correct buy source returned by sell';
+        }
+    };
+
+    subtest 'batch_buy / sell_by_shortcode' => sub {
+        my $accounts = [$account, $acc1, $acc2];
+        my $buy = buy_multiple_bets($accounts, $bet_info, $buy_txn_info);
+        is scalar @$buy, 3, 'correct number of buy transactions returned';
+        is $_->{txn}->{source}, $buy_txn_info->{source}, 'buy source is set correctly' for @$buy;
+
+        my $now  = Date::Utility->new->plus_time_interval('1s');
+        my $sell = sell_by_shortcode(
+            $bet_info->{short_code},
+            $accounts,
+            {
+                'sell_price' => '2.5',
+                'sell_time'  => $now->db_timestamp,
+                'id'         => undef,
+                'quantity'   => 1,
+            },
+            $sell_txn_info
+        );
+        is scalar @$sell, 3, 'correct number of sell transactions returned';
+
+        for my $i (0 .. @$accounts - 1) {
+            my %buy_data  = $buy->[$i]->%*;
+            my %sell_data = $sell->[$i]->%*;
+            my $loginid   = $accounts->[$i]->client_loginid;
+            is $buy_data{loginid},  $loginid, "buy loginid is correct: $loginid";
+            is $sell_data{loginid}, $loginid, "sell loginid is correct: $loginid";
+            is $buy_data{txn}->{source}, $buy_txn_info->{source}, "$loginid: buy source is set correctly";
+
+            is $sell_data{txn}->{source}, $sell_txn_info->{source}, "$loginid: sell source is correctly set";
+            is $sell_data{buy_tr_id},  $buy_data{txn}->{id},     "$loginid: correct buy txn id returned";
+            is $sell_data{buy_source}, $buy_data{txn}->{source}, "$loginid: correct buy source returned";
+        }
+    };
+
+    #TODO: to be completed by checking the whole txn and fmb structures.
 };
 
 1;
