@@ -351,7 +351,8 @@ sub get_transactions_ws {
                 b.bet_class,
                 p.payment_time,
                 COALESCE(p.remark, CASE WHEN t.action_type = 'escrow' THEN t.remark ELSE '' END) AS payment_remark,
-                t1.id AS buy_tr_id
+                t1.id AS buy_tr_id,
+                COALESCE(ot.transaction_time,of.transaction_time) AS escrow_time
             FROM
                 (
                     SELECT * FROM transaction.transaction
@@ -374,6 +375,10 @@ sub get_transactions_ws {
                     ON (t.payment_id = p.id)
                 LEFT JOIN bet.multiplier m
                     ON (b.id = m.financial_market_bet_id)
+                LEFT JOIN p2p.p2p_transaction of
+                    ON(t.action_type = $$escrow$$ AND t.id = of.from_transaction_id)
+                LEFT JOIN p2p.p2p_transaction ot
+                    ON(t.action_type = $$escrow$$ AND t.id = ot.to_transaction_id)
             ORDER BY t.transaction_time DESC
     };
 
