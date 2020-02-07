@@ -1229,8 +1229,13 @@ sub dropdown {
 if (!$client->is_virtual) {
     Bar('P2P Agent');
 
-    if ($client->p2p_agent) {
-        BOM::Backoffice::Request::template()->process('backoffice/p2p/p2p_agent_edit_form.tt', {client => $client});
+    if (my $agent_info = $client->p2p_agent_info) {
+        BOM::Backoffice::Request::template()->process(
+            'backoffice/p2p/p2p_agent_edit_form.tt',
+            {
+                agent_info => $agent_info,
+                loginid    => $client->loginid
+            });
     } else {
         BOM::Backoffice::Request::template()->process('backoffice/p2p/p2p_agent_register_form.tt', {loginid => $client->loginid});
     }
