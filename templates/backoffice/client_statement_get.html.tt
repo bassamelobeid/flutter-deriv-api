@@ -19,7 +19,7 @@
     <form action="[% history_url %]" method="get">
         <input type="hidden" name="loginID" value="[% encoded_loginid %]">
         <input type="submit" value="View [% encoded_loginid %] statement">
-        <input type="checkbox" value="yes" [% checked %] name="">Deposits and Withdrawals only
+        <input type="checkbox" name="depositswithdrawalsonly" value="yes" [% checked %] >Deposits and Withdrawals only
     </form>
 </div>
 
