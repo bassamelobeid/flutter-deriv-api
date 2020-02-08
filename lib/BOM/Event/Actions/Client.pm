@@ -289,7 +289,7 @@ async sub document_upload {
     }
     catch {
         my $e = $@;
-        $log->errorf('Failed to process Onfido application: %s', $e);
+        $log->errorf('Failed to process Onfido application for %s : %s', $args->{loginid}, $e);
         DataDog::DogStatsd::Helper::stats_inc("event.document_upload.failure",);
     };
 
@@ -399,7 +399,7 @@ async sub ready_for_authentication {
     }
     catch {
         my $e = $@;
-        $log->errorf('Failed to process Onfido verification: %s', $e);
+        $log->errorf('Failed to process Onfido verification for %s: %s', $args->{loginid}, $e);
     };
 
     return;
@@ -772,7 +772,7 @@ async sub _sync_onfido_bo_document {
     }
     catch {
         my $error = $@;
-        $log->errorf("Error in creating record in db and uploading Onfido document to S3: %s", $error);
+        $log->errorf("Error in creating record in db and uploading Onfido document to S3 for %s : %s", $client->loginid, $error);
     };
 
     if ($s3_uploaded) {
@@ -796,7 +796,7 @@ async sub _sync_onfido_bo_document {
         }
         catch {
             my $error = $@;
-            $log->errorf("Error in updating db: %s", $error);
+            $log->errorf("Error in updating db for %s : %s", $client->loginid, $error);
         };
     }
 
@@ -838,7 +838,7 @@ async sub sync_onfido_details {
     }
     catch {
         my $e = $@;
-        $log->errorf('Failed to update details in Onfido: %s', $e);
+        $log->errorf('Failed to update details in Onfido for %s : %s', $data->{loginid}, $e);
     };
 
     return;
@@ -878,7 +878,7 @@ async sub verify_address {
         catch {
             my $e = $@;
             DataDog::DogStatsd::Helper::stats_inc('event.address_verification.exception', {tags => \@dd_tags});
-            $log->errorf('Failed to verify applicants address: %s', $e);
+            $log->errorf('Failed to verify applicants address for %s : %s', $loginid, $e);
         };
         } if (($has_deposits and push(@dd_tags, 'verify_address:deposits'))
         or ($is_fully_authenticated and push(@dd_tags, 'verify_address:authenticated')));
@@ -1689,11 +1689,13 @@ async sub _upload_documents {
             sub {
                 my ($err, $category, @details) = @_;
 
-                $log->errorf('An error occurred while uploading document to Onfido: %s', $err) unless ($category // '') eq 'http';
+                $log->errorf('An error occurred while uploading document to Onfido for %s : %s ; loginid: %s', $client->loginid, $err)
+                    unless ($category // '') eq 'http';
 
                 # details is in res, req form
                 my ($res) = @details;
-                $log->errorf('An error occurred while uploading document to Onfido: %s with response %s', $err, ($res ? $res->content : ''));
+                $log->errorf('An error occurred while uploading document to Onfido for %s : %s with response %s ',
+                    $client->loginid, $err, ($res ? $res->content : ''));
 
             });
 
@@ -1721,7 +1723,7 @@ async sub _upload_documents {
     }
     catch {
         my $e = $@;
-        $log->errorf('An error occurred while uploading document to Onfido: %s', $e);
+        $log->errorf('An error occurred while uploading document to Onfido for %s : %s', $client->loginid, $e);
     }
 }
 
@@ -1782,7 +1784,7 @@ async sub _check_applicant {
                         $loginid);
                     $args->{is_pending} = 1;
                 } else {
-                    $log->errorf('An error occurred while processing Onfido verification: %s', join(' ', @_));
+                    $log->errorf('An error occurred while processing Onfido verification for %s : %s', $loginid, join(' ', @_));
                 }
             }
             )->on_done(
@@ -1811,7 +1813,7 @@ async sub _check_applicant {
     }
     catch {
         my $e = $@;
-        $log->errorf('An error occurred while processing Onfido verification: %s', $e);
+        $log->errorf('An error occurred while processing Onfido verification for %s : %s', $client->loginid, $e);
     }
 
     await Future->needs_all(_update_onfido_check_count($redis_events_write),
