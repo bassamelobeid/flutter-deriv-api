@@ -1807,11 +1807,24 @@ rpc set_self_exclusion => sub {
         $client->set_exclusion->max_deposit($args{max_deposit});
     }
 
+    $args{customerio_suspended} = 0;
+    if ($args{exclude_until} && $client->user->email_consent) {
+
+        BOM::Config::Runtime->instance->app_config->check_for_update();
+        $args{customerio_suspended} = BOM::Config::Runtime->instance->app_config->system->suspend->customerio;
+
+        my $data_subscription = {
+            loginid              => $client->loginid,
+            self_excluded        => 1,
+            customerio_suspended => $args{customerio_suspended}};
+        warn 'emit self_exclude_set  event failed.'
+            unless BOM::Platform::Event::Emitter::emit('self_exclude_set', $data_subscription);
+    }
+
 # Need to send email in 2 circumstances:
 #   - Any client sets a self exclusion period
 #   - Client under Binary (Europe) Limited with MT5 account(s) sets any of these settings
     my @mt5_logins = $client->user->mt5_logins('real');
-
     if ($client->landing_company->short eq 'malta' && @mt5_logins) {
         warn 'Compliance email regarding Binary (Europe) Limited user with MT5 account(s) failed to send.'
             unless send_self_exclusion_notification($client, 'malta_with_mt5', \%args);
@@ -1851,6 +1864,9 @@ sub send_self_exclusion_notification {
             my $label = $email_field_labels->{$_};
             my $val   = $args->{$_};
             $message .= "$label: $val\n" if $val;
+        }
+        if ($args->{customerio_suspended}) {
+            $message .= "\n\nClient " . $client->loginid . " could not be unsubcribed from cutomerio. Please unsubscribe it manually.\n";
         }
 
         my @mt5_logins = $client->user->mt5_logins('real');
