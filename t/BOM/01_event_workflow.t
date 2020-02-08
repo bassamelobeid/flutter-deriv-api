@@ -118,7 +118,7 @@ subtest 'process' => sub {
                 p2p_order_created p2p_order_updated p2p_order_expired
                 affiliate_sync_initiated withdrawal_limit_reached
                 api_token_created api_token_deleted
-                app_registered app_updated app_deleted set_financial_assessment buy sell/
+                app_registered app_updated app_deleted set_financial_assessment buy sell self_exclude_set/
         ],
         'Correct number of actions that can be emitted'
     );

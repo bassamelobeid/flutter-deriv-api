@@ -105,6 +105,32 @@ sub email_consent {
     return 1;
 }
 
+=head2 self_exclude_set
+
+When a user self_excludes themselves, unsubscribe them.
+
+=over 4
+
+=item * C<data> - data passed in from BOM::Event::Process::process
+
+=back
+
+=cut
+
+sub self_exclude_set {
+    my $data = shift;
+    return if ($data->{customerio_suspended});
+    my $loginid = $data->{loginid};
+    return 0 unless $loginid;
+
+    return _connect_and_update_customerio_record(
+        method  => 'self_exclude_set_updated',
+        loginid => $loginid,
+        details => {
+            unsubscribed => $data->{self_excluded} ? 'true' : 'false',
+        });
+}
+
 sub _connect_and_delete_customerio_record {
     my (%args) = @_;
 

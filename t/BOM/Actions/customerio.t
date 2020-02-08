@@ -115,4 +115,44 @@ subtest 'email_consent Argument Validations' => sub {
 
 };
 
+subtest 'self_exclude_set Argument Validations' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'test3@bin.com',
+    });
+
+    ok !BOM::Event::Actions::Customerio::self_exclude_set(), 'False result for empty args';
+    is BOM::Event::Actions::Customerio::self_exclude_set({
+            loginid              => 'CR123456',
+            customerio_suspended => 1
+        }
+        ),
+        undef, 'Could not proceed if customerio suspended.';
+    my $user = BOM::User->create(
+        email          => $test_client->email,
+        password       => "hello",
+        email_verified => 1,
+    );
+    $user->add_client($test_client);
+    is scalar(@datadog_calls), 0, 'No datadog calls yet';
+
+    like(
+        warning { BOM::Event::Actions::Customerio::self_exclude_set({loginid => $test_client->loginid}) },
+        qr/Connection error/,
+        'The expected warning is raised'
+    );
+
+    my @expected_datadog = (
+        ['event.customerio.all', {tags => ['method:self_exclude_set_updated']}],
+        [
+            'event.customerio.failure',
+            {tags => ['method:self_exclude_set_updated', 'error:Connection error', 'message:Can\'t connect: Name or service not known']},
+        ],
+    );
+    is scalar(@datadog_calls), 2, 'Correct number of datadog calls';
+    is_deeply \@datadog_calls, \@expected_datadog, 'Correct datadog tags - failures';
+    @datadog_calls = ();
+
+};
+
 done_testing();
