@@ -170,7 +170,7 @@ subtest 'create offer' => sub {
 
     is $offer->{account_currency}, $cl_agent->account->currency_code, 'account currency';
     is $offer->{agent_id}, $agent->{agent_id}, 'agent id';
-    ok $offer->{amount} == $offer_params{amount} && $offer->{amount_display} == $offer_params{amount}, 'amount';
+    ok $offer->{amount} == $offer_params{amount}           && $offer->{amount_display} == $offer_params{amount},           'amount';
     ok $offer->{remaining_amount} == $offer_params{amount} && $offer->{remaining_amount_display} == $offer_params{amount}, 'remaining';
     is $offer->{country}, $cl_agent->residence, 'country';
     ok $offer->{is_active}, 'is active';
@@ -191,7 +191,7 @@ subtest 'create offer' => sub {
             offer_id       => $offer->{offer_id}});
     test_schema('p2p_offer_info', $resp);
     cmp_deeply($resp->{p2p_offer_info}, $offer, 'Offer info matches offer create');
-    
+
     $resp = $t->await::p2p_agent_offers({p2p_agent_offers => 1});
     test_schema('p2p_agent_offers', $resp);
     cmp_deeply($resp->{p2p_agent_offers}{list}[0], $offer, 'Agent offers item matches offer create');
@@ -222,6 +222,13 @@ subtest 'create order' => sub {
     ok $order->{rate} == $offer->{rate} && $order->{rate_display} == $offer->{rate_display}, 'rate';
     is $order->{status}, 'pending', 'status';
     is $order->{type}, $offer->{type}, 'type';
+
+    $resp = $t->await::p2p_order_list({
+        p2p_order_list => 1,
+        offer_id       => ''
+    });
+
+    is $resp->{error}->{code}, 'InputValidationFailed', 'offer_id validation error';
 
     $resp = $t->await::p2p_order_list({p2p_order_list => 1});
     test_schema('p2p_order_list', $resp);
