@@ -36,7 +36,8 @@
         },
         "offer_id": {
             "description": "[Optional] If present, lists orders applying to a specific offer.",
-            "type": "string"
+            "type": "string",
+            "pattern": "^[0-9]+$"
         },
         "offset": {
             "description": "[Optional] Used for paging.",
