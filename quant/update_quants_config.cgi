@@ -17,6 +17,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
 use Brands;
 use Time::Duration::Concise;
+use Syntax::Keyword::Try;
 
 BOM::Backoffice::Sysinit::init();
 my $json       = JSON::MaybeXS->new;
@@ -26,6 +27,20 @@ my $app_config = BOM::Config::Runtime->instance->app_config;
 if (request()->param('save_limit')) {
     my %args = map { $_ => request()->param($_) }
         qw(market new_market expiry_type contract_group underlying_symbol landing_company barrier_type limit_type limit_amount comment start_time end_time);
+
+    for my $field (qw{start_time end_time}) {
+        my $date = $args{$field};
+        next unless $date;
+        unless (_is_valid_time($date)) {
+            print $json->encode({error => "Please match the correct format for `$field` field."});
+            return;
+        }
+    }
+
+    if ($args{start_time} && $args{start_time} gt $args{end_time}) {
+        print $json->encode({error => "`start_time` should be less than `end_time`."});
+        return;
+    }
 
     my %email_args = (%args, action => 'New');
     my $output = BOM::Backoffice::QuantsConfigHelper::save_limit(\%args, $staff);
@@ -247,4 +262,16 @@ sub _send_compliance_email {
         message => $args{message},
     });
     return;
+}
+
+sub _is_valid_time {
+    my $time = shift;
+    try {
+        my $tim_obj = Date::Utility->new($time);
+        return 1;
+    }
+    catch {
+        return 0;
+    }
+    return 0;
 }
