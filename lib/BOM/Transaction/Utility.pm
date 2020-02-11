@@ -8,7 +8,7 @@ use Syntax::Keyword::Try;
 use Log::Any qw($log);
 
 use Date::Utility;
-use List::Util qw(min max);
+use List::Util qw(min);
 use Encode;
 use JSON::MaybeXS;
 
@@ -141,11 +141,9 @@ sub set_contract_parameters {
 
     my $default_expiry = 86400;
     if (my $expiry = delete $contract_params->{expiry_time}) {
-        my $contract_expiry   = Date::Utility->new($expiry);
-        my $seconds_to_expiry = $contract_expiry->epoch - time;
-        my $ttl               = max($seconds_to_expiry, 0) + 10;
+        my $contract_expiry = Date::Utility->new($expiry);
         # 10 seconds after expiry is to cater for sell transaction delay due to settlement conditions.
-        $default_expiry = min($default_expiry, int($ttl));
+        $default_expiry = min($default_expiry, int($contract_expiry->epoch - time + 10));
     }
 
     return $redis_pricer->set($redis_key, _serialized_args(\%hash), 'EX', $default_expiry) if $default_expiry > 0;
