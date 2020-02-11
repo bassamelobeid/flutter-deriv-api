@@ -939,10 +939,10 @@ sub batch_buy {
 
     my @sold;
     my $contract_params = {
-        shortcode   => $self->contract->shortcode,
-        currency    => $self->contract->currency,
-        sell_time   => undef,
-        is_sold     => 0,
+        shortcode => $self->contract->shortcode,
+        currency  => $self->contract->currency,
+        sell_time => undef,
+        is_sold   => 0,
         $self->contract->can('available_orders') ? (limit_order => $self->contract->available_orders) : (),
     };
 
