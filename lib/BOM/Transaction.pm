@@ -943,7 +943,6 @@ sub batch_buy {
         currency    => $self->contract->currency,
         sell_time   => undef,
         is_sold     => 0,
-        expiry_time => $self->contract->date_expiry->epoch,
         $self->contract->can('available_orders') ? (limit_order => $self->contract->available_orders) : (),
     };
 
@@ -963,6 +962,7 @@ sub batch_buy {
             my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
             my @fmb_ids = map {
                 my $fmb_id = $clientdb->get_next_fmbid();
+                $contract_params->{expiry_time} = $self->contract->date_expiry->epoch;
                 $contract_params->{contract_id} = $fmb_id;
                 BOM::Transaction::Utility::set_contract_parameters($contract_params, $_->{client});
                 $fmb_id;
