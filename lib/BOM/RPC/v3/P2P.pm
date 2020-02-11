@@ -80,6 +80,9 @@ our %ERROR_MAP = do {
         InvalidMaxAmount     => localize('The maximum amount should be less than or equal to the offer amount.'),
         InvalidListLimit     => localize("Invalid value for list limit"),
         InvalidListOffset    => localize("Invalid value for list offset"),
+        RateTooSmall         => localize('Ad rate should not be less than [_1]. Please adjust the value.'),
+        RateTooBig           => localize('Ad rate should not be more than [_1]. Please adjust the value.'),
+        MinPriceTooSmall     => localize('Ad minimum price is zero, Please adjust minimum amount or rate.'),
 
         # bom-user errors
         AgentNotFound               => localize('P2P Agent not found.'),

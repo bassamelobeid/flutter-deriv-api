@@ -208,8 +208,8 @@ subtest 'status allow_document_upload is added upon mt5 create account dry_run a
 
     $method = 'mt5_new_account';
     $params = {
-        token    => $token,
-        args     => {
+        token => $token,
+        args  => {
             account_type     => 'financial',
             country          => 'mt',
             email            => $DETAILS{email},
