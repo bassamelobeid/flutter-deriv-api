@@ -92,10 +92,6 @@ subtest 'Updating agent fields' => sub {
     is $agent_info->{agent_name},  $agent_name, 'Agent name';
     ok $agent_info->{is_active},   'Agent is active';
 
-    ok $agent_info->{is_approved}, 'Agent is approved';
-    is $agent_info->{agent_name},  $agent_name, 'Agent name';
-    ok $agent_info->{is_active},   'Agent is active';
-
     cmp_deeply(
         exception {
             $agent->p2p_agent_update(agent_name => ' ');
@@ -251,6 +247,37 @@ subtest 'Creating offer' => sub {
     );
 
     cmp_ok $test_client_cr->p2p_offer_list(amount => 23)->[0]{price}, '==', $params{rate} * 23, 'Price is adjusted by amount param in offer list';
+};
+
+subtest 'Rate Validation' => sub {
+    my %params = %offer_params;
+    my $agent  = BOM::Test::Helper::P2P::create_agent();
+    $agent->p2p_agent_update(agent_name => 'testing');
+
+    my $offer;
+
+    $params{rate} = 0.0000001;
+    cmp_deeply(
+        exception {
+            $offer = $agent->p2p_offer_create(%params);
+        },
+        {
+            error_code     => 'RateTooSmall',
+            message_params => ['0.000001'],
+        },
+        'Error when amount exceeds BO offer limit'
+    );
+    $params{rate} = 10**9 + 1;
+    cmp_deeply(
+        exception {
+            $offer = $agent->p2p_offer_create(%params);
+        },
+        {
+            error_code     => 'RateTooBig',
+            message_params => ['1000000000.00'],
+        },
+        'Error when amount exceeds BO offer limit'
+    );
 };
 
 subtest 'Updating offer' => sub {

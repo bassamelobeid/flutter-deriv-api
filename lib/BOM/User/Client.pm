@@ -1736,6 +1736,14 @@ Returns the agent info or dies with error code.
 
 =cut
 
+# For some currency pairs we need to have limit so big for example: VND/BTC
+# Also this limit may need to be adjusted in future.
+use constant {
+    P2P_RATE_UPPER_LIMIT => 10**9,
+    P2P_RATE_PRECISION   => 6,
+    P2P_RATE_LOWER_LIMIT => 0.000001    #We need it because 0.000001 < 0.1**6 is true
+};
+
 sub p2p_agent_create {
     my ($client, $agent_name) = @_;
 
@@ -1852,6 +1860,24 @@ sub p2p_offer_create {
     $param{country} //= $client->residence;
 
     $param{local_currency} //= $client->local_currency || die +{error_code => 'NoLocalCurrency'};
+
+    if ($param{rate} < P2P_RATE_LOWER_LIMIT) {
+        die +{
+            error_code     => 'RateTooSmall',
+            message_params => [sprintf('%.' . P2P_RATE_PRECISION . 'f', P2P_RATE_LOWER_LIMIT)]};
+    }
+
+    if ($param{rate} > P2P_RATE_UPPER_LIMIT) {
+        die +{
+            error_code     => 'RateTooBig',
+            message_params => [sprintf('%.02f', P2P_RATE_UPPER_LIMIT)],
+        };
+    }
+
+    my $min_price = $param{rate} * $param{min_amount};
+    if (financialrounding('amount', $param{local_currency}, $min_price) == 0) {
+        die +{error_code => 'MinPriceTooSmall'};
+    }
 
     my $offer = $client->db->dbic->run(
         fixup => sub {
@@ -2379,15 +2405,15 @@ sub _offer_details {
 
         $result->{offer_description} //= '';
 
-        $result->{rate} = financialrounding('amount', $offer->{local_currency}, $offer->{rate});
-        $result->{rate_display} = formatnumber('amount', $offer->{local_currency}, $offer->{rate});
-        $result->{price} = financialrounding('amount', $offer->{local_currency}, $offer->{rate} * ($amount // 1));
-        $result->{price_display} = formatnumber('amount', $offer->{local_currency}, $offer->{rate} * ($amount // 1));
-        $result->{min_amount_limit} = financialrounding('amount', $offer->{account_currency}, $offer->{min_amount});
+        $result->{rate}                     = $offer->{rate};
+        $result->{rate_display}             = _p2p_rate_format($offer->{rate});
+        $result->{price}                    = financialrounding('amount', $offer->{local_currency}, $offer->{rate} * ($amount // 1));
+        $result->{price_display}            = formatnumber('amount', $offer->{local_currency}, $offer->{rate} * ($amount // 1));
+        $result->{min_amount_limit}         = financialrounding('amount', $offer->{account_currency}, $offer->{min_amount});
         $result->{min_amount_limit_display} = formatnumber('amount', $offer->{account_currency}, $offer->{min_amount});
-        $result->{max_amount_limit} = financialrounding('amount', $offer->{account_currency}, $effective_max);
+        $result->{max_amount_limit}         = financialrounding('amount', $offer->{account_currency}, $effective_max);
         $result->{max_amount_limit_display} = formatnumber('amount', $offer->{account_currency}, $effective_max);
-        $result->{created_time} = Date::Utility->new($offer->{created_time})->epoch;
+        $result->{created_time}             = Date::Utility->new($offer->{created_time})->epoch;
 
         # only offer owner can see these fields
         if ($client->loginid eq $offer->{agent_loginid}) {
@@ -2435,8 +2461,8 @@ sub _order_details {
         $result->{amount_display} = formatnumber('amount', $order->{account_currency}, $order->{order_amount});
         $result->{expiry_time}    = Date::Utility->new($order->{expire_time})->epoch;
         $result->{created_time}   = Date::Utility->new($order->{created_time})->epoch;
-        $result->{rate}           = financialrounding('amount', $order->{local_currency}, $order->{offer_rate});
-        $result->{rate_display}   = formatnumber('amount', $order->{local_currency}, $order->{offer_rate});
+        $result->{rate}           = $order->{offer_rate};
+        $result->{rate_display}   = _p2p_rate_format($order->{offer_rate});
         $result->{price}          = financialrounding('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
         $result->{price_display}  = formatnumber('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
 
@@ -2475,6 +2501,13 @@ sub _validate_offer_amounts {
 
     die +{error_code => 'InvalidMinMaxAmount'} unless $param{min_amount} <= $param{max_amount};
     die +{error_code => 'InvalidMaxAmount'}    unless $param{max_amount} <= $param{amount};
+
+    return;
+}
+
+sub _p2p_rate_format {
+    # We take Precision from constant but cut off tailing zeros
+    return sprintf('%0.0' . P2P_RATE_PRECISION . 'f', shift()) =~ s/(?<=\.\d{2})(\d*?)0*$/$1/r;
 }
 
 =head1 METHODS - Payments
