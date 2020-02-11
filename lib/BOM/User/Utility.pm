@@ -23,6 +23,8 @@ use YAML::XS qw(LoadFile);
 use BOM::Platform::Context qw(request);
 use BOM::Config::Runtime;
 
+use constant GAMSTOP_DURATION_IN_MONTHS => 6;
+
 sub aes_keys {
     state $config = YAML::XS::LoadFile('/etc/rmg/aes_keys.yml');
     return $config;
@@ -114,13 +116,12 @@ sub set_gamstop_self_exclusion {
     return undef if ($client->get_self_exclusion_until_date or not $gamstop_response->is_excluded());
 
     try {
-        my $exclude_until = Date::Utility->new(DateTime->now()->add(months => 6)->ymd)->date_yyyymmdd;
-        $client->set_exclusion->exclude_until($exclude_until);
+        my $exclude_until = set_exclude_until_for($client, GAMSTOP_DURATION_IN_MONTHS);
+
         my $subject = 'Client ' . $client->loginid . ' was self-excluded via GAMSTOP until ' . $exclude_until;
         my $content = 'GAMSTOP self-exclusion will end on ' . $exclude_until;
         # send email to helpdesk.
         $client->add_note($subject, $content);
-        $client->save();
         my $brand = request()->brand();
         # also send email to complience
         Email::Stuffer->from($brand->emails("compliance_alert"))->to($brand->emails("compliance_alert"))->subject($subject)->text_body($content)
@@ -131,6 +132,15 @@ sub set_gamstop_self_exclusion {
     }
 
     return undef;
+}
+
+# set exclude_until to n-months from now and returns that in yyyy-mm-dd format
+sub set_exclude_until_for {
+    my ($client, $num_months) = @_;
+    my $to_date = Date::Utility->new(DateTime->now()->add(months => $num_months))->date_yyyymmdd;
+    $client->set_exclusion->exclude_until($to_date);
+    $client->save();
+    return $to_date;
 }
 
 =head2 login_details_identifier
