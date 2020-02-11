@@ -176,6 +176,7 @@ subtest 'get_bid' => sub {
             status
             multiplier
             stash
+            expiry_time
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
 
