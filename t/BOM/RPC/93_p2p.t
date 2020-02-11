@@ -218,6 +218,17 @@ subtest 'Offers' => sub {
     delete $offer->{stash};
     ok $offer->{offer_id}, 'offer has id';
 
+    $params->{args}{rate} = 12.000001;
+    $offer = $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_no_error->result;
+    is $offer->{rate_display}, '12.000001', 'offer has id';
+
+    $params->{args}{rate} = 1_000_000_000;
+    $offer = $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_no_error->result;
+    is $offer->{rate_display}, '1000000000.00', 'offer has id';
+
+    $params->{args}{rate} = 0.000001;
+    $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_error->error_code_is('MinPriceTooSmall', 'Got error if min price is 0');
+
     $params->{args} = {};
     $res = $c->call_ok('p2p_offer_list', $params)->has_no_system_error->has_no_error->result->{list};
     cmp_ok $res->[0]->{offer_id}, '==', $offer->{offer_id}, 'p2p_offer_list returns offer';
@@ -238,7 +249,7 @@ subtest 'Offers' => sub {
     $c->call_ok('p2p_offer_update', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Edit non-existent offer');
 
     $res = $c->call_ok('p2p_agent_offers', $params)->has_no_system_error->has_no_error->result;
-    is $res->{list}[0]{offer_id}, $offer->{offer_id}, 'Offer returned in p2p_agent_offers';
+    is $res->{list}[2]{offer_id}, $offer->{offer_id}, 'Offer returned in p2p_agent_offers';
 };
 
 subtest 'Create new order' => sub {
