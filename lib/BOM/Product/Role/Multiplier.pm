@@ -579,8 +579,4 @@ sub close_tick {
     return $self->hit_tick;
 }
 
-override require_contract_id => sub {
-    return 1;
-};
-
 1;
