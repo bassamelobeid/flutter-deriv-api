@@ -247,14 +247,6 @@ BEGIN {
     *unfreeze = \&unlock_client_loginid;
 }
 
-sub get_next_fmbid {
-    my $self = shift;
-
-    my ($next_fmbid) = $self->db->dbh->selectrow_array("select nextval('sequences.bet_serial'::regclass)");
-
-    return $next_fmbid;
-}
-
 no Moose;
 
 __PACKAGE__->meta->make_immutable;
