@@ -26,7 +26,7 @@ my ($client, $order) = BOM::Test::Helper::P2P::create_order(
 );
 
 my $expected_data = $client->p2p_order_info(order_id => $order->{order_id});
-$expected_data->{agent_loginid} = $agent->loginid;
+$expected_data->{agent_loginid}  = $agent->loginid;
 $expected_data->{client_loginid} = $client->loginid;
 
 my @data_for_notification_tests = ({
@@ -35,7 +35,7 @@ my @data_for_notification_tests = ({
             client_loginid => $client->loginid,
             order_id       => $order->{order_id},
         },
-        channel => join(q{::} => ('P2P::ORDER::NOTIFICATION', uc($client->broker), uc($client->residence), uc($client->currency))),
+        channel  => join(q{::} => ('P2P::ORDER::NOTIFICATION', uc($client->broker), uc($client->residence), uc($client->currency))),
         expected => $expected_data,
     },
     {
@@ -44,7 +44,7 @@ my @data_for_notification_tests = ({
             client_loginid => $client->loginid,
             order_id       => $order->{order_id},
         },
-        channel => join(q{::} => ('P2P::ORDER::NOTIFICATION', uc($client->broker), uc($client->residence), uc($client->currency))),
+        channel  => join(q{::} => ('P2P::ORDER::NOTIFICATION', uc($client->broker), uc($client->residence), uc($client->currency))),
         expected => $expected_data,
     },
 );
