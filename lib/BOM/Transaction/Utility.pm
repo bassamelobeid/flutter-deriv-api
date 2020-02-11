@@ -22,8 +22,9 @@ our @EXPORT_OK = qw(track_event TRACK_FMB_ATTR TRACK_CONTRACT_ATTR TRACK_TIME_AT
 use constant TRACK_FMB_ATTR => [
     qw(short_code underlying_symbol buy_price payout_price sell_price is_sold is_expired purchase_time start_time sell_time settlement_time expiry_time)
 ];
-use constant TRACK_CONTRACT_ATTR => [qw(supplied_barrier supplied_high_barrier supplied_low_barrier app_markup_percentage)];
-use constant TRACK_TIME_ATTR     => [qw(purchase_time start_time sell_time settlement_time expiry_time)];
+use constant TRACK_CONTRACT_ATTR  => [qw(supplied_barrier supplied_high_barrier supplied_low_barrier app_markup_percentage)];
+use constant TRACK_TIME_ATTR      => [qw(purchase_time start_time sell_time settlement_time expiry_time)];
+use constant KEY_RETENTION_SECOND => 60;
 
 my $json = JSON::MaybeXS->new;
 
@@ -91,7 +92,7 @@ sub track_event {
 
 =head2 delete_contract_parameters
 
-Utility method to set expiry of redis key to 10 seconds.
+Utility method to set expiry of redis key to KEY_RETENTION_SECOND seconds.
 
 Note that $redis->del is not used because CONTRACT_PARAMS might still be
 used by other processes to send final contract details to client.
@@ -105,8 +106,8 @@ sub delete_contract_parameters {
     my $redis_key = join '::', ('CONTRACT_PARAMS', $contract_id, $client->landing_company->short);
 
     # we don't delete this right away because some service like pricing queue or transaction stream might still rely
-    # on the contract parameters. We will give additional 10 seconds for this to be done.
-    $redis_pricer->expire($redis_key, 10);
+    # on the contract parameters. We will give additional KEY_RETENTION_SECOND seconds for this to be done.
+    $redis_pricer->expire($redis_key, KEY_RETENTION_SECOND);
 
     return;
 }
@@ -143,8 +144,8 @@ sub set_contract_parameters {
     if (my $expiry = delete $contract_params->{expiry_time}) {
         my $contract_expiry   = Date::Utility->new($expiry);
         my $seconds_to_expiry = $contract_expiry->epoch - time;
-        my $ttl               = max($seconds_to_expiry, 0) + 10;
-        # 10 seconds after expiry is to cater for sell transaction delay due to settlement conditions.
+        # KEY_RETENTION_SECOND seconds after expiry is to cater for sell transaction delay due to settlement conditions.
+        my $ttl = max($seconds_to_expiry, 0) + KEY_RETENTION_SECOND;
         $default_expiry = min($default_expiry, int($ttl));
     }
 

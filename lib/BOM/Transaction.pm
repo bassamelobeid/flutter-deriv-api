@@ -771,12 +771,10 @@ sub buy {
     $self->stats_validation_done($stats_data);
     my $clientdb = BOM::Database::ClientDB->new({broker_code => $client->broker_code});
 
-    # only fetch fmbid when necessary
-    my $fmbid;
-    if ($self->contract->require_contract_id) {
-        $fmbid = $clientdb->get_next_fmbid();
-        $bet_data->{bet_data}{fmb_id} = $fmbid;
-    }
+    # fetch fmbid for setting contract parameters in redis to avoid race condition between
+    # pg-notify and services that require it.
+    my $fmbid = $clientdb->get_next_fmbid();
+    $bet_data->{bet_data}{fmb_id} = $fmbid;
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
@@ -809,19 +807,14 @@ sub buy {
             is_sold   => 0,
             $self->contract->can('available_orders') ? (limit_order => $self->contract->available_orders) : (),
             expiry_time => $self->contract->date_expiry->epoch,
+            contract_id => $fmbid,
         };
 
-        if ($fmbid) {
-            $contract_params->{contract_id} = $fmbid;
-            BOM::Transaction::Utility::set_contract_parameters($contract_params, $client);
-        }
+        # set contract parameter before buy to avoid race condition between
+        # pg-notify and other services that depend on contract parameters
+        BOM::Transaction::Utility::set_contract_parameters($contract_params, $client);
 
         ($fmb, $txn) = $fmb_helper->buy_bet;
-
-        unless ($fmbid) {
-            $contract_params->{contract_id} = $fmb->{id};
-            BOM::Transaction::Utility::set_contract_parameters($contract_params, $client);
-        }
 
         $self->contract_details($fmb);
         $self->transaction_details($txn);
@@ -958,13 +951,34 @@ sub batch_buy {
         my @general_error = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'));
 
         try {
-            my $currency   = $self->contract->currency;
+            my $currency           = $self->contract->currency;
+            my $contract_expiry    = $self->contract->date_expiry->epoch;
+            my $contract_shortcode = $self->contract->shortcode;
+
+            my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
+            my @fmb_ids = map {
+                my $fmb_id          = $clientdb->get_next_fmbid();
+                my $contract_params = {
+                    shortcode   => $contract_shortcode,
+                    currency    => $currency,
+                    sell_time   => undef,
+                    is_sold     => 0,
+                    expiry_time => $contract_expiry,
+                    $self->contract->can('available_orders') ? (limit_order => $self->contract->available_orders) : (),
+                    contract_id => $fmb_id,
+                };
+
+                BOM::Transaction::Utility::set_contract_parameters($contract_params, $_->{client});
+                $fmb_id;
+            } @$list;
+
             my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
                 %$bet_data,
+                fmb_ids => \@fmb_ids,
                 # great readablility provided by our tidy rules
-                account_data => [map                                      { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
-                limits       => [map                                      { $_->{limits} } @$list],
-                db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
+                account_data => [map { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
+                limits       => [map { $_->{limits} } @$list],
+                db           => $clientdb->db,
             );
 
             my @clients = map { $_->{client} } @$list;
@@ -996,17 +1010,6 @@ sub batch_buy {
                 } else {
                     $el->{fmb} = $res->{fmb};
                     $el->{txn} = $res->{txn};
-                    my $client          = $el->{client};
-                    my $contract_params = {
-                        shortcode   => $el->{fmb}->{short_code},
-                        currency    => $client->currency,
-                        sell_time   => undef,
-                        is_sold     => 0,
-                        expiry_time => Date::Utility->new($el->{fmb}->{expiry_time})->epoch,
-                        contract_id => $el->{fmb}->{id},
-                    };
-
-                    BOM::Transaction::Utility::set_contract_parameters($contract_params, $client);
                     $success++;
                     push @sold, $el;
                 }
