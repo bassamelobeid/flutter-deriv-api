@@ -940,7 +940,7 @@ sub batch_buy {
     my @sold;
     my $contract_params = {
         shortcode   => $self->contract->shortcode,
-        currency    => $self->currency->currency,
+        currency    => $self->contract->currency,
         sell_time   => undef,
         is_sold     => 0,
         expiry_time => $self->contract->date_expiry->epoch,
