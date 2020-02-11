@@ -63,20 +63,10 @@ sub get_transaction_history {
     my (@close_trades, @open_trades, @payments);
 
     for my $txn (@$results) {
-
         $txn->{transaction_id} //= $txn->{id};
 
         # set transaction_time for different action types
-        my $txn_time;
-        if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
-            if ($txn->{action_type} eq 'sell') {
-                $txn_time = $txn->{sell_time};
-            } else {
-                $txn_time = $txn->{purchase_time};
-            }
-        } else {
-            $txn_time = $txn->{payment_time};
-        }
+        my $txn_time = _get_txn_time($txn);
 
         $txn->{transaction_time} = Date::Utility->new($txn_time)->epoch();
         $txn->{short_code} = $txn->{short_code} // '';
@@ -96,4 +86,17 @@ sub get_transaction_history {
         open_trade  => \@open_trades,
     };
 }
+
+sub _get_txn_time {
+    my $txn = shift;
+
+    # Time for financial market bet
+    my $time_type = $txn->{action_type} eq 'sell' ? 'sell_time' : 'purchase_time';
+    return $txn->{$time_type} if $txn->{financial_market_bet_id};
+
+    return $txn->{escrow_time} if $txn->{action_type} eq 'escrow';
+
+    return $txn->{payment_time};
+}
+
 1;
