@@ -16,6 +16,12 @@ has 'account_data' => (
     isa => 'HashRef|ArrayRef',
 );
 
+has fmb_ids => (
+    is => 'ro',
+    isa => 'ArrayRef',
+    default => sub{[]},
+);
+
 # this will end up being either a BOM::Database::Model::FinancialMarketBetOpen or a BOM::Database::Model::FinancialMarketBet
 has 'bet' => (
     is => 'rw',
@@ -187,13 +193,15 @@ sub batch_buy_bet {
     my $currency;
     my $accs = $self->account_data;
     my $limits = $self->limits || [];
+    my $fmb_ids = $self->fmb_ids;
 
     $currency = $accs->[0]->{currency_code};
     die "Invalid currency for loginid $accs->[0]->{client_loginid}" unless $currency;
 
     for (my $i = 0; $i < @$accs; $i++) {
         die "Invalid currency for loginid $accs->[$i]->{client_loginid}" unless $accs->[$i]->{currency_code} eq $currency;
-        push @acclim, $accs->[$i]->{client_loginid}, $limits->[$i] ? Encode::encode_utf8($json->encode($limits->[$i])) : undef;
+        my $fmbid = $fmb_ids->[$i] // undef;
+        push @acclim, $fmbid, $accs->[$i]->{client_loginid}, $limits->[$i] ? Encode::encode_utf8($json->encode($limits->[$i])) : undef;
     }
 
     my %bet = (
@@ -215,7 +223,7 @@ sub batch_buy_bet {
         # FMB stuff
         $currency,
         @bet{
-            qw/fmb_id purchase_time underlying_symbol
+            qw/ purchase_time underlying_symbol
                 payout_price buy_price start_time expiry_time
                 settlement_time expiry_daily bet_class bet_type
                 remark short_code fixed_expiry tick_count/
@@ -239,21 +247,21 @@ sub batch_buy_bet {
         #       are necessary.
         my $stmt = $_->prepare('
 WITH
-acc(seq, loginid, limits) AS (VALUES
+acc(fmbid, loginid, limits) AS (VALUES
     '
                 . join(",\n    ",
-                map { '(' . $_ . '::INT, $' . ($_ * 2 + 25) . '::VARCHAR(12),' . ' $' . ($_ * 2 + 26) . '::JSONB)'; } 0 .. @acclim / 2 - 1)
+                map { '($' . ($_ * 2 + 24) . '::BIGINT, $' . ($_ * 2 + 25) . '::VARCHAR(12),' . ' $' . ($_ * 2 + 26) . '::JSONB)'; } 0 .. @acclim / 2 - 1)
                 . ')
 SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
   FROM acc
  CROSS JOIN LATERAL
-       bet_v1.buy_bet_nofail(   acc.loginid, $1::VARCHAR(3), $2::BIGINT, $3::TIMESTAMP, $4::VARCHAR(50), $5::NUMERIC,
-                                $6::NUMERIC, $7::TIMESTAMP, $8::TIMESTAMP, $9::TIMESTAMP, $10::BOOLEAN,
-                                $11::VARCHAR(30), $12::VARCHAR(30), $13::VARCHAR(800), $14::VARCHAR(255),
-                                $15::BOOLEAN, $16::INT, $17::JSON, $18::TIMESTAMP, $19::VARCHAR(24),
-                                $20::VARCHAR(800), $21::BIGINT, $22::NUMERIC, $23::INT, $24::JSON, acc.limits, $'
+       bet_v1.buy_bet_nofail(   acc.loginid, $1::VARCHAR(3), acc.fmbid, $2::TIMESTAMP, $3::VARCHAR(50), $4::NUMERIC,
+                                $5::NUMERIC, $6::TIMESTAMP, $7::TIMESTAMP, $8::TIMESTAMP, $9::BOOLEAN,
+                                $10::VARCHAR(30), $11::VARCHAR(30), $12::VARCHAR(800), $13::VARCHAR(255),
+                                $14::BOOLEAN, $15::INT, $16::JSON, $17::TIMESTAMP, $18::VARCHAR(24),
+                                $19::VARCHAR(800), $20::BIGINT, $21::NUMERIC, $22::INT, $23::JSON, acc.limits, $'
                 . ((@acclim / 2 - 1) * 2 + 27) . '::INT) b
- ORDER BY acc.seq');
+ ORDER BY acc.fmbid');
 
         $stmt->execute(@param, @acclim, ($app_config->quants->ultra_short_duration + 0) || 300);
         return $stmt->fetchall_arrayref;
