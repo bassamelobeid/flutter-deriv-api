@@ -149,6 +149,10 @@ sub set_contract_parameters {
         $default_expiry = min($default_expiry, int($ttl));
     }
 
+    if ($default_expiry <= 0) {
+        warn "CONTRACT_PARAMS is not set for $redis_key because of invalid TTL";
+    }
+
     return $redis_pricer->set($redis_key, _serialized_args(\%hash), 'EX', $default_expiry) if $default_expiry > 0;
     return;
 }
