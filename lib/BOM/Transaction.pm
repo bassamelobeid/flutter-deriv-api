@@ -939,6 +939,14 @@ sub batch_buy {
     my %stat = map { $_ => {attempt => 0 + @{$per_broker{$_}}} } keys %per_broker;
 
     my @sold;
+    my $contract_params = {
+        shortcode   => $self->contract->shortcode,
+        currency    => $self->currency->currency,
+        sell_time   => undef,
+        is_sold     => 0,
+        expiry_time => $self->contract->date_expiry->epoch,
+        $self->contract->can('available_orders') ? (limit_order => $self->contract->available_orders) : (),
+    };
 
     for my $broker (keys %per_broker) {
         my $list = $per_broker{$broker};
@@ -951,23 +959,12 @@ sub batch_buy {
         my @general_error = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'));
 
         try {
-            my $currency           = $self->contract->currency;
-            my $contract_expiry    = $self->contract->date_expiry->epoch;
-            my $contract_shortcode = $self->contract->shortcode;
+            my $currency = $self->contract->currency;
 
             my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
             my @fmb_ids = map {
-                my $fmb_id          = $clientdb->get_next_fmbid();
-                my $contract_params = {
-                    shortcode   => $contract_shortcode,
-                    currency    => $currency,
-                    sell_time   => undef,
-                    is_sold     => 0,
-                    expiry_time => $contract_expiry,
-                    $self->contract->can('available_orders') ? (limit_order => $self->contract->available_orders) : (),
-                    contract_id => $fmb_id,
-                };
-
+                my $fmb_id = $clientdb->get_next_fmbid();
+                $contract_params->{contract_id} = $fmb_id;
                 BOM::Transaction::Utility::set_contract_parameters($contract_params, $_->{client});
                 $fmb_id;
             } @$list;
