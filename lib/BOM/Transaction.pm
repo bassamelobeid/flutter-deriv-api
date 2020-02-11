@@ -825,8 +825,7 @@ sub buy {
         # otherwise the function re-throws the exception
         my $e = $@;
         stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
-        my $contract_id = $fmbid // (defined $fmb ? $fmb->{id} : undef);
-        BOM::Transaction::Utility::delete_contract_parameters($contract_id, $client) if $contract_id;
+        BOM::Transaction::Utility::delete_contract_parameters($fmbid, $client) if $fmbid;
         $company_limits->reverse_buys($client);
         $error_status = $self->_recover($e);
     }
