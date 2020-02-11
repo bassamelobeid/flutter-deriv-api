@@ -78,11 +78,13 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
         <td>
             <input type="text" name="comment" size="15"></input>
         </td>
-        <td>
-            <input type="text" name="start_time" size="12"></input>
+        <td style="text-align:center;">
+            <input type="text" name="start_time" class="datepick" size="15" maxlength="19" pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$"></input>
+            <br /><span class="hint">Format: yyyy-mm-dd (HH:mm:ss)</span>
         </td>
-        <td>
-            <input type="text" name="end_time" size="12"></input>
+        <td style="text-align:center;">
+            <input type="text" name="end_time" class="datepick" size="15" maxlength="19" pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$"></input>
+            <br /><span class="hint">Format: yyyy-mm-dd (HH:mm:ss)</span>
          </td>
         <td>
             <button onClick="saveLimit()" type="button">save</button>
@@ -241,8 +243,6 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
     function saveLimit() {
         var el = \$("table.pretty");
         if (el) {
-            var result = el.find("span.save_result");
-            result.text('processing ...');
             var market = el.find('input[name="market"]:checked').serialize();
             var new_market = el.find('input[name="new_market"]').val();
             var underlying_symbol = el.find('input[name="underlying_symbol"]').val();
@@ -255,6 +255,27 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
             var comment = el.find('input[name="comment"]').val();
             var start_time = el.find('input[name="start_time"]').val();
             var end_time = el.find('input[name="end_time"]').val();
+
+            var result = el.find("span.save_result");
+
+            //Both start_time and end_time should be empty or fill
+            if((start_time === '' && end_time !== '') || (start_time !== '' && end_time === '')) {
+                result.css('color', 'red');
+                result.text('you should enter both `start time` and `end time`');
+                return;
+            }
+
+            if(!isDatePickersValid()) return false;
+
+            if(start_time !== '') {
+                if(new Date(start_time) >= new Date(end_time)) {
+                    result.css('color', 'red');
+                    result.text('`start_time` should be less than `end_time`.');
+                    return;
+                }
+            }
+
+            result.text('processing ...');
 
             \$.ajax({
                 url: upload_url,
@@ -296,6 +317,41 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
     createDisplayTable([% existing_landing_company.records | none %], [% existing_landing_company.header | none %], 'per_landing_company');
     createDisplayTable([% existing_pending_market_group.records | none %], [% existing_pending_market_group.header | none %], 'market_group_display');
 
+    \$(document).ready(function() {
+        initDatePickers();
+    });
+
+    initDatePickers = function(){
+        \$('.datepick')
+        .not('.date-picker-inited')
+        .datepicker({dateFormat: "yy-mm-dd 00:00:00"})
+        .addClass('date-picker-inited');
+    };
+
+    isDatePickersValid = function(){
+        var isValid = true;
+        var invalidDateNames = [];
+        \$('.datepick').each(function(){
+            var date = \$(this).val().trim();
+            
+            // Ignore validation if field is empty and it's not required
+            if(!date && !\$(this).prop('required')) return true;
+
+            var valid = /^(\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?)\$/.test(date);
+            if(valid) {
+                date = new Date(date);
+                valid = date != 'Invalid Date';
+            }
+            isValid = isValid && valid;
+            if(!valid) invalidDateNames.push(\$(this).prop('name'));
+        });
+
+        if(!isValid) {
+            alert('Please match the correct format for the following fields: \n' + invalidDateNames.join('\n'));
+        }
+
+        return isValid;
+    };
 </script>
 <style>
     table {
@@ -314,5 +370,16 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
     .inlineTable {
         display: inline-block;
         vertical-align: top;
+    }
+    span.hint {
+        color: #fff;
+        border-radius: 3px;
+        display: inline-block;
+        padding: 2px 6px;
+        background-color: #639862;
+        border: none;
+        box-shadow: 1px 1px 3px #888;
+        text-shadow: 1px 1px 1px #175016;
+        margin: 2px;
     }
 </style>
