@@ -3,6 +3,7 @@ package BOM::Test::WebsocketAPI::Parameters;
 no indirect;
 use warnings;
 use strict;
+use utf8;
 
 =head1 NAME
 
@@ -262,8 +263,7 @@ for my $type (qw(buy sell)) {
         my $rate   = 1 + 10 * rand;
         my $amount = 10 + 10 * rand;
         my $price  = $rate * $amount;
-        push @p2p_orders,
-            P2POrder(
+        push @p2p_orders, P2POrder(
             rate_display      => "$rate",
             offer_id          => "$offer_id",
             offer_description => 'Please contact via whatsapp 1234',
@@ -279,9 +279,9 @@ for my $type (qw(buy sell)) {
             price             => $price,
             created_time      => (time - 30),
             price_display     => "$price",
-            order_description => '',
+            order_description => 'Тестовый заказ',        # to check UTF decoding
             type              => $type,
-            );
+        );
     }
 }
 
