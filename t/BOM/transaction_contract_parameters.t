@@ -283,7 +283,7 @@ subtest 'buy a bet with different duration', sub {
     });
     my $error = $txn->buy;
     is $error, undef, 'no error';
-    _check_contract_parameter_ttl($txn->contract_id, 15 * 60 + 10);
+    _check_contract_parameter_ttl($txn->contract_id, 15 * 60 + 60);
 
     $args->{duration} = '2d';
     $contract         = produce_contract($args);

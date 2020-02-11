@@ -214,7 +214,7 @@ sub check_one_result {
 
     subtest "$title - CONTRACT_PARAMS TTL" => sub {
         my $duration_epoch =
-            min(86400, Date::Utility->new($m->{fmb}->{expiry_time})->epoch - Date::Utility->new($m->{fmb}->{start_time})->epoch) + 10;
+            min(86400, Date::Utility->new($m->{fmb}->{expiry_time})->epoch - Date::Utility->new($m->{fmb}->{start_time})->epoch) + 60;
         _check_contract_parameter_ttl($cl, $m->{fmb}->{id}, $duration_epoch);
     };
 }
