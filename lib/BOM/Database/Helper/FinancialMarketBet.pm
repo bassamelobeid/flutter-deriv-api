@@ -17,9 +17,9 @@ has 'account_data' => (
 );
 
 has fmb_ids => (
-    is => 'ro',
-    isa => 'ArrayRef',
-    default => sub{[]},
+    is      => 'ro',
+    isa     => 'ArrayRef',
+    default => sub { [] },
 );
 
 # this will end up being either a BOM::Database::Model::FinancialMarketBetOpen or a BOM::Database::Model::FinancialMarketBet
@@ -191,8 +191,8 @@ sub batch_buy_bet {
 
     my @acclim;
     my $currency;
-    my $accs = $self->account_data;
-    my $limits = $self->limits || [];
+    my $accs    = $self->account_data;
+    my $limits  = $self->limits || [];
     my $fmb_ids = $self->fmb_ids;
 
     $currency = $accs->[0]->{currency_code};
@@ -250,7 +250,8 @@ WITH
 acc(fmbid, loginid, limits) AS (VALUES
     '
                 . join(",\n    ",
-                map { '($' . ($_ * 2 + 24) . '::BIGINT, $' . ($_ * 2 + 25) . '::VARCHAR(12),' . ' $' . ($_ * 2 + 26) . '::JSONB)'; } 0 .. @acclim / 2 - 1)
+                map { '($' . ($_ * 2 + 24) . '::BIGINT, $' . ($_ * 2 + 25) . '::VARCHAR(12),' . ' $' . ($_ * 2 + 26) . '::JSONB)'; }
+                    0 .. @acclim / 2 - 1)
                 . ')
 SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
   FROM acc
