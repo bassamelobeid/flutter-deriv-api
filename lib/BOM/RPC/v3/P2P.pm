@@ -80,6 +80,9 @@ our %ERROR_MAP = do {
         InvalidMaxAmount     => localize('The maximum amount should be less than or equal to the offer amount.'),
         InvalidListLimit     => localize("Invalid value for list limit"),
         InvalidListOffset    => localize("Invalid value for list offset"),
+        RateTooSmall         => localize('Ad rate should not be less than [_1]. Please adjust the value.'),
+        RateTooBig           => localize('Ad rate should not be more than [_1]. Please adjust the value.'),
+        MinPriceTooSmall     => localize('Ad minimum price is zero, Please adjust minimum amount or rate.'),
 
         # bom-user errors
         AgentNotFound               => localize('P2P Agent not found.'),
@@ -105,23 +108,26 @@ our %ERROR_MAP = do {
         OrderMaximumExceeded => localize('The maximum available amount for this offer is [_1] [_2] at the moment.'),
 
         InsufficientBalance => localize('Your account balance is insufficient to create an order with this amount.'),
-
-        # DB errors
-        BI225 => localize('Offer not found.'),
-        BI226 => localize('Cannot create order for your own offer.'),
-        BI227 => localize('Insufficient funds in account'),
-        BI228 => localize('Order not found.'),
-        BI229 => localize('Order cannot be completed in its current state.'),
-        BI230 => localize('Order has not been confirmed by agent.'),
-        BI231 => localize('Order not found.'),
-        BI232 => localize('Order cannot be cancelled in its current state.'),
-        BI233 => localize('Order not found.'),
-        BI234 => localize('Order cannot be agent confirmed in its current state.'),
-        BI235 => localize('Order not found.'),
-        BI236 => localize('Order cannot be client confirmed in its current state.'),
-        BI237 => localize('Order currency is different from account currency.'),
     );
 };
+
+# To prevent duplicated messages, we only keep them in `%ERROR_MAP`
+# so for each DB error here, there should be a corresponding error code there
+our %DB_ERRORS = (
+    BI225 => 'OfferNotFound',
+    BI226 => 'InvalidOfferOwn',
+    BI227 => 'OfferInsufficientAmount',
+    BI228 => 'OrderNotFound',
+    BI229 => 'InvalidStateForConfirmation',
+    BI230 => 'InvalidStateForConfirmation',
+    BI231 => 'OrderNotFound',
+    BI232 => 'AlreadyInProgress',
+    BI233 => 'OrderNotFound',
+    BI234 => 'InvalidStateForConfirmation',
+    BI235 => 'OrderNotFound',
+    BI236 => 'InvalidStateForConfirmation',
+    BI237 => 'InvalidOrderCurrency',
+);
 
 =head2 p2p_rpc
 
@@ -179,43 +185,51 @@ sub p2p_rpc {
         }
         catch {
             my $exception = $@;
-            my ($err, $err_params, $err_details);
+            my ($err_code, $err_code_db, $err_params, $err_details);
+
             # db errors come as [ BIxxx, message ]
-            # bom-user errors come as a string "ErrorCode\n"
-            #   or a HASH: {error_code => 'ErrorCode', message_params => ['values for message placeholders']}
+            # bom-user and bom-rpc errors come as a hashref:
+            #   {error_code => 'ErrorCode', message_params => ['values for message placeholders'], details => {}}
             SWITCH: for (ref $exception) {
-                if (/ARRAY/) { $err = $exception->[0]; last SWITCH; }
+                if (/ARRAY/) {
+                    $err_code_db = $exception->[0];
+                    $err_code    = $DB_ERRORS{$err_code_db};
+                    last SWITCH;
+                }
+
                 if (/HASH/) {
-                    $err         = $exception->{error_code};
+                    $err_code    = $exception->{error_code};
                     $err_params  = $exception->{message_params};
                     $err_details = $exception->{details};
                     last SWITCH;
                 }
 
-                chomp($err = $exception);
+                chomp($err_code = $exception);
             }
 
             my $p2p_prefix = $method =~ tr/_/./;
 
-            if (my $message = $ERROR_MAP{$err}) {
-                stats_inc($p2p_prefix . '.error', {tags => ['error_code:' . $err]});
-                if ($err =~ /^BI[0-9]+$/) {
-                    $log->warnf("P2P %s failed, DB failure: %s, original: %s", $method, $err, $exception->[1])
-                        ;    # original DB error may have useful details
-                    $err = 'P2PError';    # hide db error codes from user
-                }
+            if (my $message = $ERROR_MAP{$err_code}) {
+                stats_inc($p2p_prefix . '.error', {tags => ['error_code:' . $err_code]});
+
+                $log->warnf("P2P %s failed, DB failure: %s, original: %s", $method, $err_code_db, $exception->[1])
+                    if $err_code_db;    # original DB error may have useful details
+
                 return BOM::RPC::v3::Utility::create_error({
-                    code              => $err,
+                    code              => $err_code,
                     message_to_client => localize($message, (ref($err_params) eq 'ARRAY' ? $err_params : [])->@*),
                     (ref($err_details) eq 'HASH' ? (details => $err_details) : ()),
                 });
             } else {
                 # This indicates a bug in the code.
-                $log->warnf("Unexpected error in P2P %s: %s, please report as a bug to backend", $method, $err);
                 stats_inc($p2p_prefix . '.error', {tags => ['error_code:unknown']});
+
+                my $db_error = $err_code_db ? " (DB error: $err_code_db)" : '';
+                $log->warnf("Unexpected error in P2P %s: %s%s, please report as a bug to backend", $method, $err_code, $db_error);
+
                 return BOM::RPC::v3::Utility::create_error({
                     code              => 'P2PError',
-                    message_to_client => localize('Sorry, an error occurred.')    #
+                    message_to_client => localize('Sorry, an error occurred.'),
                 });
             }
         }
@@ -317,7 +331,7 @@ p2p_rpc p2p_agent_info => sub {
     my (%args) = @_;
 
     my $client = $args{client};
-    return $client->p2p_agent_info($args{params}{args}->%*) // die "AgentNotFound\n";
+    return $client->p2p_agent_info($args{params}{args}->%*) // die +{error_code => 'AgentNotFound'};
 };
 
 p2p_rpc p2p_agent_offers => sub {
@@ -452,7 +466,7 @@ p2p_rpc p2p_offer_info => sub {
     my (%args) = @_;
 
     my $client = $args{client};
-    return $client->p2p_offer_info($args{params}{args}->%*) // die "OfferNotFound\n";
+    return $client->p2p_offer_info($args{params}{args}->%*) // die +{error_code => 'OfferNotFound'};
 };
 
 =head2 p2p_offer_list
@@ -512,7 +526,7 @@ p2p_rpc p2p_offer_update => sub {
     my %args = @_;
 
     my $client = $args{client};
-    return $client->p2p_offer_update($args{params}{args}->%*) // die "OfferNotFound\n";
+    return $client->p2p_offer_update($args{params}{args}->%*) // die +{error_code => 'OfferNotFound'};
 };
 
 =head2 p2p_order_create
@@ -587,7 +601,7 @@ p2p_rpc p2p_order_info => sub {
     my %args = @_;
 
     my ($client, $params) = @args{qw/client params/};
-    return $client->p2p_order_info($args{params}{args}->%*) // die "OrderNotFound\n";
+    return $client->p2p_order_info($args{params}{args}->%*) // die +{error_code => 'OrderNotFound'};
 };
 
 =head2 p2p_order_confirm
@@ -671,7 +685,7 @@ Exchange chat messages.
 =cut
 
 p2p_rpc p2p_order_chat => sub {
-    die "PermissionDenied\n";
+    die +{error_code => 'PermissionDenied'};
 };
 
 # Check to see if the client can has access to p2p API calls or not?
@@ -683,20 +697,21 @@ sub _check_client_access {
     # are problems, and payments/ops/QA can choose whether or not the
     # functionality should be exposed in the first place. The ->p2p->enabled
     # check may be dropped in future once this is stable.
-    die "P2PDisabled\n" if $app_config->system->suspend->p2p;
-    die "P2PDisabled\n" unless $app_config->payments->p2p->enabled;
+    die +{error_code => 'P2PDisabled'} if $app_config->system->suspend->p2p;
+    die +{error_code => 'P2PDisabled'} unless $app_config->payments->p2p->enabled;
 
     # All operations require a valid client with active account
-    $client // die "NotLoggedIn\n";
+    $client // die +{error_code => 'NotLoggedIn'};
 
-    die "UnavailableOnVirtual\n" if $client->is_virtual;
+    die +{error_code => 'UnavailableOnVirtual'} if $client->is_virtual;
 
-    die "PermissionDenied\n" if $client->status->has_any(@{RESTRICTED_CLIENT_STATUSES()});
+    die +{error_code => 'PermissionDenied'} if $client->status->has_any(@{RESTRICTED_CLIENT_STATUSES()});
 
     # Allow user to pass if payments.p2p.available is checked or client login id is in payments.p2p.clients
-    die "PermissionDenied\n" unless $app_config->payments->p2p->available || any { $_ eq $client->loginid } $app_config->payments->p2p->clients->@*;
+    die +{error_code => 'PermissionDenied'}
+        unless $app_config->payments->p2p->available || any { $_ eq $client->loginid } $app_config->payments->p2p->clients->@*;
 
-    die "NoCurrency\n" unless $client->default_account;
+    die +{error_code => 'NoCurrency'} unless $client->default_account;
 }
 
 1;

@@ -62,6 +62,15 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::
 my $params = {language => 'EN'};
 my $offer;
 
+subtest 'DB errors' => sub {
+    my %error_map = %BOM::RPC::v3::P2P::ERROR_MAP;
+    my %db_errors = %BOM::RPC::v3::P2P::DB_ERRORS;
+
+    for my $err_code_db (sort keys %db_errors) {
+        ok exists $error_map{$db_errors{$err_code_db}}, "DB error '$err_code_db' has a corresponding error message in %ERROR_MAP";
+    }
+};
+
 subtest 'No token' => sub {
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'error code is InvalidToken');
 };
@@ -144,8 +153,7 @@ subtest 'Offers' => sub {
 
     $params->{args} = {agent_name => 'SpyvsSpy'};
     $c->call_ok('p2p_agent_update', $params)
-        ->has_no_system_error->has_error->error_code_is('AgentNotApproved',
-        'Cannot update the agent information when agent is not approved');
+        ->has_no_system_error->has_error->error_code_is('AgentNotApproved', 'Cannot update the agent information when agent is not approved');
 
     $client_agent->p2p_agent_update(is_approved => 1);
     $res = $c->call_ok('p2p_agent_update', $params)->has_no_system_error->has_no_error->result;
@@ -162,7 +170,7 @@ subtest 'Offers' => sub {
 
     $client_agent->p2p_agent_update(
         is_approved => 1,
-        is_active        => 0
+        is_active   => 0
     );
 
     $params->{args} = $offer_params;
@@ -210,6 +218,17 @@ subtest 'Offers' => sub {
     delete $offer->{stash};
     ok $offer->{offer_id}, 'offer has id';
 
+    $params->{args}{rate} = 12.000001;
+    $offer = $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_no_error->result;
+    is $offer->{rate_display}, '12.000001', 'offer has id';
+
+    $params->{args}{rate} = 1_000_000_000;
+    $offer = $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_no_error->result;
+    is $offer->{rate_display}, '1000000000.00', 'offer has id';
+
+    $params->{args}{rate} = 0.000001;
+    $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_error->error_code_is('MinPriceTooSmall', 'Got error if min price is 0');
+
     $params->{args} = {};
     $res = $c->call_ok('p2p_offer_list', $params)->has_no_system_error->has_no_error->result->{list};
     cmp_ok $res->[0]->{offer_id}, '==', $offer->{offer_id}, 'p2p_offer_list returns offer';
@@ -228,9 +247,9 @@ subtest 'Offers' => sub {
     $params->{args} = {offer_id => 9999};
     $c->call_ok('p2p_offer_info',   $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Get info for non-existent offer');
     $c->call_ok('p2p_offer_update', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Edit non-existent offer');
-    
+
     $res = $c->call_ok('p2p_agent_offers', $params)->has_no_system_error->has_no_error->result;
-    is $res->{list}[0]{offer_id}, $offer->{offer_id}, 'Offer returned in p2p_agent_offers';
+    is $res->{list}[2]{offer_id}, $offer->{offer_id}, 'Offer returned in p2p_agent_offers';
 };
 
 subtest 'Create new order' => sub {

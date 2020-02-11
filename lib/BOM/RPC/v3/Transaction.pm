@@ -17,7 +17,6 @@ use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::Transaction;
-use BOM::Transaction::Utility;
 use BOM::Platform::Context qw (localize request);
 use BOM::Config::Runtime;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -239,8 +238,12 @@ rpc "buy",
         is_sold         => $contract_details->{is_sold},
         transaction_ids => {buy => $transaction_details->{id}},
         longcode        => localize(shortcode_to_longcode($contract_details->{short_code}, $currency)),
-        expiry_time     => 0 + Date::Utility->new($contract_details->{expiry_time})->epoch,
     };
+
+    # multiplier requires additional parameters to define a contract
+    if ($contract->category_code eq 'multiplier') {
+        $contract_proposal_details->{limit_order} = $contract->available_orders;
+    }
 
     my $tv_interval = 1000 * Time::HiRes::tv_interval($tv);
 
@@ -617,9 +620,6 @@ rpc contract_update => sub {
                     code              => 'ContractUpdateFailure',
                     message_to_client => localize('Contract update failed.'),
                 });
-            }
-            if (my $contract_proposal_details = delete $response->{contract_details}) {
-                BOM::Transaction::Utility::set_contract_parameters($contract_proposal_details, $client);
             }
         } else {
             my $error = $updater->validation_error;

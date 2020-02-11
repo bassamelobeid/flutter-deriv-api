@@ -284,7 +284,7 @@ sub _check_password {
 }
 
 =head2 _validate_mt5_password
-    Validates the mt5 password must be of 8-25 characters long. 
+    Validates the mt5 password must be of 8-25 characters long.
     It must also have at least 2 out of the following 3 types of characters: uppercase letters, lowercase letters, and numbers.
     Returns true if a check fails else false.
 =cut
@@ -608,31 +608,39 @@ sub validate_uri {
     if ($original_url =~ /[^[:ascii:]]/) {
         return localize('Unicode is not allowed in URL');
     }
-    if (not defined $url->scheme or ($url->scheme ne 'http' and $url->scheme ne 'https')) {
-        return localize('The given URL is not http(s)');
+
+    if (not defined $url->scheme or $url->scheme !~ /^[a-z][a-z0-9.+\-]*$/) {
+        return localize('The given URL scheme is not valid');
     }
-    if ($url->userinfo) {
-        return localize('URL should not have user info');
-    }
-    if ($url->port != 80 && $url->port != 443) {
-        return localize('Only ports 80 and 443 are allowed');
-    }
+
     if ($url->fragment) {
         return localize('URL should not have fragment');
     }
+
     if ($url->query) {
         return localize('URL should not have query');
     }
-    my $host = $url->host;
-    if (!$host || $original_url =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
-        return localize('Invalid URL');
-    }
-    # We are explicitly asking to use default
-    # to avoid failure on Debian Stretch
-    # Check https://rt.cpan.org/Public/Bug/Display.html?id=121222
-    my $suffix = Domain::PublicSuffix->new({use_default => 1});
-    if (!$suffix->get_root_domain($host)) {
-        return localize('Unknown domain name');
+
+    if ($url->has_recognized_scheme) {
+        if ($url->userinfo) {
+            return localize('URL should not have user info');
+        }
+
+        if ($url->port != 80 && $url->port != 443) {
+            return localize('Only ports 80 and 443 are allowed');
+        }
+
+        my $host = $url->host;
+        if (!$host || $original_url =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
+            return localize('Invalid URL');
+        }
+        # We are explicitly asking to use default
+        # to avoid failure on Debian Stretch
+        # Check https://rt.cpan.org/Public/Bug/Display.html?id=121222
+        my $suffix = Domain::PublicSuffix->new({use_default => 1});
+        if (!$suffix->get_root_domain($host)) {
+            return localize('Unknown domain name');
+        }
     }
 
     return undef;

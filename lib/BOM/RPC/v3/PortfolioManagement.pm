@@ -16,7 +16,6 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (request localize);
 use BOM::Config::Runtime;
 use BOM::Transaction;
-use BOM::Transaction::Utility;
 use BOM::Pricing::v3::Contract;
 
 requires_auth();
@@ -200,9 +199,6 @@ sub populate_response_proposal_contract {
                 $contract->{profit_percentage} = roundcommon(0.01, $contract->{profit} / $main_contract_price * 100);
             }
             $response->{$id} = $contract;
-
-            # if we're subscribing to proposal_open_contract and contract is not sold, then set CONTRACT_PARAMS here
-            BOM::Transaction::Utility::set_contract_parameters($contract, $client) if $params->{args}->{subscribe} and not $is_sold;
         }
     }
 

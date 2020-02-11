@@ -34,8 +34,9 @@ $test_client_vr->save;
 
 my $test_loginid = $test_client->loginid;
 my $user         = BOM::User->create(
-    email    => $email,
-    password => $hash_pwd
+    email         => $email,
+    password      => $hash_pwd,
+    email_consent => 1
 );
 $user->add_client($test_client);
 $user->add_client($test_client_vr);
@@ -64,11 +65,21 @@ $test_client_mf->email($email_mlt_mf);
 $test_client_mf->save;
 
 my $user_mlt_mf = BOM::User->create(
-    email    => $email_mlt_mf,
-    password => $hash_pwd
+    email         => $email_mlt_mf,
+    password      => $hash_pwd,
+    email_consent => 1
 );
 $user_mlt_mf->add_client($test_client_mlt);
 $user_mlt_mf->add_client($test_client_mf);
+
+my $test_client_cr_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+$test_client_cr_3->email('cr3@binary.com');
+$test_client_cr_3->save;
+my $user_cr_3 = BOM::User->create(
+    email    => 'sample3@binary.com',
+    password => $hash_pwd
+);
+$user_cr_3->add_client($test_client_cr_3);
 
 my $m              = BOM::Platform::Token::API->new;
 my $token          = $m->create_token($test_loginid, 'test token');
@@ -76,12 +87,22 @@ my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test toke
 my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
 
-my $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-my $c = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+my $token_cr_3 = $m->create_token($test_client_cr_3->loginid, 'test token');
+my $t          = Test::Mojo->new('BOM::RPC::Transport::HTTP');
+my $c          = Test::BOM::RPC::Client->new(ua => $t->app->ua);
 
 my $method = 'set_self_exclusion';
 subtest 'get and set self_exclusion' => sub {
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
+
+    my $emitted;
+    my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $mock_events->mock(
+        'emit',
+        sub {
+            my ($type, $data) = @_;
+            $emitted->{$type} = $data;
+        });
 
     is(
         $c->tcall(
@@ -289,6 +310,7 @@ subtest 'get and set self_exclusion' => sub {
     ok($msg, "msg sent to marketing and compliance email");
     is_deeply($msg->{to}, ['compliance@binary.com', 'marketing@binary.com'], "msg sent to marketing and compliance email");
     like($msg->{body}, qr/.*Exclude from website until/s, 'email content is ok');
+    ok($emitted->{self_exclude_set}, 'self_exclude_set event emitted');
 
     like(
         $c->tcall($method, $params)->{error}->{message_to_client},
@@ -325,12 +347,14 @@ subtest 'get and set self_exclusion' => sub {
         max_open_bets          => 50,
         session_duration_limit => 1440,
     };
+    delete $emitted->{self_exclude_set};
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     $msg = mailbox_search(
         email   => 'compliance@binary.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
     ok(!$msg, 'No email for MLT client limits without MT5 accounts');
+    is($emitted->{self_exclude_set}, undef, 'self_exclude_set event not emitted');
 
     my $update_mt5_params = {
         language   => 'EN',
@@ -388,6 +412,20 @@ subtest 'get and set self_exclusion' => sub {
     ok($msg, 'Email for MLT client limits with MT5 accounts');
     is_deeply($msg->{to}, ['compliance@binary.com', 'marketing@binary.com', 'x-acc@binary.com'], 'email to address ok');
     like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
+    delete $params->{args};
+    delete $emitted->{self_exclude_set};
+    $params->{token} = $token_cr_3;
+    $params->{args}  = {
+        set_self_exclusion     => 1,
+        max_balance            => 9998,
+        max_turnover           => 1000,
+        max_open_bets          => 50,
+        session_duration_limit => 1440,
+        exclude_until          => $exclude_until,
+        timeout_until          => $timeout_until->epoch,
+    };
+    is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
+    is($emitted->{self_exclude_set}, undef, 'self_exclude_set event not emitted because email_consent is not set for user');
 };
 
 done_testing();
