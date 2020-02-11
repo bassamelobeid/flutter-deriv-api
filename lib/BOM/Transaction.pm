@@ -996,6 +996,17 @@ sub batch_buy {
                 } else {
                     $el->{fmb} = $res->{fmb};
                     $el->{txn} = $res->{txn};
+                    my $client          = $el->{client};
+                    my $contract_params = {
+                        shortcode   => $el->{fmb}->{short_code},
+                        currency    => $client->currency,
+                        sell_time   => undef,
+                        is_sold     => 0,
+                        expiry_time => Date::Utility->new($el->{fmb}->{expiry_time})->epoch,
+                        contract_id => $el->{fmb}->{id},
+                    };
+
+                    BOM::Transaction::Utility::set_contract_parameters($contract_params, $client);
                     $success++;
                     push @sold, $el;
                 }
