@@ -42,8 +42,7 @@ use BOM::Database::Helper::RejectedTrade;
 use BOM::Database::ClientDB;
 use BOM::Transaction::CompanyLimits;
 use BOM::Transaction::Validation;
-use BOM::Transaction::Utility qw(track_event);
-use Log::Any qw($log);
+use BOM::Transaction::Utility;
 
 =head1 NAME
 
@@ -830,14 +829,6 @@ sub buy {
 
     enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
 
-    track_event(
-        event       => 'buy',
-        loginid     => $client->loginid,
-        transaction => $txn,
-        fmb         => $fmb,
-        contract    => $self->contract
-    );
-
     return;
 }
 
@@ -914,8 +905,6 @@ sub batch_buy {
 
     my %stat = map { $_ => {attempt => 0 + @{$per_broker{$_}}} } keys %per_broker;
 
-    my @sold;
-
     for my $broker (keys %per_broker) {
         my $list = $per_broker{$broker};
         # with hash key caching introduced in recent perl versions
@@ -966,7 +955,6 @@ sub batch_buy {
                     $el->{fmb} = $res->{fmb};
                     $el->{txn} = $res->{txn};
                     $success++;
-                    push @sold, $el;
                 }
             }
 
@@ -982,17 +970,6 @@ sub batch_buy {
                 @{$el}{qw/code error/} = @general_error unless $el->{code} or $el->{fmb};
             }
         }
-    }
-
-    for my $elm (@sold) {
-        track_event(
-            event        => 'buy',
-            loginid      => $elm->{loginid},
-            copy_trading => 1,
-            transaction  => $elm->{txn},
-            fmb          => $elm->{fmb},
-            contract     => $self->contract
-        );
     }
 
     $self->stats_stop($stats_data, undef, \%stat);
@@ -1116,9 +1093,9 @@ sub sell {
     );
 
     my $error = 1;
-    my ($fmb, $txn, $buy_txn_id, $buy_source);
+    my ($fmb, $txn, $buy_txn_id);
     try {
-        ($fmb, $txn, $buy_txn_id, $buy_source) = $fmb_helper->sell_bet;
+        ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
         $error = 0;
     }
     catch {
@@ -1166,15 +1143,6 @@ sub sell {
         landing_company => $client->landing_company,
     )->add_sells($client);
 
-    track_event(
-        event       => 'sell',
-        loginid     => $client->loginid,
-        transaction => $txn,
-        fmb         => $fmb,
-        buy_source  => $buy_source,
-        contract    => $self->contract
-    );
-
     return;
 }
 
@@ -1212,7 +1180,6 @@ sub sell_by_shortcode {
 
     my %stat = map { $_ => {attempt => 0 + @{$per_broker{$_}}} } keys %per_broker;
 
-    my @sold;
     for my $broker (keys %per_broker) {
         my $list    = $per_broker{$broker};
         my $success = 0;
@@ -1248,10 +1215,10 @@ sub sell_by_shortcode {
                         @{$r}{qw/code error/} = ('UnexpectedError' . $ecode, BOM::Platform::Context::localize('An unexpected error occurred'));
                     }
                 } else {
-                    $r->{tnx}        = $res_row->{txn};
-                    $r->{fmb}        = $res_row->{fmb};
-                    $r->{buy_tr_id}  = $res_row->{buy_tr_id};
-                    $r->{buy_source} = $res_row->{buy_source};
+                    $r->{tnx}       = $res_row->{txn};
+                    $r->{fmb}       = $res_row->{fmb};
+                    $r->{buy_tr_id} = $res_row->{buy_tr_id};
+
                     my $client = $r->{client};
 
                     # We cannot batch add sells; buy price may vary even with the same short code
@@ -1262,7 +1229,6 @@ sub sell_by_shortcode {
                     )->add_sells($client);
 
                     $success++;
-                    push @sold, $r;
                 }
             }
             $stat{$broker}->{success} = $success;
@@ -1274,17 +1240,6 @@ sub sell_by_shortcode {
                     unless $el->{code} or $el->{fmb};
             }
         }
-    }
-
-    for my $r (@sold) {
-        track_event(
-            event       => 'sell',
-            loginid     => $r->{loginid},
-            transaction => $r->{tnx},
-            fmb         => $r->{fmb},
-            buy_source  => $r->{buy_source},
-            contract    => $self->contract,
-        );
     }
 
     $self->stats_stop($stats_data, undef, \%stat);
@@ -1750,7 +1705,6 @@ sub sell_expired_contracts {
     my @transdata;
     my %stats_attempt;
     my %stats_failure;
-    my %contracts;
 
     for my $bet (@$bets) {
         my $contract;
@@ -1762,7 +1716,6 @@ sub sell_expired_contracts {
                 $bet_params->{limit_order} = extract_limit_orders($bet);
             }
             $contract = produce_contract($bet_params);
-            $contracts{$bet->{id}} = $contract;
         }
         catch {
             $failure->{reason} = 'Could not instantiate contract object';
@@ -1949,15 +1902,6 @@ sub sell_expired_contracts {
             currency        => $currency,
             landing_company => $client->landing_company,
         )->add_sells($client);
-
-        track_event(
-            event        => 'sell',
-            loginid      => $loginid,
-            auto_expired => 1,
-            transaction  => $t->{txn},
-            fmb          => $fmb,
-            buy_source   => $t->{buy_source},
-            contract     => $contracts{$fmb->{id}});
     }
 
     $client->increment_social_responsibility_values({
