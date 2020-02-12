@@ -400,7 +400,7 @@ subtest 'PAs without currency' => sub {
             valid_source               => 1,
             source_bypass_verification => 0
         },
-        'available_countries' => [['nl', 'Netherlands'], ['id', 'Indonesia',], ['af', 'Afghanistan']],
+        'available_countries' => [['de', 'Germany'], ['id', 'Indonesia',], ['af', 'Afghanistan']],
         'list' => [{
                 'telephone'             => '+12345678',
                 'supported_banks'       => undef,
@@ -434,7 +434,7 @@ subtest 'PAs without currency' => sub {
             valid_source               => 1,
             source_bypass_verification => 0
         },
-        'available_countries' => [['nl', 'Netherlands'], ['id', 'Indonesia',], ['af', 'Afghanistan']],
+        'available_countries' => [['de', 'Germany'], ['id', 'Indonesia',], ['af', 'Afghanistan']],
         'list' => [],
     };
     $c->call_ok($method, $params)
