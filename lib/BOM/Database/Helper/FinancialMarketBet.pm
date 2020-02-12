@@ -319,7 +319,9 @@ sub sell_bet {
 
         # FMB child table
         $bet->{absolute_barrier} ? Encode::encode_utf8($json->encode(+{absolute_barrier => $bet->{absolute_barrier}})) : undef,
+
         $bet->{is_expired} // 1,
+
         # transaction table
         @{$self->transaction_data || {}}{qw/transaction_time staff_loginid remark source/},
         $bet->{quantity} // 1,
@@ -337,7 +339,7 @@ sub sell_bet {
         # NOTE, the parens around v_fmb and v_trans in the SQL statement
         #       are necessary.
         my $stmt = $_->prepare('
-SELECT (s.v_fmb).*, (s.v_trans).*, t.id, t.source
+SELECT (s.v_fmb).*, (s.v_trans).*, t.id
   FROM bet_v1.sell_bet( $1::VARCHAR(12), $2::VARCHAR(3), $3::BIGINT, $4::NUMERIC, $5::TIMESTAMP,
                         $6::JSON, $7::BOOLEAN, $8::TIMESTAMP, $9::VARCHAR(24), $10::VARCHAR(800), $11::BIGINT,
                         $12::INT, $13::JSON, $14::INT, $15::JSONB) s
@@ -359,8 +361,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id, t.source
     my $txn = {};
     @{$txn}{@txn_col} = @{$row}[@fmb_col .. @fmb_col + $#txn_col];
 
-    my $buy_txn_id = $row->[-2];
-    my $buy_source = $row->[-1];
+    my $buy_txn_id = $row->[-1];
 
     if ($self->bet) {
         $self->bet->sell_price($fmb->{sell_price});
@@ -368,7 +369,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id, t.source
         $self->bet->is_expired($fmb->{is_expired});
     }
 
-    return wantarray ? ($fmb, $txn, $buy_txn_id, $buy_source) : $txn->{id};
+    return wantarray ? ($fmb, $txn, $buy_txn_id) : $txn->{id};
 }
 
 sub sell_by_shortcode {
@@ -390,7 +391,7 @@ sub sell_by_shortcode {
         my $stmt = $_->prepare('
 WITH
 acc( seq, loginid) AS (VALUES ' . $tmp_table_values . ')
-SELECT acc.loginid, b.r_ecode, b.r_edescription, t.id, t.source, (b.v_fmb).*, (b.v_trans).*
+SELECT acc.loginid, b.r_ecode, b.r_edescription, t.id, (b.v_fmb).*, (b.v_trans).*
   FROM acc
  CROSS JOIN LATERAL
        bet_v1.sell_by_shortcode(
@@ -440,12 +441,10 @@ LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AN
     for my $r (@$all_rows) {
         my @row = @$r;
 
-        my $loginid    = shift @row;
-        my $ecode      = shift @row;
-        my $edescr     = shift @row;
-        my $buy_tr_id  = shift @row;
-        my $buy_source = shift @row;
-
+        my $loginid   = shift @row;
+        my $ecode     = shift @row;
+        my $edescr    = shift @row;
+        my $buy_tr_id = shift @row;
         if ($ecode) {
             push @$result,
                 {
@@ -467,11 +466,10 @@ LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AN
             @{$txn}{@txn_col} = @row[@fmb_col .. @fmb_col + $#txn_col];
 
             push @$result, {
-                fmb        => $fmb,
-                txn        => $txn,
-                buy_tr_id  => $buy_tr_id,
-                buy_source => $buy_source,
-                loginid    => $loginid,      ### Not sure, maybe need to remove
+                fmb       => $fmb,
+                txn       => $txn,
+                buy_tr_id => $buy_tr_id,
+                loginid   => $loginid,     ### Not sure, maybe need to remove
             };
         }
     }
@@ -539,7 +537,7 @@ bets(id, sell_price, sell_time, chld, is_expired, transaction_time, staff_logini
         } 0 .. $#$bets
         )
         . ')
-SELECT (s.v_fmb).*, (s.v_trans).*, t.id, t.source
+SELECT (s.v_fmb).*, (s.v_trans).*, t.id
   FROM bets b
  CROSS JOIN acc a
  CROSS JOIN LATERAL bet_v1.sell_bet(a.account_id,
@@ -612,8 +610,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id, t.source
             {
             fmb        => $fmb,
             txn        => $txn,
-            buy_txn_id => $row->[-2],
-            buy_source => $row->[-1],
+            buy_txn_id => $row->[-1],
             };
     }
 
