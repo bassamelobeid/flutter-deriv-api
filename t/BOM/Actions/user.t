@@ -16,7 +16,6 @@ use BOM::User;
 use Time::Moment;
 use Date::Utility;
 use BOM::Platform::Locale qw/get_state_by_id/;
-use BOM::Event::Process;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -33,7 +32,7 @@ my $user  = BOM::User->create(
 $user->add_client($test_client);
 
 my (@identify_args, @track_args);
-my $segment_response = Future->done(1);
+my $segment_response = Future->fail(1);
 my $mock_segment     = new Test::MockModule('WebService::Async::Segment::Customer');
 $mock_segment->redefine(
     'identify' => sub {
@@ -50,6 +49,37 @@ $mock_brands->mock(
         my $self = shift;
         return ($self->name eq 'deriv');
     });
+
+subtest 'General event validation' => sub {
+    undef @identify_args;
+    undef @track_args;
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'binary',
+        language   => 'id'
+    );
+
+    ok BOM::Event::Actions::User::login(), 'Request is skipped if barnd is not deriv';
+    is @identify_args, 0, 'Segment identify is not invoked';
+    is @track_args,    0, 'Segment track is not invoked';
+
+    $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'id'
+    );
+    request($req);
+
+    like exception { BOM::Event::Actions::User::login(); },
+        qr/Login tracking triggered without a loginid. Please inform back end team if this continues to occur./, 'Missing loginid exception';
+    my $args = {loginid => 'CR1234'};
+    like exception { BOM::Event::Actions::User::login($args) },
+        qr/Login tracking triggered with an invalid loginid. Please inform back end team if this continues to occur./, 'Invalid loginid exception';
+
+    $args->{loginid} = $test_client->loginid;
+
+    $segment_response = Future->fail('dummy test failure');
+    ok BOM::Event::Actions::User::login($args), "Segment failure doesn't make event handler fail";
+};
 
 subtest 'login event' => sub {
     my $req = BOM::Platform::Context::Request->new(
@@ -77,9 +107,7 @@ subtest 'login event' => sub {
             location            => 'Germany',
             new_signin_activity => $new_signin_activity,
         }};
-
-    my $handler = BOM::Event::Process::get_action_mappings()->{login};
-    my $result  = $handler->($args)->get;
+    my $result = BOM::Event::Actions::User::login($args);
     is $result, 1, 'Success track result';
     my ($customer, %args) = @identify_args;
     test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
@@ -117,14 +145,14 @@ subtest 'login event' => sub {
 
     $test_client->set_default_account('EUR');
 
-    ok $handler->($args), 'successful login track after setting currency';
+    ok BOM::Event::Actions::User::login($args), 'successful login track after setting currency';
     ($customer, %args) = @track_args;
     test_segment_customer($customer, $test_client, 'EUR', $virtual_client->date_joined);
 
     undef @identify_args;
     undef @track_args;
     $args->{loginid} = $virtual_client->loginid;
-    is $handler->($args)->get, 1, 'login triggered with virtual loginid';
+    ok BOM::Event::Actions::User::login($args), 'login triggered with virtual loginid';
 
     ($customer, %args) = @identify_args;
     test_segment_customer($customer, $virtual_client, 'EUR', $virtual_client->date_joined);
@@ -151,7 +179,7 @@ subtest 'login event' => sub {
     $new_signin_activity = 1 if $args->{properties}->{browser} ne $new_signin_activity_args->{properties}->{browser};
     $new_signin_activity_args->{properties}->{new_signin_activity} = $new_signin_activity;
     undef @track_args;
-    $result = $handler->($new_signin_activity_args)->get;
+    $result = BOM::Event::Actions::User::login($new_signin_activity_args);
     is $result, 1, 'Success track result';
     ($customer, %args) = @track_args;
     is_deeply \%args,
@@ -215,9 +243,8 @@ subtest 'user profile change event' => sub {
         }};
     undef @identify_args;
     undef @track_args;
-    my $handler          = BOM::Event::Process::get_action_mappings()->{profile_change};
     my $segment_response = Future->done(1);
-    my $result           = $handler->($args)->get;
+    my $result = BOM::Event::Actions::User::profile_change($args)->get;
     is $result, 1, 'Success profile_change result';
     my ($customer, %args) = @identify_args;
     test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
