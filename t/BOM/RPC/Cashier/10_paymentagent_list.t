@@ -113,8 +113,8 @@ subtest 'paymentagent_list RPC call' => sub {
             valid_source               => 1,
             source_bypass_verification => 0
         },
-        'available_countries' => [['',undef],['id', 'Indonesia']],
-        'list' => [{
+        'available_countries' => [['id', 'Indonesia']],
+        'list'                => [{
                 'telephone'             => '+12345678',
                 'supported_banks'       => undef,
                 'name'                  => 'Hoe',
@@ -172,8 +172,8 @@ subtest 'paymentagent_list RPC call' => sub {
             valid_source               => 1,
             source_bypass_verification => 0
         },
-        'available_countries' => [['',undef],['id', 'Indonesia',]],
-        'list' => [{
+        'available_countries' => [['id', 'Indonesia',]],
+        'list'                => [{
                 'telephone'             => '+12345678',
                 'supported_banks'       => undef,
                 'name'                  => 'Hoe',
@@ -243,8 +243,8 @@ subtest 'suspend countries' => sub {
             valid_source               => 1,
             source_bypass_verification => 0
         },
-        'available_countries' => [['', undef],['id', 'Indonesia',], ],
-        'list' => [],
+        'available_countries' => [['id', 'Indonesia',],],
+        'list'                => [],
     };
 
     my $full_result = {
@@ -253,7 +253,7 @@ subtest 'suspend countries' => sub {
             valid_source               => 1,
             source_bypass_verification => 0
         },
-        'available_countries' => [['',undef],['id', 'Indonesia',], ['af', 'Afghanistan',],],
+        'available_countries' => [['id', 'Indonesia',], ['af', 'Afghanistan',],],
         'list' => [{
                 'telephone'             => '+12345678',
                 'supported_banks'       => undef,
@@ -278,8 +278,8 @@ subtest 'suspend countries' => sub {
             valid_source               => 1,
             source_bypass_verification => 0
         },
-        'available_countries' => [['',undef],['id', 'Indonesia',]],
-        'list' => [{
+        'available_countries' => [['id', 'Indonesia',]],
+        'list'                => [{
                 'telephone'             => '+12345678',
                 'supported_banks'       => undef,
                 'name'                  => 'Xoe',
@@ -400,7 +400,7 @@ subtest 'PAs without currency' => sub {
             valid_source               => 1,
             source_bypass_verification => 0
         },
-        'available_countries' => [['de', 'Germany'],  ['', undef],['id', 'Indonesia',], ['af', 'Afghanistan']],
+        'available_countries' => [['nl', 'Netherlands'], ['id', 'Indonesia',], ['af', 'Afghanistan']],
         'list' => [{
                 'telephone'             => '+12345678',
                 'supported_banks'       => undef,
@@ -434,7 +434,7 @@ subtest 'PAs without currency' => sub {
             valid_source               => 1,
             source_bypass_verification => 0
         },
-        'available_countries' => [['de', 'Germany'], ['', undef],['id', 'Indonesia',],['af', 'Afghanistan'] ],
+        'available_countries' => [['nl', 'Netherlands'], ['id', 'Indonesia',], ['af', 'Afghanistan']],
         'list' => [],
     };
     $c->call_ok($method, $params)
