@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::Most (tests => 45);
+use Test::Most (tests => 36);
 use Test::MockTime qw( set_absolute_time restore_time );
 use Test::Exception;
 use Test::Warnings;
@@ -76,18 +76,12 @@ push @bet_infos,
     sell_price        => 0
     };
 
-my $txn_info = {
-    source => 1000,
-};
-
 foreach my $bet_info (@bet_infos) {
     lives_ok {
         my $now        = Date::Utility->new;
         my $start_time = $now->datetime_yyyymmdd_hhmmss;
         my $end        = Date::Utility->new($now->epoch + 3600 * 2);
         my $end_time   = $end->datetime_yyyymmdd_hhmmss;
-
-        $txn_info->{source} += 1;
 
         my $financial_market_bet_helper = BOM::Database::Helper::FinancialMarketBet->new({
 
@@ -111,8 +105,7 @@ foreach my $bet_info (@bet_infos) {
                     short_code        => '0_0_S0P_0',                      # ATM/non-ATM is required
                     quantity          => 1,
                 },
-                transaction_data => $txn_info,
-                db               => $connection_builder->db,
+                db => $connection_builder->db,
             });
 
         my ($fmb, $txn) = $financial_market_bet_helper->buy_bet;
@@ -121,7 +114,6 @@ foreach my $bet_info (@bet_infos) {
 
         my $buy_txn_id = $txn->{id};
         isnt $buy_txn_id+ 0, 0, 'got a valid buy txn id';
-        is $txn->{source}, $txn_info->{source}, "correct transaction source $txn_info->{source}";
 
         my $financial_market_bet = BOM::Database::Model::FinancialMarketBet->new({
                 data_object_params => {financial_market_bet_id => $fmb->{id}},
@@ -138,13 +130,10 @@ foreach my $bet_info (@bet_infos) {
             quantity   => 1,
             is_expired => 0,
         });
-        $financial_market_bet_helper->transaction_data({source => 1});
-        ($fmb, $txn, my $buy_txn_id2, my $buy_source) = $financial_market_bet_helper->sell_bet;
+        ($fmb, $txn, my $buy_txn_id2) = $financial_market_bet_helper->sell_bet;
         is $fmb->{id}, $financial_market_bet->id, 'sell fmb object';
         is $txn->{amount} + 0, $bet_info->{sell_price}, 'sell txn object';
         is $buy_txn_id2, $buy_txn_id, 'got buy txn id during sell';
-        is $txn->{source}, 1, 'correct sell source 1';
-        is $buy_source, $txn_info->{source}, "correct buy_source $txn_info->{source}";
     }
     'Buy a CALL bet and sell it';
 }
