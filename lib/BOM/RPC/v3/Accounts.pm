@@ -1424,68 +1424,18 @@ rpc set_settings => sub {
     BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $current_client->loginid}) if $needs_verify_address_trigger;
     $current_client->add_note('Update Address Notification', $cil_message) if $cil_message;
 
-    # lookup state name by id
-    my $lookup_state =
-        ($current_client->state and $current_client->residence)
-        ? BOM::Platform::Locale::get_state_by_id($current_client->state, $current_client->residence) // ''
-        : '';
-    my @address_fields = ((map { $current_client->$_ } qw/address_1 address_2 city/), $lookup_state, $current_client->postcode);
-    # filter out empty fields
-    my $full_address = join ', ', grep { defined $_ and /\S/ } @address_fields;
+    # send email only if there was any changes
+    if (scalar keys %$updated_fields_for_track) {
+        _send_update_account_settings_email($args, $current_client, $updated_fields_for_track, $allow_copiers, $website_name);
+        BOM::Platform::Event::Emitter::emit(
+            'profile_change',
+            {
+                loginid    => $current_client->loginid,
+                properties => {updated_fields => $updated_fields_for_track}});
 
-    my $residence_country = Locale::Country::code2country($current_client->residence);
-    my $citizen_country   = Locale::Country::code2country($current_client->citizen);
-    my @updated_fields    = (
-        [localize('Email address'),        $current_client->email],
-        [localize('Country of Residence'), $residence_country],
-        [localize('Address'),              $full_address],
-        [localize('Telephone'),            $current_client->phone],
-        [localize('Citizen'),              $citizen_country]);
-
-    my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($current_client->tax_residence || '');
-    my $pob_country = $current_client->place_of_birth ? Locale::Country::code2country($current_client->place_of_birth) : '';
-
-    push @updated_fields,
-        (
-        [localize('Place of birth'), $pob_country // ''],
-        [localize("Tax residence"), $tr_tax_residence],
-        [localize('Tax identification number'), ($current_client->tax_identification_number || '')],
-        );
-    push @updated_fields, [localize('Receive news and special offers'), $current_client->user->{email_consent} ? localize("Yes") : localize("No")]
-        if exists $args->{email_consent};
-    push @updated_fields, [localize('Allow copiers'), $current_client->allow_copiers ? localize("Yes") : localize("No")]
-        if defined $allow_copiers;
-    push @updated_fields,
-        [
-        localize('Requested professional status'),
-        (
-                   $args->{request_professional_status}
-                or $current_client->status->professional_requested
-        ) ? localize("Yes") : localize("No")];
-
-    send_email({
-            to                    => $current_client->email,
-            subject               => $current_client->loginid . ' ' . localize('Change in account settings'),
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            use_event             => 1,
-            template_loginid      => $current_client->loginid,
-            template_name         => 'update_account_settings',
-            template_args         => {
-                updated_fields => [@updated_fields],
-                salutation     => BOM::Platform::Locale::translate_salutation($current_client->salutation),
-                first_name     => $current_client->first_name,
-                last_name      => $current_client->last_name,
-                website_name   => $website_name,
-            },
-        });
-    BOM::Platform::Event::Emitter::emit(
-        'profile_change',
-        {
-            loginid    => $current_client->loginid,
-            properties => {updated_fields => $updated_fields_for_track}}) if $updated_fields_for_track;
-    BOM::User::AuditLog::log('Your settings have been updated successfully', $current_client->loginid);
-    BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $current_client->loginid});
+        BOM::User::AuditLog::log('Your settings have been updated successfully', $current_client->loginid);
+        BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $current_client->loginid});
+    }
 
     return {status => 1};
 };
@@ -1496,6 +1446,99 @@ rpc get_self_exclusion => sub {
     my $client = $params->{client};
     return _get_self_exclusion_details($client);
 };
+
+sub _contains_any {
+    my ($hash, @keys) = (@_);
+    scalar grep { exists $hash->{$_} } @keys;
+}
+
+sub _send_update_account_settings_email {
+    my ($args, $current_client, $updated_fields, $allow_copiers, $website_name) = @_;
+
+    # lookup state name by id
+    my $lookup_state =
+        ($current_client->state and $current_client->residence)
+        ? BOM::Platform::Locale::get_state_by_id($current_client->state, $current_client->residence) // ''
+        : '';
+    my @address_fields = ((map { $current_client->$_ } qw/address_1 address_2 city/), $lookup_state, $current_client->postcode);
+    # filter out empty fields
+    my $full_address = join ', ', grep { defined $_ and /\S/ } @address_fields;
+
+    my $residence_country    = Locale::Country::code2country($current_client->residence);
+    my $citizen_country      = Locale::Country::code2country($current_client->citizen);
+    my @email_updated_fields = ([
+            localize('Full Name'),
+            (
+                join ' ',                    BOM::Platform::Locale::translate_salutation($current_client->salutation),
+                $current_client->first_name, $current_client->last_name
+            ),
+            _contains_any($updated_fields, qw{first_name last_name salutation})
+        ],
+        [localize('Email address'), $current_client->email],
+        [
+            localize('Date of birth'), Date::Utility->new($current_client->date_of_birth)->date_yyyymmdd,
+            _contains_any($updated_fields, 'date_of_birth')
+        ],
+        [localize('Country of Residence'), $residence_country, _contains_any($updated_fields, 'residence')],
+        [
+            localize('Address'), $full_address,
+            _contains_any($updated_fields, qw{address_city address_line_1 address_line_2 address_postcode address_state})
+        ],
+        [localize('Telephone'), $current_client->phone, _contains_any($updated_fields, 'phone')],
+        [localize('Citizen'),   $citizen_country,       _contains_any($updated_fields, 'citizen')]);
+
+    my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($current_client->tax_residence || '');
+    my $pob_country = $current_client->place_of_birth ? Locale::Country::code2country($current_client->place_of_birth) : '';
+
+    push @email_updated_fields,
+        (
+        [localize('Place of birth'), $pob_country // '', _contains_any($updated_fields, 'place_of_birth')],
+        [localize("Tax residence"), $tr_tax_residence, _contains_any($updated_fields, 'tax_residence')],
+        [
+            localize('Tax identification number'),
+            ($current_client->tax_identification_number || ''),
+            _contains_any($updated_fields, 'tax_identification_number')
+        ],
+        [localize('Account opening reason'), $current_client->account_opening_reason, _contains_any($updated_fields, 'account_opening_reason')],
+        );
+    push @email_updated_fields,
+        [
+        localize('Receive news and special offers'),
+        $current_client->user->{email_consent} ? localize("Yes") : localize("No"),
+        _contains_any($updated_fields, 'email_consent')]
+        if exists $args->{email_consent};
+    push @email_updated_fields,
+        [
+        localize('Allow copiers'),
+        $current_client->allow_copiers ? localize("Yes") : localize("No"),
+        _contains_any($updated_fields, 'allow_copiers')]
+        if defined $allow_copiers;
+    push @email_updated_fields,
+        [
+        localize('Requested professional status'),
+        (
+                   $args->{request_professional_status}
+                or $current_client->status->professional_requested
+            ) ? localize("Yes") : localize("No"),
+        _contains_any($updated_fields, 'request_professional_status')];
+
+    send_email({
+            to                    => $current_client->email,
+            subject               => $current_client->loginid . ' ' . localize('Change in account settings'),
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            use_event             => 1,
+            template_loginid      => $current_client->loginid,
+            template_name         => 'update_account_settings',
+            template_args         => {
+                updated_fields => [@email_updated_fields],
+                salutation     => BOM::Platform::Locale::translate_salutation($current_client->salutation),
+                first_name     => $current_client->first_name,
+                last_name      => $current_client->last_name,
+                website_name   => $website_name,
+            },
+        });
+}
 
 sub _find_updated_fields {
     my $params = shift;
