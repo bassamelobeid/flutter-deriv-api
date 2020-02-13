@@ -9,7 +9,6 @@ use Test::MockModule;
 use BOM::User;
 use DataDog::DogStatsd::Helper;
 use BOM::Platform::Context qw(request);
-use BOM::Event::Process;
 
 my (@identify_args, @track_args);
 my $segment_response = Future->done(1);
@@ -117,8 +116,9 @@ subtest 'new mt5 sinup track event' => sub {
     };
     undef @identify_args;
     undef @track_args;
-    my $handler = BOM::Event::Process::get_action_mappings()->{new_mt5_signup};
-    my $result  = $handler->($args)->get;
+
+    $segment_response = Future->done(1);
+    my $result = BOM::Event::Actions::MT5::new_mt5_signup($args);
     is $result, 1, 'Success mt5 new account result';
 
     my ($customer, %args) = @track_args;
@@ -179,7 +179,7 @@ subtest 'mt5 password change track event' => sub {
             app    => {name => 'deriv'},
             locale => 'id'
         },
-        event      => 'mt5_password_changed',
+        event      => 'mt5 password change',
         properties => {
             loginid       => $test_client->loginid,
             'mt5_loginid' => 'MT90000',
