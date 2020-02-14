@@ -38,7 +38,6 @@ use BOM::Database::Model::Account;
 use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
-use BOM::Database::Helper::RejectedTrade;
 use BOM::Database::ClientDB;
 use BOM::Transaction::CompanyLimits;
 use BOM::Transaction::Validation;
