@@ -35,7 +35,7 @@ LTC:
         transaction: https://live.blockcypher.com/ltc/tx/
     sweep:
         min_transfer: 1
-        max_transfer: 100
+        max_transfer: 600
         reserve_balance: 500
         address: MN42N4FdC6scDQzAW1W3kUJeawcjECDRvB
 ETH:
