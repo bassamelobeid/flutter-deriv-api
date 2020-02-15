@@ -25,8 +25,6 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Backoffice::QuantsAuditLog;
-use BOM::Transaction::Utility qw(track_event);
-
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -53,11 +51,11 @@ my $encoded_broker   = encode_entities($broker);
 # Make transaction on client account
 if (request()->param('whattodo') eq 'closeatzero') {
 
-    if ($currency !~ /^\w\w\w$/)    { print "Invalid currency " . $encoded_currency;    code_exit_BO(); }
-    if ($price !~ /^\d*\.?\d*$/)    { print "Invalid price " . encode_entities($price); code_exit_BO(); }
-    if ($price eq "")               { print "Error : no price entered";                 code_exit_BO(); }
-    if ($loginID !~ /^$broker\d+$/) { print "Invalid loginid " . $encoded_loginID;      code_exit_BO(); }
-    if ($qty !~ /^\d+$/ or $qty > 50) { print "Invalid quantity " . encode_entities($qty); code_exit_BO(); }
+    if ($currency !~ /^\w\w\w$/)    { print "Error with curr " . $encoded_currency;        code_exit_BO(); }
+    if ($price !~ /^\d*\.?\d*$/)    { print "Error with price " . encode_entities($price); code_exit_BO(); }
+    if ($price eq "")               { print "Error : no price entered";                    code_exit_BO(); }
+    if ($loginID !~ /^$broker\d+$/) { print "Error with loginid " . $encoded_loginID;      code_exit_BO(); }
+    if ($qty !~ /^\d+$/ or $qty > 50) { print "Error with qty " . encode_entities($qty); code_exit_BO(); }
 
     my $client;
     try {
@@ -84,21 +82,18 @@ if (request()->param('whattodo') eq 'closeatzero') {
 
     my $fmbs = $fmb_mapper->get_fmb_by_id([$bet_ref]);
     if ($fmbs and @$fmbs) {
-        my $res = BOM::Database::Helper::FinancialMarketBet->new({
+        BOM::Database::Helper::FinancialMarketBet->new({
                 account_data => {
                     client_loginid => $loginID,
                     currency_code  => $currency
                 },
                 transaction_data => [({
                             staff_loginid => $clerk,
-                            remark        => request()->param('comment'),
-                            source        => 4,                             # backoffice app_id
-                        }
+                            remark        => request()->param('comment')}
                     ) x @$fmbs
                 ],
                 bet_data => [
-                    map {
-                        {
+                    map { {
                             sell_price => 0,
                             sell_time  => $now->db_timestamp,
                             quantity   => $qty,
@@ -109,20 +104,9 @@ if (request()->param('whattodo') eq 'closeatzero') {
                 ],
                 db => BOM::Database::ClientDB->new({broker_code => $broker})->db,
             })->batch_sell_bet;
-
-        for my $sell (@$res) {
-            track_event(
-                event       => 'sell',
-                loginid     => $loginID,
-                transaction => $sell->{txn},
-                fmb         => $sell->{fmb},
-                contract    => produce_contract($sell->{fmb}->{short_code}, $currency),
-                buy_source  => $sell->{buy_source},
-            );
-        }
     }
 
-# Logging
+    # Logging
     Path::Tiny::path(BOM::Backoffice::Config::config()->{log}->{deposit})
         ->append_utf8($now->datetime
             . "GMT $ttype($buysell) $qty @ $currency$price $bet_ref $loginID clerk=$clerk fellow="

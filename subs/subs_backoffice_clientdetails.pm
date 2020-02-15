@@ -723,7 +723,7 @@ sub client_statement_summary {
     my $dbic       = $clientdb->db->dbic;
     my $account_id = $dbic->run(
         fixup => sub {
-            my $sth = $_->prepare(q{SELECT id FROM transaction.account WHERE client_loginid=?});
+            my $sth = $_->prepare(q{SELECT id FROM transaction.account WHERE client_loginid=? AND is_default});
             $sth->execute($client->loginid);
             my $out = $sth->fetchall_arrayref();
             return $out->[0][0];
