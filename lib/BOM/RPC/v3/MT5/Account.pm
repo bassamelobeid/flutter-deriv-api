@@ -258,23 +258,24 @@ async_rpc "mt5_new_account",
 
     my $source_client = $client;
 
+    my $company_matching_required = $account_type ne 'demo' || $countries_list->{$residence}->{config}->{match_demo_mt5_to_existing_accounts};
+
     # Binary.com front-end will pass whichever client is currently selected
     # in the top-right corner, so check if this user has a qualifying account and switch if they do.
-    if ($account_type ne 'demo' and $client->landing_company->short ne $binary_company_name) {
+    if ($company_matching_required and $client->landing_company->short ne $binary_company_name) {
         my @clients = $user->clients_for_landing_company($binary_company_name);
         $client = (@clients > 0) ? $clients[0] : undef;
     }
 
+    # No matching binary account was found; let's see what was the reason.
     unless ($client) {
-        if (scalar($user->clients) == 1 and $source_client->is_virtual() and $account_type ne 'demo') {
-            return create_error_future('RealAccountMissing');
-        } elsif ($account_type eq 'financial') {
-            return create_error_future('FinancialAccountMissing');
-        } elsif ($account_type eq 'gaming') {
-            return create_error_future('GamingAccountMissing');
-        }
+        # First we check if a real mt5 accounts was being created with no real binary account existing
+        return create_error_future('RealAccountMissing')
+            if ($account_type ne 'demo' and scalar($user->clients) == 1 and $source_client->is_virtual());
 
-        return create_error_future('permission');
+        # Then there might be a binary account with matching company type missing
+        return create_error_future('FinancialAccountMissing') if $company_type eq 'financial';
+        return create_error_future('GamingAccountMissing');
     }
 
     return create_error_future('permission') if ($client->is_virtual() and $account_type ne 'demo');
@@ -1109,8 +1110,9 @@ async_rpc "mt5_deposit",
             # money to deposit into MT5
             try {
                 $fm_client->validate_payment(
-                    currency => $fm_client->default_account->currency_code(),
-                    amount   => -$amount,
+                    currency          => $fm_client->default_account->currency_code(),
+                    amount            => -$amount,
+                    internal_transfer => 1,
                 );
             }
             catch {
@@ -1521,9 +1523,6 @@ sub _mt5_validate_and_get_amount {
             my $client_currency = $client->account ? $client->account->currency_code() : undef;
             my $brand = Brands->new(name => request()->brand);
 
-            $err = BOM::RPC::v3::Cashier::validate_amount($amount, $client_currency);
-            return create_error_future($error_code, {message => $err}) if $err;
-
             # check for fully authenticated only if it's not gaming account
             # as of now we only support gaming for binary brand, in future if we
             # support for champion please revisit this
@@ -1543,7 +1542,6 @@ sub _mt5_validate_and_get_amount {
             # Actual USD or EUR amount that will be deposited into the MT5 account.
             # We have a currency conversion fees when transferring between currencies.
             my $mt5_amount = undef;
-            my ($min, $max) = (1, 20000);
 
             my $source_currency = $client_currency;
 
@@ -1576,10 +1574,6 @@ sub _mt5_validate_and_get_amount {
                 if ($action eq 'deposit') {
 
                     try {
-
-                        $min = convert_currency(1,     'USD', $client_currency);
-                        $max = convert_currency(20000, 'USD', $client_currency);
-
                         ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
                             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $client_currency, $mt5_currency);
 
@@ -1597,9 +1591,6 @@ sub _mt5_validate_and_get_amount {
                     try {
 
                         $source_currency = $mt5_currency;
-
-                        $min = convert_currency(1,     'USD', $mt5_currency);
-                        $max = convert_currency(20000, 'USD', $mt5_currency);
 
                         ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
                             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $mt5_currency, $client_currency);
@@ -1640,12 +1631,19 @@ sub _mt5_validate_and_get_amount {
                 return create_error_future($error_code);
             }
 
+            $err = BOM::RPC::v3::Cashier::validate_amount($amount, $source_currency);
+            return create_error_future($error_code, {message => $err}) if $err;
+
+            my $min = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$source_currency}->{min};
+
             return create_error_future(
                 'InvalidMinAmount',
                 {
                     override_code => $error_code,
                     params        => [$source_currency, formatnumber('amount', $source_currency, $min)]}
             ) if $amount < financialrounding('amount', $source_currency, $min);
+
+            my $max = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$source_currency}->{max};
 
             return create_error_future(
                 'InvalidMaxAmount',
@@ -1700,27 +1698,6 @@ sub _mt5_has_open_positions {
 
             return Future->done($response->{total} ? 1 : 0);
         })->catch($error_handler);
-}
-
-sub _notify_for_locked_mt5 {
-    my ($client, $mt5_login) = @_;
-    my $brand = Brands->new(name => request()->brand);
-    my $msg = "${\$client->loginid} MT5 Account MT$mt5_login is locked, balance is below 0.";
-
-    try {
-        send_email({
-            from                  => $brand->emails('system'),
-            to                    => $brand->emails('support'),
-            subject               => 'MT5 Withdrawal Locked',
-            message               => [$msg],
-            use_email_template    => 0,
-            email_content_is_html => 0,
-        });
-    }
-    catch {
-        warn "Failed to notify cs team about MT5 locked account MT$mt5_login";
-    };
-    return 1;
 }
 
 =head2 _record_mt5_transfer

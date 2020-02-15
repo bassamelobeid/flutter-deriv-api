@@ -350,13 +350,6 @@ subtest 'validation' => sub {
     $params->{args}->{amount} = $limits->{USD}->{min};
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
 
-    $params->{args}->{amount} = $limits->{USD}->{max} + get_min_unit('USD');
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
-    like $result->{error}->{message_to_client},
-        qr/Provided amount is not within permissible limits. Maximum transfer amount for USD currency is $limits->{USD}->{max}/,
-        'Correct error message for a value more than max limit';
-
     $params->{args}->{amount} = $limits->{USD}->{max};
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
@@ -595,9 +588,7 @@ subtest $method => sub {
             currency     => "EUR",
             amount       => 110
         };
-        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-        is($result->{error}{message_to_client}, 'The maximum amount you may transfer is: EUR -10.00.', 'error for limit');
-        is($result->{error}{code}, 'TransferBetweenAccountsError', 'error code for limit');
+        $rpc_ct->call_ok($method, $params)->has_no_error('no withdrawal limit');
     };
 };
 

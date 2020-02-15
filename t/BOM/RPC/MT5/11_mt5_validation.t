@@ -566,13 +566,18 @@ subtest 'MF accout types' => sub {
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
-    my $login = create_mt5_account->(
+    #demo accounts
+    my $login = create_mt5_account->($c, $token, $client, {account_type => 'demo'});
+    ok($login, 'demo gaming account successfully created for an MF client');
+    is $mt5_account_info->{group}, 'demo\malta', 'correct MF demo group';
+
+    $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
             mt5_account_type => 'standard'
         });
-    ok($login, 'demo standard account successfully created for a low risk client');
+    ok($login, 'demo standard account successfully created for an MF client');
     is $mt5_account_info->{group}, 'demo\maltainvest_standard', 'correct MF demo group';
 
     create_mt5_account->(
@@ -645,7 +650,7 @@ subtest 'MF accout types' => sub {
             account_type     => 'financial',
             mt5_account_type => 'standard'
         });
-    ok($login, 'real standard account successfully created for a low risk MF client');
+    ok($login, 'real standard account successfully created for an MF client');
     is $mt5_account_info->{group}, 'real\maltainvest_standard', 'correct MF standard group';
 
     create_mt5_account->(
@@ -686,6 +691,19 @@ subtest 'MX account types' => sub {
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
+    #demo accounts
+    create_mt5_account->($c, $token, $client, {account_type => 'demo'}, 'MT5NotAllowed', 'MX clients cannot create demo gaming account');
+
+    create_mt5_account->(
+        $c, $token, $client,
+        {
+            account_type     => 'demo',
+            mt5_account_type => 'standard'
+        },
+        'FinancialAccountMissing',
+        'MX client cannot create mt5 advanced demo account without any MF sibling'
+    );
+
     create_mt5_account->(
         $c, $token, $client,
         {
@@ -693,10 +711,9 @@ subtest 'MX account types' => sub {
             mt5_account_type => 'advanced'
         },
         'MT5NotAllowed',
-        'MX client cannot create mt5 real demo account'
+        'MX client cannot create mt5 advanced demo account'
     );
 
-    #demo account
     create_mt5_account->(
         $c, $token, $client,
         {
@@ -919,8 +936,8 @@ subtest 'Virtual account types - GB residence' => sub {
             account_type     => 'demo',
             mt5_account_type => 'standard'
         },
-        'RealAccountMissing',
-        'The required age verification for GB residents is not possible without real account'
+        'FinancialAccountMissing',
+        'Virtual GB client cannot create a standard financial MT5 accout'
     );
     $client->status->set('age_verification', 'test', 'test');
     $client->save();
@@ -935,13 +952,16 @@ subtest 'Virtual account types - GB residence' => sub {
         'Virtual GB client can not create gaming demo account'
     );
 
-    $login = create_mt5_account->(
+    create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
             mt5_account_type => 'standard'
-        });
-    is $mt5_account_info->{group}, 'demo\maltainvest_standard', 'correct VRTC standard demo group';
+        },
+        'FinancialAccountMissing',
+        'Unable to create MT5 financial standard account from GB even after age verification'
+    );
+
     $login = create_mt5_account->(
         $c, $token, $client,
         {
