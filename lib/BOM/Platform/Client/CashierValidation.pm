@@ -303,11 +303,11 @@ sub _withdrawal_validation_period {
 
     return {
         start_time => Date::Utility->new(time - 86400 * 30),
-        exclude    => ['currency_conversion_transfer'],
+        exclude    => ['currency_conversion_transfer', 'account_transfer'],
     } if $lc eq 'iom';
 
     return {
-        exclude => ['currency_conversion_transfer'],
+        exclude => ['currency_conversion_transfer', 'account_transfer'],
     } if $lc eq 'malta';
 
     return;
