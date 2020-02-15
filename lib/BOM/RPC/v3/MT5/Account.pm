@@ -258,23 +258,24 @@ async_rpc "mt5_new_account",
 
     my $source_client = $client;
 
+    my $company_matching_required = $account_type ne 'demo' || $countries_list->{$residence}->{config}->{match_demo_mt5_to_existing_accounts};
+
     # Binary.com front-end will pass whichever client is currently selected
     # in the top-right corner, so check if this user has a qualifying account and switch if they do.
-    if ($account_type ne 'demo' and $client->landing_company->short ne $binary_company_name) {
+    if ($company_matching_required and $client->landing_company->short ne $binary_company_name) {
         my @clients = $user->clients_for_landing_company($binary_company_name);
         $client = (@clients > 0) ? $clients[0] : undef;
     }
 
+    # No matching binary account was found; let's see what was the reason.
     unless ($client) {
-        if (scalar($user->clients) == 1 and $source_client->is_virtual() and $account_type ne 'demo') {
-            return create_error_future('RealAccountMissing');
-        } elsif ($account_type eq 'financial') {
-            return create_error_future('FinancialAccountMissing');
-        } elsif ($account_type eq 'gaming') {
-            return create_error_future('GamingAccountMissing');
-        }
+        # First we check if a real mt5 accounts was being created with no real binary account existing
+        return create_error_future('RealAccountMissing')
+            if ($account_type ne 'demo' and scalar($user->clients) == 1 and $source_client->is_virtual());
 
-        return create_error_future('permission');
+        # Then there might be a binary account with matching company type missing
+        return create_error_future('FinancialAccountMissing') if $company_type eq 'financial';
+        return create_error_future('GamingAccountMissing');
     }
 
     return create_error_future('permission') if ($client->is_virtual() and $account_type ne 'demo');
