@@ -1703,27 +1703,6 @@ sub _mt5_has_open_positions {
         })->catch($error_handler);
 }
 
-sub _notify_for_locked_mt5 {
-    my ($client, $mt5_login) = @_;
-    my $brand = Brands->new(name => request()->brand);
-    my $msg = "${\$client->loginid} MT5 Account MT$mt5_login is locked, balance is below 0.";
-
-    try {
-        send_email({
-            from                  => $brand->emails('system'),
-            to                    => $brand->emails('support'),
-            subject               => 'MT5 Withdrawal Locked',
-            message               => [$msg],
-            use_email_template    => 0,
-            email_content_is_html => 0,
-        });
-    }
-    catch {
-        warn "Failed to notify cs team about MT5 locked account MT$mt5_login";
-    };
-    return 1;
-}
-
 =head2 _record_mt5_transfer
 
 Writes an entry into the mt5_transfer table
