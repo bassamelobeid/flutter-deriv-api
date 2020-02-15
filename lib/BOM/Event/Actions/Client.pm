@@ -545,7 +545,7 @@ async sub client_verification {
                                 }
 
                                 # need to send email to client
-                                _send_email_underage_disable_account($client, $BRANDS->emails('support'));
+                                _send_email_underage_disable_account($client);
 
                                 $email_details->{is_disabled} = 1;
                             }
@@ -1087,7 +1087,7 @@ sub account_closure {
 
 =head2 _email_client_age_verified
 
-Emails client when they have been successfully age verified. 
+Emails client when they have been successfully age verified.
 Raunak 19/06/2019 Please note that we decided to do it as frontend notification but since that is not yet drafted and designed so we will implement email notification
 
 =over 4
@@ -1438,8 +1438,8 @@ If a client has breached certain thresholds, then their social responsibility (S
 be set at high-risk value "high" and an email will be sent to the SR team for further action.
 After the email has been sent, the monitoring starts again.
 
-The updated SR status is set to expire within 30 days (this is assuming that the client has not breached 
-any thresholds again) and will be placed back to their default status of low; if the SR team were to 
+The updated SR status is set to expire within 30 days (this is assuming that the client has not breached
+any thresholds again) and will be placed back to their default status of low; if the SR team were to
 re-adjust the status from BO, then the expiry time is no longer required. However, if the client has
 breached thresholds again within the 30 day period, then:
 
@@ -1866,7 +1866,7 @@ async sub _update_onfido_user_check_count {
 This check is to verify whether clients have exceeded the qualifying transaction threshold
 between an operator (us) and a customer (client). 'Qualifying transaction' refers to the deposits/withdrawals
 made by a client over a certain period of time, in either a single transaction or a series of
-linked transactions. 
+linked transactions.
 
 If the amount breached the thresholds, an email is sent out to the compliance team, and
 the monitoring starts again. If a certain period of time has passed and no thresholds
@@ -2046,8 +2046,8 @@ sub set_needs_action {
 =head2 check_or_store_onfido_applicant
 
 Check if applicant exists in database. Store applicant info if client loginid is valid.
-This is due to manual checks at onfido site by CS/Compliance. Such act will creates a new applicant id.
-We stores the applicant as we want to link any check related to the client 
+This is due to manual checks at Onfido site by CS/Compliance. Such act will create a new applicant id.
+We store the applicant as we want to link any check related to the client.
 
 =cut
 
@@ -2097,7 +2097,7 @@ sub signup {
 
 It is triggered for each B<transfer_between_accounts> event emitted.
 It is called with the following parameters:
-    
+
 =over
 
 =item * C<loginid> - required. Login Id of the user.

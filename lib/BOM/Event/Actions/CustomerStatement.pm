@@ -118,7 +118,8 @@ sub _send_email_statement {
         return {status_code => 0};
     }
 
-    my $support_email = request()->brand->emails('support');
+    my $system_generated_email = request()->brand->emails('system_generated');
+    my $support_email          = request()->brand->emails('support');
     my $email_subject =
         $params->{email_subject} ? $params->{email_subject} : 'Statement from ' . $date_from->date_ddmmmyy() . ' to ' . $date_to->date_ddmmmyy();
 
@@ -129,7 +130,7 @@ sub _send_email_statement {
     }
 
     if ($send_to_support) {
-        $email_status = Email::Stuffer->from($support_email)->to($support_email)->subject($email_subject)->html_body($html)->send();
+        $email_status = Email::Stuffer->from($system_generated_email)->to($support_email)->subject($email_subject)->html_body($html)->send();
         $log->warn('failed to send statement to support team') unless $email_status;
     }
 
