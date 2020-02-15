@@ -1041,14 +1041,15 @@ sub add_note {
     my ($self, $subject, $content) = @_;
 
     # send to different email based on the subject of the email, as desk.com handles different subject and email differently.
-    my $email_add = ($subject =~ /$SUBJECT_RE/) ? 'support_new_account' : 'support';
-    $email_add = request()->brand->emails($email_add);
+    my $email_to = ($subject =~ /$SUBJECT_RE/) ? 'support_new_account' : 'support';
+    $email_to = request()->brand->emails($email_to);
+    my $email_from = request()->brand->emails('system_generated');
 
     # We want to record who this note is for, but many legacy places already include client ID.
     # If you're reading this, please check for those and remove the condition.
     my $loginid = $self->loginid;
     $subject = $loginid . ': ' . $subject unless $subject =~ /\Q$loginid/;
-    return Email::Stuffer->from($email_add)->to($email_add)->subject($subject)->text_body($content)->send_or_die;
+    return Email::Stuffer->from($email_from)->to($email_to)->subject($subject)->text_body($content)->send_or_die;
 }
 
 =pod
