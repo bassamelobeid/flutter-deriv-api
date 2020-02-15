@@ -56,8 +56,9 @@ our %LOCAL_CURRENCY_FOR_COUNTRY = do {
     local $SIG{__WARN__} = sub { };
 
     map {
-        $_ => eval{Locale::Object::Currency->new(country_code => $_)->code} // undef
-    }  Locale::Country::all_country_codes();
+        $_ => eval { Locale::Object::Currency->new(country_code => $_)->code }
+            // undef
+    } Locale::Country::all_country_codes();
 };
 
 sub local_currency_for_country {
