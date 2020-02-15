@@ -2590,6 +2590,8 @@ sub validate_payment {
         }
 
         return 1 if $self->fully_authenticated;
+        # disable withdrawal limit for rpc/internal_transfer_exclude_limit
+        return 1 if $args{internal_transfer};
 
         my $lc = $self->landing_company->short;
         my $lc_limits;

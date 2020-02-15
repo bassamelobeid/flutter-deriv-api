@@ -69,12 +69,12 @@ subtest 'total_withdrawals' => sub {
 
     top_up $client_two, 'USD', 200;
 
-    is($account->total_withdrawals(), 0, "No payments have been made");
+    cmp_ok($account->total_withdrawals(), '==', 0, "No payments have been made");
 
     ok(
         $account->add_payment_transaction({
                 amount               => -100,
-                payment_gateway_code => 'account_transfer',
+                payment_gateway_code => 'payment_agent_transfer',
                 payment_type_code    => 'internal_transfer',
                 status               => 'OK',
                 staff_loginid        => 1,
@@ -101,8 +101,8 @@ subtest 'total_withdrawals' => sub {
         'Add payment'
     );
 
-    is($account->total_withdrawals() * 1,                                          200, "200 in  payments have been made");
-    is($account->total_withdrawals(Date::Utility->new('2018-01-01 00:00:00')) * 1, 100, '100 in payments since 01 jan 2018');
+    is($account->total_withdrawals() * 1,                                          100, "100 in  payments have been made");
+    is($account->total_withdrawals(Date::Utility->new('2018-01-01 00:00:00')) * 1, 0,   '0 in payments since 01 jan 2018');
 
 };
 
