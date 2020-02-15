@@ -231,16 +231,15 @@ sub get_clients_result_by_field {
 }
 
 sub get_unregistered_client_token_pairs_before_datetime {
-    my $self    = shift;
-    my $to_date = shift;
+    my ($self, $args) = @_;
 
-    my $sql = q{ SELECT * FROM get_unregistered_client_token_pairs_before_datetime(?) };
+    my $sql = q{ SELECT * FROM get_unregistered_client_token_pairs_before_datetime(?, ?, ?) };
 
     my $dbic = $self->db->dbic;
     return $dbic->run(
         fixup => sub {
             my $sth = $_->prepare($sql);
-            $sth->execute($to_date);
+            $sth->execute($args->{to_date}, $args->{include_apps}, $args->{exclude_apps});
 
             my $result = $sth->fetchall_arrayref({});
             return $result;
