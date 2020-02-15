@@ -23,9 +23,10 @@ if ($ENV{REQUEST_METHOD}) {
     die 'REQUEST_METHOD[' . $ENV{REQUEST_METHOD} . '] exists!?';
 }
 
-my $check_date    = Date::Utility->new(time - 86400)->date;
-my $support_email = request()->brand->emails('support');
-my $template      = Template->new(ABSOLUTE => 1);
+my $check_date = Date::Utility->new(time - 86400)->date;
+my $email_from = request()->brand->emails('system_generated');
+my $email_to   = request()->brand->emails('support');
+my $template   = Template->new(ABSOLUTE => 1);
 
 # connect to collector for getting data
 my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
@@ -75,7 +76,7 @@ if (@{$client_dup_list}) {
     };
     $template->process('/home/git/regentmarkets/bom-backoffice/templates/email/duplicated_clients.html.tt', $template_data, \my $html)
         or die 'Template error: ' . $template->error;
-    Email::Stuffer->from($support_email)->to($support_email)->subject("Duplicate clients found on $check_date")->html_body($html)->send_or_die;
+    Email::Stuffer->from($email_from)->to($email_to)->subject("Duplicate clients found on $check_date")->html_body($html)->send_or_die;
 }
 
 =head1 NAME
