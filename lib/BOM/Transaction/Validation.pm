@@ -489,12 +489,12 @@ sub _validate_iom_withdrawal_limit {
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
     my $withdrawal_in_days = $payment_mapper->get_total_withdrawal({
         start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
-        exclude    => ['currency_conversion_transfer'],
+        exclude    => ['currency_conversion_transfer', 'account_transfer'],
     });
     $withdrawal_in_days = financialrounding('amount', 'EUR', convert_currency($withdrawal_in_days, $client->currency, 'EUR'));
 
     # withdrawal since inception
-    my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']});
+    my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer', 'account_transfer']});
     $withdrawal_since_inception = financialrounding('amount', 'EUR', convert_currency($withdrawal_since_inception, $client->currency, 'EUR'));
 
     my $remaining_withdrawal_eur =
