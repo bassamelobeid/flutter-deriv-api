@@ -164,9 +164,11 @@ sub set_pending_transaction {
 
             last;
         }
+
     }
     catch {
         $log->errorf("Subscription error: %s", $@);
+        return undef;
     };
 
     return 1;
