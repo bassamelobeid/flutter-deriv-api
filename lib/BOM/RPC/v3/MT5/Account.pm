@@ -1110,8 +1110,9 @@ async_rpc "mt5_deposit",
             # money to deposit into MT5
             try {
                 $fm_client->validate_payment(
-                    currency => $fm_client->default_account->currency_code(),
-                    amount   => -$amount,
+                    currency          => $fm_client->default_account->currency_code(),
+                    amount            => -$amount,
+                    internal_transfer => 1,
                 );
             }
             catch {
@@ -1522,9 +1523,6 @@ sub _mt5_validate_and_get_amount {
             my $client_currency = $client->account ? $client->account->currency_code() : undef;
             my $brand = Brands->new(name => request()->brand);
 
-            $err = BOM::RPC::v3::Cashier::validate_amount($amount, $client_currency);
-            return create_error_future($error_code, {message => $err}) if $err;
-
             # check for fully authenticated only if it's not gaming account
             # as of now we only support gaming for binary brand, in future if we
             # support for champion please revisit this
@@ -1544,7 +1542,6 @@ sub _mt5_validate_and_get_amount {
             # Actual USD or EUR amount that will be deposited into the MT5 account.
             # We have a currency conversion fees when transferring between currencies.
             my $mt5_amount = undef;
-            my ($min, $max) = (1, 20000);
 
             my $source_currency = $client_currency;
 
@@ -1577,10 +1574,6 @@ sub _mt5_validate_and_get_amount {
                 if ($action eq 'deposit') {
 
                     try {
-
-                        $min = convert_currency(1,     'USD', $client_currency);
-                        $max = convert_currency(20000, 'USD', $client_currency);
-
                         ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
                             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $client_currency, $mt5_currency);
 
@@ -1598,9 +1591,6 @@ sub _mt5_validate_and_get_amount {
                     try {
 
                         $source_currency = $mt5_currency;
-
-                        $min = convert_currency(1,     'USD', $mt5_currency);
-                        $max = convert_currency(20000, 'USD', $mt5_currency);
 
                         ($mt5_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
                             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $mt5_currency, $client_currency);
@@ -1641,12 +1631,19 @@ sub _mt5_validate_and_get_amount {
                 return create_error_future($error_code);
             }
 
+            $err = BOM::RPC::v3::Cashier::validate_amount($amount, $source_currency);
+            return create_error_future($error_code, {message => $err}) if $err;
+
+            my $min = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$source_currency}->{min};
+
             return create_error_future(
                 'InvalidMinAmount',
                 {
                     override_code => $error_code,
                     params        => [$source_currency, formatnumber('amount', $source_currency, $min)]}
             ) if $amount < financialrounding('amount', $source_currency, $min);
+
+            my $max = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$source_currency}->{max};
 
             return create_error_future(
                 'InvalidMaxAmount',
