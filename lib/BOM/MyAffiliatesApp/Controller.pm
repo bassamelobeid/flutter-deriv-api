@@ -6,6 +6,7 @@ use Path::Tiny;
 
 use BOM::MyAffiliates::ActivityReporter;
 use BOM::MyAffiliates::TurnoverReporter;
+use BOM::MyAffiliates::GenerateRegistrationDaily;
 use BOM::Config::Runtime;
 
 sub activity_report {
@@ -37,8 +38,11 @@ sub __send_file {
         $file_name = $reporter->output_file_name();
         $file_path = $reporter->output_file_path();
     } elsif ($type eq 'registration') {
-        $file_name = 'registrations_' . Date::Utility->new({datetime => $date})->date_yyyymmdd . '.csv';
-        $file_path = BOM::Config::Runtime->instance->app_config->system->directory->db . '/myaffiliates/' . $file_name;
+        my $reporter = BOM::MyAffiliates::GenerateRegistrationDaily->new(
+            brand           => Brands->new(name => $c->stash('brand')),
+            processing_date => Date::Utility->new($date));
+        $file_name = $reporter->output_file_name();
+        $file_path = $reporter->output_file_path();
     } elsif ($type eq 'turnover_report') {
         my $reporter = BOM::MyAffiliates::TurnoverReporter->new(
             brand           => Brands->new(name => $c->stash('brand')),

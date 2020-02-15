@@ -46,9 +46,13 @@ my $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
     currency_code  => $account->currency_code
 });
 
-my $reporter = BOM::MyAffiliates::TurnoverReporter->new(
+my $processing_date = Date::Utility->new('2017-09-01');
+my $reporter        = BOM::MyAffiliates::TurnoverReporter->new(
     brand           => Brands->new(name => 'binary'),
-    processing_date => Date::Utility->new('2017-09-01'));
+    processing_date => $processing_date,
+);
+
+is $reporter->output_file_path(), '/db/myaffiliates/binary/turnover_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
 my @csv = $reporter->activity();
 

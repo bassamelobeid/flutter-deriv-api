@@ -115,11 +115,14 @@ $fmb->sell_price(40);
 $fmb_helper->sell_bet;
 
 subtest 'Activity report for specific date' => sub {
-    plan tests => 2;
+    plan tests => 3;
 
+    my $processing_date = Date::Utility->new(substr($day_one, 0, 10));
     my $reporter = BOM::MyAffiliates::ActivityReporter->new(
-        brand => Brands->new(name => 'binary'),
-        processing_date => Date::Utility->new(substr($day_one, 0, 10)));
+        brand           => Brands->new(name => 'binary'),
+        processing_date => $processing_date,
+    );
+    is $reporter->output_file_path(), '/db/myaffiliates/binary/pl_' . $processing_date->date_yyyymmdd . '.csv', 'Output file path is correct';
 
     my @csv = $reporter->activity();
     @csv = grep { my $id = $client->loginid; /$id/ } @csv;    # Filters other clients out

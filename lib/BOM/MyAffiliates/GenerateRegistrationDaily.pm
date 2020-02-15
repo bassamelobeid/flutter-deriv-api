@@ -1,81 +1,28 @@
 package BOM::MyAffiliates::GenerateRegistrationDaily;
 
 use Moose;
+extends 'BOM::MyAffiliates::Reporter';
+
 use Text::CSV;
 use Text::Trim;
 use Path::Tiny;
 use FileHandle;
-
 use Date::Utility;
+
+use LandingCompany;
+
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Config::Runtime;
 use BOM::MyAffiliates::BackfillManager;
-use LandingCompany;
 
-has start_time => (
-    is       => 'ro',
-    default  => sub { Date::Utility->new },
-    init_arg => undef
+use constant HEADERS => qw(
+    Date Loginid AffiliateToken
 );
 
-has input_date => (
-    is      => 'rw',
-    default => sub { Date::Utility->new(time - 86400)->date_ddmmmyy; },
+has '+include_headers' => (
+    default => 0,
 );
-
-has requested_date => (
-    is      => 'ro',
-    isa     => 'Date::Utility',
-    lazy    => 1,
-    default => sub { Date::Utility->new({datetime => shift->input_date}) },
-);
-
-has date_to => (
-    is         => 'rw',
-    lazy_build => 1,
-);
-
-sub _build_date_to {
-    my $self = shift;
-    return Date::Utility->new({datetime => $self->requested_date->date_ddmmmyy . ' 23:59:59GMT'})->datetime_yyyymmdd_hhmmss;
-}
-
-has filepath => (
-    is         => 'rw',
-    lazy_build => 1,
-);
-
-sub _build_filepath {
-    return BOM::Config::Runtime->instance->app_config->system->directory->db . '/myaffiliates/';
-}
-
-has filename => (
-    is         => 'rw',
-    lazy_build => 1,
-);
-
-sub _build_filename {
-    my $self = shift;
-    return $self->filepath . 'registrations_' . $self->requested_date->date_yyyymmdd . '.csv';
-}
-
-has _fh => (
-    is         => 'rw',
-    lazy_build => 1,
-);
-
-sub _build__fh {
-    my $self = shift;
-    $self->_create_filepath;
-    return FileHandle->new('>>' . $self->filename);
-}
-
-sub _create_filepath {
-    my $self = shift;
-    Path::Tiny::path($self->filepath)->mkpath if (not -d $self->filepath);
-    return;
-}
 
 has new_clients => (
     is         => 'rw',
@@ -89,7 +36,15 @@ sub _build_new_clients {
         broker_code => 'FOG',
         operation   => 'collector'
     });
-    my $candidates = $report_mapper->get_unregistered_client_token_pairs_before_datetime($self->date_to);
+
+    my $date_to = Date::Utility->new({datetime => $self->processing_date->date_ddmmmyy . ' 23:59:59GMT'})->datetime_yyyymmdd_hhmmss;
+
+    my $apps_by_brand = $self->get_apps_by_brand();
+    my $candidates    = $report_mapper->get_unregistered_client_token_pairs_before_datetime({
+        to_date      => $date_to,
+        include_apps => $apps_by_brand->{include_apps},
+        exclude_apps => $apps_by_brand->{exclude_apps},
+    });
     return $candidates;
 }
 
@@ -98,25 +53,19 @@ sub any_new_clients {
     return scalar $self->new_clients;
 }
 
-sub create_report {
-    my $self = shift;
-
-    die("Report already exists? ", $self->filename) if (-e $self->filename);
-
-    print {$self->_fh} $self->report;
-    return;
-}
-
 sub report {
     my $self = shift;
 
     return 0 unless $self->any_new_clients;
 
+    my @output = ();
+
     my $csv = Text::CSV->new;
-    return join "\n", map {
-        $csv->combine($self->_date_joined($_), $_->{loginid}, $_->{myaffiliates_token});
-        trim($csv->string);
-    } @{$self->new_clients};
+    foreach (@{$self->new_clients}) {
+        $csv->combine($self->_date_joined($_), $_->{loginid}, trim($_->{myaffiliates_token} // ''));
+        push @output, $self->format_data($csv->string);
+    }
+    return @output;
 }
 
 sub _date_joined {
@@ -125,12 +74,12 @@ sub _date_joined {
 
     if (!$date_joined) {
         warn("date_joined is empty?! [", $client_data->{'loginid'}, "]: [$date_joined]");
-        $date_joined = $self->start_time->date_yyyymmdd;
+        $date_joined = Date::Utility->new->date_yyyymmdd;
     }
     return Date::Utility->new({datetime => $date_joined})->date_yyyymmdd;
 }
 
-has registered_tokens => (
+has report_output => (
     is       => 'rw',
     lazy     => 1,
     init_arg => undef,
@@ -140,7 +89,7 @@ has registered_tokens => (
 sub register_tokens {
     my $self = shift;
 
-    my @overall_results;
+    my @overall_results = ('Registration Report:', '', 'Effective Date    LoginID     Creative?    Token');
     foreach my $broker (LandingCompany::Registry::all_broker_codes) {
         next if ($broker eq 'FOG');
 
@@ -187,7 +136,7 @@ sub register_tokens {
         }
     }
 
-    $self->registered_tokens(\@overall_results);
+    $self->report_output(\@overall_results);
     return;
 }
 
@@ -216,18 +165,23 @@ sub _force_backfill_sleep {
     return;
 }
 
-sub run {
+sub activity {
     my $self = shift;
+
     die('Backfill is pending and attempting to run it failed.') unless $self->force_backfill;
-    $self->create_report;
+
+    my @result = $self->report();
     $self->register_tokens;
 
-    my @full_report = ('Registration Report:', '', 'Effective Date    LoginID     Creative?    Token');
-    push @full_report, @{$self->registered_tokens};
-    return {
-        start_time => $self->start_time,
-        report     => \@full_report
-    };
+    return @result;
+}
+
+sub output_file_prefix {
+    return 'registrations_';
+}
+
+sub headers {
+    return HEADERS;
 }
 
 no Moose;
