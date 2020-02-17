@@ -50,6 +50,7 @@ use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
+use BOM::Platform::Event::Emitter;
 requires_auth();
 
 use Log::Any qw($log);
@@ -1192,6 +1193,7 @@ rpc transfer_between_accounts => sub {
 
     my ($client, $source, $token) = @{$params}{qw/client source token/};
     my $token_type = $params->{token_type} // '';
+    my $lc_short = $client->landing_company->short;
 
     if (BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
@@ -1514,6 +1516,18 @@ rpc transfer_between_accounts => sub {
         return $error_audit_sub->($err);
     }
     BOM::User::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
+
+    BOM::Platform::Event::Emitter::emit(
+        'client_transfer',
+        {
+            loginid_from      => $loginid_from,
+            loginid_to        => $loginid_to,
+            from_currency     => $client_from->currency,
+            to_currency       => $client_to->currency,
+            is_mt5_login_from => $is_mt5_loginid_from,
+            is_mt5_login_to   => $is_mt5_loginid_to,
+            lc_short          => $lc_short,
+            amount            => in_usd($amount, $currency)});
 
     return {
         status              => 1,
