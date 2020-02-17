@@ -91,6 +91,7 @@ use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AG
 use constant ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX         => 'ONFIDO::DOB::MISMATCH::EMAIL::PER::USER::';
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
+use constant INTERNAL_TRANSFER_FIAT_CRYPTO_PREFIX              => 'INTERNAL::TRANSFER::FIAT::CRYPTO::USER::';
 
 # Redis keys to stop sending new emails in a specific time
 use constant ONFIDO_STOP_SENDING_EMAIL_TIMEOUT => $ENV{ONFIDO_STOP_SENDING_EMAIL_TIMEOUT} // 6 * 60 * 60;
@@ -521,6 +522,12 @@ async sub client_verification {
                                 status  => 'age_verification',
                                 message => 'Onfido - age verified'
                             );
+
+                            my $redis_replicated_write = _redis_replicated_write();
+                            await $redis_replicated_write->connect;
+                            await $redis_replicated_write->del(INTERNAL_TRANSFER_FIAT_CRYPTO_PREFIX . $client->binary_user_id)
+                                if $client->fully_authenticated();
+
                         } else {
 
                             my $siblings = $client->real_account_siblings_information(include_disabled => 0);
@@ -2043,6 +2050,75 @@ sub set_needs_action {
     return;
 }
 
+async sub check_lifetime_internal_transfer {
+    my ($args) = @_;
+    my ($loginid_from, $loginid_to, $from_currency, $to_currency, $is_mt5_login_from, $is_mt5_login_to, $lc_short, $amount) =
+        @{$args}{qw(loginid_from loginid_to from_currency to_currency is_mt5_login_from is_mt5_login_to lc_short amount)};
+
+    # we are not interested with transfer to/from mt5
+    return if ($is_mt5_login_from or $is_mt5_login_to);
+
+    my ($fiat_loginid) = _group_loginid_by_currency_type({
+            client_currency_details => {
+                $loginid_from => $from_currency,
+                $loginid_to   => $to_currency,
+            },
+            lc_short => $lc_short,
+        });
+
+    my $client = BOM::User::Client->new({loginid => @{$fiat_loginid}[0]});
+
+    # do not run this check if the client is already fully authenticated
+    return if ($client->fully_authenticated or $client->landing_company->short ne 'svg');
+
+    my $redis_replicated_write = _redis_replicated_write();
+    await $redis_replicated_write->connect;
+    my $cumulative_amount = await $redis_replicated_write->incrbyfloat(INTERNAL_TRANSFER_FIAT_CRYPTO_PREFIX . $client->binary_user_id, $amount);
+
+    # we are only interested in a cumulative internak trasfer amount of 1000 USD between fiat and crypto
+    if ($cumulative_amount >= 1000) {
+        $client->set_authentication('ID_DOCUMENT')->status('needs_action');
+        $client->save();
+        my @siblings = $client->user->clients_for_landing_company('svg');
+
+        for my $current_client (@siblings) {
+
+            next if $current_client->is_virtual;
+            $current_client->status->set('withdrawal_locked', 'system', 'Transfer between Fiat and Crypto over 1k');
+
+        }
+
+        _send_email_withdrawal_locked($client, $BRANDS->emails('support'));
+
+        await $redis_replicated_write->del(INTERNAL_TRANSFER_FIAT_CRYPTO_PREFIX . $client->binary_user_id);
+    }
+
+    return;
+}
+
+=head2 _group_loginid_by_currency_type
+
+Gets client loginid if the client's currency matches the targeted currency type
+
+=cut
+
+sub _group_loginid_by_currency_type {
+    my $args                    = shift;
+    my $currencies              = LandingCompany::Registry::get($args->{lc_short})->legal_allowed_currencies;
+    my $client_currency_details = $args->{client_currency_details};
+    my (@fiat_loginids, @crypto_loginids);
+
+    for my $each_client (keys %{$client_currency_details}) {
+        if ($currencies->{$client_currency_details->{$each_client}}->{type} eq 'fiat') {
+            push @fiat_loginids, $each_client;
+        } else {
+            push @crypto_loginids, $each_client;
+        }
+    }
+
+    return (\@fiat_loginids, \@crypto_loginids);
+}
+
 =head2 check_or_store_onfido_applicant
 
 Check if applicant exists in database. Store applicant info if client loginid is valid.
@@ -2070,6 +2146,29 @@ async sub check_or_store_onfido_applicant {
 
     return 1;
 
+}
+
+sub _send_email_withdrawal_locked {
+    my ($client, $support_email) = @_;
+
+    my $website_name  = ucfirst BOM::Config::domain()->{default_domain};
+    my $email_subject = localize('Please authenticate your account to enable withdrawals and transfers');
+
+    send_email({
+            to            => $client->email,
+            from          => $support_email,
+            subject       => $email_subject,
+            template_name => 'withdrawal_locked',
+            template_args => {
+                client_fname => $client->first_name,
+                website_name => $website_name
+            },
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            use_event             => 1,
+        });
+
+    return undef;
 }
 
 =head2 signup
