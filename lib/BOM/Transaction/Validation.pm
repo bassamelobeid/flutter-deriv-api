@@ -281,6 +281,7 @@ sub _adjust_trade {
     }
 
     if ($move < -$allowed_move) {
+        $transaction->record_slippage($move);
         return $self->_write_to_rejected({
             type              => 'slippage',
             action            => $self->transaction->action_type,
@@ -329,7 +330,7 @@ sub _slippage {
             shortcode   => $contract->shortcode,
             action_type => $p->{action},
             reason      => 'SLIPPAGE',
-            details     => $self->_get_rejected_contract_details(),
+            details     => $self->_get_rejected_contract_details('slippage'),
             db          => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
         });
         $rejected_trade->record_fail_txn();
@@ -348,24 +349,31 @@ sub _slippage {
 }
 
 sub _get_rejected_contract_details {
-    my $self = shift;
+    my ($self, $type) = @_;
 
     my $contract = $self->transaction->contract;
-    my $details  = $json->encode({
-            current_tick_epoch => $contract->current_tick->epoch,
-            pricing_epoch      => $contract->date_pricing->epoch,
-            option_type        => $contract->code,
-            currency_pair      => $contract->underlying->symbol,
-            ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
-            : ($contract->can('barrier') && $contract->barrier) ? (barriers => $contract->barrier->as_absolute)
-            : (barriers => ''),
-            $contract->can('available_orders') ? (limit_order => $contract->available_orders)
-            : (),
-            expiry => $contract->date_expiry->db_timestamp,
-            payout => $contract->payout
-        });
+    my $details  = {
+        current_tick_epoch => $contract->current_tick->epoch,
+        pricing_epoch      => $contract->date_pricing->epoch,
+        option_type        => $contract->code,
+        currency_pair      => $contract->underlying->symbol,
+        ($contract->two_barriers) ? (barriers => $contract->low_barrier->as_absolute . "," . $contract->high_barrier->as_absolute)
+        : ($contract->can('barrier') && $contract->barrier) ? (barriers => $contract->barrier->as_absolute)
+        : (barriers => ''),
+        $contract->can('available_orders') ? (limit_order => $contract->available_orders)
+        : (),
+        expiry => $contract->date_expiry->db_timestamp,
+        payout => $contract->payout,
+    };
 
-    return $details;
+    if ($type eq 'slippage') {
+        $details->{price_slippage}    = $self->transaction->price_slippage;
+        $details->{requested_amount}  = $self->transaction->requested_amount;
+        $details->{recomputed_amount} = $self->transaction->recomputed_amount;
+    }
+    my $details_json = $json->encode($details);
+
+    return $details_json;
 }
 
 sub _invalid_contract {
@@ -385,7 +393,7 @@ sub _invalid_contract {
                 shortcode   => $contract->shortcode,
                 action_type => $p->{action},
                 reason      => $message_to_client,
-                details     => $self->_get_rejected_contract_details(),
+                details     => $self->_get_rejected_contract_details('invalid'),
                 db          => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
             });
             $rejected_trade->record_fail_txn();
@@ -481,12 +489,12 @@ sub _validate_iom_withdrawal_limit {
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
     my $withdrawal_in_days = $payment_mapper->get_total_withdrawal({
         start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
-        exclude    => ['currency_conversion_transfer'],
+        exclude    => ['currency_conversion_transfer', 'account_transfer'],
     });
     $withdrawal_in_days = financialrounding('amount', 'EUR', convert_currency($withdrawal_in_days, $client->currency, 'EUR'));
 
     # withdrawal since inception
-    my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']});
+    my $withdrawal_since_inception = $payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer', 'account_transfer']});
     $withdrawal_since_inception = financialrounding('amount', 'EUR', convert_currency($withdrawal_since_inception, $client->currency, 'EUR'));
 
     my $remaining_withdrawal_eur =
