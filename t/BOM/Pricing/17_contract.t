@@ -113,6 +113,42 @@ subtest 'prepare_ask' => sub {
     delete $expected->{low_barrier};
 };
 
+subtest 'send_ask for non-binary' => sub {
+    note 'callputspread and multiplier are non-binary options';
+    my $params = {
+        client_ip => '127.0.0.1',
+        args      => {
+            "proposal"=> 1,
+            "amount"=> 100,
+            "barrier"=> "+0.1",
+            "barrier2"=> "-0.2",
+            "basis"=> "payout",
+            "contract_type"=> "CALLSPREAD",
+            "currency"=> "USD",
+            "duration"=> 60,
+            "duration_unit"=> "s",
+            "symbol"=> "R_100"
+        }};
+
+    my $result = $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error->result;
+    ok $result->{skip_basis_override}, 'has basis override  flag set to true';
+
+    $params = {
+        client_ip => '127.0.0.1',
+        args      => {
+            "proposal"      => 1,
+            "amount"        => "100",
+            "basis"         => "stake",
+            "contract_type" => "MULTUP",
+            "currency"      => "USD",
+            "symbol"        => "R_100",
+            "multiplier"    => 10
+
+        }};
+    $result = $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error->result;
+    ok $result->{skip_basis_override}, 'has basis override  flag set to true';
+};
+
 subtest 'get_bid' => sub {
 
     my $contract = _create_contract(

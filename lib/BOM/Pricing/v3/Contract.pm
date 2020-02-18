@@ -228,6 +228,16 @@ sub _get_ask {
                 $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
                 $response->{limit_order} = $display;
             }
+
+            # On websocket, we are setting 'basis' to payout and 'amount' to 1000 to increase the collission rate.
+            # This logic shouldn't be in websocket since it is business logic.
+            unless ($streaming_params->{from_pricer}) {
+                # To override multiplier or callputspread contracts (non-binary) just does not make any sense because
+                # the ask_price is defined by the user and the output of limit order (take profit or stop out),
+                # is dependent of the stake and multiplier provided by the client.
+                # There is no probability calculation involved. Hence, not optimising anything.
+                $response->{skip_basis_override} = 1 if $contract->code =~ /^(MULTUP|MULTDOWN|CALLSPREAD|PUTSPREAD)$/;
+            }
         }
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
