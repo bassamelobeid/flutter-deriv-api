@@ -22,25 +22,25 @@ $app_config->system->suspend->p2p(0);
 $app_config->payments->p2p->enabled(1);
 $app_config->payments->p2p->available(1);
 
-my $email_agent  = 'p2p_agent@test.com';
-my $email_client = 'p2p_client@test.com';
+my $email_advertiser = 'p2p_advertiser@test.com';
+my $email_client     = 'p2p_client@test.com';
 
 my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
-    email       => $email_agent
+    email       => $email_advertiser
 });
 
-my $client_agent = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $client_advertiser = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
-    email       => $email_agent
+    email       => $email_advertiser
 });
 
-my $user_agent = BOM::User->create(
-    email    => $email_agent,
+my $user_advertiser = BOM::User->create(
+    email    => $email_advertiser,
     password => 'test'
 );
-$user_agent->add_client($client_vr);
-$user_agent->add_client($client_agent);
+$user_advertiser->add_client($client_vr);
+$user_advertiser->add_client($client_advertiser);
 
 my $client_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -53,14 +53,13 @@ my $user_client = BOM::User->create(
 );
 $user_client->add_client($client_client);
 
-my $token_vr     = BOM::Platform::Token::API->new->create_token($client_vr->loginid,     'test vr token');
-my $token_agent  = BOM::Platform::Token::API->new->create_token($client_agent->loginid,  'test agent token');
-my $token_client = BOM::Platform::Token::API->new->create_token($client_client->loginid, 'test client token');
+my $token_vr         = BOM::Platform::Token::API->new->create_token($client_vr->loginid,         'test vr token');
+my $token_advertiser = BOM::Platform::Token::API->new->create_token($client_advertiser->loginid, 'test advertiser token');
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
 my $params = {language => 'EN'};
-my $offer;
+my $advert;
 
 subtest 'DB errors' => sub {
     my %error_map = %BOM::RPC::v3::P2P::ERROR_MAP;
@@ -93,12 +92,12 @@ subtest 'P2P payments disabled' => sub {
 };
 
 subtest 'No account' => sub {
-    $params->{token} = $token_agent;
+    $params->{token} = $token_advertiser;
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('NoCurrency', 'error code is NoCurrency');
 };
 
 subtest 'Client restricted statuses' => sub {
-    $client_agent->set_default_account('USD');
+    $client_advertiser->set_default_account('USD');
 
     my @restricted_statuses = qw(
         unwelcome
@@ -108,11 +107,11 @@ subtest 'Client restricted statuses' => sub {
     );
 
     for my $status (@restricted_statuses) {
-        $client_agent->status->set($status);
+        $client_advertiser->status->set($status);
         $c->call_ok($dummy_method, $params)
             ->has_no_system_error->has_error->error_code_is('PermissionDenied', "error code is PermissionDenied for status $status");
         my $clear_status = "clear_$status";
-        $client_agent->status->$clear_status;
+        $client_advertiser->status->$clear_status;
     }
 
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('No errors with valid client & args');
@@ -126,195 +125,199 @@ subtest 'P2P is not available to anyone' => sub {
 };
 
 subtest 'P2P is available for only one client' => sub {
-    $app_config->payments->p2p->clients([$client_agent->loginid]);
+    $app_config->payments->p2p->clients([$client_advertiser->loginid]);
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error("P2P is available for whitelisted client");
 };
 $app_config->payments->p2p->available(1);
 
-subtest 'Offers' => sub {
-    my $offer_params = {
-        amount            => 100,
-        offer_description => 'Test offer',
-        type              => 'buy',
-        account_currency  => 'USD',
-        expiry            => 30,
-        rate              => 1.23,
-        min_amount        => 0.1,
-        max_amount        => 10,
-        method            => 'test method',
+subtest 'Adverts' => sub {
+    my $advert_params = {
+        amount           => 100,
+        description      => 'Test advert',
+        type             => 'sell',
+        account_currency => 'USD',
+        expiry           => 30,
+        rate             => 1.23,
+        min_order_amount => 0.1,
+        max_order_amount => 10,
+        payment_method   => 'test method',
     };
 
-    $params->{args} = {agent_name => 'Bond007'};
+    $params->{args} = {name => 'Bond007'};
+    $c->call_ok('p2p_advertiser_update', $params)
+        ->has_no_system_error->has_error->error_code_is('AdvertiserNotRegistered', 'Update non-existent advertiser');
 
-    $c->call_ok('p2p_agent_update', $params)->has_no_system_error->has_error->error_code_is('AgentNotRegistered', 'Update non-existent agent');
+    my $res = $c->call_ok('p2p_advertiser_create', $params)->has_no_system_error->has_no_error->result;
+    is $res->{status}, 'pending', 'result has p2p advertiser status = pending';
 
-    my $res = $c->call_ok('p2p_agent_create', $params)->has_no_system_error->has_no_error->result;
-    is $res->{status}, 'pending', 'result has p2p agent status = pending';
+    $params->{args} = {name => 'SpyvsSpy'};
+    $c->call_ok('p2p_advertiser_update', $params)
+        ->has_no_system_error->has_error->error_code_is('AdvertiserNotApproved',
+        'Cannot update the advertiser information when advertiser is not approved');
 
-    $params->{args} = {agent_name => 'SpyvsSpy'};
-    $c->call_ok('p2p_agent_update', $params)
-        ->has_no_system_error->has_error->error_code_is('AgentNotApproved', 'Cannot update the agent information when agent is not approved');
+    $client_advertiser->p2p_advertiser_update(is_approved => 1);
+    $res = $c->call_ok('p2p_advertiser_update', $params)->has_no_system_error->has_no_error->result;
+    is $res->{name}, $params->{args}{name}, 'update advertiser name';
 
-    $client_agent->p2p_agent_update(is_approved => 1);
-    $res = $c->call_ok('p2p_agent_update', $params)->has_no_system_error->has_no_error->result;
-    is $res->{agent_name}, $params->{args}{agent_name}, 'update agent name';
+    $params->{args} = {name => ' '};
+    $c->call_ok('p2p_advertiser_update', $params)
+        ->has_no_system_error->has_error->error_code_is('AdvertiserNameRequired', 'Cannot update the advertiser name to blank');
 
-    $params->{args} = {agent_name => ' '};
-    $c->call_ok('p2p_agent_update', $params)
-        ->has_no_system_error->has_error->error_code_is('AgentNameRequired', 'Cannot update the agent name to blank');
+    $client_advertiser->p2p_advertiser_update(is_approved => 0);
+    $params->{args} = $advert_params;
+    $c->call_ok('p2p_advert_create', $params)
+        ->has_no_system_error->has_error->error_code_is('AdvertiserNotApproved',
+        "unapproved advertiser, create advert error is AdvertiserNotApproved");
 
-    $client_agent->p2p_agent_update(is_approved => 0);
-    $params->{args} = $offer_params;
-    $c->call_ok('p2p_offer_create', $params)
-        ->has_no_system_error->has_error->error_code_is('AgentNotApproved', "unapproved agent, create offer error is AgentNotApproved");
-
-    $client_agent->p2p_agent_update(
+    $client_advertiser->p2p_advertiser_update(
         is_approved => 1,
-        is_active   => 0
+        is_listed   => 0,
     );
 
-    $params->{args} = $offer_params;
-    $c->call_ok('p2p_offer_create', $params)
-        ->has_no_system_error->has_error->error_code_is('AgentNotActive', "inactive agent, create offer error is AgentNotActive");
+    $params->{args} = $advert_params;
+    $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error('unlisted advertiser can still create advert');
 
-    $client_agent->p2p_agent_update(is_active => 1);
+    $client_advertiser->p2p_advertiser_update(is_listed => 1);
 
-    $params->{args} = {agent => $client_agent->p2p_agent_info->{agent_id}};
-    $res = $c->call_ok('p2p_agent_info', $params)->has_no_system_error->has_no_error->result;
-    ok $res->{is_approved} && $res->{is_active}, 'p2p_agent_info returns agent is approved and active';
+    $params->{args} = {advertiser => $client_advertiser->p2p_advertiser_info->{id}};
+    $res = $c->call_ok('p2p_advertiser_info', $params)->has_no_system_error->has_no_error->result;
+    ok $res->{is_approved} && $res->{is_listed}, 'p2p_advertiser_info returns advertiser is approved and the adverts are listed';
 
-    $params->{args} = {agent_id => 9999};
-    $c->call_ok('p2p_agent_info', $params)->has_no_system_error->has_error->error_code_is('AgentNotFound', 'Get info of non-existent agent');
+    $params->{args} = {id => 9999};
+    $c->call_ok('p2p_advertiser_info', $params)
+        ->has_no_system_error->has_error->error_code_is('AdvertiserNotFound', 'Get info of non-existent advertiser');
 
-    for my $numeric_field (qw(amount max_amount min_amount rate)) {
-        $params->{args} = {$offer_params->%*};
+    for my $numeric_field (qw(amount max_order_amount min_order_amount rate)) {
+        $params->{args} = {$advert_params->%*};
 
         for (-1, 0) {
             $params->{args}{$numeric_field} = $_;
-            $c->call_ok('p2p_offer_create', $params)
+            $c->call_ok('p2p_advert_create', $params)
                 ->has_no_system_error->has_error->error_code_is('InvalidNumericValue', "Value of '$numeric_field' should be greater than 0")
                 ->error_details_is({fields => [$numeric_field]}, 'Error details is correct.');
         }
     }
 
-    $params->{args} = {$offer_params->%*};
-    $params->{args}{min_amount} = $params->{args}{max_amount} + 1;
-    $c->call_ok('p2p_offer_create', $params)
-        ->has_no_system_error->has_error->error_code_is('InvalidMinMaxAmount', 'min_amount cannot be greater than max_amount');
+    $params->{args} = +{$advert_params->%*};
+    $params->{args}{min_order_amount} = $params->{args}{max_order_amount} + 1;
+    $c->call_ok('p2p_advert_create', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidMinMaxAmount', 'min_order_amount cannot be greater than max_order_amount');
 
-    $params->{args}             = {$offer_params->%*};
-    $params->{args}{amount}     = 80;
-    $params->{args}{max_amount} = $params->{args}{amount} + 1;
-    $c->call_ok('p2p_offer_create', $params)
-        ->has_no_system_error->has_error->error_code_is('InvalidMaxAmount', 'Offer amount cannot be less than max_amount');
+    $params->{args}                   = {$advert_params->%*};
+    $params->{args}{amount}           = 80;
+    $params->{args}{max_order_amount} = $params->{args}{amount} + 1;
+    $c->call_ok('p2p_advert_create', $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidMaxAmount', 'Advert amount cannot be less than max_order_amount');
 
-    $params->{args} = {$offer_params->%*};
-    $params->{args}{max_amount} = $app_config->payments->p2p->limits->maximum_order + 1;
-    $c->call_ok('p2p_offer_create', $params)
-        ->has_no_system_error->has_error->error_code_is('MaxPerOrderExceeded', 'Offer max_amount cannot be more than maximum_order amount config');
+    $params->{args} = {$advert_params->%*};
+    $params->{args}{max_order_amount} = $app_config->payments->p2p->limits->maximum_order + 1;
+    $c->call_ok('p2p_advert_create', $params)
+        ->has_no_system_error->has_error->error_code_is('MaxPerOrderExceeded',
+        'Advert max_order_amount cannot be more than maximum_order amount config');
 
-    $params->{args} = $offer_params;
-    $offer = $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_no_error->result;
-    delete $offer->{stash};
-    ok $offer->{offer_id}, 'offer has id';
+    $params->{args} = $advert_params;
+    $advert = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
+    delete $advert->{stash};
+    ok $advert->{id}, 'advert has id';
 
     $params->{args}{rate} = 12.000001;
-    $offer = $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_no_error->result;
-    is $offer->{rate_display}, '12.000001', 'offer has id';
+    $advert = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
+    is $advert->{rate_display}, '12.000001', 'advert rate_display is correct';
 
     $params->{args}{rate} = 1_000_000_000;
-    $offer = $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_no_error->result;
-    is $offer->{rate_display}, '1000000000.00', 'offer has id';
+    $advert = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
+    is $advert->{rate_display}, '1000000000.00', 'advert rate_display is correct for large numbers';
 
     $params->{args}{rate} = 0.000001;
-    $c->call_ok('p2p_offer_create', $params)->has_no_system_error->has_error->error_code_is('MinPriceTooSmall', 'Got error if min price is 0');
+    $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_error->error_code_is('MinPriceTooSmall', 'Got error if min price is 0');
 
     $params->{args} = {};
-    $res = $c->call_ok('p2p_offer_list', $params)->has_no_system_error->has_no_error->result->{list};
-    cmp_ok $res->[0]->{offer_id}, '==', $offer->{offer_id}, 'p2p_offer_list returns offer';
+    $res = $c->call_ok('p2p_advert_list', $params)->has_no_system_error->has_no_error->result->{list};
+    cmp_ok $res->[0]->{id}, '==', $advert->{id}, 'p2p_advert_list returns advert';
 
     $params->{args} = {
-        offer_id  => $offer->{offer_id},
+        id        => $advert->{id},
         is_active => 0,
     };
-    $res = $c->call_ok('p2p_offer_update', $params)->has_no_system_error->has_no_error->result;
-    is $res->{is_active}, 0, 'edit offer ok';
+    $res = $c->call_ok('p2p_advert_update', $params)->has_no_system_error->has_no_error->result;
+    is $res->{is_active}, 0, 'edit advert ok';
+    $params->{args} = {
+        id        => $advert->{id},
+        is_active => 1,
+    };
+    $res = $c->call_ok('p2p_advert_update', $params)->has_no_system_error->has_no_error->result;
+    is $res->{is_active}, 1, 'edit advert ok';
 
-    $params->{args} = {offer_id => $offer->{offer_id}};
-    $res = $c->call_ok('p2p_offer_info', $params)->has_no_system_error->has_no_error->result;
-    cmp_ok $res->{offer_id}, '==', $offer->{offer_id}, 'p2p_offer_info returned correct info';
+    $params->{args} = {id => $advert->{id}};
+    $res = $c->call_ok('p2p_advert_info', $params)->has_no_system_error->has_no_error->result;
+    cmp_ok $res->{id}, '==', $advert->{id}, 'p2p_advert_info returned correct info';
 
-    $params->{args} = {offer_id => 9999};
-    $c->call_ok('p2p_offer_info',   $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Get info for non-existent offer');
-    $c->call_ok('p2p_offer_update', $params)->has_no_system_error->has_error->error_code_is('OfferNotFound', 'Edit non-existent offer');
+    $params->{args} = {id => 9999};
+    $c->call_ok('p2p_advert_info',   $params)->has_no_system_error->has_error->error_code_is('AdvertNotFound', 'Get info for non-existent advert');
+    $c->call_ok('p2p_advert_update', $params)->has_no_system_error->has_error->error_code_is('AdvertNotFound', 'Edit non-existent advert');
 
-    $res = $c->call_ok('p2p_agent_offers', $params)->has_no_system_error->has_no_error->result;
-    is $res->{list}[2]{offer_id}, $offer->{offer_id}, 'Offer returned in p2p_agent_offers';
+    $params->{args} = {};
+    $res = $c->call_ok('p2p_advertiser_adverts', $params)->has_no_system_error->has_no_error->result;
+    is $res->{list}[0]{id}, $advert->{id}, 'Advert returned in p2p_advertiser_adverts';
 };
 
 subtest 'Create new order' => sub {
     BOM::Test::Helper::P2P::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
     my $client = BOM::Test::Helper::P2P::create_client();
     my $params;
     $client->set_default_account('USD');
     $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
-    $agent->payment_free_gift(
+    $advertiser->payment_free_gift(
         currency => 'USD',
         amount   => 100,
         remark   => 'free gift'
     );
 
     $params->{args} = {
-        offer_id          => $offer->{offer_id},
-        amount            => 100,
-        order_description => 'here is my order'
+        advert_id => $advert->{id},
+        amount    => 100,
     };
-
     my $order = $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_no_error->result;
-    ok($order->{order_id},         'Order is created');
+    ok($order->{id},               'Order is created');
     ok($order->{account_currency}, 'Order has account_currency');
     ok($order->{local_currency},   'Order has local_currency');
-    is($order->{order_description}, $params->{args}{order_description}, 'Order description is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Client confirm an order' => sub {
     BOM::Test::Helper::P2P::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer();
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(offer_id => $offer->{offer_id});
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-    $params->{args} = {order_id => $order->{order_id}};
-
+    $params->{args} = {id => $order->{id}};
     my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'buyer-confirmed', 'Order is confirmed';
 
-    $params->{args} = {order_id => 9999};
+    $params->{args} = {id => 9999};
     $c->call_ok('p2p_order_confirm', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Confirm non-existent order');
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
-subtest 'Agent confirm' => sub {
+subtest 'Advertiser confirm' => sub {
     BOM::Test::Helper::P2P::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer();
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(offer_id => $offer->{offer_id});
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
 
-    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-    my $agent_token  = BOM::Platform::Token::API->new->create_token($agent->loginid,  'test token');
+    my $client_token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token');
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
 
     $params->{token} = $client_token;
-    $params->{args} = {order_id => $order->{order_id}};
-
+    $params->{args} = {id => $order->{id}};
     my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'buyer-confirmed', 'Order is buyer confirmed';
 
-    $params->{token} = $agent_token;
-    $params->{args} = {order_id => $order->{order_id}};
-
+    $params->{token} = $advertiser_token;
+    $params->{args} = {id => $order->{id}};
     $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'completed', 'Order is completed';
     BOM::Test::Helper::P2P::reset_escrow();
@@ -322,19 +325,17 @@ subtest 'Agent confirm' => sub {
 
 subtest 'Client cancellation' => sub {
     BOM::Test::Helper::P2P::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer();
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(offer_id => $offer->{offer_id});
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
 
     my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-    my $agent_token  = BOM::Platform::Token::API->new->create_token($agent->loginid,  'test token');
 
     $params->{token} = $client_token;
-    $params->{args} = {order_id => $order->{order_id}};
-
+    $params->{args} = {id => $order->{id}};
     my $res = $c->call_ok(p2p_order_cancel => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'cancelled', 'Order is cancelled';
 
-    $params->{args} = {order_id => 9999};
+    $params->{args} = {id => 9999};
     $c->call_ok('p2p_order_cancel', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Cancel non-existent order');
 
     BOM::Test::Helper::P2P::reset_escrow();
@@ -342,32 +343,30 @@ subtest 'Client cancellation' => sub {
 
 subtest 'Getting order list' => sub {
     BOM::Test::Helper::P2P::create_escrow();
-    my ($agent,  $offer) = BOM::Test::Helper::P2P::create_offer();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
     my ($client, $order) = BOM::Test::Helper::P2P::create_order(
-        offer_id => $offer->{offer_id},
-        amount   => 10
+        advert_id => $advert->{id},
+        amount    => 10
     );
 
-    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-    my $agent_token  = BOM::Platform::Token::API->new->create_token($agent->loginid,  'test token');
+    my $client_token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token');
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
 
-    $params->{token} = $agent_token;
-    $params->{args} = {offer_id => $offer->{offer_id}};
-
+    $params->{token} = $advertiser_token;
+    $params->{args} = {advert_id => $advert->{id}};
     my $res1 = $c->call_ok(p2p_order_list => $params)->has_no_system_error->has_no_error->result;
-    cmp_ok scalar(@{$res1->{list}}), '==', 1, 'count of offers is correct';
+    cmp_ok scalar(@{$res1->{list}}), '==', 1, 'count of adverts is correct';
 
-    my ($client2, $order2) = BOM::Test::Helper::P2P::create_order(
-        offer_id => $offer->{offer_id},
-        amount   => 10
+    BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        amount    => 10
     );
 
     my $res2 = $c->call_ok(p2p_order_list => $params)->has_no_system_error->has_no_error->result;
     cmp_ok scalar(@{$res2->{list}}), '==', 2, 'count of orders is correct';
 
     $params->{token} = $client_token;
-    $params->{args} = {offer_id => $offer->{offer_id}};
-
+    $params->{args} = {advert_id => $advert->{id}};
     my $res3 = $c->call_ok(p2p_order_list => $params)->has_no_system_error->has_no_error->result;
     cmp_ok scalar(@{$res3->{list}}), '==', 1, 'count of orders is correct';
 
@@ -376,15 +375,15 @@ subtest 'Getting order list' => sub {
 
 subtest 'Order list pagination' => sub {
     BOM::Test::Helper::P2P::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
 
     BOM::Test::Helper::P2P::create_order(
-        offer_id => $offer->{offer_id},
-        amount   => 10
+        advert_id => $advert->{id},
+        amount    => 10
     ) for (1 .. 2);
 
     my $param = {};
-    $param->{token} = BOM::Platform::Token::API->new->create_token($agent->loginid, 'test token');
+    $param->{token} = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
 
     my $res1 = $c->call_ok(p2p_order_list => $param)->has_no_system_error->has_no_error->result;
     cmp_ok scalar(@{$res1->{list}}), '==', 2, 'Got 2 orders in a list';
@@ -394,7 +393,7 @@ subtest 'Order list pagination' => sub {
     $param->{args} = {limit => 1};
     my $res2 = $c->call_ok(p2p_order_list => $param)->has_no_system_error->has_no_error->result;
     cmp_ok scalar(@{$res2->{list}}), '==', 1, 'got 1 order with limit 1';
-    cmp_ok $res2->{list}[0]{order_id}, 'eq', $first_order->{order_id}, 'got correct order id with limit 1';
+    cmp_ok $res2->{list}[0]{id}, 'eq', $first_order->{id}, 'got correct order id with limit 1';
 
     $param->{args} = {
         limit  => 1,
@@ -402,30 +401,28 @@ subtest 'Order list pagination' => sub {
     };
     my $res3 = $c->call_ok(p2p_order_list => $param)->has_no_system_error->has_no_error->result;
     cmp_ok scalar(@{$res3->{list}}), '==', 1, 'got 1 order with limit 1 and offest 1';
-    cmp_ok $res3->{list}[0]{order_id}, 'eq', $second_order->{order_id}, 'got correct order id with limit 1 and offset 1';
+    cmp_ok $res3->{list}[0]{id}, 'eq', $second_order->{id}, 'got correct order id with limit 1 and offset 1';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'Getting order list' => sub {
     BOM::Test::Helper::P2P::create_escrow();
-    my ($agent1, $offer1) = BOM::Test::Helper::P2P::create_offer();
+    my ($advertiser, $advert1) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
 
-    my $agent1_token = BOM::Platform::Token::API->new->create_token($agent1->loginid, 'test token');
-    $params->{token} = $agent1_token;
-    $params->{args} = {agent_id => $agent1->p2p_agent_info->{agent_id}};
+    my $advertiser1_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
+    $params->{token} = $advertiser1_token;
+    $params->{args} = {advertiser_id => $advertiser->p2p_advertiser_info->{id}};
+    my $res1 = $c->call_ok(p2p_advert_list => $params)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res1->{list}}), '==', 1, 'count of adverts is correct';
 
-    my $res1 = $c->call_ok(p2p_offer_list => $params)->has_no_system_error->has_no_error->result;
-    cmp_ok scalar(@{$res1->{list}}), '==', 1, 'count of offers is correct';
+    my ($advertiser2, $advert2) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
 
-    my ($agent2, $offer2) = BOM::Test::Helper::P2P::create_offer();
-
-    my $agent2_token = BOM::Platform::Token::API->new->create_token($agent2->loginid, 'test token');
-    $params->{token} = $agent2_token;
-    $params->{args} = {agent_id => $agent2->p2p_agent_info->{agent_id}};
-
-    my $res2 = $c->call_ok(p2p_offer_list => $params)->has_no_system_error->has_no_error->result;
-    cmp_ok scalar(@{$res2->{list}}), '==', 1, 'count of offers is correct';
+    my $advertiser2_token = BOM::Platform::Token::API->new->create_token($advertiser2->loginid, 'test token');
+    $params->{token} = $advertiser2_token;
+    $params->{args} = {advertiser_id => $advertiser2->p2p_advertiser_info->{id}};
+    my $res2 = $c->call_ok(p2p_advert_list => $params)->has_no_system_error->has_no_error->result;
+    cmp_ok scalar(@{$res2->{list}}), '==', 1, 'count of adverts is correct';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -435,27 +432,25 @@ subtest 'Sell orders' => sub {
 
     BOM::Test::Helper::P2P::create_escrow();
 
-    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
         amount => $amount,
-        type   => 'sell'
+        type   => 'buy'
     );
     my ($client, $order) = BOM::Test::Helper::P2P::create_order(
-        offer_id => $offer->{offer_id},
-        balance  => $amount
+        advert_id => $advert->{id},
+        balance   => $amount
     );
 
-    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-    my $agent_token  = BOM::Platform::Token::API->new->create_token($agent->loginid,  'test token');
+    my $client_token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token');
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
 
-    $params->{token} = $agent_token;
-    $params->{args} = {order_id => $order->{order_id}};
-
+    $params->{token} = $advertiser_token;
+    $params->{args} = {id => $order->{id}};
     my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'buyer-confirmed', 'Order is buyer confirmed';
 
     $params->{token} = $client_token;
-    $params->{args} = {order_id => $order->{order_id}};
-
+    $params->{args} = {id => $order->{id}};
     $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'completed', 'Order is completed';
 

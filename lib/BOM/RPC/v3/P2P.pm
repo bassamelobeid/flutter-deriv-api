@@ -7,7 +7,7 @@ BOM::RPC::v3::P2P - peer-to-peer "over-the-counter" payment support
 =head1 DESCRIPTION
 
 The P2P cashier is a system which allows buyers and sellers to handle the details
-of payments outside our system. It acts as a marketplace for offers and orders.
+of payments outside our system. It acts as a marketplace for adverts and orders.
 
 =cut
 
@@ -34,7 +34,7 @@ use Log::Any qw($log);
 
 # Currently all functionality is restricted to users with
 # valid accounts. There's little harm in allowing a list
-# of orders or offers, but also no value to us in doing so.
+# of orders or adverts, but also no value to us in doing so.
 requires_auth();
 
 use constant RESTRICTED_CLIENT_STATUSES => [qw(
@@ -66,7 +66,7 @@ our %ERROR_MAP = do {
         NotLoggedIn      => localize('You are not logged in.'),
         NoCurrency       => localize('You have not yet selected a currency for your account.'),
         PermissionDenied => localize('You do not have permission for this action.'),
-        NotRegistered    => localize('You are not yet registered as an P2P agent.'),
+        NotRegistered    => localize('You are not yet registered as a P2P advertiser.'),
 
         # Invalid data
         InvalidPaymentMethod => localize('This payment method is invalid.'),
@@ -77,7 +77,7 @@ our %ERROR_MAP = do {
         AlreadyInProgress    => localize('This cannot be cancelled since the order is already in progress.'),
         InvalidNumericValue  => localize('Numeric value should be greater than 0.'),
         InvalidMinMaxAmount  => localize('The minimum amount should be less than or equal to maximum amount.'),
-        InvalidMaxAmount     => localize('The maximum amount should be less than or equal to the offer amount.'),
+        InvalidMaxAmount     => localize('The maximum amount should be less than or equal to the advert amount.'),
         InvalidListLimit     => localize("Invalid value for list limit"),
         InvalidListOffset    => localize("Invalid value for list offset"),
         RateTooSmall         => localize('Ad rate should not be less than [_1]. Please adjust the value.'),
@@ -85,27 +85,27 @@ our %ERROR_MAP = do {
         MinPriceTooSmall     => localize('Ad minimum price is zero, Please adjust minimum amount or rate.'),
 
         # bom-user errors
-        AgentNotFound               => localize('P2P Agent not found.'),
-        AgentNotRegistered          => localize('This account is not registered as an P2P agent.'),
-        AgentNotActive              => localize('The provided agent ID does not belong to an active agent.'),
-        AgentNotApproved            => localize('The agent is not approved.'),
-        AgentNameRequired           => localize('The agent name cannot be blank.'),
+        AdvertiserNotFound          => localize('P2P advertiser not found.'),
+        AdvertiserNotRegistered     => localize('This account is not registered as a P2P advertiser.'),
+        AdvertiserNotListed         => localize('The provided advertiser ID does not belong to an active advertiser.'),
+        AdvertiserNotApproved       => localize('The advertiser is not approved.'),
+        AdvertiserNameRequired      => localize('The advertiser name cannot be blank.'),
         OrderAlreadyConfirmed       => localize('The order is already confirmed by you.'),
         OrderAlreadyCancelled       => localize('The order is already cancelled.'),
-        OfferNoEditInactive         => localize('The offer is inactive and cannot be changed.'),
-        OfferNotFound               => localize('Offer not found.'),
-        OfferIsDisabled             => localize('Offer is inactive.'),
-        OfferInsufficientAmount     => localize('The new amount cannot be less than the value of current orders against this offer.'),
-        OfferMaxExceeded            => localize('The maximum limit of active offers reached.'),
+        AdvertNoEditInactive        => localize('The advert is inactive and cannot be changed.'),
+        AdvertNotFound              => localize('Advert not found.'),
+        AdvertIsDisabled            => localize('Advert is inactive.'),
+        AdvertInsufficientAmount    => localize('The new amount cannot be less than the value of current orders against this advert.'),
+        AdvertMaxExceeded           => localize('The maximum limit of active adverts reached.'),
         InvalidOrderCurrency        => localize('You cannot create an order with a different currency than your account.'),
         OrderNotFound               => localize('Order not found.'),
         OrderAlreadyExists          => localize('Too many orders. Please complete your pending orders.'),
-        InvalidOfferOwn             => localize('You cannot create an order for your own offer.'),
+        InvalidAdvertOwn            => localize('You cannot create an order for your own advert.'),
         OrderNoEditExpired          => localize('The order has expired and cannot be changed.'),
         InvalidStateForConfirmation => localize('The order cannot be confirmed in its current state.'),
-        EscrowNotFound              => localize('Offering for the currency is not available at the moment.'),
-        OrderMinimumNotMet => localize('The minimum amount for this offer is [_1] [_2].'),    # minimum won't change during offer lifetime
-        OrderMaximumExceeded => localize('The maximum available amount for this offer is [_1] [_2] at the moment.'),
+        EscrowNotFound              => localize('Advertising for the currency is not available at the moment.'),
+        OrderMinimumNotMet => localize('The minimum amount for this advert is [_1] [_2].'),    # minimum won't change during advert lifetime
+        OrderMaximumExceeded => localize('The maximum available amount for this advert is [_1] [_2] at the moment.'),
 
         InsufficientBalance => localize('Your account balance is insufficient to create an order with this amount.'),
     );
@@ -114,9 +114,9 @@ our %ERROR_MAP = do {
 # To prevent duplicated messages, we only keep them in `%ERROR_MAP`
 # so for each DB error here, there should be a corresponding error code there
 our %DB_ERRORS = (
-    BI225 => 'OfferNotFound',
-    BI226 => 'InvalidOfferOwn',
-    BI227 => 'OfferInsufficientAmount',
+    BI225 => 'AdvertNotFound',
+    BI226 => 'InvalidAdvertOwn',
+    BI227 => 'AdvertInsufficientAmount',
     BI228 => 'OrderNotFound',
     BI229 => 'InvalidStateForConfirmation',
     BI230 => 'InvalidStateForConfirmation',
@@ -236,17 +236,17 @@ sub p2p_rpc {
         };
 }
 
-=head2 p2p_agent_create
+=head2 p2p_advertiser_create
 
-Requests registration for an agent account.
+Requests registration for an advertiser account.
 
-Each client is able to have at most one agent account.
+Each client is able to have at most one advertiser account.
 
 Takes the following named parameters:
 
 =over 4
 
-=item * C<name> - the display name to be shown for this agent
+=item * C<name> - the display name to be shown for this advertiser
 
 =back
 
@@ -255,55 +255,57 @@ Returns a hashref with the following keys:
 =over 4
 
 =item * C<status> - usually C<pending>, unless this client is from a landing company
-that does not allow P2P agents yet, or they already have an agent account.
+that does not allow P2P advertiser yet, or they already have an advertiser account.
 
 =back
 
 =cut
 
-p2p_rpc p2p_agent_create => sub {
-    my (%args) = @_;
-    my $client = $args{client};
-    my $name   = $args{params}{args}{agent_name};
-    my $agent  = $client->p2p_agent_create($name);
-    BOM::Platform::Event::Emitter::emit(p2p_agent_created => $agent);
+p2p_rpc p2p_advertiser_create => sub {
+    my (%args)     = @_;
+    my $client     = $args{client};
+    my $name       = $args{params}{args}{name};
+    my $advertiser = $client->p2p_advertiser_create($name);
+
+    BOM::Platform::Event::Emitter::emit(p2p_advertiser_created => $advertiser);
+
     return {status => 'pending'};
 };
 
-=head2 p2p_agent_update
+=head2 p2p_advertiser_update
 
-Update agent details.
+Update advertiser details.
 
 Takes the following named parameters:
 
 =over 4
 
-=item * C<agent_name> - The agent's display name
+=item * C<name> - The advertiser's display name
 
-=item * C<is_active> - The activation status of the agent
+=item * C<is_listed> - If the advertiser's adverts are listed
 
 =back
 
-Returns a hashref containing the current agent details.
+Returns a hashref containing the current advertiser details.
 
 =cut
 
-p2p_rpc p2p_agent_update => sub {
+p2p_rpc p2p_advertiser_update => sub {
     my (%args) = @_;
 
     my $client = $args{client};
-    return $client->p2p_agent_update($args{params}{args}->%*);
+    return $client->p2p_advertiser_update($args{params}{args}->%*);
 };
 
-=head2 p2p_agent_info
+=head2 p2p_advertiser_info
 
-Returns information about the given agent (by ID).
+Returns information about the given advertiser (by ID).
 
 Takes the following named parameters:
 
 =over 4
 
-=item * C<agent_id> - The internal ID of the agent
+=item * C<id> - The internal ID of the advertiser
 
 =back
 
@@ -311,33 +313,34 @@ Returns a hashref containing the following information:
 
 =over 4
 
-=item * C<agent_id> - The agent's identification number
+=item * C<id> - The advertiser's identification number
 
-=item * C<agent_name> - The agent's displayed name
+=item * C<name> - The advertiser's displayed name
 
-=item * C<client_loginid> - The loginid of the agent
+=item * C<client_loginid> - The loginid of the advertiser
 
-=item * C<created_time> - The epoch time that the client became an agent
+=item * C<created_time> - The epoch time that the client became an advertiser
 
-=item * C<is_active> - The activation status of the agent
+=item * C<is_active> - The activation status of the advertiser
 
-=item * C<is_authenticated> - The authentication status of the agent
+=item * C<is_authenticated> - The authentication status of the advertiser
 
 =back
 
 =cut
 
-p2p_rpc p2p_agent_info => sub {
+p2p_rpc p2p_advertiser_info => sub {
     my (%args) = @_;
 
     my $client = $args{client};
-    return $client->p2p_agent_info($args{params}{args}->%*) // die +{error_code => 'AgentNotFound'};
+    return $client->p2p_advertiser_info($args{params}{args}->%*) // die +{error_code => 'AdvertiserNotFound'};
 };
 
-p2p_rpc p2p_agent_offers => sub {
+p2p_rpc p2p_advertiser_adverts => sub {
     my (%args) = @_;
+
     my $client = $args{client};
-    return {list => $client->p2p_agent_offers($args{params}{args}->%*)};
+    return {list => $client->p2p_advertiser_adverts($args{params}{args}->%*)};
 };
 
 =head2 p2p_method_list
@@ -390,71 +393,67 @@ p2p_rpc p2p_method_list => sub {
     ];
 };
 
-=head2 p2p_offer_create
+=head2 p2p_advert_create
 
-Attempts to create a new offer.
+Attempts to create a new advert.
 
 Takes the following named parameters:
 
 =over 4
 
-=item * C<agent_id> - the internal ID of the agent (if the client only has one ID, will use that one)
+=item * C<advertiser_id> - the internal ID of the advertiser (if the client only has one ID, will use that one)
 
-=item * C<min> - minimum amount per order (in C<local_currency>)
+=item * C<min_order_amount> - minimum amount per order (in C<account_currency>)
 
-=item * C<max> - maximum amount per order (in C<local_currency>)
+=item * C<max_order_amount> - maximum amount per order (in C<account_currency>)
 
-=item * C<total> - total amount for all orders on this offer (in C<local_currency>)
+=item * C<amount> - total amount for all orders on this advert (in C<account_currency>)
 
-=item * C<currency> - currency to be credited/debited from the Binary accounts
+=item * C<local_currency> - currency the advertiser/client transaction will be conducted in (outside our system)
 
-=item * C<local_currency> - currency the agent/client transaction will be conducted in (outside our system)
-
-=item * C<price> - the price (in C<local_currency>)
-
-=item * C<active> - whether to create it as active or disabled
+=item * C<rate> - the price (in C<local_currency>)
 
 =item * C<type> - either C<buy> or C<sell>
 
 =back
 
-Returns a hashref which contains the offer ID and the details of the offer (mostly just a repeat of the
+Returns a hashref which contains the advert ID and the details of the advert (mostly just a repeat of the
 above information).
 
 =cut
 
-p2p_rpc p2p_offer_create => sub {
+p2p_rpc p2p_advert_create => sub {
     my (%args) = @_;
 
     my $client = $args{client};
-    return $client->p2p_offer_create($args{params}{args}->%*);
+    return $client->p2p_advert_create($args{params}{args}->%*);
 };
 
-=head2 p2p_offer_info
+=head2 p2p_advert_info
 
-Returns information about an offer.
+Returns information about an advert.
 
 Returns a hashref containing the following keys:
 
 =over 4
 
-=item * C<agent_id> - the internal ID of the agent (if the client only has one ID, will use that one)
+=item * C<advertiser_id> - the internal ID of the advertiser (if the client only has one ID, will use that one)
 
-=item * C<id> - the internal ID of this offer
+=item * C<id> - the internal ID of this advert
 
-=item * C<min> - minimum amount per order (in C<local_currency>)
+=item * C<min_order_amount> - minimum amount per order (in C<account_currency>)
 
-=item * C<max> - maximum amount per order (in C<local_currency>)
+=item * C<max_order_amount> - maximum amount per order (in C<account_currency>)
 
-=item * C<total> - total amount for all orders on this offer (in C<local_currency>)
+=item * C<amount> - total amount for all orders on this advert (in C<account_currency>)
 
-=item * C<currency> - currency to be credited/debited from the Binary accounts
+=item * C<account_currency> - currency to be credited/debited from the Binary accounts
 
-=item * C<local_currency> - currency the agent/client transaction will be conducted in (outside our system)
+=item * C<local_currency> - currency the advertiser/client transaction will be conducted in (outside our system)
 
 =item * C<price> - the price (in C<local_currency>)
 
-=item * C<active> - true if orders can be created against this offer
+=item * C<is_active> - true if orders can be created against this advert
 
 =item * C<type> - either C<buy> or C<sell>
 
@@ -462,46 +461,46 @@ Returns a hashref containing the following keys:
 
 =cut
 
-p2p_rpc p2p_offer_info => sub {
+p2p_rpc p2p_advert_info => sub {
     my (%args) = @_;
 
     my $client = $args{client};
-    return $client->p2p_offer_info($args{params}{args}->%*) // die +{error_code => 'OfferNotFound'};
+    return $client->p2p_advert_info($args{params}{args}->%*) // die +{error_code => 'AdvertNotFound'};
 };
 
-=head2 p2p_offer_list
+=head2 p2p_advert_list
 
 Takes the following named parameters:
 
 =over 4
 
-=item * C<agent_id> - the internal ID of the agent
+=item * C<advertiser_id> - the internal ID of the advertiser
 
 =item * C<type> - either C<buy> or C<sell>
 
 =back
 
-Returns available offers as an arrayref containing hashrefs with the following keys:
+Returns available adverts as an arrayref containing hashrefs with the following keys:
 
 =over 4
 
-=item * C<agent_id> - the internal ID of the agent (if the client only has one ID, will use that one)
+=item * C<advertiser_id> - the internal ID of the advertiser (if the client only has one ID, will use that one)
 
-=item * C<id> - the internal ID of this offer
+=item * C<id> - the internal ID of this advert
 
-=item * C<min> - minimum amount per order (in C<local_currency>)
+=item * C<min_order_amount> - minimum amount per order (in C<account_currency>)
 
-=item * C<max> - maximum amount per order (in C<local_currency>)
+=item * C<max_order_amount> - maximum amount per order (in C<account_currency>)
 
-=item * C<total> - total amount for all orders on this offer (in C<local_currency>)
+=item * C<amount> - total amount for all orders on this advert (in C<account_currency>)
 
-=item * C<currency> - currency to be credited/debited from the Binary accounts
+=item * C<account_currency> - currency to be credited/debited from the Binary accounts
 
-=item * C<local_currency> - currency the agent/client transaction will be conducted in (outside our system)
+=item * C<local_currency> - currency the advertiser/client transaction will be conducted in (outside our system)
 
 =item * C<price> - the price (in C<local_currency>)
 
-=item * C<active> - true if orders can be created against this offer
+=item * C<is_active> - true if orders can be created against this advert
 
 =item * C<type> - either C<buy> or C<sell>
 
@@ -509,29 +508,29 @@ Returns available offers as an arrayref containing hashrefs with the following k
 
 =cut
 
-p2p_rpc p2p_offer_list => sub {
+p2p_rpc p2p_advert_list => sub {
     my %args = @_;
 
     my $client = $args{client};
-    return {list => $client->p2p_offer_list($args{params}{args}->%*)};
+    return {list => $client->p2p_advert_list($args{params}{args}->%*)};
 };
 
-=head2 p2p_offer_update
+=head2 p2p_advert_update
 
-Modifies details on an offer.
+Modifies details on an advert.
 
 =cut
 
-p2p_rpc p2p_offer_update => sub {
+p2p_rpc p2p_advert_update => sub {
     my %args = @_;
 
     my $client = $args{client};
-    return $client->p2p_offer_update($args{params}{args}->%*) // die +{error_code => 'OfferNotFound'};
+    return $client->p2p_advert_update($args{params}{args}->%*) // die +{error_code => 'AdvertNotFound'};
 };
 
 =head2 p2p_order_create
 
-Creates a new order for an offer.
+Creates a new order for an advert.
 
 =cut
 
@@ -540,13 +539,12 @@ p2p_rpc p2p_order_create => sub {
 
     my $client = $args{client};
 
-    my $offer_id = $args{params}{args}{offer_id};
     my $order = $client->p2p_order_create($args{params}{args}->%*, source => $args{params}{source});
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_created => {
             client_loginid => $client->loginid,
-            order_id       => $order->{order_id},
+            order_id       => $order->{id},
         });
 
     return $order;
@@ -562,11 +560,11 @@ Takes the following named parameters:
 
 =item * C<status> - return only records matching the given status
 
-=item * C<agent_id> - lists only for this agent (if not provided, lists orders owned
+=item * C<advertiser_id> - lists only for this advertiser (if not provided, lists orders owned
 by the current client)
 
-=item * C<offer_id> - lists only the orders for the given offer (this is only available
-if the current client owns that offer)
+=item * C<advert_id> - lists only the orders for the given advert (this is only available
+if the current client owns that advert)
 
 =item * C<limit> - limit number of items returned in list
 
@@ -591,7 +589,7 @@ Takes the following named parameters:
 
 =over 4
 
-=item * C<order_id> - the P2P order ID to look up
+=item * C<id> - the P2P order ID to look up
 
 =back
 
@@ -612,7 +610,7 @@ Takes the following named parameters:
 
 =over 4
 
-=item * C<order_id> - p2p order ID
+=item * C<id> - p2p order ID
 
 =back
 
@@ -623,11 +621,11 @@ p2p_rpc p2p_order_confirm => sub {
 
     my ($client, $params) = @args{qw/client params/};
 
-    my $order_id = $params->{args}{order_id};
+    my $order_id = $params->{args}{id};
 
     my $order = $client->p2p_order_confirm(
-        order_id => $order_id,
-        source   => $params->{source});
+        id     => $order_id,
+        source => $params->{source});
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
@@ -636,8 +634,8 @@ p2p_rpc p2p_order_confirm => sub {
         });
 
     return {
-        order_id => $order->{order_id},
-        status   => $order->{status},
+        id     => $order->{id},
+        status => $order->{status},
     };
 };
 
@@ -649,7 +647,7 @@ Takes the following named parameters:
 
 =over 4
 
-=item * C<order_id> - p2p order id
+=item * C<id> - p2p order id
 
 =back
 
@@ -660,11 +658,11 @@ p2p_rpc p2p_order_cancel => sub {
 
     my ($client, $params) = @args{qw/client params/};
 
-    my $order_id = $params->{args}{order_id};
+    my $order_id = $params->{args}{id};
 
     my $order = $client->p2p_order_cancel(
-        order_id => $order_id,
-        source   => $params->{source});
+        id     => $order_id,
+        source => $params->{source});
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
@@ -673,8 +671,8 @@ p2p_rpc p2p_order_cancel => sub {
         });
 
     return {
-        order_id => $order_id,
-        status   => $order->{status},
+        id     => $order_id,
+        status => $order->{status},
     };
 };
 
