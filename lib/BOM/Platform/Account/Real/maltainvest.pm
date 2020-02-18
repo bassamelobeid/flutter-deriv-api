@@ -12,7 +12,6 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
 use BOM::User::FinancialAssessment qw(should_warn update_financial_assessment);
 
-
 sub create_account {
     my $args = shift;
     my ($from_client, $user, $country, $details, $params) =

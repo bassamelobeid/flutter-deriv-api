@@ -173,7 +173,7 @@ sub _age_verified {
     my $loginid = $client->loginid;
 
     if (!$client->status->age_verification && !$client->has_valid_documents) {
-        $client->status->set('cashier_locked', 'system', 'Age verification is needed after first deposit.');
+        $client->status->set('unwelcome', 'system', 'Age verification is needed after first deposit.');
         $self->_request_id_authentication();
     }
 

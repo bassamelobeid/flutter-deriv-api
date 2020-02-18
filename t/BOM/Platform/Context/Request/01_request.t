@@ -72,7 +72,8 @@ subtest 'language' => sub {
 
 subtest 'client_ip' => sub {
     is($simple_request->client_ip, '127.0.0.1', 'default client ip is 127.0.0.1');
-    is(BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {}, 'GET')})->client_ip, '1.1.1.1', 'ip can be fetched from mojo request');
+    is(BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {}, 'GET')})->client_ip,
+        '1.1.1.1', 'ip can be fetched from mojo request');
 };
 
 done_testing;
