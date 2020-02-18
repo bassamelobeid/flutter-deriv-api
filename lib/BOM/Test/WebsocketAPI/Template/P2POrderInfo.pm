@@ -8,7 +8,7 @@ use BOM::Test::WebsocketAPI::Template::DSL;
 
 request p2p_order_info => sub {
     return p2p_order_info => {
-        order_id => $_->p2p_order->order_id,
+        id => $_->p2p_order->id,
     };
     },
     qw(p2p_order);
@@ -23,7 +23,7 @@ rpc_request {
         args                       => {
             p2p_order_info => 1,
             subscribe      => 1,
-            order_id       => $_->p2p_order->order_id,
+            id             => $_->p2p_order->id,
         },
         source  => '1',
         logging => {},
@@ -34,24 +34,30 @@ qw(client p2p_order);
 
 rpc_response {
     return {
-        rate_display      => $_->p2p_order->rate_display,
-        offer_id          => $_->p2p_order->offer_id,
-        offer_description => $_->p2p_order->offer_description,
-        expiry_time       => $_->p2p_order->expiry_time,
-        amount            => $_->p2p_order->amount,
-        rate              => $_->p2p_order->rate,
-        agent_name        => $_->p2p_order->agent_name,
-        agent_id          => $_->p2p_order->agent_id,
-        status            => $_->p2p_order->status,
-        local_currency    => $_->p2p_order->local_currency,
-        order_id          => $_->p2p_order->order_id,
-        amount_display    => $_->p2p_order->amount_display,
-        price             => $_->p2p_order->price,
-        account_currency  => $_->client->currency,
-        created_time      => $_->p2p_order->created_time,
-        price_display     => $_->p2p_order->price_display,
-        order_description => $_->p2p_order->order_description,
-        type              => $_->p2p_order->type,
+        account_currency => $_->client->currency,
+        amount           => $_->p2p_order->amount,
+        amount_display   => $_->p2p_order->amount_display,
+        created_time     => $_->p2p_order->created_time,
+        description      => $_->p2p_order->description,
+        expiry_time      => $_->p2p_order->expiry_time,
+        id               => $_->p2p_order->id,
+        is_incoming      => $_->p2p_order->is_incoming,
+        local_currency   => $_->p2p_order->local_currency,
+        price            => $_->p2p_order->price,
+        price_display    => $_->p2p_order->price_display,
+        rate             => $_->p2p_order->rate,
+        rate_display     => $_->p2p_order->rate_display,
+        status           => $_->p2p_order->status,
+        type             => $_->p2p_order->type,
+        advert_details   => {
+            id          => $_->p2p_order->advert_id,
+            description => $_->p2p_order->advert_description,
+            type        => $_->p2p_order->advert_type,
+        },
+        advertiser_details => {
+            id   => $_->p2p_order->advertiser_id,
+            name => $_->p2p_order->advertiser_name,
+        },
     };
 };
 
@@ -61,26 +67,32 @@ publish p2p => sub {
             . uc($_->client->broker) . '::'
             . uc($_->client->country) . '::'
             . uc($_->client->currency) => {
-            rate_display      => $_->p2p_order->rate_display,
-            offer_id          => $_->p2p_order->offer_id,
-            offer_description => $_->p2p_order->offer_description,
-            expiry_time       => $_->p2p_order->expiry_time,
-            amount            => $_->p2p_order->amount,
-            rate              => $_->p2p_order->rate,
-            agent_name        => $_->p2p_order->agent_name,
-            agent_id          => $_->p2p_order->agent_id,
-            status            => $_->p2p_order->status,
-            local_currency    => $_->p2p_order->local_currency,
-            order_id          => $_->p2p_order->order_id,
-            amount_display    => $_->p2p_order->amount_display,
-            price             => $_->p2p_order->price,
-            account_currency  => $_->client->currency,
-            created_time      => $_->p2p_order->created_time,
-            price_display     => $_->p2p_order->price_display,
-            order_description => $_->p2p_order->order_description,
-            type              => $_->p2p_order->type,
-            client_loginid    => $_->client->loginid,
-            agent_loginid     => $_->client->loginid,
+            account_currency   => $_->client->currency,
+            advertiser_loginid => $_->client->loginid,
+            amount             => $_->p2p_order->amount,
+            amount_display     => $_->p2p_order->amount_display,
+            client_loginid     => $_->client->loginid,
+            created_time       => $_->p2p_order->created_time,
+            description        => $_->p2p_order->description,
+            expiry_time        => $_->p2p_order->expiry_time,
+            id                 => $_->p2p_order->id,
+            is_incoming        => $_->p2p_order->is_incoming,
+            local_currency     => $_->p2p_order->local_currency,
+            price              => $_->p2p_order->price,
+            price_display      => $_->p2p_order->price_display,
+            rate               => $_->p2p_order->rate,
+            rate_display       => $_->p2p_order->rate_display,
+            status             => $_->p2p_order->status,
+            type               => $_->p2p_order->type,
+            advert_details     => {
+                id          => $_->p2p_order->advert_id,
+                description => $_->p2p_order->advert_description,
+                type        => $_->p2p_order->advert_type,
+            },
+            advertiser_details => {
+                id   => $_->p2p_order->advertiser_id,
+                name => $_->p2p_order->advertiser_name,
+            },
             },
     };
 };
