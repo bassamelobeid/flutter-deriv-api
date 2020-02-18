@@ -7,39 +7,43 @@
     <div class="grd-grid-12">
         Open positions:
     </div>
-    <div id="portfolio-table" class="grd-grid-12 grd-row-padding">
-        <div class="grd-parent grd-grid-12 table-header grd-row-padding ">
-                <div class="grd-grid-1 grd-hide-mobile">Ref.</div>
-                <div class="grd-grid-7">Contract Details</div>
-                <div class="grd-grid-2 right-aligned">Buy Price</div>
-                <div class="grd-grid-2 right-aligned">Sale Price</div>
-        </div>
+    <table id="portfolio-table" class="hover alternate collapsed" border="1" width="100%">
+        <thead>
+            <tr>
+                <th>Ref.</th>
+                <th>Contract Details</th>
+                <th class="right-aligned">Buy Price</th>
+                <th class="right-aligned">Sale Price</th>
+            </tr>
+        </thead>
+        <tbody>
         [% FOREACH open_bet IN open_bets %]
             [%
-                    total_in = total_in + (open_bet.buy_price || 0);
-                    total_value_now = total_value_now + (open_bet.sale_price || 0);
+                total_in = total_in + (open_bet.buy_price || 0);
+                total_value_now = total_value_now + (open_bet.sale_price || 0);
             %]
-            <div class="grd-parent grd-grid-12 table-body table-body-lines">
-                <div class="grd-grid-1">
-                    <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { shortcode => open_bet.short_code, currency => currency, purchase_time => open_bet.purchase_time, loginid => loginid, limit_order => open_bet.limit_order}) | none %]">[% open_bet.buy_transaction_id %]</a>
-                </div>
-                <div class="grd-grid-7">[% open_bet.description %]</div>
-                <div class="grd-grid-2 right-aligned">
-                        [% currency %] <strong>[% formatnumber('price', currency, open_bet.buy_price) | none %]</strong>
-                </div>
-                <div class="grd-grid-2 right-aligned">
-                        [% currency %] [% formatnumber('price', currency, open_bet.sale_price) | none %]
-                </div>
-            </div>
+            <tr>
+                <td>
+                    <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { shortcode => open_bet.short_code, currency => currency, purchase_time => open_bet.purchase_time, loginid => loginid, limit_order => open_bet.limit_order}) | none %]">
+                        [% open_bet.buy_transaction_id %]
+                    </a>
+                </td>
+                <td>[% open_bet.description %]</td>
+                <td class="right-aligned">
+                    [% currency %] <strong>[% formatnumber('price', currency, open_bet.buy_price) | none %]</strong>
+                </td>
+                <td class="right-aligned">
+                    [% currency %] [% formatnumber('price', currency, open_bet.sale_price) | none %]
+                </td>
+            </tr>
         [% END %]
-    </div>
+        </tbody>
+    </table>
+    <br />
 [% END %]
 
-<div class="grd-grid-6 grd-row-padding">
-    <div class="grd-grid-6"><strong>Balance</strong> : </div>
-    <div class="grd-grid-6">[% currency %] [% formatnumber('amount', currency, balance) | none %]</div>
-    <div class="grd-grid-6"><strong>Cost of open positions</strong> :</div>
-    <div class="grd-grid-6">[% currency %] [% formatnumber('amount', currency, total_in) | none %]</div>
-    <div class="grd-grid-6"><strong>Value of open positions</strong> : </div>
-    <div class="grd-grid-6">[% currency %] [% formatnumber('amount', currency, total_value_now) | none %]</div>
-</div>
+<table class="hover collapsed" border="1">
+    <tr><th>Balance</th><td>[% currency %] [% formatnumber('amount', currency, balance) | none %]</td></tr>
+    <tr><th>Cost of open positions</th><td>[% currency %] [% formatnumber('amount', currency, total_in) | none %]</td></tr>
+    <tr><th>Value of open positions</th><td>[% currency %] [% formatnumber('amount', currency, total_value_now) | none %]</td></tr>
+</table>

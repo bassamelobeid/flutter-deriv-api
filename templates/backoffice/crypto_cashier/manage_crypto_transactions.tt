@@ -12,7 +12,7 @@
     &nbsp;
 [% END %]
 [% END %]
-<table>
+<table class="hover collapsed alternate" border="1" width="100%">
     <thead>
         <th>Status</th>
         <th>Description</th>
@@ -20,7 +20,7 @@
     <tbody>
         [% IF view_action == 'deposits' || view_action == 'search' %]
             [% IF view_action == 'search' %]
-                 <tr><td><b>Deposit:</b></td></tr>
+                 <tr><th align="left" colspan="2"><b>Deposit:</b></th></tr>
             [% END %]
             <tr>
                 <td>New</td>
@@ -41,7 +41,7 @@
         [% END %]
         [% IF view_action == 'withdrawals' || view_action == 'search' %]
             [% IF view_action == 'search' %]
-                <tr><td><b>Withdrawal:</b></td></tr>
+                <tr><th align="left" colspan="2"><b>Withdrawal:</b></th></tr>
             [% END %]
             <tr>
                 <td>Pending</td>
@@ -61,7 +61,7 @@
              </tr>
              <tr>
                 <td>Performing Blockchain Transaction</td>
-                <td>List withdrawal requests where we initiated blockain transaction. Please note that this is intermediate status and transaction should not be here for long. This status is set just before we make blockchain transaction. If you see transaction in this for long then we need to investigate it.</td>
+                <td>List withdrawal requests where we initiated blockchain transaction. Please note that this is intermediate status and transaction should not be here for long. This status is set just before we make blockchain transaction. If you see transaction in this for long then we need to investigate it.</td>
              </tr>
              <tr>
                 <td>Sent</td>
@@ -81,65 +81,68 @@
 [% IF transactions.size == 0 %]
     <p>There are no such transactions.</p>
 [% ELSE %]
-    <table>
-        <tr>
-            [% IF view_action == 'search' %]
-                <th>Status</th>
-            [% END %]
-            <th>BlockchainInfo</th>
-            <th>PaymentInfo</th>
-            <th>Date</th>
-            [% IF view_action == 'withdrawals' || view_action == 'search' %]
-                <th>Verification</th>
-            [% END %]
-            <th>Details</th>
-        </tr>
+    <table class="hover collapsed alternate" border="1" width="100%">
+        <thead>
+            <tr>
+                [% IF view_action == 'search' %]
+                    <th>Status</th>
+                [% END %]
+                <th>BlockchainInfo</th>
+                <th>PaymentInfo</th>
+                <th>Date</th>
+                [% IF view_action == 'withdrawals' || view_action == 'search' %]
+                    <th>Verification</th>
+                [% END %]
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
         [% FOREACH trx IN transactions %]
             <tr>
                 [% IF view_action == 'search' %]
-                    <td><table><tbody>
+                    <td valign="top"><table><tbody>
                         <b>[% trx.transaction_type FILTER ucfirst %]: </b>
                         [% IF trx.status == 'LOCKED' %]PENDING[% ELSE %][% trx.status %][% END %]
                     </tbody></table></td>
                 [% END %]
-                <td><table><tbody>
-                    <tr><td>
-                        <b>Address</b>:
-                        [% address_link(addr = trx.address) %]
-                    </td></tr>
-                    <tr><td>
-                        <b>Blockchain ID</b>:
-                        [% transaction_link(tx = trx.blockchain_txn) %]
-                    </td></tr>
-                </tbody></table></td>
-                <td><table><tbody>
-                    <tr><td>Amount: [% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount %])</td></tr>
-                    <tr><td>Client: [% trx.client_loginid %]<td></tr>
-                    <tr><td>Balance: [% trx.balance %]</td></tr>
-                    <tr><td>Payment ID: [% trx.payment_id %]</td></tr>
+                <td valign="top">
+                    <table class="internal"><tbody>
+                        <tr><th>Address:</th><td>[% address_link(addr = trx.address) %]</td></tr>
+                        <tr><th>Blockchain ID:</th><td>[% transaction_link(tx = trx.blockchain_txn) %]</td></tr>
+                    </tbody></table>
+                </td>
+                <td valign="top">
+                    <table class="internal"><tbody>
+                        <tr><th>Amount:</th><td>[% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount %])</td></tr>
+                        <tr><th>Client:</th><td>[% trx.client_loginid %]<td></tr>
+                        <tr><th>Balance:</th><td>[% trx.balance %]</td></tr>
+                        <tr><th>Payment ID:</th><td>[% trx.payment_id %]</td></tr>
                     [% IF trx.transaction_type == 'withdrawal'%]
-                        <tr><td>Estimated Fee: [% trx.estimated_fee %]</td></tr>
-                        <tr><td>Transaction Fee: [% trx.txn_fee %]</td></tr>
+                        <tr><th>Estimated Fee:</th><td>[% trx.estimated_fee %]</td></tr>
+                        <tr><th>Transaction Fee:</th><td>[% trx.txn_fee %]</td></tr>
                     [% END %]
-                </tbody></table></td>
-                <td><table><tbody>
-                    <tr><td>Creation: [% trx.creation_date %]</td></tr>
+                    </tbody></table>
+                </td>
+                <td valign="top">
+                    <table class="internal"><tbody>
+                        <tr><th>Creation:</th><td>[% trx.creation_date %]</td></tr>
                     [% IF trx.transaction_type == 'deposit' %]
-                        <tr><td>Pending: [% trx.pending_date %]</td></tr>
-                        <tr><td>Confirmed: [% trx.confirmed_date %]</td></tr>
+                        <tr><th>Pending:</th><td>[% trx.pending_date %]</td></tr>
+                        <tr><th>Confirmed:</th><td>[% trx.confirmed_date %]</td></tr>
                     [% ELSIF trx.transaction_type == 'withdrawal' %]
-                        <tr><td>Verified: [% trx.verified_date %]</td></tr>
-                        <tr><td>Rejected: [% trx.rejected_date %]</td></tr>
-                        <tr><td>Processing: [% trx.processing_date %]</td></tr>
-                        <tr><td>Performing Blockchain: [% trx.performing_blockchain_txn_date %]</td></tr>
-                        <tr><td>Sent:[% trx.sent_date %]</td></tr>
+                        <tr><th>Verified:</th><td>[% trx.verified_date %]</td></tr>
+                        <tr><th>Rejected:</th><td>[% trx.rejected_date %]</td></tr>
+                        <tr><th>Processing:</th><td>[% trx.processing_date %]</td></tr>
+                        <tr><th>Performing Blockchain:</th><td>[% trx.performing_blockchain_txn_date %]</td></tr>
+                        <tr><th>Sent:</th><td>[% trx.sent_date %]</td></tr>
                     [% END %]
-                </tbody></table></td>
+                    </tbody></table>
+                </td>
                 [% IF trx.transaction_type == 'withdrawal' %]
-                    <td><table><tbody>
+                    <td valign="top"><table><tbody>
                         <label for="authorisers">Authorisers:</label>
                         <br/>
-                        <input type="textarea" name="authorisers" readonly="readonly" placeholder="(None)" value="[% trx.authorisers.join(', ') %]"/>
+                        <input type="textarea" id="authorisers" name="authorisers" readonly="readonly" placeholder="(None)" value="[% trx.authorisers.join(', ') %]"/>
                         <br/>
                         [% IF trx.status == 'LOCKED' %]
                         <form action="[% controller_url %]" onsubmit="return confirm('Do you really want to continue?');" method="POST">
@@ -152,7 +155,7 @@
                             <br/>
                             <label for="set_remark">Set Remark:</label>
                             <br/>
-                            <input type="text"   name="set_remark" placeholder="Replaces current remark"/>
+                            <input type="text" id="set_remark" name="set_remark" placeholder="Replaces current remark"/>
                             <br/>
                             <input type="submit" name="action" value="Save"/>
                             [% IF trx.authorisers.grep("^$staff\$").size > 0 %]
@@ -168,19 +171,23 @@
                     [% #Empty Verification cell for deposit transactions in search listing %]
                     <td></td>
                 [% END %]
-                <td><table><tbody>
-                    <tr><td>Remark: [% trx.remark %]</td></tr>
-                    <tr><td>Error: [% trx.error_text %]</td></tr>
-                    <tr><td>Resolution: [% trx.resolution %]</td></tr>
-                </tbody></table></td>
+                <td valign="top">
+                    <table class="internal"><tbody>
+                        <tr><th>Remark:</th><td>[% trx.remark %]</td></tr>
+                        <tr><th>Error:</th><td>[% trx.error_text %]</td></tr>
+                        <tr><th>Resolution:</th><td>[% trx.resolution %]</td></tr>
+                    </tbody></table>
+                </td>
             </tr>
         [% END %]
+        </tbody>
     </table>
 [% END %]
-<br/>
-<table>
-    [% url_base = '?broker=' _ broker _ '&currency=' _ currency _ '&show_all_pendings=' _ show_all_pendings _ '&view_action=' _ view_action %]
-    [% IF view_action == 'deposits' %]
+
+[% url_base = '?broker=' _ broker _ '&currency=' _ currency _ '&show_all_pendings=' _ show_all_pendings _ '&view_action=' _ view_action %]
+[% IF view_action == 'deposits' %]
+    <br/>
+    <table>
         <tr>
             <td><a [% IF view_type == 'new' %]class='selected' [% END %]href="[% url_base %]&view_type=new">View new addresses</a></td>
             <td>|</td>
@@ -190,7 +197,10 @@
             <td>|</td>
             <td><a [% IF view_type == 'error' %]class='selected' [% END %]href="[% url_base %]&view_type=error">View errored transactions</a></td>
         </tr>
-    [% ELSIF view_action == 'withdrawals' %]
+    </table>
+[% ELSIF view_action == 'withdrawals' %]
+    <br/>
+    <table>
         <tr>
             <td><a [% IF view_type == 'pending' %]class='selected' [% END %]href="[% url_base %]&view_type=pending">View Pending Transactions</a></td>
             <td>|</td>
@@ -206,6 +216,5 @@
             <td>|</td>
             <td><a [% IF view_type == 'error' %]class='selected' [% END %]href="[% url_base %]&view_type=error">View Errored Out Transactions</a></td>
         </tr>
-    [% END %]
-</table>
-<br/>
+    </table>
+[% END %]

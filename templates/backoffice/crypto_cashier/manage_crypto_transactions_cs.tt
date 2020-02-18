@@ -13,68 +13,74 @@
 [% END %]
 [% END %]
 <div id="crypto" class="grd-parent grd-grid-12">
-    <table>
-        <tr>
-            <th>Status</th>
-            <th>BlockchainInfo</th>
-            <th>PaymentInfo</th>
-            <th>Date</th>
-            <th>Details</th>
-            <th>Action</th>
-        </tr>
+    <table class="hover alternate collapsed" border="1" width="100%">
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>BlockchainInfo</th>
+                <th>PaymentInfo</th>
+                <th>Date</th>
+                <th>Details</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
         [% FOREACH trx IN transactions %]
             <tr>
-                <td><table><tbody>
+                <td valign="top"><table><tbody>
                     <b>[% trx.transaction_type FILTER ucfirst %]: </b>
                     [% IF trx.status == 'LOCKED' %]PENDING[% ELSE %][% trx.status %][% END %]
                 </tbody></table></td>
-                <td><table><tbody>
-                    <tr><td>
-                        <b>Address</b>:
-                        [% address_link(addr = trx.address) %]
-                    </td></tr>
-                    <tr><td>
-                        <b>Blockchain ID</b>:
-                        [% transaction_link(tx = trx.blockchain_txn) %]
-                    </td></tr>
-                </tbody></table></td>
-                <td><table><tbody>
-                    <tr><td>Amount: [% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount %])</td></tr>
-                    <tr><td>Client: [% trx.client_loginid %]<td></tr>
-                    <tr><td>Balance: [% trx.balance %]</td></tr>
-                    <tr><td>Payment ID: [% trx.payment_id %]</td></tr>
+                <td valign="top">
+                    <table class="internal"><tbody>
+                        <tr><th>Address:</th><td>[% address_link(addr = trx.address) %]</td></tr>
+                        <tr><th>Blockchain ID:</th><td>[% transaction_link(tx = trx.blockchain_txn) %]</td></tr>
+                    </tbody></table>
+                </td>
+                <td valign="top">
+                    <table class="internal"><tbody>
+                        <tr><th>Amount:</th><td>[% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount %])</td></tr>
+                        <tr><th>Client:</th><td>[% trx.client_loginid %]<td></tr>
+                        <tr><th>Balance:</th><td>[% trx.balance %]</td></tr>
+                        <tr><th>Payment ID:</th><td>[% trx.payment_id %]</td></tr>
                     [% IF trx.transaction_type == 'withdrawal'%]
-                        <tr><td>Estimated Fee: [% trx.estimated_fee %]</td></tr>
-                        <tr><td>Transaction Fee: [% trx.txn_fee %]</td></tr>
+                        <tr><th>Estimated Fee:</th><td>[% trx.estimated_fee %]</td></tr>
+                        <tr><th>Transaction Fee:</th><td>[% trx.txn_fee %]</td></tr>
                     [% END %]
-                </tbody></table></td>
-                <td><table><tbody>
-                    <tr><td>Creation: [% trx.creation_date %]</td></tr>
+                    </tbody></table>
+                </td>
+                <td valign="top">
+                    <table class="internal"><tbody>
+                        <tr><th>Creation:</th><td>[% trx.creation_date %]</td></tr>
                     [% IF trx.transaction_type == 'deposit' %]
-                        <tr><td>Pending: [% trx.pending_date %]</td></tr>
-                        <tr><td>Confirmed: [% trx.confirmed_date %]</td></tr>
+                        <tr><th>Pending:</th><td>[% trx.pending_date %]</td></tr>
+                        <tr><th>Confirmed:</th><td>[% trx.confirmed_date %]</td></tr>
                     [% ELSIF trx.transaction_type == 'withdrawal' %]
-                        <tr><td>Verified: [% trx.verified_date %]</td></tr>
-                        <tr><td>Rejected: [% trx.rejected_date %]</td></tr>
-                        <tr><td>Processing: [% trx.processing_date %]</td></tr>
-                        <tr><td>Performing Blockchain: [% trx.performing_blockchain_txn_date %]</td></tr>
-                        <tr><td>Sent:[% trx.sent_date %]</td></tr>
+                        <tr><th>Verified:</th><td>[% trx.verified_date %]</td></tr>
+                        <tr><th>Rejected:</th><td>[% trx.rejected_date %]</td></tr>
+                        <tr><th>Processing:</th><td>[% trx.processing_date %]</td></tr>
+                        <tr><th>Performing Blockchain:</th><td>[% trx.performing_blockchain_txn_date %]</td></tr>
+                        <tr><th>Sent:</th><td>[% trx.sent_date %]</td></tr>
                     [% END %]
-                </tbody></table></td>
-                <td><table><tbody>
-                    <tr><td>Remark: [% trx.remark %]</td></tr>
-                    <tr><td>Error: [% trx.error_text %]</td></tr>
-                    <tr><td>Resolution: [% trx.resolution %]</td></tr>
-                </tbody></table></td> 
-                [% IF trx.status == 'NEW' %]
-                    <td>
+                    </tbody></table>
+                </td>
+                <td valign="top">
+                    <table class="internal"><tbody>
+                        <tr><th>Remark:</th><td>[% trx.remark %]</td></tr>
+                        <tr><th>Error:</th><td>[% trx.error_text %]</td></tr>
+                        <tr><th>Resolution:</th><td>[% trx.resolution %]</td></tr>
+                    </tbody></table>
+                </td>
+                <td valign="top" align="center">
+                    [% IF trx.status == 'NEW' %]
                         <form action="[% controller_url %]" method="POST">
                             <input type="hidden" id="address" name="address" value="[% trx.address %]" />
                             <button type="submit" name="action" value="prioritize">Prioritize Confirmation</button>
                         </form>
-                    </td>
-                [% END %]
+                    [% END %]
+                </td>
             </tr>
         [% END %]
+        </tbody>
     </table>
 </div>

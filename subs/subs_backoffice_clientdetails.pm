@@ -467,13 +467,14 @@ sub build_client_warning_message {
 
     # build the table
     my $output =
-          '<br/><table border="1" class="collapsed hover">' . '<tr>'
+          '<br/><table border="1" class="collapsed hover alternate"><thead>' . '<tr>'
         . '<th>STATUS</th>'
         . '<th>REASON/INFO</th>'
         . '<th>STAFF</th>'
         . '<th>EDIT</th>'
         . '<th colspan="2">REMOVE</th>'
-        . '<th>SYNC</th>' . '</tr>';
+        . '<th>SYNC</th>'
+        . '</tr></thead><tbody>';
 
     if (@output) {
         my $trusted_section;
@@ -525,7 +526,7 @@ sub build_client_warning_message {
             . '</b></td>'
             . '<td colspan="4">&nbsp;</td>' . '</tr>';
     }
-    $output .= '</table><br>';
+    $output .= '</tbody></table><br>';
 
     $output .= qq~
     <script type="text/javascript" language="javascript">
@@ -1016,23 +1017,23 @@ sub check_client_login_id {
 
 =head2 get_client_details
 
-Description:  Works out all the client details required for more than 1 page. 
-Takes the following arguments 
+Description:  Works out all the client details required for more than 1 page.
+Takes the following arguments
 
 =over 4
 
 =item -  %input,  Hash, The input paramters from the page submission
 
-=item - $url, the url of the page being rendered.  
+=item - $url, the url of the page being rendered.
 
 =back
 
-Returns  a Hash with 
+Returns  a Hash with
  (
  client, L<BOM::User::Client>
  user, L<BOM::User>
  encoded_loginid, encoded version of the loginid
- mt_logins, mt5 logins for this user ArrayRef of loginid strings. 
+ mt_logins, mt5 logins for this user ArrayRef of loginid strings.
  user_clients, all the clients for this user ArrayRef of L<BOM::User::Clients>
  broker, The broker for this client (string)
  encoded_broker, encoded Broker string j
@@ -1125,7 +1126,7 @@ Description: Builds the previous next client navigation display
 
 =item - $client L<BOM::User::Client>
 
-=item - $self_post  string,  url that the links should point to. 
+=item - $self_post  string,  url that the links should point to.
 
 =back
 

@@ -93,20 +93,9 @@ print "<form id='clientdetailsDCC' action='"
     . "</form>";
 
 Bar("CLOSED/DISABLED ACCOUNTS");
-my $client_login                = request()->param('login_id') || $broker . '';
-my $untrusted_disabled_action   = "Disabled/Closed Accounts";
-my $untrusted_cashier_action    = "Cashier Lock Section";
-my $untrusted_unwelcome_action  = "Unwelcome loginIDs";
-my $untrusted_withdrawal_action = "Withdrawal locked";
-my $file_path                   = BOM::Config::Runtime->instance->app_config->system->directory->db . "/f_broker/$broker/";
+my $client_login = request()->param('login_id') || $broker . '';
+my $show_notification = request()->param('editlink') and $client_login and request()->param('untrusted_action_type');
 
-# if redirect from client details page
-if (request()->param('editlink') and $client_login and request()->param('untrusted_action_type')) {
-    print "<font color=blue>This line has already exist in <b>$encoded_broker."
-        . request()->param('untrusted_action_type')
-        . "</b> file. "
-        . "<br />To change the reason, kindly select from the dropdown selection list below and click 'Go'.<br /><br /></font>";
-}
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/untrusted_form.html.tt',
     {
@@ -114,72 +103,13 @@ BOM::Backoffice::Request::template()->process(
         edit_url                  => request()->url_for('backoffice/untrusted_client_edit.cgi'),
         reasons                   => get_untrusted_client_reason(),
         broker                    => $broker,
+        encoded_broker            => $encoded_broker,
         clientid                  => $client_login,
         actions                   => get_untrusted_types(),
+        show_untrusted            => 1,
         show_login                => 1,
+        show_notification         => $show_notification,
     }) || die BOM::Backoffice::Request::template()->error();
-
-# display log differences for untrusted client section
-print "<hr><b>View changes to this untrusted client section.</b><br />"
-    . "To view all the changes made to each status, kindly click on each of the link below : ";
-
-print "<br /><br /><table border=\"1\" cellpadding=\"3\">" . "<tr>"
-    . "<th>Untrusted section</th>"
-    . "<th>Show the log changes</th>"
-    . "<th>Description</th>" . "</tr>" . "<tr>"
-    . "<td>$untrusted_disabled_action</td>" . "<td>"
-    . '<a href="'
-    . request()->url_for(
-    'backoffice/show_audit_trail.cgi',
-    {
-        broker   => $broker,
-        category => "client_status_disabled"
-    })
-    . '">Disabled logins</a>' . "</td>"
-    . "<td>Client cannot login into disabled account, if all user's accounts have been disabled, the system says: account is unavailable.</td>"
-    . "</tr>" . "<tr>"
-    . "<td>$untrusted_cashier_action</td>" . "<td>"
-    . '<a href="'
-    . request()->url_for(
-    'backoffice/show_audit_trail.cgi',
-    {
-        broker   => $broker,
-        category => "client_status_cashier_locked"
-    })
-    . '">Lock Cashier Logins</a>' . "</td>"
-    . "<td>Client cannot make a deposit or withdrawal.</td>" . "</tr>" . "<tr>"
-    . "<td>$untrusted_unwelcome_action</td>" . "<td>"
-    . '<a href="'
-    . request()->url_for(
-    'backoffice/show_audit_trail.cgi',
-    {
-        broker   => $broker,
-        category => "client_status_unwelcome"
-    })
-    . '">Unwelcome Logins</a>' . "</td>"
-    . "<td>Client can log in, close an open position, make a withdrawal but cannot deposit or open a new trade.</td>" . "</tr>" . "<tr>"
-    . "<td>$untrusted_withdrawal_action</td>" . "<td>"
-    . '<a href="'
-    . request()->url_for(
-    "backoffice/show_audit_trail.cgi",
-    {
-        broker   => $broker,
-        category => "client_status_withdrawal_locked"
-    })
-    . '">Locked Withdrawals</a>' . "</td>"
-    . "<td>Client cannot submit new withdrawal requests.</td>" . "</tr>"
-    . "</table><br />";
-
-# view all disabled accounts details
-print '<hr><b>To view all disabled accounts and their a/c details</b><br />'
-    . "<form action=\""
-    . request()->url_for('backoffice/f_viewclientsubset.cgi')
-    . "\" method=\"get\">"
-    . "<input type=\"hidden\" name=\"broker\" value=\"$encoded_broker\">"
-    . "<input type=\"hidden\" name=\"show\" value=\"disabled\">"
-    . '<br /><input type="checkbox" value="1" checked name="onlylarge"> Only those with more than $5 equity';
-
-print '<br /><input type="submit" value="Monitor Disabled Accounts">' . '</form>';
 
 # Monitor client lists
 Bar("Monitor client lists");

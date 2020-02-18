@@ -106,8 +106,18 @@ foreach my $pair (@$currency_pairs) {
 
 print "</ul>";
 
-print "<p>Inter-bank interest rates (from BBDL=Bloomberg Data License):</p>";
-print "<table><tr><th>Currency</th><th>1 week</th><th>1 month</th></tr>";
+print qq~
+    <p>Inter-bank interest rates (from BBDL=Bloomberg Data License):</p>
+    <table class='hover alternate collapsed' border='1'>
+        <thead>
+            <tr>
+                <th>Currency</th>
+                <th>1 week</th>
+                <th>1 month</th>
+            </tr>
+        </thead>
+        <tbody>
+~;
 
 foreach my $currency_symbol (qw(AUD GBP EUR USD HKD)) {
     try {
@@ -127,10 +137,9 @@ foreach my $currency_symbol (qw(AUD GBP EUR USD HKD)) {
     catch {
         warn "Failed to get currency interest rates for $currency_symbol - $@\n";
         print '<tr><td>' . $currency_symbol . '</td><td colspan="2" style="color:red;">ERROR</td></tr>';
-
     }
 }
-print '</table>';
+print '</tbody></table>';
 
 Bar("Aggregate Balance Per Currency");
 
