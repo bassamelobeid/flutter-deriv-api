@@ -1,4 +1,4 @@
-package Binary::WebSocketAPI::v3::Subscription::P2P::Agent;
+package Binary::WebSocketAPI::v3::Subscription::P2P::Advert;
 
 use strict;
 use warnings;
@@ -32,12 +32,12 @@ sub handle_message {
     my $args = $self->args;
     $c->send({
             json => {
-                msg_type => 'p2p_agent',
+                msg_type => 'p2p_advert',
                 echo_req => $args,
                 (exists $args->{req_id})
                 ? (req_id => $args->{req_id})
                 : (),
-                p2p_agent    => $payload,
+                p2p_advert   => $payload,
                 subscription => {id => $self->uuid},
             }});
     return;

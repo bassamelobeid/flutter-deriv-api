@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "P2P Order List (response)",
-    "description": "All orders matching the requested criteria",
+    "description": "All orders matching the requested criteria.",
     "type": "object",
     "required": [
         "echo_req",
@@ -10,7 +10,7 @@
     "properties": {
         "p2p_order_list": {
             "title": "p2p_order_list",
-            "description": "P2P order list",
+            "description": "List of P2P orders.",
             "type": "object",
             "additionalProperties": false,
             "required": [
@@ -22,7 +22,30 @@
                     "type": "array",
                     "items": {
                         "type": "object",
+                        "required": [
+                            "account_currency",
+                            "advert_details",
+                            "advertiser_details",
+                            "amount",
+                            "amount_display",
+                            "created_time",
+                            "description",
+                            "expiry_time",
+                            "id",
+                            "is_incoming",
+                            "local_currency",
+                            "price",
+                            "price_display",
+                            "rate",
+                            "rate_display",
+                            "status",
+                            "type"
+                        ],
                         "properties": {
+                            "description": {
+                                "description": "Notes from the client.",
+                                "type": "string"
+                            },
                             "type": {
                                 "description": "Whether this is a buy or a sell.",
                                 "type": "string",
@@ -39,13 +62,54 @@
                                     "USD"
                                 ]
                             },
-                            "agent_id": {
-                                "description": "The agent's unique identifier.",
-                                "type": "string"
+                            "advert_details": {
+                                "title": "Advert Details",
+                                "description": "Details of the advert for this order.",
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "description",
+                                    "id",
+                                    "type"
+                                ],
+                                "properties": {
+                                    "description": {
+                                        "description": "Notes from the advertiser. Should include contact details and payment instructions.",
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "description": "Type of the advert.",
+                                        "type": "string",
+                                        "enum": [
+                                            "buy",
+                                            "sell"
+                                        ]
+                                    },
+                                    "id": {
+                                        "description": "The unique identifier for the advert.",
+                                        "type": "string"
+                                    }
+                                }
                             },
-                            "agent_name": {
-                                "description": "The agent's displayed name.",
-                                "type": "string"
+                            "advertiser_details": {
+                                "title": "Advertiser Details",
+                                "description": "Details of the advertiser for this order.",
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                    "id",
+                                    "name"
+                                ],
+                                "properties": {
+                                    "id": {
+                                        "description": "The advertiser's unique identifier.",
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "description": "The advertiser's displayed name.",
+                                        "type": "string"
+                                    }
+                                }
                             },
                             "amount": {
                                 "description": "The amount of the order.",
@@ -63,6 +127,18 @@
                                 "description": "The epoch time in which the order will be expired.",
                                 "type": "integer"
                             },
+                            "id": {
+                                "description": "The unique identifier for this order.",
+                                "type": "string"
+                            },
+                            "is_incoming": {
+                                "description": "`1` if the order is created for the advert of the current client, otherwise `0`.",
+                                "type": "integer",
+                                "enum": [
+                                    0,
+                                    1
+                                ]
+                            },
                             "local_currency": {
                                 "description": "Local currency for this order.",
                                 "type": "string",
@@ -70,24 +146,6 @@
                                 "examples": [
                                     "USD"
                                 ]
-                            },
-                            "offer_description": {
-                                "description": "Notes from the agent. Should include contact details and payment instructions.",
-                                "type": "string",
-                                "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{1,500}$"
-                            },
-                            "offer_id": {
-                                "description": "The unique identifier for the offer.",
-                                "type": "string"
-                            },
-                            "order_description": {
-                                "description": "Notes from the client.",
-                                "type": "string",
-                                "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{0,500}$"
-                            },
-                            "order_id": {
-                                "description": "The unique identifier for this order.",
-                                "type": "string"
                             },
                             "price": {
                                 "description": "Cost in local currency.",
