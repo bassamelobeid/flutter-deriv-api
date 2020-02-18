@@ -178,7 +178,7 @@ sub check_one_result {
 ####################################################################
 
 subtest 'batch-buy success + multisell', sub {
-    plan tests => 25;
+    plan tests => 15;
     lives_ok {
         my $clm = create_client;    # manager
         my $cl1 = create_client;
@@ -272,7 +272,7 @@ subtest 'batch-buy success + multisell', sub {
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
         sleep 1;
         subtest "sell_by_shortcode", sub {
-            plan tests => 21;
+            plan tests => 11;
             my $contract_parameters = shortcode_to_parameters($contract->shortcode, $clm->currency);
             $contract_parameters->{landing_company} = $clm->landing_company->short;
             $contract = produce_contract($contract_parameters);
