@@ -42,6 +42,8 @@
     <button type="submit" name="view_action" value="withdrawals">Withdrawal Transactions</button>
     <input type="checkbox" id="show_all_pendings" name="show_all_pendings" [% IF show_all_pendings %] checked [% END %]>
     <label for="show_all_pendings"> Show all pending payouts </label>
+    <input type="checkbox" id="show_one_authorised" name="show_one_authorised" [% IF show_one_authorised %] checked [% END %]>
+    <label for="show_one_authorised"> Show One Authorised pending payouts </label>
     <br>
     <button type="submit" name="view_action" value="auto_reject_insufficient">Auto-reject withdrawals with insufficient balance</button>
     <br><br>

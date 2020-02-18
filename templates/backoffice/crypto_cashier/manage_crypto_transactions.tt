@@ -184,7 +184,7 @@
     </table>
 [% END %]
 
-[% url_base = '?broker=' _ broker _ '&currency=' _ currency _ '&show_all_pendings=' _ show_all_pendings _ '&view_action=' _ view_action %]
+[% url_base = '?broker=' _ broker _ '&currency=' _ currency _ '&show_all_pendings=' _ show_all_pendings _ '&show_one_authorised=' _ show_one_authorised _ '&view_action=' _ view_action %]
 [% IF view_action == 'deposits' %]
     <br/>
     <table>
