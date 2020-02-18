@@ -382,13 +382,14 @@ rpc get_limits => sub {
     my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
     my $withdrawal_for_x_days = $payment_mapper->get_total_withdrawal({
         start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
-        exclude    => ['currency_conversion_transfer'],
+        exclude    => ['currency_conversion_transfer', 'account_transfer'],
     });
     $withdrawal_for_x_days = convert_currency($withdrawal_for_x_days, $currency, $withdrawal_limit_curr);
 
     # withdrawal since inception
     my $withdrawal_since_inception =
-        convert_currency($payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer']}), $currency, $withdrawal_limit_curr);
+        convert_currency($payment_mapper->get_total_withdrawal({exclude => ['currency_conversion_transfer', 'account_transfer']}),
+        $currency, $withdrawal_limit_curr);
 
     my $remainder = min(($numdayslimit - $withdrawal_for_x_days), ($lifetimelimit - $withdrawal_since_inception));
     if ($remainder <= 0) {
@@ -1188,7 +1189,6 @@ sub get_transfer_fee_remark {
 
 rpc transfer_between_accounts => sub {
     my $params = shift;
-    my $err;
 
     my ($client, $source, $token) = @{$params}{qw/client source token/};
     my $token_type = $params->{token_type} // '';
@@ -1393,10 +1393,7 @@ rpc transfer_between_accounts => sub {
             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $from_currency, $to_currency, $client_from, $client_to);
     }
     catch {
-        $err = $@;
-    }
-
-    if ($err) {
+        my $err = $@;
         return $error_audit_sub->($err, localize('Sorry, transfers are currently unavailable. Please try again later.'))
             if ($err =~ /No rate available to convert/);
 
@@ -1439,15 +1436,14 @@ rpc transfer_between_accounts => sub {
 
     try {
         $client_from->validate_payment(
-            currency => $currency,
-            amount   => -1 * $amount,
+            currency          => $currency,
+            amount            => -1 * $amount,
+            internal_transfer => 1,
         ) || die "validate_payment [$loginid_from]";
     }
     catch {
-        $err = $@;
-    }
+        my $err = $@;
 
-    if ($err) {
         my $limit;
         if ($err =~ /exceeds client balance/) {
             $limit = $currency . ' ' . formatnumber('amount', $currency, $client_from->default_account->balance);
@@ -1455,10 +1451,10 @@ rpc transfer_between_accounts => sub {
             my $frozen_bonus = $1;
             $limit = $currency . ' ' . formatnumber('amount', $currency, $client_from->default_account->balance - $frozen_bonus);
         } elsif ($err =~ /exceeds withdrawal limit \[(.+)\](?:\s+\((.+)\))?/) {
+
             my $bal_1 = $1;
             my $bal_2 = $2;
             $limit = $bal_1;
-
             if ($bal_1 =~ /^([A-Z]{3})\s+/ and $1 ne $currency) {
                 $limit .= " ($bal_2)";
             }
@@ -1472,14 +1468,13 @@ rpc transfer_between_accounts => sub {
 
     try {
         $client_to->validate_payment(
-            currency => $to_currency,
-            amount   => $to_amount,
+            currency          => $to_currency,
+            amount            => $to_amount,
+            internal_transfer => 1,
         ) || die "validate_payment [$loginid_to]";
     }
     catch {
-        $err = $@;
-    }
-    if ($err) {
+        my $err = $@;
         my $msg = localize("Transfer validation failed on [_1].", $loginid_to);
         if ($err =~ /Balance would exceed ([\S]+) limit/) {
             $msg = localize("Your account balance will exceed set limits. Please specify a lower amount.");
@@ -1515,9 +1510,7 @@ rpc transfer_between_accounts => sub {
     }
     catch {
         my $err_str = (ref $@ eq 'ARRAY') ? "@$@" : $@;
-        $err = "$err_msg Account Transfer failed [$err_str]";
-    }
-    if ($err) {
+        my $err = "$err_msg Account Transfer failed [$err_str]";
         return $error_audit_sub->($err);
     }
     BOM::User::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);

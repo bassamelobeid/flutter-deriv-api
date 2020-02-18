@@ -682,7 +682,7 @@ sub send_professional_requested_email {
     $to_email .= ',' . $brand->emails('support') if ($landing_company_short ne 'svg');
 
     return send_email({
-        from    => $brand->emails('support'),
+        from    => $brand->emails('system_generated'),
         to      => $to_email,
         subject => "$loginid requested for professional status, residence: " . ($residence // 'No residence provided'),
         message => ["$loginid has requested for professional status, please check and update accordingly"],
@@ -901,7 +901,7 @@ The currency code.
 
 =item * C<action>
 
-String and the possible values are: deposit, withdrawal 
+String and the possible values are: deposit, withdrawal
 
 =back
 
