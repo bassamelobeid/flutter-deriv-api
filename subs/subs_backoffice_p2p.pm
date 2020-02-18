@@ -2,29 +2,30 @@
 use strict;
 use warnings;
 
-use BOM::Backoffice::Request qw(request);
 use Syntax::Keyword::Try;
 
-sub p2p_agent_register {
+use BOM::Backoffice::Request qw(request);
+
+sub p2p_advertiser_register {
     my $client = shift;
 
     try {
-        $client->p2p_agent_create(request->param('agent_name'));
+        $client->p2p_advertiser_create(request->param('advertiser_name'));
 
         return {
             success => 1,
-            message => $client->loginid . ' has been registered as P2P Agent'
+            message => $client->loginid . ' has been registered as P2P advertiser.'
         };
     }
     catch {
         my ($error_code, $error_msg) = ($@, undef);
 
-        if ($error_code =~ 'AgentNameRequired') {
-            $error_msg = 'P2P Agent name is required.';
+        if ($error_code =~ 'AdvertiserNameRequired') {
+            $error_msg = 'P2P advertiser name is required.';
         } elsif ($error_code =~ 'AlreadyRegistered') {
-            $error_msg = $client->loginid . ' is already registered as a P2P Agent.';
+            $error_msg = $client->loginid . ' is already registered as a P2P advertiser.';
         } else {
-            $error_msg = $client->loginid . ' could not be registered as a P2P Agent. Error code: ' . $error_code;
+            $error_msg = $client->loginid . ' could not be registered as a P2P advertiser. Error code: ' . $error_code;
         }
 
         return {
@@ -34,32 +35,32 @@ sub p2p_agent_register {
     }
 }
 
-sub p2p_agent_update {
+sub p2p_advertiser_update {
     my $client = shift;
 
     try {
         if (
-            $client->p2p_agent_update(
-                agent_name  => request->param('agent_name'),
-                is_approved => request->param('approved'),
-                is_active   => request->param('active'),
+            $client->p2p_advertiser_update(
+                name        => request->param('advertiser_name'),
+                is_approved => request->param('is_approved'),
+                is_listed   => request->param('is_listed'),
             ))
         {
             return {
                 success => 1,
-                message => 'P2P Agent for ' . $client->loginid . ' updated.'
+                message => 'P2P advertiser for ' . $client->loginid . ' updated.'
             };
         }
     }
     catch {
         my ($error_code, $error_msg) = ($@, undef);
 
-        if ($error_code =~ 'AgentNameRequired') {
-            $error_msg = 'P2P Agent name is required.';
-        } elsif ($error_code =~ 'AgentNotApproved') {
-            $error_msg = 'P2P Agent for ' . $client->loginid . ' should be approved in order to update its details.';
+        if ($error_code =~ 'AdvertiserNameRequired') {
+            $error_msg = 'P2P advertiser name is required.';
+        } elsif ($error_code =~ 'AdvertiserNotApproved') {
+            $error_msg = 'P2P advertiser for ' . $client->loginid . ' should be authenticated in order to update its details.';
         } else {
-            $error_msg = 'P2P Agent for ' . $client->loginid . ' could not be updated. Error code: ' . $error_code;
+            $error_msg = 'P2P advertiser for ' . $client->loginid . ' could not be updated. Error code: ' . $error_code;
         }
 
         return {
@@ -74,10 +75,10 @@ sub p2p_process_action {
     my $action = shift;
     my $response;
 
-    if ($action eq 'p2p.agent.register') {
-        $response = p2p_agent_register($client);
-    } elsif ($action eq 'p2p.agent.update') {
-        $response = p2p_agent_update($client);
+    if ($action eq 'p2p.advertiser.register') {
+        $response = p2p_advertiser_register($client);
+    } elsif ($action eq 'p2p.advertiser.update') {
+        $response = p2p_advertiser_update($client);
     }
 
     if ($response) {

@@ -1,0 +1,53 @@
+<style type="text/css">
+table#p2p_advertiser_edit td{
+    padding-top:4px;
+}
+</style>
+
+[% advertiser_name = advertiser_info.name || '' %]
+[% is_approved     = advertiser_info.is_approved %]
+[% is_listed       = advertiser_info.is_listed %]
+
+<form action="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {loginID => loginid, whattodo => 'p2p.advertiser.update'}) %]" method="post">
+    <table border="0" width="100%" id="p2p_advertiser_edit">
+        <tr>
+            <td class="label">Name: </td>
+            <td>
+                <input type="text" name="advertiser_name" value="[% advertiser_name %]" /> [% advertiser_name %]
+            </td>
+        </tr>
+        [% IF whattodo != 'register' %]
+            <tr>
+                <td class="label">Approved: </td>
+                <td>
+                    <select name="is_approved">
+                        <option value="1" [% is_approved && 'selected' %]>YES</option>
+                        <option value="0" [% !is_approved && 'selected' %]>NO</option>
+                    </select>
+                    [% IF is_approved %]
+                        <strong style="color: green">YES</strong>
+                    [% ELSE %]
+                        <strong style="color: red">NO</strong>
+                    [% END %]
+                </td>
+            </tr>
+            <tr>
+                <td class="label">Advertiser's Adverts Are Listed: </td>
+                <td>
+                    <select name="is_listed">
+                        <option value="1" [% is_listed && 'selected' %]>YES</option>
+                        <option value="0" [% !is_listed && 'selected' %]>NO</option>
+                    </select>
+                    [% IF is_listed %]
+                        <strong style="color: green">YES</strong>
+                    [% ELSE %]
+                        <strong style="color: red">NO</strong>
+                    [% END %]
+                </td>
+            </tr>
+        [% END %]
+        <tr>
+            <td colspan="2"><button type="submit">Update P2P advertiser details</button></td>
+        </tr>
+    </table>
+</form>

@@ -145,7 +145,7 @@ if ($input{delete_checked_documents} and $input{del_document_list}) {
 }
 
 if (!$client->is_virtual && $input{whattodo} =~ 'p2p.') {
-    Bar('P2P Agent');
+    Bar('P2P Advertiser');
     print p2p_process_action($client, $input{whattodo});
     my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
     code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
@@ -1230,17 +1230,17 @@ sub dropdown {
 }
 
 if (!$client->is_virtual) {
-    Bar('P2P Agent');
+    Bar('P2P Advertiser');
 
-    if (my $agent_info = $client->p2p_agent_info) {
+    if (my $advertiser_info = $client->p2p_advertiser_info) {
         BOM::Backoffice::Request::template()->process(
-            'backoffice/p2p/p2p_agent_edit_form.tt',
+            'backoffice/p2p/p2p_advertiser_edit_form.tt',
             {
-                agent_info => $agent_info,
-                loginid    => $client->loginid
+                advertiser_info => $advertiser_info,
+                loginid         => $client->loginid
             });
     } else {
-        BOM::Backoffice::Request::template()->process('backoffice/p2p/p2p_agent_register_form.tt', {loginid => $client->loginid});
+        BOM::Backoffice::Request::template()->process('backoffice/p2p/p2p_advertiser_register_form.tt', {loginid => $client->loginid});
     }
 }
 
