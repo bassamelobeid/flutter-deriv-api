@@ -830,6 +830,4 @@ sub _check_contract_parameter_ttl {
     ok $ttl <= $expected_ttl, 'ttl for ' . $key . ' is less than or equal to ' . $expected_ttl . '. Got [' . $ttl . ']';
 }
 
-$mock_emitter->unmock_all;
-
 done_testing;
