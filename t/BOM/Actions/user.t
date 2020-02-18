@@ -244,7 +244,7 @@ subtest 'user profile change event' => sub {
     undef @identify_args;
     undef @track_args;
     my $segment_response = Future->done(1);
-    my $result = BOM::Event::Actions::User::profile_change($args)->get;
+    my $result           = BOM::Event::Actions::User::profile_change($args)->get;
     is $result, 1, 'Success profile_change result';
     my ($customer, %args) = @identify_args;
     test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);

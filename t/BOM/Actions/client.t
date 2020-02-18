@@ -863,7 +863,7 @@ subtest 'segment document upload' => sub {
     request($req);
 
     undef @track_args;
-    
+
     $args = {
         document_type     => 'national_identity_card',
         document_format   => 'PNG',

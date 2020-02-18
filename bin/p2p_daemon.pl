@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 use strict;
 use warnings;
 no indirect;
@@ -34,7 +34,7 @@ p2p_daemon - the daemon process operations which should happen at some particula
 =head1 Description
 
 The Daemon checks database every established interval of time C<POLLING_INTERVAL> and
-emits event for every order/offer, which state need to be updated.
+emits event for every order/advert, which state need to be updated.
 
 =cut
 

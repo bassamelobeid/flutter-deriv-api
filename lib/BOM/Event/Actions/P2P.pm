@@ -37,14 +37,14 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 #TODO: Put here id for special bom-event application
 # May be better to move it to config rather than keep it here.
 use constant {
-    DEFAULT_SOURCE       => 5,
-    DEFAULT_STAFF        => 'AUTOEXPIRY',
-    AGENT_PROFILE_FIELDS => [qw(agent_loginid name)],
+    DEFAULT_SOURCE            => 5,
+    DEFAULT_STAFF             => 'AUTOEXPIRY',
+    ADVERTISER_PROFILE_FIELDS => [qw(advertiser_loginid name)],
 };
 
-=head2 agent_created
+=head2 advertiser_created
 
-When there's a new request to sign up as an agent,
+When there's a new request to sign up as an advertiser,
 we'd presumably want some preliminary checks and
 then mark their status as C<approved> or C<active>.
 
@@ -52,13 +52,13 @@ Currently there's a placeholder email.
 
 =cut
 
-sub agent_created {
+sub advertiser_created {
     my $data = shift;
 
-    my $agent = $data->{agent};
+    my $advertiser = $data->{advertiser};
 
-    if (!$agent) {
-        $log->info('Fail to process agent_created, agent data was missing', $data);
+    if (!$advertiser) {
+        $log->info('Fail to process advertiser_created, advertiser data was missing', $data);
         return 0;
     }
 
@@ -67,55 +67,59 @@ sub agent_created {
     return 1 unless $email_to;
 
     send_email({
-        from    => '<no-reply@binary.com>',
-        to      => $email_to,
-        subject => 'New P2P agent registered',
-        message => ['New P2P agent registered.', 'Agent information:', map { "$_ : " . ($agent->{$_} // '') } @{AGENT_PROFILE_FIELDS()},],
-    });
+            from    => '<no-reply@binary.com>',
+            to      => $email_to,
+            subject => 'New P2P advertiser registered',
+            message => [
+                'New P2P advertiser registered.',
+                'Advertiser information:',
+                map { "$_ : " . ($advertiser->{$_} // '') } @{ADVERTISER_PROFILE_FIELDS()},
+            ],
+        });
 
     return 1;
 }
 
-=head2 agent_updated
+=head2 advertiser_updated
 
-An update to an agent - different name, for example - may
+An update to an advertiser - different name, for example - may
 be relevant to anyone with an active order.
 
 =cut
 
-sub agent_updated {
+sub advertiser_updated {
     return 1;
 }
 
-=head2 offer_created
+=head2 advert_created
 
-An agent has created a new offer. This is always triggered
-even if the agent has marked themselves as inactive, so
-it's important to check agent status before sending
+An advertiser has created a new advert. This is always triggered
+even if the advertiser has marked themselves as inactive, so
+it's important to check advertiser status before sending
 any client notifications here.
 
 =cut
 
-sub offer_created {
+sub advert_created {
     return 1;
 }
 
-=head2 offer_updated
+=head2 advert_updated
 
-An existing offer has been updated. Either that's because the
+An existing advert has been updated. Either that's because the
 an order has closed (confirmed/cancelled), or the details have
 changed.
 
 =cut
 
-sub offer_updated {
+sub advert_updated {
 
     return 1;
 }
 
 =head2 order_created
 
-An order has been created against an offer.
+An order has been created against an advert.
 
 =cut
 
@@ -128,21 +132,9 @@ sub order_created {
         return 0;
     }
 
-    my ($loginid, $order_id) = @{$data}{@args};
-
-    my $client = BOM::User::Client->new({loginid => $loginid});
-
-    my $order = $client->_p2p_orders(id => $order_id)->[0];
-    my $order_response = $client->_order_details([$order])->[0];
-    # we need these fields in subscriptions code
-    $order_response->{$_} = $order->{$_} for qw/agent_loginid client_loginid/;
-
-    my $redis_key = _get_order_channel_name($client);
-
-    my $redis = BOM::Config::RedisReplicated->redis_p2p_write();
-    $redis->publish($redis_key, encode_json_utf8($order_response));
-
-    return 1;
+    # Currently we have the same processing for this events
+    # but maybe in future we will want to separete them
+    return order_updated($data);
 }
 
 =head2 order_updated
@@ -165,13 +157,19 @@ sub order_updated {
 
     my $order = $client->_p2p_orders(id => $order_id)->[0];
     my $order_response = $client->_order_details([$order])->[0];
-    # we need these fields in subscriptions code
-    $order_response->{$_} = $order->{$_} for qw/agent_loginid client_loginid/;
 
-    my $redis = BOM::Config::RedisReplicated->redis_p2p_write();
-
+    my $redis     = BOM::Config::RedisReplicated->redis_p2p_write();
     my $redis_key = _get_order_channel_name($client);
-    $redis->publish($redis_key, encode_json_utf8($order_response));
+    for my $client_type (qw(advertiser_loginid client_loginid)) {
+        my $cur_client = $client;
+        if ($order->{$client_type} ne $client->loginid) {
+            $cur_client = BOM::User::Client->new({loginid => $order->{$client_type}});
+        }
+
+        $order_response = $cur_client->_order_details([$order])->[0];
+        $order_response->{$client_type} = $order->{$client_type};
+        $redis->publish($redis_key, encode_json_utf8($order_response));
+    }
 
     stats_inc('p2p.order.status.updated.count', {tags => ["status:$order->{status}"]});
 
@@ -202,9 +200,9 @@ sub order_expired {
         $client = BOM::User::Client->new({loginid => $loginid});
 
         $updated_order = $client->p2p_expire_order(
-            order_id => $order_id,
-            source   => $data->{source} // DEFAULT_SOURCE,
-            staff    => $data->{staff} // DEFAULT_STAFF,
+            id     => $order_id,
+            source => $data->{source} // DEFAULT_SOURCE,
+            staff  => $data->{staff} // DEFAULT_STAFF,
         );
     }
     catch {
@@ -219,7 +217,7 @@ sub order_expired {
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
             client_loginid => $client->loginid,
-            order_id       => $updated_order->{order_id},
+            order_id       => $updated_order->{id},
         });
 
     return 1;

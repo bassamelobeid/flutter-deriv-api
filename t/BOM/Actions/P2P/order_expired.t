@@ -19,18 +19,21 @@ use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 subtest pending_order_expiry => sub {
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => 100);
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        amount => 100,
+        type   => 'sell'
+    );
     my ($client, $order) = BOM::Test::Helper::P2P::create_order(
-        offer_id => $offer->{offer_id},
-        amount   => 100
+        advert_id => $advert->{id},
+        amount    => 100
     );
 
     BOM::Event::Actions::P2P::order_expired({
         client_loginid => $client->loginid,
-        order_id       => $order->{offer_id},
+        order_id       => $order->{id},
     });
 
-    my $update_order = $client->p2p_order_info(order_id => $order->{order_id});
+    my $update_order = $client->p2p_order_info(id => $order->{id});
     is $update_order->{status}, 'timed-out', "Got expected status";
 
     BOM::Test::Helper::P2P::reset_escrow();
@@ -38,20 +41,23 @@ subtest pending_order_expiry => sub {
 
 subtest client_confirmed_order_expiry => sub {
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
-    my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => 100);
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        amount => 100,
+        type   => 'sell'
+    );
     my ($client, $order) = BOM::Test::Helper::P2P::create_order(
-        offer_id => $offer->{offer_id},
-        amount   => 100
+        advert_id => $advert->{id},
+        amount    => 100
     );
 
-    $client->p2p_order_confirm(order_id => $order->{order_id});
+    $client->p2p_order_confirm(id => $order->{id});
 
     BOM::Event::Actions::P2P::order_expired({
         client_loginid => $client->loginid,
-        order_id       => $order->{order_id},
+        order_id       => $order->{id},
     });
 
-    my $update_order = $client->p2p_order_info(order_id => $order->{order_id});
+    my $update_order = $client->p2p_order_info(id => $order->{id});
     is $update_order->{status}, 'timed-out', "Got expected status";
 
     BOM::Test::Helper::P2P::reset_escrow();
@@ -60,20 +66,23 @@ subtest client_confirmed_order_expiry => sub {
 for my $test_status (qw(completed cancelled refunded timed-out)) {
     subtest "${test_status}_order_expiry" => sub {
         my $escrow = BOM::Test::Helper::P2P::create_escrow();
-        my ($agent, $offer) = BOM::Test::Helper::P2P::create_offer(amount => 100);
+        my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+            amount => 100,
+            type   => 'sell'
+        );
         my ($client, $order) = BOM::Test::Helper::P2P::create_order(
-            offer_id => $offer->{offer_id},
-            amount   => 100
+            advert_id => $advert->{id},
+            amount    => 100
         );
 
-        BOM::Test::Helper::P2P::set_order_status($client, $order->{order_id}, $test_status);
+        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $test_status);
 
         BOM::Event::Actions::P2P::order_expired({
             client_loginid => $client->loginid,
-            order_id       => $order->{order_id},
+            order_id       => $order->{id},
         });
 
-        my $update_order = $client->p2p_order_info(order_id => $order->{order_id});
+        my $update_order = $client->p2p_order_info(id => $order->{id});
         is $update_order->{status}, $test_status, "Got expected status";
 
         BOM::Test::Helper::P2P::reset_escrow();
