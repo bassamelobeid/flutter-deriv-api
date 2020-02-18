@@ -541,4 +541,58 @@ subtest 'market_risk blackouts' => sub {
     is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
 };
 
+subtest 'expiry daily contract on indices during christmas/new year period' => sub {
+    note 'holiday period for equity starts on day-345 to day-5 of the next year';
+    my $holiday_start = Date::Utility->new('2019-01-01')->plus_time_interval('345d');
+    my $hsi           = create_underlying('HSI');
+    my $hsi_open      = $trading_calendar->opening_on($hsi->exchange, $holiday_start)->plus_time_interval('15m');
+    my $tick          = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'HSI',
+        epoch      => $hsi_open->epoch,
+        quote      => 7195,
+    });
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol        => 'HSI',
+            recorded_date => $hsi_open
+        });
+    my $bet_params = {
+        bet_type     => 'CALL',
+        underlying   => 'HSI',
+        date_start   => $hsi_open,
+        date_pricing => $hsi_open,
+        barrier      => 'S0P',
+        currency     => 'USD',
+        payout       => 10,
+        duration     => '5d',
+        current_tick => $tick,
+    };
+    my $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy';
+
+    $bet_params->{barrier} = '7199';
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message_to_client->[0], 'Contract may not expire between [_1] and [_2].';
+    is $c->primary_validation_error->message_to_client->[1], '2019-12-12';
+    is $c->primary_validation_error->message_to_client->[2], '2020-01-05';
+
+    $bet_params->{date_pricing} = $hsi_open->plus_time_interval('1h');
+    $bet_params->{entry_tick}   = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'HSI',
+        epoch      => $hsi_open->epoch + 1,
+        quote      => 7196,
+    });
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_sell, 'invalid to sell';
+    is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.';
+
+    $bet_params->{date_pricing} = $hsi_open;
+    delete $bet_params->{entry_tick};
+    $bet_params->{underlying} = 'R_100';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid to buy';
+};
+
 done_testing();

@@ -681,7 +681,7 @@ sub _validate_start_and_expiry_date {
     #updated the check in this method which updates end_epoch
     my @blackout_checks = (
         [[$start_epoch], $self->date_start_blackouts,  'TradingNotAvailable'],
-        [[$end_epoch],   $self->date_expiry_blackouts, 'ContractExpiryNotAllowed'],
+        [[$end_epoch],   $self->date_expiry_blackouts, $self->for_sale ? 'ResaleNotOffered' : 'ContractExpiryNotAllowed'],
         [[$start_epoch, $end_epoch], $self->market_risk_blackouts,        'TradingNotAvailable'],
         [[$start_epoch, $end_epoch], $self->forward_blackouts,            'TradingNotAvailable'],
         [[$start_epoch, $end_epoch], $self->date_start_forward_blackouts, 'TradingNotAvailable'],
