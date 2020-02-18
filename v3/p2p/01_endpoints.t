@@ -25,29 +25,29 @@ $app_config->set({'payments.p2p.available' => 1});
 
 my $t = build_wsapi_test();
 
-my $email_agent  = 'p2p_agent@test.com';
-my $email_client = 'p2p_client@test.com';
+my $email_advertiser = 'p2p_advertiser@test.com';
+my $email_client     = 'p2p_client@test.com';
 
-my $cl_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
-    email       => $email_agent
+    email       => $email_advertiser
 });
 
-my $cl_agent = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $client_advertiser = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
-    email       => $email_agent
+    email       => $email_advertiser
 });
 
-my $user_agent = BOM::User->create(
-    email    => $email_agent,
+my $user_advertiser = BOM::User->create(
+    email    => $email_advertiser,
     password => 'test'
 );
-$user_agent->add_client($cl_vr);
-$user_agent->add_client($cl_agent);
-$cl_agent->account('USD');
-top_up($cl_agent, $cl_agent->currency, 1000);
+$user_advertiser->add_client($client_vr);
+$user_advertiser->add_client($client_advertiser);
+$client_advertiser->account('USD');
+top_up($client_advertiser, $client_advertiser->currency, 1000);
 
-my $cl_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $client_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
     email       => $email_client
 });
@@ -56,172 +56,173 @@ my $user_client = BOM::User->create(
     email    => $email_client,
     password => 'test'
 );
-$user_client->add_client($cl_client);
-$cl_client->account('USD');
+$user_client->add_client($client_client);
+$client_client->account('USD');
 
-my $cl_escrow = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $client_escrow = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
     email       => 'p2p_escrow@test.com'
 });
-$cl_escrow->account('USD');
-$app_config->set({'payments.p2p.escrow' => [$cl_escrow->loginid]});
+$client_escrow->account('USD');
+$app_config->set({'payments.p2p.escrow' => [$client_escrow->loginid]});
 
-my %offer_params = (
-    amount            => 100,
-    offer_description => 'Test offer',
-    method            => 'bank_transfer',
-    type              => 'buy',
-    local_currency    => 'IDR',
-    rate              => 1,
-    min_amount        => 0.1,
-    max_amount        => 10,
+my %advert_params = (
+    amount           => 100,
+    description      => 'Test advert',
+    local_currency   => 'IDR',
+    max_order_amount => 10,
+    min_order_amount => 0.1,
+    payment_method   => 'bank_transfer',
+    rate             => 1,
+    type             => 'sell',
 );
 
-my ($resp, $tok_vr, $tok_agent, $tok_client, $agent, $offer, $order);
-my $agent_name = 'agent' . rand(999);
+my ($resp, $token_vr, $token_advertiser, $token_client, $advertiser, $advert, $order);
+my $advertiser_name = 'advertiser' . rand(999);
 
 subtest 'misc' => sub {
-    $tok_vr = BOM::Platform::Token::API->new->create_token($cl_vr->loginid, 'test token');
-    $t->await::authorize({authorize => $tok_vr});
-    $resp = $t->await::p2p_offer_list({p2p_offer_list => 1})->{error};
+    $token_vr = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+    $t->await::authorize({authorize => $token_vr});
+    $resp = $t->await::p2p_advert_list({p2p_advert_list => 1})->{error};
     ok $resp->{code} eq 'PermissionDenied' && $resp->{message} =~ /requires payments scope/, 'Payments scope required';
 
-    $tok_vr = BOM::Platform::Token::API->new->create_token($cl_vr->loginid, 'test token', ['payments']);
-    $t->await::authorize({authorize => $tok_vr});
-    $resp = $t->await::p2p_offer_list({p2p_offer_list => 1})->{error};
+    $token_vr = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token', ['payments']);
+    $t->await::authorize({authorize => $token_vr});
+    $resp = $t->await::p2p_advert_list({p2p_advert_list => 1})->{error};
     is $resp->{code}, 'UnavailableOnVirtual', 'VR not allowed';
 
-    $tok_client = BOM::Platform::Token::API->new->create_token($cl_client->loginid, 'test token', ['payments']);
-    $t->await::authorize({authorize => $tok_client});
-    $resp = $t->await::p2p_offer_list({p2p_offer_list => 1})->{p2p_offer_list}{list};
-    ok ref $resp eq 'ARRAY' && $resp->@* == 0, 'Client gets empty offer list';
+    $token_client = BOM::Platform::Token::API->new->create_token($client_client->loginid, 'test token', ['payments']);
+    $t->await::authorize({authorize => $token_client});
+    $resp = $t->await::p2p_advert_list({p2p_advert_list => 1})->{p2p_advert_list}{list};
+    ok ref $resp eq 'ARRAY' && $resp->@* == 0, 'Client gets empty advert list';
 };
 
-subtest 'create agent' => sub {
-    $tok_agent = BOM::Platform::Token::API->new->create_token($cl_agent->loginid, 'test token', ['payments']);
-    $t->await::authorize({authorize => $tok_agent});
-    $resp = $t->await::p2p_agent_info({p2p_agent_info => 1})->{error};
-    is $resp->{code}, 'AgentNotFound', 'Agent not yet registered';
+subtest 'create advertiser' => sub {
+    $token_advertiser = BOM::Platform::Token::API->new->create_token($client_advertiser->loginid, 'test token', ['payments']);
+    $t->await::authorize({authorize => $token_advertiser});
+    $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1})->{error};
+    is $resp->{code}, 'AdvertiserNotFound', 'Advertiser not yet registered';
 
-    $cl_agent->p2p_agent_create($agent_name);
-    $resp = $t->await::p2p_agent_info({p2p_agent_info => 1});
-    test_schema('p2p_agent_info', $resp);
+    $client_advertiser->p2p_advertiser_create($advertiser_name);
+    $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
+    test_schema('p2p_advertiser_info', $resp);
 
-    $agent = $resp->{p2p_agent_info};
-    is $agent->{agent_name}, $agent_name, 'agent name';
-    ok $agent->{agent_id} > 0, 'agent id';
-    ok !$agent->{is_approved}, 'agent not approved';
-    ok $agent->{is_active}, 'agent active';
+    $advertiser = $resp->{p2p_advertiser_info};
+    is $advertiser->{name}, $advertiser_name, 'advertiser name';
+    ok $advertiser->{id} > 0, 'advertiser id';
+    ok !$advertiser->{is_approved}, 'advertiser not approved';
+    ok $advertiser->{is_listed}, "advertiser's adverts are listed";
 
-    $resp = $t->await::p2p_offer_create({
-            p2p_offer_create => 1,
-            %offer_params
+    $resp = $t->await::p2p_advert_create({
+            p2p_advert_create => 1,
+            %advert_params
         })->{error};
-    is $resp->{code}, 'AgentNotApproved', 'Unapproved agent';
+    is $resp->{code}, 'AdvertiserNotApproved', 'Unapproved advertiser';
 };
 
-subtest 'update agent' => sub {
-    $tok_agent = BOM::Platform::Token::API->new->create_token($cl_agent->loginid, 'test token', ['payments']);
-    $t->await::authorize({authorize => $tok_agent});
+subtest 'update advertiser' => sub {
+    $token_advertiser = BOM::Platform::Token::API->new->create_token($client_advertiser->loginid, 'test token', ['payments']);
+    $t->await::authorize({authorize => $token_advertiser});
 
-    my $new_agent_name = 'new agent name';
+    my $new_advertiser_name = 'new advertiser name';
 
-    $resp = $t->await::p2p_agent_update({
-            p2p_agent_update => 1,
-            agent_name       => $new_agent_name,
+    $resp = $t->await::p2p_advertiser_update({
+            p2p_advertiser_update => 1,
+            name                  => $new_advertiser_name,
         })->{error};
-    is $resp->{code}, 'AgentNotApproved', 'Unapproved agent cannot update the information';
+    is $resp->{code}, 'AdvertiserNotApproved', 'Not approved advertiser cannot update the information';
 
-    $cl_agent->p2p_agent_update(is_approved => 1);
+    $client_advertiser->p2p_advertiser_update(is_approved => 1);
 
-    $resp = $t->await::p2p_agent_update({
-            p2p_agent_update => 1,
-            agent_name       => ' ',
+    $resp = $t->await::p2p_advertiser_update({
+            p2p_advertiser_update => 1,
+            name                  => ' ',
         })->{error};
-    ok $resp->{code} eq 'InputValidationFailed' && $resp->{message} =~ /agent_name/, 'Agent name cannot be blank';
+    ok $resp->{code} eq 'InputValidationFailed' && $resp->{message} =~ /name/, 'Advertiser name cannot be blank';
 
-    $agent = $t->await::p2p_agent_update({
-            p2p_agent_update => 1,
-            agent_name       => $new_agent_name,
-            is_active        => 0,
-        })->{p2p_agent_update};
-    is $agent->{agent_name}, $new_agent_name, 'update agent name';
-    ok !$agent->{is_active}, 'set agent inactive';
+    $advertiser = $t->await::p2p_advertiser_update({
+            p2p_advertiser_update => 1,
+            name                  => $new_advertiser_name,
+            is_listed             => 0,
+        })->{p2p_advertiser_update};
+    is $advertiser->{name}, $new_advertiser_name, 'update advertiser name';
+    ok !$advertiser->{is_listed}, "set advertiser's adverts are not listed";
 
-    $resp = $t->await::p2p_agent_update({
-        p2p_agent_update => 1,
-        agent_name       => $agent_name,
-        is_active        => 1,
+    $resp = $t->await::p2p_advertiser_update({
+        p2p_advertiser_update => 1,
+        name                  => $advertiser_name,
+        is_listed             => 1,
     });
-    test_schema('p2p_agent_update', $resp);
-    $agent = $resp->{p2p_agent_update};
-    is $agent->{agent_name}, $agent_name, 'update agent name';
-    ok $agent->{is_active}, 'set agent active';
+    test_schema('p2p_advertiser_update', $resp);
+    $advertiser = $resp->{p2p_advertiser_update};
+    is $advertiser->{name}, $advertiser_name, 'update advertiser name';
+    ok $advertiser->{is_listed}, "advertiser's adverts are listed";
 };
 
-subtest 'create offer' => sub {
-    $cl_agent->p2p_agent_update(is_approved => 1);
-    $resp = $t->await::p2p_offer_create({
-        p2p_offer_create => 1,
-        %offer_params
+subtest 'create advert' => sub {
+    $client_advertiser->p2p_advertiser_update(is_approved => 1);
+    $resp = $t->await::p2p_advert_create({
+        p2p_advert_create => 1,
+        %advert_params
     });
-    test_schema('p2p_offer_create', $resp);
-    $offer = $resp->{p2p_offer_create};
 
-    is $offer->{account_currency}, $cl_agent->account->currency_code, 'account currency';
-    is $offer->{agent_id}, $agent->{agent_id}, 'agent id';
-    ok $offer->{amount} == $offer_params{amount}           && $offer->{amount_display} == $offer_params{amount},           'amount';
-    ok $offer->{remaining_amount} == $offer_params{amount} && $offer->{remaining_amount_display} == $offer_params{amount}, 'remaining';
-    is $offer->{country}, $cl_agent->residence, 'country';
-    ok $offer->{is_active}, 'is active';
-    is $offer->{local_currency}, $offer_params{local_currency}, 'local currency';
-    ok $offer->{max_amount} == $offer_params{max_amount} && $offer->{max_amount_display} == $offer_params{max_amount}, 'max amount';
-    is $offer->{offer_description}, $offer_params{offer_description}, 'description';
-    ok $offer->{offer_id} > 0, 'offer id';
-    ok $offer->{price} == $offer_params{rate} && $offer->{price_display} == $offer_params{rate}, 'price';
-    ok $offer->{rate} == $offer_params{rate}  && $offer->{rate_display} == $offer_params{rate},  'rate';
-    is $offer->{type}, $offer_params{type}, 'type';
+    test_schema('p2p_advert_create', $resp);
+    $advert = $resp->{p2p_advert_create};
 
-    $resp = $t->await::p2p_offer_list({p2p_offer_list => 1});
-    test_schema('p2p_offer_list', $resp);
-    cmp_deeply($resp->{p2p_offer_list}{list}[0], $offer, 'Offer list item matches offer create');
+    is $advert->{account_currency}, $client_advertiser->account->currency_code, 'account currency';
+    is $advert->{advertiser_details}{id}, $advertiser->{id}, 'advertiser id';
+    ok $advert->{amount} == $advert_params{amount}           && $advert->{amount_display} == $advert_params{amount},           'amount';
+    ok $advert->{remaining_amount} == $advert_params{amount} && $advert->{remaining_amount_display} == $advert_params{amount}, 'remaining';
+    is $advert->{country}, $client_advertiser->residence, 'country';
+    is $advert->{description}, $advert_params{description}, 'description';
+    ok $advert->{id} > 0, 'advert id';
+    ok $advert->{is_active}, 'is active';
+    is $advert->{local_currency}, $advert_params{local_currency}, 'local currency';
+    ok $advert->{max_order_amount} == $advert_params{max_order_amount} && $advert->{max_order_amount_display} == $advert_params{max_order_amount},
+        'max amount';
+    ok $advert->{price} == $advert_params{rate} && $advert->{price_display} == $advert_params{rate}, 'price';
+    ok $advert->{rate} == $advert_params{rate}  && $advert->{rate_display} == $advert_params{rate},  'rate';
+    is $advert->{type}, $advert_params{type}, 'type';
 
-    $resp = $t->await::p2p_offer_info({
-            p2p_offer_info => 1,
-            offer_id       => $offer->{offer_id}});
-    test_schema('p2p_offer_info', $resp);
-    cmp_deeply($resp->{p2p_offer_info}, $offer, 'Offer info matches offer create');
+    $resp = $t->await::p2p_advert_list({p2p_advert_list => 1});
+    test_schema('p2p_advert_list', $resp);
+    cmp_deeply($resp->{p2p_advert_list}{list}[0], $advert, 'Advert list item matches advert create');
 
-    $resp = $t->await::p2p_agent_offers({p2p_agent_offers => 1});
-    test_schema('p2p_agent_offers', $resp);
-    cmp_deeply($resp->{p2p_agent_offers}{list}[0], $offer, 'Agent offers item matches offer create');
+    $resp = $t->await::p2p_advert_info({
+            p2p_advert_info => 1,
+            id              => $advert->{id}});
+    test_schema('p2p_advert_info', $resp);
+    cmp_deeply($resp->{p2p_advert_info}, $advert, 'Advert info matches advert create');
+
+    $resp = $t->await::p2p_advertiser_adverts({p2p_advertiser_adverts => 1});
+    test_schema('p2p_advertiser_adverts', $resp);
+    cmp_deeply($resp->{p2p_advertiser_adverts}{list}[0], $advert, 'Advertiser adverts item matches advert create');
 };
 
 subtest 'create order' => sub {
     my $amount = 10;
-    my $price  = $offer->{price} * $amount;
+    my $price  = $advert->{price} * $amount;
 
-    $t->await::authorize({authorize => $tok_client});
-
+    $t->await::authorize({authorize => $token_client});
     $resp = $t->await::p2p_order_create({
         p2p_order_create => 1,
-        offer_id         => $offer->{offer_id},
+        advert_id        => $advert->{id},
         amount           => $amount
     });
     test_schema('p2p_order_create', $resp);
     $order = $resp->{p2p_order_create};
-
-    is $order->{account_currency}, $cl_agent->account->currency_code, 'account currency';
-    is $order->{agent_id}, $agent->{agent_id}, 'agent id';
-    is $order->{agent_name}, $agent_name, 'agent name';
+    is $order->{account_currency}, $client_advertiser->account->currency_code, 'account currency';
+    is $order->{advertiser_details}{id}, $advertiser->{id}, 'advertiser id';
+    is $order->{advertiser_details}{name}, $advertiser_name, 'advertiser name';
     ok $order->{amount} == $amount && $order->{amount_display} == $amount, 'amount';
-    ok $order->{expiry_time},    'expiry time';
-    is $order->{local_currency}, $offer_params{local_currency}, 'local currency';
-    is $order->{offer_id},       $offer->{offer_id}, 'offer id';
+    ok $order->{expiry_time}, 'expiry time';
+    is $order->{local_currency}, $advert_params{local_currency}, 'local currency';
+    is $order->{advert_details}{id}, $advert->{id}, 'advert id';
     ok $order->{price} == $price && $order->{price_display} == $price, 'price';
-    ok $order->{rate} == $offer->{rate} && $order->{rate_display} == $offer->{rate_display}, 'rate';
+    ok $order->{rate} == $advert->{rate} && $order->{rate_display} == $advert->{rate_display}, 'rate';
     is $order->{status}, 'pending', 'status';
-    is $order->{type}, $offer->{type}, 'type';
+    is $order->{advert_details}{type}, $advert->{type}, 'type';
+    is $order->{type}, $advert->{type} eq 'sell' ? 'buy' : 'sell', 'type';
 
     $resp = $t->await::p2p_order_list({
         p2p_order_list => 1,
@@ -233,47 +234,45 @@ subtest 'create order' => sub {
     $resp = $t->await::p2p_order_list({p2p_order_list => 1});
     test_schema('p2p_order_list', $resp);
     my $listed_order = $resp->{p2p_order_list}{list}[0];
-
     $resp = $t->await::p2p_order_info({
             p2p_order_info => 1,
-            order_id       => $order->{order_id}});
+            id             => $order->{id}});
     test_schema('p2p_order_info', $resp);
     my $order_info = $resp->{p2p_order_info};
-
     cmp_deeply($order_info,   $listed_order, 'Order info matches order list');
     cmp_deeply($listed_order, $order,        'Order list matches order create');
 };
 
 subtest 'confirm order' => sub {
-    $t->await::authorize({authorize => $tok_client});
+    $t->await::authorize({authorize => $token_client});
     $resp = $t->await::p2p_order_confirm({
             p2p_order_confirm => 1,
-            order_id          => $order->{order_id}});
+            id                => $order->{id}});
     test_schema('p2p_order_confirm', $resp);
-    is $resp->{p2p_order_confirm}{order_id}, $order->{order_id}, 'client confirm: order id';
+    is $resp->{p2p_order_confirm}{id}, $order->{id}, 'client confirm: order id';
     is $resp->{p2p_order_confirm}{status}, 'buyer-confirmed', 'client confirm: status';
 
-    $t->await::authorize({authorize => $tok_agent});
+    $t->await::authorize({authorize => $token_advertiser});
     $resp = $t->await::p2p_order_confirm({
             p2p_order_confirm => 1,
-            order_id          => $order->{order_id}});
+            id                => $order->{id}});
     test_schema('p2p_order_confirm', $resp);
-    is $resp->{p2p_order_confirm}{order_id}, $order->{order_id}, 'agent_confirm: order id';
-    is $resp->{p2p_order_confirm}{status}, 'completed', 'agent_confirm: status';
+    is $resp->{p2p_order_confirm}{id}, $order->{id}, 'advertiser_confirm: order id';
+    is $resp->{p2p_order_confirm}{status}, 'completed', 'advertiser_confirm: status';
 };
 
 subtest 'cancel order' => sub {
-    $t->await::authorize({authorize => $tok_client});
+    $t->await::authorize({authorize => $token_client});
     $order = $t->await::p2p_order_create({
             p2p_order_create => 1,
-            offer_id         => $offer->{offer_id},
+            advert_id        => $advert->{id},
             amount           => 10
         })->{p2p_order_create};
     $resp = $t->await::p2p_order_cancel({
             p2p_order_cancel => 1,
-            order_id         => $order->{order_id}});
+            id               => $order->{id}});
     test_schema('p2p_order_cancel', $resp);
-    is $resp->{p2p_order_cancel}{order_id}, $order->{order_id}, 'order id';
+    is $resp->{p2p_order_cancel}{id}, $order->{id}, 'order id';
     is $resp->{p2p_order_cancel}{status}, 'cancelled', 'status';
 };
 
