@@ -522,10 +522,41 @@ subtest 'volsurfaces become old and invalid' => sub {
         'volsurface_moneyness',
         {
             symbol         => 'GDAXI',
-            recorded_date  => Date::Utility->new('2013-03-27 06:00:34'),
+            recorded_date  => Date::Utility->new('2013-03-22 18:00:34'),
             spot_reference => $tick->quote,
         });
     my $gdaxi = create_underlying('GDAXI');
+    my $test_date = $trading_calendar->opening_on($gdaxi->exchange, Date::Utility->new('2013-03-25'));
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'index',
+        {
+            symbol        => 'GDAXI',
+            date          => Date::Utility->new,
+            recorded_date => $test_date->plus_time_interval('2h23m20s')});
+
+    $bet_params->{underlying}   = $gdaxi;
+    $bet_params->{date_start}   = $bet_params->{date_pricing} = $test_date->plus_time_interval('2h23m20s');
+    $bet_params->{bet_type}     = 'ONETOUCH';
+    $bet_params->{barrier}      = 103;
+    $bet_params->{duration}     = '14d';
+    $bet_params->{volsurface}   = $volsurface;
+    $bet_params->{current_tick} = $tick;
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
+        {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+
+
+    $bet                        = produce_contract($bet_params);
+ 
+    $bet->is_valid_to_buy;
+    $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol         => 'GDAXI',
+            recorded_date  => Date::Utility->new('2013-03-27 06:00:34'),
+            spot_reference => $tick->quote,
+        });
+    $gdaxi = create_underlying('GDAXI');
     my $surface_too_old_date = $trading_calendar->opening_on($gdaxi->exchange, Date::Utility->new('2013-03-28'));
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
