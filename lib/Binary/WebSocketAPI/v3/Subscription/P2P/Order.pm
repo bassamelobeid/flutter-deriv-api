@@ -76,11 +76,13 @@ sub handle_message {
         return;
     }
 
-    return if $payload->{agent_loginid} ne $self->loginid && $payload->{client_loginid} ne $self->loginid;
+    return
+        if ($payload->{advertiser_loginid} // '') ne $self->loginid
+        && ($payload->{client_loginid} // '') ne $self->loginid;
 
-    delete @{$payload}{qw(agent_loginid client_loginid)};
+    delete @{$payload}{qw(advertiser_loginid client_loginid)};
 
-    return if $self->order_id && $self->order_id ne $payload->{order_id};
+    return if $self->order_id && $self->order_id ne $payload->{id};
 
     my $args = $self->args;
     $c->send({

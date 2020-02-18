@@ -12,8 +12,12 @@
             "description": "Cancellation details",
             "type": "object",
             "additionalProperties": false,
+            "required": [
+                "id",
+                "status"
+            ],
             "properties": {
-                "order_id": {
+                "id": {
                     "description": "The unique identifier for the order.",
                     "type": "string"
                 },

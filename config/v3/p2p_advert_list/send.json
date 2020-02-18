@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "P2P Offers List (request)",
-    "description": "Returns available offers for use with `p2p_order_create`.",
+    "title": "P2P Adverts List (request)",
+    "description": "Returns available adverts for use with `p2p_order_create`.",
     "hidden": true,
     "type": "object",
     "auth_required": 1,
@@ -10,22 +10,14 @@
     ],
     "additionalProperties": false,
     "required": [
-        "p2p_offer_list"
+        "p2p_advert_list"
     ],
     "properties": {
-        "p2p_offer_list": {
+        "p2p_advert_list": {
             "description": "Must be 1",
             "type": "integer",
             "enum": [
                 1
-            ]
-        },
-        "type": {
-            "description": "[Optional] Filter the offers by type.",
-            "type": "string",
-            "enum": [
-                "buy",
-                "sell"
             ]
         },
         "account_currency": {
@@ -33,16 +25,24 @@
             "type": "string",
             "pattern": "^[a-zA-Z]{3,}$"
         },
-        "agent_id": {
-            "description": "[Optional] Which agent to list offers for.",
+        "advertiser_id": {
+            "description": "[Optional] Which advertiser to list adverts for.",
             "type": "string"
         },
         "amount": {
             "description": "[Optional] How much to buy or sell, used to calculate prices.",
             "type": "number"
         },
+        "counterparty_type": {
+            "description": "[Optional] Filter the adverts by `counterparty_type`.",
+            "type": "string",
+            "enum": [
+                "buy",
+                "sell"
+            ]
+        },
         "country": {
-            "description": "[Optional] Which country to find offers from.",
+            "description": "[Optional] Which country to find adverts from.",
             "type": "string",
             "pattern": "^[a-z]{0,2}$"
         },

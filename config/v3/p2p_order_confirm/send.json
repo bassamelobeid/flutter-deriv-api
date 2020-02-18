@@ -10,7 +10,7 @@
     ],
     "additionalProperties": false,
     "required": [
-        "order_id",
+        "id",
         "p2p_order_confirm"
     ],
     "properties": {
@@ -21,7 +21,7 @@
                 1
             ]
         },
-        "order_id": {
+        "id": {
             "description": "The unique identifier for this order.",
             "type": "string",
             "pattern": "^[0-9]+$"
