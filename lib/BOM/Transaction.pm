@@ -927,7 +927,6 @@ sub batch_buy {
 
     my %stat = map { $_ => {attempt => 0 + @{$per_broker{$_}}} } keys %per_broker;
 
-    my @sold;
     my $contract_params = {
         shortcode => $self->contract->shortcode,
         currency  => $self->contract->currency,
