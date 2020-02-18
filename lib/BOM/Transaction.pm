@@ -41,6 +41,7 @@ use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Transaction::CompanyLimits;
 use BOM::Transaction::Validation;
+use BOM::Transaction::Utility;
 
 =head1 NAME
 

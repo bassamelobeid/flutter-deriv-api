@@ -16,6 +16,10 @@ use BOM::Config::RedisReplicated;
 use BOM::Platform::Event::Emitter;
 use BOM::Config::RedisReplicated;
 
+use constant KEY_RETENTION_SECOND => 60;
+
+my $json = JSON::MaybeXS->new;
+
 =head2 delete_contract_parameters
 
 Utility method to set expiry of redis key to KEY_RETENTION_SECOND seconds.
