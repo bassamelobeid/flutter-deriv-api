@@ -16,10 +16,6 @@ use BOM::Config::Runtime;
 use Date::Utility;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
-<<<<<<< Updated upstream
-use BOM::Transaction::Utility qw(TRACK_FMB_ATTR TRACK_CONTRACT_ATTR TRACK_TIME_ATTR);
-=======
->>>>>>> Stashed changes
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
