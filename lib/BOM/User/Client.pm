@@ -1728,135 +1728,138 @@ sub check_duplicate_account {
 
 =cut
 
-use constant MAXIMUM_ACTIVE_OFFERS => 10;
+use constant {
+    # For some currency pairs we need to have limit so big for example: VND/BTC
+    # Also this limit may need to be adjusted in future.
+    P2P_RATE_LOWER_LIMIT => 0.000001,    # We need it because 0.000001 < 0.1**6 is true
+    P2P_RATE_UPPER_LIMIT => 10**9,
+    P2P_RATE_PRECISION   => 6,
 
-=head2 p2p_agent_create
+    P2P_MAXIMUM_ACTIVE_ADVERTS     => 10,
+    P2P_COUNTERYPARTY_TYPE_MAPPING => {
+        buy  => 'sell',
+        sell => 'buy',
+    },
+};
 
-Attempts to register client as an agent.
-Returns the agent info or dies with error code.
+=head2 p2p_advertiser_create
+
+Attempts to register client as an advertiser.
+Returns the advertiser info or dies with error code.
 
 =cut
 
-# For some currency pairs we need to have limit so big for example: VND/BTC
-# Also this limit may need to be adjusted in future.
-use constant {
-    P2P_RATE_UPPER_LIMIT => 10**9,
-    P2P_RATE_PRECISION   => 6,
-    P2P_RATE_LOWER_LIMIT => 0.000001    #We need it because 0.000001 < 0.1**6 is true
-};
+sub p2p_advertiser_create {
+    my ($client, $name) = @_;
 
-sub p2p_agent_create {
-    my ($client, $agent_name) = @_;
+    die +{error_code => 'AlreadyRegistered'} if $client->_p2p_advertisers(loginid => $client->loginid)->[0];
 
-    die +{error_code => 'AlreadyRegistered'} if $client->_p2p_agents(loginid => $client->loginid)->[0];
-
-    $agent_name = trim($agent_name);
-    die +{error_code => 'AgentNameRequired'} unless $agent_name;
+    $name = trim($name);
+    die +{error_code => 'AdvertiserNameRequired'} unless $name;
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.agent_create(?, ?)', undef, $client->loginid, $agent_name // '');
+            $_->selectrow_hashref('SELECT * FROM p2p.advertiser_create(?, ?)', undef, $client->loginid, $name // '');
         });
 }
 
-=head2 p2p_agent_info
+=head2 p2p_advertiser_info
 
-Returns agent info of param{agent_id} otherwise current client.
+Returns advertiser info of param{id} otherwise current client.
 
 =cut
 
-sub p2p_agent_info {
+sub p2p_advertiser_info {
     my ($client, %param) = @_;
 
-    my $agent;
-    if (exists $param{agent_id}) {
-        $agent = $client->_p2p_agents(id => $param{agent_id})->[0];
+    my $advertiser;
+    if (exists $param{id}) {
+        $advertiser = $client->_p2p_advertisers(id => $param{id})->[0];
     } else {
-        $agent = $client->_p2p_agents(loginid => $client->loginid)->[0];
+        $advertiser = $client->_p2p_advertisers(loginid => $client->loginid)->[0];
     }
 
-    return unless $agent;
-    return $client->_agent_details($agent);
+    return unless $advertiser;
+    return $client->_advertiser_details($advertiser);
 }
 
-=head2 p2p_agent_update
+=head2 p2p_advertiser_update
 
-Updates the client agent info with fields in %param.
-Returns latest agent info.
+Updates the client advertiser info with fields in %param.
+Returns latest advertiser info.
 
 =cut
 
-sub p2p_agent_update {
+sub p2p_advertiser_update {
     my ($client, %param) = @_;
 
-    my $agent_info = $client->p2p_agent_info;
-    die +{error_code => 'AgentNotRegistered'} unless $agent_info;
-    die +{error_code => 'AgentNotApproved'} unless $agent_info->{is_approved} or defined $param{is_approved};
+    my $advertiser_info = $client->p2p_advertiser_info;
+    die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
+    die +{error_code => 'AdvertiserNotApproved'} unless $advertiser_info->{is_approved} or defined $param{is_approved};
 
-    if (exists $param{agent_name}) {
-        $param{agent_name} = trim($param{agent_name});
-        die +{error_code => 'AgentNameRequired'} unless $param{agent_name};
+    if (exists $param{name}) {
+        $param{name} = trim($param{name});
+        die +{error_code => 'AdvertiserNameRequired'} unless $param{name};
     }
 
-    # Return the current information of the agent if nothing changed
-    return $agent_info unless grep { exists $agent_info->{$_} and $param{$_} ne $agent_info->{$_} } keys %param;
+    # Return the current information of the advertiser if nothing changed
+    return $advertiser_info unless grep { exists $advertiser_info->{$_} and $param{$_} ne $advertiser_info->{$_} } keys %param;
 
     my $update = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM p2p.agent_update(?, ?, ?, ?)',
+                'SELECT * FROM p2p.advertiser_update(?, ?, ?, ?)',
                 undef,
-                $agent_info->{agent_id},
-                @param{qw/is_approved is_active agent_name/});
+                $advertiser_info->{id},
+                @param{qw/is_approved is_listed name/});
         });
 
-    return $client->_agent_details($update);
+    return $client->_advertiser_details($update);
 }
 
-=head2 p2p_agent_offers
+=head2 p2p_advertiser_adverts
 
-Returns a list of offers belonging to current client
+Returns a list of adverts belonging to current client
 
 =cut
 
-sub p2p_agent_offers {
+sub p2p_advertiser_adverts {
     my ($client, %param) = @_;
 
-    my $agent_info = $client->_p2p_agents(loginid => $client->loginid)->[0];
-    die +{error_code => 'AgentNotRegistered'} unless $agent_info;
+    my $advertiser_info = $client->_p2p_advertisers(loginid => $client->loginid)->[0];
+    die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
 
     my ($limit, $offset) = @param{qw/limit offset/};
     die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
     die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
-    my $list = $client->_p2p_offers(%param, agent_id => $agent_info->{id});
-
-    return $client->_offer_details($list);
+    my $list = $client->_p2p_adverts(%param, advertiser_id => $advertiser_info->{id});
+    return $client->_advert_details($list);
 }
 
-=head2 p2p_offer_create
+=head2 p2p_advert_create
 
-Creates an offer with %param with client as agent.
-Returns new offer or dies with error code.
+Creates an advert with %param with client as advertiser.
+Returns new advert or dies with error code.
 
 =cut
 
-sub p2p_offer_create {
+sub p2p_advert_create {
     my ($client, %param) = @_;
 
-    my $agent_info = $client->_p2p_agents(loginid => $client->loginid)->[0];
-    die +{error_code => 'AgentNotActive'} unless $agent_info && $agent_info->{is_active};
-    die +{error_code => 'AgentNotApproved'} unless $agent_info->{is_approved};
+    my $advertiser_info = $client->_p2p_advertisers(loginid => $client->loginid)->[0];
+    die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
+    die +{error_code => 'AdvertiserNotApproved'}   unless $advertiser_info->{is_approved};
 
     $param{account_currency} = $client->currency;
 
-    _validate_offer_amounts(%param);
+    _validate_advert_amounts(%param);
 
-    my $active_offers_count = $client->_p2p_offers(
-        agent_loginid => $client->loginid,
-        active        => 1,
+    my $active_adverts_count = $client->_p2p_adverts(
+        advertiser_loginid => $client->loginid,
+        is_active          => 1,
     )->@*;
-    die +{error_code => 'OfferMaxExceeded'} if $active_offers_count >= MAXIMUM_ACTIVE_OFFERS;
+    die +{error_code => 'AdvertMaxExceeded'} if $active_adverts_count >= P2P_MAXIMUM_ACTIVE_ADVERTS;
 
     $param{country} //= $client->residence;
 
@@ -1875,141 +1878,146 @@ sub p2p_offer_create {
         };
     }
 
-    my $min_price = $param{rate} * $param{min_amount};
+    my $min_price = $param{rate} * $param{min_order_amount};
     if (financialrounding('amount', $param{local_currency}, $min_price) == 0) {
         die +{error_code => 'MinPriceTooSmall'};
     }
 
-    my $offer = $client->db->dbic->run(
+    my $advert = $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.offer_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                undef, $agent_info->{id},
-                @param{qw/type account_currency local_currency amount rate min_amount max_amount method offer_description country/});
+            $_->selectrow_hashref(
+                'SELECT * FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                undef,
+                $advertiser_info->{id},
+                @param{qw/type account_currency local_currency amount rate min_order_amount max_order_amount payment_method description country/});
         });
 
-    $offer->{agent_loginid} = $agent_info->{client_loginid};
-    $offer->{agent_name}    = $agent_info->{name};
-
-    return $client->_offer_details([$offer])->[0];
+    return $client->_advert_details([$advert])->[0];
 }
 
-=head2 p2p_offer_info
+=head2 p2p_advert_info
 
-Get a single offer by $id.
+Get a single advert by $id.
 
 =cut
 
-sub p2p_offer_info {
+sub p2p_advert_info {
     my ($client, %param) = @_;
-    my $id = $param{offer_id} // return;
-    my $list = $client->_p2p_offers(id => $id);
-    return $client->_offer_details($list)->[0];
+    my $id = $param{id} // return;
+    my $list = $client->_p2p_adverts(id => $id);
+    return $client->_advert_details($list)->[0];
 }
 
-=head2 p2p_offer_list
+=head2 p2p_advert_list
 
-Get offers for client view.
-Inactive offers, inactive or unauthorized agents, and remaining < min are excluded.
+Get adverts for client view.
+Inactive adverts, unlisted or unapproved advertisers, and max < min are excluded.
 
 =cut
 
-sub p2p_offer_list {
+sub p2p_advert_list {
     my ($client, %param) = @_;
 
     my ($limit, $offset) = @param{qw/limit offset/};
     die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
     die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
-    my $list = $client->_p2p_offers(
+    if ($param{counterparty_type}) {
+        $param{type} = P2P_COUNTERYPARTY_TYPE_MAPPING->{$param{counterparty_type}};
+    }
+
+    my $list = $client->_p2p_adverts(
         %param,
-        is_active           => 1,
-        can_order           => 1,
-        agent_active        => 1,
-        agent_authenticated => 1,
+        is_active              => 1,
+        can_order              => 1,
+        advertiser_is_approved => 1,
+        advertiser_is_listed   => 1,
     );
-    return $client->_offer_details($list, $param{amount});
+    return $client->_advert_details($list, $param{amount});
 }
 
-=head2 p2p_offer_update
+=head2 p2p_advert_update
 
-Updates the offer of $param{offer_id} with fields in %param.
-Client must be offer owner.
+Updates the advert of $param{id} with fields in %param.
+Client must be advert owner.
 Amount cannot be reduced below amount of outstanding orders.
-Returns latest offer info or dies with error code.
+Returns latest advert info or dies with error code.
 
 =cut
 
-sub p2p_offer_update {
+sub p2p_advert_update {
     my ($client, %param) = @_;
 
-    my $offer_id = delete $param{offer_id} or die +{error_code => 'OfferNotFound'};
-    my $offer = $client->_p2p_offers(id => $offer_id)->[0] or die +{error_code => 'OfferNotFound'};
+    my $id = delete $param{id} or die +{error_code => 'AdvertNotFound'};
+    my $advert_info = $client->_p2p_adverts(id => $id)->[0] or die +{error_code => 'AdvertNotFound'};
 
-    die +{error_code => 'PermissionDenied'} if $offer->{agent_loginid} ne $client->loginid;
+    die +{error_code => 'PermissionDenied'} if $advert_info->{advertiser_loginid} ne $client->loginid;
 
-    # return current offer details if nothing changed
-    return $client->_offer_details([$offer])->[0] unless grep { exists $offer->{$_} and $param{$_} ne $offer->{$_} } keys %param;
+    # return current advert details if nothing changed
+    return $client->_advert_details([$advert_info])->[0] unless grep { exists $advert_info->{$_} and $param{$_} ne $advert_info->{$_} } keys %param;
 
-    # Amount already used in an offer is (amount - remaining). New amount cannot be less than the amount used.
-    die +{error_code => 'OfferInsufficientAmount'} if $param{amount} && $param{amount} < ($offer->{amount} - $offer->{remaining});
+    # Amount already used in an advert is (amount - remaining). New amount cannot be less than the amount used.
+    die +{error_code => 'AdvertInsufficientAmount'} if $param{amount} && $param{amount} < ($advert_info->{amount} - $advert_info->{remaining});
 
     my $update = $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.offer_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                undef, $offer_id, $param{is_active}, map { undef } (1 .. 10));
+            $_->selectrow_hashref('SELECT * FROM p2p.advert_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                undef, $id, $param{is_active}, map { undef } (1 .. 10));
         });
 
-    return $client->_offer_details([$update])->[0];
+    return $client->_advert_details([$update])->[0];
 }
 
 =head2 p2p_order_create
 
-Creates an order for offer $param{offer_id} with %param for client.
-Offer must be active. Agent must be active and authenticated.
-Only one active order per offer per client is allowed.
+Creates an order for advert $param{advert_id} with %param for client.
+Advert must be active. Advertiser must be active and authenticated.
+Only one active order per advert per client is allowed.
 Returns new order or dies with error code.
-This will move funds from agent to escrow.
+This will move funds from advertiser to escrow.
 
 =cut
 
 sub p2p_order_create {
     my ($client, %param) = @_;
 
-    my ($offer_id, $amount, $expiry, $description, $source) = @param{qw/offer_id amount expiry order_description source/};
+    my ($advert_id, $amount, $expiry, $description, $source) = @param{qw/advert_id amount expiry description source/};
 
     $expiry //= BOM::Config::Runtime->instance->app_config->payments->p2p->order_timeout;
 
-    my $offer_info = $client->_p2p_offers(id => $offer_id)->[0];
+    my $advert_info = $client->_p2p_adverts(id => $advert_id)->[0];
 
-    die +{error_code => 'OfferNotFound'}        unless $offer_info;
-    die +{error_code => 'OfferIsDisabled'}      unless $offer_info->{is_active};
-    die +{error_code => 'InvalidOrderCurrency'} unless $offer_info->{account_currency} eq $client->currency;
-    die +{error_code => 'InvalidOfferOwn'} if $offer_info->{agent_loginid} eq $client->loginid;
-
-    die +{
-        error_code     => 'OrderMaximumExceeded',
-        message_params => [$offer_info->{account_currency}, formatnumber('amount', $offer_info->{account_currency}, $offer_info->{max_amount}),]}
-        if ($offer_info->{max_amount} && $amount > $offer_info->{max_amount})
-        || $amount > $offer_info->{amount}
-        || $amount > $offer_info->{remaining};
+    die +{error_code => 'AdvertNotFound'}       unless $advert_info;
+    die +{error_code => 'AdvertIsDisabled'}     unless $advert_info->{is_active};
+    die +{error_code => 'InvalidOrderCurrency'} unless $advert_info->{account_currency} eq $client->currency;
+    die +{error_code => 'InvalidAdvertOwn'} if $advert_info->{advertiser_loginid} eq $client->loginid;
 
     die +{
-        error_code     => 'OrderMinimumNotMet',
-        message_params => [$offer_info->{account_currency}, formatnumber('amount', $offer_info->{account_currency}, $offer_info->{min_amount}),]}
-        if $amount < ($offer_info->{min_amount} // 0);
+        error_code => 'OrderMaximumExceeded',
+        message_params =>
+            [$advert_info->{account_currency}, formatnumber('amount', $advert_info->{account_currency}, $advert_info->{max_order_amount}),]}
+        if ($advert_info->{max_order_amount} && $amount > $advert_info->{max_order_amount})
+        || $amount > $advert_info->{amount}
+        || $amount > $advert_info->{remaining};
 
-    my $agent_info = $client->_p2p_agents(id => $offer_info->{agent_id})->[0];
-    die +{error_code => 'AgentNotFound'}    unless $agent_info;
-    die +{error_code => 'AgentNotActive'}   unless $agent_info->{is_active};
-    die +{error_code => 'AgentNotApproved'} unless $agent_info->{is_approved};
+    die +{
+        error_code => 'OrderMinimumNotMet',
+        message_params =>
+            [$advert_info->{account_currency}, formatnumber('amount', $advert_info->{account_currency}, $advert_info->{min_order_amount}),]}
+        if $amount < ($advert_info->{min_order_amount} // 0);
 
-    if ($offer_info->{type} eq 'sell') {
+    my $advertiser_info = $client->_p2p_advertisers(id => $advert_info->{advertiser_id})->[0];
+    die +{error_code => 'AdvertiserNotFound'}    unless $advertiser_info;
+    die +{error_code => 'AdvertiserNotListed'}   unless $advertiser_info->{is_listed};
+    die +{error_code => 'AdvertiserNotApproved'} unless $advertiser_info->{is_approved};
+
+    if ($advert_info->{type} eq 'buy') {
         die +{error_code => 'InsufficientBalance'} if $client->account->balance < $amount;
-    } elsif ($offer_info->{type} eq 'buy') {
-        my $agent = BOM::User::Client->new({loginid => $offer_info->{agent_loginid}});
-        die +{error_code => 'MaximumExceeded'} if $agent->account->balance < $amount;
+    } elsif ($advert_info->{type} eq 'sell') {
+        my $advertiser = BOM::User::Client->new({loginid => $advert_info->{advertiser_loginid}});
+        die +{error_code => 'MaximumExceeded'} if $advertiser->account->balance < $amount;
     } else {
-        die 'Invalid offer type ' . ($offer_info->{type} // 'undef') . 'for offer ' . $offer_info->{offer_id};
+        die 'Invalid advert type ' . ($advert_info->{type} // 'undef') . ' for advert ' . $advert_info->{id};
     }
 
     my $escrow = $client->p2p_escrow;
@@ -2017,9 +2025,10 @@ sub p2p_order_create {
     die +{error_code => 'EscrowNotFound'} unless $escrow;
 
     my $open_orders = $client->_p2p_orders(
-        offer_id => $offer_id,
-        loginid  => $client->loginid,
-        status => ['pending', 'buyer-confirmed']);
+        advert_id => $advert_id,
+        loginid   => $client->loginid,
+        status => ['pending', 'buyer-confirmed'],
+    );
 
     die +{error_code => 'OrderAlreadyExists'} if @{$open_orders};
 
@@ -2027,7 +2036,7 @@ sub p2p_order_create {
     my $order    = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                undef, $offer_id, $client->loginid, $escrow->loginid, $amount, $expiry, $description, $source, $client->loginid, undef, $txn_time);
+                undef, $advert_id, $client->loginid, $escrow->loginid, $amount, $expiry, $description, $source, $client->loginid, undef, $txn_time);
         });
 
     return $client->_order_details([$order])->[0];
@@ -2035,14 +2044,14 @@ sub p2p_order_create {
 
 =head2 p2p_order_info
 
-Return a single order of $param{order_id}
+Return a single order of $param{id}
 
 =cut
 
 sub p2p_order_info {
     my ($client, %param) = @_;
 
-    my $id = $param{order_id} // return;
+    my $id = $param{id} // return;
     my $list = $client->_p2p_orders(id => $id);
     return $client->_order_details($list)->[0];
 }
@@ -2068,11 +2077,11 @@ sub p2p_order_list {
 
 =head2 p2p_order_confirm
 
-Confirms the order of $param{order_id} and returns updated order.
+Confirms the order of $param{id} and returns updated order.
 Client = client, type = buy: order is buyer-confirmed
 Client = client, type = sell: order is completed
-Client = agent, type = buy: order is completed
-Client = agent, type = sell: order is buyer-confirmed
+Client = advertiser, type = buy: order is completed
+Client = advertiser, type = sell: order is buyer-confirmed
 Otherwise dies with error code.
 
 =cut
@@ -2080,16 +2089,14 @@ Otherwise dies with error code.
 sub p2p_order_confirm {
     my ($client, %param) = @_;
 
-    my $order_id = $param{order_id} // die +{error_code => 'OrderNotFound'};
-    my $order_info = $client->_p2p_orders(id => $order_id)->[0];
-
+    my $id = $param{id} // die +{error_code => 'OrderNotFound'};
+    my $order_info = $client->_p2p_orders(id => $id)->[0];
     die +{error_code => 'OrderNotFound'} unless $order_info;
     die +{error_code => 'OrderNoEditExpired'} if $order_info->{is_expired};
 
     my $ownership_type = _order_ownership_type($client, $order_info);
 
-    my $method = $client->can('_' . $ownership_type . '_' . $order_info->{offer_type} . '_confirm');
-
+    my $method = $client->can('_' . $ownership_type . '_' . $order_info->{type} . '_confirm');
     die +{error_code => 'PermissionDenied'} unless $method;
 
     return $client->$method($order_info, $param{source});
@@ -2097,7 +2104,7 @@ sub p2p_order_confirm {
 
 =head2 p2p_order_cancel
 
-Cancels the order of $param{order_id}.
+Cancels the order of $param{id}.
 Order must belong to the buyer.
 Order must be in pending status.
 This will move funds from escrow to seller.
@@ -2107,8 +2114,8 @@ This will move funds from escrow to seller.
 sub p2p_order_cancel {
     my ($client, %param) = @_;
 
-    my $order_id = $param{order_id} // die +{error_code => 'OrderNotFound'};
-    my $order = $client->_p2p_orders(id => $order_id)->[0];
+    my $id = $param{id} // die +{error_code => 'OrderNotFound'};
+    my $order = $client->_p2p_orders(id => $id)->[0];
 
     die +{error_code => 'OrderNotFound'} unless $order;
     die +{error_code => 'OrderNoEditExpired'}    if $order->{is_expired};
@@ -2117,8 +2124,8 @@ sub p2p_order_cancel {
     my $ownership_type = _order_ownership_type($client, $order);
 
     die +{error_code => 'PermissionDenied'}
-        unless ($ownership_type eq 'client' and $order->{offer_type} eq 'buy')
-        or ($ownership_type eq 'agent' and $order->{offer_type} eq 'sell');
+        unless ($ownership_type eq 'client' and $order->{type} eq 'buy')
+        or ($ownership_type eq 'advertiser' and $order->{type} eq 'sell');
     die +{error_code => 'PermissionDenied'} unless $order->{status} eq 'pending';
 
     my $escrow    = $client->p2p_escrow;
@@ -2128,22 +2135,22 @@ sub p2p_order_cancel {
     return $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?, ?, ?)',
-                undef, $order_id, $escrow->loginid, $param{source}, $client->loginid, $timed_out, $txn_time);
+                undef, $id, $escrow->loginid, $param{source}, $client->loginid, $timed_out, $txn_time);
         });
 }
 
 =head2 expire_p2p_order
 
-    Expire order in different states.
-    Method returns order data in case if state of order was changed.
+Expire order in different states.
+Method returns order data in case if state of order was changed.
 
 =cut
 
 sub p2p_expire_order {
     my ($client, %param) = @_;
 
-    my $order_id = $param{order_id} // die "no order_id provided to p2p_expire_order";
-    my $order = $client->_p2p_orders(id => $order_id)->[0];
+    my $id = $param{id} // die "no id provided to p2p_expire_order";
+    my $order = $client->_p2p_orders(id => $id)->[0];
     die +{error_code => 'OrderNotFound'} unless $order;
 
     my $status = $order->{status};
@@ -2159,7 +2166,7 @@ sub p2p_expire_order {
     return $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?, ?, ?)',
-                undef, $order->{order_id}, $escrow->loginid, $param{source}, $param{staff}, $timed_out, $txn_time);
+                undef, $order->{id}, $escrow->loginid, $param{source}, $param{staff}, $timed_out, $txn_time);
         });
 }
 
@@ -2190,28 +2197,28 @@ sub p2p_escrow {
 
 =head1 Private P2P methods
 
-=head2 _p2p_agents
+=head2 _p2p_advertisers
 
-Returns a list of agents filtered by id and/or loginid.
+Returns a list of advertisers filtered by id and/or loginid.
 
 =cut
 
-sub _p2p_agents {
+sub _p2p_advertisers {
     my ($client, %param) = @_;
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectall_arrayref('SELECT * FROM p2p.agent_list(?, ?)', {Slice => {}}, @param{qw/id loginid/});
+            $_->selectall_arrayref('SELECT * FROM p2p.advertiser_list(?, ?)', {Slice => {}}, @param{qw/id loginid/});
         });
 }
 
-=head2 _p2p_offers
+=head2 _p2p_adverts
 
-Gets offers from DB
+Gets adverts from DB
 
 =cut
 
-sub _p2p_offers {
+sub _p2p_adverts {
     my ($client, %param) = @_;
 
     my ($limit, $offset) = @param{qw/limit offset/};
@@ -2221,16 +2228,18 @@ sub _p2p_offers {
     $client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.offer_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
-                @param{qw/id account_currency agent_id agent_loginid is_active type can_order agent_active agent_authenticated limit offset/});
+                @param{
+                    qw/id account_currency advertiser_id advertiser_loginid is_active type can_order advertiser_is_listed advertiser_is_approved limit offset/
+                });
         }) // [];
 }
 
 =head2 _p2p_orders
 
 Gets orders from DB.
-$param{loginid} will match on offer agent loginid or order client loginid.
+$param{loginid} will match on advert advertiser loginid or order client loginid.
 $param{status} if provided must by an arrayref.
 
 =cut
@@ -2251,7 +2260,7 @@ sub _p2p_orders {
             $_->selectall_arrayref(
                 'SELECT * FROM p2p.order_list(?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
-                @param{qw/id offer_id loginid status limit offset/});
+                @param{qw/id advert_id loginid status limit offset/});
         }) // [];
 }
 
@@ -2266,7 +2275,7 @@ sub _order_ownership_type {
 
     return 'client' if $order_info->{client_loginid} eq $client->loginid;
 
-    return 'agent' if $order_info->{agent_loginid} eq $client->loginid;
+    return 'advertiser' if $order_info->{advertiser_loginid} eq $client->loginid;
 
     return '';
 }
@@ -2286,18 +2295,18 @@ sub _client_buy_confirm {
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order_info->{order_id}, 1);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order_info->{id}, 1);
         });
 }
 
-=head2 _agent_buy_confirm
+=head2 _advertiser_buy_confirm
 
-Sets order agent-confirmed = true and completes the order in a single transcation.
+Sets order advertiser_confirmed = true and completes the order in a single transaction.
 Completing the order moves funds from escrow to client.
 
 =cut
 
-sub _agent_buy_confirm {
+sub _advertiser_buy_confirm {
     my ($client, $order_info, $source) = @_;
 
     die +{error_code => 'OrderAlreadyConfirmed'}       if $order_info->{status} eq 'completed';
@@ -2307,20 +2316,16 @@ sub _agent_buy_confirm {
     my $txn_time = Date::Utility->new->datetime;
     return $client->db->dbic->txn(
         fixup => sub {
-            $_->do('SELECT * FROM p2p.order_confirm_agent(?, ?)', undef, $order_info->{order_id}, 1);
-            return $_->selectrow_hashref(
-                'SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?)',
-                undef, $order_info->{order_id},
-                $escrow->loginid, $source, $client->loginid, $txn_time
-            );
+            $_->do('SELECT * FROM p2p.order_confirm_advertiser(?, ?)', undef, $order_info->{id}, 1);
+            return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?)',
+                undef, $order_info->{id}, $escrow->loginid, $source, $client->loginid, $txn_time);
         });
-
 }
 
 =head2 _client_sell_confirm
 
-Sets order client_confirmed = true and completes the order in a single transcation.
-Completing the order moves funds from escrow to agent.
+Sets order client_confirmed = true and completes the order in a single transaction.
+Completing the order moves funds from escrow to advertiser.
 
 =cut
 
@@ -2334,22 +2339,19 @@ sub _client_sell_confirm {
     my $txn_time = Date::Utility->new->datetime;
     return $client->db->dbic->txn(
         fixup => sub {
-            $_->do('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order_info->{order_id}, 1);
-            return $_->selectrow_hashref(
-                'SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?)',
-                undef, $order_info->{order_id},
-                $escrow->loginid, $source, $client->loginid, $txn_time
-            );
+            $_->do('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order_info->{id}, 1);
+            return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?)',
+                undef, $order_info->{id}, $escrow->loginid, $source, $client->loginid, $txn_time);
         });
 }
 
-=head2 _agent_sell_confirm
+=head2 _advertiser_sell_confirm
 
-Sets order agent confirmed = true and status = buyer-confirmed
+Sets order advertiser confirmed = true and status = buyer-confirmed
 
 =cut
 
-sub _agent_sell_confirm {
+sub _advertiser_sell_confirm {
     my ($client, $order_info) = @_;
 
     die +{error_code => 'OrderAlreadyConfirmed'}       if $order_info->{status} =~ /^(buyer-confirmed|completed)$/;
@@ -2357,76 +2359,86 @@ sub _agent_sell_confirm {
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_agent(?, ?)', undef, $order_info->{order_id}, 1);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_advertiser(?, ?)', undef, $order_info->{id}, 1);
         });
 
 }
 
-=head2 _agent_details
+=head2 _advertiser_details
 
-Prepares agent fields for client display.
-Takes and returns single agent.
+Prepares advertiser fields for client display.
+Takes and returns single advertiser.
 
 =cut
 
-sub _agent_details {
-    my ($client, $agent) = @_;
+sub _advertiser_details {
+    my ($client, $advertiser) = @_;
 
     return +{
-        agent_id       => $agent->{id},
-        agent_name     => $agent->{name},
-        client_loginid => $agent->{client_loginid},
-        created_time   => Date::Utility->new($agent->{created_time})->epoch,
-        is_active      => $agent->{is_active},
-        is_approved    => $agent->{is_approved},
+        id             => $advertiser->{id},
+        name           => $advertiser->{name},
+        client_loginid => $advertiser->{client_loginid},
+        created_time   => Date::Utility->new($advertiser->{created_time})->epoch,
+        is_approved    => $advertiser->{is_approved},
+        is_listed      => $advertiser->{is_listed},
     };
 }
 
-=head2 _offer_details
+=head2 _advert_details
 
-Prepares offer fields for client display.
-Takes and returns an arrayref of offers.
+Prepares advert fields for client display.
+Takes and returns an arrayref of advert.
 
 =cut
 
-sub _offer_details {
+sub _advert_details {
     my ($client, $list, $amount) = @_;
 
     my @results;
     my $max_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
 
-    for my $offer (@$list) {
-
-        my $result;
+    for my $advert (@$list) {
         my $effective_max =
-            List::Util::min($offer->{remaining}, $offer->{max_amount}, convert_currency($max_order, 'USD', $offer->{account_currency}));
+            List::Util::min($advert->{remaining}, $advert->{max_order_amount}, convert_currency($max_order, 'USD', $advert->{account_currency}));
 
-        $result->{$_} = $offer->{$_}
-            for qw/type account_currency agent_id agent_name country is_active local_currency method offer_description offer_id/;
-
-        $result->{offer_description} //= '';
-
-        $result->{rate}                     = $offer->{rate};
-        $result->{rate_display}             = _p2p_rate_format($offer->{rate});
-        $result->{price}                    = financialrounding('amount', $offer->{local_currency}, $offer->{rate} * ($amount // 1));
-        $result->{price_display}            = formatnumber('amount', $offer->{local_currency}, $offer->{rate} * ($amount // 1));
-        $result->{min_amount_limit}         = financialrounding('amount', $offer->{account_currency}, $offer->{min_amount});
-        $result->{min_amount_limit_display} = formatnumber('amount', $offer->{account_currency}, $offer->{min_amount});
-        $result->{max_amount_limit}         = financialrounding('amount', $offer->{account_currency}, $effective_max);
-        $result->{max_amount_limit_display} = formatnumber('amount', $offer->{account_currency}, $effective_max);
-        $result->{created_time}             = Date::Utility->new($offer->{created_time})->epoch;
-
-        # only offer owner can see these fields
-        if ($client->loginid eq $offer->{agent_loginid}) {
-            $result->{amount} = financialrounding('amount', $offer->{account_currency}, $offer->{amount});
-            $result->{amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{amount});
-            $result->{remaining_amount} = financialrounding('amount', $offer->{account_currency}, $offer->{remaining});
-            $result->{remaining_amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{remaining});
-            $result->{min_amount} = financialrounding('amount', $offer->{account_currency}, $offer->{min_amount});
-            $result->{min_amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{min_amount});
-            $result->{max_amount} = financialrounding('amount', $offer->{account_currency}, $offer->{max_amount});
-            $result->{max_amount_display} = formatnumber('amount', $offer->{account_currency}, $offer->{max_amount});
-        }
+        my $result = {
+            account_currency  => $advert->{account_currency},
+            country           => $advert->{country},
+            created_time      => Date::Utility->new($advert->{created_time})->epoch,
+            description       => $advert->{description} // '',
+            id                => $advert->{id},
+            is_active         => $advert->{is_active},
+            local_currency    => $advert->{local_currency},
+            payment_method    => $advert->{payment_method},
+            type              => $advert->{type},
+            counterparty_type => P2P_COUNTERYPARTY_TYPE_MAPPING->{$advert->{type}},
+            price             => financialrounding('amount', $advert->{local_currency}, $advert->{rate} * ($amount // 1)),
+            price_display     => formatnumber('amount', $advert->{local_currency}, $advert->{rate} * ($amount // 1)),
+            rate              => $advert->{rate},
+            rate_display      => _p2p_rate_format($advert->{rate}),
+            min_order_amount_limit         => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
+            min_order_amount_limit_display => formatnumber('amount',      $advert->{account_currency}, $advert->{min_order_amount}),
+            max_order_amount_limit         => financialrounding('amount', $advert->{account_currency}, $effective_max),
+            max_order_amount_limit_display => formatnumber('amount',      $advert->{account_currency}, $effective_max),
+            (
+                $client->loginid eq $advert->{advertiser_loginid}    # only advert owner can see these fields
+                ? (
+                    amount                   => financialrounding('amount', $advert->{account_currency}, $advert->{amount}),
+                    amount_display           => formatnumber('amount',      $advert->{account_currency}, $advert->{amount}),
+                    min_order_amount         => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
+                    min_order_amount_display => formatnumber('amount',      $advert->{account_currency}, $advert->{min_order_amount}),
+                    max_order_amount         => financialrounding('amount', $advert->{account_currency}, $advert->{max_order_amount}),
+                    max_order_amount_display => formatnumber('amount',      $advert->{account_currency}, $advert->{max_order_amount}),
+                    remaining_amount         => financialrounding('amount', $advert->{account_currency}, $advert->{remaining}),
+                    remaining_amount_display => formatnumber('amount',      $advert->{account_currency}, $advert->{remaining}),
+                    )
+                : ()
+            ),
+            advertiser_details => {
+                id   => $advert->{advertiser_id},
+                name => $advert->{advertiser_name},
+            },
+        };
 
         push @results, $result;
     }
@@ -2443,29 +2455,35 @@ Takes and returns an arrayref of orders.
 
 sub _order_details {
     my ($client, $list) = @_;
-
     my @results;
 
     for my $order (@$list) {
-        my $result;
-        $result->{$_} = $order->{$_}
-            for qw/offer_type account_currency agent_id agent_name local_currency offer_description order_description offer_id order_id status/;
-
-        # Temporary, to be removed by https://trello.com/c/DC2zrIKR
-        delete $result->{offer_method};
-
-        $result->{type} = delete $result->{offer_type};
-        $result->{offer_description} //= '';
-        $result->{order_description} //= '';
-
-        $result->{amount} = financialrounding('amount', $order->{account_currency}, $order->{order_amount});
-        $result->{amount_display} = formatnumber('amount', $order->{account_currency}, $order->{order_amount});
-        $result->{expiry_time}    = Date::Utility->new($order->{expire_time})->epoch;
-        $result->{created_time}   = Date::Utility->new($order->{created_time})->epoch;
-        $result->{rate}           = $order->{offer_rate};
-        $result->{rate_display}   = _p2p_rate_format($order->{offer_rate});
-        $result->{price}          = financialrounding('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
-        $result->{price_display}  = formatnumber('amount', $order->{local_currency}, $order->{offer_rate} * $order->{order_amount});
+        my $result = +{
+            account_currency   => $order->{account_currency},
+            created_time       => Date::Utility->new($order->{created_time})->epoch,
+            description        => $order->{description} // '',
+            expiry_time        => Date::Utility->new($order->{expire_time})->epoch,
+            id                 => $order->{id},
+            is_incoming        => $client->loginid eq $order->{advertiser_loginid} ? 1 : 0,
+            local_currency     => $order->{local_currency},
+            amount             => financialrounding('amount', $order->{account_currency}, $order->{amount}),
+            amount_display     => formatnumber('amount', $order->{account_currency}, $order->{amount}),
+            price              => financialrounding('amount', $order->{local_currency}, $order->{advert_rate} * $order->{amount}),
+            price_display      => formatnumber('amount', $order->{local_currency}, $order->{advert_rate} * $order->{amount}),
+            rate               => $order->{advert_rate},
+            rate_display       => _p2p_rate_format($order->{advert_rate}),
+            status             => $order->{status},
+            type               => $order->{type},
+            advertiser_details => {
+                id   => $order->{advertiser_id},
+                name => $order->{advertiser_name},
+            },
+            advert_details => {
+                id          => $order->{advert_id},
+                description => $order->{advert_description},
+                type        => $order->{advert_type},
+            },
+        };
 
         push @results, $result;
     }
@@ -2473,16 +2491,16 @@ sub _order_details {
     return \@results;
 }
 
-=head2 _validate_offer_amounts
+=head2 _validate_advert_amounts
 
-Validates offer amounts for p2p_offer_create.
+Validates advert amounts for p2p_advert_create.
 
 =cut
 
-sub _validate_offer_amounts {
+sub _validate_advert_amounts {
     my %param = @_;
 
-    if (my @invalid_fields = grep { ($param{$_} // 0) <= 0 } (qw(amount max_amount min_amount rate))) {
+    if (my @invalid_fields = grep { ($param{$_} // 0) <= 0 } (qw(amount max_order_amount min_order_amount rate))) {
         die +{
             error_code => 'InvalidNumericValue',
             details    => {fields => \@invalid_fields},
@@ -2490,18 +2508,18 @@ sub _validate_offer_amounts {
     }
 
     die +{error_code => 'MaximumExceeded'}
-        if in_usd($param{amount}, uc $param{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_offer;
+        if in_usd($param{amount}, uc $param{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert;
 
     my $maximum_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
-    if (in_usd($param{max_amount}, uc $param{account_currency}) > $maximum_order) {
+    if (in_usd($param{max_order_amount}, uc $param{account_currency}) > $maximum_order) {
         die +{
             error_code     => 'MaxPerOrderExceeded',
             message_params => [$param{account_currency}, convert_currency($maximum_order, 'USD', $param{account_currency})],
         };
     }
 
-    die +{error_code => 'InvalidMinMaxAmount'} unless $param{min_amount} <= $param{max_amount};
-    die +{error_code => 'InvalidMaxAmount'}    unless $param{max_amount} <= $param{amount};
+    die +{error_code => 'InvalidMinMaxAmount'} unless $param{min_order_amount} <= $param{max_order_amount};
+    die +{error_code => 'InvalidMaxAmount'}    unless $param{max_order_amount} <= $param{amount};
 
     return;
 }
