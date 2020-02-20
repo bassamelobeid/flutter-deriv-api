@@ -26,20 +26,20 @@ use Carp;
     }
 }
 
-sub create_agent {
+sub create_advertiser {
     my %param = @_;
 
     my $balance = $param{balance} // 0;
 
-    my $agent = create_client($balance);
+    my $advertiser = create_client($balance);
 
-    $agent->p2p_agent_create($param{agent_name} // 'test agent');
+    $advertiser->p2p_advertiser_create($param{name} // 'test advertiser');
 
-    $agent->account('USD');
+    $advertiser->account('USD');
 
-    $agent->p2p_agent_update(is_approved => 1);
+    $advertiser->p2p_advertiser_update(is_approved => 1);
 
-    return $agent;
+    return $advertiser;
 }
 
 sub create_client {
@@ -54,40 +54,41 @@ sub create_client {
     return $client;
 }
 
-sub create_offer {
+sub create_advert {
     my %param = @_;
 
-    $param{amount}            //= 100;
-    $param{offer_description} //= 'Test offer';
-    $param{type}              //= 'buy';
-    $param{rate}              //= 1;
-    $param{balance}           //= $param{type} eq 'buy' ? $param{amount} : 0;
-    $param{min_amount}        //= 0.1;
-    $param{max_amount}        //= 100;
+    $param{amount}           //= 100;
+    $param{description}      //= 'Test advert';
+    $param{type}             //= 'buy';
+    $param{rate}             //= 1;
+    $param{balance}          //= $param{type} eq 'sell' ? $param{amount} : 0;
+    $param{min_order_amount} //= 0.1;
+    $param{max_order_amount} //= 100;
+    $param{payment_method}   //= 'bank_transfer';
 
-    my $agent = create_agent(balance => $param{balance});
+    my $advertiser = create_advertiser(balance => $param{balance});
 
-    my $offer = $agent->p2p_offer_create(%param);
+    my $advert = $advertiser->p2p_advert_create(%param);
 
-    return $agent, $offer;
+    return $advertiser, $advert;
 }
 
 sub create_order {
     my %param = @_;
 
-    my $offer_id = $param{offer_id} || croak 'offer_id is required';
-    my $amount            = $param{amount}            // 100;
-    my $expiry            = $param{expiry}            // 7200;
-    my $order_description = $param{order_description} // 'Test order';
-    my $balance           = $param{balance};
+    my $advert_id = $param{advert_id} || croak 'advert_id is required';
+    my $amount      = $param{amount}      // 100;
+    my $expiry      = $param{expiry}      // 7200;
+    my $description = $param{description} // 'Test order';
+    my $balance     = $param{balance};
 
     my $client = create_client($balance);
 
     my $order = $client->p2p_order_create(
-        offer_id          => $offer_id,
-        amount            => $amount,
-        expiry            => $expiry,
-        order_description => $order_description
+        advert_id   => $advert_id,
+        amount      => $amount,
+        expiry      => $expiry,
+        description => $description
     );
 
     return $client, $order;

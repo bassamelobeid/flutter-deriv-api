@@ -97,23 +97,25 @@ struct Contract => [qw(
         )];
 
 struct P2POrder => [qw(
-        rate_display
-        offer_id
-        offer_description
-        expiry_time
         amount
-        rate
-        agent_name
-        agent_id
-        status
-        local_currency
-        order_id
         amount_display
-        price
         created_time
+        description
+        expiry_time
+        id
+        local_currency
+        price
         price_display
-        order_description
+        rate
+        rate_display
+        status
         type
+        advert_id
+        advert_description
+        advertiser_id
+        advertiser_name
+        is_incoming
+        advert_type
         )];
 
 my $history_count = 10;
@@ -255,33 +257,34 @@ for my $ul (@underlying) {
     }
 }
 
-my (@p2p_orders, $order_id, $offer_id);
+my (@p2p_orders, $order_id, $advert_id);
 for my $type (qw(buy sell)) {
-    $offer_id++;
+    $advert_id++;
     for my $status (qw(pending)) {
         $order_id++;
         my $rate   = 1 + 10 * rand;
         my $amount = 10 + 10 * rand;
         my $price  = $rate * $amount;
         push @p2p_orders, P2POrder(
-            rate_display      => "$rate",
-            offer_id          => "$offer_id",
-            offer_description => 'Please contact via whatsapp 1234',
-            expiry_time       => (time + 30),
-            amount            => $amount,
-            rate              => $rate,
-            agent_name        => 'name',
-            agent_id          => '1',
-            status            => $status,
-            local_currency    => 'IDR',
-            order_id          => $order_id,
-            amount_display    => "$amount",
-            price             => $price,
-            created_time      => (time - 30),
-            price_display     => "$price",
-            order_description => 'Тестовый заказ',        # to check UTF decoding
-            type              => $type,
-        );
+            amount             => $amount,
+            amount_display     => "$amount",
+            created_time       => (time - 30),
+            description        => 'Тестовый заказ',        # to check UTF decoding
+            expiry_time        => (time + 30),
+            id                 => $order_id,
+            local_currency     => 'IDR',
+            price              => $price,
+            price_display      => "$price",
+            rate               => $rate,
+            rate_display       => "$rate",
+            status             => $status,
+            type               => $type,
+            advert_id          => "$advert_id",
+            advert_type        => $type eq 'buy' ? 'sell' : 'buy',
+            advert_description => 'Please contact via whatsapp 1234',
+            advertiser_id      => '1',
+            advertiser_name    => 'name',
+            is_incoming => sprintf("%.0f\n", rand(1)));
     }
 }
 
