@@ -117,9 +117,9 @@ payments:
               description: 'Limits the numbers of daily purchases per day'
               default: 3
               global: 1
-            maximum_offer:
+            maximum_advert:
               isa: Num
-              description: 'Maximum amount per offer (in USD)'
+              description: 'Maximum amount per advert (in USD)'
               default: 100
               global: 1
             maximum_order:
@@ -512,13 +512,13 @@ system:
               isa: Bool
               default: 0
               global: 1
-marketing: 
+marketing:
     description:  "Marketing Bonus Settings"
     isa: section
     contains:
         bonus_dubious_countries:
             description: "Countries where Bonuses must be more thoroughly vetted"
-            isa: ArrayRef 
+            isa: ArrayRef
             default: ['India', 'Indonesia']
             global: 1
         bonus_deposit_amount:
@@ -530,9 +530,9 @@ marketing:
             description: "The deposit should  have been made with in this many days"
             isa: Num
             default: 30
-            global: 1 
+            global: 1
         bonus_sign_up_age:
             description: "The sign up should  have been done with in this many days"
             isa: Num
             default: 30
-            global: 1 
+            global: 1
