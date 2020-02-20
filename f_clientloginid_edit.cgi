@@ -24,6 +24,7 @@ use BOM::User::Client;
 use BOM::Config::RedisReplicated;
 use BOM::Backoffice::Request qw(request);
 use BOM::User;
+use BOM::User::Utility;
 use BOM::User::FinancialAssessment;
 use BOM::User::Password;
 use BOM::Platform::Client::IDAuthentication;
@@ -63,6 +64,10 @@ my $dbloc = BOM::Config::Runtime->instance->app_config->system->directory->db;
 use constant INTERNAL_TRANSFER_FIAT_CRYPTO_PREFIX => 'INTERNAL::TRANSFER::FIAT::CRYPTO::USER::';
 
 my %details = get_client_details(\%input, 'backoffice/f_clientloginid_edit.cgi');
+
+my @expirable_doctypes = (BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES, BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES_DEPRECATED);
+my @poi_doctypes       = BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES;
+my @no_date_doctypes   = qw(other);
 
 my $client          = $details{client};
 my $user            = $details{user};
@@ -251,10 +256,15 @@ if ($input{whattodo} eq 'uploadID') {
     my $s3_client =
         BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
     foreach my $i (1 .. 4) {
-        my $doctype         = $cgi->param('doctype_' . $i);
+        my $doctype      = $cgi->param('doctype_' . $i);
+        my $is_poi       = any { $_ eq $doctype } @poi_doctypes;
+        my $is_expirable = any { $_ eq $doctype } @expirable_doctypes;
+        my $no_date_doc  = any { $_ eq $doctype } @no_date_doctypes;
+
         my $filetoupload    = $cgi->upload('FILE_' . $i);
         my $page_type       = $cgi->param('page_type_' . $i);
-        my $expiration_date = $cgi->param('expiration_date_' . $i);
+        my $issue_date      = $is_expirable || $no_date_doc ? undef : $cgi->param('issue_date_' . $i);
+        my $expiration_date = !$is_expirable || $no_date_doc ? undef : $cgi->param('expiration_date_' . $i);
         my $document_id     = $input{'document_id_' . $i} // '';
         my $comments        = $input{'comments_' . $i} // '';
 
@@ -263,7 +273,22 @@ if ($input{whattodo} eq 'uploadID') {
         if (   $expiration_date
             && $expiration_date ne (eval { Date::Utility->new($expiration_date)->date_yyyymmdd } // ''))
         {
-            print "<p style=\"color:red; font-weight:bold;\">Expiration date \"$expiration_date\" is not a valid date.</p>";
+            print qq[<p style="color:red; font-weight:bold;">Expiration date "$expiration_date" is not a valid date.</p>];
+            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+        } elsif (
+            $issue_date
+            && $issue_date ne (
+                eval {
+                    Date::Utility->new($issue_date)->date_yyyymmdd;
+                } // ''
+            ))
+        {
+            print qq[<p style="color:red; font-weight:bold;">Issue date "$issue_date" is not a valid date.</p>];
+            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+        }
+
+        if ($is_poi and not $expiration_date) {
+            print qq[<p style="color:red; font-weight:bold;">Expiration date is missing for the POI document $doctype.</p>];
             code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
         }
 
@@ -293,9 +318,11 @@ if ($input{whattodo} eq 'uploadID') {
             $upload_info = $client->db->dbic->run(
                 ping => sub {
                     $_->selectrow_hashref(
-                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)',
+                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?)',
                         undef, $loginid, $doctype, $docformat, $expiration_date || undef,
-                        $document_id, $file_checksum, $comments, $page_type || '',
+                        $document_id, $file_checksum, $comments,
+                        $page_type  || '',
+                        $issue_date || undef
                     );
                 });
             die 'Document already exists.' unless $upload_info;
@@ -641,13 +668,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         CLIENT_KEY:
         foreach my $key (keys %input) {
-            if (my ($document_field, $id) = $key =~ /^(expiration_date|comments|document_id)_([0-9]+)$/) {
-                my $val = ($document_field eq 'expiration_date' && $input{$key} eq '') ? 'clear' : $input{$key};
+            if (my ($document_field, $id) = $key =~ /^(expiration_date|issue_date|comments|document_id)_([0-9]+)$/) {
+                my $val = ($document_field =~ /^(expiration_date|issue_date)$/ && $input{$key} eq '') ? 'clear' : $input{$key};
                 next CLIENT_KEY unless $val && update_needed($client, $cli, 'client_authentication_document', \%clients_updated);
                 my ($doc) = grep { $_->id eq $id } $cli->client_authentication_document;    # Rose
                 next CLIENT_KEY unless $doc;
                 my $new_value;
-                if ($document_field eq 'expiration_date') {
+                if ($document_field =~ /^(expiration_date|issue_date)$/) {
                     try {
                         $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
                     }
@@ -1110,10 +1137,13 @@ if (not $client->is_virtual) {
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_edit_upload_doc.html.tt',
         {
-            self_post => $self_post,
-            broker    => $encoded_broker,
-            loginid   => $encoded_loginid,
-            countries => request()->brand->countries_instance->countries,
+            self_post          => $self_post,
+            broker             => $encoded_broker,
+            loginid            => $encoded_loginid,
+            countries          => request()->brand->countries_instance->countries,
+            poi_doctypes       => join('|', @poi_doctypes),
+            expirable_doctypes => join('|', @expirable_doctypes),
+            no_date_doctypes   => join('|', @no_date_doctypes),
         });
 }
 
@@ -1165,7 +1195,8 @@ sub update_fa {
     return BOM::User::FinancialAssessment::update_financial_assessment($client->user, $args);
 }
 
-my $built_fa = BOM::User::FinancialAssessment::build_financial_assessment(BOM::User::FinancialAssessment::decode_fa($client->financial_assessment()));
+my $built_fa =
+    BOM::User::FinancialAssessment::build_financial_assessment(BOM::User::FinancialAssessment::decode_fa($client->financial_assessment()));
 my $fa_score = $built_fa->{scores};
 
 for my $section_name (qw(trading_experience financial_information)) {
