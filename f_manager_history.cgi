@@ -25,6 +25,7 @@ use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
 use BOM::CTC::Currency;
+use BOM::Cryptocurrency::Helper qw( prioritize_address );
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -245,13 +246,7 @@ if (@trxns) {
 
 if ($action && $action eq 'prioritize') {
     my $prioritize_address = request()->param('address');
-    my $status             = $currency_wrapper->prioritize_address($prioritize_address);
-
-    if ($status) {
-        print "<p style='color:green'><strong>SUCCESS: Requested priority</strong></p>";
-    } else {
-        print "<p style='color:red'><strong>ERROR: can't prioritize address</strong></p>";
-    }
+    prioritize_address($currency_wrapper, $prioritize_address);
 }
 
 code_exit_BO();
