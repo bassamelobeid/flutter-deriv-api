@@ -96,6 +96,11 @@
                "minimum" : 1000000000,
                "type" : "integer",
                "maximum" : 9999999999
+            },
+            "expiry_time" : {
+               "minimum" : 1000000000,
+               "type" : "integer",
+               "maximum" : 9999999999
             }
          }
       },
