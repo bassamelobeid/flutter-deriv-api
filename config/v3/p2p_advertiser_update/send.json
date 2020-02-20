@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "P2P Agent Update (request)",
-    "description": "Update the information of the P2P agent for the current account. Can only be used by an approved P2P agent.",
+    "title": "P2P Advertiser Update (request)",
+    "description": "Update the information of the P2P advertiser for the current account. Can only be used by an approved P2P advertiser.",
     "hidden": 1,
     "type": "object",
     "auth_required": 1,
@@ -10,28 +10,28 @@
     ],
     "additionalProperties": false,
     "required": [
-        "p2p_agent_update"
+        "p2p_advertiser_update"
     ],
     "properties": {
-        "p2p_agent_update": {
+        "p2p_advertiser_update": {
             "description": "Must be 1",
             "type": "integer",
             "enum": [
                 1
             ]
         },
-        "agent_name": {
-            "description": "[Optional] The agent's displayed name.",
-            "type": "string",
-            "pattern": "\\w+"
-        },
-        "is_active": {
-            "description": "[Optional] The activation status of the agent.",
+        "is_listed": {
+            "description": "[Optional] Used to set if the advertiser's adverts could be listed. When `0`, adverts won't be listed regardless of they are active or not. This doesn't change the `is_active` of each individual advert.",
             "type": "integer",
             "enum": [
                 0,
                 1
             ]
+        },
+        "name": {
+            "description": "[Optional] The advertiser's displayed name.",
+            "type": "string",
+            "pattern": "\\w+"
         },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",

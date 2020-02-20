@@ -1,53 +1,61 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "P2P Agent Update (response)",
-    "description": "Returns latest information of the agent.",
+    "title": "P2P Advertiser Information (response)",
+    "description": "Returns information about the given advertiser ID.",
     "type": "object",
     "required": [
         "echo_req",
         "msg_type"
     ],
     "properties": {
-        "p2p_agent_update": {
-            "title": "p2p_agent_update",
-            "description": "P2P agent update",
+        "p2p_advertiser_info": {
+            "title": "p2p_advertiser_info",
+            "description": "P2P advertiser information.",
             "type": "object",
             "additionalProperties": false,
+            "required": [
+                "client_loginid",
+                "created_time",
+                "id",
+                "is_approved",
+                "is_listed",
+                "name"
+            ],
             "properties": {
-                "agent_id": {
-                    "description": "The agent's identification number.",
-                    "type": "string"
-                },
-                "agent_name": {
-                    "description": "The agent's displayed name.",
-                    "type": "string"
-                },
                 "client_loginid": {
-                    "description": "The loginid of the agent.",
+                    "description": "The loginid of the advertiser.",
                     "type": "string",
                     "examples": [
                         "CR12345"
                     ]
                 },
                 "created_time": {
-                    "description": "The epoch time that the client became an agent.",
+                    "description": "The epoch time that the client became an advertiser.",
                     "type": "integer"
                 },
-                "is_active": {
-                    "description": "The activation status of the agent.",
+                "id": {
+                    "description": "The advertiser's identification number.",
+                    "type": "string"
+                },
+                "is_approved": {
+                    "description": "The approval status of the advertiser.",
                     "type": "integer",
                     "enum": [
                         0,
                         1
                     ]
                 },
-                "is_approved": {
-                    "description": "The approval status of the agent.",
+                "is_listed": {
+                    "description": "Indicates if the advertiser's active adverts are listed. When `0`, adverts won't be listed regardless of they are active or not.",
                     "type": "integer",
                     "enum": [
                         0,
                         1
                     ]
+                },
+                "name": {
+                    "description": "The advertiser's displayed name.",
+                    "type": "string"
                 }
             }
         },
@@ -59,7 +67,7 @@
             "description": "Action name of the request made.",
             "type": "string",
             "enum": [
-                "p2p_agent_update"
+                "p2p_advertiser_info"
             ]
         },
         "req_id": {

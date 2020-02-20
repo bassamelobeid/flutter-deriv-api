@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "P2P Order Create (request)",
-    "description": "Creates a P2P order.",
+    "description": "Creates a P2P order for the specified advert.",
     "hidden": 1,
     "type": "object",
     "auth_required": 1,
@@ -10,8 +10,8 @@
     ],
     "additionalProperties": false,
     "required": [
+        "advert_id",
         "amount",
-        "offer_id",
         "p2p_order_create"
     ],
     "properties": {
@@ -22,19 +22,19 @@
                 1
             ]
         },
-        "amount": {
-            "description": "The amount of currency to be bought or sold.",
-            "type": "number"
-        },
-        "offer_id": {
-            "description": "The unique identifier for the offer to create an order against.",
-            "type": "string",
-            "pattern": "^([0-9]+)$"
-        },
-        "order_description": {
+        "description": {
             "description": "[Optional] Notes from the client.",
             "type": "string",
             "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{0,500}$"
+        },
+        "advert_id": {
+            "description": "The unique identifier for the advert to create an order against.",
+            "type": "string",
+            "pattern": "^([0-9]+)$"
+        },
+        "amount": {
+            "description": "The amount of currency to be bought or sold.",
+            "type": "number"
         },
         "subscribe": {
             "description": "[Optional] If set to 1, will send updates whenever there is an update to order",

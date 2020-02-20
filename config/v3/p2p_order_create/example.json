@@ -1,5 +1,5 @@
 {
     "p2p_order_create": 1,
-    "amount": 100,
-    "offer_id": "1234"
+    "advert_id": "1234",
+    "amount": 100
 }

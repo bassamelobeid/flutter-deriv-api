@@ -280,10 +280,10 @@ sub actions_config {
         ],
         ['exchange_rates', {stash_params => [qw/ exchange_rates base_currency /]}],
         # P2P cashier
-        ['p2p_offer_create'],
-        ['p2p_offer_update'],
-        ['p2p_offer_info'],
-        ['p2p_offer_list'],
+        ['p2p_advert_create'],
+        ['p2p_advert_update'],
+        ['p2p_advert_info'],
+        ['p2p_advert_list'],
         ['p2p_order_cancel'],
         ['p2p_order_confirm'],
         [
@@ -304,9 +304,9 @@ sub actions_config {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_orders,
             }
         ],
-        ['p2p_agent_info'],
-        ['p2p_agent_update'],
-        ['p2p_agent_offers'],
+        ['p2p_advertiser_info'],
+        ['p2p_advertiser_update'],
+        ['p2p_advertiser_adverts'],
     ];
 }
 

@@ -29,14 +29,15 @@
                 1
             ]
         },
+        "advert_id": {
+            "description": "[Optional] If present, lists orders applying to a specific advert.",
+            "type": "string",
+            "pattern": "^[0-9]+$"
+        },
         "limit": {
             "description": "[Optional] Used for paging.",
             "type": "integer",
             "default": 50
-        },
-        "offer_id": {
-            "description": "[Optional] If present, lists orders applying to a specific offer.",
-            "type": "string"
         },
         "offset": {
             "description": "[Optional] Used for paging.",

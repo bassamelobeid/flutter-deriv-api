@@ -17,8 +17,8 @@ This module mostly provides subscription hooks for updates on the various P2P en
 no indirect;
 
 use Binary::WebSocketAPI::v3::Subscription;
-use Binary::WebSocketAPI::v3::Subscription::P2P::Agent;
-use Binary::WebSocketAPI::v3::Subscription::P2P::Offer;
+use Binary::WebSocketAPI::v3::Subscription::P2P::Advertiser;
+use Binary::WebSocketAPI::v3::Subscription::P2P::Advert;
 use Binary::WebSocketAPI::v3::Subscription::P2P::Order;
 
 sub subscribe_orders {
@@ -40,8 +40,8 @@ sub subscribe_orders {
     return $result unless $args->{subscribe};
 
     my $order_id =
-          $msg_type eq 'p2p_order_info'   ? $args->{order_id}
-        : $msg_type eq 'p2p_order_create' ? $rpc_response->{order_id}
+          $msg_type eq 'p2p_order_info'   ? $args->{id}
+        : $msg_type eq 'p2p_order_create' ? $rpc_response->{id}
         :                                   undef;
 
     my $sub = Binary::WebSocketAPI::v3::Subscription::P2P::Order->new(
