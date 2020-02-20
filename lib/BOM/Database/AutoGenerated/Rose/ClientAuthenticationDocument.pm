@@ -22,6 +22,7 @@ __PACKAGE__->meta->setup(
         file_name                  => { type => 'varchar', length => 100 },
         checksum                   => { type => 'varchar', length => 40, not_null => 1 },
         upload_date                => { type => 'timestamp' },
+        issue_date            => { type => 'date' },
     ],
 
     primary_key_columns => [ 'id' ],
