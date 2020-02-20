@@ -240,7 +240,7 @@ sub get_settings_by_group {
                 payments.p2p.order_timeout
                 payments.p2p.escrow
                 payments.p2p.limits.count_per_day_per_client
-                payments.p2p.limits.maximum_offer
+                payments.p2p.limits.maximum_advert
                 payments.p2p.limits.maximum_order
                 payments.transfer_between_accounts.limits.between_accounts
                 payments.transfer_between_accounts.limits.MT5

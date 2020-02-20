@@ -1,15 +1,25 @@
+[%# if redirect from client details page %]
+[% IF show_notification %]
+<div class="grd-margin-bottom" style="color: blue;">
+    This line has already exist in <b>[% encoded_broker %].[% selected_untrusted_action %]</b> file.
+    <br />
+    To change the reason, kindly select from the dropdown selection list below and click 'Go'.
+    <br />
+</div>
+[% END %]
+
 <form action="[% edit_url %]" method=post>
 [% IF show_login %]
 Login ID : <input type="text" size="45" name="login_id" value="[% clientid %]"><br />
 [% ELSE %]
 <input type="hidden" name="login_id" value="[% clientid %]">
 [% END %]
-Action :-
+Action :
 <select name="untrusted_action_type">
 <option>--------------------SELECT AN ACTION--------------------</option>
 [% FOREACH r IN actions%]
     [% NEXT IF r.show_reason == 'no' %]
-    <option value="[% r.linktype %]"[% IF r.linktype == selected_untrusted_action %]selected[% END%]>[% r.comments %]</option>
+    <option value="[% r.linktype %]"[% IF r.linktype == selected_untrusted_action %]selected[% END %]>[% r.comments %]</option>
 [% END %]
 </select>
 <br>
@@ -31,3 +41,78 @@ Reason : <select id="untrusted_reasonlist" name="untrusted_reason">
 <input type="hidden" name="untrusted_action" value="insert_data">
 <br /><input type="submit" value="Go">
 </form>
+
+[% IF show_untrusted %]
+[%# display log differences for untrusted client section %]
+<hr>
+<div class="grd-margin-top">
+    <b>View changes to this untrusted client section.</b>
+    <br />
+    To view all the changes made to each status, kindly click on each of the link below:
+</div>
+
+<br />
+<table border="1" class="hover alternate collapsed">
+    <thead>
+        <tr>
+            <th>Untrusted section</th>
+            <th>Show the log changes</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Disabled/Closed Accounts</td>
+            <td>
+                <a href="[% request.url_for('backoffice/show_audit_trail.cgi', {broker => broker, category => 'client_status_disabled'}) %]">
+                    Disabled Logins
+                </a>
+            </td>
+            <td>Client cannot login into disabled account, if all user's accounts have been disabled, the system says: account is unavailable.</td>
+        </tr>
+        <tr>
+            <td>Cashier Lock Section</td>
+            <td>
+                <a href="[% request.url_for('backoffice/show_audit_trail.cgi', {broker => broker, category => 'client_status_cashier_locked'}) %]">
+                    Lock Cashier Logins
+                </a>
+            </td>
+            <td>Client cannot make a deposit or withdrawal.</td>
+        </tr>
+        <tr>
+            <td>Unwelcome loginIDs</td>
+            <td>
+                <a href="[% request.url_for('backoffice/show_audit_trail.cgi', {broker => broker, category => 'client_status_unwelcome'}) %]">
+                    Unwelcome Logins
+                </a>
+            </td>
+            <td>Client can log in, close an open position, make a withdrawal but cannot deposit or open a new trade.</td>
+        </tr>
+        <tr>
+            <td>Withdrawal locked</td>
+            <td>
+                <a href="[% request.url_for('backoffice/show_audit_trail.cgi', {broker => broker, category => 'client_status_withdrawal_locked'}) %]">
+                    Locked Withdrawals
+                </a>
+            </td>
+            <td>Client cannot submit new withdrawal requests.</td>
+        </tr>
+    </tbody>
+</table>
+<br />
+
+[%# view all disabled accounts details %]
+<hr>
+<div class="grd-margin-top">
+    <b>To view all disabled accounts and their a/c details</b>
+</div>
+<form action="[% request.url_for('backoffice/f_viewclientsubset.cgi') %]" method="get">
+    <input type="hidden" name="broker" value="[% encoded_broker %]">
+    <input type="hidden" name="show" value="disabled">
+    <br />
+    <input type="checkbox" id="chk_only_with_more_equity" value="1" checked name="onlylarge">
+    <label for="chk_only_with_more_equity">Only those with more than $5 equity</label>
+    <br />
+    <input type="submit" value="Monitor Disabled Accounts">
+</form>
+[% END %]

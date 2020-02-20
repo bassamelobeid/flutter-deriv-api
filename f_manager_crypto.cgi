@@ -62,6 +62,8 @@ my $view_action = request()->param('view_action') // '';
 # if show_all_pendings is true, all pending withdrawal transaction will be listed;
 #otherwise, those verified/rejected by the current user will be filtered out.
 my $show_all_pendings = request()->param('show_all_pendings');
+# show only one step authorised
+my $show_one_authorised = request()->param('show_one_authorised');
 
 code_exit_BO("Invalid currency.")
     if $currency !~ /^[A-Z]{3}$/;
@@ -142,7 +144,8 @@ my $display_transactions = sub {
             controller_url  => request()->url_for('backoffice/f_manager_crypto.cgi'),
             testnet         => BOM::Config::on_qa() ? 1 : 0,
             staff           => $staff,
-            show_all_pendings => $show_all_pendings // '',
+            show_all_pendings   => $show_all_pendings   // '',
+            show_one_authorised => $show_one_authorised // '',
         }) || die $tt->error();
 };
 
@@ -153,16 +156,17 @@ my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
     'backoffice/crypto_cashier/crypto_control_panel.html.tt',
     {
-        exchange_rate     => $exchange_rate,
-        controller_url    => request()->url_for('backoffice/f_manager_crypto.cgi'),
-        currency          => $currency,
-        all_crypto        => [@crypto_currencies],
-        cmd               => request()->param('command') // '',
-        broker            => $broker,
-        start_date        => $start_date->date_yyyymmdd,
-        end_date          => $end_date->date_yyyymmdd,
-        show_all_pendings => $show_all_pendings,
-        staff             => $staff,
+        exchange_rate       => $exchange_rate,
+        controller_url      => request()->url_for('backoffice/f_manager_crypto.cgi'),
+        currency            => $currency,
+        all_crypto          => [@crypto_currencies],
+        cmd                 => request()->param('command') // '',
+        broker              => $broker,
+        start_date          => $start_date->date_yyyymmdd,
+        end_date            => $end_date->date_yyyymmdd,
+        show_all_pendings   => $show_all_pendings,
+        show_one_authorised => $show_one_authorised,
+        staff               => $staff,
     }) || die $tt2->error();
 
 # Exchange rate should be populated according to supported cryptocurrencies.
@@ -228,6 +232,14 @@ if ($view_action eq 'withdrawals') {
                 $currency, $ctc_status
             );
         });
+
+    if ($show_one_authorised) {
+        #filter one step authorised txn
+        @$trxns = extract_by {
+            any { $_ } $_->{authorisers}->@*
+        }
+        @$trxns;
+    }
 
     unless ($show_all_pendings or $view_type ne 'pending') {
         #filter pending transactions already audited by the current staff

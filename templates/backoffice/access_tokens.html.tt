@@ -2,7 +2,7 @@
 .tokencell { padding-right: 15px; }
 </style>
 
-<table class="collapsed hover" border="1">
+<table class="collapsed hover alternate" border="1">
     <tr>
         <td class="small_header" colspan="6">ACTIVE ([% tokens.size %])</td>
     </tr>

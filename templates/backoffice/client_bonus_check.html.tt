@@ -73,7 +73,7 @@ table#client_edit td{
         <td class="small_header" colspan="2">#Client Details</td>
     </tr>
         [% in_dubious_country = bonus_dubious_countries.grep(country_residence) %]
-        [% IF in_dubious_country.size > 0 %] 
+        [% IF in_dubious_country.size > 0 %]
         <tr>
             <td colspan="2" class="warning">
              <b>This client's country means thorough checks should be performed before granting Bonus</b>
@@ -126,14 +126,14 @@ table#client_edit td{
      [% END %]
 
         <td>: <b>[% client.date_joined %] </b><span class="[% age_class %]">
-       [% SWITCH joined_days_ago %] 
+       [% SWITCH joined_days_ago %]
        [% CASE  0 %]
         ( Today )
-       [% CASE 1 %]     
+       [% CASE 1 %]
         ( Yesterday )
        [% CASE %]
          ([% joined_days_ago %] Days Ago )
-       [% END %] 
+       [% END %]
         </span>
        </td>
     </tr>
@@ -200,21 +200,21 @@ table#client_edit td{
     <tr>
         <td class="label">Expiry Date</td>
         <td>:
-                  
+
                 <span [%IF affiliate_promo.expiry_date.days_between(today) < 0 %] class="danger" [% END %] <b>[% affiliate_promo.expiry_date.date_ddmmmyyyy %]</b>.</span>
         </td>
     </tr>
     <tr>
         <td class="label">Amount</td>
         <td>:
-                  
+
                 <b>[% affiliate_promo.config.amount %]</b>
         </td>
     </tr>
 [% ELSE %]
       <td>No Deposit Bonus promo code present in MyAffiliates.</td>
     </tr>
-    <tr> 
+    <tr>
         <td class="label">Note:</td>
 
        <td>
@@ -233,7 +233,7 @@ table#client_edit td{
         </tr>
    </form>
  [% END %]
-    
+
     <tr>
         <td class="label">&nbsp;</td>
     </tr>
@@ -246,20 +246,20 @@ table#client_edit td{
         [% ELSE %]
         <tr>
         <form id="approve_reject" method="post" action="[% request.url_for('backoffice/f_promotional_processing.cgi') %]" >
-        <input type="hidden" value="[% request.url_for('backoffice/f_client_bonus_check.cgi') %]" name="back_url" /> 
+        <input type="hidden" value="[% request.url_for('backoffice/f_client_bonus_check.cgi') %]" name="back_url" />
             <td class="label">Notify Client </td>
             <td> <input type="checkbox" name="notify" checked /> </td>
             <tr>
             <td class="label">Approve or Reject Bonus</td>
-                
+
             <td>
                     <input type="hidden" name="loginid" value="[% client.loginid %]">
-                    
+
                     <button  type="submit" value="[% affiliate_promo.code %]" name="bonus_approve" onclick="return confirm('Approve Bonus for [% client.loginid %]?')"> Approve </button>
                     <button  type="submit" value="[% affiliate_promo.code %]"  name="bonus_reject" onclick="return confirm('Reject  Bonus for [% client.loginid %]?')"> Reject </button>
-                   
+
             </td>
-           </tr> 
+           </tr>
         </form>
         </tr>
         [% END %]
@@ -267,14 +267,14 @@ table#client_edit td{
     <tr>
         <td class="small_header" colspan="2">#CLIENT STATEMENT</td>
     </tr>
-    
+
     <tr>
-    
+
     <td colspan="2">
 [% IF transactions.size == 0 %]
  <p>[% l('There are no items during this period') %]</p>
 [% ELSE %]
- <table id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
+ <table id="statement-table" border="1" class="hover alternate collapsed grd-parent grd-grid-12 table-header grd-row-padding">
      <thead>
          <th>Date</th>
          <th></th>
@@ -283,6 +283,7 @@ table#client_edit td{
          <th>Credit</th>
          <th>Balance</th>
      </thead>
+     <tbody>
 
      [% FOREACH transaction IN transactions %]
      [% days_ago = transaction.date.days_between(today) * -1 %]
@@ -297,14 +298,13 @@ table#client_edit td{
             <td></td>
             <td > [% currency %] <b>[% formatnumber('amount', currency, transaction.amount) %]</b> </td>
          [% ELSE %]
-            <td>[% currency %] [% formatnumber('amount', currency, transaction.amount) %] </td> 
+            <td>[% currency %] [% formatnumber('amount', currency, transaction.amount) %] </td>
             <td></td>
          [% END %]
          <td>[% currency %] [% formatnumber('amount', currency, transaction.balance_after) %] </td>
      </tr>
-    [% END %]
+     [% END %]
 
+     </tbody>
  </table>
 [% END %]
-
-

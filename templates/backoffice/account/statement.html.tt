@@ -41,7 +41,7 @@
             <input name="broker" type=hidden value="[% broker %]">
             <input name="currency" type="hidden" value="[% currency %]">
             <div style = "padding-left: 195px;">
-                <input name="all_in_one_page" type="checkbox">Show All Transactions 
+                <input name="all_in_one_page" type="checkbox">Show All Transactions
                 <input name="depositswithdrawalsonly" type="checkbox" value="yes">Deposits and Withdrawals only
                 <input name="l" type="hidden" value="EN">
                 <input type=submit value="view">
@@ -49,9 +49,36 @@
         </form>
     </div>
 </div>
+
 <div>
-    [% client.name %] Email: [% client.email %] Country: [% client.country %] Residence: [% client.residence %] Tel: [% client.tel %] Date Joined: [% client.date_joined %]
+    <table class="hover collapsed" border="1">
+        <tr>
+            <th>Name</th>
+            <td>[% client.name %]</td>
+        </tr>
+        <tr>
+            <th>Email</th>
+            <td>[% client.email %]</td>
+        </tr>
+        <tr>
+            <th>Country</th>
+            <td>[% client.country %]</td>
+        </tr>
+        <tr>
+            <th>Residence</th>
+            <td>[% client.residence %]</td>
+        </tr>
+        <tr>
+            <th>Tel</th>
+            <td>[% client.tel %]</td>
+        </tr>
+        <tr>
+            <th>Date Joined</th>
+            <td>[% client.date_joined %]</td>
+        </tr>
+    </table>
 </div>
+
 <div class="grd-parent grd-grid-12 table-header grd-row-padding">
     <div class="grd-grid-10">
         <b>Balance on [% balance.date.date %]</b>
@@ -73,79 +100,80 @@
            href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date=>client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
     </div>
 </div>
-[% IF transactions.size == 0 %]
-<p>[% l('There are no items during this period') %]</p>
-[% ELSE %]
-<div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
-    <div class="grd-parent grd-grid-12 table-header grd-row-padding">
-        <div class="grd-grid-1">Date</div>
-        <div class="grd-grid-1">Staff</div>
-        <div class="grd-grid-1">App ID</div>
-        <div class="grd-grid-1">Ref.</div>
-        <div class="grd-grid-1">Payout</div>
-        <div class="grd-grid-4">Item</div>
-        <div class="grd-grid-1 right-aligned">Debit</div>
-        <div class="grd-grid-1 right-aligned">Credit</div>
-        <div class="grd-grid-1 right-aligned">Cash Balance</div>
-    </div>
+
+<table id="statement-table" class="hover alternate collapsed" border="1" width="100%">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Staff</th>
+            <th>App ID</th>
+            <th>Ref.</th>
+            <th>Payout</th>
+            <th>Item</th>
+            <th class="right-aligned">Debit</th>
+            <th class="right-aligned">Credit</th>
+            <th class="right-aligned">Cash Balance</th>
+        </tr>
+    </thead>
+    <tbody>
+
+    [% IF transactions.size == 0 %]
+    <td align="center" colspan="9" style="color: red;"><strong>[% l('There are no items during this period') %]</strong></td>
+    [% ELSE %]
 
     [% FOREACH transaction IN transactions %]
-    <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding" style="min-width:1000px">
-        <div class="grd-grid-1">[% transaction.date.datetime %]</div>
-        <div class="grd-grid-1">[% transaction.staff_loginid %]</div>
+    <tr>
+        <td>[% transaction.date.datetime %]</td>
+        <td>[% transaction.staff_loginid %]</td>
         [% id = transaction.source %]
-        <div class="grd-grid-1 app-id">[% id %]
-            <span class="app-name">[% apps.$id %]</span>
-        </div>
+        <td class="app-id">[% id %] <span class="app-name">[% apps.$id %]</span></td>
+
         [% IF transaction.financial_market_bet_id.defined %]
-        <div class="grd-grid-1">
-            <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, limit_order => transaction.limit_order, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid}) | none %]">[%
-                transaction.id %]</a>
-        </div>
-        <div class="grd-grid-1">
-            [% transaction.payout_price %]
-        </div>
-        [% IF transaction.action_type == 'sell' %]
-        <div class="grd-grid-4">
-            Sell<br/>
-            [% contract_details(transaction, currency).description %]
-        </div>
-        <div class="grd-grid-1 right-aligned"></div>
-        <div class="grd-grid-1 right-aligned">[% currency %] [% formatnumber('amount', currency, transaction.amount)
-            %]
-        </div>
+            <td>
+                <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, limit_order => transaction.limit_order, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid}) | none %]">
+                    [% transaction.id %]
+                </a>
+            </td>
+            <td>[% transaction.payout_price %]</td>
+
+            [% IF transaction.action_type == 'sell' %]
+                <td>
+                    Sell<br/>
+                    [% contract_details(transaction, currency).description %]
+                </td>
+                <td class="right-aligned"></td>
+                <td class="right-aligned">[% currency %] [% formatnumber('amount', currency, transaction.amount) %]</td>
+            [% ELSE %]
+                <td>
+                    [% details = contract_details(transaction, currency) %]
+                    Buy<br/>[% details.longcode %]
+                </td>
+                <td class="right-aligned">[% currency %] [% formatnumber('amount', currency, transaction.amount) %] </td>
+                <td class="right-aligned"></td>
+            [% END %]
+
         [% ELSE %]
-        <div class="grd-grid-4">
-            [% details = contract_details(transaction, currency) %]
-            Buy<br/>[% details.longcode %]
-        </div>
-        <div class="grd-grid-1 right-aligned">[% currency %] [% formatnumber('amount', currency, transaction.amount)
-            %]
-        </div>
-        <div class="grd-grid-1 right-aligned"></div>
+            <td>[% transaction.id %]</td>
+            <td></td>
+            <td>[% transaction.payment_remark | replace('\s+:\s+', ': ') | html %]</td>
+
+            [% IF transaction.action_type == 'deposit' OR ( transaction.action_type == 'escrow' AND transaction.orig_amount > 0 ) %]
+                <td class="right-aligned"></td>
+                <td class="right-aligned credit-amount-st">[% currency %] [% formatnumber('amount', currency, transaction.amount) %]</td>
+            [% ELSE %]
+                <td class="right-aligned debit-amount-st">[% currency %] [% formatnumber('amount', currency, transaction.amount) %]</td>
+                <td class="right-aligned"></td>
+            [% END %]
+
         [% END %]
-        [% ELSE %]
-        <div class="grd-grid-1">[% transaction.id %]</div>
-        <div class="grd-grid-1"></div>
-        <div class="grd-grid-4">[% transaction.payment_remark | replace('\s+:\s+', ': ') | html %]</div>
-        [% IF transaction.action_type == 'deposit' OR ( transaction.action_type == 'escrow' AND transaction.orig_amount > 0 ) %]
-        <div class="grd-grid-1 right-aligned"></div>
-        <div class="grd-grid-1 right-aligned credit-amount-st">[% currency %] [% formatnumber('amount', currency, transaction.amount)
-            %]
-        </div>
-        [% ELSE %]
-        <div class="grd-grid-1 right-aligned debit-amount-st">[% currency %] [% formatnumber('amount', currency, transaction.amount)
-            %]
-        </div>
-        <div class="grd-grid-1 right-aligned"></div>
-        [% END %]
-        [% END %]
-        <div class="grd-grid-1 right-aligned">[% currency %] [% formatnumber('amount', currency,
-            transaction.balance_after) %]
-        </div>
-    </div>
+        <td class="right-aligned">[% currency %] [% formatnumber('amount', currency, transaction.balance_after) %]</td>
+    </tr>
     [% END %]
+
     [% END %]
+    </tbody>
+</table>
+
     <div>
         <div id="statement_navigation" class="grd-parent grd-grid-12">
             <div class="grd-grid-2 left-aligned">
