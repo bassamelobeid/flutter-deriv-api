@@ -294,6 +294,8 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     $client->save;
 
     $client->smart_payment(%wd2500);
+    my $payment = $client->db->dbic->run(fixup => sub { $_->selectrow_hashref("SELECT * FROM payment.payment ORDER BY id DESC LIMIT 1"); });
+    my $payment_time = Date::Utility->new($payment->{payment_time})->epoch;
 
     throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit \[EUR/,
         'Unauthed, not allowed to withdraw equiv EUR2500 then 501 making total over 3000.';
@@ -305,7 +307,7 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     ok $client->validate_payment(%wd0500), 'Unauthed, allowed to withdraw equiv EUR2500 then 500 making total 3000.';
 
     # move forward 29 days
-    set_fixed_time(time + 29 * 86400);
+    set_fixed_time($payment_time + 29 * 86400);
 
     throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit \[EUR/,
         'Unauthed, not allowed to withdraw equiv EUR3000 then 1 more 29 days later';
