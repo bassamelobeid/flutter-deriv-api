@@ -30,7 +30,7 @@
         "description": {
             "description": "Notes from the advertiser. Should include contact details and payment instructions.",
             "type": "string",
-            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/+-]{1,500}$"
+            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/+-]{1,300}$"
         },
         "type": {
             "description": "Whether this is a buy or a sell.",

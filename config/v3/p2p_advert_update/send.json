@@ -24,7 +24,7 @@
         "description": {
             "description": "[Optional] Sets notes from the advertiser.",
             "type": "string",
-            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/+-]{1,500}$"
+            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/+-]{1,300}$"
         },
         "id": {
             "description": "The unique identifier for this advert.",
