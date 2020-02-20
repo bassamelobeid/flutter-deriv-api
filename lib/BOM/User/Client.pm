@@ -61,12 +61,17 @@ use Log::Any qw($log);
 
 # ideally we should have document category table
 # but that does not exists so using constant type
-use constant PROOF_OF_ADDRESS_DOCUMENTS_TYPE => qw(
+use constant PROOF_OF_ADDRESS_DOCUMENT_TYPES => qw(
     proofaddress payslip bankstatement cardstatement
 );
 
-use constant PROOF_OF_IDENTITY_DOCUMENTS_TYPE => qw(
+use constant PROOF_OF_IDENTITY_DOCUMENT_TYPES => qw(
     proofid driverslicense passport driving_licence national_identity_card
+);
+
+# poi document types no longer used
+use constant PROOF_OF_IDENTITY_DOCUMENT_TYPES_DEPRECATED => qw(
+    selfie_with_id vf_id vf_face_id
 );
 
 # this email address should not be added into brand as it is specific to internal system
@@ -542,8 +547,8 @@ sub documents_uploaded {
             next if defined $single_document->status and $single_document->status eq 'uploading';
 
             my $type = 'other';
-            $type = 'proof_of_identity' if (first { $_ eq $single_document->document_type } PROOF_OF_IDENTITY_DOCUMENTS_TYPE);
-            $type = 'proof_of_address'  if (first { $_ eq $single_document->document_type } PROOF_OF_ADDRESS_DOCUMENTS_TYPE);
+            $type = 'proof_of_identity' if (first { $_ eq $single_document->document_type } PROOF_OF_IDENTITY_DOCUMENT_TYPES);
+            $type = 'proof_of_address'  if (first { $_ eq $single_document->document_type } PROOF_OF_ADDRESS_DOCUMENT_TYPES);
 
             $documents{$type}{documents}{$single_document->file_name} = $doc_structure->($single_document);
 
