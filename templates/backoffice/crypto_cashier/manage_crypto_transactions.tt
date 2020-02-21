@@ -114,7 +114,7 @@
                 <td valign="top">
                     <table class="internal"><tbody>
                         <tr><th>Amount:</th><td>[% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount %])</td></tr>
-                        <tr><th>Client:</th><td>[% trx.client_loginid %]<td></tr>
+                        <tr><th>Client:</th> <td><a href="[% trx.details_link %]" target="_blank"> [% trx.client_loginid %] </a></td> [% IF trx.fiat_loginid %] <th>FIAT Login:</th> <td><a href="[% trx.fiat_link %]" target="_blank"> [% trx.fiat_loginid %] </a> </td>[% END %]<td></tr>
                         <tr><th>Balance:</th><td>[% trx.balance %]</td></tr>
                         <tr><th>Payment ID:</th><td>[% trx.payment_id %]</td></tr>
                     [% IF trx.transaction_type == 'withdrawal'%]

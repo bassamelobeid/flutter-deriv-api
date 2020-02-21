@@ -1228,4 +1228,66 @@ sub is_client_in_onfido_country {
     return ($countries_list->{uc $country} // 0);
 }
 
+=head2 get_fiat_login_id_for
+
+Description: Given a client loginID, this sub will return a Real Fiat loginID from the 
+client following these rules:
+
+=over 3
+
+=item  If an available (not disabled and not duplicatd) account exists, this will be returned 
+=item  Unavailable(duplicated or disabled) loginID will be returned IF AND ONLY IF no other real fiat account loginID is available.
+=item In case there is no available accounts, the first unavailable retrieved from database will be returned.
+
+=back
+
+=over 4
+
+=item - $lid string, the client loginid. 
+
+=item - $broker, the broker code for building the link
+
+=back
+
+Returns Hash with keys `fiat_loginid` and `fiat_link`
+
+=cut
+
+sub get_fiat_login_id_for {
+    my $lid    = uc shift;
+    my $broker = shift;
+
+    my $client = BOM::User::Client->new({loginid => $lid});
+
+    my %fiat_details = (
+        fiat_loginid => undef,
+        fiat_link    => undef
+    );
+
+    my $fiat_loginid = undef;
+    my $broker_code  = undef;
+    foreach my $login_id ($client->user->bom_loginids) {
+        my $client_account = BOM::User::Client->new({loginid => $login_id});
+        next if $client_account->is_virtual();
+        next if LandingCompany::Registry::get_currency_type($client_account->currency) eq 'crypto';
+        $broker_code = $broker;
+        if (not $client_account->is_available()) {
+            $fiat_loginid //= $login_id;
+            next;
+        }
+        $fiat_loginid = $login_id;
+        last;
+    }
+
+    $fiat_details{fiat_loginid} = $fiat_loginid;
+    $fiat_details{fiat_link}    = request()->url_for(
+        'backoffice/f_clientloginid_edit.cgi',
+        {
+            broker  => $broker,
+            loginID => $fiat_loginid
+        });
+
+    return %fiat_details;
+}
+
 1;
