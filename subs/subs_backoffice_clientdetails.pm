@@ -13,7 +13,7 @@ use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
 use LandingCompany::Registry;
-use Syntax::Keyword::Try;
+use List::MoreUtils qw(any);
 
 use BOM::Transaction;
 use BOM::Config;
@@ -30,6 +30,7 @@ use BOM::Backoffice::Config;
 use BOM::Backoffice::Request qw(request);
 use BOM::Database::Model::HandoffToken;
 use BOM::Config::RedisReplicated;
+use BOM::User::Client;
 
 =head1 subs_backoffice_clientdetails
 
@@ -40,9 +41,17 @@ A spot to place subroutines that might be useful for various client related oper
 use constant ONFIDO_REPORT_KEY_PREFIX             => 'ONFIDO::REPORT::ID::';
 use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
 
+my @expirable_doctypes = (BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES, BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES_DEPRECATED);
+my @poi_doctypes       = BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES;
+my @no_date_doctypes   = qw(other);
+
 sub get_currency_options {
+    # we need to prioritise based on the following list, since BO users mostly use them
+    my %order = (
+        'USD' => 1,
+    );
     my $currency_options;
-    foreach my $currency (@{request()->available_currencies}) {
+    foreach my $currency (sort { ($order{$a} // 99) <=> ($order{$b} // 99) or $a cmp $b } @{request()->available_currencies}) {
         $currency_options .= '<option value="' . $currency . '">' . $currency . '</option>';
     }
     return $currency_options;
@@ -344,7 +353,7 @@ sub build_client_statement_form {
         . '</SELECT>'
         . '<input type="hidden" name="l" value="EN">'
         . '<input type="checkbox" name="all_in_one_page">Show All Transactions</input>'
-        . '&nbsp; <input type="checkbox" value="yes" name="depositswithdrawalsonly">Deposits and Withdrawals only '
+        . '&nbsp; <input type="checkbox" value="yes" name="depositswithdrawalsonly" id="depositswithdrawalsonly"><label for="depositswithdrawalsonly">Deposits and Withdrawals only</label>'
         . '&nbsp; <input type="submit" value="Client Statement">'
         . '</FORM>';
 }
@@ -571,6 +580,23 @@ sub get_untrusted_client_reason {
         Internal       => ['Internal client used for testing & learning']};
 }
 
+sub date_html {
+    my ($name, $value, $label, $id, $required, $extra) = @_;
+
+    $required = $required ? 'required' : '';
+    my $required_mark = $required ? '*' : ' ';
+    my $date = $value || '';
+    if ($date) {
+        eval {
+            my $formatted = Date::Utility->new($date)->date_yyyymmdd;
+            $date = $formatted;
+        } or $label = "<span style='color:red;'>$label (invalid)</span>";
+    }
+
+    return
+        qq{ $label$required_mark<input type="text" $required style="width:100px" maxlength="15" name="${name}_${id}" value="$date" pattern="\\d{4}-\\d{2}-\\d{2}" class = "datepick" $extra>};
+}
+
 ## show_client_id_docs #######################################
 # Purpose : generate the html to display client's documents.
 # Relocated to here from Client module.
@@ -597,6 +623,8 @@ sub show_client_id_docs {
             $_->selectall_arrayref( <<'SQL', undef, $loginid);
 SELECT id,
        file_name,
+       document_type,
+       issue_date,
        expiration_date,
        comments,
        document_id,
@@ -606,8 +634,9 @@ SELECT id,
  WHERE client_loginid = ? AND status != 'uploading'
 SQL
         });
+
     foreach my $doc (sort { $a->[0] <=> $b->[0] } @$docs) {
-        my ($id, $file_name, $expiration_date, $comments, $document_id, $upload_date, $age) = @$doc;
+        my ($id, $file_name, $document_type, $issue_date, $expiration_date, $comments, $document_id, $upload_date, $age) = @$doc;
 
         if (not $file_name) {
             $links .= qq{<tr><td>Missing filename for a file with ID: $id</td></tr>};
@@ -623,30 +652,32 @@ SQL
             $age_display = '<td></td>';
         }
 
-        my $date = $expiration_date || '';
-        if ($date) {
-            eval {
-                my $formatted = Date::Utility->new($date)->date_yyyymmdd;
-                $date = $formatted;
-            } or do {
-                warn "Invalid date, using original information: $date\n";
-            };
-        }
+        my $poi_doc       = any { $_ eq $document_type } @poi_doctypes;
+        my $expirable_doc = any { $_ eq $document_type } @expirable_doctypes;
+        my $no_date_doc   = any { $_ eq $document_type } @no_date_doctypes;
 
-        my $input =
-            qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$id" value="$date" pattern="\\d{4}-\\d{2}-\\d{2}" class = "datepick" $extra>};
-        $input .= qq{document id <input type="text" style="width:100px" maxlength="30" name="document_id_$id" value="$document_id" $extra>};
-        $input .= qq{comments <input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" $extra>};
+        my $required_mark = $poi_doc ? '*' : ' ';
+
+        my $input = '<td align="right">';
+        $input .=
+            $expirable_doc
+            ? date_html('expiration_date', $expiration_date, 'expires on', $id, $poi_doc, $extra)
+            : ($no_date_doc ? '' : date_html('issue_date', $issue_date, 'issued on', $id, 0, $extra));
+        $input .= "</td>";
+
+        $input .=
+            qq{<td align="right"> document id $required_mark<input type="text" style="width:100px" maxlength="30" name="document_id_$id" value="$document_id" $extra> </td>};
+        $input .= qq{<td> comments <input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" $extra> </td>};
 
         my $s3_client =
             BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
         my $url = $s3_client->get_s3_url($file_name);
 
-        $links .= qq{<tr><td><a href="$url">$file_name</a></td>$age_display<td>$input};
+        $links .= qq{<tr><td><a href="$url">$file_name</a></td>$age_display$input};
 
-        $links .= qq{<input type="checkbox" class='files_checkbox' name="del_document_list" value="$file_name">};
+        $links .= qq{<td><input type="checkbox" class='files_checkbox' name="del_document_list" value="$file_name"><td>};
 
-        $links .= "</td></tr>";
+        $links .= "</tr>";
     }
     $links = "<table>$links</table>" if $links;
 
@@ -1198,6 +1229,68 @@ sub is_client_in_onfido_country {
     return undef unless $countries_list;
     $countries_list = decode_json_utf8($countries_list);
     return ($countries_list->{uc $country} // 0);
+}
+
+=head2 get_fiat_login_id_for
+
+Description: Given a client loginID, this sub will return a Real Fiat loginID from the
+client following these rules:
+
+=over 3
+
+=item  If an available (not disabled and not duplicatd) account exists, this will be returned
+=item  Unavailable(duplicated or disabled) loginID will be returned IF AND ONLY IF no other real fiat account loginID is available.
+=item In case there is no available accounts, the first unavailable retrieved from database will be returned.
+
+=back
+
+=over 4
+
+=item - $lid string, the client loginid.
+
+=item - $broker, the broker code for building the link
+
+=back
+
+Returns Hash with keys `fiat_loginid` and `fiat_link`
+
+=cut
+
+sub get_fiat_login_id_for {
+    my $lid    = uc shift;
+    my $broker = shift;
+
+    my $client = BOM::User::Client->new({loginid => $lid});
+
+    my %fiat_details = (
+        fiat_loginid => undef,
+        fiat_link    => undef
+    );
+
+    my $fiat_loginid = undef;
+    my $broker_code  = undef;
+    foreach my $login_id ($client->user->bom_loginids) {
+        my $client_account = BOM::User::Client->new({loginid => $login_id});
+        next if $client_account->is_virtual();
+        next if LandingCompany::Registry::get_currency_type($client_account->currency) eq 'crypto';
+        $broker_code = $broker;
+        if (not $client_account->is_available()) {
+            $fiat_loginid //= $login_id;
+            next;
+        }
+        $fiat_loginid = $login_id;
+        last;
+    }
+
+    $fiat_details{fiat_loginid} = $fiat_loginid;
+    $fiat_details{fiat_link}    = request()->url_for(
+        'backoffice/f_clientloginid_edit.cgi',
+        {
+            broker  => $broker,
+            loginID => $fiat_loginid
+        });
+
+    return %fiat_details;
 }
 
 1;

@@ -25,6 +25,7 @@ use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
 use BOM::CTC::Currency;
+use BOM::Cryptocurrency::Helper qw( prioritize_address );
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -224,12 +225,26 @@ if (@trxns) {
     my $transaction_uri = URI->new($currency_url->{transaction});
     my $address_uri     = URI->new($currency_url->{address});
 
+    my $details_link = request()->url_for(
+        'backoffice/f_clientloginid_edit.cgi',
+        {
+            broker  => $broker,
+            loginID => $client->loginid
+        });
+
+    my %fiat         = get_fiat_login_id_for($client->loginid, $broker);
+    my $fiat_loginid = $fiat{fiat_loginid};
+    my $fiat_link    = $fiat{fiat_link};
+
     for my $trx (@trxns) {
         $trx->{amount} //= 0;    # it will be undef on newly generated addresses
-        $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
+        $trx->{usd_amount}   = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
+        $trx->{fiat_loginid} = $fiat_loginid;
+        $trx->{fiat_link}    = $fiat_link;
+        $trx->{details_link} = $details_link;
     }
-    Bar('CRYPTOCURRENCY ACTIVITY');
 
+    Bar('CRYPTOCURRENCY ACTIVITY');
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
         'backoffice/crypto_cashier/manage_crypto_transactions_cs.tt',
@@ -245,13 +260,7 @@ if (@trxns) {
 
 if ($action && $action eq 'prioritize') {
     my $prioritize_address = request()->param('address');
-    my $status             = $currency_wrapper->prioritize_address($prioritize_address);
-
-    if ($status) {
-        print "<p style='color:green'><strong>SUCCESS: Requested priority</strong></p>";
-    } else {
-        print "<p style='color:red'><strong>ERROR: can't prioritize address</strong></p>";
-    }
+    prioritize_address($currency_wrapper, $prioritize_address);
 }
 
 code_exit_BO();

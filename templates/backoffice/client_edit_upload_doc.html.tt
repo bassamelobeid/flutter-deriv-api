@@ -1,4 +1,5 @@
 <br />
+
 <form enctype="multipart/form-data" ACTION="[% self_post %]" method="POST" onsubmit="return validate_document_info()">
   <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence, updates only with Passport and Proof ID upload)</label>
   <select id="docnationalityselect" name="docnationality">
@@ -9,9 +10,12 @@
     [% END %]
   </select>
   <br>
+
+<table style="width: 1200px">
 [% FOR n IN [1..4] %]
- File [% n %]:
-  <select name="doctype_[% n %]">
+<tr>
+  <td>File [% n %]:</td>
+  <td><select name="doctype_[% n %]" id="doctype_[% n %]" onchange="doc_type_changed([% n %])")">
     <option value="passport">Passport</option>
     <option value="proofid">ID</option>
     <option value="driverslicense">Drivers License</option>
@@ -32,26 +36,71 @@
     <option value="employment_contract">Employment Contract</option>
     <option value="code_of_conduct">Code of Conduct</option>
     <option value="other">Other</option>
-  </select>
-  <select name="page_type_[% n %]">
-    <option value="" selected>Page Type</option>
-    <option value="front">Front Side</option>
-    <option value="back">Back Side</option>
-    <option value="photo">Photo</option>
-  </select>
-  <input type="FILE" name="FILE_[% n %]" style="width: 150px" onchange="file_size_validation(this)">
-  Expiration date:<input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick">
-  Document ID:<input type="text" size=11 maxlength="30" name="document_id_[% n %]" placeholder="Document ID">
-  Comments:<input type="text" size=25 maxlength="255" name="comments_[% n %]" placeholder="optional, up to 255 characters">
-    <br>
-  [% END %]
-  <br>
+  </select></td>
+  <td align="right">
+  <label name="doc_field_required_[% n %]">*</label>
+    <select name="page_type_[% n %]">
+      <option value="" selected>Page Type</option>
+      <option value="front">Front Side</option>
+      <option value="back">Back Side</option>
+      <option value="photo">Photo</option>
+    </select>
+  <td>
+  <td>*<input type="FILE" name="FILE_[% n %]" style="width: 150px" onchange="file_size_validation(this)"></td>
+  <td align="right">
+    <div id="expiration_date_div_[% n %]" anch>
+      Expiration date:
+      <label name="doc_field_required_[% n %]">*</label>
+      <input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick">
+    </div>
+    <div id="issue_date_div_[% n %]" style="display:none">
+      Issue date:
+      <input type="text" size=11 name="issue_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick">
+      <label name="doc_field_required_[% n %]">*</label>
+    </div>
+  </td>
+  <td align="right">
+    Document ID:
+    <label name="doc_field_required_[% n %]">*</label>
+    <input type="text" size=11 maxlength="30" name="document_id_[% n %]" placeholder="Document ID">
+  </td>
+  <td align="right">
+    Comments:
+    <input type="text" size=25 maxlength="255" name="comments_[% n %]" placeholder="optional, up to 255 characters">
+  </td>
+</tr>
+[% END %]
+</table>
+
   <input type="hidden" name="whattodo" value="uploadID">
   <input type="hidden" name="broker" value="[% broker %]">
   <input type="hidden" name="loginID" value="[% loginid %]">
   <input type=submit value="Upload new ID doc.">
 </form>
 <script type="text/javascript" language="javascript">
+
+var regex_poi = /([% poi_doctypes %])/i;
+var regex_expirable =  /([% expirable_doctypes %])/i;
+var regex_no_date = /[% no_date_doctypes %]/i;
+
+function doc_type_changed(i){
+  let doc_type = document.getElementById('doctype_'+i).value;
+  let is_expirable_doc = doc_type.match(regex_expirable);
+  let is_no_date_doc = doc_type.match(regex_no_date);
+  let is_poi_doc = doc_type.match(regex_poi);
+  
+  document.getElementById('expiration_date_div_'+i).style.display = 'none';
+  document.getElementById('issue_date_div_'+i).style.display = 'none';
+  
+  if (is_expirable_doc)
+    document.getElementById('expiration_date_div_'+i).style.display = 'inline';
+  else if (!is_no_date_doc)
+    document.getElementById('issue_date_div_'+i).style.display = 'inline';
+  
+  let req_elements = document.getElementsByName('doc_field_required_'+i);
+  for (let i = 0; i < req_elements.length; i++)
+      req_elements[i].innerHTML = is_poi_doc? '*': '';
+}
 
 function file_size_validation(file) {
   var FileSize = file.files[0].size / (1024 * 1024);
@@ -64,27 +113,40 @@ function file_size_validation(file) {
   }
 }
 
+function validate_expiry_date(date) {
+  let expiry_date = new Date(date);
+  if(expiry_date == 'Invalid Date')
+      return "Invalid expiry date. Please match the requested format.\n"
+  else if(expiry_date <= new Date())
+    return "Expiry date must be a future date.\n";
+  
+  return '';
+}
+
 function validate_document_info() {
-  var get_value = function(elm_name) {
+  let get_value = function(elm_name) {
     return (document.getElementsByName(elm_name)[0] || {}).value;
   }
   
-  var error_msg = "";
-  var regex_poi = /(passport|proofid|driverslicense)/i;
-  var nationality = document.getElementsByName('docnationality')[0].value;
-  var is_file_uploaded = false;
+  let error_msg = "";
+  let nationality = document.getElementsByName('docnationality')[0].value;
+  let is_file_uploaded = false;
   
-  for (var i = 1; i <= 4; i++) {
+  for (let i = 1; i <= 4; i++) {
     
-    var file_comments_errors = "";
+    let file_comments_errors = "";
     
-    var doc_type = get_value('doctype_' + i);
-    var expiry_date = get_value('expiration_date_' + i);
-    var comments = get_value('comments_' + i);
-    var doc_id = get_value('document_id_' + i);
-    var page_type = get_value('page_type_' + i);
+    let doc_type = get_value('doctype_' + i);
+    let issue_date = get_value('issue_date_' + i);
+    let expiry_date = get_value('expiration_date_' + i);
+    let comments = get_value('comments_' + i);
+    let doc_id = get_value('document_id_' + i);
+    let page_type = get_value('page_type_' + i);
+
+    let is_poi_doc = doc_type.match(regex_poi);
+    let is_expirable_doc = doc_type.match(regex_expirable);
+    let is_no_date_doc = doc_type.match(regex_no_date);
     
-    var regex_match = doc_type.match(regex_poi);
     
     // Check if file uploaded (if not, proceed to next file)
     if(!get_value('FILE_' + i)) {
@@ -100,35 +162,37 @@ function validate_document_info() {
     is_file_uploaded = true;
     
     // POI validation
-    if(regex_match) {
+    if(is_poi_doc) {
       if(!nationality) {
         file_comments_errors += "Nationality is required.\n";
       }
-      
+
       if(!page_type) {
         file_comments_errors += "Page type is not selected.\n";
       }
-      
-      if(!expiry_date) {
-        file_comments_errors += "Expiry date is required.\n";
-      }
-  
+
       if(!doc_id) {
         file_comments_errors += "Document ID is required.\n";
       }
-    }
     
-    if(expiry_date) {
-      expiry_date = new Date(expiry_date);
-        if(expiry_date == 'Invalid Date'){
-            file_comments_errors += "Invalid Expiry date. Please match the requested format.\n"
+      if(!expiry_date)
+        file_comments_errors += "Expiry date is required.\n";
+      else
+        file_comments_errors += validate_expiry_date(expiry_date);
+    }
+    else if (is_expirable_doc && expiry_date){
+      file_comments_errors += validate_expiry_date(expiry_date);
+    }
+    else if (!is_no_date_doc && issue_date) {
+      issue_date = new Date(issue_date);
+      if(issue_date == 'Invalid Date'){
+          file_comments_errors += "Invalid issue date. Please match the requested format.\n"
         }
-        else if(expiry_date <= new Date()) {
-        file_comments_errors += "Expiry date must be a future date.\n"
+        else if(issue_date > new Date()) {
+        file_comments_errors += "Issue date must be a past date.\n"
       }
-
     }
-    
+
     if (doc_id.length > 30) {
       file_comments_errors += "Document ID is too long.\n";
     }
@@ -140,7 +204,6 @@ function validate_document_info() {
     if (file_comments_errors !== "") {
       error_msg += "Document upload failed for File " + i + ": \n\n" + file_comments_errors + "\n\n";
     }
-    
   }
   
   if(!is_file_uploaded) {

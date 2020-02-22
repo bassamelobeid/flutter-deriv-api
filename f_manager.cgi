@@ -67,11 +67,20 @@ my $tt = BOM::Backoffice::Request::template;
 
 Bar("MANUAL PAYMENTS");
 
-$tt->process('backoffice/account/manager_payments.tt', {languages => BOM::Backoffice::Utility::get_languages()}) || die $tt->error();
+$tt->process(
+    'backoffice/account/manager_payments.tt',
+    {
+        languages        => BOM::Backoffice::Utility::get_languages(),
+        currency_options => $currency_options,
+    }) || die $tt->error();
 
 Bar("TRANSFER BETWEEN ACCOUNTS");
 
-$tt->process('backoffice/account/manager_transfer.tt') || die $tt->error();
+$tt->process(
+    'backoffice/account/manager_transfer.tt',
+    {
+        currency_options => $currency_options,
+    }) || die $tt->error();
 
 Bar("BATCH CREDIT/DEBIT CLIENTS ACCOUNT");
 
@@ -86,4 +95,3 @@ Bar("Crypto cashier");
 print '<a href="f_manager_crypto.cgi">Go to crypto cashier management page</a>';
 
 code_exit_BO();
-

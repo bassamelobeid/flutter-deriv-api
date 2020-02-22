@@ -322,7 +322,7 @@ table#client_edit td{
             [%
                 IF show_uploaded_documents;
                 THEN;
-                    'Expiry date format: yyyy-mm-dd<br>' | none;
+                    'Expiry/issue date format: yyyy-mm-dd<br>' | none;
                     show_uploaded_documents | none;
                 ELSE;
                     "There are no uploaded documents for $client.loginid - $client.full_name";

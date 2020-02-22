@@ -33,6 +33,7 @@ use BOM::Database::ClientDB;
 use BOM::DualControl;
 use LandingCompany::Registry;
 use f_brokerincludeall;
+use BOM::Cryptocurrency::Helper qw( prioritize_address );
 
 BOM::Backoffice::Sysinit::init();
 
@@ -127,6 +128,21 @@ my $display_transactions = sub {
     for my $trx (@$trxns) {
         $trx->{amount} //= 0;    # it will be undef on newly generated addresses
         $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
+
+        my $client = BOM::User::Client::get_instance({
+            'loginid'    => $trx->{client_loginid},
+            db_operation => 'replica'
+        });
+
+        $trx->{details_link} = request()->url_for(
+            'backoffice/f_clientloginid_edit.cgi',
+            {
+                broker  => $broker,
+                loginID => $trx->{client_loginid}});
+
+        my %fiat = get_fiat_login_id_for($trx->{client_loginid}, $broker);
+        $trx->{fiat_loginid} = $fiat{fiat_loginid};
+        $trx->{fiat_link}    = $fiat{fiat_link};
     }
 
     # Render template page with transactions
@@ -436,24 +452,6 @@ EOF
         unless $new_address;
 } elsif ($view_action eq 'prioritize_confirmation') {
     my $prioritize_address = request()->param('prioritize_address');
-    if ($prioritize_address) {
-        my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-        my $dbic = $clientdb->db->dbic;
-
-        $prioritize_address =~ s/^\s+|\s+$//g;
-        if ($currency_wrapper->is_valid_address($prioritize_address)) {
-            my $status = $currency_wrapper->prioritize_address($prioritize_address);
-
-            if ($status) {
-                print "<p style='color:green'><strong>SUCCESS: Requested priority</strong></p>";
-            } else {
-                print "<p style='color:red'><strong>ERROR: can't prioritize address</strong></p>";
-            }
-        } else {
-            print "<p style='color:red'><strong>ERROR: invalid address format</strong></p>";
-        }
-    } else {
-        print "<p style=\"color:red\"><strong>ERROR: Address not found</strong></p>";
-    }
+    prioritize_address($currency_wrapper, $prioritize_address);
 }
 code_exit_BO();
