@@ -12,6 +12,12 @@
     &nbsp;
 [% END %]
 [% END %]
+
+<style>
+    table.internal th {
+        padding: 0 5px;
+    }
+</style>
 <div id="crypto" class="grd-parent grd-grid-12">
     <table class="hover alternate collapsed" border="1" width="100%">
         <thead>

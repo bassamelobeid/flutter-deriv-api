@@ -13,7 +13,6 @@ use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
 use LandingCompany::Registry;
-use Syntax::Keyword::Try;
 use List::MoreUtils qw(any);
 
 use BOM::Transaction;
@@ -47,8 +46,12 @@ my @poi_doctypes       = BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES;
 my @no_date_doctypes   = qw(other);
 
 sub get_currency_options {
+    # we need to prioritise based on the following list, since BO users mostly use them
+    my %order = (
+        'USD' => 1,
+    );
     my $currency_options;
-    foreach my $currency (@{request()->available_currencies}) {
+    foreach my $currency (sort { ($order{$a} // 99) <=> ($order{$b} // 99) or $a cmp $b } @{request()->available_currencies}) {
         $currency_options .= '<option value="' . $currency . '">' . $currency . '</option>';
     }
     return $currency_options;
@@ -350,7 +353,7 @@ sub build_client_statement_form {
         . '</SELECT>'
         . '<input type="hidden" name="l" value="EN">'
         . '<input type="checkbox" name="all_in_one_page">Show All Transactions</input>'
-        . '&nbsp; <input type="checkbox" value="yes" name="depositswithdrawalsonly">Deposits and Withdrawals only '
+        . '&nbsp; <input type="checkbox" value="yes" name="depositswithdrawalsonly" id="depositswithdrawalsonly"><label for="depositswithdrawalsonly">Deposits and Withdrawals only</label>'
         . '&nbsp; <input type="submit" value="Client Statement">'
         . '</FORM>';
 }
@@ -1230,12 +1233,12 @@ sub is_client_in_onfido_country {
 
 =head2 get_fiat_login_id_for
 
-Description: Given a client loginID, this sub will return a Real Fiat loginID from the 
+Description: Given a client loginID, this sub will return a Real Fiat loginID from the
 client following these rules:
 
 =over 3
 
-=item  If an available (not disabled and not duplicatd) account exists, this will be returned 
+=item  If an available (not disabled and not duplicatd) account exists, this will be returned
 =item  Unavailable(duplicated or disabled) loginID will be returned IF AND ONLY IF no other real fiat account loginID is available.
 =item In case there is no available accounts, the first unavailable retrieved from database will be returned.
 
@@ -1243,7 +1246,7 @@ client following these rules:
 
 =over 4
 
-=item - $lid string, the client loginid. 
+=item - $lid string, the client loginid.
 
 =item - $broker, the broker code for building the link
 

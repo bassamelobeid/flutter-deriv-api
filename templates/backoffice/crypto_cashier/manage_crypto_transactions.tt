@@ -12,6 +12,12 @@
     &nbsp;
 [% END %]
 [% END %]
+
+<style>
+    table.internal th {
+        padding: 0 5px;
+    }
+</style>
 <table class="hover collapsed alternate" border="1" width="100%">
     <thead>
         <th>Status</th>

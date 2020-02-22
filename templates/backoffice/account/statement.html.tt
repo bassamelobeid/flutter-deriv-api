@@ -41,8 +41,12 @@
             <input name="broker" type=hidden value="[% broker %]">
             <input name="currency" type="hidden" value="[% currency %]">
             <div style = "padding-left: 195px;">
-                <input name="all_in_one_page" type="checkbox">Show All Transactions
-                <input name="depositswithdrawalsonly" type="checkbox" value="yes">Deposits and Withdrawals only
+                <input name="all_in_one_page" id="all_in_one_page" type="checkbox">
+                <label for="all_in_one_page">Show All Transactions</label>
+
+                <input name="depositswithdrawalsonly" id="depositswithdrawalsonly" type="checkbox" value="yes">
+                <label for="depositswithdrawalsonly">Deposits and Withdrawals only</label>
+
                 <input name="l" type="hidden" value="EN">
                 <input type=submit value="view">
             </div>
@@ -50,29 +54,20 @@
     </div>
 </div>
 
+[%# Note: keep the table in one row, so that it takes less vertical space in page %]
 <div>
     <table class="hover collapsed" border="1">
         <tr>
             <th>Name</th>
             <td>[% client.name %]</td>
-        </tr>
-        <tr>
             <th>Email</th>
             <td>[% client.email %]</td>
-        </tr>
-        <tr>
             <th>Country</th>
             <td>[% client.country %]</td>
-        </tr>
-        <tr>
             <th>Residence</th>
             <td>[% client.residence %]</td>
-        </tr>
-        <tr>
             <th>Tel</th>
             <td>[% client.tel %]</td>
-        </tr>
-        <tr>
             <th>Date Joined</th>
             <td>[% client.date_joined %]</td>
         </tr>
@@ -142,31 +137,31 @@
                     [% contract_details(transaction, currency).description %]
                 </td>
                 <td class="right-aligned"></td>
-                <td class="right-aligned">[% currency %] [% formatnumber('amount', currency, transaction.amount) %]</td>
+                <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.amount) %]</b></td>
             [% ELSE %]
                 <td>
                     [% details = contract_details(transaction, currency) %]
                     Buy<br/>[% details.longcode %]
                 </td>
-                <td class="right-aligned">[% currency %] [% formatnumber('amount', currency, transaction.amount) %] </td>
+                <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.amount) %]</b></td>
                 <td class="right-aligned"></td>
             [% END %]
 
         [% ELSE %]
             <td>[% transaction.id %]</td>
             <td></td>
-            <td>[% transaction.payment_remark | replace('\s+:\s+', ': ') | html %]</td>
+            <td>[% transaction.payment_remark.replace('\s+:\s+', ': ').replace('(payment_processor=)(\w+) ', '$1<b>$2</b> ') | none %]</td>
 
             [% IF transaction.action_type == 'deposit' OR ( transaction.action_type == 'escrow' AND transaction.orig_amount > 0 ) %]
                 <td class="right-aligned"></td>
-                <td class="right-aligned credit-amount-st">[% currency %] [% formatnumber('amount', currency, transaction.amount) %]</td>
+                <td class="right-aligned credit-amount-st">[% currency %] <b>[% formatnumber('amount', currency, transaction.amount) %]</b></td>
             [% ELSE %]
-                <td class="right-aligned debit-amount-st">[% currency %] [% formatnumber('amount', currency, transaction.amount) %]</td>
+                <td class="right-aligned debit-amount-st">[% currency %] <b>[% formatnumber('amount', currency, transaction.amount) %]</b></td>
                 <td class="right-aligned"></td>
             [% END %]
 
         [% END %]
-        <td class="right-aligned">[% currency %] [% formatnumber('amount', currency, transaction.balance_after) %]</td>
+        <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.balance_after) %]</b></td>
     </tr>
     [% END %]
 
@@ -189,6 +184,9 @@
             </div>
         </div>
         <style>
+            #statement-table td {
+                padding: 15px;
+            }
             .app-id .app-name {
                 visibility: hidden;
                 background-color: black;

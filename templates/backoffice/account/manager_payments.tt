@@ -56,9 +56,7 @@
     <td><input type="text" name="account" required placeholder="required"/></td>
     <td>
         <select name="currency">
-            [% FOR currency IN request().available_currencies %]
-            <option value="[%currency%]">[%currency%]</option>
-            [% END %]
+            [% currency_options | none %]
         </select>
     </td>
     <td><input type="text" name="amount" required placeholder="required"/></td>
