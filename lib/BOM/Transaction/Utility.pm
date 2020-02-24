@@ -32,7 +32,7 @@ used by other processes to send final contract details to client.
 sub delete_contract_parameters {
     my ($contract_id, $client) = @_;
 
-    my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer;
+    my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer_shared;
     my $redis_key = join '::', ('CONTRACT_PARAMS', $contract_id, $client->landing_company->short);
 
     # we don't delete this right away because some service like pricing queue or transaction stream might still rely
@@ -51,7 +51,7 @@ Utility method to set contract parameters when a contract is purchased
 sub set_contract_parameters {
     my ($contract_params, $client) = @_;
 
-    my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer;
+    my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer_shared;
 
     my %hash = (
         price_daemon_cmd => 'bid',
