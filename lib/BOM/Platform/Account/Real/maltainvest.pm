@@ -42,8 +42,6 @@ sub create_account {
         $client->status->set('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
     }
 
-    BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
-
     return $register;
 }
 

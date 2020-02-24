@@ -312,14 +312,14 @@ EOM
 
 =head _notify_cs($subject, $body)
 
-Adds an entry in desk.com for the client with $subject and $body
+Adds an entry in the helpdesk system for the client with $subject and $body
 
 =cut
 
 sub _notify_cs {
     my ($self, $subject, $body) = @_;
 
-    return unless BOM::Config::on_production();    #TODO Remove when desk.com mocked server is ready. Also merge to main sub
+    return unless BOM::Config::on_production();
 
     my $client = $self->client;
     $client->add_note($subject, $client->loginid . ' ' . $body);
