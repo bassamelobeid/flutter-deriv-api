@@ -65,7 +65,6 @@ my @clienst = $user->clients;
 This repo contains objects to abstract company's business logic related to clients management and client's payments management
 
 * BOM::User::Client::PaymentAgent - class to represent any client as a separate payment agent.
-* BOM::User::Client::Desk, which is a wrapper around WWW::Desk - Desk.com API.
 * BOM::User::Client::PaymentAgent, which include client payment agent system.
 * BOM::User::Client::Payments, which include staff about payment
 

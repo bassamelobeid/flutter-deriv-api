@@ -1032,7 +1032,7 @@ queues or CRM applications).
 Adds a note for a customer record.  This is supposed to integrate with whatever
 CS is doing, and returns 1 on success or 0 on failure.
 
-Currently this is simply an emailer which sends the email to the desk.com
+Currently this is simply an emailer which sends the email to the helpdesk
 system.  Since we go through localhost, we die if there is an error.  This
 might happen if somehow we are sending invalid SMTP commands or the like.
 
@@ -1045,7 +1045,7 @@ working going forward with any input, it should die.
 sub add_note {
     my ($self, $subject, $content) = @_;
 
-    # send to different email based on the subject of the email, as desk.com handles different subject and email differently.
+    # send to different email based on the subject of the email, as the helpdesk system handles different subject and email differently.
     my $email_to = ($subject =~ /$SUBJECT_RE/) ? 'support_new_account' : 'support';
     $email_to = request()->brand->emails($email_to);
     my $email_from = request()->brand->emails('system_generated');
