@@ -12,7 +12,6 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
 use BOM::User::FinancialAssessment qw(should_warn update_financial_assessment);
 
-
 sub create_account {
     my $args = shift;
     my ($from_client, $user, $country, $details, $params) =
@@ -42,8 +41,6 @@ sub create_account {
     } elsif (not $should_warn) {
         $client->status->set('financial_risk_approval', 'SYSTEM', 'Financial risk approved based on financial assessment score');
     }
-
-    BOM::Platform::Account::Real::default::add_details_to_desk($client, $details);
 
     return $register;
 }

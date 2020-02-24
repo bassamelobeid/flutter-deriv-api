@@ -11,7 +11,6 @@ use Text::Trim qw(trim);
 
 use BOM::User::Client;
 use BOM::User::Phone;
-use BOM::User::Client::Desk;
 
 use BOM::Database::ClientDB;
 use BOM::Config;
@@ -39,8 +38,6 @@ sub create_account {
         ip      => $args->{ip},
         country => $args->{country},
     });
-
-    add_details_to_desk($client, $details);
 
     return $response;
 }
@@ -105,34 +102,6 @@ sub sync_client_status {
             last;
         }
     }
-}
-
-sub add_details_to_desk {
-    my ($client, $details) = @_;
-
-    if (BOM::Config::on_production()) {
-        try {
-            my $desk_api = BOM::User::Client::Desk->new({
-                desk_url     => BOM::Config::third_party()->{desk}->{api_uri},
-                api_key      => BOM::Config::third_party()->{desk}->{api_key},
-                secret_key   => BOM::Config::third_party()->{desk}->{api_key_secret},
-                token        => BOM::Config::third_party()->{desk}->{access_token},
-                token_secret => BOM::Config::third_party()->{desk}->{access_token_secret},
-            });
-
-            # we don't want to modify original details hence create
-            # copy for desk.com
-            my $copy = {%$details};
-            $copy->{loginid}  = $client->loginid;
-            $copy->{language} = request()->language;
-            $desk_api->upload($copy);
-        }
-        catch {
-            warn "Unable to add loginid " . $client->loginid . "(" . $client->email . ") to desk.com API:" . $@;
-        }
-    }
-
-    return;
 }
 
 sub validate_account_details {
