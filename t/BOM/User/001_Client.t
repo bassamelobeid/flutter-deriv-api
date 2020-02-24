@@ -208,4 +208,15 @@ subtest "format and validate" => sub {
     $args = {citizen => 'oo'};
     is $client->validate_common_account_details($args)->{error}, 'InvalidCitizenship', 'validate_common_account_details: InvalidCitizenship';
 
+    $args = {
+        promo_code_status => 'claimed',
+        promo_code        => ''
+    };
+    is $client->validate_common_account_details($args)->{error}, 'No promotion code was provided', 'correct error when no promotion code is provided';
+    $args = {
+        promo_code_status => 'claimed',
+        promo_code        => 'BOM123'
+    };
+    is $client->validate_common_account_details($args), undef, 'validation is passed when both promotion code and status is provided';
+
 };

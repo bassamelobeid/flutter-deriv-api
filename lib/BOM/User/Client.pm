@@ -1601,6 +1601,9 @@ sub validate_common_account_details {
         die "invalid PO Box\n"
             if (($args->{address_line_1} || '') =~ /p[\.\s]+o[\.\s]+box/i
             or ($args->{address_line_2} || '') =~ /p[\.\s]+o[\.\s]+box/i);
+
+        die "No promotion code was provided\n" if (trim($args->{promo_code_status}) and not(trim($args->{promo_code}) // $client->promo_code));
+
         return undef;
     }
     catch {
