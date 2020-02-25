@@ -26,6 +26,10 @@ use IO::Select;
 use Syntax::Keyword::Try;
 use RedisDB;
 use JSON::MaybeUTF8 qw(:v1);
+use Date::Utility;
+use Time::HiRes qw(tv_interval);
+use DataDog::DogStatsd::Helper qw(stats_histogram);
+use Format::Util::Numbers qw(formatnumber);
 
 my $conn;
 
@@ -55,7 +59,7 @@ sub run {
                     while ($sel->can_read) {
                         while (my $notify = $dbh->pg_notifies) {
                             my ($name, $pid, $payload) = @$notify;
-                            _publish($redis, _msg($payload));
+                            _publish($redis, _msg($payload, $dbh));
                         }
                     }
                 }
@@ -93,13 +97,20 @@ sub _publish {
 }
 
 sub _msg {
-    my $payload = shift;
+    my ($payload, $dbh) = @_;
 
     my %msg;
     @msg{
         qw/id account_id action_type referrer_type financial_market_bet_id
             payment_id amount balance_after transaction_time short_code currency_code purchase_time purchase_price sell_time payment_remark/
     } = split(',', $payload, 15);
+
+    # measuring the potential delay on transaction notification
+
+    my ($datetime_str, $subsecond) = split '\.', $msg{transaction_time};
+    $subsecond = ("0." . $subsecond) + 0;
+    my $timediff = tv_interval([Date::Utility->new($datetime_str)->epoch, $subsecond * 1e6]);
+    stats_histogram 'notifypub.delay', $timediff * 1000;    # millisec
 
     return \%msg;
 }
