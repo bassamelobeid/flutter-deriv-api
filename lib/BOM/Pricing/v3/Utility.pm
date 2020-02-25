@@ -100,16 +100,16 @@ sub create_relative_shortcode {
 sub get_contract_params {
     my ($contract_id, $landing_company) = @_;
 
-    my $redis      = BOM::Config::RedisReplicated::redis_pricer_shared();
+    my $redis_read = BOM::Config::RedisReplicated::redis_pricer_shared();
     my $params_key = join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company);
-    my $params     = $redis->get($params_key);
+    my $params     = $redis_read->get($params_key);
 
     # Returns empty hash reference if could not find contract parameters.
     # This will then fail in validation.
     return {} unless $params;
 
     # refreshes the expiry to 10 seconds if TTL is less.
-    $redis->expire($params_key, 10) if $redis->ttl($params_key) < 10;
+    BOM::Config::RedisReplicated::redis_pricer_shared_write()->expire($params_key, 10) if $redis_read->ttl($params_key) < 10;
 
     my $payload         = decode_json_utf8($params);
     my $contract_params = {@{$payload}};
