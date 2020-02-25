@@ -84,6 +84,12 @@ sub redis_pricer {
 sub redis_pricer_shared {
     $config->{pricer_shared} //= BOM::Config::redis_pricer_shared_config();
     my %args = @_;
+    return _redis('pricer_shared', 'read', $args{timeout} // 10);
+}
+
+sub redis_pricer_shared_write {
+    $config->{pricer_shared} //= BOM::Config::redis_pricer_shared_config();
+    my %args = @_;
     return _redis('pricer_shared', 'write', $args{timeout} // 10);
 }
 
