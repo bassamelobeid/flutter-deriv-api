@@ -41,14 +41,13 @@ use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Transaction::CompanyLimits;
 use BOM::Transaction::Validation;
+use BOM::Transaction::Utility;
 
 =head1 NAME
 
     BOM::Transaction
 
 =cut
-
-my $json = JSON::MaybeXS->new;
 
 =head2 action_type
 
@@ -768,6 +767,13 @@ sub buy {
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
+    my $clientdb = BOM::Database::ClientDB->new({broker_code => $client->broker_code});
+
+    # fetch fmbid for setting contract parameters in redis to avoid race condition between
+    # pg-notify and services that require it.
+    my $fmbid = $clientdb->get_next_fmbid();
+    $bet_data->{bet_data}{fmb_id} = $fmbid;
+
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
         account_data => {
@@ -775,7 +781,7 @@ sub buy {
             currency_code  => $self->contract->currency,
         },
         limits => $self->limits,
-        db     => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
+        db     => $clientdb->db,
     );
 
     my $error = 1;
@@ -789,8 +795,25 @@ sub buy {
 
     try {
         $company_limits->add_buys($client);
+        # Some contracts require more information besides shortcode to fully defined the contract.
+        # To avoid race condition between transaction stream and contract parameters setting,
+        # we will set contract parameters before buy.
+        my $contract_params = {
+            shortcode => $self->contract->shortcode,
+            currency  => $client->currency,
+            sell_time => undef,
+            is_sold   => 0,
+            $self->contract->can('available_orders') ? (limit_order => $self->contract->available_orders) : (),
+            expiry_time => $self->contract->date_expiry->epoch,
+            contract_id => $fmbid,
+        };
+
+        # set contract parameter before buy to avoid race condition between
+        # pg-notify and other services that depend on contract parameters
+        BOM::Transaction::Utility::set_contract_parameters($contract_params, $client);
 
         ($fmb, $txn) = $fmb_helper->buy_bet;
+
         $self->contract_details($fmb);
         $self->transaction_details($txn);
         $error = 0;
@@ -800,6 +823,7 @@ sub buy {
         # otherwise the function re-throws the exception
         my $e = $@;
         stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
+        BOM::Transaction::Utility::delete_contract_parameters($fmbid, $client) if $fmbid;
         $company_limits->reverse_buys($client);
         $error_status = $self->_recover($e);
     }
@@ -903,6 +927,14 @@ sub batch_buy {
 
     my %stat = map { $_ => {attempt => 0 + @{$per_broker{$_}}} } keys %per_broker;
 
+    my $contract_params = {
+        shortcode => $self->contract->shortcode,
+        currency  => $self->contract->currency,
+        sell_time => undef,
+        is_sold   => 0,
+        $self->contract->can('available_orders') ? (limit_order => $self->contract->available_orders) : (),
+    };
+
     for my $broker (keys %per_broker) {
         my $list = $per_broker{$broker};
         # with hash key caching introduced in recent perl versions
@@ -914,13 +946,24 @@ sub batch_buy {
         my @general_error = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'));
 
         try {
-            my $currency   = $self->contract->currency;
+            my $currency = $self->contract->currency;
+
+            my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
+            my @fmb_ids = map {
+                my $fmb_id = $clientdb->get_next_fmbid();
+                $contract_params->{expiry_time} = $self->contract->date_expiry->epoch;
+                $contract_params->{contract_id} = $fmb_id;
+                BOM::Transaction::Utility::set_contract_parameters($contract_params, $_->{client});
+                $fmb_id;
+            } @$list;
+
             my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
                 %$bet_data,
+                fmb_ids => \@fmb_ids,
                 # great readablility provided by our tidy rules
-                account_data => [map                                      { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
-                limits       => [map                                      { $_->{limits} } @$list],
-                db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
+                account_data => [map { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
+                limits       => [map { $_->{limits} } @$list],
+                db           => $clientdb->db,
             );
 
             my @clients = map { $_->{client} } @$list;
@@ -1094,6 +1137,7 @@ sub sell {
     my ($fmb, $txn, $buy_txn_id);
     try {
         ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
+        BOM::Transaction::Utility::delete_contract_parameters($fmb->{id}, $client) if $fmb->{id};
         $error = 0;
     }
     catch {
@@ -1847,6 +1891,7 @@ sub sell_expired_contracts {
     my $sold;
     try {
         $sold = $fmb_helper->batch_sell_bet;
+        BOM::Transaction::Utility::delete_contract_parameters($_->{id}, $client) for (@bets_to_sell);
     }
     catch {
         my $e = $@;
