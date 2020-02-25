@@ -98,10 +98,11 @@ sub create_relative_shortcode {
 }
 
 sub get_contract_params {
-    my ($redis, $contract_id, $landing_company) = @_;
+    my ($contract_id, $landing_company) = @_;
 
+    my $redis      = BOM::Config::RedisReplicated::redis_pricer_shared();
     my $params_key = join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company);
-    my $params = $redis->get($params_key);
+    my $params     = $redis->get($params_key);
 
     # Returns empty hash reference if could not find contract parameters.
     # This will then fail in validation.

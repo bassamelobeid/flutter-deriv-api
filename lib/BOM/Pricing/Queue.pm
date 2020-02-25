@@ -202,7 +202,7 @@ sub _process_price_queue {
     for my $key (@keys) {
         my $params = {decode_json_utf8($key =~ s/^PRICER_KEYS:://r)->@*};
         if ($params->{contract_id} and $params->{landing_company}) {
-            my $contract_params = BOM::Pricing::v3::Utility::get_contract_params($self->redis, $params->{contract_id}, $params->{landing_company});
+            my $contract_params = BOM::Pricing::v3::Utility::get_contract_params($params->{contract_id}, $params->{landing_company});
             $params = {%$params, %$contract_params};
         }
         unless (exists $params->{barriers}) {    # exclude proposal_array
