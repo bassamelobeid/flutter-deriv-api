@@ -174,10 +174,6 @@ foreach my $table (
     }
 }
 
-#add desk.com entries
-push @audit_entries, _get_desk_com_entries($loginid, $startdate, $enddate);
-push @audit_entries, _get_desk_com_entries($loginid, $startdate, $enddate, 'deleted');
-
 print "<div style='background-color:yellow'>$encoded_loginid</div>";
 print "<div style='background-color:white'>";
 my $old;
@@ -204,97 +200,4 @@ sub revers_ip {
         $r->{$client_ip} = $ip;
     }
     return $r->{$client_ip};
-}
-
-sub _get_desk_created_string {
-    my $start_date = shift;
-    my $end_date   = shift;
-
-    $start_date = Date::Utility->new($start_date);
-    $end_date   = Date::Utility->new($end_date);
-
-    my $created      = 'today';
-    my $days_between = $end_date->days_between($start_date);
-    if ($days_between < 1) {
-        $created = 'today';
-    } elsif ($days_between >= 1 and $days_between <= 7) {
-        $created = 'week';
-    } elsif ($days_between <= 31) {
-        $created = 'month';
-    } else {
-        $created = 'year';
-    }
-    return $created;
-}
-
-sub _get_desk_com_entries {
-    my $loginid   = shift;
-    my $startdate = shift;
-    my $enddate   = shift;
-    my $status    = shift;
-
-    my $color = $status ? 'red' : 'black';
-
-    my @desk_entries;
-    my $ua = Mojo::UserAgent->new;
-    try {
-        my $uri = URI->new(BOM::Config::third_party()->{desk}->{api_uri} . 'cases/search');
-        $uri->query_param(
-            q => 'custom_loginid:' . $loginid . ' created:' . _get_desk_created_string($startdate, $enddate) . ($status ? '+status:' . $status : ''));
-        $uri->query_param(sort_field     => 'created_at');
-        $uri->query_param(sort_direction => 'asc');
-        $uri->userinfo(BOM::Config::third_party()->{desk}->{username} . ":" . BOM::Config::third_party()->{desk}->{password});
-        my $res = $ua->get(
-            "$uri",
-            => {
-                Accept => 'application/json',
-            });
-        die $res->message if $res->is_error;
-        die 'unknown issue with request' unless $res->is_success;
-        my $response = decode_json_utf8($res->body);
-
-        if ($response->{total_entries} > 0 and $response->{_embedded} and $response->{_embedded}->{entries}) {
-            foreach (sort { Date::Utility->new($a->{created_at})->epoch <=> Date::Utility->new($b->{created_at})->epoch }
-                @{$response->{_embedded}->{entries}})
-            {
-                my $stamp = Date::Utility->new($_->{created_at})->datetime;
-                my $case =
-                      $stamp
-                    . ' <strong>Desk.com Id</strong>: '
-                    . $_->{id}
-                    . ' <strong>description</strong>: '
-                    . $_->{blurb}
-                    . ' <strong>status</strong>: '
-                    . $_->{status};
-                $case .= ' <strong>updated at</strong>: ' . Date::Utility->new($_->{updated_at})->datetime   if $_->{updated_at};
-                $case .= ' <strong>resolved at</strong>: ' . Date::Utility->new($_->{resolved_at})->datetime if $_->{resolved_at};
-                $case .= ' <strong>type</strong>: ' . $_->{type}                                             if $_->{type};
-                $case .= ' <strong>subject</strong>: ' . $_->{subject}                                       if $_->{subject};
-
-                push @desk_entries,
-                    {
-                    timestring  => $stamp,
-                    description => $case,
-                    color       => $color
-                    };
-            }
-        } else {
-            push @desk_entries,
-                {
-                timestring  => Date::Utility::today()->datetime,
-                description => Date::Utility::today()->datetime . ' No desk.com record found',
-                color       => $color
-                };
-        }
-    }
-    catch {
-        push @desk_entries,
-            {
-            timestring  => Date::Utility::today()->datetime,
-            description => Date::Utility::today()->datetime . ' Error occurred while accessing desk.com',
-            color       => $color
-            };
-    }
-
-    return @desk_entries;
 }

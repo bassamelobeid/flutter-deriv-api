@@ -1,5 +1,5 @@
 [%
- # Cannot use proper tables and formatting here: the email is parsed by desk.com and a text version is used
+ # Cannot use proper tables and formatting here: the email is parsed by the helpdesk system and a text version is used
 -%]
 =========================================================================================<br>
  The following clients opened an account on [% check_date %] but has the same name and date of birth as other clients.<br>

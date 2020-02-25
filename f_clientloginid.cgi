@@ -159,27 +159,4 @@ print "</table>";
 print "<input type=\"submit\" value=\"Submit\">";
 print "</form>";
 
-Bar('Client Desk.com cases');
-print "<form action=\"" . request()->url_for('backoffice/f_client_deskcom.cgi') . "\" method=get>";
-print qq~
-    <table>
-        <tr>
-            <td>
-            <b>Loginid</b>
-            </td>
-            <td>
-            <input type=text size=15 name="loginid_desk" value="">
-            </td>
-        </tr>
-        <tr>
-            <td>
-            <b>Cases created on</b>
-            </td>
-            <td>
-~;
-print "<input name=created type=text size=10 value='today'/></td></tr>";
-print '<tr><td colspan=2>Case created(Date range "today", "yesterday", "week", "month", "year") as desk.com accepts these parameters</td></tr>';
-print "</table>";
-print "<input type=\"submit\" value=\"Submit\">";
-print "</form>";
 code_exit_BO();

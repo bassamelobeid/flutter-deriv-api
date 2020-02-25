@@ -72,7 +72,6 @@ my $permissions = {
     'untrusted_client_edit.cgi'       => ['CS'],
     'sync_client_status.cgi'          => ['CS'],
     'view_192_raw_response.cgi'       => ['CS'],
-    'f_client_deskcom.cgi'            => ['CS'],
     'email_templates.cgi'             => ['CS'],
     'send_emails.cgi'                 => ['CS'],
 

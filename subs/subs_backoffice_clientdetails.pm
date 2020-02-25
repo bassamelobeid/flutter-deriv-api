@@ -661,7 +661,7 @@ SQL
         my $input = '<td align="right">';
         $input .=
             $expirable_doc
-            ? date_html('expiration_date', $expiration_date, 'expires on', $id, $poi_doc, $extra)
+            ? date_html('expiration_date', $expiration_date, 'expires on', $id, 0, $extra)
             : ($no_date_doc ? '' : date_html('issue_date', $issue_date, 'issued on', $id, 0, $extra));
         $input .= "</td>";
 
