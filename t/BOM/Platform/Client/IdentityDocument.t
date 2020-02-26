@@ -27,13 +27,21 @@ my $user_client_mlt = BOM::User->create(
     email_verified => 1,
 );
 
+my $user_client_mf = BOM::User->create(
+    email          => 'abcdef@binary.com',
+    password       => BOM::User::Password::hashpw('jskjd8292922'),
+    email_verified => 1,
+);
+
 my $cr_client  = create_client('CR');
 my $mx_client  = create_client('MX');
 my $mlt_client = create_client('MLT');
+my $mf_client = create_client('MF');
 
 $user_client_cr->add_client($cr_client);
 $user_client_mx->add_client($mx_client);
 $user_client_mlt->add_client($mlt_client);
+$user_client_mf->add_client($mf_client);
 
 my %clients_1 = (
     CR  => $cr_client,
@@ -133,6 +141,39 @@ subtest 'Documents expiry test' => sub {
             }
         };
     }
+};
+
+subtest 'Valid document of Duplicate sibling account should validate its active siblings' => sub {
+    $mf_client->status->set('duplicate_account');
+    ok $mf_client->status->duplicate_account, "MF Account is set as duplicate_account";
+    my $mf_client_2 = create_client('MF');
+    $user_client_mf->add_client($mf_client_2);
+    $mf_client_2->status->set('age_verification', 'Darth Vader', 'Test Case');
+    ok $mf_client_2->status->age_verification, "Age verified by other sources";
+
+     my ($doc) = $mf_client_2->add_client_authentication_document({
+                file_name                  => $mf_client_2->loginid . '.passport.' . Date::Utility->new->epoch . '.pdf',
+                document_type              => "passport",
+                document_format            => "PDF",
+                document_path              => '/tmp/test.pdf',
+                expiration_date            => Date::Utility->new()->plus_time_interval('1d')->date,
+                authentication_method_code => 'ID_DOCUMENT',
+                checksum                   => '120EA8A25E5D487BF68B5F7096440019'
+            });
+    $doc->status('uploaded');
+    $mf_client_2->save;
+    $mf_client_2->load;
+    ok $mf_client_2->has_valid_documents, "Documents with status of 'uploaded' are valid";
+    $mf_client_2->status->set('duplicate_account');
+    ok $mf_client_2->status->duplicate_account, "MF2 Account is set as duplicate_account";
+    $mf_client->status->clear_duplicate_account;
+    ok !$mf_client->status->duplicate_account, "MF Account is enabled now.";
+
+    ok $mf_client->has_valid_documents, "Documents with status of 'uploaded' are valid";
+    $doc->expiration_date('2010-10-10');
+    $doc->save;
+    $doc->load;
+    ok !$mf_client->has_valid_documents, "If Duplicate account's document expires, documents are not valid anymore for sibling too.";
 };
 
 done_testing();
