@@ -536,7 +536,10 @@ sub documents_uploaded {
 
     my %documents = ();
 
-    my @siblings = $self->user->clients(include_disabled => 1);
+    my @siblings = $self->user->clients(
+        include_disabled   => 1,
+        include_duplicated => 1
+    );
 
     for my $each_sibling (@siblings) {
         next if $each_sibling->is_virtual;
