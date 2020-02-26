@@ -197,13 +197,25 @@ sub login {
     BOM::User::Utility::set_gamstop_self_exclusion($gamstop_client) if $gamstop_client;
     return {success => 1};
 }
-#
-# Get my enabled client objects, in loginid order but with reals up first.  Use the replica db for speed.
-# if called as $user->clients(include_disabled=>1); will include disableds.
+
+=head2 clients
+
+Get my enabled client objects, in loginid order but with reals up first.  Use the replica db for speed.
+
+=over 4
+
+=item * C<include_disabled> - e.g. include_disabled=>1  will include disableds otherwise not.
+=item * C<include_duplicated> - e.g. include_duplicated=>1  will include duplicated otherwise not.
+
+=back
+Returns client objects array
+=cut
+
 sub clients {
     my ($self, %args) = @_;
+    my $include_duplicated = $args{include_duplicated} // 0;
 
-    my @clients = @{$self->get_clients_in_sorted_order(include_duplicated => 1)};
+    my @clients = @{$self->get_clients_in_sorted_order(include_duplicated => $include_duplicated)};
 
     # todo should be refactor
     @clients = grep { not $_->status->disabled } @clients unless $args{include_disabled};
@@ -362,9 +374,10 @@ Return an ARRAY reference that is a list of clients in following order
 
 sub get_clients_in_sorted_order {
     my ($self, %args) = @_;
-    my $account_lists = $self->accounts_by_category([$self->bom_loginids], include_duplicated => 1);
+    my $include_duplicated = $args{include_duplicated} // 0;
+    my $account_lists = $self->accounts_by_category([$self->bom_loginids], include_duplicated => $include_duplicated);
     my @allowed_statuses = qw(enabled virtual self_excluded disabled);
-    push @allowed_statuses, 'duplicated' if ($args{include_duplicated});
+    push @allowed_statuses, 'duplicated' if ($include_duplicated);
 
     return [map { @$_ } @{$account_lists}{@allowed_statuses}];
 }
