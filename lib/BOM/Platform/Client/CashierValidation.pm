@@ -72,11 +72,7 @@ sub validate {
     my $landing_company = $client->landing_company;
     return _create_error(localize('[_1] transactions may not be performed with this account.', $currency))
         unless ($landing_company->is_currency_legal($currency));
-        
-    use Data::Dumper;
-    warn Dumper $client->documents_expired;
-    warn "well its checking";
-    
+
     return _create_error(
         localize(
             'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to [_1] to unlock your cashier.',
