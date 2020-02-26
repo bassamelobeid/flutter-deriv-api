@@ -36,7 +36,7 @@ my $user_client_mf = BOM::User->create(
 my $cr_client  = create_client('CR');
 my $mx_client  = create_client('MX');
 my $mlt_client = create_client('MLT');
-my $mf_client = create_client('MF');
+my $mf_client  = create_client('MF');
 
 $user_client_cr->add_client($cr_client);
 $user_client_mx->add_client($mx_client);
@@ -151,15 +151,15 @@ subtest 'Valid document of Duplicate sibling account should validate its active 
     $mf_client_2->status->set('age_verification', 'Darth Vader', 'Test Case');
     ok $mf_client_2->status->age_verification, "Age verified by other sources";
 
-     my ($doc) = $mf_client_2->add_client_authentication_document({
-                file_name                  => $mf_client_2->loginid . '.passport.' . Date::Utility->new->epoch . '.pdf',
-                document_type              => "passport",
-                document_format            => "PDF",
-                document_path              => '/tmp/test.pdf',
-                expiration_date            => Date::Utility->new()->plus_time_interval('1d')->date,
-                authentication_method_code => 'ID_DOCUMENT',
-                checksum                   => '120EA8A25E5D487BF68B5F7096440019'
-            });
+    my ($doc) = $mf_client_2->add_client_authentication_document({
+        file_name                  => $mf_client_2->loginid . '.passport.' . Date::Utility->new->epoch . '.pdf',
+        document_type              => "passport",
+        document_format            => "PDF",
+        document_path              => '/tmp/test.pdf',
+        expiration_date            => Date::Utility->new()->plus_time_interval('1d')->date,
+        authentication_method_code => 'ID_DOCUMENT',
+        checksum                   => '120EA8A25E5D487BF68B5F7096440019'
+    });
     $doc->status('uploaded');
     $mf_client_2->save;
     $mf_client_2->load;
