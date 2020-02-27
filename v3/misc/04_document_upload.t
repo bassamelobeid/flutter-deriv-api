@@ -107,17 +107,21 @@ subtest 'binary frame should be sent correctly' => sub {
     my $res = await_binary(encode_json({ping => 1}));
     ok $res->{ping}, 'Encoded json should be treated as json';
 
-    $res = send_warning((pack 'N', 1), qr/Invalid frame/);
-    ok $res->{error}, 'Upload frame should be at least 12 bytes';
+    $res = await_binary((pack 'N', 1));
+    my $error = $res->{error};
+    is $error->{code}, 'UploadDenied', 'Upload frame should be at least 12 bytes';
 
-    $res = send_warning((pack 'N3A*', 1, 1, 1, 'A'), qr/Unknown upload request/);
-    ok $res->{error}, 'Should ask for document_upload first';
+    $res = await_binary((pack 'N3A*', 1, 1, 1, 'A'));
+    $error = $res->{error};
+    is $error->{code}, 'UploadDenied', 'Should ask for document_upload first';
 
     my %upload_info = request_upload('N');
 
     my ($call_type, $upload_id) = @upload_info{qw/call_type upload_id/};
 
-    send_warning((pack 'N3A*', $call_type, 1111, 1, 'A'), qr/Unknown upload request/);
+    $res = await_binary((pack 'N3A*', $call_type, 1111, 1, 'A'));
+    $error = $res->{error};
+    is $error->{code}, 'UploadDenied', 'Unknown upload request';
 
     send_warning((pack 'N3A*', 1111, $upload_id, 1, 'A'), qr/Unknown call type/);
 
@@ -244,7 +248,9 @@ subtest 'sending extra data after EOF chunk' => sub {
 
     my @frames = gen_frames($data, %upload_info);
 
-    send_warning($frames[$#frames], qr/Unknown upload request/);
+    my $res = await_binary($frames[$#frames]);
+    my $error = $res->{error};
+    is $error->{code}, 'UploadDenied', 'Sending extra data after EOF chunk should fail';
 };
 
 subtest 'Checksum not matching the etag' => sub {
@@ -353,11 +359,7 @@ sub upload_error {
 
     my %upload_info = request_upload($data, \%metadata);
 
-    my $res;
-    warning_like {
-        $res = send_chunks($data, %upload_info);
-    }
-    [$warning], 'Expected warning';
+    my $res = send_chunks($data, %upload_info);
 
     my $error = $res->{error};
 
