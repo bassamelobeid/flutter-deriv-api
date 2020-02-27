@@ -708,6 +708,9 @@ sub _check_client_access {
     # Allow user to pass if payments.p2p.available is checked or client login id is in payments.p2p.clients
     die +{error_code => 'PermissionDenied'}
         unless $app_config->payments->p2p->available || any { $_ eq $client->loginid } $app_config->payments->p2p->clients->@*;
+    my @avaliable_for_countries = $app_config->payments->p2p->available_for_countries->@*;
+    die +{error_code => 'RestrictedCountry'}
+        unless any { $_ eq lc($client->residence // '') } @avaliable_for_countries;
 
     die +{error_code => 'NoCurrency'} unless $client->default_account;
 }

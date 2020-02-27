@@ -21,6 +21,7 @@ my ($p2p_suspend, $p2p_enable) = ($app_config->system->suspend->p2p, $app_config
 $app_config->system->suspend->p2p(0);
 $app_config->payments->p2p->enabled(1);
 $app_config->payments->p2p->available(1);
+$app_config->payments->p2p->available_for_countries(['id']);
 
 my $email_advertiser = 'p2p_advertiser@test.com';
 my $email_client     = 'p2p_client@test.com';
@@ -77,6 +78,16 @@ subtest 'No token' => sub {
 subtest 'VR not allowed' => sub {
     $params->{token} = $token_vr;
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('UnavailableOnVirtual', 'error code is UnavailableOnVirtual');
+};
+
+subtest 'Allowed countries' => sub {
+    my $client_ru = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'country-test' . $email_client,
+        residence   => 'ru',
+    });
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_ru->loginid, 'test vr token');
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('RestrictedCountry', 'error code is RestrictedCountry');
 };
 
 subtest 'P2P suspended' => sub {
