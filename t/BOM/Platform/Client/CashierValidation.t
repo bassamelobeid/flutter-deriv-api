@@ -76,7 +76,7 @@ subtest 'Check cashier suspended' => sub {
     BOM::Config::Runtime->instance->app_config->system->suspend->payments(0);
 
     BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier(1);
-    ok BOM::Platform::Client::CashierValidation::is_crypto_cashier_suspended, 'crpto cashier suspended';
+    ok BOM::Platform::Client::CashierValidation::is_crypto_cashier_suspended, 'crypto cashier suspended';
     BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier(0);
 };
 
