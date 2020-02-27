@@ -10,11 +10,11 @@
     ],
     "additionalProperties": false,
     "required": [
+        "p2p_advert_create",
         "amount",
         "description",
         "max_order_amount",
         "min_order_amount",
-        "p2p_advert_create",
         "payment_method",
         "rate",
         "type"
@@ -27,19 +27,6 @@
                 1
             ]
         },
-        "description": {
-            "description": "Notes from the advertiser. Should include contact details and payment instructions.",
-            "type": "string",
-            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/+-]{1,300}$"
-        },
-        "type": {
-            "description": "Whether this is a buy or a sell.",
-            "type": "string",
-            "enum": [
-                "buy",
-                "sell"
-            ]
-        },
         "amount": {
             "description": "The total amount of the advert, in advertiser's account currency.",
             "type": "number"
@@ -48,6 +35,11 @@
             "description": "[Optional] The target country code of the advert. If not provided, will use client's residence by default.",
             "type": "string",
             "pattern": "^[a-z]{0,2}$"
+        },
+        "description": {
+            "description": "Notes from the advertiser. Should include contact details and payment instructions.",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/+-]{1,300}$"
         },
         "local_currency": {
             "description": "[Optional] Local currency for this advert. If not provided, will use the currency of client's residence by default.",
@@ -75,6 +67,14 @@
         "rate": {
             "description": "Conversion rate from advertiser's account currency to `local_currency`.",
             "type": "number"
+        },
+        "type": {
+            "description": "Whether this is a buy or a sell.",
+            "type": "string",
+            "enum": [
+                "buy",
+                "sell"
+            ]
         },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",

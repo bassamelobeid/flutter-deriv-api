@@ -10,9 +10,9 @@
     ],
     "additionalProperties": false,
     "required": [
+        "p2p_order_create",
         "advert_id",
-        "amount",
-        "p2p_order_create"
+        "amount"
     ],
     "properties": {
         "p2p_order_create": {
@@ -22,11 +22,6 @@
                 1
             ]
         },
-        "description": {
-            "description": "[Optional] Notes from the client.",
-            "type": "string",
-            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{0,500}$"
-        },
         "advert_id": {
             "description": "The unique identifier for the advert to create an order against.",
             "type": "string",
@@ -35,6 +30,11 @@
         "amount": {
             "description": "The amount of currency to be bought or sold.",
             "type": "number"
+        },
+        "description": {
+            "description": "[Optional] Notes from the client.",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/-]{0,500}$"
         },
         "subscribe": {
             "description": "[Optional] If set to 1, will send updates whenever there is an update to order",

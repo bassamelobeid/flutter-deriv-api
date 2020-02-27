@@ -35,18 +35,6 @@
                 "type"
             ],
             "properties": {
-                "description": {
-                    "description": "Notes from the advertiser. Should include contact details and payment instructions.",
-                    "type": "string"
-                },
-                "type": {
-                    "description": "Whether this is a buy or a sell.",
-                    "type": "string",
-                    "enum": [
-                        "buy",
-                        "sell"
-                    ]
-                },
                 "account_currency": {
                     "description": "Currency for this advert. This is the system currency to be transferred between advertiser and client.",
                     "type": "string",
@@ -99,6 +87,10 @@
                 "created_time": {
                     "description": "The advert creation time in epoch.",
                     "type": "integer"
+                },
+                "description": {
+                    "description": "Notes from the advertiser. Should include contact details and payment instructions.",
+                    "type": "string"
                 },
                 "id": {
                     "description": "The unique identifier for this advert.",
@@ -182,6 +174,14 @@
                 "remaining_amount_display": {
                     "description": "Amount currently available for orders, in `account_currency`, formatted to appropriate decimal places. It is only visible for advertisers.",
                     "type": "string"
+                },
+                "type": {
+                    "description": "Whether this is a buy or a sell.",
+                    "type": "string",
+                    "enum": [
+                        "buy",
+                        "sell"
+                    ]
                 }
             }
         },

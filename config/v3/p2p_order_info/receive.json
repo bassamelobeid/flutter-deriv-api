@@ -33,18 +33,6 @@
                 "type"
             ],
             "properties": {
-                "description": {
-                    "description": "Notes from the client.",
-                    "type": "string"
-                },
-                "type": {
-                    "description": "Whether this is a buy or a sell.",
-                    "type": "string",
-                    "enum": [
-                        "buy",
-                        "sell"
-                    ]
-                },
                 "account_currency": {
                     "description": "The currency of order.",
                     "type": "string",
@@ -68,6 +56,10 @@
                             "description": "Notes from the advertiser. Should include contact details and payment instructions.",
                             "type": "string"
                         },
+                        "id": {
+                            "description": "The unique identifier for the advert.",
+                            "type": "string"
+                        },
                         "type": {
                             "description": "Type of the advert.",
                             "type": "string",
@@ -75,10 +67,6 @@
                                 "buy",
                                 "sell"
                             ]
-                        },
-                        "id": {
-                            "description": "The unique identifier for the advert.",
-                            "type": "string"
                         }
                     }
                 },
@@ -113,6 +101,10 @@
                 "created_time": {
                     "description": "The epoch time of the order creation.",
                     "type": "integer"
+                },
+                "description": {
+                    "description": "Notes from the client.",
+                    "type": "string"
                 },
                 "expiry_time": {
                     "description": "The epoch time in which the order will be expired.",
@@ -164,6 +156,14 @@
                         "timed-out",
                         "refunded",
                         "completed"
+                    ]
+                },
+                "type": {
+                    "description": "Whether this is a buy or a sell.",
+                    "type": "string",
+                    "enum": [
+                        "buy",
+                        "sell"
                     ]
                 }
             }
