@@ -55,7 +55,7 @@ my @test_cases = (
             before => 0,
             after  => 100
         },
-        status => 'timed-out',
+        status => 'refunded',
     },
     # Sell orders
     {
@@ -100,11 +100,11 @@ my @test_cases = (
             before => 0,
             after  => 0
         },
-        status => 'timed-out',
+        status => 'refunded',
     },
 );
 
-for my $status (qw(timed-out)) {
+for my $status (qw(timed-out refunded)) {
     for my $type (qw(sell buy)) {
         push @test_cases,
             {
