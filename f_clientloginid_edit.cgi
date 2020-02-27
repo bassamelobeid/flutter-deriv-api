@@ -1009,7 +1009,7 @@ print qq[
     <script>
         \$(function() {
             \$('.datepick').datepicker( {
-                onSelect: function(date) {
+                onClose: function(date) {
                     \$(this).addClass('data-changed')
                 },
                 dateFormat: 'yy-mm-dd',
