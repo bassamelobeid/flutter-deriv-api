@@ -29,9 +29,17 @@
                         "CR12345"
                     ]
                 },
+                "contact_info": {
+                    "description": "Advertiser's contact information.",
+                    "type": "string"
+                },
                 "created_time": {
                     "description": "The epoch time that the client became an advertiser.",
                     "type": "integer"
+                },
+                "default_advert_description": {
+                    "description": "Could be used as a template for general instructions for adverts.",
+                    "type": "string"
                 },
                 "id": {
                     "description": "The advertiser's identification number.",
@@ -55,6 +63,10 @@
                 },
                 "name": {
                     "description": "The advertiser's displayed name.",
+                    "type": "string"
+                },
+                "payment_info": {
+                    "description": "Advertiser's payment information.",
                     "type": "string"
                 }
             }

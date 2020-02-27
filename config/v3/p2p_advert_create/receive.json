@@ -79,6 +79,10 @@
                     "description": "The total amount specified in advert, in `account_currency`, formatted to appropriate decimal places. It is only visible for advertisers.",
                     "type": "string"
                 },
+                "contact_info": {
+                    "description": "Only applicable for sell adverts. Contact details for the advertiser, which the buyer can use contact the seller.",
+                    "type": "string"
+                },
                 "counterparty_type": {
                     "description": "Type of transaction from the opposite party's perspective.",
                     "type": "string",
@@ -97,7 +101,7 @@
                     "type": "integer"
                 },
                 "description": {
-                    "description": "Notes from the advertiser. Should include contact details and payment instructions.",
+                    "description": "Notes and general instructions from the advertiser.",
                     "type": "string"
                 },
                 "id": {
@@ -150,6 +154,10 @@
                 },
                 "min_order_amount_limit_display": {
                     "description": "Minimum order amount at this time, in `account_currency`, formatted to appropriate decimal places.",
+                    "type": "string"
+                },
+                "payment_info": {
+                    "description": "Only applicable for sell adverts. Payment instructions for the buyer to transfer funds.",
                     "type": "string"
                 },
                 "payment_method": {
