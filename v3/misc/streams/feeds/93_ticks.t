@@ -169,7 +169,7 @@ subtest 'ticks_history_fail_rpc' => sub {
             "req_id"        => 100,
             "subscribe"     => 1,
         };
-	$res = $t->await::ticks_history($req2);
+        $res = $t->await::ticks_history($req2);
 
         cmp_ok $res->{error}->{message}, 'eq', 'Sorry, an error occurred while processing your request.',
             "Recived tick history error when RPC failed";

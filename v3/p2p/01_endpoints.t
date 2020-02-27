@@ -13,15 +13,31 @@ use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
+use Guard;
 
 cleanup_redis_tokens();
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 
-$app_config->set({'payments.p2p.enabled'   => 1});
-$app_config->set({'system.suspend.p2p'     => 0});
-$app_config->set({'payments.p2p.available' => 1});
+# We need to restore previous values when tests is done
+my %init_config_values = (
+    'payments.p2p.enabled'                 => $app_config->payments->p2p->enabled,
+    'system.suspend.p2p'                   => $app_config->system->suspend->p2p,
+    'payments.p2p.available'               => $app_config->payments->p2p->available,
+    'payments.p2p.available_for_countries' => $app_config->payments->p2p->available_for_countries,
+);
+
+scope_guard {
+    for my $key (keys %init_config_values) {
+        $app_config->set({$key => $init_config_values{$key}});
+    }
+};
+
+$app_config->set({'payments.p2p.enabled'                 => 1});
+$app_config->set({'system.suspend.p2p'                   => 0});
+$app_config->set({'payments.p2p.available'               => 1});
+$app_config->set({'payments.p2p.available_for_countries' => ['id']});
 
 my $t = build_wsapi_test();
 
