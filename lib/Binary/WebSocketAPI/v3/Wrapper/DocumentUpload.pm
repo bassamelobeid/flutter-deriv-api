@@ -11,6 +11,7 @@ use JSON::MaybeXS qw/decode_json/;
 use List::Util qw/first/;
 
 use Binary::WebSocketAPI::Hooks;
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use constant {
     MAX_CHUNK_SIZE       => 2**17,    # Chunks bigger than 100KB are not allowed
@@ -74,6 +75,10 @@ sub document_upload {
 
     try {
         $upload_info = get_upload_info($c, $frame);
+        unless ($upload_info) {
+            send_upload_failure($c, $upload_info, 'unknown');
+            return;
+        }
         upload_chunk($c, $upload_info);
     }
     catch {
@@ -88,11 +93,17 @@ sub document_upload {
 sub get_upload_info {
     my ($c, $frame) = @_;
 
-    die 'Invalid frame' if length $frame < 12;
+    if (length $frame < 12) {
+        stats_inc('bom_websocket_api.v_3.document_upload_error', {tags => ['app_id:' . $c->app_id]});
+        return;
+    }
 
     my ($call_type, $upload_id, $chunk_size, $data) = unpack "N3a*", $frame;
-
-    my $upload_info = $c->stash->{document_upload}->{$upload_id} or die "Unknown upload request";
+    my $upload_info = $c->stash->{document_upload}->{$upload_id};
+    unless ($upload_info) {
+        stats_inc('bom_websocket_api.v_3.document_upload_error', {tags => ['app_id:' . $c->app_id]});
+        return;
+    }
 
     die "Unknown call type"           if $call_type != $upload_info->{call_type};
     die "Maximum chunk size exceeded" if $chunk_size > MAX_CHUNK_SIZE;
