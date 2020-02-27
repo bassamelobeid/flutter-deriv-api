@@ -152,6 +152,8 @@ subtest 'Adverts' => sub {
         min_order_amount => 0.1,
         max_order_amount => 10,
         payment_method   => 'test method',
+        payment_info     => 'Bank 123',
+        contact_info     => 'Tel 123',
     };
 
     $params->{args} = {name => 'Bond007'};

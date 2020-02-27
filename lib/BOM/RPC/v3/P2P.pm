@@ -69,20 +69,26 @@ our %ERROR_MAP = do {
         NotRegistered    => localize('You are not yet registered as a P2P advertiser.'),
 
         # Invalid data
-        InvalidPaymentMethod => localize('This payment method is invalid.'),
-        NotFound             => localize('Not found.'),
-        MinimumNotMet        => localize('The minimum amount requirements are not met.'),
-        MaximumExceeded      => localize('The amount exceeds the maximum limit.'),
-        MaxPerOrderExceeded  => localize('The maximum amount exceeds the maximum amount per order ([_1] [_2]). Please adjust the value.'),
-        AlreadyInProgress    => localize('This cannot be cancelled since the order is already in progress.'),
-        InvalidNumericValue  => localize('Numeric value should be greater than 0.'),
-        InvalidMinMaxAmount  => localize('The minimum amount should be less than or equal to maximum amount.'),
-        InvalidMaxAmount     => localize('The maximum amount should be less than or equal to the advert amount.'),
-        InvalidListLimit     => localize("Invalid value for list limit"),
-        InvalidListOffset    => localize("Invalid value for list offset"),
-        RateTooSmall         => localize('Ad rate should not be less than [_1]. Please adjust the value.'),
-        RateTooBig           => localize('Ad rate should not be more than [_1]. Please adjust the value.'),
-        MinPriceTooSmall     => localize('Ad minimum price is zero, Please adjust minimum amount or rate.'),
+        InvalidPaymentMethod      => localize('This payment method is invalid.'),
+        NotFound                  => localize('Not found.'),
+        MinimumNotMet             => localize('The minimum amount requirements are not met.'),
+        MaximumExceeded           => localize('The amount exceeds the maximum limit.'),
+        MaxPerOrderExceeded       => localize('The maximum amount exceeds the maximum amount per order ([_1] [_2]). Please adjust the value.'),
+        AlreadyInProgress         => localize('This cannot be cancelled since the order is already in progress.'),
+        InvalidNumericValue       => localize('Numeric value should be greater than 0.'),
+        InvalidMinMaxAmount       => localize('The minimum amount should be less than or equal to maximum amount.'),
+        InvalidMaxAmount          => localize('The maximum amount should be less than or equal to the advert amount.'),
+        InvalidListLimit          => localize("Invalid value for list limit"),
+        InvalidListOffset         => localize("Invalid value for list offset"),
+        RateTooSmall              => localize('Advert rate should not be less than [_1]. Please adjust the value.'),
+        RateTooBig                => localize('Advert rate should not be more than [_1]. Please adjust the value.'),
+        MinPriceTooSmall          => localize('Advert minimum price is zero, Please adjust minimum amount or rate.'),
+        AdvertPaymentInfoRequired => localize('Advert payment information is required for sell adverts.'),
+        AdvertContactInfoRequired => localize('Advert contact information is required for sell adverts.'),
+        OrderPaymentInfoRequired  => localize('Order payment information is required for sell orders.'),
+        OrderContactInfoRequired  => localize('Order contact information is required for sell orders.'),
+        AdvertPaymentContactInfoNotAllowed => localize('Payment and contact information cannot be specified for buy advert.'),
+        OrderPaymentContactInfoNotAllowed  => localize('Payment and contact information cannot be specified for buy order.'),
 
         # bom-user errors
         AdvertiserNotFound          => localize('P2P advertiser not found.'),
@@ -106,8 +112,9 @@ our %ERROR_MAP = do {
         EscrowNotFound              => localize('Advertising for the currency is not available at the moment.'),
         OrderMinimumNotMet => localize('The minimum amount for this advert is [_1] [_2].'),    # minimum won't change during advert lifetime
         OrderMaximumExceeded => localize('The maximum available amount for this advert is [_1] [_2] at the moment.'),
-
-        InsufficientBalance => localize('Your account balance is insufficient to create an order with this amount.'),
+        InsufficientBalance  => localize('Your account balance is insufficient to create an order with this amount.'),
+        OpenOrdersDeleteAdvert =>
+            localize('You cannot delete an advert with open orders. Please ensure the advert is deactivated and wait until all orders are closed.'),
     );
 };
 
@@ -127,6 +134,7 @@ our %DB_ERRORS = (
     BI235 => 'OrderNotFound',
     BI236 => 'InvalidStateForConfirmation',
     BI237 => 'InvalidOrderCurrency',
+    BI238 => 'OpenOrdersDeleteAdvert',
 );
 
 =head2 p2p_rpc
@@ -262,10 +270,10 @@ that does not allow P2P advertiser yet, or they already have an advertiser accou
 =cut
 
 p2p_rpc p2p_advertiser_create => sub {
-    my (%args)     = @_;
+    my (%args) = @_;
+
     my $client     = $args{client};
-    my $name       = $args{params}{args}{name};
-    my $advertiser = $client->p2p_advertiser_create($name);
+    my $advertiser = $client->p2p_advertiser_create($args{params}{args}->%*);
 
     BOM::Platform::Event::Emitter::emit(p2p_advertiser_created => $advertiser);
 
