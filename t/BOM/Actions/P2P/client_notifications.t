@@ -70,7 +70,8 @@ for my $test_data (@data_for_notification_tests) {
             $test_data->{event});
         eval { $p2p_redis->get_reply for (1 .. 2) };
         my @notifications = map {
-            eval { decode_json_utf8($_) } || undef
+            eval { decode_json_utf8($_) }
+                || undef
         } @got_notification;
 
         is_deeply(\@notifications, $test_data->{expected}, 'No notification about an order');

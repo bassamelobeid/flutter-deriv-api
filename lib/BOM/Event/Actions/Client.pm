@@ -2082,10 +2082,8 @@ async sub check_lifetime_internal_transfer {
         my @siblings = $client->user->clients_for_landing_company('svg');
 
         for my $current_client (@siblings) {
-
             next if $current_client->is_virtual;
             $current_client->status->set('withdrawal_locked', 'system', 'Transfer between Fiat and Crypto over 1k');
-
         }
 
         _send_email_withdrawal_locked($client, $BRANDS->emails('support'));
@@ -2103,13 +2101,13 @@ Gets client loginid if the client's currency matches the targeted currency type
 =cut
 
 sub _group_loginid_by_currency_type {
-    my $args                    = shift;
-    my $currencies              = LandingCompany::Registry::get($args->{lc_short})->legal_allowed_currencies;
+    my $args = shift;
+
     my $client_currency_details = $args->{client_currency_details};
     my (@fiat_loginids, @crypto_loginids);
 
     for my $each_client (keys %{$client_currency_details}) {
-        if ($currencies->{$client_currency_details->{$each_client}}->{type} eq 'fiat') {
+        if (LandingCompany::Registry::get_currency_type($client_currency_details->{$each_client}) eq 'fiat') {
             push @fiat_loginids, $each_client;
         } else {
             push @crypto_loginids, $each_client;
