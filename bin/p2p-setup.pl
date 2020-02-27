@@ -50,6 +50,12 @@ use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Database::Model::OAuth;
 
+$SIG{__DIE__} = sub {
+    return if $^S;
+    $log->errorf('Fatal error: %s', @_);
+    exit(1);
+};
+
 # File calling arguments
 GetOptions("r|reset-clients" => \(my $reset_clients = 0));
 
@@ -205,7 +211,7 @@ $log->infof('Maximum order  configured is %s',   BOM::Config::Runtime->instance-
 # ===== Advertiser Update =====
 section_title('Advertiser Update');
 unless ($advertiser->p2p_advertiser_info) {
-    $advertiser->p2p_advertiser_create('example advertiser');
+    $advertiser->p2p_advertiser_create(name => 'example advertiser');
 }
 $advertiser->p2p_advertiser_update(
     is_listed   => 1,
@@ -238,6 +244,10 @@ $advertiser->p2p_advert_create(
     min_order_amount => 10,
     max_order_amount => 100,
     payment_method   => 'bank_transfer',
+    payment_info     => 'Transfer to account 000-1111',
+    contact_info     => 'Please contact via whatsapp 1234',
     description      => 'Please contact via whatsapp 1234',
     country          => 'za',
 );
+
+section_title('Success!');
