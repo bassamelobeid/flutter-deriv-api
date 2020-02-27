@@ -1758,16 +1758,16 @@ Returns the advertiser info or dies with error code.
 =cut
 
 sub p2p_advertiser_create {
-    my ($client, $name) = @_;
+    my ($client, %param) = @_;
 
     die +{error_code => 'AlreadyRegistered'} if $client->_p2p_advertisers(loginid => $client->loginid)->[0];
 
-    $name = trim($name);
-    die +{error_code => 'AdvertiserNameRequired'} unless $name;
+    die +{error_code => 'AdvertiserNameRequired'} unless trim($param{name});
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.advertiser_create(?, ?)', undef, $client->loginid, $name // '');
+            $_->selectrow_hashref('SELECT * FROM p2p.advertiser_create(?, ?, ?, ?, ?)',
+                undef, $client->loginid, @param{qw/name default_advert_description payment_info contact_info/});
         });
 }
 
@@ -1816,10 +1816,10 @@ sub p2p_advertiser_update {
     my $update = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM p2p.advertiser_update(?, ?, ?, ?)',
+                'SELECT * FROM p2p.advertiser_update(?, ?, ?, ?, ?, ?, ?)',
                 undef,
                 $advertiser_info->{id},
-                @param{qw/is_approved is_listed name/});
+                @param{qw/is_approved is_listed name default_advert_description payment_info contact_info/});
         });
 
     return $client->_advertiser_details($update);
@@ -1891,13 +1891,24 @@ sub p2p_advert_create {
         die +{error_code => 'MinPriceTooSmall'};
     }
 
+    die +{error_code => 'AdvertPaymentContactInfoNotAllowed'}
+        if $param{type} eq 'buy' && (trim($param{payment_info}) || trim($param{contact_info}));
+
+    die +{error_code => 'AdvertPaymentInfoRequired'}
+        if $param{type} eq 'sell' && !trim($param{payment_info});
+
+    die +{error_code => 'AdvertContactInfoRequired'}
+        if $param{type} eq 'sell' && !trim($param{contact_info});
+
     my $advert = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef,
                 $advertiser_info->{id},
-                @param{qw/type account_currency local_currency amount rate min_order_amount max_order_amount payment_method description country/});
+                @param{
+                    qw/type account_currency local_currency country amount rate min_order_amount max_order_amount description payment_method payment_info contact_info/
+                });
         });
 
     return $client->_advert_details([$advert])->[0];
@@ -1948,7 +1959,7 @@ sub p2p_advert_list {
 
 Updates the advert of $param{id} with fields in %param.
 Client must be advert owner.
-Amount cannot be reduced below amount of outstanding orders.
+Cannot delete if there are open orders.
 Returns latest advert info or dies with error code.
 
 =cut
@@ -1962,15 +1973,22 @@ sub p2p_advert_update {
     die +{error_code => 'PermissionDenied'} if $advert_info->{advertiser_loginid} ne $client->loginid;
 
     # return current advert details if nothing changed
-    return $client->_advert_details([$advert_info])->[0] unless grep { exists $advert_info->{$_} and $param{$_} ne $advert_info->{$_} } keys %param;
+    return $client->_advert_details([$advert_info])->[0]
+        unless $param{delete}
+        or grep { exists $advert_info->{$_} and $param{$_} ne $advert_info->{$_} } keys %param;
 
-    # Amount already used in an advert is (amount - remaining). New amount cannot be less than the amount used.
-    die +{error_code => 'AdvertInsufficientAmount'} if $param{amount} && $param{amount} < ($advert_info->{amount} - $advert_info->{remaining});
+    if ($param{delete}) {
+        my $open_orders = $client->_p2p_orders(
+            advert_id => $id,
+            status => ['pending', 'buyer-confirmed'],
+        );
+        die +{error_code => 'OpenOrdersDeleteAdvert'} if @$open_orders;
+    }
 
     my $update = $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.advert_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                undef, $id, $param{is_active}, map { undef } (1 .. 10));
+            $_->selectrow_hashref('SELECT * FROM p2p.advert_update(?, ?, ?, ?, ?, ?, ?)',
+                undef, $id, @param{qw/is_active delete description payment_method payment_info contact_info/});
         });
 
     return $client->_advert_details([$update])->[0];
@@ -1989,7 +2007,7 @@ This will move funds from advertiser to escrow.
 sub p2p_order_create {
     my ($client, %param) = @_;
 
-    my ($advert_id, $amount, $expiry, $description, $source) = @param{qw/advert_id amount expiry description source/};
+    my ($advert_id, $amount, $expiry, $payment_info, $contact_info, $source) = @param{qw/advert_id amount expiry payment_info contact_info source/};
 
     $expiry //= BOM::Config::Runtime->instance->app_config->payments->p2p->order_timeout;
 
@@ -2021,9 +2039,14 @@ sub p2p_order_create {
 
     if ($advert_info->{type} eq 'buy') {
         die +{error_code => 'InsufficientBalance'} if $client->account->balance < $amount;
+
+        die +{error_code => 'OrderPaymentInfoRequired'} if !trim($param{payment_info});
+        die +{error_code => 'OrderContactInfoRequired'} if !trim($param{contact_info});
     } elsif ($advert_info->{type} eq 'sell') {
         my $advertiser = BOM::User::Client->new({loginid => $advert_info->{advertiser_loginid}});
         die +{error_code => 'MaximumExceeded'} if $advertiser->account->balance < $amount;
+        die +{error_code => 'OrderPaymentContactInfoNotAllowed'} if $payment_info or $contact_info;
+        ($payment_info, $contact_info) = $advert_info->@{qw/payment_info contact_info/};
     } else {
         die 'Invalid advert type ' . ($advert_info->{type} // 'undef') . ' for advert ' . $advert_info->{id};
     }
@@ -2043,8 +2066,9 @@ sub p2p_order_create {
     my $txn_time = Date::Utility->new->datetime;
     my $order    = $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                undef, $advert_id, $client->loginid, $escrow->loginid, $amount, $expiry, $description, $source, $client->loginid, undef, $txn_time);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                undef, $advert_id, $client->loginid, $escrow->loginid, $amount, $expiry, $payment_info, $contact_info, $source, $client->loginid,
+                undef, $txn_time);
         });
 
     return $client->_order_details([$order])->[0];
@@ -2383,12 +2407,21 @@ sub _advertiser_details {
     my ($client, $advertiser) = @_;
 
     return +{
-        id             => $advertiser->{id},
-        name           => $advertiser->{name},
-        client_loginid => $advertiser->{client_loginid},
-        created_time   => Date::Utility->new($advertiser->{created_time})->epoch,
-        is_approved    => $advertiser->{is_approved},
-        is_listed      => $advertiser->{is_listed},
+        id                         => $advertiser->{id},
+        name                       => $advertiser->{name},
+        client_loginid             => $advertiser->{client_loginid},
+        created_time               => Date::Utility->new($advertiser->{created_time})->epoch,
+        is_approved                => $advertiser->{is_approved},
+        is_listed                  => $advertiser->{is_listed},
+        default_advert_description => $advertiser->{default_advert_description} // '',
+        (
+            $client->loginid eq $advertiser->{client_loginid}    # only advertiser themself can see these fields
+            ? (
+                payment_info => $advertiser->{payment_info} // '',
+                contact_info => $advertiser->{contact_info} // '',
+                )
+            : ()
+        ),
     };
 }
 
@@ -2431,6 +2464,8 @@ sub _advert_details {
             (
                 $client->loginid eq $advert->{advertiser_loginid}    # only advert owner can see these fields
                 ? (
+                    payment_info => $advert->{payment_info} // '',
+                    contact_info => $advert->{contact_info} // '',
                     amount                   => financialrounding('amount', $advert->{account_currency}, $advert->{amount}),
                     amount_display           => formatnumber('amount',      $advert->{account_currency}, $advert->{amount}),
                     min_order_amount         => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
@@ -2469,7 +2504,8 @@ sub _order_details {
         my $result = +{
             account_currency   => $order->{account_currency},
             created_time       => Date::Utility->new($order->{created_time})->epoch,
-            description        => $order->{description} // '',
+            payment_info       => $order->{payment_info} // '',
+            contact_info       => $order->{contact_info} // '',
             expiry_time        => Date::Utility->new($order->{expire_time})->epoch,
             id                 => $order->{id},
             is_incoming        => $client->loginid eq $order->{advertiser_loginid} ? 1 : 0,
@@ -2487,9 +2523,10 @@ sub _order_details {
                 name => $order->{advertiser_name},
             },
             advert_details => {
-                id          => $order->{advert_id},
-                description => $order->{advert_description},
-                type        => $order->{advert_type},
+                id             => $order->{advert_id},
+                description    => $order->{advert_description} // '',
+                type           => $order->{advert_type},
+                payment_method => $order->{advert_payment_method},
             },
         };
 

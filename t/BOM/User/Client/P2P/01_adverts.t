@@ -4,6 +4,7 @@ use warnings;
 use Test::More;
 use Test::Fatal;
 use Test::Deep;
+use List::Util qw(pairs);
 
 use BOM::User::Client;
 use BOM::Test::Helper::P2P;
@@ -26,7 +27,12 @@ my $user = BOM::User->create(
 
 $user->add_client($test_client_cr);
 
-my $advertiser_name = 'advertiser name';
+my %advertiser_params = (
+    name                       => 'advertiser name',
+    default_advert_description => 'adv description',
+    payment_info               => 'adv pay info',
+    contact_info               => 'adv contact info',
+);
 
 my %advert_params = (
     account_currency  => 'usd',
@@ -37,9 +43,11 @@ my %advert_params = (
     max_order_amount  => 10,
     min_order_amount  => 0.1,
     payment_method    => 'camels',
+    payment_info      => 'ad pay info',
+    contact_info      => 'ad contact info',
     rate              => 1.23,
-    type              => 'buy',
-    counterparty_type => 'sell',
+    type              => 'sell',
+    counterparty_type => 'buy',
 );
 
 my %params = %advert_params;
@@ -52,12 +60,25 @@ subtest 'Creating advert from non-advertiser' => sub {
 };
 
 subtest 'advertiser Registration' => sub {
-    my $client = BOM::Test::Helper::P2P::create_client();
-    cmp_ok $client->p2p_advertiser_create($advertiser_name)->{client_loginid}, 'eq', $client->loginid, "create advertiser";
-    my $advertiser_info = $client->p2p_advertiser_info;
-    ok !$advertiser_info->{is_approved}, "advertiser not approved";
-    ok $advertiser_info->{is_listed}, "advertiser adverts are listed";
-    cmp_ok $advertiser_info->{name}, 'eq', $advertiser_name, "advertiser name";
+    my $adv_client = BOM::Test::Helper::P2P::create_client();
+    ok my $adv = $adv_client->p2p_advertiser_create(%advertiser_params), 'create advertiser';
+
+    my $expected_adv = {
+        id             => $adv->{id},
+        client_loginid => $adv_client->loginid,
+        is_listed      => bool(1),
+        is_approved    => bool(0),
+        created_time   => bool(1),
+        %advertiser_params
+    };
+
+    my $advertiser_info = $adv_client->p2p_advertiser_info;
+    cmp_deeply($advertiser_info, $expected_adv, 'correct advertiser_info for advertiser');
+
+    my $other_client = BOM::Test::Helper::P2P::create_client();
+    $advertiser_info = $other_client->p2p_advertiser_info(id => $adv->{id});
+    delete $expected_adv->@{qw/payment_info contact_info/};
+    cmp_deeply($advertiser_info, $expected_adv, 'sensitve fields hidden in advertiser_info for other client');
 };
 
 subtest 'Duplicate advertiser Registration' => sub {
@@ -65,7 +86,7 @@ subtest 'Duplicate advertiser Registration' => sub {
 
     cmp_deeply(
         exception {
-            $advertiser->p2p_advertiser_create($advertiser_name)
+            $advertiser->p2p_advertiser_create(%advertiser_params)
         },
         {error_code => 'AlreadyRegistered'},
         "duplicate advertiser request not allowed"
@@ -86,12 +107,12 @@ subtest 'Creating advert from not approved advertiser' => sub {
 };
 
 subtest 'Updating advertiser fields' => sub {
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(name => $advertiser_name);
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(%advertiser_params);
 
     my $advertiser_info = $advertiser->p2p_advertiser_info;
 
     ok $advertiser_info->{is_approved}, 'advertiser is approved';
-    is $advertiser_info->{name},        $advertiser_name, 'advertiser name';
+    is $advertiser_info->{name},        $advertiser_params{name}, 'advertiser name';
     ok $advertiser_info->{is_listed},   'advertiser is listed';
 
     cmp_deeply(
@@ -117,12 +138,15 @@ subtest 'Updating advertiser fields' => sub {
 
     ok $advertiser->p2p_advertiser_update(is_approved => 1)->{is_approved}, 'Enabling approval';
     ok $advertiser->p2p_advertiser_update(is_listed   => 1)->{is_listed},   'Switch flag is_listed to true';
+
+    for my $pair (pairs('default_advert_description', 'new desc', 'contact_info', 'new contact info', 'payment_info', 'new pay info')) {
+        is $advertiser->p2p_advertiser_update($pair->[0] => $pair->[1])->{$pair->[0]}, $pair->[1], 'update ' . $pair->[0];
+    }
 };
 
 subtest 'Creating advert' => sub {
-    my %params = %advert_params;
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(name => $advertiser_name);
-    $advertiser->p2p_advertiser_update(name => $advertiser_name);
+    my %params     = %advert_params;
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(%advertiser_params);
 
     my $advert;
 
@@ -187,6 +211,36 @@ subtest 'Creating advert' => sub {
     );
 
     %params = %advert_params;
+    $params{type} = 'buy';
+    cmp_deeply(
+        exception {
+            $advert = $advertiser->p2p_advert_create(%params);
+        },
+        {error_code => 'AdvertPaymentContactInfoNotAllowed'},
+        'Error when payment/contact info provided for buy advert'
+    );
+
+    %params = %advert_params;
+    $params{payment_info} = ' ';
+    cmp_deeply(
+        exception {
+            $advert = $advertiser->p2p_advert_create(%params);
+        },
+        {error_code => 'AdvertPaymentInfoRequired'},
+        'Error when payment info not provided for buy advert'
+    );
+
+    %params = %advert_params;
+    $params{contact_info} = ' ';
+    cmp_deeply(
+        exception {
+            $advert = $advertiser->p2p_advert_create(%params);
+        },
+        {error_code => 'AdvertContactInfoRequired'},
+        'Error when contact info not provided for buy advert'
+    );
+
+    %params = %advert_params;
     is(
         exception {
             $advert = $advertiser->p2p_advert_create(%params);
@@ -214,6 +268,8 @@ subtest 'Creating advert' => sub {
         min_order_amount_limit         => num($params{min_order_amount}),
         min_order_amount_limit_display => num($params{min_order_amount}),
         payment_method                 => $params{payment_method},
+        payment_info                   => $params{payment_info},
+        contact_info                   => $params{contact_info},
         price                          => num($params{rate}),
         price_display                  => num($params{rate}),
         rate                           => num($params{rate}),
@@ -224,7 +280,7 @@ subtest 'Creating advert' => sub {
         counterparty_type              => $params{counterparty_type},
         advertiser_details             => {
             id   => $advertiser->p2p_advertiser_info->{id},
-            name => $advertiser_name,
+            name => $advertiser_params{name},
         },
     };
 
@@ -241,7 +297,7 @@ subtest 'Creating advert' => sub {
 
     # Fields that should only be visible to advert owner
     delete @$expected_advert{
-        qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display)
+        qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info)
     };
 
     cmp_deeply($test_client_cr->p2p_advert_list, [$expected_advert], "p2p_advert_list returns less fields for client");
@@ -332,6 +388,42 @@ subtest 'Creating advert from non active advertiser' => sub {
         undef,
         "unlisted advertiser can still create advert"
     );
+};
+
+subtest 'Deleting ads' => sub {
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_update(
+                id     => $advert->{id},
+                delete => 1
+                )
+        },
+        {error_code => 'OpenOrdersDeleteAdvert'},
+        "cannot delete ad with open orders"
+    );
+
+    BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'cancelled');
+
+    is exception { $advertiser->p2p_advert_update(id => $advert->{id}, delete => 1) }, undef, 'delete ad ok';
+
+    is $advertiser->p2p_advert_info(id => $advert->{id}), undef, 'deleted ad is not seen';
+
+    cmp_deeply(
+        exception {
+            $client->p2p_order_create(
+                advert_id => $advert->{id},
+                amount    => 10
+                )
+        },
+        {error_code => 'AdvertNotFound'},
+        "cannot create order for deleted ad"
+    );
+
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 done_testing();
