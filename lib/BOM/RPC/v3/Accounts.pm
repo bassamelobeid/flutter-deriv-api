@@ -749,6 +749,7 @@ rpc get_account_status => sub {
         push @$status, 'allow_document_upload';
     } elsif ($client->landing_company->is_authentication_mandatory
         or ($client->aml_risk_classification // '') eq 'high'
+        or $client->status->withdrawal_locked
         or $client->status->allow_document_upload)
     {
         push @$status, 'allow_document_upload';
