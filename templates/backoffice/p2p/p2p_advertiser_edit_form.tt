@@ -4,9 +4,12 @@ table#p2p_advertiser_edit td{
 }
 </style>
 
-[% advertiser_name = advertiser_info.name || '' %]
-[% is_approved     = advertiser_info.is_approved %]
-[% is_listed       = advertiser_info.is_listed %]
+[% advertiser_name            = advertiser_info.name || '' %]
+[% is_approved                = advertiser_info.is_approved %]
+[% is_listed                  = advertiser_info.is_listed %]
+[% default_advert_description = advertiser_info.default_advert_description %]
+[% payment_info               = advertiser_info.payment_info %]
+[% contact_info               = advertiser_info.contact_info %]
 
 <form action="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {loginID => loginid, whattodo => 'p2p.advertiser.update'}) %]" method="post">
     <table border="0" width="100%" id="p2p_advertiser_edit">
@@ -45,6 +48,24 @@ table#p2p_advertiser_edit td{
                     [% END %]
                 </td>
             </tr>
+            <tr>
+                <td class="label">Default advert description: </td>
+                <td>
+                    <input type="text" name="default_advert_description" value="[% default_advert_description %]" size=80/> [% default_advert_description %]
+                </td>
+            </tr>
+            <tr>
+                <td class="label">Payment Info: </td>
+                <td>
+                    <input type="text" name="payment_info" value="[% payment_info %]" size=80/> [% payment_info %]
+                </td>
+            </tr> 
+            <tr>
+                <td class="label">Contact Info: </td>
+                <td>
+                    <input type="text" name="contact_info" value="[% contact_info %]" size=80/> [% contact_info %]
+                </td>
+            </tr>             
         [% END %]
         <tr>
             <td colspan="2"><button type="submit">Update P2P advertiser details</button></td>
