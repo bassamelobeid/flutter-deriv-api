@@ -50,6 +50,12 @@ use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::Database::Model::OAuth;
 
+$SIG{__DIE__} = sub {
+    return if $^S;
+    $log->errorf('Fatal error: %s', @_);
+    exit(1);
+};
+
 # File calling arguments
 GetOptions("r|reset-clients" => \(my $reset_clients = 0));
 
@@ -84,7 +90,7 @@ sub create_client {
         last_name          => '',
         myaffiliates_token => '',
         email              => $email,
-        residence          => 'id',
+        residence          => 'za',
         address_line_1     => '',
         address_line_2     => '',
         address_city       => '',
@@ -188,12 +194,13 @@ my $all_clients = $app_config->payments->p2p->clients;
 my $new_clients = [$advertiser->loginid, $client->loginid];
 push(@$all_clients, @$new_clients);
 
-$app_config->set({'payments.p2p.enabled'               => 1});
-$app_config->set({'payments.p2p.available'             => 1});
-$app_config->set({'system.suspend.p2p'                 => 0});
-$app_config->set({'payments.p2p.clients'               => $reset_clients ? $new_clients : $all_clients});
-$app_config->set({'payments.p2p.escrow'                => \@escrow_ids});
-$app_config->set({'payments.p2p.limits.maximum_advert' => 3000});
+$app_config->set({'payments.p2p.enabled'                 => 1});
+$app_config->set({'payments.p2p.available'               => 1});
+$app_config->set({'system.suspend.p2p'                   => 0});
+$app_config->set({'payments.p2p.clients'                 => $reset_clients ? $new_clients : $all_clients});
+$app_config->set({'payments.p2p.escrow'                  => \@escrow_ids});
+$app_config->set({'payments.p2p.limits.maximum_advert'   => 3000});
+$app_config->set({'payments.p2p.available_for_countries' => [qw(za ng)]});
 
 $log->infof('App config applied');
 $log->infof('P2P devops status originally:  %s', $app_config->system->suspend->p2p   ? 'off' : 'on');
@@ -204,7 +211,7 @@ $log->infof('Maximum order  configured is %s',   BOM::Config::Runtime->instance-
 # ===== Advertiser Update =====
 section_title('Advertiser Update');
 unless ($advertiser->p2p_advertiser_info) {
-    $advertiser->p2p_advertiser_create('example advertiser');
+    $advertiser->p2p_advertiser_create(name => 'example advertiser');
 }
 $advertiser->p2p_advertiser_update(
     is_listed   => 1,
@@ -215,7 +222,7 @@ $log->infof('Advertiser info: %s', $advertiser->p2p_advertiser_info);
 
 $advertiser->p2p_advert_create(
     account_currency => 'USD',
-    local_currency   => 'IDR',
+    local_currency   => 'ZAR',
     amount           => 3000,
     rate             => 14500,
     type             => 'buy',
@@ -224,12 +231,12 @@ $advertiser->p2p_advert_create(
     max_order_amount => 100,
     payment_method   => 'bank_transfer',
     description      => 'Please contact via whatsapp 1234',
-    country          => 'id',
+    country          => 'za',
 );
 
 $advertiser->p2p_advert_create(
     account_currency => 'USD',
-    local_currency   => 'IDR',
+    local_currency   => 'ZAR',
     amount           => 3000,
     rate             => 13500,
     type             => 'sell',
@@ -237,6 +244,10 @@ $advertiser->p2p_advert_create(
     min_order_amount => 10,
     max_order_amount => 100,
     payment_method   => 'bank_transfer',
+    payment_info     => 'Transfer to account 000-1111',
+    contact_info     => 'Please contact via whatsapp 1234',
     description      => 'Please contact via whatsapp 1234',
-    country          => 'id',
+    country          => 'za',
 );
+
+section_title('Success!');
