@@ -159,6 +159,46 @@ subtest 'client documents expiry' => sub {
             $sth_doc_finish->execute($id1);
         };
     }
+
+    subtest 'check for document_expired of duplicate_acount' => sub {
+        my $user_client_mf = BOM::User->create(
+            email          => 'abcdef@binary.com',
+            password       => BOM::User::Password::hashpw('jskjd8292922'),
+            email_verified => 1,
+        );
+        my $mf_client  = create_client('MF');
+        $user_client_mf->add_client($mf_client);
+        $mf_client->status->set('duplicate_account');
+        ok $mf_client->status->duplicate_account, "MF Account is set as duplicate_account";
+        my $mf_client_2 = create_client('MF');
+        $user_client_mf->add_client($mf_client_2);
+        $mf_client_2->status->set('age_verification', 'Darth Vader', 'Test Case');
+        ok $mf_client_2->status->age_verification, "Age verified by other sources";
+
+        my ($doc) = $mf_client_2->add_client_authentication_document({
+            file_name                  => $mf_client_2->loginid . '.passport.' . Date::Utility->new->epoch . '.pdf',
+            document_type              => "passport",
+            document_format            => "PDF",
+            document_path              => '/tmp/test.pdf',
+            expiration_date            => Date::Utility->new()->plus_time_interval('1d')->date,
+            authentication_method_code => 'ID_DOCUMENT',
+            checksum                   => '120EA8A25E5D487BF68B5F7096440019'
+        });
+        $doc->status('uploaded');
+        $mf_client_2->save;
+        $mf_client_2->load;
+        ok !$mf_client_2->documents_expired, "Documents with status of 'uploaded' are valid";
+        $mf_client_2->status->set('duplicate_account');
+        ok $mf_client_2->status->duplicate_account, "MF2 Account is set as duplicate_account";
+        $mf_client->status->clear_duplicate_account;
+        ok !$mf_client->status->duplicate_account, "MF Account is enabled now.";
+
+        ok !$mf_client->documents_expired, "Documents with status of 'uploaded' are valid";
+        $doc->expiration_date('2010-10-10');
+        $doc->save;
+        $doc->load;
+        ok $mf_client->documents_expired, "If Duplicate account's document expires, documents are not valid anymore for sibling too.";
+    };
 };
 
 subtest 'documents uploaded' => sub {
