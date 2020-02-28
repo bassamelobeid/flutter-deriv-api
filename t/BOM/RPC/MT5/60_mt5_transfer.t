@@ -179,6 +179,12 @@ subtest 'multi currency transfers' => sub {
         );
 
         BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+        $client_eur->status->set('no_withdrawal_or_trading', 'system', '..dont like you, sorry.');
+        $c->call_ok('mt5_deposit', $deposit_params)
+            ->has_error->error_message_is('You cannot perform this action, as your account is withdrawal locked.');
+        $client_eur->status->clear_no_withdrawal_or_trading;
+
         $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit EUR->USD with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'deposit EUR->USD with current rate - has transaction id');
 
@@ -190,6 +196,11 @@ subtest 'multi currency transfers' => sub {
 
         $prev_bal = $client_eur->account->balance;
         BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+        $client_eur->status->set('unwelcome', 'system', '..dont like you, sorry.');
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error->error_message_is('Your account is restricted to withdrawals only.');
+        $client_eur->status->clear_unwelcome;
+
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->EUR with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->EUR with current rate - has transaction id');
         is financialrounding('amount', 'EUR', $client_eur->account->balance),

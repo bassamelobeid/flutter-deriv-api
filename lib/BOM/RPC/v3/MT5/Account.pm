@@ -1434,7 +1434,8 @@ sub _mt5_validate_and_get_amount {
                     params        => $mt5_loginid
                 }) if (ref $setting eq 'HASH' && $setting->{error});
 
-            my $action = ($error_code =~ /Withdrawal/) ? 'withdrawal' : 'deposit';
+            my $action             = ($error_code =~ /Withdrawal/) ? 'withdrawal' : 'deposit';
+            my $action_counterpart = ($error_code =~ /Withdrawal/) ? 'deposit'    : 'withdraw';
 
             my $mt5_group = $setting->{group};
             my $mt5_lc    = _fetch_mt5_lc($setting);
@@ -1498,6 +1499,7 @@ sub _mt5_validate_and_get_amount {
                     loginid      => $loginid,
                     db_operation => 'replica'
                 });
+
             }
             catch {
                 return create_error_future(
@@ -1651,6 +1653,9 @@ sub _mt5_validate_and_get_amount {
                     override_code => $error_code,
                     params        => [$source_currency, formatnumber('amount', $source_currency, $max)]}
             ) if $amount > financialrounding('amount', $source_currency, $max);
+
+            my $validation = BOM::Platform::Client::CashierValidation::validate($loginid, $action_counterpart);
+            return create_error_future($error_code, {message => $validation->{error}->{message_to_client}}) if exists $validation->{error};
 
             return Future->done({
                 mt5_amount              => $mt5_amount,

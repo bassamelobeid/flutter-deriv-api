@@ -223,6 +223,11 @@ subtest 'suspend countries' => sub {
         residence      => 'af',
         place_of_birth => 'af',
     });
+    my $user_af_agent = BOM::User->create(
+        email          => $pa_info->{email},
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
     $af_agent->set_default_account('USD');
     $af_agent->payment_agent($pa_info);
     $af_agent->save;
@@ -233,6 +238,11 @@ subtest 'suspend countries' => sub {
         residence      => 'af',
         place_of_birth => 'af',
     });
+    my $user_af_client = BOM::User->create(
+        email          => $af_client->{email},
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
     $af_client->set_default_account('USD');
     $af_client->save;
     my $token_client = BOM::Database::Model::OAuth->new->store_access_token_only(1, $af_client->loginid);
