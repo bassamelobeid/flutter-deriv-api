@@ -51,7 +51,7 @@ $client->set_default_account('USD');
 
 $client->status->set('unwelcome', 'calum', '..dont like you, sorry.');
 
-throws_ok { $client->validate_payment(%deposit) } qr/Deposits blocked/, 'cannot deposit when unwelcome.';
+throws_ok { $client->validate_payment(%deposit) } qr/Your account is restricted to withdrawals only./, 'cannot deposit when unwelcome.';
 
 $client->status->clear_unwelcome;
 
@@ -59,7 +59,7 @@ ok $client->validate_payment(%deposit), 'can deposit when not unwelcome.';
 
 $client->status->set('disabled', 'calum', '..dont like you, sorry.');
 
-throws_ok { $client->validate_payment(%deposit) } qr/Client is disabled/, 'cannot deposit when disabled.';
+throws_ok { $client->validate_payment(%deposit) } qr/Your account is disabled/, 'cannot deposit when disabled.';
 
 $client->status->clear_disabled;
 
@@ -67,7 +67,7 @@ ok $client->validate_payment(%deposit), 'can deposit when not disabled.';
 
 $client->status->set('cashier_locked', 'calum', '..dont like you, sorry.');
 
-throws_ok { $client->validate_payment(%deposit) } qr/Client's cashier is locked/, 'cannot deposit when cashier is locked.';
+throws_ok { $client->validate_payment(%deposit) } qr/Your cashier is locked/, 'cannot deposit when cashier is locked.';
 
 $client->status->clear_cashier_locked;
 
@@ -113,6 +113,9 @@ my %deposit_iom = (
 my $client_iom = $user_iom->create_client(%$client_details_iom);
 $client_iom->set_default_account('GBP');
 
+throws_ok { $client_iom->validate_payment(%deposit_iom) } qr/Please accept Funds Protection./, 'GB residence needs to accept fund protection';
+
+$client_iom->status->set('ukgc_funds_protection', 'system', 'testing');
 ok $client_iom->validate_payment(%deposit_iom), 'can deposit when no deposit limit set.';
 
 $client_iom->payment_free_gift(%deposit_iom);

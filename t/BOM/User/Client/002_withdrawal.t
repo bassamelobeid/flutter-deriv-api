@@ -109,7 +109,7 @@ subtest 'Client-specific' => sub {
     my $client = new_client('USD');
 
     $client->status->set('withdrawal_locked', 'calum', 'reason?');
-    throws_ok { $client->validate_payment(%withdrawal) } qr/disabled/, 'Client withdrawals have been locked.';
+    throws_ok { $client->validate_payment(%withdrawal) } qr/Your account is locked for withdrawals./, 'Client withdrawals have been locked.';
     $client->status->clear_withdrawal_locked;
 
     $client->status->clear_unwelcome;
@@ -117,11 +117,11 @@ subtest 'Client-specific' => sub {
     throws_ok { $client->validate_payment(%withdrawal) } qr/disabled/, 'Client disabled.';
 
     $client->status->set('cashier_locked', 'calum', 'reason?');
-    throws_ok { $client->validate_payment(%withdrawal) } qr/Client's cashier is locked/, 'Client withdrawals have been locked.';
+    throws_ok { $client->validate_payment(%withdrawal) } qr/Your cashier is locked/, 'Client withdrawals have been locked.';
     $client->status->clear_cashier_locked;
 
     $client->status->set('disabled', 'calum', 'reason?');
-    throws_ok { $client->validate_payment(%withdrawal) } qr/Client is disabled/, 'Client withdrawals have been locked.';
+    throws_ok { $client->validate_payment(%withdrawal) } qr/Your account is disabled/, 'Client withdrawals have been locked.';
     $client->status->clear_disabled;
 };
 
@@ -242,22 +242,25 @@ subtest 'CR withdrawal' => sub {
 
 # Test for MX withdrawal limits
 subtest 'EUR3k over 30 days MX limitation.' => sub {
-    plan tests => 11;
+    plan tests => 12;
 
     my $client = new_client(
         'GBP',
         broker_code => 'MX',
-        residence   => 'gb'
+        residence   => 'gb',
+        email       => 'binarygb@binary.com',
     );
 
     ok(!$client->fully_authenticated, 'client has not authenticated identity.');
-
-    my $gbp_amount = _GBP_equiv(6200);
-    $client->smart_payment(
+    my $gbp_amount  = _GBP_equiv(6200);
+    my %deposit_gbp = (
         %deposit,
         amount   => $gbp_amount,
         currency => 'GBP'
     );
+    throws_ok { $client->validate_payment(%deposit_gbp) } qr/Please accept Funds Protection./, 'GB residence needs to accept fund protection';
+    $client->status->set('ukgc_funds_protection', 'system', 'testing');
+    $client->smart_payment(%deposit_gbp);
     $client->status->clear_cashier_locked;    # first-deposit will cause this in non-CR clients!
 
     ok $client->default_account->balance == $gbp_amount, 'Successfully credited client; no other amount has been credited to GBP account segment.';
