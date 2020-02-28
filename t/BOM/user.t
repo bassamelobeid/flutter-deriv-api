@@ -642,4 +642,42 @@ subtest 'fail if mt5 api return empty login' => sub {
     like($f->failure, qr/Empty login returned/, 'MT5 create_user failed, no/empty login returned');
 };
 
+subtest 'pep_self_declaration_time' => sub {
+    my $test_user = BOM::User->create(
+        email    => 'pep_test@binary.com',
+        password => $hash_pwd
+    );
+
+    my $test_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+
+    my $test_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $test_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+    });
+
+    my $cr_date = '2019-01-01 00:00:00';
+    $test_cr->date_joined($cr_date);
+    $test_cr->save;
+
+    my $mlt_date = '2019-02-01 00:00:00';
+    $test_mlt->date_joined($mlt_date);
+    $test_mlt->save;
+
+    is $test_user->pep_self_declaration_time, undef, 'No pep declaration without any client added';
+
+    $test_user->add_client($test_vr);
+    is $test_user->pep_self_declaration_time, undef, 'No pep declaration without any real';
+
+    $test_user->add_client($test_mlt);
+    is $test_user->pep_self_declaration_time, $mlt_date, 'Pep declaration time is correct with a single real account';
+
+    $test_user->add_client($test_cr);
+    is $test_user->pep_self_declaration_time, $cr_date, 'Pep declaration time is the minimum jointed date among all real accounts';
+};
+
 done_testing;

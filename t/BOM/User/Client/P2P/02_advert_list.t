@@ -36,32 +36,6 @@ subtest 'advertiser adverts' => sub {
     is $advertiser2->p2p_advertiser_adverts()->@*, 1, 'advertiser 2 got one';
 };
 
-subtest 'amount filter' => sub {
-    plan skip_all => "We don't filter advert list for now, but might do later";
-
-    is $client->p2p_advert_list()->@*, 1, 'No filter gets advert';
-    is $client->p2p_advert_list(amount => 101)->@*, 0, 'Filter out >amount';
-    is $client->p2p_advert_list(amount => 99)->@*,  1, 'Not filter out <amount';
-
-    $advertiser1->p2p_advert_update(
-        id         => $advert1->{id},
-        max_amount => 90
-    );
-    is $client->p2p_advert_list(amount => 91)->@*, 0, 'Filter out >max';
-    is $client->p2p_advert_list(amount => 89)->@*, 1, 'Not filter out <max';
-
-    BOM::Test::Helper::P2P::create_order(
-        advert_id => $advert1->{advert_id},
-        amount    => 20
-    );    # advert remaining is now 80
-    is $client->p2p_advert_list(amount => 81)->@*, 0, 'Filter out >remaining';
-    is $client->p2p_advert_list(amount => 79)->@*, 1, 'Not filter out <remaining';
-
-    $app_config->payments->p2p->limits->maximum_order(70);
-    is $client->p2p_advert_list(amount => 71)->@*, 0, 'Filter out >config max';
-    is $client->p2p_advert_list(amount => 69)->@*, 1, 'Not filter out <config max';
-};
-
 BOM::Test::Helper::P2P::reset_escrow();
 
 # restore app config

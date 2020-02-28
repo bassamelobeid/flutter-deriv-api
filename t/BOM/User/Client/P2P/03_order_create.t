@@ -13,58 +13,74 @@ use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
 use Test::Fatal;
 
-my $order_description = 'Test order';
 BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
 
-subtest 'Creating new order' => sub {
-    my $amount = 100;
+subtest 'Creating new buy order' => sub {
+
+    my %ad_params = (
+        amount         => 100,
+        rate           => 1.1,
+        type           => 'sell',
+        description    => 'ad description',
+        payment_method => 'a pay method',
+        payment_info   => 'ad pay info',
+        contact_info   => 'ad contact info',
+        local_currency => 'sgd',
+    );
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
-    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
-        amount => $amount,
-        type   => 'sell',
-    );
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(%ad_params);
     my $client = BOM::Test::Helper::P2P::create_client();
 
-    ok($escrow->account->balance == 0,           'Escrow balance is correct');
-    ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
-    my $order_data = $client->p2p_order_create(
-        advert_id   => $advert_info->{id},
-        amount      => 100,
-        expiry      => 7200,
-        description => $order_description
+    ok($escrow->account->balance == 0,                      'Escrow balance is correct');
+    ok($advertiser->account->balance == $ad_params{amount}, 'advertiser balance is correct');
+
+    my $order_amount = 100;
+
+    my $err = exception {
+        $client->p2p_order_create(
+            advert_id    => $advert_info->{id},
+            amount       => $order_amount,
+            expiry       => 7200,
+            payment_info => 'blah',
+            contact_info => 'blah',
+        );
+    };
+    is $err->{error_code}, 'OrderPaymentContactInfoNotAllowed', 'Cannot provide payment/contact info for buy order';
+
+    my $new_order = $client->p2p_order_create(
+        advert_id => $advert_info->{id},
+        amount    => $order_amount,
+        expiry    => 7200,
     );
 
-    ok($order_data, 'Order is created');
-
-    ok($escrow->account->balance == $amount, 'Money is deposited to Escrow account');
-    ok($advertiser->account->balance == 0,   'Money is withdrawn from advertiser account');
-    is($order_data->{status}, 'pending', 'Status for new order is correct');
-    ok($order_data->{amount} == $amount, 'Amount for new order is correct');
-    is($order_data->{description}, $order_description, 'Description for new order is correct');
+    ok($escrow->account->balance == $order_amount, 'Money is deposited to Escrow account');
+    ok($advertiser->account->balance == 0,         'Money is withdrawn from advertiser account');
 
     BOM::Test::Helper::P2P::reset_escrow();
 
     my $expected_order = {
-        account_currency => $advert_info->{account_currency},
-        amount           => num($order_data->{amount}),
-        amount_display   => num($order_data->{amount}),
+        account_currency => $advertiser->account->currency_code,
+        amount           => num($order_amount),
+        amount_display   => num($order_amount),
         created_time     => re('\d+'),
-        description      => $order_data->{description},
         expiry_time      => re('\d+'),
-        id               => $order_data->{id},
+        id               => $new_order->{id},
         is_incoming      => 0,
-        local_currency   => $advert_info->{local_currency},
-        price            => num($advert_info->{rate} * 100),
-        price_display    => num($advert_info->{rate} * 100),
-        rate             => num($advert_info->{rate}),
-        rate_display     => num($advert_info->{rate}),
+        local_currency   => $ad_params{local_currency},
+        price            => num($ad_params{amount} * $ad_params{rate}),
+        price_display    => num($ad_params{amount} * $ad_params{rate}),
+        rate             => num($ad_params{rate}),
+        rate_display     => num($ad_params{rate}),
         status           => 'pending',
-        type             => $order_data->{type},
+        type             => 'buy',
+        payment_info     => $ad_params{payment_info},
+        contact_info     => $ad_params{contact_info},
         advert_details   => {
-            id          => $advert_info->{id},
-            description => $advert_info->{description},
-            type        => $advert_info->{type},
+            id             => $advert_info->{id},
+            description    => $ad_params{description},
+            type           => $ad_params{type},
+            payment_method => $ad_params{payment_method}
         },
         advertiser_details => {
             id   => $advertiser->p2p_advertiser_info->{id},
@@ -72,8 +88,9 @@ subtest 'Creating new order' => sub {
         },
     };
 
+    cmp_deeply($new_order, $expected_order, 'order_create expected response');
     cmp_deeply($client->p2p_order_list, [$expected_order], 'order_list() returns correct info');
-    cmp_deeply($client->p2p_order_info(id => $order_data->{id}), $expected_order, 'order_info() returns correct info');
+    cmp_deeply($client->p2p_order_info(id => $new_order->{id}), $expected_order, 'order_info() returns correct info');
 };
 
 subtest 'Creating two orders from two clients' => sub {
@@ -91,10 +108,9 @@ subtest 'Creating two orders from two clients' => sub {
     ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
 
     my $order_data1 = $client1->p2p_order_create(
-        advert_id   => $advert_info->{id},
-        amount      => 50,
-        expiry      => 7200,
-        description => $order_description
+        advert_id => $advert_info->{id},
+        amount    => 50,
+        expiry    => 7200,
     );
 
     ok($order_data1, 'Order is created');
@@ -104,13 +120,11 @@ subtest 'Creating two orders from two clients' => sub {
 
     is($order_data1->{status}, 'pending', 'Status for new order is correct');
     ok($order_data1->{amount} == 50, 'Amount for new order is correct');
-    is($order_data1->{description}, $order_description, 'Description for new order is correct');
 
     my $order_data2 = $client2->p2p_order_create(
-        advert_id   => $advert_info->{id},
-        amount      => 50,
-        expiry      => 7200,
-        description => $order_description
+        advert_id => $advert_info->{id},
+        amount    => 50,
+        expiry    => 7200,
     );
 
     ok($order_data2, 'Order is created');
@@ -120,7 +134,6 @@ subtest 'Creating two orders from two clients' => sub {
 
     is($order_data2->{status}, 'pending', 'Status for new order is correct');
     ok($order_data2->{amount} == 50, 'Amount for new order is correct');
-    is($order_data2->{description}, $order_description, 'Description for new order is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -144,10 +157,9 @@ subtest 'Creating two orders from one client for two adverts' => sub {
     ok($advertiser2->account->balance == $amount, 'advertiser balance is correct');
 
     my $order_data1 = $client->p2p_order_create(
-        advert_id   => $advert_info_1->{id},
-        amount      => 100,
-        expiry      => 7200,
-        description => $order_description
+        advert_id => $advert_info_1->{id},
+        amount    => 100,
+        expiry    => 7200
     );
 
     ok($order_data1, 'Order is created');
@@ -157,13 +169,11 @@ subtest 'Creating two orders from one client for two adverts' => sub {
 
     is($order_data1->{status}, 'pending', 'Status for new order is correct');
     ok($order_data1->{amount} == 100, 'Amount for new order is correct');
-    is($order_data1->{description}, $order_description, 'Description for new order is correct');
 
     my $order_data2 = $client->p2p_order_create(
-        advert_id   => $advert_info_2->{id},
-        amount      => 100,
-        expiry      => 7200,
-        description => $order_description
+        advert_id => $advert_info_2->{id},
+        amount    => 100,
+        expiry    => 7200,
     );
 
     ok($order_data2, 'Order is created');
@@ -173,7 +183,6 @@ subtest 'Creating two orders from one client for two adverts' => sub {
 
     is($order_data2->{status}, 'pending', 'Status for new order is correct');
     ok($order_data2->{amount} == 100, 'Amount for new order is correct');
-    is($order_data2->{description}, $order_description, 'Description for new order is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -193,10 +202,9 @@ subtest 'Creating two new orders from one client for one advert' => sub {
     ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
 
     my $order_data = $client->p2p_order_create(
-        advert_id   => $advert_info->{id},
-        amount      => 50,
-        expiry      => 7200,
-        description => $order_description
+        advert_id => $advert_info->{id},
+        amount    => 50,
+        expiry    => 7200,
     );
 
     ok($order_data, 'Order is created');
@@ -206,14 +214,12 @@ subtest 'Creating two new orders from one client for one advert' => sub {
 
     is($order_data->{status}, 'pending', 'Status for new order is correct');
     ok($order_data->{amount} == 50, 'Amount for new order is correct');
-    is($order_data->{description}, $order_description, 'Description for new order is correct');
 
     my $err = exception {
         $client->p2p_order_create(
-            advert_id   => $advert_info->{id},
-            amount      => 50,
-            expiry      => 7200,
-            description => $order_description
+            advert_id => $advert_info->{id},
+            amount    => 50,
+            expiry    => 7200,
         );
     };
     is $err->{error_code}, 'OrderAlreadyExists', 'Got correct error';
@@ -235,10 +241,9 @@ subtest 'Creating order for advertiser own order' => sub {
 
     my $err = exception {
         $advertiser->p2p_order_create(
-            advert_id   => $advert_info->{id},
-            amount      => 100,
-            expiry      => 7200,
-            description => $order_description
+            advert_id => $advert_info->{id},
+            amount    => 100,
+            expiry    => 7200,
         );
     };
     is $err->{error_code}, 'InvalidAdvertOwn', 'Got correct error code';
@@ -264,10 +269,9 @@ subtest 'Creating order with amount more than available' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            advert_id   => $advert_info->{id},
-            amount      => 101,
-            expiry      => 7200,
-            description => $order_description
+            advert_id => $advert_info->{id},
+            amount    => 101,
+            expiry    => 7200,
         );
     };
     is $err->{error_code}, 'OrderMaximumExceeded', 'Got correct error code';
@@ -293,10 +297,9 @@ subtest 'Creating order with negative amount' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            advert_id   => $advert_info->{id},
-            amount      => -1,
-            expiry      => 7200,
-            description => $order_description
+            advert_id => $advert_info->{id},
+            amount    => -1,
+            expiry    => 7200,
         );
     };
     is $err->{error_code}, 'OrderMinimumNotMet', 'Got correct error code';
@@ -327,10 +330,9 @@ subtest 'Creating order outside min-max range' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            advert_id   => $advert_info->{id},
-            amount      => $min_amount - 1,
-            expiry      => 7200,
-            description => $order_description
+            advert_id => $advert_info->{id},
+            amount    => $min_amount - 1,
+            expiry    => 7200,
         );
     };
     is $err->{error_code}, 'OrderMinimumNotMet', 'Got correct error code';
@@ -338,10 +340,9 @@ subtest 'Creating order outside min-max range' => sub {
 
     $err = exception {
         $client->p2p_order_create(
-            advert_id   => $advert_info->{id},
-            amount      => $max_amount + 1,
-            expiry      => 7200,
-            description => $order_description
+            advert_id => $advert_info->{id},
+            amount    => $max_amount + 1,
+            expiry    => 7200,
         );
     };
     is $err->{error_code}, 'OrderMaximumExceeded', 'Got correct error code';
@@ -370,10 +371,9 @@ subtest 'Creating order with disabled advertiser' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            advert_id   => $advert_info->{id},
-            amount      => $amount,
-            expiry      => 7200,
-            description => $order_description
+            advert_id => $advert_info->{id},
+            amount    => $amount,
+            expiry    => 7200,
         );
     };
 
@@ -401,10 +401,9 @@ subtest 'Creating order without escrow' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            advert_id   => $advert_info->{id},
-            amount      => $amount,
-            expiry      => 7200,
-            description => $order_description
+            advert_id => $advert_info->{id},
+            amount    => $amount,
+            expiry    => 7200,
         );
     };
     is $err->{error_code}, 'EscrowNotFound', 'Got correct error code';
@@ -447,8 +446,9 @@ subtest 'Buy adverts' => sub {
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
-        amount => $amount,
-        type   => 'buy'
+        amount         => $amount,
+        type           => 'buy',
+        payment_method => 'my method',
     );
     my $client = BOM::Test::Helper::P2P::create_client();
 
@@ -456,17 +456,25 @@ subtest 'Buy adverts' => sub {
     ok($advertiser->account->balance == 0, 'advertiser balance is correct');
     note $advertiser->account->balance;
     my %params = (
-        advert_id   => $advert_info->{id},
-        amount      => 100,
-        expiry      => 7200,
-        description => $order_description
+        advert_id    => $advert_info->{id},
+        amount       => $amount,
+        expiry       => 7200,
+        payment_info => 'order pay info',
+        contact_info => 'order contact info'
     );
+
     my $err = exception {
         warning_like { $client->p2p_order_create(%params) } qr/check_no_negative_balance/;
     };
     is $err->{error_code}, 'InsufficientBalance', 'error for insufficient client balance';
 
     BOM::Test::Helper::Client::top_up($client, $client->currency, $amount);
+
+    $err = exception { $client->p2p_order_create(%params, payment_info => undef) };
+    is $err->{error_code}, 'OrderPaymentInfoRequired', 'error for empty payment info';
+
+    $err = exception { $client->p2p_order_create(%params, contact_info => undef) };
+    is $err->{error_code}, 'OrderContactInfoRequired', 'error for empty contact info';
 
     my $order_data = $client->p2p_order_create(%params);
 
@@ -477,9 +485,10 @@ subtest 'Buy adverts' => sub {
 
     is($order_data->{status}, 'pending', 'Status for new order is correct');
     ok($order_data->{amount} == $amount, 'Amount for new order is correct');
-    is($order_data->{description},          $order_description,                'Description for new order is correct');
     is($order_data->{advert_details}{type}, $advert_info->{type},              'advert type is correct');
     is($order_data->{type},                 $advert_info->{counterparty_type}, 'order type is correct');
+    is($order_data->{payment_info},         $params{payment_info},             'payment_info is correct');
+    is($order_data->{contact_info},         $params{contact_info},             'contact_info is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
