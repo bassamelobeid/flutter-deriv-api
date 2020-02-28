@@ -2,17 +2,22 @@ package BOM::Event::Services::Track;
 
 use strict;
 use warnings;
+use feature 'state';
+
 use Log::Any qw($log);
-use BOM::User;
-use BOM::User::Client;
 use Syntax::Keyword::Try;
-use BOM::Event::Services;
-use BOM::Platform::Context qw(request);
 use Locale::Country qw(code2country);
 use Time::Moment;
 use Date::Utility;
-use BOM::Platform::Locale qw/get_state_by_id/;
+use Brands;
+use List::Util qw(first any);
 use Storable qw(dclone);
+
+use BOM::User;
+use BOM::User::Client;
+use BOM::Event::Services;
+use BOM::Platform::Context qw(request);
+use BOM::Platform::Locale qw(get_state_by_id);
 
 my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
@@ -26,7 +31,7 @@ sub _segment {
 =head2 login
 
 It is triggered for each B<login> event emitted, delivering it to Segment.
-It can be called with the following parameters:
+It can be called with the following named parameters:
 
 =over
 
@@ -40,19 +45,20 @@ It can be called with the following parameters:
 
 sub login {
     my ($args) = @_;
-    my $loginid = $args->{loginid};
-    my $properties = $args->{properties} // {};
+    my $properties = $args->{properties};
 
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
-    $log->debugf('Track login event for client %s', $loginid);
-    return Future->needs_all(_identify($customer), _track($customer, $properties, 'login'));
+    return track_event(
+        event                => 'login',
+        loginid              => $args->{loginid},
+        properties           => $properties,
+        is_identify_required => 1
+    );
 }
 
 =head2 signup
 
 It is triggered for each B<signup> event emitted, delivering it to Segment.
-It can be called with the following parameters:
+It can be called with the following named parameters:
 
 =over
 
@@ -65,21 +71,25 @@ It can be called with the following parameters:
 =cut
 
 sub signup {
-    my ($args) = @_;
-    my $loginid = $args->{loginid};
-    my $properties = $args->{properties} // {};
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
+    my ($args)     = @_;
+    my $loginid    = $args->{loginid};
+    my $properties = $args->{properties};
+
+    my $client = _validate_params($loginid, 'signup');
+    return Future->done unless $client;
+    my $customer = _create_customer($client);
+
     $properties->{loginid} = $loginid;
     # Although we have user profile we also want to have some information on event itself
     map { $properties->{$_} = $customer->{$_}           if $customer->{$_} } qw/currency landing_company date_joined/;
     map { $properties->{$_} = $customer->{traits}->{$_} if $customer->{traits}->{$_} } qw/first_name last_name phone address age country/;
     $log->debugf('Track signup event for client %s', $loginid);
+
     if ($properties->{utm_tags}) {
         @{$customer->{traits}}{keys $properties->{utm_tags}->%*} = values $properties->{utm_tags}->%*;
         delete $properties->{utm_tags};
     }
-    return Future->needs_all(_identify($customer), _track($customer, $properties, 'signup'));
+    return Future->needs_all(_send_identify_request($customer), _send_track_request($customer, $properties, 'signup'));
 }
 
 =head2 api_token_created
@@ -90,14 +100,12 @@ It is triggered for each B<signup> event emitted, delivering it to Segment.
 
 sub api_token_created {
     my ($args) = @_;
-    my $loginid = $args->{loginid};
 
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
-    $args->{landing_company} = $customer->{landing_company};
-
-    $log->debugf('Track api_token_create event for client %s', $loginid);
-    return _track($customer, $args, 'api_token_created');
+    return track_event(
+        event      => 'api_token_created',
+        loginid    => $args->{loginid},
+        properties => $args
+    );
 }
 
 =head2 api_token_deleted
@@ -108,14 +116,12 @@ It is triggered for each B<api_token_delete> event emitted, delivering it to Seg
 
 sub api_token_deleted {
     my ($args) = @_;
-    my $loginid = $args->{loginid};
 
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
-    $args->{landing_company} = $customer->{landing_company};
-
-    $log->debugf('Track api_token_delete event for client %s', $loginid);
-    return _track($customer, $args, 'api_token_deleted');
+    return track_event(
+        event      => 'api_token_deleted',
+        loginid    => $args->{loginid},
+        properties => $args
+    );
 }
 
 =head2 account_closure
@@ -125,16 +131,13 @@ It is triggered for each B<account_closure> event emitted, delivering the data t
 =cut
 
 sub account_closure {
-    my ($args)     = @_;
-    my $loginid    = $args->{loginid};
-    my $properties = {%$args};
+    my ($args) = @_;
 
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
-    $properties->{landing_company} = $customer->{landing_company};
-
-    $log->debugf('Track account_closure event for client %s', $loginid);
-    return _track($customer, $properties, 'account_closure');
+    return track_event(
+        event      => 'account_closure',
+        loginid    => $args->{loginid},
+        properties => $args
+    );
 }
 
 =head2 new_mt5_signup
@@ -154,17 +157,16 @@ It can be called with the following parameters:
 
 sub new_mt5_signup {
     my $args       = dclone(shift());
-    my $loginid    = $args->{loginid};
-    my $properties = $args->{properties} // {};
+    my $properties = {$args->{properties}->%*};
 
     die 'mt5 loginid is required' unless $properties->{mt5_login_id};
-    delete $properties->{cs_email} if $properties->{cs_email};
+    delete $properties->{cs_email};
 
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
-
-    $log->debugf('Track new mt5 signup event for client %s', $loginid);
-    return _track($customer, $properties, 'mt5 signup');
+    return track_event(
+        event      => 'mt5 signup',
+        loginid    => $args->{loginid},
+        properties => $properties
+    );
 }
 
 =head2 mt5_password_changed
@@ -184,16 +186,15 @@ It can be called with the following parameters:
 
 sub mt5_password_changed {
     my ($args) = @_;
-    my $loginid = $args->{loginid};
     my $properties = $args->{properties} // {};
 
     $properties->{mt5_loginid} = "MT" . ($properties->{mt5_loginid} // die('mt5 loginid is required'));
 
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
-
-    $log->debugf('Track mt5 password change event for client %s', $loginid);
-    return _track($customer, $properties, 'mt5 password change');
+    return track_event(
+        event      => 'mt5_password_changed',
+        loginid    => $args->{loginid},
+        properties => $properties
+    );
 }
 
 =head2 profile_change
@@ -215,8 +216,11 @@ sub profile_change {
     my ($args) = @_;
     my $loginid = $args->{loginid};
     my $properties = $args->{properties} // {};
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
+
+    my $client = _validate_params($loginid, 'profile_change');
+    return Future->done unless $client;
+    my $customer = _create_customer($client);
+
     $properties->{loginid} = $loginid;
     # Modify some properties to be more readable in segment
     $properties->{updated_fields}->{address_state} = $customer->{traits}->{address}->{state} if $properties->{updated_fields}->{address_state};
@@ -225,19 +229,20 @@ sub profile_change {
             if (defined $properties->{updated_fields}->{$field} and $properties->{updated_fields}->{$field} ne '');
     }
     $log->debugf('Track profile_change event for client %s', $loginid);
-    return Future->needs_all(_identify($customer), _track($customer, $properties, 'profile change'));
+    return Future->needs_all(_send_identify_request($customer), _send_track_request($customer, $properties, 'profile change'));
 }
 
 =head2 transfer_between_accounts
 
 It is triggered for each B<transfer_between_accounts> event emitted, delivering it to Segment.
-It can be called with the following parameters:
+
+It is called with the following parameters: 
 
 =over
 
 =item * C<loginid> - required. Login Id of the user.
 
-=item * C<properties> - Free-form dictionary of event properties.
+=item * C<properties> - Free-form dictionary of event properties
 
 =back
 
@@ -245,13 +250,9 @@ It can be called with the following parameters:
 
 sub transfer_between_accounts {
     my ($args) = @_;
-    my $loginid = $args->{loginid};
 
     # Deref and ref, So we don't modify the main properties that is passed as an argument
     my $properties = {($args->{properties} // {})->%*};
-
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
 
     $properties->{revenue} = -($properties->{from_amount} // die('required from_account'));
     $properties->{currency} = $properties->{from_currency} // die('required from_currency');
@@ -265,9 +266,11 @@ sub transfer_between_accounts {
         delete $properties->{is_from_account_pa};
     }
 
-    $log->debugf('Track transfer_between_accounts event for client %s', $loginid);
-
-    return _track($customer, $properties, 'transfer_between_accounts');
+    return track_event(
+        event      => 'transfer_between_accounts',
+        loginid    => $args->{loginid},
+        properties => $properties
+    );
 }
 
 =head2 document_upload
@@ -287,21 +290,18 @@ It can be called with the following parameters:
 
 sub document_upload {
     my ($args) = @_;
-    my $loginid = $args->{loginid};
-    my $properties = $args->{properties} // {};
-
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
+    my $properties = {$args->{properties}->%*};
 
     delete $properties->{comments};
     delete $properties->{document_id};
     $properties->{upload_date} = _time_to_iso_8601($properties->{upload_date} // die('required time'));
     $properties->{uploaded_manually_by_staff} //= 0;
-    $properties->{loginid} = $loginid;
 
-    $log->debugf('Track document_upload event for client %s', $loginid);
-
-    return _track($customer, $properties, 'document_upload');
+    return track_event(
+        event      => 'document_upload',
+        loginid    => $args->{loginid},
+        properties => $properties
+    );
 }
 
 =head2 app_registered
@@ -312,13 +312,13 @@ It is triggered for each B<app_registered> event emitted, delivering it to Segme
 
 sub app_registered {
     my ($args) = @_;
-    my $loginid = $args->{loginid};
 
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
+    return track_event(
+        event      => 'app_registered',
+        loginid    => $args->{loginid},
+        properties => $args
+    );
 
-    $log->debugf('Track app_register event for client %s', $loginid);
-    return _track($customer, $args, 'app_registered');
 }
 
 =head2 app_updated
@@ -329,13 +329,12 @@ It is triggered for each B<app_updated> event emitted, delivering it to Segment.
 
 sub app_updated {
     my ($args) = @_;
-    my $loginid = $args->{loginid};
 
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
-
-    $log->debugf('Track app_update event for client %s', $loginid);
-    return _track($customer, $args, 'app_updated');
+    return track_event(
+        event      => 'app_updated',
+        loginid    => $args->{loginid},
+        properties => $args
+    );
 }
 
 =head2 app_deleted
@@ -346,13 +345,12 @@ It is triggered for each B<app_deleted> event emitted, delivering it to Segment.
 
 sub app_deleted {
     my ($args) = @_;
-    my $loginid = $args->{loginid};
 
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
-
-    $log->debugf('Track app_delete event for client %s', $loginid);
-    return _track($customer, $args, 'app_deleted');
+    return track_event(
+        event      => 'app_deleted',
+        loginid    => $args->{loginid},
+        properties => $args
+    );
 }
 
 =head2 set_financial_assessment
@@ -363,21 +361,55 @@ It is triggered for each B<set_financial_assessment> event emitted, delivering i
 
 sub set_financial_assessment {
     my ($args) = @_;
-    my $loginid = $args->{loginid};
 
-    return Future->done unless _validate_params($loginid);
-    my $customer = _create_customer($loginid);
+    return track_event(
+        event      => 'set_financial_assessment',
+        loginid    => $args->{loginid},
+        properties => $args
+    );
+}
 
-    $log->debugf('Track set_financial_assessment event for client %s', $loginid);
+=head2 track_event
 
-    return _track($customer, $args, 'set_financial_assessment');
+A public method that performs event validtion and tracking by Segment B<track> and (if requested) B<identify> API calls.
+Takes the following named parameters:
+
+=over 4
+
+=item * C<event> - Name of the event to be emitted.
+
+=item * C<loginid> - Loginid of the client.
+
+=item * C<properties> - event proprties as a hash ref (optional).
+
+=item * C<is_identify_required> - a binary flag determining wether or not make an B<identify> API call (optional)
+
+=item * C<brand> - the brand assiciated with the event as a L<Brands> object (optional - defaults to request's brand)
+
+=back
+
+=cut
+
+sub track_event {
+    my %args = @_;
+
+    my $client = _validate_params($args{loginid}, $args{event}, $args{brand});
+    return Future->done unless $client;
+    my $customer = _create_customer($client);
+
+    $log->debugf('Tracked %s for client %s', $args{event}, $args{loginid});
+
+    return Future->needs_all(
+        _send_track_request($customer, $args{properties}, $args{event}, $args{brand}),
+        $args{is_identify_required} ? _send_identify_request($customer, $args{brand}) : Future->done,
+    );
 }
 
 =head2 _time_to_iso_8601 
 
 Convert the format of the database time to iso 8601 time that is sutable for Segment
 Arguments:
-    
+
 =over
 
 =item * C<time> - required. Database time.
@@ -403,45 +435,52 @@ sub _time_to_iso_8601 {
     )->to_string;
 }
 
-=head2 _identify
+=head2 _send_identify_request
 
-Send identify for each B<customer>.
-It can be called with the following parameters:
+A private method that makes a Segment B<identify> API call.
+It is called with the following parameters:
 
 =over
 
 =item * C<customer> - required. Customer object included traits.
 
+=item *C<brand> - (optional) The request brand as a <Brands> object.
+
 =back
 
 =cut
 
-sub _identify {
-    my ($customer) = (@_);
-    my $context = _create_context();
+sub _send_identify_request {
+    my ($customer, $brand) = (@_);
+
+    my $context = _create_context($brand);
+
     return $customer->identify(context => $context);
 }
 
-=head2 _track
+=head2 _send_track_request
 
-Send track for each B<customer>.
-It can be called with the following parameters:
+A private method that makes a Segment B<track> API call.
+It is called with the following parameters:
 
 =over
 
-=item * C<customer> - required. Customer object included traits.
+=item * C<customer> - Customer object included traits.
 
 =item * C<properties> - Free-form dictionary of event properties.
 
-=item * C<event> - required. The event name that will be sent to the Segment.
+=item * C<event> - The event name that will be sent to the Segment.
+
+=item *C<brand> - (optional) The request brand as a <Brands> object.
 
 =back
 
 =cut
 
-sub _track {
-    my ($customer, $properties, $event) = (@_);
-    my $context = _create_context();
+sub _send_track_request {
+    my ($customer, $properties, $event, $brand) = (@_);
+    my $context = _create_context($brand);
+
     return $customer->track(
         event      => $event,
         properties => $properties,
@@ -452,13 +491,21 @@ sub _track {
 =head2 _create_context
 
 Dictionary of extra information that provides context about a message.
+It takes the following args: 
+
+=over
+
+=item *C<brand> - (optional) The request brand as a <Brands> object.
+
+=back
 
 =cut
 
 sub _create_context {
+    my $brand = shift // request->brand;
     return {
         locale => request->language,
-        app    => {name => request->brand->name},
+        app    => {name => $brand->name},
         active => 1
     };
 }
@@ -470,17 +517,15 @@ Arguments:
 
 =over
 
-=item * C<loginid> - required. Login Id of the user.
+=item * C<client> - required. A L<BOM::User::Client> object representing a client.
 
 =back
 
 =cut
 
 sub _create_customer {
-    my ($loginid) = @_;
+    my ($client) = @_;
 
-    my $client = BOM::User::Client->new({loginid => $loginid})
-        or die "Login tracking triggered with an invalid loginid. Please inform back end team if this continues to occur.";
     my @siblings = $client->user->clients(include_disabled => 1);
 
     # Get list of user currencies
@@ -538,8 +583,9 @@ sub _create_customer {
             #website: website,
 
             # Custom traits
-            country    => Locale::Country::code2country($client->residence),
-            currencies => join(',', sort(keys %currencies)),
+            country      => Locale::Country::code2country($client->residence),
+            currencies   => join(',', sort(keys %currencies)),
+            mt5_loginids => join(',', sort($client->user->get_mt5_loginids)),
         });
     # Will use this attributes as properties in some events like signup
     $customer->{currency} = $client->account ? $client->account->currency_code : '';
@@ -559,25 +605,36 @@ Arguments:
 
 =item * C<loginid> - required. Login Id of the user.
 
+=item * C<event> - required. event name.
+
+=item * C<brand> - optional. barnd object.
+
 =back
+
+Returns a L<BOM::User::Client> object constructed by C<loginid> arg.
 
 =cut
 
 sub _validate_params {
-    my ($loginid) = @_;
+    my ($loginid, $event, $brand) = @_;
+    $brand //= request->brand;
 
     unless (_segment->write_key) {
         $log->debugf('Write key was not set.');
         return undef;
     }
 
-    unless (request->brand->is_track_enabled) {
-        $log->debugf('Event tracking is not enabled for brand %s', request->brand->name);
+    unless ($brand->is_track_enabled) {
+        $log->debugf('Event tracking is not enabled for brand %s', $brand->name);
         return undef;
     }
-    die 'Login tracking triggered without a loginid. Please inform back end team if this continues to occur.' unless $loginid;
 
-    return 1;
+    die "$event tracking triggered without a loginid. Please inform backend team if it continues to occur." unless $loginid;
+
+    my $client = BOM::User::Client->new({loginid => $loginid})
+        or die "$event tracking triggered with an invalid loginid. Please inform backend team if it continues to occur.";
+
+    return $client;
 }
 
 1;

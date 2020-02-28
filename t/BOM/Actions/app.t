@@ -16,6 +16,7 @@ use BOM::User;
 use Time::Moment;
 use Date::Utility;
 use BOM::Platform::Locale qw/get_state_by_id/;
+use BOM::Event::Process;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -68,7 +69,8 @@ subtest 'app registered' => sub {
         verification_uri => 'https://www.example.com/verify',
         homepage         => 'https://www.homepage.com/',
     };
-    my $result = BOM::Event::Actions::App::app_registered($args)->get;
+    my $handler = BOM::Event::Process::get_action_mappings()->{app_registered};
+    my $result  = $handler->($args)->get;
     is $result, 1, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
 
@@ -93,7 +95,7 @@ subtest 'app registered' => sub {
     request($req);
     undef @track_args;
 
-    $result = BOM::Event::Actions::App::app_registered($args)->get;
+    $result = $handler->($args)->get;
     is $result, undef, 'empty track result (not called)';
     is scalar @identify_args, 0, 'no identify call';
     is scalar @track_args,    0, 'no track call';
@@ -115,7 +117,8 @@ subtest 'app updated' => sub {
         googleplay => 'https://googleplay.com/app_2',
         homepage   => 'https://www.homepage.com/',
     };
-    my $result = BOM::Event::Actions::App::app_updated($args)->get;
+    my $handler = BOM::Event::Process::get_action_mappings()->{app_updated};
+    my $result  = $handler->($args)->get;
     is $result, 1, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
 
@@ -140,7 +143,7 @@ subtest 'app updated' => sub {
     request($req);
     undef @track_args;
 
-    $result = BOM::Event::Actions::App::app_updated($args)->get;
+    $result = $handler->($args)->get;
     is $result, undef, 'Empty track result';
     is scalar @identify_args, 0, 'no identify call';
     is scalar @track_args,    0, 'no track call';
@@ -159,7 +162,8 @@ subtest 'app deleted' => sub {
         loginid => $test_client->loginid,
         app_id  => 1,
     };
-    my $result = BOM::Event::Actions::App::app_deleted($args)->get;
+    my $handler = BOM::Event::Process::get_action_mappings()->{app_deleted};
+    my $result  = $handler->($args)->get;
     is $result, 1, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
 
@@ -184,7 +188,7 @@ subtest 'app deleted' => sub {
     request($req);
     undef @track_args;
 
-    $result = BOM::Event::Actions::App::app_deleted($args)->get;
+    $result = $handler->($args)->get;
     is $result, undef, 'Empty track result';
     is scalar @identify_args, 0, 'no identify call';
     is scalar @track_args,    0, 'no track call';

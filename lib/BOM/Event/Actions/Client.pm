@@ -2208,9 +2208,7 @@ It is called with the following parameters:
 sub transfer_between_accounts {
     my @args = @_;
 
-    BOM::Event::Services::Track::transfer_between_accounts(@args)->retain;
-
-    return 1;
+    return BOM::Event::Services::Track::transfer_between_accounts(@args);
 }
 
 =head2 api_token_created
