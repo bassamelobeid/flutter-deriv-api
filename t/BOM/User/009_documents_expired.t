@@ -166,7 +166,7 @@ subtest 'client documents expiry' => sub {
             password       => BOM::User::Password::hashpw('jskjd8292922'),
             email_verified => 1,
         );
-        my $mf_client  = create_client('MF');
+        my $mf_client = create_client('MF');
         $user_client_mf->add_client($mf_client);
         $mf_client->status->set('duplicate_account');
         ok $mf_client->status->duplicate_account, "MF Account is set as duplicate_account";

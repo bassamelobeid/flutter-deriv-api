@@ -418,7 +418,10 @@ have any POI documents (passport, proofid, driverslicense, vf_id, vf_face_id) wh
 sub documents_expired {
     my $self = shift;
 
-    my @siblings = $self->user->clients(include_disabled => 1,include_duplicated => 1);
+    my @siblings = $self->user->clients(
+        include_disabled   => 1,
+        include_duplicated => 1
+    );
 
     for my $sibling (@siblings) {
 
