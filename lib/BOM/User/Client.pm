@@ -54,6 +54,7 @@ use BOM::User::Client::PaymentTransaction::Doughflow;
 use BOM::Database::ClientDB;
 
 use BOM::Platform::Event::Emitter;
+use BOM::Platform::Client::CashierValidation;
 
 use Carp qw(croak);
 
@@ -2588,18 +2589,14 @@ sub validate_payment {
     my $acccur  = $account->currency_code();
     my $absamt  = abs($amount);
 
-    die "Client\'s cashier is locked.\n"
-        if $self->status->cashier_locked;
-
-    die "Client is disabled.\n"
-        if $self->status->disabled;
+    # validate expects 'deposit'/'withdraw' so if action_type is 'withdrawal' should be replaced to 'withdraw'
+    my $validation = BOM::Platform::Client::CashierValidation::validate($self->loginid, $action_type =~ s/withdrawal/withdraw/r);
+    die "$validation->{error}->{message_to_client}\n" if exists $validation->{error};
 
     die "Payment currency [$currency] not client currency [$acccur].\n"
         if $currency ne $acccur;
 
     if ($action_type eq 'deposit') {
-        die "Deposits blocked for this Client.\n"
-            if $self->status->unwelcome;
 
         if (    $self->landing_company->short eq 'malta'
             and $self->is_first_deposit_pending
@@ -2636,11 +2633,6 @@ sub validate_payment {
     }
 
     if ($action_type eq 'withdrawal') {
-        die "Withdrawal is disabled.\n"
-            if $self->status->withdrawal_locked;
-
-        die "Missing personal details required for withdrawal.\n"
-            if ($self->missing_requirements('withdrawal'));
 
         die "Withdrawal amount [$currency $absamt] exceeds client balance [$currency $accbal].\n"
             if financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $accbal);
