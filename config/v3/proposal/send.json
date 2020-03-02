@@ -98,8 +98,8 @@
             "maximum": 9999999999,
             "minimum": 0
         },
-        "deal_cancellation": {
-            "description": "Deal cancellation duration option (only for MULTUP and MULTDOWN).",
+        "cancellation": {
+            "description": "Cancellation duration option (only for MULTUP and MULTDOWN).",
             "type": "string"
         },
         "duration": {

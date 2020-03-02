@@ -44,16 +44,16 @@
                         1439999053
                     ]
                 },
-                "deal_cancellation": {
-                    "description": "Contains information about deal cancellation option.",
+                "cancellation": {
+                    "description": "Contains information about contract cancellation option.",
                     "type": "object",
                     "properties": {
                         "ask_price": {
-                            "description": "Ask price of deal cancellation option.",
+                            "description": "Ask price of contract cancellation option.",
                             "type": "number"
                         },
                         "date_expiry": {
-                            "description": "Expiry time in epoch for deal cancellation option.",
+                            "description": "Expiry time in epoch for contract cancellation option.",
                             "type": "integer"
                         }
                     }
