@@ -63,7 +63,7 @@ subtest 'normal flow' => sub {
     is($stats{'pricer_daemon.queue.size'},     @keys,                            'keys waiting for processing in statsd');
     is((keys %tags)[0],                        "tag:@{[ $queue->internal_ip ]}", 'internal ip recorded as tag');
 
-    like $redis->lrange('pricer_jobs', -1, -1)->[0], qr/"price_daemon_cmd","bid"/, 'bid contract is the first to rpop for being processed';
+    like $redis->lrange('pricer_jobs', -1, -1)->[0], qr/"contract_id"/, 'bid contract is the first to rpop for being processed';
 };
 
 subtest 'overloaded daemon' => sub {
