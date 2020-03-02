@@ -108,10 +108,11 @@ subtest 'multiplier - send_ask' => sub {
                 'order_amount' => -100
             }
         },
-        'payout'     => '0',
-        'rpc_time'   => ignore(),
-        'ask_price'  => '100.00',
-        'multiplier' => 10
+        'payout'            => '0',
+        'rpc_time'          => ignore(),
+        'ask_price'         => '100.00',
+        'multiplier'        => 10,
+        skip_basis_override => 1,
     };
     my $res = $c->call_ok('send_ask', $params)->has_no_error->result;
     cmp_deeply($res, $expected, 'send_ask output as expected');
@@ -158,10 +159,11 @@ subtest 'multiplier - send_ask' => sub {
                 'value'        => 101.05,
             },
         },
-        'payout'     => '0',
-        'rpc_time'   => ignore(),
-        'ask_price'  => '100.00',
-        'multiplier' => 10
+        'payout'            => '0',
+        'rpc_time'          => ignore(),
+        'ask_price'         => '100.00',
+        'multiplier'        => 10,
+        skip_basis_override => 1,
     };
     $args->{limit_order}->{take_profit} = 10;
     $res = $c->call_ok('send_ask', $params)->has_no_error->result;
@@ -218,6 +220,7 @@ subtest 'multiplier - send_ask' => sub {
             'ask_price'   => 4.11,
             'date_expiry' => ignore(),
         },
+        skip_basis_override => 1,
     };
     $args->{cancellation} = '1h';
     $res = $c->call_ok('send_ask', $params)->has_no_error->result;
