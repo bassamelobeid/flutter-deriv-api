@@ -88,18 +88,19 @@ subtest 'cancel' => sub {
     });
     ok $res->{error}, 'error';
     is $res->{error}->{code}, 'CancelFailed', 'error code - CancelFailed';
-    is $res->{error}->{message}, 'This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.',
+    is $res->{error}->{message},
+        'This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.',
         'error message - This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.';
 
     $proposal_res = $t->await::proposal({
-        "proposal"          => 1,
-        "amount"            => "100",
-        "basis"             => "stake",
-        "contract_type"     => "MULTUP",
-        "currency"          => "USD",
-        "symbol"            => "R_100",
-        "multiplier"        => 10,
-        "deal_cancellation" => '1h',
+        "proposal"      => 1,
+        "amount"        => "100",
+        "basis"         => "stake",
+        "contract_type" => "MULTUP",
+        "currency"      => "USD",
+        "symbol"        => "R_100",
+        "multiplier"    => 10,
+        "cancellation"  => '1h',
     });
 
     $buy_res = $t->await::buy({
