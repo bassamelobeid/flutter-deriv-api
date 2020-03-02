@@ -175,14 +175,14 @@ subtest 'test cancel functionality', sub {
     subtest 'buy deal cancellation with wrong duration' => sub {
         my $now      = time;
         my $contract = produce_contract({
-            underlying        => 'R_100',
-            bet_type          => 'MULTUP',
-            currency          => 'USD',
-            multiplier        => 10,
-            amount            => 100,
-            amount_type       => 'stake',
-            current_tick      => $current_tick,
-            deal_cancellation => 1,
+            underlying   => 'R_100',
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            multiplier   => 10,
+            amount       => 100,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+            cancellation => 1,
         });
 
         my $txn = BOM::Transaction->new({
@@ -229,16 +229,16 @@ subtest 'test cancel functionality', sub {
     subtest 'cancel after deal cancellation expires' => sub {
         my $now      = time;
         my $contract = produce_contract({
-            underlying        => 'R_100',
-            bet_type          => 'MULTUP',
-            currency          => 'USD',
-            multiplier        => 10,
-            amount            => 100,
-            amount_type       => 'stake',
-            current_tick      => $current_tick,
-            date_start        => $now,
-            date_pricing      => $now + 3601,
-            deal_cancellation => '1h',
+            underlying   => 'R_100',
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            multiplier   => 10,
+            amount       => 100,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+            date_start   => $now,
+            date_pricing => $now + 3601,
+            cancellation => '1h',
         });
 
         my $txn = BOM::Transaction->new({
@@ -260,14 +260,14 @@ subtest 'test cancel functionality', sub {
     subtest 'cancel and get back stake' => sub {
         my $now      = time;
         my $contract = produce_contract({
-            underlying        => 'R_100',
-            bet_type          => 'MULTUP',
-            currency          => 'USD',
-            multiplier        => 10,
-            amount            => 100,
-            amount_type       => 'stake',
-            current_tick      => $current_tick,
-            deal_cancellation => '1h',
+            underlying   => 'R_100',
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            multiplier   => 10,
+            amount       => 100,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+            cancellation => '1h',
         });
 
         my $txn = BOM::Transaction->new({
@@ -286,17 +286,17 @@ subtest 'test cancel functionality', sub {
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db multiplier => $txn->transaction_id;
 
         $contract = produce_contract({
-                underlying        => 'R_100',
-                bet_type          => 'MULTUP',
-                currency          => 'USD',
-                multiplier        => 10,
-                amount            => 100,
-                amount_type       => 'stake',
-                current_tick      => $current_tick,
-                deal_cancellation => '1h',
-                date_start        => $now,
-                date_pricing      => $now + 30,
-                limit_order       => {
+                underlying   => 'R_100',
+                bet_type     => 'MULTUP',
+                currency     => 'USD',
+                multiplier   => 10,
+                amount       => 100,
+                amount_type  => 'stake',
+                current_tick => $current_tick,
+                cancellation => '1h',
+                date_start   => $now,
+                date_pricing => $now + 30,
+                limit_order  => {
                     stop_out => {
                         order_type   => 'stop_out',
                         order_amount => -100,

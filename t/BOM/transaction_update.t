@@ -472,14 +472,14 @@ subtest 'update take profit', sub {
 
 subtest 'update stop loss with/without active deal cancellation' => sub {
     my $args = {
-        underlying        => $underlying,
-        bet_type          => 'MULTUP',
-        currency          => 'USD',
-        multiplier        => 10,
-        amount            => 100,
-        amount_type       => 'stake',
-        current_tick      => $current_tick,
-        deal_cancellation => '1h',
+        underlying   => $underlying,
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        multiplier   => 10,
+        amount       => 100,
+        amount_type  => 'stake',
+        current_tick => $current_tick,
+        cancellation => '1h',
     };
     my $contract = produce_contract($args);
 
@@ -543,14 +543,14 @@ subtest 'update stop loss with/without active deal cancellation' => sub {
 
 subtest 'update contract of another account' => sub {
     my $args = {
-        underlying        => $underlying,
-        bet_type          => 'MULTUP',
-        currency          => 'USD',
-        multiplier        => 10,
-        amount            => 100,
-        amount_type       => 'stake',
-        current_tick      => $current_tick,
-        deal_cancellation => '1h',
+        underlying   => $underlying,
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        multiplier   => 10,
+        amount       => 100,
+        amount_type  => 'stake',
+        current_tick => $current_tick,
+        cancellation => '1h',
     };
     my $contract = produce_contract($args);
 
