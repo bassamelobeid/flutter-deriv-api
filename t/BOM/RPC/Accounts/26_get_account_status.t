@@ -339,9 +339,57 @@ subtest 'get account status' => sub {
         };
 
         subtest 'costarica account' => sub {
+             my $result = $c->tcall($method, {token => $token_cr});
+             cmp_deeply(
+                $result,
+                {
+                    status                        => [qw(financial_information_not_complete trading_experience_not_complete)],
+                    risk_classification           => 'low',
+                    prompt_client_to_authenticate => '0',
+                    authentication                => {
+                        document => {status => "none"},
+                        identity => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
+                        },
+                        needs_verification => [],
+                    }
+                },
+                'Intial CR status is correct'
+            );
+        
+            $test_client_cr->status->set('withdrawal_locked', 'system', 'For test purposes');
+            $result = $c->tcall($method, {token => $token_cr});
+            cmp_deeply(
+                $result,
+                {
+                    status                        => superbagof(qw(allow_document_upload withdrawal_locked)),
+                    risk_classification           => 'low',
+                    prompt_client_to_authenticate => '0',
+                    authentication                => {
+                        document => {status => "none"},
+                        identity => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
+                        },
+                        needs_verification => [],
+                    }
+                },
+                'allow_document_upload is automatically added along with withdrawal_locked'
+            );
+             $test_client_cr->status->clear_withdrawal_locked;
+        
             $test_client_cr->set_authentication('ID_DOCUMENT')->status('needs_action');
             $test_client_cr->save;
-            my $result = $c->tcall($method, {token => $token_cr});
+            $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(
                 $result,
                 {
@@ -1026,6 +1074,7 @@ subtest 'get account status' => sub {
             );
         };
     };
+    
 };
 
 done_testing();
