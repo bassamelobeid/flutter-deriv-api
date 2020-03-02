@@ -100,7 +100,6 @@ struct P2POrder => [qw(
         amount
         amount_display
         created_time
-        description
         expiry_time
         id
         local_currency
@@ -116,6 +115,9 @@ struct P2POrder => [qw(
         advertiser_name
         is_incoming
         advert_type
+        contact_info
+        payment_info
+        payment_method
         )];
 
 my $history_count = 10;
@@ -269,7 +271,6 @@ for my $type (qw(buy sell)) {
             amount             => $amount,
             amount_display     => "$amount",
             created_time       => (time - 30),
-            description        => 'Тестовый заказ',        # to check UTF decoding
             expiry_time        => (time + 30),
             id                 => $order_id,
             local_currency     => 'IDR',
@@ -284,7 +285,11 @@ for my $type (qw(buy sell)) {
             advert_description => 'Please contact via whatsapp 1234',
             advertiser_id      => '1',
             advertiser_name    => 'name',
-            is_incoming => sprintf("%.0f\n", rand(1)));
+            is_incoming    => sprintf("%.0f\n", rand(1)),
+            contact_info   => 'Тестовый заказ', # to check UTF decoding
+            payment_info   => 'Payment Information',
+            payment_method => 'bank_transfer'
+        );
     }
 }
 
