@@ -219,6 +219,7 @@ function validate_document_info() {
 }
 
 \$(document).ready(function() {
-      \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+      \$('.datepick').datepicker({dateFormat: "yy-mm-dd",changeMonth: true,
+      changeYear: true});
 });
 </script>

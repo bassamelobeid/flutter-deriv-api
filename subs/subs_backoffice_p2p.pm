@@ -10,7 +10,7 @@ sub p2p_advertiser_register {
     my $client = shift;
 
     try {
-        $client->p2p_advertiser_create(request->param('advertiser_name'));
+        $client->p2p_advertiser_create(name => request->param('advertiser_name'));
 
         return {
             success => 1,
@@ -41,9 +41,12 @@ sub p2p_advertiser_update {
     try {
         if (
             $client->p2p_advertiser_update(
-                name        => request->param('advertiser_name'),
-                is_approved => request->param('is_approved'),
-                is_listed   => request->param('is_listed'),
+                name                       => request->param('advertiser_name'),
+                is_approved                => request->param('is_approved'),
+                is_listed                  => request->param('is_listed'),
+                default_advert_description => request->param('default_advert_description'),
+                payment_info               => request->param('payment_info'),
+                contact_info               => request->param('contact_info'),
             ))
         {
             return {
