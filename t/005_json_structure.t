@@ -8,11 +8,12 @@ use Test::Warnings;
 use Getopt::Long;
 use JSON::MaybeUTF8 qw(:v1);
 use JSON::PP;
-use List::Util qw(first);
+use List::Util qw(first all);
 use Path::Tiny;
 use Scalar::Util qw(looks_like_number);
 use Term::ANSIColor qw(colored);
 use Text::Diff;
+use Tie::IxHash;
 use constant BASE_PATH => 'config/v3/';
 
 GetOptions(
@@ -58,18 +59,14 @@ This mainly tests to make sure the schemas are correct in terms of:
 
     - Order of properties is:
         1. The main method name should be always the first
-        2. Other properties are tested recursively according to the '%order' hash below
-        3. The rest should be ordered alphabetically
-    - Array items are sorted alphabetically (excluding enums, arrays of objects)
+        2. 'required' array should be sorted the same as the order of 'properties' elements
+        2. Other properties are tested recursively according to the '$order' hash below and their parent element.
+        3. The rest should be ordered alphabetically (excluding enums, arrays of objects)
 
 =cut
 
-subtest 'general formatting and order' => sub {
-    my $json = JSON::PP->new;
-
-    $json = $json->canonical(1)->pretty(1)->indent(1)->indent_length(4)->space_before(0)->space_after(1);
-
-    my %order = (
+my $order = {
+    other => {
         '$schema'            => 1,
         title                => 2,
         description          => 3,
@@ -85,30 +82,43 @@ subtest 'general formatting and order' => sub {
         additionalProperties => 13,
         required             => 14,
         properties           => 15,
-        echo_req             => 101,
-        msg_type             => 102,
-        passthrough          => 103,
+        passthrough          => 101,
+        req_id               => 102,
+    },
+    properties => {
+        passthrough          => 101,
+        echo_req             => 102,
+        msg_type             => 103,
         req_id               => 104,
-    );
+    },
+};
 
-    $json = $json->sort_by(
-        sub {
-            ($order{$JSON::PP::a} // 99) <=> ($order{$JSON::PP::b} // 99)
-                or $JSON::PP::a cmp $JSON::PP::b;
-        });
-
-    sub sort_arrays {
-        my ($params) = @_;
-        for my $key (keys $params->%*) {
-            my $node = $params->{$key};
-
-            if (ref $node eq 'ARRAY' && ref $node->[0] ne 'HASH' && $key ne 'enum') {
-                $params->{$key} = [sort { looks_like_number($a) ? $a <=> $b : $a cmp $b } $node->@*];    # Prevent converting numbers to strings
-            } elsif (ref $node eq 'HASH') {
-                sort_arrays($node);
-            }
-        }
+sub sort_elements {
+    my ($ref, $parent) = @_;
+    
+    if ( ref $ref eq 'ARRAY' and $parent eq 'required' ) {
+        return [ sort { ( $order->{properties}{$a} // 99 ) <=> ( $order->{properties}{$b} // 99 ) or $a cmp $b } @$ref ];
+    }     
+    elsif ( ref $ref eq 'ARRAY' and all { ref eq 'HASH' } @$ref ) {
+        return [ map { sort_elements($_) } @$ref ];
+    }  
+    elsif ( ref $ref eq 'ARRAY' and $parent ne 'enum' ) {
+        return [ sort { looks_like_number($a); looks_like_number($a) ? $a <=> $b : $a cmp $b } @$ref ];
     }
+    elsif ( ref $ref eq 'HASH' ) {
+        my $type = ( $parent // '' ) eq 'properties' ? $parent : 'other';
+        tie my %res, 'Tie::IxHash', map { $_, sort_elements($ref->{$_}, $_) } sort { ( $order->{$type}{$a} // 99 ) <=> ( $order->{$type}{$b} // 99 ) or $a cmp $b } keys %$ref;
+        return \%res;
+    }
+    else {
+        return $ref;
+    }
+}
+
+subtest 'general formatting and order' => sub {
+    my $json = JSON::PP->new;
+
+    $json = $json->canonical(0)->pretty(1)->indent(1)->indent_length(4)->space_before(0)->space_after(1);
 
     sub test_diff {
         my ($source, $result, $file_name) = @_;
@@ -136,18 +146,19 @@ subtest 'general formatting and order' => sub {
     }
 
     for my $schema (@json_schemas) {
-        $order{$schema->{method_name}} = 0;    # Always put the main action at the beginning
+        $order->{other}{$schema->{method_name}} = $order->{properties}{$schema->{method_name}} = 0;    # Always put the main action at the beginning
 
-        sort_arrays($schema->{json});
-        my $sorted = $json->encode($schema->{json});
+        my $sorted = $json->encode(sort_elements($schema->{json}));
 
         test_diff($schema->{json_text}, $sorted, $schema->{formatted_path});
 
-        delete $order{$schema->{method_name}};    # cleanup for next
+        delete $order->{other}{$schema->{method_name}};    # cleanup for next
+        delete $order->{properties}{$schema->{method_name}}; 
 
         path($schema->{path})->spew_utf8($sorted) if $should_fix;
     }
 };
+
 
 # Make sure common properties are consistent across all schema files
 subtest 'common properties' => sub {

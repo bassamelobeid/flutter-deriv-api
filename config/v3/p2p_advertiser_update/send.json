@@ -20,6 +20,16 @@
                 1
             ]
         },
+        "contact_info": {
+            "description": "[Optional] Advertiser's contact information, to be used as a default for new sell adverts.",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/+-]{1,300}$"
+        },
+        "default_advert_description": {
+            "description": "[Optional] Could be used as a template for general instructions for adverts.",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/+-]{1,300}$"
+        },
         "is_listed": {
             "description": "[Optional] Used to set if the advertiser's adverts could be listed. When `0`, adverts won't be listed regardless of they are active or not. This doesn't change the `is_active` of each individual advert.",
             "type": "integer",
@@ -32,6 +42,11 @@
             "description": "[Optional] The advertiser's displayed name.",
             "type": "string",
             "pattern": "\\w+"
+        },
+        "payment_info": {
+            "description": "[Optional] Advertiser's payment information, to be used as a default for new sell adverts.",
+            "type": "string",
+            "pattern": "^[\\p{L}\\p{Nd}\\s'.,:;()@#/+-]{1,300}$"
         },
         "passthrough": {
             "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
