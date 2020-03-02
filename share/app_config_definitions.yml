@@ -108,6 +108,11 @@ payments:
           isa: ArrayRef
           global: 1
           default: []
+        available_for_countries:
+          description: 'List of countries for which P2P is available, country code should be lower case'
+          isa: ArrayRef
+          global: 1
+          default: []
         limits:
           description: 'Peer-to-peer payment system and client limits'
           isa: section
