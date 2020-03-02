@@ -5,6 +5,7 @@ use lib "$Bin/lib";
 use Test::More;
 use APIHelper qw(balance deposit withdraw request decode_json);
 use BOM::User::Client;
+use BOM::User;
 
 my $loginid = 'CR0012';
 
@@ -12,6 +13,8 @@ my $cli = BOM::User::Client->new({loginid => $loginid});
 $cli->place_of_birth('id');
 $cli->save;
 
+my $user = BOM::User->create(email=>'unit_test@binary.com', password=>'asdaiasda');
+$user->add_client($cli);
 # deposit first so that we can withdraw
 my $r = deposit(
     loginid => $loginid,

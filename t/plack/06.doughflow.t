@@ -4,7 +4,6 @@ use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
 use APIHelper qw(balance deposit request decode_json);
-
 my $loginid = 'CR0011';
 
 my $starting_balance = balance($loginid);
@@ -13,6 +12,9 @@ my $trace_id         = time();
 ## test freeze
 my $client_db = BOM::Database::ClientDB->new({client_loginid => $loginid});
 $client_db->freeze;
+
+my $user = BOM::User->create(email=>'unit_test@binary.com', password=>'asdaiasda');
+$user->add_client($client_db);
 
 my $r = deposit(
     loginid  => $loginid,

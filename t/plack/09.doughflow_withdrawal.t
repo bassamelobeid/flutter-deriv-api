@@ -8,10 +8,14 @@ use BOM::User::Client;
 
 my $loginid = 'CR0011';
 
+
+
 my $cli = BOM::User::Client->new({loginid => $loginid});
 $cli->place_of_birth('id');
 $cli->save;
 
+my $user = BOM::User->create(email=>'unit_test@binary.com', password=>'asdaiasda');
+$user->add_client($cli);
 my $r = deposit(
     loginid => $loginid,
     amount  => 2
