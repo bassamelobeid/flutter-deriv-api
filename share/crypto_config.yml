@@ -54,6 +54,12 @@ ETH:
         address: https://etherscan.io/address/
         transaction: https://etherscan.io/tx/
     ethgasstation_api: https://ethgasstation.info/json/ethgasAPI.json
+    thirdparty_api:
+      etherscan:
+          url: http://api.etherscan.io/api
+          token: ZXEEVTNEGYKA7KRZB7HPKXPTSCH1RDRUFK
+      blockscout:
+          url: https://blockscout.com/eth/mainnet/api
     safe_gas_price: 11000000000 # Wei
     cold_wallet:
         min_transfer: 10 # ETH
