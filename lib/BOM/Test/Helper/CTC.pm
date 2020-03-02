@@ -110,7 +110,7 @@ sub deploy_test_contract {
 
     return undef unless ($currency->parent_currency // '') eq 'ETH';
 
-    my $address = $currency->_contract->{contract_address};
+    my $address = $currency->contract->{contract_address};
     # avoid creating duplicate addresses in QA boxes
     return $address if $address;
 
@@ -149,7 +149,7 @@ sub deploy_test_contract {
     # here we need to set the contract address into Redis, since
     # we will use this contract in the tests
     $currency->set_contract_address($contract->contract_address);
-    $currency->_contract($contract);
+    $currency->contract($contract);
 
     return $contract->contract_address;
 }
