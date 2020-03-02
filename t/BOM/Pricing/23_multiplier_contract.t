@@ -178,7 +178,7 @@ subtest 'multiplier - send_ask' => sub {
             'multiplier'            => 10,
             'currency'              => 'USD',
             'deep_otm_threshold'    => '0.025',
-            'deal_cancellation'     => '1h',
+            'cancellation'          => '1h',
             'limit_order'           => {'take_profit' => 10},
             'date_start'            => 0,
             'proposal'              => 1,
@@ -210,16 +210,16 @@ subtest 'multiplier - send_ask' => sub {
                 'value'        => 101.05,
             },
         },
-        'payout'            => '0',
-        'rpc_time'          => ignore(),
-        'ask_price'         => '104.11',
-        'multiplier'        => 10,
-        'deal_cancellation' => {
+        'payout'       => '0',
+        'rpc_time'     => ignore(),
+        'ask_price'    => '104.11',
+        'multiplier'   => 10,
+        'cancellation' => {
             'ask_price'   => 4.11,
             'date_expiry' => ignore(),
         },
     };
-    $args->{deal_cancellation} = '1h';
+    $args->{cancellation} = '1h';
     $res = $c->call_ok('send_ask', $params)->has_no_error->result;
     cmp_deeply($res, $expected, 'send_ask output as expected');
 };
@@ -318,7 +318,7 @@ subtest 'multiplier - get_bid' => sub {
                     basis_spot   => 100
                 }
             },
-            deal_cancellation => '1h',
+            cancellation => '1h',
         });
     $params = {
         short_code      => $contract->shortcode,
@@ -376,7 +376,7 @@ subtest 'multiplier - get_bid' => sub {
         'date_start'               => $now->epoch,
         'status'                   => 'open',
         expiry_time                => ignore(),
-        'deal_cancellation'        => {
+        'cancellation'             => {
             'ask_price'   => '4.22',
             'date_expiry' => ignore(),
         },
