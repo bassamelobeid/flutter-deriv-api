@@ -153,13 +153,12 @@ sub _process_price_queue {
 
     $log->trace('processing price_queue...');
     _sleep_to_next_second();
+
+    # Take note of keys that were not processed since the last pricing interval
     my $overflow = $self->redis->llen('pricer_jobs');
 
-    # If we didn't manage to process everything within 1s, we'll allow 1s extra - this will cause price update rates to
-    # be halved on the UI.
     if ($overflow) {
         $log->debugf('got pricer_jobs overflow: %s', $overflow);
-        _sleep_to_next_second();
     }
 
     # We prepend short_code where possible, so sorting means we should get similar contracts together,
@@ -170,29 +169,24 @@ sub _process_price_queue {
             COUNT => 20000
         )};
 
-    # Take note of keys that were not processed since the last second
-    # (which may be the same or not as $overflow, depending on how busy
-    # the system gets)
-    my $not_processed = $self->redis->llen('pricer_jobs');
-    $log->debugf('got pricer_jobs not processed: %s', $not_processed) if $not_processed;
-
     $log->trace('pricer_jobs queue updating...');
     $self->redis->del('pricer_jobs');
-    $self->redis->lpush('pricer_jobs', @keys) if @keys;
+    my @asks = @keys;    # since we extract 'bids' on the next line, so only 'asks' contracts would remain in `@asks`, hence the naming
+    my @bids = extract_by { /"price_daemon_cmd","bid"/ } @asks;    # avoid decoding json for faster results
+    $self->redis->lpush('pricer_jobs', @bids) if @bids;            # prioritise bids since we'll do `rpop` for processing
+    $self->redis->lpush('pricer_jobs', @asks) if @asks;
     $log->debug('pricer_jobs queue updated.');
 
-    stats_gauge('pricer_daemon.queue.overflow',      $overflow,      {tags => ['tag:' . $self->internal_ip]});
-    stats_gauge('pricer_daemon.queue.size',          0 + @keys,      {tags => ['tag:' . $self->internal_ip]});
-    stats_gauge('pricer_daemon.queue.not_processed', $not_processed, {tags => ['tag:' . $self->internal_ip]});
+    stats_gauge('pricer_daemon.queue.overflow', $overflow, {tags => ['tag:' . $self->internal_ip]});
+    stats_gauge('pricer_daemon.queue.size',     0 + @keys, {tags => ['tag:' . $self->internal_ip]});
 
     $log->trace('pricer_daemon_queue_stats updating...');
     $self->redis->set(
         'pricer_daemon_queue_stats',
         encode_json_utf8({
-                overflow      => $overflow,
-                not_processed => $not_processed,
-                size          => 0 + @keys,
-                updated       => Time::HiRes::time(),
+                overflow => $overflow,
+                size     => 0 + @keys,
+                updated  => Time::HiRes::time(),
             }));
     $log->debug('pricer_daemon_queue_stats updated.');
 

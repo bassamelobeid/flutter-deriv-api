@@ -40,6 +40,7 @@ my $queue;
 my @keys = (
     "PRICER_KEYS::[\"amount\",1000,\"basis\",\"payout\",\"contract_type\",\"PUT\",\"country_code\",\"ph\",\"currency\",\"AUD\",\"duration\",3,\"duration_unit\",\"m\",\"landing_company\",null,\"price_daemon_cmd\",\"price\",\"product_type\",\"basic\",\"proposal\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxAUDJPY\"]",
     "PRICER_KEYS::[\"amount\",1000,\"basis\",\"payout\",\"contract_type\",\"CALL\",\"country_code\",\"ph\",\"currency\",\"AUD\",\"duration\",3,\"duration_unit\",\"m\",\"landing_company\",null,\"price_daemon_cmd\",\"price\",\"product_type\",\"basic\",\"proposal\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxAUDJPY\"]",
+    "PRICER_KEYS::[\"amount\",1000,\"basis\",\"payout\",\"contract_type\",\"CALL\",\"country_code\",\"ph\",\"currency\",\"AUD\",\"duration\",3,\"duration_unit\",\"m\",\"landing_company\",null,\"price_daemon_cmd\",\"bid\",\"product_type\",\"basic\",\"proposal\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxAUDJPY\"]",
     "PRICER_KEYS::[\"amount\",1000,\"barriers\",[\"106.902\",\"106.952\",\"107.002\",\"107.052\",\"107.102\",\"107.152\",\"107.202\"],\"basis\",\"payout\",\"contract_type\",[\"PUT\",\"CALLE\"],\"country_code\",\"ph\",\"currency\",\"JPY\",\"date_expiry\",\"1522923300\",\"landing_company\",null,\"price_daemon_cmd\",\"price\",\"product_type\",\"multi_barrier\",\"proposal_array\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxUSDJPY\",\"trading_period_start\",\"1522916100\"]",
     "PRICER_KEYS::[\"amount\",1000,\"barriers\",[\"106.902\",\"106.952\",\"107.002\",\"107.052\",\"107.102\",\"107.152\",\"107.202\"],\"basis\",\"payout\",\"contract_type\",[\"PUT\",\"CALLE\"],\"country_code\",\"ph\",\"currency\",\"JPY\",\"date_expiry\",\"1522923300\",\"landing_company\",null,\"price_daemon_cmd\",\"price\",\"product_type\",\"multi_barrier\",\"proposal_array\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxEURCAD\",\"trading_period_start\",\"1522916100\"]",
 );
@@ -57,11 +58,12 @@ subtest 'normal flow' => sub {
     $redis->set($_ => 1) for @keys;
     $queue->process;
 
-    is($redis->llen('pricer_jobs'),                 @keys,                            'keys added to pricer_jobs queue');
-    is($stats{'pricer_daemon.queue.overflow'},      0,                                'zero overflow reported in statd');
-    is($stats{'pricer_daemon.queue.size'},          @keys,                            'keys waiting for processing in statsd');
-    is($stats{'pricer_daemon.queue.not_processed'}, 0,                                'zero not_processed reported in statsd');
-    is((keys %tags)[0],                             "tag:@{[ $queue->internal_ip ]}", 'internal ip recorded as tag');
+    is($redis->llen('pricer_jobs'),            @keys,                            'keys added to pricer_jobs queue');
+    is($stats{'pricer_daemon.queue.overflow'}, 0,                                'zero overflow reported in statd');
+    is($stats{'pricer_daemon.queue.size'},     @keys,                            'keys waiting for processing in statsd');
+    is((keys %tags)[0],                        "tag:@{[ $queue->internal_ip ]}", 'internal ip recorded as tag');
+
+    like $redis->lrange('pricer_jobs', -1, -1)->[0], qr/"price_daemon_cmd","bid"/, 'bid contract is the first to rpop for being processed';
 };
 
 subtest 'overloaded daemon' => sub {
@@ -69,9 +71,9 @@ subtest 'overloaded daemon' => sub {
     $redis->del($_) for @keys;
 
     $queue->process;
-    is($stats{'pricer_daemon.queue.overflow'},      @keys, 'overflow correctly reported in statsd');
-    is($stats{'pricer_daemon.queue.size'},          0,     'no keys pending processing in statsd');
-    is($stats{'pricer_daemon.queue.not_processed'}, @keys, 'not_processed correctly reported in statsd');
+
+    is($stats{'pricer_daemon.queue.overflow'}, @keys, 'overflow correctly reported in statsd');
+    is($stats{'pricer_daemon.queue.size'},     0,     'no keys pending processing in statsd');
 };
 
 subtest 'jobs processed by daemon' => sub {
@@ -79,10 +81,8 @@ subtest 'jobs processed by daemon' => sub {
     $redis->del('pricer_jobs');
     $queue->process;
 
-    is($stats{'pricer_daemon.queue.overflow'},      0, 'zero overflow reported in statsd');
-    is($stats{'pricer_daemon.queue.size'},          0, 'no keys pending processing in statsd');
-    is($stats{'pricer_daemon.queue.not_processed'}, 0, 'zero not_processed reported in statsd');
-
+    is($stats{'pricer_daemon.queue.overflow'}, 0, 'zero overflow reported in statsd');
+    is($stats{'pricer_daemon.queue.size'},     0, 'no keys pending processing in statsd');
 };
 
 subtest 'sleeping to next second' => sub {
@@ -93,7 +93,6 @@ subtest 'sleeping to next second' => sub {
 };
 
 subtest 'priority_queue' => sub {
-
     my $pid = fork // die "Couldn't fork";
     unless ($pid) {
         sleep 1;
@@ -111,7 +110,7 @@ subtest 'priority_queue' => sub {
         'New priority BOM::Pricing::Queue processor'
     );
     # need to do 5 times because initial redis reply will be subscription confirmation
-    $queue->process for (0 .. 4);
+    $queue->process for (0 .. @keys);
     is($redis->llen('pricer_jobs_priority'),        @keys, 'keys added to pricer_jobs_priority queue');
     is($stats{'pricer_daemon.priority_queue.recv'}, @keys, 'receive stats updated in statsd');
     is($stats{'pricer_daemon.priority_queue.send'}, @keys, 'send stats updated in statsd');
