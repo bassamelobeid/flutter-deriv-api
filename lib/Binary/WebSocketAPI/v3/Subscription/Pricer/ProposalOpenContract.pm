@@ -3,6 +3,7 @@ use strict;
 use warnings;
 no indirect;
 
+use DataDog::DogStatsd::Helper qw/stats_timing/;
 use Format::Util::Numbers qw/formatnumber roundcommon/;
 use Binary::WebSocketAPI::v3::Subscription::Transaction;
 use Moo;
@@ -67,8 +68,17 @@ sub do_handle_message {
     $results->{$type}->{validation_error} = $c->l($results->{$type}->{validation_error}) if ($results->{$type}->{validation_error});
 
     $c->send({json => $results}, {args => $self->args});
-    return;
 
+    if (exists $results->{$type} and not $message->{is_expired}) {
+        my $tags = [
+            'contract_type:' . ($message->{contract_type} // ''),
+            'underlying:' .    ($message->{underlying}    // ''),
+            'tick_count:' .    ($message->{tick_count}    // ''),
+        ];
+        stats_timing('bom_websocket_api.v_3.poc.timing', 1000 * (time - $message->{current_spot_time}), {tags => $tags});
+    }
+
+    return;
 }
 
 # DEMOLISH in subclass will prevent super ROLE's DEMOLISH in Subscription.pm. So here `before` is used.
@@ -82,6 +92,32 @@ before DEMOLISH => sub {
         $s->unregister if ($s->type eq 'sell' && $s->poc_uuid eq $self->uuid);
     }
     return undef;
+};
+
+=head2 subscribe
+
+Subscribe the channel and store channel to Redis so that pricer_queue script can handle them.
+Also store the pricer_args by contract id for later retrieval for contract update.
+
+=cut
+
+before subscribe => sub {
+    my $self = shift;
+
+    # Having such a long pricer key is not ideal when contract needs to be updated.
+    # Future bug is waiting to happen when we change the order or something is mistakenly converted to string instead of number
+    # or vice versa.
+    my ($pricer_args, $id) = @{$self->pricer_args};
+    my $redis = $self->subscription_manager->redis;
+    # can't use redis->multi & exec here because it is not supported by Mojo::Redis2
+    my $old_key = $redis->get($id);
+    $redis->del($old_key) if $old_key;
+    # for pricer demon
+    $redis->set($pricer_args, $id);
+    # for update retrieval based on id
+    $redis->set($id, $pricer_args);
+
+    return;
 };
 
 1;

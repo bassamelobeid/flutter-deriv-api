@@ -10,8 +10,8 @@
     ],
     "additionalProperties": false,
     "required": [
-        "id",
-        "p2p_order_cancel"
+        "p2p_order_cancel",
+        "id"
     ],
     "properties": {
         "p2p_order_cancel": {

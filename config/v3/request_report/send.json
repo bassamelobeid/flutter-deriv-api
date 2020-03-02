@@ -10,10 +10,10 @@
     ],
     "additionalProperties": false,
     "required": [
+        "request_report",
         "date_from",
         "date_to",
-        "report_type",
-        "request_report"
+        "report_type"
     ],
     "properties": {
         "request_report": {

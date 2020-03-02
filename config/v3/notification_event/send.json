@@ -10,9 +10,9 @@
     ],
     "additionalProperties": false,
     "required": [
+        "notification_event",
         "category",
-        "event",
-        "notification_event"
+        "event"
     ],
     "properties": {
         "notification_event": {

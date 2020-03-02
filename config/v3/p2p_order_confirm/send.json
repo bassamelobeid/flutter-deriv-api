@@ -10,8 +10,8 @@
     ],
     "additionalProperties": false,
     "required": [
-        "id",
-        "p2p_order_confirm"
+        "p2p_order_confirm",
+        "id"
     ],
     "properties": {
         "p2p_order_confirm": {

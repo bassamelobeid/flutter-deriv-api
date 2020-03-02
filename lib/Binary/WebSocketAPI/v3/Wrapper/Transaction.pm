@@ -4,9 +4,10 @@ package Binary::WebSocketAPI::v3::Wrapper::Transaction;
 use strict;
 use warnings;
 
+use List::Util qw(first);
+
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Subscription::Transaction;
-use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 
 sub buy_get_single_contract {
     my ($c, $api_response, $req_storage, $store_last_contract_id) = @_;
@@ -36,6 +37,7 @@ sub contract_update_handler {
 
     # do not send this back
     delete $api_response->{updated_queue};
+
     return undef;
 }
 

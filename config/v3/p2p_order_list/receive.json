@@ -28,12 +28,13 @@
                             "advertiser_details",
                             "amount",
                             "amount_display",
+                            "contact_info",
                             "created_time",
-                            "description",
                             "expiry_time",
                             "id",
                             "is_incoming",
                             "local_currency",
+                            "payment_info",
                             "price",
                             "price_display",
                             "rate",
@@ -42,20 +43,8 @@
                             "type"
                         ],
                         "properties": {
-                            "description": {
-                                "description": "Notes from the client.",
-                                "type": "string"
-                            },
-                            "type": {
-                                "description": "Whether this is a buy or a sell.",
-                                "type": "string",
-                                "enum": [
-                                    "buy",
-                                    "sell"
-                                ]
-                            },
                             "account_currency": {
-                                "description": "The currency of order.",
+                                "description": "The currency to be bought or sold.",
                                 "type": "string",
                                 "pattern": "^[a-zA-Z]{3,}$",
                                 "examples": [
@@ -70,11 +59,20 @@
                                 "required": [
                                     "description",
                                     "id",
+                                    "payment_method",
                                     "type"
                                 ],
                                 "properties": {
                                     "description": {
-                                        "description": "Notes from the advertiser. Should include contact details and payment instructions.",
+                                        "description": "Notes and general instructions from the advertiser.",
+                                        "type": "string"
+                                    },
+                                    "id": {
+                                        "description": "The unique identifier for the advert.",
+                                        "type": "string"
+                                    },
+                                    "payment_method": {
+                                        "description": "The payment method.",
                                         "type": "string"
                                     },
                                     "type": {
@@ -84,10 +82,6 @@
                                             "buy",
                                             "sell"
                                         ]
-                                    },
-                                    "id": {
-                                        "description": "The unique identifier for the advert.",
-                                        "type": "string"
                                     }
                                 }
                             },
@@ -119,6 +113,10 @@
                                 "description": "The amount of the order, formatted to appropriate decimal places.",
                                 "type": "string"
                             },
+                            "contact_info": {
+                                "description": "Details for contacting the seller.",
+                                "type": "string"
+                            },
                             "created_time": {
                                 "description": "The epoch time of the order creation.",
                                 "type": "integer"
@@ -147,6 +145,10 @@
                                     "USD"
                                 ]
                             },
+                            "payment_info": {
+                                "description": "Payment instructions for the buyer to transfer funds to the seller.",
+                                "type": "string"
+                            },
                             "price": {
                                 "description": "Cost in local currency.",
                                 "type": "number"
@@ -173,6 +175,14 @@
                                     "timed-out",
                                     "refunded",
                                     "completed"
+                                ]
+                            },
+                            "type": {
+                                "description": "Whether this is a buy or a sell.",
+                                "type": "string",
+                                "enum": [
+                                    "buy",
+                                    "sell"
                                 ]
                             }
                         }
