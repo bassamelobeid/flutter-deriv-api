@@ -26,7 +26,6 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     email       => 'XX@binary.com'
 });
 
-#my $client  = BOM::User::Client->new({loginid => 'CR2002'});
 my $account = $client->set_default_account('USD');
 my $db      = $client->set_db('write');
 my $comment_str =
