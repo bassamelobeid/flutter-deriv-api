@@ -1414,6 +1414,7 @@ Currently both requirements are same so currently the sub has no
 separate logic for them.
 
 =end comment
+
 =cut
 
 sub is_verification_required {

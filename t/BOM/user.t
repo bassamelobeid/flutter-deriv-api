@@ -680,4 +680,38 @@ subtest 'pep_self_declaration_time' => sub {
     is $test_user->pep_self_declaration_time, $cr_date, 'Pep declaration time is the minimum jointed date among all real accounts';
 };
 
+subtest has_mt5_regulated_account => sub {
+    my $mt5_loginids = {
+        MT12340  => 'real\svg_standard',
+        MTR12350 => 'real\svg_advanced',
+        MTR12390 => 'real\svg_standard',
+        MTD12370 => 'demo\svg_standard',
+        MTD12380 => 'demo\svg_advanced'
+    };
+    $user = BOM::User->create(
+        email    => 'hello@binary.com',
+        password => $hash_pwd,
+    );
+
+    for my $loginid (keys %$mt5_loginids) {
+        $user->add_loginid($loginid);
+    }
+    my $mock = Test::MockModule->new('BOM::MT5::User::Async');
+    my @called_loginids;
+    $mock->mock(
+        'get_user',
+        sub {
+            my $loginid = shift;
+            push @called_loginids, $loginid;
+            Future->done({group => $mt5_loginids->{$loginid}});
+        });
+    is($user->has_mt5_regulated_account, 0, 'no regulated account');
+    is_deeply(\@called_loginids, [qw(MTR12390 MTR12350 MT12340)], 'MTR will be before  MT, and greater number will at first');
+    $mt5_loginids->{MTR12350} = 'real\labuan_standard';
+    @called_loginids = ();
+    is($user->has_mt5_regulated_account, 1, 'have regulated account');
+    is_deeply(\@called_loginids, [qw(MTR12390 MTR12350)], 'MTR will be before  MT, and greater number will at first');
+};
+
 done_testing;
+

@@ -2,6 +2,7 @@ package BOM::User;
 
 use strict;
 use warnings;
+no indirect;
 
 use feature 'state';
 use Syntax::Keyword::Try;
@@ -344,7 +345,14 @@ Check if user has any mt5 regulated account - currently its only Labuan
 sub has_mt5_regulated_account {
     my $self = shift;
 
-    return 1 if (any { defined && /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_standard|_advanced)/ } values %{$self->mt5_logins_with_group('real')});
+    my @all_mt5_loginids = $self->get_mt5_loginids;
+    # We want to check the real mt5 accounts, so we filter out MTD, then reverse sort,
+    # that will move MTR first, and latest created id first
+    my @loginids = reverse sort grep { !/^MTD\d+/ } @all_mt5_loginids;
+    for my $loginid (@loginids) {
+        my $group = BOM::MT5::User::Async::get_user($loginid)->else(sub { Future->done({}) })->get->{group};
+        return 1 if defined($group) && $group =~ /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_standard|_advanced)/;
+    }
 
     return 0;
 }
