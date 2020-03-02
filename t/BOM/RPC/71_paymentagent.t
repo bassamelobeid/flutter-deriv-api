@@ -500,7 +500,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->status->set('cashier_locked', 'Testy McTestington', 'Just running some tests');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, 'Your account cashier is locked. Please contact us for more information.', $test);
+        is($res->{error}{message_to_client}, 'Your cashier is locked.', $test);
         $Alice->status->clear_cashier_locked;
         $Alice->save;
 
@@ -508,7 +508,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->status->set('disabled', 'Testy McTestington', 'Just running some tests');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, 'You cannot perform this action, as your account is currently disabled.', $test);
+        is($res->{error}{message_to_client}, 'Your account is disabled.', $test);
         $Alice->status->clear_disabled;
         $Alice->save;
 
@@ -516,7 +516,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->status->set('withdrawal_locked', 'Testy McTestington', 'Just running some tests');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, 'Withdrawal is disabled.', $test);
+        is($res->{error}{message_to_client}, 'Your account is locked for withdrawals.', $test);
         $Alice->status->clear_withdrawal_locked;
         $Alice->save;
 
@@ -532,7 +532,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Bob->status->set('disabled', 'Testy McTestington', 'Just running some tests');
         $Bob->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, "You cannot transfer to account $Bob_id, as their account is currently disabled.", $test);
+        is($res->{error}{message_to_client}, "You cannot transfer to account $Bob_id, as their account is disabled.", $test);
         $Bob->status->clear_disabled;
         $Bob->save;
 
@@ -624,7 +624,14 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
 
         $test = 'Transfer fails if given currency does not match transfer_to client default account currency';
         ## Cannot change existing currency for a client, so we make a new transfer_to client
-        my $dummy_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        my $dummy_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => 'dummy' . $test_currency . '@dummy.com'
+        });
+        my $dummy_user = BOM::User->create(
+            email    => $dummy_client->{email},
+            password => $hash_pwd,
+        );
         $dummy_client->set_default_account($alt_currency);
         $testargs->{args}{transfer_to} = $dummy_client->loginid;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
@@ -739,6 +746,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $test_lc_limits = $payment_withdrawal_limits->{$lc_short};
         ($lc_currency, $lc_lifetime_limit) = @$test_lc_limits{qw/ currency lifetime_limit /};
         $mock_landingcompany->mock('allows_payment_agents', sub { return 1; });
+        $mock_landingcompany->mock('is_currency_legal',     sub { 1 });
         ## As before, we carefully adjust our payment history
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is(

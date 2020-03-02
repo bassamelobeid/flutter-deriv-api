@@ -578,6 +578,21 @@ rpc paymentagent_transfer => sub {
         };
     }
 
+    my $validation_fm = BOM::Platform::Client::CashierValidation::validate($loginid_fm, 'withdraw');
+    my $validation_to = BOM::Platform::Client::CashierValidation::validate($loginid_to, 'deposit');
+    if (exists $validation_to->{error}) {
+        # to_clinet's data should not be visible for who is transferring so the error message is replaced by a general one unless for sepcific messages
+        my $msg = localize('You cannot transfer to account [_1]', $loginid_to);
+        $msg .= localize(', as their cashier is locked.')   if $validation_to->{error}->{message_to_client} eq 'Your cashier is locked.';
+        $msg .= localize(', as their account is disabled.') if $validation_to->{error}->{message_to_client} eq 'Your account is disabled.';
+        $validation_to->{error}->{message_to_client} = $msg;
+    }
+    my $validation = $validation_fm // $validation_to;
+    if (exists $validation->{error}) {
+        $validation->{error}->{code} = 'PaymentAgentTransferError';
+        return BOM::RPC::v3::Utility::create_error($validation->{error});
+    }
+
     # normalized all amount to USD for comparing payment agent limits
     my ($amount_transferred_in_usd, $count) = _get_amount_and_count($loginid_fm);
     $amount_transferred_in_usd = in_usd($amount_transferred_in_usd, $currency);
@@ -667,16 +682,6 @@ rpc paymentagent_transfer => sub {
             return $error_sub->(localize('Login ID ([_1]) does not exist.', $error_msg =~ /\b$loginid_fm\b/ ? $loginid_fm : $loginid_to));
         } elsif ($error_code eq 'BI206') {    ## Redundant check (account is virtual)
             return $error_sub->(localize('Sorry, this feature is not available.'), $full_error_msg);
-        } elsif ($error_code eq 'BI208') {
-            return $error_sub->(localize('You cannot transfer to account [_1], as their cashier is locked.', $loginid_to));
-        } elsif ($error_code eq 'BI209') {
-            return $error_sub->(localize('Your account cashier is locked. Please contact us for more information.'));
-        } elsif ($error_code eq 'BI210') {
-            return $error_sub->(localize('You cannot perform this action, as your account is currently disabled.'));
-        } elsif ($error_code eq 'BI211') {
-            return $error_sub->(localize('Withdrawal is disabled.'));
-        } elsif ($error_code eq 'BI212') {
-            return $error_sub->(localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to));
         } elsif ($error_code eq 'BI213') {
             return $error_sub->(localize("We are unable to transfer to [_1], because that account has been restricted.", $loginid_to));
         } elsif ($error_code eq 'BI214') {
@@ -899,7 +904,8 @@ rpc paymentagent_withdraw => sub {
         localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is not authorized.", $pa_client->loginid))
         unless $paymentagent->is_authenticated;
 
-    return $error_sub->(localize('Payment agent withdrawals are not allowed for specified accounts.')) if ($client->broker ne $paymentagent->broker);
+    return $error_sub->(localize('Payment agent withdrawals are not allowed for specified accounts.'))
+        if ($client->broker ne $paymentagent->broker);
 
     return $error_sub->(
         localize('You cannot perform this action, as [_1] is not default currency for your account [_2].', $currency, $client->loginid))

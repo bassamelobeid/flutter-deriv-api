@@ -531,6 +531,12 @@ subtest $method => sub {
 
         $client_mlt->status->clear_cashier_locked;    # clear locked
 
+        $client_mf->set_authentication('ID_DOCUMENT')->status('pass');
+        $client_mf->status->set('financial_risk_approval', 'system', 'Accepted approval');
+        $client_mf->tax_residence('de');
+        $client_mf->tax_identification_number('111-222-333');
+        $client_mf->save;
+
         $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
         is scalar(@{$result->{accounts}}), 2, 'two accounts';
         ($tmp) = grep { $_->{loginid} eq $client_mlt->loginid } @{$result->{accounts}};

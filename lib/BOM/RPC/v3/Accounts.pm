@@ -749,6 +749,7 @@ rpc get_account_status => sub {
         push @$status, 'allow_document_upload';
     } elsif ($client->landing_company->is_authentication_mandatory
         or ($client->aml_risk_classification // '') eq 'high'
+        or $client->status->withdrawal_locked
         or $client->status->allow_document_upload)
     {
         push @$status, 'allow_document_upload';
@@ -894,6 +895,9 @@ sub _get_authentication {
         $authentication_object;
     } if $client->fully_authenticated();
 
+    # variable for caching result
+    my ($is_verification_required, $is_verification_required_check_authentication_status);
+
     # proof of identity provided
     return do {
         # proof of identity
@@ -902,7 +906,8 @@ sub _get_authentication {
 
         # proof of address
         if (not $poa_documents) {
-            $needs_verification_hash{document} = 'document' if $client->is_verification_required(check_authentication_status => 1);
+            $is_verification_required_check_authentication_status //= $client->is_verification_required(check_authentication_status => 1);
+            $needs_verification_hash{document} = 'document' if $is_verification_required_check_authentication_status;
         } else {
             $poa_structure->();
         }
@@ -924,7 +929,8 @@ sub _get_authentication {
         my $user_check = BOM::User::Onfido::get_latest_onfido_check($client->binary_user_id);
 
         unless ($user_check) {
-            $needs_verification_hash{identity} = 'identity' if $client->is_verification_required();
+            $is_verification_required //= $client->is_verification_required();
+            $needs_verification_hash{identity} = 'identity' if $is_verification_required;
         } else {
             if (my $check_id = $user_check->{id}) {
                 if ($user_check->{status} =~ /^in_progress|awaiting_applicant$/) {
@@ -949,20 +955,23 @@ sub _get_authentication {
             }
         }
     } elsif (not $poi_documents) {
-        $needs_verification_hash{identity} = 'identity' if $client->is_verification_required();
+        $is_verification_required //= $client->is_verification_required();
+        $needs_verification_hash{identity} = 'identity' if $is_verification_required;
     } else {
         $poi_structure->();
     }
 
+    $is_verification_required_check_authentication_status //= $client->is_verification_required(check_authentication_status => 1);
+
     # proof of address
     if (not $poa_documents) {
-        $needs_verification_hash{document} = 'document' if $client->is_verification_required(check_authentication_status => 1);
+        $needs_verification_hash{document} = 'document' if $is_verification_required_check_authentication_status;
     } else {
         $poa_structure->();
     }
 
     # If needs action and not age verified, we require both POI and POA
-    if ($client->is_verification_required(check_authentication_status => 1) and not defined $client->status->age_verification) {
+    if ($is_verification_required_check_authentication_status and not defined $client->status->age_verification) {
         $needs_verification_hash{identity} = 'identity' if $authentication_object->{identity}->{status} eq 'none';
     }
 

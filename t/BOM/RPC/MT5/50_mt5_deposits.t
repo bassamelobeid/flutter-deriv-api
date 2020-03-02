@@ -459,7 +459,9 @@ subtest 'labuan withdrawal' => sub {
 subtest 'mf_withdrawal' => sub {
     my $test_mf_client = create_client('MF');
     $test_mf_client->account('USD');
-
+    $test_mf_client->status->set('financial_risk_approval', 'system', 'Accepted approval');
+    $test_mf_client->tax_residence('de');
+    $test_mf_client->tax_identification_number('111-222-333');
     $test_mf_client->email($DETAILS{email});
     $test_mf_client->status->clear_age_verification;
 
@@ -548,6 +550,14 @@ subtest 'mf_deposit' => sub {
     $test_mf_client->save();
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
+
+    $c->call_ok($method, $params_mf)->has_error('Deposit failed.')->error_message_like(qr/Financial Risk approval is required./);
+    $test_mf_client->status->set('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
+    $c->call_ok($method, $params_mf)->has_error('Deposit failed.')
+        ->error_message_like(qr/Tax-related information is mandatory for legal and regulatory requirements/);
+    $test_mf_client->tax_residence('de');
+    $test_mf_client->tax_identification_number('111-222-333');
+    $test_mf_client->save;
 
     $c->call_ok($method, $params_mf)->has_no_error('no error for mt5_deposit');
 
