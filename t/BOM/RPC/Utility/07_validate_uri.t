@@ -41,20 +41,21 @@ subtest 'URI should not have fragments' => sub {
     isnt BOM::RPC::v3::Utility::validate_uri('http://example.com/#hello'), undef, 'URL with fragment';
 };
 
-subtest 'URI should not have IP' => sub {
-    isnt BOM::RPC::v3::Utility::validate_uri('http://127.0.0.1'), undef, 'URL with IPv4';
-    isnt BOM::RPC::v3::Utility::validate_uri('http://::'),        undef, 'URL with IPv6';
-};
-
-subtest 'URI should have known TLDs' => sub {
-    isnt BOM::RPC::v3::Utility::validate_uri('http://localhost'),          undef, 'URL without TLD';
-    isnt BOM::RPC::v3::Utility::validate_uri('http://localhost.local'),    undef, 'URL with invalid TLD';
-    isnt BOM::RPC::v3::Utility::validate_uri('http://username.com.local'), undef, 'URL with .com.invalid TLD';
+subtest 'URI with IP' => sub {
+    is BOM::RPC::v3::Utility::validate_uri('http://127.0.0.1'), undef, 'URL with IPv4 is ok';
+    isnt BOM::RPC::v3::Utility::validate_uri('http://::'),      undef, 'URL with IPv6 not ok';
 };
 
 subtest 'Unencoded Unicode is not allowed' => sub {
     isnt BOM::RPC::v3::Utility::validate_uri('http://نامه.com/example/subdir'), undef, 'Unicode in host';
     isnt BOM::RPC::v3::Utility::validate_uri('http://example.com/نامه/subdir'), undef, 'Unicode in path';
+};
+
+subtest 'URI can have unknown TLD or without TLD' => sub {
+    is BOM::RPC::v3::Utility::validate_uri('http://localhost'),          undef, 'URL without TLD';
+    is BOM::RPC::v3::Utility::validate_uri('http://localhost.local'),    undef, 'URL with invalid TLD';
+    is BOM::RPC::v3::Utility::validate_uri('http://username.com.local'), undef, 'URL with .com.invalid TLD';
+    is BOM::RPC::v3::Utility::validate_uri('deriv://p2p'),               undef, 'Custom scheme without TLD';
 };
 
 subtest 'Healthy URL' => sub {
