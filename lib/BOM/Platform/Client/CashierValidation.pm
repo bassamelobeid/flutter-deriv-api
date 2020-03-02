@@ -127,7 +127,9 @@ Returns whether payment is currently suspended or not
 =cut
 
 sub is_payment_suspended {
-    return BOM::Config::Runtime->instance->app_config->system->suspend->payments;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update();
+    return $app_config->system->suspend->payments;
 }
 
 =head2 is_cashier_suspended
@@ -137,7 +139,9 @@ Returns whether fiat cashier is currently suspended or not
 =cut
 
 sub is_cashier_suspended {
-    return BOM::Config::Runtime->instance->app_config->system->suspend->cashier;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update();
+    return $app_config->system->suspend->cashier;
 }
 
 =head2 is_crypto_cashier_suspended
@@ -147,7 +151,9 @@ Returns whether crypto cashier is currently suspended or not
 =cut
 
 sub is_crypto_cashier_suspended {
-    return BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update();
+    return $app_config->system->suspend->cryptocashier;
 }
 
 =head2 is_crypto_currency_suspended {
@@ -177,13 +183,16 @@ sub is_crypto_currency_suspended {
 
     die "Failed to accept $currency as a cryptocurrency." if (LandingCompany::Registry::get_currency_type(uc $currency) // '') ne 'crypto';
 
-    return 1 if BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update();
 
-    my $first_check = BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies =~ /\Q$currency\E/;
+    return 1 if $app_config->system->suspend->cryptocashier;
+
+    my $first_check = $app_config->system->suspend->cryptocurrencies =~ /\Q$currency\E/;
 
     if ($action) {
         my $sub_action = "cryptocurrencies_$action";
-        my $second_check = any { $currency eq $_ } BOM::Config::Runtime->instance->app_config->system->suspend->$sub_action->@*;
+        my $second_check = any { $currency eq $_ } $app_config->system->suspend->$sub_action->@*;
         return $first_check || $second_check;
     }
 
