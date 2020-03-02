@@ -75,6 +75,10 @@ subtest 'CR - USD' => sub {
         broker_code    => 'CR',
         place_of_birth => 'id',
     });
+    my $user = BOM::User->create(
+        email    => $email,
+        password => 'dsd32e23ewef',
+    );
     $client->set_default_account('USD');
 
     $client->email($email);
@@ -192,6 +196,10 @@ subtest 'CR-EUR' => sub {
         broker_code    => 'CR',
         place_of_birth => 'id',
     });
+    my $user = BOM::User->create(
+        email    => $email,
+        password => 'dsd32e23ewef',
+    );
     $client->set_default_account('EUR');
 
     $client->email($email);
@@ -286,6 +294,10 @@ subtest 'CR-BTC' => sub {
         broker_code    => 'CR',
         place_of_birth => 'id',
     });
+    my $user = BOM::User->create(
+        email    => $email,
+        password => 'dsd32e23ewef',
+    );
     $client->set_default_account('BTC');
 
     $client->email($email);
@@ -388,6 +400,11 @@ subtest 'MLT' => sub {
         broker_code    => 'MLT',
         place_of_birth => 'id',
     });
+    my $user = BOM::User->create(
+        email    => $email,
+        password => 'dsd32e23ewef',
+    );
+
     $client->set_default_account('EUR');
 
     $client->email($email);
@@ -471,12 +488,18 @@ subtest 'MLT' => sub {
 # Test for MX accounts which use EUR as the currency
 subtest 'MX' => sub {
     # Initialise a MX test account and email and set EUR as the currency
-    my $email  = 'test-mlt@binary.com';
+    my $email  = 'test-mx@binary.com';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'MX',
         place_of_birth => 'id',
     });
+    my $user = BOM::User->create(
+        email    => $email,
+        password => 'dsd32e23ewef',
+    );
     $client->set_default_account('EUR');
+    my $mocked_landing = Test::MockModule->new(ref($client->landing_company));
+    $mocked_landing->mock('is_currency_legal', sub { 1 });
 
     $client->email($email);
     $client->save;
