@@ -30,20 +30,6 @@
                         5.14
                     ]
                 },
-                "commission": {
-                    "description": "Commission changed in percentage (%).",
-                    "type": [
-                        "null",
-                        "number"
-                    ]
-                },
-                "date_start": {
-                    "description": "The start date of the contract.",
-                    "type": "integer",
-                    "examples": [
-                        1439999053
-                    ]
-                },
                 "cancellation": {
                     "description": "Contains information about contract cancellation option.",
                     "type": "object",
@@ -57,6 +43,20 @@
                             "type": "integer"
                         }
                     }
+                },
+                "commission": {
+                    "description": "Commission changed in percentage (%).",
+                    "type": [
+                        "null",
+                        "number"
+                    ]
+                },
+                "date_start": {
+                    "description": "The start date of the contract.",
+                    "type": "integer",
+                    "examples": [
+                        1439999053
+                    ]
                 },
                 "display_value": {
                     "description": "Same as `ask_price`.",

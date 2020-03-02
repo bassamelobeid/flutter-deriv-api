@@ -175,6 +175,20 @@
                     "description": "Price at which contract was purchased",
                     "type": "number"
                 },
+                "cancellation": {
+                    "description": "Contains information about contract cancellation option.",
+                    "type": "object",
+                    "properties": {
+                        "ask_price": {
+                            "description": "Ask price of contract cancellation option.",
+                            "type": "number"
+                        },
+                        "date_expiry": {
+                            "description": "Expiry time in epoch for contract cancellation option.",
+                            "type": "integer"
+                        }
+                    }
+                },
                 "commision": {
                     "description": "Commission in payout currency amount.",
                     "type": [
@@ -242,20 +256,6 @@
                     "examples": [
                         1446629000
                     ]
-                },
-                "cancellation": {
-                    "description": "Contains information about contract cancellation option.",
-                    "type": "object",
-                    "properties": {
-                        "ask_price": {
-                            "description": "Ask price of contract cancellation option.",
-                            "type": "number"
-                        },
-                        "date_expiry": {
-                            "description": "Expiry time in epoch for contract cancellation option.",
-                            "type": "integer"
-                        }
-                    }
                 },
                 "display_name": {
                     "description": "Display name of underlying",
