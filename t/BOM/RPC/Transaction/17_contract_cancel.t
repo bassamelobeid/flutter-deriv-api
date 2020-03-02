@@ -97,11 +97,13 @@ subtest 'contract_update' => sub {
     ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
 
     $cancel_params->{args}->{cancel} = $buy_res->{contract_id};
-    my $res = $c->call_ok('cancel', $cancel_params)->has_error->error_code_is('CancelFailed')
-        ->error_message_is('This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.');
+    my $res =
+        $c->call_ok('cancel', $cancel_params)->has_error->error_code_is('CancelFailed')
+        ->error_message_is(
+        'This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.');
 
-    $buy_params->{contract_parameters}->{deal_cancellation} = '1h';
-    $buy_params->{args}->{price}                            = 104.35;
+    $buy_params->{contract_parameters}->{cancellation} = '1h';
+    $buy_params->{args}->{price}                       = 104.35;
     $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
 
     ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
