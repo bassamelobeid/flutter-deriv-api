@@ -172,8 +172,8 @@ sub _process_price_queue {
     $log->trace('pricer_jobs queue updating...');
     $self->redis->del('pricer_jobs');
     my @asks = @keys;    # since we extract 'bids' on the next line, so only 'asks' contracts would remain in `@asks`, hence the naming
-    my @bids = extract_by { /"contract_id"/ } @asks;    # avoid decoding json for faster results
-    $self->redis->lpush('pricer_jobs', @bids) if @bids; # prioritise bids since we'll do `rpop` for processing
+    my @bids = extract_by { /"price_daemon_cmd","bid"/ } @asks;    # avoid decoding json for faster results
+    $self->redis->lpush('pricer_jobs', @bids) if @bids;            # prioritise bids since we'll do `rpop` for processing
     $self->redis->lpush('pricer_jobs', @asks) if @asks;
     $log->debug('pricer_jobs queue updated.');
 
