@@ -33,7 +33,8 @@ is_deeply(\%tags,  {}, 'start with no tags');
 use BOM::Pricing::Queue;
 
 # use a separate redis client for this test
-my $redis = RedisDB->new(YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write}->%*);
+my $redis        = RedisDB->new(YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write}->%*);
+my $redis_shared = RedisDB->new(YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer-shared.yml')->{write}->%*);
 my $queue;
 
 # Sample pricer jobs
@@ -49,7 +50,7 @@ my @contract_params = ([
     "CONTRACT_PARAMS::123::svg",
     "[\"short_code\",\"PUT_FRXAUDJPY_19.23_1583120649_1583120949_S0P_0\",\"contract_id\",\"123\",\"currency\",\"USD\",\"is_sold\",\"0\",\"landing_company\",\"svg\",\"price_daemon_cmd\",\"bid\",\"sell_time\",null]"
 ]);
-$redis->set($_->[0] => $_->[1]) for @contract_params;
+$redis_shared->set($_->[0] => $_->[1]) for @contract_params;
 
 subtest 'normal flow' => sub {
     $queue = new_ok(
