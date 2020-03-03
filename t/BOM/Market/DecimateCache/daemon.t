@@ -9,7 +9,7 @@ BOM::Config::Runtime->instance->app_config;
 
 my $time = time;
 
-my $redis     = BOM::Config::RedisReplicated::redis_write();
+my $redis     = BOM::Config::Redis::redis_replicated_write();
 my $undec_key = "DECIMATE_frxUSDJPY" . "_31m_FULL";
 my $encoder   = Sereal::Encoder->new({
     canonical => 1,
