@@ -9,9 +9,9 @@ use BOM::User::Password;
 use BOM::User;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
-my $redis = BOM::Config::RedisReplicated::redis_auth_write();
+my $redis = BOM::Config::Redis::redis_auth_write();
 
 ## init
 my $app_id = do {
