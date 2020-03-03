@@ -4,7 +4,7 @@ use warnings;
 
 no indirect;
 
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Config::Chronicle;
 use Date::Utility;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
@@ -63,7 +63,7 @@ $loop->add($s3);
 
 sub upload_redis {
 
-    my $r       = BOM::Config::RedisReplicated::redis_read();
+    my $r       = BOM::Config::Redis::redis_replicated_read();
     my @keys    = map { @{$r->scan_all(MATCH => "$_*")} } @redis_keys;
     my %data    = map { $_ => $r->get($_) } @keys;
     my $content = join "\n" => map { "$_ $data{$_}" } keys %data;
