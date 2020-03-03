@@ -9,7 +9,7 @@ use Cwd qw/abs_path/;
 use base qw( Exporter );
 use Quant::Framework::Underlying;
 use BOM::Test;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
 our @EXPORT_OK = qw(initialize_realtime_ticks_db initialize_events_redis);
 
@@ -46,7 +46,7 @@ because BOM::Test is included above). This sub needs to be updated if new queues
 =cut
 
 sub initialize_events_redis {
-    my $redis = BOM::Config::RedisReplicated::redis_events_write();
+    my $redis = BOM::Config::Redis::redis_events_write();
     $redis->del($_) for qw (GENERIC_EVENTS_QUEUE STATEMENTS_QUEUE DOCUMENT_AUTHENTICATION_QUEUE);
     return;
 }
