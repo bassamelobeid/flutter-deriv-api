@@ -5,13 +5,13 @@ use Date::Utility;
 
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use BOM::Database::ClientDB;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::User::Client;
 use BOM::Platform::Event::Emitter;
 use BOM::Config;
 
 my $db = BOM::Database::ClientDB->new({broker_code => 'MX'})->db->dbic;
-my $redis = BOM::Config::RedisReplicated::redis_events();
+my $redis = BOM::Config::Redis::redis_events();
 
 # Conditions for the SQL:
 # - Transactions in the last 30 days

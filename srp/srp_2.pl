@@ -4,7 +4,7 @@ use warnings;
 use BOM::Database::UserDB;
 use BOM::User;
 use BOM::MT5::User::Async;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
 use Date::Utility;
 use JSON::MaybeUTF8 qw/decode_json_utf8 encode_json_utf8/;
@@ -12,7 +12,7 @@ use JSON::MaybeUTF8 qw/decode_json_utf8 encode_json_utf8/;
 my $user_dbic = BOM::Database::UserDB::rose_db()->dbic;
 
 use constant REDIS_MASTERKEY =>'MT5_REMINDER_AUTHENTICATION_CHECK';
-my $redis = BOM::Config::RedisReplicated::redis_write;
+my $redis = BOM::Config::Redis::redis_replicated_write();
 
 # Fetch binary_user_ids from MT5 accounts created in the last 5 days
 # The query fetches the binary_user_id and aggregates the associated mt5 loginids and creation stamp in json format in an array

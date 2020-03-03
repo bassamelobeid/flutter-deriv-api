@@ -1,11 +1,11 @@
 use strict;
 use warnings;
 
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
-my $redis_replicated = BOM::Config::RedisReplicated::redis_write();
-my $redis_events = BOM::Config::RedisReplicated::redis_events();
-my $redis_mt5 = BOM::Config::RedisReplicated::redis_mt5_user_write();
+my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
+my $redis_events = BOM::Config::Redis::redis_events();
+my $redis_mt5 = BOM::Config::Redis::redis_mt5_user_write();
 
 # Move social responsibility to events redis
 my %full_data_hash = @{$redis_replicated->hgetall('social_responsibility')};
