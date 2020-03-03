@@ -159,8 +159,6 @@ subtest 'paymentagent_list RPC call' => sub {
                 'max_withdrawal'        => 5,
                 'min_withdrawal'        => 0.002,
             }]};
-    # use Data::Dumper;
-    # print Dumper $c->call_ok($method, $params)->result;
     $c->call_ok($method, $params)
         ->has_no_error->result_is_deeply($expected_result, 'If token is invalid, then the paymentagents are from broker "CR"');
     $params->{token} = $token;
