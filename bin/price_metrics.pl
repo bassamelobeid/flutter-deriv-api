@@ -8,7 +8,7 @@ use List::MoreUtils qw(uniq);
 use Path::Tiny qw(path);
 use POSIX qw(strftime);
 
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
 use constant EXPORT_PATH => '/var/lib/binary/pricing-metrics';
 
@@ -36,7 +36,7 @@ sub export_last_minute {
 }
 
 sub generate_csv_contents {
-    my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer();
+    my $redis_pricer = BOM::Config::Redis::redis_pricer();
 
     $redis_pricer->multi;
 

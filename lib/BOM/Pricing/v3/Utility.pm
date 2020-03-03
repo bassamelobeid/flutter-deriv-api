@@ -4,8 +4,8 @@ use strict;
 use warnings;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
-
-use BOM::Config::RedisReplicated;
+use JSON::MaybeUTF8 qw(:v1);
+use BOM::Config::Redis;
 use BOM::Product::Contract;
 
 sub create_error {
@@ -38,7 +38,7 @@ and the total timing.
 sub update_price_metrics {
     my ($relative_shortcode, $timing) = @_;
 
-    my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer;
+    my $redis_pricer = BOM::Config::Redis::redis_pricer;
 
     $redis_pricer->hincrby('PRICE_METRICS::COUNT', $relative_shortcode, 1);
     $redis_pricer->hincrbyfloat('PRICE_METRICS::TIMING', $relative_shortcode, $timing);
