@@ -172,8 +172,8 @@ sub _process_price_queue {
     $log->trace('pricer_jobs queue updating...');
     $self->redis->del('pricer_jobs');
     my @asks = @keys;    # since we extract 'bids' on the next line, so only 'asks' contracts would remain in `@asks`, hence the naming
-    my @bids = extract_by { /"price_daemon_cmd","bid"/ } @asks;    # avoid decoding json for faster results
-    $self->redis->lpush('pricer_jobs', @bids) if @bids;            # prioritise bids since we'll do `rpop` for processing
+    my @bids = extract_by { /"contract_id"/ } @asks;    # avoid decoding json for faster results
+    $self->redis->lpush('pricer_jobs', @bids) if @bids; # prioritise bids since we'll do `rpop` for processing
     $self->redis->lpush('pricer_jobs', @asks) if @asks;
     $log->debug('pricer_jobs queue updated.');
 
@@ -195,6 +195,10 @@ sub _process_price_queue {
     my %queued;
     for my $key (@keys) {
         my $params = {decode_json_utf8($key =~ s/^PRICER_KEYS:://r)->@*};
+        if ($params->{contract_id} and $params->{landing_company}) {
+            my $contract_params = BOM::Pricing::v3::Utility::get_contract_params($params->{contract_id}, $params->{landing_company});
+            $params = {%$params, %$contract_params};
+        }
         unless (exists $params->{barriers}) {    # exclude proposal_array
             my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode($params);
             $queued{$relative_shortcode}++;
