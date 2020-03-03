@@ -23,7 +23,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates populate_exchange_rates_db/;
 use BOM::Platform::Token;
 use Email::Stuffer::TestLinks;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Config::CurrencyConfig;
 use Test::BOM::RPC::Accounts;
@@ -33,7 +33,7 @@ use utf8;
 my $test_binary_user_id = 65000;
 my ($t, $rpc_ct);
 
-my $redis = BOM::Config::RedisReplicated::redis_exchangerates_write();
+my $redis = BOM::Config::Redis::redis_exchangerates_write();
 
 # In the weekend the account transfers will be suspended. So we mock a valid day here
 set_absolute_time(Date::Utility->new('2018-02-15')->epoch);

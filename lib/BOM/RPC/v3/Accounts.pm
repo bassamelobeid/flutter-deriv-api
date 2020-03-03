@@ -56,7 +56,7 @@ use BOM::Database::Model::UserConnect;
 use BOM::Config::Runtime;
 use BOM::Config::ContractPricingLimits qw(market_pricing_limits);
 use BOM::RPC::v3::Services;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::User::Onfido;
 
 use constant DEFAULT_STATEMENT_LIMIT              => 100;
@@ -833,7 +833,7 @@ sub _get_authentication {
 
     return $authentication_object if $client->is_virtual;
 
-    my $redis = BOM::Config::RedisReplicated::redis_write();
+    my $redis = BOM::Config::Redis::redis_replicated_write();
     $authentication_object->{identity}{further_resubmissions_allowed} =
         $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id) // 0;
 
@@ -1966,7 +1966,7 @@ rpc api_token => sub {
         # send notification to cancel streaming, if we add more streaming
         # for authenticated calls in future, we need to add here as well
         if (defined $params->{account_id}) {
-            BOM::Config::RedisReplicated::redis_transaction_write()->publish(
+            BOM::Config::Redis::redis_transaction_write()->publish(
                 'TXNUPDATE::transaction_' . $params->{account_id},
                 Encode::encode_utf8(
                     $json->encode({

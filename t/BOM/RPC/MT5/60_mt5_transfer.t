@@ -16,14 +16,14 @@ use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;
 use BOM::Config::Runtime;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Config::CurrencyConfig;
 
 use Test::BOM::RPC::Accounts;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
-my $redis = BOM::Config::RedisReplicated::redis_exchangerates_write();
+my $redis = BOM::Config::Redis::redis_exchangerates_write();
 
 my $manager_module = Test::MockModule->new('BOM::MT5::User::Async');
 $manager_module->mock(
