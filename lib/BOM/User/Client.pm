@@ -1718,7 +1718,7 @@ sub check_duplicate_account {
 
         my $dup_details = {
             email          => $client->email,
-            exclude_status => ['duplicate_account', 'disabled'],
+            exclude_status => ['duplicate_account'],
         };
         $dup_details->{$_} = $args->{$_} || $client->$_ for @$duplicate_check;
         #name + dob is one group to check, phone is another independent condition
