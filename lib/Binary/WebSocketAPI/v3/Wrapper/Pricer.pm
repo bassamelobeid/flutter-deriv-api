@@ -581,7 +581,7 @@ sub pricing_channel_for_proposal_open_contract {
     my $contract_id     = $cache->{contract_id};
     my $landing_company = $c->landing_company_name;
 
-    my $redis_channel = join '::', ('CONTRACT_PRICE', $contract_id, $landing_company);
+    my $redis_channel = 'CONTRACT_PRICE::' .  $contract_id . '_' .  $landing_company;
     my $pricer_args = _serialized_args({
         contract_id      => $contract_id,
         landing_company  => $landing_company,
