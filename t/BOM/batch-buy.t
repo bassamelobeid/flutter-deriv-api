@@ -9,6 +9,7 @@ use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More;
 use Test::Exception;
+use List::Util qw(min);
 
 use BOM::User::Client;
 use Date::Utility;
@@ -164,6 +165,12 @@ sub check_one_result {
         $err++ unless is $m->{txn}->{balance_after}, sprintf('%.2f', $balance_after), 'balance_after';
         $err++ unless is $m->{loginid}, $cl->loginid, 'loginid';
     };
+
+    subtest "$title - CONTRACT_PARAMS TTL" => sub {
+        my $duration_epoch =
+            min(86400, Date::Utility->new($m->{fmb}->{expiry_time})->epoch - Date::Utility->new($m->{fmb}->{start_time})->epoch) + 60;
+        _check_contract_parameter_ttl($cl, $m->{fmb}->{id}, $duration_epoch);
+    };
 }
 
 ####################################################################
@@ -171,7 +178,7 @@ sub check_one_result {
 ####################################################################
 
 subtest 'batch-buy success + multisell', sub {
-    plan tests => 12;
+    plan tests => 15;
     lives_ok {
         my $clm = create_client;    # manager
         my $cl1 = create_client;
@@ -265,7 +272,7 @@ subtest 'batch-buy success + multisell', sub {
         is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
         sleep 1;
         subtest "sell_by_shortcode", sub {
-            plan tests => 8;
+            plan tests => 11;
             my $contract_parameters = shortcode_to_parameters($contract->shortcode, $clm->currency);
             $contract_parameters->{landing_company} = $clm->landing_company->short;
             $contract = produce_contract($contract_parameters);
@@ -428,7 +435,7 @@ subtest 'contract already started', sub {
 };
 
 subtest 'single contract fails in database', sub {
-    plan tests => 10;
+    plan tests => 12;
     lives_ok {
         my $clm = create_client;    # manager
         my $cl1 = create_client;
@@ -509,7 +516,7 @@ subtest 'single contract fails in database', sub {
 };
 
 subtest 'batch-buy multiple databases and datadog', sub {
-    plan tests => 17;
+    plan tests => 20;
     lives_ok {
         my $clm = create_client 'VRTC';    # manager
         my @cl;
@@ -814,5 +821,13 @@ subtest 'batch_buy multiplier contract' => sub {
     }
     'survived';
 };
+
+sub _check_contract_parameter_ttl {
+    my ($cl, $contract_id, $expected_ttl) = @_;
+
+    my $key = join '::', 'CONTRACT_PARAMS', $contract_id, $cl->landing_company->short;
+    my $ttl = BOM::Config::RedisReplicated::redis_pricer()->ttl($key);
+    ok $ttl <= $expected_ttl, 'ttl for ' . $key . ' is less than or equal to ' . $expected_ttl . '. Got [' . $ttl . ']';
+}
 
 done_testing;
