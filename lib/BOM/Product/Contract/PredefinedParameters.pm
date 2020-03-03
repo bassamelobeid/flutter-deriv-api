@@ -20,7 +20,7 @@ use Finance::Contract::Category;
 use LandingCompany::Registry;
 
 use BOM::MarketData qw(create_underlying);
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 
@@ -129,7 +129,7 @@ sub update_predefined_highlow {
 
     foreach my $period (@periods) {
         my $key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
-        my $cache = BOM::Config::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
+        my $cache = BOM::Config::Redis::redis_replicated_read()->get($cache_namespace . '::' . $key);
         my ($new_high, $new_low);
 
         if ($cache) {
@@ -149,7 +149,7 @@ sub update_predefined_highlow {
         }
         my $ttl = max(1, $period->{date_expiry}->{epoch} - $tick_epoch);
         # not using chronicle here because we don't want to save historical highlow data
-        BOM::Config::RedisReplicated::redis_write()->set($cache_namespace . '::' . $key, $json->encode([$new_high, $new_low]), 'EX', $ttl);
+        BOM::Config::Redis::redis_replicated_write()->set($cache_namespace . '::' . $key, $json->encode([$new_high, $new_low]), 'EX', $ttl);
     }
 
     return 1;
@@ -168,7 +168,7 @@ sub _get_predefined_highlow {
     }
 
     my $highlow_key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
-    my $cache = BOM::Config::RedisReplicated::redis_read()->get($cache_namespace . '::' . $highlow_key);
+    my $cache = BOM::Config::Redis::redis_replicated_read()->get($cache_namespace . '::' . $highlow_key);
 
     return @{$json->decode($cache)} if ($cache);
     return ();
@@ -320,7 +320,7 @@ sub generate_barriers_for_window {
     }
 
     my $key = join '_', ('barriers', $symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
-    my $cache = BOM::Config::RedisReplicated::redis_read()->get($cache_namespace . '::' . $key);
+    my $cache = BOM::Config::Redis::redis_replicated_read()->get($cache_namespace . '::' . $key);
 
     # return if barriers are generated already
     return if $cache;
@@ -378,7 +378,7 @@ sub _get_spot {
 
     my $now = time;
     my $tick_from_distributor_redis;
-    my $redis = BOM::Config::RedisReplicated::redis_read();
+    my $redis = BOM::Config::Redis::redis_replicated_read();
     my $redis_tick_json;
     my $redis_tick_from_date_start;
 

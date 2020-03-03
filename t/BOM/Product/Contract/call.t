@@ -14,7 +14,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use Test::MockModule;
 use BOM::Config::Runtime;
 
@@ -70,7 +70,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 0.9936,
 });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
-my $redis     = BOM::Config::RedisReplicated::redis_write();
+my $redis     = BOM::Config::Redis::redis_replicated_write();
 my $undec_key = "DECIMATE_frxAUDCAD" . "_31m_FULL";
 my $encoder   = Sereal::Encoder->new({
     canonical => 1,

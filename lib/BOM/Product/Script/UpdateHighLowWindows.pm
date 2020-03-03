@@ -4,7 +4,7 @@ use warnings;
 
 use LandingCompany::Registry;
 use BOM::Config::Runtime;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow);
 use JSON::MaybeXS;
 
@@ -13,7 +13,7 @@ sub run {
     my $offerings_obj = LandingCompany::Registry::get('virtual')->multi_barrier_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my @symbols       = $offerings_obj->values_for_key('underlying_symbol');
 
-    my $redis = BOM::Config::RedisReplicated::redis_feed();
+    my $redis = BOM::Config::Redis::redis_feed();
 
     $redis->subscription_loop(
         subscribe        => [map { 'FEED_LATEST_TICK::' . $_ } @symbols],

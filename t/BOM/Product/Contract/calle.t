@@ -12,7 +12,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 use Test::MockModule;
@@ -56,7 +56,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
-my $redis     = BOM::Config::RedisReplicated::redis_write();
+my $redis     = BOM::Config::Redis::redis_replicated_write();
 my $undec_key = "DECIMATE_frxUSDJPY" . "_31m_FULL";
 my $encoder   = Sereal::Encoder->new({
     canonical => 1,
@@ -87,7 +87,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
-$redis     = BOM::Config::RedisReplicated::redis_write();
+$redis     = BOM::Config::Redis::redis_replicated_write();
 $undec_key = "DECIMATE_frxAUDCAD" . "_31m_FULL";
 $encoder   = Sereal::Encoder->new({
     canonical => 1,

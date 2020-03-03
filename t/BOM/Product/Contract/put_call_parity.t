@@ -15,7 +15,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory qw(produce_contract);
 
 use Cache::RedisDB;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('1-Mar-2017');
@@ -111,7 +111,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 114.5,
 });
 
-my $redis     = BOM::Config::RedisReplicated::redis_write();
+my $redis     = BOM::Config::Redis::redis_replicated_write();
 my $undec_key = "DECIMATE_frxUSDJPY" . "_31m_FULL";
 my $encoder   = Sereal::Encoder->new({
     canonical => 1,

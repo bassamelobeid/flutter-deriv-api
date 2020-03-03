@@ -5,11 +5,11 @@ use warnings;
 
 use BOM::Product::ContractFactory qw/produce_contract/;
 use Date::Utility;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use JSON::MaybeXS qw/decode_json/;
 
 sub get_keys {
-    my $r = BOM::Config::RedisReplicated::redis_pricer;
+    my $r = BOM::Config::Redis::redis_pricer;
     return $r->keys('*')->@*;
 }
 
