@@ -3,7 +3,7 @@ package BOM::Cryptocurrency::Helper;
 use strict;
 use warnings;
 
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use constant {PRIORITIZE_KEY_TTL => 300};
 
 use Exporter qw/import/;
@@ -34,11 +34,11 @@ sub prioritize_address {
     if ($prioritize_address) {
         $prioritize_address =~ s/^\s+|\s+$//g;
         if ($currency_wrapper->is_valid_address($prioritize_address)) {
-            my $redis_reader = BOM::Config::RedisReplicated::redis_read();
+            my $redis_reader = BOM::Config::Redis::redis_replicated_read();
             unless ($redis_reader->get("Prioritize::" . $prioritize_address)) {
                 my $status = $currency_wrapper->prioritize_address($prioritize_address);
                 if ($status) {
-                    my $writer = BOM::Config::RedisReplicated::redis_write();
+                    my $writer = BOM::Config::Redis::redis_replicated_write();
                     $writer->set(
                         "Prioritize::" . $prioritize_address => 1,
                         EX                                   => PRIORITIZE_KEY_TTL

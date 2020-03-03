@@ -21,7 +21,7 @@ use f_brokerincludeall;
 use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::User::Client;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Backoffice::Request qw(request);
 use BOM::User;
 use BOM::User::Utility;
@@ -41,7 +41,6 @@ use BOM::Database::Model::AccessToken;
 use BOM::Backoffice::Config;
 use BOM::Database::DataMapper::Copier;
 use BOM::Platform::S3Client;
-use BOM::Config::RedisReplicated;
 use BOM::User::Onfido;
 use BOM::User::Phone;
 
@@ -85,7 +84,7 @@ my $loginid         = $client->loginid;
 # Disabled for now
 # to enable, replace condition with 'defined $input{allow_onfido_resubmission}'
 if (0) {
-    my $redis = BOM::Config::RedisReplicated::redis_write();
+    my $redis = BOM::Config::Redis::redis_replicated_write();
     $input{allow_onfido_resubmission}
         ? $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1)
         : $redis->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
@@ -442,7 +441,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         {    #Authenticated with scans, front end lets this get run again even if already set.
 
             $client->set_authentication('ID_DOCUMENT')->status('pass');
-            BOM::Config::RedisReplicated::redis_write()->del(INTERNAL_TRANSFER_FIAT_CRYPTO_PREFIX . $client->binary_user_id)
+            BOM::Config::Redis::redis_write()->del(INTERNAL_TRANSFER_FIAT_CRYPTO_PREFIX . $client->binary_user_id)
                 if ($client->landing_company->short eq 'svg');
             BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $loginid});
         }
@@ -464,7 +463,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             # if client is marked as needs action then we need to inform
             # CS for new POA document hence we need to remove any
             # key set for email already sent for POA
-            BOM::Config::RedisReplicated::redis_write()->hdel("EMAIL_NOTIFICATION_POA", $client->binary_user_id);
+            BOM::Config::Redis::redis_replicated_write()->hdel("EMAIL_NOTIFICATION_POA", $client->binary_user_id);
         }
     }
 
@@ -499,7 +498,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     {
 
         my $key_name = $loginid . '_sr_risk_status';
-        my $redis    = BOM::Config::RedisReplicated::redis_events_write();
+        my $redis    = BOM::Config::Redis::redis_events_write();
 
         # There is no need to store clients with low risk in redis, as it is default
         # and also: if the status is changed from high, we don't need the expiry time
@@ -927,7 +926,7 @@ foreach my $mt_ac ($mt_logins->@*) {
 
     # If we have group information, display it
     my $cache_key  = "MT5_USER_GROUP::$mt_ac";
-    my $group      = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'group');
+    my $group      = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'group');
     my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
 
     my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
@@ -935,7 +934,7 @@ foreach my $mt_ac ($mt_logins->@*) {
     if ($group->[0]) {
         print " (" . encode_entities($group->[0]) . ")";
 
-        my $status = BOM::Config::RedisReplicated::redis_mt5_user()->hmget($cache_key, 'rights');
+        my $status = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'rights');
 
         my %rights;
 
@@ -956,7 +955,7 @@ foreach my $mt_ac ($mt_logins->@*) {
         # ... and if we don't, queue up the request. This may lead to a few duplicates
         # in the queue - that's fine, we check each one to see if it's already
         # been processed.
-        BOM::Config::RedisReplicated::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $mt_ac, time));
+        BOM::Config::Redis::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $mt_ac, time));
         print ' (<span title="Try refreshing in a minute or so">no group info yet</span>)';
     }
     print "</li>";
@@ -965,7 +964,7 @@ foreach my $mt_ac ($mt_logins->@*) {
 print "</ul>";
 
 eval {
-    my $mt5_log_size = BOM::Config::RedisReplicated::redis_mt5_user()->llen("MT5_USER_GROUP_PENDING");
+    my $mt5_log_size = BOM::Config::Redis::redis_mt5_user()->llen("MT5_USER_GROUP_PENDING");
 
     print "<p style='color:red'>Note: MT5 groups might take time to appear, since there are "
         . encode_entities($mt5_log_size)

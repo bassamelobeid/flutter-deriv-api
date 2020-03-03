@@ -10,7 +10,7 @@ use Quant::Framework::EconomicEventCalendar;
 use Syntax::Keyword::Try;
 use Volatility::Seasonality;
 use LandingCompany::Registry;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
 use BOM::Backoffice::Request;
 use BOM::Backoffice::QuantsAuditLog;
@@ -194,7 +194,7 @@ sub _regenerate {
     my $events = shift;
 
     # signal pricer to refresh cache
-    my $redis = BOM::Config::RedisReplicated::redis_pricer;
+    my $redis = BOM::Config::Redis::redis_pricer;
     $redis->set('economic_events_cache_snapshot', time);
 
     # update economic events impact curve with the newly added economic event

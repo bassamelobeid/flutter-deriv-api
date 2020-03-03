@@ -13,8 +13,6 @@ use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-use BOM::Config::RedisReplicated;
-
 PrintContentType();
 BrokerPresentation("UNTRUSTED/DISABLE CLIENT");
 
