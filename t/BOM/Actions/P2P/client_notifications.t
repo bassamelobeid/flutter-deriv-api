@@ -9,7 +9,7 @@ use BOM::Test;
 use BOM::Config::Runtime;
 use Data::Dumper;
 use BOM::Database::ClientDB;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Test::Helper::P2P;
 use BOM::Event::Process;
 use Date::Utility;
@@ -55,7 +55,7 @@ my @data_for_notification_tests = ({
 
 for my $test_data (@data_for_notification_tests) {
     subtest 'Notification for ' . $test_data->{event} => sub {
-        my $p2p_redis = BOM::Config::RedisReplicated->redis_p2p();
+        my $p2p_redis = BOM::Config::Redis->redis_p2p();
         #Yes, this's really need, because when we're trying to get_reply,
         # and after time out, auto reconnecting for some reason doesn't work
         $p2p_redis->_connect();

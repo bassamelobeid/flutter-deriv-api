@@ -10,11 +10,11 @@ use BOM::Event::QueueHandler;
 use Log::Any qw($log);
 use Log::Any::Adapter ('Stderr', log_level => 'warn');
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use IO::Async::Loop;
 use Future::AsyncAwait;
 initialize_events_redis();
-my $redis = BOM::Config::RedisReplicated::redis_events_write();
+my $redis = BOM::Config::Redis::redis_events_write();
 my $loop  = IO::Async::Loop->new;
 my $handler;
 subtest 'startup and shutdown' => sub {
