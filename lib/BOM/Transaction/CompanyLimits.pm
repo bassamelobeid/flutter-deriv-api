@@ -5,7 +5,6 @@ use strict;
 use warnings;
 
 use ExchangeRates::CurrencyConverter;
-use BOM::Config::RedisReplicated;
 use BOM::Config::RedisTransactionLimits;
 use BOM::Transaction::Limits::Combinations;
 use DataDog::DogStatsd::Helper qw(stats_timed);
