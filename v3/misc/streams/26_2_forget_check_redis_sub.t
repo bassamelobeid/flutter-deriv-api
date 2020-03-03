@@ -22,7 +22,7 @@ BEGIN {
 is_deeply(\%stats, {}, 'start with no metrics');
 is_deeply(\%tags,  {}, 'start with no tags');
 
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use Sereal::Encoder;
 use BOM::Test::Helper qw/build_wsapi_test build_test_R_50_data/;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -76,7 +76,7 @@ for (my $i = $time - 1800; $i <= $time; $i += 15) {
         decimate_epoch => $i,
         quote          => 100 + rand(0.0001)};
 }
-my $redis = BOM::Config::RedisReplicated::redis_write();
+my $redis = BOM::Config::Redis::redis_replicated_write();
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

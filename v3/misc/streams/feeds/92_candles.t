@@ -6,7 +6,7 @@ use JSON::MaybeUTF8 qw/encode_json_utf8 decode_json_utf8/;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use File::Temp;
 use Date::Utility;
 use Data::Dumper;
@@ -39,7 +39,7 @@ sub _create_tick {    #creates R_50 tick in redis channel DISTRIBUTOR_FEED::R_50
         bid    => $i + 1,
         ohlc   => $ohlc_sample,
     };
-    BOM::Config::RedisReplicated::redis_write()->publish("DISTRIBUTOR_FEED::$symbol", encode_json_utf8($payload));
+    BOM::Config::Redis::redis_replicated_write()->publish("DISTRIBUTOR_FEED::$symbol", encode_json_utf8($payload));
 }
 
 my $t = build_wsapi_test();

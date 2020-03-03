@@ -11,7 +11,6 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use Date::Utility;

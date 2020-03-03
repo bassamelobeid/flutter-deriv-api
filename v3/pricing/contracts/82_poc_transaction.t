@@ -5,7 +5,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data call_
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Config::Runtime;
 use Test::Deep;
@@ -146,7 +146,7 @@ subtest 'sell a contract and test' => sub {
         currency_code           => 'USD',
     };
 
-    BOM::Config::RedisReplicated::redis_transaction_write()
+    BOM::Config::Redis::redis_transaction_write()
         ->publish('TXNUPDATE::transaction_' . $msg->{account_id}, Encode::encode_utf8($json->encode($msg)));
 
     my $data = $t->await::proposal_open_contract();

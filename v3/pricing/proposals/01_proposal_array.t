@@ -17,7 +17,7 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Config::Chronicle;
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -30,7 +30,7 @@ my $encoder = Sereal::Encoder->new({
     canonical => 1,
 });
 
-my $redis = BOM::Config::RedisReplicated::redis_write();
+my $redis = BOM::Config::Redis::redis_replicated_write();
 my @tick_data;
 my $start_time    = time;
 my $previous_tick = 100;

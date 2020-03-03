@@ -14,7 +14,7 @@ use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase;
 use Date::Utility;
@@ -331,7 +331,7 @@ subtest 'buy and subscribe' => sub {
 
     };
 
-    BOM::Config::RedisReplicated::redis_transaction_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, encode_json_utf8($msg));
+    BOM::Config::Redis::redis_transaction_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, encode_json_utf8($msg));
 
     sleep 2;
 
