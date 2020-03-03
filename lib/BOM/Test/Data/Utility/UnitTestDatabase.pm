@@ -98,16 +98,19 @@ If auth is defined and broker need authentication, do it
 sub create_client {
     my $args = shift;
     my $auth = shift;
-    
+
     die "broker code required" if !exists $args->{broker_code};
 
     my $broker_code = delete $args->{broker_code};
 
-    my $fixture     = YAML::XS::LoadFile('/home/git/regentmarkets/bom-test/data/market_unit_test.yml');
-    my $client_data = $fixture->{client}{data};
+    my $fixture      = YAML::XS::LoadFile('/home/git/regentmarkets/bom-test/data/market_unit_test.yml');
+    my $client_data  = $fixture->{client}{data};
     my $next_user_id = get_next_binary_user_id();
-    my $user = BOM::User->create(email=>'unit_test_'.$next_user_id.'@binary.com', password=>'asdaiasda');
-    
+    my $user         = BOM::User->create(
+        email    => 'unit_test_' . $next_user_id . '@binary.com',
+        password => 'asdaiasda'
+    );
+
     $client_data->{email}       = 'unit_test@binary.com';
     $client_data->{broker_code} = $broker_code;
 
