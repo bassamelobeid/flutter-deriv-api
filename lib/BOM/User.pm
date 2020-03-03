@@ -487,7 +487,7 @@ sub add_login_history {
 
         # Key format: binary user id, epoch
         my $key   = $self->{id} . '-' . $args{token};
-        my $redis = BOM::Config::RedisReplicated::redis_write();
+        my $redis = BOM::Config::Redis::redis_replicated_write();
 
         # If the key exists, there is no need to do anything else
         # Otherwise:
@@ -621,7 +621,7 @@ sub _save_login_detail_redis {
     my $entry      = BOM::User::Utility::login_details_identifier($environment);
     my $entry_time = time;
 
-    my $auth_redis = BOM::Config::RedisReplicated::redis_auth_write();
+    my $auth_redis = BOM::Config::Redis::redis_auth_write();
     try {
         $auth_redis->hset($key, $entry, $entry_time);
     }
@@ -636,7 +636,7 @@ sub logged_in_before_from_same_location {
     my $key   = CLIENT_LOGIN_HISTORY_KEY . $self->id;
     my $entry = BOM::User::Utility::login_details_identifier($new_env);
 
-    my $auth_redis    = BOM::Config::RedisReplicated::redis_auth();
+    my $auth_redis    = BOM::Config::Redis::redis_auth();
     my $attempt_known = undef;
     try {
         $attempt_known = $auth_redis->hget($key, $entry);

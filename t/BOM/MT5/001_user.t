@@ -25,7 +25,7 @@ subtest 'MT5 Timeout logic handle' => sub {
     };
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
     my $details = {group => 'real//svg_standard'};
-    my $redis = BOM::Config::RedisReplicated::redis_mt5_user_write();
+    my $redis = BOM::Config::Redis::redis_mt5_user_write();
     # reset all redis keys.
     $redis->del($FAILCOUNT_KEY);
     $redis->del($LOCK_KEY);
