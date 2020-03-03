@@ -583,8 +583,9 @@ sub pricing_channel_for_proposal_open_contract {
 
     my $redis_channel = join '::', ('CONTRACT_PRICE', $contract_id, $landing_company);
     my $pricer_args = _serialized_args({
-        contract_id     => $contract_id,
-        landing_company => $landing_company,
+        contract_id      => $contract_id,
+        landing_company  => $landing_company,
+        price_daemon_cmd => 'bid',
     });
 
     my %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
