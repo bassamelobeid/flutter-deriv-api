@@ -35,7 +35,7 @@ use Finance::Contract::Longcode qw(shortcode_to_longcode);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Platform::Token::API;
 use BOM::Database::Model::OAuth;
@@ -634,13 +634,6 @@ sub validate_uri {
         if (!$host || $original_url =~ /https?:\/\/.*(\:|\@|\#|\?)+/) {
             return localize('Invalid URL');
         }
-        # We are explicitly asking to use default
-        # to avoid failure on Debian Stretch
-        # Check https://rt.cpan.org/Public/Bug/Display.html?id=121222
-        my $suffix = Domain::PublicSuffix->new({use_default => 1});
-        if (!$suffix->get_root_domain($host)) {
-            return localize('Unknown domain name');
-        }
     }
 
     return undef;
@@ -792,7 +785,7 @@ Saves the mismatches in redis so cron_report_ip_mismatch can send an email to th
 
 sub check_ip_country {
     my %data  = @_;
-    my $redis = BOM::Config::RedisReplicated::redis_write();
+    my $redis = BOM::Config::Redis::redis_replicated_write();
     use constant REDIS_MASTERKEY     => 'IP_COUNTRY_MISMATCH';
     use constant REDIS_TRACK_CHECKED => 'CHECKED_ID';
 
@@ -829,7 +822,7 @@ Returns undef if the token is not found
 
 sub get_user_by_token {
     my $token = shift;
-    my $redis = BOM::Config::RedisReplicated::redis_read();
+    my $redis = BOM::Config::Redis::redis_replicated_read();
     my $user;
 
     if (my $token_details = decode_json_utf8($redis->get("VERIFICATION_TOKEN::$token"))) {

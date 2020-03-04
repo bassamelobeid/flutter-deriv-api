@@ -28,7 +28,6 @@ use JSON::MaybeXS;
 
 use BOM::RPC::Registry '-dsl';
 
-use BOM::Config::RedisReplicated;
 use BOM::Config::Runtime;
 use BOM::Platform::Locale;
 use BOM::Config;

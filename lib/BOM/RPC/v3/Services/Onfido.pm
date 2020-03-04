@@ -24,7 +24,6 @@ use Locale::Codes::Country qw(country_code2code);
 use Time::HiRes;
 use List::Util qw(all);
 
-use BOM::Config::RedisReplicated;
 use BOM::Platform::Context qw(localize);
 use BOM::RPC::v3::Services;
 use BOM::RPC::v3::Utility;
