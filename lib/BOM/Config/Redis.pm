@@ -158,15 +158,15 @@ sub redis_pricer {
 
 =head2 redis_pricer_shared
 
-    my $redis = BOM::Confg::Redis::redis_pricer_shared();
+    my $redis = BOM::Config::Redis::redis_pricer_shared();
 
 Returns a readable L<RedisDB> handle to our shared pricer Redis service.
 
 =head2 redis_pricer_shared_write
 
-    my $redis = BOM::Confg::Redis::redis_pricer_shared_write();
+    my $redis = BOM::Config::Redis::redis_pricer_shared_write();
 
-Returns a writable L<RedisDB> handle to our shared pricer Redis service.
+Returns a writable L<RedisDB> handle to our shared shared pricer Redis service.
 
 =cut
 
