@@ -4,7 +4,7 @@ use warnings;
 
 no indirect;
 
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 use IO::Async::Loop;
 use JSON;
@@ -59,7 +59,7 @@ $loop->add($s3);
 
 sub upload_redis {
 
-    my $r       = BOM::Config::RedisReplicated::redis_exchangerates();
+    my $r       = BOM::Config::Redis::redis_exchangerates();
     my $keys    = $r->keys('*');
     my %data    = map { $_ => {$r->hgetall($_)->@*} } $keys->@*;
     my $content = encode_json(\%data);
@@ -77,7 +77,7 @@ sub upload_redis {
 
 sub download_redis {
     my $data      = decode_json($s3->get_object(key => $file_name)->get);
-    my $writer    = BOM::Config::RedisReplicated::redis_exchangerates_write();
+    my $writer    = BOM::Config::Redis::redis_exchangerates_write();
 
     foreach my $record_key (keys %$data) {
     
