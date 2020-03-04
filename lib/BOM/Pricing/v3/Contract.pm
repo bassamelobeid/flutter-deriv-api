@@ -28,7 +28,6 @@ use BOM::Product::ContractFinder;
 use Finance::Contract::Longcode qw( shortcode_to_parameters);
 use LandingCompany::Registry;
 use BOM::Pricing::v3::Utility;
-use BOM::Config::RedisReplicated;
 use Scalar::Util qw(looks_like_number);
 use feature "state";
 
