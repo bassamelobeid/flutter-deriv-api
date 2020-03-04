@@ -4,7 +4,6 @@ use warnings;
 
 use BOM::Test;
 use BOM::Test::Script;
-use BOM::Config::RedisReplicated;
 
 my $script;
 
