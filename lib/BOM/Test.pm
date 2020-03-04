@@ -37,14 +37,14 @@ This variable will be set if test is running on qa devbox. If it is set the BOM:
 
 =item $ENV{BOM_TEST_REDIS_REPLICATED}
 
-This variable will be set if test is running on qa devbox. If it is set the BOM::Config::RedisReplicated and other bom services
+This variable will be set if test is running on qa devbox. If it is set the BOM::Config::Redis and other bom services
 will use test redis instance instead of development.
 
 =cut
 
 =item $ENV{BOM_TEST_REDIS_FEED}
 
-This variable wil be set if test is running on qa devbox. If it is set the BOM::Config::RedisReplicated::redis_feed_*() will use it.
+This variable wil be set if test is running on qa devbox. If it is set the BOM::Config::Redis::redis_feed_*() will use it.
 
 =cut
 

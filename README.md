@@ -20,7 +20,7 @@ This module is used to prepare test environment. It should be used before any ot
 
 - $ENV{BOM\_TEST\_REDIS\_REPLICATED}
 
-    This variable will be set if test is running on qa devbox. If it is set the BOM::Platform::RedisReplicated and other bom services
+    This variable will be set if test is running on qa devbox. If it is set the BOM::Platform::Redis and other bom services
     will use test redis instance instead of development.
 
 # TEST
