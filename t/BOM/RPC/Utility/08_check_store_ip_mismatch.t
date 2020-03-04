@@ -5,7 +5,7 @@ use Test::Most;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::RPC::v3::Utility;
 use YAML::XS qw(LoadFile);
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use JSON::MaybeXS qw{decode_json};
 
 subtest 'check if test saves ' => sub {
@@ -16,7 +16,7 @@ subtest 'check if test saves ' => sub {
     my $mock_client_login_id  = 'MX1234567';
     my $redis_masterkey       = 'IP_COUNTRY_MISMATCH';
     my $check_flag            = 'always';
-    my $redis                 = BOM::Config::RedisReplicated::redis_write();
+    my $redis                 = BOM::Config::Redis::redis_replicated_write();
 
     BOM::RPC::v3::Utility::check_ip_country(
         client_residence => $mock_client_residence,

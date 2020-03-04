@@ -11,7 +11,7 @@ use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::Utility;
-use BOM::Config::RedisReplicated ();
+use BOM::Config::Redis ();
 use BOM::Platform::Context qw (localize request);
 use BOM::User;
 use BOM::User::AuditLog;
@@ -132,7 +132,7 @@ rpc authorize => sub {
         # we would expect a secondary process to pull this
         # data out of Redis periodically and to move it
         # somewhere safer.
-        BOM::Config::RedisReplicated::redis_auth_write()->hincrby(
+        BOM::Config::Redis::redis_auth_write()->hincrby(
             $redis_key => $hash_key,
             1
         );

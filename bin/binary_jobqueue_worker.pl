@@ -22,7 +22,7 @@ use Future::Utils qw(try_repeat);
 use Getopt::Long;
 use Log::Any qw($log);
 
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::RPC::JobTimeout;
 
 use constant QUEUE_WORKER_TIMEOUT => 300;
@@ -109,7 +109,7 @@ use constant RESTART_COOLDOWN => 1;
 # it should be kept bellow supervisord's stopwaitsecs (10 seconds, by default)
 use constant SHUTDOWN_TIMEOUT => 9;
 
-my $redis_config = BOM::Config::RedisReplicated::redis_config('queue', 'write');
+my $redis_config = BOM::Config::Redis::redis_config('queue', 'write');
 my $env = path('/etc/rmg/environment')->slurp_utf8;
 chomp($env);
 

@@ -161,9 +161,9 @@ sub _throttle {
     my $loginid = shift;
     my $key     = MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
 
-    return 1 if BOM::Config::RedisReplicated::redis_read()->get($key);
+    return 1 if BOM::Config::Redis::redis_replicated_read()->get($key);
 
-    BOM::Config::RedisReplicated::redis_write()->set($key, 1, 'EX', 60);
+    BOM::Config::Redis::redis_replicated_write()->set($key, 1, 'EX', 60);
 
     return 0;
 }
@@ -174,7 +174,7 @@ sub reset_throttler {
     my $loginid = shift;
     my $key     = MT5_ACCOUNT_THROTTLE_KEY_PREFIX . $loginid;
 
-    return BOM::Config::RedisReplicated::redis_write()->del($key);
+    return BOM::Config::Redis::redis_replicated_write()->del($key);
 }
 
 sub _mt5_group {
