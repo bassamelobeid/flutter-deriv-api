@@ -15,7 +15,7 @@ use Syntax::Keyword::Try;
 use YAML::XS;
 use RedisDB;
 
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Pricing::v3::Utility;
 
 =head1 NAME
@@ -88,7 +88,7 @@ sub BUILD {
 
 sub _build_redis {
     try {
-        return BOM::Config::RedisReplicated::redis_pricer();
+        return BOM::Config::Redis::redis_pricer();
     }
     catch {
         my $e = $@;

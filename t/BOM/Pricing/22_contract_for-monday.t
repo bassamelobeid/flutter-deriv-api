@@ -14,6 +14,7 @@ use Data::Dumper;
 use Date::Utility;
 use BOM::Test::RPC::Client;
 use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow);
+use BOM::Config::Redis;
 
 use utf8;
 
@@ -49,7 +50,7 @@ subtest "Request $method" => sub {
     ok !grep { $_->{contract_type} =~ /^(EXPIRYMISS|EXPIRYRANGE)E$/ } @{$result->{available}};
 
     # mock distributor quote
-    my $redis = BOM::Config::RedisReplicated::redis_write();
+    my $redis = BOM::Config::Redis::redis_replicated_write();
     $redis->set(
         'Distributor::QUOTE::frxUSDJPY',
         encode_json({
