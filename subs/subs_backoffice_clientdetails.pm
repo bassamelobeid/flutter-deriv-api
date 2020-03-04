@@ -29,7 +29,7 @@ use BOM::Backoffice::FormAccounts;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Request qw(request);
 use BOM::Database::Model::HandoffToken;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::User::Client;
 
 =head1 subs_backoffice_clientdetails
@@ -273,7 +273,7 @@ sub print_client_details {
 
     my $onfido_check = get_onfido_check_latest($client);
 
-    my $redis                          = BOM::Config::RedisReplicated::redis_write();
+    my $redis                          = BOM::Config::Redis::redis_replicated_write();
     my $onfido_allow_resubmission_flag = $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
     my $template_param = {
@@ -303,7 +303,7 @@ sub print_client_details {
         self_exclusion_enabled             => $self_exclusion_enabled,
         show_allow_professional_client     => $client->landing_company->support_professional_client,
         show_social_responsibility_client  => $client->landing_company->social_responsibility_check_required,
-        social_responsibility_risk_status  => BOM::Config::RedisReplicated::redis_events_write()->get($client->loginid . '_sr_risk_status') // 'low',
+        social_responsibility_risk_status  => BOM::Config::Redis::redis_events_write()->get($client->loginid . '_sr_risk_status') // 'low',
         professional_status                => get_professional_status($client),
         show_funds_message                 => ($client->residence eq 'gb' and not $client->is_virtual),
         show_risk_approval                 => ($client->landing_company->short eq 'maltainvest'),
@@ -1227,7 +1227,7 @@ sub client_navigation {
 sub is_client_in_onfido_country {
     my $client         = shift;
     my $country        = uc($client->place_of_birth // $client->residence);
-    my $countries_list = BOM::Config::RedisReplicated::redis_events()->get('ONFIDO_SUPPORTED_COUNTRIES');
+    my $countries_list = BOM::Config::Redis::redis_events()->get('ONFIDO_SUPPORTED_COUNTRIES');
     return undef unless $countries_list;
     $countries_list = decode_json_utf8($countries_list);
     return ($countries_list->{uc $country} // 0);
