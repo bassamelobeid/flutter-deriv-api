@@ -12,7 +12,7 @@ use Postgres::FeedDB::Spot::OHLC;
 use File::Basename;
 use YAML::XS qw(LoadFile);
 use Sereal::Encoder;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw( setup_ticks );
@@ -102,7 +102,7 @@ sub create_historical_ticks {
     my $default_start      = $args->{epoch} // time;
     my $key                = "DECIMATE_" . $default_underlying . "_15s_DEC";
 
-    my $redis = BOM::Config::RedisReplicated::redis_write();
+    my $redis = BOM::Config::Redis::redis_replicated_write();
     for my $tick (@$tick_data) {
         $tick->{epoch} = $tick->{decimate_epoch} = $default_start;
         $redis->zadd($key, $tick->{epoch}, $encoder->encode($tick));
@@ -118,7 +118,7 @@ sub create_redis_ticks {
     my $ticks             = $args->{ticks}      // die 'ticks are required.';
     my $underlying_symbol = $args->{underlying} // die 'underlying is required.';
     my $type  = $args->{type} eq 'decimate' ? '_15s_DEC' : '_31m_FULL';
-    my $redis = BOM::Config::RedisReplicated::redis_write();
+    my $redis = BOM::Config::Redis::redis_replicated_write();
     my $key   = 'DECIMATE_' . $underlying_symbol . $type;
 
     $redis->zadd($key, $_->{epoch}, $encoder->encode($_)) for @$ticks;
@@ -196,7 +196,7 @@ sub flush_and_create_ticks {
     my @ticks = @_;
 
     Cache::RedisDB->flushall;
-    my $redis = BOM::Config::RedisReplicated::redis_write();
+    my $redis = BOM::Config::Redis::redis_replicated_write();
     $redis->del($_) for @{$redis->keys('*DEC*')};
     BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
 

@@ -2,7 +2,7 @@ package BOM::Test::Helper::ExchangeRates;
 
 use strict;
 use warnings;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
 use LandingCompany::Registry;
 use Exporter qw( import );
@@ -16,7 +16,7 @@ my $rates = \%all_currencies_rates;
 sub populate_exchange_rates {
     my $local_rates = shift || $rates;
     $local_rates = {%$rates, %$local_rates};
-    my $redis = BOM::Config::RedisReplicated::redis_exchangerates_write();
+    my $redis = BOM::Config::Redis::redis_exchangerates_write();
     $redis->hmset(
         'exchange_rates::' . $_ . '_USD',
         quote => $local_rates->{$_},
