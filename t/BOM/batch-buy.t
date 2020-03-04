@@ -826,7 +826,7 @@ sub _check_contract_parameter_ttl {
     my ($cl, $contract_id, $expected_ttl) = @_;
 
     my $key = join '::', 'CONTRACT_PARAMS', $contract_id, $cl->landing_company->short;
-    my $ttl = BOM::Config::RedisReplicated::redis_pricer()->ttl($key);
+    my $ttl = BOM::Config::Redis::redis_pricer()->ttl($key);
     ok $ttl <= $expected_ttl, 'ttl for ' . $key . ' is less than or equal to ' . $expected_ttl . '. Got [' . $ttl . ']';
 }
 
