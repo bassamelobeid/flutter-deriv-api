@@ -61,6 +61,7 @@ ETH:
       blockscout:
           url: https://blockscout.com/eth/mainnet/api
     safe_gas_price: 11000000000 # Wei
+    internal_transaction_max_age: 8 # Hours
     cold_wallet:
         min_transfer: 10 # ETH
         max_transfer: 100 # ETH
