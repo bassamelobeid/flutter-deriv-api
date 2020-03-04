@@ -12,9 +12,8 @@ use List::Util qw(min max);
 use Encode;
 use JSON::MaybeXS;
 
-use BOM::Config::RedisReplicated;
 use BOM::Platform::Event::Emitter;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 
 use constant KEY_RETENTION_SECOND => 60;
 
@@ -32,7 +31,7 @@ used by other processes to send final contract details to client.
 sub delete_contract_parameters {
     my ($contract_id, $client) = @_;
 
-    my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer_shared_write;
+    my $redis_pricer = BOM::Config::Redis::redis_pricer_shared_write;
     my $redis_key = join '::', ('CONTRACT_PARAMS', $contract_id, $client->landing_company->short);
 
     # we don't delete this right away because some service like pricing queue or transaction stream might still rely
@@ -51,7 +50,7 @@ Utility method to set contract parameters when a contract is purchased
 sub set_contract_parameters {
     my ($contract_params, $client) = @_;
 
-    my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer_shared_write;
+    my $redis_pricer = BOM::Config::Redis::redis_pricer_shared_write;
 
     my %hash = (
         price_daemon_cmd => 'bid',
