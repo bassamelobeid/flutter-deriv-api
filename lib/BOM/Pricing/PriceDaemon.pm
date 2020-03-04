@@ -16,7 +16,7 @@ use Data::Dumper;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Pricing::v3::Contract;
 use BOM::Pricing::v3::Utility;
@@ -112,7 +112,7 @@ sub process_job {
 
 sub run {
     my ($self, %args) = @_;
-    my $redis = BOM::Config::RedisReplicated::redis_pricer(timeout => 0);
+    my $redis = BOM::Config::Redis::redis_pricer(timeout => 0);
 
     my $tv_appconfig          = [0, 0];
     my $tv                    = [Time::HiRes::gettimeofday];

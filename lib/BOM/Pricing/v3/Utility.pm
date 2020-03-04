@@ -5,7 +5,7 @@ use warnings;
 
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use JSON::MaybeUTF8 qw(:v1);
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Product::Contract;
 
 sub create_error {
@@ -38,7 +38,7 @@ and the total timing.
 sub update_price_metrics {
     my ($relative_shortcode, $timing) = @_;
 
-    my $redis_pricer = BOM::Config::RedisReplicated::redis_pricer;
+    my $redis_pricer = BOM::Config::Redis::redis_pricer;
 
     $redis_pricer->hincrby('PRICE_METRICS::COUNT', $relative_shortcode, 1);
     $redis_pricer->hincrbyfloat('PRICE_METRICS::TIMING', $relative_shortcode, $timing);
@@ -100,7 +100,7 @@ sub create_relative_shortcode {
 sub get_contract_params {
     my ($contract_id, $landing_company) = @_;
 
-    my $redis_read = BOM::Config::RedisReplicated::redis_pricer_shared();
+    my $redis_read = BOM::Config::Redis::redis_pricer_shared();
     my $params_key = join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company);
     my $params     = $redis_read->get($params_key);
 
@@ -109,7 +109,7 @@ sub get_contract_params {
     return {} unless $params;
 
     # refreshes the expiry to 10 seconds if TTL is less.
-    BOM::Config::RedisReplicated::redis_pricer_shared_write()->expire($params_key, 10) if $redis_read->ttl($params_key) < 10;
+    BOM::Config::Redis::redis_pricer_shared_write()->expire($params_key, 10) if $redis_read->ttl($params_key) < 10;
 
     my $payload         = decode_json_utf8($params);
     my $contract_params = {@{$payload}};
