@@ -15,7 +15,7 @@ use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
 use BOM::Test::Data::Utility::FeedTestDatabase;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use BOM::Test::Helper qw/build_wsapi_test/;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
@@ -46,7 +46,7 @@ sub _create_tick {    #creates R_50 tick in redis channel DISTRIBUTOR_FEED::R_50
         bid    => $i + 1,
         ohlc   => $ohlc_sample,
     };
-    BOM::Config::RedisReplicated::redis_write()->publish("DISTRIBUTOR_FEED::$symbol", Encode::encode_utf8($json->encode($payload)));
+    BOM::Config::Redis::redis_replicated_write()->publish("DISTRIBUTOR_FEED::$symbol", Encode::encode_utf8($json->encode($payload)));
 }
 
 my ($t, $test_name, $response) = (build_wsapi_test());

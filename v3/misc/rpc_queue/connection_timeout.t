@@ -8,8 +8,6 @@ use Scalar::Util qw( looks_like_number );
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 use Mojo::IOLoop;
 
-use BOM::Config::RedisReplicated;
-
 use BOM::Test::Helper qw(build_wsapi_test call_instrospection);
 use BOM::Test::Script::RpcQueue;
 use BOM::Test::WebsocketAPI::Redis;

@@ -289,7 +289,6 @@ $expected_res->{subscription}{id} = $res->{balance}{id};
 
 is_deeply($res, $expected_res, "the second result ok");
 
-use BOM::Config::RedisReplicated;
 use JSON::MaybeUTF8 qw(:v1);
 my $msg = {
     account_id    => $client->default_account->id,

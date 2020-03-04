@@ -9,7 +9,7 @@ use JSON::MaybeXS;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
-use BOM::Config::RedisReplicated;
+use BOM::Config::Redis;
 use File::Temp;
 use Date::Utility;
 use Data::Dumper;
@@ -42,7 +42,7 @@ sub _create_tick {    #creates R_50 tick in redis channel DISTRIBUTOR_FEED::R_50
         bid    => $i + 1,
         ohlc   => $ohlc_sample,
     };
-    BOM::Config::RedisReplicated::redis_write()->publish("DISTRIBUTOR_FEED::$symbol", Encode::encode_utf8($json->encode($payload)));
+    BOM::Config::Redis::redis_replicated_write()->publish("DISTRIBUTOR_FEED::$symbol", Encode::encode_utf8($json->encode($payload)));
 }
 
 my $t = build_wsapi_test();
