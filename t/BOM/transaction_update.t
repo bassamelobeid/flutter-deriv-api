@@ -277,7 +277,7 @@ subtest 'update take profit', sub {
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{'multiplier'},             10,      'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
+            is $chld->{'basis_spot'},             100, 'basis_spot is 100';
             is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
             is $chld->{'stop_loss_order_date'},   undef,   'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
@@ -306,7 +306,7 @@ subtest 'update take profit', sub {
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{'multiplier'},             10,      'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
+            is $chld->{'basis_spot'},             100, 'basis_spot is 100';
             is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
             is $chld->{'stop_loss_order_date'},   undef,   'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
@@ -336,7 +336,7 @@ subtest 'update take profit', sub {
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{'multiplier'},             10,      'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
+            is $chld->{'basis_spot'},             100, 'basis_spot is 100';
             is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
             is $chld->{'stop_loss_order_date'},   undef,   'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
