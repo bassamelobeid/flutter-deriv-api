@@ -115,6 +115,7 @@ our %ERROR_MAP = do {
         InsufficientBalance  => localize('Your account balance is insufficient to create an order with this amount.'),
         OpenOrdersDeleteAdvert =>
             localize('You cannot delete an advert with open orders. Please ensure the advert is deactivated and wait until all orders are closed.'),
+        AdvertiserNameTaken => localize('The advertiser name is already taken. Please choose another.'),
     );
 };
 
