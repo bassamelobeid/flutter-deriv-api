@@ -481,7 +481,8 @@ sub _process_proposal_open_contract_response {
                 # are used to to identify redis channel and as arguments to get_bid rpc call
                 # transaction_ids purchase_time buy_price should be stored and will be added to
                 # every get_bid results and sent to client while streaming
-                my $cache = {map { $_ => $contract->{$_} }
+                my $cache =
+                    {map { $_ => $contract->{$_} }
                         qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
 
                 $cache->{limit_order} = $contract->{limit_order} if $contract->{limit_order};
@@ -539,6 +540,7 @@ sub _serialized_args {
     foreach my $k (sort keys %$copy) {
         push @arr, ($k, $copy->{$k});
     }
+
     return 'PRICER_KEYS::' . Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
 }
 
@@ -573,36 +575,23 @@ sub _pricing_channel_for_proposal {
     return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, $class, $cache, $skip);
 }
 
-sub get_pricer_args {
-    my ($c, $cache) = @_;
-
-    my $price_daemon_cmd = 'bid';
-    my %hash;
-    my $contract_id = $cache->{contract_id};
-    # get_bid RPC call requires 'short_code' param, not 'shortcode'
-    @hash{qw(short_code contract_id currency sell_time)} = delete @{$cache}{qw(shortcode contract_id currency sell_time)};
-    $hash{is_sold} = $cache->{is_sold} + 0;
-    $hash{language}         = $c->stash('language') || 'EN';
-    $hash{price_daemon_cmd} = $price_daemon_cmd;
-    $hash{landing_company}  = $c->landing_company_name;
-    # use residence when available, fall back to IP country
-    $hash{country_code} = $c->stash('residence') || $c->stash('country_code');
-    $hash{limit_order} = $cache->{limit_order} if $cache->{limit_order};
-    my $id = $hash{contract_id} . '_' . $hash{landing_company};
-
-    return [_serialized_args(\%hash), $id];
-}
-
 sub pricing_channel_for_proposal_open_contract {
     my ($c, $args, $cache) = @_;
 
-    my $contract_id = $cache->{contract_id};
-    my $pricer_args = get_pricer_args($c, $cache);
-    my %hash        = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
+    my $contract_id     = $cache->{contract_id};
+    my $landing_company = $c->landing_company_name;
+
+    my $redis_channel = 'CONTRACT_PRICE::' . $contract_id . '_' . $landing_company;
+    my $pricer_args   = _serialized_args({
+        contract_id      => $contract_id,
+        landing_company  => $landing_company,
+        price_daemon_cmd => 'bid',
+    });
+
+    my %hash = map { $_ =~ /passthrough/ ? () : ($_ => $args->{$_}) } keys %$args;
     $hash{account_id}     = delete $cache->{account_id};
     $hash{transaction_id} = $cache->{transaction_ids}->{buy};    # transaction is going to be stored
-    my $subchannel    = _serialized_args(\%hash);
-    my $redis_channel = 'CONTRACT_PRICE::' . $contract_id . '_' . $c->landing_company_name;
+    my $subchannel = _serialized_args(\%hash);
 
     return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, 'ProposalOpenContract', $cache);
 }
