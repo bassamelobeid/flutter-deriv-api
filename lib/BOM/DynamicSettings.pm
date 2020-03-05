@@ -208,6 +208,7 @@ sub get_settings_by_group {
                 system.suspend.onfido
                 system.suspend.customerio
                 system.suspend.p2p
+                system.restricted_countries
                 system.mt5.suspend.all
                 system.mt5.suspend.deposits
                 system.mt5.suspend.withdrawals
