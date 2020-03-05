@@ -6,6 +6,8 @@ use warnings;
 use BOM::Test::Helper::Client;
 use Carp;
 
+my $advertiser_num;
+
 {
     my ($current_escrow, $original_escrow);
 
@@ -33,7 +35,7 @@ sub create_advertiser {
 
     my $advertiser = create_client($balance);
 
-    $advertiser->p2p_advertiser_create(name => $param{name} // 'test advertiser');
+    $advertiser->p2p_advertiser_create(name => $param{name} // 'test advertiser ' . (++$advertiser_num));
 
     $advertiser->account('USD');
 

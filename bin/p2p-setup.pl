@@ -208,10 +208,10 @@ $log->infof('P2P payment status originally: %s', $app_config->payments->p2p->ena
 $log->infof('Maximum advert configured is %s',   BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert);
 $log->infof('Maximum order  configured is %s',   BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order);
 
-# ===== Advertiser Update =====
-section_title('Advertiser Update');
+# ===== Advertiser Create =====
+section_title('Advertiser Create');
 unless ($advertiser->p2p_advertiser_info) {
-    $advertiser->p2p_advertiser_create(name => 'example advertiser');
+    $advertiser->p2p_advertiser_create(name => 'advertiser '.$advertiser->loginid);
 }
 $advertiser->p2p_advertiser_update(
     is_listed   => 1,
