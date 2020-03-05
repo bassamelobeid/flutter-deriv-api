@@ -156,6 +156,32 @@ sub redis_pricer {
     return _redis('pricer', 'write', $args{timeout} // 10);
 }
 
+=head2 redis_pricer_shared
+
+    my $redis = BOM::Config::Redis::redis_pricer_shared();
+
+Returns a readable L<RedisDB> handle to our shared pricer Redis service.
+
+=head2 redis_pricer_shared_write
+
+    my $redis = BOM::Config::Redis::redis_pricer_shared_write();
+
+Returns a writable L<RedisDB> handle to our shared shared pricer Redis service.
+
+=cut
+
+sub redis_pricer_shared {
+    $config->{pricer_shared} //= BOM::Config::redis_pricer_shared_config();
+    my %args = @_;
+    return _redis('pricer_shared', 'read', $args{timeout} // 10);
+}
+
+sub redis_pricer_shared_write {
+    $config->{pricer_shared} //= BOM::Config::redis_pricer_shared_config();
+    my %args = @_;
+    return _redis('pricer_shared', 'write', $args{timeout} // 10);
+}
+
 =head2 redis_exchangerates
 
     my $redis = BOM::Config::Redis::redis_exchangerates();
