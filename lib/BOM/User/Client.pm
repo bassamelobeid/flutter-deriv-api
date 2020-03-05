@@ -1764,12 +1764,14 @@ sub p2p_advertiser_create {
 
     die +{error_code => 'AlreadyRegistered'} if $client->_p2p_advertisers(loginid => $client->loginid)->[0];
 
-    die +{error_code => 'AdvertiserNameRequired'} unless trim($param{name});
+    my $name = trim($param{name});
+    die +{error_code => 'AdvertiserNameRequired'} unless $name;
+    die +{error_code => 'AdvertiserNameTaken'} if $client->_p2p_advertisers(name => $name)->[0];
 
     return $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.advertiser_create(?, ?, ?, ?, ?)',
-                undef, $client->loginid, @param{qw/name default_advert_description payment_info contact_info/});
+                undef, $client->loginid, $name, @param{qw/default_advert_description payment_info contact_info/});
         });
 }
 
@@ -1810,6 +1812,8 @@ sub p2p_advertiser_update {
     if (exists $param{name}) {
         $param{name} = trim($param{name});
         die +{error_code => 'AdvertiserNameRequired'} unless $param{name};
+        die +{error_code => 'AdvertiserNameTaken'}
+            if $param{name} ne $advertiser_info->{name} and $client->_p2p_advertisers(name => $param{name})->[0];
     }
 
     # Return the current information of the advertiser if nothing changed
@@ -2242,7 +2246,7 @@ sub _p2p_advertisers {
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectall_arrayref('SELECT * FROM p2p.advertiser_list(?, ?)', {Slice => {}}, @param{qw/id loginid/});
+            $_->selectall_arrayref('SELECT * FROM p2p.advertiser_list(?, ?, ?)', {Slice => {}}, @param{qw/id loginid name/});
         });
 }
 

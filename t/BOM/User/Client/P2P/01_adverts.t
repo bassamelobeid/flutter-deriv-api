@@ -28,7 +28,6 @@ my $user = BOM::User->create(
 $user->add_client($test_client_cr);
 
 my %advertiser_params = (
-    name                       => 'advertiser name',
     default_advert_description => 'adv description',
     payment_info               => 'adv pay info',
     contact_info               => 'adv contact info',
@@ -50,8 +49,6 @@ my %advert_params = (
     counterparty_type => 'buy',
 );
 
-my %params = %advert_params;
-
 subtest 'Creating advert from non-advertiser' => sub {
     my %params = %advert_params;
 
@@ -61,35 +58,48 @@ subtest 'Creating advert from non-advertiser' => sub {
 
 subtest 'advertiser Registration' => sub {
     my $adv_client = BOM::Test::Helper::P2P::create_client();
-    ok my $adv = $adv_client->p2p_advertiser_create(%advertiser_params), 'create advertiser';
+    
+    my %params = ( name => 'ad man 1', %advertiser_params );
+    ok my $adv = $adv_client->p2p_advertiser_create(%params), 'create advertiser';
 
-    my $expected_adv = {
+    my $expected = {
         id             => $adv->{id},
         client_loginid => $adv_client->loginid,
         is_listed      => bool(1),
         is_approved    => bool(0),
         created_time   => bool(1),
-        %advertiser_params
+        %params
     };
 
     my $advertiser_info = $adv_client->p2p_advertiser_info;
-    cmp_deeply($advertiser_info, $expected_adv, 'correct advertiser_info for advertiser');
+    cmp_deeply($advertiser_info, $expected, 'correct advertiser_info for advertiser');
 
     my $other_client = BOM::Test::Helper::P2P::create_client();
     $advertiser_info = $other_client->p2p_advertiser_info(id => $adv->{id});
-    delete $expected_adv->@{qw/payment_info contact_info/};
-    cmp_deeply($advertiser_info, $expected_adv, 'sensitve fields hidden in advertiser_info for other client');
+    delete $expected->@{qw/payment_info contact_info/};
+    cmp_deeply($advertiser_info, $expected, 'sensitve fields hidden in advertiser_info for other client');
 };
 
 subtest 'Duplicate advertiser Registration' => sub {
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
+    my $name = 'ad man 2';
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(name=>$name);
 
     cmp_deeply(
         exception {
             $advertiser->p2p_advertiser_create(%advertiser_params)
         },
         {error_code => 'AlreadyRegistered'},
-        "duplicate advertiser request not allowed"
+        "cannot create second advertiser for a client"
+    );
+
+    my $client = BOM::Test::Helper::P2P::create_client();
+
+    cmp_deeply(
+        exception {
+            $client->p2p_advertiser_create(name=>$name)
+        },
+        {error_code => 'AdvertiserNameTaken'},
+        "duplicate advertiser name not allowed"
     );
 };
 
@@ -99,7 +109,7 @@ subtest 'Creating advert from not approved advertiser' => sub {
 
     cmp_deeply(
         exception {
-            $advertiser->p2p_advert_create(%params)
+            $advertiser->p2p_advert_create(%advert_params)
         },
         {error_code => 'AdvertiserNotApproved'},
         "non approved can't create advert"
@@ -107,12 +117,14 @@ subtest 'Creating advert from not approved advertiser' => sub {
 };
 
 subtest 'Updating advertiser fields' => sub {
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(%advertiser_params);
+    
+    my %params = ( name => 'ad man 3', %advertiser_params );
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(%params);
 
     my $advertiser_info = $advertiser->p2p_advertiser_info;
 
     ok $advertiser_info->{is_approved}, 'advertiser is approved';
-    is $advertiser_info->{name},        $advertiser_params{name}, 'advertiser name';
+    is $advertiser_info->{name},        $params{name}, 'advertiser name';
     ok $advertiser_info->{is_listed},   'advertiser is listed';
 
     cmp_deeply(
@@ -122,10 +134,20 @@ subtest 'Updating advertiser fields' => sub {
         {error_code => 'AdvertiserNameRequired'},
         'Error when advertiser name is blank'
     );
+    
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advertiser_update(name => 'ad man 2');
+        },
+        {error_code => 'AdvertiserNameTaken'},
+        'Cannot change to existing advertiser name'
+    );
 
     is $advertiser->p2p_advertiser_update(name => 'test')->{name}, 'test', 'Changing name';
+    
+    is $advertiser->p2p_advertiser_update(name => 'test')->{name}, 'test', 'Do it again to ensure no duplicate error';
 
-    ok !($advertiser->p2p_advertiser_update(is_listed => 0)->{is_listed}), 'Switch flag is_listed to false';
+    ok !($advertiser->p2p_advertiser_update(name => 'test', is_listed => 0)->{is_listed}), 'Once more and switch flag is_listed to false';
 
     ok !($advertiser->p2p_advertiser_update(is_approved => 0)->{is_approved}), 'Disable approval';
     cmp_deeply(
@@ -146,7 +168,8 @@ subtest 'Updating advertiser fields' => sub {
 
 subtest 'Creating advert' => sub {
     my %params     = %advert_params;
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(%advertiser_params);
+    my $name       = 'ad man 4';
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(name => $name, %advertiser_params);
 
     my $advert;
 
@@ -280,7 +303,7 @@ subtest 'Creating advert' => sub {
         counterparty_type              => $params{counterparty_type},
         advertiser_details             => {
             id   => $advertiser->p2p_advertiser_info->{id},
-            name => $advertiser_params{name},
+            name => $name,
         },
     };
 
