@@ -9,7 +9,7 @@ my $loginid          = 'CR0012';
 
 my $client_db = BOM::Database::ClientDB->new({client_loginid => $loginid});
 my $user = BOM::User->create(email=>'unit_test@binary.com', password=>'asdaiasda');
-$user->add_client($client_db);
+$user->add_loginid($loginid);
 my $starting_balance = balance($loginid);
 my $r                = deposit(loginid => $loginid);
 is($r->code,    201,       'correct status code');

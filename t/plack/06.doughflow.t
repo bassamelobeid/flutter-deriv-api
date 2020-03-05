@@ -14,7 +14,7 @@ my $client_db = BOM::Database::ClientDB->new({client_loginid => $loginid});
 $client_db->freeze;
 
 my $user = BOM::User->create(email=>'unit_test@binary.com', password=>'asdaiasda');
-$user->add_client($client_db);
+$user->add_loginid($loginid);
 
 my $r = deposit(
     loginid  => $loginid,
