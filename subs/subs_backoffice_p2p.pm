@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 use Syntax::Keyword::Try;
+use Data::Dumper;
 
 use BOM::Backoffice::Request qw(request);
 
@@ -25,7 +26,8 @@ sub p2p_advertiser_register {
         } elsif ($error_code =~ 'AlreadyRegistered') {
             $error_msg = $client->loginid . ' is already registered as a P2P advertiser.';
         } else {
-            $error_msg = $client->loginid . ' could not be registered as a P2P advertiser. Error code: ' . $error_code;
+            $Data::Dumper::Terse = 1;
+            $error_msg           = $client->loginid . ' could not be registered as a P2P advertiser. Error: ' . Dumper($error_code);
         }
 
         return {
@@ -63,7 +65,8 @@ sub p2p_advertiser_update {
         } elsif ($error_code =~ 'AdvertiserNotApproved') {
             $error_msg = 'P2P advertiser for ' . $client->loginid . ' should be authenticated in order to update its details.';
         } else {
-            $error_msg = 'P2P advertiser for ' . $client->loginid . ' could not be updated. Error code: ' . $error_code;
+            $Data::Dumper::Terse = 1;
+            $error_msg           = 'P2P advertiser for ' . $client->loginid . ' could not be updated. Error: ' . Dumper($error_code);
         }
 
         return {
