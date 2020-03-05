@@ -2256,7 +2256,7 @@ Set and copy status to all siblings
 sub set_all_sibling_status {
     my ($args) = @_;
 
-    my $loginid = $args->{client_loginid};
+    my $loginid = $args->{loginid} or die 'No client login ID supplied';
 
     my $client = BOM::User::Client->new({loginid => $loginid});
     my @all_loginids = $client->user->bom_real_loginids;
