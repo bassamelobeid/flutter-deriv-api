@@ -13,6 +13,8 @@ my $cli = BOM::User::Client->new({loginid => $loginid});
 $cli->place_of_birth('id');
 $cli->save;
 
+my $user = BOM::User->create(email=>'unit_test@binary.com', password=>'asdaiasda');
+$user->add_client($cli);
 my $r = deposit(loginid => $loginid);
 is($r->code,    201,       'correct status code');
 is($r->message, 'Created', 'Correct message');
