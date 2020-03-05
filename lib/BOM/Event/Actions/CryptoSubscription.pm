@@ -91,7 +91,7 @@ sub set_pending_transaction {
             # transaction already confirmed by confirmation daemon and does not have a transaction hash
             # in this case we can't risk to duplicate the transaction so we just ignore it
             # this is a check for the transactions done to before the subscription impl in place
-            if (any { $_->{status} ne 'NEW' && !$_->{blockchain_txn} } @payment) {
+            if (any { $_->{status} ne 'NEW' && !$_->{blockchain_txn} && $_->{transaction_type} ne 'withdrawal' } @payment) {
                 $log->debugf("Address already confirmed by confirmation daemon for transaction: %s", $transaction->{hash});
                 return undef;
             }
