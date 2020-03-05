@@ -16,12 +16,16 @@ use BOM::User::Client;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Transaction;
 
 my $now = Date::Utility->new;
 initialize_realtime_ticks_db();
+my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+    email       => 'XX@binary.com'
+});
 
-my $client  = BOM::User::Client->new({loginid => 'CR2002'});
 my $account = $client->set_default_account('USD');
 my $db      = $client->set_db('write');
 my $comment_str =
