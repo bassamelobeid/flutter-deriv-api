@@ -198,4 +198,9 @@ sub onfido_supported_documents {
     return $config;
 }
 
+sub restricted_countries_list {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/restricted_countries.yml');
+    return $config;
+}
+
 1;

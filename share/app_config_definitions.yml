@@ -517,6 +517,11 @@ system:
               isa: Bool
               default: 0
               global: 1
+    restricted_countries:
+      description: "Restricted countries list, separated by comma"
+      isa: ArrayRef
+      default: []
+      global: 1
 marketing:
     description:  "Marketing Bonus Settings"
     isa: section
