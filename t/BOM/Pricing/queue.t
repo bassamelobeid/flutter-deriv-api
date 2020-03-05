@@ -33,17 +33,24 @@ is_deeply(\%tags,  {}, 'start with no tags');
 use BOM::Pricing::Queue;
 
 # use a separate redis client for this test
-my $redis = RedisDB->new(YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write}->%*);
+my $redis        = RedisDB->new(YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write}->%*);
+my $redis_shared = RedisDB->new(YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer-shared.yml')->{write}->%*);
 my $queue;
 
 # Sample pricer jobs
 my @keys = (
     "PRICER_KEYS::[\"amount\",1000,\"basis\",\"payout\",\"contract_type\",\"PUT\",\"country_code\",\"ph\",\"currency\",\"AUD\",\"duration\",3,\"duration_unit\",\"m\",\"landing_company\",null,\"price_daemon_cmd\",\"price\",\"product_type\",\"basic\",\"proposal\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxAUDJPY\"]",
     "PRICER_KEYS::[\"amount\",1000,\"basis\",\"payout\",\"contract_type\",\"CALL\",\"country_code\",\"ph\",\"currency\",\"AUD\",\"duration\",3,\"duration_unit\",\"m\",\"landing_company\",null,\"price_daemon_cmd\",\"price\",\"product_type\",\"basic\",\"proposal\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxAUDJPY\"]",
-    "PRICER_KEYS::[\"amount\",1000,\"basis\",\"payout\",\"contract_type\",\"CALL\",\"country_code\",\"ph\",\"currency\",\"AUD\",\"duration\",3,\"duration_unit\",\"m\",\"landing_company\",null,\"price_daemon_cmd\",\"bid\",\"product_type\",\"basic\",\"proposal\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxAUDJPY\"]",
+    "PRICER_KEYS::[\"contract_id\",123,\"landing_company\",\"svg\",\"price_daemon_cmd\",\"bid\"]",
     "PRICER_KEYS::[\"amount\",1000,\"barriers\",[\"106.902\",\"106.952\",\"107.002\",\"107.052\",\"107.102\",\"107.152\",\"107.202\"],\"basis\",\"payout\",\"contract_type\",[\"PUT\",\"CALLE\"],\"country_code\",\"ph\",\"currency\",\"JPY\",\"date_expiry\",\"1522923300\",\"landing_company\",null,\"price_daemon_cmd\",\"price\",\"product_type\",\"multi_barrier\",\"proposal_array\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxUSDJPY\",\"trading_period_start\",\"1522916100\"]",
     "PRICER_KEYS::[\"amount\",1000,\"barriers\",[\"106.902\",\"106.952\",\"107.002\",\"107.052\",\"107.102\",\"107.152\",\"107.202\"],\"basis\",\"payout\",\"contract_type\",[\"PUT\",\"CALLE\"],\"country_code\",\"ph\",\"currency\",\"JPY\",\"date_expiry\",\"1522923300\",\"landing_company\",null,\"price_daemon_cmd\",\"price\",\"product_type\",\"multi_barrier\",\"proposal_array\",1,\"skips_price_validation\",1,\"subscribe\",1,\"symbol\",\"frxEURCAD\",\"trading_period_start\",\"1522916100\"]",
 );
+
+my @contract_params = ([
+    "CONTRACT_PARAMS::123::svg",
+    "[\"short_code\",\"PUT_FRXAUDJPY_19.23_1583120649_1583120949_S0P_0\",\"contract_id\",\"123\",\"currency\",\"USD\",\"is_sold\",\"0\",\"landing_company\",\"svg\",\"price_daemon_cmd\",\"bid\",\"sell_time\",null]"
+]);
+$redis_shared->set($_->[0] => $_->[1]) for @contract_params;
 
 subtest 'normal flow' => sub {
     $queue = new_ok(
@@ -56,6 +63,7 @@ subtest 'normal flow' => sub {
     );
 
     $redis->set($_ => 1) for @keys;
+
     $queue->process;
 
     is($redis->llen('pricer_jobs'),            @keys,                            'keys added to pricer_jobs queue');
@@ -63,7 +71,7 @@ subtest 'normal flow' => sub {
     is($stats{'pricer_daemon.queue.size'},     @keys,                            'keys waiting for processing in statsd');
     is((keys %tags)[0],                        "tag:@{[ $queue->internal_ip ]}", 'internal ip recorded as tag');
 
-    like $redis->lrange('pricer_jobs', -1, -1)->[0], qr/"price_daemon_cmd","bid"/, 'bid contract is the first to rpop for being processed';
+    like $redis->lrange('pricer_jobs', -1, -1)->[0], qr/"contract_id"/, 'bid contract is the first to rpop for being processed';
 };
 
 subtest 'overloaded daemon' => sub {

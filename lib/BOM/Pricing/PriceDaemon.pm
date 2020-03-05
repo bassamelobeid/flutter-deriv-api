@@ -161,8 +161,14 @@ sub run {
 
         my $next = $key->[1];
         next unless $next =~ s/^PRICER_KEYS:://;
-        my $payload       = decode_json_utf8($next);
-        my $params        = {@{$payload}};
+        my $payload = decode_json_utf8($next);
+        my $params  = {@{$payload}};
+
+        # for proposal open_contract, we will fetch contract data with contract id and landing company.
+        if ($params->{contract_id} and $params->{landing_company}) {
+            $params = BOM::Pricing::v3::Utility::get_contract_params($params->{contract_id}, $params->{landing_company});
+        }
+
         my $contract_type = $params->{contract_type};
 
         # If incomplete or invalid keys somehow got into pricer,
@@ -197,7 +203,7 @@ sub run {
                 {tags => $self->tags('contract_type:' . $contract_type_string, 'currency:' . $params->{currency})});
         }
 
-        # On websocket clients are subscribing to proposal open contract with "CONTRACT_PRICE::123123_virtual" as the key
+        # On websocket clients are subscribing to proposal open contract with "CONTRACT_PRICE::123122__virtual" as the key
         my $redis_channel = $params->{contract_id} ? 'CONTRACT_PRICE::' . $params->{contract_id} . '_' . $params->{landing_company} : $key->[1];
         my $subscribers_count = $redis->publish($redis_channel, encode_json_utf8($response));
         # if None was subscribed, so delete the job

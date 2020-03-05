@@ -552,6 +552,10 @@ sub get_contract_details {
     try {
         $bet_params =
             shortcode_to_parameters($params->{short_code}, $params->{currency});
+        if ($bet_params->{bet_type} =~ /^(?:MULTUP|MULTDOWN)$/) {
+            my $contract_params = BOM::Pricing::v3::Utility::get_contract_params($params->{contract_id}, $params->{landing_company});
+            $bet_params->{limit_order} = $contract_params->{limit_order};
+        }
     }
     catch {
         warn __PACKAGE__ . " get_contract_details shortcode_to_parameters failed: $params->{short_code}, currency: $params->{currency}";
@@ -841,6 +845,7 @@ sub _build_bid_response {
         bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
         is_settleable       => $is_valid_to_settle,
         barrier_count       => $contract->two_barriers ? 2 : 1,
+        expiry_time         => $contract->date_expiry->epoch,
     };
     if (!$contract->uses_barrier) {
         $response->{barrier_count} = 0;
