@@ -103,13 +103,8 @@ sub create_client {
 
     my $broker_code = delete $args->{broker_code};
 
-    my $fixture      = YAML::XS::LoadFile('/home/git/regentmarkets/bom-test/data/market_unit_test.yml');
-    my $client_data  = $fixture->{client}{data};
-    my $next_user_id = get_next_binary_user_id();
-    my $user         = BOM::User->create(
-        email    => 'unit_test_' . $next_user_id . '@binary.com',
-        password => 'asdaiasda'
-    );
+    my $fixture     = YAML::XS::LoadFile('/home/git/regentmarkets/bom-test/data/market_unit_test.yml');
+    my $client_data = $fixture->{client}{data};
 
     $client_data->{email}       = 'unit_test@binary.com';
     $client_data->{broker_code} = $broker_code;
@@ -147,7 +142,7 @@ sub create_client {
         $client->$_($client_data->{$_});
     }
     $client->save;
-    $user->add_client($client);
+
     if ($auth && $broker_code =~ /(?:MF|MLT|MX)/) {
         $client->status->set('age_verification');
         $client->set_authentication('ID_DOCUMENT')->status('pass') if $broker_code eq 'MF';
