@@ -2277,13 +2277,13 @@ sub _set_all_sibling_status {
     return;
 }
 
-=head2 crypto_withdrawal
+=head2 handle_crypto_withdrawal
 
 Handles all cryptocurrency withdrawal issue.
 
 =cut
 
-sub crypto_withdrawal {
+sub handle_crypto_withdrawal {
     my ($args) = @_;
 
     my $loginid = $args->{loginid} or die 'No client login ID supplied';
