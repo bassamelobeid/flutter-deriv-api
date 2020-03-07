@@ -220,3 +220,36 @@ subtest "format and validate" => sub {
     is $client->validate_common_account_details($args), undef, 'validation is passed when both promotion code and status is provided';
 
 };
+
+subtest "check duplicate accounts" => sub {
+    plan tests => 3;
+
+    my $client_details = {
+        first_name    => 'alan',
+        last_name     => 'turing',
+        date_of_birth => '1983-01-01'
+    };
+
+    my $first_client = BOM::User::Client->new({loginid => 'CR0001'});
+
+    $first_client->email('firstclienttest@binary.com');
+    $first_client->first_name($client_details->{first_name});
+    $first_client->last_name($client_details->{last_name});
+    $first_client->date_of_birth($client_details->{date_of_birth});
+    $first_client->save;
+
+    my $second_client = BOM::User::Client->new({loginid => 'CR0002'});
+
+    is $second_client->check_duplicate_account($client_details)->{error}, 'DuplicateAccount', 'second client is considered as duplicate';
+
+    $first_client->status->set('disabled', 'system', 'test');
+
+    is $second_client->check_duplicate_account($client_details)->{error}, 'DuplicateAccount',
+        'second client is considered as duplicate regardless if first client is disabled';
+
+    $second_client->email($first_client->email);
+    is $second_client->check_duplicate_account($client_details), undef, 'no duplicate as emails are same';
+
+};
+
+done_testing();

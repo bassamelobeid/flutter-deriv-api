@@ -146,7 +146,7 @@ sub _invoke_mt5 {
     my $loop          = IO::Async::Loop->new;
     my $f             = $loop->new_future;
     my $request_start = [Time::HiRes::gettimeofday];
-    my $redis         = BOM::Config::RedisReplicated::redis_mt5_user_write();
+    my $redis         = BOM::Config::Redis::redis_mt5_user_write();
     my $failcount     = $redis->get($FAILCOUNT_KEY) // 0;
     my $lock          = $redis->get($LOCK_KEY) // 0;
     my $trying        = 0;
