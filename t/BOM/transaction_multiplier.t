@@ -261,7 +261,7 @@ subtest 'buy MULTUP', sub {
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{'multiplier'},             10,      'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
+            is $chld->{'basis_spot'},             100, 'basis_spot is 100';
             is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
             is $chld->{'stop_loss_basis_spot'},   undef,   'stop_loss_basis_spot is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
@@ -368,7 +368,7 @@ subtest 'buy MULTUP with take profit', sub {
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{'multiplier'},             10,      'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
+            is $chld->{'basis_spot'},             100, 'basis_spot is 100';
             is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
             is $chld->{'stop_loss_order_date'},   undef,   'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
@@ -475,7 +475,7 @@ subtest 'buy MULTUP with stop loss', sub {
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
             is $chld->{'multiplier'},               10,      'multiplier is 10';
-            is $chld->{'basis_spot'},               '100.0', 'basis_spot is 100.0';
+            is $chld->{'basis_spot'},               100, 'basis_spot is 100';
             is $chld->{'stop_loss_order_amount'},   -5,      'stop_loss_order_amount is -5';
             cmp_ok $chld->{'stop_loss_order_date'}, "eq",    $fmb->{start_time}, 'stop_loss_order_date is correctly set';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
@@ -505,13 +505,13 @@ subtest 'sell a bet', sub {
                         order_type   => 'stop_out',
                         order_amount => -100,
                         order_date   => $contract_start_time,
-                        basis_spot   => '100.00',
+                        basis_spot   => 100,
                     },
                     stop_loss => {
                         order_type   => 'stop_loss',
                         order_amount => -5,
                         order_date   => $contract_start_time,
-                        basis_spot   => '100.00',
+                        basis_spot   => 100,
                     }}});
         my $txn;
         #note 'bid price: ' . $contract->bid_price;
@@ -621,7 +621,7 @@ subtest 'sell failure due to update' => sub {
                     order_type   => 'stop_out',
                     order_amount => -100,
                     order_date   => $contract_start_time,
-                    basis_spot   => '100.00',
+                    basis_spot   => 100,
                 }}});
     my $sell_txn = BOM::Transaction->new({
         purchase_date => $contract->date_start,
