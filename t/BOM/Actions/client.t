@@ -36,6 +36,9 @@ $mock_brands->mock(
         return ($self->name eq 'deriv');
     });
 
+my $onfido_doc = Test::MockModule->new('WebService::Async::Onfido::Document');
+$onfido_doc->mock('side', sub { return undef });
+
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
@@ -213,6 +216,8 @@ subtest "client_verification" => sub {
     ok($msg, 'automated age verification failed email sent');
 
 };
+
+$onfido_doc->unmock_all();
 
 # construct a client that upload document itself, then test  client_verification, and see uploading documents
 subtest 'client_verification after upload document himself' => sub {

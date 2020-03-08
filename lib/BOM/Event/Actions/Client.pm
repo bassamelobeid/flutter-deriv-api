@@ -332,7 +332,7 @@ async sub ready_for_authentication {
         $log->debugf('Have %d documents for applicant %s', 0 + @documents, $applicant_id);
 
         my ($doc, $poa_doc) = rev_nsort_by {
-            ($_->side eq 'front' ? 10 : 1) * ($ONFIDO_DOCUMENT_TYPE_PRIORITY{$_->type} // 0)
+            ($_->side && $_->side eq 'front' ? 10 : 1) * ($ONFIDO_DOCUMENT_TYPE_PRIORITY{$_->type} // 0)
         }
         @documents;
 
@@ -639,6 +639,7 @@ async sub _store_applicant_documents {
         my (undef, $type, $side) = split /\./, $doc->file_name;
         $type = $doc->type;
         $side = $doc->side;
+        $side = $side && $ONFIDO_DOCUMENT_SIDE_MAPPING{$side} // 'front';
         $type = 'live_photo' if $side eq 'photo';
 
         unless ($existing_onfido_docs && $existing_onfido_docs->{$doc->id}) {
@@ -717,7 +718,7 @@ async sub _sync_onfido_bo_document {
         $page_type = $onfido_res->side;
         for my $each_report (@{$all_report}) {
             if ($each_report->documents) {
-                @doc_ids = @{$each_report->documents};
+                @doc_ids = grep { $_ && $_->{id} } @{$each_report->documents};
                 my %all_ids = map { $_->{id} => 1 } @doc_ids;
 
                 if (exists($all_ids{$doc_id})) {
