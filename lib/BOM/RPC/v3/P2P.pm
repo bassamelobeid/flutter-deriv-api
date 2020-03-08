@@ -52,6 +52,7 @@ our %ERROR_MAP = do {
     # each item when we want to send to a client.
     ## no critic(TestingAndDebugging::ProhibitNoWarnings)
     no warnings 'redefine';
+
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
     (
         # System or country limitations
@@ -91,25 +92,26 @@ our %ERROR_MAP = do {
         OrderPaymentContactInfoNotAllowed  => localize('Payment and contact information cannot be specified for buy order.'),
 
         # bom-user errors
-        AdvertiserNotFound          => localize('P2P advertiser not found.'),
-        AdvertiserNotRegistered     => localize('This account is not registered as a P2P advertiser.'),
-        AdvertiserNotListed         => localize('The provided advertiser ID does not belong to an active advertiser.'),
-        AdvertiserNotApproved       => localize('The advertiser is not approved.'),
-        AdvertiserNameRequired      => localize('The advertiser name cannot be blank.'),
-        OrderAlreadyConfirmed       => localize('The order is already confirmed by you.'),
-        OrderAlreadyCancelled       => localize('The order is already cancelled.'),
-        AdvertNoEditInactive        => localize('The advert is inactive and cannot be changed.'),
-        AdvertNotFound              => localize('Advert not found.'),
-        AdvertIsDisabled            => localize('Advert is inactive.'),
-        AdvertInsufficientAmount    => localize('The new amount cannot be less than the value of current orders against this advert.'),
-        AdvertMaxExceeded           => localize('The maximum limit of active adverts reached.'),
-        InvalidOrderCurrency        => localize('You cannot create an order with a different currency than your account.'),
-        OrderNotFound               => localize('Order not found.'),
-        OrderAlreadyExists          => localize('Too many orders. Please complete your pending orders.'),
-        InvalidAdvertOwn            => localize('You cannot create an order for your own advert.'),
-        OrderNoEditExpired          => localize('The order has expired and cannot be changed.'),
-        InvalidStateForConfirmation => localize('The order cannot be confirmed in its current state.'),
-        EscrowNotFound              => localize('Advertising for the currency is not available at the moment.'),
+        AdvertiserNotFound            => localize('P2P advertiser not found.'),
+        AdvertiserNotRegistered       => localize('This account is not registered as a P2P advertiser.'),
+        AdvertiserNotListed           => localize('The provided advertiser ID does not belong to an active advertiser.'),
+        AdvertiserNotApproved         => localize('The advertiser is not approved.'),
+        AdvertiserNameRequired        => localize('The advertiser name cannot be blank.'),
+        OrderAlreadyConfirmed         => localize('The order is already confirmed by you.'),
+        OrderAlreadyCancelled         => localize('The order is already cancelled.'),
+        AdvertNoEditInactive          => localize('The advert is inactive and cannot be changed.'),
+        AdvertNotFound                => localize('Advert not found.'),
+        AdvertIsDisabled              => localize('Advert is inactive.'),
+        AdvertInsufficientAmount      => localize('The new amount cannot be less than the value of current orders against this advert.'),
+        AdvertMaxExceeded             => localize('The maximum limit of active adverts reached.'),
+        ClientDailyOrderLimitExceeded => localize('You may only place [_1] orders every 24 hours. Please try again later.'),
+        InvalidOrderCurrency          => localize('You cannot create an order with a different currency than your account.'),
+        OrderNotFound                 => localize('Order not found.'),
+        OrderAlreadyExists            => localize('Too many orders. Please complete your pending orders.'),
+        InvalidAdvertOwn              => localize('You cannot create an order for your own advert.'),
+        OrderNoEditExpired            => localize('The order has expired and cannot be changed.'),
+        InvalidStateForConfirmation   => localize('The order cannot be confirmed in its current state.'),
+        EscrowNotFound                => localize('Advertising for the currency is not available at the moment.'),
         OrderMinimumNotMet => localize('The minimum amount for this advert is [_1] [_2].'),    # minimum won't change during advert lifetime
         OrderMaximumExceeded => localize('The maximum available amount for this advert is [_1] [_2] at the moment.'),
         InsufficientBalance  => localize('Your account balance is insufficient to create an order with this amount.'),
@@ -135,8 +137,13 @@ our %DB_ERRORS = (
     BI235 => 'OrderNotFound',
     BI236 => 'InvalidStateForConfirmation',
     BI237 => 'InvalidOrderCurrency',
-    BI238 => 'OpenOrdersDeleteAdvert',
+    BI238 => 'ClientDailyOrderLimitExceeded',
+    BI239 => 'OpenOrdersDeleteAdvert',
 );
+
+sub DB_ERROR_PARAMS {
+    return {'ClientDailyOrderLimitExceeded' => [BOM::Config::Runtime->instance->app_config->payments->p2p->limits->count_per_day_per_client]};
+}
 
 =head2 p2p_rpc
 
@@ -203,6 +210,7 @@ sub p2p_rpc {
                 if (/ARRAY/) {
                     $err_code_db = $exception->[0];
                     $err_code    = $DB_ERRORS{$err_code_db};
+                    $err_params  = DB_ERROR_PARAMS->{$err_code};
                     last SWITCH;
                 }
 
@@ -221,7 +229,7 @@ sub p2p_rpc {
             if (my $message = $ERROR_MAP{$err_code}) {
                 stats_inc($p2p_prefix . '.error', {tags => ['error_code:' . $err_code]});
 
-                $log->warnf("P2P %s failed, DB failure: %s, original: %s", $method, $err_code_db, $exception->[1])
+                $log->debugf("P2P %s raised a DB exception, exception code is %s, original: %s", $method, $err_code_db, $message)
                     if $err_code_db;    # original DB error may have useful details
 
                 return BOM::RPC::v3::Utility::create_error({
