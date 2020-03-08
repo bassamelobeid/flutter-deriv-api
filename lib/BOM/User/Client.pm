@@ -2015,7 +2015,9 @@ sub p2p_order_create {
 
     my ($advert_id, $amount, $expiry, $payment_info, $contact_info, $source) = @param{qw/advert_id amount expiry payment_info contact_info source/};
 
-    $expiry //= BOM::Config::Runtime->instance->app_config->payments->p2p->order_timeout;
+    my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+    $expiry //= $p2p_config->order_timeout;
+    my $limit_per_day_per_client = $p2p_config->limits->count_per_day_per_client;
 
     my $advert_info = $client->_p2p_adverts(id => $advert_id)->[0];
 
@@ -2074,7 +2076,7 @@ sub p2p_order_create {
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $advert_id, $client->loginid, $escrow->loginid, $amount, $expiry, $payment_info, $contact_info, $source, $client->loginid,
-                undef, $txn_time);
+                $limit_per_day_per_client, $txn_time);
         });
 
     return $client->_order_details([$order])->[0];
