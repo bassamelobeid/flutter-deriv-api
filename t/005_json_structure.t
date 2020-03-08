@@ -70,6 +70,7 @@ my $order = {
         '$schema'            => 1,
         title                => 2,
         description          => 3,
+        beta                 => 4,
         deprecated           => 4,
         hidden               => 5,
         type                 => 6,
@@ -95,13 +96,13 @@ my $order = {
 
 sub sort_elements {
     my ($ref, $parent) = @_;
-    
+
     if ( ref $ref eq 'ARRAY' and $parent eq 'required' ) {
         return [ sort { ( $order->{properties}{$a} // 99 ) <=> ( $order->{properties}{$b} // 99 ) or $a cmp $b } @$ref ];
-    }     
+    }
     elsif ( ref $ref eq 'ARRAY' and all { ref eq 'HASH' } @$ref ) {
         return [ map { sort_elements($_) } @$ref ];
-    }  
+    }
     elsif ( ref $ref eq 'ARRAY' and $parent ne 'enum' ) {
         return [ sort { looks_like_number($a); looks_like_number($a) ? $a <=> $b : $a cmp $b } @$ref ];
     }
@@ -153,7 +154,7 @@ subtest 'general formatting and order' => sub {
         test_diff($schema->{json_text}, $sorted, $schema->{formatted_path});
 
         delete $order->{other}{$schema->{method_name}};    # cleanup for next
-        delete $order->{properties}{$schema->{method_name}}; 
+        delete $order->{properties}{$schema->{method_name}};
 
         path($schema->{path})->spew_utf8($sorted) if $should_fix;
     }
