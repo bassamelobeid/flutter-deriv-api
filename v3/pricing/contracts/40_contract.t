@@ -340,6 +340,25 @@ subtest 'buy and subscribe' => sub {
     is $data->{forget_all}->[0], $uuid, 'Correct subscription id returned';
 };
 
+subtest 'buy contract with wrong proposal' => sub {
+    $response = $t->await::transaction({
+        transaction => 1,
+        subscribe   => 1
+    });
+
+    ok my $uuid = $response->{transaction}->{id}, 'There is an ID';
+    # we buy a contract with transaction id.
+    # that shouldn't happen in real world
+    # but we construct this case to test the scenario that but with a wrong proposal which is also a subscription id in the memory
+    my $buy_error = $t->await::buy({
+        buy   => $uuid,
+        price => 1
+    });
+    is $buy_error->{msg_type}, 'buy';
+    is $buy_error->{error}->{code}, 'InvalidContractProposal';
+
+};
+
 $t->finish_ok;
 
 done_testing();
