@@ -86,8 +86,7 @@ sub create_order {
     my $amount  = $param{amount}  // 100;
     my $expiry  = $param{expiry}  // 7200;
     my $balance = $param{balance} // $param{amount};
-
-    my $client = create_client($balance);
+    my $client  = $param{client}  // create_client($balance);
 
     my $advert = $client->p2p_advert_info(id => $param{advert_id});
 
