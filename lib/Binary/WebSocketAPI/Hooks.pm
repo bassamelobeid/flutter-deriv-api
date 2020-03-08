@@ -666,8 +666,10 @@ sub _handle_error {
         INVALID_JSON    => 'websocket_proxy.malformed_json.failure'
     );
 
-    stats_inc($error_mapping{$all_data->{details}->{error_code}}, {tags => ['error_code:1007']});
-    $log->errorf("[ERROR - %s] APP ID: %s Details: %s", $all_data->{details}->{error_code}, $app_id, $all_data->{details}->{reason});
+    # 1007 means 'Invalid frame payload data'
+    # reference: https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
+    my $tags = ['error_code:1007', "app_id:$app_id"];
+    stats_inc($error_mapping{$all_data->{details}->{error_code}}, {tags => $tags});
     $c->finish;
     return;
 }
