@@ -101,6 +101,9 @@ async sub _populate_mt5_affiliate_to_client {
 async sub _set_affiliate_for_mt5 {
     my ($mt5_login, $affiliate_mt5_login) = @_;
 
+    # Skip demo accounts
+    return 0 if $mt5_login =~ /^MTD/;
+
     my $user_details = await BOM::MT5::User::Async::get_user($mt5_login);
 
     return 0 if $user_details->{group} =~ /^demo/;

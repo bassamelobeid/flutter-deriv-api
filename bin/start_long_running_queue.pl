@@ -77,8 +77,8 @@ my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4") || '
 my $pm = Parallel::ForkManager->new($options{number_of_workers});
 
  local $SIG{INT} = local $SIG{TERM}  = sub {
-     if ($pm->is_parent) {
-         my $start_time = time; 
+     if (@running_forks) {
+         my $start_time = time;
          # Give everything a chance to shut down gracefully before forcibly killing them.
          local $SIG{ALRM} = sub {
              print "Timeout reached forcibly killing child procs.\n";
@@ -112,6 +112,7 @@ $pm->run_on_finish(
             }
         }
         @running_forks = grep { $_ != $pid } @running_forks;
+
         DataDog::DogStatsd::Helper::stats_gauge('long_running_event_queue.'.$options{queue}.'.forks.count', (scalar @running_forks), {tags => ['tag:' . $internal_ip]});
     });
 
@@ -119,11 +120,11 @@ while (1) {
   $pm->start and next;
   #We are running in child processes here. 
     my $daemon = BOM::Event::Listener->new(%options);
-    
+
     # This runs the actual process (queue listening, running jobs etc ) that  we are interested in.
     # It is a blocking call, This while loop will only loop again if the child finishes or is killed. 
     # in which case it will cause the respawn of another child to replace the killed one.
-    $daemon->run();  
-    
+    $daemon->run();
+
     $pm->finish;
 }
