@@ -99,7 +99,7 @@ subtest 'multiday' => sub {
             [100, $now->epoch + 1,                                                 $symbol],
             [102, $now->epoch + 2,                                                 $symbol],
             [100, $now->truncate_to_day->plus_time_interval('1d23h59m59s')->epoch, $symbol]);
-        my $c = produce_contract({%$args, date_pricing => $args->{date_start}->truncate_to_day->plus_time_interval('1d23h59m59s')->epoch});
+        my $c = produce_contract({%$args, date_pricing => $args->{date_start}->truncate_to_day->plus_time_interval('2d')->epoch});
         ok $c->expiry_daily, 'multi-day contract';
         ok $c->is_expired,   'is expired';
         is $c->exit_tick->quote, 100, 'exit tick is 100';
@@ -119,7 +119,7 @@ subtest 'multiday' => sub {
             close      => 100.11,
             official   => 0,
         });
-        my $c = produce_contract({%$args, date_pricing => $args->{date_start}->truncate_to_day->plus_time_interval('1d23h59m59s')->epoch});
+        my $c = produce_contract({%$args, date_pricing => $args->{date_start}->truncate_to_day->plus_time_interval('2d')->epoch});
         ok $c->expiry_daily, 'multi-day contract';
         is $c->high_barrier->as_absolute, '100.10', 'high barrier is 100.10';
         is $c->low_barrier->as_absolute,  '99.90',  'low barrier is 99.90';

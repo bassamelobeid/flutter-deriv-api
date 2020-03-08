@@ -450,9 +450,25 @@ sub date_settlement {
     my $end_date = $self->date_expiry;
     my $exchange = $self->underlying->exchange;
 
-    my $date_settlement = $end_date;    # Usually we settle when we expire.
-    if ($self->expiry_daily and $self->trading_calendar->trades_on($exchange, $end_date)) {
-        $date_settlement = $self->trading_calendar->get_exchange_open_times($exchange, $end_date, 'daily_settlement');
+    my $date_settlement = $end_date;                 # Usually we settle when we expire.
+    my $calendar        = $self->trading_calendar;
+    if ($self->expiry_daily and $calendar->trades_on($exchange, $end_date)) {
+        # We have a huge inefficiency at how we settle daily contracts that need to be fixed after we have
+        # consistent feed. Currently, the OHLC of a trading day for a particular instrument is generated when we
+        # receive the first tick on the next trading day. There's a database trigger set on 'tick_insert' function
+        # in feed database to populate OHLC aggregation for different intervals (minutely, hourly & daily).
+        #
+        # This needs to change when we have consistent feed where we will have the OHLC of the trading day after market is closed
+        # for the day. This isn't possible without consistent feed where we're still back-populating historical ticks.
+        #
+        # To solve MTM error where contracts are expired but could not be settled because of missing OHLC, we will
+        # change the settlement time for daily contract to the next trading day open. E.g.:
+        #
+        # Hong Kong Index opens at 1:30GMT and closes a 8GMT on a normal trading day, If you buy a contract expiring on wednesday close,
+        # your contract will only be settled on thursday when Hong Kong Index opens at 1:30GMT.
+        # This affects daily contract on forex too on Fridays or when next day is a non-trading day.
+        my $next_trading_day = $calendar->trade_date_after($exchange, $end_date);
+        $date_settlement = $self->trading_calendar->opening_on($exchange, $next_trading_day);
     }
 
     return $date_settlement;
