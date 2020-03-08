@@ -139,7 +139,7 @@ sub buy_get_contract_params {
     if (my $proposal_id = $args->{buy} // $args->{buy_contract_for_multiple_accounts}) {
         # get subscription object Proposal or ProposalArrayItem for information
         my $subscription = Binary::WebSocketAPI::v3::Subscription->get_by_uuid($c, $proposal_id);
-        if ($subscription) {
+        if ($subscription && $subscription->does('Binary::WebSocketAPI::v3::Subscription::Pricer')) {
             $req_storage->{call_params}->{payout}                                       = $subscription->cache->{payout};
             $req_storage->{call_params}->{contract_parameters}                          = $subscription->args;
             $req_storage->{call_params}->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
