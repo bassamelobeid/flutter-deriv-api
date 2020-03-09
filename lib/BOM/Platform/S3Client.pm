@@ -61,7 +61,7 @@ sub upload {
     my ($self, $original_filename, $file_path, $checksum) = @_;
     my $fh;
     open($fh, "<:raw", $file_path) or return Future->fail('Unable to read the upload file handle');    ## no critic (RequireBriefOpen)
-
+    $original_filename //= '';
     my $stat      = stat($fh);
     my $file_size = $stat->size;
 
