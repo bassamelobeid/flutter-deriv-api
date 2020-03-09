@@ -630,9 +630,17 @@ rpc contract_update => sub {
         }
     }
     catch {
+        my $exception = $@;
+        my $message_to_client;
+        if (blessed($exception) && $exception->isa('BOM::Product::Exception')) {
+            $message_to_client = $exception->message_to_client;
+        } else {
+            $message_to_client = ['Sorry, an error occurred while processing your request.'];
+            warn __PACKAGE__ . " contract update failed: '$exception', parameters: " . $json->encode($args->{limit_order});
+        }
         $response = BOM::Pricing::v3::Utility::create_error({
             code              => 'ContractUpdateError',
-            message_to_client => localize("Sorry, an error occurred while processing your request."),
+            message_to_client => localize(@$message_to_client),
         });
     }
 
