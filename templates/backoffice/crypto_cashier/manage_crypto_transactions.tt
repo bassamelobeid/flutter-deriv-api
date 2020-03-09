@@ -17,6 +17,12 @@
     table.internal th {
         padding: 0 5px;
     }
+    #warning_tag {
+        color:red;
+        font-weight:bold;
+        text-align: center;
+        background-color: #FFFF00;
+    }
 </style>
 <table class="hover collapsed alternate" border="1" width="100%">
     <thead>
@@ -113,6 +119,9 @@
                 [% END %]
                 <td valign="top">
                     <table class="internal"><tbody>
+                        [% IF trx.is_internal_transfer == 1 %]
+                        <tr><td>&nbsp;</td><td><span id="warning_tag">INTERNAL TRANSFER</span></td></tr>
+                        [% END %]
                         <tr><th>Address:</th><td>[% address_link(addr = trx.address) %]</td></tr>
                         <tr><th>Blockchain ID:</th><td>[% transaction_link(tx = trx.blockchain_txn) %]</td></tr>
                     </tbody></table>
