@@ -1,8 +1,8 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "P2P Order Information (request)",
-    "description": "Retrieves the information about a P2P order.",
-    "hidden": 1,
+    "description": "Retrieves the information about a P2P order. **This API call is still in Beta.**",
+    "beta": 1,
     "type": "object",
     "auth_required": 1,
     "auth_scopes": [
