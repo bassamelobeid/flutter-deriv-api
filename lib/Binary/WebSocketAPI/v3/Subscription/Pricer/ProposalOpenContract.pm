@@ -65,7 +65,7 @@ sub do_handle_message {
 
     $c->send({json => $results}, {args => $self->args});
 
-    if (exists $results->{$type} and not $message->{is_expired}) {
+    if (exists $results->{$type} and exists $message->{current_spot_time} and not $message->{is_expired}) {
         my $tags = [
             'contract_type:' . ($message->{contract_type} // ''),
             'underlying:' .    ($message->{underlying}    // ''),
