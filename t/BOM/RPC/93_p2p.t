@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use BOM::Test::RPC::Client;
+use Log::Any::Test;
 use Test::More;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -296,6 +297,81 @@ subtest 'Create new order' => sub {
     ok($order->{id},               'Order is created');
     ok($order->{account_currency}, 'Order has account_currency');
     ok($order->{local_currency},   'Order has local_currency');
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Prevent create orders more than daily order limit number' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($params, $advertiser, $advert, $order);
+
+    # Set maximum order create limit per day to 5
+    $app_config->payments->p2p->limits->count_per_day_per_client(5);
+    is($app_config->payments->p2p->limits->count_per_day_per_client, 5, 'Change `count_per_day_per_client` setting value to 5');
+
+    # Create client
+    my $client = BOM::Test::Helper::P2P::create_client(100);
+
+    for (my $i = 0; $i < $app_config->payments->p2p->limits->count_per_day_per_client - 1; $i++) {
+        ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+        BOM::Test::Helper::P2P::create_order(
+            advert_id => $advert->{id},
+            client    => $client,
+            amount    => 10
+        );
+    }
+
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    $params->{args} = {
+        advert_id         => $advert->{id},
+        amount            => 10,
+        order_description => 'here is my order'
+    };
+
+    $order = $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_no_error->result;
+
+    ok($order->{id}, 'Orders will successfully created until numbers of created orders reached `count_per_day_per_client` limit.');
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    $params->{args} = {
+        advert_id         => $advert->{id},
+        amount            => 10,
+        order_description => 'here is my order'
+    };
+
+    # API v3 gives us an error when we are trying to submits order more than p2p.limits.count_per_day_per_client setting.
+    $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_error('Client daily order limit exceeded.')
+        ->error_code_is('ClientDailyOrderLimitExceeded', 'Client daily order limit exceeded.')
+        ->error_message_is('You may only place 5 orders every 24 hours. Please try again later.', 'Client max order is 5 per 24hours');
+
+    # Increase count_per_day_per_client bye 1 to 6
+    $app_config->payments->p2p->limits->count_per_day_per_client(6);
+    is($app_config->payments->p2p->limits->count_per_day_per_client, 6, 'Change `count_per_day_per_client` setting value to 6');
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    $params->{args} = {
+        advert_id         => $advert->{id},
+        amount            => 10,
+        order_description => 'here is my order'
+    };
+
+    $order = $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_no_error->result;
+
+    ok($order->{id}, 'Orders will successfully created until numbers of created orders reached `count_per_day_per_client` limit.');
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    $params->{args} = {
+        advert_id         => $advert->{id},
+        amount            => 10,
+        order_description => 'here is my order'
+    };
+
+    # API v3 gives us an error when we are trying to submits order more than p2p.limits.count_per_day_per_client setting.
+    $c->call_ok('p2p_order_create', $params)->has_no_system_error->has_error('Client daily order limit exceeded.')
+        ->error_code_is('ClientDailyOrderLimitExceeded', 'Client daily order limit exceeded.')
+        ->error_message_is('You may only place 6 orders every 24 hours. Please try again later.', 'Client max order is 6 per 24hours');
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
