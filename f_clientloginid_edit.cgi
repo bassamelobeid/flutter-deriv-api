@@ -441,7 +441,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         {    #Authenticated with scans, front end lets this get run again even if already set.
 
             $client->set_authentication('ID_DOCUMENT')->status('pass');
-            BOM::Config::Redis::redis_write()->del(INTERNAL_TRANSFER_FIAT_CRYPTO_PREFIX . $client->binary_user_id)
+            BOM::Config::Redis::redis_replicated_write()->del(INTERNAL_TRANSFER_FIAT_CRYPTO_PREFIX . $client->binary_user_id)
                 if ($client->landing_company->short eq 'svg');
             BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $loginid});
         }
