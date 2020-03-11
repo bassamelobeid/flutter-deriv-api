@@ -1774,11 +1774,12 @@ sub p2p_advertiser_create {
     die +{error_code => 'AdvertiserNameRequired'} unless $name;
     die +{error_code => 'AdvertiserNameTaken'} if $client->_p2p_advertisers(name => $name)->[0];
 
-    return $client->db->dbic->run(
+    my $advertiser = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.advertiser_create(?, ?, ?, ?, ?)',
                 undef, $client->loginid, $name, @param{qw/default_advert_description payment_info contact_info/});
         });
+    return $client->_advertiser_details($advertiser);
 }
 
 =head2 p2p_advertiser_info
