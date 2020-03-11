@@ -82,6 +82,8 @@ my $client_escrow = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $client_escrow->account('USD');
 $app_config->set({'payments.p2p.escrow' => [$client_escrow->loginid]});
 
+my %advertiser_params = map { $_ => rand(999) } qw( name contact_info default_advert_description payment_info );
+
 my %advert_params = (
     amount           => 100,
     description      => 'Test advert',
@@ -96,7 +98,6 @@ my %advert_params = (
 );
 
 my ($resp, $token_vr, $token_advertiser, $token_client, $advertiser, $advert, $order);
-my $advertiser_name = 'advertiser' . rand(999);
 
 subtest 'misc' => sub {
     $token_vr = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
@@ -120,22 +121,35 @@ subtest 'create advertiser' => sub {
     $t->await::authorize({authorize => $token_advertiser});
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1})->{error};
     is $resp->{code}, 'AdvertiserNotFound', 'Advertiser not yet registered';
+    
+    $resp = $t->await::p2p_advertiser_create({
+            p2p_advertiser_create => 1,
+            %advertiser_params
+        });
+    test_schema('p2p_advertiser_create', $resp);
+    $advertiser = $resp->{p2p_advertiser_create};
 
-    $client_advertiser->p2p_advertiser_create(name => $advertiser_name);
-    $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
-    test_schema('p2p_advertiser_info', $resp);
-
-    $advertiser = $resp->{p2p_advertiser_info};
-    is $advertiser->{name}, $advertiser_name, 'advertiser name';
+    is $advertiser->{$_}, $advertiser_params{$_}, "advertiser $_" for qw( name contact_info default_advert_description payment_info );
     ok $advertiser->{id} > 0, 'advertiser id';
     ok !$advertiser->{is_approved}, 'advertiser not approved';
     ok $advertiser->{is_listed}, "advertiser's adverts are listed";
+    
+    $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
+    test_schema('p2p_advertiser_info', $resp);
+
+    cmp_deeply( $resp->{p2p_advertiser_info}, $advertiser, 'advertiser info is correct');
+
+    $resp = $t->await::p2p_advertiser_create({
+            p2p_advertiser_create => 1,
+            %advertiser_params
+        })->{error};
+    is $resp->{code}, 'AlreadyRegistered', 'Cannot create duplicate advertiser';        
 
     $resp = $t->await::p2p_advert_create({
             p2p_advert_create => 1,
             %advert_params
         })->{error};
-    is $resp->{code}, 'AdvertiserNotApproved', 'Unapproved advertiser';
+    is $resp->{code}, 'AdvertiserNotApproved', 'Unapproved advertiser cannot create ad';
 };
 
 subtest 'update advertiser' => sub {
