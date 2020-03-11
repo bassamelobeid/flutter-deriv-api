@@ -103,6 +103,11 @@ payments:
           isa: ArrayRef
           global: 1
           default: []
+        email_to:
+          description: "Internal email address to be sent notifications when new P2P advertisers are registered."
+          isa: Str
+          global: 1
+          default: "p2p-support@deriv.com"          
         escrow:
           description: 'List of escrow accounts. There should be one per currency per landing company'
           isa: ArrayRef
