@@ -92,6 +92,7 @@ our %ERROR_MAP = do {
         OrderPaymentContactInfoNotAllowed  => localize('Payment and contact information cannot be specified for buy order.'),
 
         # bom-user errors
+        AlreadyRegistered             => localize('This account has already been registered as a P2P advertiser.'),
         AdvertiserNotFound            => localize('P2P advertiser not found.'),
         AdvertiserNotRegistered       => localize('This account is not registered as a P2P advertiser.'),
         AdvertiserNotListed           => localize('The provided advertiser ID does not belong to an active advertiser.'),
@@ -286,7 +287,7 @@ p2p_rpc p2p_advertiser_create => sub {
 
     BOM::Platform::Event::Emitter::emit(p2p_advertiser_created => $advertiser);
 
-    return {status => 'pending'};
+    return $advertiser;
 };
 
 =head2 p2p_advertiser_update
