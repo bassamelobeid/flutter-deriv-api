@@ -42,8 +42,10 @@ $mock_btc->mock(
 my $mock_subscription = Test::MockModule->new('BOM::Event::Actions::CryptoSubscription');
 my $mock_platform     = Test::MockModule->new('BOM::Platform::Event::Emitter');
 
-subtest "change_address_status" => sub {
+my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
+my $dbic = $clientdb->db->dbic;
 
+subtest "change_address_status" => sub {
     my $transaction_hash1 = "427d42cfa0717e8d4ce8b453de74cc84f3156861df07173876f6cfebdcbc099a";
     my $transaction_hash2 = "adf0e2b9604813163ba6eb769a22174c68ace6349ddd1a79d4b10129f8d35924";
     my $transaction_hash3 = "55adac01630d9f836b4075128190887c54ba56c5e0d991e90ecb7ebd487a0526";
@@ -105,9 +107,6 @@ subtest "change_address_status" => sub {
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, undef, "Can't set pending a transaction already pending";
-
-    my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-    my $dbic = $clientdb->db->dbic;
 
     my $start = Time::HiRes::time;
     my $rows  = $dbic->run(
@@ -190,7 +189,8 @@ subtest "change_address_status" => sub {
             amount   => Math::BigFloat->new(0.00270685)->bstr(),
             address  => '3KHFGHbBX71PE7V1dawAMPRtHD3U3Bqk7e',
             hash     => '63aa8c1ab1b8cd761527b074a8efa3296e913780a4f712b865c03047931c1cf3',
-        }];
+        },
+    ];
 
     for my $tx ($transactions->@*) {
         my $client = create_client();
@@ -205,6 +205,52 @@ subtest "change_address_status" => sub {
         is $response, 1, "response ok from the database";
     }
 
+};
+
+subtest "internal_transactions" => sub {
+    my $client = create_client();
+    $client->set_default_account('BTC');
+    my $helper = BOM::CTC::Helper->new(client => $client);
+
+    $mock_btc->mock(
+        get_new_address => sub {
+            return '3QLeXx1J9Tp3TBnQyHrhVxne9KqkAS9JSR',;
+        });
+
+    my $transaction = {
+        currency => 'BTC',
+        hash     => "ce67323aa74ec562233feb378a895c5abfe97bc0bb8b31b2f72a00ca226f8fa0",
+        type     => 'receipt',
+        amount   => 0,
+        block    => 100,
+    };
+
+    my $btc_address;
+    lives_ok {
+        $btc_address = $helper->get_deposit_address;
+    }
+    'survived get_deposit_address';
+
+    $transaction->{to} = [$btc_address];
+
+    my $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response, undef, "transaction with balance 0 but type eq receipt";
+
+    $transaction->{type} = 'internal';
+
+    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response, 1, "transaction with balance 0 but type eq internal";
+
+    my $rows = $dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare(q{SELECT * FROM payment.ctc_find_deposit_pending_by_currency(?)});
+            $sth->execute('BTC');
+            return $sth->fetchall_arrayref({});
+        });
+
+    my @address_entries = grep { $_->{address} eq $btc_address } $rows->@*;
+
+    is @address_entries, 1, "correct number of pending transactions for $btc_address";
 };
 
 done_testing;
