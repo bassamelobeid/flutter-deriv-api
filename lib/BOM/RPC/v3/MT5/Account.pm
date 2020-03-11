@@ -20,6 +20,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use Digest::SHA qw(sha384_hex);
 use LandingCompany::Registry;
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
+use Log::Any qw($log);
 
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::MT5::Errors;
@@ -387,10 +388,11 @@ async_rpc "mt5_new_account",
                     $args->{currency} = $group_details->{currency};
 
                     # else get one associated with affiliate token
+                    #only affiliate who is also an introducing Broker has mt5_account in myaffiliates
                     if ($client->myaffiliates_token and $account_type ne 'demo') {
                         my $agent_login = _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
                         $args->{agent} = $agent_login if $agent_login;
-                        warn "Failed to link " . $client->loginid . " MT5 account with myaffiliates token " . $client->myaffiliates_token
+                        $log->infof("Unable to link %s MT5 account with myaffiliates token %s", $client->loginid, $client->myaffiliates_token)
                             unless $agent_login;
                     }
 

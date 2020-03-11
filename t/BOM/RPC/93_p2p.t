@@ -162,7 +162,7 @@ subtest 'Adverts' => sub {
         ->has_no_system_error->has_error->error_code_is('AdvertiserNotRegistered', 'Update non-existent advertiser');
 
     my $res = $c->call_ok('p2p_advertiser_create', $params)->has_no_system_error->has_no_error->result;
-    is $res->{status}, 'pending', 'result has p2p advertiser status = pending';
+    is $res->{name}, $params->{args}{name}, 'advertiser created';
 
     $params->{args} = {name => 'SpyvsSpy'};
     $c->call_ok('p2p_advertiser_update', $params)
