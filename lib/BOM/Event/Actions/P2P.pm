@@ -37,9 +37,8 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 #TODO: Put here id for special bom-event application
 # May be better to move it to config rather than keep it here.
 use constant {
-    DEFAULT_SOURCE            => 5,
-    DEFAULT_STAFF             => 'AUTOEXPIRY',
-    ADVERTISER_PROFILE_FIELDS => [qw(advertiser_loginid name)],
+    DEFAULT_SOURCE => 5,
+    DEFAULT_STAFF  => 'AUTOEXPIRY',
 };
 
 =head2 advertiser_created
@@ -55,10 +54,10 @@ Currently there's a placeholder email.
 sub advertiser_created {
     my $data = shift;
 
-    my $advertiser = $data->{advertiser};
+    my @args = qw(client_loginid name contact_info default_advert_description payment_info);
 
-    if (!$advertiser) {
-        $log->info('Fail to process advertiser_created, advertiser data was missing', $data);
+    if (grep { !defined $data->{$_} } @args) {
+        $log->info('Fail to procces advertiser_created: Invalid event data', $data);
         return 0;
     }
 
@@ -67,15 +66,11 @@ sub advertiser_created {
     return 1 unless $email_to;
 
     send_email({
-            from    => '<no-reply@binary.com>',
-            to      => $email_to,
-            subject => 'New P2P advertiser registered',
-            message => [
-                'New P2P advertiser registered.',
-                'Advertiser information:',
-                map { "$_ : " . ($advertiser->{$_} // '') } @{ADVERTISER_PROFILE_FIELDS()},
-            ],
-        });
+        from    => '<no-reply@binary.com>',
+        to      => $email_to,
+        subject => 'New P2P advertiser registered',
+        message => ['New P2P advertiser registered.', 'Advertiser information:', map { $_ . ': ' . ($data->{$_} || '<none>') } @args,],
+    });
 
     return 1;
 }
