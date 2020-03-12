@@ -52,7 +52,7 @@ __PACKAGE__->meta->setup(
         account_opening_reason                   => { type => 'varchar', length => 100 },
         mifir_id                                 => { type => 'varchar', length => 35 },
         binary_user_id                           => { type => 'bigint' },
-        non_pep_declaration_time                 => { type => 'timestamp'},
+        non_pep_declaration_time                 => { type => 'timestamp' },
     ],
 
     primary_key_columns => [ 'loginid' ],
