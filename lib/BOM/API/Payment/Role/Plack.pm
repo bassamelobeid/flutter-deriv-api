@@ -58,7 +58,7 @@ sub throw {
         return {status_code => $status};
     };
     chomp($message);
-    $log->error(sprintf '%s: %s', $c->user || '(no-user)', $message);
+    $log->error(sprintf '%s: %s', ($c->user && $c->user->loginid) || '(no-user)', $message);
     return {
         status_code => $status,
         error       => $message
@@ -69,7 +69,7 @@ sub status_bad_request {
     my ($c, $message) = @_;
     my $log = $c->env->{log};
     chomp($message);
-    $log->warn(sprintf '%s: %s', $c->user || '(no-user)', $message);
+    $log->warn(sprintf '%s: %s', ($c->user && $c->user->loginid) || '(no-user)', $message);
     return {
         status_code => 400,
         error       => $message
