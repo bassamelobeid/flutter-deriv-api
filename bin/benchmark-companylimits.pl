@@ -107,8 +107,8 @@ sub parent {
     @tm = sort {$a<=>$b} @tm;
 
     my $avg = 0;
-    map {$avg+=$_} @tm;
-    $avg/=@tm;
+    $avg += $_ for @tm;
+    $avg /= @tm;
 
     printf "number of requests: %d, parallelism: %d\n", 0+@tm, $nproc;
     printf "min: %.3f ms, avg: %.3f ms, max: %.3f ms\n", $tm[0], $avg, $tm[-1];
