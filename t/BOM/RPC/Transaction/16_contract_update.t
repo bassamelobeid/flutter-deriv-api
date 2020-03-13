@@ -83,7 +83,7 @@ subtest 'contract_update' => sub {
     };
 
     $c->call_ok('contract_update', $update_params)->has_error->error_code_is('ContractNotFound')
-        ->error_message_is('No open contract found for contract id: 123.');
+        ->error_message_is('This contract was not found among your open positions.');
 
     my $buy_params = {
         client_ip           => '127.0.0.1',
@@ -104,22 +104,22 @@ subtest 'contract_update' => sub {
     ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
 
     $update_params->{args}->{contract_id} = $buy_res->{contract_id};
-    $update_params->{args}->{limit_order} = ();
+    $update_params->{args}->{limit_order} = (1);
     my $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidUpdateArgument')
-        ->error_message_is('Update only accepts hash reference as input parameter.');
+        ->error_message_is('Only a hash reference input is accepted.');
 
     $update_params->{args}->{limit_order} = {take_profit => 'notanumberornull'};
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidUpdateValue')
-        ->error_message_is('Update value accepts number or null');
+        ->error_message_is('Please enter a number or a null value.');
 
     $update_params->{args}->{limit_order} = {
         something => 1,
     };
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('UpdateNotAllowed')
-        ->error_message_is('Update is not allowed for this contract. Allowed updates take_profit,stop_loss');
-    $update_params->{args}->{limit_order} = {take_profit => -1};
+        ->error_message_is('Only updates to these parameters are allowed take_profit,stop_loss.');
+    $update_params->{args}->{limit_order} = {take_profit => -0.4};
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidContractUpdate')
-        ->error_message_is('Invalid take profit. Take profit must be higher than -0.50.');
+        ->error_message_is('Please enter a take profit amount that\'s higher than 0.1.');
     $update_params->{args}->{limit_order} = {take_profit => 10};
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
     ok $res->{take_profit}, 'returns the new take profit value';
@@ -127,7 +127,7 @@ subtest 'contract_update' => sub {
     ok !%{$res->{stop_loss}}, 'stop loss is undef';
 
     delete $update_params->{args}->{limit_order}->{take_profit};
-    $update_params->{args}->{limit_order}->{stop_loss} = -80;
+    $update_params->{args}->{limit_order}->{stop_loss} = 80;
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
     ok $res->{take_profit}, 'returns the new take profit value';
     is $res->{take_profit}->{order_amount}, 10, 'correct take profit order_amount';
