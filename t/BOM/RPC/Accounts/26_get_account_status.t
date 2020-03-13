@@ -339,8 +339,8 @@ subtest 'get account status' => sub {
         };
 
         subtest 'costarica account' => sub {
-             my $result = $c->tcall($method, {token => $token_cr});
-             cmp_deeply(
+            my $result = $c->tcall($method, {token => $token_cr});
+            cmp_deeply(
                 $result,
                 {
                     status                        => [qw(financial_information_not_complete trading_experience_not_complete)],
@@ -361,7 +361,7 @@ subtest 'get account status' => sub {
                 },
                 'Intial CR status is correct'
             );
-        
+
             $test_client_cr->status->set('withdrawal_locked', 'system', 'For test purposes');
             $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(
@@ -385,8 +385,8 @@ subtest 'get account status' => sub {
                 },
                 'allow_document_upload is automatically added along with withdrawal_locked'
             );
-             $test_client_cr->status->clear_withdrawal_locked;
-        
+            $test_client_cr->status->clear_withdrawal_locked;
+
             $test_client_cr->set_authentication('ID_DOCUMENT')->status('needs_action');
             $test_client_cr->save;
             $result = $c->tcall($method, {token => $token_cr});
@@ -1074,7 +1074,7 @@ subtest 'get account status' => sub {
             );
         };
     };
-    
+
 };
 
 done_testing();
