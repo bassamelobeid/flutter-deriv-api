@@ -1100,8 +1100,7 @@ my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
 
 my $copiers = $copiers_data_mapper->get_copiers_tokens_all({trader_id => $loginid});
 my $traders = $copiers_data_mapper->get_traders_tokens_all({copier_id => $loginid});
-map { $_->[3] = obfuscate_token($_->[2]) } @$copiers;
-map { $_->[3] = obfuscate_token($_->[2]) } @$traders;
+$_->[3] = obfuscate_token($_->[2]) for @$copiers, @$traders;
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/copy_trader_tokens.html.tt',
