@@ -33,6 +33,8 @@ sub multiplier;
 override '_build_ask_price' => sub {
     my $self = shift;
 
+    return $self->_user_input_stake if defined $self->_user_input_stake;
+
     # for lookbacks, we are setting a minimum_ask_price_per_unit and a minimum_commission_per_unit.
     # hence, the ask price is a simple price per unit multiplied by number of units.
     my $ask_price = financialrounding('price', $self->currency, $self->_ask_price_per_unit) * $self->multiplier;

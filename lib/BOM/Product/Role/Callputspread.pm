@@ -41,6 +41,8 @@ sub _build_minimum_commission_per_contract {
 override '_build_ask_price' => sub {
     my $self = shift;
 
+    return $self->_user_input_stake if defined $self->_user_input_stake;
+
     my $ask_price          = $self->_ask_price_per_unit * $self->multiplier;
     my $commission_charged = $self->commission_per_unit * $self->multiplier;
 

@@ -389,7 +389,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     $bet_params->{amount}      = 0;
     my $error = exception { produce_contract($bet_params) };
     isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'Invalid stake/payout.';
+    is $error->message_to_client->[0], 'Please enter a stake amount that\'s at least [_1].';
 };
 
 subtest 'invalid barriers knocked down for great justice' => sub {
@@ -1171,7 +1171,7 @@ subtest 'zero payout' => sub {
             })
     };
     isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'Invalid stake/payout.';
+    is $error->message_to_client->[0], 'Please enter a payout amount that\'s at least [_1].';
 };
 
 my $now       = Date::Utility->new;

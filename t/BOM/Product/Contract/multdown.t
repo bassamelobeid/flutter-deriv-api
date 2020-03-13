@@ -10,8 +10,14 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
+use Test::MockModule;
 
 use Test::Fatal;
+
+my $mocked = Test::MockModule->new('BOM::Product::Contract::Multdown');
+# setting commission to zero for easy calculation
+$mocked->mock('commission',        sub { return 0 });
+$mocked->mock('commission_amount', sub { return 0 });
 
 my $now = Date::Utility->new;
 
@@ -33,7 +39,6 @@ subtest 'pricing new - general' => sub {
         amount       => 100,
         multiplier   => 10,
         currency     => 'USD',
-        commission   => 0,            # setting commission to zero for easy calculation
     };
     my $c = produce_contract($args);
     is $c->code,            'MULTDOWN', 'code is MULTDOWN';
@@ -66,12 +71,11 @@ subtest 'pricing new - general' => sub {
         'take_profit' => 0,
     };
     $c = produce_contract($args);
-    my $take_profit = $c->take_profit;
-    is $take_profit->initialization_error->{message}, 'order amount is zero for take_profit', 'order amount is zero for take_profit';
-    is $take_profit->validation_error, undef, 'validation error is undef';
-    $take_profit->is_valid;
-    is $take_profit->validation_error->{message}, 'order amount is zero for take_profit', 'order amount is zero for take_profit';
-
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'take profit too low', 'message - take profit too low';
+    is $c->primary_validation_error->message_to_client->[0], 'Please enter a take profit amount that\'s higher than [_1].',
+        'message - Please enter a take profit amount that\'s higher than [_1].';
+    is $c->primary_validation_error->message_to_client->[1], '0.10';
 };
 
 subtest 'non-pricing new' => sub {
@@ -85,7 +89,6 @@ subtest 'non-pricing new' => sub {
         amount       => 100,
         multiplier   => 10,
         currency     => 'USD',
-        commission   => 0,                 # setting commission to zero for easy calculation
     };
     my $c = produce_contract($args);
     ok !$c->pricing_new, 'non pricing_new';
@@ -122,10 +125,60 @@ subtest 'shortcode' => sub {
         amount       => 100,
         multiplier   => 10,
         currency     => 'USD',
-        commission   => 0,            # setting commission to zero for easy calculation
     };
     my $c = produce_contract($args);
-    is $c->shortcode, 'MULTDOWN_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch, 'shortcode populated correctly';
+    is $c->shortcode, 'MULTDOWN_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_0_0', 'shortcode populated correctly';
+};
+
+subtest 'deal cancellation' => sub {
+    my $args = {
+        date_start   => $now,
+        date_pricing => $now,
+        bet_type     => 'MULTDOWN',
+        underlying   => 'R_100',
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+        cancellation => '1h',
+    };
+
+    my $c = produce_contract($args);
+    is $c->cost_of_cancellation, 4.48, 'cost of cancellation is 4.48';
+    is $c->cancellation_expiry->epoch, $now->plus_time_interval('1h')->epoch, 'cancellation expiry is correct';
+    is $c->ask_price, 104.48, 'ask price is 104.48';
+
+    delete $args->{cancellation};
+    $c = produce_contract($args);
+    is $c->cost_of_cancellation, 0, 'zero cost of cancellation';
+    ok !$c->cancellation_expiry, 'cancellation expiry is undef';
+    is $c->ask_price, 100, 'ask price is 100 as per user input';
+    ok !$c->is_cancelled,       'not cancelled';
+    ok !$c->is_valid_to_cancel, 'invalid to cancel';
+    is $c->primary_validation_error->message, 'Deal cancellation not purchased', 'error - Deal cancellation not purchased';
+    is $c->primary_validation_error->message_to_client->[0],
+        'This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.',
+        'message_to_client - This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.';
+
+    $args->{cancellation} = '1h';
+    $args->{date_pricing} = $now->plus_time_interval('1h');
+    $args->{limit_order}  = {
+        stop_out => {
+            order_type   => 'stop_out',
+            order_amount => -100,
+            order_date   => $now->epoch,
+            basis_spot   => '100.00',
+        }};
+    $c = produce_contract($args);
+    ok $c->is_valid_to_cancel, 'is valid to cancel';
+
+    $args->{date_pricing} = $now->plus_time_interval('1h1s');
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_cancel, 'invalid to cancel';
+    is $c->primary_validation_error->message, 'Deal cancellation expired', 'error - Deal cancellation expired';
+    is $c->primary_validation_error->message_to_client->[0],
+        'Deal cancellation period has expired. Your contract can only be cancelled while deal cancellation is active.',
+        'message_to_client - Deal cancellation period has expired. Your contract can only be cancelled while deal cancellation is active.';
 };
 
 subtest 'minmum stake' => sub {
@@ -136,13 +189,10 @@ subtest 'minmum stake' => sub {
         amount      => 0.9,
         multiplier  => 10,
         currency    => 'USD',
-        commission  => 0,            # setting commission to zero for easy calculation
     };
-    my $c = produce_contract($args);
-    ok !$c->is_valid_to_buy, 'invalid to buy';
-    is $c->primary_validation_error->message, 'multiplier stake lower than minimum', 'message - multiplier stake lower than minimum';
-    is $c->primary_validation_error->message_to_client->[0], 'Stake must be at least [_1] 1.', 'message to client - Stake must be at least [_1] 1.';
-    is $c->primary_validation_error->message_to_client->[1], 'USD';
+    my $error = exception { produce_contract($args) };
+    is $error->message_to_client->[0], 'Please enter a stake amount that\'s at least [_1].', 'message to client - Stake must be at least [_1] 1.';
+    is $error->message_to_client->[1], '1.00';
 };
 
 subtest 'take profit cap' => sub {
@@ -153,15 +203,14 @@ subtest 'take profit cap' => sub {
         amount      => 10,
         multiplier  => 10,
         currency    => 'USD',
-        commission  => 0,            # setting commission to zero for easy calculation
         limit_order => {
             take_profit => 10000 + 0.01,
         },
     };
     my $c = produce_contract($args);
-    ok !$c->is_valid_to_buy, 'invalid to buy';
-    is $c->primary_validation_error->message, 'take profit too high', 'message - take profit too high';
-    is $c->primary_validation_error->message_to_client, 'Invalid take profit. Take profit cannot be more than 100 times of stake.';
+    my $error = exception {$c->is_valid_to_buy};
+    is $error->message_to_client->[0], 'Please enter a take profit amount that\'s lower than [_1].';
+    is $error->message_to_client->[1], '90.00', 'max at 90.00';
 };
 
 done_testing();

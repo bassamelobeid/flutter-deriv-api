@@ -27,6 +27,7 @@ BOM::Product::Categorizer - A module that initializes and validates contract inp
 use Date::Utility;
 use Quant::Framework;
 use Finance::Contract::Category;
+use Format::Util::Numbers qw(financialrounding);
 use Carp qw(croak);
 use List::Util qw(any);
 use Scalar::Util qw(looks_like_number blessed);
@@ -388,9 +389,9 @@ sub _initialize_other_parameters {
         $params->{amount_type} = 'payout';
     }
 
-    # ask_price could come from $contract->build_parameters if make_similar_contract is used
-    if (defined $params->{ask_price} and not(defined $params->{amount} and defined $params->{amount_type})) {
-        $params->{amount}      = delete $params->{ask_price};
+    # _user_input_stake could come from $contract->build_parameters if make_similar_contract is used
+    if (defined $params->{_user_input_stake} and not(defined $params->{amount} and defined $params->{amount_type})) {
+        $params->{amount}      = delete $params->{_user_input_stake};
         $params->{amount_type} = 'stake';
     }
 
@@ -402,8 +403,9 @@ sub _initialize_other_parameters {
         ) if (not(exists $params->{amount_type} and exists $params->{amount}));
 
         BOM::Product::Exception->throw(
-            error_code => 'InvalidStake',
-            details    => {field => 'amount'}) if exists $params->{amount} and $params->{amount} <= 0;
+            error_code => $params->{amount_type} eq 'stake' ? 'InvalidMinStake' : 'InvalidMinPayout',
+            error_args => [financialrounding('price', $params->{currency}, $params->{category}->minimum_stake)],
+            details => {field => 'amount'}) if exists $params->{amount} and $params->{amount} < $params->{category}->minimum_stake;
 
         my @allowed = @{$params->{category}->supported_amount_type};
         if (not any { $params->{amount_type} eq $_ } @allowed) {
@@ -454,7 +456,7 @@ sub _initialize_other_parameters {
 
     # only do this conversion here.
     if ($params->{amount_type}) {
-        $params->{amount_type} = 'ask_price' if $params->{amount_type} eq 'stake';
+        $params->{amount_type} = '_user_input_stake' if $params->{amount_type} eq 'stake';
         $params->{$params->{amount_type}} = $params->{amount};
     }
     delete $params->{$_} for qw(amount amount_type);

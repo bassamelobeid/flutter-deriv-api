@@ -122,6 +122,9 @@ has ask_price => (
     lazy_build => 1,
 );
 
+# when user specify stake=??, it gets set to this attribute
+has _user_input_stake => (is => 'ro');
+
 sub _build_ask_price {
     die '_build_ask_price should be over-written';
 }
@@ -825,7 +828,7 @@ sub _build_price_calculator {
         ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
         ($self->has_commission_from_stake)  ? (commission_from_stake  => $self->commission_from_stake)  : (),
         ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
-        ($self->has_ask_price)              ? (ask_price              => $self->ask_price)              : (),
+        (defined $self->_user_input_stake)  ? (ask_price              => $self->ask_price)              : (),
         ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
         ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
         ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),

@@ -119,6 +119,7 @@ override _build_bid_price => sub {
 override _build_ask_price => sub {
     my $self = shift;
 
+    return $self->_user_input_stake if defined $self->_user_input_stake;
     # Ensure theo_probability exists before computing ask_probability/ask_price
     $self->theo_probability;
 

@@ -78,19 +78,20 @@ subtest 'zero amount' => sub {
 
     my $error = exception { produce_contract({%$args, payout => 0}) };
     isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero payout not valid';
+    is $error->message_to_client->[0], 'Please enter a payout amount that\'s at least [_1].', 'zero payout not valid';
+    is $error->message_to_client->[1], '0.01';
 
     $error = exception { produce_contract({%$args, stake => 0}) };
     isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero stake not valid';
+    is $error->message_to_client->[0], 'Please enter a stake amount that\'s at least [_1].', 'zero payout not valid';
 
     $error = exception { produce_contract({%$args, amount_type => 'payout', amount => 0}) };
     isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero stake not valid';
+    is $error->message_to_client->[0], 'Please enter a payout amount that\'s at least [_1].', 'zero payout not valid';
 
     $error = exception { produce_contract({%$args, amount_type => 'stake', amount => 0}) };
     isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero stake not valid';
+    is $error->message_to_client->[0], 'Please enter a stake amount that\'s at least [_1].', 'zero payout not valid';
 
     delete $args->{barrier};
     $args->{bet_type}   = 'LBFLOATCALL';

@@ -6,11 +6,18 @@ use List::Util qw(max first);
 use Date::Utility;
 use BOM::Product::Exception;
 use BOM::Product::LimitOrder;
-use Format::Util::Numbers qw(formatnumber);
+use Format::Util::Numbers qw(financialrounding);
 use BOM::Config::Runtime;
 use YAML::XS qw(LoadFile);
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
+use Machine::Epsilon;
+use Scalar::Util qw(looks_like_number);
+
+use constant {
+    MIN_COMMISSION_AMOUNT     => 0.02,
+    BARRIER_ADJUSTMENT_FACTOR => 0.5826,
+};
 
 my $ERROR_MAPPING   = BOM::Product::Static::get_error_mapping();
 my $GENERIC_MAPPING = BOM::Product::Static::get_generic_mapping();
@@ -28,15 +35,62 @@ sub BUILD {
         );
     }
 
-    # minimum stake
-    if ($self->ask_price < 1) {
+    # We want to charge a minimum commission for each contract.
+    # Since, commission is a function of barrier calculation, we will need to fix it at BUILD
+    my $commission = $self->_multiplier_config->{commission};
+
+    unless (defined $commission) {
         $self->_add_error({
-            message           => 'multiplier stake lower than minimum',
-            message_to_client => [$ERROR_MAPPING->{InvalidMultiplierStake}, $self->currency],
+            message           => 'multiplier commission not defined for ' . $self->underlying->symbol,
+            message_to_client => $ERROR_MAPPING->{InvalidInputAsset},
         });
+        $commission = 0;
     }
 
+    my $commission_amount = $commission * $self->_user_input_stake * $self->multiplier;
+
+    if ($commission_amount < MIN_COMMISSION_AMOUNT) {
+        $commission = MIN_COMMISSION_AMOUNT / ($self->_user_input_stake * $self->multiplier);
+        $commission_amount = MIN_COMMISSION_AMOUNT;
+    }
+
+    $self->commission($commission);
+    $self->commission_amount(financialrounding('price', $self->currency, $commission_amount));
+
     return;
+}
+
+=head2 commission_amount
+
+Commission charged in payout currency amount. A minimum of 0.02 is imposed per contract.
+
+=head2 commission
+
+Commission in decimal amount. E.g. 0.01 = 1%
+
+=cut
+
+has [qw(commission_amount commission)] => (
+    is => 'rw',
+);
+
+=head2 cancel_price
+
+The amount user gets back if deal cancellation was executed.
+
+=cut
+
+has cancel_price => (
+    is         => 'ro',
+    init_arg   => undef,
+    lazy_build => 1,
+);
+
+sub _build_cancel_price {
+    my $self = shift;
+
+    return 0 unless $self->cancellation;
+    return $self->_user_input_stake;
 }
 
 =head2 multiplier
@@ -111,6 +165,9 @@ sub new_order {
 
     my ($order_type, $order_amount) = %$params;
 
+    # internally converts the order amount to negative value
+    $order_amount *= -1 if (($order_type eq 'stop_loss' or $order_type eq 'stop_out') and defined $order_amount);
+
     return BOM::Product::LimitOrder->new(
         order_type   => $order_type,
         order_amount => $order_amount,
@@ -154,7 +211,7 @@ sub _build_stop_out {
     if ($self->pricing_new) {
         # TODO: This should be changeable from backoffice
         my $stop_out_percentage = 0;
-        my $order_amount        = (1 - $stop_out_percentage / 100) * $self->ask_price * -1;
+        my $order_amount        = (1 - $stop_out_percentage / 100) * $self->_user_input_stake;
 
         return $self->new_order({stop_out => $order_amount});
     }
@@ -181,27 +238,6 @@ has sell_time => (
     default => undef,
 );
 
-has commission => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_commission',
-);
-
-sub _build_commission {
-    my $self = shift;
-
-    if (my $commission = $self->_multiplier_config->{commission}) {
-        return $commission;
-    }
-
-    $self->_add_error({
-        message           => 'multiplier commission not defined for ' . $self->underlying->symbol,
-        message_to_client => $ERROR_MAPPING->{InvalidInputAsset},
-    });
-
-    return 0;
-}
-
 =head2 is_expired
 
 Is this contract expired?
@@ -224,12 +260,27 @@ sub is_expired {
         return 0;
     }
 
-    # we don't expect a contract to reach date_expiry, but we it does, we will need to close
-    # it at current bid price.
-    if ($self->hit_tick or $self->date_pricing->is_after($self->date_expiry)) {
-        # we it reaches expiry without $self->hit_tick, we sell it at $self->current_tick
-        my $value = $self->ask_price + max($self->_calculate_pnl_at_tick({at_tick => $self->hit_tick // $self->current_tick}), -$self->ask_price);
-        $self->value(formatnumber('price', $self->currency, $value));
+    # contract expires if it hits either of these barriers:
+    # - stop out
+    # - stop loss (if defined)
+    # - take profit (if defined)
+    if ($self->hit_tick) {
+        # if contract hit stop out before the end of deal cancellation period, the initial stake is returned
+        if ($self->is_cancelled) {
+            $self->value(financialrounding('price', $self->currency, $self->_user_input_stake));
+            return 1;
+        } else {
+            my $value =
+                $self->_user_input_stake + max($self->_calculate_pnl_at_tick({at_tick => $self->hit_tick}), -$self->_user_input_stake);
+            $self->value(financialrounding('price', $self->currency, $value));
+            return 1;
+        }
+    } elsif ($self->date_pricing->is_after($self->date_expiry)) {
+        # we don't expect a contract to reach date_expiry, but we it does, we will need to close
+        # it at current tick.
+        my $value =
+            $self->_user_input_stake + max($self->_calculate_pnl_at_tick({at_tick => $self->current_tick}), -$self->_user_input_stake);
+        $self->value(financialrounding('price', $self->currency, $value));
         return 1;
     }
 
@@ -248,6 +299,8 @@ has hit_tick => (
 sub _build_hit_tick {
     my $self = shift;
 
+    # hit tick is not relevant when the contract hasn't started
+    return undef if $self->pricing_new;
     # we can't really combined the search for stop out and take profit because
     # we can potentially look at different periods once we allow changing of take profit
     # when contract is opened.
@@ -303,13 +356,12 @@ sub _calculate_pnl_at_tick {
 
     # if there's a hit_tick, pnl is calculated with that tick
     my $nth_tick = $args->{at_tick} or die 'calculating pnl without a reference tick';
+    my $commission = $self->commission // 0;
 
     my $main_pnl =
-        $self->ask_price *
-        ($self->_pnl_sign * ($nth_tick->quote - $self->stop_out->basis_spot) / $self->stop_out->basis_spot - $self->commission) *
-        $self->multiplier;
+        $self->_user_input_stake * ($self->_pnl_sign * ($nth_tick->quote - $self->basis_spot) / $self->basis_spot - $commission) * $self->multiplier;
 
-    return formatnumber('price', $self->currency, $main_pnl);
+    return financialrounding('price', $self->currency, $main_pnl);
 }
 
 =head2 current_pnl
@@ -337,7 +389,13 @@ override '_build_bid_price' => sub {
     my $self = shift;
 
     return $self->value if $self->is_expired;
-    return $self->ask_price + $self->current_pnl();
+    return $self->_user_input_stake + $self->current_pnl();
+};
+
+override '_build_ask_price' => sub {
+    my $self = shift;
+
+    return $self->_user_input_stake + $self->cost_of_cancellation;
 };
 
 =head2 pricing engine
@@ -357,26 +415,36 @@ override '_build_pricing_engine_name' => sub {
 
 # basis spot is stored in the database to 100% ensure that
 # limit order calculations are always correct.
-# TODO: use $self->underlying->tick_at($self->date_start->epoch) when feed project is over.
-override 'entry_spot' => sub {
+override '_build_entry_tick' => sub {
     my $self = shift;
 
     return undef if $self->pricing_new;
-    return $self->basis_spot;
-};
 
-override 'entry_spot_epoch' => sub {
-    my $self = shift;
+    my $tick = $self->underlying->tick_at($self->date_start->epoch);
+    # less wait for consistent entry tick here.
+    return undef unless $tick;
+    # due to potential inconsistent tick during pricing time (could be due to distribution delay or tick receives later in the second),
+    # we need to check it the tick that is used when the contract is bought
+    if (abs($self->basis_spot - $tick->quote) < machine_epsilon()) {
+        return $tick;
+    }
 
-    return undef unless $self->entry_spot;
-    return $self->date_start->epoch;
+    # if it is not the tick at $self->date_start->epoch, it has to be tick 1 second before that
+    return $self->underlying->tick_at($self->date_start->epoch - 1);
 };
 
 override 'shortcode' => sub {
     my $self = shift;
 
     return join '_',
-        (uc $self->code, uc $self->underlying->symbol, $self->ask_price, $self->multiplier, $self->date_start->epoch, $self->date_expiry->epoch);
+        (
+        uc $self->code,
+        uc $self->underlying->symbol,
+        $self->_user_input_stake, $self->multiplier,
+        $self->date_start->epoch,
+        $self->date_expiry->epoch,
+        $self->cancellation, $self->cancellation_tp,
+        );
 };
 
 sub is_valid_to_sell {
@@ -392,11 +460,43 @@ sub is_valid_to_sell {
 
     return 1 if $self->is_expired;
 
-    foreach my $method (qw(_validate_trading_times _validate_feed)) {
+    foreach my $method (qw(_validate_trading_times _validate_feed _validate_sell_pnl)) {
         if (my $error = $self->$method($args)) {
             $self->_add_error($error);
             return 0;
         }
+    }
+
+    return 1;
+}
+
+sub is_valid_to_cancel {
+    my $self = shift;
+
+    if ($self->is_sold) {
+        $self->_add_error({
+            message           => 'Contract is sold',
+            message_to_client => [$ERROR_MAPPING->{ContractAlreadySold}],
+        });
+        return 0;
+    }
+
+    # if deal cancellation is not purchased, then no.
+    unless ($self->cancellation) {
+        $self->_add_error({
+            message           => 'Deal cancellation not purchased',
+            message_to_client => [$ERROR_MAPPING->{DealCancellationNotBought}],
+        });
+        return 0;
+    }
+
+    # cancellation period is inclusive of the cancellation expiry time.
+    if ($self->date_pricing->is_after($self->cancellation_expiry)) {
+        $self->_add_error({
+            message           => 'Deal cancellation expired',
+            message_to_client => [$ERROR_MAPPING->{DealCancellationExpired}],
+        });
+        return 0;
     }
 
     return 1;
@@ -475,7 +575,7 @@ sub _extract_details {
     # this details needs to in the following order (sort qw(order_type order_amount basis_spot order_date)). Do not change the order!
     return [
         'basis_spot', $order_object->basis_spot + 0, 'order_amount',
-        formatnumber('price', $self->currency, $order_amount), 'order_date', int($order_object->order_date->epoch),
+        financialrounding('price', $self->currency, $order_amount), 'order_date', int($order_object->order_date->epoch),
         'order_type', $order_object->order_type
     ];
 }
@@ -495,6 +595,101 @@ sub take_profit_side {
     return $self->sentiment eq 'up' ? 'higher' : 'lower';
 }
 
+sub commission_amount {
+    my $self = shift;
+
+    my $commission = $self->commission // 0;
+    my $commission_amount = $commission * $self->_user_input_stake * $self->multiplier;
+
+    if ($commission_amount < MIN_COMMISSION_AMOUNT) {
+
+    }
+}
+
+=head2 cancellation
+
+deal cancellation duration
+
+=head2 cancellaton_tp
+
+deal cancellation price is a function of take profit, hence we need to record it.
+
+=cut
+
+has cancellation => (
+    is      => 'ro',
+    default => 0,
+);
+
+has cancellation_tp => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_cancellation_tp {
+    my $self = shift;
+
+    return 0 unless $self->take_profit;
+    return $self->take_profit->order_amount;
+}
+
+has cancellation_expiry => (
+    is         => 'ro',
+    init_arg   => undef,
+    lazy_build => 1,
+);
+
+sub _build_cancellation_expiry {
+    my $self = shift;
+
+    my $cancellation_duration = $self->cancellation;
+    return undef unless $cancellation_duration;
+
+    return $self->date_start->plus_time_interval($cancellation_duration);
+}
+
+sub close_tick {
+    my $self = shift;
+
+    return $self->hit_tick if $self->hit_tick;
+
+    return undef unless $self->is_sold;
+    # if it is not hit tick then we need to check for the tick used at sell time.
+    my $sell_epoch = Date::Utility->new($self->sell_time)->epoch;
+
+    # this is sell at market, it could be that the contract is sold at previous tick
+    foreach my $args ([$sell_epoch, {allow_inconsistent => 1}], [$sell_epoch - 1]) {
+        my $tick;
+        if ($tick = $self->underlying->tick_at(@$args)
+            and abs($self->sell_price - ($self->_user_input_stake + $self->_calculate_pnl_at_tick({at_tick => $tick}))) < machine_epsilon)
+        {
+            return $tick;
+        }
+    }
+
+    return undef;
+}
+
+=head2 cost_of_cancellation
+
+We allow client to purchase deal cancellation on top of their main contract
+at a premium.
+
+=cut
+
+sub cost_of_cancellation {
+    my $self = shift;
+
+    # if there's no cancellation request, do not charge
+    return 0 unless $self->cancellation;
+
+    my $dc_model_price = $self->cancellation_tp ? $self->_american_binary_knockout + $self->_double_knockout : $self->_standard_barrier_option;
+    my $cost           = $self->_user_input_stake * $self->multiplier * $dc_model_price;
+    my $dc_ask         = $cost * (1 + $self->_multiplier_config->{cancellation_commission});
+
+    return financialrounding('price', $self->currency, $dc_ask);
+}
+
 ### PRIVATE METHODS ###
 
 sub _validation_methods {
@@ -503,16 +698,72 @@ sub _validation_methods {
     # - start time (if start time is in the past or in the future)
     # - trading times (if market is open)
     # - feed (if feed is too old)
-    return [qw(_validate_offerings _validate_input_parameters _validate_trading_times _validate_feed _validate_multiplier_range _validate_orders)];
+    return [
+        qw(_validate_offerings _validate_input_parameters _validate_trading_times _validate_feed _validate_commission _validate_multiplier_range _validate_orders _validate_cancellation)
+    ];
+}
+
+sub _validate_cancellation {
+    my $self = shift;
+
+    return if looks_like_number($self->cancellation) and $self->cancellation == 0;
+
+    # currently only allow '1h' as deal cancellation duration. Will expand this to /\d+(?:h|m)/
+    if ($self->cancellation ne '1h') {
+        return {
+            message           => 'invalid deal cancellation duration',
+            message_to_client => $ERROR_MAPPING->{InvalidDealCancellation},
+            details           => {field => 'cancellation'},
+        };
+    }
+
+    unless ($self->cancellation_expiry->is_after($self->date_start)) {
+        return {
+            message           => 'invalid deal cancellation duration',
+            message_to_client => $ERROR_MAPPING->{InvalidDealCancellation},
+            details           => {field => 'cancellation'},
+        };
+    }
+
+    return;
 }
 
 sub _validate_orders {
     my $self = shift;
 
     foreach my $order_name (@supported_orders) {
-        if ($self->$order_name and not $self->$order_name->is_valid($self->current_pnl)) {
+        # at the beginning of contract purchase, stop loss more be more than commission to
+        # avoid contract closing immediately after purchase.
+        my $pnl =
+            ($self->pricing_new and $order_name eq 'stop_loss')
+            ? -1 * $self->commission_amount
+            : $self->current_pnl;
+        if ($self->$order_name and not $self->$order_name->is_valid($pnl, $self->currency, $self->pricing_new)) {
             return $self->$order_name->validation_error;
         }
+    }
+
+    # Deal cancellation order cannot be set together with stop loss even though these orders work independently.
+    # If a contract is closed when it hit stop loss while deal cancellation option is active, client would feel cheated.
+    if ($self->pricing_new and $self->cancellation and $self->stop_loss) {
+        return {
+            message           => 'deal cancellation set with stop loss',
+            message_to_client => $ERROR_MAPPING->{EitherStopLossOrCancel},
+            details           => {field => 'stop_loss'},
+        };
+    }
+
+    return;
+}
+
+sub _validate_commission {
+    my $self = shift;
+
+    unless (defined $self->commission) {
+        return {
+            message           => 'multiplier commission not defined for ' . $self->underlying->symbol,
+            message_to_client => $ERROR_MAPPING->{InvalidInputAsset},
+        };
     }
 
     return;
@@ -527,6 +778,22 @@ sub _validate_multiplier_range {
             message           => 'multiplier out of range',
             message_to_client => [$ERROR_MAPPING->{MultiplierOutOfRange}, join(',', @$available_multiplier)],
             details => {field => 'multiplier'},
+        };
+    }
+
+    return;
+}
+
+sub _validate_sell_pnl {
+    my $self = shift;
+
+    # To protect against user accidentally closing contract at loss when deal cancellation is active or
+    # to protect against race condition around the sell request, we will invalidate sell if pnl is negative when deal cancellation is active.
+    # The better option is for the user to cancel the contract and get back the stake.
+    if ($self->current_pnl < 0 and $self->is_valid_to_cancel) {
+        return {
+            message           => 'cancel is better',
+            message_to_client => $ERROR_MAPPING->{CancelIsBetter},
         };
     }
 
@@ -554,7 +821,7 @@ sub _limit_order_args {
     my $self = shift;
 
     return {
-        ask_price       => $self->ask_price,
+        ask_price       => $self->_user_input_stake,
         multiplier      => $self->multiplier,
         sentiment       => $self->sentiment,
         commission      => $self->commission,
@@ -574,9 +841,45 @@ has _order => (
     default => sub { {} },
 );
 
-sub close_tick {
+has _formula_args => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_formula_args',
+);
+
+sub _build_formula_args {
     my $self = shift;
-    return $self->hit_tick;
+
+    # not sure when we will be implementing multiplier for financial instruments,
+    # don't over-complicate matters now.
+    my $sigma =
+          $self->underlying->volatility_surface_type eq 'flat'
+        ? $self->volsurface->get_volatility
+        : die 'you need to refactor volatility calculation for financial instrument';
+
+    return {
+        t => ($self->cancellation_expiry->epoch - $self->date_start->epoch) / (86400 * 365),
+        r => 0,
+        q => 0,
+        mu    => 0,
+        sigma => $sigma,
+    };
+}
+
+sub _spot_proxy {
+    return 1;
+}
+
+sub _generation_interval_in_years {
+    my $self = shift;
+
+    return $self->underlying->generation_interval->seconds / (365 * 86400);
+}
+
+sub _barrier_continuity_adjustment {
+    my $self = shift;
+
+    return BARRIER_ADJUSTMENT_FACTOR * $self->_formula_args->{sigma} * sqrt($self->_generation_interval_in_years);
 }
 
 1;

@@ -5,20 +5,21 @@ use warnings;
 
 use Test::More;
 use BOM::Product::ContractFactory qw(produce_contract);
+use Date::Utility;
 
 subtest 'allowed_slippage' => sub {
     my $args = {
-        bet_type   => 'CALL',
-        underlying => 'frxUSDJPY',
-        barrier    => 'S0P',
-        duration   => '1h',
-        payout     => 100,
-        currency   => 'USD',
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        barrier      => 'S0P',
+        duration     => '1h',
+        payout       => 100,
+        currency     => 'USD',
+        date_start   => Date::Utility->new('2019-12-9 10:00:00'),
+        date_pricing => Date::Utility->new('2019-12-9 10:00:00'),
     };
     my $c = produce_contract($args);
-    my $pricing_hour = Date::Utility->new;
-    my $fx_slippage = ($pricing_hour->hour >= 6 and $pricing_hour->hour <= 16) ? 0.015 : 0.0175;
-    is ($c->allowed_slippage, $fx_slippage, 'slippage is ' . $fx_slippage);
+    is ($c->allowed_slippage, 0.015, 'slippage is ' . 0.015);
     $args->{underlying} = 'R_10';
     $c = produce_contract($args);
     is $c->allowed_slippage, 0.006, 'slippage is 0.6%';

@@ -4,11 +4,15 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Exception;
+use Test::Fatal;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 use BOM::Product::ContractFactory qw(produce_contract);
+use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use Date::Utility;
+use Test::MockModule;
 
 use Test::Fatal;
 
@@ -21,6 +25,11 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     });
 
+my $mocked = Test::MockModule->new('BOM::Product::Contract::Multup');
+# setting commission to zero for easy calculation
+$mocked->mock('commission',        sub { return 0 });
+$mocked->mock('commission_amount', sub { return 0 });
+
 subtest 'pricing new - general' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);
     my $args = {
@@ -32,7 +41,6 @@ subtest 'pricing new - general' => sub {
         amount       => 100,
         multiplier   => 10,
         currency     => 'USD',
-        commission   => 0,          # setting commission to zero for easy calculation
     };
     my $c = produce_contract($args);
     is $c->code,            'MULTUP', 'code is MULTUP';
@@ -65,12 +73,11 @@ subtest 'pricing new - general' => sub {
         'take_profit' => 0,
     };
     $c = produce_contract($args);
-    my $take_profit = $c->take_profit;
-    is $take_profit->initialization_error->{message}, 'order amount is zero for take_profit', 'order amount is zero for take_profit';
-    is $take_profit->validation_error, undef, 'validation error is undef';
-    $take_profit->is_valid;
-    is $take_profit->validation_error->{message}, 'order amount is zero for take_profit', 'order amount is zero for take_profit';
-
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'take profit too low', 'message - take profit too low';
+    is $c->primary_validation_error->message_to_client->[0], 'Please enter a take profit amount that\'s higher than [_1].',
+        'message - Please enter a take profit amount that\'s higher than [_1].';
+    is $c->primary_validation_error->message_to_client->[1], '0.10';
 };
 
 subtest 'non-pricing new' => sub {
@@ -84,7 +91,6 @@ subtest 'non-pricing new' => sub {
         amount       => 100,
         multiplier   => 10,
         currency     => 'USD',
-        commission   => 0,                 # setting commission to zero for easy calculation
     };
     my $c = produce_contract($args);
     ok !$c->pricing_new, 'non pricing_new';
@@ -121,10 +127,58 @@ subtest 'shortcode' => sub {
         amount       => 100,
         multiplier   => 10,
         currency     => 'USD',
-        commission   => 0,          # setting commission to zero for easy calculation
     };
     my $c = produce_contract($args);
-    is $c->shortcode, 'MULTUP_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch, 'shortcode populated correctly';
+    is $c->shortcode, 'MULTUP_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_0_0', 'shortcode populated correctly';
+    lives_ok { produce_contract(shortcode_to_parameters($c->shortcode, $c->currency)) } 'can produce contract properly';
+    $args->{cancellation} = '1h';
+    $c = produce_contract($args);
+    is $c->shortcode, 'MULTUP_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_1h_0', 'shortcode populated correctly';
+    lives_ok { produce_contract(shortcode_to_parameters($c->shortcode, $c->currency)) } 'can produce contract properly';
+    $args->{limit_order} = {take_profit => 20};
+    $c = produce_contract($args);
+    is $c->shortcode, 'MULTUP_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_1h_20', 'shortcode populated correctly';
+    lives_ok { produce_contract(shortcode_to_parameters($c->shortcode, $c->currency)) } 'can produce contract properly';
+    $args->{limit_order} = {take_profit => 20.4};
+    $c = produce_contract($args);
+    is $c->shortcode, 'MULTUP_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_1h_20.4', 'shortcode populated correctly';
+    lives_ok { produce_contract(shortcode_to_parameters($c->shortcode, $c->currency)) } 'can produce contract properly';
+};
+
+subtest 'shortcode to parameters' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+        cancellation => '1h',
+        limit_order  => {take_profit => 25.5},
+    };
+    my $c = produce_contract($args);
+    my $params = shortcode_to_parameters($c->shortcode, $c->currency);
+    $params->{date_pricing} = $c->date_start->plus_time_interval('1h1s');
+    $params->{limit_order}  = {
+        stop_out => {
+            order_type   => 'stop_out',
+            order_amount => -100,
+            order_date   => $now->epoch,
+            basis_spot   => '100.00',
+        },
+        take_profit => {
+            order_type   => 'take_profit',
+            order_amount => 15,
+            order_date   => $now->epoch + 100,
+            basis_spot   => '100.00',
+        },
+    };
+    my $c2 = produce_contract($params);
+    is $c->cost_of_cancellation, $c2->cost_of_cancellation, 'same deal cancellation price';
+    ok $c->take_profit->order_amount != $c2->take_profit->order_amount, 'take profit amount different';
 };
 
 subtest 'trying to pass in date_expiry or duration' => sub {
@@ -135,7 +189,6 @@ subtest 'trying to pass in date_expiry or duration' => sub {
         amount      => 100,
         multiplier  => 10,
         currency    => 'USD',
-        commission  => 0,          # setting commission to zero for easy calculation
     };
     my $error = exception { produce_contract({%$args, duration => '60s'}) };
     isa_ok $error, 'BOM::Product::Exception';
@@ -146,6 +199,66 @@ subtest 'trying to pass in date_expiry or duration' => sub {
     is $error->message_to_client->[0], 'Invalid input (duration or date_expiry) for this contract type ([_1]).', 'throws exception with duration';
 };
 
+subtest 'deal cancellation' => sub {
+    my $args = {
+        date_start   => $now,
+        date_pricing => $now,
+        bet_type     => 'MULTUP',
+        underlying   => 'R_100',
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+        cancellation => '1h',
+    };
+
+    my $c = produce_contract($args);
+    is $c->cost_of_cancellation, 4.48, 'cost of cancellation is 4.48';
+    is $c->cancellation_expiry->epoch, $now->plus_time_interval('1h')->epoch, 'cancellation expiry is correct';
+    is $c->ask_price, 104.48, 'ask price is 104.48';
+    ok !$c->is_cancelled, 'not cancelled';
+    ok $c->is_valid_to_cancel, 'valid to cancel';
+
+    delete $args->{cancellation};
+    $c = produce_contract($args);
+    is $c->cost_of_cancellation, 0, 'zero cost of cancellation';
+    ok !$c->cancellation_expiry, 'cancellation expiry is undef';
+    is $c->ask_price, 100, 'ask price is 100 as per user input';
+    ok !$c->is_cancelled,       'not cancelled';
+    ok !$c->is_valid_to_cancel, 'invalid to cancel';
+    is $c->primary_validation_error->message, 'Deal cancellation not purchased', 'error - Deal cancellation not purchased';
+    is $c->primary_validation_error->message_to_client->[0],
+        'This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.',
+        'message_to_client - This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.';
+
+    $args->{cancellation} = '1h';
+    $args->{date_pricing} = $now->plus_time_interval('1h');
+    $args->{limit_order}  = {
+        stop_out => {
+            order_type   => 'stop_out',
+            order_amount => -100,
+            order_date   => $now->epoch,
+            basis_spot   => '100.00',
+        }};
+    $c = produce_contract($args);
+    ok $c->is_valid_to_cancel, 'is valid to cancel';
+
+    $args->{date_pricing} = $now->plus_time_interval('1h1s');
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_cancel, 'invalid to cancel';
+    is $c->primary_validation_error->message, 'Deal cancellation expired', 'error - Deal cancellation expired';
+    is $c->primary_validation_error->message_to_client->[0],
+        'Deal cancellation period has expired. Your contract can only be cancelled while deal cancellation is active.',
+        'message_to_client - Deal cancellation period has expired. Your contract can only be cancelled while deal cancellation is active.';
+
+    # when contract is sold
+    $args->{is_sold} = 1;
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_cancel, 'invalid to cancel';
+    is $c->primary_validation_error->message, 'Contract is sold', 'error - Contract is sold';
+    is $c->primary_validation_error->message_to_client->[0], 'This contract has been sold.',;
+};
+
 subtest 'minmum stake' => sub {
     my $args = {
         bet_type    => 'MULTUP',
@@ -154,18 +267,15 @@ subtest 'minmum stake' => sub {
         amount      => 0.9,
         multiplier  => 10,
         currency    => 'USD',
-        commission  => 0,          # setting commission to zero for easy calculation
     };
-    my $c = produce_contract($args);
-    ok !$c->is_valid_to_buy, 'invalid to buy';
-    is $c->primary_validation_error->message, 'multiplier stake lower than minimum', 'message - multiplier stake lower than minimum';
-    is $c->primary_validation_error->message_to_client->[0], 'Stake must be at least [_1] 1.', 'message to client - Stake must be at least [_1] 1.';
-    is $c->primary_validation_error->message_to_client->[1], 'USD';
+    my $error = exception { produce_contract($args) };
+    is $error->message_to_client->[0], 'Please enter a stake amount that\'s at least [_1].', 'message to client - Stake must be at least [_1] 1.';
+    is $error->message_to_client->[1], '1.00';
 
     $args->{amount} = 0;
-    my $error = exception { produce_contract($args) };
-    isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'Invalid stake/payout.', 'zero amount not valid';
+    $error = exception { produce_contract($args) };
+    is $error->message_to_client->[0], 'Please enter a stake amount that\'s at least [_1].', 'message to client - Stake must be at least [_1] 1.';
+    is $error->message_to_client->[1], '1.00';
 };
 
 subtest 'take profit cap and precision' => sub {
@@ -177,22 +287,253 @@ subtest 'take profit cap and precision' => sub {
         amount      => 10,
         multiplier  => 10,
         currency    => 'USD',
-        commission  => 0,          # setting commission to zero for easy calculation
         limit_order => {
             take_profit => 10000 + 0.01,
         },
     };
     my $c = produce_contract($args);
-    ok !$c->is_valid_to_buy, 'invalid to buy';
-    is $c->primary_validation_error->message, 'take profit too high', 'message - take profit too high';
-    is $c->primary_validation_error->message_to_client, 'Invalid take profit. Take profit cannot be more than 100 times of stake.';
+    my $error = exception {$c->is_valid_to_buy};
+    is $error->message_to_client->[0], 'Please enter a take profit amount that\'s lower than [_1].';
+    is $error->message_to_client->[1], '90.00', 'max at 90.00';
 
     $args->{limit_order}->{take_profit} = 0.000001;
     $c = produce_contract($args);
     ok !$c->is_valid_to_buy, 'invalid to buy';
     is $c->primary_validation_error->message, 'too many decimal places', 'message - too many decimal places';
-    is $c->primary_validation_error->message_to_client->[0], 'Take profit can not have more than [_1] decimal places.';
+    is $c->primary_validation_error->message_to_client->[0], 'Only [_1] decimal places allowed.';
     is $c->primary_validation_error->message_to_client->[1], 2;
+};
+
+subtest 'stop loss cap' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);
+    my $args = {
+        bet_type    => 'MULTUP',
+        underlying  => 'R_100',
+        amount_type => 'stake',
+        amount      => 10,
+        multiplier  => 10,
+        currency    => 'USD',
+        limit_order => {
+            stop_loss => 11,
+        },
+    };
+    my $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'stop loss too high', 'message - stop loss too high';
+    is $c->primary_validation_error->message_to_client, 'Invalid stop loss. Stop loss cannot be more than stake.';
+
+    $mocked->unmock_all;
+    $args->{limit_order}->{stop_loss} = 0.09;
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'stop loss too low', 'message - stop loss too low';
+    is $c->primary_validation_error->message_to_client->[0], 'Please enter a stop loss amount that\'s higher than [_1].';
+    is $c->primary_validation_error->message_to_client->[1], '0.10';
+
+    $args->{limit_order}->{stop_loss} = 0.1;
+    $c = produce_contract($args);
+    ok $c->is_valid_to_buy, 'valid to buy';
+
+    $args->{amount}                   = 100;
+    $args->{limit_order}->{stop_loss} = 0.11;
+    $c                                = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'stop loss lower than pnl', 'message - stop loss lower than pnl';
+    is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss must be higher than commission ([_1]).';
+    is $c->primary_validation_error->message_to_client->[1], '0.50';
+};
+
+# setting commission to zero for easy calculation
+$mocked->mock('commission',        sub { return 0 });
+$mocked->mock('commission_amount', sub { return 0 });
+
+subtest 'entry tick inconsistency check' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [100, $now->epoch - 1, 'R_100'],
+        [101, $now->epoch,     'R_100'],
+        [102, $now->epoch + 1, 'R_100']);
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now->epoch + 1,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+        limit_order  => {
+            stop_out => {
+                order_type   => 'stop_out',
+                order_amount => -100,
+                order_date   => $now->epoch,
+                basis_spot   => '100.00',
+            }
+        },
+    };
+    my $c = produce_contract($args);
+    ok $c->entry_tick, 'entry tick is defined';
+    is $c->entry_tick->epoch, $now->epoch - 1, 'entry tick epoch is one second before date start';
+    is $c->entry_tick->quote + 0, $c->basis_spot + 0, 'entry tick is same as basis spot';
+};
+
+subtest 'close tick inconsistency check' => sub {
+    subtest 'sell early' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100, $now->epoch,     'R_100'],
+            [102, $now->epoch + 1, 'R_100'],
+            [104, $now->epoch + 2, 'R_100'],
+            [105, $now->epoch + 3, 'R_100'],
+        );
+        my $args = {
+            bet_type     => 'MULTUP',
+            underlying   => 'R_100',
+            date_start   => $now,
+            date_pricing => $now->epoch + 2,
+            amount_type  => 'stake',
+            amount       => 100,
+            multiplier   => 10,
+            currency     => 'USD',
+            limit_order  => {
+                stop_out => {
+                    order_type   => 'stop_out',
+                    order_amount => -100,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                }
+            },
+        };
+        my $c = produce_contract($args);
+        ok !$c->close_tick, 'close tick is undef is contract is not sold';
+        $args->{is_sold}    = 1;
+        $args->{sell_price} = 120;
+        $args->{sell_time}  = $now->epoch + 2;
+
+        $c = produce_contract($args);
+        ok $c->close_tick, 'close tick is defined';
+        is $c->close_tick->epoch, $now->epoch + 1, 'close epoch is correct';
+        is $c->close_tick->quote + 0, 102, 'close quote is correct';
+
+        $args->{sell_price} = 140;
+        $c = produce_contract($args);
+        ok $c->close_tick, 'close tick is defined';
+        is $c->close_tick->epoch, $now->epoch + 2, 'close epoch is correct';
+        is $c->close_tick->quote + 0, 104, 'close quote is correct';
+    };
+
+    subtest 'hit order' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [100, $now->epoch,     'R_100'],
+            [102, $now->epoch + 1, 'R_100'],
+            [104, $now->epoch + 2, 'R_100'],
+            [105, $now->epoch + 3, 'R_100'],
+        );
+        my $args = {
+            is_sold      => 1,
+            bet_type     => 'MULTUP',
+            underlying   => 'R_100',
+            date_start   => $now,
+            date_pricing => $now->epoch + 3,
+            amount_type  => 'stake',
+            amount       => 100,
+            multiplier   => 10,
+            currency     => 'USD',
+            limit_order  => {
+                stop_out => {
+                    order_type   => 'stop_out',
+                    order_amount => -100,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                },
+                take_profit => {
+                    order_type   => 'take_profit',
+                    order_amount => 19,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                }
+            },
+        };
+        my $c = produce_contract($args);
+        ok $c->close_tick, 'close tick is defined';
+        is $c->close_tick->epoch, $now->epoch + 1, 'close epoch is correct';
+        is $c->close_tick->quote + 0, 102, 'close quote is correct';
+    };
+};
+
+subtest 'sell at a loss on active deal cancellation' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [100, $now->epoch,        'R_100'],
+        [102, $now->epoch + 1,    'R_100'],
+        [99,  $now->epoch + 2,    'R_100'],
+        [105, $now->epoch + 3,    'R_100'],
+        [98,  $now->epoch + 3601, 'R_100'],
+    );
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now->epoch + 2,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+        limit_order  => {
+            stop_out => {
+                order_type   => 'stop_out',
+                order_amount => -100,
+                order_date   => $now->epoch,
+                basis_spot   => '100.00',
+            }
+        },
+        cancellation => '1h',
+    };
+    my $c = produce_contract($args);
+    ok $c->current_pnl < 0, 'negative pnl';
+    ok !$c->is_valid_to_sell, 'invalid to sell';
+    is $c->primary_validation_error->message, 'cancel is better', 'message - cancel is better';
+    is $c->primary_validation_error->message_to_client,
+        'The spot price has moved. We have not closed this contract because your profit is negative and deal cancellation is active. Cancel your contract to get your full stake back.',
+        'message_to_client - The spot price has moved. We have not closed this contract because your profit is negative and deal cancellation is active. Cancel your contract to get your full stake back.';
+
+    $args->{date_pricing} = $now->epoch + 3;
+    $c = produce_contract($args);
+    ok $c->current_pnl > 0, 'positive pnl';
+    ok $c->is_valid_to_sell, 'valid to sell when pnl is positive';
+
+    $args->{date_pricing} = $now->epoch + 3601;
+    $c = produce_contract($args);
+    ok $c->current_pnl < 0, 'negative pnl';
+    ok $c->is_valid_to_sell, 'valid to sell with negative pnl after expiry of deal cancellation';
+};
+
+subtest 'deal cancellation duration check' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [102, $now->epoch + 1, 'R_100'],);
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+        cancellation => '1',
+    };
+    my $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message_to_client, 'Deal cancellation is not offered at this duration.',
+        'message_to_client - Deal cancellation is not offered at this duration.';
+
+    $args->{cancellation} = '1s';
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message_to_client, 'Deal cancellation is not offered at this duration.',
+        'message_to_client - Deal cancellation is not offered at this duration.';
+
+    $args->{cancellation} = '0d';
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message_to_client, 'Deal cancellation is not offered at this duration.',
+        'message_to_client - Deal cancellation is not offered at this duration.';
 };
 
 done_testing();

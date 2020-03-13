@@ -96,6 +96,16 @@ has underlying => (
     handles => [qw(market pip_size)],
 );
 
+=head2 is_cancelled
+
+By default, contract cannot be cancelled unless specified
+
+=cut
+
+sub is_cancelled {
+    return 0;
+}
+
 #overriding Financial::Contract fields
 sub absolute_barrier_multiplier {
     my $self = shift;
@@ -237,7 +247,7 @@ has exit_tick => (
 );
 
 # to be used for logic related to early sell especially tick related code.
-has sell_time => (
+has [qw(sell_time sell_price)] => (
     is => 'ro',
 );
 
@@ -1522,6 +1532,21 @@ sub to_relative_barrier {
     $barrier = $underlying->pipsized_value($barrier) =~ s/[+.]//gr;
 
     return "S${barrier}P";
+}
+
+sub is_valid_to_cancel {
+    my $self = shift;
+
+    $self->_add_error({
+        message           => 'cannot cancel contract ' . $self->code,
+        message_to_client => $ERROR_MAPPING->{CannotCancelContract},
+    });
+
+    return 0;
+}
+
+sub cancel_price {
+    return 0;
 }
 
 sub is_non_zero_payout {
