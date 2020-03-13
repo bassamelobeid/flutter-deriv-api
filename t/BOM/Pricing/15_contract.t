@@ -405,6 +405,7 @@ subtest 'get_bid' => sub {
             underlying
             is_expired
             is_valid_to_sell
+            is_valid_to_cancel
             is_settleable
             is_forward_starting
             is_path_dependent

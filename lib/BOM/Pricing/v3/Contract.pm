@@ -14,7 +14,7 @@ use Time::HiRes;
 use Time::Duration::Concise::Localize;
 use BOM::User::Client;
 
-use Format::Util::Numbers qw/formatnumber/;
+use Format::Util::Numbers qw/formatnumber roundcommon/;
 use Scalar::Util::Numeric qw(isint);
 
 use BOM::MarketData qw(create_underlying);
@@ -223,9 +223,18 @@ sub _get_ask {
 
             $response->{multiplier} = $contract->multiplier unless $contract->is_binary;
 
-            if ($contract->category_code eq 'multiplier' and my $display = $contract->available_orders_for_display) {
+            if ($contract->category_code eq 'multiplier') {
+                my $display = $contract->available_orders_for_display;
                 $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
                 $response->{limit_order} = $display;
+                $response->{commission} = roundcommon(0.0001, $contract->commission * 100);    # commission in percentage term
+
+                if ($contract->cancellation) {
+                    $response->{cancellation} = {
+                        ask_price   => $contract->cost_of_cancellation,
+                        date_expiry => $contract->cancellation_expiry->epoch,
+                    };
+                }
             }
 
             # On websocket, we are setting 'basis' to payout and 'amount' to 1000 to increase the collission rate.
@@ -393,6 +402,7 @@ sub get_bid {
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
         $bet_params->{landing_company}       = $landing_company;
         $bet_params->{sell_time}             = $sell_time if $is_sold;
+        $bet_params->{sell_price}            = $sell_price if defined $sell_price;
         $contract                            = produce_contract($bet_params);
     }
     catch {
@@ -430,15 +440,16 @@ sub get_bid {
             my $format_limit_order = ($params->{streaming_params} and $params->{streaming_params}->{format_limit_order}) ? 1 : 0;
 
             $response = _build_bid_response({
-                contract         => $contract,
-                contract_id      => $contract_id,
-                is_valid_to_sell => $valid_to_sell->{is_valid_to_sell},
-                is_sold          => $is_sold,
-                is_expired       => $is_expired,
-                sell_price       => $sell_price,
-                sell_time        => $sell_time,
-                validation_error => $valid_to_sell->{validation_error},
-                from_pricer      => $format_limit_order,
+                contract           => $contract,
+                contract_id        => $contract_id,
+                is_valid_to_sell   => $valid_to_sell->{is_valid_to_sell},
+                is_valid_to_cancel => $contract->is_valid_to_cancel,
+                is_sold            => $is_sold,
+                is_expired         => $is_expired,
+                sell_price         => $sell_price,
+                sell_time          => $sell_time,
+                validation_error   => $valid_to_sell->{validation_error},
+                from_pricer        => $format_limit_order,
             });
 
             my $pen = $contract->pricing_engine_name;
@@ -845,6 +856,7 @@ sub _build_bid_response {
         bid_price           => formatnumber('price', $contract->currency, $contract->bid_price),
         is_settleable       => $is_valid_to_settle,
         barrier_count       => $contract->two_barriers ? 2 : 1,
+        is_valid_to_cancel  => $params->{is_valid_to_cancel},
         expiry_time         => $contract->date_expiry->epoch,
     };
     if (!$contract->uses_barrier) {
@@ -876,6 +888,9 @@ sub _build_bid_response {
     } else {    # not sold
         $response->{status} = 'open';
     }
+
+    # overwrite the above status if contract is cancelled
+    $response->{status} = 'cancelled' if $contract->is_cancelled;
 
     if ($contract->entry_spot) {
         my $entry_spot = $contract->underlying->pipsized_value($contract->entry_spot);
@@ -914,6 +929,15 @@ sub _build_bid_response {
         } else {
             $response->{limit_order}            = $contract->available_orders;
             $response->{limit_order_as_hashref} = $display;
+        }
+        # commission in payout currency amount
+        $response->{commission} = $contract->commission_amount;
+        # deal cancellation
+        if ($contract->cancellation) {
+            $response->{cancellation} = {
+                ask_price   => $contract->cost_of_cancellation,
+                date_expiry => $contract->cancellation_expiry->epoch,
+            };
         }
     }
 
