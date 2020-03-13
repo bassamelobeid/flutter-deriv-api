@@ -46,10 +46,9 @@ my $user = BOM::User->create(
 $user->add_client($client);
 
 subtest 'attempt contract_update before authorized' => sub {
-    my $res = $t->await::contract_update({
-            contract_update => 1,
-            contract_id     => 123,
-            limit_order     => {}});
+    my $res = $t->await::cancel({
+        cancel => 1,
+    });
     ok $res->{error}, 'error';
     is $res->{error}->{code},    'AuthorizationRequired', 'error code - AuthorizationRequired';
     is $res->{error}->{message}, 'Please log in.',        'error message - Please log in.';
@@ -58,17 +57,14 @@ subtest 'attempt contract_update before authorized' => sub {
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 my $authorize = $t->await::authorize({authorize => $token});
 
-subtest 'contract_update' => sub {
-    my $res = $t->await::contract_update({
-            contract_update => 1,
-            contract_id     => 123,
-            limit_order     => {
-                take_profit => 1,
-            }});
-    is $res->{msg_type}, 'contract_update', 'msg_type - contract_update';
+subtest 'cancel' => sub {
+    my $res = $t->await::cancel({
+        cancel => 123,
+    });
+    is $res->{msg_type}, 'cancel', 'msg_type - cancel';
     ok $res->{error}, 'error';
     is $res->{error}->{code}, 'ContractNotFound', 'error code - ContractNotFound';
-    is $res->{error}->{message}, 'This contract was not found among your open positions.', 'error message - This contract was not found among your open positions.';
+    is $res->{error}->{message}, 'Contract not found for contract id: 123.', 'error message - Contract not found for contract id: 123.';
 
     my $proposal_res = $t->await::proposal({
         "proposal"      => 1,
@@ -82,30 +78,45 @@ subtest 'contract_update' => sub {
 
     my $buy_res = $t->await::buy({
         buy   => $proposal_res->{proposal}->{id},
-        price => 100,
+        price => $proposal_res->{proposal}->{ask_price},
     });
 
     ok $buy_res->{buy}->{transaction_id}, 'contract bought successfully';
 
-    $res = $t->await::contract_update({
-            contract_update => 1,
-            contract_id     => $buy_res->{buy}->{contract_id},
-            limit_order     => {
-                something => 1,
-            }});
+    $res = $t->await::cancel({
+        cancel => $buy_res->{buy}->{contract_id},
+    });
     ok $res->{error}, 'error';
-    is $res->{error}->{code}, 'InputValidationFailed', 'error code - InputValidationFailed';
-    is $res->{error}->{message}, 'Input validation failed: limit_order', 'error message - Input validation failed: limit_order';
+    is $res->{error}->{code}, 'CancelFailed', 'error code - CancelFailed';
+    is $res->{error}->{message},
+        'This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.',
+        'error message - This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.';
 
-    $res = $t->await::contract_update({
-            contract_update => 1,
-            contract_id     => $buy_res->{buy}->{contract_id},
-            limit_order     => {take_profit => 10}});
-    ok $res->{contract_update}->{take_profit}, 'take profit update successfully';
-    ok !%{$res->{contract_update}->{stop_loss}}, 'stop loss empty hashref';
+    $proposal_res = $t->await::proposal({
+        "proposal"      => 1,
+        "amount"        => "100",
+        "basis"         => "stake",
+        "contract_type" => "MULTUP",
+        "currency"      => "USD",
+        "symbol"        => "R_100",
+        "multiplier"    => 10,
+        "cancellation"  => '1h',
+    });
+
+    $buy_res = $t->await::buy({
+        buy   => $proposal_res->{proposal}->{id},
+        price => $proposal_res->{proposal}->{ask_price},
+    });
+
+    # buy and cancel cannot happen on the same second
+    sleep 1;
+    $res = $t->await::cancel({
+        cancel => $buy_res->{buy}->{contract_id},
+    });
+    is $res->{cancel}->{sold_for} + 0, 100, 'contract cancelled correctly';
 };
 
-subtest 'contrcat_update on unsupported contract type' => sub {
+subtest 'cancel on unsupported contract type' => sub {
     my $proposal_res = $t->await::proposal({
         "proposal"      => 1,
         "amount"        => "100",
@@ -124,15 +135,15 @@ subtest 'contrcat_update on unsupported contract type' => sub {
 
     ok $buy_res->{buy}->{transaction_id}, 'contract bought successfully';
 
-    my $res = $t->await::contract_update({
-            contract_update => 1,
-            contract_id     => $buy_res->{buy}->{contract_id},
-            limit_order     => {
-                take_profit => 1,
-            }});
+    # buy and cancel cannot happen on the same second
+    sleep 1;
+    my $res = $t->await::cancel({
+        cancel => $buy_res->{buy}->{contract_id},
+    });
     ok $res->{error}, 'error';
-    is $res->{error}->{code}, 'UpdateNotAllowed', 'error code - UpdateNotAllowed';
-    is $res->{error}->{message}, 'This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.', 'error message - This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.';
+    is $res->{error}->{code}, 'CancelFailed', 'error code - CancelFailed';
+    is $res->{error}->{message}, 'Deal cancellation is not available for this contract.',
+        'error message - Deal cancellation is not available for this contract.';
 };
 
 done_testing();
