@@ -2248,4 +2248,56 @@ sub set_financial_assessment {
     return BOM::Event::Services::Track::set_financial_assessment(@args);
 }
 
+=head2 _set_all_sibling_status
+
+Set and copy status to all siblings
+
+=cut
+
+sub _set_all_sibling_status {
+    my ($args) = @_;
+
+    my $loginid = $args->{loginid} or die 'No client login ID supplied';
+    my $status  = $args->{status}  or die 'No status supplied';
+
+    my $client = BOM::User::Client->new({loginid => $loginid});
+    my @all_loginids = $client->user->bom_real_loginids;
+
+    for my $each_loginid (@all_loginids) {
+        my $c = BOM::User::Client->new({loginid => $each_loginid});
+
+        try {
+            $c->status->set($status, 'system', $args->{message});
+        }
+        catch {
+            my $e = $@;
+            $log->errorf('Failed to set %s as %s : %s', $each_loginid, $status, $e);
+        }
+    }
+
+    return;
+}
+
+=head2 handle_crypto_withdrawal
+
+Handles all cryptocurrency withdrawal issue.
+
+=cut
+
+sub handle_crypto_withdrawal {
+    my ($args) = @_;
+
+    my $loginid = $args->{loginid} or die 'No client login ID supplied';
+
+    if ($args->{error} && $args->{error} eq 'no_crypto_deposit') {
+        _set_all_sibling_status({
+            loginid => $loginid,
+            status  => 'withdrawal_locked',
+            message => 'Perform crypto withdrawal without crypto deposit [User not authenticated]'
+        });
+    }
+
+    return;
+}
+
 1;
