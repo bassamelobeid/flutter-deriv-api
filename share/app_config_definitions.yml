@@ -137,6 +137,15 @@ payments:
               description: 'Maximum amount per order (in USD)'
               default: 100
               global: 1
+    crypto:
+      description: 'Cryptocurrencies related config'
+      isa: section
+      contains:
+        restricted_countries:
+          description: "Countries where crypto withdrawals are restricted, separated by comma. Clients in these countries must have made a prior crypto deposit. Country code can be in lower case."
+          isa: ArrayRef
+          default: []
+          global: 1
     transfer_between_accounts:
       description: 'Transfer between accounts config'
       isa: section
