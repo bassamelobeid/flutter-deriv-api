@@ -131,7 +131,7 @@ EOF`;
 
 sub _get_tokenize_values {
     my @tokens = split /!/, shift;
-    map { $_ =~ s/^\s+|\s+$//g } @tokens;
+     s/^\s+|\s+$//g for @tokens;
     return @tokens;
 }
 
