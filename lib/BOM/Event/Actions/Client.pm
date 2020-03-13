@@ -758,7 +758,6 @@ async sub _sync_onfido_bo_document {
     my $new_file_name;
     my $doc_id_number;
     $doc_id_number = $document_numbers->[0]->{value} if $document_numbers;
-
     try {
         $upload_info = $client->db->dbic->run(
             ping => sub {
@@ -780,6 +779,13 @@ async sub _sync_onfido_bo_document {
     }
     catch {
         my $error = $@;
+        local $log->context->{loginid}         = $client->loginid;
+        local $log->context->{doc_type}        = $doc_type;
+        local $log->context->{file_type}       = $file_type;
+        local $log->context->{expiration_date} = $expiration_date;
+        local $log->context->{doc_id_number}   = $doc_id_number;
+        local $log->context->{file_checksum}   = $file_checksum;
+        local $log->context->{page_type}       = $page_type;
         $log->errorf("Error in creating record in db and uploading Onfido document to S3 for %s : %s", $client->loginid, $error);
     };
 
