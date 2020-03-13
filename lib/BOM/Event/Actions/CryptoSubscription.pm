@@ -79,7 +79,7 @@ sub set_pending_transaction {
         }
 
         my %rows_ref;
-        map { push(@{$rows_ref{$_->{address}}}, $_) } @rows;
+        push($rows_ref{$_->{address}}->@*, $_) for @rows;
 
         for my $address (keys %rows_ref) {
             my @payment = $rows_ref{$address}->@*;

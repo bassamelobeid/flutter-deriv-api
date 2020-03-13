@@ -81,8 +81,10 @@ sub signup {
 
     $properties->{loginid} = $loginid;
     # Although we have user profile we also want to have some information on event itself
-    map { $properties->{$_} = $customer->{$_}           if $customer->{$_} } qw/currency landing_company date_joined/;
-    map { $properties->{$_} = $customer->{traits}->{$_} if $customer->{traits}->{$_} } qw/first_name last_name phone address age country/;
+    my @items = grep { $customer->{$_} } qw(currency landing_company date_joined);
+    @{$properties}{@items} = @{$customer}{@items};
+    my @traits = grep { $customer->{traits}->{$_} } qw(first_name last_name phone address age country);
+    @{$properties}{@traits} = @{$customer->{traits}}{@traits};
     $log->debugf('Track signup event for client %s', $loginid);
 
     if ($properties->{utm_tags}) {
