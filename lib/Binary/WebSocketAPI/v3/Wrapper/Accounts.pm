@@ -150,11 +150,11 @@ sub balance_success_handler {
     } else {
         @results = $rpc_response;
     }
-    map {
+    for (@results) {
         delete $_->{currency_rate_in_total_currency};
         delete $_->{account_id};
         $_->{id} = $req_storage->{transaction_channel_id} if $req_storage->{transaction_channel_id};
-    } @results;
+    }
 
     #send from 0 to -1, the last one will be sent by $rpc_response;
     %$rpc_response = (%{pop @results});
