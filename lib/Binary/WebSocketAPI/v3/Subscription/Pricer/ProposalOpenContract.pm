@@ -35,8 +35,12 @@ sub do_handle_message {
         $message->{purchase_time}   = $passed_fields->{purchase_time};
         $message->{is_sold}         = $passed_fields->{is_sold};
         if ($message->{buy_price} and $message->{bid_price} and $message->{currency}) {
-            $message->{profit} = formatnumber('price', $message->{currency}, $message->{bid_price} - $message->{buy_price});
-            $message->{profit_percentage} = roundcommon(0.01, $message->{profit} / $message->{buy_price} * 100);
+            my $contract_cancellation = $message->{cancellation};
+            # we need to exclude cost of cancellation in profit/loss calculation to avoid confusion since
+            # pnl always refers to the main contract.
+            my $main_contract_price = $contract_cancellation ? $message->{buy_price} - $contract_cancellation->{ask_price} : $message->{buy_price};
+            $message->{profit} = formatnumber('price', $message->{currency}, $message->{bid_price} - $main_contract_price);
+            $message->{profit_percentage} = roundcommon(0.01, $message->{profit} / $main_contract_price * 100);
         }
         $self->unregister
             if $message->{is_sold};

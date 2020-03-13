@@ -139,6 +139,7 @@ sub actions_config {
         ],
         ['contract_update_history'],
         ['sell'],
+        ['cancel'],
         [
             'buy',
             {
