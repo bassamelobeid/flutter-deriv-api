@@ -157,7 +157,7 @@ sub _forget_transaction_subscription {
     my $removed_ids = [];
     if ($type eq 'balance') {
         my @subscriptions = Binary::WebSocketAPI::v3::Subscription::BalanceAll->get_by_class($c);
-        map { push @$removed_ids, $_->uuid; $_->unregister } @subscriptions;
+        @$removed_ids = map { $_->unregister; $_->uuid; } @subscriptions;
     }
     my @subscriptions = Binary::WebSocketAPI::v3::Subscription::Transaction->get_by_class($c);
     for my $subscription (@subscriptions) {
