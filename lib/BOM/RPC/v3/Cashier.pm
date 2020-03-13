@@ -362,7 +362,11 @@ rpc get_limits => sub {
     };
 
     my $market_specifics = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
-    map { $_->{name} = localize($_->{name}) } map { @$_ } values %$market_specifics;
+    for my $limits (values %$market_specifics) {
+        for my $market (@$limits) {
+            $market->{name} = localize($market->{name});
+        }
+    }
     $limit->{market_specific} = $market_specifics;
 
     my $numdays               = $wl_config->{for_days};
