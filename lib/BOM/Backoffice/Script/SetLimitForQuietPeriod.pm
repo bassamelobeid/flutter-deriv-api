@@ -51,9 +51,10 @@ sub script_run {
         my $uniq_key = substr(md5_hex('new' . $todo), 0, 16);
 
         #removing old limit (tick trade/ ultra short duration)
-        map { delete $current_product_profiles->{$_} }
+        my @removing_keys =
             grep { $current_product_profiles->{$_}->{updated_by} eq 'cron job' and $current_product_profiles->{$_}->{name} eq $to_remove }
             keys %$current_product_profiles;
+        delete @{$current_product_profiles}{@removing_keys};
 
         $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
 

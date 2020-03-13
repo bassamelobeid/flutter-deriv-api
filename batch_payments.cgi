@@ -338,7 +338,7 @@ if ($preview and @invalid_lines == 0) {
 sub construct_row_line {
     my %args = @_;
 
-    map { $args{$_} = encode_entities($args{$_}) } keys %args;
+    $args{$_} = encode_entities($args{$_}) for keys %args;
     my $notes = $args{error} || $args{remark};
     my $color = $args{error} ? 'red' : 'green';
     $args{$_} ||= '&nbsp;' for keys %args;
