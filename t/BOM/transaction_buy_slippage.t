@@ -435,8 +435,8 @@ subtest 'test CALL (binary) slippage' => sub {
 
         $error = $txn->buy;
         is $error->{-type}, 'PriceMoved';
-        is $error->{-message_to_client},
-            'The underlying market has moved too much since you priced the contract. The contract price has changed from USD50.55 to USD51.16.';
+        like $error->{-message_to_client},
+            qr/The underlying market has moved too much since you priced the contract. The contract price has changed/;
 
         $price = $contract->ask_price + ($contract->allowed_slippage * $contract->payout + 0.01);
         $txn = BOM::Transaction->new({
@@ -528,8 +528,8 @@ subtest 'test CALL (binary) slippage' => sub {
 
         $error = $txn->buy;
         is $error->{-type}, 'PriceMoved';
-        is $error->{-message_to_client},
-            'The underlying market has moved too much since you priced the contract. The contract payout has changed from USD98.34 to USD97.73.';
+        like $error->{-message_to_client},
+            qr/The underlying market has moved too much since you priced the contract. The contract payout has changed from/;
 
         $payout = $contract->payout - 0.61;
         $txn    = BOM::Transaction->new({
@@ -557,6 +557,46 @@ subtest 'test CALL (binary) slippage' => sub {
 
     }
     'survived amount_type=stake';
+};
+
+subtest "high input price" => sub {
+    my $contract = produce_contract({
+        underlying   => create_underlying('R_100'),
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        duration     => '5m',
+        current_tick => $tick,
+        barrier      => 'S0P',
+    });
+
+    # amount_type = payout with high price
+    my $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => 10000,
+        payout        => 100,
+        amount_type   => 'payout',
+        purchase_date => Date::Utility->new(),
+    });
+
+    ok !$txn->buy, 'buy successful without error';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+    is $fmb->{buy_price} + 0, $contract->ask_price, 'buy_price';
+
+    # amount_type = stake with high price
+    $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => 10000,
+        payout        => 100,
+        amount_type   => 'stake',
+        purchase_date => Date::Utility->new(),
+    });
+
+    ok !$txn->buy, 'buy successful without error';
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
+    is $fmb->{buy_price} + 0, $contract->ask_price, 'buy_price';
 };
 
 subtest 'test (binary) sell slippage' => sub {

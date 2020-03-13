@@ -60,7 +60,7 @@ sub BUILD {
     unless ($contract) {
         $self->validation_error({
             code              => 'ContractNotFound',
-            message_to_client => localize('No open contract found for contract id: [_1].', $self->contract_id),
+            message_to_client => localize('This contract was not found among your open positions.'),
         });
     }
 
@@ -76,6 +76,8 @@ has contract => (
 sub _build_contract {
     my $self = shift;
 
+    return undef unless $self->client->default_account;
+
     my $fmb_dm = $self->_fmb_datamapper;
     # fmb reference with buy_transantion transaction ids (buy or buy and sell)
     my $fmb = $fmb_dm->get_contract_by_account_id_contract_id($self->client->default_account->id, $self->contract_id)->[0];
@@ -87,7 +89,10 @@ sub _build_contract {
     my $contract_params = shortcode_to_parameters($fmb->{short_code}, $self->client->currency);
     my $limit_order = BOM::Transaction::extract_limit_orders($fmb);
     $contract_params->{limit_order} = $limit_order if %$limit_order;
-    $contract_params->{is_sold} = $fmb->{is_sold};
+
+    $contract_params->{is_sold}    = $fmb->{is_sold};
+    $contract_params->{sell_time}  = $fmb->{sell_time} if $fmb->{sell_time};
+    $contract_params->{sell_price} = $fmb->{sell_price} if $fmb->{sell_price};
 
     return produce_contract($contract_params);
 }
@@ -121,15 +126,16 @@ sub _validate_update_parameter {
     # If no update is allowed for this contract, don't proceed
     unless (keys %{$self->allowed_update}) {
         return {
-            code              => 'UpdateNotAllowed',
-            message_to_client => localize('Update is not allowed for this contract.'),
+            code => 'UpdateNotAllowed',
+            message_to_client =>
+                localize('This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.'),
         };
     }
 
     if (ref $self->update_params ne 'HASH') {
         return {
             code              => 'InvalidUpdateArgument',
-            message_to_client => localize('Update only accepts hash reference as input parameter.'),
+            message_to_client => localize('Only a hash reference input is accepted.'),
         };
     }
 
@@ -141,7 +147,7 @@ sub _validate_update_parameter {
         unless (looks_like_number($order_value) or $order_value eq 'null') {
             $error = {
                 code              => 'InvalidUpdateValue',
-                message_to_client => localize('Update value accepts number or null'),
+                message_to_client => localize('Please enter a number or a null value.'),
             };
             last;
         }
@@ -149,7 +155,7 @@ sub _validate_update_parameter {
             $error = {
                 code => 'UpdateNotAllowed',
                 message_to_client =>
-                    localize('Update is not allowed for this contract. Allowed updates [_1]', join(',', @{$contract->category->allowed_update})),
+                    localize('Only updates to these parameters are allowed [_1].', join(',', @{$contract->category->allowed_update})),
             };
             last;
         }
@@ -161,6 +167,7 @@ sub _validate_update_parameter {
             if ($contract->$order_name) {
                 my $new_order = $contract->new_order({$order_name => undef});
                 $self->$order_name($new_order);
+                $self->requeue_stop_out(1) if $order_name eq 'stop_loss';
             }
             next;
         }
@@ -175,6 +182,22 @@ sub _validate_update_parameter {
                 code              => 'TooFrequentUpdate',
                 message_to_client => localize('Only one update per second is allowed.'),
             };
+            last;
+        }
+
+        # stop loss cannot be added while deal cancellation is active
+        if ($contract->is_valid_to_cancel) {
+            if ($order_name eq 'stop_loss') {
+                $error = {
+                    code              => 'UpdateStopLossNotAllowed',
+                    message_to_client => localize('You may update your stop loss amount after deal cancellation has expired.'),
+                };
+            } elsif ($order_name eq 'take_profit') {
+                $error = {
+                    code              => 'UpdateTakeProfitNotAllowed',
+                    message_to_client => localize('You may update your take profit amount after deal cancellation has expired.'),
+                };
+            }
             last;
         }
 
@@ -311,7 +334,7 @@ sub get_history {
                 display_name => $display_name,
                 order_amount => $order_amount,
                 order_date   => Date::Utility->new($current->{$order_type . '_order_date'})->epoch,
-                value        => $self->contract->new_order({$order_type => $order_amount})->barrier_value,
+                value        => $self->contract->new_order({$order_type => abs($order_amount)})->barrier_value,
                 order_type   => $order_type,
                 }
                 if (defined $order_amount);
@@ -323,6 +346,12 @@ sub get_history {
     return [reverse @history];
 }
 
+has requeue_stop_out => (
+    is        => 'rw',
+    default   => 0,
+    init_args => undef,
+);
+
 ### PRIVATE ###
 
 sub _requeue_transaction {
@@ -331,17 +360,17 @@ sub _requeue_transaction {
     my $fmb      = $self->fmb;
     my $contract = $self->contract;
 
+    my $expiry_queue_params = {
+        purchase_price        => $fmb->{buy_price},
+        transaction_reference => $fmb->{buy_transaction_id},
+        contract_id           => $fmb->{id},
+        symbol                => $fmb->{underlying_symbol},
+        in_currency           => $self->client->currency,
+        held_by               => $self->client->loginid,
+    };
+
     my ($in, $out);
     foreach my $order_type (keys %{$self->update_params}) {
-        my $expiry_queue_params = {
-            purchase_price        => $fmb->{buy_price},
-            transaction_reference => $fmb->{buy_transaction_id},
-            contract_id           => $fmb->{id},
-            symbol                => $fmb->{underlying_symbol},
-            in_currency           => $self->client->currency,
-            held_by               => $self->client->loginid,
-        };
-
         my $which_side = $order_type . '_side';
         my $key = $contract->$which_side eq 'lower' ? 'down_level' : 'up_level';
 
@@ -350,6 +379,13 @@ sub _requeue_transaction {
         delete $expiry_queue_params->{$key};
         $expiry_queue_params->{$key} = $self->$order_type->barrier_value if $self->$order_type;
         $in = enqueue_open_contract($expiry_queue_params) // 0;
+    }
+
+    # when stop loss is cancelled, we need to requeue stop out
+    if ($self->requeue_stop_out) {
+        my $key = $contract->stop_out_side eq 'lower' ? 'down_level' : 'up_level';
+        $expiry_queue_params->{$key} = $contract->stop_out->barrier_value;
+        enqueue_open_contract($expiry_queue_params);
     }
 
     return {

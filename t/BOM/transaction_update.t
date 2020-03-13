@@ -198,8 +198,8 @@ subtest 'update take profit', sub {
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
         is $updater->validation_error->{code}, 'ContractNotFound', 'code - ContractNotFound';
-        is $updater->validation_error->{message_to_client}, 'No open contract found for contract id: 123.',
-            'message_to_client - No open contract found for contract id: [_1].';
+        is $updater->validation_error->{message_to_client}, 'This contract was not found among your open positions.',
+            'message_to_client - This contract was not found among your open positions.';
 
         my $args = {
             underlying   => $underlying,
@@ -236,8 +236,9 @@ subtest 'update take profit', sub {
         );
         ok !$updater->is_valid_to_update, 'not valid to update';
         is $updater->validation_error->{code}, 'UpdateNotAllowed', 'code - UpdateNotAllowed';
-        is $updater->validation_error->{message_to_client}, 'Update is not allowed for this contract.',
-            'message_to_client - Update is not allowed for this contract.';
+        is $updater->validation_error->{message_to_client},
+            'This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.',
+            'message_to_client - This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.';
 
         delete $args->{duration};
         delete $args->{barrier};
@@ -369,13 +370,13 @@ subtest 'update take profit', sub {
                 client        => $cl,
                 contract_id   => $fmb->{id},
                 update_params => {
-                    stop_loss   => -52,
+                    stop_loss   => 52,
                     take_profit => 11
                 },
             );
             ok $updater->is_valid_to_update, 'valid to update';
             $updater->update;
-            $res = $updater->get_history();
+            $res = $updater->get_history;
             is $res->[0]->{display_name}, 'Take profit';
             is $res->[0]->{order_amount}, 11;
             is $res->[1]->{display_name}, 'Stop loss';
@@ -467,6 +468,118 @@ subtest 'update take profit', sub {
         is $updater->validation_error->{code},              'ContractIsSold',        'code - ContractIsSold';
         is $updater->validation_error->{message_to_client}, 'Contract has expired.', 'message_to_client - Contract has expired.';
     };
+};
+
+subtest 'update stop loss with/without active deal cancellation' => sub {
+    my $args = {
+        underlying   => $underlying,
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        multiplier   => 10,
+        amount       => 100,
+        amount_type  => 'stake',
+        current_tick => $current_tick,
+        cancellation => '1h',
+    };
+    my $contract = produce_contract($args);
+
+    my $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => 104.35,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $txn->buy;
+    ok !$error, 'buy without error';
+
+    my (undef, $fmb) = get_transaction_from_db multiplier => $txn->transaction_id;
+
+    my $updater = BOM::Transaction::ContractUpdate->new(
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        update_params => {stop_loss => 10},
+    );
+
+    ok !$updater->is_valid_to_update, 'not valid to update';
+    is $updater->validation_error->{code}, 'UpdateStopLossNotAllowed', 'code - UpdateStopLossNotAllowed';
+    is $updater->validation_error->{message_to_client},
+        'You may update your stop loss amount after deal cancellation has expired.',
+        'message_to_client - You may update your stop loss amount after deal cancellation has expired.';
+
+    $updater = BOM::Transaction::ContractUpdate->new(
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        update_params => {take_profit => 10},
+    );
+    ok !$updater->is_valid_to_update, 'not valid to update';
+    is $updater->validation_error->{code}, 'UpdateTakeProfitNotAllowed', 'code - UpdateTakeProfitNotAllowed';
+    is $updater->validation_error->{message_to_client},
+        'You may update your take profit amount after deal cancellation has expired.',
+        'message_to_client - You may update your take profit amount after deal cancellation has expired.';
+
+    $args->{date_start}   = $contract->date_start;
+    $args->{date_pricing} = $contract->date_start->plus_time_interval('3601s');
+    $args->{limit_order}  = {
+        stop_out => {
+            order_type   => 'stop_out',
+            order_amount => -100,
+            order_date   => $contract->date_start->epoch,
+            basis_spot   => 100
+        }};
+    $contract = produce_contract($args);
+    $updater  = BOM::Transaction::ContractUpdate->new(
+        client        => $cl,
+        contract_id   => $fmb->{id},
+        update_params => {stop_loss => 10},
+    );
+    # override contract
+    $updater->contract($contract);
+    ok $updater->is_valid_to_update, 'valid to update';
+};
+
+subtest 'update contract of another account' => sub {
+    my $args = {
+        underlying   => $underlying,
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        multiplier   => 10,
+        amount       => 100,
+        amount_type  => 'stake',
+        current_tick => $current_tick,
+        cancellation => '1h',
+    };
+    my $contract = produce_contract($args);
+
+    my $txn = BOM::Transaction->new({
+        client        => $cl,
+        contract      => $contract,
+        price         => 104.35,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $txn->buy;
+    ok !$error, 'buy without error';
+
+    my (undef, $fmb) = get_transaction_from_db multiplier => $txn->transaction_id;
+
+    my $cl2 = create_client;
+    top_up $cl2, 'USD', 5000;
+    my $updater = BOM::Transaction::ContractUpdate->new(
+        client        => $cl2,
+        contract_id   => $fmb->{id},
+        update_params => {stop_loss => 10},
+    );
+    ok !$updater->is_valid_to_update, 'invalid to update';
+    is $updater->validation_error->{code}, 'ContractNotFound', 'code - ContractNotFound';
+    is $updater->validation_error->{message_to_client}, 'This contract was not found among your open positions.',
+        'message to client - This contract was not found among your open positions.';
 };
 
 done_testing();

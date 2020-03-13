@@ -29,6 +29,25 @@ has transaction => (is => 'ro');
 my $json = JSON::MaybeXS->new;
 ################ Client and transaction validation ########################
 
+sub validate_trx_cancel {
+    my $self = shift;
+
+    my $contract = $self->transaction->contract;
+
+    unless ($contract->is_valid_to_cancel) {
+        my $error = $contract->primary_validation_error;
+
+        return Error::Base->cuss(
+            -type              => 'CancelFailed',
+            -mesg              => $error->message,
+            -message_to_client => localize($error->message_to_client),
+        );
+    }
+
+    $self->transaction->price($contract->cancel_price);
+    return undef;
+}
+
 sub validate_trx_sell {
     my $self = shift;
     ### Client-depended checks
@@ -218,7 +237,10 @@ sub _validate_sell_pricing_adjustment {
         -message_to_client => localize('The contract has expired'),
     ) if $contract->is_expired;
 
-    if (not defined $transaction->price) {
+    # Due to the volatile nature of the bid price for multiplier (high multiplier),
+    # all multiplier contracts will be closed at recomputed bid price without going through price movement checks.
+    # This is specified in the contract terms and conditions.
+    if (not defined $transaction->price or $contract->category_code eq 'multiplier') {
         $transaction->price($contract->bid_price);
         return undef;
     }
@@ -230,13 +252,19 @@ sub _validate_sell_pricing_adjustment {
 sub _validate_trade_pricing_adjustment {
     my $self = shift;
 
-    my $contract = $self->transaction->contract;
+    my $transaction = $self->transaction;
+    my $contract    = $transaction->contract;
 
     return Error::Base->cuss(
-        -type              => 'BetExpired',
-        -mesg              => 'Bet expired with a new price[' . $self->recomputed_amount . '] (old price[' . $self->amount . '])',
+        -type => 'BetExpired',
+        -mesg => 'Bet expired with a new price[' . $transaction->recomputed_amount . '] (old price[' . $transaction->requestedamount . '])',
         -message_to_client => localize('The contract has expired'),
     ) if $contract->is_expired;
+
+    if ($transaction->request_type eq 'payout') {
+        # This is to avoid buying contract at exorbitant 'price' due to human error
+        $transaction->price($contract->ask_price);
+    }
 
     return $self->_validate_binary_price_adjustment('ask_probability') if $contract->is_binary;
     return $self->_validate_non_binary_price_adjustment();
