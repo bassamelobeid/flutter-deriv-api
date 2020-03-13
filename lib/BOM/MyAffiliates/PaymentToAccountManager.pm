@@ -154,7 +154,7 @@ sub _write_csv_files {
 
         open my $fh, '>', $parse_errors_file_loc or die "Cannot open $parse_errors_file_loc: $!";
 
-        map { print $fh $_ } @parse_errors;
+        print $fh @parse_errors;
         close $fh;
 
         push @csv_file_locs, $parse_errors_file_loc;

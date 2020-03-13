@@ -215,13 +215,11 @@ sub get_apps_by_brand {
 
     my $allowed_brand_names = $self->brand->allowed_names();
     if ($self->brand->name eq 'binary' and any { 'binary' eq $_ } @$allowed_brand_names) {
-        map {
+        for (grep { $_ ne 'binary' } @$allowed_brand_names) {
             my $allowed_name = $_;
             my $brand = Brands->new(name => $allowed_name);
             push @{$result->{exclude_apps}}, keys %{$brand->whitelist_apps()};
-            } grep {
-            $_ ne 'binary'
-            } @$allowed_brand_names;
+        }
     } else {
         push @{$result->{include_apps}}, keys %{$self->brand->whitelist_apps()};
     }
