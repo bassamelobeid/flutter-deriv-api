@@ -123,8 +123,10 @@ sub token_deletion_history {
             $_->selectall_arrayref("SELECT * FROM audit.get_deleted_tokens(?)", {Slice => {}}, $loginid);
         });
     # Easier to convert the scopes array here than in Postgres
-    map { $_->{scopes} =~ s/[\[\]\"]//g; $_->{info} = 'Name: ' . $_->{name} . '; Scopes: ' . $_->{scopes} } @$tokens;
-
+    for (@$tokens) {
+        $_->{scopes} =~ s/[\[\]\"]//g;
+        $_->{info} = 'Name: ' . $_->{name} . '; Scopes: ' . $_->{scopes};
+    }
     return $tokens;
 }
 

@@ -167,7 +167,7 @@ Returns number of rows deleted.
 sub delete_copiers {
     my ($self, $args) = @_;
     if ($args->{match_all}) {
-        map { $args->{$_} ||= '*' } qw/trader_id copier_id token/;
+        $args->{$_} ||= '*' for qw/trader_id copier_id token/;
     }
 
     my $rows_affected = $self->db->dbic->run(
