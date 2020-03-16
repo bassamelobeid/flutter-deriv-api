@@ -5,13 +5,12 @@ use warnings;
 no indirect;
 
 use Log::Any qw($log);
-use List::Util qw(any all first);
+use List::Util qw(any all);
 use BOM::Database::ClientDB;
 use BOM::Config;
 use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/financialrounding/;
 use BOM::Platform::Event::Emitter;
-use BOM::CTC::Currency;
 
 my $clientdb;
 my $collectordb;
@@ -83,13 +82,8 @@ sub set_pending_transaction {
 
         for my $address (keys %rows_ref) {
             my @payment = $rows_ref{$address}->@*;
-
-            $transaction->{type} //= '';
-
-            # ignores those that are internal transfer and transactions that already confirmed by subscription
-            if ($transaction->{type} ne 'internal'
-                && any { $_->{blockchain_txn} && $_->{blockchain_txn} eq $transaction->{hash} && $_->{status} ne 'NEW' } @payment)
-            {
+            # transaction already confirmed by subscription
+            if (any { $_->{blockchain_txn} && $_->{blockchain_txn} eq $transaction->{hash} && $_->{status} ne 'NEW' } @payment) {
                 $log->debugf("Address already confirmed by subscription for transaction: %s", $transaction->{hash});
                 return undef;
             }
@@ -105,14 +99,10 @@ sub set_pending_transaction {
             # address has no new transaction so it's safe to create a new one since we
             # already verified that the transaction hash is not present on the table
             if (all { $_->{status} ne 'NEW' } @payment) {
-
-                # this is to prevent getting the wrong client loginid as we now support internal transfer
-                # to get the correct loginid for the address, we need to get the record which transaction type is 'deposit'
-                my $record = first { $_->{transaction_type} eq 'deposit' } @payment;
                 my $result = clientdb()->run(
                     ping => sub {
                         my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit(?, ?, ?, ?, ?)');
-                        $sth->execute($address, $transaction->{currency}, $record->{client_loginid}, $transaction->{fee}, $transaction->{hash})
+                        $sth->execute($address, $transaction->{currency}, $payment[0]->{client_loginid}, $transaction->{fee}, $transaction->{hash})
                             or die $sth->errstr;
                     });
 
@@ -138,10 +128,8 @@ sub set_pending_transaction {
                 return undef;
             }
 
-            my $currency = BOM::CTC::Currency->new(currency_code => $transaction->{currency});
-
             # ignore amount 0
-            unless ($currency->ignore_zero_amount_internal($transaction)) {
+            unless ($transaction->{amount} > 0) {
                 $log->warnf("Amount is zero for transaction: %s", $transaction->{hash});
                 return undef;
             }
@@ -173,6 +161,7 @@ sub set_pending_transaction {
             }
 
             $log->debugf("Transaction status changed to pending: %s", $transaction->{hash});
+
             last;
         }
 
@@ -199,7 +188,7 @@ sub update_transaction_status_to_pending {
                 'SELECT payment.ctc_set_deposit_pending(?, ?, ?, ?)',
                 undef, $address,
                 $transaction->{currency},
-                $transaction->{amount} > 0 ? financialrounding('amount', $transaction->{currency}, $transaction->{amount}) : undef,
+                financialrounding('amount', $transaction->{currency}, $transaction->{amount}),
                 $transaction->{hash});
         });
     return $result;
