@@ -124,15 +124,15 @@ my $form_max_deposit_amount = request()->param('MAXDEPOSIT')     || undef;
 
 # user will not be allowed to set a max deposit without an expiry time
 if ($form_max_deposit_date xor defined $form_max_deposit_amount) {
-    die 'max deposit and max deposit end date must be set together';
+    code_exit_BO("Max deposit and Max deposit end date must be set together");
 }
 
 if ($form_max_deposit_date) {
     my $max_deposit_date = Date::Utility->new($form_max_deposit_date);
     my $now              = Date::Utility->new;
-    die 'cannot set a max deposit end date in the past' if $max_deposit_date->is_before($now);
+    code_exit_BO("Cannot set a Max deposit end date in the past") if $max_deposit_date->is_before($now);
     $client->set_exclusion->max_deposit_end_date($max_deposit_date->date);
-    die 'max deposit is not a number' unless (looks_like_number($form_max_deposit_amount));
+    code_exit_BO("Max deposit is not a number") unless (looks_like_number($form_max_deposit_amount));
     $client->set_exclusion->max_deposit($form_max_deposit_amount);
 } else {
     $client->set_exclusion->max_deposit_end_date(undef);
