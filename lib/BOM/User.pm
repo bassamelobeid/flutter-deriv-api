@@ -198,13 +198,25 @@ sub login {
     BOM::User::Utility::set_gamstop_self_exclusion($gamstop_client) if $gamstop_client;
     return {success => 1};
 }
-#
-# Get my enabled client objects, in loginid order but with reals up first.  Use the replica db for speed.
-# if called as $user->clients(include_disabled=>1); will include disableds.
+
+=head2 clients
+
+Get my enabled client objects, in loginid order but with reals up first.  Use the replica db for speed.
+
+=over 4
+
+=item * C<include_disabled> - e.g. include_disabled=>1  will include disableds otherwise not.
+=item * C<include_duplicated> - e.g. include_duplicated=>1  will include duplicated otherwise not.
+
+=back
+Returns client objects array
+=cut
+
 sub clients {
     my ($self, %args) = @_;
+    my $include_duplicated = $args{include_duplicated} // 0;
 
-    my @clients = @{$self->get_clients_in_sorted_order};
+    my @clients = @{$self->get_clients_in_sorted_order(include_duplicated => $include_duplicated)};
 
     # todo should be refactor
     @clients = grep { not $_->status->disabled } @clients unless $args{include_disabled};
@@ -369,10 +381,13 @@ Return an ARRAY reference that is a list of clients in following order
 =cut
 
 sub get_clients_in_sorted_order {
-    my ($self) = @_;
-    my $account_lists = $self->accounts_by_category([$self->bom_loginids]);
+    my ($self, %args) = @_;
+    my $include_duplicated = $args{include_duplicated} // 0;
+    my $account_lists = $self->accounts_by_category([$self->bom_loginids], include_duplicated => $include_duplicated);
+    my @allowed_statuses = qw(enabled virtual self_excluded disabled);
+    push @allowed_statuses, 'duplicated' if ($include_duplicated);
 
-    return [map { @$_ } @{$account_lists}{qw(enabled virtual self_excluded disabled)}];
+    return [map { @$_ } @{$account_lists}{@allowed_statuses}];
 }
 
 =head2 accounts_by_category
@@ -388,9 +403,9 @@ The categories are:
 =cut
 
 sub accounts_by_category {
-    my ($self, $loginid_list) = @_;
+    my ($self, $loginid_list, %args) = @_;
 
-    my (@enabled_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts);
+    my (@enabled_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts, @duplicated_accounts);
     foreach my $loginid (sort @$loginid_list) {
         my $cl;
         try {
@@ -406,7 +421,7 @@ sub accounts_by_category {
 
         next unless $cl;
 
-        next if $cl->status->is_login_disallowed;
+        next if ($cl->status->is_login_disallowed and not $args{include_duplicated});
 
         # we store the first suitable client to _disabled_real_client/_self_excluded_client/_virtual_client/_first_enabled_real_client.
         # which will be used in get_default_client
@@ -425,6 +440,11 @@ sub accounts_by_category {
             next;
         }
 
+        if ($cl->status->duplicate_account) {
+            push @duplicated_accounts, $cl;
+            next;
+        }
+
         push @enabled_accounts, $cl;
     }
 
@@ -432,7 +452,8 @@ sub accounts_by_category {
         enabled       => \@enabled_accounts,
         virtual       => \@virtual_accounts,
         self_excluded => \@self_excluded_accounts,
-        disabled      => \@disabled_accounts
+        disabled      => \@disabled_accounts,
+        duplicated    => \@duplicated_accounts
     };
 }
 
