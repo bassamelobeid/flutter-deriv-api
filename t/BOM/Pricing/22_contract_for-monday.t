@@ -13,14 +13,12 @@ use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Date::Utility;
 use BOM::Test::RPC::Client;
-use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow);
 use BOM::Config::Redis;
 
 use utf8;
 
 my $mock = Test::MockModule->new('BOM::Product::Contract::PredefinedParameters');
 $mock->mock('_get_predefined_highlow', sub { (100, 90) });
-$mock->mock('update_predefined_highlow', sub { 1 });
 
 set_absolute_time(Date::Utility->new('2017-11-20 00:00:00')->epoch);
 my ($t, $rpc_ct);
