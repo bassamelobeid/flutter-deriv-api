@@ -8,8 +8,10 @@ use BOM::Test::Helper qw/build_wsapi_test test_schema/;
 use await;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw(top_up);
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
+use BOM::User::Client;
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
@@ -49,19 +51,12 @@ my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     email       => $email_advertiser
 });
 
-my $client_advertiser = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => $email_advertiser
-});
-
 my $user_advertiser = BOM::User->create(
     email    => $email_advertiser,
     password => 'test'
 );
+$user_advertiser->update_email_fields(email_verified => 't');
 $user_advertiser->add_client($client_vr);
-$user_advertiser->add_client($client_advertiser);
-$client_advertiser->account('USD');
-top_up($client_advertiser, $client_advertiser->currency, 1000);
 
 my $client_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -97,7 +92,27 @@ my %advert_params = (
     contact_info     => 'ad contact info'
 );
 
-my ($resp, $token_vr, $token_advertiser, $token_client, $advertiser, $advert, $order);
+my ($resp, $token_vr, $client_advertiser, $token_advertiser, $token_client, $advertiser, $advert, $order);
+
+subtest 'new real account for p2p' => sub {
+    my %account_params = (
+        new_account_real       => 1,
+        account_opening_reason => 'Peer-to-peer exchange',
+        last_name              => 'last-name',
+        first_name             => 'first\'name',
+        date_of_birth          => '1990-12-30',
+        residence              => 'id',
+    );
+
+    $token_vr = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token', ['admin']);    
+    $t->await::authorize({authorize => $token_vr});
+    $resp = $t->await::new_account_real(\%account_params);
+    test_schema('new_account_real', $resp);
+    my $loginid = $resp->{new_account_real}->{client_id};
+    like($loginid, qr/^CR\d+$/, "got CR client $loginid");
+    $client_advertiser = BOM::User::Client->new({loginid=>$loginid});
+    top_up($client_advertiser, $client_advertiser->currency, 1000);
+};
 
 subtest 'misc' => sub {
     $token_vr = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
