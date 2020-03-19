@@ -35,7 +35,7 @@ use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::Utils::Test;
 use Quant::Framework::Asset;
 
-use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods generate_barriers_for_window update_predefined_highlow);
+use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods generate_barriers_for_window);
 use BOM::Product::ContractFinder;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -214,11 +214,6 @@ sub create_predefined_parameters_for {
             quote      => 100,
         }) for (@start_times);
     create_predefined_barriers($symbol, $_, $date) for (@$tp);
-    update_predefined_highlow({
-        symbol => $symbol,
-        epoch  => $date->epoch,
-        quote  => 100
-    });
     my $barrier_by_category = create_predefined_barriers_by_contract_category($symbol, $date);
 
     return ($tp, $barrier_by_category);
