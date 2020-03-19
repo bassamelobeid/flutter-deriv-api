@@ -5,7 +5,7 @@ use warnings;
 
 use Exporter qw(import);
 our @EXPORT_OK =
-    qw(get_predefined_barriers_by_contract_category get_expired_barriers get_available_barriers get_trading_periods generate_barriers_for_window generate_trading_periods update_predefined_highlow next_generation_epoch);
+    qw(get_predefined_barriers_by_contract_category get_expired_barriers get_available_barriers get_trading_periods generate_barriers_for_window generate_trading_periods next_generation_epoch);
 
 use Encode;
 use JSON::MaybeXS;
@@ -111,48 +111,6 @@ sub trading_period_key {
 
     my $key = join '_', ('trading_period', $underlying_symbol, $date->date, $date->hour);
     return ($cache_namespace, $key);
-}
-
-=head2 update_predefined_highlow
-For a given tick, it updates a list of relevant high-low period.
-=cut
-
-sub update_predefined_highlow {
-    my $tick_data = shift;
-
-    my $underlying = create_underlying($tick_data->{symbol});
-    my $tick_epoch = $tick_data->{epoch};
-    my @periods    = @{get_trading_periods($underlying->symbol)};
-    my $new_quote  = $tick_data->{quote};
-
-    return unless @periods;
-
-    foreach my $period (@periods) {
-        my $key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
-        my $cache = BOM::Config::Redis::redis_replicated_read()->get($cache_namespace . '::' . $key);
-        my ($new_high, $new_low);
-
-        if ($cache) {
-            my $current_highlow = $json->decode($cache);
-            my ($high, $low) = map { $current_highlow->[$_] } (0, 1);
-            $new_high = max($new_quote, $high);
-            $new_low = min($new_quote, $low);
-        } else {
-            my $start_epoch = $period->{date_start}->{epoch};
-            my $end_epoch   = max($tick_epoch, $start_epoch);
-            my $db_highlow  = $underlying->get_high_low_for_period({
-                start => $start_epoch,
-                end   => $end_epoch,
-            });
-            $new_high = defined $db_highlow->{high} ? max($new_quote, $db_highlow->{high}) : $new_quote;
-            $new_low = defined $db_highlow->{low} ? min($new_quote, $db_highlow->{low}) : $new_quote;
-        }
-        my $ttl = max(1, $period->{date_expiry}->{epoch} - $tick_epoch);
-        # not using chronicle here because we don't want to save historical highlow data
-        BOM::Config::Redis::redis_replicated_write()->set($cache_namespace . '::' . $key, $json->encode([$new_high, $new_low]), 'EX', $ttl);
-    }
-
-    return 1;
 }
 
 sub _get_predefined_highlow {

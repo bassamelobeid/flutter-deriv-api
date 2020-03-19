@@ -17,7 +17,7 @@ use JSON::MaybeXS;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::ContractFinder;
-use BOM::Product::Contract::PredefinedParameters qw(update_predefined_highlow get_expired_barriers next_generation_epoch);
+use BOM::Product::Contract::PredefinedParameters qw(get_expired_barriers next_generation_epoch);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -216,34 +216,6 @@ subtest 'predefined barriers' => sub {
             cmp_bag($offering->{available_barriers}, $test->{available_barriers}, 'available barriers for ' . $testname);
             cmp_bag($offering->{expired_barriers},   $test->{expired_barriers},   'expired barriers for ' . $testname);
         }
-    }
-};
-
-subtest 'update_predefined_highlow' => sub {
-    my $now    = Date::Utility->new;
-    my $symbol = 'frxGBPUSD';
-    SKIP: {
-        my $u = create_underlying($symbol);
-        skip 'non trading day', 4, unless $u->calendar->trades_on($u->exchange, $now);
-        setup_ticks($symbol, [[$now->minus_time_interval('365d'), 100], [$now, 69], [$now->plus_time_interval('10s'), 69.1]]);
-        my $new_tick = {
-            symbol => $symbol,
-            epoch  => $now->plus_time_interval('30s')->epoch,
-            quote  => 69.2
-        };
-        my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $now);
-        BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_barriers($symbol, $_, $now) for @$tp;
-        ok update_predefined_highlow($new_tick), 'updated highlow';
-        my $offering = BOM::Product::ContractFinder->new->multi_barrier_contracts_for({symbol => $symbol})->{available};
-        my $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
-        skip 'touchnotouch not offered', unless $touch;
-        ok !scalar(@{$touch->{expired_barriers}}), 'no expired barrier detected';
-        $new_tick->{epoch} += 1;
-        $new_tick->{quote} = 125;
-        ok update_predefined_highlow($new_tick), 'next update';
-        $offering = BOM::Product::ContractFinder->new->multi_barrier_contracts_for({symbol => $symbol})->{available};
-        $touch = first { $_->{contract_category} eq 'touchnotouch' and $_->{trading_period}->{duration} eq '3M' } @$offering;
-        ok scalar(@{$touch->{expired_barriers}}), 'expired barrier detected';
     }
 };
 
