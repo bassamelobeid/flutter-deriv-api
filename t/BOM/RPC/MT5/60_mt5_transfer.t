@@ -5,7 +5,7 @@ use Test::Mojo;
 use Test::MockModule;
 use Format::Util::Numbers qw/financialrounding get_min_unit/;
 use JSON::MaybeUTF8;
-
+use Date::Utility;
 use LandingCompany::Registry;
 use BOM::Test::RPC::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -172,12 +172,6 @@ subtest 'multi currency transfers' => sub {
                 return Future->done({success => 1});
             });
 
-        $redis->hmset(
-            'exchange_rates::EUR_USD',
-            quote => $EUR_USD,
-            epoch => time
-        );
-
         BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
         $client_eur->status->set('no_withdrawal_or_trading', 'system', '..dont like you, sorry.');
@@ -185,6 +179,33 @@ subtest 'multi currency transfers' => sub {
             ->has_error->error_message_is('You cannot perform this action, as your account is withdrawal locked.');
         $client_eur->status->clear_no_withdrawal_or_trading;
 
+        $redis->hmset(
+            'exchange_rates::EUR_USD',
+            quote => 0,
+            epoch => time
+        );
+
+        my $mock_date = Test::MockModule->new('Date::Utility');
+        $mock_date->mock(
+            'is_a_weekend',
+            sub {
+                return 1;
+            });
+
+        $c->call_ok('mt5_deposit', $deposit_params)->has_error->error_message_like(qr/Transfers are unavailable on weekends/);
+        $mock_date->mock(
+            'is_a_weekend',
+            sub {
+                return 0;
+            });
+        $c->call_ok('mt5_deposit', $deposit_params)->has_error->error_message_like(qr/transfers are currently unavailable/);
+
+        $redis->hmset(
+            'exchange_rates::EUR_USD',
+            quote => $EUR_USD,
+            epoch => time
+        );
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit EUR->USD with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'deposit EUR->USD with current rate - has transaction id');
 

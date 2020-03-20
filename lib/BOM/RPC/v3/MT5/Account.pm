@@ -1613,7 +1613,7 @@ sub _mt5_validate_and_get_amount {
             }
 
             if ($err) {
-                return create_error_future('NoExchangeRates', {override_code => $error_code})
+                return create_error_future(Date::Utility->new->is_a_weekend ? 'ClosedMarket' : 'NoExchangeRates', {override_code => $error_code})
                     if ($err =~ /No rate available to convert/);
 
                 return create_error_future(
