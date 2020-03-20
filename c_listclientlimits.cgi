@@ -7,7 +7,6 @@ use f_brokerincludeall;
 
 use BOM::User::Client;
 use HTML::Entities;
-
 use BOM::Database::DataMapper::Account;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
@@ -22,16 +21,14 @@ BrokerPresentation('CLIENT LIMITS FOR ' . $encoded_login);
 
 my $broker = request()->broker_code;
 
-if ($login !~ /^$broker\d+$/) {
+# Withdrawal limits
+my $client = eval { BOM::User::Client::get_instance({'loginid' => $login, db_operation => 'replica'}) };
+
+if (!$client) {
     print 'ERROR : Wrong loginID ' . $encoded_login;
     code_exit_BO();
 }
 
-# Withdrawal limits
-my $client = BOM::User::Client::get_instance({
-        'loginid'    => $login,
-        db_operation => 'replica'
-    }) || die "[$0] could not get client for $login";
 my $curr = $client->currency;
 
 my $account_mapper = BOM::Database::DataMapper::Account->new({

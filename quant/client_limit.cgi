@@ -74,7 +74,12 @@ sub get_limited_client_list {
 
     my @client_output;
     foreach my $client_loginid (keys %$custom_client_limits) {
-        my $binary_user_id = BOM::User::Client->new({loginid => $client_loginid})->binary_user_id;
+        my $client = eval { BOM::User::Client::get_instance({'loginid' => $client_loginid, db_operation => 'replica'}) };
+        if (not $client) {
+            print "Error: wrong loginid ($client_loginid) could not get client instance";
+            code_exit_BO();
+        }
+        my $binary_user_id = $client->binary_user_id;
         my %data           = %{$custom_client_limits->{$client_loginid}};
         my $reason         = $data{reason};
         my $limits         = $data{custom_limits};

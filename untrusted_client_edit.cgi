@@ -39,7 +39,7 @@ Bar("UNTRUSTED/DISABLE CLIENT");
 
 LOGIN:
 foreach my $login_id (split(/\s+/, $clientID)) {
-    my $client = BOM::User::Client::get_instance({'loginid' => $login_id});
+    my $client = eval { BOM::User::Client::get_instance({'loginid' => $login_id}) };
     if (not $client) {
         push @invalid_logins, encode_entities($login_id);
         next LOGIN;

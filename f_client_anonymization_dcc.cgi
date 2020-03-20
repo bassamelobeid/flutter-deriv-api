@@ -21,10 +21,7 @@ $input->{clientloginid} = trim(uc $input->{clientloginid});
 my $well_formatted = check_client_login_id($input->{clientloginid});
 code_exit_BO("Invalid loginid provided!") unless $well_formatted;
 
-my $client = BOM::User::Client::get_instance({
-    'loginid'    => uc($input->{'clientloginid'}),
-    db_operation => 'replica'
-});
+my $client = eval { BOM::User::Client::get_instance({'loginid' => uc($input->{'clientloginid'}), db_operation => 'replica'}) };
 code_exit_BO("ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist") if (not $client);
 
 my $code = BOM::DualControl->new({

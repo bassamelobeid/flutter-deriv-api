@@ -29,8 +29,11 @@ if ($loginid =~ /^VR/) {
     code_exit_BO();
 }
 
-my $client = BOM::User::Client::get_instance({'loginid' => $loginid})
-    || die "[$0] Could not get the client object instance for client [$loginid]";
+my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginid}) };
+if (not $client) {
+    print "Error: wrong loginid ($loginid) could not get client object";
+    code_exit_BO();
+}
 
 my $broker = $client->broker;
 

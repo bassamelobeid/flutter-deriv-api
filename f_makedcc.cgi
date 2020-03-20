@@ -51,10 +51,7 @@ if ($input->{'dcctype'} ne 'file_content') {
         code_exit_BO();
     }
 
-    $client = BOM::User::Client::get_instance({
-        'loginid'    => uc($input->{'clientloginid'}),
-        db_operation => 'replica'
-    });
+    $client = eval { BOM::User::Client::get_instance({'loginid' => uc($input->{'clientloginid'}), db_operation => 'replica'}) };
 
     if (not $client) {
         print "ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist! Perhaps you made a typo?";
