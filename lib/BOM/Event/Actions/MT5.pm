@@ -196,11 +196,6 @@ sub new_mt5_signup {
     my $client = BOM::User::Client->new({loginid => $data->{loginid}});
     return unless $client;
 
-    BOM::Event::Services::Track::new_mt5_signup({
-            loginid    => $data->{loginid},
-            properties => $data
-        })->retain;
-
     my $id = $data->{mt5_login_id};
 
     my $cache_key  = "MT5_USER_GROUP::" . $id;
@@ -226,7 +221,10 @@ sub new_mt5_signup {
         BOM::Config::Redis::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
     }
 
-    return 1;
+    return BOM::Event::Services::Track::new_mt5_signup({
+        loginid    => $data->{loginid},
+        properties => $data
+    });
 }
 
 =head2 mt5_password_changed

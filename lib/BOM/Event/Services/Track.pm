@@ -12,6 +12,7 @@ use Date::Utility;
 use Brands;
 use List::Util qw(first any);
 use Storable qw(dclone);
+use Format::Util::Numbers qw(formatnumber);
 
 use BOM::User;
 use BOM::User::Client;
@@ -162,10 +163,12 @@ sub new_mt5_signup {
     my $properties = {$args->{properties}->%*};
 
     die 'mt5 loginid is required' unless $properties->{mt5_login_id};
+
+    $properties->{mt5_loginid} = delete $properties->{mt5_login_id};
     delete $properties->{cs_email};
 
     return track_event(
-        event      => 'mt5 signup',
+        event      => 'mt5_signup',
         loginid    => $args->{loginid},
         properties => $properties
     );
@@ -190,7 +193,7 @@ sub mt5_password_changed {
     my ($args) = @_;
     my $properties = $args->{properties} // {};
 
-    $properties->{mt5_loginid} = "MT" . ($properties->{mt5_loginid} // die('mt5 loginid is required'));
+    die 'mt5 loginid is required' unless $properties->{mt5_loginid};
 
     return track_event(
         event      => 'mt5_password_changed',
@@ -259,8 +262,9 @@ sub transfer_between_accounts {
     $properties->{revenue} = -($properties->{from_amount} // die('required from_account'));
     $properties->{currency} = $properties->{from_currency} // die('required from_currency');
     $properties->{value}    = $properties->{from_amount}   // die('required from_amount');
-
     $properties->{time} = _time_to_iso_8601($properties->{time} // die('required time'));
+
+    $properties->{fees} = formatnumber('amount', $properties->{from_currency}, $properties->{fees} // 0);
 
     # Do not send PaymentAgent fields to Segment when it's not a payment agent transfer
     if ($properties->{gateway_code} ne 'payment_agent_transfer') {
@@ -373,7 +377,7 @@ sub set_financial_assessment {
 
 =head2 track_event
 
-A public method that performs event validtion and tracking by Segment B<track> and (if requested) B<identify> API calls.
+A public method that performs event validation and tracking by Segment B<track> and (if requested) B<identify> API calls.
 Takes the following named parameters:
 
 =over 4
@@ -386,7 +390,7 @@ Takes the following named parameters:
 
 =item * C<is_identify_required> - a binary flag determining wether or not make an B<identify> API call (optional)
 
-=item * C<brand> - the brand assiciated with the event as a L<Brands> object (optional - defaults to request's brand)
+=item * C<brand> - the brand associated with the event as a L<Brands> object (optional - defaults to request's brand)
 
 =back
 
@@ -609,7 +613,7 @@ Arguments:
 
 =item * C<event> - required. event name.
 
-=item * C<brand> - optional. barnd object.
+=item * C<brand> - optional. brand object.
 
 =back
 
@@ -634,7 +638,7 @@ sub _validate_params {
     die "$event tracking triggered without a loginid. Please inform backend team if it continues to occur." unless $loginid;
 
     my $client = BOM::User::Client->new({loginid => $loginid})
-        or die "$event tracking triggered with an invalid loginid. Please inform backend team if it continues to occur.";
+        or die "$event tracking triggered with an invalid loginid $loginid. Please inform backend team if it continues to occur.";
 
     return $client;
 }

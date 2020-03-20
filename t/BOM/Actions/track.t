@@ -80,7 +80,8 @@ subtest 'General event validation - filtering by brand' => sub {
         qr/login tracking triggered without a loginid. Please inform backend team if it continues to occur./, 'Missing loginid exception';
 
     like exception { BOM::Event::Services::Track::track_event(event => 'login', loginid => 'CR1234')->get },
-        qr/login tracking triggered with an invalid loginid. Please inform backend team if it continues to occur./, 'Invalid loginid exception';
+        qr/login tracking triggered with an invalid loginid CR1234. Please inform backend team if it continues to occur./,
+        'Invalid loginid exception';
 
     $segment_response = Future->fail('dummy test failure');
     like exception { BOM::Event::Services::Track::track_event(event => 'login', loginid => $test_client->loginid)->get }, qr/dummy test failure/,
