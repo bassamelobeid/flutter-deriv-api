@@ -39,6 +39,7 @@ struct ParamLists => [qw(
         client
         contract
         p2p_order
+        p2p_advertiser
         )];
 
 struct Client => [qw(
@@ -118,6 +119,17 @@ struct P2POrder => [qw(
         contact_info
         payment_info
         payment_method
+        )];
+
+struct P2PAdvertiser => [qw(
+        contact_info
+        created_time
+        default_advert_description
+        id
+        is_approved
+        is_listed
+        name
+        payment_info
         )];
 
 my $history_count = 10;
@@ -293,6 +305,22 @@ for my $type (qw(buy sell)) {
     }
 }
 
+my (@p2p_advertisers, $advertiser_id);
+for my $name (qw(name имя)) {
+    $advertiser_id++;
+    push @p2p_advertisers,
+        P2PAdvertiser(
+        contact_info               => 'Telegram +023753475',
+        created_time               => (time - 30),
+        default_advert_description => 'Some Ad description',
+        id                         => $advertiser_id,
+        is_approved                => 1,
+        is_listed                  => 1,
+        name                       => $name,
+        payment_info               => 'Paypal user@example.com',
+        );
+}
+
 our $parameters = {
     underlying     => \@underlying,
     ticks_history  => \@ticks_history,
@@ -301,6 +329,7 @@ our $parameters = {
     client         => \@client,
     contract       => \@contract,
     p2p_order      => \@p2p_orders,
+    p2p_advertiser => \@p2p_advertisers,
 };
 $parameters->{param_lists} = [ParamLists($parameters->%*)];
 
