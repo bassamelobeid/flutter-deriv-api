@@ -56,7 +56,7 @@ sub advertiser_created {
 
     my @args = qw(client_loginid name contact_info default_advert_description payment_info);
 
-    if (grep { !defined $data->{$_} } @args) {
+    if (grep { !exists $data->{$_} } @args) {
         $log->info('Fail to procces advertiser_created: Invalid event data', $data);
         return 0;
     }
@@ -83,6 +83,34 @@ be relevant to anyone with an active order.
 =cut
 
 sub advertiser_updated {
+    my $data = shift;
+    my @args = qw(client_loginid advertiser_id);
+
+    if (grep { !$data->{$_} } @args) {
+        $log->info('Fail to procces advertiser_updated: Invalid event data', $data);
+        return 0;
+    }
+    my ($loginid, $advertiser_id) = @{$data}{@args};
+
+    my $client = BOM::User::Client->new({loginid => $loginid});
+
+    my $advertiser = $client->_p2p_advertisers(id => $advertiser_id)->[0];
+
+    return 0 unless $advertiser;
+
+    if ($advertiser->{client_loginid} ne $loginid) {
+        # Probably we will never have this case, because update shuould be called by advertiser
+        # just to be sure that we will get all fields for notificaton
+        $client = BOM::User::Client->new({loginid => $advertiser->{client_loginid}});
+    }
+
+    my $advertiser_response = $client->_advertiser_details($advertiser);
+    $advertiser_response->{client_loginid} = $client->loginid;
+
+    my $redis     = BOM::Config::Redis->redis_p2p_write();
+    my $redis_key = _get_advertiser_channel_name($client);
+    $redis->publish($redis_key, encode_json_utf8($advertiser_response));
+
     return 1;
 }
 
@@ -222,6 +250,12 @@ sub _get_order_channel_name {
     my $client = shift;
 
     return join q{::} => map { uc($_) } ("P2P::ORDER::NOTIFICATION", $client->broker, $client->residence, $client->currency,);
+}
+
+sub _get_advertiser_channel_name {
+    my $client = shift;
+
+    return join q{::} => map { uc($_) } ("P2P::ADVERTISER::NOTIFICATION", $client->broker);
 }
 
 1;

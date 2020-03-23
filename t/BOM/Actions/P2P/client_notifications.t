@@ -51,6 +51,15 @@ my @data_for_notification_tests = ({
         channel  => join(q{::} => ('P2P::ORDER::NOTIFICATION', uc($client->broker), uc($client->residence), uc($client->currency))),
         expected => $expected_data,
     },
+    {
+        event => 'p2p_advertiser_updated',
+        data  => {
+            client_loginid => $advertiser->loginid,
+            advertiser_id  => $advertiser->p2p_advertiser_info->{id},
+        },
+        channel => join(q{::} => ('P2P::ADVERTISER::NOTIFICATION', uc($client->broker))),
+        expected => [+{$advertiser->p2p_advertiser_info->%*, client_loginid => $advertiser->loginid}],
+    },
 );
 
 for my $test_data (@data_for_notification_tests) {
