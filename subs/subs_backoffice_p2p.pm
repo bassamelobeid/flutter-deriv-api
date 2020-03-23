@@ -41,21 +41,26 @@ sub p2p_advertiser_update {
     my $client = shift;
 
     try {
-        if (
-            $client->p2p_advertiser_update(
-                name                       => request->param('advertiser_name'),
-                is_approved                => request->param('is_approved'),
-                is_listed                  => request->param('is_listed'),
-                default_advert_description => request->param('default_advert_description'),
-                payment_info               => request->param('payment_info'),
-                contact_info               => request->param('contact_info'),
-            ))
-        {
-            return {
-                success => 1,
-                message => 'P2P advertiser for ' . $client->loginid . ' updated.'
-            };
-        }
+        my $advertiser = $client->p2p_advertiser_update(
+            name                       => request->param('advertiser_name'),
+            is_approved                => request->param('is_approved'),
+            is_listed                  => request->param('is_listed'),
+            default_advert_description => request->param('default_advert_description'),
+            payment_info               => request->param('payment_info'),
+            contact_info               => request->param('contact_info'),
+        );
+
+        BOM::Platform::Event::Emitter::emit(
+            p2p_advertiser_updated => {
+                client_loginid => $client->loginid,
+                advertiser_id  => $advertiser->{id},
+            },
+        );
+
+        return {
+            success => 1,
+            message => 'P2P advertiser for ' . $client->loginid . ' updated.'
+        };
     }
     catch {
         my ($error_code, $error_msg) = ($@, undef);
