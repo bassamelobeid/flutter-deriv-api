@@ -178,22 +178,18 @@ subtest 'Updating advertiser fields' => sub {
 };
 
 subtest 'Creating advert' => sub {
-    my %params     = %advert_params;
+    
     my $name       = 'ad man 4';
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
-        name => $name,
-        %advertiser_params
-    );
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(%advertiser_params, name => $name, balance => 2.4);
 
-    my $advert;
-
+    my %params     = %advert_params;
     for my $numeric_field (qw(amount max_order_amount min_order_amount rate)) {
         %params = %advert_params;
 
         $params{$numeric_field} = -1;
         cmp_deeply(
             exception {
-                $advert = $advertiser->p2p_advert_create(%params);
+                $advertiser->p2p_advert_create(%params);
             },
             {
                 error_code => 'InvalidNumericValue',
@@ -207,7 +203,7 @@ subtest 'Creating advert' => sub {
     $params{amount} = 200;
     cmp_deeply(
         exception {
-            $advert = $advertiser->p2p_advert_create(%params);
+            $advertiser->p2p_advert_create(%params);
         },
         {error_code => 'MaximumExceeded'},
         'Error when amount exceeds BO advert limit'
@@ -231,7 +227,7 @@ subtest 'Creating advert' => sub {
     $params{min_order_amount} = $params{max_order_amount} + 1;
     cmp_deeply(
         exception {
-            $advert = $advertiser->p2p_advert_create(%params);
+            $advertiser->p2p_advert_create(%params);
         },
         {error_code => 'InvalidMinMaxAmount'},
         'Error when min_order_amount is more than max_order_amount'
@@ -241,7 +237,7 @@ subtest 'Creating advert' => sub {
     $params{amount} = $params{max_order_amount} - 1;
     cmp_deeply(
         exception {
-            $advert = $advertiser->p2p_advert_create(%params);
+            $advertiser->p2p_advert_create(%params);
         },
         {error_code => 'InvalidMaxAmount'},
         'Error when max_order_amount is more than amount'
@@ -251,7 +247,7 @@ subtest 'Creating advert' => sub {
     $params{type} = 'buy';
     cmp_deeply(
         exception {
-            $advert = $advertiser->p2p_advert_create(%params);
+            $advertiser->p2p_advert_create(%params);
         },
         {error_code => 'AdvertPaymentContactInfoNotAllowed'},
         'Error when payment/contact info provided for buy advert'
@@ -261,7 +257,7 @@ subtest 'Creating advert' => sub {
     $params{payment_info} = ' ';
     cmp_deeply(
         exception {
-            $advert = $advertiser->p2p_advert_create(%params);
+            $advertiser->p2p_advert_create(%params);
         },
         {error_code => 'AdvertPaymentInfoRequired'},
         'Error when payment info not provided for buy advert'
@@ -271,12 +267,13 @@ subtest 'Creating advert' => sub {
     $params{contact_info} = ' ';
     cmp_deeply(
         exception {
-            $advert = $advertiser->p2p_advert_create(%params);
+            $advertiser->p2p_advert_create(%params);
         },
         {error_code => 'AdvertContactInfoRequired'},
         'Error when contact info not provided for buy advert'
     );
 
+    my $advert;
     %params = %advert_params;
     is(
         exception {
@@ -298,12 +295,8 @@ subtest 'Creating advert' => sub {
         local_currency                 => $params{local_currency},
         max_order_amount               => num($params{max_order_amount}),
         max_order_amount_display       => num($params{max_order_amount}),
-        max_order_amount_limit         => num($params{max_order_amount}),
-        max_order_amount_limit_display => num($params{max_order_amount}),
         min_order_amount               => num($params{min_order_amount}),
         min_order_amount_display       => num($params{min_order_amount}),
-        min_order_amount_limit         => num($params{min_order_amount}),
-        min_order_amount_limit_display => num($params{min_order_amount}),
         payment_method                 => $params{payment_method},
         payment_info                   => $params{payment_info},
         contact_info                   => $params{contact_info},
@@ -322,15 +315,19 @@ subtest 'Creating advert' => sub {
     };
 
     cmp_deeply($advert, $expected_advert, "advert_create returns expected fields");
+    
+    cmp_deeply($advertiser->p2p_advertiser_adverts, [$expected_advert], "p2p_advertiser_adverts returns expected fields");
+    
+    # these are not returned by previous calls because there was no counterparty to check balance for buy orders
+    $expected_advert->{min_order_amount_limit} = $expected_advert->{min_order_amount_limit_display} = num($params{min_order_amount});
+    $expected_advert->{max_order_amount_limit} = $expected_advert->{max_order_amount_limit_display} = num(2.4); # advertiser balance
 
     cmp_deeply($advertiser->p2p_advert_info(id => $advert->{id}), $expected_advert, "advert_info returns expected fields");
 
     cmp_deeply($advertiser->p2p_advert_list, [$expected_advert], "p2p_advert_list returns expected fields");
 
-    cmp_deeply($advertiser->p2p_advert_list(counterparty_type => $BOM::User::Client::P2P_COUNTERYPARTY_TYPE_MAPPING->{$params{type}}),
+    cmp_deeply($advertiser->p2p_advert_list(counterparty_type => 'buy'),
         [$expected_advert], "p2p_advert_list returns expected result when filtered by type");
-
-    cmp_deeply($advertiser->p2p_advertiser_adverts, [$expected_advert], "p2p_advertiser_adverts returns expected fields");
 
     # Fields that should only be visible to advert owner
     delete @$expected_advert{
@@ -404,13 +401,19 @@ subtest 'Updating advert' => sub {
 
     ok !$advertiser->p2p_advert_info(id => $advert->{id})->{is_active}, "advert is inactive";
 
-    ok $advertiser->p2p_advert_update(
-        id        => $advert->{id},
-        is_active => 1
-    )->{is_active}, "reactivate advert";
+    my $ad_info = $advertiser->p2p_advert_info(id => $advert->{id});
+    
+    # p2p_advert_update does not return these, because we don't know counterparty balance
+    delete @$ad_info{
+        qw( min_order_amount_limit min_order_amount_limit_display max_order_amount_limit max_order_amount_limit_display )
+    }; 
 
     my $empty_update = $advertiser->p2p_advert_update(id => $advert->{id});
-    cmp_deeply($empty_update, $advertiser->p2p_advert_info(id => $advert->{id}), 'empty update');
+    cmp_deeply($empty_update, $ad_info, 'empty update returns all fields');
+    
+    my $real_update =  $advertiser->p2p_advert_update(id => $advert->{id}, is_active => 1);
+    $ad_info->{is_active} = 1;
+    cmp_deeply($real_update, $ad_info, 'actual update returns all fields');
 };
 
 subtest 'Creating advert from non active advertiser' => sub {

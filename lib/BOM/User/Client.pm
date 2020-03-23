@@ -1877,8 +1877,8 @@ sub p2p_advert_create {
     _validate_advert_amounts(%param);
 
     my $active_adverts_count = $client->_p2p_adverts(
-        advertiser_loginid => $client->loginid,
-        is_active          => 1,
+        advertiser_id => $advertiser_info->{id},
+        is_active     => 1,
     )->@*;
     die +{error_code => 'AdvertMaxExceeded'} if $active_adverts_count >= P2P_MAXIMUM_ACTIVE_ADVERTS;
 
@@ -1937,7 +1937,7 @@ sub p2p_advert_info {
     my ($client, %param) = @_;
     my $id = $param{id} // return;
     my $list = $client->_p2p_adverts(id => $id);
-    return $client->_advert_details($list)->[0];
+    return $client->_advert_details($list, undef, 1)->[0];
 }
 
 =head2 p2p_advert_list
@@ -1965,7 +1965,7 @@ sub p2p_advert_list {
         advertiser_is_approved => 1,
         advertiser_is_listed   => 1,
     );
-    return $client->_advert_details($list, $param{amount});
+    return $client->_advert_details($list, $param{amount}, 1);
 }
 
 =head2 p2p_advert_update
@@ -1986,9 +1986,10 @@ sub p2p_advert_update {
     die +{error_code => 'PermissionDenied'} if $advert_info->{advertiser_loginid} ne $client->loginid;
 
     # return current advert details if nothing changed
-    return $client->_advert_details([$advert_info])->[0]
-        unless $param{delete}
-        or grep { exists $advert_info->{$_} and $param{$_} ne $advert_info->{$_} } keys %param;
+    unless ($param{delete} or grep { exists $advert_info->{$_} and $param{$_} ne $advert_info->{$_} } keys %param) {
+        delete $advert_info->{max_order_amount_actual};    # not relevant for advertiser
+        return $client->_advert_details([$advert_info])->[0];
+    }
 
     if ($param{delete}) {
         my $open_orders = $client->_p2p_orders(
@@ -2028,9 +2029,8 @@ sub p2p_order_create {
 
     my $advert_info = $client->_p2p_adverts(id => $advert_id)->[0];
 
-    die +{error_code => 'AdvertNotFound'}       unless $advert_info;
-    die +{error_code => 'AdvertIsDisabled'}     unless $advert_info->{is_active};
-    die +{error_code => 'InvalidOrderCurrency'} unless $advert_info->{account_currency} eq $client->currency;
+    die +{error_code => 'AdvertNotFound'}   unless $advert_info;
+    die +{error_code => 'AdvertIsDisabled'} unless $advert_info->{is_active};
     die +{error_code => 'InvalidAdvertOwn'} if $advert_info->{advertiser_loginid} eq $client->loginid;
 
     die +{
@@ -2272,13 +2272,17 @@ sub _p2p_adverts {
     die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
     die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
+    $param{account_currency} = $client->currency;
+    $param{client_loginid}   = $client->loginid;
+    $param{max_order} = convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order, 'USD', $client->currency);
+
     $client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{
-                    qw/id account_currency advertiser_id advertiser_loginid is_active type can_order advertiser_is_listed advertiser_is_approved limit offset/
+                    qw/id account_currency advertiser_id is_active type can_order max_order advertiser_is_listed advertiser_is_approved client_loginid limit offset/
                 });
         }) // [];
 }
@@ -2450,14 +2454,10 @@ Takes and returns an arrayref of advert.
 =cut
 
 sub _advert_details {
-    my ($client, $list, $amount) = @_;
-
+    my ($client, $list, $amount, $show_limits) = @_;
     my @results;
-    my $max_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
 
     for my $advert (@$list) {
-        my $effective_max =
-            List::Util::min($advert->{remaining}, $advert->{max_order_amount}, convert_currency($max_order, 'USD', $advert->{account_currency}));
 
         my $result = {
             account_currency  => $advert->{account_currency},
@@ -2474,10 +2474,16 @@ sub _advert_details {
             price_display     => formatnumber('amount', $advert->{local_currency}, $advert->{rate} * ($amount // 1)),
             rate              => $advert->{rate},
             rate_display      => _p2p_rate_format($advert->{rate}),
-            min_order_amount_limit         => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
-            min_order_amount_limit_display => formatnumber('amount',      $advert->{account_currency}, $advert->{min_order_amount}),
-            max_order_amount_limit         => financialrounding('amount', $advert->{account_currency}, $effective_max),
-            max_order_amount_limit_display => formatnumber('amount',      $advert->{account_currency}, $effective_max),
+            (
+                $show_limits
+                ? (
+                    min_order_amount_limit         => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
+                    min_order_amount_limit_display => formatnumber('amount',      $advert->{account_currency}, $advert->{min_order_amount}),
+                    max_order_amount_limit         => financialrounding('amount', $advert->{account_currency}, $advert->{max_order_amount_actual}),
+                    max_order_amount_limit_display => formatnumber('amount',      $advert->{account_currency}, $advert->{max_order_amount_actual}),
+                    )
+                : ()
+            ),
             (
                 $client->loginid eq $advert->{advertiser_loginid}    # only advert owner can see these fields
                 ? (

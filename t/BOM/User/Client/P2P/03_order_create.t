@@ -9,9 +9,12 @@ use Format::Util::Numbers qw(formatnumber);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client;
+use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
 use Test::Fatal;
+
+populate_exchange_rates();
 
 BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
 
@@ -434,7 +437,7 @@ subtest 'Creating order with wrong currency' => sub {
             description => $description
         );
     };
-    is $err->{error_code}, 'InvalidOrderCurrency', 'Got correct error code';
+    is $err->{error_code}, 'AdvertNotFound', 'Got correct error code';
 
     ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
 
@@ -445,11 +448,13 @@ subtest 'Buy adverts' => sub {
     my $amount = 100;
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
         amount         => $amount,
         type           => 'buy',
         payment_method => 'my method',
     );
+
     my $client = BOM::Test::Helper::P2P::create_client();
 
     ok($escrow->account->balance == 0,     'Escrow balance is correct');
