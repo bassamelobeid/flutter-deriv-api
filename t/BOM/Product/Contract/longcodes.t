@@ -29,7 +29,7 @@ subtest 'Proper form' => sub {
             PUT_FRXEURUSD_100_1394590423_1394591143_S0P_0
             ~
     );
-    my @currencies = ('USD', 'EUR', 'RUR');    # Inexhaustive, incorrect list: just to be sure the currency is not accidentally hard-coded.
+    my @currencies = ('USD', 'EUR', 'AUD');    # Inexhaustive, incorrect list: just to be sure the currency is not accidentally hard-coded.
     foreach my $currency (@currencies) {
         my $expected_standard_form = qr/Win payout if .*\.$/;                                   # Simplified standard form to which all should adhere.
                                                                                                 # Can this be improved further?
@@ -69,7 +69,7 @@ subtest 'Proper form' => sub {
             },
             ['entry spot plus [plural,_1,%d pip, %d pips]', 300]]);
 
-    $c = produce_contract($shortcodes[-1], 'RUR');
+    $c = produce_contract($shortcodes[-1], 'AUD');
     is_deeply(
         $c->longcode,
         [

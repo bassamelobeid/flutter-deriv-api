@@ -104,4 +104,22 @@ subtest 'zero amount' => sub {
 
 };
 
+subtest 'cryto amount' => sub {
+    my $args = {
+        bet_type   => 'CALL',
+        underlying => 'R_100',
+        barrier    => 'S0P',
+        duration   => '5m',
+        currency   => 'BTC',
+    };
+
+    my $error = exception { produce_contract({%$args, payout => 0}) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Please enter a payout amount that\'s at least [_1].', 'zero payout not valid';
+    is $error->message_to_client->[1], '0.00000001';
+
+    my $c = produce_contract({%$args, payout => 0.0000001});
+    isa_ok $c, 'BOM::Product::Contract::Call';
+};
+
 done_testing();

@@ -402,10 +402,11 @@ sub _initialize_other_parameters {
             details    => {field => 'amount'},
         ) if (not(exists $params->{amount_type} and exists $params->{amount}));
 
+        my $min_amount = $params->{category}->get_minimum_stake($params->{currency}, $params->{payout_currency_type});
         BOM::Product::Exception->throw(
             error_code => $params->{amount_type} eq 'stake' ? 'InvalidMinStake' : 'InvalidMinPayout',
-            error_args => [financialrounding('price', $params->{currency}, $params->{category}->minimum_stake)],
-            details => {field => 'amount'}) if exists $params->{amount} and $params->{amount} < $params->{category}->minimum_stake;
+            error_args => [financialrounding('price', $params->{currency}, $min_amount)],
+            details => {field => 'amount'}) if exists $params->{amount} and $params->{amount} < $min_amount;
 
         my @allowed = @{$params->{category}->supported_amount_type};
         if (not any { $params->{amount_type} eq $_ } @allowed) {

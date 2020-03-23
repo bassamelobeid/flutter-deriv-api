@@ -287,7 +287,7 @@ subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday'
 };
 
 subtest 'longcode of daily contracts at 10 minutes before friday close' => sub {
-    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463172600_1463173200_S0P_0', 'usd');
+    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463172600_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     is_deeply(
         $c2->longcode,
@@ -305,7 +305,7 @@ subtest 'longcode of daily contracts at 10 minutes before friday close' => sub {
 };
 
 subtest 'longcode of 22 hours contract from Thursday 3GMT' => sub {
-    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463022000_1463101200_S0P_0', 'usd');
+    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463022000_1463101200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     is_deeply(
         $c2->longcode,

@@ -25,7 +25,7 @@ subtest 'commission for underlying' => sub {
     my $args = {
         bet_type => 'multup',
         stake    => 100,
-        currency => 'usd',
+        currency => 'USD',
     };
 
     foreach my $symbol (@symbols) {
