@@ -67,7 +67,6 @@ subtest 'advertiser Registration' => sub {
 
     my $expected = {
         id             => $adv->{id},
-        client_loginid => $adv_client->loginid,
         is_listed      => bool(1),
         is_approved    => bool(0),
         created_time   => bool(1),

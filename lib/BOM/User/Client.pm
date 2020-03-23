@@ -2424,13 +2424,15 @@ sub _advertiser_details {
     return +{
         id                         => $advertiser->{id},
         name                       => $advertiser->{name},
-        client_loginid             => $advertiser->{client_loginid},
         created_time               => Date::Utility->new($advertiser->{created_time})->epoch,
         is_approved                => $advertiser->{is_approved},
         is_listed                  => $advertiser->{is_listed},
         default_advert_description => $advertiser->{default_advert_description} // '',
         (
-            $client->loginid eq $advertiser->{client_loginid}    # only advertiser themself can see these fields
+            # only advertiser themself can see these fields
+            # We will manualy clean up this field in websocket
+            # If you're adding any new field here please add it to websocket subscription clean up as well
+            $client->loginid eq $advertiser->{client_loginid}
             ? (
                 payment_info => $advertiser->{payment_info} // '',
                 contact_info => $advertiser->{contact_info} // '',
