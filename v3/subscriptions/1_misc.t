@@ -105,7 +105,7 @@ subtest 'Publish gap test: all calls in parallel' => sub {
             concurrent => 50,
             token      => $default_token,
             requests   => requests(
-                exclude_calls => [qw(p2p_order_create)],
+                exclude_calls => [qw(p2p_order_create p2p_advertiser_create)],
                 filter        => sub {
                     state $count;
                     my $params = delete $_[0]->{params};

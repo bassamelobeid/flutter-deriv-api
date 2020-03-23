@@ -30,7 +30,20 @@ $loop->add(
             concurrent => 200,
             token      => $default_token,
             requests   => requests(
-                calls  => [qw( buy transaction balance ticks ticks_history proposal website_status p2p_order_info p2p_order_create p2p_order_list)],
+                calls  => [qw(
+                    buy
+                    transaction
+                    balance
+                    ticks
+                    ticks_history
+                    proposal
+                    website_status
+                    p2p_order_info
+                    p2p_order_create
+                    p2p_order_list
+                    p2p_advertiser_create
+                    p2p_advertiser_info
+                )],
                 filter => sub {
                     my $params = shift->{params};
                     my $symbol;
