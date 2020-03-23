@@ -304,8 +304,18 @@ sub actions_config {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_orders,
             }
         ],
-        ['p2p_advertiser_create'],
-        ['p2p_advertiser_info'],
+        [
+            'p2p_advertiser_create',
+            {
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_advertisers,
+            }
+        ],
+        [
+            'p2p_advertiser_info',
+            {
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_advertisers,
+            }
+        ],
         ['p2p_advertiser_update'],
         ['p2p_advertiser_adverts'],
     ];

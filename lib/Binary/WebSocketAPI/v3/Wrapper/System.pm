@@ -32,7 +32,7 @@ sub forget_after_logout {
     _forget_all_pricing_subscriptions($c, 'proposal_open_contract');
     # TODO I suspect this line is not correct. Is there a feed subscription with the type 'proposal_open_contract' ?
     _forget_feed_subscription($c, 'proposal_open_contract');
-    _forget_p2p_subscription($c);
+    _forget_p2p_order_subscription($c);
     return;
 }
 
@@ -55,6 +55,7 @@ sub forget_all {
             proposal_array
             website_status
             p2p_order
+            p2p_advertiser
         );
         my $accepted_types = qr/^${\join q{|} => @accepted_types}$/;
         my @failed_types = grep { !/$accepted_types/ } @$types;
@@ -79,7 +80,9 @@ sub forget_all {
             } elsif ($type eq 'proposal' or $type eq 'proposal_array') {
                 @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
             } elsif ($type eq 'p2p_order') {
-                @removed_ids{@{_forget_p2p_subscription($c)}} = ();
+                @removed_ids{@{_forget_p2p_order_subscription($c)}} = ();
+            } elsif ($type eq 'p2p_advertiser') {
+                @removed_ids{@{_forget_p2p_advertiser_subscription($c)}} = ();
             }
             #TODO why we check 'proposal_open_contract' here ?
             if ($type ne 'proposal_open_contract') {
@@ -202,10 +205,23 @@ sub _forget_feed_subscription {
     return $removed_ids;
 }
 
-sub _forget_p2p_subscription {
+sub _forget_p2p_order_subscription {
     my ($c) = @_;
     my @removed_ids;
     my @subscriptions = Binary::WebSocketAPI::v3::Subscription::P2P::Order->get_by_class($c);
+
+    foreach my $subscription (@subscriptions) {
+        my $uuid = $subscription->uuid;
+        push @removed_ids, $uuid;
+        $subscription->unregister;
+    }
+    return \@removed_ids;
+}
+
+sub _forget_p2p_advertiser_subscription {
+    my ($c) = @_;
+    my @removed_ids;
+    my @subscriptions = Binary::WebSocketAPI::v3::Subscription::P2P::Advertiser->get_by_class($c);
 
     foreach my $subscription (@subscriptions) {
         my $uuid = $subscription->uuid;

@@ -68,4 +68,44 @@ sub subscribe_orders {
     return $result;
 }
 
+sub subscribe_advertisers {
+    my ($c, $rpc_response, $req_storage) = @_;
+
+    my $args     = $req_storage->{args};
+    my $msg_type = $req_storage->{msg_type};
+
+    if ($rpc_response->{error}) {
+        return $c->new_error($msg_type, $rpc_response->{error}{code}, $rpc_response->{error}{message_to_client});
+    }
+
+    my $result = {
+        msg_type  => $msg_type,
+        $msg_type => $rpc_response,
+        defined $args->{req_id} ? (req_id => $args->{req_id}) : (),
+    };
+
+    return $result unless $args->{subscribe};
+
+    my $advertiser_id = $rpc_response->{id};
+
+    return $result unless $advertiser_id;
+
+    my $sub = Binary::WebSocketAPI::v3::Subscription::P2P::Advertiser->new(
+        c             => $c,
+        args          => $args,
+        broker        => $c->stash('broker'),
+        loginid       => $c->stash('loginid'),
+        advertiser_id => $advertiser_id,
+    );
+
+    if ($sub->already_registered) {
+        return $c->new_error($msg_type, 'AlreadySubscribed', $c->l('You are already subscribed to p2p advertiser id [_1].', $advertiser_id));
+    }
+
+    $sub->register;
+    $sub->subscribe;
+    $result->{subscription}{id} = $sub->uuid;
+    return $result;
+}
+
 1;

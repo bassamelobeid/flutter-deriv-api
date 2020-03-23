@@ -87,31 +87,34 @@ my $order = {
         req_id               => 102,
     },
     properties => {
-        passthrough          => 101,
-        echo_req             => 102,
-        msg_type             => 103,
-        req_id               => 104,
+        passthrough => 101,
+        echo_req    => 102,
+        msg_type    => 103,
+        req_id      => 104,
     },
 };
 
 sub sort_elements {
     my ($ref, $parent) = @_;
 
-    if ( ref $ref eq 'ARRAY' and $parent eq 'required' ) {
-        return [ sort { ( $order->{properties}{$a} // 99 ) <=> ( $order->{properties}{$b} // 99 ) or $a cmp $b } @$ref ];
-    }
-    elsif ( ref $ref eq 'ARRAY' and all { ref eq 'HASH' } @$ref ) {
-        return [ map { sort_elements($_) } @$ref ];
-    }
-    elsif ( ref $ref eq 'ARRAY' and $parent ne 'enum' ) {
-        return [ sort { looks_like_number($a); looks_like_number($a) ? $a <=> $b : $a cmp $b } @$ref ];
-    }
-    elsif ( ref $ref eq 'HASH' ) {
-        my $type = ( $parent // '' ) eq 'properties' ? $parent : 'other';
-        tie my %res, 'Tie::IxHash', map { $_, sort_elements($ref->{$_}, $_) } sort { ( $order->{$type}{$a} // 99 ) <=> ( $order->{$type}{$b} // 99 ) or $a cmp $b } keys %$ref;
+    if (ref $ref eq 'ARRAY' and $parent eq 'required') {
+        return [sort { ($order->{properties}{$a} // 99) <=> ($order->{properties}{$b} // 99) or $a cmp $b } @$ref];
+    } elsif (
+        ref $ref eq 'ARRAY' and all {
+            ref eq 'HASH'
+        }
+        @$ref
+        )
+    {
+        return [map { sort_elements($_) } @$ref];
+    } elsif (ref $ref eq 'ARRAY' and $parent ne 'enum') {
+        return [sort { looks_like_number($a); looks_like_number($a) ? $a <=> $b : $a cmp $b } @$ref];
+    } elsif (ref $ref eq 'HASH') {
+        my $type = ($parent // '') eq 'properties' ? $parent : 'other';
+        tie my %res, 'Tie::IxHash',
+            map { $_, sort_elements($ref->{$_}, $_) } sort { ($order->{$type}{$a} // 99) <=> ($order->{$type}{$b} // 99) or $a cmp $b } keys %$ref;
         return \%res;
-    }
-    else {
+    } else {
         return $ref;
     }
 }
@@ -153,13 +156,12 @@ subtest 'general formatting and order' => sub {
 
         test_diff($schema->{json_text}, $sorted, $schema->{formatted_path});
 
-        delete $order->{other}{$schema->{method_name}};    # cleanup for next
+        delete $order->{other}{$schema->{method_name}};                                                # cleanup for next
         delete $order->{properties}{$schema->{method_name}};
 
         path($schema->{path})->spew_utf8($sorted) if $should_fix;
     }
 };
-
 
 # Make sure common properties are consistent across all schema files
 subtest 'common properties' => sub {
