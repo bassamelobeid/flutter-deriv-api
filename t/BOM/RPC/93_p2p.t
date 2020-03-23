@@ -10,6 +10,7 @@ use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::RPC::v3::P2P;
 use BOM::Test::Helper::P2P;
+use BOM::Test::Helper::Client;
 
 cleanup_redis_tokens();
 
@@ -234,6 +235,13 @@ subtest 'Adverts' => sub {
     delete $advert->{stash};
     ok $advert->{id}, 'advert has id';
 
+    BOM::Test::Helper::Client::top_up($client_advertiser, $client_advertiser->currency, $advert_params->{amount});
+
+    $params->{args} = {};
+    $res = $c->call_ok('p2p_advert_list', $params)->has_no_system_error->has_no_error->result->{list};
+    cmp_ok $res->[0]->{id}, '==', $advert->{id}, 'p2p_advert_list returns advert';
+
+    $params->{args} = $advert_params;
     $params->{args}{rate} = 12.000001;
     $advert = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
     is $advert->{rate_display}, '12.000001', 'advert rate_display is correct';
@@ -244,10 +252,6 @@ subtest 'Adverts' => sub {
 
     $params->{args}{rate} = 0.000001;
     $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_error->error_code_is('MinPriceTooSmall', 'Got error if min price is 0');
-
-    $params->{args} = {};
-    $res = $c->call_ok('p2p_advert_list', $params)->has_no_system_error->has_no_error->result->{list};
-    cmp_ok $res->[0]->{id}, '==', $advert->{id}, 'p2p_advert_list returns advert';
 
     $params->{args} = {
         id        => $advert->{id},
