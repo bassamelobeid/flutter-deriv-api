@@ -285,7 +285,11 @@ p2p_rpc p2p_advertiser_create => sub {
     my $client     = $args{client};
     my $advertiser = $client->p2p_advertiser_create($args{params}{args}->%*);
 
-    BOM::Platform::Event::Emitter::emit(p2p_advertiser_created => $advertiser);
+    BOM::Platform::Event::Emitter::emit(
+        p2p_advertiser_created => {
+            client_loginid => $client->loginid,
+            $advertiser->%*
+        });
 
     return $advertiser;
 };
@@ -311,8 +315,17 @@ Returns a hashref containing the current advertiser details.
 p2p_rpc p2p_advertiser_update => sub {
     my (%args) = @_;
 
-    my $client = $args{client};
-    return $client->p2p_advertiser_update($args{params}{args}->%*);
+    my $client     = $args{client};
+    my $advertiser = $client->p2p_advertiser_update($args{params}{args}->%*);
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_advertiser_updated => {
+            client_loginid => $client->loginid,
+            advertiser_id  => $advertiser->{id},
+        },
+    );
+
+    return $advertiser;
 };
 
 =head2 p2p_advertiser_info
