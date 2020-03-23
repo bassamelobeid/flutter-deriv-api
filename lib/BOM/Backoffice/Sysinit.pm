@@ -18,6 +18,7 @@ use BOM::Backoffice::Request qw(request localize);
 use BOM::Backoffice::Request::Base;
 use BOM::Config::Chronicle;
 use BOM::Config;
+use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
 my $permissions = {
     'f_broker_login.cgi'   => ['ALL'],
