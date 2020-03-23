@@ -28,6 +28,7 @@ my %init_config_values = (
     'system.suspend.p2p'                   => $app_config->system->suspend->p2p,
     'payments.p2p.available'               => $app_config->payments->p2p->available,
     'payments.p2p.available_for_countries' => $app_config->payments->p2p->available_for_countries,
+    'payments.p2p.limits.maximum_order'    => $app_config->payments->p2p->limits->maximum_order,
 );
 
 scope_guard {
@@ -40,6 +41,8 @@ $app_config->set({'payments.p2p.enabled'                 => 1});
 $app_config->set({'system.suspend.p2p'                   => 0});
 $app_config->set({'payments.p2p.available'               => 1});
 $app_config->set({'payments.p2p.available_for_countries' => ['id']});
+$app_config->set({'payments.p2p.limits.maximum_order'    => 10});
+
 
 my $t = build_wsapi_test();
 
@@ -243,26 +246,38 @@ subtest 'create advert (sell)' => sub {
     is $advert->{payment_info}, $advert_params{payment_info}, 'payment_info';
     is $advert->{contact_info}, $advert_params{contact_info}, 'contact_info';
 
+    $resp = $t->await::p2p_advertiser_adverts({p2p_advertiser_adverts => 1});
+    test_schema('p2p_advertiser_adverts', $resp);
+    cmp_deeply($resp->{p2p_advertiser_adverts}{list}[0], $advert, 'Advertiser adverts item matches advert create');
+
+    # These fields are not returned from advert_create and advertiser_adverts, but should be returned from following calls
+    $advert->{min_order_amount_limit} = $advert->{min_order_amount_limit_display} = num($advert_params{min_order_amount});
+    $advert->{max_order_amount_limit} = $advert->{max_order_amount_limit_display} = num($advert_params{max_order_amount});
+
     $resp = $t->await::p2p_advert_list({p2p_advert_list => 1});
     test_schema('p2p_advert_list', $resp);
     cmp_deeply($resp->{p2p_advert_list}{list}[0], $advert, 'Advert list item matches advert create');
-
+    
     $resp = $t->await::p2p_advert_info({
             p2p_advert_info => 1,
             id              => $advert->{id}});
     test_schema('p2p_advert_info', $resp);
     cmp_deeply($resp->{p2p_advert_info}, $advert, 'Advert info matches advert create');
-
-    $resp = $t->await::p2p_advertiser_adverts({p2p_advertiser_adverts => 1});
-    test_schema('p2p_advertiser_adverts', $resp);
-    cmp_deeply($resp->{p2p_advertiser_adverts}{list}[0], $advert, 'Advertiser adverts item matches advert create');
     
     $t->await::authorize({authorize => $token_client});
     
     subtest 'Client use p2p_advert_info' => sub {
         $t->await::authorize({authorize => $token_client});
         $resp = $t->await::p2p_advert_info({p2p_advert_info => 1, id => $advert->{id}});
-        test_schema('p2p_advert_info', $resp);    
+        test_schema('p2p_advert_info', $resp);
+
+        my %expected = %$advert;
+        # Fields that should only be visible to advert owner
+        delete @expected{
+            qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info)
+        };
+        cmp_deeply($resp->{p2p_advert_info}, \%expected, 'Advert info sensitive fields hidden');
+        
     };    
 };
 
