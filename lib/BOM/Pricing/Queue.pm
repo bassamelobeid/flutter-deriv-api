@@ -78,6 +78,19 @@ has priority => (
     required => 1
 );
 
+=head2 enable_price_metrics_queued
+
+enable or disable calculting metrics for price queuee.
+by default it is disabled because the redis access takes 80 microseconds on average -
+slowing down the price-queue, more than 1 second, each time it wakes up.
+
+=cut
+
+has enable_price_metrics_queued => (
+    is      => 'ro',
+    default => 0
+);
+
 sub BUILD {
     my $self = shift;
 
@@ -154,6 +167,8 @@ sub _process_price_queue {
     $log->trace('processing price_queue...');
     _sleep_to_next_second();
 
+    my $now = Time::HiRes::time;
+
     # Take note of keys that were not processed since the last pricing interval
     my $overflow = $self->redis->llen('pricer_jobs');
 
@@ -190,21 +205,24 @@ sub _process_price_queue {
             }));
     $log->debug('pricer_daemon_queue_stats updated.');
 
-    # There might be multiple occurrences of the same 'relative shortcode'
-    # to achieve higher performance, we count them first, then update the redis
-    my %queued;
-    for my $key (@keys) {
-        my $params = {decode_json_utf8($key =~ s/^PRICER_KEYS:://r)->@*};
-        if ($params->{contract_id} and $params->{landing_company}) {
-            my $contract_params = BOM::Pricing::v3::Utility::get_contract_params($params->{contract_id}, $params->{landing_company});
-            $params = {%$params, %$contract_params};
+    if ($self->enable_price_metrics_queued) {
+        # Count number of 'relative shortcode's and them as metrics in redis
+        my %queued;
+        for my $key (@keys) {
+            my $params = {decode_json_utf8($key =~ s/^PRICER_KEYS:://r)->@*};
+            if ($params->{contract_id} and $params->{landing_company}) {
+                my $contract_params = BOM::Pricing::v3::Utility::get_contract_params($params->{contract_id}, $params->{landing_company});
+                $params = {%$params, %$contract_params};
+            }
+            unless (exists $params->{barriers}) {    # exclude proposal_array
+                my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode($params);
+                $queued{$relative_shortcode}++;
+            }
         }
-        unless (exists $params->{barriers}) {    # exclude proposal_array
-            my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode($params);
-            $queued{$relative_shortcode}++;
-        }
+        $self->redis->hincrby('PRICE_METRICS::QUEUED', $_, $queued{$_}) for keys %queued;
     }
-    $self->redis->hincrby('PRICE_METRICS::QUEUED', $_, $queued{$_}) for keys %queued;
+
+    stats_gauge('pricer_daemon.queue.time', int(1000 * (Time::HiRes::time - $now)), {tags => ['tag:' . $self->internal_ip]});
 
     return undef;
 }

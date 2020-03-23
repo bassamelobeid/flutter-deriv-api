@@ -12,17 +12,21 @@ use BOM::Pricing::Queue;
 
 STDOUT->autoflush(1);
 GetOptions
-    'log-level=s' => \my $log_level,
-    'pid-file=s'  => \my $pid_file,
-    'priority'    => \my $priority,
-    'help'        => \my $help;
+    'log-level=s'                    => \my $log_level,
+    'pid-file=s'                     => \my $pid_file,
+    'priority'                       => \my $priority,
+    'enable_price_metrics_queued'    => \my $enable_price_metrics_queued,
+    'help'                           => \my $help;
 
 pod2usage(1) if $help;
 path($pid_file)->spew($$) if $pid_file;
 
 Log::Any::Adapter->set('Stdout', log_level => $log_level // 'warn');
 
-exit BOM::Pricing::Queue->new(priority => $priority)->run;
+exit BOM::Pricing::Queue->new(
+    priority => $priority,
+    enable_price_metrics_queued => $enable_price_metrics_queued
+)->run;
 
 __END__
 
