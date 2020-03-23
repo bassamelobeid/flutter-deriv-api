@@ -118,6 +118,7 @@ sub _confirm_sell_validity {
             message           => 'waiting for settlement',
             message_to_client => [$ERROR_MAPPING->{WaitForContractSettlement}],
         });
+        $self->waiting_for_settlement_tick(1);
         return 0;
     }
 

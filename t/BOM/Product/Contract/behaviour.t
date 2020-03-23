@@ -483,11 +483,10 @@ subtest 'expiry condition for upordown' => sub {
 };
 
 subtest 'too fast deal for expiry tick contract will be delayed' => sub {
-    my $entry_tick
-        = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            epoch      => $now->epoch,
-            underlying => 'R_50',
-        });
+    my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch,
+        underlying => 'R_50',
+    });
 
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(([111, $now->epoch, 'R_100'], [112, $now->epoch + 1, 'R_100']));
 
@@ -510,11 +509,10 @@ subtest 'too fast deal for expiry tick contract will be delayed' => sub {
 };
 
 subtest 'forward start contract should be possible to sell before start time' => sub {
-    my $entry_tick
-        = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            epoch      => $now->epoch,
-            underlying => 'R_50',
-        });
+    my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch,
+        underlying => 'R_50',
+    });
 
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [101, $now->epoch + 1, 'R_100'],);
     my $params = {
@@ -533,6 +531,27 @@ subtest 'forward start contract should be possible to sell before start time' =>
     my $c = produce_contract($params);
 
     ok $c->is_valid_to_sell, 'should be valid to sell';
+};
+
+subtest 'after expiry but not after settlement' => sub {
+    my $now    = Date::Utility->new('2020-03-12');
+    my $params = {
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        date_start   => $now,
+        date_pricing => $now->plus_time_interval('1d21h1m'),
+        date_expiry  => $now->plus_time_interval('1d21h'),
+        payout       => 100,
+        barrier      => 8,
+        currency     => 'USD',
+    };
+
+    my $c = produce_contract($params);
+    ok $c->is_expired, 'expired';
+    ok !$c->is_after_settlement, 'not after settlement';
+    ok !$c->is_valid_to_sell,    'not valid to sell';
+    ok $c->waiting_for_settlement_tick, 'waiting for settlement tick flag returns true';
+    is $c->primary_validation_error->message, 'waiting for settlement', 'error message - waiting for settlement';
 };
 
 done_testing;
