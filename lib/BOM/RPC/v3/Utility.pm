@@ -905,13 +905,22 @@ Returns 1 if suspended and 0 if not.
 sub verify_cashier_suspended {
     my ($currency, $action) = @_;
 
-    return 1 if BOM::Platform::Client::CashierValidation::is_payment_suspended;
-
     my $is_cryptocurrency = LandingCompany::Registry::get_currency_type($currency) eq 'crypto';
 
     if ($is_cryptocurrency) {
-        return 1
-            if BOM::Platform::Client::CashierValidation::is_crypto_currency_suspended($currency, $action);
+
+        if ($action eq 'deposit') {
+            return 1
+                if (BOM::Platform::Client::CashierValidation::is_crypto_cashier_suspended()
+                || BOM::Platform::Client::CashierValidation::is_crypto_currency_deposit_suspended($currency));
+        }
+
+        if ($action eq 'withdrawal') {
+            return 1
+                if (BOM::Platform::Client::CashierValidation::is_crypto_cashier_suspended()
+                || BOM::Platform::Client::CashierValidation::is_crypto_currency_withdrawal_suspended($currency));
+        }
+
     } else {
         return 1
             if BOM::Platform::Client::CashierValidation::is_cashier_suspended();

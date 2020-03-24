@@ -64,13 +64,13 @@ subtest 'Error checks' => sub {
             ->error_code_is('CurrencyTypeNotAllowed', 'error code is correct');
     };
 
-    subtest 'Error for cryptocurrency when cryptocashier is unavailable' => sub {
-        BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier(1);
-        $params->{currency} = 'BTC';
+    subtest 'Error for cryptocurrency when cryptocurrency is suspended' => sub {
+        BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies("LTC");
+        $params->{currency} = 'LTC';
         $c->call_ok($method, $params)
-            ->has_error->error_message_is('The provided currency BTC is not selectable at the moment.', 'currency not applicable for this client')
+            ->has_error->error_message_is('The provided currency LTC is not selectable at the moment.', 'currency not applicable for this client')
             ->error_code_is('CurrencyTypeNotAllowed', 'error code is correct');
-        BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier(0);
+        BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies("");
     };
 };
 
