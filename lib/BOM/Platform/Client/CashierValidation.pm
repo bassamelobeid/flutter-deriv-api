@@ -141,7 +141,7 @@ Returns whether fiat cashier is currently suspended or not
 sub is_cashier_suspended {
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->check_for_update();
-    return $app_config->system->suspend->cashier;
+    return is_payment_suspended() || $app_config->system->suspend->cashier;
 }
 
 =head2 is_crypto_cashier_suspended
@@ -153,7 +153,7 @@ Returns whether crypto cashier is currently suspended or not
 sub is_crypto_cashier_suspended {
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->check_for_update();
-    return $app_config->system->suspend->cryptocashier;
+    return is_payment_suspended() || $app_config->system->suspend->cryptocashier;
 }
 
 =head2 is_crypto_currency_suspended {
@@ -165,38 +165,81 @@ this will die for fiat currencies such as USD / GBP.
 
 =item C<currency> Currency symbol
 
-=item C<action> deposit/withdrawal
-
 =back
 
-return true if the currency is currently suspended for the action
+return true if the currency is currently suspended
 
 =cut
 
 sub is_crypto_currency_suspended {
-    my ($currency, $action) = @_;
-
-    # if payment is suspended crypto is suspended too
-    return 1 if is_payment_suspended();
+    my $currency = shift;
 
     die "expected currency type parameter" unless $currency;
-
     die "Failed to accept $currency as a cryptocurrency." if (LandingCompany::Registry::get_currency_type(uc $currency) // '') ne 'crypto';
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->check_for_update();
+    my $response = $app_config->system->suspend->cryptocurrencies =~ /\Q$currency\E/;
+    return $response;
+}
 
-    return 1 if $app_config->system->suspend->cryptocashier;
+=head2 is_crypto_currency_deposit_suspended {
 
-    my $first_check = $app_config->system->suspend->cryptocurrencies =~ /\Q$currency\E/;
+Returns true if the given currency deposit is suspended in the crypto cashier. Only works for crypto currencies,
+this will die for fiat currencies such as USD / GBP.
 
-    if ($action) {
-        my $sub_action = "cryptocurrencies_$action";
-        my $second_check = any { $currency eq $_ } $app_config->system->suspend->$sub_action->@*;
-        return $first_check || $second_check;
-    }
+=over 4
 
-    return $first_check;
+=item C<currency> Currency symbol
+
+=back
+
+return true if the currency is currently suspended for deposit
+
+=cut
+
+sub is_crypto_currency_deposit_suspended {
+    my $currency = shift;
+
+    die "expected currency type parameter" unless $currency;
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update();
+    return 1 if is_crypto_currency_suspended($currency);
+
+    my $action = "cryptocurrencies_deposit";
+    my $response = any { $currency eq $_ } $app_config->system->suspend->$action->@*;
+    return $response;
+}
+
+=head2 is_crypto_currency_withdrawal_suspended {
+
+Returns true if the given currency withdrawal is suspended in the crypto cashier. Only works for crypto currencies,
+this will die for fiat currencies such as USD / GBP.
+
+=over 4
+
+=item C<currency> Currency symbol
+
+=back
+
+return true if the currency is currently suspended for withdrawal
+
+=cut
+
+sub is_crypto_currency_withdrawal_suspended {
+    my $currency = shift;
+
+    die "expected currency type parameter" unless $currency;
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update();
+
+    return 1 if is_crypto_currency_suspended($currency);
+
+    my $action = "cryptocurrencies_withdrawal";
+    my $response = any { $currency eq $_ } $app_config->system->suspend->$action->@*;
+    return $response;
 }
 
 =head2 pre_withdrawal_validation
