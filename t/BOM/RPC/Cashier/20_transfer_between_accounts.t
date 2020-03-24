@@ -648,7 +648,6 @@ subtest 'transfer with fees' => sub {
         commission_withdrawal => 0,
         is_authenticated      => 'f',
         currency_code         => 'BTC',
-        target_country        => 'id',
     });
 
     $client_cr_pa_btc->payment_free_gift(
@@ -677,6 +676,8 @@ subtest 'transfer with fees' => sub {
     $user->add_client($client_cr_eur);
 
     $client_cr_pa_btc->save;
+    #save target countries for PA
+    $client_cr_pa_btc->get_payment_agent->set_countries(['id', 'in']);
 
     $client_cr_usd->payment_free_gift(
         currency       => 'USD',
@@ -989,16 +990,19 @@ subtest 'transfer with no fee' => sub {
         commission_withdrawal => 0,
         is_authenticated      => 't',
         currency_code         => 'BTC',
-        target_country        => 'id',
     };
 
     $client_cr_pa_btc->payment_agent($pa_args);
     $client_cr_pa_btc->save();
+    #save target countries for PA
+    $client_cr_pa_btc->get_payment_agent->set_countries(['id', 'in']);
 
     $pa_args->{is_authenticated} = 'f';
     $pa_args->{currency_code}    = 'USD';
     $client_cr_pa_usd->payment_agent($pa_args);
     $client_cr_pa_usd->save();
+    #save target countries for PA
+    $client_cr_pa_usd->get_payment_agent->set_countries(['id', 'in']);
 
     my $amount = 0.1;
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_pa_btc->loginid, _get_unique_display_name());

@@ -52,7 +52,6 @@ my $payment_agent_args = {
     commission_deposit    => 0,
     commission_withdrawal => 0,
     is_authenticated      => 't',
-    target_country        => 'id',
 };
 
 ## For client authentication document tests.
@@ -314,7 +313,11 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
 
         $test = 'Transfer fails is amount is over the landing company maximum';
         $payment_agent_args->{currency_code} = $test_currency;
+        #make him payment agent
         $Alice->payment_agent($payment_agent_args);
+        $Alice->save;
+        #set countries for payment agent
+        $Alice->get_payment_agent->set_countries(['id', 'in']);
         my $currency_type = LandingCompany::Registry::get_currency_type($test_currency);      ## e.g. "fiat"
         my $lim           = BOM::Config::payment_agent()->{payment_limits}{$currency_type};
         my $max           = formatnumber('amount', $test_currency, $lim->{maximum});
@@ -328,9 +331,11 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         ## These two checks rely on a local YAML file (e.g. 'landing_companies.yml')
         my $max_amount = formatnumber('amount', $test_currency, $test_amount / 2);
         $Alice->payment_agent->max_withdrawal($max_amount);
+        $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, "Invalid amount. Minimum is $min, maximum is $max_amount.", $test);
         $Alice->payment_agent->max_withdrawal(undef);
+        $Alice->save;
 
         $test                     = 'Transfer fails is amount is under the landing company minimum';
         $testargs->{args}{amount} = $min * 0.5;
@@ -341,9 +346,11 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $test = 'Transfer fails if amount is under the payment agent minimum';
         my $min_amount = formatnumber('amount', $test_currency, $test_amount * 2);
         $Alice->payment_agent->min_withdrawal($min_amount);
+        $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, "Invalid amount. Minimum is $min_amount, maximum is $max.", $test);
         $Alice->payment_agent->min_withdrawal(undef);
+        $Alice->save;
 
         # this test assume address_city is a withdrawal requirement for SVG in landing_companies.yml
         $test = 'Transfer fails if missing required details (address_city + address_line_1)';
@@ -396,12 +403,15 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $mock_landingcompany->unmock('allows_payment_agents');
         $mock_user_client->unmock('landing_company');
 
-        $test = q{You cannot transfer to client of different residence};
-        my $old_residence = $Alice->residence;
-        $Alice->residence('in the Wonder Land');
+        $test = "We're unable to process this transfer because the client's resident country is not within your portfolio.";
+        my $old_residence = $Bob->residence;
+        $Bob->residence('pk');
+        $Bob->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        like($res->{error}{message_to_client}, qr/You cannot transfer to a client in a different country of residence./, $test);
-        $Alice->residence($old_residence);
+        like($res->{error}{message_to_client},
+            qr/We're unable to process this transfer because the client's resident country is not within your portfolio./, $test);
+        $Bob->residence($old_residence);
+        $Bob->save;
 
         $test = 'Transfer fails if payment agents are suspended in the target country';
         BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([$Alice->residence]);
@@ -424,6 +434,16 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
 
         $test = 'After transfer with dry_run, transfer_to client account has an unchanged balance';
         is($Bob->default_account->balance, 0, $test);
+
+        reset_transfer_testargs();
+        $test          = 'You can transfer to client of different residence';
+        $old_residence = $Alice->residence;
+        $Alice->residence('in');
+        $Alice->save;
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is($res->{status}, 2, $test) or diag Dumper $res;
+        $Alice->residence($old_residence);
+        $Alice->save;
 
         $test = "Transfer fails if over maximum amount per day (USD $MAX_DAILY_TRANSFER_AMOUNT_USD)";
         ## From this point on, we cannot have dry run enabled
@@ -877,8 +897,11 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->set_default_account($test_currency);
         $Bob->set_default_account($test_currency);
         $payment_agent_args->{currency_code} = $test_currency;
+        # make him payment agent
         $Bob->payment_agent($payment_agent_args);
         $Bob->save;
+        # set countries for payment agent
+        $Bob->get_payment_agent->set_countries(['id', 'in']);
 
         $test = 'Withdraw fails if client has a virtual broker';
         $testargs->{client} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
@@ -953,11 +976,15 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         like($res->{error}{message_to_client}, qr/You cannot perform this action, please set your residence./, $test);
         $Alice->residence($old_residence);
 
-        $test = q{Withdraw fails if payment agent facility not allowed in client's country};
-        $Alice->residence('Walla Walla');
+        $test          = q{Withdraw fails if payment agent facility not allowed in client's country};
+        $old_residence = $Alice->residence;
+        $Alice->residence('pk');
+        $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/You cannot withdraw from a payment agent in a different country of residence./, $test);
+        like($res->{error}{message_to_client},
+            qr/We're unable to process this withdrawal because your country of residence is not within the payment agent's portfolio./, $test);
         $Alice->residence($old_residence);
+        $Alice->save;
 
         $test = 'Withdraw fails if client status = disabled';
         $Alice->status->set('disabled', 'Testy McTestington', 'Just running some tests');
@@ -1114,16 +1141,6 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         like($res->{error}{message}, qr/stuck in previous transaction $Bob_id/, $test);
         $mock_clientdb->unmock('freeze');
 
-        # mock to make sure that there is authenticated pa in Alice's country
-        $mock_payment_agent->mock('get_authenticated_payment_agents', sub { return {pa1 => 'dummy'}; });
-        $test          = q{You cannot withdraw from payment agent of different residence};
-        $old_residence = $Alice->residence;
-        $Alice->residence('in');
-        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/You cannot withdraw from a payment agent in a different country of residence./, $test);
-        $Alice->residence($old_residence);
-        $mock_payment_agent->unmock('get_authenticated_payment_agents');
-
         $test = 'Withdrawal fails if payment agents are suspended in the target country';
         BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([$Alice->residence]);
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
@@ -1208,6 +1225,19 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         is($res->{error}, undef, $test);
         BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
         $testargs->{args}->{dry_run} = 0;
+
+        # to avoid request too frequent rest for 2 seconds
+        sleep 2;
+
+        # mock to make sure that there is authenticated pa in Alice's country
+        $mock_payment_agent->mock('get_authenticated_payment_agents', sub { return {pa1 => 'dummy'}; });
+        $test          = q{You can withdraw from payment agent of different residence};
+        $old_residence = $Alice->residence;
+        $Alice->residence('in');
+        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        is($res->{status}, 1, $test) or diag Dumper $res;
+        $Alice->residence($old_residence);
+        $mock_payment_agent->unmock('get_authenticated_payment_agents');
 
         ## Cleanup:
         $mock_utility->unmock('is_verification_token_valid');

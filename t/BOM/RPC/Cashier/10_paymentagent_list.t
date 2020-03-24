@@ -45,9 +45,9 @@ $pa_client->payment_agent({
     commission_withdrawal => 0,
     is_authenticated      => 't',
     currency_code         => 'USD',
-    target_country        => 'id',
 });
 $pa_client->save;
+$pa_client->get_payment_agent->set_countries(['id']);
 
 my $first_pa_loginid = $pa_client->loginid;
 
@@ -68,9 +68,9 @@ $pa_client->payment_agent({
     commission_withdrawal => 0,
     is_authenticated      => 't',
     currency_code         => 'BTC',
-    target_country        => 'id',
 });
 $pa_client->save;
+$pa_client->get_payment_agent->set_countries(['id']);
 my $second_pa_loginid = $pa_client->loginid;
 
 $pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -90,9 +90,9 @@ $pa_client->payment_agent({
     commission_withdrawal => 0,
     is_authenticated      => 't',
     currency_code         => 'ETH',
-    target_country        => 'id',
 });
 $pa_client->save;
+$pa_client->get_payment_agent->set_countries(['id']);
 my $third_pa_loginid = $pa_client->loginid;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
@@ -113,7 +113,7 @@ subtest 'paymentagent_list RPC call' => sub {
             valid_source               => 1,
             source_bypass_verification => 0
         },
-        'available_countries' => [['id', 'Indonesia']],
+        'available_countries' => [['id', 'Indonesia',]],
         'list'                => [{
                 'telephone'             => '+12345678',
                 'supported_banks'       => undef,
@@ -209,7 +209,6 @@ subtest 'suspend countries' => sub {
         commission_withdrawal => 0,
         is_authenticated      => 't',
         currency_code         => 'USD',
-        target_country        => 'af',
     };
 
     my $params = {
@@ -230,6 +229,8 @@ subtest 'suspend countries' => sub {
     $af_agent->set_default_account('USD');
     $af_agent->payment_agent($pa_info);
     $af_agent->save;
+    $af_agent->get_payment_agent->set_countries(['af']);
+
     my $token_agent = BOM::Database::Model::OAuth->new->store_access_token_only(1, $af_agent->loginid);
 
     my $af_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -262,7 +263,7 @@ subtest 'suspend countries' => sub {
             valid_source               => 1,
             source_bypass_verification => 0
         },
-        'available_countries' => [['af', 'Afghanistan',], ['id', 'Indonesia',],],
+        'available_countries' => [['af', 'Afghanistan',], ['id', 'Indonesia',]],
         'list' => [{
                 'telephone'             => '+12345678',
                 'supported_banks'       => undef,
@@ -357,6 +358,7 @@ subtest 'PAs without currency' => sub {
     # Normal PA
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MLT',
+        residence   => 'cy'
     });
     $client->set_default_account('GBP');
     $client->payment_agent({
@@ -370,14 +372,16 @@ subtest 'PAs without currency' => sub {
         commission_withdrawal => 1,
         is_authenticated      => 't',
         currency_code         => 'GBP',
-        target_country        => 'de',
     });
     $client->save;
-    my $pa_no_currency_loginid = $client->loginid;
+
+    $client->get_payment_agent->set_countries(['nl']);
+    my $pa_with_currency_loginid = $client->loginid;
 
     # PA with no currecy
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MLT',
+        residence   => 'cy'
     });
     $client->set_default_account('GBP');
     $client->payment_agent({
@@ -391,16 +395,16 @@ subtest 'PAs without currency' => sub {
         commission_withdrawal => 2,
         is_authenticated      => 't',
         currency_code         => '',
-        target_country        => 'de',
     });
     $client->save;
+    $client->get_payment_agent->set_countries(['nl']);
     my $client_pa_no_currency_loginid = $client->loginid;
     my $mlt_token = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 
     my $params = {
         language => 'EN',
-        token    => $token,
-        args     => {paymentagent_list => 'de'},
+        token    => $mlt_token,
+        args     => {paymentagent_list => 'nl'},
     };
 
     my $expected_result = {
@@ -409,7 +413,7 @@ subtest 'PAs without currency' => sub {
             valid_source               => 1,
             source_bypass_verification => 0
         },
-        'available_countries' => [['af', 'Afghanistan'], ['de', 'Germany'], ['id', 'Indonesia',]],
+        'available_countries' => [['af', 'Afghanistan',], ['id', 'Indonesia',], ['nl', 'Netherlands',]],
         'list' => [{
                 'telephone'             => '+12345678',
                 'supported_banks'       => undef,
@@ -421,7 +425,7 @@ subtest 'PAs without currency' => sub {
                 'email'                 => 'test@sample.com',
                 'summary'               => "Summary",
                 'url'                   => 'http://www.sample2.com/',
-                'paymentagent_loginid'  => $pa_no_currency_loginid,
+                'paymentagent_loginid'  => $pa_with_currency_loginid,
                 'max_withdrawal'        => 2000,
                 'min_withdrawal'        => 10,
             }]};
@@ -429,7 +433,6 @@ subtest 'PAs without currency' => sub {
     my $mock_log = Test::MockModule->new('Log::Any::Proxy');
     my @log_params;
     $mock_log->mock('warnf' => sub { @log_params = @_ });
-
     $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, "Only PAs with account currency are returned");
 
     is $log_params[1], '%s dropped from PA list. Failed to retrieve limits: %s', 'Correct log message';
@@ -443,7 +446,7 @@ subtest 'PAs without currency' => sub {
             valid_source               => 1,
             source_bypass_verification => 0
         },
-        'available_countries' => [['af', 'Afghanistan'], ['de', 'Germany'], ['id', 'Indonesia',]],
+        'available_countries' => [['af', 'Afghanistan',], ['id', 'Indonesia',], ['nl', 'Netherlands',]],
         'list' => [],
     };
     $c->call_ok($method, $params)

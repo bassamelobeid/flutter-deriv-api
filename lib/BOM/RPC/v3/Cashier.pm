@@ -524,7 +524,6 @@ rpc paymentagent_transfer => sub {
             message_to_client => $message_to_client
         });
     };
-
     # Simple regex plus precision check via precision.yml
     my $amount_validation_error = validate_amount($amount, $currency);
     return $error_sub->($amount_validation_error) if $amount_validation_error;
@@ -537,8 +536,19 @@ rpc paymentagent_transfer => sub {
         unless $client_fm->landing_company->allows_payment_agents;
 
     # Reads fiat/crypto from landing_companies.yml, then gets min/max from paymentagent_config.yml
-    my $payment_agent = $client_fm->payment_agent;
-    return $error_sub->(localize('You are not authorized for transfers via payment agents.')) unless $payment_agent;
+    my ($payment_agent, $paymentagent_error);
+    try {
+        $payment_agent = BOM::User::Client::PaymentAgent->new({
+            'loginid'    => $loginid_fm,
+            db_operation => 'replica'
+        });
+    }
+    catch {
+        $paymentagent_error = $@;
+    }
+    if ($paymentagent_error or not $payment_agent) {
+        return $error_sub->(localize('You are not authorized for transfers via payment agents.'));
+    }
 
     $rpc_error = _validate_paymentagent_limits(
         error_sub     => $error_sub,
@@ -556,17 +566,25 @@ rpc paymentagent_transfer => sub {
     return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
         if ($client_fm->landing_company->short ne $client_to->landing_company->short);
 
-    return $error_sub->(localize('You cannot transfer to a client in a different country of residence.'))
-        if $client_fm->residence ne $client_to->residence and not _is_pa_residence_exclusion($client_fm);
-
     if (my @missing_requirements = $client_fm->missing_requirements('withdrawal')) {
         return BOM::RPC::v3::Utility::missing_details_error(details => \@missing_requirements);
     }
+
+    #lets make sure that payment is transfering to client of allowed countries.
+    my $pa_target_countries = $payment_agent->get_countries;
+    my $is_country_allowed  = any { $client_to->residence eq $_ } @$pa_target_countries;
+    my $email_marketing     = request()->brand->emails('marketing');
+    return $error_sub->(
+        localize(
+            "We're unable to process this transfer because the client's resident country is not within your portfolio. Please contact [_1] for more info.",
+            $email_marketing
+        )) if (not $is_country_allowed and not _is_pa_residence_exclusion($client_fm));
 
     #disable/suspending pa transfers in a country, does not exclude a pa if a previous transfer is recorded in db.
     if (is_payment_agents_suspended_in_country($client_to->residence)) {
         my $available_payment_agents_for_client =
             _get_available_payment_agents($client_to->residence, $client_to->broker_code, $currency, $loginid_to);
+
         return $error_sub->(localize("Payment agent transfers are temporarily unavailable in the client's country of residence."))
             unless $available_payment_agents_for_client->{$client_fm->loginid};
     }
@@ -953,9 +971,15 @@ rpc paymentagent_withdraw => sub {
         localize("You cannot perform withdrawal to account [_1], as payment agent's verification documents have expired.", $pa_client->loginid))
         if $pa_client->documents_expired;
 
-    return $error_sub->(localize('You cannot withdraw from a payment agent in a different country of residence.'))
-        if not _is_pa_residence_exclusion($pa_client)
-        and $client->residence ne ($pa_client->residence // '');
+    #lets make sure that client is withdrawing to payment agent having allowed countries.
+    my $pa_target_countries = $paymentagent->get_countries;
+    my $is_country_allowed  = any { $client->residence eq $_ } @$pa_target_countries;
+    my $email_marketing     = request()->brand->emails('marketing');
+    return $error_sub->(
+        localize(
+            "We're unable to process this withdrawal because your country of residence is not within the payment agent's portfolio. Please contact [_1] for more info.",
+            $email_marketing
+        )) if (not $is_country_allowed and not _is_pa_residence_exclusion($pa_client));
 
     if (is_payment_agents_suspended_in_country($client->residence)) {
         my $available_payment_agents_for_client =
