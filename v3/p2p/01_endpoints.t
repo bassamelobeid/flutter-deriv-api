@@ -190,6 +190,18 @@ subtest 'update advertiser' => sub {
         })->{error};
     ok $resp->{code} eq 'InputValidationFailed' && $resp->{message} =~ /name/, 'Advertiser name cannot be blank';
 
+    $resp = $t->await::p2p_advertiser_update({
+        p2p_advertiser_update => 1,
+        contact_info                => '',
+        default_advert_description  => '',
+        payment_info                => '',
+    });
+    test_schema('p2p_advertiser_update', $resp);
+    $advertiser = $resp->{p2p_advertiser_update};
+    is $advertiser->{contact_info}, '', 'contact_info can be empty';
+    is $advertiser->{default_advert_description}, '', 'default_advert_description can be empty';
+    is $advertiser->{payment_info}, '', 'payment_info can be empty';
+
     $advertiser = $t->await::p2p_advertiser_update({
             p2p_advertiser_update => 1,
             is_listed             => 0,
@@ -209,7 +221,7 @@ subtest 'update advertiser' => sub {
     test_schema('p2p_advertiser_update', $resp);
     $advertiser = $resp->{p2p_advertiser_update};
     ok $advertiser->{is_listed}, "enable is_listed";
-    
+
     subtest 'Client use p2p_advertiser_info' => sub {
         $t->await::authorize({authorize => $token_client});
         $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1, id => $advertiser->{id}});
