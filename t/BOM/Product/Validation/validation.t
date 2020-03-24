@@ -938,7 +938,7 @@ subtest 'spot reference check' => sub {
         {
             symbol         => 'DJI',
             recorded_date  => $now,
-            spot_reference => 94.9,
+            spot_reference => 89.9,
         });
     my $tick_params = {
         symbol => 'DJI',

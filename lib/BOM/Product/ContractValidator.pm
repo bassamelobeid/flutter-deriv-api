@@ -16,6 +16,10 @@ use BOM::Product::Static;
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 my %all_currencies = map { $_ => 1 } LandingCompany::Registry::all_currencies();
 
+# This value was previously set to 5. But, we are facing extremely high volatility due to covid-19 crisis
+
+use constant MAX_SPOT_REFERENCE_JUMP => 10;
+
 has disable_trading_at_quiet_period => (
     is      => 'ro',
     default => 1,
@@ -792,7 +796,7 @@ sub _validate_volsurface {
     }
 
     if ($volsurface->type eq 'moneyness' and my $current_spot = $self->current_spot) {
-        if (abs($volsurface->spot_reference - $current_spot) / $current_spot * 100 > 5) {
+        if (abs($volsurface->spot_reference - $current_spot) / $current_spot * 100 > MAX_SPOT_REFERENCE_JUMP) {
             warn 'spot too far from surface reference '
                 . "[symbol: "
                 . $self->underlying->symbol . "] "
