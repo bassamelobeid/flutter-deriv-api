@@ -26,7 +26,8 @@ my $encoded_loginid = encode_entities($loginid);
 
 Bar('Payment Agent Setting');
 
-print "<b>Please note that payment agent currency and country of service will be same as client account currency and residence respectively.</b>";
+print
+    "<b>Please note that payment agent account currency will be same as client account currency & allowed country of service will be as per target countries provided.</b><br/><br/>";
 
 if ($whattodo eq 'create') {
     my $client = BOM::User::Client->new({loginid => $loginid});
@@ -45,6 +46,7 @@ if ($whattodo eq 'create') {
 if ($whattodo eq 'show') {
     my $pa = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
+    my $pa_countries = $pa->get_countries;
 
     my $input_fields = {
         pa_name            => $pa->payment_agent_name,
@@ -60,6 +62,7 @@ if ($whattodo eq 'show') {
         pa_auth            => ($pa->is_authenticated ? 'yes' : 'no'),
         pa_listed          => ($pa->is_listed ? 'yes' : 'no'),
         pa_supported_banks => $pa->supported_banks,
+        pa_countries => join(',', @$pa_countries),
     };
 
     $payment_agent_registration_form->set_input_fields($input_fields);
@@ -73,7 +76,9 @@ if ($whattodo eq 'show') {
     code_exit_BO("Error : wrong loginid ($loginid) could not get client instance") unless $client;
     code_exit_BO("Client has not set account currency. Currency is mandatory for payment agent") unless $client->default_account;
     code_exit_BO("Payment agents are suspended in client's residence country.") if is_payment_agents_suspended_in_country($client->residence);
+    code_exit_BO("Error : must provide at least one country.") unless request()->param('pa_countries');
 
+    my @countries = split(',', request()->param('pa_countries'));
     my $pa = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
     unless ($pa) {
         # if its new so we need to set it
@@ -98,7 +103,6 @@ if ($whattodo eq 'show') {
 
     # update payment agent file
     $pa->payment_agent_name(request()->param('pa_name'));
-    $pa->target_country($client->residence);
     $pa->summary(request()->param('pa_summary'));
     $pa->email(request()->param('pa_email'));
     $pa->phone(request->param('pa_tel'));
@@ -114,6 +118,8 @@ if ($whattodo eq 'show') {
     $pa->currency_code($currency);
 
     $pa->save || die "failed to save payment_agent!";
+    code_exit_BO("Invalid Countries: could not add countries.")
+        unless ($client->get_payment_agent->set_countries(\@countries));
 
     print "<p style=\"color:green; font-weight:bold;\">Successfully updated payment agent details for [$encoded_loginid]</p>";
 

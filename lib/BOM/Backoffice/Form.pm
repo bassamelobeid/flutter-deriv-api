@@ -862,6 +862,32 @@ sub get_payment_agent_registration_form {
             'options' => _select_yes_no(),
         )};
 
+    # Input field for pa_countries
+    my $input_field_pa_countries = {
+        'label' => {
+            'text' => 'Countries',
+            'for'  => 'pa_countries'
+        },
+        'input' => {
+            'id'        => 'pa_countries',
+            'name'      => 'pa_countries',
+            'type'      => 'text',
+            'maxlength' => 500,
+        },
+        'error' => {
+            'id'    => 'errorpa_countries',
+            'class' => 'errorfield'
+        },
+        'validation' => [{
+                'type'    => 'regexp',
+                'regexp'  => '^[a-zA-Z,]*$',
+                'err_msg' => 'Countries list is invalid',
+            },
+        ],
+        comment => {
+            'text' => '** Comma-separated list of 2 character country code (no spaces) e. g id,vn',
+        }};
+
     my $input_hidden_field_whattodo = {
         'id'    => 'whattodo',
         'name'  => 'whattodo',
@@ -936,6 +962,7 @@ sub get_payment_agent_registration_form {
     if ($input_field_pa_listed) {
         $fieldset->add_field($input_field_pa_listed);
     }
+    $fieldset->add_field($input_field_pa_countries);
     $fieldset->add_field($hidden_fields);
     $fieldset->add_field($input_submit_button);
 

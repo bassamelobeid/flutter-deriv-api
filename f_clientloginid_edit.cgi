@@ -845,8 +845,12 @@ if ($payment_agent) {
 
     foreach my $column ($payment_agent->meta->columns) {
         my $value = $payment_agent->$column;
+        #this line shall be removed in cleanup card when we will drop target_country column
+        next if $column eq 'target_country';
         print "<tr><td>$column</td><td>=</td><td>" . encode_entities($value) . "</td></tr>";
     }
+    my $pa_countries = $client->get_payment_agent->get_countries;
+    print "<tr><td>Target Countries</td><td>=</td><td>" . encode_entities(join(',', @$pa_countries)) . "</td></tr>";
 
     print '</table>';
 }
