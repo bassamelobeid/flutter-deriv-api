@@ -84,12 +84,12 @@ our %ERROR_MAP = do {
         RateTooSmall              => localize('Advert rate should not be less than [_1]. Please adjust the value.'),
         RateTooBig                => localize('Advert rate should not be more than [_1]. Please adjust the value.'),
         MinPriceTooSmall          => localize('Advert minimum price is zero, Please adjust minimum amount or rate.'),
-        AdvertPaymentInfoRequired => localize('Advert payment information is required for sell adverts.'),
-        AdvertContactInfoRequired => localize('Advert contact information is required for sell adverts.'),
-        OrderPaymentInfoRequired  => localize('Order payment information is required for sell orders.'),
-        OrderContactInfoRequired  => localize('Order contact information is required for sell orders.'),
-        AdvertPaymentContactInfoNotAllowed => localize('Payment and contact information cannot be specified for buy advert.'),
-        OrderPaymentContactInfoNotAllowed  => localize('Payment and contact information cannot be specified for buy order.'),
+        AdvertPaymentInfoRequired => localize('Please include your payment information.'),
+        AdvertContactInfoRequired => localize('Please include your contact information.'),
+        OrderPaymentInfoRequired  => localize('Please include your payment information.'),
+        OrderContactInfoRequired  => localize('Please include your contact information.'),
+        AdvertPaymentContactInfoNotAllowed => localize('Contact and payment information are not applicable for this ad.'),
+        OrderPaymentContactInfoNotAllowed  => localize('Contact and payment information are not applicable for this order.'),
 
         # bom-user errors
         AlreadyRegistered             => localize('This account has already been registered as a P2P advertiser.'),
@@ -114,10 +114,11 @@ our %ERROR_MAP = do {
         InvalidStateForConfirmation   => localize('The order cannot be confirmed in its current state.'),
         EscrowNotFound                => localize('Advertising for the currency is not available at the moment.'),
         OrderMinimumNotMet => localize('The minimum amount for this advert is [_1] [_2].'),    # minimum won't change during advert lifetime
-        OrderMaximumExceeded => localize('The maximum available amount for this advert is [_1] [_2] at the moment.'),
-        InsufficientBalance  => localize('Your account balance is insufficient to create an order with this amount.'),
-        OpenOrdersDeleteAdvert =>
-            localize('You cannot delete an advert with open orders. Please ensure the advert is deactivated and wait until all orders are closed.'),
+        OrderMaximumExceeded   => localize('The maximum available amount for this advert is [_1] [_2] at the moment.'),
+        InsufficientBalance    => localize('Your account balance is insufficient to create an order with this amount.'),
+        OpenOrdersDeleteAdvert => localize(
+            "This advert cannot be deleted because there are open orders. Please wait until the orders are closed and try again. If you'd like to stop accepting new orders, you may disable your advert."
+        ),
         AdvertiserNameTaken => localize('The advertiser name is already taken. Please choose another.'),
     );
 };
