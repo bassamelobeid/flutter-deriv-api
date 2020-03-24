@@ -27,6 +27,7 @@ ok($payment_agent->is_authenticated, "payment agent is authenticated");
 Test::Exception::lives_ok {
     $payment_agent->is_authenticated('');
     $payment_agent->save();
+    $payment_agent->set_countries(['id', 'in']);
 }
 "set PaymentAgent authenticated to 'undef'";
 
@@ -40,11 +41,15 @@ Test::Exception::lives_ok {
     $payment_agent->payment_agent_name('new name');
     $payment_agent->summary('new summary');
     $payment_agent->save();
+    $payment_agent->set_countries(['id', 'in']);
 }
 "save payment agent";
 
 my $pa2 = BOM::User::Client::PaymentAgent->new({loginid => $payment_agent->client_loginid});
 ok($pa2->summary, "new summary");
+my $expected_result_1 = ['id', 'in'];
+my $target_countries = $pa2->get_countries;
+is_deeply($target_countries, $expected_result_1, "returned correct countries");
 
 #################################
 # testing: client
