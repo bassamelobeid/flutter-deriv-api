@@ -97,25 +97,24 @@ my $dbic = BOM::Database::ClientDB->new({
     )->db->dbic
     or die "[$0] cannot create connection";
 
-my $u_db;
-my $prefix;
 foreach my $table (
     qw(client client_status client_promo_code client_authentication_method client_authentication_document self_exclusion financial_assessment))
 {
-    $prefix = ($table eq 'client') ? '' : 'client_';
-    $u_db = $dbic->run(
+    my $column_name = ($table eq 'client') ? 'loginid' : 'client_loginid';
+    my $u_db = $dbic->run(
         fixup => sub {
-            $_->selectall_hashref(
-                "SELECT * FROM audit.$table WHERE "
-                    . $prefix
-                    . "loginid='$loginid' and stamp between '$startdate'::TIMESTAMP and '$enddate'::TIMESTAMP order by stamp",
-                'stamp'
-            );
+            $_->selectall_hashref("SELECT * from audit.get_client_audit_details(?::TEXT,?::TEXT,?::VARCHAR,?::DATE,?::DATE)",
+                'data', {}, $table, $column_name, $loginid, $startdate, $enddate);
         });
-
+    my %u_db_hash;
+    # convert JSON to respective records.
+    foreach my $data (keys %{$u_db}) {
+        my $record = decode_json($data);
+        $u_db_hash{$record->{stamp}} = $record;
+    }
     my $old;
-    foreach my $stamp (sort keys %{$u_db}) {
-        my $new = $u_db->{$stamp};
+    foreach my $stamp (sort keys %u_db_hash) {
+        my $new = $u_db_hash{$stamp};
         my $diffs;
         if (not $old) {
             $old = $new;
@@ -133,7 +132,7 @@ foreach my $table (
                 };
             $old = $new;
         }
-        foreach my $key (sort keys %{$u_db->{$stamp}}) {
+        foreach my $key (sort keys %{$u_db_hash{$stamp}}) {
             if ($key eq 'secret_answer') {
                 try {
                     $new->{secret_answer} = BOM::User::Utility::decrypt_secret_answer($new->{secret_answer});
