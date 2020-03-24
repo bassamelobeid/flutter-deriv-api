@@ -1,0 +1,21 @@
+<h2>Following Clients are set withdrawal_locked & allow_document_upload as their AML Risk becomes high.<br/><br/></h2>
+<table border='1'>
+  <tr><th>Client-DB</th></tr>
+  <tr><td>[% landing_company.upper %]</td></tr>
+</table>
+<br/><br/>
+
+<table border='1'>
+ <tr>
+    <th>operation</th>
+    <th>corresponding MT loginids</th>
+    <th>corresponding loginIDs / accounts</th>
+ </tr>
+[% FOREACH aml_updated_clients  %]
+   <tr>
+       <td>withdrawal locked</td>
+       <td>[% mt_ids %]</td>
+       <td>[% login_ids | replace(',', ', ') %]</td>
+   </tr>
+[% END %]
+</table>

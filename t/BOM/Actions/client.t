@@ -1000,5 +1000,23 @@ subtest 'client_transfer event' => sub {
 
 };
 
+subtest 'aml risk becomes high withdrawal_locked email CR landing company' => sub {
+    mailbox_clear();
+    my $landing_company = 'CR';
+    my $aml_high_clients = [{login_ids => $test_client->loginid}];
+    #send email
+    BOM::Event::Actions::Client::aml_client_status_update({
+            template_args => {
+                landing_company     => $landing_company,
+                aml_updated_clients => @$aml_high_clients
+            }});
+    my $subject = 'Daily Withdrawal Locked AML risk update';
+    my $msg     = mailbox_search(
+        email   => 'compliance-alerts@binary.com',
+        subject => qr/\Q$subject\E/
+    );
+    ok($msg, "email received");
+};
+
 done_testing();
 

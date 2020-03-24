@@ -2306,4 +2306,40 @@ sub handle_crypto_withdrawal {
     return;
 }
 
+=head2 aml_client_status_update
+
+Send email to compliance-alerts@binary.com if some clients that are set withdrawal_locked
+
+=cut
+
+sub aml_client_status_update {
+    my $data = shift;
+
+    my $template_args   = $data->{template_args};
+    my $system_email    = $BRANDS->emails('no-reply');
+    my $to              = $BRANDS->emails('compliance_alert');
+    my $landing_company = $template_args->{landing_company} // '';
+    my $email_subject   = "Daily Withdrawal Locked AML risk update (" . $landing_company . ")";
+
+    my $tt = Template::AutoFilter->new({
+        ABSOLUTE => 1,
+        ENCODING => 'utf8'
+    });
+    try {
+        $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/clients_update_status.html.tt', $template_args, \my $html);
+        die "Template error: @{[$tt->error]}" if $tt->error;
+
+        unless (Email::Stuffer->from($system_email)->to($to)->subject($email_subject)->html_body($html)->send()) {
+            $log->errorf($template_args);
+            die "failed to send aml_risk_clients_update_status email.";
+        }
+
+        return undef;
+    }
+    catch {
+        $log->errorf("Failed to send AML Risk withdrawal_locked email to compliance %s on %s", $template_args, $@);
+        return undef;
+    }
+}
+
 1;
