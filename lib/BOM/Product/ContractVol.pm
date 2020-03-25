@@ -230,6 +230,7 @@ sub _build_empirical_volsurface {
 
     return VolSurface::Empirical->new(
         underlying       => $self->underlying,
+        is_atm           => $self->is_atm_bet,
         chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($self->underlying->for_date),
         chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
     );
