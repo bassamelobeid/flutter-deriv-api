@@ -1191,7 +1191,7 @@ sub update_fa {
         {
             loginid => $client->loginid,
             params  => \%changed_items,
-        });
+        }) if (%changed_items);
 
     return BOM::User::FinancialAssessment::update_financial_assessment($client->user, $args);
 }
