@@ -2636,7 +2636,8 @@ sub validate_payment {
 
             # Call get_total_deposit and validate against limits
             if ($max_deposit_limits) {
-                my $deposit_over_period = $self->db->dbic->run(
+                my $deposit_over_period = 0;
+                my $payment_arrayref    = $self->db->dbic->run(
                     ping => sub {
                         my $sth = $_->prepare('SELECT payment.get_total_deposit(?,?,?,?)');
                         $sth->execute(
@@ -2645,10 +2646,13 @@ sub validate_payment {
                             $max_deposit_limits->{end},
                             "{mt5_transfer}"    # exclude mt5 transfers
                         );
-                        return $sth->fetchrow_arrayref()->[0];
+                        return $sth->fetchrow_arrayref;
                     });
+                if ($payment_arrayref && $payment_arrayref->[0]) {
+                    $deposit_over_period = $payment_arrayref->[0];
+                }
                 die
-                    "Deposit exceeds limit [$max_deposit_limits->{max_deposit}]. Aggregated deposit over period [$deposit_over_period]. Current amount [$amount]."
+                    "Deposit exceeds limit [$max_deposit_limits->{max_deposit}]. Aggregated deposit over period [$deposit_over_period]. Current amount [$amount].\n"
                     if ($deposit_over_period + $amount) > $max_deposit_limits->{max_deposit};
             }
         }
