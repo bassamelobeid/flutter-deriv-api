@@ -225,10 +225,11 @@ if ($view_action eq 'withdrawals') {
         my $error;
         ($error) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_remark(?, ?, ?)', undef, $address, $currency, $set_remark) })
             if $action eq 'Save';
+        my $approvals_required = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_approvals_required;
         ($error) = $dbic->run(
             ping => sub {
-                $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?, ?, ?)',
-                    undef, $address, $currency, $staff, ($set_remark ne '' ? $set_remark : undef));
+                $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?, ?::JSONB, ?, ?)',
+                    undef, $address, $currency, $approvals_required, $staff, ($set_remark ne '' ? $set_remark : undef));
             }) if $action eq 'Verify';
         ($error) = $dbic->run(
             ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $address, $currency, $set_remark) })
