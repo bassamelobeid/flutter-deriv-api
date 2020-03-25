@@ -8,6 +8,7 @@ use Future::Mojo;
 use Time::Duration::Concise;
 use Variable::Disposition qw/retain_future/;
 use YAML::XS qw(LoadFile);
+use Log::Any qw($log);
 
 sub register {
     my ($self, $app) = @_;
@@ -66,7 +67,7 @@ sub _update_redis {
             return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
 
             if ($error) {
-                $c->app->log->warn("Redis error: $error");
+                $log->warn("Redis error: $error");
                 return $f->fail($error);
             }
             # overwrite by force speculatively calculated value
@@ -85,7 +86,7 @@ sub _update_redis {
                     sub {
                         my ($redis, $error, $redis_ttl) = @_;
                         if ($error) {
-                            $c->app->log->warn("Redis error: $error");
+                            $log->warn("Redis error: $error");
                             return $f->fail($error);
                         }
                         # If ttl == -2 the key has just expired and we don't need a warning here.
@@ -103,13 +104,18 @@ sub _update_redis {
 
 sub _set_key_expiry {
     my ($c, $redis_key, $ttl, $f) = @_;
-    my $redis = $c->app->ws_redis_master;
+    my $redis  = $c->app->ws_redis_master;
+    my @caller = caller;
     $redis->expire(
         $redis_key,
         $ttl,
         sub {
             my ($redis, $error, $confirmation) = @_;
-            $c->app->log->warn("Expiration on $redis_key was not confirmed")
+            # TODO this line is for debug, should be removed later.
+            # https://trello.com/c/ucCVDdSp/73-logs-expirationnotconfirmed
+            local $log->context->{caller} = \@caller;
+            $log->error("Error when set key $redis_key expiry: $error") if $error;
+            $log->info("Expiration on $redis_key was not confirmed")
                 unless $confirmation;
             $f->done if $f;
         });
