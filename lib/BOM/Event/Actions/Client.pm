@@ -2054,6 +2054,9 @@ sub set_needs_action {
         $client->save();
     }
 
+    # allow client to upload documents
+    $client->status->set('allow_document_upload', 'system', 'Allow client to document upload') unless ($client->status->allow_document_upload);
+
     return;
 }
 
