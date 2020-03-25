@@ -169,6 +169,8 @@ sub add_req_data {
         $args = $req_storage->{origin_args} || $req_storage->{args};
 
         my $err_code = $api_response->{error} && $api_response->{error}{code} // '';
+        local $log->context->{args}         = $args;
+        local $log->context->{api_response} = $api_response;
         $api_response->{echo_req} =
             $err_code ne 'InputValidationFailed'
             ? _sanitize_echo($args, $api_response->{msg_type})
@@ -426,6 +428,8 @@ sub output_validation {
 
     my $schema;
     if ($api_response->{msg_type}) {
+        local $log->context->{args} = $req_storage->{origin_args} || $req_storage->{args};
+        local $log->context->{api_response} = $api_response;
         $schema = _load_schema($api_response->{msg_type});
     }
 
