@@ -208,7 +208,7 @@ if ($view_action eq 'withdrawals') {
     code_exit_BO("Invalid action.")
         if $action and $action !~ /^[a-zA-Z]{4,15}$/;
     code_exit_BO("Invalid selection to view type of transactions.")
-        if not $view_type or $view_type !~ /^(?:pending|verified|rejected|processing|performing_blockchain_txn|sent|error)$/;
+        if not $view_type or $view_type !~ /^(?:pending|verified|rejected|cancelled|processing|performing_blockchain_txn|sent|error)$/;
 
     if ($action and $action =~ /^(?:Save|Verify|Reject)$/) {
         my $amount     = request()->param('amount');

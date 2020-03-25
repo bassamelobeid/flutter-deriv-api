@@ -67,6 +67,10 @@
                 <td>Rejected</td>
                 <td>List withdrawal requests rejected by payments team after validation</td>
              </tr>
+            <tr>
+                <td>Cancelled</td>
+                <td>List withdrawal requests cancelled by the client before transactions were verified</td>
+             </tr>
              <tr>
                 <td>Processing</td>
                 <td>List withdrawal requests where client account is debited but blockchain transaction is not yet confirmed</td>
@@ -147,6 +151,7 @@
                     [% ELSIF trx.transaction_type == 'withdrawal' %]
                         <tr><th>Verified:</th><td>[% trx.verified_date %]</td></tr>
                         <tr><th>Rejected:</th><td>[% trx.rejected_date %]</td></tr>
+                        <tr><th>Cancelled:</th><td>[% trx.cancelled_date %]</td></tr>
                         <tr><th>Processing:</th><td>[% trx.processing_date %]</td></tr>
                         <tr><th>Performing Blockchain:</th><td>[% trx.performing_blockchain_txn_date %]</td></tr>
                         <tr><th>Sent:</th><td>[% trx.sent_date %]</td></tr>
@@ -222,6 +227,8 @@
             <td><a [% IF view_type == 'verified' %]class='selected' [% END %]href="[% url_base %]&view_type=verified">View Verified Transactions</a></td>
             <td>|</td>
             <td><a [% IF view_type == 'rejected' %]class='selected' [% END %]href="[% url_base %]&view_type=rejected">View Rejected Transaction</a></td>
+            <td>|</td>
+            <td><a [% IF view_type == 'cancelled' %]class='selected' [% END %]href="[% url_base %]&view_type=cancelled">View Cancelled Transaction</a></td>
             <td>|</td>
             <td><a [% IF view_type == 'processing' %]class='selected' [% END %]href="[% url_base %]&view_type=processing">View transactions under processing</a></td>
             <td>|</td>

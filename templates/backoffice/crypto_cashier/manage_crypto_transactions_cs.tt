@@ -64,6 +64,7 @@
                     [% ELSIF trx.transaction_type == 'withdrawal' %]
                         <tr><th>Verified:</th><td>[% trx.verified_date %]</td></tr>
                         <tr><th>Rejected:</th><td>[% trx.rejected_date %]</td></tr>
+                        <tr><th>Cancelled:</th><td>[% trx.cancelled_date %]</td></tr>
                         <tr><th>Processing:</th><td>[% trx.processing_date %]</td></tr>
                         <tr><th>Performing Blockchain:</th><td>[% trx.performing_blockchain_txn_date %]</td></tr>
                         <tr><th>Sent:</th><td>[% trx.sent_date %]</td></tr>
