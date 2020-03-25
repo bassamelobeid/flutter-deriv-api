@@ -2275,7 +2275,7 @@ rpc set_financial_assessment => sub {
         {
             loginid => $client->loginid,
             params  => \%changed_items,
-        });
+        }) if (%changed_items);
     return $response;
 };
 
