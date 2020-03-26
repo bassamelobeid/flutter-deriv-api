@@ -201,6 +201,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "USD" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => noneof(qw(duplicate_account)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -230,6 +236,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "EUR" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => noneof(qw(authenticated)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
@@ -257,6 +269,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "EUR" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => superbagof(qw(authenticated)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -282,6 +300,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "EUR" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => superbagof(qw(document_expired)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -316,6 +340,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "EUR" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => superbagof(qw(document_expiring_soon)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -343,6 +373,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "USD" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => [qw(financial_information_not_complete trading_experience_not_complete)],
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -367,6 +403,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "USD" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => superbagof(qw(allow_document_upload withdrawal_locked)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -393,6 +435,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "USD" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => superbagof(qw(document_needs_action)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
@@ -418,6 +466,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "USD" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => superbagof(qw(document_needs_action)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
@@ -444,6 +498,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "USD" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => superbagof(qw(document_under_review)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -471,6 +531,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "USD" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status => superbagof(qw(financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete)),
                     risk_classification           => 'high',
                     prompt_client_to_authenticate => '1',
@@ -501,6 +567,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "USD" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => superbagof(qw(age_verification allow_document_upload)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -528,6 +600,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "USD" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status => superbagof(qw(age_verification authenticated financial_information_not_complete trading_experience_not_complete)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -558,6 +636,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "USD" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => superbagof(qw()),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
@@ -587,6 +671,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "EUR" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status => superbagof(
                         qw(allow_document_upload financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete)
                     ),
@@ -615,6 +705,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "EUR" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status              => superbagof(qw(allow_document_upload financial_information_not_complete trading_experience_not_complete)),
                     risk_classification => 'low',
                     prompt_client_to_authenticate => '0',
@@ -641,6 +737,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "EUR" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => superbagof(qw(financial_information_not_complete trading_experience_not_complete)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
@@ -670,6 +772,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "GBP" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status => superbagof(qw(financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete)),
                     risk_classification           => 'high',
                     prompt_client_to_authenticate => '1',
@@ -703,6 +811,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "GBP" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => superbagof(qw(financial_information_not_complete trading_experience_not_complete)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
@@ -741,6 +855,12 @@ subtest 'get account status' => sub {
                 cmp_deeply(
                     $result,
                     {
+                        experimental_suspended => {
+                            "EUR" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
                         status => superbagof(
                             qw(allow_document_upload age_verification authenticated financial_information_not_complete financial_assessment_not_complete)
                         ),
@@ -803,6 +923,12 @@ subtest 'get account status' => sub {
                 cmp_deeply(
                     $result,
                     {
+                        experimental_suspended => {
+                            "EUR" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
                         status => superbagof(qw(age_verification authenticated financial_information_not_complete financial_assessment_not_complete)),
                         risk_classification           => 'low',
                         prompt_client_to_authenticate => '0',
@@ -920,6 +1046,12 @@ subtest 'get account status' => sub {
                 cmp_deeply(
                     $result,
                     {
+                        experimental_suspended => {
+                            "EUR" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
                         status              => superbagof(qw(age_verification financial_information_not_complete financial_assessment_not_complete)),
                         risk_classification => 'low',
                         prompt_client_to_authenticate => 1,
@@ -969,6 +1101,12 @@ subtest 'get account status' => sub {
                     cmp_deeply(
                         $result,
                         {
+                            experimental_suspended => {
+                                "EUR" => {
+                                    is_deposit_suspended    => 0,
+                                    is_withdrawal_suspended => 0,
+                                }
+                            },
                             status => superbagof(qw(age_verification financial_information_not_complete financial_assessment_not_complete)),
                             risk_classification           => 'low',
                             prompt_client_to_authenticate => 1,
@@ -1017,6 +1155,12 @@ subtest 'get account status' => sub {
                     cmp_deeply(
                         $result,
                         {
+                            experimental_suspended => {
+                                "EUR" => {
+                                    is_deposit_suspended    => 0,
+                                    is_withdrawal_suspended => 0,
+                                }
+                            },
                             status => superbagof(qw(age_verification financial_information_not_complete financial_assessment_not_complete)),
                             risk_classification           => 'low',
                             prompt_client_to_authenticate => 1,
@@ -1053,6 +1197,12 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
+                    experimental_suspended => {
+                        "EUR" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
                     status                        => superbagof(qw(financial_information_not_complete financial_assessment_not_complete)),
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => 1,

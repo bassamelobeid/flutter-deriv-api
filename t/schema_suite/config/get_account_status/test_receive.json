@@ -9,9 +9,39 @@
       "stash",
       "risk_classification",
       "prompt_client_to_authenticate",
-      "authentication"
+      "authentication",
+      "experimental_suspended"
    ],
    "properties" : {
+      "experimental_suspended": {
+         "description": "Provides cashier details for experimental currencies.",
+           "type": "object",
+           "minProperties": 0,
+           "patternProperties": {
+               "^[A-Z]{3,4}$": {
+                   "description": "Client currency",
+                   "type": "object",
+                    "properties": {
+                        "is_deposit_suspended": {
+                            "description": "Deposit is allowed for currency or not",
+                           "type": "integer",
+                           "enum": [
+                               0,
+                               1
+                             ]
+                       },
+                       "is_withdrawal_suspended": {
+                           "description": "Withdrawal is allowed for currency or not",
+                           "type": "integer",
+                           "enum": [
+                               0,
+                               1
+                           ]
+                       }
+                    }
+               }
+           }
+      },
       "stash" : {
          "type" : "object"
       },

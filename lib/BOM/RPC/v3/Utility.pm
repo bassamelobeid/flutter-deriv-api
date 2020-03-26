@@ -571,13 +571,8 @@ sub _is_currency_allowed {
     }
 
     # if currency is experimental and client is not allowed to use such currencies we don't allow
-    if (LandingCompany::Registry::get_currency_definition($currency)->{experimental}) {
-        my $allowed_emails = BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed;
-        my $client_email   = $client->email;
-        $result->{message} = localize('Please note that the selected currency is allowed for limited accounts only');
-
-        return $result if not any { $_ eq $client_email } @$allowed_emails;
-    }
+    $result->{message} = localize('Please note that the selected currency is allowed for limited accounts only.');
+    return $result if verify_email_whitelisted($client, $currency);
 
     #that's enough for virtual accounts or empty siblings
     return {allowed => 1} if ($client->is_virtual or scalar(keys %$siblings) == 0);
@@ -920,6 +915,38 @@ sub verify_cashier_suspended {
     } else {
         return 1
             if BOM::Platform::Client::CashierValidation::is_cashier_suspended();
+    }
+
+    return 0;
+}
+
+=head2 verify_email_whitelisted
+
+Check if email is whitelisted for experimental currency.
+
+=over 4
+
+=item * C<client>
+
+client object.
+
+=item * C<currency>
+
+The currency code.
+
+=back
+
+Returns 1 if experimental is in emails list and 0 if not.
+
+=cut
+
+sub verify_email_whitelisted {
+    my ($client, $currency) = @_;
+
+    if (BOM::Platform::Client::CashierValidation::is_experimental_currency($currency)) {
+        my $allowed_emails = BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed;
+        my $client_email   = $client->email;
+        return 1 if not any { $_ eq $client_email } @$allowed_emails;
     }
 
     return 0;

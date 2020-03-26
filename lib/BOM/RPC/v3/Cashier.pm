@@ -1229,13 +1229,15 @@ rpc transfer_between_accounts => sub {
     my $token_type = $params->{token_type} // '';
     my $lc_short = $client->landing_company->short;
 
+    my $args = $params->{args};
+    my ($currency, $amount) = @{$args}{qw/currency amount/};
+    my $status = $client->status;
+
     if (BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
 
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual && $token_type ne 'oauth_token';
-
-    my $status = $client->status;
 
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is currently disabled.'))
         if $status->disabled;
@@ -1247,9 +1249,6 @@ rpc transfer_between_accounts => sub {
     if (my @missed_fields = $client->missing_requirements('withdrawal')) {
         return BOM::RPC::v3::Utility::missing_details_error(details => \@missed_fields);
     }
-
-    my $args = $params->{args};
-    my ($currency, $amount) = @{$args}{qw/currency amount/};
 
     my $siblings = $client->real_account_siblings_information(include_disabled => 0);
 
@@ -1414,6 +1413,10 @@ rpc transfer_between_accounts => sub {
         $token_type
     );
     return $res if $res;
+
+    return _transfer_between_accounts_error(localize('Please note that the selected currency is allowed for limited accounts only.'))
+        if BOM::RPC::v3::Utility::verify_email_whitelisted($client, $from_currency)
+        || BOM::RPC::v3::Utility::verify_email_whitelisted($client, $to_currency);
 
     BOM::User::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
     my $error_audit_sub = sub {
