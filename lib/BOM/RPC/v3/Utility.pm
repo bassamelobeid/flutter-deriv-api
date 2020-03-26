@@ -249,10 +249,6 @@ sub is_verification_token_valid {
 
     if ($verification_token->email and $verification_token->email eq $email) {
         $response = {status => 1};
-    } else {
-        $response = create_error({
-                code              => 'InvalidEmail',
-                message_to_client => localize('Email address is incorrect.')});
     }
     $verification_token->delete_token;
 
