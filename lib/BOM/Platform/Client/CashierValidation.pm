@@ -242,6 +242,27 @@ sub is_crypto_currency_withdrawal_suspended {
     return $response;
 }
 
+=head2 is_experimental_currency
+
+Returns 1 or 0 if currency is experimental or not
+
+=over 4
+
+=item C<currency> Currency symbol
+
+=cut
+
+sub is_experimental_currency {
+    my $currency = shift;
+    return undef unless $currency;
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update();
+
+    my $experimental = any { $currency eq $_ } $app_config->payments->experimental_currencies->@*;
+    return $experimental;
+}
+
 =head2 pre_withdrawal_validation
 
 Validates withdrawal amount
