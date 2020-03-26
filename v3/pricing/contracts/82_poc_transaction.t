@@ -146,8 +146,7 @@ subtest 'sell a contract and test' => sub {
         currency_code           => 'USD',
     };
 
-    BOM::Config::Redis::redis_transaction_write()
-        ->publish('TXNUPDATE::transaction_' . $msg->{account_id}, Encode::encode_utf8($json->encode($msg)));
+    BOM::Config::Redis::redis_transaction_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, Encode::encode_utf8($json->encode($msg)));
 
     my $data = $t->await::proposal_open_contract();
     is($data->{msg_type}, 'proposal_open_contract', 'Got message about selling contract');

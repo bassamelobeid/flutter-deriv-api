@@ -13,9 +13,34 @@
          "required" : [
             "prompt_client_to_authenticate",
             "status",
-            "risk_classification"
+            "risk_classification",
+            "experimental_suspended"
          ],
          "properties" : {
+            "experimental_suspended" : {
+               "type" : "object",
+               "patternProperties" : {
+                   "^[A-Z]{3,4}$" : {
+                       "type" : "object",
+                       "properties" : {
+                           "is_deposit_suspended" : {
+                               "type" : "integer",
+                               "enum": [
+                                  0,
+                                  1
+                              ]
+                           },
+                           "is_withdrawal_suspended" : {
+                               "type" : "integer",
+                               "enum": [
+                                  0,
+                                  1
+                              ]
+                           }
+                       }
+                   }
+               }
+            },
             "prompt_client_to_authenticate" : {
                "enum" : [1,0]
             },

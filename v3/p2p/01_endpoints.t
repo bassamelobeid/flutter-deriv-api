@@ -43,7 +43,6 @@ $app_config->set({'payments.p2p.available'               => 1});
 $app_config->set({'payments.p2p.available_for_countries' => ['id']});
 $app_config->set({'payments.p2p.limits.maximum_order'    => 10});
 
-
 my $t = build_wsapi_test();
 
 my $email_advertiser = 'p2p_advertiser@test.com';
@@ -107,13 +106,13 @@ subtest 'new real account for p2p' => sub {
         residence              => 'id',
     );
 
-    $token_vr = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token', ['admin']);    
+    $token_vr = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token', ['admin']);
     $t->await::authorize({authorize => $token_vr});
     $resp = $t->await::new_account_real(\%account_params);
     test_schema('new_account_real', $resp);
     my $loginid = $resp->{new_account_real}->{client_id};
     like($loginid, qr/^CR\d+$/, "got CR client $loginid");
-    $client_advertiser = BOM::User::Client->new({loginid=>$loginid});
+    $client_advertiser = BOM::User::Client->new({loginid => $loginid});
     top_up($client_advertiser, $client_advertiser->currency, 1000);
 };
 
@@ -139,11 +138,11 @@ subtest 'create advertiser' => sub {
     $t->await::authorize({authorize => $token_advertiser});
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1})->{error};
     is $resp->{code}, 'AdvertiserNotFound', 'Advertiser not yet registered';
-    
+
     $resp = $t->await::p2p_advertiser_create({
-            p2p_advertiser_create => 1,
-            %advertiser_params
-        });
+        p2p_advertiser_create => 1,
+        %advertiser_params
+    });
     test_schema('p2p_advertiser_create', $resp);
     $advertiser = $resp->{p2p_advertiser_create};
 
@@ -151,17 +150,17 @@ subtest 'create advertiser' => sub {
     ok $advertiser->{id} > 0, 'advertiser id';
     ok !$advertiser->{is_approved}, 'advertiser not approved';
     ok $advertiser->{is_listed}, "advertiser's adverts are listed";
-    
+
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
     test_schema('p2p_advertiser_info', $resp);
 
-    cmp_deeply( $resp->{p2p_advertiser_info}, $advertiser, 'advertiser info is correct');
+    cmp_deeply($resp->{p2p_advertiser_info}, $advertiser, 'advertiser info is correct');
 
     $resp = $t->await::p2p_advertiser_create({
             p2p_advertiser_create => 1,
             %advertiser_params
         })->{error};
-    is $resp->{code}, 'AlreadyRegistered', 'Cannot create duplicate advertiser';        
+    is $resp->{code}, 'AlreadyRegistered', 'Cannot create duplicate advertiser';
 
     $resp = $t->await::p2p_advert_create({
             p2p_advert_create => 1,
@@ -174,7 +173,7 @@ subtest 'update advertiser' => sub {
     $token_advertiser = BOM::Platform::Token::API->new->create_token($client_advertiser->loginid, 'test token', ['payments']);
     $t->await::authorize({authorize => $token_advertiser});
 
-    my ( $name, $payment, $contact ) = ( 'new advertiser name', 'adv pay info', 'adv contact info' );
+    my ($name, $payment, $contact) = ('new advertiser name', 'adv pay info', 'adv contact info');
 
     $resp = $t->await::p2p_advertiser_update({
             p2p_advertiser_update => 1,
@@ -191,16 +190,16 @@ subtest 'update advertiser' => sub {
     ok $resp->{code} eq 'InputValidationFailed' && $resp->{message} =~ /name/, 'Advertiser name cannot be blank';
 
     $resp = $t->await::p2p_advertiser_update({
-        p2p_advertiser_update => 1,
-        contact_info                => '',
-        default_advert_description  => '',
-        payment_info                => '',
+        p2p_advertiser_update      => 1,
+        contact_info               => '',
+        default_advert_description => '',
+        payment_info               => '',
     });
     test_schema('p2p_advertiser_update', $resp);
     $advertiser = $resp->{p2p_advertiser_update};
-    is $advertiser->{contact_info}, '', 'contact_info can be empty';
+    is $advertiser->{contact_info},               '', 'contact_info can be empty';
     is $advertiser->{default_advert_description}, '', 'default_advert_description can be empty';
-    is $advertiser->{payment_info}, '', 'payment_info can be empty';
+    is $advertiser->{payment_info},               '', 'payment_info can be empty';
 
     $advertiser = $t->await::p2p_advertiser_update({
             p2p_advertiser_update => 1,
@@ -210,7 +209,7 @@ subtest 'update advertiser' => sub {
             contact_info          => $contact
         })->{p2p_advertiser_update};
     ok !$advertiser->{is_listed}, "is_listed updated";
-    is $advertiser->{name}, $name, 'advertiser name updated';
+    is $advertiser->{name},         $name,    'advertiser name updated';
     is $advertiser->{payment_info}, $payment, 'advertiser payment_info updated';
     is $advertiser->{contact_info}, $contact, 'advertiser contact_info updated';
 
@@ -224,15 +223,17 @@ subtest 'update advertiser' => sub {
 
     subtest 'Client use p2p_advertiser_info' => sub {
         $t->await::authorize({authorize => $token_client});
-        $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1, id => $advertiser->{id}});
-        test_schema('p2p_advertiser_info', $resp);    
+        $resp = $t->await::p2p_advertiser_info({
+                p2p_advertiser_info => 1,
+                id                  => $advertiser->{id}});
+        test_schema('p2p_advertiser_info', $resp);
     };
-    
+
 };
 
 subtest 'create advert (sell)' => sub {
     $t->await::authorize({authorize => $token_advertiser});
-    
+
     $client_advertiser->p2p_advertiser_update(is_approved => 1);
     $resp = $t->await::p2p_advert_create({
         p2p_advert_create => 1,
@@ -254,7 +255,7 @@ subtest 'create advert (sell)' => sub {
         'max amount';
     ok $advert->{price} == $advert_params{rate} && $advert->{price_display} == $advert_params{rate}, 'price';
     ok $advert->{rate} == $advert_params{rate}  && $advert->{rate_display} == $advert_params{rate},  'rate';
-    is $advert->{type}, $advert_params{type}, 'type';
+    is $advert->{type},         $advert_params{type},         'type';
     is $advert->{payment_info}, $advert_params{payment_info}, 'payment_info';
     is $advert->{contact_info}, $advert_params{contact_info}, 'contact_info';
 
@@ -269,18 +270,20 @@ subtest 'create advert (sell)' => sub {
     $resp = $t->await::p2p_advert_list({p2p_advert_list => 1});
     test_schema('p2p_advert_list', $resp);
     cmp_deeply($resp->{p2p_advert_list}{list}[0], $advert, 'Advert list item matches advert create');
-    
+
     $resp = $t->await::p2p_advert_info({
             p2p_advert_info => 1,
             id              => $advert->{id}});
     test_schema('p2p_advert_info', $resp);
     cmp_deeply($resp->{p2p_advert_info}, $advert, 'Advert info matches advert create');
-    
+
     $t->await::authorize({authorize => $token_client});
-    
+
     subtest 'Client use p2p_advert_info' => sub {
         $t->await::authorize({authorize => $token_client});
-        $resp = $t->await::p2p_advert_info({p2p_advert_info => 1, id => $advert->{id}});
+        $resp = $t->await::p2p_advert_info({
+                p2p_advert_info => 1,
+                id              => $advert->{id}});
         test_schema('p2p_advert_info', $resp);
 
         my %expected = %$advert;
@@ -289,14 +292,14 @@ subtest 'create advert (sell)' => sub {
             qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info)
         };
         cmp_deeply($resp->{p2p_advert_info}, \%expected, 'Advert info sensitive fields hidden');
-        
-    };    
+
+    };
 };
 
 subtest 'create order (buy)' => sub {
     my $amount = 10;
     my $price  = $advert->{price} * $amount;
-    
+
     $resp = $t->await::p2p_order_create({
         p2p_order_create => 1,
         advert_id        => $advert->{id},
@@ -373,8 +376,8 @@ subtest 'cancel order' => sub {
 
 subtest 'buy advert/sell order' => sub {
     $advert_params{type} = 'buy';
-    delete @advert_params{ 'payment_info', 'contact_info' }; # not allowed for buy advert
-    
+    delete @advert_params{'payment_info', 'contact_info'};    # not allowed for buy advert
+
     $t->await::authorize({authorize => $token_advertiser});
 
     $resp = $t->await::p2p_advert_create({
@@ -384,7 +387,7 @@ subtest 'buy advert/sell order' => sub {
     test_schema('p2p_advert_create', $resp);
     $advert = $resp->{p2p_advert_create};
 
-    my ( $payment, $contact) = ( 'order pay info', 'order contact info' );
+    my ($payment, $contact) = ('order pay info', 'order contact info');
 
     $t->await::authorize({authorize => $token_client});
     $resp = $t->await::p2p_order_create({
@@ -396,7 +399,7 @@ subtest 'buy advert/sell order' => sub {
     });
     test_schema('p2p_order_create', $resp);
     $order = $resp->{p2p_order_create};
- 
+
     is $order->{payment_info}, $payment, 'payment_info';
     is $order->{contact_info}, $contact, 'contact_info';
 };

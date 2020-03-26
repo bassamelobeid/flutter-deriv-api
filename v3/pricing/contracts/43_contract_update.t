@@ -68,7 +68,8 @@ subtest 'contract_update' => sub {
     is $res->{msg_type}, 'contract_update', 'msg_type - contract_update';
     ok $res->{error}, 'error';
     is $res->{error}->{code}, 'ContractNotFound', 'error code - ContractNotFound';
-    is $res->{error}->{message}, 'This contract was not found among your open positions.', 'error message - This contract was not found among your open positions.';
+    is $res->{error}->{message}, 'This contract was not found among your open positions.',
+        'error message - This contract was not found among your open positions.';
 
     my $proposal_res = $t->await::proposal({
         "proposal"      => 1,
@@ -132,7 +133,9 @@ subtest 'contrcat_update on unsupported contract type' => sub {
             }});
     ok $res->{error}, 'error';
     is $res->{error}->{code}, 'UpdateNotAllowed', 'error code - UpdateNotAllowed';
-    is $res->{error}->{message}, 'This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.', 'error message - This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.';
+    is $res->{error}->{message},
+        'This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.',
+        'error message - This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.';
 };
 
 done_testing();

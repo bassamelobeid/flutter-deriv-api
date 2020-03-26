@@ -248,7 +248,7 @@ subtest 'sending extra data after EOF chunk' => sub {
 
     my @frames = gen_frames($data, %upload_info);
 
-    my $res = await_binary($frames[$#frames]);
+    my $res   = await_binary($frames[$#frames]);
     my $error = $res->{error};
     is $error->{code}, 'UploadDenied', 'Sending extra data after EOF chunk should fail';
 };
