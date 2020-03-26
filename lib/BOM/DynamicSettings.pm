@@ -254,6 +254,7 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.maximum.default
                 payments.experimental_currencies_allowed
                 payments.crypto.restricted_countries
+                payments.experimental_currencies
                 )
         ],
         # these settings are configured in separate pages. No need to reconfure them in Dynamic Settings/Others.
