@@ -10,6 +10,7 @@ use File::ShareDir;
 sub run {
     my $u_file = Finance::Asset->instance->all_parameters;
     my $u_subm = LoadFile(File::ShareDir::dist_file('Finance-Asset', 'submarkets.yml'));
+    my $u_mt   = LoadFile(File::ShareDir::dist_file('Finance-Underlying', 'underlyings.yml'));
 
     my $dbic = BOM::Database::ClientDB->new({
             broker_code => 'FOG',
@@ -28,7 +29,7 @@ sub run {
 
         my $insert_sth = $_->prepare(
             q{
-        INSERT INTO data_collection.underlying_symbol_currency_mapper (symbol, market, submarket, quoted_currency) VALUES (?,?,?,?)
+        INSERT INTO data_collection.underlying_symbol_currency_mapper (symbol, market, submarket, quoted_currency, market_type) VALUES (?,?,?,?,?)
     }
         );
 
@@ -37,7 +38,8 @@ sub run {
         UPDATE data_collection.underlying_symbol_currency_mapper SET
             market = ?,
             submarket = ?,
-            quoted_currency = ?
+            quoted_currency = ?,
+            market_type = ?
         WHERE symbol = ?
     }
         );
@@ -52,18 +54,29 @@ sub run {
             next if ref($symbol_file) ne 'HASH';
 
             $symbol_file->{market} //= $u_subm->{$symbol_file->{submarket}}->{market};
+            $symbol_file->{market_type} = $u_mt->{$symbol}->{market_type} // 'financial';
 
             if (defined $u_db->{$symbol}) {
                 my $symbol_db = $u_db->{$symbol};
 
                 # check for changes & update row
-                if (grep { $symbol_file->{$_} ne $symbol_db->{$_} } qw(market submarket quoted_currency)) {
-                    $update_sth->execute($symbol_file->{market}, $symbol_file->{submarket}, $symbol_file->{quoted_currency}, $symbol);
+                if (grep { ($symbol_file->{$_} //= '') ne ($symbol_db->{$_} //= '') } qw(market submarket quoted_currency market_type)) {
+                    $update_sth->execute(
+                        $symbol_file->{market},
+                        $symbol_file->{submarket},
+                        $symbol_file->{quoted_currency},
+                        $symbol_file->{market_type}, $symbol
+                    );
                     $upd++;
                 }
             } else {
                 # insert new underlying
-                $insert_sth->execute($symbol, $symbol_file->{market}, $symbol_file->{submarket}, $symbol_file->{quoted_currency});
+                $insert_sth->execute(
+                    $symbol,
+                    $symbol_file->{market},
+                    $symbol_file->{submarket},
+                    $symbol_file->{quoted_currency},
+                    $symbol_file->{market_type});
                 $ins++;
             }
         }
