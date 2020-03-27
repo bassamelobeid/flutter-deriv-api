@@ -1572,7 +1572,7 @@ sub _find_updated_fields {
 
     # email consent is per user whereas other settings are per client
     # so need to save it separately
-    if (defined($args->{email_consent} and $user->email_consent) and $user->email_consent ne $args->{email_consent}) {
+    if (defined($args->{email_consent}) and (($user->email_consent // 0) ne $args->{email_consent})) {
         $updated_fields->{email_consent} = $args->{email_consent};
     }
 
