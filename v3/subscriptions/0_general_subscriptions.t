@@ -19,7 +19,7 @@ my $loop             = IO::Async::Loop->new;
 $loop->add(
     my $tester = BOM::Test::WebsocketAPI->new(
         timeout            => 90,
-        max_response_delay => 3,
+        max_response_delay => 5,
         skip_sanity_checks => {
             # Response can be overlapping between publishes
             # website status is not added to the published list ATM
