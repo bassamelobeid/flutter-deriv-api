@@ -83,7 +83,7 @@
                         "properties" : {
                            "name" : {
                               "type" : "string",
-                              "pattern" : "^Indices$"
+                              "pattern" : "^Stock Indices$"
                            },
                            "turnover_limit" : {
                               "enum" : [
