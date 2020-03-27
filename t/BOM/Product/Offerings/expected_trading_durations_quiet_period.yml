@@ -646,7 +646,7 @@
         display_name: Stays Between/Goes Outside
         name: staysinout
   market:
-    display_name: Indices
+    display_name: Stock Indices
     name: indices
   submarket:
     display_name: Asia/Oceania
@@ -791,7 +791,7 @@
         display_name: Stays Between/Goes Outside
         name: staysinout
   market:
-    display_name: Indices
+    display_name: Stock Indices
     name: indices
   submarket:
     display_name: Europe
@@ -866,7 +866,7 @@
         display_name: Stays Between/Goes Outside
         name: staysinout
   market:
-    display_name: Indices
+    display_name: Stock Indices
     name: indices
   submarket:
     display_name: Americas
