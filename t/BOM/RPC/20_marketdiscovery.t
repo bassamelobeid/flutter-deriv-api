@@ -36,7 +36,7 @@ subtest $method => sub {
     $result = $c->call_ok($method, $params)->has_no_system_error->result;
     ($indices) = grep { $_->{symbol} eq 'AEX' } @$result;
     is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
-    is($indices->{market_display_name},    'Indices', 'the market_display_name is translated');
+    is($indices->{market_display_name},    'Stock Indices', 'the market_display_name is translated');
     is($indices->{submarket_display_name}, 'Europe',  'the submarket_display_name is translated');
     is(scalar @$result,                    77,        'the default landing company is "svg", the number of result should be ok');
 };
