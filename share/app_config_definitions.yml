@@ -103,11 +103,16 @@ payments:
           isa: ArrayRef
           global: 1
           default: []
+        available_for_currencies:
+          description: 'List of currencies for which P2P is available, currency code should be lower case'
+          isa: ArrayRef
+          global: 1
+          default: ['usd']
         email_to:
           description: "Internal email address to be sent notifications when new P2P advertisers are registered."
           isa: Str
           global: 1
-          default: "p2p-support@deriv.com"          
+          default: "p2p-support@deriv.com"
         escrow:
           description: 'List of escrow accounts. There should be one per currency per landing company'
           isa: ArrayRef
