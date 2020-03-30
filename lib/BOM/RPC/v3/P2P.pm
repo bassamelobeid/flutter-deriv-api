@@ -70,7 +70,6 @@ our %ERROR_MAP = do {
         NotRegistered    => localize('You are not yet registered as a P2P advertiser.'),
 
         # Invalid data
-        InvalidPaymentMethod      => localize('This payment method is invalid.'),
         NotFound                  => localize('Not found.'),
         MinimumNotMet             => localize('The minimum amount requirements are not met.'),
         MaximumExceeded           => localize('The amount exceeds the maximum limit.'),
@@ -740,11 +739,16 @@ sub _check_client_access {
     # Allow user to pass if payments.p2p.available is checked or client login id is in payments.p2p.clients
     die +{error_code => 'PermissionDenied'}
         unless $app_config->payments->p2p->available || any { $_ eq $client->loginid } $app_config->payments->p2p->clients->@*;
-    my @avaliable_for_countries = $app_config->payments->p2p->available_for_countries->@*;
+
     die +{error_code => 'RestrictedCountry'}
-        unless any { $_ eq lc($client->residence // '') } @avaliable_for_countries;
+        unless any { $_ eq lc($client->residence // '') } $app_config->payments->p2p->available_for_countries->@*;
 
     die +{error_code => 'NoCurrency'} unless $client->default_account;
+
+    die "RestrictedCurrency\n" unless any { $_ eq lc($client->currency) } $app_config->payments->p2p->available_for_currencies->@*;
+
+    die "NoCountry\n" unless $client->residence;
+
 }
 
 1;

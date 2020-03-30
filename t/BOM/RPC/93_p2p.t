@@ -20,10 +20,15 @@ BOM::RPC::v3::P2P::p2p_rpc $dummy_method => sub { return {success => 1} };
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 my ($p2p_suspend, $p2p_enable) = ($app_config->system->suspend->p2p, $app_config->payments->p2p->enabled);
+
+my $P2P_AVAILABLE_COUNTRIES  = ['id'];
+my $P2P_AVAILABLE_CURRENCIES = ['usd'];
+
 $app_config->system->suspend->p2p(0);
 $app_config->payments->p2p->enabled(1);
 $app_config->payments->p2p->available(1);
-$app_config->payments->p2p->available_for_countries(['id']);
+$app_config->payments->p2p->available_for_countries($P2P_AVAILABLE_COUNTRIES);
+$app_config->payments->p2p->available_for_currencies($P2P_AVAILABLE_CURRENCIES);
 
 my $email_advertiser = 'p2p_advertiser@test.com';
 my $email_client     = 'p2p_client@test.com';
@@ -109,9 +114,27 @@ subtest 'No account' => sub {
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('NoCurrency', 'error code is NoCurrency');
 };
 
-subtest 'Client restricted statuses' => sub {
-    $client_advertiser->set_default_account('USD');
+$client_advertiser->set_default_account('USD');
 
+subtest 'Currency not enabled' => sub {
+    $app_config->payments->p2p->available_for_currencies([]);
+
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('RestrictedCurrency', 'error code is RestrictedCurrency');
+
+    $app_config->payments->p2p->available_for_currencies($P2P_AVAILABLE_CURRENCIES);
+
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('No errors when the currency is allowed');
+};
+
+subtest 'Country not enabled' => sub {
+    $app_config->payments->p2p->available_for_countries([]);
+
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('RestrictedCountry', 'error code is RestrictedCountry');
+
+    $app_config->payments->p2p->available_for_countries($P2P_AVAILABLE_COUNTRIES);
+};
+
+subtest 'Client restricted statuses' => sub {
     my @restricted_statuses = qw(
         unwelcome
         cashier_locked
@@ -153,7 +176,7 @@ subtest 'Adverts' => sub {
         rate             => 1.23,
         min_order_amount => 0.1,
         max_order_amount => 10,
-        payment_method   => 'test method',
+        payment_method   => 'bank_transfer',
         payment_info     => 'Bank 123',
         contact_info     => 'Tel 123',
     };
@@ -161,6 +184,8 @@ subtest 'Adverts' => sub {
     $params->{args} = {name => 'Bond007'};
     $c->call_ok('p2p_advertiser_update', $params)
         ->has_no_system_error->has_error->error_code_is('AdvertiserNotRegistered', 'Update non-existent advertiser');
+
+    $params->{args} = {name => 'bond007'};
 
     my $res = $c->call_ok('p2p_advertiser_create', $params)->has_no_system_error->has_no_error->result;
     is $res->{name}, $params->{args}{name}, 'advertiser created';
@@ -189,8 +214,10 @@ subtest 'Adverts' => sub {
         is_listed   => 0,
     );
 
+    my @offer_ids = ();    # store all agent's offer's ids to check p2p_agent_offers later
     $params->{args} = $advert_params;
-    $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error('unlisted advertiser can still create advert');
+    $res = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error('unlisted advertiser can still create advert')->result;
+    push @offer_ids, $res->{offer_id};
 
     $client_advertiser->p2p_advertiser_update(is_listed => 1);
 
@@ -234,6 +261,7 @@ subtest 'Adverts' => sub {
     $advert = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
     delete $advert->{stash};
     ok $advert->{id}, 'advert has id';
+    push @offer_ids, $advert->{id};
 
     BOM::Test::Helper::Client::top_up($client_advertiser, $client_advertiser->currency, $advert_params->{amount});
 
@@ -245,10 +273,12 @@ subtest 'Adverts' => sub {
     $params->{args}{rate} = 12.000001;
     $advert = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
     is $advert->{rate_display}, '12.000001', 'advert rate_display is correct';
+    push @offer_ids, $advert->{id};
 
     $params->{args}{rate} = 1_000_000_000;
     $advert = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
     is $advert->{rate_display}, '1000000000.00', 'advert rate_display is correct for large numbers';
+    push @offer_ids, $advert->{id};
 
     $params->{args}{rate} = 0.000001;
     $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_error->error_code_is('MinPriceTooSmall', 'Got error if min price is 0');
@@ -276,7 +306,7 @@ subtest 'Adverts' => sub {
 
     $params->{args} = {};
     $res = $c->call_ok('p2p_advertiser_adverts', $params)->has_no_system_error->has_no_error->result;
-    is $res->{list}[0]{id}, $advert->{id}, 'Advert returned in p2p_advertiser_adverts';
+    is((map { $_{offer_id} } $res->{list}->@*), @offer_ids, 'Advert returned in p2p_advertiser_adverts');
 };
 
 subtest 'Create new order' => sub {
@@ -284,7 +314,6 @@ subtest 'Create new order' => sub {
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
     my $client = BOM::Test::Helper::P2P::create_client();
     my $params;
-    $client->set_default_account('USD');
     $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     $advertiser->payment_free_gift(
