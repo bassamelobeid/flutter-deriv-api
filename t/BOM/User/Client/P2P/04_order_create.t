@@ -25,13 +25,14 @@ subtest 'Creating new buy order' => sub {
         rate           => 1.1,
         type           => 'sell',
         description    => 'ad description',
-        payment_method => 'a pay method',
+        payment_method => 'bank_transfer',
         payment_info   => 'ad pay info',
         contact_info   => 'ad contact info',
         local_currency => 'sgd',
     );
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
+
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(%ad_params);
     my $client = BOM::Test::Helper::P2P::create_client();
 
@@ -448,11 +449,11 @@ subtest 'Buy adverts' => sub {
     my $amount = 100;
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
-    
+
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
         amount         => $amount,
         type           => 'buy',
-        payment_method => 'my method',
+        payment_method => 'bank_transfer',
     );
 
     my $client = BOM::Test::Helper::P2P::create_client();

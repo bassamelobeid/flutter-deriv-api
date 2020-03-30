@@ -47,6 +47,7 @@ my %advert_params = (
     rate              => 1.23,
     type              => 'sell',
     counterparty_type => 'buy',
+    payment_method    => 'bank_transfer',
 );
 
 subtest 'Creating advert from non-advertiser' => sub {
@@ -59,6 +60,8 @@ subtest 'Creating advert from non-advertiser' => sub {
 subtest 'advertiser Registration' => sub {
     my $adv_client = BOM::Test::Helper::P2P::create_client();
 
+    cmp_deeply(exception { $adv_client->p2p_advertiser_create() }, {error_code => 'AdvertiserNameRequired'}, 'Error when advertiser name is blank');
+
     my %params = (
         name => 'ad man 1',
         %advertiser_params
@@ -66,10 +69,10 @@ subtest 'advertiser Registration' => sub {
     ok my $adv = $adv_client->p2p_advertiser_create(%params), 'create advertiser';
 
     my $expected = {
-        id             => $adv->{id},
-        is_listed      => bool(1),
-        is_approved    => bool(0),
-        created_time   => bool(1),
+        id           => $adv->{id},
+        is_listed    => bool(1),
+        is_approved  => bool(0),
+        created_time => bool(1),
         %params
     };
 
@@ -178,11 +181,15 @@ subtest 'Updating advertiser fields' => sub {
 };
 
 subtest 'Creating advert' => sub {
-    
-    my $name       = 'ad man 4';
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(%advertiser_params, name => $name, balance => 2.4);
 
-    my %params     = %advert_params;
+    my $name       = 'ad man 4';
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
+        %advertiser_params,
+        name    => $name,
+        balance => 2.4
+    );
+
+    my %params = %advert_params;
     for my $numeric_field (qw(amount max_order_amount min_order_amount rate)) {
         %params = %advert_params;
 
@@ -284,43 +291,43 @@ subtest 'Creating advert' => sub {
     );
 
     my $expected_advert = {
-        account_currency               => uc($params{account_currency}),
-        amount                         => num($params{amount}),
-        amount_display                 => num($params{amount}),
-        country                        => $params{country},
-        created_time                   => re('\d+'),
-        description                    => $params{description},
-        id                             => re('\d+'),
-        is_active                      => bool(1),
-        local_currency                 => $params{local_currency},
-        max_order_amount               => num($params{max_order_amount}),
-        max_order_amount_display       => num($params{max_order_amount}),
-        min_order_amount               => num($params{min_order_amount}),
-        min_order_amount_display       => num($params{min_order_amount}),
-        payment_method                 => $params{payment_method},
-        payment_info                   => $params{payment_info},
-        contact_info                   => $params{contact_info},
-        price                          => num($params{rate}),
-        price_display                  => num($params{rate}),
-        rate                           => num($params{rate}),
-        rate_display                   => num($params{rate}),
-        remaining_amount               => num($params{amount}),
-        remaining_amount_display       => num($params{amount}),
-        type                           => $params{type},
-        counterparty_type              => $params{counterparty_type},
-        advertiser_details             => {
+        account_currency         => uc($params{account_currency}),
+        amount                   => num($params{amount}),
+        amount_display           => num($params{amount}),
+        country                  => $params{country},
+        created_time             => re('\d+'),
+        description              => $params{description},
+        id                       => re('\d+'),
+        is_active                => bool(1),
+        local_currency           => $params{local_currency},
+        max_order_amount         => num($params{max_order_amount}),
+        max_order_amount_display => num($params{max_order_amount}),
+        min_order_amount         => num($params{min_order_amount}),
+        min_order_amount_display => num($params{min_order_amount}),
+        payment_method           => $params{payment_method},
+        payment_info             => $params{payment_info},
+        contact_info             => $params{contact_info},
+        price                    => num($params{rate}),
+        price_display            => num($params{rate}),
+        rate                     => num($params{rate}),
+        rate_display             => num($params{rate}),
+        remaining_amount         => num($params{amount}),
+        remaining_amount_display => num($params{amount}),
+        type                     => $params{type},
+        counterparty_type        => $params{counterparty_type},
+        advertiser_details       => {
             id   => $advertiser->p2p_advertiser_info->{id},
             name => $name,
         },
     };
 
     cmp_deeply($advert, $expected_advert, "advert_create returns expected fields");
-    
+
     cmp_deeply($advertiser->p2p_advertiser_adverts, [$expected_advert], "p2p_advertiser_adverts returns expected fields");
-    
+
     # these are not returned by previous calls because there was no counterparty to check balance for buy orders
     $expected_advert->{min_order_amount_limit} = $expected_advert->{min_order_amount_limit_display} = num($params{min_order_amount});
-    $expected_advert->{max_order_amount_limit} = $expected_advert->{max_order_amount_limit_display} = num(2.4); # advertiser balance
+    $expected_advert->{max_order_amount_limit} = $expected_advert->{max_order_amount_limit_display} = num(2.4);    # advertiser balance
 
     cmp_deeply($advertiser->p2p_advert_info(id => $advert->{id}), $expected_advert, "advert_info returns expected fields");
 
@@ -402,16 +409,17 @@ subtest 'Updating advert' => sub {
     ok !$advertiser->p2p_advert_info(id => $advert->{id})->{is_active}, "advert is inactive";
 
     my $ad_info = $advertiser->p2p_advert_info(id => $advert->{id});
-    
+
     # p2p_advert_update does not return these, because we don't know counterparty balance
-    delete @$ad_info{
-        qw( min_order_amount_limit min_order_amount_limit_display max_order_amount_limit max_order_amount_limit_display )
-    }; 
+    delete @$ad_info{qw( min_order_amount_limit min_order_amount_limit_display max_order_amount_limit max_order_amount_limit_display )};
 
     my $empty_update = $advertiser->p2p_advert_update(id => $advert->{id});
     cmp_deeply($empty_update, $ad_info, 'empty update returns all fields');
-    
-    my $real_update =  $advertiser->p2p_advert_update(id => $advert->{id}, is_active => 1);
+
+    my $real_update = $advertiser->p2p_advert_update(
+        id        => $advert->{id},
+        is_active => 1
+    );
     $ad_info->{is_active} = 1;
     cmp_deeply($real_update, $ad_info, 'actual update returns all fields');
 };

@@ -1953,6 +1953,7 @@ sub p2p_advert_list {
     my ($limit, $offset) = @param{qw/limit offset/};
     die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
     die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
+    $param{country} //= $client->residence;
 
     if ($param{counterparty_type}) {
         $param{type} = P2P_COUNTERYPARTY_TYPE_MAPPING->{$param{counterparty_type}};

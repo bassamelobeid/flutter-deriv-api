@@ -242,8 +242,6 @@ subtest 'CR withdrawal' => sub {
 
 # Test for MX withdrawal limits
 subtest 'EUR3k over 30 days MX limitation.' => sub {
-    plan tests => 12;
-
     my $client = new_client(
         'GBP',
         broker_code => 'MX',
