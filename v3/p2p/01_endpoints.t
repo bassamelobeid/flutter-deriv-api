@@ -28,6 +28,7 @@ my %init_config_values = (
     'system.suspend.p2p'                   => $app_config->system->suspend->p2p,
     'payments.p2p.available'               => $app_config->payments->p2p->available,
     'payments.p2p.available_for_countries' => $app_config->payments->p2p->available_for_countries,
+    'payments.p2p.available_for_currencies' => $app_config->payments->p2p->available_for_countries,
     'payments.p2p.limits.maximum_order'    => $app_config->payments->p2p->limits->maximum_order,
 );
 
@@ -41,6 +42,7 @@ $app_config->set({'payments.p2p.enabled'                 => 1});
 $app_config->set({'system.suspend.p2p'                   => 0});
 $app_config->set({'payments.p2p.available'               => 1});
 $app_config->set({'payments.p2p.available_for_countries' => ['id']});
+$app_config->set({'payments.p2p.available_for_currencies' => ['usd']});
 $app_config->set({'payments.p2p.limits.maximum_order'    => 10});
 
 my $t = build_wsapi_test();
