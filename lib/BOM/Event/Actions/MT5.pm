@@ -99,7 +99,6 @@ sub sync_info {
     return Future->needs_all(@update_operations)->then_done(1)->else(
         sub {
             my $error = shift;
-            $log->warnf("Failed to sync client %s information to MT5: %s", $data->{loginid}, $error);
             my $tried_times = $data->{tried_times} // 0;
             $tried_times++;
             # if that error cannot recoverable
