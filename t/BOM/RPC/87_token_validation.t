@@ -34,7 +34,7 @@ my $code = BOM::Platform::Token->new({
         created_for => 'reset_password'
     })->token;
 #create 2nd client
-my $email_cr_2 = 'cr2_abc@binary.com';
+my $email_cr_2  = 'cr2_abc@binary.com';
 my $client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code   => 'CR',
     date_of_birth => '1990-07-09'
@@ -80,7 +80,8 @@ $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->logi
 
 $params->{args}->{verification_code} = $code_cr_2;
 $c->call_ok('cashier', $params)
-->has_no_system_error->has_error->error_code_is('InvalidToken', 'Error code is correct when one client used other client withdrawal token.')
-->error_message_is('Your token has expired or is invalid.', 'Correct error message for token invalid when one client used other client withdrawal token.');
+    ->has_no_system_error->has_error->error_code_is('InvalidToken', 'Error code is correct when one client used other client withdrawal token.')
+    ->error_message_is('Your token has expired or is invalid.',
+    'Correct error message for token invalid when one client used other client withdrawal token.');
 
 done_testing();

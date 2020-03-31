@@ -86,6 +86,7 @@ my %category_message_mapping = do {
         VirtualProhibited            => localize('You cannot perform this action with a virtual account.'),
         ExpiredDocuments =>
             localize('Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to [_1].'),
+        Experimental => localize('Please note that the selected currency is allowed for selected users only.'),
     );
 };
 

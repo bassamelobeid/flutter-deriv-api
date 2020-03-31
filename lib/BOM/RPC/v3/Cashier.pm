@@ -1414,9 +1414,9 @@ rpc transfer_between_accounts => sub {
     );
     return $res if $res;
 
-    return _transfer_between_accounts_error(localize('Please note that the selected currency is allowed for limited accounts only.'))
-        if BOM::RPC::v3::Utility::verify_email_whitelisted($client, $from_currency)
-        || BOM::RPC::v3::Utility::verify_email_whitelisted($client, $to_currency);
+    return _transfer_between_accounts_error(localize('Please note that the selected currency is allowed for selected users only.'))
+        if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $from_currency)
+        || BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $to_currency);
 
     BOM::User::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
     my $error_audit_sub = sub {

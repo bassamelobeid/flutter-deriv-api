@@ -37,8 +37,8 @@ subtest $method => sub {
     ($indices) = grep { $_->{symbol} eq 'AEX' } @$result;
     is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
     is($indices->{market_display_name},    'Stock Indices', 'the market_display_name is translated');
-    is($indices->{submarket_display_name}, 'Europe',  'the submarket_display_name is translated');
-    is(scalar @$result,                    77,        'the default landing company is "svg", the number of result should be ok');
+    is($indices->{submarket_display_name}, 'Europe',        'the submarket_display_name is translated');
+    is(scalar @$result,                    77,              'the default landing company is "svg", the number of result should be ok');
 };
 
 # unauthenticated call for `active_symbols` for landing company like `maltainvest` doesn't have an offering

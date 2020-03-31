@@ -781,8 +781,8 @@ rpc get_account_status => sub {
 
     my %experimental_suspended = map {
         $_ => {
-            is_deposit_suspended    => BOM::RPC::v3::Utility::verify_email_whitelisted($client, $_),
-            is_withdrawal_suspended => BOM::RPC::v3::Utility::verify_email_whitelisted($client, $_),
+            is_deposit_suspended    => BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $_),
+            is_withdrawal_suspended => BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $_),
             }
     } $client->currency;
 

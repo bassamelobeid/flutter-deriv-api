@@ -22,7 +22,8 @@ use Test::BOM::RPC::Accounts;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
-my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
+my $runtime_system  = BOM::Config::Runtime->instance->app_config->system;
+my $runtime_payment = BOM::Config::Runtime->instance->app_config->payments;
 
 scope_guard { restore_time() };
 
@@ -143,6 +144,13 @@ subtest 'deposit' => sub {
         ->error_code_is('MT5DepositError', 'error code is MT5DepositError')
         ->error_message_is('Deposits are currently unavailable. Please try again later.');
     $runtime_system->mt5->suspend->deposits(0);
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
+
+    $runtime_payment->experimental_currencies(['USD']);
+    $c->call_ok($method, $params)->has_error('error as currency is experimental')->error_code_is('Experimental', 'error code is Experimental')
+        ->error_message_is('Please note that the selected currency is allowed for selected users only.');
+    $runtime_payment->experimental_currencies([]);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
@@ -344,6 +352,13 @@ subtest 'withdrawal' => sub {
         ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
         ->error_message_is('Withdrawals are currently unavailable. Please try again later.');
     $runtime_system->mt5->suspend->withdrawals(0);
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+    $runtime_payment->experimental_currencies(['USD']);
+    $c->call_ok($method, $params)->has_error('error as currency is experimental')->error_code_is('Experimental', 'error code is Experimental')
+        ->error_message_is('Please note that the selected currency is allowed for selected users only.');
+    $runtime_payment->experimental_currencies([]);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
