@@ -2,7 +2,10 @@
 
 use strict;
 use warnings;
+
 use Test::More;
+use Test::Exception;
+
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init :disable_redis_cleanup);
@@ -42,6 +45,12 @@ is_deeply $names, $expected_names, "got correct name for single app";
 ## it's in test db
 my $app = $m->verify_app($test_appid);
 is $app->{id}, $test_appid;
+
+## test verify_app
+lives_ok {
+    $m->verify_app($_) for ('abcd', '9223372036854775808', '9999999999999999999999999');
+}
+'verify_app handles invalid app_id values as well as numbers that exceed the bigint range';
 
 my $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 0, 'not confirmed';

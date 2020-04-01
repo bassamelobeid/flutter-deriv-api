@@ -32,6 +32,8 @@ sub __filter_valid_scopes {
 sub verify_app {
     my ($self, $app_id) = @_;
 
+    return unless $app_id =~ /^[0-9]+$/ && $app_id < sprintf("%.0f", 2**63);    # upper range of Postgres BIGINT
+
     my $app = $self->dbic->run(
         fixup => sub {
             $_->selectrow_hashref("
