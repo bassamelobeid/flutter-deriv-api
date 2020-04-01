@@ -260,7 +260,7 @@ subtest 'get_current_profile_definitions' => sub {
             'indices' => [{
                     'turnover_limit' => "100000.00",
                     'payout_limit'   => "20000.00",
-                    'name'           => 'Indices',
+                    'name'           => 'Stock Indices',
                     'profile_name'   => 'medium_risk'
                 }
             ],
