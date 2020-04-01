@@ -13,7 +13,7 @@ use Syntax::Keyword::Try;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use Date::Utility;
-use List::Util qw/all first min any/;
+use List::Util qw/all first min any uniq/;
 use Locale::Country::Extra;
 use Format::Util::Numbers qw(roundcommon);
 use Text::Trim qw(trim);
@@ -1718,24 +1718,20 @@ sub check_duplicate_account {
     # If client is going to update his virtual account there is no need to check for duplicate account
     return undef if $target_broker =~ BOM::User::VIRTUAL_REGEX();
 
-    # Get what details we need to check signup has different detail than BO check
-    my $duplicate_check = $args->{checks} // ['first_name', 'last_name', 'date_of_birth', 'phone'];
-    if (any { $args->{$_} and $args->{$_} ne $client->$_ } @$duplicate_check) {
+    my $checks = ['first_name', 'last_name', 'date_of_birth'];
 
+    if (any { $args->{$_} and defined $client->$_ and $args->{$_} ne $client->$_ } @$checks) {
         my $dup_details = {
             email          => $client->email,
-            exclude_status => ['duplicate_account'],
-        };
-        $dup_details->{$_} = $args->{$_} || $client->$_ for @$duplicate_check;
-        #name + dob is one group to check, phone is another independent condition
-        #current logic is we only check phone when it is changed
-        delete $dup_details->{phone} unless $args->{phone} and $args->{phone} ne $client->phone;
-        my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $target_broker})->get_duplicate_client($dup_details);
+            exclude_status => ['duplicate_account']};
+        $dup_details->{$_} = $args->{$_} || $client->$_ for @$checks;
 
+        my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $target_broker})->get_duplicate_client($dup_details);
         return {
             error   => 'DuplicateAccount',
             details => \@dup_account_details
         } if scalar @dup_account_details;
+
     }
     return undef;
 }

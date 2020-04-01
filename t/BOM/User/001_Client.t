@@ -222,7 +222,7 @@ subtest "format and validate" => sub {
 };
 
 subtest "check duplicate accounts" => sub {
-    plan tests => 3;
+    plan tests => 9;
 
     my $client_details = {
         first_name    => 'alan',
@@ -232,15 +232,17 @@ subtest "check duplicate accounts" => sub {
 
     my $first_client = BOM::User::Client->new({loginid => 'CR0001'});
 
-    $first_client->email('firstclienttest@binary.com');
-    $first_client->first_name($client_details->{first_name});
     $first_client->last_name($client_details->{last_name});
+    $first_client->first_name($client_details->{first_name});
     $first_client->date_of_birth($client_details->{date_of_birth});
+    $first_client->email('another@email.com');
     $first_client->save;
+
+    $first_client = BOM::User::Client->new({loginid => 'CR0001'});
 
     my $second_client = BOM::User::Client->new({loginid => 'CR0002'});
 
-    is $second_client->check_duplicate_account($client_details)->{error}, 'DuplicateAccount', 'second client is considered as duplicate';
+    is $second_client->check_duplicate_account($client_details)->{error}, 'DuplicateAccount', 'second client is considered as duplicate same name + dob with different email account';
 
     $first_client->status->set('disabled', 'system', 'test');
 
@@ -248,7 +250,51 @@ subtest "check duplicate accounts" => sub {
         'second client is considered as duplicate regardless if first client is disabled';
 
     $second_client->email($first_client->email);
-    is $second_client->check_duplicate_account($client_details), undef, 'no duplicate as emails are same';
+    is $second_client->check_duplicate_account($client_details), undef, 'no duplicate as emails are same, could have different currency in the account';
+
+    my $third_client = BOM::User::Client->new({loginid => 'CR0003'});
+    $third_client->email('ada@lovelace.com');
+    $third_client->first_name('Ada');
+    $third_client->last_name('Lovelace');
+    $third_client->date_of_birth('1815-12-10');
+    $third_client->phone('+4411223344');
+    $third_client->save;
+    my $same_details = {
+        first_name    => 'Ada',
+        last_name     => 'Lovelace',
+        date_of_birth => '1815-12-10',
+        phone         => '+4411223344',
+    };
+    my $result = $third_client->check_duplicate_account($same_details);
+    is $result, undef, "No duplicate, the modified details are the same as the details present in the current client";
+
+    delete $same_details->{first_name};
+    delete $same_details->{last_name};
+
+    $result = $third_client->check_duplicate_account($same_details);
+    is $result, undef,
+        "No duplicate, the modified details are the same as the details present in the current client, even if name or last name ar not present in the details to change";
+
+    delete $same_details->{date_of_birth};
+    $result = $third_client->check_duplicate_account($same_details);
+    is $result, undef, "No duplicate, the modified details are the same as the details present in the current client, even if only phone is provided";
+
+    my $modified_details = {
+        first_name    => $second_client->first_name,
+        last_name     => $second_client->last_name,
+        date_of_birth => $second_client->date_of_birth,
+        phone         => $second_client->phone,
+    };
+    $result = $third_client->check_duplicate_account($modified_details);
+    ok $result, 'A result is returned from check_duplicate_account';
+    is $result->{error}, 'DuplicateAccount', 'duplicated account found, same data than a different client account (different emails)';
+
+    delete $modified_details->{first_name};
+    delete $modified_details->{last_name};
+    delete $modified_details->{date_of_birth};
+    $result = $third_client->check_duplicate_account($modified_details);
+    is $result, undef,
+        'No duplicated account found, same phone number alone doesn\'t consider duplicate account';
 
 };
 
