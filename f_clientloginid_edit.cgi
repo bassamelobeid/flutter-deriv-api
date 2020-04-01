@@ -550,8 +550,12 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     }
 
     # Do not check here for phone duplicate because CS will have to contact the client
-    $input{checks} = ['first_name', 'last_name', 'date_of_birth'];
-    $error = $client->check_duplicate_account(\%input);
+    #$input{checks} = ['first_name', 'last_name', 'date_of_birth'];
+    my $details_to_check_for_duplicate = {
+        first_name    => $input{first_name},
+        last_name     => $input{last_name},
+        date_of_birth => $input{date_of_birth}};
+    $error = $client->check_duplicate_account($details_to_check_for_duplicate);
     if ($error) {
         my $duplicate_account_details = $error->{details};
         my $data                      = {
