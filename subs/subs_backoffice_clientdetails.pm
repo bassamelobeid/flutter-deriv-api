@@ -1275,7 +1275,7 @@ sub get_fiat_login_id_for {
         my $client_account = BOM::User::Client->new({loginid => $login_id});
         next if $client_account->is_virtual();
         next unless $client_account->currency;
-        next if LandingCompany::Registry::get_currency_type($client_account->currency) eq 'crypto';
+        next if (LandingCompany::Registry::get_currency_type($client_account->currency) // '') eq 'crypto';
         $broker_code = $broker;
         if (not $client_account->is_available()) {
             $fiat_loginid //= $login_id;
