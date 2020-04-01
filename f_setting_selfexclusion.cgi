@@ -77,6 +77,8 @@ if (my $self_exclusion = $client->get_self_exclusion) {
 
     $info .= make_row('Maximum deposit limit', $self_exclusion->max_deposit)
         if $self_exclusion->max_deposit;
+    $info .= make_row('Maximum deposit limit start date', Date::Utility->new($self_exclusion->max_deposit_begin_date)->date)
+        if $self_exclusion->max_deposit_begin_date;
     $info .= make_row('Maximum deposit limit expiration', Date::Utility->new($self_exclusion->max_deposit_end_date)->date)
         if $self_exclusion->max_deposit_end_date;
 
@@ -134,9 +136,10 @@ if ($form_max_deposit_date) {
     my $max_deposit_date = Date::Utility->new($form_max_deposit_date);
     my $now              = Date::Utility->new;
     code_exit_BO("Cannot set a Max deposit end date in the past") if $max_deposit_date->is_before($now);
-    $client->set_exclusion->max_deposit_end_date($max_deposit_date->date);
     code_exit_BO("Max deposit is not a number") unless (looks_like_number($form_max_deposit_amount));
     $client->set_exclusion->max_deposit($form_max_deposit_amount);
+    $client->set_exclusion->max_deposit_end_date($max_deposit_date->date);
+    $client->set_exclusion->max_deposit_begin_date(Date::Utility->new->date);
 } else {
     $client->set_exclusion->max_deposit_end_date(undef);
     $client->set_exclusion->max_deposit_begin_date(undef);
