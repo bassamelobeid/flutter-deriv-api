@@ -761,6 +761,10 @@ sub _build_priced_with {
 sub _build_mu {
     my $self = shift;
 
+    # mu does not have an impact in intraday pricing model. Hence, do not calculate
+    # it for optimization
+    return 0 if $self->priced_with_intraday_model;
+
     my $mu = $self->r_rate - $self->q_rate;
 
     if (first { $self->underlying->market->name eq $_ } (qw(forex commodities indices))) {
