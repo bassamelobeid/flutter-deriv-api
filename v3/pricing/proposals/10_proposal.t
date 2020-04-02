@@ -44,6 +44,14 @@ $req->{amount} = ".";
 $res = $t->await::proposal($req);
 is $res->{error}->{code}, 'InputValidationFailed', 'Correct failed due to input validation';
 
+#test Special wrong amount values
+my @special_numbers = qw(NaN -NaN inf -inf);
+foreach my $special_number (@special_numbers) {
+    $req->{amount} = $special_number;
+    $res = $t->await::proposal($req);
+    is $res->{error}->{code}, 'InputValidationFailed', "Correct failed due to input: $special_number validation";
+}
+
 $req->{amount} = "+100";
 $res = $t->await::proposal($req);
 is $res->{error}->{code}, undef, 'Correct + sign in number, allowed due to coercion';
