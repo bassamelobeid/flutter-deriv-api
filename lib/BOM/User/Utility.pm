@@ -19,6 +19,7 @@ use Webservice::GAMSTOP;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use YAML::XS qw(LoadFile);
+use WebService::SendBird;
 
 use BOM::Platform::Context qw(request);
 use BOM::Config::Runtime;
@@ -170,6 +171,15 @@ sub login_details_identifier {
     my $browser = $browser_info->browser_string || 'unknown';
 
     return ($country || 'unknown') . '::' . $device . '::' . $browser;
+}
+
+sub sendbird_api {
+    my $config = BOM::Config::third_party()->{sendbird};
+
+    return WebService::SendBird->new(
+        api_token => $config->{api_token},
+        app_id    => $config->{app_id},
+    );
 }
 
 1;

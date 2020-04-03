@@ -11,6 +11,8 @@ use BOM::Config::Runtime;
 use Test::Fatal;
 use Data::Dumper;
 
+BOM::Test::Helper::P2P::bypass_sendbird();
+
 my @test_cases = (
     #Sell orders client confirmation:
     {

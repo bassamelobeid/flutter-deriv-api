@@ -1770,10 +1770,32 @@ sub p2p_advertiser_create {
     die +{error_code => 'AdvertiserNameRequired'} unless $name;
     die +{error_code => 'AdvertiserNameTaken'} if $client->_p2p_advertisers(name => $name)->[0];
 
+    my ($id) = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array("SELECT nextval('p2p.advertiser_serial')");
+        });
+
+    my $sb_api     = BOM::User::Utility::sendbird_api();
+    my $sb_user_id = 'p2puser_' . $client->loginid;
+    my $sb_user;
+    try {
+        $sb_user = $sb_api->create_user(
+            user_id     => $sb_user_id,
+            nickname    => $name,
+            profile_url => ''
+        );
+    }
+    catch {
+        die +{error_code => 'AdvertiserCreateChatError'};
+    }
+
     my $advertiser = $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.advertiser_create(?, ?, ?, ?, ?)',
-                undef, $client->loginid, $name, @param{qw/default_advert_description payment_info contact_info/});
+            $_->selectrow_hashref(
+                'SELECT * FROM p2p.advertiser_create(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                undef, $id, $client->loginid, $name, @param{qw/default_advert_description payment_info contact_info/},
+                $sb_user->user_id, undef, undef
+            );
         });
     return $client->_advertiser_details($advertiser);
 }
@@ -2214,6 +2236,121 @@ sub p2p_expire_order {
         });
 }
 
+=head2 p2p_chat_create
+
+Creates a sendbird chat channel for an order, and users if required.
+Both clients of the order must be P2P advertisers.
+
+=cut
+
+sub p2p_chat_create {
+    my ($client, %param) = @_;
+
+    my $order_id = $param{order_id} // die +{error_code => 'OrderNotFound'};
+    my $order = $client->_p2p_orders(id => $order_id)->[0] // die +{error_code => 'OrderNotFound'};
+
+    my $counterparty_loginid;
+    if ($order->{advertiser_loginid} eq $client->loginid) {
+        $counterparty_loginid = $order->{client_loginid};
+    } elsif ($order->{client_loginid} eq $client->loginid) {
+        $counterparty_loginid = $order->{advertiser_loginid};
+    } else {
+        die +{error_code => 'PermissionDenied'};
+    }
+
+    die +{error_code => 'OrderChatAlreadyCreated'} if $order->{chat_channel_url};
+    my $advertiser_info = $client->_p2p_advertisers(loginid => $client->loginid)->[0] // die +{error_code => 'AdvertiserNotFoundForChat'};
+
+    my $counterparty_advertiser = $client->_p2p_advertisers(loginid => $counterparty_loginid)->[0]
+        // die +{error_code => 'CounterpartyNotAdvertiserForChat'};
+
+    my $sb_api = BOM::User::Utility::sendbird_api();
+    my $sb_channel = join '_', ('p2porder', $client->broker_code, $order_id);
+
+    my $sb_chat;
+    try {
+        $sb_chat = $sb_api->create_group_chat(
+            channel_url => $sb_channel,
+            user_ids    => [$advertiser_info->{chat_user_id}, $counterparty_advertiser->{chat_user_id}],
+            name        => 'Chat about order ' . $order_id,
+        );
+    }
+    catch {
+        die +{error_code => 'CreateChatError'};
+    }
+
+    $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?, ?)', undef, $order_id, undef, $sb_chat->channel_url);
+        });
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_order_updated => {
+            client_loginid => $client->loginid,
+            order_id       => $order_id,
+        });
+
+    return {
+        channel_url => $sb_chat->channel_url,
+        order_id    => $order_id,
+    };
+}
+
+=head2 p2p_chat_token
+
+Returns sendbird session token.
+Creates one if it doesn't exist or has expired.
+
+=cut
+
+sub p2p_chat_token {
+    my ($client) = @_;
+
+    my $age_limit = 2 * 60 * 60;    # 2 hours
+    my $advertiser_info = $client->_p2p_advertisers(loginid => $client->loginid)->[0] // die +{error_code => 'AdvertiserNotFoundForChatToken'};
+
+    my ($token, $expiry) = $advertiser_info->@{qw(chat_token chat_token_expiry)};
+    if ($token and $expiry and ($expiry - time) >= $age_limit) {
+        return {
+            token       => $token,
+            expiry_time => $expiry
+        };
+    } else {
+        my $sb_user = WebService::SendBird::User->new(
+            user_id    => $advertiser_info->{chat_user_id},
+            api_client => BOM::User::Utility::sendbird_api());
+        try {
+            ($token, $expiry) = $sb_user->issue_session_token()->@{qw(session_token expires_at)};
+        }
+        catch {
+            die +{error_code => 'ChatTokenError'};
+        }
+    }
+
+    $expiry = int($expiry / 1000);    # sb api returns milliseconds timestamps
+
+    $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref(
+                'SELECT * FROM p2p.advertiser_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                undef, $advertiser_info->{id},
+                undef, undef, undef, undef, undef, undef, undef, $token, $expiry
+            );
+        });
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_advertiser_updated => {
+            client_loginid => $client->loginid,
+            advertiser_id  => $advertiser_info->{id},
+        },
+    );
+
+    return {
+        token       => $token,
+        expiry_time => $expiry
+    };
+}
+
 =head2 p2p_escrow
 
 Gets the configured escrow account for clients currency and landing company.
@@ -2437,6 +2574,8 @@ sub _advertiser_details {
             ? (
                 payment_info => $advertiser->{payment_info} // '',
                 contact_info => $advertiser->{contact_info} // '',
+                chat_user_id => $advertiser->{chat_user_id},
+                chat_token   => $advertiser->{chat_token}   // '',
                 )
             : ()
         ),
@@ -2522,22 +2661,23 @@ sub _order_details {
 
     for my $order (@$list) {
         my $result = +{
-            account_currency   => $order->{account_currency},
-            created_time       => Date::Utility->new($order->{created_time})->epoch,
-            payment_info       => $order->{payment_info} // '',
-            contact_info       => $order->{contact_info} // '',
-            expiry_time        => Date::Utility->new($order->{expire_time})->epoch,
-            id                 => $order->{id},
-            is_incoming        => $client->loginid eq $order->{advertiser_loginid} ? 1 : 0,
-            local_currency     => $order->{local_currency},
-            amount             => financialrounding('amount', $order->{account_currency}, $order->{amount}),
-            amount_display     => formatnumber('amount', $order->{account_currency}, $order->{amount}),
-            price              => financialrounding('amount', $order->{local_currency}, $order->{advert_rate} * $order->{amount}),
-            price_display      => formatnumber('amount', $order->{local_currency}, $order->{advert_rate} * $order->{amount}),
-            rate               => $order->{advert_rate},
-            rate_display       => _p2p_rate_format($order->{advert_rate}),
-            status             => $order->{status},
-            type               => $order->{type},
+            account_currency => $order->{account_currency},
+            created_time     => Date::Utility->new($order->{created_time})->epoch,
+            payment_info     => $order->{payment_info} // '',
+            contact_info     => $order->{contact_info} // '',
+            expiry_time      => Date::Utility->new($order->{expire_time})->epoch,
+            id               => $order->{id},
+            is_incoming      => $client->loginid eq $order->{advertiser_loginid} ? 1 : 0,
+            local_currency   => $order->{local_currency},
+            amount           => financialrounding('amount', $order->{account_currency}, $order->{amount}),
+            amount_display   => formatnumber('amount', $order->{account_currency}, $order->{amount}),
+            price            => financialrounding('amount', $order->{local_currency}, $order->{advert_rate} * $order->{amount}),
+            price_display    => formatnumber('amount', $order->{local_currency}, $order->{advert_rate} * $order->{amount}),
+            rate             => $order->{advert_rate},
+            rate_display     => _p2p_rate_format($order->{advert_rate}),
+            status           => $order->{status},
+            type             => $order->{type},
+            chat_channel_url => $order->{chat_channel_url} // '',
             advertiser_details => {
                 id   => $order->{advertiser_id},
                 name => $order->{advertiser_name},

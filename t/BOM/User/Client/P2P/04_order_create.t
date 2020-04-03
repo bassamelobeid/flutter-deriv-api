@@ -17,6 +17,7 @@ use Test::Fatal;
 populate_exchange_rates();
 
 BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
+BOM::Test::Helper::P2P::bypass_sendbird();
 
 subtest 'Creating new buy order' => sub {
 
@@ -80,6 +81,7 @@ subtest 'Creating new buy order' => sub {
         type             => 'buy',
         payment_info     => $ad_params{payment_info},
         contact_info     => $ad_params{contact_info},
+        chat_channel_url => '',
         advert_details   => {
             id             => $advert_info->{id},
             description    => $ad_params{description},

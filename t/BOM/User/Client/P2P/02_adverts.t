@@ -11,6 +11,8 @@ use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
+BOM::Test::Helper::P2P::bypass_sendbird();
+
 my $email = 'p2p_adverts_test@binary.com';
 
 BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
@@ -69,10 +71,12 @@ subtest 'advertiser Registration' => sub {
     ok my $adv = $adv_client->p2p_advertiser_create(%params), 'create advertiser';
 
     my $expected = {
-        id           => $adv->{id},
-        is_listed    => bool(1),
-        is_approved  => bool(0),
-        created_time => bool(1),
+        id             => $adv->{id},
+        is_listed      => bool(1),
+        is_approved    => bool(0),
+        created_time   => bool(1),
+        chat_user_id   => 'dummy',
+        chat_token     => '',
         %params
     };
 
@@ -81,7 +85,7 @@ subtest 'advertiser Registration' => sub {
 
     my $other_client = BOM::Test::Helper::P2P::create_client();
     $advertiser_info = $other_client->p2p_advertiser_info(id => $adv->{id});
-    delete $expected->@{qw/payment_info contact_info/};
+    delete $expected->@{qw/payment_info contact_info chat_user_id chat_token/};
     cmp_deeply($advertiser_info, $expected, 'sensitve fields hidden in advertiser_info for other client');
 };
 
@@ -134,6 +138,7 @@ subtest 'Updating advertiser fields' => sub {
     ok $advertiser_info->{is_approved}, 'advertiser is approved';
     is $advertiser_info->{name},        $params{name}, 'advertiser name';
     ok $advertiser_info->{is_listed},   'advertiser is listed';
+    is $advertiser_info->{chat_user_id}, 'dummy', 'advertiser chat user_id';
 
     cmp_deeply(
         exception {

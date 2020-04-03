@@ -10,6 +10,8 @@ use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
+BOM::Test::Helper::P2P::bypass_sendbird();
+
 my $email = 'p2p_adverts_test@binary.com';
 
 BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);

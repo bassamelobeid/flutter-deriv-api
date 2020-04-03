@@ -14,6 +14,7 @@ use BOM::Config::Runtime;
 my $app_config = BOM::Config::Runtime->instance->app_config;
 my $max_order  = $app_config->payments->p2p->limits->maximum_order;
 
+BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
 my ($advertiser1, $advert1) = BOM::Test::Helper::P2P::create_advert(amount => 100);
 my ($advertiser2, $advert2) = BOM::Test::Helper::P2P::create_advert(amount => 100);
