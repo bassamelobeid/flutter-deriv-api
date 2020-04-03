@@ -79,7 +79,9 @@ UST:
     protocol_cost: 0.00000546
     decimal_places: 8
     minimum_safe_amount: 6500
-    property_id: 2147484941
+# https://github.com/regentmarkets/development-workflow/blob/master/cryptocurrency/ctc_qa.md#propertyid
+# Please update the property_id: 2147484941 (already generated in our testnet) for QA environment.
+    property_id: 31
     blockchain_url:
         address: https://omniexplorer.info/tx/
         transaction: https://omniexplorer.info/address/
