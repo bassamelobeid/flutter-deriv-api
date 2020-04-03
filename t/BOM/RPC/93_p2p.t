@@ -13,6 +13,7 @@ use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
 
 cleanup_redis_tokens();
+BOM::Test::Helper::P2P::bypass_sendbird();
 
 #Test endpoint for testing logic in function p2p_rpc
 my $dummy_method = 'test_p2p_controller';

@@ -2027,6 +2027,14 @@ async_rpc service_token => sub {
     my $params = shift;
 
     my ($client, $args) = @{$params}{qw/client args/};
+
+    if ($args->{service} eq 'sendbird') {
+        return Future->done({
+            $client->p2p_chat_token()->%*,
+            service => $args->{service},
+        });
+    }
+
     $args->{referrer} //= $params->{referrer};
     # The requirement for the format of <referrer> is https://*.<DOMAIN>/*
     # as stated in https://documentation.onfido.com/#generate-web-sdk-token

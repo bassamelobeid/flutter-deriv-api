@@ -118,7 +118,12 @@ our %ERROR_MAP = do {
         OpenOrdersDeleteAdvert => localize(
             "This advert cannot be deleted because there are open orders. Please wait until the orders are closed and try again. If you'd like to stop accepting new orders, you may disable your advert."
         ),
-        AdvertiserNameTaken => localize('The advertiser name is already taken. Please choose another.'),
+        AdvertiserNameTaken              => localize('The advertiser name is already taken. Please choose another.'),
+        AdvertiserCreateChatError        => localize('An error occurred (chat user not created). Please try again later.'),
+        CounterpartyNotAdvertiserForChat => localize('Chat is not possible because the other client is not yet registered on the P2P system.'),
+        AdvertiserNotFoundForChat        => localize('You may not chat until you have registered on the P2P system.'),
+        CreateChatError                  => localize('An error occurred when creating the chat. Please try again later.'),
+        ChatTokenError                   => localize('An error occurred when issuing a new token. Please try again later.'),
     );
 };
 
@@ -707,14 +712,35 @@ p2p_rpc p2p_order_cancel => sub {
     };
 };
 
-=head2 p2p_order_chat
+=head2 p2p_chat_create
 
-Exchange chat messages.
+Creates a new chat for the specified order.
+
+Takes the following named parameters:
+
+=over 4
+
+=item * C<order_id> - the P2P order ID to create the chat for
+
+=back
+
+Returns the information of the created chat containing:
+
+=over 4
+
+=item * C<channel_url> - The chat channel URL for the requested order
+
+=item * C<order_id> - The unique identifier for the order that the chat belongs to
+
+=back
 
 =cut
 
-p2p_rpc p2p_order_chat => sub {
-    die +{error_code => 'PermissionDenied'};
+p2p_rpc p2p_chat_create => sub {
+    my %args = @_;
+
+    my $client = $args{client};
+    return $client->p2p_chat_create($args{params}{args}->%*);
 };
 
 # Check to see if the client can has access to p2p API calls or not?
