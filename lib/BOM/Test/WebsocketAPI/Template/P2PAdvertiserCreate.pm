@@ -42,6 +42,8 @@ rpc_response {
         is_listed                  => $_->p2p_advertiser->is_listed,
         name                       => $_->p2p_advertiser->name,
         payment_info               => $_->p2p_advertiser->payment_info,
+        chat_token                 => $_->p2p_advertiser->chat_token,
+        chat_user_id               => $_->p2p_advertiser->chat_user_id,
     };
 };
 
@@ -58,6 +60,8 @@ publish p2p => sub {
             is_listed                  => $_->p2p_advertiser->is_listed,
             name                       => $_->p2p_advertiser->name,
             payment_info               => $_->p2p_advertiser->payment_info,
+            chat_token                 => $_->p2p_advertiser->chat_token,
+            chat_user_id               => $_->p2p_advertiser->chat_user_id,
             },
     };
 };

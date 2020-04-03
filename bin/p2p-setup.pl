@@ -57,7 +57,22 @@ $SIG{__DIE__} = sub {
 };
 
 # File calling arguments
-GetOptions("r|reset-clients" => \(my $reset_clients = 0));
+GetOptions(
+    "r|reset-clients" => \(my $reset_clients = 0),
+    "s|sendbird" => \(my $use_sendbird = 0),
+);
+
+unless ($use_sendbird) {
+    no strict 'refs';
+    no warnings;
+    *WebService::SendBird::create_user = sub { 
+        return WebService::SendBird::User->new(
+            api_client => 1,
+            user_id    => 'dummy'
+        );
+    };
+    $log->info('Sendbird is disabled. You can enable with --sendbird 1');
+}
 
 sub section_title {
     print "\n" . '-' x 25 . ' ' . shift . ' ' . '-' x 25 . "\n";

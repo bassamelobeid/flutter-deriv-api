@@ -119,6 +119,7 @@ struct P2POrder => [qw(
         contact_info
         payment_info
         payment_method
+        chat_channel_url
         )];
 
 struct P2PAdvertiser => [qw(
@@ -130,6 +131,8 @@ struct P2PAdvertiser => [qw(
         is_listed
         name
         payment_info
+        chat_token
+        chat_user_id
         )];
 
 my $history_count = 10;
@@ -297,10 +300,11 @@ for my $type (qw(buy sell)) {
             advert_description => 'Please contact via whatsapp 1234',
             advertiser_id      => '1',
             advertiser_name    => 'name',
-            is_incoming    => sprintf("%.0f\n", rand(1)),
-            contact_info   => 'Тестовый заказ', # to check UTF decoding
-            payment_info   => 'Payment Information',
-            payment_method => 'bank_transfer'
+            is_incoming      => sprintf("%.0f\n", rand(1)),
+            contact_info     => 'Тестовый заказ', # to check UTF decoding
+            payment_info     => 'Payment Information',
+            payment_method   => 'bank_transfer',
+            chat_channel_url => 'chatty channel',
         );
     }
 }
@@ -318,6 +322,8 @@ for my $name (qw(name имя)) {
         is_listed                  => 1,
         name                       => $name,
         payment_info               => 'Paypal user@example.com',
+        chat_user_id               => 'chatty user',
+        chat_token                 => 'chatty token',
         );
 }
 

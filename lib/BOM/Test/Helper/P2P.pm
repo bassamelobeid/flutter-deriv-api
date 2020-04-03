@@ -5,8 +5,12 @@ use warnings;
 
 use BOM::Test::Helper::Client;
 use Carp;
+use Test::More;
+use Test::MockModule;
 
 my $advertiser_num;
+my $mock_sb;
+my $mock_sb_user;
 
 {
     my ($current_escrow, $original_escrow);
@@ -114,6 +118,41 @@ sub set_order_status {
     my ($client, $order_id, $new_status) = @_;
 
     return $client->db->dbic->dbh->do('SELECT * FROM p2p.order_update(?, ?)', undef, $order_id, $new_status);
+}
+
+sub bypass_sendbird {
+    $mock_sb      = Test::MockModule->new('WebService::SendBird');
+    $mock_sb_user = Test::MockModule->new('WebService::SendBird::User');
+
+    $mock_sb->mock(
+        'create_user',
+        sub {
+            note "mocking sendbird create_user";
+            return WebService::SendBird::User->new(
+                api_client => 1,
+                user_id    => 'dummy'
+            );
+        });
+
+    $mock_sb->mock(
+        'create_group_chat',
+        sub {
+            note "mocking sendbird create_group_chat";
+            return WebService::SendBird::GroupChat->new(
+                api_client  => 1,
+                channel_url => 'dummy',
+            );
+        });
+
+    $mock_sb_user->mock(
+        'issue_session_token',
+        sub {
+            note "mocking sendbird issue_session_token";
+            return {
+                'session_token' => 'dummy',
+                'expires_at'    => time + 7200
+            };
+        });
 }
 
 1;

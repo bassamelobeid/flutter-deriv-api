@@ -5,6 +5,7 @@ use warnings;
 use Mojo::Server::Daemon;
 use Path::Tiny;
 use BOM::RPC::Transport::HTTP;
+use BOM::Test::Helper::P2P;
 
 my $pid;
 
@@ -30,11 +31,13 @@ EOC
         if (not defined $pid) {
             die 'Could not fork process to start RPC: ' . $!;
         } elsif ($pid == 0) {
+
             my $rpc    = BOM::RPC::Transport::HTTP->new();
             my $daemon = Mojo::Server::Daemon->new(
                 app    => $rpc,
                 listen => [$rpc_url],
             );
+            BOM::Test::Helper::P2P::bypass_sendbird();
             local $SIG{HUP} = sub { $daemon->stop; exit; };
             $daemon->run;
         }

@@ -50,6 +50,7 @@ rpc_response {
         type             => $_->p2p_order->type,
         contact_info     => $_->p2p_order->contact_info,
         payment_info     => $_->p2p_order->payment_info,
+        chat_channel_url => $_->p2p_order->chat_channel_url,
         advert_details   => {
             id             => $_->p2p_order->advert_id,
             description    => $_->p2p_order->advert_description,
@@ -87,6 +88,7 @@ publish p2p => sub {
             type               => $_->p2p_order->type,
             contact_info       => $_->p2p_order->contact_info,
             payment_info       => $_->p2p_order->payment_info,
+            chat_channel_url   => $_->p2p_order->chat_channel_url,
             advert_details     => {
                 id             => $_->p2p_order->advert_id,
                 description    => $_->p2p_order->advert_description,
