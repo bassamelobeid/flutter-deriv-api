@@ -67,7 +67,7 @@ sub handle_message {
     return if $self->advertiser_id ne $payload->{id};
 
     if ($self->loginid ne $payload->{client_loginid}) {
-        delete @{$payload}{qw(contact_info payment_info)};
+        delete @{$payload}{qw(contact_info payment_info chat_user_id chat_token)};
     }
 
     delete $payload->{client_loginid};

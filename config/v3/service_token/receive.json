@@ -18,11 +18,16 @@
                 "token"
             ],
             "properties": {
+                "expiry_time": {
+                    "description": "The epoch time in which the token will be expired. Note: the token could be expired sooner then than this, due to different reasons.",
+                    "type": "integer"
+                },
                 "service": {
                     "description": "Name of the service that token is retrieved for.",
                     "type": "string",
                     "enum": [
-                        "onfido"
+                        "onfido",
+                        "sendbird"
                     ]
                 },
                 "token": {

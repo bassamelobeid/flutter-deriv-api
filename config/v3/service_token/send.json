@@ -30,7 +30,8 @@
             "description": "The service name to retrieve the token for.",
             "type": "string",
             "enum": [
-                "onfido"
+                "onfido",
+                "sendbird"
             ]
         },
         "passthrough": {
