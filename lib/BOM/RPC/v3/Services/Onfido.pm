@@ -182,8 +182,7 @@ sub _client_onfido_details {
 
     my $details = {
         (map { $_ => $client->$_ } qw(first_name last_name email)),
-        title => $client->salutation,
-        dob   => $client->date_of_birth,
+        dob => $client->date_of_birth,
     };
 
     # Add address info if the required fields not empty
