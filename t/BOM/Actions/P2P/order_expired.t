@@ -16,6 +16,8 @@ use BOM::Test::Helper::P2P;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
+BOM::Test::Helper::P2P::bypass_sendbird();
+
 subtest pending_order_expiry => sub {
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(

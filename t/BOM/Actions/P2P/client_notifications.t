@@ -18,6 +18,8 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
+BOM::Test::Helper::P2P::bypass_sendbird();
+
 my $escrow = BOM::Test::Helper::P2P::create_escrow();
 my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
     amount => 100,
