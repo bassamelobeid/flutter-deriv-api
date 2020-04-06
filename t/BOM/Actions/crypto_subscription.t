@@ -152,7 +152,7 @@ subtest "change_address_status" => sub {
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, undef, "Error inserting transaction in the database";
 
-    my $new_transaction_event = BOM::Platform::Event::Emitter::get("GENERIC_EVENTS_QUEUE");
+    my $new_transaction_event = BOM::Platform::Event::Emitter::get("CRYPTO_EVENTS_QUEUE");
     is_deeply $new_transaction_event->{details}, $transaction, 'Event found after emit it again';
 
     $mock_subscription->unmock_all();
