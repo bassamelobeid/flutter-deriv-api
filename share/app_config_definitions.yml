@@ -146,6 +146,25 @@ payments:
       description: 'Cryptocurrencies related config'
       isa: section
       contains:
+        sweep_reserve_balance:
+          description: "Reserve Balance of Sweep"
+          isa: section
+          contains:
+            BTC:
+              isa: Num
+              description: "Reserve balance for BTC sweep"
+              default: 40
+              global: 1
+            LTC:
+              isa: Num
+              description: "Reserve balance for LTC sweep"
+              default: 500
+              global: 1
+            ETH:
+              isa: Num
+              description: "Reserve balance for ETH sweep"
+              default: 120
+              global: 1
         restricted_countries:
           description: "Countries where crypto withdrawals are restricted, separated by comma. Clients in these countries must have made a prior crypto deposit. Country code can be in lower case."
           isa: ArrayRef

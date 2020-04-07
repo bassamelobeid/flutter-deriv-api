@@ -16,7 +16,6 @@ BTC:
     sweep:
         min_transfer: 1
         max_transfer: 100
-        reserve_balance: 20
         address: 1QEdWqpiEfWMCGLHmmABLFqym8SSeib8Ks
 LTC:
     withdrawal:
@@ -36,7 +35,6 @@ LTC:
     sweep:
         min_transfer: 1
         max_transfer: 600
-        reserve_balance: 500
         address: MN42N4FdC6scDQzAW1W3kUJeawcjECDRvB
 ETH:
     withdrawal:
@@ -65,7 +63,6 @@ ETH:
     cold_wallet:
         min_transfer: 10 # ETH
         max_transfer: 100 # ETH
-        reserve_balance: 120 # ETH
         address: 0x067f48d1bbaab135cfbe43535cc34312facc54a1 # multis.co address
 UST:
     withdrawal:
