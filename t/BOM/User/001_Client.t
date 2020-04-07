@@ -242,7 +242,8 @@ subtest "check duplicate accounts" => sub {
 
     my $second_client = BOM::User::Client->new({loginid => 'CR0002'});
 
-    is $second_client->check_duplicate_account($client_details)->{error}, 'DuplicateAccount', 'second client is considered as duplicate same name + dob with different email account';
+    is $second_client->check_duplicate_account($client_details)->{error}, 'DuplicateAccount',
+        'second client is considered as duplicate same name + dob with different email account';
 
     $first_client->status->set('disabled', 'system', 'test');
 
@@ -250,7 +251,8 @@ subtest "check duplicate accounts" => sub {
         'second client is considered as duplicate regardless if first client is disabled';
 
     $second_client->email($first_client->email);
-    is $second_client->check_duplicate_account($client_details), undef, 'no duplicate as emails are same, could have different currency in the account';
+    is $second_client->check_duplicate_account($client_details), undef,
+        'no duplicate as emails are same, could have different currency in the account';
 
     my $third_client = BOM::User::Client->new({loginid => 'CR0003'});
     $third_client->email('ada@lovelace.com');
@@ -293,8 +295,7 @@ subtest "check duplicate accounts" => sub {
     delete $modified_details->{last_name};
     delete $modified_details->{date_of_birth};
     $result = $third_client->check_duplicate_account($modified_details);
-    is $result, undef,
-        'No duplicated account found, same phone number alone doesn\'t consider duplicate account';
+    is $result, undef, 'No duplicated account found, same phone number alone doesn\'t consider duplicate account';
 
 };
 

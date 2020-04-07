@@ -2055,10 +2055,8 @@ sub p2p_order_create {
     die +{
         error_code => 'OrderMaximumExceeded',
         message_params =>
-            [$advert_info->{account_currency}, formatnumber('amount', $advert_info->{account_currency}, $advert_info->{max_order_amount}),]}
-        if ($advert_info->{max_order_amount} && $amount > $advert_info->{max_order_amount})
-        || $amount > $advert_info->{amount}
-        || $amount > $advert_info->{remaining};
+            [$advert_info->{account_currency}, formatnumber('amount', $advert_info->{account_currency}, $advert_info->{max_order_amount_actual}),]}
+        if $amount > $advert_info->{max_order_amount_actual};
 
     die +{
         error_code => 'OrderMinimumNotMet',
@@ -2072,13 +2070,9 @@ sub p2p_order_create {
     die +{error_code => 'AdvertiserNotApproved'} unless $advertiser_info->{is_approved};
 
     if ($advert_info->{type} eq 'buy') {
-        die +{error_code => 'InsufficientBalance'} if $client->account->balance < $amount;
-
         die +{error_code => 'OrderPaymentInfoRequired'} if !trim($param{payment_info});
         die +{error_code => 'OrderContactInfoRequired'} if !trim($param{contact_info});
     } elsif ($advert_info->{type} eq 'sell') {
-        my $advertiser = BOM::User::Client->new({loginid => $advert_info->{advertiser_loginid}});
-        die +{error_code => 'MaximumExceeded'} if $advertiser->account->balance < $amount;
         die +{error_code => 'OrderPaymentContactInfoNotAllowed'} if $payment_info or $contact_info;
         ($payment_info, $contact_info) = $advert_info->@{qw/payment_info contact_info/};
     } else {

@@ -474,7 +474,7 @@ subtest 'Buy adverts' => sub {
     my $err = exception {
         warning_like { $client->p2p_order_create(%params) } qr/check_no_negative_balance/;
     };
-    is $err->{error_code}, 'InsufficientBalance', 'error for insufficient client balance';
+    is $err->{error_code}, 'OrderMaximumExceeded', 'error for insufficient client balance';
 
     BOM::Test::Helper::Client::top_up($client, $client->currency, $amount);
 
@@ -497,6 +497,37 @@ subtest 'Buy adverts' => sub {
     is($order_data->{type},                 $advert_info->{counterparty_type}, 'order type is correct');
     is($order_data->{payment_info},         $params{payment_info},             'payment_info is correct');
     is($order_data->{contact_info},         $params{contact_info},             'contact_info is correct');
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Buyer tries to place an order with an amount that exceeds the advertiser balance' => sub {
+    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
+
+    my $ad_amount = 100;
+    my $escrow    = BOM::Test::Helper::P2P::create_escrow();
+
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+        amount           => $ad_amount,
+        max_order_amount => $ad_amount,
+        type             => 'sell'
+    );
+
+    BOM::Test::Helper::Client::top_up($advertiser, $advertiser->currency, -50);
+
+    my $buyer        = BOM::Test::Helper::Client::create_client();
+    my $order_amount = 70;
+
+    ok $advertiser->account->balance < $order_amount, 'The advertiser balance is less that the order amount';
+
+    my $err = exception {
+        $buyer->p2p_order_create(
+            advert_id => $advert_info->{id},
+            amount    => $order_amount
+            )
+    };
+
+    is $err->{error_code}, 'OrderMaximumExceeded', 'OrderMaximumExceeded';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
