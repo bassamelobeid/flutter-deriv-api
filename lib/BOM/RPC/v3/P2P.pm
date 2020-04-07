@@ -114,7 +114,6 @@ our %ERROR_MAP = do {
         EscrowNotFound                => localize('Advertising for the currency is not available at the moment.'),
         OrderMinimumNotMet => localize('The minimum amount for this advert is [_1] [_2].'),    # minimum won't change during advert lifetime
         OrderMaximumExceeded   => localize('The maximum available amount for this advert is [_1] [_2] at the moment.'),
-        InsufficientBalance    => localize('Your account balance is insufficient to create an order with this amount.'),
         OpenOrdersDeleteAdvert => localize(
             "This advert cannot be deleted because there are open orders. Please wait until the orders are closed and try again. If you'd like to stop accepting new orders, you may disable your advert."
         ),
