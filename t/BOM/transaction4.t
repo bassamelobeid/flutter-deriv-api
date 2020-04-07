@@ -465,6 +465,31 @@ subtest 'Validate Unwelcome Client' => sub {
     lives_ok { $client->status->clear_unwelcome } "delete client from unwelcome login";
 };
 
+subtest 'Validate no_trading Client' => sub {
+    plan tests => 4;
+    my $reason = "test to set no_trading login";
+    lives_ok { $client->status->set('no_trading', 'test', $reason) } "set client no_trading login";
+
+    my $transaction = BOM::Transaction->new({
+        purchase_date => $contract->date_start,
+        client        => $client,
+        contract      => $contract,
+    });
+
+    my $error = BOM::Transaction::Validation->new({
+            clients     => [$client],
+            transaction => $transaction
+        })->_validate_client_status($client);
+    is($error->get_type, 'ClientUnwelcome', 'Client is no_trading : _validate_client_status - error type');
+    like(
+        $error->{-message_to_client},
+        qr/Sorry, your account is not authorised for any further contract purchases/,
+        'Client is no_trading : _validate_client_status - error message'
+    );
+
+    lives_ok { $client->status->clear_no_trading } "delete client from no_trading login";
+};
+
 subtest 'Validate Disabled Client' => sub {
     plan tests => 4;
     my $reason = "test to set disabled login";

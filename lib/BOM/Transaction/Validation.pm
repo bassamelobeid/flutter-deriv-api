@@ -709,7 +709,7 @@ sub _validate_client_status {
 
     my $status = $client->status;
 
-    if ($status->unwelcome or $status->disabled or $status->no_withdrawal_or_trading) {
+    if ($status->unwelcome or $status->disabled or $status->no_trading or $status->no_withdrawal_or_trading) {
         return Error::Base->cuss(
             -quiet             => 1,
             -type              => 'ClientUnwelcome',
