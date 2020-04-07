@@ -68,7 +68,7 @@ The SubscriptionManager instance that will manage this worker
 =cut
 
 sub subscription_manager {
-    return Binary::WebSocketAPI::v3::SubscriptionManager->redis_pricer_manager();
+    return Binary::WebSocketAPI::v3::SubscriptionManager->redis_pricer_subscription_manager();
 }
 
 # This method is used to find a subscription. Class name + _unique_key will be a unique index of the subscription objects.
@@ -268,8 +268,7 @@ subscribe the channel and store channel to Redis so that pricer_queue script can
 
 before subscribe => sub {
     my $self = shift;
-
-    return $self->subscription_manager->redis->set($self->pricer_args, 1);
+    return Binary::WebSocketAPI::v3::SubscriptionManager->redis_pricer_manager()->redis->set($self->pricer_args, 1);
 };
 
 1;

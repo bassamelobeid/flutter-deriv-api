@@ -40,6 +40,11 @@ my $servers = {
         user     => 'write',
         override => 'BOM_TEST_REDIS_REPLICATED'
     },
+    redis_pricer_subscription => {
+        config   => '/etc/rmg/redis-pricer-subscription.yml',
+        user     => 'write',
+        override => 'BOM_TEST_REDIS_REPLICATED'
+    },
     ws_redis_master => {
         config   => '/etc/rmg/ws-redis.yml',
         user     => 'write',
