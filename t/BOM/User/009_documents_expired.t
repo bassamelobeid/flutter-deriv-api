@@ -225,10 +225,7 @@ subtest 'documents uploaded' => sub {
                     type        => "bankstatement",
                     },
             },
-            is_expired => 1,
             is_pending => 1,
-            minimum_expiry_date =>
-                $documents->{proof_of_address}{documents}{$client_mlt->loginid . '.bankstatement.270744521_front.PNG'}{expiry_date},
         },
         proof_of_identity => {
             documents => {

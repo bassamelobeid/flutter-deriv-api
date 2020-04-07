@@ -559,6 +559,9 @@ sub documents_uploaded {
 
             $documents{$type}{documents}{$single_document->file_name} = $doc_structure->($single_document);
 
+            # there should be no expiration date for POA
+            next if $type eq 'proof_of_address';
+
             my $expires = $documents{$type}{documents}{$single_document->file_name}{expiry_date};
             next unless $expires;
 
