@@ -371,6 +371,14 @@ sub may_settle_automatically {
     return (not $self->get_time_to_settlement->seconds and not $self->is_valid_to_sell) ? 0 : 1;
 }
 
+sub apply_binary_limit {
+    my $self = shift;
+
+    my $apply_binary_limit = ($self->category_code eq 'lookback') ? 0 : 1;
+
+    return $apply_binary_limit;
+}
+
 =head1 METHODS - Other
 
 =cut

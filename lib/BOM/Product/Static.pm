@@ -51,6 +51,7 @@ my $config = {
         IncorrectPayoutDecimals       => 'Payout can not have more than [_1] decimal places.',
         IncorrectStakeDecimals        => 'Stake can not have more than [_1] decimal places.',
         IntegerBarrierRequired        => 'Barrier must be an integer.',
+        SymmetricBarrier              => 'Barrier must be symmetrical.',
         IntegerSelectedTickRequired   => 'Selected tick must be an integer.',
         InvalidBarrier                => 'Invalid barrier.',
         InvalidBarrierUndef           => 'Invalid barrier.',

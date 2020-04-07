@@ -462,6 +462,7 @@ sub _create_new_interface_engine {
                 contract_type       => $self->pricing_code,
                 spot_max            => $self->spot_min_max($self->date_start_plus_1s)->{high},
                 spot_min            => $self->spot_min_max($self->date_start_plus_1s)->{low},
+                multiplier          => $self->multiplier,
                 generation_interval => $self->underlying->generation_interval->seconds,
             );
 
@@ -533,6 +534,67 @@ sub market_is_inefficient {
     my $disable_hour = $self->date_pricing->is_dst_in_zone('America/New_York') ? 20 : 21;
     return 0 if $hour < $disable_hour;
     return 1;
+}
+
+=head2 is_in_quiet_period
+
+Are we currently in a quiet traidng period for this underlying?
+Keeping this as a method will allow us to have long-lived objects
+
+=cut
+
+sub is_in_quiet_period {
+    my ($self, $date) = @_;
+
+    my $underlying = $self->underlying;
+    die 'date must be specified when requesting for quiet period' unless $date;
+
+    my $quiet = 0;
+
+    if ($underlying->market->name eq 'forex') {
+        # Pretty much everything trades in these big centers of activity
+        my @check_if_open = ('LSE', 'FSE', 'NYSE');
+
+        my @currencies = ($underlying->asset_symbol, $underlying->quoted_currency_symbol);
+
+        if (grep { $_ eq 'JPY' } @currencies) {
+
+            # The yen is also heavily traded in
+            # Australia, Singapore and Tokyo
+            push @check_if_open, ('ASX', 'SES', 'TSE');
+        } elsif (
+            grep {
+                $_ eq 'AUD'
+            } @currencies
+            )
+        {
+
+            # The Aussie dollar is also heavily traded in
+            # Australia and Singapore
+            push @check_if_open, ('ASX', 'SES');
+        }
+        # If any of the places we've listed have an exchange open, we are not in a quiet period.
+        $quiet = (any { $self->trading_calendar->is_open_at(Finance::Exchange->create_exchange($_), $date) } @check_if_open) ? 0 : 1;
+    }
+
+    return $quiet;
+}
+
+sub apply_rollover_markup {
+    my $self = shift;
+
+    return 0 if $self->underlying->market->name ne 'forex';
+
+    return 0 if $self->date_expiry->hour < 20;
+    my $rollover_date = $self->volsurface->rollover_date($self->date_pricing);
+
+    return 1
+        if ((
+               ($self->date_start->hour >= ($rollover_date->hour - 1))
+            or ($self->date_expiry->hour >= $rollover_date->hour))
+        and ($self->date_start->hour < ($rollover_date->hour + 2)));
+
+    return 0;
 }
 
 ## BUILDERS  #######################

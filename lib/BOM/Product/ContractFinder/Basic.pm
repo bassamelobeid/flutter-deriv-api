@@ -97,20 +97,23 @@ sub decorate {
         } else {
             if ($o->{barriers} == 1) {
                 $o->{barrier} = _default_barrier({
-                    underlying   => $underlying,
-                    duration     => $o->{min_contract_duration},
-                    barrier_kind => 'high'
+                    underlying        => $underlying,
+                    duration          => $o->{min_contract_duration},
+                    barrier_kind      => 'high',
+                    contract_category => $o->{contract_category},
                 });
             } else {
                 $o->{high_barrier} = _default_barrier({
-                    underlying   => $underlying,
-                    duration     => $o->{min_contract_duration},
-                    barrier_kind => 'high'
+                    underlying        => $underlying,
+                    duration          => $o->{min_contract_duration},
+                    barrier_kind      => 'high',
+                    contract_category => $o->{contract_category},
                 });
                 $o->{low_barrier} = _default_barrier({
-                    underlying   => $underlying,
-                    duration     => $o->{min_contract_duration},
-                    barrier_kind => 'low'
+                    underlying        => $underlying,
+                    duration          => $o->{min_contract_duration},
+                    barrier_kind      => 'low',
+                    contract_category => $o->{contract_category},
                 });
             }
         }
@@ -122,7 +125,18 @@ sub decorate {
 sub _default_barrier {
     my $args = shift;
 
-    my ($underlying, $duration, $barrier_kind) = @{$args}{'underlying', 'duration', 'barrier_kind'};
+    my ($underlying, $duration, $barrier_kind, $category) = @{$args}{'underlying', 'duration', 'barrier_kind', 'contract_category'};
+
+    if ($category eq 'callputspread' and $underlying->market->name eq 'forex') {
+        my $barrier = $underlying->pip_size;
+        if ($barrier_kind eq 'high') {
+            $barrier = '+' . $barrier;
+        } else {
+            $barrier = 0 - $barrier;
+        }
+        return $barrier;
+    }
+
     my $option_type = $barrier_kind eq 'low' ? 'VANILLA_PUT' : 'VANILLA_CALL';
     $duration =~ s/t//g;
     $duration = Time::Duration::Concise->new(interval => $duration)->seconds;

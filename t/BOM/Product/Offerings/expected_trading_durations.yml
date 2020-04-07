@@ -120,6 +120,18 @@
       trade_type:
         display_name: Stays Between/Goes Outside
         name: staysinout
+    - durations:
+      - display_name: Minutes
+        max: 1440
+        min: 3
+        name: m
+      - display_name: Hours
+        max: 24
+        min: 1
+        name: h
+      trade_type:
+        display_name: Call Spread/Put Spread
+        name: callputspread
   - symbol:
     - display_name: GBP/USD
       name: frxGBPUSD

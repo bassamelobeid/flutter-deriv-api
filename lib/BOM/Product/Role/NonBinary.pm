@@ -9,15 +9,6 @@ use List::Util qw(max min);
 use Format::Util::Numbers qw/financialrounding/;
 use Scalar::Util qw(looks_like_number);
 
-sub _ask_price_per_unit {
-    my ($self, $for_sale) = @_;
-
-    my $ask_price_per_unit = $self->theo_price + $self->commission_per_unit;
-    $ask_price_per_unit += $self->app_markup_per_unit unless $for_sale;
-    return max($self->minimum_ask_price_per_unit, $ask_price_per_unit) if $self->can('minimum_ask_price_per_unit') and not $for_sale;
-    return $ask_price_per_unit;
-}
-
 override '_build_bid_price' => sub {
     my $self = shift;
 
@@ -26,7 +17,8 @@ override '_build_bid_price' => sub {
         # if contract can be settled, then return the evaluated contract value
         $bid_price = $self->value;
     } else {
-        my $bid_price_per_unit = max($self->minimum_bid_price, $self->_ask_price_per_unit(1) - 2 * $self->commission_per_unit);
+        my $ask_price = $self->theo_price + $self->commission;
+        my $bid_price_per_unit = max($self->minimum_bid_price, ($ask_price - 2 * $self->commission) / $self->multiplier);
         $bid_price_per_unit = financialrounding('price', $self->currency, $bid_price_per_unit) if $self->user_defined_multiplier;
         $bid_price = $bid_price_per_unit * $self->multiplier;
     }
@@ -85,6 +77,20 @@ override _validate_price => sub {
     return;
 };
 
+sub commission {
+    my $self = shift;
+
+    my $base_commission = $self->base_commission;
+    my $base_price      = $self->pricing_engine->base_price;
+
+    my $commission = $base_commission * $base_price;
+
+    my $commission_per_unit =
+        $self->can('minimum_commission_per_unit') ? max($self->minimum_commission_per_unit, $base_commission * $base_price) : $commission;
+
+    return $commission_per_unit * $self->multiplier;
+}
+
 =head2 commission_per_unit
 
 Return commission of the contract in dollar amount for one unit, not percentage.
@@ -113,7 +119,7 @@ override allowed_slippage => sub {
 
     # Commission is calculated base on ask price for non-binary.
     # We allow price slippage of up to half of our commission charged per contract.
-    return financialrounding('price', $self->currency, $self->commission_per_unit * $self->multiplier * 0.5);
+    return financialrounding('price', $self->currency, $self->commission * 0.5);
 };
 
 1;

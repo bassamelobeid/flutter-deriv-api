@@ -6,6 +6,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::FailWarnings;
+use Try::Tiny;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -14,18 +15,65 @@ use Date::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 
 my $now = Date::Utility->new;
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
-        symbol        => 'USD',
+        recorded_date => $now,
+        symbol        => $_,
+    }) for qw( USD JPY JPY-USD AUD AUD-JPY);
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $_,
         recorded_date => $now
+    }) for ('frxUSDJPY', 'frxAUDJPY');
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol => 'JPY',
+        rates  => {
+            1   => 0.2,
+            2   => 0.15,
+            7   => 0.18,
+            32  => 0.25,
+            62  => 0.2,
+            92  => 0.18,
+            186 => 0.1,
+            365 => 0.13,
+        },
+        type          => 'implied',
+        implied_from  => 'USD',
+        recorded_date => $now,
     });
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'currency',
+    {
+        symbol => 'USD',
+        rates  => {
+            1   => 3,
+            2   => 2,
+            7   => 1,
+            32  => 1.25,
+            62  => 1.2,
+            92  => 1.18,
+            186 => 1.1,
+            365 => 1.13,
+        },
+        type          => 'market',
+        recorded_date => $now,
+    });
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
+
 subtest 'config' => sub {
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'R_100'], [100.10, $now->epoch + 1, 'R_100']);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'frxUSDJPY'], [100.10, $now->epoch + 1, 'frxUSDJPY']);
     my $c = produce_contract({
         bet_type     => 'CALLSPREAD',
-        underlying   => 'R_100',
+        underlying   => 'frxUSDJPY',
         duration     => '5h',
         high_barrier => 100.11,
         low_barrier  => 99.01,
@@ -45,28 +93,6 @@ subtest 'config' => sub {
     isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
     isa_ok $c->high_barrier,   'BOM::Product::Contract::Strike';
     isa_ok $c->low_barrier,    'BOM::Product::Contract::Strike';
-};
-
-subtest 'ask/bid price' => sub {
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'R_100'], [100.10, $now->epoch + 1, 'R_100']);
-    my $expiry = $now->plus_time_interval('2m');
-    my $args   = {
-        bet_type     => 'CALLSPREAD',
-        underlying   => 'R_100',
-        date_start   => $now,
-        date_pricing => $now,
-        date_expiry  => $expiry,
-        high_barrier => 100,
-        low_barrier  => 99,
-        currency     => 'USD',
-        payout       => 100,
-    };
-    my $c = produce_contract($args);
-    is $c->multiplier, 100, 'multiplier is 100';
-    is $c->pricing_engine->theo_price, 92.2830146038422, 'theo price 92.2830146038422';
-    is $c->commission_per_unit, 1.10739617524611, '';
-    cmp_ok $c->ask_price,       '==',               93.39, 'correct ask price';
-    cmp_ok $c->bid_price,       '==',               91.18, 'correct bid price';
 };
 
 done_testing();

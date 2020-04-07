@@ -35,9 +35,15 @@ override '_build_ask_price' => sub {
 
     return $self->_user_input_stake if defined $self->_user_input_stake;
 
+    my $ask_price_per_unit = ($self->theo_price + $self->commission) / $self->multiplier;
+    $ask_price_per_unit += $self->app_markup_per_unit unless $self->for_sale;
+    $ask_price_per_unit = max($self->minimum_ask_price_per_unit, $ask_price_per_unit)
+        if $self->can('minimum_ask_price_per_unit')
+        and not $self->for_sale;
+
     # for lookbacks, we are setting a minimum_ask_price_per_unit and a minimum_commission_per_unit.
     # hence, the ask price is a simple price per unit multiplied by number of units.
-    my $ask_price = financialrounding('price', $self->currency, $self->_ask_price_per_unit) * $self->multiplier;
+    my $ask_price = financialrounding('price', $self->currency, $ask_price_per_unit) * $self->multiplier;
 
     # publish ask price to pricing server
     $self->_publish({ask_price => $ask_price});

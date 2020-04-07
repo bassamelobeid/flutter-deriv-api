@@ -24,6 +24,7 @@ use Pricing::Engine::Markup::HourEndMarkup;
 use Pricing::Engine::Markup::HourEndDiscount;
 use Pricing::Engine::Markup::IntradayMeanReversionMarkup;
 use Pricing::Engine::Markup::RollOverMarkup;
+use Pricing::Engine::Markup::IntradayForexRisk;
 use Math::Util::CalculatedValue::Validatable;
 
 =head2 tick_source
@@ -123,29 +124,6 @@ sub _build_apply_equal_tie_markup {
             and ($self->bet->underlying->submarket->name eq 'major_pairs' or $self->bet->underlying->submarket->name eq 'minor_pairs')) ? 1 : 0;
 }
 
-has apply_rollover_markup => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_apply_rollover_markup {
-    my $self = shift;
-
-    my $bet = $self->bet;
-
-    return 0 if $bet->underlying->market->name ne 'forex';
-
-    return 0 if $bet->date_expiry->hour < 20;
-    my $rollover_date = $bet->volsurface->rollover_date($bet->date_pricing);
-
-    return 1
-        if ((
-               ($bet->date_start->hour >= ($rollover_date->hour - 1))
-            or ($bet->date_expiry->hour >= $rollover_date->hour))
-        and ($bet->date_start->hour < ($rollover_date->hour + 2)));
-
-    return 0;
-}
 has mean_reversion_markup => (
     is         => 'ro',
     lazy_build => 1,
@@ -187,6 +165,7 @@ sub _build_mean_reversion_markup {
 
     return $markup;
 }
+
 has hour_end_markup => (
     is         => 'ro',
     lazy_build => 1,
@@ -339,6 +318,29 @@ my $shortterm_risk_interpolator = Math::Function::Interpolator->new(
         15 => 0,
     });
 
+sub apply_mean_reversion_markup {
+    my $self = shift;
+
+    my $bet          = $self->bet;
+    my $bet_duration = $bet->timeindays->amount * 24 * 60;
+    # Maximum lookback period is 30 minutes
+    my $lookback_duration = min(30, $bet_duration);
+    #  We did not do any ajdusment if there is nothing to lookback ie either monday morning or the next day after early close
+    return $bet->trading_calendar->is_open_at($bet->underlying->exchange, $bet->date_start->minus_time_interval($lookback_duration . 'm'));
+}
+
+sub apply_quiet_period_markup {
+    my $self = shift;
+
+    my $bet = $self->bet;
+    my $apply_flag =
+        ($bet->trading_calendar->is_open_at($bet->underlying->exchange, $bet->date_start) and $bet->is_in_quiet_period($bet->date_pricing))
+        ? 1
+        : 0;
+
+    return $apply_flag;
+}
+
 =head1 risk_markup
 
 Markup added to accommdate for pricing uncertainty
@@ -348,107 +350,57 @@ Markup added to accommdate for pricing uncertainty
 sub _build_risk_markup {
     my $self = shift;
 
-    my $bet = $self->bet;
-    # minimum of 0 is removed for end of hour discount
-    my $risk_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'risk_markup',
-        description => 'A set of markups added to accommodate for pricing risk',
-        set_by      => __PACKAGE__,
-        base_amount => 0,
-    });
+    my $bet          = $self->bet;
+    my $bet_duration = $bet->timeindays->amount * 24 * 60;
+    # Maximum lookback period is 30 minutes
+    my $lookback_duration = min(30, $bet_duration);
 
-    $risk_markup->include_adjustment('add', $self->economic_events_markup);
+    my $min_max         = $bet->spot_min_max($bet->date_start->minus_time_interval($lookback_duration . 'm'));
+    my $rollover_hour   = $bet->underlying->market->name eq 'forex' ? $bet->volsurface->rollover_date($bet->date_pricing) : undef;
+    my $apply_equal_tie = $self->apply_equal_tie_markup;
 
-    if (%{$self->bet->hour_end_markup_parameters} and $self->hour_end_markup->amount > $self->mean_reversion_markup->amount) {
+    my $mean_reversion_markup = (defined $self->apply_mean_reversion_markup and $self->apply_mean_reversion_markup) ? 1 : 0;
 
-        $risk_markup->include_adjustment('add', $self->hour_end_markup);
+    my %markup_params = (
+        apply_mean_reversion_markup => $mean_reversion_markup,
+        min_max                     => $min_max,
+        custom_commission           => $bet->_custom_commission,
+        effective_start             => $bet->effective_start,
+        date_expiry                 => $bet->date_expiry,
+        barrier_tier                => $bet->barrier_tier,
+        symbol                      => $bet->underlying->symbol,
+        economic_events             => $bet->economic_events_for_volatility_calculation,
+        apply_quiet_period_markup   => $self->apply_quiet_period_markup,
+        #payout                      => $bet->payout,
+        apply_rollover_markup      => $bet->apply_rollover_markup,
+        rollover_date              => $rollover_hour,
+        interest_rate_difference   => $bet->q_rate - $bet->r_rate,
+        date_start                 => $bet->date_start,
+        market                     => $bet->underlying->market->name,
+        market_is_inefficient      => $bet->market_is_inefficient,
+        contract_category          => $bet->category->code,
+        hour_end_markup_parameters => $bet->hour_end_markup_parameters,
+        enable_hour_end_discount   => BOM::Config::Runtime->instance->app_config->quants->enable_hour_end_discount,
+        apply_equal_tie_markup     => $apply_equal_tie,
+        spot                       => $bet->pricing_spot,
+        contract_type              => $bet->pricing_code,
+        t                          => $bet->timeinyears->amount,
 
-    } else {
+        inefficient_period     => $bet->market_is_inefficient,
+        long_term_average_vol  => $self->long_term_average_vol,
+        iv                     => $bet->_pricing_args->{iv},
+        intraday_vega          => $self->base_probability->peek_amount('intraday_vega'),
+        remaining_time         => $bet->remaining_time->minutes,
+        is_path_dependent      => $bet->is_path_dependent,
+        intraday_vanilla_delta => $self->intraday_vanilla_delta->amount,
+        is_atm_bet             => $bet->is_atm_bet,
+        is_forward_starting    => $bet->is_forward_starting,
+        bs_probability         => $self->base_probability->base_amount,
+    );
 
-        $risk_markup->include_adjustment('add', $self->mean_reversion_markup);
+    my $risk_markup = Pricing::Engine::Markup::IntradayForexRisk->new(%markup_params);
 
-    }
-
-    if ($bet->is_path_dependent) {
-        my $iv_risk = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'intraday_historical_iv_risk',
-            description => 'Intraday::Forex markup for IV contracts only.',
-            set_by      => __PACKAGE__,
-            base_amount => $iv_risk_interpolator->linear($self->intraday_vanilla_delta->amount),
-        });
-        $risk_markup->include_adjustment('add', $iv_risk);
-    }
-
-    if (    $bet->trading_calendar->is_open_at($bet->underlying->exchange, $bet->date_start)
-        and $self->is_in_quiet_period($bet->date_pricing))
-    {
-        my $quiet_period_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'quiet_period_markup',
-            description => 'Intraday::Forex markup factor for underlyings in the quiet period',
-            set_by      => __PACKAGE__,
-            base_amount => 0.01,
-        });
-        $risk_markup->include_adjustment('add', $quiet_period_markup);
-    }
-
-    if ($bet->market->name eq 'commodities') {
-        my $illiquid_market_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'illiquid_market_markup',
-            description => 'Intraday::Forex markup factor for commodities',
-            set_by      => __PACKAGE__,
-            base_amount => 0.015,
-        });
-        $risk_markup->include_adjustment('add', $illiquid_market_markup);
-    }
-
-    if ($bet->is_atm_bet) {
-        $risk_markup->include_adjustment(
-            'add',
-            Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'intraday_eod_markup',
-                    description => '5% markup for inefficient period',
-                    set_by      => __PACKAGE__,
-                    base_amount => 0.05,
-                })) if $self->inefficient_period;
-    } else {
-        $risk_markup->include_adjustment('add', $self->vol_spread_markup);
-        $risk_markup->include_adjustment(
-            'add',
-            Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'intraday_eod_markup',
-                    description => '10% markup for inefficient period',
-                    set_by      => __PACKAGE__,
-                    base_amount => 0.1,
-                })) if $self->inefficient_period;
-        $risk_markup->include_adjustment(
-            'add',
-            Math::Util::CalculatedValue::Validatable->new({
-                    name        => 'short_term_kurtosis_risk_markup',
-                    description => 'shortterm markup added for kurtosis risk for contract less than 15 minutes',
-                    set_by      => __PACKAGE__,
-                    base_amount => $shortterm_risk_interpolator->linear($bet->remaining_time->minutes),
-                })) if $bet->remaining_time->minutes <= 15;
-    }
-    $risk_markup->include_adjustment(
-        'add',
-        Pricing::Engine::Markup::EqualTie->new(
-            underlying_symbol => $bet->underlying->symbol,
-            timeinyears       => $bet->timeinyears->amount
-        )->markup
-    ) if $self->apply_equal_tie_markup;
-    # Rollover markup should only app]y for contract that start after 1 hour before rollover time (ie 16NYT) or contract end after rollover time (ie 17NYT)
-    $risk_markup->include_adjustment(
-        'add',
-        Pricing::Engine::Markup::RollOverMarkup->new(
-            interest_rate_difference => $bet->q_rate - $bet->r_rate,
-            rollover_hour            => $bet->volsurface->rollover_date($bet->date_pricing),
-            date_start               => $bet->date_start,
-            date_expiry              => $bet->date_expiry,
-            pricing_code             => $bet->pricing_code
-        )->markup
-    ) if $self->apply_rollover_markup;
-
-    return $risk_markup;
+    return $risk_markup->markup;
 }
 
 sub event_markup {
@@ -478,7 +430,7 @@ sub economic_events_spot_risk_markup {
 sub long_term_average_vol {
     my $self = shift;
 
-    return ($self->is_in_quiet_period($self->bet->date_pricing)) ? 0.035 : 0.07;
+    return ($self->bet->is_in_quiet_period($self->bet->date_pricing)) ? 0.035 : 0.07;
 }
 
 sub vol_spread_markup {
@@ -497,50 +449,6 @@ sub vol_spread_markup {
         vol_spread => $vol_spread,
         multiplier => $multiplier,
     )->markup;
-}
-
-=head2 is_in_quiet_period
-
-Are we currently in a quiet traidng period for this underlying?
-Keeping this as a method will allow us to have long-lived objects
-
-=cut
-
-sub is_in_quiet_period {
-    my ($self, $date) = @_;
-
-    my $underlying = $self->bet->underlying;
-    die 'date must be specified when requesting for quiet period' unless $date;
-
-    my $quiet = 0;
-
-    if ($underlying->market->name eq 'forex') {
-        # Pretty much everything trades in these big centers of activity
-        my @check_if_open = ('LSE', 'FSE', 'NYSE');
-
-        my @currencies = ($underlying->asset_symbol, $underlying->quoted_currency_symbol);
-
-        if (grep { $_ eq 'JPY' } @currencies) {
-
-            # The yen is also heavily traded in
-            # Australia, Singapore and Tokyo
-            push @check_if_open, ('ASX', 'SES', 'TSE');
-        } elsif (
-            grep {
-                $_ eq 'AUD'
-            } @currencies
-            )
-        {
-
-            # The Aussie dollar is also heavily traded in
-            # Australia and Singapore
-            push @check_if_open, ('ASX', 'SES');
-        }
-        # If any of the places we've listed have an exchange open, we are not in a quiet period.
-        $quiet = (any { $self->bet->trading_calendar->is_open_at(Finance::Exchange->create_exchange($_), $date) } @check_if_open) ? 0 : 1;
-    }
-
-    return $quiet;
 }
 
 sub get_compatible {

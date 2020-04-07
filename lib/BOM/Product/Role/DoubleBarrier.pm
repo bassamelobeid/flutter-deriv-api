@@ -167,6 +167,18 @@ sub _validate_barrier {
         }
     }
 
+    if ($self->category_code eq 'callputspread' and $self->underlying->market->name eq 'forex' and $current_spot) {
+        my $low_barrier_diff  = $self->underlying->pipsized_value(abs($low_barrier->as_absolute - $current_spot));
+        my $high_barrier_diff = $self->underlying->pipsized_value(abs($high_barrier->as_absolute - $current_spot));
+
+        $self->_add_error({
+                severity          => 5,
+                message           => 'High and low barriers is not symmetrical',
+                message_to_client => [$ERROR_MAPPING->{SymmetricBarrier}],
+                details           => {field => 'barrier'},
+            }) if $low_barrier_diff != $high_barrier_diff;
+    }
+
     return;
 }
 1;
