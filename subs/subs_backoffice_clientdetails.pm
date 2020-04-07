@@ -906,6 +906,12 @@ sub get_untrusted_types {
             'comments'    => 'Internal Client',
             'code'        => 'internal_client',
             'show_reason' => 'yes'
+        },
+        {
+            'linktype'    => 'notrading',
+            'comments'    => 'Disable Trading',
+            'code'        => 'no_trading',
+            'show_reason' => 'yes'
         }];
 }
 

@@ -123,9 +123,11 @@ print "<br /><br /><form action=\""
     . "Select list : <select name=show>"
     . "<option value='age_verification'>Age Verified</option>"
     . "<option value='disabled'>Disabled/Closed Accounts</option>"
-    . "<option value='cashier_locked'>Cashier Lock Section</option>"
-    . "<option value='withdrawal_locked'>Withdrawal Lock Section</option>"
+    . "<option value='cashier_locked'>Cashier Locked Section</option>"
+    . "<option value='withdrawal_locked'>Withdrawal Locked Section</option>"
     . "<option value='unwelcome'>Unwelcome loginIDs</option>"
+    . "<option value='no_trading'>Trading Disabled Accounts</option>"
+    . "<option value='no_withdrawal_or_trading'>Trading Disabled and Withdrawal Locked Accounts</option>"
     . "</select>"
     . '<br /><input type=checkbox value="1" name=onlyfunded>Only funded accounts'
     . '<br /><input type=checkbox value="1" name=onlynonzerobalance>Only nonzero balance'
