@@ -55,7 +55,22 @@ my $first_entry_cr = [
         ["touchnotouch", "Touch/No Touch",             "1d", "365d"],
         ["endsinout",    "Ends Between/Ends Outside",  "1d", "365d"],
         ["staysinout",   "Stays Between/Goes Outside", "1d", "365d"],
-        ["callputequal", "Rise/Fall Equal",            "3m", "365d"]]];
+        ["callputequal", "Rise/Fall Equal",            "3m", "365d"],
+        ["callputspread", "Call Spread/Put Spread",     "3m", "1d"]
+]];
+
+my $first_entry_cr_mf_test2 = [
+    "frxAUDJPY",
+    "AUD/JPY",
+    [
+        ["callput",      "Higher/Lower",               "1d", "365d"],
+        ["callput",      "Rise/Fall",                  "5t", "365d"],
+        ["touchnotouch", "Touch/No Touch",             "1d", "365d"],
+        ["endsinout",    "Ends Between/Ends Outside",  "1d", "365d"],
+        ["staysinout",   "Stays Between/Goes Outside", "1d", "365d"],
+        ["callputequal", "Rise/Fall Equal",            "3m", "365d"],
+        ["callputspread","Call Spread/Put Spread",     "3m", "1d"  ],
+]];
 
 sub _test_asset_index {
     my ($params, $count, $first_entry) = @_;
@@ -65,6 +80,7 @@ sub _test_asset_index {
         is(0 + @$result,    $count,            'correct number of entries');
         is($result->[0][0], $first_entry->[0], 'First entry item 1 is asset code');
         is($result->[0][1], $first_entry->[1], 'First entry item 2 is asset name/description');
+#warn Dumper($result->[0][2]);
         cmp_deeply($result->[0][2], bag(@{$first_entry->[2]}), 'First entry item 3 lists available contract types');
         return undef;
     };
@@ -85,7 +101,8 @@ subtest "asset_index logged in - with arg" => _test_asset_index({
 # Result should be Binary (SVG) Ltd.
 # Trades everything except, so should be 113 entries and first entry should
 #   be frxAUDJPY with 5 contract types.
-subtest "asset_index logged out - no arg" => _test_asset_index({language => 'EN'}, $entry_count_cr, $first_entry_cr);
+subtest "asset_index logged out - no arg" => _test_asset_index({language => 'EN'}, $entry_count_cr, $first_entry_cr_mf_test2);
+
 
 # Result should be for Binary (Europe) Ltd
 # Only trades volatilities, so should be 7 entries and first entry should
