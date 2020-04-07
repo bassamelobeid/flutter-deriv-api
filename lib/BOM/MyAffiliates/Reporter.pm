@@ -185,7 +185,7 @@ sub format_data {
     return $data;
 }
 
-=head2 get_apps
+=head2 get_apps_by_brand
 
 This return apps by brand
 
@@ -193,7 +193,7 @@ It has special case for brand 'binary' - details below
 
 In past we used to send single file to myaffiliates containing
 all clients activities.
-Now, we need to send per brand and we don't proper segregation
+Now, we need to send per brand and we don't have proper segregation
 of client activity by brand, the closest we have is app id.
 
 For all brands except 'binary' brand we will only send data
@@ -225,6 +225,32 @@ sub get_apps_by_brand {
     }
 
     return $result;
+}
+
+=head2 prefix_field
+
+This returns a field by adding brand prefix.
+
+This is required by myaffiliates.
+
+myaffiliates system is not designed to have same login id across
+different channels. They requested to add prefix to loginid for deriv
+brand.
+
+We may remove this in future once binary brand is removed.
+
+=cut
+
+sub prefix_field {
+    my $self  = shift;
+    my $field = shift;
+
+    die "No data provided to be prefixed with brand" unless $field;
+
+    my $brand_name = $self->brand->name // '';
+    return "${brand_name}_${field}" if $brand_name eq 'deriv';
+
+    return $field;
 }
 
 no Moose;

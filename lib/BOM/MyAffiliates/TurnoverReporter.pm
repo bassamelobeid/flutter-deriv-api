@@ -66,7 +66,7 @@ sub activity {
             # transaction date
             Date::Utility->new($obj->[0])->date_yyyymmdd,
             # loginid
-            $obj->[1],
+            $self->prefix_field($obj->[1]),
             # stake
             financialrounding('price', 'USD', $obj->[2]),
             # payout

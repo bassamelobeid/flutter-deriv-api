@@ -75,7 +75,7 @@ sub activity {
 
         my $first_funded_date =
             $activity->{$loginid}->{'first_funded_date'} ? Date::Utility->new($activity->{$loginid}->{'first_funded_date'})->date_yyyymmdd : '';
-        my @output_fields = ($when->date_yyyymmdd, $loginid);
+        my @output_fields = ($when->date_yyyymmdd, $self->prefix_field($loginid));
 
         if ($currency eq 'USD') {
             push @output_fields, formatnumber('amount', $currency, $activity->{$loginid}->{pnl});

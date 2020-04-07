@@ -62,7 +62,7 @@ sub report {
 
     my $csv = Text::CSV->new;
     foreach (@{$self->new_clients}) {
-        $csv->combine($self->_date_joined($_), $_->{loginid}, trim($_->{myaffiliates_token} // ''));
+        $csv->combine($self->_date_joined($_), $self->prefix_field($_->{loginid}), trim($_->{myaffiliates_token} // ''));
         push @output, $self->format_data($csv->string);
     }
     return @output;
