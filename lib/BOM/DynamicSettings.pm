@@ -256,6 +256,9 @@ sub get_settings_by_group {
                 payments.experimental_currencies_allowed
                 payments.crypto.restricted_countries
                 payments.experimental_currencies
+                payments.crypto.sweep_reserve_balance.BTC
+                payments.crypto.sweep_reserve_balance.LTC
+                payments.crypto.sweep_reserve_balance.ETH
                 )
         ],
         # these settings are configured in separate pages. No need to reconfure them in Dynamic Settings/Others.
