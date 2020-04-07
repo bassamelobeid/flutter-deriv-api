@@ -480,10 +480,18 @@ sub _debug_price {
     my ($contract, $type) = @{$args};
 
     my $price_per_unit;
-    if ($type eq 'ask_price') {
-        $price_per_unit = $contract->_ask_price_per_unit;
+    if ($contract->is_binary) {
+        if ($type eq 'ask_price') {
+            $price_per_unit = $contract->_ask_price_per_unit;
+        } else {
+            $price_per_unit = max($contract->minimum_bid_price, $contract->_ask_price_per_unit - 2 * $contract->commission_per_unit);
+        }
     } else {
-        $price_per_unit = max($contract->minimum_bid_price, $contract->_ask_price_per_unit - 2 * $contract->commission_per_unit);
+        if ($type eq 'ask_price') {
+            $price_per_unit = $contract->ask_price / $contract->multiplier;
+        } else {
+            $price_per_unit = max($contract->minimum_bid_price, ($contract->ask_price - 2 * $contract->commission) / $contract->multiplier);
+        }
     }
 
     my $table = '<ul>';

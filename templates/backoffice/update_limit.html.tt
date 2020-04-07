@@ -34,7 +34,7 @@
         <tr>
             <td>Contract category: </td>
             <td><input type="text" name="contract_category" value=''></input></td>
-            <td> e.g. callput | touchnotouch | endsinout | staysinout | digits | asian | lookback | highlowticks | callputequal</td>
+            <td> e.g. callput | touchnotouch | endsinout | staysinout | digits | asian | lookback | highlowticks | callputequal | callputspread</td>
         </tr>
         <tr>
             <td>Barrier category: </td>
