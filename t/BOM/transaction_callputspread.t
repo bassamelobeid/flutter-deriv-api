@@ -261,7 +261,7 @@ subtest 'offerings' => sub {
     foreach my $data ((
             ['R_100', '15s', 1],
             ['R_100',     '14s',   0, $invalid_duration],
-            ['frxUSDJPY', '1m59s', 0, $invalid_category],
+            ['frxUSDJPY', '1m59s', 0, $invalid_duration],
             ['AEX',       '1d',    0, $invalid_category],
             ['frxXAGUSD', '1d',    0, $invalid_category]))
     {

@@ -573,7 +573,7 @@ sub calculate_limits {
     my $rp = $contract->risk_profile;
     my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
 
-    if ($contract->is_binary) {
+    if ($contract->apply_binary_limit) {
         # TODO: comebine this with BOM::Product::QuantsConfig
         push @{$limits{specific_turnover_limits}}, @{$rp->get_turnover_limit_parameters(\@cl_rp)};
     } else {
@@ -1526,11 +1526,15 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $limit_name = 'Unknown';
         $msg =~ /^.+: ([^,]+)/ and $limit_name = $1;
 
+        my $error_msg = BOM::Platform::Context::localize('You have exceeded the daily limit for contracts of this type.');
+        $error_msg = BOM::Platform::Context::localize('This contract is unavailable on this account.')
+            if (not $self->contract->is_binary and $self->contract->apply_binary_limit);
+
         return Error::Base->cuss(
             -quiet             => 1,
             -type              => 'ProductSpecificTurnoverLimitExceeded',
             -mesg              => 'Exceeds turnover limit on ' . $limit_name,
-            -message_to_client => BOM::Platform::Context::localize('You have exceeded the daily limit for contracts of this type.'),
+            -message_to_client => $error_msg,
         );
     },
     BI012 => sub {
