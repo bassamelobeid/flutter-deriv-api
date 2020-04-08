@@ -212,6 +212,21 @@ subtest 'is_login_disallowed' => sub {
     is($res, 0, 'login is not disallowed');
 };
 
+subtest 'closed status code' => sub {
+    reset_client_statuses($client) if $client->status->all->@*;
+    $client->status->set('disabled', 'test', 'just for testing closed status');
+    $client->status->set('closed',   'test', 'just for testing');
+    cmp_deeply($client->status->all, ['closed', 'disabled'], 'disabled and closed status codes added');
+
+    $client->status->clear_closed;
+    cmp_deeply($client->status->all, ['disabled'], 'disabled status is not removed if closed status is cleared');
+
+    $client->status->set('closed', 'test', 'reverting the disabled status');
+    cmp_deeply($client->status->all, ['closed', 'disabled'], 'disabled and closed status codes are back now');
+    $client->status->clear_disabled;
+    cmp_deeply($client->status->all, [], 'closed status is removed along with disabled status');
+};
+
 done_testing();
 
 sub reset_client_statuses {

@@ -26,6 +26,7 @@ my @status_codes = qw(
     require3ds  skip_3ds  ok  ico_only  allowed_other_card  can_authenticate
     social_signup  trusted pa_withdrawal_explicitly_allowed
     address_verified no_withdrawal_or_trading no_trading allow_document_upload internal_client
+    closed
 );
 
 for my $code (@status_codes) {
@@ -43,7 +44,12 @@ for my $code (@status_codes) {
 
     after "clear_$code" => sub {
         my $self = shift;
-        return $self->_clear($code);
+
+        my $result = $self->_clear($code);
+        # 'closed' is dependent on 'disabled', so it should be cleared along with 'disabled'.
+        $result &&= $self->clear_closed if $code eq 'disabled';
+
+        return $result;
     };
 }
 
