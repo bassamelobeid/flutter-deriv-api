@@ -2186,6 +2186,7 @@ rpc account_closure => sub {
     foreach my $client (@accounts_to_disable) {
         try {
             $client->status->set('disabled', $loginid, $closing_reason);
+            $client->status->set('closed',   $loginid, $closing_reason);
             $loginids_disabled_success .= $client->loginid . ' ';
         }
         catch {

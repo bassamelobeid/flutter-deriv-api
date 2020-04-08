@@ -87,12 +87,14 @@ subtest 'account closure' => sub {
     is($res->{status}, 1, 'Successfully received request');
     ok($test_client_vr->status->disabled, 'Virtual account disabled');
     ok($test_client->status->disabled,    'CR account disabled');
+    ok($test_client_vr->status->closed,   'Virtual account self-closed status');
+    ok($test_client->status->closed,      'CR account self-closed status');
 
     $test_client_vr->status->clear_disabled;
     $test_client->status->clear_disabled;
 
     ok(!$test_client->status->disabled, 'CR account is enabled back again');
-
+    ok(!$test_client->status->closed,   'self-closed status removed from CR account');
     subtest "Open Contracts" => sub {
         my $mock = Test::MockModule->new('BOM::User::Client');
         $mock->mock(
@@ -117,6 +119,8 @@ subtest 'account closure' => sub {
         is_deeply($res->{error}->{details}, {accounts => {$loginid => 1}}, "Correct error details");
         ok(!$test_client->status->disabled,    'CR account is not disabled');
         ok(!$test_client_vr->status->disabled, 'Virtual account is also not disabled');
+        ok(!$test_client_vr->status->closed,   'Virtual account has no self-closed status');
+        ok(!$test_client->status->closed,      'CR account has no self-closed status');
 
         $mock->unmock_all;
         $test_client_vr->status->clear_disabled;
@@ -136,6 +140,8 @@ subtest 'account closure' => sub {
     is($res->{error}->{code}, 'ExistingAccountHasBalance', 'Correct error code');
     ok(!$test_client->status->disabled,    'CR account is not disabled');
     ok(!$test_client_vr->status->disabled, 'Virtual account is also not disabled');
+    ok(!$test_client_vr->status->closed,   'Virtual account has no self-closed status');
+    ok(!$test_client->status->closed,      'CR account has no self-closed status');
 
     my $test_client_2 = $new_client_handler->('CR', 'BTC');
     $payment_handler->($test_client,   -1);
@@ -170,6 +176,8 @@ subtest 'account closure' => sub {
     is($test_client->account->balance, '0.00', 'CR (USD) has no balance');
     ok(!$test_client->status->disabled,   'CR account is not disabled');
     ok(!$test_client_2->status->disabled, 'Sibling account is also not disabled');
+    ok(!$test_client->status->closed,     'Virtual account has no self-closed status');
+    ok(!$test_client_2->status->closed,   'CR account has no self-closed status');
 
     # Test with siblings account (has balance)
     $payment_handler->($test_client_2, -1);
@@ -192,6 +200,9 @@ subtest 'account closure' => sub {
     is($disabled_hashref->{staff_name}, $test_client->loginid, 'Correct loginid');
     ok($test_client_vr->status->disabled, 'Virtual account disabled');
     ok($test_client->status->disabled,    'CR account disabled');
+    ok($test_client_vr->status->closed,   'Virtual account self-closed status');
+    ok($test_client->status->closed,      'CR account self-closed status');
+
 };
 
 done_testing();
