@@ -1974,7 +1974,6 @@ sub p2p_advert_list {
     my ($limit, $offset) = @param{qw/limit offset/};
     die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
     die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
-    $param{country} //= $client->residence;
 
     if ($param{counterparty_type}) {
         $param{type} = P2P_COUNTERYPARTY_TYPE_MAPPING->{$param{counterparty_type}};
@@ -1986,6 +1985,8 @@ sub p2p_advert_list {
         can_order              => 1,
         advertiser_is_approved => 1,
         advertiser_is_listed   => 1,
+        country                => $client->residence,
+        account_currency       => $client->currency,
     );
     return $client->_advert_details($list, $param{amount}, 1);
 }
@@ -2049,7 +2050,11 @@ sub p2p_order_create {
     $expiry //= $p2p_config->order_timeout;
     my $limit_per_day_per_client = $p2p_config->limits->count_per_day_per_client;
 
-    my $advert_info = $client->_p2p_adverts(id => $advert_id)->[0];
+    my $advert_info = $client->_p2p_adverts(
+        id               => $advert_id,
+        country          => $client->residence,
+        account_currency => $client->currency
+    )->[0];
 
     die +{error_code => 'AdvertNotFound'}   unless $advert_info;
     die +{error_code => 'AdvertIsDisabled'} unless $advert_info->{is_active};
@@ -2403,17 +2408,16 @@ sub _p2p_adverts {
     die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
     die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
-    $param{account_currency} = $client->currency;
-    $param{client_loginid}   = $client->loginid;
+    $param{client_loginid} = $client->loginid;
     $param{max_order} = convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order, 'USD', $client->currency);
 
     $client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{
-                    qw/id account_currency advertiser_id is_active type can_order max_order advertiser_is_listed advertiser_is_approved client_loginid limit offset/
+                    qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved client_loginid limit offset/
                 });
         }) // [];
 }

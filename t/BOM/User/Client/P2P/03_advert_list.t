@@ -46,11 +46,18 @@ subtest 'Seller lists ads and those with a min order amount greater than its bal
 
 my ($advertiser1, $advert1) = BOM::Test::Helper::P2P::create_advert(amount => 100);
 my ($advertiser2, $advert2) = BOM::Test::Helper::P2P::create_advert(amount => 100);
-my $client = BOM::Test::Helper::P2P::create_client();
+
+my $client1 = BOM::Test::Helper::P2P::create_client();
+$client1->residence('ID');
+my $client2 = BOM::Test::Helper::P2P::create_client();
+$client2->residence('MY');
+my $client3 = BOM::Test::Helper::Client::create_client();
+$client3->account('EUR');
+
 subtest 'advertiser adverts' => sub {
     cmp_deeply(
         exception {
-            $client->p2p_advertiser_adverts()
+            $client1->p2p_advertiser_adverts()
         },
         {error_code => 'AdvertiserNotRegistered'},
         "non advertiser gets error"
@@ -63,6 +70,14 @@ subtest 'advertiser adverts' => sub {
     is $advertiser2->p2p_advertiser_adverts()->[0]{id}, $advert2->{id}, 'advertiser 2 (inactive) gets advert';
     is $advertiser2->p2p_advertiser_adverts()->@*, 1, 'advertiser 2 got one';
 };
+
+subtest 'country & currency filtering' => sub {
+    is $client1->p2p_advert_list()->@*, 1, 'Client from same country sees ad';
+    is $client2->p2p_advert_list()->@*, 0, 'Client from other country does not see ads';
+    is $client3->p2p_advert_list()->@*, 0, 'Client with other currency does not see ads';
+};
+
+    
 
 BOM::Test::Helper::P2P::reset_escrow();
 

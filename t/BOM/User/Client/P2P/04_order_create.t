@@ -447,6 +447,35 @@ subtest 'Creating order with wrong currency' => sub {
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
+subtest 'Creating order with wrong country' => sub {
+    my $amount      = 100;
+    my $description = 'Test order';
+
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+        amount => $amount,
+        type   => 'sell'
+    );
+
+    my $client = BOM::Test::Helper::Client::create_client();
+    $client->account('USD');
+    $client->residence('MY');
+
+    my $err = exception {
+        $client->p2p_order_create(
+            advert_id   => $advert_info->{id},
+            amount      => $amount,
+            expiry      => 7200,
+            description => $description
+        );
+    };
+    is $err->{error_code}, 'AdvertNotFound', 'Got correct error code';
+
+    ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
 subtest 'Buy adverts' => sub {
     my $amount = 100;
 
