@@ -62,7 +62,7 @@ Reason : <select id="untrusted_reasonlist" name="untrusted_reason">
     </thead>
     <tbody>
         <tr>
-            <td>Disabled/Closed Accounts</td>
+            <td>Disabled Accounts</td>
             <td>
                 <a href="[% request.url_for('backoffice/show_audit_trail.cgi', {broker => broker, category => 'client_status_disabled'}) %]">
                     Disabled Logins

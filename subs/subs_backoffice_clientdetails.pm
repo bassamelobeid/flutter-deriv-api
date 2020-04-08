@@ -849,7 +849,7 @@ sub client_statement_for_backoffice {
 sub get_untrusted_types {
     return [{
             'linktype'    => 'disabledlogins',
-            'comments'    => 'Disabled/Closed Accounts',
+            'comments'    => 'Disabled Accounts',
             'code'        => 'disabled',
             'show_reason' => 'yes'
         },
