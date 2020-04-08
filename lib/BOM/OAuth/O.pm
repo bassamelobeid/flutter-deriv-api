@@ -441,16 +441,17 @@ sub _compare_signin_activity {
     }
 
     send_email({
-        from                  => $brand->emails('no-reply'),
-        to                    => $client->email,
-        subject               => localize(get_message_mapping()->{NEW_SIGNIN_SUBJECT}),
-        message               => [$message],
-        template_loginid      => $client->loginid,
-        use_email_template    => 1,
-        email_content_is_html => 1,
-        skip_text2html        => 1
-    });
+            from                  => $brand->emails('no-reply'),
+            to                    => $client->email,
+            subject               => localize(get_message_mapping()->{NEW_SIGNIN_SUBJECT}),
+            message               => [$message],
+            template_loginid      => $client->loginid,
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            skip_text2html        => 1
+        }) if $brand->send_signin_email_enabled();
 
+    # Return 1 if a different new signin detected
     return 1;
 }
 
@@ -523,7 +524,7 @@ sub _validate_login {
     }
 
     # Get last login (this excludes impersonate) before current login to get last record
-    my $new_env        = request()->login_env({user_agent => $c->req->headers->header('User-Agent')});
+    my $new_env = request()->login_env({user_agent => $c->req->headers->header('User-Agent')});
     my $known_location = $user->logged_in_before_from_same_location($new_env);
 
     my $result = $user->login(

@@ -61,8 +61,11 @@ $platform_mock->mock(
 
 sub do_client_login {
     my $agent        = shift // 'chrome';
+    my $brand        = shift // 'binary';
     my $agent_header = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36';
     my $t            = Test::Mojo->new('BOM::OAuth');
+    $email           = shift // $email;
+    $password        = shift // $password;
 
     if ($agent eq 'firefox') {
         $agent_header = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/79.0.3945.79 Safari/537.36';
@@ -74,12 +77,13 @@ sub do_client_login {
             $tx->req->headers->header('User-Agent' => $agent_header);
         });
 
-    $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
+    my $url = "/authorize?app_id=$app_id&brand=$brand";
+    $t = $t->get_ok($url)->content_like(qr/login/);
 
     my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
     ok $csrf_token, 'csrf_token is there';
     $t->post_ok(
-        "/authorize?app_id=$app_id" => form => {
+        $url => form => {
             login      => 1,
             email      => $email,
             password   => $password,
@@ -112,6 +116,23 @@ subtest "it should not send an email if no entry but we have a previous recored 
     $redis->del("CLIENT_LOGIN_HISTORY::" . $user->id);
     do_client_login();
     is(scalar @$virtual_inbox, 1, 'email should be sent for new unknown logins');
+};
+
+subtest "it should not send any notification email for new login if brand is deriv" => sub {
+    my $email = 'deriv_randomly_email_address@deriv.com';
+    my $password = BOM::User::Password::hashpw('alkdjasldkjaslkxjclk');
+
+    BOM::User->create(
+      email    => $email,
+      password => $password
+    );
+
+    $virtual_inbox = [];
+    do_client_login('firefox', 'deriv', $email, $password);
+    is(scalar @$virtual_inbox, 0, 'email should not be sent for deriv first login.');
+
+    do_client_login('firefox', 'deriv', $email, $password);
+    is(scalar @$virtual_inbox, 0, 'email should not be sent for deriv at all.');
 };
 
 done_testing()
