@@ -153,6 +153,7 @@ sub _process_price_queue {
 
     $log->trace('processing price_queue...');
     _sleep_to_next_second();
+    my $t0 = [Time::HiRes::gettimeofday];
 
     # Take note of keys that were not processed since the last pricing interval
     my $overflow = $self->redis->llen('pricer_jobs');
@@ -206,6 +207,7 @@ sub _process_price_queue {
     }
     $self->redis->hincrby('PRICE_METRICS::QUEUED', $_, $queued{$_}) for keys %queued;
 
+    stats_gauge('pricer_daemon.queue.time', int(1000 * Time::HiRes::tv_interval($t0)), {tags => ['tag:' . $self->internal_ip]});
     return undef;
 }
 
