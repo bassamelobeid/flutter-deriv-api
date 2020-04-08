@@ -1083,9 +1083,9 @@ sub _update_client_status {
     return;
 }
 
-=head2 account_closure_event
+=head2 account_closure
 
-Send email to CS that a client has closed their accounts.
+Called when a client closes their accounts, sends an email to CS and tracks the event.
 
 =cut
 
