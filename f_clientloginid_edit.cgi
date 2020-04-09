@@ -1039,119 +1039,6 @@ print qq[
     </script>
 ];
 
-if (not $client->is_virtual) {
-    Bar("Sync Client Authentication Status to Doughflow");
-    print qq{
-        <p>Click to sync client authentication status to Doughflow: </p>
-        <form action="$self_post" method="get">
-            <input type="hidden" name="whattodo" value="sync_to_DF">
-            <input type="hidden" name="broker" value="$encoded_broker">
-            <input type="hidden" name="loginID" value="$encoded_loginid">
-            <input type="submit" value="Sync now !!">
-        </form>
-    };
-    Bar("Sync Client Information to MT5");
-    print qq{
-        <p>Click to sync client information to MT5: </p>
-        <form action="$self_post" method="get">
-            <input type="hidden" name="whattodo" value="sync_to_MT5">
-            <input type="hidden" name="loginID" value="$encoded_loginid">
-            <input type="submit" value="Sync to MT5">
-        </form>
-    };
-}
-
-Bar("Two-Factor Authentication");
-print 'Enabled : <b>' . ($user->is_totp_enabled ? 'Yes' : 'No') . '</b>';
-print qq{
-    <br/><br/>
-    <form action="$self_post" method="get">
-        <input type="hidden" name="whattodo" value="disable_2fa">
-        <input type="hidden" name="broker" value="$encoded_broker">
-        <input type="hidden" name="loginID" value="$encoded_loginid">
-        <input type="submit" value = "Disable 2FA"/>
-        <span style="color:red;">This will disable the 2FA feature. Only user can enable then.</span>
-    </form>
-} if $user->is_totp_enabled;
-
-Bar("$loginid Tokens");
-my $token_db = BOM::Database::Model::AccessToken->new();
-my (@all_tokens, @deleted_tokens);
-
-foreach my $l ($user_clients->@*) {
-    foreach my $t (@{$token_db->get_all_tokens_by_loginid($l->loginid)}) {
-        $t->{loginid} = $l->loginid;
-        $t->{token}   = obfuscate_token($t->{token});
-        push @all_tokens, $t;
-    }
-    foreach my $t (@{$token_db->token_deletion_history($l->loginid)}) {
-        $t->{loginid} = $l->loginid;
-        push @deleted_tokens, $t;
-    }
-}
-
-@all_tokens     = rev_sort_by { $_->{creation_time} } @all_tokens;
-@deleted_tokens = rev_sort_by { $_->{deleted} } @deleted_tokens;
-
-BOM::Backoffice::Request::template()->process(
-    'backoffice/access_tokens.html.tt',
-    {
-        tokens  => \@all_tokens,
-        deleted => \@deleted_tokens
-    }) || die BOM::Backoffice::Request::template()->error();
-
-Bar("$loginid Copiers/Traders");
-my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
-    db             => $client->db,
-    client_loginid => $loginid
-});
-
-my $copiers = $copiers_data_mapper->get_copiers_tokens_all({trader_id => $loginid});
-my $traders = $copiers_data_mapper->get_traders_tokens_all({copier_id => $loginid});
-$_->[3] = obfuscate_token($_->[2]) for @$copiers, @$traders;
-
-BOM::Backoffice::Request::template()->process(
-    'backoffice/copy_trader_tokens.html.tt',
-    {
-        copiers   => $copiers,
-        traders   => $traders,
-        loginid   => $encoded_loginid,
-        self_post => $self_post
-    }) || die BOM::Backoffice::Request::template()->error();
-
-Bar('Send Client Statement');
-BOM::Backoffice::Request::template()->process(
-    'backoffice/send_client_statement.tt',
-    {
-        today     => Date::Utility->new()->date_yyyymmdd(),
-        broker    => $input{broker},
-        client_id => $input{loginID},
-        action    => request()->url_for('backoffice/f_send_statement.cgi')
-    },
-);
-
-Bar("Email Consent");
-print '<br/>';
-print 'Email consent for marketing: ' . ($user->{email_consent} ? 'Yes' : 'No');
-print '<br/><br/>';
-
-if (not $client->is_virtual) {
-
-    #upload new ID doc
-    Bar("Upload new ID document");
-    BOM::Backoffice::Request::template()->process(
-        'backoffice/client_edit_upload_doc.html.tt',
-        {
-            self_post          => $self_post,
-            broker             => $encoded_broker,
-            loginid            => $encoded_loginid,
-            countries          => request()->brand->countries_instance->countries,
-            poi_doctypes       => join('|', @poi_doctypes),
-            expirable_doctypes => join('|', @expirable_doctypes),
-            no_date_doctypes   => join('|', @no_date_doctypes),
-        });
-}
-
 =head2 Trading Experience & Financial Information
 
 The purpose of this section is to display the client's
@@ -1263,6 +1150,119 @@ sub dropdown {
     $ddl .= '</select>';
 
     return $ddl;
+}
+
+if (not $client->is_virtual) {
+    Bar("Sync Client Authentication Status to Doughflow");
+    print qq{
+        <p>Click to sync client authentication status to Doughflow: </p>
+        <form action="$self_post" method="get">
+            <input type="hidden" name="whattodo" value="sync_to_DF">
+            <input type="hidden" name="broker" value="$encoded_broker">
+            <input type="hidden" name="loginID" value="$encoded_loginid">
+            <input type="submit" value="Sync now !!">
+        </form>
+    };
+    Bar("Sync Client Information to MT5");
+    print qq{
+        <p>Click to sync client information to MT5: </p>
+        <form action="$self_post" method="get">
+            <input type="hidden" name="whattodo" value="sync_to_MT5">
+            <input type="hidden" name="loginID" value="$encoded_loginid">
+            <input type="submit" value="Sync to MT5">
+        </form>
+    };
+}
+
+Bar("Two-Factor Authentication");
+print 'Enabled : <b>' . ($user->is_totp_enabled ? 'Yes' : 'No') . '</b>';
+print qq{
+    <br/><br/>
+    <form action="$self_post" method="get">
+        <input type="hidden" name="whattodo" value="disable_2fa">
+        <input type="hidden" name="broker" value="$encoded_broker">
+        <input type="hidden" name="loginID" value="$encoded_loginid">
+        <input type="submit" value = "Disable 2FA"/>
+        <span style="color:red;">This will disable the 2FA feature. Only user can enable then.</span>
+    </form>
+} if $user->is_totp_enabled;
+
+Bar("$loginid Tokens");
+my $token_db = BOM::Database::Model::AccessToken->new();
+my (@all_tokens, @deleted_tokens);
+
+foreach my $l ($user_clients->@*) {
+    foreach my $t (@{$token_db->get_all_tokens_by_loginid($l->loginid)}) {
+        $t->{loginid} = $l->loginid;
+        $t->{token}   = obfuscate_token($t->{token});
+        push @all_tokens, $t;
+    }
+    foreach my $t (@{$token_db->token_deletion_history($l->loginid)}) {
+        $t->{loginid} = $l->loginid;
+        push @deleted_tokens, $t;
+    }
+}
+
+@all_tokens     = rev_sort_by { $_->{creation_time} } @all_tokens;
+@deleted_tokens = rev_sort_by { $_->{deleted} } @deleted_tokens;
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/access_tokens.html.tt',
+    {
+        tokens  => \@all_tokens,
+        deleted => \@deleted_tokens
+    }) || die BOM::Backoffice::Request::template()->error();
+
+Bar("$loginid Copiers/Traders");
+my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
+    db             => $client->db,
+    client_loginid => $loginid
+});
+
+my $copiers = $copiers_data_mapper->get_copiers_tokens_all({trader_id => $loginid});
+my $traders = $copiers_data_mapper->get_traders_tokens_all({copier_id => $loginid});
+$_->[3] = obfuscate_token($_->[2]) for @$copiers, @$traders;
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/copy_trader_tokens.html.tt',
+    {
+        copiers   => $copiers,
+        traders   => $traders,
+        loginid   => $encoded_loginid,
+        self_post => $self_post
+    }) || die BOM::Backoffice::Request::template()->error();
+
+Bar('Send Client Statement');
+BOM::Backoffice::Request::template()->process(
+    'backoffice/send_client_statement.tt',
+    {
+        today     => Date::Utility->new()->date_yyyymmdd(),
+        broker    => $input{broker},
+        client_id => $input{loginID},
+        action    => request()->url_for('backoffice/f_send_statement.cgi')
+    },
+);
+
+Bar("Email Consent");
+print '<br/>';
+print 'Email consent for marketing: ' . ($user->{email_consent} ? 'Yes' : 'No');
+print '<br/><br/>';
+
+if (not $client->is_virtual) {
+
+    #upload new ID doc
+    Bar("Upload new ID document");
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/client_edit_upload_doc.html.tt',
+        {
+            self_post          => $self_post,
+            broker             => $encoded_broker,
+            loginid            => $encoded_loginid,
+            countries          => request()->brand->countries_instance->countries,
+            poi_doctypes       => join('|', @poi_doctypes),
+            expirable_doctypes => join('|', @expirable_doctypes),
+            no_date_doctypes   => join('|', @no_date_doctypes),
+        });
 }
 
 if (!$client->is_virtual) {

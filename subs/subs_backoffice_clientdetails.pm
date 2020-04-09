@@ -45,6 +45,59 @@ my @expirable_doctypes = (BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES, B
 my @poi_doctypes       = BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES;
 my @no_date_doctypes   = qw(other);
 
+my %categories = (
+    POI => {
+        index => 1,
+        title => "POI (Proof of Identity)"
+    },
+    POA => {
+        index => 2,
+        title => "POA (Proof of Address)"
+    },
+    Funds => {
+        index => 3,
+        title => "Source of funds / wealth"
+    },
+    Checks => {
+        index => 4,
+        title => "Checks"
+    },
+    Declarations => {
+        index => 5,
+        title => "Declarations"
+    },
+    Other => {
+        index => 10,
+        title => "Other"
+    });
+
+my %doc_types_categories = (
+    passport                                     => $categories{POI},
+    proofid                                      => $categories{POI},
+    driverslicense                               => $categories{POI},
+    driving_licence                              => $categories{POI},
+    national_identity_card                       => $categories{POI},
+    vf_face_id                                   => $categories{POI},
+    vf_id                                        => $categories{POI},
+    photo                                        => $categories{POI},
+    live_photo                                   => $categories{POI},
+    selfie_with_id                               => $categories{POI},
+    vf_poa                                       => $categories{POA},
+    proofaddress                                 => $categories{POA},
+    bankstatement                                => $categories{POA},
+    payslip                                      => $categories{Funds},
+    tax_receipt                                  => $categories{Funds},
+    employment_contract                          => $categories{Funds},
+    amlglobalcheck                               => $categories{Checks},
+    docverification                              => $categories{Checks},
+    power_of_attorney                            => $categories{Declarations},
+    code_of_conduct                              => $categories{Declarations},
+    professional_eu_qualified_investor           => $categories{Other},
+    professional_uk_high_net_worth               => $categories{Other},
+    professional_uk_self_certified_sophisticated => $categories{Other},
+    other                                        => $categories{Other},
+);
+
 sub get_currency_options {
     # we need to prioritise based on the following list, since BO users mostly use them
     my %order = (
@@ -622,7 +675,7 @@ sub show_client_id_docs {
 
     my $docs = $dbic->run(
         fixup => sub {
-            $_->selectall_arrayref( <<'SQL', undef, $loginid);
+            $_->selectall_arrayref( <<'SQL', {Slice => {}}, $loginid);
 SELECT id,
        file_name,
        document_type,
@@ -637,8 +690,29 @@ SELECT id,
 SQL
         });
 
-    foreach my $doc (sort { $a->[0] <=> $b->[0] } @$docs) {
-        my ($id, $file_name, $document_type, $issue_date, $expiration_date, $comments, $document_id, $upload_date, $age) = @$doc;
+    foreach my $doc (@$docs) {
+        # add category index to each doc
+        $doc->{category_idx} = $doc->{document_type} ? $doc_types_categories{$doc->{document_type}}{index} : $doc_types_categories{Other}{index};
+    }
+
+    # sort by category then by issue date and expiration date descending
+    @$docs = sort {
+               $a->{category_idx} <=> $b->{category_idx}
+            || ($b->{issue_date}      ? $b->{issue_date}      : '') cmp($a->{issue_date}      ? $a->{issue_date}      : '')
+            || ($b->{expiration_date} ? $b->{expiration_date} : '') cmp($a->{expiration_date} ? $a->{expiration_date} : '')
+    } @$docs;
+
+    my $last_category_idx = -1;
+    foreach my $doc (@$docs) {
+        my ($id, $file_name, $document_type, $issue_date, $expiration_date, $comments, $document_id, $upload_date, $age, $category_idx) = (
+            $doc->{id},       $doc->{file_name},   $doc->{document_type}, $doc->{issue_date}, $doc->{expiration_date},
+            $doc->{comments}, $doc->{document_id}, $doc->{upload_date},   $doc->{age},        $doc->{category_idx});
+
+        if ($category_idx != $last_category_idx) {
+            my $category_title = ($doc_types_categories{$document_type}{title} // $categories{"Other"}{title}) . ":";
+            $links .= qq(<tr><td colspan='7'><b> $category_title </b></td></tr>);
+        }
+        $last_category_idx = $category_idx;
 
         if (not $file_name) {
             $links .= qq{<tr><td>Missing filename for a file with ID: $id</td></tr>};
@@ -675,7 +749,10 @@ SQL
             BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
         my $url = $s3_client->get_s3_url($file_name);
 
-        $links .= qq{<tr><td><a href="$url">$file_name</a></td>$age_display$input};
+        my $expired_poi_hint =
+            ($expirable_doc && $poi_doc && Date::Utility::today()->date gt $expiration_date) ? qq{ style="color:red" title="expired" } : "";
+
+        $links .= qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td><a href="$url">$file_name</a></td>$age_display$input};
 
         $links .= qq{<td><input type="checkbox" class='files_checkbox' name="del_document_list" value="$file_name"><td>};
 
