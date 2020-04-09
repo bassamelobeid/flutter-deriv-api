@@ -46,6 +46,8 @@ sub _build_hit_tick {
 
     return undef unless $self->entry_tick;
 
+    # date_start + 1 applies for all expiry type (tick, intraday & multi-day). Basically the first tick
+    # that comes into play is the tick after the contract start time, not at the contract start time.
     my $start_time     = $self->date_start->epoch + 1;
     my $end_time       = max($start_time, min($self->date_pricing->epoch, $self->date_expiry->epoch));
     my %hit_conditions = (

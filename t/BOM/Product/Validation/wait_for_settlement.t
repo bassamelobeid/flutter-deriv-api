@@ -284,7 +284,7 @@ subtest 'Index settlement check on ' => sub {
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'GDAXI',
-        epoch      => 1203322200,    #entry tick
+        epoch      => 1203322200-600,    #entry tick
         quote      => 1000,
     });
 

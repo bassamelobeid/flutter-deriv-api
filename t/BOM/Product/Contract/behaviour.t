@@ -554,4 +554,83 @@ subtest 'after expiry but not after settlement' => sub {
     is $c->primary_validation_error->message, 'waiting for settlement', 'error message - waiting for settlement';
 };
 
+subtest 'entry tick for different contract conditions' => sub {
+    my $now = Date::Utility->new;
+
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [101, $now->epoch + 1, 'R_100'],);
+
+    my $params = {
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        date_start   => $now->epoch,
+        date_pricing => $now->epoch + 1,
+        duration     => '10d',
+        payout       => 100,
+        barrier      => 8,
+        currency     => 'USD',
+    };
+
+    my $c = produce_contract($params);
+    is $c->_basis_tick->epoch, $c->date_start->epoch, 'basis tick epoch is at start';
+    is $c->_basis_tick->quote, 100, 'basis tick is at start';
+    is $c->entry_tick->epoch, $c->date_start->epoch + 1, 'entry tick epoch is start + 1';
+    is $c->entry_tick->quote, 101, 'entry tick is tick at start + 1';
+
+    $params->{duration} = '5m';
+    $params->{barrier}  = '+0.123';
+    $c                  = produce_contract($params);
+
+    is $c->_basis_tick->epoch, $c->date_start->epoch + 1, 'basis tick epoch is start time + 1';
+    is $c->_basis_tick->quote, 101, 'basis tick is tick at start + 1';
+    is $c->entry_tick->epoch, $c->date_start->epoch + 1, 'entry tick epoch is start time + 1';
+    is $c->entry_tick->quote, 101, 'entry tick is tick at start + 1';
+
+    $params->{duration} = '5t';
+    $params->{barrier}  = 8;
+    $c                  = produce_contract($params);
+
+    is $c->_basis_tick->epoch, $c->date_start->epoch + 1, 'basis tick epoch is start time + 1';
+    is $c->_basis_tick->quote, 101, 'basis tick is tick at start + 1';
+    is $c->entry_tick->epoch, $c->date_start->epoch + 1, 'entry tick epoch is start time + 1';
+    is $c->entry_tick->quote, 101, 'entry tick is tick at start + 1';
+};
+
+subtest 'first tick as settlement tick' => sub {
+    my $now = Date::Utility->new;
+
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [100, $now->epoch,     'R_100'],
+        [102, $now->epoch + 1, 'R_100'],
+        [103, $now->epoch + 2, 'R_100']);
+
+    my $params = {
+        bet_type     => 'ONETOUCH',
+        underlying   => 'R_100',
+        date_start   => $now->epoch,
+        date_pricing => $now->epoch + 1,
+        payout       => 100,
+        barrier      => 101,
+        currency     => 'USD',
+    };
+
+    foreach my $duration (qw(10d 5m 5h)) {
+        note("testing settlement for $duration $params->{bet_type}");
+        $params->{duration} = $duration;
+        my $c = produce_contract($params);
+        ok $c->is_expired, 'expired';
+        is $c->value, $c->payout, 'contract won';
+        is $c->entry_tick->quote,    102,      'entry tick is 102';
+        is $c->barrier->as_absolute, '101.00', 'barrier is 101';
+        is $c->hit_tick->quote, $c->entry_tick->quote, 'entry tick hits the barrier';
+    }
+
+    note("testing settlement for 5t $params->{bet_type}");
+    $params->{duration} = '5t';
+    my $c = produce_contract($params);
+    ok !$c->is_expired, 'not expired';
+    is $c->entry_tick->quote,    102,      'entry tick is 102';
+    is $c->barrier->as_absolute, '101.00', 'barrier is 101';
+    ok !$c->hit_tick, 'entry tick is not used in settlement';
+};
+
 done_testing;

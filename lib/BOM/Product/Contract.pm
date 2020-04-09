@@ -636,7 +636,16 @@ sub _build_basis_tick {
         $potential_error = $self->starts_as_forward_starting ? $waiting_for_entry_tick : $missing_market_data;
         warn "No basis tick for " . $self->underlying->symbol if ($potential_error eq $missing_market_data && !$basis_tick);
     } else {
-        $basis_tick      = $self->entry_tick;
+        # basis_tick which is also the reference tick use in barrier calculation.
+        # For relative barrier, the reference tick is always the entry tick.
+        # For absolute barrier, the reference tick is the tick at start time for non-tick expiry contracts. For tick expiry, the reference tick is still the entry tick.
+        $basis_tick =
+            (       not $self->tick_expiry
+                and $self->has_user_defined_barrier
+                and $self->supplied_barrier
+                and $self->supplied_barrier =~ /^(?:\d+.?\d{0,12})$/)
+            ? $self->_tick_accessor->tick_at($self->date_start->epoch)
+            : $self->entry_tick;
         $potential_error = $waiting_for_entry_tick;
     }
 
