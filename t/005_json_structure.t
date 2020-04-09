@@ -87,10 +87,11 @@ my $order = {
         req_id               => 102,
     },
     properties => {
-        passthrough => 101,
-        echo_req    => 102,
-        msg_type    => 103,
-        req_id      => 104,
+        subscription => 101,
+        passthrough  => 102,
+        echo_req     => 103,
+        msg_type     => 104,
+        req_id       => 105,
     },
 };
 
@@ -168,27 +169,47 @@ subtest 'common properties' => sub {
     my $common_properties = {
         send => {
             passthrough => {
-                type        => 'object',
                 description => '[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.',
+                type        => 'object',
             },
             req_id => {
-                type        => 'integer',
                 description => '[Optional] Used to map request to response.',
+                type        => 'integer',
             },
         },
         receive => {
-            echo_req => {
+            subscription => {
+                title       => 'Subscription information',
+                description => 'For subscription requests only.',
                 type        => 'object',
+                required    => ['id'],
+                properties  => {
+                    id => {
+                        description => 'A per-connection unique identifier. Can be passed to the `forget` API call to unsubscribe.',
+                        type        => 'string',
+                        examples    => ['c84a793b-8a87-7999-ce10-9b22f7ceead3'],
+                    }
+                },
+            },
+            echo_req => {
                 description => 'Echo of the request made.',
+                type        => 'object',
             },
             req_id => {
-                type        => 'integer',
                 description => 'Optional field sent in request to map to response, present only when request contains `req_id`.',
+                type        => 'integer',
             },
             msg_type => {
-                type        => 'string',
                 description => 'Action name of the request made.',
+                type        => 'string',
+                enum        => [],
             },
+        },
+    };
+
+    my $optional_properties = {
+        receive => {
+            subscription => 1,
         },
     };
 
@@ -204,24 +225,23 @@ subtest 'common properties' => sub {
         print $schema->{formatted_path}, "\n";
         for my $prop (keys $common_properties->{$schema_type}->%*) {
             my $schema_node  = $schema->{json}{properties}{$prop};
-            my $node_pattern = $common_properties->{$schema_type}{$prop};
+            my $node_pattern = {$common_properties->{$schema_type}{$prop}->%*};
 
-            is $schema_node->{type},        $node_pattern->{type},        "\"$prop\" type is correct.";
-            is $schema_node->{description}, $node_pattern->{description}, "\"$prop\" description is correct."
-                unless ($prop eq 'msg_type' and exists $msg_type_exceptions->{$schema->{method_name}});
+            next if ($optional_properties->{$schema_type}{$prop} and not $schema_node);
 
             if ($prop eq 'msg_type') {
-                is_deeply $schema_node->{enum},
-                    $msg_type_exceptions->{$schema->{method_name}} // [$schema->{method_name}],
-                    "\"$prop\" value is a correct enum.";
+                my $exception_call = $msg_type_exceptions->{$schema->{method_name}};
+                $node_pattern->{description} = $schema_node->{description} if $exception_call;    # description is also different for exceptions
+                $node_pattern->{enum} = $exception_call // [$schema->{method_name}];
             }
+
+            is_deeply($schema_node, $node_pattern, "\"$prop\" structure is correct.");
         }
     }
 };
 
 # Make sure every property has type and description
 subtest 'type and description' => sub {
-
     sub check_fields {
         my ($node, $path, $errors) = @_;
 
@@ -301,7 +321,6 @@ subtest 'auth scopes' => sub {
             ok(defined($valid_scopes{$schema_scope}), "$method :  scope $schema_scope is valid");
         }
     }
-
 };
 
 done_testing;
