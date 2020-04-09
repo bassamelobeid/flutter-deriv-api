@@ -80,8 +80,8 @@ UST:
 # Please update the property_id: 2147484941 (already generated in our testnet) for QA environment.
     property_id: 31
     blockchain_url:
-        address: https://omniexplorer.info/tx/
-        transaction: https://omniexplorer.info/address/
+        address: https://omniexplorer.info/address/
+        transaction: https://omniexplorer.info/tx/
 USB:
     withdrawal:
         timeout: "3d"
