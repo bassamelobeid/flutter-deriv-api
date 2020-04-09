@@ -232,8 +232,9 @@ if ($view_action eq 'withdrawals') {
                     undef, $address, $currency, $approvals_required, $staff, ($set_remark ne '' ? $set_remark : undef));
             }) if $action eq 'Verify';
         ($error) = $dbic->run(
-            ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $address, $currency, $set_remark) })
-            if $action eq 'Reject';
+            ping =>
+                sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?, ?)', undef, $address, $currency, $set_remark, $staff) }
+        ) if $action eq 'Reject';
 
         code_exit_BO("ERROR: $error. Please check with someone from IT team before proceeding.")
             if ($error);
@@ -284,10 +285,10 @@ if ($view_action eq 'withdrawals') {
             my ($error) = $dbic->run(
                 ping => sub {
                     $_->selectrow_array(
-                        'SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)',
+                        'SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?, ?)',
                         undef, $trxn->{address},
                         $trxn->{currency_code},
-                        'Insufficient balance'
+                        'Insufficient balance', $staff
                     );
                 });
 
