@@ -595,4 +595,37 @@ subtest 'expiry daily contract on indices during christmas/new year period' => s
     ok $c->is_valid_to_buy, 'valid to buy';
 };
 
+subtest 'end of day two minute blackout' => sub {
+    # fixed time to avoid weekend
+    my $now        = Date::Utility->new('8-04-2020');
+    my $underlying = create_underlying('R_100');
+    my $close      = $trading_calendar->closing_on($underlying->exchange, $now);
+    my $start      = $close->minus_time_interval('2m');
+    my $tick       = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $start->epoch,
+        quote      => 7195,
+    });
+    my $bet_params = {
+        bet_type     => 'CALL',
+        underlying   => $underlying,
+        date_start   => $start,
+        date_pricing => $start,
+        barrier      => 'S0P',
+        currency     => 'USD',
+        payout       => 10,
+        duration     => '5d',
+        current_tick => $tick,
+    };
+    my $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid for synthetic';
+
+    $bet_params->{underlying} = create_underlying('frxUSDJPY');
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'invalid for forex';
+    is $c->primary_validation_error->message_to_client->[0], 'Trading is not available from [_1] to [_2].';
+    is $c->primary_validation_error->message_to_client->[1], '23:57:59';
+    is $c->primary_validation_error->message_to_client->[2], '23:59:59';
+};
+
 done_testing();

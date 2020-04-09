@@ -914,6 +914,8 @@ sub _build_date_start_blackouts {
                 ? $self->_max_tick_expiry_duration
                 : $underlying->eod_blackout_start;
             push @periods, [$end_of_trading->minus_time_interval($eod_blackout)->epoch, $end_of_trading->epoch] if $eod_blackout;
+        } elsif ($self->expiry_daily and $self->market->name ne 'synthetic_index') {
+            push @periods, [$end_of_trading->minus_time_interval('2m')->epoch, $end_of_trading->epoch];
         }
     }
 
