@@ -35,7 +35,7 @@ default: &6
   - auth:
       password: $DOCKERHUB_PASSWORD
       username: circle4regentmarkets
-    image: phantasm/debian-ci:redis-split-for-pricing
+    image: regentmarkets/debian-ci:redis-split-for-pricing
     user: nobody
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/binary-websocket-api
