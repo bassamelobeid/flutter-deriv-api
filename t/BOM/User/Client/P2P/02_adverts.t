@@ -76,7 +76,7 @@ subtest 'advertiser Registration' => sub {
         is_approved    => bool(0),
         created_time   => bool(1),
         chat_user_id   => 'dummy',
-        chat_token     => '',
+        chat_token     => 'dummy',
         %params
     };
 

@@ -13,6 +13,7 @@ BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_adver
 
 my $mock_sb = Test::MockModule->new('WebService::SendBird');
 my $mock_sb_user = Test::MockModule->new('WebService::SendBird::User');
+set_absolute_time(0);
 
 my %last_event;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -34,8 +35,12 @@ subtest 'create_advertiser' => sub {
     $mock_sb->mock('create_user', sub {
         return WebService::SendBird::User->new(
              api_client  => 1,
-             user_id => $user_id
-         ); 
+             user_id => $user_id,
+             session_tokens =>  [{
+                    'session_token' => 'dummy',
+                    'expires_at'    => (time + 7200) * 1000,
+            }]
+        )
     });
     is $client->p2p_advertiser_create(%params)->{chat_user_id}, $user_id, 'advertiser create chat user id';
     is $client->p2p_advertiser_info()->{chat_user_id}, $user_id, 'advertiser info chat user id';
@@ -47,24 +52,30 @@ subtest 'chat_token' => sub {
 
     is exception { $client->p2p_chat_token() }->{error_code} => 'AdvertiserNotFoundForChatToken', 'client is non-advertiser';
     
-    my $advertiser = $client->p2p_advertiser_create(name => 'advertiser 2 name');
-    $mock_sb_user->mock('issue_session_token', sub { die });
-    is exception { $client->p2p_chat_token() }->{error_code} => 'ChatTokenError', 'handle sb api error';
-
     my $expiry = 7200;  # to match BOM::User::Client::p2p_chat_token()
-    set_absolute_time(0);
+    
+    my $advertiser = $client->p2p_advertiser_create(name => 'advertiser 2 name');
+    is $advertiser->{chat_token}, 'dummy', 'token issued when advertiser created';;
+
+    $mock_sb_user->mock('issue_session_token', sub { die });
+    my $resp = $client->p2p_chat_token();
+    is $resp->{token}, 'dummy', 'token not reissued';
+    is $resp->{expiry_time}, $expiry, 'correct expiry time';
+    
+    set_absolute_time(1);
+    is exception { $client->p2p_chat_token() }->{error_code} => 'ChatTokenError', 'handle sb api error';
     
     my $token = rand(999);
     $mock_sb_user->mock('issue_session_token', sub { 
         return {
             'session_token' => $token,
-            'expires_at' => $expiry * 1000, # sb api returns millseconds
+            'expires_at'    => ($expiry+1) * 1000,
          }
     });
     
-    my $resp = $client->p2p_chat_token();
-    is $resp->{token}, $token, 'issue token when there is none';
-    is $resp->{expiry_time}, $expiry, 'correct expiry time';
+    $resp = $client->p2p_chat_token();
+    is $resp->{token}, $token, 'token not reissued';
+    is $resp->{expiry_time}, $expiry+1, 'correct expiry time';    
     
     is $last_event{type}, 'p2p_advertiser_updated', 'event emitted';
     is $last_event{data}->{advertiser_id}, $advertiser->{id}, 'event advertiser id';
@@ -72,28 +83,13 @@ subtest 'chat_token' => sub {
 
     $advertiser = $client->_p2p_advertisers(loginid => $client->loginid)->[0];
     is $advertiser->{chat_token}, $token, 'token is stored';
-    is $advertiser->{chat_token_expiry}, $expiry, 'token expiry is stored';
+    is $advertiser->{chat_token_expiry}, $expiry+1, 'token expiry is stored';
     
     $mock_sb_user->mock('issue_session_token', sub { die });
     is $client->p2p_chat_token()->{token}, $token, 'stored token is returned';
     
-    set_absolute_time(1);
-    is exception { $client->p2p_chat_token() }->{error_code} => 'ChatTokenError', 'new token issue was attempted with api error';
-
-    $token = rand(999);
-    $mock_sb_user->mock('issue_session_token', sub { 
-        return {
-            'session_token' => $token,
-            'expires_at' => ($expiry+1) * 1000,
-         }
-    });
-    $resp = $client->p2p_chat_token();
-    is $resp->{token}, $token, 'new token issued';
-    is $resp->{expiry_time}, $expiry+1, 'correct expiry time';
-    $mock_sb_user->mock('issue_session_token', sub { die });
-    is $client->p2p_chat_token()->{token}, $token, 'new token is returned';
-    is $client->p2p_advertiser_info()->{chat_token}, $token, 'new token is stored';
-    is $client->p2p_advertiser_update(is_approved=>1)->{chat_token}, $token, 'returned from advertiser update';
+    is $client->p2p_advertiser_info()->{chat_token}, $token, 'stored token returned from p2p_advertiser_info';
+    is $client->p2p_advertiser_update(is_approved=>1)->{chat_token}, $token, 'stored token returned from p2p_advertiser_update';
 };
 
 subtest 'create chat' => sub {
@@ -136,3 +132,4 @@ subtest 'create chat' => sub {
 };
 
 done_testing();
+

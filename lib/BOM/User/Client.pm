@@ -1783,21 +1783,25 @@ sub p2p_advertiser_create {
     my $sb_user;
     try {
         $sb_user = $sb_api->create_user(
-            user_id     => $sb_user_id,
-            nickname    => $name,
-            profile_url => ''
+            user_id             => $sb_user_id,
+            nickname            => $name,
+            profile_url         => '',
+            issue_session_token => 'true'
         );
     }
     catch {
         die +{error_code => 'AdvertiserCreateChatError'};
     }
 
+    # sb api returns milliseconds timestamps
+    my ($token, $expiry) = ($sb_user->session_tokens->[0]{session_token}, int($sb_user->session_tokens->[0]{expires_at} / 1000));
+
     my $advertiser = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
                 'SELECT * FROM p2p.advertiser_create(?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $id, $client->loginid, $name, @param{qw/default_advert_description payment_info contact_info/},
-                $sb_user->user_id, undef, undef
+                $sb_user->user_id, $token, $expiry
             );
         });
     return $client->_advertiser_details($advertiser);
