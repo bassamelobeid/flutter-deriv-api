@@ -154,7 +154,7 @@ subtest 'create advertiser' => sub {
     ok !$advertiser->{is_approved}, 'advertiser not approved';
     ok $advertiser->{is_listed}, "advertiser's adverts are listed";
     is $advertiser->{chat_user_id}, 'dummy', 'chat user id';  # from mocked sendbird 
-    is $advertiser->{chat_token}, '', 'chat token (empty)';
+    is $advertiser->{chat_token}, 'dummy', 'chat token';
     
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
     test_schema('p2p_advertiser_info', $resp);
