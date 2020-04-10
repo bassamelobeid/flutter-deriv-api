@@ -117,16 +117,16 @@ subtest 'send_ask for non-binary' => sub {
     my $params = {
         client_ip => '127.0.0.1',
         args      => {
-            "proposal"=> 1,
-            "amount"=> 100,
-            "barrier"=> "+0.1",
-            "barrier2"=> "-0.2",
-            "basis"=> "payout",
-            "contract_type"=> "CALLSPREAD",
-            "currency"=> "USD",
-            "duration"=> 60,
-            "duration_unit"=> "s",
-            "symbol"=> "R_100"
+            "proposal"      => 1,
+            "amount"        => 100,
+            "barrier"       => "+0.1",
+            "barrier2"      => "-0.2",
+            "basis"         => "payout",
+            "contract_type" => "CALLSPREAD",
+            "currency"      => "USD",
+            "duration"      => 60,
+            "duration_unit" => "s",
+            "symbol"        => "R_100"
         }};
 
     my $result = $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error->result;

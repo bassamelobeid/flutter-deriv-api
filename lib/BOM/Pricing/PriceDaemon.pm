@@ -232,7 +232,7 @@ sub run {
         $redis->set("PRICER_STATUS::$args{ip}-$args{fork_index}", encode_json_utf8(\@stat_redis));
 
         # Should be after publishing the response to avoid causing additional delays
-        unless (exists $response->{error}) {
+        if ($self->{record_price_metrics} and not exists $response->{error}) {
             my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode({$params->%*}, $response->{spot});
             BOM::Pricing::v3::Utility::update_price_metrics($relative_shortcode, $response->{rpc_time});
         }

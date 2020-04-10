@@ -49,7 +49,11 @@ sub generate_csv_contents {
 
     my $result = $redis_pricer->exec;
 
-    my @results = map { {@$_} } grep { ref $_ eq 'ARRAY' } $result->@*;
+    my @results = map {
+        { @$_ }
+        } grep {
+        ref $_ eq 'ARRAY'
+        } $result->@*;
     my @unique_shortcodes = sort { $a cmp $b } uniq map { keys $_->%* } @results;
 
     my $csv_contents = (join ',', qw(shortcode processed timing queued)) . "\n";

@@ -20,13 +20,15 @@ use BOM::Pricing::PriceDaemon;
 my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4") || '127.0.0.1';
 
 GetOptions(
-    "workers=i"   => \my $workers,
-    "queues=s"    => \my $queues,
-    "pid-file=s"  => \my $pid_file,
-    "no-warmup=i" => \my $nowarmup,
+    "workers=i"              => \my $workers,
+    "queues=s"               => \my $queues,
+    "pid-file=s"             => \my $pid_file,
+    "no-warmup=i"            => \my $nowarmup,
+    'record_price_metrics:i' => \my $record_price_metrics,
 );
-$queues ||= 'pricer_jobs_priority,pricer_jobs, pricer_jobs_bid';
-$workers ||= max(1, Sys::Info->new->device("CPU")->count);
+$queues               ||= 'pricer_jobs_priority,pricer_jobs, pricer_jobs_bid';
+$workers              ||= max(1, Sys::Info->new->device("CPU")->count);
+$record_price_metrics ||= 0;
 
 if ($pid_file) {
     $pid_file = Path::Tiny->new($pid_file);
@@ -81,7 +83,10 @@ while (1) {
     $pm->start and next;
     my $pid = $$;
     ($index) = grep { $workers[$_] == 0 } 0 .. $#workers;
-    my $daemon = BOM::Pricing::PriceDaemon->new(tags => ['tag:' . $internal_ip]);
+    my $daemon = BOM::Pricing::PriceDaemon->new(
+        tags                 => ['tag:' . $internal_ip],
+        record_price_metrics => $record_price_metrics
+    );
     # Allow graceful shutdown
     $SIG{TERM} = sub {
         $daemon->stop;

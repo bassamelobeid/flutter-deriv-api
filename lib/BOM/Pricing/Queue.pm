@@ -78,6 +78,17 @@ has priority => (
     required => 1
 );
 
+=head2 record_price_metrics
+
+Flag to enable or disable recording of pricing metrics
+
+=cut
+
+has record_price_metrics => (
+    is      => 'ro',
+    default => 0
+);
+
 sub BUILD {
     my $self = shift;
 
@@ -191,21 +202,23 @@ sub _process_price_queue {
             }));
     $log->debug('pricer_daemon_queue_stats updated.');
 
-    # There might be multiple occurrences of the same 'relative shortcode'
-    # to achieve higher performance, we count them first, then update the redis
-    my %queued;
-    for my $key (@keys) {
-        my $params = {decode_json_utf8($key =~ s/^PRICER_KEYS:://r)->@*};
-        if ($params->{contract_id} and $params->{landing_company}) {
-            my $contract_params = BOM::Pricing::v3::Utility::get_contract_params($params->{contract_id}, $params->{landing_company});
-            $params = {%$params, %$contract_params};
+    if ($self->record_price_metrics) {
+        # There might be multiple occurrences of the same 'relative shortcode'
+        # to achieve higher performance, we count them first, then update the redis
+        my %queued;
+        for my $key (@keys) {
+            my $params = {decode_json_utf8($key =~ s/^PRICER_KEYS:://r)->@*};
+            if ($params->{contract_id} and $params->{landing_company}) {
+                my $contract_params = BOM::Pricing::v3::Utility::get_contract_params($params->{contract_id}, $params->{landing_company});
+                $params = {%$params, %$contract_params};
+            }
+            unless (exists $params->{barriers}) {    # exclude proposal_array
+                my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode($params);
+                $queued{$relative_shortcode}++;
+            }
         }
-        unless (exists $params->{barriers}) {    # exclude proposal_array
-            my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode($params);
-            $queued{$relative_shortcode}++;
-        }
+        $self->redis->hincrby('PRICE_METRICS::QUEUED', $_, $queued{$_}) for keys %queued;
     }
-    $self->redis->hincrby('PRICE_METRICS::QUEUED', $_, $queued{$_}) for keys %queued;
 
     stats_gauge('pricer_daemon.queue.time', int(1000 * Time::HiRes::tv_interval($t0)), {tags => ['tag:' . $self->internal_ip]});
     return undef;
