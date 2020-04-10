@@ -129,9 +129,12 @@ sub bypass_sendbird {
         sub {
             note "mocking sendbird create_user";
             return WebService::SendBird::User->new(
-                api_client => 1,
-                user_id    => 'dummy'
-            );
+                api_client     => 1,
+                user_id        => 'dummy',
+                session_tokens => [{
+                        'session_token' => 'dummy',
+                        'expires_at'    => (time + 7200) * 1000,
+                    }]);
         });
 
     $mock_sb->mock(
@@ -150,7 +153,7 @@ sub bypass_sendbird {
             note "mocking sendbird issue_session_token";
             return {
                 'session_token' => 'dummy',
-                'expires_at'    => time + 7200
+                'expires_at'    => (time + 7200) * 1000,
             };
         });
 }

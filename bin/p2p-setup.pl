@@ -68,7 +68,11 @@ unless ($use_sendbird) {
     *WebService::SendBird::create_user = sub { 
         return WebService::SendBird::User->new(
             api_client => 1,
-            user_id    => 'dummy'
+            user_id    => 'dummy',
+            session_tokens => [{
+                'session_token' => 'dummy',
+                'expires_at'    => time + 7200 
+            }]            
         );
     };
     $log->info('Sendbird is disabled. You can enable with --sendbird 1');
