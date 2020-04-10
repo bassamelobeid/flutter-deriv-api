@@ -93,6 +93,7 @@ sub startup {
     # get flag to log detailed exception
     ## no critic (RequireLocalizedPunctuationVars)
     $ENV{LOG_DETAILED_EXCEPTION} = $app->config->{hypnotoad}->{log_detailed_exception};
+    $ENV{RECORD_PRICE_METRICS}   = $app->config->{hypnotoad}->{record_price_metrics};
 
     my $log = $app->log;
 

@@ -244,7 +244,7 @@ rpc "buy",
 
     my $tv_interval = 1000 * Time::HiRes::tv_interval($tv);
 
-    BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, $tv_interval);
+    BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, $tv_interval) if $ENV{RECORD_PRICE_METRICS};
 
     return {
         transaction_id   => $trx->transaction_id,
@@ -553,7 +553,8 @@ rpc "sell",
     }
 
     my $contract = $trx->contract;
-    BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, 1000 * Time::HiRes::tv_interval($tv));
+    BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, 1000 * Time::HiRes::tv_interval($tv))
+        if $ENV{RECORD_PRICE_METRICS};
 
     try {
         trade_copiers({

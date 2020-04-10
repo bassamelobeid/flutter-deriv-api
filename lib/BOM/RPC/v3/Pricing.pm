@@ -15,7 +15,7 @@ rpc send_ask => sub {
 
     my $response = BOM::Pricing::v3::Contract::send_ask($params);
 
-    unless (exists $response->{error}) {
+    if ($ENV{RECORD_PRICE_METRICS} and not exists $response->{error}) {
         my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode({$params->{args}->%*}, $response->{spot});
         BOM::Pricing::v3::Utility::update_price_metrics($relative_shortcode, $response->{rpc_time});
     }
