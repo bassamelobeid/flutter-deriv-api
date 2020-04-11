@@ -126,6 +126,20 @@ sub _build_surfaces_from_file {
     return $combined;
 }
 
+has symbol_with_non_atm_offering => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_symbol_with_non_atm_offering {
+
+    my @non_atm_symbol = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
+        ->query({barrier_category => ['euro_non_atm', 'american']}, ['underlying_symbol']);
+
+    return \@non_atm_symbol;
+
+}
+
 =head1 METHODS
 
 =head2 run
@@ -143,9 +157,6 @@ sub run {
     my $rollover_date           = NY1700_rollover_date_on(Date::Utility->new);
     my $one_hour_after_rollover = $rollover_date->plus_time_interval('1h');
     my $surfaces_from_file      = $self->surfaces_from_file;
-
-    my @non_atm_symbol = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
-        ->query({barrier_category => ['euro_non_atm', 'american']}, ['underlying_symbol']);
 
     foreach my $symbol (@{$self->symbols_to_update}) {
         my $quanto_only = 'NO';
@@ -169,7 +180,7 @@ sub run {
             next;    # skipping it here else it will die in the next line.
         }
 
-        if (grep { $_ eq $symbol } (@non_atm_symbol)) {
+        if (grep { $_ eq $symbol } (@{$self->symbol_with_non_atm_offering})) {
             #skip this symbol if it is non atm and rr , bb are undef.
             if (exists $raw_volsurface->{rr_bf_status} and $raw_volsurface->{rr_bf_status}) {
                 $self->report->{$symbol} = {
@@ -242,13 +253,29 @@ sub process_volsurface {
 
     my $vol_surface;
     foreach my $underlying_symbol (keys %$data) {
+        my $error_from_raw = $data->{$underlying_symbol}->{error};
+        if ($error_from_raw) {
 
-        if ($data->{$underlying_symbol}->{error}) {
-            $self->report->{'frx' . $underlying_symbol} = {
-                success => 0,
-                reason  => $data->{$underlying_symbol}->{error},
-            };
-            next;
+            if ($error_from_raw =~ /OUTDATED_VOL/) {
+
+                if (grep { $_ eq $underlying_symbol } (@{$self->symbol_with_non_atm_offering})) {
+                    $self->report->{'frx' . $underlying_symbol} = {
+                        success => 0,
+                        reason  => $data->{$underlying_symbol}->{error},
+                    };
+                    next;
+                } else {
+                    delete $data->{$underlying_symbol}->{error};
+                }
+
+            } else {
+
+                $self->report->{'frx' . $underlying_symbol} = {
+                    success => 0,
+                    reason  => $data->{$underlying_symbol}->{error},
+                };
+                next;
+            }
         }
         my ($surface_data, $rr_bf_flag, $error) = _get_surface_data($data->{$underlying_symbol});
 
@@ -363,7 +390,7 @@ sub _check_vol_point {
     my $rr_bf_flag = 0;
     foreach my $term (keys %{$vol_surf}) {
         next if $term eq 'volupdate_time';
-        return ({}, 0, "Missing ATM vol for $term") if (not defined $vol_surf->{$term}->{smile}->{'ATM'});
+        return ({}, 0, "MISSING_ATM_VOL: Missing ATM vol for $term") if (not defined $vol_surf->{$term}->{smile}->{'ATM'});
 
         if (not defined $vol_surf->{$term}->{smile}->{'25RR'}) {
             $vol_surf->{$term}->{smile}->{'25RR'} = 0;

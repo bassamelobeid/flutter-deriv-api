@@ -95,6 +95,8 @@ sub process_volsurface {
     my $vol_surface;
     foreach my $underlying_symbol (keys %$data) {
         my $system_symbol = $self->bloomberg_symbol_mapping->{$underlying_symbol};
+
+        next if (not $system_symbol);
         if ($data->{$underlying_symbol}->{error}) {
             $self->report->{$system_symbol} = {
                 success => 0,
