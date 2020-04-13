@@ -15,5 +15,6 @@
   "phone": "[_3]",
   "secret_question": "Mother's maiden name",
   "secret_answer": "Jones",
-  "account_opening_reason": "Speculative"
+  "account_opening_reason": "Speculative",
+  "non_pep_declaration": 1
 }

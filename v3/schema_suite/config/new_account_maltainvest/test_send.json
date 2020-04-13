@@ -31,6 +31,7 @@
   "education_level": "Secondary",
   "income_source": "Self-Employed",
   "net_income": "$25,000 - $50,000",
+  "non_pep_declaration": 1,
   "estimated_worth": "$100,000 - $250,000",
   "occupation": "Managers",
   "employment_status": "Self-Employed",
