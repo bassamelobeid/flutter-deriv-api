@@ -7,6 +7,7 @@ use Test::MockModule;
 use Test::FailWarnings;
 use Test::Warn;
 use Test::Fatal qw(lives_ok);
+use Test::MockTime qw(set_fixed_time);
 
 use Date::Utility;
 use MojoX::JSON::RPC::Client;
@@ -24,6 +25,7 @@ use BOM::Test::Helper::FinancialAssessment;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Token::API;
 use utf8;
+
 my $app = BOM::Database::Model::OAuth->new->create_app({
     name    => 'test',
     scopes  => '{read,admin,trade,payments}',
@@ -31,6 +33,10 @@ my $app = BOM::Database::Model::OAuth->new->create_app({
 });
 my $app_id = $app->{app_id};
 isnt($app_id, 1, 'app id is not 1');    # There was a bug that the created token will be always app_id 1; We want to test that it is fixed.
+
+my $fixed_time = Date::Utility->new('2018-02-15');
+set_fixed_time($fixed_time->epoch);
+
 my %emitted;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_events->mock(
@@ -40,6 +46,17 @@ $mock_events->mock(
         $emitted{$type . '_' . $data->{loginid}}++;
     });
 
+my $empty_pep_declartion_dd_key = 'bom_rpc.v_3.new_real_account.called_without_non_pep_declaration.count';
+my %datadog_args;
+my $mock_datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
+$mock_datadog->mock(
+    'stats_inc' => sub {
+        my $key  = shift;
+        my $args = shift;
+        #do{use Data::Dumper; warn Dumper($key); warn Dumper($args); warn 'BBBBBBBBBBBBBBBBBBB'} if $key eq $empty_pep_declartion_dd_key;
+        $datadog_args{$key} = $args;
+    },
+);
 my $email = 'test' . rand(999) . '@binary.com';
 my ($t, $rpc_ct);
 my ($method, $params, $client_details);
@@ -186,6 +203,33 @@ subtest $method => sub {
         );
         is $user->{email_consent}, 0, 'email consent for new account is 0 for european clients - gb';
     };
+
+    subtest 'non-pep self declaration' => sub {
+        %datadog_args = ();
+        # without non-pep declaration
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => 'new_email' . rand(999) . 'vr_non_pep@binary.com',
+            created_for => 'account_opening'
+        )->token;
+
+        delete $params->{args}->{non_pep_declaration};
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('virtual account created without checking non-pep declaration');
+        my $client = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
+        is $client->non_pep_declaration_time, undef, 'non_pep_declaration_time is empty for virtual account';
+        is $datadog_args{$empty_pep_declartion_dd_key}, undef, 'no datadog metric';
+
+        # with non-pep declaration
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => 'new_email' . rand(999) . 'vr_non_pep@binary.com',
+            created_for => 'account_opening'
+        )->token;
+        $params->{args}->{non_pep_declaration} = 1;
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('virtual account created with checking non-pep declaration');
+        $client = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
+        is $client->non_pep_declaration_time, undef,
+            'non_pep_self_declaration_time is empty for virtual accounts even when rpc is called with param set to 1';
+        is $datadog_args{$empty_pep_declartion_dd_key}, undef, 'no datadog metric';
+    };
 };
 
 $method = 'new_account_real';
@@ -311,7 +355,6 @@ subtest $method => sub {
     };
 
     subtest 'Create multiple accounts in CR' => sub {
-
         $email = 'new_email' . rand(999) . '@binary.com';
 
         $params->{args}->{client_password} = 'verylongandhardpasswordDDD1!';
@@ -321,6 +364,8 @@ subtest $method => sub {
         $params->{args}->{utm_medium}   = 'email';
         $params->{args}->{utm_campaign} = 'spring sale';
         $params->{args}->{gclid_url}    = 'FQdb3wodOkkGBgCMrlnPq42q8C';
+        delete $params->{args}->{non_pep_declaration};
+        %datadog_args = ();
 
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
             email       => $email,
@@ -343,20 +388,31 @@ subtest $method => sub {
 
         $params->{token} = $rpc_ct->result->{oauth_token};
 
-        $params->{args}->{currency} = 'USD';
+        is $datadog_args{$empty_pep_declartion_dd_key}, undef, 'no datadog metric for virtual accounts';
+        %datadog_args = ();
 
+        $params->{args}->{currency} = 'USD';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('create fiat currency account')
             ->result_value_is(sub { shift->{currency} }, 'USD', 'fiat currency account currency is USD');
+
+        is_deeply $datadog_args{$empty_pep_declartion_dd_key}, {tags => ['app_id:1003', 'company:svg']},
+            'datadog metric tags for creating a real account without non-pep declaration';
+        %datadog_args = ();
 
         my $cl_usd = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
 
         $params->{token} = $rpc_ct->result->{oauth_token};
 
+        ok $cl_usd->non_pep_declaration_time, 'Non-pep self declaration time is set';
+        $cl_usd->non_pep_declaration_time('2018-01-01');
+
         is $cl_usd->authentication_status, 'no', 'Client is not authenticated yet';
 
         $cl_usd->set_authentication('ID_DOCUMENT')->status('pass');
         $cl_usd->save;
+
         is $cl_usd->authentication_status, 'scans', 'Client is fully authenticated with scans';
+        $cl_usd->save;
 
         $params->{args}->{currency} = 'EUR';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error('cannot create second fiat currency account')
@@ -386,6 +442,8 @@ subtest $method => sub {
         ok(defined($cl_btc->binary_user_id), 'BTC client has a binary user id');
         ok(defined($cl_usd->binary_user_id), 'USD client has a binary_user_id');
         is $cl_btc->binary_user_id, $cl_usd->binary_user_id, 'Both BTC and USD clients have the same binary user id';
+        is $datadog_args{$empty_pep_declartion_dd_key}, undef, 'datadog metric is not emitted for the second account in the same landing company';
+        is $cl_btc->non_pep_declaration_time, '2018-01-01 00:00:00', 'Pep self-declaration time is the same for CR siblings';
 
         $params->{args}->{currency} = 'BTC';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error('cannot create another crypto currency account with same currency')
@@ -398,9 +456,10 @@ subtest $method => sub {
         });
         $cl_usd->save();
 
-        $params->{args}->{currency}       = 'LTC';
-        $params->{args}->{citizen}        = 'af';
-        $params->{args}->{place_of_birth} = 'af';
+        $params->{args}->{currency}            = 'LTC';
+        $params->{args}->{citizen}             = 'af';
+        $params->{args}->{place_of_birth}      = 'af';
+        $params->{args}->{non_pep_declaration} = 1;
 
         $rpc_ct->call_ok($method, $params)->has_error()->error_code_is('CannotChangeAccountDetails')
             ->error_message_is('You may not change these account details.')->error_details_is({changed => ["citizen", "place_of_birth"]});
@@ -420,9 +479,17 @@ subtest $method => sub {
             "new client financial assessment is the same as old client financial_assessment"
         );
 
+        is $datadog_args{$empty_pep_declartion_dd_key}, undef, 'datadog metric is not emitted for the third account in the same landing company';
+        %datadog_args = ();
+        cmp_ok(
+            $cl_ltc->non_pep_declaration_time,
+            'eq',
+            $fixed_time->datetime_yyyymmdd_hhmmss,
+            'Pep self-declaration time is not copied from siblings if non_pep_delclaration arg was true'
+        );
+
         $rpc_ct->call_ok('get_settings', {token => $rpc_ct->result->{oauth_token}})->result;
         cmp_ok($rpc_ct->result->{place_of_birth}, 'eq', $client_details->{place_of_birth}, 'place_of_birth cannot be changed');
-
     };
 };
 
@@ -498,6 +565,8 @@ subtest $method => sub {
 
     subtest 'Create new account maltainvest' => sub {
         $params->{args}->{accept_risk} = 1;
+        delete $params->{args}->{non_pep_delclaration};
+        %datadog_args = ();
         $params->{token} = $auth_token;
 
         $rpc_ct->call_ok($method, $params)
@@ -595,6 +664,10 @@ subtest $method => sub {
 
         my $cl = BOM::User::Client->new({loginid => $new_loginid});
         ok($cl->status->financial_risk_approval, 'For mf accounts we will set financial risk approval status');
+        is $cl->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
+            'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
+        is_deeply $datadog_args{$empty_pep_declartion_dd_key}, {tags => ['app_id:1003', 'company:maltainvest']},
+            'datadog metric is emitted for empty self-declartion';
 
         is $cl->status->crs_tin_information->{reason}, 'Client confirmed tax information', "CRS status is set";
 
@@ -618,20 +691,29 @@ subtest $method => sub {
                 email_verified => 1,
             );
             $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTC',
-                email       => $email,
-                residence   => 'cz',
+                broker_code              => 'VRTC',
+                email                    => $email,
+                residence                => 'cz',
+                non_pep_declaration_time => '2010-10-10',
             });
+            is $client->non_pep_declaration_time, '2010-10-10 00:00:00',
+                'non_pep_declaration_time is the same value as the arg passed to test create_account';
+            $client->save;
             $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                    broker_code   => 'MLT',
-                    email         => $email,
-                    residence     => 'cz',
-                    secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
+                broker_code              => 'MLT',
+                email                    => $email,
+                residence                => 'cz',
+                secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
+                non_pep_declaration_time => undef,
+            });
+            is $client_mlt->non_pep_declaration_time, undef, 'non_pep_declaration_time is empty, as undef is passed to test create_account';
+            $client_mlt->non_pep_declaration_time('2020-01-02');
+            $client_mlt->save;
+
             $auth_token = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, 'test token');
 
             $user->add_client($client);
             $user->add_client($client_mlt);
-
         }
         'Initial users and clients';
     };
@@ -641,6 +723,8 @@ subtest $method => sub {
         $params->{token}               = $auth_token;
         $params->{args}->{residence}   = 'gb';
         $params->{args}->{citizen}     = 'at';
+        delete $params->{args}->{non_pep_delclaration};
+        %datadog_args = ();
 
         mailbox_clear();
 
@@ -673,6 +757,13 @@ subtest $method => sub {
             subject => qr/\Qhas submitted the assessment test\E/
         );
         ok($msg, "Risk disclosure email received");
+
+        is $cl->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
+            'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
+        is_deeply $datadog_args{$empty_pep_declartion_dd_key}, {tags => ["app_id:$app_id", 'company:maltainvest']},
+            'datadog metric is emitted for empty self-declartion';
+
+        cmp_ok $cl->non_pep_declaration_time, 'ne', $client_mlt->non_pep_declaration_time, 'non_pep declaration time is different from MLT account';
     };
 
     my $client_mx;
@@ -700,6 +791,11 @@ subtest $method => sub {
 
             $user->add_client($client);
             $user->add_client($client_mx);
+
+            is $client_mx->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
+                'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args (test create_account call)';
+            $client_mx->non_pep_declaration_time('2020-01-02');
+            $client_mx->save;
         }
         'Initial users and clients';
     };
@@ -708,6 +804,8 @@ subtest $method => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token}               = $auth_token;
         $params->{args}->{residence}   = 'gb';
+        delete $params->{args}->{non_pep_delclaration};
+        %datadog_args = ();
 
         # call with totally random values - our client still should have correct one
         ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
@@ -742,6 +840,10 @@ subtest $method => sub {
         ok $emitted{"register_details_$new_loginid"}, "register_details event emitted";
         ok $emitted{"signup_$new_loginid"},           "signup event emitted";
 
+        ok $cl->non_pep_declaration_time, 'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
+        cmp_ok $cl->non_pep_declaration_time, 'ne', '2020-01-02T00:00:00', 'non_pep declaration time is different from MLT account';
+        is_deeply $datadog_args{$empty_pep_declartion_dd_key}, {tags => ["app_id:$app_id", 'company:maltainvest']},,
+            'datadog metric is emitted for empty self-declartion';
     };
 
     subtest 'Create a new account maltainvest from a virtual account' => sub {
@@ -823,6 +925,9 @@ subtest $method => sub {
         ok $emitted{'register_details_' . $result->{client_id}}, "register_details event emitted";
         ok $emitted{'signup_' . $result->{client_id}},           "signup event emitted";
 
+        my $cl = BOM::User::Client->new({loginid => $result->{client_id}});
+        ok $cl->non_pep_declaration_time,
+            'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args (test create_account call)';
     };
 };
 

@@ -5,6 +5,7 @@ use warnings;
 
 use Syntax::Keyword::Try;
 use List::MoreUtils qw(any);
+use List::Util qw(minstr);
 use Format::Util::Numbers qw/formatnumber/;
 use Email::Valid;
 use BOM::Platform::Context qw (localize);
@@ -52,6 +53,9 @@ rpc "new_account_virtual",
     if ($err_code = BOM::RPC::v3::Utility::_check_password({new_password => $args->{client_password}})) {
         return $err_code;
     }
+
+    # non-PEP declaration is not made for virtual accounts.
+    delete $args->{non_pep_declaration};
 
     my $email = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
 
@@ -252,6 +256,49 @@ sub _get_professional_details_clients {
     return (\@clients, $professional_status, $professional_requested);
 }
 
+=head2 _get_non_pep_declaration_time
+
+Called on new real account rpc calls, it returns the time clients have submitted their (non-)PEP declartion for a landing company.
+If there is an older account in the same landing company, it's declaration time will be returned.
+If there is not any non-PEP declaration found for the specified landing company, current time will be returned.
+
+#TODO(Mat): If all apps (both official and third-party) send non_pep_declaration whenever it's submitted by clients on signup,
+#    the return value should be changed to undef if non-PEP declaration was missing.
+
+=over 4
+
+=item * C<client> - current client who has initated a new real account request
+
+=item * C<company> - landing company of the new account being created
+
+= item * C<non_pep_declaration> - boolean value that determines if non-PEP declaration is made through the current signup process
+
+- item * C<app_id> - the id of the app through which the request is made
+
+=back
+
+returns the time when the client has declared they are not a PEP/RCA for the requested C<company>.
+
+=cut
+
+sub _get_non_pep_declaration_time {
+    my ($client, $company, $non_pep_declaration, $app_id) = @_;
+
+    return time if $non_pep_declaration;
+
+    # declaration time can be safely extracted from older siblings in the same landing company.
+    my @same_lc_siblings = $client->user->clients_for_landing_company($company);
+    for (@same_lc_siblings) {
+        return $_->non_pep_declaration_time if $_->non_pep_declaration_time;
+    }
+
+    stats_inc('bom_rpc.v_3.new_real_account.called_without_non_pep_declaration.count', {tags => ["app_id:$app_id", "company:$company"]});
+
+    #TODO(Mat): we will return undef here, provided that nothing is logged by the above line
+    #           (non_pep_declaration is sent from all appls for the first real account per landing complany).
+    return minstr(map { $_->date_joined } @same_lc_siblings) || time;
+}
+
 rpc new_account_real => sub {
     my $params = shift;
 
@@ -273,6 +320,8 @@ rpc new_account_real => sub {
         // $countries_instance->financial_company_for_country($client->residence);
     my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
+    my $non_pep_declaration = delete $args->{non_pep_declaration};
+    $args->{non_pep_declaration_time} = _get_non_pep_declaration_time($client, $company, $non_pep_declaration, $params->{source});
     my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
 
     my $error_map = BOM::RPC::v3::Utility::error_map();
@@ -382,6 +431,9 @@ rpc new_account_maltainvest => sub {
     # malta, iom tried to make this call
     return BOM::RPC::v3::Utility::permission_error()
         if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest|iom)$/);
+
+    my $non_pep_declaration = delete $args->{non_pep_declaration};
+    $args->{non_pep_declaration_time} = _get_non_pep_declaration_time($client, 'maltainvest', $non_pep_declaration, $params->{source});
 
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'financial', $args);
     return $error if $error;
