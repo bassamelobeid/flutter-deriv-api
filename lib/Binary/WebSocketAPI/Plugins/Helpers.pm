@@ -127,7 +127,7 @@ sub register {
             };
         });
 
-    for my $redis_name (qw(ws_redis_master redis_pricer redis_feed_master redis_transaction)) {
+    for my $redis_name (qw(ws_redis_master redis_pricer redis_pricer_subscription redis_feed_master redis_transaction)) {
         $app->helper(
             $redis_name => sub {
                 return Binary::WebSocketAPI::v3::Instance::Redis->$redis_name;
