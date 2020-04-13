@@ -212,7 +212,8 @@ sub validate_account_details {
         account_opening_reason    => '',
         place_of_birth            => undef,
         tax_residence             => undef,
-        tax_identification_number => undef
+        tax_identification_number => undef,
+        non_pep_declaration_time  => undef,
     );
 
     for my $field (keys %default_values) {

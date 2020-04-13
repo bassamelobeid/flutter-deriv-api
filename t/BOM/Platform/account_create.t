@@ -13,7 +13,6 @@ use Test::Warnings;
 
 use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(decode_fa);
-use Date::Utility;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
@@ -86,6 +85,7 @@ my %real_client_details = (
     checked_affiliate_exposures   => 0,
     latest_environment            => '',
     account_opening_reason        => 'Hedging',
+    non_pep_declaration_time      => Date::Utility->new()->_plus_years(1)->date_yyyymmdd,
 );
 
 my %financial_data = (
@@ -174,6 +174,7 @@ subtest 'create account' => sub {
         my ($vr_client_n, $user_n) = @{$vr_acc}{'client', 'user'};
     }
     'create VR acc without residence and password';
+
     subtest date_first_contact => sub {
         my $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
                 details => {
@@ -217,6 +218,10 @@ subtest 'create account' => sub {
 
     delete $t_details{phone};
     $t_details{place_of_birth} = '';
+    $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client, $broker, 1);
+    is $details->{error}, 'TooLateNonPepTime', 'Non-pep declaratin time is too late';
+    $t_details{non_pep_declaration_time} = Date::Utility->today->date_yyyymmdd;
+
     $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client, $broker, 1);
     is $details->{error}, undef, 'no error for empty place of birth';
 
