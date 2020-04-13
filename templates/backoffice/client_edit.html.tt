@@ -71,12 +71,12 @@ table#client_edit td{
         <td class="label">Last sanctions check run</td>
         <td>: [% last_check.tstmp %] [% last_check.type == 'R' ? 'Registration' : 'Cron'%]</td>
     </tr>
-    [% IF show_pep_self_declaration_time %]
+    [% IF show_non_pep_declaration_time %]
         <tr>
-            <td class="label">PEP/RCA self-declaration</td>
+            <td class="label">Non-PEP/RCA self-declaration</td>
             <td style="text-align:left;">
-                : <input type="checkbox" id='pep_self_declaration' [% IF pep_self_declaration_time %]checked[% END %] disabled="disabled"/>
-                <label for="pep_self_declaration">[% IF pep_self_declaration_time %] [% pep_self_declaration_time %] [% END %] </label>
+                : <input type="checkbox" id='non_pep_declaration' [% IF non_pep_declaration_time %]checked[% END %] disabled="disabled"/>
+                <label for="non_pep_declaration">[% IF non_pep_declaration_time %] [% non_pep_declaration_time %] [% END %] </label>
             </td>
         </tr>
     [% END %]
