@@ -60,12 +60,12 @@ $platform_mock->mock(
     });
 
 sub do_client_login {
-    my $agent        = shift // 'chrome';
-    my $brand        = shift // 'binary';
+    my $agent = shift // 'chrome';
+    my $brand = shift // 'binary';
     my $agent_header = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36';
     my $t            = Test::Mojo->new('BOM::OAuth');
-    $email           = shift // $email;
-    $password        = shift // $password;
+    $email    = shift // $email;
+    $password = shift // $password;
 
     if ($agent eq 'firefox') {
         $agent_header = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/79.0.3945.79 Safari/537.36';
@@ -119,12 +119,12 @@ subtest "it should not send an email if no entry but we have a previous recored 
 };
 
 subtest "it should not send any notification email for new login if brand is deriv" => sub {
-    my $email = 'deriv_randomly_email_address@deriv.com';
+    my $email    = 'deriv_randomly_email_address@deriv.com';
     my $password = BOM::User::Password::hashpw('alkdjasldkjaslkxjclk');
 
     BOM::User->create(
-      email    => $email,
-      password => $password
+        email    => $email,
+        password => $password
     );
 
     $virtual_inbox = [];
