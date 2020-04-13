@@ -89,7 +89,8 @@ sub get_next_binary_user_id {
 
 Use this to create a new client object for testing. broker_code is required.
 Additional args to the hashref can be specified which will update the
-relavant client attribute
+relavant client attribute; with non_pep_declaration_time automatically defaulted
+to current time unless it is explicitly set in args (null is also accepted).
 
 If auth is defined and broker need authentication, do it
 
@@ -128,8 +129,9 @@ sub create_client {
         });
     my $new_loginid = $broker_code . $loginid_sequence[0];
 
-    $client_data->{loginid} = $new_loginid;
-    $client_data->{binary_user_id} = $args->{binary_user_id} // get_next_binary_user_id();
+    $client_data->{loginid}           = $new_loginid;
+    $client_data->{binary_user_id}    = $args->{binary_user_id} // get_next_binary_user_id();
+    $args->{non_pep_declaration_time} = DateTime->now unless exists($args->{non_pep_declaration_time});
 
     # any modify args were specified?
     for (keys %$args) {
