@@ -143,6 +143,11 @@ sub redis_pricer_config {
     return $config;
 }
 
+sub redis_pricer_subscription_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer-subscription.yml');
+    return $config;
+}
+
 sub redis_pricer_shared_config {
     state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer-shared.yml');
     return $config;

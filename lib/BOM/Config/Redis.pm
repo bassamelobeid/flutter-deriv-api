@@ -156,6 +156,20 @@ sub redis_pricer {
     return _redis('pricer', 'write', $args{timeout} // 10);
 }
 
+=head2 redis_pricer_subscription_write
+
+    my $redis = BOM::Config::Redis::redis_pricer_subscription_write();
+
+Returns a writable L<RedisDB> handle to our pricer subscription Redis service.
+
+=cut
+
+sub redis_pricer_subscription_write {
+    $config->{pricer_subscription} //= BOM::Config::redis_pricer_subscription_config();
+    my %args = @_;
+    return _redis('pricer_subscription', 'write', $args{timeout} // 10);
+}
+
 =head2 redis_pricer_shared
 
     my $redis = BOM::Config::Redis::redis_pricer_shared();
