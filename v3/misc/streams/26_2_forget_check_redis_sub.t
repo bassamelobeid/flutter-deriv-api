@@ -37,13 +37,13 @@ use await;
 
 use Test::MockObject::Extends;
 use Mojo::Redis2;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer |;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer_subscription |;
 
 my $t            = build_wsapi_test();
-my $redis_pricer = Test::MockObject::Extends->new(redis_pricer);
+my $redis_pricer_subscription = Test::MockObject::Extends->new(redis_pricer_subscription);
 
 my $keys_hash = {};
-$redis_pricer->mock(
+$redis_pricer_subscription->mock(
     'subscribe',
     sub {
         my $redis = shift;
@@ -51,7 +51,7 @@ $redis_pricer->mock(
         $keys_hash->{$_} = 1 for @$keys;
     });
 
-$redis_pricer->mock(
+$redis_pricer_subscription->mock(
     'unsubscribe',
     sub {
         my $redis = shift;

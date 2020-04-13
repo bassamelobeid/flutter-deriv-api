@@ -22,7 +22,7 @@ my $loop             = IO::Async::Loop->new;
 $loop->add(
     my $tester = BOM::Test::WebsocketAPI->new(
         timeout            => 60 * 3,    # 3 mins should be more than enough
-        max_response_delay => 3,
+        max_response_delay => 5,
     ),
 );
 
