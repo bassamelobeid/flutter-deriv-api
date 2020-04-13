@@ -692,7 +692,10 @@ SQL
 
     foreach my $doc (@$docs) {
         # add category index to each doc
-        $doc->{category_idx} = $doc->{document_type} ? $doc_types_categories{$doc->{document_type}}{index} : $doc_types_categories{Other}{index};
+        $doc->{category_idx} =
+            ($doc->{document_type} && $doc_types_categories{$doc->{document_type}})
+            ? $doc_types_categories{$doc->{document_type}}{index}
+            : $doc_types_categories{Other}{index};
     }
 
     # sort by category then by issue date and expiration date descending
@@ -750,7 +753,9 @@ SQL
         my $url = $s3_client->get_s3_url($file_name);
 
         my $expired_poi_hint =
-            ($expirable_doc && $poi_doc && Date::Utility::today()->date gt $expiration_date) ? qq{ style="color:red" title="expired" } : "";
+            ($expirable_doc && $poi_doc && $expiration_date && Date::Utility::today()->date gt $expiration_date)
+            ? qq{ style="color:red" title="expired" }
+            : "";
 
         $links .= qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td><a href="$url">$file_name</a></td>$age_display$input};
 
