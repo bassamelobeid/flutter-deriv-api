@@ -65,14 +65,14 @@ my $commands = {
 my $eco_snapshot = 0;
 
 sub process_job {
-    my ($self, $redis, $next, $params) = @_;
+    my ($self, $redis_pricer, $next, $params) = @_;
 
     my $cmd          = $params->{price_daemon_cmd};
     my $current_time = time;
 
     my $underlying           = $self->_get_underlying_or_log($next, $params) or return undef;
     my $current_spot_ts      = $underlying->spot_tick->epoch;
-    my $last_priced_contract = eval { decode_json_utf8($redis->get($next) // die 'default') } || {time => 0};
+    my $last_priced_contract = eval { decode_json_utf8($redis_pricer->get($next) // die 'default') } || {time => 0};
     my $last_price_ts        = $last_priced_contract->{time};
 
     # For plain queue, if we have request for a price, and tick has not changed since last one, and it was not more
@@ -94,7 +94,7 @@ sub process_job {
     delete $response->{contract_parameters};
 
     # when it reaches here, contract is considered priced.
-    $redis->set(
+    $redis_pricer->set(
         $next => encode_json_utf8({
                 # - for proposal open contract, don't use $current_time here since we are using this time to check if we want to skip repricing contract with the same spot price.
                 # - for proposal, because $response doesn't have current_spot_time, we will resort to $current_time
@@ -112,7 +112,8 @@ sub process_job {
 
 sub run {
     my ($self, %args) = @_;
-    my $redis = BOM::Config::Redis::redis_pricer(timeout => 0);
+    my $redis_pricer = BOM::Config::Redis::redis_pricer(timeout => 0);
+    my $redis_pricer_subscription = BOM::Config::Redis::redis_pricer_subscription_write(timeout => 0);
 
     my $tv_appconfig          = [0, 0];
     my $tv                    = [Time::HiRes::gettimeofday];
@@ -124,7 +125,7 @@ sub run {
     LOOP: while ($self->is_running) {
         my $key;
         try {
-            $key = $redis->brpop(@{$args{queues}}, 0)
+            $key = $redis_pricer->brpop(@{$args{queues}}, 0)
         }
         catch {
             my $err = $@;
@@ -136,7 +137,7 @@ sub run {
             }
         };
         last LOOP unless $key;
-        my $current_eco_cache_epoch = $redis->get('economic_events_cache_snapshot');
+        my $current_eco_cache_epoch = $redis_pricer->get('economic_events_cache_snapshot');
         if ($current_eco_cache_epoch and $eco_snapshot != $current_eco_cache_epoch) {
             Volatility::LinearCache::clear_cache();
             $eco_snapshot = $current_eco_cache_epoch;
@@ -175,7 +176,7 @@ sub run {
         # delete them here.
         unless ($self->_validate_params($next, $params)) {
             $log->warnf('Invalid parameters: %s', $next);
-            $redis->del($key->[1], $next);
+            $redis_pricer->del($key->[1], $next);
             next LOOP;
         }
 
@@ -185,12 +186,12 @@ sub run {
         my $response;
         try {
             # Possible transient failure/dupe spot time
-            $response = $self->process_job($redis, $next, $params) // next LOOP;
+            $response = $self->process_job($redis_pricer, $next, $params) // next LOOP;
         }
         catch {
             my $err = $@;
             $log->warnf('process_job_exception: param_str[%s], exception[%s], params[%s]', $next, $err, $params);
-            $redis->del($key->[1], $next);
+            $redis_pricer->del($key->[1], $next);
             next LOOP;
         }
 
@@ -205,10 +206,10 @@ sub run {
 
         # On websocket clients are subscribing to proposal open contract with "CONTRACT_PRICE::123122__virtual" as the key
         my $redis_channel = $params->{contract_id} ? 'CONTRACT_PRICE::' . $params->{contract_id} . '_' . $params->{landing_company} : $key->[1];
-        my $subscribers_count = $redis->publish($redis_channel, encode_json_utf8($response));
+        my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, encode_json_utf8($response));
         # if None was subscribed, so delete the job
         if ($subscribers_count == 0) {
-            $redis->del($key->[1], $next);
+            $redis_pricer->del($key->[1], $next);
         }
 
         $tv_now = [Time::HiRes::gettimeofday];
@@ -229,7 +230,7 @@ sub run {
             process_end_time => 1000 * ($end_time - int($end_time)),
             time             => time,
             fork_index       => $args{fork_index});
-        $redis->set("PRICER_STATUS::$args{ip}-$args{fork_index}", encode_json_utf8(\@stat_redis));
+        $redis_pricer->set("PRICER_STATUS::$args{ip}-$args{fork_index}", encode_json_utf8(\@stat_redis));
 
         # Should be after publishing the response to avoid causing additional delays
         if ($self->{record_price_metrics} and not exists $response->{error}) {
