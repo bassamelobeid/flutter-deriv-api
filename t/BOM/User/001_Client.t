@@ -219,6 +219,35 @@ subtest "format and validate" => sub {
     };
     is $client->validate_common_account_details($args), undef, 'validation is passed when both promotion code and status is provided';
 
+    $args = {
+        non_pep_declaration_time => 'abc',
+    };
+    is $client->validate_common_account_details($args)->{error}, 'InvalidNonPepTime', 'Invalid non-pep declaration time format error';
+
+    $args = {
+        non_pep_declaration_time => '2002-01-66',
+    };
+    is $client->validate_common_account_details($args)->{error}, 'InvalidNonPepTime', 'Invalid non-pep declaration time format error';
+
+    $args = {
+        non_pep_declaration_time => time + 1,
+    };
+    is $client->validate_common_account_details($args)->{error}, 'TooLateNonPepTime', 'Too late non-pep declaration time error';
+
+    $args = {
+        non_pep_declaration_time => undef,
+    };
+    is $client->validate_common_account_details($args), undef, 'Validation is passed with empty non-pep declaration time';
+
+    $args = {
+        non_pep_declaration_time => time,
+    };
+    is $client->validate_common_account_details($args), undef, 'Validation is passed with non-pep declaration time set to now';
+
+    $args = {
+        non_pep_declaration_time => Date::Utility->today->_plus_years(-1)->date_yyyymmdd,
+    };
+    is $client->validate_common_account_details($args), undef, 'Validation is passed with non-pep declaration time set to an earlier time';
 };
 
 subtest "check duplicate accounts" => sub {

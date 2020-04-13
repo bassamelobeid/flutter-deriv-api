@@ -133,6 +133,8 @@ $META->column('date_of_birth')->add_trigger(inflate => $date_inflator_ymd);
 $META->column('date_of_birth')->add_trigger(deflate => $date_inflator_ymd);
 $META->column('date_joined')->add_trigger(inflate => $date_inflator_ymdhms);
 $META->column('date_joined')->add_trigger(deflate => $date_inflator_ymdhms);
+$META->column('non_pep_declaration_time')->add_trigger(inflate => $date_inflator_ymdhms);
+$META->column('non_pep_declaration_time')->add_trigger(deflate => $date_inflator_ymdhms);
 
 my %DEFAULT_VALUES = (
     cashier_setting_password => '',
@@ -1615,6 +1617,8 @@ sub validate_common_account_details {
 
         die "No promotion code was provided\n" if (trim($args->{promo_code_status}) and not(trim($args->{promo_code}) // $client->promo_code));
 
+        _validate_non_pep_time($args->{non_pep_declaration_time}) if $args->{non_pep_declaration_time};
+
         return undef;
     }
     catch {
@@ -1638,6 +1642,17 @@ sub _validate_dob {
 
     my $minimum_date = Date::Utility->new->minus_time_interval($min_age . 'y');
     die "BelowMinimumAge\n" if $dob_date->is_after($minimum_date);
+
+    return undef;
+}
+
+sub _validate_non_pep_time {
+    my ($non_pep_time) = @_;
+
+    my $non_pep_date = eval { Date::Utility->new($non_pep_time) };
+    die "InvalidNonPepTime\n" unless $non_pep_date;
+
+    die "TooLateNonPepTime\n" if $non_pep_date->epoch > time;
 
     return undef;
 }

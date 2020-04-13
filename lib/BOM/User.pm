@@ -680,18 +680,4 @@ sub logged_in_before_from_same_location {
     return $attempt_known;
 }
 
-=head2 pep_self_declaration_time
-
-It returns the time a user has confirmed that they are not a PEP (politically exposed person) or RCA (relative/ close associate).
-Since as of now, the confirmation is handled by FE on the first client signup, the minimum joined date among all real accounts is being returned here.
-
-=cut
-
-sub pep_self_declaration_time {
-    my ($self) = @_;
-    my @clients = grep { not $_->is_virtual and $_->date_joined } $self->clients;
-
-    return minstr(map { $_->date_joined } @clients);
-}
-
 1;
