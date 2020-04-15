@@ -15,8 +15,11 @@ use BOM::Platform::Locale;
 use BOM::User::Client;
 
 sub get_self_exclusion_form {
-    my $arg_ref = shift;
-    my $client  = $arg_ref->{client};
+    my $arg_ref         = shift;
+    my $client          = $arg_ref->{client};
+    my $restricted_only = $arg_ref->{restricted_only};
+
+    my $regulated = $client->landing_company->is_eu;
 
     my $loginID = $client->loginid;
 
@@ -472,7 +475,7 @@ sub get_self_exclusion_form {
             'id'    => 'self_exclusion_submit',
             'name'  => 'submit',
             'type'  => 'submit',
-            'value' => 'Update Settings'
+            'value' => 'Update Settings',
         },
         'error' => {
             'id'    => 'invalidinputfound',
@@ -488,26 +491,41 @@ sub get_self_exclusion_form {
             'name'   => 'selfExclusion',
             'class'  => 'formObject',
             'method' => 'post',
-            'action' => request()->url_for('backoffice/f_setting_selfexclusion.cgi'),
+            'action' => request()->url_for(
+                $restricted_only
+                ? 'backoffice/f_setting_selfexclusion_restricted.cgi'
+                : 'backoffice/f_setting_selfexclusion.cgi'
+            ),
         });
+
+    my @restricted_fields = (
+        $input_field_daily_loss_limit,  $input_field_7day_loss_limit, $input_field_30day_loss_limit,
+        $input_field_max_deposit_limit, $input_field_max_deposit_end_date
+    );
 
     # add a fieldset to append input fields
     my $fieldset = $form_self_exclusion->add_fieldset({});
+    if ($restricted_only) {
+        $fieldset->add_field($_) for @restricted_fields;
+    } else {
+        if ($regulated) {
+            $_->{input}->{readonly} = 1 for @restricted_fields;
+        }
 
-    $fieldset->add_field($input_field_maximum_account_cash_balance);
-    $fieldset->add_field($input_field_daily_turnover_limit);
-    $fieldset->add_field($input_field_daily_loss_limit);
-    $fieldset->add_field($input_field_7day_turnover_limit);
-    $fieldset->add_field($input_field_7day_loss_limit);
-    $fieldset->add_field($input_field_30day_turnover_limit);
-    $fieldset->add_field($input_field_30day_loss_limit);
-    $fieldset->add_field($input_field_maximum_number_open_positions);
-    $fieldset->add_field($input_field_session_duration);
-    $fieldset->add_field($input_field_exclude_me);
-    $fieldset->add_field($input_field_timeout_me);
-    $fieldset->add_field($input_field_max_deposit_limit);
-    $fieldset->add_field($input_field_max_deposit_end_date);
-
+        $fieldset->add_field($input_field_maximum_account_cash_balance);
+        $fieldset->add_field($input_field_daily_turnover_limit);
+        $fieldset->add_field($input_field_daily_loss_limit);
+        $fieldset->add_field($input_field_7day_turnover_limit);
+        $fieldset->add_field($input_field_7day_loss_limit);
+        $fieldset->add_field($input_field_30day_turnover_limit);
+        $fieldset->add_field($input_field_30day_loss_limit);
+        $fieldset->add_field($input_field_maximum_number_open_positions);
+        $fieldset->add_field($input_field_session_duration);
+        $fieldset->add_field($input_field_exclude_me);
+        $fieldset->add_field($input_field_timeout_me);
+        $fieldset->add_field($input_field_max_deposit_limit);
+        $fieldset->add_field($input_field_max_deposit_end_date);
+    }
     $fieldset->add_field($input_hidden_fields);
     $fieldset->add_field($input_submit_button);
 

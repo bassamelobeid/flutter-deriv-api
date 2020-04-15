@@ -22,30 +22,41 @@ BrokerPresentation("Setting Client Self Exclusion");
 my $loginid = request()->param('loginid');
 Bar("Setting Client Self Exclusion");
 
-# Not available for Virtual Accounts
-if ($loginid =~ /^VR/) {
-    print '<h1>Self-Exclusion Facilities</h1>';
-    print '<p class="aligncenter">We\'re sorry but the Self Exclusion facility is not available for Virtual Accounts.</p>';
-    code_exit_BO();
-}
-
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginid}) };
 if (not $client) {
     print "Error: wrong loginid ($loginid) could not get client object";
     code_exit_BO();
 }
 
+# Not available for Virtual Accounts
+if ($client->is_virtual) {
+    print '<h1>Self-Exclusion Facilities</h1>';
+    print '<p class="aligncenter">We\'re sorry but the Self Exclusion facility is not available for Virtual Accounts.</p>';
+    code_exit_BO();
+}
+
+# some limits are not updatable in regulated landing companies
+my $regulated_lc = $client->landing_company->is_eu;
+
 my $broker = $client->broker;
 
 my $self_exclusion_form = BOM::Backoffice::Form::get_self_exclusion_form({
-    client => $client,
-    lang   => request()->language,
+    client          => $client,
+    lang            => request()->language,
+    restricted_only => 0
 });
 
+my $client_details_link = request()->url_for(
+    "backoffice/f_clientloginid_edit.cgi",
+    {
+        broker  => $broker,
+        loginID => $loginid
+    });
+
 my $page =
-      '<h2> The Client [loginid: '
+      "<h2> The Client loginid: <a href='$client_details_link'>"
     . encode_entities($loginid)
-    . '] self-exclusion settings are as follows. You may change it by editing the corresponding value.</h2>';
+    . ' </a> self-exclusion settings are as follows. You may change it by editing the corresponding value.</h2>';
 
 sub make_row {
     my ($name, @values) = @_;
@@ -109,41 +120,44 @@ $v = request()->param('MAXOPENPOS');
 $client->set_exclusion->max_open_bets(looks_like_number($v) ? $v : undef);
 $v = request()->param('DAILYTURNOVERLIMIT');
 $client->set_exclusion->max_turnover(looks_like_number($v) ? $v : undef);
-$v = request()->param('DAILYLOSSLIMIT');
-$client->set_exclusion->max_losses(looks_like_number($v) ? $v : undef);
 $v = request()->param('7DAYTURNOVERLIMIT');
 $client->set_exclusion->max_7day_turnover(looks_like_number($v) ? $v : undef);
-$v = request()->param('7DAYLOSSLIMIT');
-$client->set_exclusion->max_7day_losses(looks_like_number($v) ? $v : undef);
 $v = request()->param('30DAYTURNOVERLIMIT');
 $client->set_exclusion->max_30day_turnover(looks_like_number($v) ? $v : undef);
-$v = request()->param('30DAYLOSSLIMIT');
-$client->set_exclusion->max_30day_losses(looks_like_number($v) ? $v : undef);
 $v = request()->param('MAXCASHBAL');
 $client->set_exclusion->max_balance(looks_like_number($v) ? $v : undef);
 $v = request()->param('SESSIONDURATION');
 $client->set_exclusion->session_duration_limit(looks_like_number($v) ? $v : undef);
 
-my $form_max_deposit_date   = request()->param('MAXDEPOSITDATE') || undef;
-my $form_max_deposit_amount = request()->param('MAXDEPOSIT')     || undef;
+unless ($regulated_lc) {
+    $v = request()->param('DAILYLOSSLIMIT');
+    $client->set_exclusion->max_losses(looks_like_number($v) ? $v : undef);
+    $v = request()->param('7DAYLOSSLIMIT');
+    $client->set_exclusion->max_7day_losses(looks_like_number($v) ? $v : undef);
+    $v = request()->param('30DAYLOSSLIMIT');
+    $client->set_exclusion->max_30day_losses(looks_like_number($v) ? $v : undef);
+
+    my $form_max_deposit_date   = request()->param('MAXDEPOSITDATE') || undef;
+    my $form_max_deposit_amount = request()->param('MAXDEPOSIT')     || undef;
 
 # user will not be allowed to set a max deposit without an expiry time
-if ($form_max_deposit_date xor defined $form_max_deposit_amount) {
-    code_exit_BO("Max deposit and Max deposit end date must be set together");
-}
+    if ($form_max_deposit_date xor defined $form_max_deposit_amount) {
+        code_exit_BO("Max deposit and Max deposit end date must be set together");
+    }
 
-if ($form_max_deposit_date) {
-    my $max_deposit_date = Date::Utility->new($form_max_deposit_date);
-    my $now              = Date::Utility->new;
-    code_exit_BO("Cannot set a Max deposit end date in the past") if $max_deposit_date->is_before($now);
-    code_exit_BO("Max deposit is not a number") unless (looks_like_number($form_max_deposit_amount));
-    $client->set_exclusion->max_deposit($form_max_deposit_amount);
-    $client->set_exclusion->max_deposit_end_date($max_deposit_date->date);
-    $client->set_exclusion->max_deposit_begin_date(Date::Utility->new->date);
-} else {
-    $client->set_exclusion->max_deposit_end_date(undef);
-    $client->set_exclusion->max_deposit_begin_date(undef);
-    $client->set_exclusion->max_deposit(undef);
+    if ($form_max_deposit_date) {
+        my $max_deposit_date = Date::Utility->new($form_max_deposit_date);
+        my $now              = Date::Utility->new;
+        code_exit_BO("Cannot set a Max deposit end date in the past") if $max_deposit_date->is_before($now);
+        code_exit_BO("Max deposit is not a number") unless (looks_like_number($form_max_deposit_amount));
+        $client->set_exclusion->max_deposit($form_max_deposit_amount);
+        $client->set_exclusion->max_deposit_end_date($max_deposit_date->date);
+        $client->set_exclusion->max_deposit_begin_date(Date::Utility->new->date);
+    } else {
+        $client->set_exclusion->max_deposit_end_date(undef);
+        $client->set_exclusion->max_deposit_begin_date(undef);
+        $client->set_exclusion->max_deposit(undef);
+    }
 }
 
 my $form_exclusion_until_date = request()->param('EXCLUDEUNTIL') || undef;
@@ -177,13 +191,7 @@ $client->set_exclusion->timeout_until($timeout_until);
 if ($client->save) {
     #print message inform Client everything is ok
     print "<p class=\"aligncenter\">Thank you. the client settings have been updated.</p>";
-    print "<a href=\""
-        . request()->url_for(
-        "backoffice/f_clientloginid_edit.cgi",
-        {
-            broker  => $broker,
-            loginID => $loginid
-        }) . "\">&laquo; return to client details</a>";
+    print qq{<a href='$client_details_link'>&laquo; return to client details</a>};
 } else {
     print "<p class=\"aligncenter\">Sorry, the client settings have not been updated, please try it again.</p>";
     warn("Error: cannot write to self_exclusion table $!");

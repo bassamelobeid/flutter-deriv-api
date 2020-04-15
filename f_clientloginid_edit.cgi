@@ -840,6 +840,18 @@ print "Configure <a id='self-exclusion' href=\""
         loginid => $loginid
     }) . "\">self-exclusion</a> settings for $encoded_loginid.";
 
+# show restricted-access fields of regulated landing company clients (accessible for compliance staff only)
+if (BOM::Backoffice::Auth0::has_authorisation(['Compliance']) and $client->landing_company->is_eu) {
+    print('<br>');
+    print 'Configure <a id="self-exclusion_restricted" href="'
+        . request()->url_for(
+        'backoffice/f_setting_selfexclusion_restricted.cgi',
+        {
+            broker  => $broker,
+            loginid => $loginid
+        }) . '"> restricted self-exlcusion </a> settings';
+}
+
 Bar("$loginid PAYMENT AGENT DETAILS");
 
 # Show Payment-Agent details if this client is also a Payment Agent.
