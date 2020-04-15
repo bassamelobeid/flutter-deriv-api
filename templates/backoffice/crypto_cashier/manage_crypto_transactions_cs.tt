@@ -19,6 +19,8 @@
     }
 </style>
 <div id="crypto" class="grd-parent grd-grid-12">
+    <div style="margin-bottom:10px"> <lable> <strong> Client: </strong> <a href="[% details_link %]" target="_blank"> [% loginid %] </a> <lable> &nbsp&nbsp&nbsp
+       [% IF fiat_loginid %] <lable> <strong> FIAT Login: </strong> <a href="[% fiat_link %]" target="_blank"> [% fiat_loginid %] </a> </lable>[% END %] </div>
     <table class="hover alternate collapsed" border="1" width="100%">
         <thead>
             <tr>
@@ -46,7 +48,6 @@
                 <td valign="top">
                     <table class="internal"><tbody>
                         <tr><th>Amount:</th><td>[% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount %])</td></tr>
-                        <tr><th>Client:</th><td> <a href="[% trx.details_link %]" target="_blank"> [% trx.client_loginid %] </td></a> [% IF trx.fiat_loginid %] <th>FIAT Login:</th><td> <a href="[% trx.fiat_link %]" target="_blank"> [% trx.fiat_loginid %] </a></td> [% END %]<td></tr>
                         <tr><th>Balance:</th><td>[% trx.balance %]</td></tr>
                         <tr><th>Payment ID:</th><td>[% trx.payment_id %]</td></tr>
                     [% IF trx.transaction_type == 'withdrawal'%]

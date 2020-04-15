@@ -75,6 +75,7 @@ my $permissions = {
     'view_192_raw_response.cgi'       => ['CS'],
     'email_templates.cgi'             => ['CS'],
     'send_emails.cgi'                 => ['CS'],
+    'fetch_client_details.cgi'        => ['CS'],
 
     'f_client_anonymization.cgi'     => ['Compliance'],
     'f_client_anonymization_dcc.cgi' => ['Compliance'],

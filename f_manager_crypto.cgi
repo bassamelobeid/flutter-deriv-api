@@ -129,20 +129,11 @@ my $display_transactions = sub {
         $trx->{amount} //= 0;    # it will be undef on newly generated addresses
         $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
 
-        my $client = BOM::User::Client::get_instance({
-            'loginid'    => $trx->{client_loginid},
-            db_operation => 'replica'
-        });
-
         $trx->{details_link} = request()->url_for(
             'backoffice/f_clientloginid_edit.cgi',
             {
                 broker  => $broker,
                 loginID => $trx->{client_loginid}});
-
-        my %fiat = get_fiat_login_id_for($trx->{client_loginid}, $broker);
-        $trx->{fiat_loginid} = $fiat{fiat_loginid};
-        $trx->{fiat_link}    = $fiat{fiat_link};
     }
 
     # Render template page with transactions
@@ -162,6 +153,7 @@ my $display_transactions = sub {
             staff           => $staff,
             show_all_pendings   => $show_all_pendings   // '',
             show_one_authorised => $show_one_authorised // '',
+            fetch_url           => request()->url_for('backoffice/fetch_client_details.cgi'),
         }) || die $tt->error();
 };
 

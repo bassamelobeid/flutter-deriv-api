@@ -229,16 +229,17 @@ if (@trxns) {
             loginID => $client->loginid
         });
 
-    my %fiat         = get_fiat_login_id_for($client->loginid, $broker);
-    my $fiat_loginid = $fiat{fiat_loginid};
-    my $fiat_link    = $fiat{fiat_link};
+    my %fiat = get_fiat_login_id_for($client->loginid, $broker);
+    my %client_details = (
+        loginid      => $client->loginid,
+        details_link => "$details_link",
+        fiat_loginid => $fiat{fiat_loginid},
+        fiat_link    => "$fiat{fiat_link}",
+    );
 
     for my $trx (@trxns) {
         $trx->{amount} //= 0;    # it will be undef on newly generated addresses
-        $trx->{usd_amount}   = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
-        $trx->{fiat_loginid} = $fiat_loginid;
-        $trx->{fiat_link}    = $fiat_link;
-        $trx->{details_link} = $details_link;
+        $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
     }
 
     Bar('CRYPTOCURRENCY ACTIVITY');
@@ -252,6 +253,7 @@ if (@trxns) {
             transaction_uri => $transaction_uri,
             address_uri     => $address_uri,
             testnet         => BOM::Config::on_qa() ? 1 : 0,
+            %client_details,
         }) || die $tt->error();
 }
 
