@@ -22,12 +22,13 @@ my $failure_recipients = join(',', 'compliance-alerts@binary.com', 'sysadmin@bin
 
 # If we pass in a date, then we presumably want to use that date as our reference date
 # We are actually reporting on the year previous to our reference date.
-# So if we pass in NOW(), we will report on yesterday + 364 days further back
+# So if we pass in NOW(), we will report on yesterday + 364 days further back + 1 day if leap year
 # NOW/Today is default
 my $rd      = Date::Utility->new($specified_rptDate);
 my $rptDate = $rd->date_yyyymmdd;
-my $start   = $rd->minus_time_interval('365d');
-my $end     = $rd->minus_time_interval('1d');
+# April 2020, Compliance requested to make the lookback 1 year rather than 365 days to encompass leap year
+my $start = $rd->minus_time_interval('1y');
+my $end   = $rd->minus_time_interval('1d');
 
 # Our files will be written out for reference with a name like MX_2018-03-02_20180131_20180301.csv
 # where first is the broker code (assigned further down in the SQL) and next is the report date.
