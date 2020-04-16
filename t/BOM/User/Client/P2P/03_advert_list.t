@@ -77,8 +77,6 @@ subtest 'country & currency filtering' => sub {
     is $client3->p2p_advert_list()->@*, 0, 'Client with other currency does not see ads';
 };
 
-    
-
 BOM::Test::Helper::P2P::reset_escrow();
 
 # restore app config

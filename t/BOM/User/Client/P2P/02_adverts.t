@@ -38,7 +38,6 @@ my %advertiser_params = (
 my %advert_params = (
     account_currency  => 'usd',
     amount            => 100,
-    country           => 'id',
     description       => 'test advert',
     local_currency    => 'myr',
     max_order_amount  => 10,
@@ -71,12 +70,12 @@ subtest 'advertiser Registration' => sub {
     ok my $adv = $adv_client->p2p_advertiser_create(%params), 'create advertiser';
 
     my $expected = {
-        id             => $adv->{id},
-        is_listed      => bool(1),
-        is_approved    => bool(0),
-        created_time   => bool(1),
-        chat_user_id   => 'dummy',
-        chat_token     => 'dummy',
+        id           => $adv->{id},
+        is_listed    => bool(1),
+        is_approved  => bool(0),
+        created_time => bool(1),
+        chat_user_id => 'dummy',
+        chat_token   => 'dummy',
         %params
     };
 
@@ -135,9 +134,9 @@ subtest 'Updating advertiser fields' => sub {
 
     my $advertiser_info = $advertiser->p2p_advertiser_info;
 
-    ok $advertiser_info->{is_approved}, 'advertiser is approved';
-    is $advertiser_info->{name},        $params{name}, 'advertiser name';
-    ok $advertiser_info->{is_listed},   'advertiser is listed';
+    ok $advertiser_info->{is_approved},  'advertiser is approved';
+    is $advertiser_info->{name},         $params{name}, 'advertiser name';
+    ok $advertiser_info->{is_listed},    'advertiser is listed';
     is $advertiser_info->{chat_user_id}, 'dummy', 'advertiser chat user_id';
 
     cmp_deeply(
@@ -299,7 +298,7 @@ subtest 'Creating advert' => sub {
         account_currency         => uc($params{account_currency}),
         amount                   => num($params{amount}),
         amount_display           => num($params{amount}),
-        country                  => $params{country},
+        country                  => $advertiser->residence,
         created_time             => re('\d+'),
         description              => $params{description},
         id                       => re('\d+'),

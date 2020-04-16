@@ -1912,6 +1912,7 @@ sub p2p_advert_create {
     die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
     die +{error_code => 'AdvertiserNotApproved'}   unless $advertiser_info->{is_approved};
 
+    $param{country}          = $client->residence;
     $param{account_currency} = $client->currency;
 
     _validate_advert_amounts(%param);
@@ -1921,8 +1922,6 @@ sub p2p_advert_create {
         is_active     => 1,
     )->@*;
     die +{error_code => 'AdvertMaxExceeded'} if $active_adverts_count >= P2P_MAXIMUM_ACTIVE_ADVERTS;
-
-    $param{country} //= $client->residence;
 
     $param{local_currency} //= $client->local_currency || die +{error_code => 'NoLocalCurrency'};
 
