@@ -3,6 +3,8 @@ use warnings;
 
 use Test::More;
 use Test::MockObject;
+use Log::Any::Test;
+use Log::Any qw($log);
 
 use Binary::WebSocketAPI::Hooks;
 
@@ -39,6 +41,20 @@ subtest 'add_req_data' => sub {
 
         is_deeply $response->{echo_req}{tokens}, [('<not shown>') x $test_tokens->@*], 'Sanitization was performed';
     };
+};
+
+subtest 'output_validation with undefined msg_type' => sub {
+    my $req_storage  = {msg_type => 'ticks_history'};
+    my $api_response = {};
+    my $c_mock       = Test::MockObject->new({});
+    $c_mock->mock(l => sub { shift; shift });
+    $c_mock->mock(new_error => sub { shift; {error => join "", @_} });
+    $log->clear();
+    Binary::WebSocketAPI::Hooks::output_validation($c_mock, $req_storage, $api_response);
+    $log->contains_ok(
+        qr/Schema validation failed for our own output \[ \{\} error: No validation rules defined. \], make sure backend are aware of this error!, schema may need adjusting/
+    );
+    like($api_response->{error}, qr/validation failed: No validation rules defined/, 'api_response will have an error');
 };
 
 done_testing();

@@ -44,6 +44,16 @@ Returns version 4 schema
 
 sub _load_schema {
     my ($request_type, $direction) = @_;
+
+    # For an unknown reason, bom-rpc will return empty result `{}` .
+    # In such case the request_type will be undef.
+    # Please refer to the card https://trello.com/c/uZRt85Zg/42-logs-validatorerrors
+    # and the card https://trello.com/c/UTx5s4uM/10378-1-bugfix-debug-msg-type-1
+    unless ($request_type) {
+        $log->error('No request type when loading schema');
+        return {};
+    }
+
     return if $request_type eq 'error';
     $direction //= 'receive';
     my $schema;
@@ -58,6 +68,7 @@ sub _load_schema {
 
     );
     $request_type = $schema_mapping{$request_type} || $request_type;
+
     if (!exists $schema_cache{$request_type}{$direction}) {
         my $schema_path = $schemas_base . $request_type . '/' . $direction . '.json';
         if (!-e $schema_path) {
@@ -426,7 +437,7 @@ sub output_validation {
         return if exists $api_response->{error}{code};
     }
 
-    my $schema;
+    my $schema = {};
     if ($api_response->{msg_type}) {
         local $log->context->{args} = $req_storage->{origin_args} || $req_storage->{args};
         local $log->context->{api_response} = $api_response;
@@ -640,6 +651,7 @@ sub _validate_schema_error {
         numbers  => 1,
         strings  => 1
     );
+
     @errors = $validator->schema($schema)->validate($args);
     return undef unless scalar(@errors);    #passed Version 4 Check
 
