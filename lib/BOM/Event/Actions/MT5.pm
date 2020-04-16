@@ -125,7 +125,7 @@ sub redis_record_mt5_transfer {
     my $redis      = BOM::Config::Redis::redis_mt5_user_write();
     my $loginid    = $input_data->{loginid};
     my $mt5_id     = $input_data->{mt5_id};
-    my $redis_key  = $mt5_id . "_" . $input_data->{action};
+    my $redis_key  = 'MT5_TRANSFER_' . (uc $input_data->{action}) . '::' . $mt5_id;
 
     # check if the mt5 id exists in redis
     if ($redis->get($redis_key)) {
