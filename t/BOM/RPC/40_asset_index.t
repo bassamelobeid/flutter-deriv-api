@@ -50,27 +50,27 @@ my $first_entry_cr = [
     "frxAUDJPY",
     "AUD/JPY",
     [
-        ["callput",      "Higher/Lower",               "1d", "365d"],
-        ["callput",      "Rise/Fall",                  "5t", "365d"],
-        ["touchnotouch", "Touch/No Touch",             "1d", "365d"],
-        ["endsinout",    "Ends Between/Ends Outside",  "1d", "365d"],
-        ["staysinout",   "Stays Between/Goes Outside", "1d", "365d"],
-        ["callputequal", "Rise/Fall Equal",            "3m", "365d"],
-        ["callputspread", "Call Spread/Put Spread",     "3m", "1d"]
+        ["callput",       "Higher/Lower",               "1d", "365d"],
+        ["callput",       "Rise/Fall",                  "5t", "365d"],
+        ["touchnotouch",  "Touch/No Touch",             "1d", "365d"],
+        ["endsinout",     "Ends Between/Ends Outside",  "1d", "365d"],
+        ["staysinout",    "Stays Between/Goes Outside", "1d", "365d"],
+        ["callputequal",  "Rise/Fall Equal",            "3m", "365d"],
+        ["callputspread", "Call Spread/Put Spread",     "3m", "1d"],
 ]];
 
 my $first_entry_cr_mf_test2 = [
     "frxAUDJPY",
     "AUD/JPY",
     [
-        ["callput",      "Higher/Lower",               "1d", "365d"],
-        ["callput",      "Rise/Fall",                  "5t", "365d"],
-        ["touchnotouch", "Touch/No Touch",             "1d", "365d"],
-        ["endsinout",    "Ends Between/Ends Outside",  "1d", "365d"],
-        ["staysinout",   "Stays Between/Goes Outside", "1d", "365d"],
-        ["callputequal", "Rise/Fall Equal",            "3m", "365d"],
-        ["callputspread","Call Spread/Put Spread",     "3m", "1d"  ],
-]];
+        ["callput",       "Higher/Lower",               "1d", "365d"],
+        ["callput",       "Rise/Fall",                  "5t", "365d"],
+        ["touchnotouch",  "Touch/No Touch",             "1d", "365d"],
+        ["endsinout",     "Ends Between/Ends Outside",  "1d", "365d"],
+        ["staysinout",    "Stays Between/Goes Outside", "1d", "365d"],
+        ["callputequal",  "Rise/Fall Equal",            "3m", "365d"],
+        ["callputspread", "Call Spread/Put Spread",     "3m", "1d"],
+    ]];
 
 sub _test_asset_index {
     my ($params, $count, $first_entry) = @_;
@@ -102,7 +102,6 @@ subtest "asset_index logged in - with arg" => _test_asset_index({
 # Trades everything except, so should be 113 entries and first entry should
 #   be frxAUDJPY with 5 contract types.
 subtest "asset_index logged out - no arg" => _test_asset_index({language => 'EN'}, $entry_count_cr, $first_entry_cr_mf_test2);
-
 
 # Result should be for Binary (Europe) Ltd
 # Only trades volatilities, so should be 7 entries and first entry should
