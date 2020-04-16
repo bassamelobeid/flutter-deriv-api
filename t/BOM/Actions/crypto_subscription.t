@@ -47,6 +47,7 @@ subtest "change_address_status" => sub {
     my $transaction_hash1 = "427d42cfa0717e8d4ce8b453de74cc84f3156861df07173876f6cfebdcbc099a";
     my $transaction_hash2 = "adf0e2b9604813163ba6eb769a22174c68ace6349ddd1a79d4b10129f8d35924";
     my $transaction_hash3 = "55adac01630d9f836b4075128190887c54ba56c5e0d991e90ecb7ebd487a0526";
+    my $transaction_hash4 = "fbbe6717b6946bc426d52c8102dadb59a9250ea5368fb70eea69c152bc7cd4ef";
 
     my $transaction = {
         currency => 'LTC',
@@ -69,12 +70,6 @@ subtest "change_address_status" => sub {
         $btc_address = $helper->get_deposit_address;
     }
     'survived get_deposit_address';
-
-    my $btc_address2;
-    lives_ok {
-        $btc_address2 = $helper->get_deposit_address;
-    }
-    'survived get_deposit_address 2';
 
     $transaction->{to} = [$btc_address];
 
@@ -100,11 +95,27 @@ subtest "change_address_status" => sub {
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, 1, "Able to set pending a transaction to the same address with an different hash";
 
-    $transaction->{address} = $btc_address2;
-    is $response, 1, "Able to set pending a the same transaction to two different addresses";
+    $mock_btc->mock(
+        get_new_address => sub {
+            return '2N7MPismngmXWAHzUmyQ2wVG8s81CvqUkQS',;
+        });
+    my $btc_address2;
+    lives_ok {
+        $btc_address2 = $helper->get_deposit_address;
+    }
+    'survived get_deposit_address 2';
+
+    $transaction->{to} = [$btc_address2];
+    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response, 1, "Able to set pending the same transaction to two different addresses";
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, undef, "Can't set pending a transaction already pending";
+
+    $transaction->{hash} = $transaction_hash4;
+
+    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response, 1, "Able to set pending two pending transactions to the same address with an different hash";
 
     my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
     my $dbic = $clientdb->db->dbic;
@@ -117,14 +128,16 @@ subtest "change_address_status" => sub {
             return $sth->fetchall_arrayref({});
         });
 
-    my @address_entries = grep { $_->{address} eq $btc_address } $rows->@*;
+    my @address_entries = grep { $_->{address} eq $btc_address or $_->{address} eq $btc_address2 } $rows->@*;
 
-    is @address_entries, 2, "correct number of pending transactions";
+    is @address_entries, 4, "correct number of pending transactions";
 
     my @tx1 = grep { $_->{blockchain_txn} eq $transaction_hash1 } @address_entries;
     is @tx1, 1, "Correct hash for the first deposit";
     my @tx2 = grep { $_->{blockchain_txn} eq $transaction_hash2 } @address_entries;
-    is @tx2, 1, "Correct hash for the second deposit";
+    is @tx2, 2, "Correct hash for the second deposit";
+    my @tx3 = grep { $_->{blockchain_txn} eq $transaction_hash4 } @address_entries;
+    is @tx3, 1, "Correct hash for the third pending deposit";
 
     my $currency = BOM::CTC::Currency->new(
         currency_code => $transaction->{currency},
@@ -164,7 +177,7 @@ subtest "change_address_status" => sub {
             return $sth->fetchall_arrayref({});
         });
 
-    my $is_transacton_inserted = all { $_->{status} eq 'NEW' and $_->{address} eq $transaction->{address} } $rows->@*;
+    my $is_transacton_inserted = all { $_->{status} eq 'NEW' and $_->{address} eq $btc_address2 } $rows->@*;
     ok $is_transacton_inserted, "Transaction has been inserted with status NEW";
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
@@ -204,6 +217,46 @@ subtest "change_address_status" => sub {
         $response = BOM::Event::Actions::CryptoSubscription::update_transaction_status_to_pending($tx, $tx->{address});
         is $response, 1, "response ok from the database";
     }
+
+    $response = BOM::Event::Actions::CryptoSubscription::insert_new_deposit($transaction);
+    is $response, 0, "no payments found in the database (missing payments parameter)";
+    $response = BOM::Event::Actions::CryptoSubscription::insert_new_deposit($transaction, \());
+    is $response, 0, "no payments found in the database (empty payments parameter)";
+
+    $transaction->{to}   = "mtXWDB6k5yC5v7TcwKZHB89SUp85yCKshy";
+    $transaction->{hash} = "DF00012";
+
+    my $payment = {
+        'address'          => $transaction->{to},
+        'client_loginid'   => 'CR10000',
+        'status'           => 'NEW',
+        'currency_code'    => 'BTC',
+        'transaction_type' => 'deposit'
+    };
+
+    $response = BOM::Event::Actions::CryptoSubscription::insert_new_deposit($transaction, [$payment]);
+    is $response, 1, "empty transaction NEW state in the database, do not insert a new row";
+
+    $payment->{blockchain_txn} = $transaction->{hash};
+
+    $response = BOM::Event::Actions::CryptoSubscription::insert_new_deposit($transaction, [$payment]);
+    is $response, 1, "same transaction already in the database, do not insert a new row";
+
+    $payment->{blockchain_txn} = "DF00011";
+
+    $response = BOM::Event::Actions::CryptoSubscription::insert_new_deposit($transaction, [$payment]);
+    is $response, 1, "Different transaction insert the new row in the database";
+
+    $rows = $dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare('select * from payment.find_crypto_by_addresses(?::VARCHAR[])');
+            $sth->execute([$transaction->{to}]);
+            return $sth->fetchall_arrayref({});
+        });
+
+    my @rows = $rows->@*;
+    my @newtx = grep { $_->{blockchain_txn} eq $transaction->{hash} } @rows;
+    is @newtx, 1, "new transaction found in the database";
 
 };
 

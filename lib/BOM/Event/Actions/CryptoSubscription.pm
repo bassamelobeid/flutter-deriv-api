@@ -52,6 +52,12 @@ sub set_pending_transaction {
     my $transaction = shift;
 
     try {
+
+        # the update cursor call is done before because
+        # we need to update the database with the last block
+        # started since once we start the subscription daemon
+        # again it will continue including the latest block
+        # inserted in the database
         my $cursor_result = collectordb()->run(
             ping => sub {
                 $_->selectall_arrayref(
@@ -62,6 +68,10 @@ sub set_pending_transaction {
             });
         $log->warnf("%s: Can't update the cursor to block: %s", $transaction->{currency}, $transaction->{block}) unless $cursor_result;
 
+        # get all the payments related to the `to` address from the transaction
+        # since this is only for deposits we don't care about the `from` address
+        # also, the subscription daemon takes care about the multiple receivers
+        # transactions, so in this daemon we are going to always receive just 1 to 1 transactions.
         my $payment_rows = clientdb()->run(
             fixup => sub {
                 my $sth = $_->prepare('select * from payment.find_crypto_by_addresses(?::VARCHAR[])');
@@ -96,30 +106,6 @@ sub set_pending_transaction {
                 return undef;
             }
 
-            # address has no new transaction so it's safe to create a new one since we
-            # already verified that the transaction hash is not present on the table
-            if (all { $_->{status} ne 'NEW' } @payment) {
-                my $result = clientdb()->run(
-                    ping => sub {
-                        my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit(?, ?, ?, ?, ?)');
-                        $sth->execute($address, $transaction->{currency}, $payment[0]->{client_loginid}, $transaction->{fee}, $transaction->{hash})
-                            or die $sth->errstr;
-                    });
-
-                unless ($result) {
-                    $log->warnf("Duplicate deposit rejected for %s transaction: %s", $transaction->{currency}, $transaction->{hash});
-                    return undef;
-                }
-            }
-
-            # for omnicore we need to check if the property id is correct
-            if ($transaction->{property_id}
-                && ($transaction->{property_id} + 0) != (BOM::Config::crypto()->{$transaction->{currency}}->{property_id} + 0))
-            {
-                $log->warnf("%s - Invalid property ID for transaction: %s", $transaction->{currency}, $transaction->{hash});
-                return undef;
-            }
-
             # TODO: when the user send a transaction to a correct address but using
             # a different currency, we need to change the currency in the DATABASE and set
             # the transaction as pending.
@@ -133,6 +119,19 @@ sub set_pending_transaction {
                 $log->warnf("Amount is zero for transaction: %s", $transaction->{hash});
                 return undef;
             }
+
+            # for omnicore we need to check if the property id is correct
+            if ($transaction->{property_id}
+                && ($transaction->{property_id} + 0) != (BOM::Config::crypto()->{$transaction->{currency}}->{property_id} + 0))
+            {
+                $log->warnf("%s - Invalid property ID for transaction: %s", $transaction->{currency}, $transaction->{hash});
+                return undef;
+            }
+
+            # insert new duplicated deposit if needed
+            # requirements to insert a new deposit:
+            #  - database already contains one or more transactions to the same address
+            return undef unless insert_new_deposit($transaction, \@payment);
 
             my $result = update_transaction_status_to_pending($transaction, $address);
 
@@ -174,6 +173,63 @@ sub set_pending_transaction {
     return 1;
 }
 
+=head2 insert_new_deposit
+
+If the database already contains any transaction to the same address no matter the status
+we insert a new database row to the second deposit
+
+=over 4
+
+=item* C<transaction> transaction object L<https://github.com/regentmarkets/bom-cryptocurrency/blob/master/lib/BOM/CTC/Subscription.pm#L113-L120>
+
+=item* C<payment> payment.cryptocurrency rows related to the address
+
+=back
+
+Return 1 for no errors and 0 when error is found inserting the row to the database.
+
+=cut
+
+sub insert_new_deposit {
+    my ($transaction, $payment_list) = @_;
+
+    return 0 unless $payment_list;
+
+    my @payment = @$payment_list;
+    return 0 unless @payment > 0;
+
+    # address has no new transaction so it's safe to create a new one since we
+    # already verified that the transaction hash is not present on the table
+    my $no_new_found = any { $_->{status} eq 'NEW' and not $_->{blockchain_txn} } @payment;
+    # or in case we already have another transaction to this same address
+    # we need to be able to create another row in the payment database too
+    # so we are going to have two rows in the new status but with different
+    # transactions.
+    my $is_txn_exists = any { $_->{blockchain_txn} and $_->{blockchain_txn} eq $transaction->{hash} and $_->{status} eq 'NEW' } @payment;
+
+    unless ($no_new_found || $is_txn_exists) {
+        my $result = clientdb()->run(
+            ping => sub {
+                my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit(?, ?, ?, ?, ?)');
+                $sth->execute(
+                    $payment[0]->{address},
+                    $transaction->{currency},
+                    $payment[0]->{client_loginid},
+                    $transaction->{fee}, $transaction->{hash});
+            });
+
+        # this is just a safe check in case we get some error from the database
+        # but we should not reach this point because we are verifying the PKs conflicts
+        # before this point
+        unless ($result) {
+            $log->warnf("Duplicate deposit rejected for %s transaction: %s", $transaction->{currency}, $transaction->{hash});
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 =head2 update_transaction_status_to_pending
 
 Update the status to pending in the database
@@ -195,4 +251,3 @@ sub update_transaction_status_to_pending {
 }
 
 1;
-
