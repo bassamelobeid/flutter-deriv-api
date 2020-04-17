@@ -60,7 +60,8 @@ sub authorize {
     return $c->_bad_request('the request was missing valid app_id') unless $app;
 
     # setup oneall callback url
-    my $oneall_callback = $c->req->url->path('/oauth2/oneall/callback')->to_abs;
+    my $oneall_callback = Mojo::URL->new($c->req->url->path('/oauth2/oneall/callback')->to_abs);
+    $oneall_callback->scheme('https');
     $c->stash('oneall_callback' => $oneall_callback);
 
     # load available networks for brand
