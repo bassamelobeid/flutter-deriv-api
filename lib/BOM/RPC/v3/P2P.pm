@@ -56,73 +56,70 @@ our %ERROR_MAP = do {
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
     (
         # System or country limitations
-        P2PDisabled          => localize('The P2P cashier is currently disabled.'),
-        RestrictedCountry    => localize('This country is not enabled for P2P cashier functionality.'),
-        RestrictedCurrency   => localize('This currency is not enabled for P2P cashier functionality.'),
-        UnavailableOnVirtual => localize('P2P cashier functionality is not available on demo accounts.'),
-        NoCountry            => localize('You need to set your residence in order to use this feature.'),
-        NoLocalCurrency      => localize('We are unable to determine the local currency for your country.'),
+        NoCountry            => localize("Please set your country of residence."),
+        NoCurrency           => localize("Please set your account currency."),
+        P2PDisabled          => localize("P2P cashier is currently unavailable. Please check back later."),
+        RestrictedCountry    => localize("P2P cashier is unavailable in your country."),
+        RestrictedCurrency   => localize("[_1] is not supported at the moment."),
+        UnavailableOnVirtual => localize("P2P cashier is unavailable on demo accounts. Please switch to your real account."),
 
         # Client status
-        NotLoggedIn      => localize('You are not logged in.'),
-        NoCurrency       => localize('You have not yet selected a currency for your account.'),
-        PermissionDenied => localize('You do not have permission for this action.'),
-        NotRegistered    => localize('You are not yet registered as a P2P advertiser.'),
+        NoLocalCurrency => localize("We cannot recognise your local currency. Please contact our Customer Support team."),    # TODO maybe this?
+        NotLoggedIn     => localize("Please log in to continue."),
+        PermissionDenied => localize("You cannot perform this action because of your account status. Please contact our Customer Support team."),
 
         # Invalid data
-        NotFound                  => localize('Not found.'),
-        MinimumNotMet             => localize('The minimum amount requirements are not met.'),
-        MaximumExceeded           => localize('The amount exceeds the maximum limit.'),
-        MaxPerOrderExceeded       => localize('The maximum amount exceeds the maximum amount per order ([_1] [_2]). Please adjust the value.'),
-        AlreadyInProgress         => localize('This cannot be cancelled since the order is already in progress.'),
-        InvalidNumericValue       => localize('Numeric value should be greater than 0.'),
-        InvalidMinMaxAmount       => localize('The minimum amount should be less than or equal to maximum amount.'),
-        InvalidMaxAmount          => localize('The maximum amount should be less than or equal to the advert amount.'),
-        InvalidListLimit          => localize("Invalid value for list limit"),
-        InvalidListOffset         => localize("Invalid value for list offset"),
-        RateTooSmall              => localize('Advert rate should not be less than [_1]. Please adjust the value.'),
-        RateTooBig                => localize('Advert rate should not be more than [_1]. Please adjust the value.'),
-        MinPriceTooSmall          => localize('Advert minimum price is zero, Please adjust minimum amount or rate.'),
-        AdvertPaymentInfoRequired => localize('Please include your payment information.'),
-        AdvertContactInfoRequired => localize('Please include your contact information.'),
-        OrderPaymentInfoRequired  => localize('Please include your payment information.'),
-        OrderContactInfoRequired  => localize('Please include your contact information.'),
-        AdvertPaymentContactInfoNotAllowed => localize('Contact and payment information are not applicable for this ad.'),
-        OrderPaymentContactInfoNotAllowed  => localize('Contact and payment information are not applicable for this order.'),
+        AdvertContactInfoRequired          => localize("Please provide your contact details."),
+        AdvertPaymentContactInfoNotAllowed => localize("Payment and contact information are not needed for buy ads."),
+        AdvertPaymentInfoRequired          => localize("Please provide your payment details."),
+        AlreadyInProgress                  => localize("Order is in progress. Changes are no longer allowed."),
+        InvalidListLimit                   => localize("Please enter a limit value that's greater than 0."),
+        InvalidListOffset                  => localize("The offset value cannot be negative. Please enter 0 or higher."),
+        InvalidMaxAmount                   => localize("This value should be less than or equal to the ad amount."),
+        InvalidMinMaxAmount => localize("The minimum order amount should be less than or equal to the maximum ad amount. Please adjust the value."),
+        InvalidNumericValue => localize("Please enter a value that's greater than 0."),
+        MaximumExceeded     => localize("Maximum ad limit is [_1] [_2]. Please adjust the value."),
+        MaxPerOrderExceeded => localize("Maximum ad order amount is [_1] [_2]. Please adjust the value."),
+        MinPriceTooSmall    => localize("Minimum order amount is [_1]. Please adjust the value."),
+        OrderContactInfoRequired          => localize("Please provide your contact details."),
+        OrderPaymentContactInfoNotAllowed => localize("Buy orders do not require payment and contact information."),
+        OrderPaymentInfoRequired          => localize("Please provide your payment details."),
+        RateTooBig                        => localize("Ad rate should not be more than [_1]. Please adjust the value."),
+        RateTooSmall                      => localize("Ad rate should not be less than [_1]. Please adjust the value."),
 
         # bom-user errors
-        AlreadyRegistered             => localize('This account has already been registered as a P2P advertiser.'),
-        AdvertiserNotFound            => localize('P2P advertiser not found.'),
-        AdvertiserNotRegistered       => localize('This account is not registered as a P2P advertiser.'),
-        AdvertiserNotListed           => localize('The provided advertiser ID does not belong to an active advertiser.'),
-        AdvertiserNotApproved         => localize('The advertiser is not approved.'),
-        AdvertiserNameRequired        => localize('The advertiser name cannot be blank.'),
-        OrderAlreadyConfirmed         => localize('The order is already confirmed by you.'),
-        OrderAlreadyCancelled         => localize('The order is already cancelled.'),
-        AdvertNoEditInactive          => localize('The advert is inactive and cannot be changed.'),
-        AdvertNotFound                => localize('Advert not found.'),
-        AdvertIsDisabled              => localize('Advert is inactive.'),
-        AdvertInsufficientAmount      => localize('The new amount cannot be less than the value of current orders against this advert.'),
-        AdvertMaxExceeded             => localize('The maximum limit of active adverts reached.'),
-        ClientDailyOrderLimitExceeded => localize('You may only place [_1] orders every 24 hours. Please try again later.'),
-        InvalidOrderCurrency          => localize('You cannot create an order with a different currency than your account.'),
-        OrderNotFound                 => localize('Order not found.'),
-        OrderAlreadyExists            => localize('Too many orders. Please complete your pending orders.'),
-        InvalidAdvertOwn              => localize('You cannot create an order for your own advert.'),
-        OrderNoEditExpired            => localize('The order has expired and cannot be changed.'),
-        InvalidStateForConfirmation   => localize('The order cannot be confirmed in its current state.'),
-        EscrowNotFound                => localize('Advertising for the currency is not available at the moment.'),
-        OrderMinimumNotMet => localize('The minimum amount for this advert is [_1] [_2].'),    # minimum won't change during advert lifetime
-        OrderMaximumExceeded   => localize('The maximum available amount for this advert is [_1] [_2] at the moment.'),
-        OpenOrdersDeleteAdvert => localize(
-            "This advert cannot be deleted because there are open orders. Please wait until the orders are closed and try again. If you'd like to stop accepting new orders, you may disable your advert."
-        ),
-        AdvertiserNameTaken              => localize('The advertiser name is already taken. Please choose another.'),
+        AdvertIsDisabled        => localize("This ad is currently unavailable. Please check back later."),
+        AdvertiserNameRequired  => localize("Please provide your name."),
+        AdvertiserNameTaken     => localize("This name is already in use. Please provide a different name."),
+        AdvertiserNotApproved   => localize("You've not been approved as an advertiser yet. Please contact our Customer Support team."),
+        AdvertiserNotFound      => localize("We can't find the advertiser. Please review the details and try again."),
+        AdvertiserNotListed     => localize("This advertiser is currently inactive. Please check again later or choose another advertiser."),
+        AdvertiserNotRegistered => localize("Please apply to be an advertiser. If you've already applied, please contact our Customer Support team."),
+        AdvertMaxExceeded       => localize("You've reached the maximum ad limit. Please deactivate some ads."),
+        AdvertNotFound          => localize("We can't find the ad. Please review the details or try another ad."),
+        AdvertOwnerNotApproved  => localize("This advertiser has not been approved yet. Please choose another advertiser."),
+        AlreadyRegistered       => localize("You are already an advertiser."),
+        ClientDailyOrderLimitExceeded => localize("You may only place [_1] orders every 24 hours. Please try again later."),
+        EscrowNotFound =>
+            localize("Advertising for this currency is currently unavailable. Please contact our Customer Support team or try again later."),
+        InvalidAdvertOwn            => localize("You cannot make an order for your own ad."),
+        InvalidOrderCurrency        => localize("Please select an ad that matches your currency."),
+        InvalidStateForConfirmation => localize("Please wait for confirmation or contact the seller."),
+        OpenOrdersDeleteAdvert      => localize("You have open orders for this ad. Please wait until all orders are closed."),
+        OrderAlreadyCancelled       => localize("You've already cancelled this order."),
+        OrderAlreadyConfirmed       => localize("This order is already confirmed."),
+        OrderAlreadyExists          => localize("You have an active order for this ad. Please complete the order before making a new one."),
+        OrderMaximumExceeded        => localize("Maximum ad amount is [_1] [_2]. Please adjust the value."),
+        OrderMinimumNotMet          => localize("Minimum ad amount is [_1] [_2]. Please adjust the value."),
+        OrderNoEditExpired          => localize("This order has expired and cannot be changed."),
+        OrderNotFound               => localize("This order does not exist."),
+
+        # TODO these messages needs to be checked with copywritter team
         AdvertiserCreateChatError        => localize('An error occurred (chat user not created). Please try again later.'),
-        CounterpartyNotAdvertiserForChat => localize('Chat is not possible because the other client is not yet registered on the P2P system.'),
         AdvertiserNotFoundForChat        => localize('You may not chat until you have registered on the P2P system.'),
-        CreateChatError                  => localize('An error occurred when creating the chat. Please try again later.'),
         ChatTokenError                   => localize('An error occurred when issuing a new token. Please try again later.'),
+        CounterpartyNotAdvertiserForChat => localize('Chat is not possible because the other client is not yet registered on the P2P system.'),
+        CreateChatError                  => localize('An error occurred when creating the chat. Please try again later.'),
     );
 };
 
@@ -131,7 +128,6 @@ our %ERROR_MAP = do {
 our %DB_ERRORS = (
     BI225 => 'AdvertNotFound',
     BI226 => 'InvalidAdvertOwn',
-    BI227 => 'AdvertInsufficientAmount',
     BI228 => 'OrderNotFound',
     BI229 => 'InvalidStateForConfirmation',
     BI230 => 'InvalidStateForConfirmation',
@@ -770,7 +766,10 @@ sub _check_client_access {
 
     die +{error_code => 'NoCurrency'} unless $client->default_account;
 
-    die "RestrictedCurrency\n" unless any { $_ eq lc($client->currency) } $app_config->payments->p2p->available_for_currencies->@*;
+    die +{
+        error_code     => 'RestrictedCurrency',
+        message_params => [uc $client->currency]}
+        unless any { $_ eq lc($client->currency) } $app_config->payments->p2p->available_for_currencies->@*;
 
     die "NoCountry\n" unless $client->residence;
 

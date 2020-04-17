@@ -57,7 +57,7 @@ my $first_entry_cr = [
         ["staysinout",    "Stays Between/Goes Outside", "1d", "365d"],
         ["callputequal",  "Rise/Fall Equal",            "3m", "365d"],
         ["callputspread", "Call Spread/Put Spread",     "3m", "1d"],
-]];
+    ]];
 
 my $first_entry_cr_mf_test2 = [
     "frxAUDJPY",
@@ -80,7 +80,6 @@ sub _test_asset_index {
         is(0 + @$result,    $count,            'correct number of entries');
         is($result->[0][0], $first_entry->[0], 'First entry item 1 is asset code');
         is($result->[0][1], $first_entry->[1], 'First entry item 2 is asset name/description');
-#warn Dumper($result->[0][2]);
         cmp_deeply($result->[0][2], bag(@{$first_entry->[2]}), 'First entry item 3 lists available contract types');
         return undef;
     };

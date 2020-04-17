@@ -120,7 +120,8 @@ $client_advertiser->set_default_account('USD');
 subtest 'Currency not enabled' => sub {
     $app_config->payments->p2p->available_for_currencies([]);
 
-    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('RestrictedCurrency', 'error code is RestrictedCurrency');
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('RestrictedCurrency', 'error code is RestrictedCurrency')
+        ->error_message_is('USD is not supported at the moment.');
 
     $app_config->payments->p2p->available_for_currencies($P2P_AVAILABLE_CURRENCIES);
 
