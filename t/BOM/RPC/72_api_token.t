@@ -67,6 +67,29 @@ my $copiers_data_mapper = create_test_copier($client, $test_token->{token});
 my $traders_tokens = $copiers_data_mapper->get_traders_tokens_all({copier_id => 'CR10001'});
 is scalar(@$traders_tokens), 1, 'get tokens in copiers table';
 
+# delete wrong token
+$res = BOM::RPC::v3::Accounts::api_token({
+    client => $client,
+    args   => {delete_token => "invalidtoken"},
+});
+is($res->{error}{message_to_client}, 'No token found', 'error message ok');
+
+my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+$res = BOM::RPC::v3::Accounts::api_token({
+        client => $client2,
+        args   => {
+            new_token        => 'Test Token',
+            new_token_scopes => ['read'],
+        },
+    });
+
+ok($res->{tokens}->[0]{token}, 'test token created');
+$res = BOM::RPC::v3::Accounts::api_token({
+    client => $client,
+    args   => {delete_token => $res->{tokens}[0]{token}},
+});
+is($res->{error}{message_to_client}, 'No token found', 'error message ok');
+
 # delete token
 $res = BOM::RPC::v3::Accounts::api_token({
         client => $client,

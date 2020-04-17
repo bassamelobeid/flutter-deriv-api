@@ -1958,7 +1958,11 @@ rpc api_token => sub {
     my $m = BOM::Platform::Token::API->new;
     my $rtn;
     if (my $token = $args->{delete_token}) {
-        my $token_details = $m->get_token_details($token);
+        my $token_details = $m->get_token_details($token) // {};
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidToken',
+                message_to_client => localize('No token found'),
+            }) unless (($token_details->{loginid} // '') eq $client->loginid);
         # When a token is deleted from authdb, it need to be deleted from clientdb betonmarkets.copiers
         BOM::Database::DataMapper::Copier->new({
                 broker_code => $client->broker_code,
