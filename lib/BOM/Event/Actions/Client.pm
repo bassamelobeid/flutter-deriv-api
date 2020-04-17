@@ -454,7 +454,6 @@ async sub client_verification {
             for my $each_report (@all_report) {
                 BOM::User::Onfido::store_onfido_report($check, $each_report);
             }
-
             await _store_applicant_documents($applicant_id, $client, \@all_report);
 
             my $redis_events_write = _redis_events_write();
@@ -629,7 +628,6 @@ Gets the client's documents from Onfido and store in DB
 async sub _store_applicant_documents {
     my ($applicant_id, $client, $all_report) = @_;
     my $onfido = _onfido();
-
     my @documents = await $onfido->document_list(applicant_id => $applicant_id)->as_list;
 
     my $existing_onfido_docs = BOM::User::Onfido::get_onfido_document($client->binary_user_id);
@@ -671,7 +669,6 @@ async sub _store_applicant_documents {
             $log->debugf('Insert live photo data for user %s and document id %s', $client->binary_user_id, $photo->id);
 
             BOM::User::Onfido::store_onfido_live_photo($photo, $applicant_id);
-
             try {
                 await _sync_onfido_bo_document({
                     type          => 'photo',
@@ -702,10 +699,8 @@ async sub _sync_onfido_bo_document {
     my $args = shift;
     my ($type, $doc_id, $client, $applicant_id, $onfido_res, $all_report) =
         @{$args}{qw/type document_id client applicant_id onfido_result all_report/};
-
     my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
-
-    my $onfido = _onfido();
+    my $onfido    = _onfido();
     my $doc_type;
     my $page_type = '';
     my $image_blob;
@@ -743,15 +738,13 @@ async sub _sync_onfido_bo_document {
         die "Unsupported document type";
     }
 
-    my $file_type = $onfido_res->file_type;
-
-    my $fh = File::Temp->new(DIR => '/var/lib/binary');
+    my $file_type    = $onfido_res->file_type;
+    my $fh           = File::Temp->new(DIR => '/var/lib/binary');
     my $tmp_filename = $fh->filename;
     print $fh $image_blob;
     seek $fh, 0, 0;
     my $file_checksum = Digest::MD5->new->addfile($fh)->hexdigest;
     close $fh;
-
     my $upload_info;
     my $s3_uploaded;
     my $file_id;
@@ -769,8 +762,10 @@ async sub _sync_onfido_bo_document {
                     $file_checksum, '', $page_type,
                 );
             });
-
-        die "Document already exists" unless $upload_info;
+        unless ($upload_info) {
+            $log->warn("Document already exists");
+            return;
+        }
 
         ($file_id, $new_file_name) = @{$upload_info}{qw/file_id file_name/};
 
@@ -779,15 +774,8 @@ async sub _sync_onfido_bo_document {
     }
     catch {
         my $error = $@;
-        local $log->context->{loginid}         = $client->loginid;
-        local $log->context->{doc_type}        = $doc_type;
-        local $log->context->{file_type}       = $file_type;
-        local $log->context->{expiration_date} = $expiration_date;
-        local $log->context->{doc_id_number}   = $doc_id_number;
-        local $log->context->{file_checksum}   = $file_checksum;
-        local $log->context->{page_type}       = $page_type;
         $log->errorf("Error in creating record in db and uploading Onfido document to S3 for %s : %s", $client->loginid, $error);
-    };
+    }
 
     if ($s3_uploaded) {
         $log->debugf("Successfully uploaded file_id: $file_id to S3 ");

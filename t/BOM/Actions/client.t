@@ -5,6 +5,8 @@ use Future;
 use Test::More;
 use Test::Exception;
 use Test::MockModule;
+use Log::Any::Test;
+use Log::Any qw($log);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::Test::Email;
@@ -302,6 +304,15 @@ subtest 'client_verification after upload document himself' => sub {
     my $check2 = $onfido->check_list(applicant_id => $applicant_id2)->as_arrayref->get->[0];
     ok($check2, "there is a check");
 
+    my $mocked_config = Test::MockModule->new('BOM::Config');
+    $mocked_config->mock(
+        s3 => sub {
+            return {document_auth => {map { $_ => 1 } qw(aws_access_key_id aws_secret_access_key aws_bucket)}};
+        });
+    my $mocked_s3client = Test::MockModule->new('BOM::Platform::S3Client');
+    $mocked_s3client->mock(upload => sub { return Future->done(1) });
+    $log->clear();
+
     lives_ok {
         BOM::Event::Actions::Client::client_verification({
                 check_url => $check2->{href},
@@ -317,6 +328,22 @@ subtest 'client_verification after upload document himself' => sub {
         });
 
     is_deeply([keys %$existing_onfido_docs], [$doc->id], 'now the doc is stored in db');
+
+    my $mocked_user_onfido = Test::MockModule->new('BOM::User::Onfido');
+    # simulate the case that 2 processes uploading same documents almost at same time.
+    # at first process 1 doesn't upload document yet, so process 2 get_onfido_live_photo will return null
+    # and when process 2 call db func `start_document_upload` , process 1 already uploaded file.
+    # at this time process 2 should report a warn.
+    $mocked_user_onfido->mock(get_onfido_live_photo   => sub { diag "in mocked get_";  return undef });
+    $mocked_user_onfido->mock(store_onfido_live_photo => sub { diag "in mocked store"; return undef });
+
+    lives_ok {
+        BOM::Event::Actions::Client::client_verification({
+                check_url => $check2->{href},
+            })->get;
+    }
+    "ready_for_authentication no exception";
+    $log->contains_ok(qr/Document already exists/, 'warning string is ok');
 
 };
 
