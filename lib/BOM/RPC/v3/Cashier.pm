@@ -1414,7 +1414,7 @@ rpc transfer_between_accounts => sub {
     );
     return $res if $res;
 
-    return _transfer_between_accounts_error(localize('Please note that the selected currency is allowed for selected users only.'))
+    return _transfer_between_accounts_error(localize('This currency is temporarily suspended. Please select another currency to proceed.'))
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $from_currency)
         || BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $to_currency);
 

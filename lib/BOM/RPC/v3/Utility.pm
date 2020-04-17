@@ -571,7 +571,7 @@ sub _is_currency_allowed {
     }
 
     # if currency is experimental and client is not allowed to use such currencies we don't allow
-    $result->{message} = localize('Please note that the selected currency is allowed for selected users only.');
+    $result->{message} = localize('This currency is temporarily suspended. Please select another currency to proceed.');
     return $result if verify_experimental_email_whitelisted($client, $currency);
 
     #that's enough for virtual accounts or empty siblings

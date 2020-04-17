@@ -149,7 +149,7 @@ subtest 'deposit' => sub {
 
     $runtime_payment->experimental_currencies(['USD']);
     $c->call_ok($method, $params)->has_error('error as currency is experimental')->error_code_is('Experimental', 'error code is Experimental')
-        ->error_message_is('Please note that the selected currency is allowed for selected users only.');
+        ->error_message_is('This currency is temporarily suspended. Please select another currency to proceed.');
     $runtime_payment->experimental_currencies([]);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
@@ -357,7 +357,7 @@ subtest 'withdrawal' => sub {
 
     $runtime_payment->experimental_currencies(['USD']);
     $c->call_ok($method, $params)->has_error('error as currency is experimental')->error_code_is('Experimental', 'error code is Experimental')
-        ->error_message_is('Please note that the selected currency is allowed for selected users only.');
+        ->error_message_is('This currency is temporarily suspended. Please select another currency to proceed.');
     $runtime_payment->experimental_currencies([]);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
