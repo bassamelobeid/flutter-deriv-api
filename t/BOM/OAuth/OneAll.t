@@ -12,6 +12,9 @@ use BOM::Platform::Context qw(localize);
 use BOM::OAuth::Static qw(get_message_mapping);
 use Locale::Codes::Country qw(code2country);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::User;
+use Test::MockModule;
 
 get '/callback' => sub {
     my $c = shift;
@@ -92,7 +95,71 @@ subtest "check wether client's country of residence is set correctly" => sub {
         });
     $t->get_ok("/callback?email=$email&brand=$brand")->status_is(200)
         ->json_is(json => {'error' => localize(get_message_mapping()->{'InvalidBrand'})});
+};
 
+subtest "User sing up with social login, app_id is saved" => sub {
+    my $t = Test::Mojo->new('BOM::OAuth');
+
+    my $app_id = do {
+        my $oauth = BOM::Database::Model::OAuth->new;
+        my $app   = $oauth->create_app({
+            name         => 'Test App',
+            user_id      => 1,
+            scopes       => ['read', 'trade', 'admin'],
+            redirect_uri => 'https://www.example.com/'
+        });
+        $app->{app_id};
+    };
+
+    # mock domain_name to suppress warnings
+    my $mocked_request = Test::MockModule->new('BOM::Platform::Context::Request');
+    $mocked_request->mock('domain_name', 'www.binaryqa.com');
+
+    my $email = 'test1' . rand(999) . '@binary.com';
+
+    # Mocking OneAll Data
+    my $mocked_oneall = Test::MockModule->new('WWW::OneAll');
+    $mocked_oneall->mock(
+        new        => sub { bless +{}, 'WWW::OneAll' },
+        connection => sub {
+            return +{
+                response => {
+                    request => {
+                        status => {
+                            code => 200,
+                        },
+                    },
+                    result => {
+                        status => {
+                            code => 200,
+                            flag => '',
+                        },
+                        data => {
+                            user => {
+                                identity => {
+                                    emails                => [{value => $email}],
+                                    provider              => 'google',
+                                    provider_identity_uid => 'test_uid',
+                                }
+                            },
+                        },
+                    },
+                },
+            };
+        });
+
+    my $residence = 'au';
+    $t->ua->on(
+        start => sub {
+            my ($ua, $tx) = @_;
+            $tx->req->headers->header('X-Client-Country' => $residence);
+        });
+
+    $t->get_ok("/oneall/callback?app_id=$app_id&connection_token=1")->status_is(302);
+
+    my $user = eval { BOM::User->new(email => $email) };
+    ok $user, 'User was created';
+    is $user->{app_id}, $app_id, 'User has correct app_id';
 };
 
 done_testing();

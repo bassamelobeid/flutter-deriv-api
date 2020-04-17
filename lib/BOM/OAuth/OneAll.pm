@@ -102,7 +102,10 @@ sub callback {
             gclid_url          => $c->session('gclid_url'),
             utm_medium         => $c->session('utm_medium'),
             utm_source         => $c->session('utm_source'),
-            utm_campaign       => $c->session('utm_campaign'));
+            utm_campaign       => $c->session('utm_campaign'),
+            source             => $c->param('app_id'),
+        );
+
         if ($account->{error}) {
             my $error_msg =
                 ($account->{error} eq 'invalid residence')
@@ -193,6 +196,7 @@ sub __create_virtual_account {
         has_social_signup => 1,
         brand_name        => $user_details{brand},
         residence         => $user_details{residence},
+        source            => $user_details{source},
     };
 
     $details->{$_} = $user_details{$_}
