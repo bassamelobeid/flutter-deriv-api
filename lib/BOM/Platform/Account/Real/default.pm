@@ -42,23 +42,24 @@ sub create_account {
     return $response;
 }
 
-sub copy_withdrawal_locked_from_siblings {
-    my ($cur_client, $user) = @_;
+sub copy_status_from_siblings {
+    my ($cur_client, $user, $status_list) = @_;
     for my $cl ($user->clients) {
-        if ($cl->status->withdrawal_locked) {
-            $cur_client->status->set('withdrawal_locked', 'system', 'copied from ' . $cl->loginid);
-            last;
+        for my $status (@$status_list) {
+            if ($cl->status->$status && !$cur_client->status->$status) {
+                $cur_client->status->set($status, 'system', 'copied from ' . $cl->loginid);
+            }
         }
     }
 }
-                                                                                                       
+
 sub after_register_client {
     my $args = shift;
     my ($client, $user, $details, $ip, $country) = @{$args}{qw(client user details ip country)};
 
     unless ($client->is_virtual) {
         $client->status->set('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
-        copy_withdrawal_locked_from_siblings($client, $user);
+        copy_status_from_siblings($client, $user, ['no_trading', 'withdrawal_locked']);
     }
 
     # CR client auto sync by db function betonmarkets.update_authentication_status_new_client
