@@ -251,6 +251,11 @@ async sub document_upload {
             file_id => $file_id
         );
 
+        unless ($document_entry) {
+            $log->errorf('Could not get document %s from database for client %s', $file_id, $loginid);
+            return;
+        }
+
         await BOM::Event::Services::Track::document_upload({
                 loginid    => $loginid,
                 properties => {
