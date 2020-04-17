@@ -406,9 +406,6 @@ table#client_edit td{
                 [% # proveID.has_saved_xml or proveID.has_saved_pdf
                 END %]
             [% # client.residence == 'gb'
-            ELSE %]
-                Please go to the client's MX account with residence 'gb' to submit/delete proveID requests.
-            [% # client.residence == 'gb'
             END %]
         </td>
     </tr>
