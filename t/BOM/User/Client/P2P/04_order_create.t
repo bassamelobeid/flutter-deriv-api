@@ -561,4 +561,26 @@ subtest 'Buyer tries to place an order with an amount that exceeds the advertise
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
+subtest 'Buyer tries to place an order for an advert of an unapproved advertiser' => sub {
+    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
+    BOM::Test::Helper::P2P::create_escrow();
+
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+
+    $advertiser->p2p_advertiser_update(is_approved => 0);
+
+    ok !($advertiser->p2p_advertiser_info->{is_approved}), 'The advertiser is not approved';
+
+    my $buyer = BOM::Test::Helper::Client::create_client();
+    my $err   = exception {
+        $buyer->p2p_order_create(
+            advert_id => $advert_info->{id},
+            amount    => $advert_info->{amount})
+    };
+
+    is $err->{error_code}, 'AdvertOwnerNotApproved', 'AdvertOwnerNotApproved';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
 done_testing();

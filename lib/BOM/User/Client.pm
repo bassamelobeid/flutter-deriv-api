@@ -1890,10 +1890,6 @@ sub p2p_advertiser_adverts {
     my $advertiser_info = $client->_p2p_advertisers(loginid => $client->loginid)->[0];
     die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
 
-    my ($limit, $offset) = @param{qw/limit offset/};
-    die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
-    die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
-
     my $list = $client->_p2p_adverts(%param, advertiser_id => $advertiser_info->{id});
     return $client->_advert_details($list);
 }
@@ -1940,7 +1936,9 @@ sub p2p_advert_create {
 
     my $min_price = $param{rate} * $param{min_order_amount};
     if (financialrounding('amount', $param{local_currency}, $min_price) == 0) {
-        die +{error_code => 'MinPriceTooSmall'};
+        die +{
+            error_code     => 'MinPriceTooSmall',
+            message_params => [0]};
     }
 
     die +{error_code => 'AdvertPaymentContactInfoNotAllowed'}
@@ -1988,10 +1986,6 @@ Inactive adverts, unlisted or unapproved advertisers, and max < min are excluded
 
 sub p2p_advert_list {
     my ($client, %param) = @_;
-
-    my ($limit, $offset) = @param{qw/limit offset/};
-    die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
-    die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
     if ($param{counterparty_type}) {
         $param{type} = P2P_COUNTERYPARTY_TYPE_MAPPING->{$param{counterparty_type}};
@@ -2091,9 +2085,9 @@ sub p2p_order_create {
         if $amount < ($advert_info->{min_order_amount} // 0);
 
     my $advertiser_info = $client->_p2p_advertisers(id => $advert_info->{advertiser_id})->[0];
-    die +{error_code => 'AdvertiserNotFound'}    unless $advertiser_info;
-    die +{error_code => 'AdvertiserNotListed'}   unless $advertiser_info->{is_listed};
-    die +{error_code => 'AdvertiserNotApproved'} unless $advertiser_info->{is_approved};
+    die +{error_code => 'AdvertiserNotFound'}     unless $advertiser_info;
+    die +{error_code => 'AdvertiserNotListed'}    unless $advertiser_info->{is_listed};
+    die +{error_code => 'AdvertOwnerNotApproved'} unless $advertiser_info->{is_approved};
 
     if ($advert_info->{type} eq 'buy') {
         die +{error_code => 'OrderPaymentInfoRequired'} if !trim($param{payment_info});
@@ -2152,10 +2146,6 @@ sub p2p_order_list {
     my ($client, %param) = @_;
 
     $param{loginid} = $client->loginid;
-
-    my ($limit, $offset) = @param{qw/limit offset/};
-    die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
-    die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
     my $list = $client->_p2p_orders(%param);
     return $client->_order_details($list);
@@ -2731,7 +2721,10 @@ sub _validate_advert_amounts {
         };
     }
 
-    die +{error_code => 'MaximumExceeded'}
+    die +{
+        error_code     => 'MaximumExceeded',
+        message_params => [$param{account_currency}, convert_currency($param{amount}, 'USD', $param{account_currency})],
+        }
         if in_usd($param{amount}, uc $param{account_currency}) > BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert;
 
     my $maximum_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;

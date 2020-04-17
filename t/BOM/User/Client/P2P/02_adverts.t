@@ -216,7 +216,10 @@ subtest 'Creating advert' => sub {
         exception {
             $advertiser->p2p_advert_create(%params);
         },
-        {error_code => 'MaximumExceeded'},
+        {
+            error_code     => 'MaximumExceeded',
+            message_params => [uc $params{account_currency}, $params{amount}]
+        },
         'Error when amount exceeds BO advert limit'
     );
 

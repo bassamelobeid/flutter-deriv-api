@@ -358,4 +358,125 @@ for my $test_case (@test_cases) {
     };
 }
 
+subtest 'Advertiser confirms pending buy order' => sub {
+    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
+    BOM::Test::Helper::P2P::create_escrow();
+
+    my $ad_amount = 100;
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+        amount           => $ad_amount,
+        max_order_amount => $ad_amount,
+        type             => 'sell'
+    );
+
+    my $client = BOM::Test::Helper::Client::create_client();
+
+    my $order = $client->p2p_order_create(
+        advert_id => $advert_info->{id},
+        amount    => $advert_info->{amount},
+    );
+
+    my $err = exception {
+        $advertiser->p2p_order_confirm(id => $order->{id})
+    };
+
+    is $err->{error_code}, 'InvalidStateForConfirmation', 'InvalidStateForConfirmation';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Client confirms not pending (cancelled) buy order' => sub {
+    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
+    BOM::Test::Helper::P2P::create_escrow();
+
+    my $ad_amount = 100;
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+        amount           => $ad_amount,
+        max_order_amount => $ad_amount,
+        type             => 'sell'
+    );
+
+    my $client = BOM::Test::Helper::Client::create_client();
+
+    my $order = $client->p2p_order_create(
+        advert_id => $advert_info->{id},
+        amount    => $advert_info->{amount},
+    );
+
+    ok $client->p2p_order_cancel(id => $order->{id}), 'Client cancels the order';
+
+    my $err = exception {
+        $client->p2p_order_confirm(id => $order->{id})
+    };
+
+    is $err->{error_code}, 'InvalidStateForConfirmation', 'InvalidStateForConfirmation';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Client confirms pending sell order' => sub {
+    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
+    BOM::Test::Helper::P2P::create_escrow();
+
+    my $ad_amount = 100;
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+        amount           => $ad_amount,
+        max_order_amount => $ad_amount,
+        type             => 'buy'
+    );
+
+    my $client = BOM::Test::Helper::Client::create_client();
+    $client->account('USD');
+    BOM::Test::Helper::Client::top_up($client, $client->currency, $ad_amount);
+
+    ok my $order = $client->p2p_order_create(
+        advert_id    => $advert_info->{id},
+        amount       => $advert_info->{amount},
+        contact_info => 'contact info',
+        payment_info => 'payment info',
+    );
+
+    my $err = exception {
+        $client->p2p_order_confirm(id => $order->{id})
+    };
+
+    is $err->{error_code}, 'InvalidStateForConfirmation', 'InvalidStateForConfirmation';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Advertiser confirms not pending (cancelled) sell order' => sub {
+    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
+    BOM::Test::Helper::P2P::create_escrow();
+
+    my $ad_amount = 100;
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+        amount           => $ad_amount,
+        max_order_amount => $ad_amount,
+        type             => 'buy'
+    );
+
+    my $client = BOM::Test::Helper::Client::create_client();
+
+    $client->account('USD');
+    BOM::Test::Helper::Client::top_up($client, $client->currency, $ad_amount);
+
+    my $order = $client->p2p_order_create(
+        advert_id    => $advert_info->{id},
+        amount       => $advert_info->{amount},
+        contact_info => 'contact info',
+        payment_info => 'payment info',
+    );
+
+    ok $advertiser->p2p_order_cancel(id => $order->{id});
+
+    my $err = exception {
+        $advertiser->p2p_order_confirm(id => $order->{id})
+    };
+
+    is $err->{error_code}, 'InvalidStateForConfirmation', 'InvalidStateForConfirmation';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
 done_testing();
