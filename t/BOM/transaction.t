@@ -2275,6 +2275,125 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
     'survived';
 };
 
+#### Test for 1HZ contracts for China account ***** 
+my $china_account;
+my $underlying_symbol = "1HZ10V";
+$underlying      = create_underlying($underlying_symbol);
+
+# Initialize random index for the 1HZ contract
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'randomindex',
+    {
+        symbol => $underlying_symbol,
+        date   => Date::Utility->new
+    });
+
+# Create tick for the 1HZ contract
+my $tick_1HZ = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch,
+    underlying => $underlying_symbol,
+});
+
+lives_ok {
+
+    $china_account = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR' , residence =>'cn'});
+
+    #make sure client can trade
+    ok(!BOM::Transaction::Validation->new({clients => [$china_account]})->check_trade_status($china_account),      "China client can trade: check_trade_status");
+    ok(!BOM::Transaction::Validation->new({clients => [$china_account]})->_validate_client_status($china_account), "China client can trade: _validate_client_status");
+
+    top_up $china_account, 'USD', 5000;
+
+    isnt + ($acc_usd = $china_account->account), 'USD', 'got USD account';
+
+    my $bal;
+    is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
+}
+'client created and funded';
+
+
+subtest 'buy a 1HZ bet for China account', sub {
+
+    # print Dumper($underlying);
+    lives_ok {
+        my $contract = produce_contract({
+                underlying => $underlying,
+                bet_type   => 'CALL',
+                currency   => 'USD',
+                payout     => 1000,
+                duration   => '15m',
+                current_tick => $tick_1HZ,
+                barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $china_account,
+            contract      => $contract,
+            price         => 511.47,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+        my $error = $txn->buy;
+        is $error, undef, 'no error';
+
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+
+    }
+    'survived';
+
+
+subtest 'sell a 1HZ bet for China account', sub {
+  
+    lives_ok {
+        set_relative_time 1;
+        my $reset_time = guard { restore_time };
+        my $contract = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 1000,
+            duration     => '15m',
+            date_start   => $now->epoch,
+            current_tick => $tick_1HZ,
+            entry_tick   => $tick_1HZ,
+            exit_tick    => $tick_1HZ,
+            barrier      => 'S0P',
+        });
+        my $txn;
+        #note 'bid price: ' . $contract->bid_price;
+        my $error = do {
+            my $mocked           = Test::MockModule->new('BOM::Transaction');
+            my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
+            $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
+            $mocked->mock('price', sub { $contract->bid_price });
+            $txn = BOM::Transaction->new({
+                purchase_date => $contract->date_start,
+                client        => $china_account,
+                contract      => $contract,
+                contract_id   => $fmb->{id},
+                price         => $contract->bid_price,
+                source        => 23,
+            });
+            $txn->sell;
+        };
+        is $error, undef, 'no error';
+
+        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+
+        is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
+        is $txn->transaction_id, $trx->{id},            'txn->transaction_id';
+        is $txn->balance_after,  $trx->{balance_after}, 'txn->balance_after';
+    }
+    'survived';
+};
+};
+
+
+
+#######
+
 # see further transaction2.t: special turnover limits
 #             transaction3.t: intraday fx action
 $mocked_underlying->unmock_all;
