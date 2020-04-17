@@ -98,7 +98,7 @@ sub session_validate_GET {
     # throwing a db exception if it doesnt exist
     # REALLY ANNOYING
     if (!$handoff_token->exists) {
-        return $c->status_bad_request('No token found');
+        return $c->status_bad_request('No token found', 'bom_paymentapi.session.no_token_found');
     }
 
     if (not $handoff_token->is_valid or ($handoff_token->client_loginid ne $c->user->loginid)) {

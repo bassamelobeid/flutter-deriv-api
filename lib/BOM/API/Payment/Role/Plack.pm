@@ -6,6 +6,7 @@ use Moo::Role;
 use Plack::Request;
 use Scalar::Util qw( looks_like_number );
 use XML::Simple;
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 has 'env' => (
     is       => 'ro',
@@ -66,10 +67,16 @@ sub throw {
 }
 
 sub status_bad_request {
-    my ($c, $message) = @_;
+    my ($c, $message, $datadog_metric) = @_;
     my $log = $c->env->{log};
     chomp($message);
-    $log->warn(sprintf '%s: %s', ($c->user && $c->user->loginid) || '(no-user)', $message);
+    my $log_message = sprintf '%s: %s', ($c->user && $c->user->loginid) || '(no-user)', $message;
+    if ($datadog_metric) {
+        DataDog::DogStatsd::Helper::stats_inc($datadog_metric);
+        $log->info($log_message);
+    } else {
+        $log->warn($log_message);
+    }
     return {
         status_code => 400,
         error       => $message
