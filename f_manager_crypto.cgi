@@ -66,6 +66,9 @@ my $show_all_pendings = request()->param('show_all_pendings');
 # show only one step authorised
 my $show_one_authorised = request()->param('show_one_authorised');
 
+my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
+my $dbic = $clientdb->db->dbic;
+
 code_exit_BO("Invalid currency.")
     if $currency !~ /^[A-Z]{3}$/;
 
@@ -91,6 +94,17 @@ Bar("Actions");
 my $start_date = request()->param('start_date');
 my $end_date   = request()->param('end_date');
 
+my $pending_withdrawal_amount = request()->param('pending_withdrawal_amount');
+if ($view_action eq 'withdrawals') {
+    $pending_withdrawal_amount = $dbic->run(
+        ping => sub {
+            $_->selectrow_array(
+                "SELECT SUM(amount) FROM payment.cryptocurrency WHERE currency_code = ? AND blockchain_txn IS NULL AND status = 'LOCKED' AND transaction_type='withdrawal'",
+                undef, $currency
+            );
+        }) // 0;
+}
+
 try {
     if ($start_date && $start_date =~ /[0-9]{4}-[0-1][0-9]{1,2}-[0-3][0-9]{1,2}$/) {
         $start_date = Date::Utility->new("$start_date 00:00:00");
@@ -111,9 +125,6 @@ catch {
 if ($end_date->is_before($start_date)) {
     code_exit_BO("Invalid dates, the end date must be after the initial date");
 }
-
-my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
-my $dbic = $clientdb->db->dbic;
 
 my $currency_wrapper = BOM::CTC::Currency->new(
     currency_code => $currency,
@@ -164,17 +175,18 @@ my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
     'backoffice/crypto_cashier/crypto_control_panel.html.tt',
     {
-        exchange_rate       => $exchange_rate,
-        controller_url      => request()->url_for('backoffice/f_manager_crypto.cgi'),
-        currency            => $currency,
-        all_crypto          => [@crypto_currencies],
-        cmd                 => request()->param('command') // '',
-        broker              => $broker,
-        start_date          => $start_date->date_yyyymmdd,
-        end_date            => $end_date->date_yyyymmdd,
-        show_all_pendings   => $show_all_pendings,
-        show_one_authorised => $show_one_authorised,
-        staff               => $staff,
+        exchange_rate             => $exchange_rate,
+        controller_url            => request()->url_for('backoffice/f_manager_crypto.cgi'),
+        currency                  => $currency,
+        all_crypto                => [@crypto_currencies],
+        cmd                       => request()->param('command') // '',
+        broker                    => $broker,
+        start_date                => $start_date->date_yyyymmdd,
+        end_date                  => $end_date->date_yyyymmdd,
+        show_all_pendings         => $show_all_pendings,
+        show_one_authorised       => $show_one_authorised,
+        staff                     => $staff,
+        pending_withdrawal_amount => $pending_withdrawal_amount,
     }) || die $tt2->error();
 
 # Exchange rate should be populated according to supported cryptocurrencies.

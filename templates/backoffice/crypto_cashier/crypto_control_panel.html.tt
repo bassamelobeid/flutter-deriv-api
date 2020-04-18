@@ -47,6 +47,8 @@
     <br>
     <button type="submit" name="view_action" value="auto_reject_insufficient">Auto-reject withdrawals with insufficient balance</button>
     <br><br>
+    Pending Client Payouts : <strong> [% pending_withdrawal_amount %] [% currency %] </strong>
+    <br><br>
 <!-- Tools -->
         <button type="submit" name="view_action" value="run">Run</button>
         <select name="command">
