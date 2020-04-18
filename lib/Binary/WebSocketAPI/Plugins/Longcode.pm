@@ -186,6 +186,11 @@ sub process_next_batch {
                 currency    => $currency,
                 language    => $language,
             },
+            block_response => 1,
+            rpc_failure_cb => sub {
+                my (undef, undef, undef, $err) = @_;
+                $log->warnf("Error happened when fetch longcode: %s", $err);
+            },
             response => sub {
                 my $rpc_response = shift;
                 $log->tracef("RPC responds with %s", $rpc_response);
