@@ -8,6 +8,7 @@ use Test::Exception;
 use Test::Fatal;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Config::Runtime;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
@@ -292,7 +293,7 @@ subtest 'take profit cap and precision' => sub {
         },
     };
     my $c = produce_contract($args);
-    my $error = exception {$c->is_valid_to_buy};
+    my $error = exception { $c->is_valid_to_buy };
     is $error->message_to_client->[0], 'Please enter a take profit amount that\'s lower than [_1].';
     is $error->message_to_client->[1], '90.00', 'max at 90.00';
 
@@ -534,6 +535,33 @@ subtest 'deal cancellation duration check' => sub {
     ok !$c->is_valid_to_buy, 'invalid to buy';
     is $c->primary_validation_error->message_to_client, 'Deal cancellation is not offered at this duration.',
         'message_to_client - Deal cancellation is not offered at this duration.';
+};
+
+subtest 'deal cancellation suspension' => sub {
+    my $suspend = BOM::Config::Runtime->instance->app_config->quants->suspend_deal_cancellation->synthetic_index;
+    BOM::Config::Runtime->instance->app_config->quants->suspend_deal_cancellation->synthetic_index(1);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [102, $now->epoch + 1, 'R_100'],);
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+        cancellation => '1h',
+    };
+    my $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message_to_client, 'Deal cancellation is not available at this moment.',
+        'message_to_client - Deal cancellation is not available at this moment.';
+
+    delete $args->{cancellation};
+    $c = produce_contract($args);
+    ok $c->is_valid_to_buy, 'valid to buy';
+
+    BOM::Config::Runtime->instance->app_config->quants->suspend_deal_cancellation->synthetic_index($suspend);
 };
 
 done_testing();

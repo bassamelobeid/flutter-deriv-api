@@ -200,9 +200,9 @@ sub _validate_input_parameters {
     # these will be handled in validation later.
     return
            if $offerings->config->{suspend_trading}
-        or $offerings->config->{disabled_markets}{$params->{underlying}->market->name}
-        or $offerings->config->{suspend_trades}{$us}
-        or $offerings->config->{suspend_buy}{$us};
+        or $offerings->config->{suspend_markets}{$params->{underlying}->market->name}
+        or $offerings->config->{suspend_underlying_symbols}{$us}
+        or $offerings->config->{suspend_contract_types}{$params->{bet_type}};
 
     unless (any { $us eq $_ } $offerings->values_for_key('underlying_symbol')) {
         BOM::Product::Exception->throw(

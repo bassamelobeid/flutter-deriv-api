@@ -135,7 +135,8 @@ my $config = {
         EitherStopLossOrCancel     => 'You may use either stop loss or deal cancellation, but not both. Please select either one.',
         CancelIsBetter =>
             'The spot price has moved. We have not closed this contract because your profit is negative and deal cancellation is active. Cancel your contract to get your full stake back.',
-        InvalidDealCancellation => 'Deal cancellation is not offered at this duration.',
+        InvalidDealCancellation           => 'Deal cancellation is not offered at this duration.',
+        DealCancellationPurchaseSuspended => 'Deal cancellation is not available at this moment.',
     },
     generic => {
         # use it audit details

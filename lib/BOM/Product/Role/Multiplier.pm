@@ -706,7 +706,27 @@ sub _validation_methods {
 sub _validate_cancellation {
     my $self = shift;
 
-    return if looks_like_number($self->cancellation) and $self->cancellation == 0;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
+    my $market = $self->underlying->market->name;
+
+    unless ($app_config->quants->suspend_deal_cancellation->can($market)) {
+        return {
+            message           => 'deal cancellation suspension config not set',
+            message_to_client => $ERROR_MAPPING->{DealCancellationPurchaseSuspended},
+            details           => {field => 'deal_cancellation'},
+        };
+    }
+
+    if ($app_config->quants->suspend_deal_cancellation->$market and $self->cancellation) {
+        return {
+            message           => 'deal cancellation suspended',
+            message_to_client => $ERROR_MAPPING->{DealCancellationPurchaseSuspended},
+            details           => {field => 'deal_cancellation'},
+        };
+    }
+
+    return unless $self->cancellation;
 
     # currently only allow '1h' as deal cancellation duration. Will expand this to /\d+(?:h|m)/
     if ($self->cancellation ne '1h') {

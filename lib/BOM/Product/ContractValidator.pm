@@ -5,7 +5,7 @@ use warnings;
 
 use Time::HiRes;
 use Date::Utility;
-use List::Util qw(any first);
+use List::Util qw(any first uniq);
 
 use LandingCompany::Registry;
 
@@ -225,42 +225,12 @@ sub _validate_offerings {
         );
     }
 
-    my $message_to_client = $self->for_sale ? [$ERROR_MAPPING->{ResaleNotOffered}] : [$ERROR_MAPPING->{TradeTemporarilyUnavailable}];
-
-    if (BOM::Config::Runtime->instance->app_config->system->suspend->trading) {
-        return {
-            message           => 'All trading suspended on system',
-            message_to_client => $message_to_client,
-            details           => {},
-        };
-    }
-
-    my $underlying    = $self->underlying;
-    my $contract_code = $self->code;
-    # check if trades are suspended on that claimtype
-    my $suspend_contract_types = BOM::Config::Runtime->instance->app_config->quants->features->suspend_contract_types;
-    if (@$suspend_contract_types and first { $contract_code eq $_ } @{$suspend_contract_types}) {
-        return {
-            message           => "Trading suspended for contract type [code: " . $contract_code . "]",
-            message_to_client => $message_to_client,
-            details           => {field => 'contract_type'},
-        };
-    }
-
-    if (first { $_ eq $underlying->symbol } @{BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_trades}) {
-        return {
-            message           => "Underlying trades suspended [symbol: " . $underlying->symbol . "]",
-            message_to_client => $message_to_client,
-            details           => {field => 'symbol'},
-        };
-    }
-
     # NOTE: this check only validates the contract-specific risk profile.
     # There may also be a client specific one which is validated in B:P::Transaction
     if ($self->risk_profile->get_risk_profile eq 'no_business') {
         return {
             message           => 'manually disabled by quants',
-            message_to_client => $message_to_client,
+            message_to_client => $self->for_sale ? [$ERROR_MAPPING->{ResaleNotOffered}] : [$ERROR_MAPPING->{TradeTemporarilyUnavailable}],
         };
     }
 

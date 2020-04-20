@@ -48,16 +48,6 @@ my $mocked_FA = Test::MockModule->new('Finance::Asset');
 $mocked_FA->mock('cached_underlyings', sub { {} });
 
 note("Validation runs on " . $now->datetime);
-subtest 'system wide suspend trading' => sub {
-    BOM::Config::Runtime->instance->app_config->system->suspend->trading(1);
-    my $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'not valid to buy';
-    like($c->primary_validation_error->{message}, qr/All trading suspended on system/, 'trading suspended message');
-    BOM::Config::Runtime->instance->app_config->system->suspend->trading(0);
-    $c = produce_contract($bet_params);
-    ok $c->is_valid_to_buy, 'ok to buy';
-};
-
 subtest 'custom suspend trading' => sub {
     my $orig = BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles;
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
