@@ -11,6 +11,8 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Database::Model::OAuth;
 use Email::Stuffer::TestLinks;
 use LandingCompany::Registry;
+use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
@@ -57,6 +59,32 @@ subtest "active_symbols_for_" => sub {
         }};
 
     is_deeply $c->call_ok($method, $params)->has_no_error->result, [], 'No active symbols for companies without offerings';
+};
+
+subtest 'active_symbols for suspend_buy' => sub {
+    my $params = {
+        language => 'EN',
+        args     => {
+            active_symbols => 'brief',
+        }};
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+    my $prev_market_suspend_buy = $app_config->quants->markets->suspend_buy;
+    note('setting app_config->quants->markets->suspend_buy to [\'forex\']');
+    $app_config->set({'quants.markets.suspend_buy' => ['forex']});
+    my $result = $c->call_ok($method, $params)->has_no_system_error->result;
+    ok(!grep { $_->{market} eq 'forex' } @$result);
+    note('resetting app_config->quants->markets->suspend_buy');
+    $app_config->set({'quants.markets.suspend_buy' => $prev_market_suspend_buy});
+
+    my $prev_underlying_suspend_buy = $app_config->quants->underlyings->suspend_buy;
+    note('setting app_config->quants->underlyings->suspend_buy to [\'frxUSDJPY\']');
+    $app_config->set({'quants.underlyings.suspend_buy' => ['frxUSDJPY']});
+    $result = $c->call_ok($method, $params)->has_no_system_error->result;
+    ok !grep { $_->{symbol} eq 'frxUSDJPY' } @$result;
+    note('resetting app_config->quants->underlyings->suspend_buy');
+    $app_config->set({'quants.underlyings.suspend_buy' => $prev_underlying_suspend_buy});
 };
 
 done_testing();

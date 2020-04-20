@@ -21,13 +21,20 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Config::Runtime;
 
+=head2 is_invalid_symbol
+
+This checks if a know about the existence of the given symbol. A symbol is valid if it is defined in
+the configuration file. A symbol can be disabled by still valid.
+
+=cut
+
 sub is_invalid_symbol {
     my $symbol = shift;
-    my @offerings =
-        LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
-        ->values_for_key('underlying_symbol');
-    if (!$symbol || none { $symbol eq $_ } @offerings) {
 
+    my $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    unless ($symbol && $offerings_obj->offerings->{$symbol}) {
+
+        my @offerings = keys %{$offerings_obj->offerings};
         # There's going to be a few symbols that are disabled or otherwise not provided
         # for valid reasons, but if we have nothing, or it's a symbol that's very
         # unlikely to be disabled, it'd be nice to know.
