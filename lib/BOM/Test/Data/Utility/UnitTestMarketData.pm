@@ -92,10 +92,15 @@ sub _init {
                 },
                 'quants' => {
                     'markets' => {
-                        'disabled' => ['sectors'],
+                        'suspend_trades' => ['sectors'],
+                        'suspend_buy'    => [],
+                    },
+                    'contract_types' => {
+                        'suspend_trades' => [],
+                        'suspend_buy'    => [],
                     },
                     'features' => {
-                        'suspend_contract_types' => [],
+                        'suspend_deal_cancellation' => 0,
                     },
                     'client_limits' => {
                         'asian_turnover_limit' => '50000',
