@@ -1249,6 +1249,30 @@ sub _get_tick_details {
     return \@details;
 }
 
+has tick_stream => (
+    is         => 'ro',
+    lazy_build => 1
+);
+
+sub _build_tick_stream {
+    my $self = shift;
+
+    if (not $self->tick_expiry) {
+
+        return;
+    }
+    my @all_ticks = @{$self->ticks_for_tick_expiry};
+
+    # for path dependent contract, there should be no more tick after close tick
+    # because the contract technically has expired
+    if ($self->is_path_dependent and $self->close_tick) {
+        @all_ticks = grep { $_->epoch <= $self->close_tick->epoch } @all_ticks;
+    }
+
+    return [map { {epoch => $_->epoch, tick => $_->quote, tick_display_value => $self->underlying->pipsized_value($_->quote)} } @all_ticks];
+
+}
+
 =head2 metadata
 
 Contract metadata.
