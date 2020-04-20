@@ -12,6 +12,7 @@ use Crypt::NamedKeys;
 use BOM::User::Client;
 use BOM::User::Password;
 use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
 
 use Date::Utility;
 use BOM::Transaction;
@@ -1947,201 +1948,154 @@ subtest 'transaction slippage' => sub {
     };
 };
 
-subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspend_contract_types' => sub {
-    lives_ok {
-        my $cl = create_client;
+subtest 'buy/sell on suspend_trading' => sub {
+    my $cl = create_client;
 
-        top_up $cl, 'USD', 100;
+    top_up $cl, 'USD', 100;
 
-        isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
+    isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
-        my $bal;
-        is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
+    my $bal;
+    is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        note "mocking app_config->loaded_revision to rand()";
-        my $mock_appconfig = Test::MockModule->new('App::Config::Chronicle');
-        $mock_appconfig->mock('loaded_revision', sub { rand });
+    note "mocking app_config->loaded_revision to rand()";
+    my $mock_appconfig = Test::MockModule->new('App::Config::Chronicle');
+    $mock_appconfig->mock('loaded_revision', sub { rand });
 
-        my $now      = Date::Utility->new();
-        my $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'CALL',
-            currency     => 'USD',
-            payout       => 10.00,
-            duration     => '15m',
-            current_tick => $tick,
-            barrier      => 'S0P',
-            date_pricing => Date::Utility->new(time + 10),
+    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+    $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+    my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+    my $mock_validation  = Test::MockModule->new('BOM::Transaction::Validation');
+    # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+    $mock_validation->mock(
+        _validate_trade_pricing_adjustment => sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () }
+    );
+    $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+    my $now      = Date::Utility->new();
+    my $contract = produce_contract({
+        underlying   => $underlying,
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 10.00,
+        duration     => '15m',
+        current_tick => $tick,
+        barrier      => 'S0P',
+        date_pricing => Date::Utility->new(time + 10),
+    });
+
+    my $txn;
+    my $error = do {
+        $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 5.20,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            purchase_date => $contract->date_start,
         });
 
-        my $error = do {
-            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+        $txn->buy;
+    };
 
-            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
-            my $mock_validation  = Test::MockModule->new('BOM::Transaction::Validation');
-            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_validation->mock(_validate_trade_pricing_adjustment =>
-                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-            note "setting app_config->system->suspend_trading to 1";
-            BOM::Config::Runtime->instance->app_config->system->suspend->trading(1);
+    ok !$error, 'no error';
 
-            my $txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract,
-                price         => 5.20,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => $contract->date_start,
-            });
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
-            $txn->buy;
-        };
+    note "setting app_config->system->suspend_trading to 1";
+    BOM::Config::Runtime->instance->app_config->system->suspend->trading(1);
 
-        is $error->{'-type'}, 'InvalidOfferings', 'type is InvalidOfferings';
-        is $error->{'-mesg'}, 'trying unauthorised combination', 'message is trying unauthorised combination';
-        is $error->{'-message_to_client'}, 'Trading is not offered for this duration.',
-            'message to clien is Trading is not offered for this duration.';
-
-        note "reset app_config->system->suspend_trading to 0";
-        BOM::Config::Runtime->instance->app_config->system->suspend->trading(0);
-        $error = do {
-            my $txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract,
-                price         => 5.20,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => $contract->date_start,
-            });
-
-            $txn->buy;
-        };
-
-        ok !$error, 'no error';
-
-        $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'CALL',
-            currency     => 'USD',
-            payout       => 10.00,
-            duration     => '15m',
-            current_tick => $tick,
-            barrier      => 'S0P',
-            date_pricing => Date::Utility->new(time + 10),
+    $error = do {
+        $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 5.20,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            purchase_date => $contract->date_start,
         });
 
-        $error = do {
-            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+        $txn->buy;
+    };
 
-            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
-            my $mock_validation  = Test::MockModule->new('BOM::Transaction::Validation');
-            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_validation->mock(_validate_trade_pricing_adjustment =>
-                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-            note "setting quants->underlyings->suspend_trades to ['R_50']";
-            BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_trades(['R_50']);
+    is $error->{'-type'},              'InvalidOfferings',                          'type is InvalidOfferings';
+    is $error->{'-mesg'},              'Disabled platform',           'message is Disabled platform';
+    is $error->{'-message_to_client'}, 'This trade is temporarily unavailable.', 'message to clien is This trade is temporarily unavailable.';
 
-            my $txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract,
-                price         => 5.20,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => $contract->date_start,
-            });
+    $contract = produce_contract({
+        underlying   => $underlying,
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 1000,
+        duration     => '15m',
+        date_start   => $now->epoch,
+        date_pricing => $now->epoch + 1,
+        current_tick => $tick,
+        entry_tick   => $tick,
+        exit_tick    => $tick,
+        barrier      => 'S0P',
+    });
 
-            $txn->buy;
-        };
-
-        is $error->{'-type'}, 'InvalidOfferings', 'type is InvalidOfferings';
-        is $error->{'-mesg'}, 'trying unauthorised combination', 'message is trying unauthorised combination';
-        is $error->{'-message_to_client'}, 'Trading is not offered for this duration.',
-            'message to clien is Trading is not offered for this duration.';
-
-        note "reset quants->underlyings->suspend_trades to []";
-        BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_trades([]);
-
-        $error = do {
-            my $txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract,
-                price         => 5.20,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => $contract->date_start,
-            });
-
-            $txn->buy;
-        };
-
-        ok !$error, 'no error';
-
-        $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'CALL',
-            currency     => 'USD',
-            payout       => 10.00,
-            duration     => '15m',
-            current_tick => $tick,
-            barrier      => 'S0P',
-            date_pricing => Date::Utility->new(time + 10),
+    #note 'bid price: ' . $contract->bid_price;
+    $error = do {
+        $mock_transaction->mock('price', sub { $contract->bid_price });
+        $txn = BOM::Transaction->new({
+            purchase_date => $contract->date_start,
+            client        => $cl,
+            contract      => $contract,
+            contract_id   => $fmb->{id},
+            price         => $contract->bid_price,
+            source        => 23,
         });
+        $txn->sell;
+    };
 
-        $error = do {
-            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+    is $error->{'-type'},              'InvalidOfferings',                        'type is InvalidOfferings';
+    is $error->{'-mesg'},              'Disabled platform',         'message is Disabled platform';
+    is $error->{'-message_to_client'}, 'Resale of this contract is not offered.', 'message to clien is Resale of this contract is not offered.';
 
-            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
-            my $mock_validation  = Test::MockModule->new('BOM::Transaction::Validation');
-            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_validation->mock(_validate_trade_pricing_adjustment =>
-                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-            note "setting quants->underlyings->suspend_buy to ['R_50']";
-            BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy(['R_50']);
+    note "reset app_config->system->suspend_trading to 0";
+    BOM::Config::Runtime->instance->app_config->system->suspend->trading(0);
+};
 
-            my $txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract,
-                price         => 5.20,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => $contract->date_start,
-            });
+subtest 'suspend_buy & suspend_trades' => sub {
+    my $cl = create_client;
 
-            $txn->buy;
-        };
+    top_up $cl, 'USD', 100;
 
-        is $error->{'-type'}, 'InvalidOfferings', 'type is InvalidOfferings';
-        is $error->{'-mesg'}, 'trying unauthorised combination', 'message is trying unauthorised combination';
-        is $error->{'-message_to_client'}, 'Trading is not offered for this duration.',
-            'message to clien is Trading is not offered for this duration.';
+    isnt + (my $acc_usd = $cl->account), 'USD', 'got USD account';
 
-        note "reset quants->underlyings->suspend_buy to []";
-        BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy([]);
+    my $bal;
+    is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
 
-        $error = do {
-            my $txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract,
-                price         => 5.20,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => $contract->date_start,
-            });
+    note "mocking app_config->loaded_revision to rand()";
+    my $mock_appconfig = Test::MockModule->new('App::Config::Chronicle');
+    $mock_appconfig->mock('loaded_revision', sub { rand });
 
-            $txn->buy;
-        };
+    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+    $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
 
-        ok !$error, 'no error';
+    my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+    my $mock_validation  = Test::MockModule->new('BOM::Transaction::Validation');
+    # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+    $mock_validation->mock(
+        _validate_trade_pricing_adjustment => sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () }
+    );
+    $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-        SKIP: {
-            skip 'currently does not validate contract type';
-            $contract = produce_contract({
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    subtest 'suspend buy' => sub {
+        foreach my $type (
+            ['quants.underlyings.suspend_buy',    [$underlying->symbol]],
+            ['quants.markets.suspend_buy',        [$underlying->market->name]],
+            ['quants.contract_types.suspend_buy', ['CALL']])
+        {
+            my ($to_suspend, $data) = @$type;
+            my $now      = Date::Utility->new();
+            my $contract = produce_contract({
                 underlying   => $underlying,
                 bet_type     => 'CALL',
                 currency     => 'USD',
@@ -2152,20 +2106,9 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
                 date_pricing => Date::Utility->new(time + 10),
             });
 
-            $error = do {
-                my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-                $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
-
-                my $mock_transaction = Test::MockModule->new('BOM::Transaction');
-                my $mock_validation  = Test::MockModule->new('BOM::Transaction::Validation');
-                # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-                $mock_validation->mock(_validate_trade_pricing_adjustment =>
-                        sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
-                $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-                note "setting quants->features->suspend_contract_types to ['CALL']";
-                BOM::Config::Runtime->instance->app_config->quants->features->suspend_contract_types(['CALL']);
-
-                my $txn = BOM::Transaction->new({
+            my $txn;
+            my $error = do {
+                $txn = BOM::Transaction->new({
                     client        => $cl,
                     contract      => $contract,
                     price         => 5.20,
@@ -2177,14 +2120,76 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
                 $txn->buy;
             };
 
+            ok !$error, 'no error';
+
+            ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+
+            note "setting app_config->$to_suspend to [$data->[0]]";
+            $app_config->set({@$type});
+
+            $error = do {
+                $txn = BOM::Transaction->new({
+                    client        => $cl,
+                    contract      => $contract,
+                    price         => 5.20,
+                    payout        => $contract->payout,
+                    amount_type   => 'payout',
+                    purchase_date => $contract->date_start,
+                });
+
+                $txn->buy;
+            };
             is $error->{'-type'}, 'InvalidOfferings', 'type is InvalidOfferings';
-            is $error->{'-mesg'}, 'trying unauthorised combination', 'message is trying unauthorised combination';
-            is $error->{'-message_to_client'}, 'Trading is not offered for this duration.',
-                'message to clien is Trading is not offered for this duration.';
+            like $error->{'-mesg'}, qr/Disabled (contract_type|market|underlying_symbol)/, 'message is Disabled ' . $type;
+            is $error->{'-message_to_client'}, 'This trade is temporarily unavailable.',
+                'message to clien is This trade is temporarily unavailable.';
 
             $contract = produce_contract({
                 underlying   => $underlying,
-                bet_type     => 'PUT',
+                bet_type     => 'CALL',
+                currency     => 'USD',
+                payout       => 10,
+                duration     => '15m',
+                date_start   => $now->epoch,
+                date_pricing => $now->epoch + 1,
+                current_tick => $tick,
+                entry_tick   => $tick,
+                exit_tick    => $tick,
+                barrier      => 'S0P',
+            });
+
+            #note 'bid price: ' . $contract->bid_price;
+            $error = do {
+                $mock_transaction->mock('price', sub { $contract->bid_price });
+                $txn = BOM::Transaction->new({
+                    purchase_date => $contract->date_start,
+                    client        => $cl,
+                    contract      => $contract,
+                    contract_id   => $fmb->{id},
+                    price         => $contract->bid_price,
+                    source        => 23,
+                });
+                $txn->sell;
+            };
+
+            ok !$error, "$type->[0] will not afffect sell";
+
+            note "reset app_config->$to_suspend to []";
+            $app_config->set({$type->[0], []});
+        }
+    };
+
+    subtest 'suspend trades' => sub {
+        foreach my $type (
+            ['quants.underlyings.suspend_trades',    [$underlying->symbol]],
+            ['quants.markets.suspend_trades',        [$underlying->market->name]],
+            ['quants.contract_types.suspend_trades', ['CALL']])
+        {
+            my ($to_suspend, $data) = @$type;
+            my $now      = Date::Utility->new();
+            my $contract = produce_contract({
+                underlying   => $underlying,
+                bet_type     => 'CALL',
                 currency     => 'USD',
                 payout       => 10.00,
                 duration     => '15m',
@@ -2193,8 +2198,9 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
                 date_pricing => Date::Utility->new(time + 10),
             });
 
-            $error = do {
-                my $txn = BOM::Transaction->new({
+            my $txn;
+            my $error = do {
+                $txn = BOM::Transaction->new({
                     client        => $cl,
                     contract      => $contract,
                     price         => 5.20,
@@ -2206,73 +2212,67 @@ subtest 'buy on suspend_trading|suspend_trades|suspend_buy|disabled_market|suspe
                 $txn->buy;
             };
 
-            ok !$error, 'no error buy a PUT';
+            ok !$error, 'no error';
 
-            note "reset app_config->quants->features->suspend_contract_types to []";
-            BOM::Config::Runtime->instance->app_config->quants->features->suspend_contract_types([]);
+            ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
+            note "setting app_config->$to_suspend to [$data->[0]]";
+            $app_config->set({@$type});
+
+            $error = do {
+                $txn = BOM::Transaction->new({
+                    client        => $cl,
+                    contract      => $contract,
+                    price         => 5.20,
+                    payout        => $contract->payout,
+                    amount_type   => 'payout',
+                    purchase_date => $contract->date_start,
+                });
+
+                $txn->buy;
+            };
+            is $error->{'-type'}, 'InvalidOfferings', 'type is InvalidOfferings';
+            like $error->{'-mesg'}, qr/Disabled (underlying_symbol|market|contract_type)/, 'message is Disabled ' . $type;
+            is $error->{'-message_to_client'}, 'This trade is temporarily unavailable.',
+                'message to clien is This trade is temporarily unavailable.';
+
+            $contract = produce_contract({
+                underlying   => $underlying,
+                bet_type     => 'CALL',
+                currency     => 'USD',
+                payout       => 10,
+                duration     => '15m',
+                date_start   => $now->epoch,
+                date_pricing => $now->epoch + 1,
+                current_tick => $tick,
+                entry_tick   => $tick,
+                exit_tick    => $tick,
+                barrier      => 'S0P',
+            });
+
+            #note 'bid price: ' . $contract->bid_price;
+            $error = do {
+                $mock_transaction->mock('price', sub { $contract->bid_price });
+                $txn = BOM::Transaction->new({
+                    purchase_date => $contract->date_start,
+                    client        => $cl,
+                    contract      => $contract,
+                    contract_id   => $fmb->{id},
+                    price         => $contract->bid_price,
+                    source        => 23,
+                });
+                $txn->sell;
+            };
+
+            is $error->{'-type'}, 'InvalidOfferings', 'type is InvalidOfferings';
+            like $error->{'-mesg'}, qr/Disabled (underlying_symbol|market|contract_type)/, 'message is Disabled ' . $type;
+            is $error->{'-message_to_client'}, 'Resale of this contract is not offered.',
+                'message to clien is Resale of this contract is not offered.';
+
+            note "reset app_config->$to_suspend to []";
+            $app_config->set({$type->[0], []});
         }
-        $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'CALL',
-            currency     => 'USD',
-            payout       => 10.00,
-            duration     => '15m',
-            current_tick => $tick,
-            barrier      => 'S0P',
-            date_pricing => Date::Utility->new(time + 10),
-        });
-
-        $error = do {
-            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
-
-            my $mock_transaction = Test::MockModule->new('BOM::Transaction');
-            my $mock_validation  = Test::MockModule->new('BOM::Transaction::Validation');
-            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_validation->mock(_validate_trade_pricing_adjustment =>
-                    sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
-            note "setting quants->markets->disabled to [''synthetic_index']";
-            BOM::Config::Runtime->instance->app_config->quants->markets->disabled(['synthetic_index']);
-
-            my $txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract,
-                price         => 5.20,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => $contract->date_start,
-            });
-
-            $txn->buy;
-        };
-
-        is $error->{'-type'}, 'InvalidOfferings', 'type is InvalidOfferings';
-        is $error->{'-mesg'}, 'trying unauthorised combination', 'message is trying unauthorised combination';
-        is $error->{'-message_to_client'}, 'Trading is not offered for this duration.',
-            'message to clien is Trading is not offered for this duration.';
-
-        note "reset quants->markets->disabled to []";
-        BOM::Config::Runtime->instance->app_config->quants->markets->disabled([]);
-
-        $error = do {
-            my $txn = BOM::Transaction->new({
-                client        => $cl,
-                contract      => $contract,
-                price         => 5.20,
-                payout        => $contract->payout,
-                amount_type   => 'payout',
-                purchase_date => $contract->date_start,
-            });
-
-            $txn->buy;
-        };
-
-        ok !$error, 'no error';
-
-    }
-    'survived';
+    };
 };
 
 #### Test for 1HZ contracts for China account ***** 

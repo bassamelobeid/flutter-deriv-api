@@ -6,6 +6,7 @@ use BOM::Platform::Context qw(localize);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Helper::FinancialMarketBet;
 
+use BOM::Config::Runtime;
 use Machine::Epsilon;
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
@@ -113,6 +114,15 @@ sub _validate_update_parameter {
     my $self = shift;
 
     my $contract = $self->contract;
+
+    # update is not allowed when suspend trade is activated.
+    my $offerings = $self->client->landing_company->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config('sell'));
+    if ($offerings->is_disabled($self->contract->metadata('sell'))) {
+        return {
+            code              => 'Update is not available',
+            message_to_client => localize('Update of stop loss and take profit is not available at the moment.'),
+        };
+    }
 
     # Contract can be closed if any of the limit orders is breached.
     # if contract is sold, don't proceed.

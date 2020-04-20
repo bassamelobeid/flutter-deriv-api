@@ -22,6 +22,7 @@ use BOM::User::Client;
 use BOM::User::Password;
 use BOM::User::Utility;
 use BOM::User;
+use BOM::Config::Runtime;
 
 use BOM::Transaction;
 use BOM::Transaction::ContractUpdate;
@@ -260,10 +261,10 @@ subtest 'buy MULTUP', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             10,      'multiplier is 10';
-            is $chld->{'basis_spot'},             100, 'basis_spot is 100';
-            is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_basis_spot'},   undef,   'stop_loss_basis_spot is undef';
+            is $chld->{'multiplier'},             10,    'multiplier is 10';
+            is $chld->{'basis_spot'},             100,   'basis_spot is 100';
+            is $chld->{'stop_loss_order_amount'}, undef, 'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_basis_spot'},   undef, 'stop_loss_basis_spot is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, undef, 'take_profit_order_amount is undef';
@@ -367,10 +368,10 @@ subtest 'buy MULTUP with take profit', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             10,      'multiplier is 10';
-            is $chld->{'basis_spot'},             100, 'basis_spot is 100';
-            is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_order_date'},   undef,   'stop_loss_order_date is undef';
+            is $chld->{'multiplier'},             10,    'multiplier is 10';
+            is $chld->{'basis_spot'},             100,   'basis_spot is 100';
+            is $chld->{'stop_loss_order_amount'}, undef, 'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_order_date'},   undef, 'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, 5, 'take_profit_order_amount is 5';
@@ -474,10 +475,10 @@ subtest 'buy MULTUP with stop loss', sub {
         # note explain $chld;
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},               10,      'multiplier is 10';
-            is $chld->{'basis_spot'},               100, 'basis_spot is 100';
-            is $chld->{'stop_loss_order_amount'},   -5,      'stop_loss_order_amount is -5';
-            cmp_ok $chld->{'stop_loss_order_date'}, "eq",    $fmb->{start_time}, 'stop_loss_order_date is correctly set';
+            is $chld->{'multiplier'},               10,   'multiplier is 10';
+            is $chld->{'basis_spot'},               100,  'basis_spot is 100';
+            is $chld->{'stop_loss_order_amount'},   -5,   'stop_loss_order_amount is -5';
+            cmp_ok $chld->{'stop_loss_order_date'}, "eq", $fmb->{start_time}, 'stop_loss_order_date is correctly set';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, undef, 'take_profit_order_amount is undef';
@@ -709,6 +710,89 @@ subtest 'buy multiplier with unsupported underlying' => sub {
         is $error->{-message_to_client}, 'Trading is not offered for this asset.', 'message to client Trading is not offered for this asset.';
     };
     restore_time();
+};
+
+subtest 'buy deal cancellation when it is disabled' => sub {
+    lives_ok {
+        my $contract = produce_contract({
+            underlying   => 'R_100',
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            multiplier   => 10,
+            amount       => 100,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+            cancellation => '1h',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = $txn->buy;
+        ok !$error, 'buy successful';
+
+        note 'suspend deal cancellation';
+        BOM::Config::Runtime->instance->app_config->quants->suspend_deal_cancellation->synthetic_index(1);
+
+        $contract = produce_contract({
+            underlying   => 'R_100',
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            multiplier   => 10,
+            amount       => 100,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+            cancellation => '1h',
+        });
+
+        $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        $error = $txn->buy;
+        is $error->{-mesg}, 'deal cancellation suspended', 'message is deal cancellation suspended';
+        is $error->{-message_to_client}, 'Deal cancellation is not available at this moment.',
+            'message to client is Deal cancellation is not available at this moment.';
+
+        $contract = produce_contract({
+            underlying   => 'R_100',
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            multiplier   => 10,
+            amount       => 100,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+        });
+
+        $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        $error = $txn->buy;
+        ok !$error, 'can still buy multiplier without deal cancellation';
+
+        note 'reset deal cancellation';
+        BOM::Config::Runtime->instance->app_config->quants->suspend_deal_cancellation->synthetic_index(0);
+    };
 };
 
 done_testing();
