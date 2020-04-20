@@ -19,7 +19,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("Setting Client Self Exclusion");
 
-my $loginid = request()->param('loginid');
+my $loginid = request()->param('loginid') || '';
 Bar("Setting Client Self Exclusion");
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginid}) };
