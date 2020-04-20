@@ -324,24 +324,48 @@ quants:
               isa: Num
               default: 100
               global: 1
-    features:
-      description: "Toggles for various platform features"
+    suspend_deal_cancellation:
+      description: "Allow suspension of deal cancellation by market."
       isa: section
       contains:
-        suspend_contract_types:
-          description: "Suspend trades only on these bet types (Flash, DoubleDown, DoubleUp, ..)"
+        forex:
+          description: "Suspend purchase of deal cancellation on multiplier for forex."
+          isa: Bool
+          default: 0
+          global: 1
+        synthetic_index:
+          description: "Suspend purchase of deal cancellation on multiplier for synthetic index."
+          isa: Bool
+          default: 0
+          global: 1
+    contract_types:
+      description: "Contract type specific variables"
+      isa: section
+      contains:
+        suspend_buy:
+          description: "Suspend buy only on these bet types (CALL, DIGITODD, ..)"
           isa: ArrayRef
           default: []
           global: 1
+        suspend_trades:
+          description: "A list of contract types for which trades should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
     markets:
       description: "Market-specific variables"
       isa: section
       contains:
-        disabled:
-          description: "Switch off a given market (volatility index)"
+        suspend_trades:
+          description: "A list of markets for which trades should be suspended"
+          global: 1
           isa: ArrayRef
           default: []
+        suspend_buy:
+          description: "A list of markets for which purchase trades should be suspended"
           global: 1
+          isa: ArrayRef
+          default: []
     underlyings:
       description: "Underlying-specific variables"
       isa: section

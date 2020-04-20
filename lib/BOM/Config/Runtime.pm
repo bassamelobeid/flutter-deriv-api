@@ -6,6 +6,7 @@ use feature 'state';
 use App::Config::Chronicle;
 use BOM::Config::Chronicle;
 use BOM::Config;
+use List::Util qw(uniq);
 
 has 'app_config' => (
     is         => 'ro',
@@ -50,16 +51,32 @@ sub _build_quant_config {
 }
 
 sub get_offerings_config {
-    my $runtime = shift;
+    my ($runtime, $action) = @_;
 
-    return {
-        suspend_trading        => $runtime->app_config->system->suspend->trading,
-        suspend_trades         => $runtime->app_config->quants->underlyings->suspend_trades,
-        suspend_buy            => $runtime->app_config->quants->underlyings->suspend_buy,
-        suspend_contract_types => $runtime->app_config->quants->features->suspend_contract_types,
-        disabled_markets       => $runtime->app_config->quants->markets->disabled,
-        loaded_revision        => $runtime->app_config->loaded_revision // 0,
+    # default to buy action
+    $action //= 'buy';
+
+    die 'unsupported action ' . $action unless $action eq 'buy' or $action eq 'sell';
+
+    my $config = {
+        suspend_trading => $runtime->app_config->system->suspend->trading,
+        loaded_revision => $runtime->app_config->loaded_revision // 0,
+        action          => $action,
     };
+
+    my $quants_config = $runtime->app_config->quants;
+
+    if ($action eq 'buy') {
+        $config->{suspend_underlying_symbols} = [uniq(@{$quants_config->underlyings->suspend_buy}, @{$quants_config->underlyings->suspend_trades})];
+        $config->{suspend_markets}            = [uniq(@{$quants_config->markets->suspend_buy},     @{$quants_config->markets->suspend_trades})];
+        $config->{suspend_contract_types} = [uniq(@{$quants_config->contract_types->suspend_buy}, @{$quants_config->contract_types->suspend_trades})];
+    } elsif ($action eq 'sell') {
+        $config->{suspend_underlying_symbols} = [uniq(@{$quants_config->underlyings->suspend_trades})];
+        $config->{suspend_markets}            = [uniq(@{$quants_config->markets->suspend_trades})];
+        $config->{suspend_contract_types}     = [uniq(@{$quants_config->contract_types->suspend_trades})];
+    }
+
+    return $config;
 }
 
 __PACKAGE__->meta->make_immutable;
