@@ -118,6 +118,8 @@ our %ERROR_MAP = do {
         AdvertiserCreateChatError        => localize('An error occurred (chat user not created). Please try again later.'),
         AdvertiserNotFoundForChat        => localize('You may not chat until you have registered on the P2P system.'),
         ChatTokenError                   => localize('An error occurred when issuing a new token. Please try again later.'),
+        AdvertiserNotFoundForChatToken   => localize('This account is not registered as a P2P advertiser.'),
+        OrderChatAlreadyCreated          => localize('A chat for this order has already been created.'),
         CounterpartyNotAdvertiserForChat => localize('Chat is not possible because the other client is not yet registered on the P2P system.'),
         CreateChatError                  => localize('An error occurred when creating the chat. Please try again later.'),
     );

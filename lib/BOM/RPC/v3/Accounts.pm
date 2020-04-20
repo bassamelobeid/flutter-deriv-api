@@ -2027,10 +2027,26 @@ async_rpc service_token => sub {
     my ($client, $args) = @{$params}{qw/client args/};
 
     if ($args->{service} eq 'sendbird') {
-        return Future->done({
-            $client->p2p_chat_token()->%*,
-            service => $args->{service},
-        });
+        try {
+            my $res = $client->p2p_chat_token();
+            return Future->done({
+                $res->%*,
+                service => $args->{service},
+            });
+        }
+        catch {
+            my $err = $@;
+            my $err_code = $err->{error_code} // '';
+
+            if (my $message = $BOM::RPC::v3::P2P::ERROR_MAP{$err_code}) {
+                return Future->fail(
+                    BOM::RPC::v3::Utility::create_error({
+                            code              => $err_code,
+                            message_to_client => localize($message),
+                        }));
+            }
+            die $@;
+        }
     }
 
     $args->{referrer} //= $params->{referrer};
