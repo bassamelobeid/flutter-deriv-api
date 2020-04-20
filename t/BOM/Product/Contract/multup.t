@@ -535,6 +535,18 @@ subtest 'deal cancellation duration check' => sub {
     ok !$c->is_valid_to_buy, 'invalid to buy';
     is $c->primary_validation_error->message_to_client, 'Deal cancellation is not offered at this duration.',
         'message_to_client - Deal cancellation is not offered at this duration.';
+
+    $args->{cancellation} = '5m';
+    $c = produce_contract($args);
+    ok $c->is_valid_to_buy, 'valid to buy 5m cancellation option';
+
+    $args->{cancellation} = '60m';
+    $c = produce_contract($args);
+    ok $c->is_valid_to_buy, 'valid to buy 60m cancellation option';
+
+    $args->{cancellation} = '1h';
+    $c = produce_contract($args);
+    ok $c->is_valid_to_buy, 'valid to buy 1h cancellation option';
 };
 
 subtest 'deal cancellation suspension' => sub {

@@ -74,7 +74,8 @@ sub decorate {
         }
 
         if ($contract_category eq 'multiplier') {
-            $o->{multiplier_range} = _get_multiplier_range($underlying->symbol);
+            $o->{multiplier_range}   = _get_multiplier_config($underlying->symbol, 'multiplier_range');
+            $o->{cancellation_range} = _get_multiplier_config($underlying->symbol, 'cancellation_duration_range');
         }
         # The reason why we have to append 't' to tick expiry duration
         # is because in the backend it is easier to handle them if the
@@ -175,13 +176,13 @@ sub _default_barrier {
     return $underlying->market->integer_barrier ? floor($barrier) : $barrier;
 }
 
-sub _get_multiplier_range {
-    my $symbol = shift;
+sub _get_multiplier_config {
+    my ($symbol, $type) = @_;
 
     my $config = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader())
         ->get_config('multiplier_config', {underlying_symbol => $symbol}) // {};
 
-    return $config->{multiplier_range};
+    return $config->{$type};
 }
 
 1;

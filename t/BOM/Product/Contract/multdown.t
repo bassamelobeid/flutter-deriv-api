@@ -213,4 +213,46 @@ subtest 'take profit cap' => sub {
     is $error->message_to_client->[1], '90.00', 'max at 90.00';
 };
 
+subtest 'deal cancellation duration check' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [102, $now->epoch + 1, 'R_100'],);
+    my $args = {
+        bet_type     => 'MULTDOWN',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+        cancellation => '1',
+    };
+    my $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message_to_client, 'Deal cancellation is not offered at this duration.',
+        'message_to_client - Deal cancellation is not offered at this duration.';
+
+    $args->{cancellation} = '1s';
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message_to_client, 'Deal cancellation is not offered at this duration.',
+        'message_to_client - Deal cancellation is not offered at this duration.';
+
+    $args->{cancellation} = '0d';
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message_to_client, 'Deal cancellation is not offered at this duration.',
+        'message_to_client - Deal cancellation is not offered at this duration.';
+
+    $args->{cancellation} = '5m';
+    $c = produce_contract($args);
+    ok $c->is_valid_to_buy, 'valid to buy 5m cancellation option';
+
+    $args->{cancellation} = '60m';
+    $c = produce_contract($args);
+    ok $c->is_valid_to_buy, 'valid to buy 60m cancellation option';
+
+    $args->{cancellation} = '1h';
+    $c = produce_contract($args);
+    ok $c->is_valid_to_buy, 'valid to buy 1h cancellation option';
+};
 done_testing();

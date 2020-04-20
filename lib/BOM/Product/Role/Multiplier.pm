@@ -13,6 +13,7 @@ use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 use Machine::Epsilon;
 use Scalar::Util qw(looks_like_number);
+use Time::Duration::Concise;
 
 use constant {
     MIN_COMMISSION_AMOUNT     => 0.02,
@@ -728,8 +729,10 @@ sub _validate_cancellation {
 
     return unless $self->cancellation;
 
-    # currently only allow '1h' as deal cancellation duration. Will expand this to /\d+(?:h|m)/
-    if ($self->cancellation ne '1h') {
+    my $available_range = $self->_multiplier_config->{cancellation_duration_range};
+    my $cancellation_interval = Time::Duration::Concise->new(interval => $self->cancellation);
+
+    unless (grep { $cancellation_interval->seconds == Time::Duration::Concise->new(interval => $_)->seconds } @$available_range) {
         return {
             message           => 'invalid deal cancellation duration',
             message_to_client => $ERROR_MAPPING->{InvalidDealCancellation},
