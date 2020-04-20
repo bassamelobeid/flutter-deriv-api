@@ -4,7 +4,7 @@ use warnings;
 use Test::More;
 use Test::Fatal;
 use Test::MockModule;
-use Test::MockTime qw(set_absolute_time);
+use Test::MockTime qw(set_fixed_time);
 
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -13,7 +13,7 @@ BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_adver
 
 my $mock_sb = Test::MockModule->new('WebService::SendBird');
 my $mock_sb_user = Test::MockModule->new('WebService::SendBird::User');
-set_absolute_time(0);
+set_fixed_time(0);
 
 my %last_event;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -33,6 +33,9 @@ subtest 'create_advertiser' => sub {
     
     my $user_id = rand(999);
     $mock_sb->mock('create_user', sub {
+        my ($self, %params) = @_;
+        my $t = time;
+        ok $params{user_id} =~ /p2puser_CR_\d+_$t/, 'sendbird user_id includes timestamp'; 
         return WebService::SendBird::User->new(
              api_client  => 1,
              user_id => $user_id,
@@ -62,7 +65,7 @@ subtest 'chat_token' => sub {
     is $resp->{token}, 'dummy', 'token not reissued';
     is $resp->{expiry_time}, $expiry, 'correct expiry time';
     
-    set_absolute_time(1);
+    set_fixed_time(1);
     is exception { $client->p2p_chat_token() }->{error_code} => 'ChatTokenError', 'handle sb api error';
     
     my $token = rand(999);

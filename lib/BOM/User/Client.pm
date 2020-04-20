@@ -75,10 +75,12 @@ use constant PROOF_OF_IDENTITY_DOCUMENT_TYPES_DEPRECATED => qw(
     selfie_with_id vf_id vf_face_id
 );
 
+use constant P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60;    # 2 hours
+
 # this email address should not be added into brand as it is specific to internal system
 my $SUBJECT_RE = qr/(New Sign-Up|Update Address)/;
 
-my $META = __PACKAGE__->meta;    # rose::db::object::manager meta rules. Knows our db structure
+my $META = __PACKAGE__->meta;                        # rose::db::object::manager meta rules. Knows our db structure
 
 my $json = JSON::MaybeXS->new;
 
@@ -1793,8 +1795,8 @@ sub p2p_advertiser_create {
             $_->selectrow_array("SELECT nextval('p2p.advertiser_serial')");
         });
 
-    my $sb_api     = BOM::User::Utility::sendbird_api();
-    my $sb_user_id = 'p2puser_' . $client->loginid;
+    my $sb_api = BOM::User::Utility::sendbird_api();
+    my $sb_user_id = join '_', 'p2puser', $client->broker_code, $id, time;
     my $sb_user;
     try {
         $sb_user = $sb_api->create_user(
@@ -2275,7 +2277,7 @@ sub p2p_chat_create {
         // die +{error_code => 'CounterpartyNotAdvertiserForChat'};
 
     my $sb_api = BOM::User::Utility::sendbird_api();
-    my $sb_channel = join '_', ('p2porder', $client->broker_code, $order_id);
+    my $sb_channel = join '_', ('p2porder', $client->broker_code, $order_id, time);
 
     my $sb_chat;
     try {
@@ -2316,11 +2318,10 @@ Creates one if it doesn't exist or has expired.
 sub p2p_chat_token {
     my ($client) = @_;
 
-    my $age_limit = 2 * 60 * 60;    # 2 hours
     my $advertiser_info = $client->_p2p_advertisers(loginid => $client->loginid)->[0] // die +{error_code => 'AdvertiserNotFoundForChatToken'};
 
     my ($token, $expiry) = $advertiser_info->@{qw(chat_token chat_token_expiry)};
-    if ($token and $expiry and ($expiry - time) >= $age_limit) {
+    if ($token and $expiry and ($expiry - time) >= P2P_TOKEN_MIN_EXPIRY) {
         return {
             token       => $token,
             expiry_time => $expiry
