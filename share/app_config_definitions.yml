@@ -273,11 +273,6 @@ payments:
       isa: ArrayRef
       default: []
       global: 1
-    experimental_currencies:
-      description: "List of experimental currencies"
-      isa: ArrayRef
-      default: []
-      global: 1
     crypto_withdrawal_approvals_required:
       description: "Number of approvals required to verify a cryptocurrency withdrawal, restricted by the amount in USD. The withdrawal amount can be less than or equal to the amount specified here."
       isa: json_string
@@ -476,6 +471,11 @@ system:
           global: 1
         cryptocurrencies_withdrawal:
           description: "Withdrawal suspend comma-separated list of currencies, set this configuration if you want to block just withdrawals"
+          isa: ArrayRef
+          default: []
+          global: 1
+        experimental_currencies:
+          description: "List of experimental currencies"
           isa: ArrayRef
           default: []
           global: 1
