@@ -259,7 +259,7 @@ sub is_experimental_currency {
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->check_for_update();
 
-    my $experimental = any { $currency eq $_ } $app_config->payments->experimental_currencies->@*;
+    my $experimental = any { $currency eq $_ } $app_config->system->suspend->experimental_currencies->@*;
     return $experimental;
 }
 

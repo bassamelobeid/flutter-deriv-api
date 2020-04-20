@@ -317,32 +317,32 @@ subtest 'create account' => sub {
         is(defined $user,   1,            "Social login user with residence $user->residence has been created");
         is($client->broker, $broker_code, "Successfully created real account $client->loginid");
     }
-    
+
     subtest 'sync wihtdrawal_locked status to new clients upon creation' => sub {
         my $real_acc = BOM::Platform::Account::Real::default::create_account({
-                  from_client => $vr_client,
-                  user        => $user,
-                  details     => \%t_details,
-                  });
+            from_client => $vr_client,
+            user        => $user,
+            details     => \%t_details,
+        });
         my ($real_client, $user) = @{$real_acc}{'client', 'user'};
         $real_client->status->set('withdrawal_locked', 'system', 'transfer over 1k');
-      
+
         my $real_acc_new = BOM::Platform::Account::Real::default::create_account({
-                  from_client => $vr_client,
-                  user        => $user,
-                  details     => \%t_details,
-                  });
+            from_client => $vr_client,
+            user        => $user,
+            details     => \%t_details,
+        });
         my $real_client_new = @{$real_acc_new}{'client'};
-        
+
         ok $real_client_new->status->withdrawal_locked, "withdrawal_locked status copied to new real client upon creation";
 
         my $client_vr_new = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                    broker_code => 'VRTC',
-                });
+            broker_code => 'VRTC',
+        });
         $user->add_client($client_vr_new);
 
         ok !$client_vr_new->status->withdrawal_locked, 'withdrawal_locked status must not set or copied for virtual accounts';
-    }
+        }
 };
 
 sub create_vr_acc {

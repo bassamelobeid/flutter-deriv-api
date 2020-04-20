@@ -117,10 +117,10 @@ subtest 'Check Types of Suspension' => sub {
         BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies_withdrawal([]);
     };
     subtest 'Only when currency is experimental' => sub {
-        BOM::Config::Runtime->instance->app_config->payments->experimental_currencies(['USB']);
+        BOM::Config::Runtime->instance->app_config->system->suspend->experimental_currencies(['USB']);
         ok BOM::Platform::Client::CashierValidation::is_experimental_currency("USB"), 'Currency USB is experimental';
         ok !(BOM::Platform::Client::CashierValidation::is_experimental_currency("UST")), 'Currency UST is not experimental';
-        BOM::Config::Runtime->instance->app_config->payments->experimental_currencies([]);
+        BOM::Config::Runtime->instance->app_config->system->suspend->experimental_currencies([]);
     };
 };
 
