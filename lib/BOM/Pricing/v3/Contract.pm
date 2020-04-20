@@ -723,7 +723,8 @@ sub _validate_offerings {
     try {
         my $landing_company = LandingCompany::Registry::get($args_copy->{landing_company} // 'virtual');
         my $method = $contract->is_parameters_predefined ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
-        my $offerings_obj = $landing_company->$method(delete $args_copy->{country_code} // '', BOM::Config::Runtime->instance->get_offerings_config);
+        my $offerings_obj = $landing_company->$method(delete $args_copy->{country_code} // '',
+            BOM::Config::Runtime->instance->get_offerings_config($args_copy->{action}));
 
         die 'Could not find offerings for ' . $args_copy->{country_code} unless $offerings_obj;
         if (my $error = $offerings_obj->validate_offerings($contract->metadata($args_copy->{action}))) {
