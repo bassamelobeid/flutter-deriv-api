@@ -211,6 +211,7 @@ sub get_settings_by_group {
                 system.mt5.suspend.all
                 system.mt5.suspend.deposits
                 system.mt5.suspend.withdrawals
+                system.suspend.experimental_currencies
                 )
         ],
         quant => [qw(
@@ -255,7 +256,6 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.maximum.default
                 payments.experimental_currencies_allowed
                 payments.crypto.restricted_countries
-                payments.experimental_currencies
                 payments.crypto.sweep_reserve_balance.BTC
                 payments.crypto.sweep_reserve_balance.LTC
                 payments.crypto.sweep_reserve_balance.ETH
