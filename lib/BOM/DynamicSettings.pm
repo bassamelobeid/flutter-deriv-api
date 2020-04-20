@@ -220,8 +220,12 @@ sub get_settings_by_group {
                 quants.commission.adjustment.per_market_scaling.indices
                 quants.commission.adjustment.per_market_scaling.commodities
                 quants.commission.adjustment.per_market_scaling.synthetic_index
-                quants.markets.disabled
-                quants.features.suspend_contract_types
+                quants.markets.suspend_buy
+                quants.markets.suspend_trades
+                quants.contract_types.suspend_buy
+                quants.contract_types.suspend_trades
+                quants.suspend_deal_cancellation.forex
+                quants.suspend_deal_cancellation.synthetic_index
                 quants.underlyings.disable_autoupdate_vol
                 quants.underlyings.suspend_buy
                 quants.underlyings.suspend_trades
@@ -477,6 +481,8 @@ sub send_email_notification {
     my $old_value = shift;
     my $for       = shift;
 
+    return if ref $new_value ne 'ARRAY' or ref $old_value ne 'ARRAY';
+
     my $enable_disable = scalar(@$new_value) > scalar(@$old_value) ? 'Disable' : 'Enable';
 
     my $subject = "$enable_disable Asset/Product Notification. ";
@@ -484,7 +490,9 @@ sub send_email_notification {
     my @different = array_diff(@$new_value, @$old_value);
 
     my $disable_type =
-        $for eq 'quants.features.suspend_contract_types' ? 'Contract_type' : $for eq 'quants.markets.disabled' ? 'Market' : 'Underlying';
+          ($for =~ /quants\.contract_types\.suspend_(?:buy|trades)/) ? 'Contract_type'
+        : ($for =~ /quants\.markets\.suspend_(?:buy|trades)/)        ? 'Market'
+        :                                                              'Underlying';
     my $staff   = BOM::Backoffice::Auth0::get_staffname();
     my @message = "$enable_disable the following offering:";
     push @message, "$disable_type: " . join(",", @different);
