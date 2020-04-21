@@ -76,7 +76,7 @@ subtest 'login event' => sub {
             location            => 'Germany',
             new_signin_activity => $new_signin_activity,
         }};
-    my $result = BOM::Event::Actions::User::login($args);
+    my $result = BOM::Event::Actions::User::login($args)->get;
     is $result, 1, 'Success track result';
     my ($customer, %args) = @identify_args;
     test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
@@ -148,7 +148,7 @@ subtest 'login event' => sub {
     $new_signin_activity = 1 if $args->{properties}->{browser} ne $new_signin_activity_args->{properties}->{browser};
     $new_signin_activity_args->{properties}->{new_signin_activity} = $new_signin_activity;
     undef @track_args;
-    $result = BOM::Event::Actions::User::login($new_signin_activity_args);
+    $result = BOM::Event::Actions::User::login($new_signin_activity_args)->get;
     is $result, 1, 'Success track result';
     ($customer, %args) = @track_args;
     is_deeply \%args,
