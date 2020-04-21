@@ -2065,13 +2065,16 @@ sub p2p_order_create {
     my $limit_per_day_per_client = $p2p_config->limits->count_per_day_per_client;
 
     my $advert_info = $client->_p2p_adverts(
-        id               => $advert_id,
-        country          => $client->residence,
-        account_currency => $client->currency
+        id                     => $advert_id,
+        is_active              => 1,
+        can_order              => 1,
+        advertiser_is_approved => 1,
+        advertiser_is_listed   => 1,
+        country                => $client->residence,
+        account_currency       => $client->currency
     )->[0];
 
-    die +{error_code => 'AdvertNotFound'}   unless $advert_info;
-    die +{error_code => 'AdvertIsDisabled'} unless $advert_info->{is_active};
+    die +{error_code => 'AdvertNotFound'} unless $advert_info;
     die +{error_code => 'InvalidAdvertOwn'} if $advert_info->{advertiser_loginid} eq $client->loginid;
 
     die +{
@@ -2085,11 +2088,6 @@ sub p2p_order_create {
         message_params =>
             [$advert_info->{account_currency}, formatnumber('amount', $advert_info->{account_currency}, $advert_info->{min_order_amount}),]}
         if $amount < ($advert_info->{min_order_amount} // 0);
-
-    my $advertiser_info = $client->_p2p_advertisers(id => $advert_info->{advertiser_id})->[0];
-    die +{error_code => 'AdvertiserNotFound'}     unless $advertiser_info;
-    die +{error_code => 'AdvertiserNotListed'}    unless $advertiser_info->{is_listed};
-    die +{error_code => 'AdvertOwnerNotApproved'} unless $advertiser_info->{is_approved};
 
     if ($advert_info->{type} eq 'buy') {
         die +{error_code => 'OrderPaymentInfoRequired'} if !trim($param{payment_info});

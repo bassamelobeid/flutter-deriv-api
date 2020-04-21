@@ -228,7 +228,7 @@ subtest 'Creating two new orders from one client for one advert' => sub {
             expiry    => 7200,
         );
     };
-    is $err->{error_code}, 'OrderAlreadyExists', 'Got correct error';
+    is $err->{error_code}, 'OrderAlreadyExists', 'Could not create order, got error code OrderAlreadyExists';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -260,34 +260,6 @@ subtest 'Creating order for advertiser own order' => sub {
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
-subtest 'Creating order with amount more than available' => sub {
-    my $amount = 100;
-
-    my $escrow = BOM::Test::Helper::P2P::create_escrow();
-    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
-        amount => $amount,
-        type   => 'sell'
-    );
-    my $client = BOM::Test::Helper::P2P::create_client();
-
-    ok($escrow->account->balance == 0,           'Escrow balance is correct');
-    ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
-
-    my $err = exception {
-        $client->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => 101,
-            expiry    => 7200,
-        );
-    };
-    is $err->{error_code}, 'OrderMaximumExceeded', 'Got correct error code';
-
-    ok($escrow->account->balance == 0,           'Escrow balance is correct');
-    ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
-
-    BOM::Test::Helper::P2P::reset_escrow();
-};
-
 subtest 'Creating order with negative amount' => sub {
     my $amount = 100;
 
@@ -308,7 +280,7 @@ subtest 'Creating order with negative amount' => sub {
             expiry    => 7200,
         );
     };
-    is $err->{error_code}, 'OrderMinimumNotMet', 'Got correct error code';
+    is $err->{error_code}, 'OrderMinimumNotMet', 'Could not create order, got error code OrderMinimumNotMet';
 
     ok($escrow->account->balance == 0,           'Escrow balance is correct');
     ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
@@ -341,7 +313,7 @@ subtest 'Creating order outside min-max range' => sub {
             expiry    => 7200,
         );
     };
-    is $err->{error_code}, 'OrderMinimumNotMet', 'Got correct error code';
+    is $err->{error_code}, 'OrderMinimumNotMet', 'Could not create order, got error code OrderMinimumNotMet';
     cmp_bag($err->{message_params}, [$account_currency, formatnumber('amount', $account_currency, $min_amount)], 'Got correct error values');
 
     $err = exception {
@@ -353,37 +325,6 @@ subtest 'Creating order outside min-max range' => sub {
     };
     is $err->{error_code}, 'OrderMaximumExceeded', 'Got correct error code';
     cmp_bag($err->{message_params}, [$account_currency, formatnumber('amount', $account_currency, $max_amount)], 'Got correct error values');
-
-    ok($escrow->account->balance == 0,           'Escrow balance is correct');
-    ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
-
-    BOM::Test::Helper::P2P::reset_escrow();
-};
-
-subtest 'Creating order with disabled advertiser' => sub {
-    my $amount = 100;
-
-    my $escrow = BOM::Test::Helper::P2P::create_escrow();
-    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
-        amount => $amount,
-        type   => 'sell'
-    );
-    my $client = BOM::Test::Helper::P2P::create_client();
-
-    ok($escrow->account->balance == 0,           'Escrow balance is correct');
-    ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
-
-    $advertiser->p2p_advertiser_update(is_listed => 0);
-
-    my $err = exception {
-        $client->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => $amount,
-            expiry    => 7200,
-        );
-    };
-
-    is $err->{error_code}, 'AdvertiserNotListed', 'Got correct error code';
 
     ok($escrow->account->balance == 0,           'Escrow balance is correct');
     ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
@@ -412,14 +353,14 @@ subtest 'Creating order without escrow' => sub {
             expiry    => 7200,
         );
     };
-    is $err->{error_code}, 'EscrowNotFound', 'Got correct error code';
+    is $err->{error_code}, 'EscrowNotFound', 'EscrowNotFound';
 
     ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
 
     BOM::Config::Runtime->instance->app_config->payments->p2p->escrow($original_escrow);
 };
 
-subtest 'Creating order with wrong currency' => sub {
+subtest 'Buyer tries to place an order for an advert with a different currency' => sub {
     my $amount      = 100;
     my $description = 'Test order';
 
@@ -432,6 +373,8 @@ subtest 'Creating order with wrong currency' => sub {
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('EUR');
 
+    isnt $client->account->currency_code, $advertiser->account->currency_code, 'Advertiser and buyer has different currencies';
+
     my $err = exception {
         $client->p2p_order_create(
             advert_id   => $advert_info->{id},
@@ -440,16 +383,15 @@ subtest 'Creating order with wrong currency' => sub {
             description => $description
         );
     };
-    is $err->{error_code}, 'AdvertNotFound', 'Got correct error code';
+    is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
 
     ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
-subtest 'Creating order with wrong country' => sub {
-    my $amount      = 100;
-    my $description = 'Test order';
+subtest 'Buyer tries to place an order for an advert of another country' => sub {
+    my $amount = 100;
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
@@ -463,15 +405,15 @@ subtest 'Creating order with wrong country' => sub {
 
     my $err = exception {
         $client->p2p_order_create(
-            advert_id   => $advert_info->{id},
-            amount      => $amount,
-            expiry      => 7200,
-            description => $description
+            advert_id => $advert_info->{id},
+            amount    => $amount,
+            expiry    => 7200,
         );
     };
-    is $err->{error_code}, 'AdvertNotFound', 'Got correct error code';
+    is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
 
-    ok($advertiser->account->balance == $amount, 'advertiser balance is correct');
+    ok $escrow->account->balance == 0, 'The escrow balance did not change';
+    ok $advertiser->account->balance == $amount, 'The advertiser balance did not change';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -500,14 +442,9 @@ subtest 'Buy adverts' => sub {
         contact_info => 'order contact info'
     );
 
-    my $err = exception {
-        warning_like { $client->p2p_order_create(%params) } qr/check_no_negative_balance/;
-    };
-    is $err->{error_code}, 'OrderMaximumExceeded', 'error for insufficient client balance';
-
     BOM::Test::Helper::Client::top_up($client, $client->currency, $amount);
 
-    $err = exception { $client->p2p_order_create(%params, payment_info => undef) };
+    my $err = exception { $client->p2p_order_create(%params, payment_info => undef) };
     is $err->{error_code}, 'OrderPaymentInfoRequired', 'error for empty payment info';
 
     $err = exception { $client->p2p_order_create(%params, contact_info => undef) };
@@ -530,7 +467,125 @@ subtest 'Buy adverts' => sub {
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
-subtest 'Buyer tries to place an order with an amount that exceeds the advertiser balance' => sub {
+subtest 'Buyer tries to place an order for an advert of a non-approved advertiser' => sub {
+    my $escrow    = BOM::Test::Helper::P2P::create_escrow();
+    my $ad_amount = 100;
+
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+        amount           => $ad_amount,
+        max_order_amount => $ad_amount,
+        type             => 'sell'
+    );
+
+    $advertiser->p2p_advertiser_update(is_approved => 0);
+
+    ok !($advertiser->p2p_advertiser_info->{is_approved}), 'The advertiser is not approved';
+
+    my $buyer        = BOM::Test::Helper::Client::create_client();
+    my $order_amount = $ad_amount;
+
+    my $err = exception {
+        $buyer->p2p_order_create(
+            advert_id => $advert_info->{id},
+            amount    => $order_amount
+            )
+    };
+
+    is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Buyer tries to place an order for an advert of a non-listed advertiser' => sub {
+    my $escrow    = BOM::Test::Helper::P2P::create_escrow();
+    my $ad_amount = 100;
+
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+        amount           => $ad_amount,
+        max_order_amount => $ad_amount,
+        type             => 'sell'
+    );
+
+    $advertiser->p2p_advertiser_update(is_listed => 0);
+
+    ok !($advertiser->p2p_advertiser_info->{is_listed}), 'The advertiser is not listed';
+
+    my $buyer        = BOM::Test::Helper::Client::create_client();
+    my $order_amount = $ad_amount;
+
+    my $err = exception {
+        $buyer->p2p_order_create(
+            advert_id => $advert_info->{id},
+            amount    => $order_amount
+            )
+    };
+
+    is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Buyer with empty balance tries to place an "sell" order' => sub {
+    my $escrow    = BOM::Test::Helper::P2P::create_escrow();
+    my $ad_amount = 100;
+
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+        amount           => $ad_amount,
+        max_order_amount => $ad_amount,
+        type             => 'buy'
+    );
+
+    my $buyer = BOM::Test::Helper::Client::create_client();
+    $buyer->account('USD');
+
+    cmp_ok $buyer->account->balance, '==', 0, "The buyer's balance is 0";
+
+    my $err = exception {
+        $buyer->p2p_order_create(
+            advert_id    => $advert_info->{id},
+            amount       => $ad_amount,
+            payment_info => 'payment info',
+            contact_info => 'contact info',
+            )
+    };
+
+    is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Buyer tries to place an order for an inactive ad' => sub {
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+
+    my $ad_amount = 100;
+
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+        amount           => $ad_amount,
+        max_order_amount => $ad_amount,
+        type             => 'buy'
+    );
+
+    ok $advertiser->p2p_advert_update(
+        id        => $advert_info->{id},
+        is_active => 0
+        ),
+        'The advert is inactive';
+
+    my $buyer = BOM::Test::Helper::Client::create_client();
+
+    my $err = exception {
+        $buyer->p2p_order_create(
+            advert_id => $advert_info->{id},
+            amount    => $ad_amount,
+            )
+    };
+
+    is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Buyer tries to place a "buy" order with an amount that exceeds the advertiser balance' => sub {
     BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
 
     my $ad_amount = 100;
@@ -556,7 +611,34 @@ subtest 'Buyer tries to place an order with an amount that exceeds the advertise
             )
     };
 
-    is $err->{error_code}, 'OrderMaximumExceeded', 'OrderMaximumExceeded';
+    is $err->{error_code}, 'OrderMaximumExceeded', 'Could not create order, got error code OrderMaximumExceeded';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Buyer tries to place an order bigger than the ad amount' => sub {
+    my $escrow    = BOM::Test::Helper::P2P::create_escrow();
+    my $ad_amount = 100;
+
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+        amount           => $ad_amount,
+        max_order_amount => $ad_amount,
+        type             => 'buy'
+    );
+
+    my $buyer = BOM::Test::Helper::Client::create_client();
+    $buyer->account('USD');
+
+    cmp_ok $buyer->account->balance, '==', 0, 'The buyer balance is 0';
+
+    my $err = exception {
+        $buyer->p2p_order_create(
+            advert_id => $advert_info->{id},
+            amount    => $advert_info->{amount} * 2
+            )
+    };
+
+    is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -578,7 +660,7 @@ subtest 'Buyer tries to place an order for an advert of an unapproved advertiser
             amount    => $advert_info->{amount})
     };
 
-    is $err->{error_code}, 'AdvertOwnerNotApproved', 'AdvertOwnerNotApproved';
+    is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
