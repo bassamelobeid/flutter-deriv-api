@@ -390,72 +390,6 @@ sub _website_domain {
     return lc $c->stash('brand')->website_name;
 }
 
-=head2 _compare_signin_activity
-
-Check the user login attempt device and country against the previous entries
-The entries are stored in Redis hash composed of $country::$device.
-
-if it's the client's first login we will not send an email else update the entry with the current timestamp.
-we expect old entries to be removed by an independent cronjob
-
-=cut
-
-sub _compare_signin_activity {
-    my ($args) = @_;
-
-    my $app            = delete $args->{app};
-    my $client         = delete $args->{client};
-    my $c              = delete $args->{c};
-    my $known_location = delete $args->{known_location};
-
-    my $brand = $c->stash('brand');
-
-    my $bd           = HTTP::BrowserDetect->new($c->req->headers->header('User-Agent'));
-    my $country_code = uc($c->stash('request')->country_code // '');
-    my $ip_address   = $c->stash('request')->client_ip // '';
-
-    return 0 if $known_location;
-
-    # Relevant data required
-    my $data = {
-        client_name => $client->first_name ? ' ' . $client->first_name . ' ' . $client->last_name : '',
-        country => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
-        device  => $bd->device                                                             // $bd->os_string,
-        browser => $bd->browser_string,
-        app     => $app,
-        ip      => $ip_address,
-        l       => \&localize,
-        language                  => lc($c->stash('request')->language),
-        start_url                 => 'https://' . lc($c->stash('brand')->website_name),
-        is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
-    };
-
-    my $tt = Template->new(
-        ABSOLUTE => 1,
-        ENCODING => 'utf8'
-    );
-    $tt->process('/home/git/regentmarkets/bom-oauth/templates/email/new_signin_' . $brand->name . '.html.tt', $data, \my $message);
-
-    if ($tt->error) {
-        warn "Template error: " . $tt->error;
-        return 0;
-    }
-
-    send_email({
-            from                  => $brand->emails('no-reply'),
-            to                    => $client->email,
-            subject               => localize(get_message_mapping()->{NEW_SIGNIN_SUBJECT}),
-            message               => [$message],
-            template_loginid      => $client->loginid,
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            skip_text2html        => 1
-        }) if $brand->send_signin_email_enabled();
-
-    # Return 1 if a different new signin detected
-    return 1;
-}
-
 =head2 _validate_login
 
 Validate the email and password inputs. Return the user object
@@ -526,7 +460,7 @@ sub _validate_login {
 
     # Get last login (this excludes impersonate) before current login to get last record
     my $new_env = request()->login_env({user_agent => $c->req->headers->header('User-Agent')});
-    my $known_location = $user->logged_in_before_from_same_location($new_env);
+    my $unknown_location = !$user->logged_in_before_from_same_location($new_env);
 
     my $result = $user->login(
         password        => $password,
@@ -582,13 +516,6 @@ sub _validate_login {
 
     my $client = $filtered_clients[0];
 
-    my $new_signin_activity = _compare_signin_activity({
-        known_location => $known_location,
-        client         => $client,
-        c              => $c,
-        app            => $app
-    });
-
     return $err_var->("TEMP_DISABLED") if grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins};
     return $err_var->("DISABLED") if ($client->status->is_login_disallowed or $client->status->disabled);
 
@@ -604,13 +531,54 @@ sub _validate_login {
                 location            => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
                 browser             => $bd->browser,
                 device              => $bd->device // $bd->os_string,
-                new_signin_activity => $new_signin_activity ? 1 : 0,
+                new_signin_activity => $unknown_location ? 1 : 0,
             }});
+
+    _notify_unknown_login_by_email($c, $app, $client, $bd) if $unknown_location && $brand->send_signin_email_enabled();
 
     return {
         filtered_clients => \@filtered_clients,
         user             => $user
     };
+}
+
+=head2 _notify_unknown_login_by_email
+
+Handle sending email using events to notify the user for new unknown login happened.
+
+=cut
+
+sub _notify_unknown_login_by_email {
+    my ($c, $app, $client, $bd) = @_;
+
+    my $request = $c->stash('request');
+    my $brand   = $c->stash('brand');
+
+    my $country_code = uc($request->country_code // '');
+
+    my $email_data = {
+        client_name => $client->first_name
+        ? ' ' . $client->first_name . ' ' . $client->last_name
+        : '',
+        country => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
+        device  => $bd->device                                                             // $bd->os_string,
+        browser => $bd->browser_string                                                     // $bd->browser,
+        app     => $app,
+        ip      => $request->client_ip,
+        language                  => lc($request->language),
+        start_url                 => 'https://' . lc($brand->website_name),
+        is_reset_password_allowed => _is_reset_password_allowed($app->{id})};
+
+    send_email({
+        to                    => $client->email,
+        subject               => localize(get_message_mapping()->{NEW_SIGNIN_SUBJECT}),
+        template_name         => 'unknown_login',
+        template_args         => $email_data,
+        template_loginid      => $client->loginid,
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        use_event             => 1
+    });
 }
 
 # TODO: Remove this when we agree to use all accounts for Mobytrader

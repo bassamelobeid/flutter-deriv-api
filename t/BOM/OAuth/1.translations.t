@@ -12,8 +12,11 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Database::Model::OAuth;
 use BOM::Config::Runtime;
 use BOM::User::TOTP;
+use BOM::Test::Email qw/ :no_event /;
 use BOM::Platform::Email qw(send_email);
-use Email::Sender::Transport::Test;
+
+my $redis = BOM::Config::Redis::redis_auth_write();
+
 ## init
 my $app_id = do {
     my $oauth = BOM::Database::Model::OAuth->new;
@@ -101,23 +104,16 @@ $mock_history->mock(
 
 BEGIN { use_ok('BOM::Platform::Email', qw(send_email)); }
 
-my $transport      = Email::Sender::Transport::Test->new;
-my $mocked_stuffer = Test::MockModule->new('Email::Stuffer');
+$redis->del("CLIENT_LOGIN_HISTORY::" . $user->id);
 
-$mocked_stuffer->mock(
-    'send_or_die',
-    sub {
-        my $self = shift;
-        $self->transport($transport);
-        $mocked_stuffer->original('send_or_die')->($self, @_);
-    });
+mailbox_clear();
 
 $t = callPost($t, $email, $password, $csrf_token, "ID");
-my @deliveries = $transport->deliveries;
-my $semail     = $deliveries[-1]{email};
-# this test can be added back when we have an updated translation
-# like($semail->get_header('Subject'), qr/Aktivitas Pengaksesan Baru Terdeteksi/, "email subject ID validation");
-like($semail->get_body, qr/$email|ID/i, "email ID validation");
+
+my $received_email = mailbox_search(email => $email);
+like $received_email->{subject}, qr/Peringatan keamanan: Aktivitas pengaksesan terbaru/, 'email translation done';
+
+like($received_email->{body}, qr/$email|ID/i, "email ID validation");
 
 done_testing();
 
