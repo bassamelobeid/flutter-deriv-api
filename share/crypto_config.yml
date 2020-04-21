@@ -10,9 +10,6 @@ BTC:
     protocol_cost: 0
     decimal_places: 8
     minimum_safe_amount: 10
-    blockchain_url:
-        address: https://blockstream.info/address/
-        transaction: https://blockstream.info/tx/
     sweep:
         min_transfer: 1
         max_transfer: 100
@@ -29,9 +26,6 @@ LTC:
     protocol_cost: 0
     decimal_places: 8
     minimum_safe_amount: 30
-    blockchain_url:
-        address: https://live.blockcypher.com/ltc/address/
-        transaction: https://live.blockcypher.com/ltc/tx/
     sweep:
         min_transfer: 1
         max_transfer: 600
@@ -48,9 +42,6 @@ ETH:
     protocol_cost: 0
     decimal_places: 18
     minimum_safe_amount: 60
-    blockchain_url:
-        address: https://etherscan.io/address/
-        transaction: https://etherscan.io/tx/
     ethgasstation_api: https://ethgasstation.info/json/ethgasAPI.json
     thirdparty_api:
       etherscan:
@@ -76,12 +67,6 @@ UST:
     protocol_cost: 0.00000546
     decimal_places: 8
     minimum_safe_amount: 6500
-# https://github.com/regentmarkets/development-workflow/blob/master/cryptocurrency/ctc_qa.md#propertyid
-# Please update the property_id: 2147484941 (already generated in our testnet) for QA environment.
-    property_id: 31
-    blockchain_url:
-        address: https://omniexplorer.info/address/
-        transaction: https://omniexplorer.info/tx/
 USB:
     withdrawal:
         timeout: "3d"
@@ -91,9 +76,6 @@ USB:
         required_confirmations: 3
     protocol_cost: 0
     decimal_places: 18
-    blockchain_url:
-        address: https://etherscan.io/address/
-        transaction: https://etherscan.io/tx/
 IDK:
     withdrawal:
         timeout: "3d"
@@ -103,7 +85,3 @@ IDK:
         required_confirmations: 3
     protocol_cost: 0
     decimal_places: 8
-    blockchain_url:
-        address: https://etherscan.io/address/
-        transaction: https://etherscan.io/tx/
-
