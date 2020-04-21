@@ -7,10 +7,10 @@ no indirect;
 use Log::Any qw($log);
 use List::Util qw(any all);
 use BOM::Database::ClientDB;
-use BOM::Config;
 use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/financialrounding/;
 use BOM::Platform::Event::Emitter;
+use BOM::CTC::Currency;
 
 my $clientdb;
 my $collectordb;
@@ -33,7 +33,6 @@ sub collectordb {
 }
 
 =head2 set_pending_transaction
-
 Set the transaction as pending in payment.cryptocurrency if the transaction
 pass for all the requirements:
 - Found in the database
@@ -42,14 +41,14 @@ pass for all the requirements:
     in this case a new row will be created and set as pending(duplicated transaction to the same address)
 - Same currency as we have in the database
 - No zero amount
-
 On issue setting the transaction as pending in the database a new event will be triggered to
 try it again after some seconds.
-
 =cut
 
 sub set_pending_transaction {
-    my $transaction = shift;
+    my $transaction   = shift;
+    my $currency_code = $transaction->{currency};
+    my $currency      = BOM::CTC::Currency->new(currency_code => $currency_code);
 
     try {
 
@@ -60,13 +59,9 @@ sub set_pending_transaction {
         # inserted in the database
         my $cursor_result = collectordb()->run(
             ping => sub {
-                $_->selectall_arrayref(
-                    'SELECT cryptocurrency.update_cursor(?, ?, ?)',
-                    undef, $transaction->{currency},
-                    $transaction->{block}, 'deposit'
-                );
+                $_->selectall_arrayref('SELECT cryptocurrency.update_cursor(?, ?, ?)', undef, $currency_code, $transaction->{block}, 'deposit');
             });
-        $log->warnf("%s: Can't update the cursor to block: %s", $transaction->{currency}, $transaction->{block}) unless $cursor_result;
+        $log->warnf("%s: Can't update the cursor to block: %s", $currency_code, $transaction->{block}) unless $cursor_result;
 
         # get all the payments related to the `to` address from the transaction
         # since this is only for deposits we don't care about the `from` address
@@ -109,7 +104,7 @@ sub set_pending_transaction {
             # TODO: when the user send a transaction to a correct address but using
             # a different currency, we need to change the currency in the DATABASE and set
             # the transaction as pending.
-            if (any { $_->{currency_code} ne $transaction->{currency} } @payment) {
+            if (any { $_->{currency_code} ne $currency_code } @payment) {
                 $log->warnf("Invalid currency for transaction: %s", $transaction->{hash});
                 return undef;
             }
@@ -122,9 +117,9 @@ sub set_pending_transaction {
 
             # for omnicore we need to check if the property id is correct
             if ($transaction->{property_id}
-                && ($transaction->{property_id} + 0) != (BOM::Config::crypto()->{$transaction->{currency}}->{property_id} + 0))
+                && ($transaction->{property_id} + 0) != ($currency->get_property_id() + 0))
             {
-                $log->warnf("%s - Invalid property ID for transaction: %s", $transaction->{currency}, $transaction->{hash});
+                $log->warnf("%s - Invalid property ID for transaction: %s", $currency_code, $transaction->{hash});
                 return undef;
             }
 
@@ -150,11 +145,8 @@ sub set_pending_transaction {
                     $error = $@;
                 };
 
-                $log->warnf(
-                    'Failed to emit event for currency: %s, transaction: %s, error: %s',
-                    $transaction->{currency},
-                    $transaction->{hash}, $error
-                ) unless $emit;
+                $log->warnf('Failed to emit event for currency: %s, transaction: %s, error: %s', $currency_code, $transaction->{hash}, $error)
+                    unless $emit;
 
                 return undef;
             }
@@ -174,24 +166,18 @@ sub set_pending_transaction {
 }
 
 =head2 insert_new_deposit
-
 If the database already contains any transaction to the same address no matter the status
 we insert a new database row to the second deposit
-
 =over 4
-
 =item* C<transaction> transaction object L<https://github.com/regentmarkets/bom-cryptocurrency/blob/master/lib/BOM/CTC/Subscription.pm#L113-L120>
-
 =item* C<payment> payment.cryptocurrency rows related to the address
-
 =back
-
 Return 1 for no errors and 0 when error is found inserting the row to the database.
-
 =cut
 
 sub insert_new_deposit {
     my ($transaction, $payment_list) = @_;
+    my $currency_code = $transaction->{currency};
 
     return 0 unless $payment_list;
 
@@ -211,18 +197,14 @@ sub insert_new_deposit {
         my $result = clientdb()->run(
             ping => sub {
                 my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit(?, ?, ?, ?, ?)');
-                $sth->execute(
-                    $payment[0]->{address},
-                    $transaction->{currency},
-                    $payment[0]->{client_loginid},
-                    $transaction->{fee}, $transaction->{hash});
+                $sth->execute($payment[0]->{address}, $currency_code, $payment[0]->{client_loginid}, $transaction->{fee}, $transaction->{hash});
             });
 
         # this is just a safe check in case we get some error from the database
         # but we should not reach this point because we are verifying the PKs conflicts
         # before this point
         unless ($result) {
-            $log->warnf("Duplicate deposit rejected for %s transaction: %s", $transaction->{currency}, $transaction->{hash});
+            $log->warnf("Duplicate deposit rejected for %s transaction: %s", $currency_code, $transaction->{hash});
             return 0;
         }
     }
@@ -231,20 +213,18 @@ sub insert_new_deposit {
 }
 
 =head2 update_transaction_status_to_pending
-
 Update the status to pending in the database
-
 =cut
 
 sub update_transaction_status_to_pending {
     my ($transaction, $address) = @_;
+    my $currency_code = $transaction->{currency};
+
     my $result = clientdb()->run(
         ping => sub {
             $_->selectrow_array(
                 'SELECT payment.ctc_set_deposit_pending(?, ?, ?, ?)',
-                undef, $address,
-                $transaction->{currency},
-                financialrounding('amount', $transaction->{currency}, $transaction->{amount}),
+                undef, $address, $currency_code, financialrounding('amount', $currency_code, $transaction->{amount}),
                 $transaction->{hash});
         });
     return $result;
