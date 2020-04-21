@@ -32,7 +32,7 @@
                      },
                      "display_name" : {
                         "type" : "string",
-                        "pattern" : "^test$"
+                        "pattern" : "^[_1]$"
                      },
                      "scopes" : {
                         "items" : {

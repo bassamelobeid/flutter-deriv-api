@@ -6,6 +6,7 @@ use Dir::Self;
 use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
 use lib "$Bin";
+use utf8;
 
 use BOM::Test::Suite::DSL;
 
@@ -78,9 +79,10 @@ test_sendrecv 'set_settings/test_send.json',             'set_settings/test_rece
 test_sendrecv 'get_financial_assessment/test_send.json', 'get_financial_assessment/test_receive_vrt.json';
 
 # TESTS TO RETURN ERROR (GENERAL)
-test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json', 'test';
+test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json',       'test_123';
+test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create_error.json', 'invalid-token-name';
 # Create api token with the same display name
-test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json', 'test';
+test_sendrecv_params 'api_token/test_send_create.json', 'api_token/test_receive_create.json', 'test_123';
 test_sendrecv_params 'app_delete/test_send.json', 'app_delete/test_receive.json',       $suite->get_stashed('app_register/app_register/app_id'), '1';
 test_sendrecv_params 'app_update/test_send.json', 'app_update/test_receive_error.json', $suite->get_stashed('app_register/app_register/app_id');
 test_sendrecv_params 'app_get/test_send.json',    'app_get/test_receive_error.json',    $suite->get_stashed('app_register/app_register/app_id');
@@ -104,8 +106,9 @@ test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currenc
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive_error.json', 'XXX';
 test_sendrecv_params 'payout_currencies/test_send.json',    'payout_currencies/test_receive_vrt.json',      'USD', 1;
 test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', 'USD', $suite->get_stashed('authorize/authorize/loginid');
-test_sendrecv 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json';
-test_sendrecv 'set_settings/test_send.json',       'set_settings/test_receive.json';
+test_sendrecv 'set_self_exclusion/test_send.json',            'set_self_exclusion/test_receive.json';
+test_sendrecv 'set_settings/test_send.json',                  'set_settings/test_receive.json';
+test_sendrecv 'set_settings/test_send_invalid_postcode.json', 'set_settings/test_receive_error_postcode.json';
 
 # READ SCOPE CALLS (CR) AFTER CHANGE
 test_sendrecv 'get_settings/test_send.json',       'get_settings/test_receive_cr_after.json';

@@ -152,10 +152,10 @@ subtest 'create advertiser' => sub {
     is $advertiser->{$_}, $advertiser_params{$_}, "advertiser $_" for qw( name contact_info default_advert_description payment_info );
     ok $advertiser->{id} > 0, 'advertiser id';
     ok !$advertiser->{is_approved}, 'advertiser not approved';
-    ok $advertiser->{is_listed}, "advertiser's adverts are listed";
-    is $advertiser->{chat_user_id}, 'dummy', 'chat user id';  # from mocked sendbird 
-    is $advertiser->{chat_token}, 'dummy', 'chat token';
-    
+    ok $advertiser->{is_listed},    "advertiser's adverts are listed";
+    is $advertiser->{chat_user_id}, 'dummy', 'chat user id';             # from mocked sendbird
+    is $advertiser->{chat_token},   'dummy', 'chat token';
+
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
     test_schema('p2p_advertiser_info', $resp);
 
@@ -240,13 +240,13 @@ subtest 'chat token' => sub {
     $t->await::authorize({authorize => $token_admin});
 
     my $serivce_token = $t->await::service_token({
-        service_token => 1,
-        service       => 'sendbird',
-    })->{service_token};
-    
-    is $serivce_token->{token}, 'dummy', 'got token';  # from mocked sendbird
+            service_token => 1,
+            service       => 'sendbird',
+        })->{service_token};
+
+    is $serivce_token->{token}, 'dummy', 'got token';    # from mocked sendbird
     ok $serivce_token->{expiry_time}, 'got expiry time';
-    
+
     $t->await::authorize({authorize => $token_advertiser});
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
     is $resp->{p2p_advertiser_info}{chat_token}, $serivce_token->{token}, 'token returned by advertiser info';
@@ -367,17 +367,16 @@ subtest 'create chat' => sub {
 
     # client needs to be an advertiser to chat about order
     $resp = $t->await::p2p_advertiser_create({
-            p2p_advertiser_create => 1,
-            name => 'client advertiser name',
-        });
+        p2p_advertiser_create => 1,
+        name                  => 'client advertiser name',
+    });
 
     my $chat = $t->await::p2p_chat_create({
-        p2p_chat_create => 1,
-        order_id        => $order->{id}
-    })->{p2p_chat_create};
+            p2p_chat_create => 1,
+            order_id        => $order->{id}})->{p2p_chat_create};
 
-    is $chat->{channel_url}, 'dummy', 'chat channel url';  # from mocked sendbird
-    is $chat->{order_id}, $order->{id}, 'order id'; 
+    is $chat->{channel_url}, 'dummy', 'chat channel url';    # from mocked sendbird
+    is $chat->{order_id}, $order->{id}, 'order id';
 };
 
 subtest 'confirm order' => sub {
