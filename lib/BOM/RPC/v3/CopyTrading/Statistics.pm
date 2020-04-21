@@ -18,7 +18,8 @@ use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context qw (localize);
 use BOM::Config::Redis;
 use BOM::Product::ContractFactory qw(produce_contract);
-
+use DataDog::DogStatsd::Helper qw(stats_timing);
+use Time::Moment;
 rpc copytrading_statistics => sub {
     my $params = shift->{args};
 
@@ -36,6 +37,8 @@ rpc copytrading_statistics => sub {
                 code              => 'CopyTradingNotAllowed',
                 message_to_client => localize('Trader does not allow copy trading.')});
     }
+
+    my $start_time = Time::Moment->now;
 
     my $trader_date_joined = Date::Utility->new($trader->date_joined);
     my $result_hash        = {
@@ -79,17 +82,28 @@ rpc copytrading_statistics => sub {
         operation      => 'replica',
     });
 
+    stats_timing('rpc.copytrading_statistics', $start_time->delta_milliseconds(Time::Moment->now), {tags => ['begin']});
+    $start_time = Time::Moment->now;
+
     # trader performance
     for my $row (@{$txn_dm->get_monthly_payments_sum()}) {
         my ($year, $month, $D, $W) = @$row;
         $result_hash->{monthly_profitable_trades}->{$year . '-' . $month}->{deposit}    = $D;
         $result_hash->{monthly_profitable_trades}->{$year . '-' . $month}->{withdrawal} = $W;
     }
+
+    stats_timing('rpc.copytrading_statistics', $start_time->delta_milliseconds(Time::Moment->now), {tags => ['monthly_payments']});
+    $start_time = Time::Moment->now;
+
     for my $row (@{$txn_dm->get_monthly_balance()}) {
         my ($year, $month, $E0, $E1) = @$row;
         $result_hash->{monthly_profitable_trades}->{$year . '-' . $month}->{E0} = $E0;
         $result_hash->{monthly_profitable_trades}->{$year . '-' . $month}->{E1} = $E1;
     }
+
+    stats_timing('rpc.copytrading_statistics', $start_time->delta_milliseconds(Time::Moment->now), {tags => ['monthly_balance']});
+    $start_time = Time::Moment->now;
+
     my @sorted_monthly_profits;
     for my $date (sort keys %{$result_hash->{monthly_profitable_trades}}) {
         my ($year) = ($date =~ /(\d{4})/);
@@ -116,6 +130,9 @@ rpc copytrading_statistics => sub {
     my $last_month_idx = scalar(@sorted_monthly_profits) < 12 ? scalar(@sorted_monthly_profits) : 12;
     $result_hash->{last_12months_profitable_trades} = _year_performance($currency, @sorted_monthly_profits[-$last_month_idx .. -1]);
 
+    stats_timing('rpc.copytrading_statistics', $start_time->delta_milliseconds(Time::Moment->now), {tags => ['monthly_profitable']});
+    $start_time = Time::Moment->now;
+
     # Performance Probability
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
         client_loginid => $trader->loginid,
@@ -127,6 +144,10 @@ rpc copytrading_statistics => sub {
     my $sold_contracts = $fmb_dm->get_sold({
         limit => 100,
     });
+
+    my $total_contracts = @{$sold_contracts};
+    stats_timing('rpc.copytrading_statistics', $start_time->delta_milliseconds(Time::Moment->now), {tags => ['sold_contracts', $total_contracts]});
+    $start_time = Time::Moment->now;
 
     my $cumulative_pnl      = 0;
     my $contract_parameters = {};
@@ -160,6 +181,10 @@ rpc copytrading_statistics => sub {
             $cumulative_pnl = $cumulative_pnl + ($contract->{sell_price} - $contract->{buy_price});
         }
     }
+
+    stats_timing('rpc.copytrading_statistics', $start_time->delta_milliseconds(Time::Moment->now), {tags => ['produce_contract', $total_contracts]});
+    $start_time = Time::Moment->now;
+
     # Ren: the model doesn’t work because if there are too few contract
     # let’s try if client has at least 50 contracts
     # let Ren know if there are still errors
@@ -184,6 +209,12 @@ rpc copytrading_statistics => sub {
         }
     }
 
+    stats_timing(
+        'rpc.copytrading_statistics',
+        $start_time->delta_milliseconds(Time::Moment->now),
+        {tags => ['performance_probability', $total_contracts]});
+    $start_time = Time::Moment->now;
+
     # trades average duration
     $result_hash->{avg_duration} = sprintf("%u", BOM::Config::Redis::redis_replicated_read()->get("COPY_TRADING_AVG_DURATION:$trader_id") || 0);
 
@@ -207,6 +238,8 @@ rpc copytrading_statistics => sub {
         $result_hash->{trades_breakdown}->{$market} =
             sprintf("%.4f", $result_hash->{trades_breakdown}->{$market} / $result_hash->{total_trades});
     }
+
+    stats_timing('rpc.copytrading_statistics', $start_time->delta_milliseconds(Time::Moment->now), {tags => ['end']});
 
     return $result_hash;
 };
