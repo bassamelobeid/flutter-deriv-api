@@ -72,11 +72,16 @@ my $dbic = $clientdb->db->dbic;
 code_exit_BO("Invalid currency.")
     if $currency !~ /^[A-Z]{3}$/;
 
-my $currency_url = BOM::Config::crypto()->{$currency}{blockchain_url};
-code_exit_BO('No currency urls for ' . $currency) unless $currency_url->{transaction} and $currency_url->{address};
+my $currency_wrapper = BOM::CTC::Currency->new(
+    currency_code => $currency,
+    broker_code   => $broker
+);
+my $blockchain_address     = $currency_wrapper->get_address_blockchain_url();
+my $blockchain_transaction = $currency_wrapper->get_transaction_blockchain_url();
+code_exit_BO('No currency urls for ' . $currency) unless $blockchain_transaction and $blockchain_address;
 
-my $transaction_uri = URI->new($currency_url->{transaction});
-my $address_uri     = URI->new($currency_url->{address});
+my $transaction_uri = URI->new($blockchain_transaction);
+my $address_uri     = URI->new($blockchain_address);
 my $tt              = BOM::Backoffice::Request::template;
 {
     my $cmd = request()->param('command');
@@ -125,11 +130,6 @@ catch {
 if ($end_date->is_before($start_date)) {
     code_exit_BO("Invalid dates, the end date must be after the initial date");
 }
-
-my $currency_wrapper = BOM::CTC::Currency->new(
-    currency_code => $currency,
-    broker_code   => $broker
-);
 
 my $exchange_rate = eval { in_usd(1.0, $currency) } // 'N.A.';
 

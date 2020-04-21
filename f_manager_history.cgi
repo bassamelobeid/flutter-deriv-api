@@ -218,9 +218,10 @@ if (@trxns) {
         code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.");
     }
 
-    my $currency_url    = BOM::Config::crypto()->{$currency}{blockchain_url};
-    my $transaction_uri = URI->new($currency_url->{transaction});
-    my $address_uri     = URI->new($currency_url->{address});
+    my $blockchain_address     = $currency_wrapper->get_address_blockchain_url();
+    my $blockchain_transaction = $currency_wrapper->get_transaction_blockchain_url();
+    my $transaction_uri        = URI->new($blockchain_transaction);
+    my $address_uri            = URI->new($blockchain_address);
 
     my $details_link = request()->url_for(
         'backoffice/f_clientloginid_edit.cgi',
