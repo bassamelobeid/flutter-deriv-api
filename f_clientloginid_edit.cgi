@@ -733,7 +733,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 } else {
                     $cli->status->clear_age_verification;
                 }
-            } elsif ($key eq 'client_aml_risk_classification') {
+            } elsif ($key eq 'client_aml_risk_classification' && BOM::Backoffice::Auth0::has_authorisation(['Compliance'])) {
                 $cli->aml_risk_classification($input{$key});
             }
 
@@ -1489,32 +1489,11 @@ Given a key and a sibling client, check if that client should be updated, and up
 
 sub update_needed {
     my ($client, $client_checked, $key, $clients_updated) = @_;
-    my $result = _check_update_needed($client, $client_checked, $key);
+    my $result = check_update_needed($client, $client_checked, $key);
     if ($result) {
         $clients_updated->{$client_checked->loginid} = $client_checked;
     }
     return $result;
-}
-
-sub _check_update_needed {
-    my ($client, $client_checked, $key) = @_;
-
-    # %sync_scope:
-    # client: the key only apply to the current client
-    # lc: the key will apply to all clients in the same lc
-    # user: the key will aply to all clients of this user
-    # default is user
-    my %sync_scope = (
-        client_aml_risk_classification => 'lc',
-    );
-
-    return 1 if (!exists($sync_scope{$key}) || $sync_scope{$key} eq 'user');
-    return $client_checked->loginid eq $client->loginid
-        if ($sync_scope{$key} eq 'client');
-    return $client_checked->broker eq $client->broker
-        if ($sync_scope{$key} eq 'lc');
-    die "don't know the scope $sync_scope{$key}";
-
 }
 
 1;

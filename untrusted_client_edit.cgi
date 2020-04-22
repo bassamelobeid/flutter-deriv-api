@@ -151,15 +151,6 @@ if (scalar @invalid_logins > 0) {
 
 code_exit_BO();
 
-sub link_for_clientloginid_edit {
-    my $login_id = shift;
-
-    return
-          '<a href="'
-        . request()->url_for("backoffice/f_clientloginid_edit.cgi", {loginID => encode_entities($login_id)}) . '">'
-        . encode_entities($login_id) . '</a>';
-}
-
 sub execute_set_status {
     my $params = shift;
     my $client = $params->{client};

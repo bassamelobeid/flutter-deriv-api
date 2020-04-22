@@ -376,6 +376,8 @@ sub print_client_details {
         onfido_check_url                   => $onfido_check->{results_uri} // '',
         onfido_resubmission                => $onfido_allow_resubmission_flag,
         is_client_in_onfido_country        => is_client_in_onfido_country($client) // 1,
+        aml_risk_levels                    => [get_aml_risk_classicications()],
+        is_staff_compliance                => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
@@ -1382,6 +1384,60 @@ sub get_fiat_login_id_for {
         });
 
     return %fiat_details;
+}
+
+sub get_aml_risk_classicications {
+    my @classifications = ('low', 'standard', 'high', 'manual override - low', 'manual override - standard', 'manual override - high');
+    return map { {name => ucfirst($_), value => $_} } @classifications;
+}
+
+sub link_for_clientloginid_edit {
+    my $login_id = shift;
+
+    return
+          '<a href="'
+        . request()->url_for("backoffice/f_clientloginid_edit.cgi", {loginID => encode_entities($login_id)}) . '">'
+        . encode_entities($login_id) . '</a>';
+}
+
+=head2 check_update_needed
+
+Checks if a change in an account is allowed to be synced to a specific sibling.
+It takes following arguments: 
+
+=over 4
+
+=item - $client, a L<BOM::User::Client> object of the client being edited.
+
+=item - $client_checked, a L<BOM::User::Client> object representing the account to be checked for syncing.
+
+=item - $key the name of the key being updated.
+
+=back
+
+Returns  1 if the sibling can be updated, 0 otherwise.
+
+=cut
+
+sub check_update_needed {
+    my ($client, $client_checked, $key) = @_;
+
+    # %sync_scope:
+    # client: the key only apply to the current client
+    # lc: the key will apply to all clients in the same lc
+    # user: the key will aply to all clients of this user
+    # default is user
+    my %sync_scope = (
+        client_aml_risk_classification => 'lc',
+        aml_risk_classification        => 'lc',
+    );
+
+    return 1 if (!exists($sync_scope{$key}) || $sync_scope{$key} eq 'user');
+    return $client_checked->loginid eq $client->loginid
+        if ($sync_scope{$key} eq 'client');
+    return $client_checked->broker eq $client->broker
+        if ($sync_scope{$key} eq 'lc');
+    die "don't know the scope $sync_scope{$key}";
 }
 
 1;

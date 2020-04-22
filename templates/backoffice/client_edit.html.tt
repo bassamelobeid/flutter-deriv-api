@@ -258,20 +258,10 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">AML Risk Classification : </td>
-        [%
-            risk_classification_options = [
-                {'value' => 'low', 'details' => 'Low' }
-                {'value' => 'standard', 'details' => 'Standard' }
-                {'value' => 'high', 'details' => 'High' }
-                {'value' => 'manual override - low', 'details' => 'Manual override - low' }
-                {'value' => 'manual override - standard', 'details' => 'Manual override - standard' }
-                {'value' => 'manual override - high', 'details' => 'Manual override - high' }
-            ]
-        %]
         <td>
-            <select name="client_aml_risk_classification">
-                [% FOREACH risk_classification = risk_classification_options %]
-                    <option value="[% risk_classification.value %]" [% IF risk_classification.value == client.aml_risk_classification %] selected="selected" [% END %]>[% risk_classification.details %]</option>
+            <select name="client_aml_risk_classification" [% IF not is_staff_compliance %] disabled [% END %]>
+                [% FOREACH risk_classification = aml_risk_levels %]
+                    <option value="[% risk_classification.value %]" [% IF risk_classification.value == client.aml_risk_classification %] selected="selected" [% END %]>[% risk_classification.name %]</option>
                 [% END %]
             </select>
         </td>

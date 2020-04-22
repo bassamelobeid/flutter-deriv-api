@@ -93,7 +93,7 @@ print "<form id='clientdetailsDCC' action='"
     . "</form>";
 
 Bar("CLOSED/DISABLED ACCOUNTS");
-my $client_login = request()->param('login_id') || $broker . '';
+my $client_login = request()->param('login_id') // '';
 my $show_notification = request()->param('editlink') and $client_login and request()->param('untrusted_action_type');
 
 BOM::Backoffice::Request::template()->process(
@@ -109,6 +109,17 @@ BOM::Backoffice::Request::template()->process(
         show_untrusted            => 1,
         show_login                => 1,
         show_notification         => $show_notification,
+    }) || die BOM::Backoffice::Request::template()->error();
+
+Bar("Set Aml Risk Classification - Multiple loginids");
+BOM::Backoffice::Request::template()->process(
+    'backoffice/account/bulk_aml_risk_form.html.tt',
+    {
+        selected_aml_risk_level => request()->param('aml_risk_level'),
+        edit_url                => request()->url_for('backoffice/bulk_aml_risk.cgi'),
+        loginids                => request()->param('risk_loginids') // '',
+        aml_risk_levels         => [get_aml_risk_classicications()],
+        disabled                => not BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
     }) || die BOM::Backoffice::Request::template()->error();
 
 # Monitor client lists
