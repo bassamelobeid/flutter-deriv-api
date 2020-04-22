@@ -26,17 +26,20 @@ sub get_status_msg {
     my ($c, $status_code) = @_;
 
     my %status_msg = (
-        release_due => $c->l('We are updating our site in a short while. Some services may be temporarily unavailable.'),
-        suspended   => $c->l('Sorry, but trading is unavailable until further notice due to an unexpected error. Please try again later.'),
+        release_due => $c->l(qq{We're updating our site in a short while. Some services may be temporarily unavailable.}),
+        suspended   => $c->l(
+            qq{Trading is unavailable until further notice due to an unexpected error. We're working hard to resolve this. Please try again later.}),
         feed_issues => $c->l(
-            'We are having an issue with one or more of our data feeds. We are working to resolve the issue but some markets may be unavailable for the time being.'
+            qq{We're having an issue with some of our data feeds. We're working hard to resolve this, but some markets may be unavailable for the time being.}
         ),
-        mt5_issues     => $c->l('Sorry, we are having a technical issue with our MT5 platform.'),
+        mt5_issues => $c->l(
+            qq{We're experiencing a technical issue with our MT5 platform. We're working hard to resolve this, but some services may be temporarily unavailable.}
+        ),
         cashier_issues => $c->l(
-            'Sorry, but we are experiencing a technical issue with our Cashier. Your funds are safe but deposits and withdrawals are unavailable for the time being.'
+            qq{We're experiencing a technical issue with our Cashier. Your funds are safe, but deposits and withdrawals are unavailable for the time being.}
         ),
         unstable => $c->l(
-            'We are experiencing an unusually high load on our system. Some features and services may be unstable or temporarily unavailable. We hope to resolve this issue as soon as we can.'
+            qq{We're experiencing an unusually high load on our system. We're working hard to resolve this, but some services may be temporarily unavailable.}
         ),
     );
 

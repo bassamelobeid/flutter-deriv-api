@@ -242,6 +242,7 @@ subtest 'common properties' => sub {
 
 # Make sure every property has type and description
 subtest 'type and description' => sub {
+
     sub check_fields {
         my ($node, $path, $errors) = @_;
 
