@@ -397,7 +397,7 @@ rpc new_account_real => sub {
     BOM::User::AuditLog::log("successful login", "$client->email");
     BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'real',
-        currency      => 'USD',
+        currency      => $args->{currency} // 'USD',
         loginid       => $new_client->loginid,
         type          => 'newaccount',
         amount        => 0,
@@ -519,7 +519,7 @@ rpc new_account_maltainvest => sub {
     BOM::User::AuditLog::log("successful login", "$client->email");
     BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'real',
-        currency      => 'USD',
+        currency      => $args->{currency} // 'USD',
         loginid       => $new_client->loginid,
         type          => 'newaccount',
         amount        => 0,
