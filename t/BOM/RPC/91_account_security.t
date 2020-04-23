@@ -51,44 +51,48 @@ subtest 'Initialization' => sub {
     is_deeply($result->{totp}, {'is_enabled' => 0}, 'Status should be 0');
 };
 
-subtest 'Two Factor Authentication Functionality' => sub {
-    my ($result, $secret_key, $oath, $oath_totp);
-    $oath = Authen::OATH->new();
+my ($secret_key, $oath_totp) = '';
+my $oath = Authen::OATH->new();
 
-    # Enable should not work if OTP is Wrong
-    $result = _call_enable('123456');
-    is($result->{error}->{code}, 'InvalidOTP', 'Enable should fail with wrong OTP');
+subtest 'Generate TOTP secret key' => sub {
+    my $result          = _call_generate();
+    my $temp_secret_key = decode_base32($result->{totp}->{secret_key});
+    is(length($temp_secret_key) > 0, 1, 'Secret Key generated.');
 
-    # Secret Key should be generated
     $result     = _call_generate();
     $secret_key = decode_base32($result->{totp}->{secret_key});
-    is(length($secret_key) > 0, 1, 'Secret Key should be generated');
+    ok($secret_key ne $temp_secret_key, 'Secret key is different with previous key');
+};
 
-    # If OTP is correct, 2FA should be enabled
+subtest 'Enable 2FA' => sub {
+    my $result = _call_enable('123456');
+    is($result->{error}->{code}, 'InvalidOTP', 'Enable failed due to wrong OTP');
+
+    $result     = _call_generate();
+    $secret_key = decode_base32($result->{totp}->{secret_key});
+    is(length($secret_key) > 0, 1, 'Secret key generated');
+
     $oath_totp = $oath->totp($secret_key);
     $result    = _call_enable($oath_totp);
-    is_deeply($result->{totp}, {'is_enabled' => 1}, 'Should be enabled with correct OTP');
+    is_deeply($result->{totp}, {'is_enabled' => 1}, '2FA enabled');
 
-    # If already enabled, request to enable should fail
     $result = _call_enable($oath_totp);
-    is($result->{error}->{code}, 'InvalidRequest', 'Enable should fail if already enabled');
+    is($result->{error}->{code}, 'InvalidRequest', 'Enable failed due to already enabled 2FA');
 
-    # If already enabled, request to generate secret key should fail
     $result = _call_generate();
-    is($result->{error}->{code}, 'InvalidRequest', 'Generate should fail if already enabled');
+    is($result->{error}->{code}, 'InvalidRequest', 'Generate failed due to already enabled 2FA');
+};
 
-    # Disable should not work if OTP is Wrong
-    $result = _call_disable('123456');
-    is($result->{error}->{code}, 'InvalidOTP', 'Disable should fail with wrong OTP');
+subtest 'Disable 2FA' => sub {
+    my $result = _call_disable('123456');
+    is($result->{error}->{code}, 'InvalidOTP', 'Disable failed due to wrong OTP');
 
-    # If OTP is correct and 2FA is enabled request to disable should succeed
     $oath_totp = $oath->totp($secret_key);
     $result    = _call_disable($oath_totp);
-    is_deeply($result->{totp}, {'is_enabled' => 0}, 'Should be disabled with correct OTP');
+    is_deeply($result->{totp}, {'is_enabled' => 0}, '2FA disabled');
 
-    # Disable should not work as it is already disabled
     $result = _call_disable('123456');
-    is($result->{error}->{code}, 'InvalidRequest', 'Disable should fail if already disabled');
+    is($result->{error}->{code}, 'InvalidRequest', 'Disable failed due to already enabled 2FA');
 };
 
 sub _call_status {

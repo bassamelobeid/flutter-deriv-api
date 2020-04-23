@@ -297,60 +297,62 @@ rpc logout => sub {
     return {status => 1};
 };
 
-rpc account_security => sub {
-    my $params        = shift;
-    my $token_details = $params->{token_details};
-    my $loginid       = $token_details->{loginid};
-    my $totp_action   = $params->{args}->{totp_action};
+rpc(
+    "account_security",
+    auth => 1,
+    sub {
+        my $params        = shift;
+        my $token_details = $params->{token_details};
+        my $loginid       = $token_details->{loginid};
+        my $totp_action   = $params->{args}->{totp_action};
 
-    my $client = BOM::User::Client->new({loginid => $loginid});
-    my $user = BOM::User->new(email => $client->email);
+        my $client = BOM::User::Client->new({loginid => $loginid});
+        my $user = BOM::User->new(email => $client->email);
 
-    my $status = $user->{is_totp_enabled} // 0;
+        my $status = $user->{is_totp_enabled} // 0;
 
-    # Get the Status of TOTP Activation
-    if ($totp_action eq 'status') {
-        return {totp => {is_enabled => $status}};
-    }
-    # Generate a new Secret Key if not already enabled
-    elsif ($totp_action eq 'generate') {
-        # return error if already enabled
-        return _create_error('InvalidRequest', BOM::Platform::Context::localize('TOTP based 2FA is already enabled.')) if $status;
-        # generate new secret key if it doesn't exits
-        unless ($user->{secret_key}) {
-            $user->update_totp_fields(secret_key => BOM::User::TOTP->generate_key);
+        # Get the Status of TOTP Activation
+        if ($totp_action eq 'status') {
+            return {totp => {is_enabled => $status}};
         }
-        # convert the key into base32 before sending
-        return {totp => {secret_key => encode_base32($user->{secret_key})}};
-    }
-    # Enable or Disable 2FA
-    elsif ($totp_action eq 'enable' || $totp_action eq 'disable') {
-        # return error if user wants to enable 2fa and it's already enabled
-        return _create_error('InvalidRequest', BOM::Platform::Context::localize('TOTP based 2FA is already enabled.'))
-            if ($status == 1 && $totp_action eq 'enable');
-        # return error if user wants to disbale 2fa and it's already disabled
-        return _create_error('InvalidRequest', BOM::Platform::Context::localize('TOTP based 2FA is already disabled.'))
-            if ($status == 0 && $totp_action eq 'disable');
-
-        # verify the provided OTP with secret key from user
-        my $otp = $params->{args}->{otp};
-        my $verify = BOM::User::TOTP->verify_totp($user->{secret_key}, $otp);
-        return _create_error('InvalidOTP', BOM::Platform::Context::localize('OTP verification failed')) unless ($otp and $verify);
-
-        if ($totp_action eq 'enable') {
-            # enable 2FA
-            $user->update_totp_fields(is_totp_enabled => 1);
-        } elsif ($totp_action eq 'disable') {
-            # disable 2FA and reset secret key. Next time a new secret key should be generated
-            $user->update_totp_fields(
-                is_totp_enabled => 0,
-                secret_key      => ''
-            );
+        # Generate a new Secret Key if not already enabled
+        elsif ($totp_action eq 'generate') {
+            # return error if already enabled
+            return _create_error('InvalidRequest', BOM::Platform::Context::localize('TOTP based 2FA is already enabled.')) if $status;
+            # generate new secret key if it doesn't exits
+            $user->update_totp_fields(secret_key => BOM::User::TOTP->generate_key)
+                unless $user->{is_totp_enabled};
+            # convert the key into base32 before sending
+            return {totp => {secret_key => encode_base32($user->{secret_key})}};
         }
+        # Enable or Disable 2FA
+        elsif ($totp_action eq 'enable' || $totp_action eq 'disable') {
+            # return error if user wants to enable 2fa and it's already enabled
+            return _create_error('InvalidRequest', BOM::Platform::Context::localize('TOTP based 2FA is already enabled.'))
+                if ($status == 1 && $totp_action eq 'enable');
+            # return error if user wants to disbale 2fa and it's already disabled
+            return _create_error('InvalidRequest', BOM::Platform::Context::localize('TOTP based 2FA is already disabled.'))
+                if ($status == 0 && $totp_action eq 'disable');
 
-        return {totp => {is_enabled => $user->{is_totp_enabled}}};
-    }
-};
+            # verify the provided OTP with secret key from user
+            my $otp = $params->{args}->{otp};
+            my $verify = BOM::User::TOTP->verify_totp($user->{secret_key}, $otp);
+            return _create_error('InvalidOTP', BOM::Platform::Context::localize('OTP verification failed')) unless ($otp and $verify);
+
+            if ($totp_action eq 'enable') {
+                # enable 2FA
+                $user->update_totp_fields(is_totp_enabled => 1);
+            } elsif ($totp_action eq 'disable') {
+                # disable 2FA and reset secret key. Next time a new secret key should be generated
+                $user->update_totp_fields(
+                    is_totp_enabled => 0,
+                    secret_key      => ''
+                );
+            }
+
+            return {totp => {is_enabled => $user->{is_totp_enabled}}};
+        }
+    });
 
 sub _create_error {
     my ($code, $message) = @_;
