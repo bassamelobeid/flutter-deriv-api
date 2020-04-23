@@ -59,6 +59,7 @@ sub add {
     # Skip any virtual accounts
     return if $args{loginid} =~ /^VR/ and ($args{type} eq 'deposit' or $args{type} eq 'withdrawal');
 
+    my $tags = {tags => ['source:' . $args{source}, 'currency:' . $args{currency}]};
     try {
         my $client = BOM::User::Client->new({
                 loginid      => $args{loginid},
@@ -68,7 +69,7 @@ sub add {
         $args{$_} = $user->{$_} for qw(utm_source utm_medium utm_campaign);
     }
     catch {
-        stats_inc('payment.' . $args{type} . '.user_lookup.failure', {tag => ['source:' . $args{source}]});
+        stats_inc('payment.' . $args{type} . '.user_lookup.failure', $tags);
     }
 
     # No need to convert the currency if we're in USD already
@@ -79,7 +80,7 @@ sub add {
         $args{amount_usd} //= $args{amount} ? in_usd($args{amount} => $args{currency}) : 0.0;
     }
     catch {
-        stats_inc('payment.' . $args{type} . '.usd_conversion.failure', {tag => ['source:' . $args{source}]});
+        stats_inc('payment.' . $args{type} . '.usd_conversion.failure', $tags);
         return;
     };
 
@@ -91,7 +92,7 @@ sub add {
     }
 
     # Rescale by 100x to ensure we send integers (all amounts in USD)
-    stats_timing('payment.' . $args{type} . '.usd', abs(int(100.0 * $args{amount_usd})), {tags => ['source:' . $args{source}]});
+    stats_timing('payment.' . $args{type} . '.usd', abs(int(100.0 * $args{amount_usd})), $tags);
     return;
 }
 
