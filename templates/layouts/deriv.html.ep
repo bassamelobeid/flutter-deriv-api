@@ -225,7 +225,6 @@
             input ~ label {
                 color: var(--color-grey-1);
                 font-size: var(--text-size-xs);
-                background-color: var(--color-white);
                 position: absolute;
                 pointer-events: none;
                 left: 1rem;
@@ -252,7 +251,9 @@
                 opacity: 0.4;
             }
             input:focus ~ label,
+            input:-webkit-autofill ~ label,
             input:not(:focus):not(:invalid) ~ label {
+                background-color: var(--color-white);
                 -webkit-transform: translate(0, -1.8rem) scale(0.75);
                 -ms-transform: translate(0, -1.8rem) scale(0.75);
                 transform: translate(0, -1.8rem) scale(0.75);
