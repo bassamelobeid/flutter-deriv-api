@@ -226,19 +226,23 @@ sub log_call_timing_sent {
 }
 
 my %rate_limit_map = (
-    ping_real                      => '',
-    time_real                      => '',
-    portfolio_real                 => 'websocket_call_expensive',
-    statement_real                 => 'websocket_call_expensive',
-    profit_table_real              => 'websocket_call_expensive',
-    proposal_real                  => 'websocket_real_pricing',
-    proposal_open_contract_real    => 'websocket_real_pricing',
-    verify_email_real              => 'websocket_call_email',
-    buy_real                       => 'websocket_real_pricing',
-    sell_real                      => 'websocket_real_pricing',
-    buy_virtual                    => 'virtual_buy_transaction',
-    sell_virtual                   => 'virtual_sell_transaction',
-    reality_check_real             => 'websocket_call_expensive',
+    # Real Actions
+    ping_real                   => '',
+    time_real                   => '',
+    portfolio_real              => 'websocket_call_expensive',
+    statement_real              => 'websocket_call_expensive',
+    profit_table_real           => 'websocket_call_expensive',
+    proposal_real               => 'websocket_real_pricing',
+    proposal_open_contract_real => 'websocket_real_pricing',
+    verify_email_real           => 'websocket_call_email',
+    request_report_real         => 'websocket_call_email',
+    buy_real                    => 'websocket_real_pricing',
+    sell_real                   => 'websocket_real_pricing',
+    reality_check_real          => 'websocket_call_expensive',
+    account_statistics_real     => 'websocket_call_expensive',
+    account_security_real       => 'websocket_call_expensive',
+
+    # Virtual Actions
     ping_virtual                   => '',
     time_virtual                   => '',
     portfolio_virtual              => 'websocket_call_expensive',
@@ -247,10 +251,11 @@ my %rate_limit_map = (
     proposal_virtual               => 'websocket_call_pricing',
     proposal_open_contract_virtual => 'websocket_call_pricing',
     verify_email_virtual           => 'websocket_call_email',
-    request_report_real            => 'websocket_call_email',
     request_report_virtual         => 'websocket_call_email',
-    account_statistics_real        => 'websocket_call_expensive',
+    buy_virtual                    => 'virtual_buy_transaction',
+    sell_virtual                   => 'virtual_sell_transaction',
     account_statistics_virtual     => 'websocket_call_expensive',
+    account_security_virtual       => 'websocket_call_expensive',
 );
 
 sub reached_limit_check {
