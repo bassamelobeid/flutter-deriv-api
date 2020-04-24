@@ -66,6 +66,8 @@ my $token = $m->create_token($test_client->loginid, 'test token');
 # consecutive tests to fail without a reset.
 BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
+BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5(999);
+
 my $params = {
     language => 'EN',
     token    => $token,

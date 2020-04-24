@@ -26,6 +26,9 @@ BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts-
 my $runtime_system  = BOM::Config::Runtime->instance->app_config->system;
 my $runtime_payment = BOM::Config::Runtime->instance->app_config->payments;
 
+# unlimit daily transfer
+$runtime_payment->transfer_between_accounts->limits->MT5(999);
+
 scope_guard { restore_time() };
 
 my $manager_module = Test::MockModule->new('BOM::MT5::User::Async');

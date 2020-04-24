@@ -1823,11 +1823,11 @@ sub _validate_client {
     my $client_currency = $client_obj->account ? $client_obj->account->currency_code() : undef;
     return ('SetExistingAccountCurrency', $loginid) unless $client_currency;
 
-    my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
-    my $client_today_transfer = $client_obj->get_today_transfer_summary('mt5_transfer');
+    my $daily_transfer_limit      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
+    my $user_daily_transfer_count = $client_obj->user->daily_transfer_count('mt5');
 
     return ('MaximumTransfers', $daily_transfer_limit)
-        unless $client_today_transfer->{count} < $daily_transfer_limit;
+        unless $user_daily_transfer_count < $daily_transfer_limit;
 
     return undef;
 }

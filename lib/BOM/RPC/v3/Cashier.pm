@@ -412,12 +412,12 @@ rpc get_limits => sub {
     if (defined $client->default_account) {
         my $between_accounts_transfer_limit =
             BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
-        my $mt5_transfer_limits      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
-        my $client_internal_transfer = $client->get_today_transfer_summary()->{count};
-        my $client_mt5_transfer      = $client->get_today_transfer_summary('mt5_transfer')->{count};
+        my $mt5_transfer_limits     = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
+        my $user_internal_transfers = $client->user->daily_transfer_count();
+        my $user_mt5_transfers      = $client->user->daily_transfer_count('mt5');
 
-        my $available_internal_transfer = $between_accounts_transfer_limit - $client_internal_transfer;
-        my $available_mt5_transfer      = $mt5_transfer_limits - $client_mt5_transfer;
+        my $available_internal_transfer = $between_accounts_transfer_limit - $user_internal_transfers;
+        my $available_mt5_transfer      = $mt5_transfer_limits - $user_mt5_transfers;
 
         $limit->{daily_transfers} = {
             'internal' => {
@@ -1566,6 +1566,8 @@ rpc transfer_between_accounts => sub {
             lc_short          => $lc_short,
             amount            => in_usd($amount, $currency)});
 
+    $client_from->user->daily_transfer_incr();
+
     return {
         status              => 1,
         transaction_id      => $response->{transaction_id},
@@ -1727,11 +1729,11 @@ sub _validate_transfer_between_accounts {
         and ($from_currency_type eq 'crypto'));
 
     # check for internal transactions number limits
-    my $daily_transfer_limit  = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
-    my $client_today_transfer = $current_client->get_today_transfer_summary();
+    my $daily_transfer_limit = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
+    my $daily_transfer_count = $current_client->user->daily_transfer_count();
     return _transfer_between_accounts_error(
         localize("You can only perform up to [_1] transfers a day. Please try again tomorrow.", $daily_transfer_limit))
-        unless $client_today_transfer->{count} < $daily_transfer_limit;
+        unless $daily_transfer_count < $daily_transfer_limit;
 
     my $min_allowed_amount = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$currency}->{min};
 
