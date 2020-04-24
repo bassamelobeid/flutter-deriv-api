@@ -86,7 +86,8 @@ my %category_message_mapping = do {
         VirtualProhibited            => localize('You cannot perform this action with a virtual account.'),
         ExpiredDocuments =>
             localize('Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to [_1].'),
-        Experimental => localize('This currency is temporarily suspended. Please select another currency to proceed.'),
+        Experimental     => localize('This currency is temporarily suspended. Please select another currency to proceed.'),
+        MT5DepositLocked => localize('You cannot make a deposit because your MT5 account is disabled. Please contact our Customer Support team.'),
     );
 };
 

@@ -21,6 +21,7 @@ use BOM::Config::Runtime;
 use Test::BOM::RPC::Accounts;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5(999);
 
 my $runtime_system  = BOM::Config::Runtime->instance->app_config->system;
 my $runtime_payment = BOM::Config::Runtime->instance->app_config->payments;
@@ -160,12 +161,12 @@ subtest 'deposit' => sub {
     $test_client->status->clear_no_withdrawal_or_trading;
 
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
-
     $params->{args}{to_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_deposit wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_deposit wrong login');
 
     $demo_account_mock->unmock;
+
 };
 
 subtest 'demo account can not be tagged as an agent' => sub {
@@ -580,6 +581,69 @@ subtest 'mf_deposit' => sub {
 
     $mocked_client->unmock_all;
     $demo_account_mock->unmock;
+};
+subtest 'labuan deposit' => sub {
+
+    my $loginid = $test_client->loginid;
+    $test_client->financial_assessment({data => '{}'});
+    $test_client->save();
+
+    my $method = "mt5_deposit";
+    $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            to_mt5      => 'MTR' . $ACCOUNTS{'real\labuan_advanced'},
+            from_binary => $test_client->loginid,
+            amount      => 20,
+        },
+    };
+
+    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+
+    my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('labuan'); });
+    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
+
+    my $mocked_client = Test::MockModule->new(ref($test_client));
+    $mocked_client->mock('has_valid_documents', sub { 1 });
+    $c->call_ok($method, $params)->has_no_error('Deposit allowed to enable labuan mt5 account');
+    cmp_ok $test_client->default_account->balance, '==', 1050, "Correct balance after deposit";
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
+    $manager_module->mock(
+        'get_group',
+        sub {
+            return Future->done({
+                'leverage' => 300,
+                'currency' => 'USD',
+                'group'    => 'real\labuan_advanced',
+                'company'  => 'Binary (SVG) Ltd.'
+            });
+        });
+    # Returning invalid rights will block deposit.
+    $manager_module->mock(
+        'get_user',
+        sub {
+            return Future->done({
+                email   => 'test.account@binary.com',
+                name    => 'Meta traderman',
+                balance => '1234',
+                country => 'Malta',
+                rights  => 999,
+                group   => 'real\labuan_advanced',
+                'login' => 'MTR00000015',
+            });
+        });
+    $c->call_ok($method, $params)->has_error('client is disable')
+        ->error_code_is('MT5DepositLocked', 'Deposit is locked when mt5 account is disabled for labuan');
+
+    cmp_ok $test_client->default_account->balance, '==', 1050, "Balance has not changed because mt5 account is locked";
+    $manager_module->unmock('get_user', 'get_group');
+    # Using enable rights 482 should enable transfer.
+    $c->call_ok($method, $params)->has_no_error('Deposit allowed when mt5 account gets enabled');
+    cmp_ok $test_client->default_account->balance, '==', 1030, "Correct balance after deposit";
+
 };
 
 done_testing();

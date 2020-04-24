@@ -31,6 +31,7 @@ our %ACCOUNT_DETAILS = (
     country         => 'Malta',
     balance         => '1234',
     display_balance => '1234.00',
+    rights          => 483,
 );
 
 our %FINANCIAL_DATA = (

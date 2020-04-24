@@ -8,7 +8,7 @@ no indirect;
 use Guard;
 use YAML::XS;
 use Date::Utility;
-use List::Util qw(any first);
+use List::Util qw(any first sum0);
 use Syntax::Keyword::Try;
 use File::ShareDir;
 use Locale::Country::Extra;
@@ -617,8 +617,28 @@ async_rpc "mt5_get_settings",
 
     # MT5 login not belongs to user
     return create_error_future('permission') unless _check_logins($client, [$login]);
+    return _get_user_with_group($login)->then(
+        sub {
+            my ($settings) = @_;
+            $settings = _filter_settings($settings,
+                qw/address balance city company country currency email group leverage login name phone phonePassword state zipCode landing_company display_balance/
+            );
 
-    return BOM::MT5::User::Async::get_user($login)->then(
+            return Future->done($settings);
+        })->catch($error_handler);
+    };
+
+sub _filter_settings {
+    my ($settings, @allowed_keys) = @_;
+    my $filtered_settings = {};
+    @{$filtered_settings}{@allowed_keys} = @{$settings}{@allowed_keys};
+    return $filtered_settings;
+}
+
+sub _get_user_with_group {
+    my ($loginid) = shift;
+    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
+    return BOM::MT5::User::Async::get_user($loginid)->then(
         sub {
             my ($settings) = @_;
             return create_error_future('MT5GetUserError', {message => $settings->{error}}) if (ref $settings eq 'HASH' and $settings->{error});
@@ -638,28 +658,14 @@ async_rpc "mt5_get_settings",
             return BOM::MT5::User::Async::get_group($settings->{group})->then(
                 sub {
                     my ($group_details) = @_;
-
                     return create_error_future('MT5GetGroupError', {message => $group_details->{error}})
                         if (ref $group_details eq 'HASH' and $group_details->{error});
-
                     $settings->{currency}        = $group_details->{currency};
                     $settings->{landing_company} = $group_details->{company};
                     $settings->{display_balance} = formatnumber('amount', $settings->{currency}, $settings->{balance});
-
-                    $settings = _filter_settings($settings,
-                        qw/address balance city company country currency email group leverage login name phone phonePassword state zipCode landing_company display_balance/
-                    );
                     return Future->done($settings);
                 });
         })->catch($error_handler);
-
-    };
-
-sub _filter_settings {
-    my ($settings, @allowed_keys) = @_;
-    my $filtered_settings = {};
-    @{$filtered_settings}{@allowed_keys} = @{$settings}{@allowed_keys};
-    return $filtered_settings;
 }
 
 =head2 mt5_password_check
@@ -1067,7 +1073,6 @@ async_rpc "mt5_deposit",
 
     return create_error_future('Experimental')
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
-
     return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code)->then(
         sub {
             my ($response) = @_;
@@ -1427,14 +1432,9 @@ sub _mt5_validate_and_get_amount {
 
     return create_error_future('permission') unless _check_logins($authorized_client, \@loginids_list);
 
-    return mt5_get_settings({
-            client => $authorized_client,
-            args   => {login => $mt5_loginid}}
-        )->then(
+    return _get_user_with_group($mt5_loginid)->then(
         sub {
-
             my ($setting) = @_;
-
             return create_error_future(
                 'NoAccountDetails',
                 {
@@ -1548,6 +1548,18 @@ sub _mt5_validate_and_get_amount {
                     params        => $brand->emails('support')})
                 if ($action eq 'deposit'
                 and ($client->status->no_withdrawal_or_trading or $client->status->withdrawal_locked));
+
+            # Deposit should be locked if mt5 vanuatu/labuan account is disabled
+            if ($action eq 'deposit' and any { $mt5_group eq $_ } qw/real\labuan_advanced real\vanuatu_standard/) {
+                my $hex_rights   = BOM::Config::mt5_user_rights()->{'rights'};
+                my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
+                my %rights       = map { $_ => $setting->{rights} & $known_rights{$_} ? 1 : 0 } keys %known_rights;
+                unless (sum0(@rights{qw(enabled api)}) == 2
+                    and not $rights{trade_disabled})
+                {
+                    return create_error_future('MT5DepositLocked');
+                }
+            }
 
             # Actual USD or EUR amount that will be deposited into the MT5 account.
             # We have a currency conversion fees when transferring between currencies.
