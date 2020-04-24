@@ -5,7 +5,7 @@ use warnings;
 no indirect;
 
 use Log::Any qw($log);
-use List::Util qw(any all);
+use List::Util qw(any all first);
 use BOM::Database::ClientDB;
 use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/financialrounding/;
@@ -34,6 +34,7 @@ sub collectordb {
 
 =head2 set_pending_transaction
 Set the transaction as pending in payment.cryptocurrency if the transaction
+
 pass for all the requirements:
 - Found in the database
 - Is currently in the NEW state
@@ -87,8 +88,13 @@ sub set_pending_transaction {
 
         for my $address (keys %rows_ref) {
             my @payment = $rows_ref{$address}->@*;
-            # transaction already confirmed by subscription
-            if (any { $_->{blockchain_txn} && $_->{blockchain_txn} eq $transaction->{hash} && $_->{status} ne 'NEW' } @payment) {
+
+            return undef unless ($transaction->{type});
+
+            # ignores those that are not internal transfer and transactions that already confirmed by subscription
+            if ($transaction->{type} ne 'internal'
+                && any { $_->{blockchain_txn} && $_->{blockchain_txn} eq $transaction->{hash} && $_->{status} ne 'NEW' } @payment)
+            {
                 $log->debugf("Address already confirmed by subscription for transaction: %s", $transaction->{hash});
                 return undef;
             }
@@ -109,8 +115,8 @@ sub set_pending_transaction {
                 return undef;
             }
 
-            # ignore amount 0
-            unless ($transaction->{amount} > 0) {
+            # ignore transaction with 0 amount if it is not internal transfer
+            unless ($currency->transaction_amount_not_zero($transaction)) {
                 $log->warnf("Amount is zero for transaction: %s", $transaction->{hash});
                 return undef;
             }
@@ -224,7 +230,8 @@ sub update_transaction_status_to_pending {
         ping => sub {
             $_->selectrow_array(
                 'SELECT payment.ctc_set_deposit_pending(?, ?, ?, ?)',
-                undef, $address, $currency_code, financialrounding('amount', $currency_code, $transaction->{amount}),
+                undef, $address, $currency_code,
+                $transaction->{amount} > 0 ? financialrounding('amount', $transaction->{currency}, $transaction->{amount}) : undef,
                 $transaction->{hash});
         });
     return $result;
