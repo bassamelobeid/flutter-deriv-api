@@ -870,23 +870,6 @@ sub get_limit_for_payout {
     return $max_payout->{$self->currency};
 }
 
-=head2 get_today_transfer_summary
-
-Returns today (GMT timezone ) money transfers summary for the user based on the given type
-default payment type is: 'internal_transfer'
-
-=cut
-
-sub get_today_transfer_summary {
-    my ($self, $transfer_type) = @_;
-    $transfer_type //= 'internal_transfer';
-    my $dbic = $self->db->dbic;
-    return $dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref("SELECT * from payment.get_today_account_transfer_summary(?, ?);", undef, $self->account->id, $transfer_type);
-        });
-}
-
 sub get_limit {
     my $self = shift;
     my $args = shift || die 'get_limit needs args';
@@ -3262,6 +3245,8 @@ sub payment_mt5_transfer {
         source               => $source,
         transfer_fees        => $fees,
     });
+
+    $self->user->daily_transfer_incr('mt5');
 
     return $trx;
 }

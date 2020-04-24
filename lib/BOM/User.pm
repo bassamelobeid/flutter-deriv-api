@@ -28,7 +28,9 @@ our @EXPORT_OK = qw( is_payment_agents_suspended_in_country );
 # Backoffice Application Id used in some login cases
 use constant BACKOFFICE_APP_ID => 4;
 # Redis key prefix for client's previous login attempts
-use constant CLIENT_LOGIN_HISTORY_KEY => "CLIENT_LOGIN_HISTORY::";
+use constant CLIENT_LOGIN_HISTORY_KEY_PREFIX => "CLIENT_LOGIN_HISTORY::";
+# Redis key prefix for counting daily user transfers
+use constant DAILY_TRANSFER_COUNT_KEY_PREFIX => "USER_TRANSFERS_DAILY::";
 
 sub dbic {
     #not caching this as the handle is cached at a lower level and
@@ -638,7 +640,7 @@ sub is_closed {
 sub _save_login_detail_redis {
     my ($self, $environment) = @_;
 
-    my $key        = CLIENT_LOGIN_HISTORY_KEY . $self->id;
+    my $key        = CLIENT_LOGIN_HISTORY_KEY_PREFIX . $self->id;
     my $entry      = BOM::User::Utility::login_details_identifier($environment);
     my $entry_time = time;
 
@@ -654,7 +656,7 @@ sub _save_login_detail_redis {
 sub logged_in_before_from_same_location {
     my ($self, $new_env) = @_;
 
-    my $key   = CLIENT_LOGIN_HISTORY_KEY . $self->id;
+    my $key   = CLIENT_LOGIN_HISTORY_KEY_PREFIX . $self->id;
     my $entry = BOM::User::Utility::login_details_identifier($new_env);
 
     my $auth_redis    = BOM::Config::Redis::redis_auth();
@@ -678,6 +680,44 @@ sub logged_in_before_from_same_location {
     };
 
     return $attempt_known;
+}
+
+=head2 daily_transfer_incr
+
+Increments number of transfers per day in redis.
+
+=cut
+
+sub daily_transfer_incr {
+    my ($self, $type) = @_;
+    $type //= 'internal';
+
+    my $redis     = BOM::Config::Redis::redis_replicated_write();
+    my $redis_key = DAILY_TRANSFER_COUNT_KEY_PREFIX . $type . '_' . $self->id;
+    my $expiry    = 86400 - Date::Utility->new->seconds_after_midnight;
+
+    $redis->multi;
+    $redis->incr($redis_key);
+    $redis->expire($redis_key, $expiry);
+    $redis->exec;
+
+    return;
+}
+
+=head2 daily_transfer_count
+
+Gets number of transfers made in the current day.
+
+=cut
+
+sub daily_transfer_count {
+    my ($self, $type) = @_;
+    $type //= 'internal';
+
+    my $redis     = BOM::Config::Redis::redis_replicated_write();
+    my $redis_key = DAILY_TRANSFER_COUNT_KEY_PREFIX . $type . '_' . $self->id;
+
+    return $redis->get($redis_key) // 0;
 }
 
 1;
