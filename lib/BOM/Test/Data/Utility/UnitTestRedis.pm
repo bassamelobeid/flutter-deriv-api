@@ -11,7 +11,7 @@ use Quant::Framework::Underlying;
 use BOM::Test;
 use BOM::Config::Redis;
 
-our @EXPORT_OK = qw(initialize_realtime_ticks_db initialize_events_redis);
+our @EXPORT_OK = qw(initialize_realtime_ticks_db initialize_events_redis initialize_user_transfer_limits);
 
 BEGIN {
     die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
@@ -48,6 +48,18 @@ because BOM::Test is included above). This sub needs to be updated if new queues
 sub initialize_events_redis {
     my $redis = BOM::Config::Redis::redis_events_write();
     $redis->del($_) for qw (GENERIC_EVENTS_QUEUE STATEMENTS_QUEUE DOCUMENT_AUTHENTICATION_QUEUE);
+    return;
+}
+
+=head2 initialize_user_transfer_limits
+
+Deletes all keys for user daily transfer limits.
+
+=cut
+
+sub initialize_user_transfer_limits {
+    my $redis = BOM::Config::Redis::redis_replicated_write();
+    $redis->del($_) for $redis->keys('USER_TRANSFERS_DAILY::*')->@*;
     return;
 }
 
