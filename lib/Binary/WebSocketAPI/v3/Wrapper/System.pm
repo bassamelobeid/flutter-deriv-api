@@ -176,9 +176,11 @@ sub _forget_transaction_subscription {
 sub _forget_all_pricing_subscriptions {
     my ($c, $type) = @_;
 
-    Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction_channel($c, 'unsubscribe', $c->stash('account_id'), 'buy')
-        if $c->stash('account_id');
-    $c->stash('proposal_open_contracts_subscribed' => 0) if $type eq 'proposal_open_contract';
+    if ($type eq 'proposal_open_contract') {
+        Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction_channel($c, 'unsubscribe', $c->stash('account_id'), 'buy')
+            if $c->stash('account_id');
+        $c->stash('proposal_open_contracts_subscribed' => 0);
+    }
 
     my $class       = 'Binary::WebSocketAPI::v3::Subscription::Pricer::' . camelize($type);
     my $removed_ids = $class->unregister_class($c);
