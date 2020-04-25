@@ -88,18 +88,19 @@ ok(ref $validation_obj->_validate_client_status($client) eq 'Error::Base', "no_w
 $client->status->clear_no_withdrawal_or_trading;
 
 my $client_details = {
-    broker_code     => 'MX',
-    residence       => 'au',
-    client_password => 'x',
-    last_name       => 'shuwnyuan',
-    first_name      => 'tee',
-    email           => 'shuwnyuan@regentmarkets.com',
-    salutation      => 'Ms',
-    address_line_1  => 'ADDR 1',
-    address_city    => 'Segamat',
-    phone           => '+60123456789',
-    secret_question => "Mother's maiden name",
-    secret_answer   => 'blah',
+    broker_code              => 'MX',
+    residence                => 'au',
+    client_password          => 'x',
+    last_name                => 'shuwnyuan',
+    first_name               => 'tee',
+    email                    => 'shuwnyuan@regentmarkets.com',
+    salutation               => 'Ms',
+    address_line_1           => 'ADDR 1',
+    address_city             => 'Segamat',
+    phone                    => '+60123456789',
+    secret_question          => "Mother's maiden name",
+    secret_answer            => 'blah',
+    non_pep_declaration_time => time,
 };
 
 my %deposit = (
