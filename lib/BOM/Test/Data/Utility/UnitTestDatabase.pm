@@ -143,6 +143,7 @@ sub create_client {
     for (keys %$client_data) {
         $client->$_($client_data->{$_});
     }
+
     $client->save;
 
     if ($auth && $broker_code =~ /(?:MF|MLT|MX)/) {
