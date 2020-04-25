@@ -6,7 +6,7 @@ use Test::Mojo;
 use Test::MockModule;
 use Test::FailWarnings;
 use Test::Warn;
-use Test::Fatal qw(lives_ok);
+use Test::Fatal qw(lives_ok exception);
 use Test::MockTime qw(set_fixed_time);
 
 use Date::Utility;
@@ -697,19 +697,31 @@ subtest $method => sub {
                 non_pep_declaration_time => '2010-10-10',
             });
             is $client->non_pep_declaration_time, '2010-10-10 00:00:00',
-                'non_pep_declaration_time is the same value as the arg passed to test create_account';
+                'non_pep_declaration_time equals the value of the arg passed to test create_account';
             $client->save;
-            $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            
+            warning_like {
+            like exception {
+            BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code              => 'MLT',
                 email                    => $email,
                 residence                => 'cz',
                 secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
                 non_pep_declaration_time => undef,
+            }); }, 
+                qr/new row for relation "client" violates check constraint "check_non_pep_declaration_time"/, 
+                'cannot create a real client with empty non_pep_declaration_time';
+            } [qr/new row for relation "client" violates check constraint "check_non_pep_declaration_time"/], 
+                'expected database constraint violation warning';
+            
+            
+            $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code              => 'MLT',
+                email                    => $email,
+                residence                => 'cz',
+                secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
+                non_pep_declaration_time => '2020-01-02',
             });
-            is $client_mlt->non_pep_declaration_time, undef, 'non_pep_declaration_time is empty, as undef is passed to test create_account';
-            $client_mlt->non_pep_declaration_time('2020-01-02');
-            $client_mlt->save;
-
             $auth_token = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, 'test token');
 
             $user->add_client($client);
