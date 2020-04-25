@@ -144,6 +144,8 @@ my $open_account_details = {
     checked_affiliate_exposures   => 0,
     client_password               => '123456',
     binary_user_id                => BOM::Test::Data::Utility::UnitTestDatabase::get_next_binary_user_id(),
+    non_pep_declaration_time      => Date::Utility->new('20010108')->date_yyyymmdd,
+
 };
 
 my $client;

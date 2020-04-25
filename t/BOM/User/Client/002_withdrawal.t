@@ -51,19 +51,20 @@ populate_exchange_rates({
 my $recorded_date = Date::Utility->new;
 
 my %new_client_details = (
-    broker_code     => 'CR',
-    residence       => 'br',
-    client_password => 'x',
-    last_name       => 'binary',
-    first_name      => 'test',
-    email           => 'binarytest@binary.com',
-    salutation      => 'Ms',
-    address_line_1  => 'ADDR 1',
-    address_city    => 'Cyberjaya',
-    phone           => '+60123456789',
-    place_of_birth  => 'br',
-    secret_question => "Mother's maiden name",
-    secret_answer   => 'blah',
+    broker_code              => 'CR',
+    residence                => 'br',
+    client_password          => 'x',
+    last_name                => 'binary',
+    first_name               => 'test',
+    email                    => 'binarytest@binary.com',
+    salutation               => 'Ms',
+    address_line_1           => 'ADDR 1',
+    address_city             => 'Cyberjaya',
+    phone                    => '+60123456789',
+    place_of_birth           => 'br',
+    secret_question          => "Mother's maiden name",
+    secret_answer            => 'blah',
+    non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
 );
 
 sub new_client {

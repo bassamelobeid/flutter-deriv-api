@@ -145,12 +145,12 @@ subtest 'payment transaction' => sub {
     my $client = ClientAccountTestHelper::create_client({
         broker_code => 'CR',
     });
-    
+
     BOM::User->create(
         email    => $client->email,
         password => 'test',
     )->add_client($client);
-    
+
     my $account = new_ok(
         "BOM::User::Client::Account" => [
             db             => $client->db,

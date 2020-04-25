@@ -25,18 +25,19 @@ my $user = BOM::User->create(
 );
 
 my $client_details = {
-    broker_code     => 'CR',
-    residence       => 'au',
-    client_password => 'x',
-    last_name       => 'shuwnyuan',
-    first_name      => 'tee',
-    email           => 'shuwnyuan@regentmarkets.com',
-    salutation      => 'Ms',
-    address_line_1  => 'ADDR 1',
-    address_city    => 'Segamat',
-    phone           => '+60123456789',
-    secret_question => "Mother's maiden name",
-    secret_answer   => 'blah',
+    broker_code              => 'CR',
+    residence                => 'au',
+    client_password          => 'x',
+    last_name                => 'shuwnyuan',
+    first_name               => 'tee',
+    email                    => 'shuwnyuan@regentmarkets.com',
+    salutation               => 'Ms',
+    address_line_1           => 'ADDR 1',
+    address_city             => 'Segamat',
+    phone                    => '+60123456789',
+    secret_question          => "Mother's maiden name",
+    secret_answer            => 'blah',
+    non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
 };
 
 my %deposit = (
@@ -89,18 +90,19 @@ my $user_iom = BOM::User->create(
 );
 
 my $client_details_iom = {
-    broker_code     => 'MX',
-    residence       => 'gb',
-    client_password => $passwd_iom,
-    last_name       => 'Test',
-    first_name      => 'Test',
-    email           => $email_iom,
-    salutation      => 'Ms',
-    address_line_1  => 'ADDR 1',
-    address_city    => 'Test',
-    phone           => '+60123456789',
-    secret_question => "Mother's maiden name",
-    secret_answer   => 'Test',
+    broker_code              => 'MX',
+    residence                => 'gb',
+    client_password          => $passwd_iom,
+    last_name                => 'Test',
+    first_name               => 'Test',
+    email                    => $email_iom,
+    salutation               => 'Ms',
+    address_line_1           => 'ADDR 1',
+    address_city             => 'Test',
+    phone                    => '+60123456789',
+    secret_question          => "Mother's maiden name",
+    secret_answer            => 'Test',
+    non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
 };
 
 my %deposit_iom = (

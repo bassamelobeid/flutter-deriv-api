@@ -49,6 +49,7 @@ subtest 'prepare' => sub {
             cashier_setting_password => '',
             date_of_birth            => '1980-01-01',
             binary_user_id           => BOM::Test::Data::Utility::UnitTestDatabase::get_next_binary_user_id(),
+            non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
         );
 
         $first_client->db($conn->db);
@@ -81,6 +82,7 @@ subtest 'prepare' => sub {
             cashier_setting_password => '',
             date_of_birth            => '1980-01-01',
             binary_user_id           => BOM::Test::Data::Utility::UnitTestDatabase::get_next_binary_user_id(),
+            non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
         );
         $thi_client->db($conn->db);
         $thi_client->save();

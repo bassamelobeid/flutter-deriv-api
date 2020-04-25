@@ -27,7 +27,7 @@ subtest 'transfer limit store' => sub {
     is $user->daily_transfer_count(), 2, 'recorded another';
     is $redis->ttl('USER_TRANSFERS_DAILY::internal_' . $user->id), 86400, 'key expiry';
 
-    set_fixed_time(86300); # 100 seconds to midnight
+    set_fixed_time(86300);    # 100 seconds to midnight
 
     is $user->daily_transfer_count('mt5'), 0, 'no mt5 transfers yet';
     $user->daily_transfer_incr('mt5');
