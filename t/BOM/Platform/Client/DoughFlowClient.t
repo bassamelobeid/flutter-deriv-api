@@ -46,7 +46,8 @@ my $client_details1 = {
     'phone'                    => '21345678',
     'comment'                  => '',
     'first_name'               => 'Felix',
-    'citizen'                  => 'Brazil'
+    'citizen'                  => 'Brazil',
+    non_pep_declaration_time   => Date::Utility->new->date_yyyymmdd,
 };
 
 my $client_details2 = {
@@ -80,7 +81,8 @@ my $client_details2 = {
     'phone'                    => '21345678',
     'comment'                  => '',
     'first_name'               => 'Felix',
-    'citizen'                  => 'Brazil'
+    'citizen'                  => 'Brazil',
+    non_pep_declaration_time   => Date::Utility->new->date_yyyymmdd,
 };
 
 my $df_client;

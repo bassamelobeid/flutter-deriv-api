@@ -40,6 +40,7 @@ subtest 'prepare' => sub {
             gender                   => 'm',
             cashier_setting_password => '',
             date_of_birth            => '1980-01-01',
+            non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
         );
 
         $first_client->db($conn->db);
@@ -71,6 +72,7 @@ subtest 'prepare' => sub {
             gender                   => 'm',
             cashier_setting_password => '',
             date_of_birth            => '1980-01-01',
+            non_pep_declaration_time => Date::Utility->new('20010108')->date_yyyymmdd,
         );
         $thi_client->db($conn->db);
         $thi_client->save();
