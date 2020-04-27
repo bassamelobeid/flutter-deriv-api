@@ -1,6 +1,5 @@
 -Ilib
 --exec '/etc/rmg/bin/perl -It/lib -MTest::Warnings -MMojo::JSON::MaybeXS'
--MDevel::Confess=color
 -MBOM::Test
 -MBOM::Test::Initializations
 -MBOM::Test::Suite
