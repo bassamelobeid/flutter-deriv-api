@@ -28,7 +28,15 @@ is $res->{website_status}->{terms_conditions_version},
 
 # Update terms_conditions_version at chronicle
 my $updated_tcv = 'Version 100 ' . Date::Utility->new->date;
-$writer->set('app_settings', 'binary', {global => {cgi => {terms_conditions_version => $updated_tcv}}}, Date::Utility->new);
+$writer->set(
+    'app_settings',
+    'binary',
+    {
+        global => {cgi => {terms_conditions_version => $updated_tcv}},
+        _rev   => time
+    },
+    Date::Utility->new
+);
 
 is $reader->get('app_settings', 'binary')->{global}->{cgi}->{terms_conditions_version}, $updated_tcv, 'Chronickle should be updated';
 
