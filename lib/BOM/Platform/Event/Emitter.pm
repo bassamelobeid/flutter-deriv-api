@@ -38,12 +38,13 @@ use redis to store events as FIFO queue
 use constant TIMEOUT => 5;
 
 my %event_queue_mapping = (
-    email_statement          => 'STATEMENTS_QUEUE',
-    document_upload          => 'DOCUMENT_AUTHENTICATION_QUEUE',
-    ready_for_authentication => 'DOCUMENT_AUTHENTICATION_QUEUE',
-    client_verification      => 'DOCUMENT_AUTHENTICATION_QUEUE',
-    affiliate_sync_initiated => 'AFFILIATE_SYNC_LONG_RUNNING_QUEUE',
-    set_pending_transaction  => 'CRYPTO_EVENTS_QUEUE',
+    email_statement           => 'STATEMENTS_QUEUE',
+    document_upload           => 'DOCUMENT_AUTHENTICATION_QUEUE',
+    ready_for_authentication  => 'DOCUMENT_AUTHENTICATION_QUEUE',
+    client_verification       => 'DOCUMENT_AUTHENTICATION_QUEUE',
+    affiliate_sync_initiated  => 'AFFILIATE_SYNC_LONG_RUNNING_QUEUE',
+    set_pending_transaction   => 'CRYPTO_EVENTS_QUEUE',
+    client_promo_codes_upload => 'PROMO_CODE_IMPORT_LONG_RUNNING_QUEUE',
 );
 
 my $config = LoadFile($ENV{BOM_TEST_REDIS_EVENTS} // '/etc/rmg/redis-events.yml');
