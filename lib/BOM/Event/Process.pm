@@ -86,6 +86,7 @@ my $action_mapping = {
     aml_client_status_update    => \&BOM::Event::Actions::Client::aml_client_status_update,
     self_exclude_set            => \&BOM::Event::Actions::App::self_exclude_set,
     crypto_withdrawal           => \&BOM::Event::Actions::Client::handle_crypto_withdrawal,
+    client_promo_codes_upload   => \&BOM::Event::Actions::Client::client_promo_codes_upload,
 };
 
 =head1 METHODS

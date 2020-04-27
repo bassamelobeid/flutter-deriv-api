@@ -2148,6 +2148,51 @@ async sub check_or_store_onfido_applicant {
 
 }
 
+=head2 client_promo_codes_upload
+
+Bulik assigns client promo codes uploaded in backoffice.
+
+=cut
+
+sub client_promo_codes_upload {
+    my ($args) = @_;
+
+    my ($email, $file, $data) = @$args{qw/email file data/};
+    my $success = 0;
+    my @errors  = ();
+
+    for my $row (@$data) {
+        try {
+            my ($loginid, $code) = @$row;
+            my $client;
+            try {
+                $client = BOM::User::Client->new({loginid => $loginid});
+            }
+            catch {
+                die "client not found\n";
+            }
+            die "client not found\n" unless $client;
+            die "client is virtual\n" if $client->is_virtual;
+            die "client already has a promo code (" . $client->client_promo_code->promotion_code . ")\n" if $client->client_promo_code;
+            $client->promo_code($code);
+            $client->save;
+            $success++;
+        }
+        catch {
+            push @errors, 'Error on line: ' . (join ', ', @$row) . ' - error: ' . $@;
+        }
+    }
+
+    send_email({
+        from    => '<no-reply@binary.com>',
+        to      => $email,
+        subject => "Bulk promo code assignment completed for file $file",
+        message => ["Rows: " . scalar @$data, "Promo codes assigned: $success", "Errors: " . scalar @errors, @errors],
+    });
+
+    return 1;
+}
+
 sub _send_email_withdrawal_locked {
     my ($client, $support_email) = @_;
 
