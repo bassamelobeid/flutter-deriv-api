@@ -8,8 +8,11 @@ use Locale::Country;
 
 use JSON::MaybeXS;
 use File::stat qw( stat );
+use Syntax::Keyword::Try;
+use Text::CSV;
 
 use LandingCompany::Registry;
+use BOM::Platform::Event::Emitter;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
@@ -20,6 +23,8 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
+
+my $cgi = CGI->new;
 
 PrintContentType();
 BrokerPresentation('MARKETING TOOLS');
@@ -179,6 +184,47 @@ print '<form method=get action="'
     . '<input type=submit value="Add new promocode"> Note: Click this button to add new promocode'
     . '</form>';
 
+# Buk upload promocodes
+Bar('BULK PROMO CODE APPLY');
+
+if (my $bulk_upload = $input{bulk_promo_upload}) {
+
+    try {
+        die "$bulk_upload: only csv or txt files allowed\n" unless $bulk_upload =~ /(txt|csv)$/i;
+
+        my $csv = Text::CSV->new({binary => 1});
+        my $fh = $cgi->upload('bulk_promo_upload');
+        my @errors;
+        my $success = 0;
+        my $lines   = $csv->getline_all($fh);
+        my $email   = $input{bulk_promo_notify_email} or die "Please provide an email to notify about promo code import.\n";
+        BOM::Platform::Event::Emitter::emit(
+            'client_promo_codes_upload',
+            {
+                email => $email,
+                file  => $bulk_upload,
+                data  => $lines
+            }) or die "Failed to emit assign_promo_codes event - please check with Backend team.\n";
+        print '<p style="color:green; font-weight:bold;">'
+            . " $bulk_upload is being processed. An email will be sent to $email when the job completes.</p>";
+    }
+    catch {
+        print '<p style="color:red; font-weight:bold;">ERROR: ' . $@ . '</p>';
+    }
+}
+
+my $clerk = BOM::Backoffice::Auth0::get_staffname() // '';
+
+print
+    '<l><li>Applies bonus codes to clients if the code is valid and the client does not have a promo code.</li><li>CSV format, comma separated</li><li>No header</li><li>2 columns: client id, bonus code</li></l>'
+    . '<form method="post" enctype="multipart/form-data">'
+    . '<br>File:&nbsp;<input type="file" required name="bulk_promo_upload" style="width: 150px">'
+    . '<br>Notify when done:&nbsp;<input type="email" required name="bulk_promo_notify_email" value="'
+    . $clerk
+    . '@binary.com">'
+    . '<br><input type=submit value="Upload">'
+    . '</form>';
+
 # PROMO CODE APPROVAL TOOL
 Bar('PROMO CODE APPROVAL TOOL');
 
@@ -284,6 +330,13 @@ foreach my $client (@clients) {
 
     $total_turnover ||= '&nbsp;';
 
+    my $bonuscheck_link = '<a href="'
+        . request()->url_for(
+        'backoffice/f_client_bonus_check.cgi',
+        {
+            broker  => $broker,
+            loginID => $client_login
+        }) . '" target=_blank>bonus check</a>';
     my $clientdetail_link = '<a href="'
         . request()->url_for(
         'backoffice/f_clientloginid_edit.cgi',
@@ -325,7 +378,7 @@ foreach my $client (@clients) {
             <td><font color="$color">$client_authenticated</font></td>
             <td><font color="$color">$check_account</font></td>
             <td><center><input name="${client_login}_notify" type="checkbox" checked="checked"></center></td>
-            <td>$clientdetail_link, $statement_link</td>
+            <td>$bonuscheck_link, $clientdetail_link, $statement_link</td>
         </tr>
     ]
 }
