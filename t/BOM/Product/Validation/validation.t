@@ -22,6 +22,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Config::Chronicle;
 use Quant::Framework;
+use LandingCompany::Registry;
 
 initialize_realtime_ticks_db();
 
@@ -1198,6 +1199,36 @@ subtest 'validate tick expiry barrier type' => sub {
     $bet_params->{barrier} = 101;
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy with absolute barrier';
+};
+
+subtest 'sell back validation for volatility indices' => sub {
+    my $starting = Date::Utility->new('2014-10-08 13:00:00');
+    my $date_pricing = $starting->plus_time_interval('2m');
+    my $o = LandingCompany::Registry::get('virtual')->basic_offerings({loaded_revision => 0, action => 'sell'});
+
+    foreach my $contract_type (qw(CALLE PUTE CALL PUT ONETOUCH NOTOUCH)) {
+        foreach my $symbol ($o->query({market => 'synthetic_index'}, ['underlying_symbol'])) {
+            my $tick     = Postgres::FeedDB::Spot::Tick->new({
+                underlying => $symbol,
+                epoch      => $date_pricing->epoch,
+                quote      => 100,
+            });
+            my $bet_params = {
+                underlying   => $symbol,
+                bet_type     => $contract_type,
+                currency     => 'USD',
+                payout       => 100,
+                date_start   => $starting,
+                date_pricing => $date_pricing,
+                duration     => '20m',
+                barrier      => 'S0P',
+                current_tick => $tick,
+            };
+
+            my $c = produce_contract($bet_params);
+            ok !$o->validate_offerings($c->metadata('sell')), 'valid to sell for - ' . $contract_type . ' & ' . $symbol;
+        }
+    }
 };
 
 my $counter = 0;
