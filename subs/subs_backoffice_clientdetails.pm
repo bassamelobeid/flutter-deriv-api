@@ -45,59 +45,6 @@ my @expirable_doctypes = (BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES, B
 my @poi_doctypes       = BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES;
 my @no_date_doctypes   = qw(other);
 
-my %categories = (
-    POI => {
-        index => 1,
-        title => "POI (Proof of Identity)"
-    },
-    POA => {
-        index => 2,
-        title => "POA (Proof of Address)"
-    },
-    Funds => {
-        index => 3,
-        title => "Source of funds / wealth"
-    },
-    Checks => {
-        index => 4,
-        title => "Checks"
-    },
-    Declarations => {
-        index => 5,
-        title => "Declarations"
-    },
-    Other => {
-        index => 10,
-        title => "Other"
-    });
-
-my %doc_types_categories = (
-    passport                                     => $categories{POI},
-    proofid                                      => $categories{POI},
-    driverslicense                               => $categories{POI},
-    driving_licence                              => $categories{POI},
-    national_identity_card                       => $categories{POI},
-    vf_face_id                                   => $categories{POI},
-    vf_id                                        => $categories{POI},
-    photo                                        => $categories{POI},
-    live_photo                                   => $categories{POI},
-    selfie_with_id                               => $categories{POI},
-    vf_poa                                       => $categories{POA},
-    proofaddress                                 => $categories{POA},
-    bankstatement                                => $categories{POA},
-    payslip                                      => $categories{Funds},
-    tax_receipt                                  => $categories{Funds},
-    employment_contract                          => $categories{Funds},
-    amlglobalcheck                               => $categories{Checks},
-    docverification                              => $categories{Checks},
-    power_of_attorney                            => $categories{Declarations},
-    code_of_conduct                              => $categories{Declarations},
-    professional_eu_qualified_investor           => $categories{Other},
-    professional_uk_high_net_worth               => $categories{Other},
-    professional_uk_self_certified_sophisticated => $categories{Other},
-    other                                        => $categories{Other},
-);
-
 sub get_currency_options {
     # we need to prioritise based on the following list, since BO users mostly use them
     my %order = (
@@ -660,9 +607,10 @@ sub date_html {
 ##############################################################
 sub show_client_id_docs {
     my ($loginid, %args) = @_;
-    my $show_delete = $args{show_delete};
-    my $extra       = $args{no_edit} ? 'disabled' : '';
-    my $links       = '';
+    my $show_delete          = $args{show_delete};
+    my $extra                = $args{no_edit} ? 'disabled' : '';
+    my $links                = '';
+    my %doc_types_categories = _get_document_types_categories();
 
     return unless $loginid;
 
@@ -697,7 +645,7 @@ SQL
         $doc->{category_idx} =
             ($doc->{document_type} && $doc_types_categories{$doc->{document_type}})
             ? $doc_types_categories{$doc->{document_type}}{index}
-            : $doc_types_categories{Other}{index};
+            : $doc_types_categories{other}{index};
     }
 
     # sort by category then by issue date and expiration date descending
@@ -714,7 +662,10 @@ SQL
             $doc->{comments}, $doc->{document_id}, $doc->{upload_date},   $doc->{age},        $doc->{category_idx});
 
         if ($category_idx != $last_category_idx) {
-            my $category_title = ($doc_types_categories{$document_type}{title} // $categories{"Other"}{title}) . ":";
+            my $category_title = (
+                ($doc_types_categories{$document_type} && $doc_types_categories{$document_type}{title})
+                ? $doc_types_categories{$document_type}{title}
+                : $doc_types_categories{other}{title}) . ":";
             $links .= qq(<tr><td colspan='7'><b> $category_title </b></td></tr>);
         }
         $last_category_idx = $category_idx;
@@ -1438,6 +1389,72 @@ sub check_update_needed {
     return $client_checked->broker eq $client->broker
         if ($sync_scope{$key} eq 'lc');
     die "don't know the scope $sync_scope{$key}";
+}
+
+=head2 _get_document_types_categories
+
+Description: get document types as hash
+
+=back
+
+return hash of doc_types_categories
+
+=cut
+
+sub _get_document_types_categories {
+    my %categories = (
+        POI => {
+            index => 1,
+            title => "POI (Proof of Identity)"
+        },
+        POA => {
+            index => 2,
+            title => "POA (Proof of Address)"
+        },
+        Funds => {
+            index => 3,
+            title => "Source of funds / wealth"
+        },
+        Checks => {
+            index => 4,
+            title => "Checks"
+        },
+        Declarations => {
+            index => 5,
+            title => "Declarations"
+        },
+        Other => {
+            index => 10,
+            title => "Other"
+        });
+
+    my %doc_types_categories = (
+        passport                                     => $categories{POI},
+        proofid                                      => $categories{POI},
+        driverslicense                               => $categories{POI},
+        driving_licence                              => $categories{POI},
+        national_identity_card                       => $categories{POI},
+        vf_face_id                                   => $categories{POI},
+        vf_id                                        => $categories{POI},
+        photo                                        => $categories{POI},
+        live_photo                                   => $categories{POI},
+        selfie_with_id                               => $categories{POI},
+        vf_poa                                       => $categories{POA},
+        proofaddress                                 => $categories{POA},
+        bankstatement                                => $categories{POA},
+        payslip                                      => $categories{Funds},
+        tax_receipt                                  => $categories{Funds},
+        employment_contract                          => $categories{Funds},
+        amlglobalcheck                               => $categories{Checks},
+        docverification                              => $categories{Checks},
+        power_of_attorney                            => $categories{Declarations},
+        code_of_conduct                              => $categories{Declarations},
+        professional_eu_qualified_investor           => $categories{Other},
+        professional_uk_high_net_worth               => $categories{Other},
+        professional_uk_self_certified_sophisticated => $categories{Other},
+        other                                        => $categories{Other},
+    );
+    return %doc_types_categories;
 }
 
 1;
