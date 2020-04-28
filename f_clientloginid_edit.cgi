@@ -43,11 +43,21 @@ use BOM::Database::DataMapper::Copier;
 use BOM::Platform::S3Client;
 use BOM::User::Onfido;
 use BOM::User::Phone;
+use Log::Any qw($log);
 
 BOM::Backoffice::Sysinit::init();
-
 my %input = %{request()->params};
 PrintContentType();
+
+# Once a day we have zombie apocalipsis at backoffice production
+# https://trello.com/c/sNvAuYNn/76-backoffice-memory-leak
+# We have 30 seconds time out at Cloudflare,
+# here we want to try to set up alarm with the same time out.
+alarm(30);
+local $SIG{ALRM} = sub {
+    $log->errorf('Timeout processing request f_clientloginid_edit.cgi: %s', request()->params);
+    code_exit_BO(qq[ERROR: Timeout loading page, try again later]);
+};
 
 # /etc/mime.types should exist but just in case...
 my $mts;
@@ -58,7 +68,6 @@ if (open my $mime_defs, '<', '/etc/mime.types') {
     warn "Can't open MIME types definition file: $!";
     $mts = Media::Type::Simple->new();
 }
-
 my $dbloc = BOM::Config::Runtime->instance->app_config->system->directory->db;
 use constant INTERNAL_TRANSFER_FIAT_CRYPTO_PREFIX => 'INTERNAL::TRANSFER::FIAT::CRYPTO::USER::';
 
