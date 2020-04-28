@@ -107,11 +107,24 @@ sub login_env {
     my $ip_address_country = uc($params->{country_code} || $self->country_code || '');
     my $lang               = uc($params->{language}     || $self->language     || '');
 
-    my $ua = $params->{user_agent} || '';
+    ## The User-Agent can be arbitrarily large, but we do not want to store anything
+    ## too large in the database, so we truncate it here if the final environment
+    ## string goes over 1000 characters
 
-    my $environment = "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
+    my $max_env_length    = 1000;
+    my $ua                = $params->{user_agent} || '';
+    my $ua_string_length  = length($ua);
+    my $env_string_length = length("$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT= LANG=$lang");
+    my $total_env_length  = $env_string_length + $ua_string_length;
+    if ($total_env_length > $max_env_length) {
+        my $ua_note     = " AGENT_TRUNCATED=$ua_string_length";
+        my $new_ua_size = $max_env_length - $env_string_length - length($ua_note);
+        $ua = substr($ua, 0, $new_ua_size);
+        $ua .= $ua_note;
+    }
 
-    return $environment;
+    return "$now IP=$ip_address IP_COUNTRY=$ip_address_country User_AGENT=$ua LANG=$lang";
+
 }
 
 sub _build_params {
