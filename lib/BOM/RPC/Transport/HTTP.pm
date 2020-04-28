@@ -145,6 +145,10 @@ sub startup {
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ["rpc:$call"]});
             $vsz_start = current_vsz();
             BOM::Test::Time::set_date_from_file() if defined $INC{'BOM/Test/Time.pm'};    # check BOM::Test::Time for details
+            $c->tx->on(
+                'client_disconnect' => sub {
+                    DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.client_disconnect', {tags => ["rpc:$call"]});
+                });
         });
 
     $app->hook(
