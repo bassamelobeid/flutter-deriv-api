@@ -7,6 +7,7 @@ use Sys::Hostname;
 
 use Brands;
 use BOM::Config::Runtime;
+use BOM::Database::Model::OAuth;
 
 with 'BOM::Platform::Context::Request::Builders';
 
@@ -47,6 +48,16 @@ has 'params' => (
 );
 
 has 'brand_name' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+has 'app_id' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+has 'app' => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -189,6 +200,18 @@ sub _build_brand_name {
     }
 
     return "binary";
+}
+
+sub _build_app_id {
+    my $self = shift;
+    return ($self->param('app_id') || $self->source || '');
+}
+
+sub _build_app {
+    my $self = shift;
+
+    return undef unless $self->app_id;
+    return BOM::Database::Model::OAuth->new->get_app_by_id($self->app_id);
 }
 
 sub BUILD {

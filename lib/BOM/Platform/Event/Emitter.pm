@@ -87,6 +87,7 @@ sub emit {
     my $context_info = {
         brand_name => $request->brand->name,
         language   => $request->language,
+        app_id     => $request->app_id,
     };
 
     my $event_data;

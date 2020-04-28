@@ -70,6 +70,70 @@ subtest 'language' => sub {
     );
 };
 
+subtest 'source' => sub {
+    is($simple_request->source, undef, 'undef is the default source value');
+    is(BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {source => 4321}, 'GET')})->source,
+        undef, 'source is not a request param');
+    is(
+        BOM::Platform::Context::Request::from_mojo({
+                source       => 4321,
+                mojo_request => mock_request_for("https://www.dummy.com", {}, 'GET')}
+            )->source,
+        4321,
+        'source is not a request param'
+    );
+};
+
+subtest 'app_id and app' => sub {
+    my $request = BOM::Platform::Context::Request->new;
+    is $request->app_id, '',    'empty string is the default app_id';
+    is $request->app,    undef, 'no app is returned';
+
+    my $mocked_oauth = Test::MockModule->new('BOM::Database::Model::OAuth');
+    $mocked_oauth->mock(
+        get_app_by_id => sub {
+            my ($self, $app_id) = @_;
+            return undef unless $app_id;
+            return {
+                id   => $app_id,
+                name => 'mocked name',
+            };
+        });
+
+    $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {app_id => 1234}, 'GET')});
+    is $request->app_id, 1234, 'app_id is correct';
+    is_deeply $request->app,
+        {
+        id   => 1234,
+        name => 'mocked name'
+        },
+        'correct app';
+
+    $request = BOM::Platform::Context::Request::from_mojo({
+            source       => 4321,
+            mojo_request => mock_request_for("https://www.dummy.com", {}, 'GET')});
+    is $request->app_id, 4321, 'app_id fell back to source';
+    is_deeply $request->app,
+        {
+        id   => 4321,
+        name => 'mocked name'
+        },
+        'correct app';
+
+    $request = BOM::Platform::Context::Request::from_mojo({
+            source       => 4321,
+            mojo_request => mock_request_for("https://www.dummy.com", {app_id => 1234}, 'GET')});
+    is($request->app_id, 1234, 'app_id has priority over source');
+    is_deeply $request->app,
+        {
+        id   => 1234,
+        name => 'mocked name'
+        },
+        'correct app';
+
+    $mocked_oauth->unmock_all();
+};
+
 subtest 'client_ip' => sub {
     is($simple_request->client_ip, '127.0.0.1', 'default client ip is 127.0.0.1');
     is(BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {}, 'GET')})->client_ip,
