@@ -64,6 +64,8 @@ sub set_pending_transaction {
             });
         $log->warnf("%s: Can't update the cursor to block: %s", $currency_code, $transaction->{block}) unless $cursor_result;
 
+        return undef if (!$transaction->{type} || $transaction->{type} eq 'send');
+
         # get all the payments related to the `to` address from the transaction
         # since this is only for deposits we don't care about the `from` address
         # also, the subscription daemon takes care about the multiple receivers
