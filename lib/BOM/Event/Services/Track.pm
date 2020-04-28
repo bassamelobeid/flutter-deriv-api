@@ -48,11 +48,14 @@ sub login {
     my ($args) = @_;
     my $properties = $args->{properties};
 
+    my $app = request->app // {};
+    $properties->{app_name} = $app->{name} // '';
+
     return track_event(
         event                => 'login',
         loginid              => $args->{loginid},
         properties           => $properties,
-        is_identify_required => 1
+        is_identify_required => 1,
     );
 }
 

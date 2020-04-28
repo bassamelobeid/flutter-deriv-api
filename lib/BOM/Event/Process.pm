@@ -135,7 +135,7 @@ sub process {
     }
 
     my $context_info = $event_to_be_processed->{context} // {};
-    my @req_args = map { $_ => $context_info->{$_} } grep { $context_info->{$_} } qw(brand_name language);
+    my @req_args = map { $_ => $context_info->{$_} } grep { $context_info->{$_} } qw(brand_name language app_id);
     my $req = BOM::Platform::Context::Request->new(@req_args);
     request($req);
 

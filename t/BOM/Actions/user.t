@@ -11,11 +11,11 @@ use WebService::Async::Segment::Customer;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
-use BOM::Event::Actions::User;
 use BOM::User;
 use Time::Moment;
 use Date::Utility;
 use BOM::Platform::Locale qw/get_state_by_id/;
+use BOM::Event::Process;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -51,7 +51,8 @@ $mock_brands->mock(
     });
 
 subtest 'login event' => sub {
-    my $req = BOM::Platform::Context::Request->new(
+    my $action_handler = BOM::Event::Process::get_action_mappings()->{login};
+    my $req            = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
         language   => 'id'
     );
@@ -75,8 +76,10 @@ subtest 'login event' => sub {
             ip                  => '127.0.0.1',
             location            => 'Germany',
             new_signin_activity => $new_signin_activity,
+            app_name            => 'it will be overwritten by request->app->{name}',
         }};
-    my $result = BOM::Event::Actions::User::login($args)->get;
+
+    my $result = $action_handler->($args)->get;
     is $result, 1, 'Success track result';
     my ($customer, %args) = @identify_args;
     test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
@@ -108,20 +111,21 @@ subtest 'login event' => sub {
             ip                  => '127.0.0.1',
             location            => 'Germany',
             new_signin_activity => $new_signin_activity,
+            app_name            => '',
         }
         },
         'identify context and properties is properly set.';
 
     $test_client->set_default_account('EUR');
 
-    ok BOM::Event::Actions::User::login($args), 'successful login track after setting currency';
+    ok $action_handler->($args)->get, 'successful login track after setting currency';
     ($customer, %args) = @track_args;
     test_segment_customer($customer, $test_client, 'EUR', $virtual_client->date_joined);
 
     undef @identify_args;
     undef @track_args;
     $args->{loginid} = $virtual_client->loginid;
-    ok BOM::Event::Actions::User::login($args), 'login triggered with virtual loginid';
+    ok $action_handler->($args)->get, 'login triggered with virtual loginid';
 
     ($customer, %args) = @identify_args;
     test_segment_customer($customer, $virtual_client, 'EUR', $virtual_client->date_joined);
@@ -148,7 +152,7 @@ subtest 'login event' => sub {
     $new_signin_activity = 1 if $args->{properties}->{browser} ne $new_signin_activity_args->{properties}->{browser};
     $new_signin_activity_args->{properties}->{new_signin_activity} = $new_signin_activity;
     undef @track_args;
-    $result = BOM::Event::Actions::User::login($new_signin_activity_args)->get;
+    $result = $action_handler->($new_signin_activity_args)->get;
     is $result, 1, 'Success track result';
     ($customer, %args) = @track_args;
     is_deeply \%args,
@@ -165,12 +169,59 @@ subtest 'login event' => sub {
             ip                  => '127.0.0.1',
             location            => 'Germany',
             new_signin_activity => $new_signin_activity,
+            app_name            => '',
         }
         },
         'idenify context and properties is properly set after new signin activity.';
+
+    subtest 'app name' => sub {
+        my $mocked_oauth = Test::MockModule->new('BOM::Database::Model::OAuth');
+        $mocked_oauth->mock(
+            get_app_by_id => sub {
+                my ($self, $app_id) = @_;
+
+                return undef unless $app_id;
+                return {
+                    id   => $app_id,
+                    name => "in the name of $app_id",
+                };
+            });
+        $req = BOM::Platform::Context::Request->new(
+            brand_name => 'deriv',
+            language   => 'id',
+            app_id     => 100
+        );
+        request($req);
+
+        $result = $action_handler->($args)->get;
+        is $result, 1, 'Success track result';
+        ($customer, %args) = @track_args;
+        ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
+        is_deeply \%args,
+            {
+            context => {
+                active => 1,
+                app    => {name => 'deriv'},
+                locale => 'id'
+            },
+            event      => 'login',
+            properties => {
+                browser             => 'chrome',
+                device              => 'Mac OS X',
+                ip                  => '127.0.0.1',
+                location            => 'Germany',
+                new_signin_activity => 0,
+                app_name            => 'in the name of 100',
+            }
+            },
+            'App name matches request->app_id.';
+
+        $mocked_oauth->unmock_all;
+        }
 };
 
 subtest 'user profile change event' => sub {
+    my $action_handler = BOM::Event::Process::get_action_mappings()->{profile_change};
     my $virtual_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
         email       => 'test3@bin.com',
@@ -213,7 +264,7 @@ subtest 'user profile change event' => sub {
     undef @identify_args;
     undef @track_args;
     my $segment_response = Future->done(1);
-    my $result           = BOM::Event::Actions::User::profile_change($args)->get;
+    my $result           = $action_handler->($args)->get;
     is $result, 1, 'Success profile_change result';
     my ($customer, %args) = @identify_args;
     test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
