@@ -137,7 +137,7 @@ sub run {
             }
         };
         last LOOP unless $key;
-        my $current_eco_cache_epoch = $redis_pricer->get('economic_events_cache_snapshot');
+        my $current_eco_cache_epoch = BOM::Config::Redis::redis_replicated_read()->get('economic_events_cache_snapshot');
         if ($current_eco_cache_epoch and $eco_snapshot != $current_eco_cache_epoch) {
             Volatility::LinearCache::clear_cache();
             $eco_snapshot = $current_eco_cache_epoch;
