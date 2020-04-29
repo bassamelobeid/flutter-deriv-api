@@ -11,6 +11,9 @@ table#client_edit td{
     text-transform:uppercase;
     vertical-align:top;
 }
+.invalid{
+    color: #FF0000;
+}
 .small_header{
     background:#ffffff;
     text-transform:uppercase;
@@ -45,9 +48,50 @@ table#client_edit td{
 }
 </style>
 
+<script>
+var validation_info = {
+[% FOREACH field IN text_validation_info.keys %]
+    [% field %]: {
+        [% pattern = text_validation_info.$field.pattern %]
+        pattern: String.raw`[% pattern.replace('`', '\`') %]`,
+        message: "[% text_validation_info.$field.message %]",
+        is_valid: [% IF text_validation_info.$field.is_valid %] 1 [% ELSE %] 0 [% END %],
+    },
+[% END %]
+};
+
+function escape_regex(s) {
+    return s.replace(/[\/\\^\$*+?.()|[\]{}]/g, '\\\$&');
+}
+
+function init_text_validations() {
+    for (let field in validation_info) {
+        let search = document.getElementsByName(field);
+        if (!search) {
+            console.log(`Error initializing text validations: element \${field} not found`);
+            continue;
+        }
+        let element = search[0];
+        // an extra \ added by backend code for escaping the raw string quotation mark is removed here (otherwise regex validation will break)
+        let pattern =  validation_info[field].pattern.replace("\\`", "`");
+
+        if (!validation_info[field].is_valid){
+            element.classList.add('invalid');
+        }
+        
+        let value = escape_regex(element.value);
+        // let the current value be accepted anyway
+        element.pattern = `^\${value}\$|\${pattern}`;
+        element.title = validation_info[field].message;
+    }
+};
+
+window.addEventListener('DOMContentLoaded', init_text_validations, false);
+</script>
+
 [% yes_no_options = [{value => 1, text => 'yes'} {value => 0, text => 'no'}] %]
 
-<table border="0" width="100%" id="client_edit">
+<table border="0" width="100%" id="client_edit" onload="init_text_validations()">
     <tr>
         <td class="label">Email</td>
         <td>: <b>[% client.email %]</b> (To edit client's email, <a href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) | none %]">click here</a>) </td>

@@ -425,6 +425,37 @@ if ($input{delete_existing_192}) {
 # SAVE DETAILS
 # TODO:  Once we switch to userdb, we will not need to loop through all clients
 if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
+    my $error;
+    # algorithm provide different encrypted string from the same text based on some randomness
+    # so we update this encrypted field only on value change - we don't want our trigger log trash
+    my $secret_answer = '';
+    try {
+        $secret_answer = BOM::User::Utility::decrypt_secret_answer($client->secret_answer) // '';
+    }
+    catch {
+        print qq{<p style="color:red">ERROR: Unable to extract secret answer. Client secret answer is outdated or invalid.</p>};
+    }
+
+    my $text_validation_info = client_text_field_validation_info(
+        $client,
+        secret_answer => $secret_answer,
+        %input
+    );
+
+    # only validate non-empty values
+    for my $key (keys %$text_validation_info) {
+        if ($input{$key}) {
+            my $info = $text_validation_info->{$key};
+            my $old_value = ($key eq 'secret_answer') ? $secret_answer : $client->$key;
+
+            # if value is not changed, ignore validation result
+            if ($old_value ne $input{$key} and not $info->{is_valid}) {
+                print qq{<p style="color:red">ERROR: <b>$info->{name}</b> validation failed: $info->{message}</p>};
+                $error = 1;
+            }
+        }
+    }
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]) if ($error);
 
     _assemble_dob_input({
         client => $client,
@@ -550,9 +581,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     }
 
 # Prior to duplicate check and storing, strip off trailing and leading whitespace
-
-    my $error = $client->format_input_details(\%input)
-        || $client->validate_common_account_details(\%input);
+    $error = $client->format_input_details(\%input)
+        || $client->validate_common_account_details({
+            secret_answer => $secret_answer // '',
+            %input
+        });
     if ($error) {
         my $message = $error->{error};
         code_exit_BO("<p style='color:red; font-weight:bold;'>ERROR: $message </p><p><a href='$self_href'>&laquo;Return to Client Details</a></p>");
@@ -718,19 +751,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             next CLIENT_KEY
                 unless update_needed($client, $cli, $key, \%clients_updated);
             if ($key eq 'secret_answer') {
-
-# algorithm provide different encrypted string from the same text based on some randomness
-# so we update this encrypted field only on value change - we don't want our trigger log trash
-
-                my $secret_answer;
-                try {
-                    $secret_answer = BOM::User::Utility::decrypt_secret_answer($cli->secret_answer);
-                }
-                catch {
-                    print qq{<p style="color:red">ERROR: Unable to extract secret answer. Client secret answer is outdated or invalid.</p>};
-                    $secret_answer = '';
-                }
-
                 $cli->secret_answer(BOM::User::Utility::encrypt_secret_answer($input{$key}))
                     if ($input{$key} ne $secret_answer);
 

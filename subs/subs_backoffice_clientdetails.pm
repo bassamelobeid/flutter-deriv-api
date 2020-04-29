@@ -323,6 +323,7 @@ sub print_client_details {
         onfido_check_url                   => $onfido_check->{results_uri} // '',
         onfido_resubmission                => $onfido_allow_resubmission_flag,
         is_client_in_onfido_country        => is_client_in_onfido_country($client) // 1,
+        text_validation_info               => client_text_field_validation_info($client, secret_answer => $secret_answer),
         aml_risk_levels                    => [get_aml_risk_classicications()],
         is_staff_compliance                => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
     };
@@ -1149,13 +1150,13 @@ sub get_client_details {
     catch {}
 
         if (!$client) {
-        my $error_message =
+        my $message =
             $well_formatted
             ? "Client [$encoded_loginid] not found."
             : "Invalid loginid provided.";
 
         code_exit_BO(
-            qq[<p>ERROR: $error_message </p>
+            qq[<p>ERROR: $message </p>
             <form action="$self_post" method="get">
             Try Again: <input type="text" name="loginID" value="$encoded_loginid"></input>
             </form>]
@@ -1335,6 +1336,92 @@ sub get_fiat_login_id_for {
         });
 
     return %fiat_details;
+}
+
+=head2 client_text_field_validation_info
+
+Returns a hash-ref representing information about validation of client's free text profile fields,
+containing a regex pattern, an error message, a name (display name) and a validation result (is_valid) 
+for each field. It takes following args:
+    
+=over 1
+
+=item C<client>: client object to take values form
+
+=item C<args>: a collection of named arguments, values of which override C<client>'s attributes 
+(used for letting input values be validated before they are saved to the C<client> object, 
+and dealing with the special field C<secret_answer>, whose value cannot be read directly from client object).
+
+=back
+
+=cut
+
+sub client_text_field_validation_info {
+    my ($client, %args) = @_;
+
+    my %validations = (
+        first_name => {
+            pattern => q/^[\p{L}\s`"'.-]{2,50}$/,
+            message => 'Within 2-50 characters, use only letters, spaces, hyphens, full-stops or apostrophes.',
+            name    => 'First Name',
+        },
+        last_name => {
+            pattern => q/^[\p{L}\s`'.-]{2,50}$/,
+            message => 'Within 2-50 characters, use only letters, spaces, hyphens, full-stops or apostrophes.',
+            name    => 'Last Name',
+
+        },
+        address_1 => {
+            pattern => q/^[\p{L}\p{Nd}\s'.,:;()@#\/-]{1,70}$/,
+            message => 'Within 70 characters, Only letters, numbers, space, and these special characters are allowed: - . \' # ; : ( ) , @ /',
+            name    => 'Address 1',
+        },
+        address_2 => {
+            pattern => q/^[\p{L}\p{Nd}\s'.,:;()@#\/-]{0,70}$/,
+            message => 'Within 70 characters, Only letters, numbers, space, and these special characters are allowed: - . \' # ; : ( ) , @ /',
+            name    => 'Address 2',
+        },
+        city => {
+            pattern => q/^[\p{L}\s'.-]{1,35}$/,
+            message => 'Within 35 characters, use only letters, spaces, hyphens, full-stops or apostrophes',
+            name    => 'City/Town',
+        },
+        postcode => {
+            pattern => q/^[\w\s-]{0,20}$/,
+            message => 'Within 20 characters, use only letters, spaces, underscore or hyphens',
+            name    => 'Postal Code',
+        },
+        tax_identification_number => {
+            pattern => q/^[\w\-\/. ]{0,20}$/,
+            message => 'Within 20 characters, use only letters, space and these characters: - _ . /',
+            name    => 'Tax Identification Number',
+        },
+        # secrete question could be limitted to the values accepted by websocket API,
+        # but in backoffice it's still a free text field.
+        secret_question => {
+            pattern => q/^[\w\-,.' ]{4,50}$/,
+            message => 'Within 4 to 50 characters, use only letters, numbers, space, hyphen, period, and apostrophe.',
+            name    => 'Secret Question',
+        },
+        secret_answer => {
+            pattern => q/^[\w\-,.' ]{4,50}$/,
+            message => 'Within 4 to 50 characters, use only letters, numbers, space, hyphen, period, and apostrophe.',
+            name    => 'Secret Answer',
+        },
+        restricted_ip_address => {
+            pattern => q/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
+            message => 'Four integers separated by dots, like 172.154.22.22',
+            name    => 'Ip Security',
+        });
+
+    for my $field (keys %validations) {
+        my $value = $args{$field} // $client->$field // '';
+
+        # empty values are accepted in backoffice
+        $validations{$field}->{is_valid} = (not $value or $value =~ m/$validations{$field}->{pattern}/);
+    }
+
+    return \%validations;
 }
 
 sub get_aml_risk_classicications {
