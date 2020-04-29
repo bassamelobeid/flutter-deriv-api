@@ -194,7 +194,7 @@ sub _regenerate {
     my $events = shift;
 
     # signal pricer to refresh cache
-    my $redis = BOM::Config::Redis::redis_pricer;
+    my $redis = BOM::Config::Redis::redis_replicated_write();
     $redis->set('economic_events_cache_snapshot', time);
 
     # update economic events impact curve with the newly added economic event
