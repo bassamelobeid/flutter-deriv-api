@@ -2183,7 +2183,7 @@ subtest 'suspend_buy & suspend_trades' => sub {
         foreach my $type (
             ['quants.underlyings.suspend_trades',    [$underlying->symbol]],
             ['quants.markets.suspend_trades',        [$underlying->market->name]],
-            ['quants.contract_types.suspend_trades', ['CALL']])
+            ['quants.contract_types.suspend_trades', ['CALL', 'PUT']])
         {
             my ($to_suspend, $data) = @$type;
             my $now      = Date::Utility->new();
