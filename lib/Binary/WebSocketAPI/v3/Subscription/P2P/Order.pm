@@ -26,7 +26,7 @@ has broker => (
     required => 1,
     isa      => sub {
         ;
-        die "brocker can only be a string which contains 2-4 chars: $_[0]" unless $_[0] =~ /^\w{2,4}$/;
+        die "broker can only be a string which contains 2-4 chars: $_[0]" unless $_[0] =~ /^\w{2,4}$/;
     });
 
 has loginid => (
@@ -39,7 +39,7 @@ has currency => (
     required => 1,
     isa      => sub {
         ;
-        die "currency can only be a string which contains 3 chars: $_[0]" unless $_[0] =~ /^\w{3,}$/;
+        die "currency can only be a string containing 2-20 letters and numbers: $_[0]" unless $_[0] =~ /^[a-zA-Z0-9]{2,20}$/;
     });
 
 has country => (
