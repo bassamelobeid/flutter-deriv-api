@@ -62,14 +62,6 @@ use BOM::User::Onfido;
 use constant DEFAULT_STATEMENT_LIMIT              => 100;
 use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
 
-use constant POA_DOCUMENTS_TYPE => qw(
-    proofaddress payslip bankstatement cardstatement
-);
-
-use constant POI_DOCUMENTS_TYPE => qw(
-    proofid driverslicense passport
-);
-
 use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
 
 my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers/;

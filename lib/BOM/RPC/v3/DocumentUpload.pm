@@ -13,6 +13,10 @@ use base qw(Exporter);
 
 use BOM::RPC::Registry '-dsl';
 
+use List::MoreUtils qw(none);
+
+use BOM::User::Client;
+
 our @EXPORT_OK = qw(MAX_FILE_SIZE);
 
 use constant MAX_FILE_SIZE => 8 * 2**20;
@@ -41,13 +45,20 @@ sub start_document_upload {
         $client->set_db('write');
     }
 
+    my %NEW_DOCUMENT_TYPE_MAPPING = (
+        driverslicense => 'driving_licence',
+        proofid        => 'national_identity_card',
+        proofaddress   => 'utility_bill',
+    );
+    my $document_type = $NEW_DOCUMENT_TYPE_MAPPING{$args->{document_type}} // $args->{document_type};
+
     my $upload_info;
     try {
         $upload_info = $client->db->dbic->run(
             ping => sub {
                 $_->selectrow_hashref(
                     'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)', undef,
-                    $client->loginid,                                                           $args->{document_type},
+                    $client->loginid,                                                           $document_type,
                     $args->{document_format}, $args->{expiration_date} || undef,
                     $args->{document_id} || '', $args->{expected_checksum},
                     '', $args->{page_type} || '',
@@ -131,10 +142,13 @@ sub validate_id_and_exp_date {
     my $args          = shift;
     my $document_type = $args->{document_type};
 
+    return if not $document_type;
+
     # The fields expiration_date and document_id are only required for certain
     #   document types, so only do this check in these cases.
-
-    return if not $document_type or $document_type !~ /^passport|proofid|driverslicense$/;
+    my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
+    my @poi_doctypes        = @{$doc_type_categories{POI}{doc_types_appreciated}};
+    return if none { $_ eq $document_type } @poi_doctypes;
 
     return 'missing_exp_date' if not $args->{expiration_date};
     return 'missing_doc_id'   if not $args->{document_id};
