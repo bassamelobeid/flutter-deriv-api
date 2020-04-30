@@ -60,20 +60,30 @@ use Carp qw(croak);
 
 use Log::Any qw($log);
 
-# ideally we should have document category table
-# but that does not exists so using constant type
-use constant PROOF_OF_ADDRESS_DOCUMENT_TYPES => qw(
-    proofaddress payslip bankstatement cardstatement
-);
-
-use constant PROOF_OF_IDENTITY_DOCUMENT_TYPES => qw(
-    proofid driverslicense passport driving_licence national_identity_card
-);
-
-# poi document types no longer used
-use constant PROOF_OF_IDENTITY_DOCUMENT_TYPES_DEPRECATED => qw(
-    selfie_with_id vf_id vf_face_id
-);
+sub DOCUMENT_TYPE_CATEGORIES {
+    my %document_type_categories = (
+        POI => {
+            doc_types =>
+                [qw(passport proofid driverslicense driving_licence national_identity_card vf_face_id vf_id photo live_photo selfie_with_id)],
+            doc_types_appreciated => [qw(passport national_identity_card driving_licence proofid driverslicense)],
+        },
+        POA => {
+            doc_types => [qw(vf_poa proofaddress utility_bill bankstatement cardstatement)],
+        },
+        Funds => {
+            doc_types => [qw(payslip tax_receipt employment_contract)],
+        },
+        Checks => {
+            doc_types => [qw(amlglobalcheck docverification)],
+        },
+        Declarations => {
+            doc_types => [qw(power_of_attorney code_of_conduct)],
+        },
+        Other => {
+            doc_types => [qw(other professional_eu_qualified_investor professional_uk_high_net_worth professional_uk_self_certified_sophisticated)],
+        });
+    return %document_type_categories;
+}
 
 use constant P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60;    # 2 hours
 
@@ -557,9 +567,10 @@ sub documents_uploaded {
             # so better to not consider that
             next if defined $single_document->status and $single_document->status eq 'uploading';
 
-            my $type = 'other';
-            $type = 'proof_of_identity' if (first { $_ eq $single_document->document_type } PROOF_OF_IDENTITY_DOCUMENT_TYPES);
-            $type = 'proof_of_address'  if (first { $_ eq $single_document->document_type } PROOF_OF_ADDRESS_DOCUMENT_TYPES);
+            my $type                = 'other';
+            my %doc_type_categories = DOCUMENT_TYPE_CATEGORIES();
+            $type = 'proof_of_identity' if (first { $_ eq $single_document->document_type } @{$doc_type_categories{POI}{doc_types_appreciated}});
+            $type = 'proof_of_address'  if (first { $_ eq $single_document->document_type } qw(proofaddress payslip bankstatement cardstatement));
 
             $documents{$type}{documents}{$single_document->file_name} = $doc_structure->($single_document);
 
