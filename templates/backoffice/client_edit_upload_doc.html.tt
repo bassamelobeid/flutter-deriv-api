@@ -17,9 +17,9 @@
   <td>File [% n %]:</td>
   <td><select name="doctype_[% n %]" id="doctype_[% n %]" onchange="doc_type_changed([% n %])")">
     <option value="passport">Passport</option>
-    <option value="proofid">ID</option>
-    <option value="driverslicense">Drivers License</option>
-    <option value="proofaddress">Proof of Address</option>
+    <option value="national_identity_card">National ID</option>
+    <option value="driving_licence">Driving License</option>
+    <option value="utility_bill">Utility Bill</option>
     <option value="bankstatement">Bank statement</option>
     <option value="power_of_attorney">Power of attorney</option>
     <option value="amlglobalcheck">AML Global Check</option>

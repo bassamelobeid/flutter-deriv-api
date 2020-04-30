@@ -73,9 +73,10 @@ use constant INTERNAL_TRANSFER_FIAT_CRYPTO_PREFIX => 'INTERNAL::TRANSFER::FIAT::
 
 my %details = get_client_details(\%input, 'backoffice/f_clientloginid_edit.cgi');
 
-my @expirable_doctypes = (BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES, BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES_DEPRECATED);
-my @poi_doctypes       = BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES;
-my @no_date_doctypes   = qw(other);
+my %doc_types_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
+my @expirable_doctypes   = @{$doc_types_categories{POI}{doc_types}};
+my @poi_doctypes         = @{$doc_types_categories{POI}{doc_types_appreciated}};
+my @no_date_doctypes     = qw(other);
 
 my $client          = $details{client};
 my $user            = $details{user};

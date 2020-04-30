@@ -41,9 +41,41 @@ A spot to place subroutines that might be useful for various client related oper
 use constant ONFIDO_REPORT_KEY_PREFIX             => 'ONFIDO::REPORT::ID::';
 use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
 
-my @expirable_doctypes = (BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES, BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES_DEPRECATED);
-my @poi_doctypes       = BOM::User::Client::PROOF_OF_IDENTITY_DOCUMENT_TYPES;
-my @no_date_doctypes   = qw(other);
+my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
+my @expirable_doctypes  = @{$doc_type_categories{POI}{doc_types}};
+my @poi_doctypes        = @{$doc_type_categories{POI}{doc_types_appreciated}};
+my @no_date_doctypes    = qw(other);
+
+sub get_document_type_category_mapping {
+    my %type_category_mapping;
+    foreach my $category (keys %doc_type_categories) {
+        my $category_index = 100;
+        my $category_title = "Other";
+        if ($category eq "POI") {
+            $category_index = 1;
+            $category_title = "POI (Proof of Identity)";
+        } elsif ($category eq "POA") {
+            $category_index = 2;
+            $category_title = "POA (Proof of Address)";
+        } elsif ($category eq "Funds") {
+            $category_index = 3;
+            $category_title = "Source of Funds / Wealth";
+        } elsif ($category eq "Checks") {
+            $category_index = 4;
+            $category_title = "Checks";
+        } elsif ($category eq "Declarations") {
+            $category_index = 5;
+            $category_title = "Declarations";
+        }
+        foreach my $doc_type (@{$doc_type_categories{$category}{doc_types}}) {
+            $type_category_mapping{$doc_type} = {
+                index => $category_index,
+                title => $category_title,
+            };
+        }
+    }
+    return %type_category_mapping;
+}
 
 sub get_currency_options {
     # we need to prioritise based on the following list, since BO users mostly use them
@@ -608,14 +640,15 @@ sub date_html {
 ##############################################################
 sub show_client_id_docs {
     my ($loginid, %args) = @_;
-    my $show_delete          = $args{show_delete};
-    my $extra                = $args{no_edit} ? 'disabled' : '';
-    my $links                = '';
-    my %doc_types_categories = _get_document_types_categories();
+    my $show_delete = $args{show_delete};
+    my $extra       = $args{no_edit} ? 'disabled' : '';
+    my $links       = '';
 
     return unless $loginid;
 
     return '' if $loginid =~ /^MT[DR]?/;
+
+    my %doc_types_categories = get_document_type_category_mapping();
 
     my $dbic = BOM::Database::ClientDB->new({
             client_loginid => $loginid,
@@ -1476,72 +1509,6 @@ sub check_update_needed {
     return $client_checked->broker eq $client->broker
         if ($sync_scope{$key} eq 'lc');
     die "don't know the scope $sync_scope{$key}";
-}
-
-=head2 _get_document_types_categories
-
-Description: get document types as hash
-
-=back
-
-return hash of doc_types_categories
-
-=cut
-
-sub _get_document_types_categories {
-    my %categories = (
-        POI => {
-            index => 1,
-            title => "POI (Proof of Identity)"
-        },
-        POA => {
-            index => 2,
-            title => "POA (Proof of Address)"
-        },
-        Funds => {
-            index => 3,
-            title => "Source of funds / wealth"
-        },
-        Checks => {
-            index => 4,
-            title => "Checks"
-        },
-        Declarations => {
-            index => 5,
-            title => "Declarations"
-        },
-        Other => {
-            index => 10,
-            title => "Other"
-        });
-
-    my %doc_types_categories = (
-        passport                                     => $categories{POI},
-        proofid                                      => $categories{POI},
-        driverslicense                               => $categories{POI},
-        driving_licence                              => $categories{POI},
-        national_identity_card                       => $categories{POI},
-        vf_face_id                                   => $categories{POI},
-        vf_id                                        => $categories{POI},
-        photo                                        => $categories{POI},
-        live_photo                                   => $categories{POI},
-        selfie_with_id                               => $categories{POI},
-        vf_poa                                       => $categories{POA},
-        proofaddress                                 => $categories{POA},
-        bankstatement                                => $categories{POA},
-        payslip                                      => $categories{Funds},
-        tax_receipt                                  => $categories{Funds},
-        employment_contract                          => $categories{Funds},
-        amlglobalcheck                               => $categories{Checks},
-        docverification                              => $categories{Checks},
-        power_of_attorney                            => $categories{Declarations},
-        code_of_conduct                              => $categories{Declarations},
-        professional_eu_qualified_investor           => $categories{Other},
-        professional_uk_high_net_worth               => $categories{Other},
-        professional_uk_self_certified_sophisticated => $categories{Other},
-        other                                        => $categories{Other},
-    );
-    return %doc_types_categories;
 }
 
 1;
