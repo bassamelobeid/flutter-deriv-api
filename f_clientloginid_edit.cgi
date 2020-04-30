@@ -269,12 +269,13 @@ if ($input{whattodo} eq 'uploadID') {
         my $is_expirable = any { $_ eq $doctype } @expirable_doctypes;
         my $no_date_doc  = any { $_ eq $doctype } @no_date_doctypes;
 
-        my $filetoupload    = $cgi->upload('FILE_' . $i);
-        my $page_type       = $cgi->param('page_type_' . $i);
-        my $issue_date      = $is_expirable || $no_date_doc ? undef : $cgi->param('issue_date_' . $i);
-        my $expiration_date = !$is_expirable || $no_date_doc ? undef : $cgi->param('expiration_date_' . $i);
-        my $document_id     = $input{'document_id_' . $i} // '';
-        my $comments        = $input{'comments_' . $i} // '';
+        my $filetoupload                = $cgi->upload('FILE_' . $i);
+        my $page_type                   = $cgi->param('page_type_' . $i);
+        my $issue_date                  = $is_expirable || $no_date_doc ? undef : $cgi->param('issue_date_' . $i);
+        my $expiration_date             = !$is_expirable || $no_date_doc ? undef : $cgi->param('expiration_date_' . $i);
+        my $document_id                 = $input{'document_id_' . $i} // '';
+        my $comments                    = $input{'comments_' . $i} // '';
+        my $is_expiration_date_optional = $cgi->param('is_expiration_date_optional_' . $i) eq "on";
 
         next unless $filetoupload;
 
@@ -295,7 +296,7 @@ if ($input{whattodo} eq 'uploadID') {
             code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
         }
 
-        if ($is_poi and not $expiration_date) {
+        if ($is_poi and not $expiration_date and not $is_expiration_date_optional) {
             print qq[<p style="color:red; font-weight:bold;">Expiration date is missing for the POI document $doctype.</p>];
             code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
         }

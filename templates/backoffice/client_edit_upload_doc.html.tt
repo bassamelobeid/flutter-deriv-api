@@ -50,7 +50,9 @@
   <td align="right">
     <div id="expiration_date_div_[% n %]" anch>
       Expiration date:
-      <label name="doc_field_required_[% n %]">*</label>
+      <span name="doc_field_required_[% n %]">
+      <input type="checkbox" name="is_expiration_date_optional_[% n %]" onClick="check_is_expiration_date_optional([% n %])" title="Make optional" style="vertical-align:middle;margin:0;padding:0">
+      <label id="required_star_[% n %]">*</label></span>
       <input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick">
     </div>
     <div id="issue_date_div_[% n %]" style="display:none">
@@ -99,7 +101,11 @@ function doc_type_changed(i){
   
   let req_elements = document.getElementsByName('doc_field_required_'+i);
   for (let i = 0; i < req_elements.length; i++)
-      req_elements[i].innerHTML = is_poi_doc? '*': '';
+      req_elements[i].style.display = is_poi_doc ? 'inline': 'none';
+}
+
+function check_is_expiration_date_optional(i){
+   document.getElementById('required_star_' + i).innerHTML = document.getElementsByName('is_expiration_date_optional_' + i)[0].checked ? '': '*';
 }
 
 function file_size_validation(file) {
@@ -146,6 +152,7 @@ function validate_document_info() {
     let is_poi_doc = doc_type.match(regex_poi);
     let is_expirable_doc = doc_type.match(regex_expirable);
     let is_no_date_doc = doc_type.match(regex_no_date);
+    let is_expiration_date_optional = document.getElementsByName('is_expiration_date_optional_' + i)[0].checked;
     
     
     // Check if file uploaded (if not, proceed to next file)
@@ -175,9 +182,9 @@ function validate_document_info() {
         file_comments_errors += "Document ID is required.\n";
       }
     
-      if(!expiry_date)
+      if (!expiry_date && !is_expiration_date_optional)
         file_comments_errors += "Expiry date is required.\n";
-      else
+      if (expiry_date)
         file_comments_errors += validate_expiry_date(expiry_date);
     }
     else if (is_expirable_doc && expiry_date){
