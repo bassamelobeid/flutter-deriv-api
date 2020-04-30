@@ -58,9 +58,9 @@ sub execute {
         if (ref($passed) and $passed->{status_code}) {    # Plack::Response
             return $passed unless $c->type =~ 'validate';
             # validate
-            return {
-                allowed => 0,
-                message => $passed->{error}};
+            $passed->{allowed} = 0;
+            $passed->{message} = delete $passed->{error};
+            return $passed;
         }
         return {allowed => 1} if $c->type =~ 'validate';
     }
