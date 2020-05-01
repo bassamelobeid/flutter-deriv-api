@@ -96,7 +96,7 @@ my $is_internal_payment = any { $payment_type eq $_ } qw( bank_money_transfer ex
 
 my $clerk = BOM::Backoffice::Auth0::get_staffname();
 
-unless ($curr =~ /^[A-Z]{3}$/ && LandingCompany::Registry::get_currency_type($curr)) {
+unless ($curr =~ /^[a-zA-Z0-9]{2,20}$/ && LandingCompany::Registry::get_currency_type($curr)) {
     print "Invalid currency, please check: " . encode_entities($curr);
     code_exit_BO();
 }

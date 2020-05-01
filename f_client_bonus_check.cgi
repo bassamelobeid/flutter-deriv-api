@@ -301,7 +301,7 @@ Returns an hashref
           'expiry_date' => 'Date::Utility',
           'code' => promo_code string ,
           'config' => { Perl Representaion of promo_code_config field
-                        'currency' => string 3 letter code,
+                        'currency' => alphanumeric with length of two or more,
                         'country' => Country that bonus applies to ,
                         'amount' => amount to credit account
                       }

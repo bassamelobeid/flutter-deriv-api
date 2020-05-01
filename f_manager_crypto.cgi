@@ -70,7 +70,7 @@ my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 my $dbic = $clientdb->db->dbic;
 
 code_exit_BO("Invalid currency.")
-    if $currency !~ /^[A-Z]{3}$/;
+    if $currency !~ /^[a-zA-Z0-9]{2,20}$/;
 
 my $currency_wrapper = BOM::CTC::Currency->new(
     currency_code => $currency,
