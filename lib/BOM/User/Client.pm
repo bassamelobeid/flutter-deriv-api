@@ -40,6 +40,7 @@ use BOM::User::Phone;
 use BOM::User::FinancialAssessment qw(is_section_complete decode_fa);
 use BOM::User::Utility;
 use BOM::Platform::Event::Emitter;
+use BOM::Database::UserDB;
 use BOM::Database::DataMapper::Account;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
@@ -53,6 +54,7 @@ use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
 use BOM::Database::ClientDB;
 
+use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Client::CashierValidation;
 
@@ -86,6 +88,11 @@ sub DOCUMENT_TYPE_CATEGORIES {
 }
 
 use constant P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60;    # 2 hours
+
+use constant {
+    MT5_REGEX     => qr/^MT[DR]?(?=\d+$)/,
+    VIRTUAL_REGEX => qr/^VR/,
+};
 
 # this email address should not be added into brand as it is specific to internal system
 my $SUBJECT_RE = qr/(New Sign-Up|Update Address)/;
@@ -337,7 +344,7 @@ sub get_objects_from_sql {
     return [map { bless $_, $class } @$clients];
 }
 
-sub is_virtual { return shift->broker =~ /^VR/ }
+sub is_virtual { return shift->broker =~ VIRTUAL_REGEX }
 
 sub has_funded { return shift->first_funded_date ? 1 : 0 }
 
@@ -940,6 +947,18 @@ sub is_first_deposit_pending {
     my $self = shift;
     # we need to ignore free gift as its payment done manually by marketing
     return !$self->is_virtual && !$self->has_deposits({exclude => ['free_gift']});
+}
+
+=head2 is_mt5
+
+Returns 1 if this is an MT5 account.
+Returns 0 if this isn't an MT5 account
+
+=cut
+
+sub is_mt5 {
+    my $self = shift;
+    return $self->loginid =~ MT5_REGEX;
 }
 
 sub has_mt5_deposits {
@@ -3512,6 +3531,71 @@ sub has_siblings {
     my $self = shift;
 
     return scalar(@{$self->siblings()}) > 0;
+}
+
+=head2 anonymize_client
+
+Anonymizes the client
+
+=head2 Usage Caution
+
+**NOTE:** Be careful to use this function it clears client data from all databases and it is irreversible action.
+
+=cut
+
+sub anonymize_client {
+    my $self = shift;
+
+    $self->db->dbic->run(
+        fixup => sub {
+            $_->do('SELECT * FROM betonmarkets.client_anonymization(?)', undef, $self->loginid);
+        });
+}
+
+=head2 remove_client_authentication_docs_from_S3
+
+Removes the client authentication documents from s3
+
+=cut
+
+sub remove_client_authentication_docs_from_S3 {
+    my $self = shift;
+
+    my $docs = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(<<'SQL', undef, $self->loginid);
+SELECT file_name
+FROM betonmarkets.client_authentication_document
+WHERE client_loginid = ?
+SQL
+        });
+    if ($docs) {
+        my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
+        foreach my $doc (@$docs) {
+            my $filename = $doc->[0];
+            $s3_client->delete($filename);
+        }
+    }
+}
+
+=head2 anonymize_associated_user_return_list_of_siblings
+
+Anonymize the associated user for this client and returns a list of siblings loginids
+
+=head2 Usage Caution
+
+**NOTE:** Be careful to use this function, it clears the client associated user data from all databases and it is irreversible action.
+
+=cut
+
+sub anonymize_associated_user_return_list_of_siblings {
+    my $self = shift;
+
+    # Get list of loginids for a userid
+    return BOM::Database::UserDB::rose_db()->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT * FROM users.user_anonymization(?)", {Slice => {}}, $self->loginid);
+        })->@*;
 }
 
 1;

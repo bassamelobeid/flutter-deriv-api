@@ -720,4 +720,28 @@ sub daily_transfer_count {
     return $redis->get($redis_key) // 0;
 }
 
+=head2 valid_to_anonymize
+
+Determines if the user is valid to anonymize or not.
+
+Returns 1 if the user is valid to anonymize
+Returns 0 otherwise
+
+=cut
+
+sub valid_to_anonymize {
+    my $self = shift;
+
+    my $result = BOM::Database::ClientDB->new({
+            broker_code => 'FOG',
+            operation   => 'collector',
+        }
+        )->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT users.ck_user_valid_to_anonymize(?)', undef, $self->id);
+        });
+
+    return $result->{ck_user_valid_to_anonymize};
+}
+
 1;
