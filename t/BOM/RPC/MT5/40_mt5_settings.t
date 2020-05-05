@@ -195,7 +195,7 @@ subtest 'password check' => sub {
 
     $params->{args}{password} = "wrong";
     $c->call_ok($method, $params)->has_error('error for mt5_password_check wrong password')
-        ->error_message_like(qr/Forgot your password/, 'error code for mt5_password_check wrong password');
+        ->error_code_is('InvalidPassword', 'error code for mt5_password_check wrong password');
 
     $params->{args}{login} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_password_check wrong login')

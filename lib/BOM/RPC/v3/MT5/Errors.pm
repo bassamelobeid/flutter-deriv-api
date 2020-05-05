@@ -125,19 +125,16 @@ sub format_error {
         return BOM::RPC::v3::Utility::permission_error();
     }
 
-    my $message = $category_message_mapping{$error_code};
-    my @params;
-    my $details;
-    if (ref $options eq 'HASH') {
-        $message = $options->{message} if $options->{message} && !$message;
-        $error_code = $options->{override_code} if $options->{override_code};
-        @params = ref $options->{params} eq 'ARRAY' ? @{$options->{params}} : ($options->{params}) if exists $options->{params};
-        $details = $options->{details} if $options->{details};
+    $options //= {};
+    my $message;
+    unless ($message = $options->{message}) {
+        $message = $category_message_mapping{$error_code} // $category_message_mapping{'General'};
+        my @params = ref $options->{params} eq 'ARRAY' ? @{$options->{params}} : ($options->{params});
+        $message = localize($message, @params);
     }
+    $error_code = $options->{override_code} if $options->{override_code};
 
-    $message ||= $category_message_mapping{'General'};
-
-    return $self->_create_error($error_code, localize($message, @params), $details);
+    return $self->_create_error($error_code, $message, $options->{details});
 }
 
 =head2 _create_error
@@ -148,6 +145,7 @@ Call BOM::RPC::v3::Utility::create_error to create the common error format
 
 sub _create_error {
     my ($self, $code, $message, $details) = @_;
+
     return BOM::RPC::v3::Utility::create_error({
         code              => $code,
         message_to_client => $message,
