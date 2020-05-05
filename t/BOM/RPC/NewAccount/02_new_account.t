@@ -699,22 +699,23 @@ subtest $method => sub {
             is $client->non_pep_declaration_time, '2010-10-10 00:00:00',
                 'non_pep_declaration_time equals the value of the arg passed to test create_account';
             $client->save;
-            
+
             warning_like {
-            like exception {
-            BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code              => 'MLT',
-                email                    => $email,
-                residence                => 'cz',
-                secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
-                non_pep_declaration_time => undef,
-            }); }, 
-                qr/new row for relation "client" violates check constraint "check_non_pep_declaration_time"/, 
-                'cannot create a real client with empty non_pep_declaration_time';
-            } [qr/new row for relation "client" violates check constraint "check_non_pep_declaration_time"/], 
+                like exception {
+                    BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                        broker_code              => 'MLT',
+                        email                    => $email,
+                        residence                => 'cz',
+                        secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
+                        non_pep_declaration_time => undef,
+                    });
+                },
+                    qr/new row for relation "client" violates check constraint "check_non_pep_declaration_time"/,
+                    'cannot create a real client with empty non_pep_declaration_time';
+            }
+            [qr/new row for relation "client" violates check constraint "check_non_pep_declaration_time"/],
                 'expected database constraint violation warning';
-            
-            
+
             $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
                 broker_code              => 'MLT',
                 email                    => $email,

@@ -80,14 +80,20 @@ sub email_verification {
         $user_name = ($user->clients)[0]->last_name if $user->clients;
     }
 
-    my $brand              = request()->brand;
-    my $password_reset_url = 'https://www.'
+    my $brand = request()->brand;
+    my $password_reset_url =
+        $brand->name eq 'deriv'
+        ? 'https://' . lc($brand->website_name) . '/reset-password/'
+        : 'https://www.'
         # Redirect Binary.me and Binary Desktop to binary.me
         . ($source == 15284 || $source == 14473 ? $brand->whitelist_apps->{15284} : $website_name) . '/'
         . lc($language)
         . ($website_name =~ /champion/i ? '/lost-password.html' : '/user/lost_passwordws.html');
 
-    my $contact_url = 'https://www.' . lc($brand->website_name) . '/en/contact.html';
+    my $contact_url =
+        $brand->name eq 'deriv'
+        ? 'https://' . lc($brand->website_name) . '/contact-us'
+        : 'https://www.' . lc($brand->website_name) . '/en/contact.html';
 
     my %common_args = (
         $args->%*,
@@ -119,14 +125,17 @@ sub email_verification {
         },
         account_opening_existing => sub {
             my $subject =
-                  $brand->name eq 'deriv' ? localize('This email is taken')
+                  $brand->name eq 'deriv' ? localize('Unsuccessful Deriv account creation')
                 : $source == 1 ? localize('Duplicate email address submitted - [_1]', $website_name)
                 :                localize('Duplicate email address submitted to [_1] (powered by [_2])', $app_name, $website_name);
 
             return {
                 subject       => $subject,
                 template_name => 'account_opening_existing',
-                template_args => {%common_args},
+                template_args => {
+                    login_url => 'https://oauth.' . lc($brand->website_name) . '/oauth2/authorize?app_id=' . $source . '&brand=' . $brand->name,
+                    %common_args,
+                },
             };
         },
         payment_withdraw => sub {
