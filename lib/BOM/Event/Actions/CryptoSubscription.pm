@@ -65,6 +65,21 @@ sub set_pending_transaction {
             });
         $log->warnf("%s: Can't update the cursor to block: %s", $currency_code, $transaction->{block}) unless $cursor_result;
 
+        # for ETH at the moment we store the fee in the database we store just
+        # the estimation, to not hold the process in the withdrawal daemon waiting
+        # for the transaction to be send, we added the fee update here, so once
+        # we received the transaction by the subscription we can update with the
+        # final gas.
+        # the second condition here is more to add some performance since
+        # we don't need to update the fee for all currencies just for ETH
+        if ($transaction->{type} eq 'send' && $transaction->{fee_currency} eq 'ETH' && $transaction->{fee}) {
+            clientdb()->run(
+                ping => sub {
+                    my $sth = $_->prepare('select payment.ctc_update_transaction_fee(?, ?, ?)');
+                    $sth->execute($transaction->{hash}, $transaction->{currency}, $transaction->{fee});
+                });
+        }
+
         return undef if (!$transaction->{type} || $transaction->{type} eq 'send');
 
         # get all the payments related to the `to` address from the transaction
@@ -177,13 +192,20 @@ sub set_pending_transaction {
 }
 
 =head2 insert_new_deposit
+
 If the database already contains any transaction to the same address no matter the status
 we insert a new database row to the second deposit
+
 =over 4
+
 =item* C<transaction> transaction object L<https://github.com/regentmarkets/bom-cryptocurrency/blob/master/lib/BOM/CTC/Subscription.pm#L113-L120>
+
 =item* C<payment> payment.cryptocurrency rows related to the address
+
 =back
+
 Return 1 for no errors and 0 when error is found inserting the row to the database.
+
 =cut
 
 sub insert_new_deposit {
@@ -224,7 +246,9 @@ sub insert_new_deposit {
 }
 
 =head2 update_transaction_status_to_pending
+
 Update the status to pending in the database
+
 =cut
 
 sub update_transaction_status_to_pending {

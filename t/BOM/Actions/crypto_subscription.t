@@ -23,6 +23,7 @@ use BOM::Platform::Event::Emitter;
 use IO::Async::Loop;
 use BOM::Event::Services;
 use List::Util qw(all);
+use BOM::Test::Helper::Client qw( create_client top_up);
 
 initialize_events_redis();
 
@@ -41,6 +42,22 @@ $mock_btc->mock(
     });
 my $mock_subscription = Test::MockModule->new('BOM::Event::Actions::CryptoSubscription');
 my $mock_platform     = Test::MockModule->new('BOM::Platform::Event::Emitter');
+
+my $user = BOM::User->create(
+    email    => 'test@binary.com',
+    password => 'abcd'
+);
+
+top_up my $client = create_client('CR'), 'ETH', 10;
+
+$user->add_client($client);
+
+my $currency = BOM::CTC::Currency->new(
+    currency_code => 'ETH',
+    broker_code   => 'CR'
+);
+
+my $helper = BOM::CTC::Helper->new(client => $client);
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
 my $dbic = $clientdb->db->dbic;
@@ -261,7 +278,67 @@ subtest "change_address_status" => sub {
     my @newtx = grep { $_->{blockchain_txn} eq $transaction->{hash} } @rows;
     is @newtx, 1, "new transaction found in the database";
 
+    $transaction = {
+        currency     => 'ETH',
+        hash         => "withdrawal_test",
+        to           => ['36ob9DZcMYQkRHGFNJHjrEKP7N9RyTihHo'],
+        type         => 'send',
+        amount       => 10,
+        fee          => 0.0145288,
+        fee_currency => 'ETH',
+        block        => 10,
+    };
+
+    _insert_withdrawal_transaction($transaction);
+
+    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response, undef, "Just updating the fee for withdrawal transaction";
+
+    my $updated_transaction = _fetch_withdrawal_transaction($transaction->{hash});
+    is $updated_transaction->{fee}, $transaction->{fee};
+
 };
+
+sub _set_withdrawal_verified {
+    my ($address, $currency) = @_;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
+    $helper->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?, ?::JSONB, ?, ?)',
+                undef, $address, $currency, '{"":0}', undef, undef);
+        });
+}
+
+sub _insert_withdrawal_transaction {
+    my $transaction = shift;
+
+    my $address = @{$transaction->{to}}[0];
+
+    $helper->insert_new_withdraw($address, $transaction->{currency}, $client->loginid, $transaction->{amount}, 0);
+
+    _set_withdrawal_verified($address, $transaction->{currency});
+
+    $helper->dbic->run(
+        ping => sub { $_->selectrow_array('SELECT payment_id FROM payment.ctc_process_withdrawal(?, ?)', undef, $address, $transaction->{currency}) }
+    );
+
+    return $helper->dbic->run(
+        ping => sub {
+            my $sth = $_->prepare('UPDATE payment.cryptocurrency SET blockchain_txn = ? , status = ? WHERE address = ? AND blockchain_txn IS NULL');
+            $sth->execute($transaction->{hash}, 'PROCESSING', $address);
+        });
+}
+
+sub _fetch_withdrawal_transaction {
+    my ($blockchain_txn) = @_;
+    return $helper->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare(q{SELECT * FROM payment.cryptocurrency where blockchain_txn = ?});
+            $sth->execute($blockchain_txn);
+            return $sth->fetchrow_hashref;
+        });
+}
 
 subtest "internal_transactions" => sub {
 
