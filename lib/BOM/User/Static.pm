@@ -21,7 +21,7 @@ my $config = {
         # it will be consistent in case in future we want to send
         # these as error codes to RPC
         LoginTooManyAttempts   => 'Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.',
-        IncorrectEmailPassword => 'Incorrect email or password. Please check if you previously logged in via a social network.',
+        IncorrectEmailPassword => 'Your email and/or password is incorrect. Please check and try again. Perhaps you signed up with a social account?',
         AccountUnavailable     => 'This account is unavailable.',
         LoginDisabledDuoToSystemMaintenance =>
             'Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.',
