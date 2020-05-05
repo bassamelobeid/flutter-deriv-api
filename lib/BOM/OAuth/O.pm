@@ -439,17 +439,15 @@ sub _validate_login {
         return $err_var->("INVALID_EMAIL") unless ($email and Email::Valid->address($email));
         return $err_var->("INVALID_PASSWORD") unless $password;
 
-        my $brand_name = uc $c->stash('brand')->name;
-
         $user = BOM::User->new(email => $email);
 
-        return $err_var->("USER_NOT_FOUND_$brand_name") unless $user;
+        return $err_var->("LOGIN_ERROR") unless $user;
 
         # Prevent login if social signup flag is found.
         # As the main purpose of this controller is to serve
         # clients with email/password only.
 
-        return $err_var->("NO_SOCIAL_SIGNUP_$brand_name") if $user->{has_social_signup};
+        return $err_var->("LOGIN_ERROR") if $user->{has_social_signup};
     }
 
     if (BOM::Config::Runtime->instance->app_config->system->suspend->all_logins) {

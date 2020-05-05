@@ -42,17 +42,12 @@ my $config = {
         INVALID_PROVIDER     => "The email address you provided is already registered with your [_1] account.",
         'duplicate email' =>
             "Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.",
-        'InvalidBrand'        => "Brand is invalid.",
-        'invalid'             => "Sorry, an error occurred. Please try again later.",
-        'UNAUTHORIZED_ACCESS' => 'Sorry, your account is not authorized to access this application. Currently, only USD accounts are allowed.',
-        'SUSPICIOUS_BLOCKED'  => 'Suspicious activity detected from this device - for safety, login has been blocked temporarily.',
+        InvalidBrand        => "Brand is invalid.",
+        invalid             => "Sorry, an error occurred. Please try again later.",
+        UNAUTHORIZED_ACCESS => 'Sorry, your account is not authorized to access this application. Currently, only USD accounts are allowed.',
+        SUSPICIOUS_BLOCKED  => 'Suspicious activity detected from this device - for safety, login has been blocked temporarily.',
 
-        # brand-specific messages
-        USER_NOT_FOUND_BINARY => "Incorrect email or password. Please check if you previously logged in via a social network.",
-        USER_NOT_FOUND_DERIV  => "Your email and/or password do not match.",
-
-        NO_SOCIAL_SIGNUP_BINARY => "Incorrect email or password. Please check if you previously logged in via a social network.",
-        NO_SOCIAL_SIGNUP_DERIV  => "Your email and/or password do not match.",
+        LOGIN_ERROR => "Your email and/or password is incorrect. Please check and try again. Perhaps you signed up with a social account?",
     },
 };
 
