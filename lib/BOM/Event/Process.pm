@@ -24,6 +24,7 @@ use BOM::Event::Actions::User;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
 use BOM::Event::Actions::App;
+use BOM::Event::Utility qw(exception_logged);
 
 use Scalar::Util qw(blessed);
 
@@ -139,16 +140,21 @@ sub process {
     my $req = BOM::Platform::Context::Request->new(@req_args);
     request($req);
 
-    my $response = 0;
+    my $response      = 0;
+    my $dd_metric_key = '';
     try {
         $response = get_action_mappings()->{$event_type}->($event_to_be_processed->{details});
         $response->retain if blessed($response) and $response->isa('Future');
-        stats_inc(lc "$queue_name.processed.success");
+        $dd_metric_key = sprintf("bom.events.%s.processed.success", $queue_name);
+        stats_inc(lc $dd_metric_key);
     }
     catch {
         my $e = $@;
         $log->errorf("An error occurred processing %s: %s", $event_type, $e);
-        stats_inc(lc "$queue_name.processed.failure");
+        my @tags = ($event_type);
+        $dd_metric_key = sprintf("bom.events.%s.processed.failure", $queue_name);
+        stats_inc(lc $dd_metric_key, {tags => \@tags});
+        exception_logged();
     }
 
     return $response;

@@ -14,6 +14,7 @@ use BOM::User::Client;
 use Future::AsyncAwait;
 use Future::Utils 'fmap1';
 use BOM::MT5::User::Async;
+use BOM::Event::Utility qw(exception_logged);
 
 async sub affiliate_sync_initiated {
     my ($data)              = @_;
@@ -40,6 +41,7 @@ async sub affiliate_sync_initiated {
         }
         catch {
             $result->{error} = $@;
+            exception_logged();
         }
     }
 
@@ -77,6 +79,7 @@ async sub _populate_mt5_affiliate_to_client {
                 return {};
             }
             catch {
+                exception_logged();
                 return {err => $@};
             }
         },

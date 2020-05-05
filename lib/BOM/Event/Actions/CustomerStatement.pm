@@ -19,6 +19,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Format::Util::Numbers qw(formatnumber);
 
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
+use BOM::Event::Utility qw(exception_logged);
 
 use constant EPOCH_IN_MINUTE => 60;
 use constant EPOCH_IN_HOUR   => EPOCH_IN_MINUTE * EPOCH_IN_MINUTE;
@@ -152,6 +153,7 @@ sub _retrieve_transaction_history {
     catch {
         my $e = $@;
         $log->warn("error in selling expired contracts\ncaught error: $e");
+        exception_logged();
     }
 
     my $transactions = get_transaction_history({
@@ -191,6 +193,7 @@ sub _retrieve_transaction_history {
                     $log->warn("exception is thrown when executing shortcode_to_longcode, parameters: " . $txn->short_code . ' error: ' . $_);
                 }
                 $txn->{long_code} = localize('No information is available for this contract.');
+                exception_logged();
             }
         } else {
             $txn->{long_code} //= localize($txn->{payment_remark} // '');

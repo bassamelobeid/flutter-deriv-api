@@ -11,6 +11,7 @@ use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/financialrounding/;
 use BOM::Platform::Event::Emitter;
 use BOM::CTC::Currency;
+use BOM::Event::Utility qw(exception_logged);
 
 my $clientdb;
 my $collectordb;
@@ -151,6 +152,7 @@ sub set_pending_transaction {
                 }
                 catch {
                     $error = $@;
+                    exception_logged();
                 };
 
                 $log->warnf('Failed to emit event for currency: %s, transaction: %s, error: %s', $currency_code, $transaction->{hash}, $error)
@@ -167,6 +169,7 @@ sub set_pending_transaction {
     }
     catch {
         $log->errorf("Subscription error: %s", $@);
+        exception_logged();
         return undef;
     };
 

@@ -33,6 +33,7 @@ use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
+use BOM::Event::Utility qw(exception_logged);
 
 #TODO: Put here id for special bom-event application
 # May be better to move it to config rather than keep it here.
@@ -231,6 +232,7 @@ sub order_expired {
     catch {
         my $err = $@;
         $log->info('Fail to procces order_expired: ' . $err, $data);
+        exception_logged();
     }
 
     return 0 unless $updated_order;

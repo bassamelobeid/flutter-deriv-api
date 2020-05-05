@@ -12,6 +12,7 @@ use BOM::Database::UserDB;
 use Syntax::Keyword::Try;
 use BOM::Platform::Token::API;
 use BOM::Platform::Context;
+use BOM::Event::Utility qw(exception_logged);
 
 #load Brands object globally,
 my $BRANDS = BOM::Platform::Context::request()->brand();
@@ -106,6 +107,7 @@ sub anonymize_client {
     }
     catch {
         $log->debugf('Anonymize client failed %s.', $@);
+        exception_logged();
         _send_report_anonymization_failed($loginid, "Client anonymization failed. Please re-try or inform Backend team.");
         return undef;
     };

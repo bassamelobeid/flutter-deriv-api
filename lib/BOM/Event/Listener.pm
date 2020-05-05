@@ -11,6 +11,7 @@ use BOM::Event::Process;
 use BOM::Event::QueueHandler;
 
 use IO::Async::Loop;
+use BOM::Event::Utility qw(exception_logged);
 
 use constant SHUTDOWN_TIMEOUT => 60;
 
@@ -82,6 +83,7 @@ sub run {    ## no critic (RequireFinalReturn)
     }
     catch {
         $log->errorf('Event listener bailing out early for %s - %s', $self->queue, $@) unless $@ =~ /normal_shutdown/;
+        exception_logged() unless $@ =~ /normal_shutdown/;
     }
     finally {
         alarm(0);

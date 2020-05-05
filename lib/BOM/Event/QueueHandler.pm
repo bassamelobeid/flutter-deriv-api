@@ -23,6 +23,7 @@ use BOM::Event::Services;
 use BOM::Event::Process;
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use Log::Any qw($log);
+use BOM::Event::Utility qw(exception_logged);
 
 =head2 DEFAULT_QUEUE_WAIT_TIME
 
@@ -222,6 +223,7 @@ sub process_loop {
                             # entirely and record the details
                             $log->errorf('Bad data received in event queue %s causing exception %s - data was %s',
                                 $queue_name, $err, $self->clean_data_for_logging($event_data));
+                            exception_logged();
                             return Future->fail("bad event data - $err");
                         }
                     }
@@ -306,6 +308,7 @@ sub process_job {
     }
     catch {
         $log->errorf('Failed to process %s (data %s) - %s', $queue_name, $self->cleaned_data($event_data), $@);
+        exception_logged();
         # This one's less clear cut than other failure cases:
         # we *do* expect occasional failures from processing,
         # and normally that does not imply everything is broken.
@@ -347,6 +350,7 @@ sub clean_data_for_logging {
         $decoded_data = decode_json_utf8($event_data);
     }
     catch {
+        exception_logged();
         return "Invalid JSON format event data";
     }
     my ($loginid_key) = grep { $decoded_data->{details}->{$_} } qw( loginid client_loginid );

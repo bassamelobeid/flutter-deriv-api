@@ -53,6 +53,7 @@ use Encode qw(decode_utf8 encode_utf8);
 use Time::HiRes;
 use File::Temp;
 use Digest::MD5;
+use BOM::Event::Utility qw(exception_logged);
 
 # For smartystreets datadog stats_timing
 $Future::TIMES = 1;
@@ -298,6 +299,7 @@ async sub document_upload {
     catch {
         my $e = $@;
         $log->errorf('Failed to process Onfido application for %s : %s', $args->{loginid}, $e);
+        exception_logged();
         DataDog::DogStatsd::Helper::stats_inc("event.document_upload.failure",);
     };
 
@@ -408,6 +410,7 @@ async sub ready_for_authentication {
     catch {
         my $e = $@;
         $log->errorf('Failed to process Onfido verification for %s: %s', $args->{loginid}, $e);
+        exception_logged();
     };
 
     return;
@@ -513,6 +516,7 @@ async sub client_verification {
                             catch {
                                 my $e = $@;
                                 $log->debugf('Error updating client date of birth: %s', $e);
+                                exception_logged();
                             };
 
                             # Update applicant data
@@ -621,6 +625,7 @@ async sub client_verification {
     catch {
         my $e = $@;
         $log->errorf('Exception while handling client verification result: %s', $e);
+        exception_logged();
     };
 
     return;
@@ -664,6 +669,7 @@ async sub _store_applicant_documents {
             }
             catch {
                 $log->debugf("Error in downloading and sync document file : $@");
+                exception_logged();
             }
         }
     }
@@ -688,6 +694,7 @@ async sub _store_applicant_documents {
             }
             catch {
                 $log->debugf("Error in downloading and sync photo file : $@");
+                exception_logged();
             }
 
         }
@@ -782,6 +789,7 @@ async sub _sync_onfido_bo_document {
     catch {
         my $error = $@;
         $log->errorf("Error in creating record in db and uploading Onfido document to S3 for %s : %s", $client->loginid, $error);
+        exception_logged();
     }
 
     if ($s3_uploaded) {
@@ -806,6 +814,7 @@ async sub _sync_onfido_bo_document {
         catch {
             my $error = $@;
             $log->errorf("Error in updating db for %s : %s", $client->loginid, $error);
+            exception_logged();
         };
     }
 
@@ -848,6 +857,7 @@ async sub sync_onfido_details {
     catch {
         my $e = $@;
         $log->errorf('Failed to update details in Onfido for %s : %s', $data->{loginid}, $e);
+        exception_logged();
     };
 
     return;
@@ -888,6 +898,7 @@ async sub verify_address {
             my $e = $@;
             DataDog::DogStatsd::Helper::stats_inc('event.address_verification.exception', {tags => \@dd_tags});
             $log->errorf('Failed to verify applicants address for %s : %s', $loginid, $e);
+            exception_logged();
         };
         } if (($has_deposits and push(@dd_tags, 'verify_address:deposits'))
         or ($is_fully_authenticated and push(@dd_tags, 'verify_address:authenticated')));
@@ -1017,6 +1028,7 @@ async sub _get_onfido_applicant {
     catch {
         my $e = $@;
         $log->warn($e);
+        exception_logged();
     };
 
     return undef;
@@ -1059,6 +1071,7 @@ SQL
             DataDog::DogStatsd::Helper::stats_timing("event.document_upload.database.document_lookup.elapsed", $elapsed);
         }
         catch {
+            exception_logged();
             die "An error occurred while getting document details ($file_id) from database for login ID $loginid.";
         };
         $doc;
@@ -1140,6 +1153,7 @@ sub _email_client_age_verified {
     }
     catch {
         $log->warn($@);
+        exception_logged();
     };
     return undef;
 }
@@ -1191,6 +1205,7 @@ sub email_client_account_verification {
     }
     catch {
         $log->warn($@);
+        exception_logged();
     };
     return undef;
 }
@@ -1564,6 +1579,7 @@ sub social_responsibility_check {
             }
             catch {
                 $log->warn($@);
+                exception_logged();
                 return undef;
             };
         }
@@ -1732,6 +1748,7 @@ async sub _upload_documents {
     catch {
         my $e = $@;
         $log->errorf('An error occurred while uploading document to Onfido for %s : %s', $client->loginid, $e);
+        exception_logged();
     }
 }
 
@@ -1822,6 +1839,7 @@ async sub _check_applicant {
     catch {
         my $e = $@;
         $log->errorf('An error occurred while processing Onfido verification for %s : %s', $client->loginid, $e);
+        exception_logged();
     }
 
     await Future->needs_all(_update_onfido_check_count($redis_events_write),
@@ -1841,6 +1859,7 @@ async sub _update_onfido_check_count {
         catch {
             my $e = $@;
             $log->debugf("Failed in adding expire to ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY: %s", $e);
+            exception_logged();
         }
     }
 
@@ -1862,6 +1881,7 @@ async sub _update_onfido_user_check_count {
         catch {
             my $e = $@;
             $log->debugf("Failed in adding expire to ONFIDO_REQUEST_PER_USER_PREFIX: %s", $e);
+            exception_logged();
         }
     }
 
@@ -1979,6 +1999,7 @@ sub qualifying_payment_check {
         }
         catch {
             $log->warn($@);
+            exception_logged();
             return undef;
         };
 
@@ -2015,6 +2036,7 @@ async sub payment_deposit {
         catch {
             my $e = $@;
             $log->errorf('Failed to verify applicants address: %s', $e);
+            exception_logged();
         }
 
         BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication;
@@ -2320,6 +2342,7 @@ sub _set_all_sibling_status {
         catch {
             my $e = $@;
             $log->errorf('Failed to set %s as %s : %s', $each_loginid, $status, $e);
+            exception_logged();
         }
     }
 
@@ -2380,6 +2403,7 @@ sub aml_client_status_update {
     }
     catch {
         $log->errorf("Failed to send AML Risk withdrawal_locked email to compliance %s on %s", $template_args, $@);
+        exception_logged();
         return undef;
     }
 }
