@@ -71,13 +71,13 @@ $t = callPost($t, $email, "", $csrf_token, "ID");
 $t = $t->content_like(qr/Kata sandi tidak diberikan./, "no password ID");
 
 $t = callPost($t, $email . "invalid", $password, $csrf_token, "ID");
-$t = $t->content_like(qr/Email atau kata sandi salah. Mohon periksa apakah Anda sebelumnya mengakses melalui jejaring sosial./,
+$t = $t->content_like(qr#Email dan/atau kata sandi Anda tidak benar. Silakan periksa dan coba lagi. Mungkin Anda mendaftar menggunakan akun sosial#,
     "invalid login or password iID");
 
 $user->update_has_social_signup(1);
 
 $t = callPost($t, $email, $password, $csrf_token, "ID");
-$t = $t->content_like(qr/Email atau kata sandi salah. Mohon periksa apakah Anda sebelumnya mengakses melalui jejaring sosial./,
+$t = $t->content_like(qr#Email dan/atau kata sandi Anda tidak benar. Silakan periksa dan coba lagi. Mungkin Anda mendaftar menggunakan akun sosial#,
     "invalid social login ID");
 
 $user->update_has_social_signup(0);
