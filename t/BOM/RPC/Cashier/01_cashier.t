@@ -86,6 +86,55 @@ subtest 'Doughflow' => sub {
 
 };
 
+subtest 'Get deposit address' => sub {
+    my $params = {};
+    my $method = 'cashier';
+    my $email  = 'dummy' . rand(999) . '@binary.com';
+
+    my $user = BOM::User->create(
+        email          => $email,
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'id',
+    });
+
+    $client->set_default_account('BTC');
+
+    $params->{args}->{cashier}  = 'deposit';
+    $params->{args}->{provider} = 'crypto';
+    $params->{args}->{type}     = 'api';
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token123');
+    $params->{domain} = 'binary.com';
+
+    my $expected_result = {
+        stash => {
+            valid_source               => 1,
+            app_markup_percentage      => 0,
+            source_bypass_verification => 0,
+        },
+        deposit => {
+            address => '',
+        },
+        action => 'deposit',
+    };
+
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_is_deeply($expected_result, 'Empty Address');
+
+    my $address = 'test_deposit_address';
+    $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT payment.ctc_insert_new_deposit(?, ?, ?)', undef, $address, $client->currency, $client->loginid);
+        },
+    );
+
+    $expected_result->{deposit}{address} = $address;
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_is_deeply($expected_result, 'Correct address');
+};
+
 subtest 'validate_amount' => sub {
 
     my $mocked_fun = Test::MockModule->new('Format::Util::Numbers');

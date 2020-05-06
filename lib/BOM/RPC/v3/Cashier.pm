@@ -77,10 +77,11 @@ rpc "cashier", sub {
     my ($client, $args) = @{$params}{qw/client args/};
     my $action   = $args->{cashier}  // 'deposit';
     my $provider = $args->{provider} // 'doughflow';
+    my $type     = $args->{type}     // 'url';
 
     # this should come before all validation as verification
     # token is mandatory for withdrawal.
-    if ($action eq 'withdraw') {
+    if ($action eq 'withdraw' && $type eq 'url') {
         my $token = $args->{verification_code} // '';
 
         my $email = $client->email;
@@ -109,7 +110,34 @@ rpc "cashier", sub {
 
     my ($brand, $currency) = (request()->brand, $client->default_account->currency_code());
 
+    # We need it for backward compatibility, previously provider could be only doughflow
+    # and in realty we ignored this value.
     if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
+        $provider = 'crypto';
+    } elsif ($provider eq 'crypto') {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidRequest',
+            message_to_client => localize("Crypto cashier is unavailable for fiat currencies."),
+        });
+    }
+
+    if ($type eq 'api') {
+        my %response;
+        unless ($provider eq 'crypto' && $action eq 'deposit') {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidRequest',
+                message_to_client => localize("Cashier API doesn't support the selected provider or operation."),
+            });
+        }
+
+        return {
+            action  => 'deposit',
+            deposit => {
+                address => _get_crypto_deposit_address($client),
+            }};
+    }
+
+    if ($provider eq 'crypto') {
         return _get_cryptocurrency_cashier_url({
             loginid      => $client->loginid,
             website_name => $params->{website_name},
@@ -1821,6 +1849,17 @@ sub _template_args {
         pa_first_name     => encode_entities($pa_client->first_name),
         pa_last_name      => encode_entities($pa_client->last_name),
     };
+}
+
+sub _get_crypto_deposit_address {
+    my ($client) = @_;
+
+    my ($address) = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT payment.ctc_find_new_deposit(?, ?)', undef, $client->currency, $client->loginid);
+        });
+
+    return $address // '';
 }
 
 1;
