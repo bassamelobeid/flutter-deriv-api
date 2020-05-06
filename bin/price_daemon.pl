@@ -25,7 +25,7 @@ GetOptions(
     "no-warmup=i"            => \my $nowarmup,
     'record_price_metrics:i' => \my $record_price_metrics,
 );
-$queues               ||= 'pricer_jobs_priority,pricer_jobs, pricer_jobs_bid';
+$queues               ||= 'pricer_jobs';
 $workers              ||= max(1, Sys::Info->new->device("CPU")->count);
 $record_price_metrics ||= 0;
 

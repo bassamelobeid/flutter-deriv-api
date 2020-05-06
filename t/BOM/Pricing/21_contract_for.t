@@ -50,9 +50,9 @@ subtest "Request $method" => sub {
     ok !grep { $_->{contract_type} =~ /^(EXPIRYMISS|EXPIRYRANGE)E$/ } @{$result->{available}};
 
     # check for multiplier related config
-    my @multiplier = grep {$_->{contract_category} eq 'multiplier'} @{$result->{available}};
+    my @multiplier = grep { $_->{contract_category} eq 'multiplier' } @{$result->{available}};
     ok @multiplier, 'has multiplier';
-    ok $multiplier[0]->{multiplier_range}, 'has multiplier range';
+    ok $multiplier[0]->{multiplier_range},   'has multiplier range';
     ok $multiplier[0]->{cancellation_range}, 'has cancellation range';
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxUSDJPY', Date::Utility->new);
