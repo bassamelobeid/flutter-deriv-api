@@ -42,6 +42,10 @@ use YAML::XS qw(LoadFile);
 my $epsilon                   = machine_epsilon();
 my $minimum_multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_minimum_multiplier.yml');
 
+use constant {
+    MAX_DURATION => 60 * 60 * 24 * 365 * 2    #2 years in seconds
+};
+
 has parameters => (
     is       => 'ro',
     isa      => 'HashRef',
@@ -356,6 +360,15 @@ sub _initialize_other_parameters {
             error_args => ['date_start'],
             details    => {field => 'date_start'},
         );
+    }
+
+    if ($params->{category}->has_user_defined_expiry and defined($params->{date_expiry})) {
+        my $duration_in_seconds = $params->{date_expiry}->epoch - $params->{date_start}->epoch;
+        if ($duration_in_seconds > MAX_DURATION) {
+            BOM::Product::Exception->throw(
+                error_code => 'TradingDurationNotAllowed',
+                details    => {field => 'duration'});
+        }
     }
 
     if ($params->{category}->has_user_defined_expiry) {

@@ -1309,7 +1309,7 @@ sub metadata {
         start_type        => ($contract->is_forward_starting ? 'forward' : 'spot'),
         contract_duration => $contract_duration,
         for_sale          => ($action ne 'buy'),
-        contract_type     => $contract->code,
+        contract_type     => $self->code,
         market            => $contract->underlying->market->name,
     };
 }
