@@ -273,13 +273,31 @@ $res = $t->await::buy({
 is $res->{error}->{code}, 'InputValidationFailed', 'Invalid contract_type';
 $contractParameters{contract_type} = 'CALL';
 
-$contractParameters{duration} = 100000000;
+$contractParameters{duration} = 10000000000;
 $res = $t->await::buy({
     buy        => 1,
     price      => 0,
     parameters => \%contractParameters,
 });
-is $res->{error}->{code}, 'InvalidtoBuy', 'Schema validation does not fail with huge duration';
+is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with huge duration';
+
+$contractParameters{duration} = 99999999;
+$res = $t->await::buy({
+    buy        => 1,
+    price      => 0,
+    parameters => \%contractParameters,
+});
+is $res->{error}->{code}, 'ContractCreationFailure', 'Duration validation fails with huge duration';
+
+delete $contractParameters{duration};
+$contractParameters{date_expiry} = 9999999999;
+$res = $t->await::buy({
+    buy        => 1,
+    price      => 0,
+    parameters => \%contractParameters,
+});
+is $res->{error}->{code}, 'ContractCreationFailure', 'Duration validation fails with huge duration';
+delete $contractParameters{date_expiry};
 
 $contractParameters{duration} = -10;
 $res = $t->await::buy({

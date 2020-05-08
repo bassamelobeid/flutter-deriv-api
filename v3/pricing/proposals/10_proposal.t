@@ -56,10 +56,19 @@ $req->{amount} = "+100";
 $res = $t->await::proposal($req);
 is $res->{error}->{code}, undef, 'Correct + sign in number, allowed due to coercion';
 
-$req->{amount}   = "100";
-$req->{duration} = "100000000";
-$res             = $t->await::proposal($req);
-is $res->{error}->{code}, 'OfferingsValidationError', 'Schema validation does not fail with huge duration';
+$req->{duration} = "10000000000";
+$res = $t->await::proposal($req);
+is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with huge duration';
+
+$req->{duration} = "99999999";
+$res = $t->await::proposal($req);
+is $res->{error}->{code}, 'ContractCreationFailure', 'Duration validation fails with huge duration';
+
+delete $req->{duration};
+$req->{date_expiry} = 9999999999;
+$res = $t->await::proposal($req);
+is $res->{error}->{code}, 'ContractCreationFailure', 'Duration validation fails with huge duration';
+delete $req->{date_expiry};
 
 $req->{duration} = "-10";
 $res = $t->await::proposal($req);
