@@ -676,7 +676,15 @@ rpc contract_update_history => sub {
             client      => $client,
             contract_id => $contract_id,
         );
-        $response = $updater->get_history;
+
+        if (my $error = $updater->validation_error) {
+            $response = BOM::Pricing::v3::Utility::create_error({
+                code              => 'ContractUpdateHistoryFailure',
+                message_to_client => localize($error->{message_to_client}),
+            });
+        } else {
+            $response = $updater->get_history;
+        }
     }
     catch {
         $response = BOM::Pricing::v3::Utility::create_error({

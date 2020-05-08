@@ -155,6 +155,27 @@ subtest 'contract_update' => sub {
     is $res->[0]->{order_amount}, -80;
     is $res->[1]->{display_name}, 'Take profit';
     is $res->[1]->{order_amount}, 10;
+
+    # contract update history
+    my $update_history_params = {
+        client_ip => '127.0.0.1',
+        token     => $token,
+        args      => {
+            contract_update_history => 1,
+            contract_id             => 123,
+        }};
+
+    $c->call_ok('contract_update_history', $update_history_params)->has_error->error_code_is('ContractUpdateHistoryFailure')
+        ->error_message_is('This contract was not found among your open positions.');
+
+    $update_history_params->{args}{contract_id} = $buy_res->{contract_id};
+    my $history = $c->call_ok('contract_update_history', $update_history_params)->has_no_error->result;
+    is $history->[0]->{display_name}, 'Stop loss';
+    is $history->[0]->{order_amount}, -80;
+    is $history->[0]->{value},        92.05;
+    is $history->[1]->{display_name}, 'Take profit';
+    is $history->[1]->{order_amount}, 10;
+    is $history->[1]->{value},        101.05;
 };
 
 done_testing();
