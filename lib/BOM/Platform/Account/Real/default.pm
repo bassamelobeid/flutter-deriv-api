@@ -62,11 +62,6 @@ sub after_register_client {
         copy_status_from_siblings($client, $user, ['no_trading', 'withdrawal_locked']);
     }
 
-    # CR client auto sync by db function betonmarkets.update_authentication_status_new_client
-    if (!$client->status->age_verification) {
-        sync_client_status($client);
-    }
-
     BOM::Platform::Client::Sanctions->new({
             client => $client,
             brand  => request()->brand
@@ -94,26 +89,6 @@ sub after_register_client {
         client => $client,
         user   => $user
     };
-}
-
-=head2 sync_client_status
-
-Sync user's (age verification) status between differnt accounts of differnt brokers.
-
-=cut
-
-sub sync_client_status {
-    my ($cur_client) = @_;
-    for my $cl ($cur_client->user->clients(include_disabled => 0)) {
-        if (  !$cl->is_virtual
-            && $cl->loginid ne $cur_client->loginid
-            && $cl->landing_company->short ne $cur_client->landing_company->short
-            && $cl->status->age_verification)
-        {
-            $cur_client->status->set('age_verification', 'system', 'copied from ' . $cl->loginid);
-            last;
-        }
-    }
 }
 
 sub validate_account_details {

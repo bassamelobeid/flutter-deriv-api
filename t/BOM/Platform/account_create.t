@@ -137,7 +137,6 @@ subtest 'create account' => sub {
             my $cl = BOM::User::Client->new({loginid => $real_acc->{client}->loginid});
             my $data = decode_fa($cl->financial_assessment());
             is $data->{forex_trading_experience}, '0-1 year', "got the forex trading experience";
-            ok $cl->status->age_verification, 'sync_client_status age_verification';
         }
     }
 
