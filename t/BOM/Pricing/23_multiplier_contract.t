@@ -74,7 +74,7 @@ subtest 'multiplier - send_ask' => sub {
     delete $args->{duration};
 
     my $expected = {
-        'longcode'            => 'Win 10% of your stake for every 1% rise in the market price.',
+        'longcode'            => 'Win 10% of your stake for every 1% rise in Volatility 100 Index.',
         'spot'                => '100.00',
         'date_start'          => ignore(),
         'contract_parameters' => {
@@ -118,7 +118,7 @@ subtest 'multiplier - send_ask' => sub {
     cmp_deeply($res, $expected, 'send_ask output as expected');
 
     $expected = {
-        'longcode'            => 'Win 10% of your stake for every 1% rise in the market price.',
+        'longcode'            => 'Win 10% of your stake for every 1% rise in Volatility 100 Index.',
         'spot'                => '100.00',
         'date_start'          => ignore(),
         'contract_parameters' => {
@@ -170,7 +170,7 @@ subtest 'multiplier - send_ask' => sub {
     cmp_deeply($res, $expected, 'send_ask output as expected');
 
     $expected = {
-        'longcode'            => 'Win 10% of your stake for every 1% rise in the market price.',
+        'longcode'            => 'Win 10% of your stake for every 1% rise in Volatility 100 Index.',
         'spot'                => '100.00',
         'date_start'          => ignore(),
         'contract_parameters' => {
@@ -291,7 +291,7 @@ subtest 'multiplier - get_bid' => sub {
         'bid_price'                => '99.50',
         'shortcode'                => ignore(),
         'contract_id'              => '470',
-        'longcode'                 => 'Win 10% of your stake for every 1% rise in the market price.',
+        'longcode'                 => 'Win 10% of your stake for every 1% rise in Volatility 100 Index.',
         'is_valid_to_sell'         => 1,
         'is_valid_to_cancel'       => 0,
         'entry_spot_display_value' => '100.00',
@@ -370,7 +370,7 @@ subtest 'multiplier - get_bid' => sub {
         'bid_price'                => '99.50',
         'shortcode'                => ignore(),
         'contract_id'              => '470',
-        'longcode'                 => 'Win 10% of your stake for every 1% rise in the market price.',
+        'longcode'                 => 'Win 10% of your stake for every 1% rise in Volatility 100 Index.',
         'is_valid_to_sell'         => 0,
         'is_valid_to_cancel'       => 1,
         'entry_spot_display_value' => '100.00',
