@@ -17,7 +17,7 @@ use List::Util qw/all first min any uniq/;
 use Locale::Country::Extra;
 use Format::Util::Numbers qw(roundcommon);
 use Text::Trim qw(trim);
-use BOM::Platform::Context qw (request);
+use BOM::Platform::Context qw/ localize request /;
 use YAML::XS qw(LoadFile);
 use Path::Tiny;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
@@ -2826,9 +2826,15 @@ sub validate_payment {
 
         if (my $frozen = $self->get_withdrawal_limits->{frozen_free_gift}) {
             my $unfrozen = financialrounding('amount', $currency, $accbal - $frozen);
-            die sprintf "Withdrawal is [%s %s] but balance [%s] includes frozen bonus [%s].\n", $currency,
-                formatnumber('amount', $currency, $absamt), formatnumber('amount', $currency, $accbal), formatnumber('amount', $currency, $frozen)
-                if financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $unfrozen);
+            die(
+                localize(
+                    "Withdrawal is [_1] [_2] but balance [_3] includes frozen bonus [_4].",
+                    $currency,
+                    formatnumber('amount', $currency, $absamt),
+                    formatnumber('amount', $currency, $accbal),
+                    formatnumber('amount', $currency, $frozen))
+                    . "\n"
+            ) if financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $unfrozen);
         }
 
         return 1 if $self->fully_authenticated;
