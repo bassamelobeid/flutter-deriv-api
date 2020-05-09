@@ -158,7 +158,7 @@ subtest 'buy with invalid expiry date' => sub {
     delete $buy_params->{contract_parameters}{duration};
     delete $buy_params->{contract_parameters}{duration_unit};
     $buy_params->{contract_parameters}{date_expiry} = Date::Utility->new->epoch + 9999999999;
-    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('InvalidtoBuy', 'correct error code');
+    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
 };
 
 subtest 'get proposal with invalid expiry date' => sub {
@@ -166,7 +166,7 @@ subtest 'get proposal with invalid expiry date' => sub {
     delete $ask_params->{duration_unit};
     $ask_params->{date_expiry} = Date::Utility->new->epoch + 9999999999;
 
-    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
+    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
 };
 
 subtest 'get digitmatch proposal with invalid input' => sub {
