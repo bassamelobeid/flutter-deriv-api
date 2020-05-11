@@ -52,7 +52,11 @@ foreach my $client_hash (@{$client_dup_list}) {
 
     my $client = BOM::User::Client::get_instance({loginid => $loginid});
 
-    my $siblings = {map { $_->loginid => 1 } $client->user->clients};
+    my $siblings = {
+        map { $_->loginid => 1 } $client->user->clients(
+            include_disabled   => 1,
+            include_duplicated => 1
+        )};
 
     my @duplicate_clients = grep { !($_ eq $loginid || exists $siblings->{$_}) } @{$client_hash->{loginids}};
 

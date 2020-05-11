@@ -14,7 +14,6 @@ Login ID&nbsp;&nbsp;Reason&nbsp;&nbsp;First Name&nbsp;&nbsp;Last Name&nbsp;&nbsp
 [% client.reason %]&nbsp;
 [% client.first_name %]&nbsp;
 [% client.last_name %]&nbsp;
-[% client.phone %]&nbsp;
 [% client.duplicated_loginid %]&nbsp;
 [% END -%]
 <br>
