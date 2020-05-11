@@ -6,6 +6,7 @@ use Syntax::Keyword::Try;
 use Data::Dumper;
 
 use BOM::Backoffice::Request qw(request);
+use BOM::RPC::v3::P2P;
 
 sub p2p_advertiser_register {
     my $client = shift;
@@ -63,15 +64,14 @@ sub p2p_advertiser_update {
         };
     }
     catch {
-        my ($error_code, $error_msg) = ($@, undef);
+        my $error = $@;
 
-        if ($error_code =~ 'AdvertiserNameRequired') {
-            $error_msg = 'P2P advertiser name is required.';
-        } elsif ($error_code =~ 'AdvertiserNotApproved') {
-            $error_msg = 'P2P advertiser for ' . $client->loginid . ' should be authenticated in order to update its details.';
+        my $error_msg = 'P2P advertiser for ' . $client->loginid . ' could not be updated. ';
+
+        if (ref $error eq 'HASH' and $BOM::RPC::v3::P2P::ERROR_MAP{$error->{error_code}}) {
+            $error_msg .= ' Message: "' . $BOM::RPC::v3::P2P::ERROR_MAP{$error->{error_code}} . '", code: ' . $error->{error_code};
         } else {
-            $Data::Dumper::Terse = 1;
-            $error_msg           = 'P2P advertiser for ' . $client->loginid . ' could not be updated. Error: ' . Dumper($error_code);
+            $error_msg .= 'Error: ' . Dumper($error);
         }
 
         return {
