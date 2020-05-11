@@ -122,6 +122,7 @@ our %ERROR_MAP = do {
         OrderChatAlreadyCreated          => localize('A chat for this order has already been created.'),
         CounterpartyNotAdvertiserForChat => localize('Chat is not possible because the other client is not yet registered on the P2P system.'),
         CreateChatError                  => localize('An error occurred when creating the chat. Please try again later.'),
+        AdvertiserCannotListAds          => localize("You cannot list adverts because you've not been approved as an advertiser yet."),
     );
 };
 
