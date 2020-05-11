@@ -1878,6 +1878,9 @@ sub p2p_advertiser_update {
             if $param{name} ne $advertiser_info->{name} and $client->_p2p_advertisers(name => $param{name})->[0];
     }
 
+    die +{error_code => 'AdvertiserCannotListAds'} if $param{is_listed} and not $advertiser_info->{is_approved} and not $param{is_approved};
+    $param{is_listed} = 0 if defined $param{is_approved} and not $param{is_approved};
+
     # Return the current information of the advertiser if nothing changed
     return $advertiser_info unless grep { exists $advertiser_info->{$_} and $param{$_} ne $advertiser_info->{$_} } keys %param;
 
