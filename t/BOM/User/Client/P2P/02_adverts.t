@@ -211,14 +211,15 @@ subtest 'Creating advert' => sub {
     }
 
     %params = %advert_params;
-    $params{amount} = 200;
+    my $maximum_advert = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert;
+    $params{amount} = $maximum_advert + 1;
     cmp_deeply(
         exception {
             $advertiser->p2p_advert_create(%params);
         },
         {
             error_code     => 'MaximumExceeded',
-            message_params => [uc $params{account_currency}, $params{amount}]
+            message_params => [uc $params{account_currency}, $maximum_advert]
         },
         'Error when amount exceeds BO advert limit'
     );
