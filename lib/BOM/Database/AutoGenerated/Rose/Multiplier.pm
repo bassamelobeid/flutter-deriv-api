@@ -21,6 +21,9 @@ __PACKAGE__->meta->setup(
         take_profit_order_amount => {type => 'numeric'},
         stop_loss_order_date     => {type => 'timestamp'},
         stop_loss_order_amount   => {type => 'numeric'},
+        cancellation_price       => {type => 'numeric'},
+        is_cancelled             => {type => 'boolean'},
+        commission               => {type => 'numeric'},
     ],
 
     primary_key_columns => ['financial_market_bet_id'],
