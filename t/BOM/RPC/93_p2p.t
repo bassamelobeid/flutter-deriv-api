@@ -158,8 +158,8 @@ subtest 'Client restricted statuses' => sub {
 $app_config->payments->p2p->available(0);
 subtest 'P2P is not available to anyone' => sub {
     $c->call_ok($dummy_method, $params)
-        ->has_no_system_error->has_error->error_code_is('PermissionDenied',
-        "error code is PermissionDenied, because payments.p2p.available is unchecked");
+        ->has_no_system_error->has_error->error_code_is('P2PDisabled',
+        "error code is P2PDisabled, because payments.p2p.available is unchecked");
 };
 
 subtest 'P2P is available for only one client' => sub {
