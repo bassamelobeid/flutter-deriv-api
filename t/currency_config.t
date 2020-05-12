@@ -184,5 +184,12 @@ subtest 'exchange_rate_expiry' => sub {
         300, 'should return fiat_holidays expiry when market is closed if both currencies are fiat');
 };
 
+subtest 'is_valid_currency' => sub {
+    ok BOM::Config::CurrencyConfig::is_valid_currency($_), "Currency '$_' is valid" for LandingCompany::Registry::all_currencies();
+
+    ok !BOM::Config::CurrencyConfig::is_valid_currency('INVALID'), "Currency 'INVALID' is not valid";
+    ok !BOM::Config::CurrencyConfig::is_valid_currency('usd'), "Currency with wrong case 'usd' is not valid";
+};
+
 $mock_app_config->unmock_all();
 done_testing();

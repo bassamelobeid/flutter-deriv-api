@@ -20,7 +20,7 @@ use JSON::MaybeUTF8;
 use Log::Any qw($log);
 use Format::Util::Numbers qw(get_min_unit financialrounding);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
-use List::Util qw(max min);
+use List::Util qw(any max min);
 use LandingCompany::Registry;
 
 use BOM::Config::Runtime;
@@ -67,14 +67,33 @@ sub local_currency_for_country {
     return $LOCAL_CURRENCY_FOR_COUNTRY{lc($country_code)};
 }
 
+=head2 is_valid_currency
+
+Checks if the currency is valid.
+
+=over 4
+
+=item * C<currency> - The currency code to check the validity of. (case-sensitive)
+
+=back
+
+Returns 1 if currency is valid, otherwise 0.
+
+=cut
+
+sub is_valid_currency {
+    my ($currency) = @_;
+    return (any { $_ eq $currency } LandingCompany::Registry->new()->all_currencies);
+}
+
 =head2 transfer_between_accounts_limits
 
 Transfer limits are returned as a {currency => {min => 1, max => 2500}, ... } hash ref.
 These values are extracted from app_config->payment.transfer_between_accounts.minimum/maximum editable in backoffice Dynamic Settings page.
 
-=over4
+=over 4
 
-=item * if true, transfer between accouts will be recalculated (a little expensive); otherwise, use the cached values.
+=item * C<force_refresh> - if true, transfer between accounts will be recalculated (a little expensive); otherwise, use the cached values.
 
 =back
 
@@ -125,7 +144,7 @@ sub transfer_between_accounts_limits {
 =head2 transfer_between_accounts_fees
 
 Transfer fees are returned as a hashref for all supported currency pairs; e.g. {'USD' => {'BTC' => 1,'EUR' => 0.5, ...}, ... }.
-These values are extracted from payment.transfer_between_accounts.fees.by_currency, if not available it defaults to 
+These values are extracted from payment.transfer_between_accounts.fees.by_currency, if not available it defaults to
 a value under payment.transfer_between_accounts.fees.default.* that matches the currency types.
 
 =cut
@@ -189,13 +208,15 @@ app config setting will be used. Otherwise "fiat" is used.
 "crypto" is used for crypto currencies.
 In the case of different currency types, the shortest expiry time is returned.
 
-=item * The source currrency we want to convert from.
+=over 4
+
+=item * The source currency we want to convert from.
 
 =item * The target currency we want to convert to.
 
-Retruns
+=back
 
-=item * The allowed age for exchange rate quote in seconds.
+Returns the allowed age for exchange rate quote in seconds.
 
 =cut
 
