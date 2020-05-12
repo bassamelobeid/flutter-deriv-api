@@ -112,8 +112,8 @@ subtest 'hour_end_markup_start_now_contract' => sub {
         $args->{date_start}   = Date::Utility->new('2018-11-16 16:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:01:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 6.8, 'correct ask price';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.15, 'correct end hour markup';
+        cmp_ok $c->ask_price, '==', 10, 'correct ask price';
+        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup');
 
     };
 };
@@ -152,8 +152,8 @@ subtest 'hour_end_markup_extra_test_after_logic_change' => sub {
         $args->{date_start}   = Date::Utility->new('2018-11-16 16:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:01:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 6.8, 'correct ask price';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.15, 'correct end hour markup';
+        cmp_ok $c->ask_price, '==', 10, 'correct ask price';
+        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup');
 
         # Winter on EU, hour equal 8 or 20
         $args->{date_start}   = Date::Utility->new('2018-11-16 20:01:00');
@@ -262,10 +262,10 @@ subtest 'test discount for current spot closer to previous low' => sub {
     };
 
     my $c = produce_contract($args);
-    is $c->pricing_engine->risk_markup->peek_amount('hour_end_discount'), 0, 'no discount for CALL at X1=0.6';
+    is $c->pricing_engine->risk_markup->peek_amount('hour_end_discount'), undef, 'no discount for CALL at X1=0.6';
     $args->{bet_type} = 'PUT';
     $c = produce_contract($args);
-    is $c->pricing_engine->risk_markup->peek_amount('hour_end_discount'), -0.01, '0.01 discount for PUT at X1=0.6';
+    is $c->pricing_engine->risk_markup->peek_amount('hour_end_discount'), undef, 'no discount for PUT at X1=0.6';
     $mocked->mock(
         '_x1',
         sub {
@@ -277,7 +277,7 @@ subtest 'test discount for current spot closer to previous low' => sub {
             });
         });
     $c = produce_contract($args);
-    is $c->pricing_engine->risk_markup->peek_amount('hour_end_discount'), 0, 'no discount for PUT at X1=0.4';
+    is $c->pricing_engine->risk_markup->peek_amount('hour_end_discount'), undef, 'no discount for PUT at X1=0.4';
 };
 
 subtest 'test discount for current spot closer to previous high' => sub {
