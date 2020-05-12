@@ -468,6 +468,12 @@ rpc "paymentagent_list",
     my ($language, $args, $token_details) = @{$params}{qw/language args token_details/};
 
     my $target_country = $args->{paymentagent_list};
+    my $currency       = $args->{currency};
+
+    if ($currency) {
+        my $invalid_currency = BOM::Platform::Client::CashierValidation::invalid_currency_error($currency);
+        return BOM::RPC::v3::Utility::create_error($invalid_currency) if $invalid_currency;
+    }
 
     my $loginid;
     my $broker_code = 'CR';
@@ -487,7 +493,7 @@ rpc "paymentagent_list",
     foreach (@available_countries) {
         $_->[1] = Brands->new(name => request()->brand)->countries_instance->countries->localized_code2country($_->[0], $language);
     }
-    my $available_payment_agents = _get_available_payment_agents($target_country, $broker_code, $args->{currency}, $loginid, 1);
+    my $available_payment_agents = _get_available_payment_agents($target_country, $broker_code, $currency, $loginid, 1);
 
     my $payment_agent_table_row = [];
     foreach my $loginid (keys %{$available_payment_agents}) {

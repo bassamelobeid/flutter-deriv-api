@@ -107,6 +107,12 @@ subtest 'paymentagent_list RPC call' => sub {
         args     => {paymentagent_list => 'id'},
     };
 
+    $params->{args}{currency} = 'INVALID';
+    $c->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('InvalidCurrency', 'Returns correct error code if currency is invalid')
+        ->error_message_is('The provided currency INVALID is invalid.', 'Returns correct error message if currency is invalid');
+    delete $params->{args}{currency};
+
     my $expected_result = {
         stash => {
             app_markup_percentage      => 0,

@@ -20,10 +20,10 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::
 
 my ($base, $result);
 subtest 'invalid currency' => sub {
-    $base = 'XXX';
-    $result = $c->call_ok('exchange_rates', {args => {base_currency => $base}});
-    ok $result->has_no_system_error->has_error, 'RPC called without system errors';
-    ok $result->error_code_is('InvalidCurrency'), 'Base currency not available';
+    $base = 'INVALID';
+    $c->call_ok('exchange_rates', {args => {base_currency => $base}})
+        ->has_no_system_error->has_error->error_code_is('InvalidCurrency', 'Returns correct error code if currency is invalid')
+        ->error_message_is('The provided currency INVALID is invalid.', 'Returns correct error message if currency is invalid');
 };
 
 subtest 'exchange rates' => sub {

@@ -26,22 +26,21 @@ use BOM::RPC::v3::Utility;
 
 =head2 exchange_rates
 
-    $exchg_rages = exchange_rates()
+    $exchg_rates = exchange_rates()
 
-This function returns the rates of exchanging from all supported currencies into a base currency. 
+This function returns the rates of exchanging from all supported currencies into a base currency.
 The argument is optional and consists of a hash with a single key that represents base currency (default value is USD):
     =item * base_currency (Base currency)
 
 The return value is an anonymous hash contains the following items:
 
-
 =over 4
 
-=item * base (Base currency)
+=item * C<base_currency> (Base currency)
 
-=item * date (The epoch time of data retrieval as an integer number)
+=item * C<date> (The epoch time of data retrieval as an integer number)
 
-=item * rates (A hash containing currency=>rate pairs)
+=item * C<rates> (A hash containing currency=>rate pairs)
 
 =back
 
@@ -52,10 +51,9 @@ rpc exchange_rates => sub {
     my $base_currency = $params->{args}->{base_currency};
 
     my @all_currencies = LandingCompany::Registry->new()->all_currencies;
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidCurrency',
-            message_to_client => localize('Invalid currency.'),
-        }) unless (any { $_ eq $base_currency } @all_currencies);
+
+    my $invalid_currency = BOM::Platform::Client::CashierValidation::invalid_currency_error($base_currency);
+    return BOM::RPC::v3::Utility::create_error($invalid_currency) if $invalid_currency;
 
     my %rates_hash;
     foreach my $target (@all_currencies) {
@@ -77,4 +75,3 @@ rpc exchange_rates => sub {
 };
 
 1;
-
