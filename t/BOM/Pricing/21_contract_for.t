@@ -43,6 +43,12 @@ $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 subtest "Request $method" => sub {
     my (%got_landing_company, $result);
 
+    $params[1]{args}{currency} = 'INVALID';
+    $rpc_ct->call_ok(@params)
+        ->has_no_system_error->has_error->error_code_is('InvalidCurrency', 'It should return correct error code if currency is invalid')
+        ->error_message_is('The provided currency INVALID is invalid.', 'It should return correct error message if currency is invalid');
+
+    $params[1]{args}{currency} = 'USD';
     $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
 
     is_deeply [sort keys %{$result}], [sort qw/ available close open hit_count spot feed_license stash/], 'It should return contracts_for object';
@@ -73,7 +79,6 @@ subtest "Request $method" => sub {
     $params[1]{args}{landing_company} = 'maltainvest';
     $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if offering is unavailable')
         ->error_message_is('This contract is not offered in your country.', 'It should return error if offering is unavailable');
-
 };
 
 done_testing();

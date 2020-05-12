@@ -647,6 +647,9 @@ sub contracts_for {
 
     return $get_invalid_symbol_error->() unless $product_type;
 
+    my $invalid_currency = BOM::Platform::Client::CashierValidation::invalid_currency_error($currency);
+    return BOM::Pricing::v3::Utility::create_error($invalid_currency) if $invalid_currency;
+
     my $finder        = BOM::Product::ContractFinder->new;
     my $method        = $product_type eq 'basic' ? 'basic_contracts_for' : 'multi_barrier_contracts_for';
     my $contracts_for = $finder->$method({
