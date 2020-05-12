@@ -248,7 +248,9 @@ Returns 1 or 0 if currency is experimental or not
 
 =over 4
 
-=item C<currency> Currency symbol
+=item * C<currency> - Currency symbol
+
+=back
 
 =cut
 
@@ -261,6 +263,31 @@ sub is_experimental_currency {
 
     my $experimental = any { $currency eq $_ } $app_config->system->suspend->experimental_currencies->@*;
     return $experimental;
+}
+
+=head2 invalid_currency_error
+
+Generate standard error parameters if currency is invalid.
+
+=over 4
+
+=item * C<currency> - The currency code to check the validity of. (case-sensitive)
+
+=back
+
+Returns a hashref containing error parameters if currency is invalid, otherwise C<undef>.
+
+=cut
+
+sub invalid_currency_error {
+    my ($currency) = @_;
+
+    return undef if BOM::Config::CurrencyConfig::is_valid_currency($currency);
+
+    return {
+        code              => 'InvalidCurrency',
+        message_to_client => BOM::Platform::Context::localize('The provided currency [_1] is invalid.', $currency),
+    };
 }
 
 =head2 pre_withdrawal_validation
@@ -305,7 +332,7 @@ Calculates transfer amount and fees
 
 Args
 
-=over4
+=over 4
 
 =item * The amount is be transferred (in the currency of the sending account)
 
@@ -323,7 +350,7 @@ Optional: only required to ascertain if client qualifies for PA fee exemption
 
 Returns
 
-=over4
+=over 4
 
 =item * The amount that will be received (in the currency of the receiving account)
 
