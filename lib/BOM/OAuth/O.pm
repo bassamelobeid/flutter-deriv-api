@@ -13,6 +13,7 @@ use Email::Valid;
 use List::Util qw(any first min);
 use HTML::Entities;
 use Format::Util::Strings qw( defang );
+use Text::Trim;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use HTTP::BrowserDetect;
 
@@ -412,7 +413,7 @@ sub _validate_login {
 
     my $app_id = $app->{id};
 
-    my $email    = lc defang($c->param('email'));
+    my $email    = trim(lc defang($c->param('email')));
     my $password = $c->param('password');
 
     my $r = $c->stash('request');
