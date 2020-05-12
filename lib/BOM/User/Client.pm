@@ -2080,6 +2080,16 @@ sub p2p_order_create {
     $expiry //= $p2p_config->order_timeout;
     my $limit_per_day_per_client = $p2p_config->limits->count_per_day_per_client;
 
+    my ($day_order_count) = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT * FROM p2p.client_orders_created(?)', undef, $client->loginid);
+        });
+
+    die +{
+        error_code     => 'ClientDailyOrderLimitExceeded',
+        message_params => [$limit_per_day_per_client]}
+        if ($day_order_count // 0) >= $limit_per_day_per_client;
+
     my $advert_info = $client->_p2p_adverts(
         id                     => $advert_id,
         is_active              => 1,

@@ -665,4 +665,26 @@ subtest 'Buyer tries to place an order for an advert of an unapproved advertiser
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
+subtest 'Daily order limit' => sub {
+    BOM::Config::Runtime->instance->app_config->payments->p2p->limits->count_per_day_per_client(2);
+    BOM::Test::Helper::P2P::create_escrow();
+
+    my $buyer = BOM::Test::Helper::Client::create_client();
+
+    for (1..2) {
+        my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(type => 'sell', amount => 100);
+        $buyer->p2p_order_create(advert_id => $advert_info->{id}, amount => 10);
+    }
+    
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(type => 'sell', amount => 100);
+
+    my $err = exception {
+        $buyer->p2p_order_create(advert_id => $advert_info->{id}, amount => 10);
+    };
+
+    is $err->{error_code}, 'ClientDailyOrderLimitExceeded', 'Could not create order, got error code ClientDailyOrderLimitExceeded';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
 done_testing();
