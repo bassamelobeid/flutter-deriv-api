@@ -101,7 +101,7 @@ sub set_pending_transaction {
             # for transactions from our internal sweeps or external wallets
             # we don't want to print the error message since they are happening
             # correctly
-            unless (any { $transaction->{to} eq $_ } $reserved_addresses->@*) {
+            unless (any { $_ && $transaction->{to} eq $_ } $reserved_addresses->@*) {
                 $log->warnf(
                     "%s Transaction not found for address: %s and transaction: %s",
                     $transaction->{currency},
