@@ -29,6 +29,7 @@ use Scalar::Util qw(looks_like_number);
 use Finance::Contract::Category;
 use Syntax::Keyword::Try;
 use YAML::XS qw(LoadFile);
+use Finance::Underlying;
 
 use BOM::Config::Runtime;
 
@@ -159,7 +160,21 @@ sub _process_commission {
 
     return [values %$existing_config] unless $args;
 
-    my ($foreign_curr, $domestic_curr) = $args->{underlying_symbol} =~ /^(?:frx|(?=WLD))(\w{3})(\w{3})$/;
+    my $underlying_symbol = $args->{underlying_symbol};
+    my $finance_underlying = eval { Finance::Underlying->by_symbol($underlying_symbol) } if $underlying_symbol and $underlying_symbol =~ /^(frx|WLD)/;
+
+    my $foreign_curr  = '';
+    my $domestic_curr = '';
+
+    if ($finance_underlying) {
+        if ($underlying_symbol =~ /^frx/) {
+            $foreign_curr  = $finance_underlying->asset;
+            $domestic_curr = $finance_underlying->quoted_currency;
+        } elsif ($underlying_symbol =~ /^WLD/) {
+            $foreign_curr  = 'WLD';
+            $domestic_curr = $finance_underlying->asset;
+        }
+    }
 
     my @match;
     foreach my $key (keys %$existing_config) {
@@ -168,11 +183,11 @@ sub _process_commission {
 
         if (!$config->{bias}) {
             push @match, $config
-                if ($underlying_hash{$args->{underlying_symbol}}
-                || ($config->{currency_symbol} && first { $args->{underlying_symbol} =~ /$_/ } @{$config->{currency_symbol}}));
+                if ($underlying_hash{$underlying_symbol}
+                || ($config->{currency_symbol} && first { $underlying_symbol =~ /$_/ } @{$config->{currency_symbol}}));
         } else {
             my %currency_hash = map { $_ => 1 } @{$config->{currency_symbol} // []};
-            if ($underlying_hash{$args->{underlying_symbol}} || $currency_hash{$foreign_curr}) {
+            if ($underlying_hash{$underlying_symbol} || $currency_hash{$foreign_curr}) {
                 push @match, $config if ($config->{bias} eq 'long'  && $args->{contract_type} =~ /CALL/);
                 push @match, $config if ($config->{bias} eq 'short' && $args->{contract_type} =~ /PUT/);
             } elsif ($currency_hash{$domestic_curr}) {
