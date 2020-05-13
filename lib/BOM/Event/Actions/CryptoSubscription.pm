@@ -11,6 +11,7 @@ use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/financialrounding/;
 use BOM::Platform::Event::Emitter;
 use BOM::CTC::Currency;
+use BOM::CTC::Helper;
 use BOM::Event::Utility qw(exception_logged);
 
 my $clientdb;
@@ -166,7 +167,26 @@ sub set_pending_transaction {
 
             my $result = update_transaction_status_to_pending($transaction, $address);
 
-            unless ($result) {
+            if ($result) {
+                my ($emit, $error);
+                try {
+                    my $record = first { ($_->{transaction_type} // '') eq 'deposit' } @payment;
+
+                    $emit = BOM::Platform::Event::Emitter::emit(
+                        'new_crypto_address',
+                        {
+                            loginid => $record->{client_loginid},
+                        });
+                }
+                catch {
+                    $error = $@;
+                }
+
+                $log->warnf(
+                    'Failed to emit event - new_crypto_address - for currency: %s, loginid: %s, after marking transaction: %s as pending with error: %s',
+                    $currency_code, ($payment[0]->{client_loginid} // ''), $transaction->{hash}, $error
+                ) unless $emit;
+            } else {
                 $log->warnf("Can't set the status to pending for tx: %s", $transaction->{hash});
 
                 # if we don't receive the response from the database we need to retry sending it
@@ -180,7 +200,7 @@ sub set_pending_transaction {
                 catch {
                     $error = $@;
                     exception_logged();
-                };
+                }
 
                 $log->warnf('Failed to emit event for currency: %s, transaction: %s, error: %s', $currency_code, $transaction->{hash}, $error)
                     unless $emit;
@@ -198,7 +218,7 @@ sub set_pending_transaction {
         $log->errorf("Subscription error: %s", $@);
         exception_logged();
         return undef;
-    };
+    }
 
     return 1;
 }
@@ -276,6 +296,38 @@ sub update_transaction_status_to_pending {
                 $transaction->{hash});
         });
     return $result;
+}
+
+=head2 new_crypto_address
+
+Generate a new crypto address for client currency
+
+=cut
+
+sub new_crypto_address {
+    my $data = shift;
+
+    return undef unless $data->{loginid};
+
+    my $client = BOM::User::Client->new({loginid => $data->{loginid}})
+        or die 'Could not instantiate client for login ID ' . $data->{loginid};
+
+    my $currency = $client->account ? $client->account->currency_code : '';
+
+    return undef unless $currency;
+
+    return undef unless LandingCompany::Registry::get_currency_type($currency) eq 'crypto';
+
+    try {
+        my $helper = BOM::CTC::Helper->new(client => $client);
+        return $helper->get_deposit_address()
+    }
+    catch {
+        $log->errorf('Failed to generate address for new_crypto_address event. Details: loginid %s, currency: %s, and error: %s',
+            $client->loginid, $currency, $@)
+    }
+
+    return undef;
 }
 
 1;

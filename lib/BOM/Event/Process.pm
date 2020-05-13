@@ -63,6 +63,7 @@ my $action_mapping = {
     account_closure             => \&BOM::Event::Actions::Client::account_closure,
     social_responsibility_check => \&BOM::Event::Actions::Client::social_responsibility_check,
     set_pending_transaction     => \&BOM::Event::Actions::CryptoSubscription::set_pending_transaction,
+    new_crypto_address          => \&BOM::Event::Actions::CryptoSubscription::new_crypto_address,
     sync_onfido_details         => \&BOM::Event::Actions::Client::sync_onfido_details,
     authenticated_with_scans    => \&BOM::Event::Actions::Client::email_client_account_verification,
     qualifying_payment_check    => \&BOM::Event::Actions::Client::qualifying_payment_check,

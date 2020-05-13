@@ -2258,6 +2258,23 @@ It can be called with the following parameters:
 sub signup {
     my @args = @_;
 
+    my ($data) = @args;
+
+    my ($emit, $error);
+    try {
+        $emit = BOM::Platform::Event::Emitter::emit(
+            'new_crypto_address',
+            {
+                loginid => $data->{loginid},
+            });
+    }
+    catch {
+        $error = $@;
+    }
+
+    $log->warnf('Failed to emit event - new_crypto_address - for loginid: %s, after creating a new account with error: %s', $data->{loginid}, $error)
+        unless $emit;
+
     return BOM::Event::Services::Track::signup(@args);
 }
 

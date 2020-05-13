@@ -182,12 +182,20 @@ subtest "change_address_status" => sub {
     $transaction->{hash}   = $transaction_hash3;
     $transaction->{amount} = 0.5;
 
+    my %emitted_event;
+    $mock_platform->mock(
+        emit => sub {
+            my ($notifier, $data) = @_;
+            $emitted_event{$notifier} = $data;
+            return 1;
+        });
+
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, undef, "Error inserting transaction in the database";
 
-    my $new_transaction_event = BOM::Platform::Event::Emitter::get("CRYPTO_EVENTS_QUEUE");
-    is_deeply $new_transaction_event->{details}, $transaction, 'Event found after emit it again';
+    is_deeply $emitted_event{set_pending_transaction}, $transaction, 'Event found after emit it again';
 
+    $mock_platform->unmock_all();
     $mock_subscription->unmock_all();
 
     $rows = $dbic->run(
@@ -202,6 +210,9 @@ subtest "change_address_status" => sub {
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, 1, "Update the transaction status to pending after emitting it again";
+
+    $response = BOM::Event::Actions::CryptoSubscription::new_crypto_address({loginid => $client->loginid});
+    is $response, '2N7MPismngmXWAHzUmyQ2wVG8s81CvqUkQS', 'got new address';
 
     # These are one of the few transactions we had failing in production we are adding
     # them to test to make sure we are not really not failing to insert them in the database
@@ -237,6 +248,10 @@ subtest "change_address_status" => sub {
         $response = BOM::Event::Actions::CryptoSubscription::update_transaction_status_to_pending($tx, $tx->{address});
         is $response, 1, "response ok from the database";
     }
+
+    my ($address) = $dbic->run(fixup => sub { $_->selectrow_array('SELECT payment.ctc_find_new_deposit(?, ?)', undef, 'BTC', $client->loginid) });
+
+    is $address, '2N7MPismngmXWAHzUmyQ2wVG8s81CvqUkQS', 'new address created when previous deposit address was marked as pending';
 
     $response = BOM::Event::Actions::CryptoSubscription::insert_new_deposit($transaction);
     is $response, 0, "no payments found in the database (missing payments parameter)";
@@ -296,7 +311,6 @@ subtest "change_address_status" => sub {
 
     my $updated_transaction = _fetch_withdrawal_transaction($transaction->{hash});
     is $updated_transaction->{fee}, $transaction->{fee};
-
 };
 
 sub _set_withdrawal_verified {
@@ -385,6 +399,10 @@ subtest "internal_transactions" => sub {
     my @address_entries = grep { $_->{address} eq $btc_address } $rows->@*;
 
     is @address_entries, 1, "correct number of pending transactions for $btc_address";
+
+    my ($address) = $dbic->run(fixup => sub { $_->selectrow_array('SELECT payment.ctc_find_new_deposit(?, ?)', undef, 'BTC', $client->loginid) });
+
+    is $address, undef, 'no new address created when internal transactions was marked as pending';
 };
 
 done_testing;

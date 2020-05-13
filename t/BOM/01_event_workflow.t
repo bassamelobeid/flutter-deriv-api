@@ -119,7 +119,7 @@ subtest 'process' => sub {
                 affiliate_sync_initiated withdrawal_limit_reached client_transfer
                 api_token_created api_token_deleted
                 app_registered app_updated app_deleted set_financial_assessment self_exclude_set crypto_withdrawal aml_client_status_update
-                client_promo_codes_upload/
+                client_promo_codes_upload new_crypto_address/
         ],
         'Correct number of actions that can be emitted'
     );
