@@ -1528,7 +1528,7 @@ rpc transfer_between_accounts => sub {
             my $bal_1 = $1;
             my $bal_2 = $2;
             $limit = $bal_1;
-            if ($bal_1 =~ /^([A-Z]{3})\s+/ and $1 ne $currency) {
+            if ($bal_1 =~ /^([a-zA-Z0-9]{2,20})\s+/ and $1 ne $currency) {
                 $limit .= " ($bal_2)";
             }
         }

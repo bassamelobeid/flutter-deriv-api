@@ -106,7 +106,7 @@
                "additionalProperties" : false,
                "type" : "object",
                "patternProperties" : {
-                  "^[A-Z]{3,4}$" : {
+                  "^[a-zA-Z0-9]{2,20}$" : {
                      "properties" : {
                         "max_payout" : {
                            "type" : "number",

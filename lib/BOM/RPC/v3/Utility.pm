@@ -720,7 +720,7 @@ Returns a hashref which contains a single key with the shortcode to longcode map
 
 sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
     my $params = shift;
-    die 'Invalid currency: ' . $params->{currency} unless ((uc $params->{currency}) =~ /^[A-Z]{3}$/);
+    die 'Invalid currency: ' . $params->{currency} unless ($params->{currency} =~ /^[a-zA-Z0-9]{2,20}$/);
 
     # We generate a hash, so we only need each shortcode once
     my @short_codes = uniqstr(@{$params->{short_codes}});

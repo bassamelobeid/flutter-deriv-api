@@ -43,7 +43,7 @@
                "additionalProperties" : false,
                "type" : "object",
                "patternProperties" : {
-                  "^[A-Z]{3,4}$" : {
+                  "^[a-zA-Z0-9]{2,20}$" : {
                      "required" : [
                         "max_payout",
                         "min_stake"
@@ -154,7 +154,7 @@
       "legal_allowed_currencies" : {
          "type" : "array",
          "items" : {
-            "pattern" : "^[A-Z]{3,4}$",
+            "pattern" : "^[a-zA-Z0-9]{2,20}$",
             "type" : "string"
          },
          "minItems" : 4
