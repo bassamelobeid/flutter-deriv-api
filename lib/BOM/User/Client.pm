@@ -913,7 +913,7 @@ sub currency {
 
 =head2 local_currency
 
-Returns the 3-character currency code matching the client's residence.
+Returns the 3-character currency code matching the client's residence as defined in L<ISO 4217|https://en.wikipedia.org/wiki/ISO_4217>.
 
 =over 4
 
@@ -1015,7 +1015,7 @@ Takes the following parameters.
 
 =over 4
 
-=item * C<currency> - (optional) A string representing 3 character currency as defined in L<ISO 4217|https://en.wikipedia.org/wiki/ISO_4217>. An account will be created based on the given string, if it does not exist.
+=item * C<currency> - (optional) An alphanumeric string with 2-20 characters as defined in L<ISO 4217|https://en.wikipedia.org/wiki/ISO_4217> where L<ISO 4217> applicable for some currencies (i.e. fiat). An account will be created based on the given string, if it does not exist.
 =back
 
 =back
