@@ -35,7 +35,7 @@ initialize_realtime_ticks_db();
 
 # INCORRECT DATA in support of in_quiet_period testing, only.
 # Update if you want to test some other exchange info here.
-my $looks_like_currency = qr/^[A-Z]{3}/;
+my $looks_like_currency = qr/^[a-zA-Z0-9]{2,20}/;
 
 # reason: if we only test existing symbols, attributes are set by config file,
 # and _build methods are not called.
@@ -577,11 +577,11 @@ subtest 'last_licensed_display_epoch' => sub {
 };
 
 subtest 'risk type' => sub {
-    is(create_underlying('frxUSDJPY')->risk_profile, 'medium_risk', 'USDJPY is medium risk');
-    is(create_underlying('frxAUDCAD')->risk_profile, 'moderate_risk',   'AUDCAD is moderate risk');
-    is(create_underlying('AEX')->risk_profile,       'medium_risk', 'AEX is medium risk');
-    is(create_underlying('frxXAUUSD')->risk_profile, 'moderate_risk',   'XAUUSD is moderate risk');
-    is(create_underlying('R_100')->risk_profile,     'low_risk',    'R_100 is low risk');
+    is(create_underlying('frxUSDJPY')->risk_profile, 'medium_risk',   'USDJPY is medium risk');
+    is(create_underlying('frxAUDCAD')->risk_profile, 'moderate_risk', 'AUDCAD is moderate risk');
+    is(create_underlying('AEX')->risk_profile,       'medium_risk',   'AEX is medium risk');
+    is(create_underlying('frxXAUUSD')->risk_profile, 'moderate_risk', 'XAUUSD is moderate risk');
+    is(create_underlying('R_100')->risk_profile,     'low_risk',      'R_100 is low risk');
 };
 
 subtest 'feed failover' => sub {
