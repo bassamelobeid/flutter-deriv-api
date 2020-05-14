@@ -146,7 +146,7 @@
                      "legal_allowed_currencies" : {
                         "items" : {
                            "type" : "string",
-                           "pattern" : "/^[A-Z]{3,4}$/"
+                           "pattern" : "/^[a-zA-Z0-9]{2,20}$/"
                         },
                         "type" : "array",
                         "minItems" : 5
@@ -238,7 +238,7 @@
                   },
                   "legal_allowed_currencies" : {
                      "items" : {
-                        "pattern" : "^[A-Z]{3,4}$",
+                        "pattern" : "^[a-zA-Z0-9]{2,20}$",
                         "type" : "string"
                      },
                      "minItems" : 5,
@@ -270,7 +270,7 @@
                      "type" : "array",
                      "items" : {
                         "type" : "string",
-                        "pattern" : "^[A-Z]{3,4}$"
+                        "pattern" : "^[a-zA-Z0-9]{2,20}$"
                      }
                   },
                   "country" : {

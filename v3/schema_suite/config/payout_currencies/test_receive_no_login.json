@@ -13,7 +13,7 @@
       "payout_currencies" : {
          "items" : {
             "type" : "string",
-            "pattern" : "^[A-Z]{3,4}$"
+            "pattern" : "^[a-zA-Z0-9]{2,20}$"
          },
          "minItems" : 7,
          "type" : "array"

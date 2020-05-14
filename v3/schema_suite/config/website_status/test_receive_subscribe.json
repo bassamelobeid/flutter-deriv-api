@@ -21,7 +21,7 @@
                     "type": "object",
                     "minProperties" :  1,
                     "patternProperties": {
-                        "^[A-Z]{3,4}$": {
+                        "^[a-zA-Z0-9]{2,20}$": {
                             "type": "object",
                             "required": ["minimum_withdrawal"],
                             "properties": {
@@ -43,7 +43,7 @@
                     "type": "object",
                     "minProperties" :  1,
                     "patternProperties": {
-                        "^[A-Z]{3,4}$": {
+                        "^[a-zA-Z0-9]{2,20}$": {
                             "type": "object",
                             "required": ["fractional_digits", "type", "stake_default", "transfer_between_accounts"],
                             "properties": {
@@ -73,7 +73,7 @@
                                         "fees": {
                                             "type": "object",
                                             "patternProperties": {
-                                                "^[A-Z]{3,4}$": {
+                                                "^[a-zA-Z0-9]{2,20}$": {
                                                     "type": "number",
                                                     "minimum": 0,
                                                     "maximum": 7
