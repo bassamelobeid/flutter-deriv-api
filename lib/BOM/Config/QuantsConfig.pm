@@ -141,18 +141,18 @@ sub get_config {
 
     # custom commission requires some special treatment.
     return $self->_process_commission($existing_config, $args) if $config_type eq 'commission';
-    return $self->_process_multiplier_config($existing_config, $args) if $config_type eq 'multiplier_config';
+    return $self->_process_multiplier_config($existing_config, $config_type, $args) if $config_type =~ /multiplier_config/;
     return $existing_config;
 }
 
 sub _process_multiplier_config {
-    my ($self, $existing_config, $args) = @_;
+    my ($self, $existing_config, $config_type, $args) = @_;
+
+    return $existing_config if %$existing_config;
+    my (undef, $symbol) = split '::', $config_type;
 
     # if there's no existing config in chronicle, loads it from default yaml file.
-    my $config = %$existing_config ? $existing_config : $default_multiplier_config;
-
-    return $config unless $args->{underlying_symbol};
-    return $config->{$args->{underlying_symbol}};
+    return $default_multiplier_config->{$symbol};
 }
 
 sub _process_commission {

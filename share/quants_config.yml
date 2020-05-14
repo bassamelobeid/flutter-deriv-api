@@ -58,55 +58,117 @@ bet_limits:
     UST: 200
     USB: 200
     IDK: 3000
+
+# The following limits is based on this exchange rates
+# (1 BTC = $7701.50)
+# (1 ETH = $194.36)
+# (1 LTC = $43.88)
+# (1 IDK = $0.066)
+# Date: 2020-04-28
+
+  min_payout:
+    default_landing_company:
+      default_market:
+        default_contract_category:
+          USD: 0.01
+          EUR: 0.01
+          AUD: 0.01
+          GBP: 0.01
+          BTC: 0.000002
+          ETH: 0.00006
+          LTC: 0.00025
+          UST: 0.01
+          USB: 0.01
+          IDK: 0.15
   max_payout:
     default_landing_company:
       default_market:
-        USD: 50000
-        EUR: 50000
-        AUD: 50000
-        GBP: 50000
-        BTC: 5
-        ETH: 10
-        LTC: 50
-        UST: 5000
-        USB: 5000
-        IDK: 75000
+        default_contract_category:
+          USD: 50000
+          EUR: 50000
+          AUD: 50000
+          GBP: 50000
+          BTC: 6.5
+          ETH: 250
+          LTC: 1000
+          UST: 5000
+          USB: 5000
+          IDK: 75000
   min_stake:
     default_landing_company:
       default_market:
-        USD: 0.5
-        EUR: 0.5
-        AUD: 0.5
-        GBP: 0.5
-        BTC: 0.0002
-        ETH: 0.002
-        LTC: 0.01
-        UST: 0.5
-        USB: 0.5
-        IDK: 8
+        default_contract_category:
+          USD: 0.5
+          EUR: 0.5
+          AUD: 0.5
+          GBP: 0.5
+          BTC: 0.0002
+          ETH: 0.002
+          LTC: 0.01
+          UST: 0.5
+          USB: 0.5
+          IDK: 6
+        multiplier:
+          USD: 1
+          EUR: 1
+          AUD: 1
+          GBP: 1
+          BTC: 0.0002
+          ETH: 0.006
+          LTC: 0.025
+          UST: 1
+          USB: 1
+          IDK: 15
       synthetic_index:
-        USD: 0.35
-        EUR: 0.35
-        AUD: 0.35
-        GBP: 0.35
-        BTC: 0.0002
-        ETH: 0.002
-        LTC: 0.01
-        UST: 0.5
-        USB: 0.5
-        IDK: 8
+        default_contract_category:
+          USD: 0.35
+          EUR: 0.35
+          AUD: 0.35
+          GBP: 0.35
+          BTC: 0.0002
+          ETH: 0.002
+          LTC: 0.01
+          UST: 0.5
+          USB: 0.5
+          IDK: 6
+        multiplier:
+          USD: 1
+          EUR: 1
+          AUD: 1
+          GBP: 1
+          BTC: 0.0002
+          ETH: 0.006
+          LTC: 0.025
+          UST: 1
+          USB: 1
+          IDK: 15
     maltainvest:
       default_market:
-        USD: 5
-        EUR: 5
-        AUD: 5
-        GBP: 5
-        BTC: 0.002
-        ETH: 0.02
-        LTC: 0.1
-        UST: 5
-        USB: 5
-        IDK: 75
+        default_contract_category:
+          USD: 5
+          EUR: 5
+          AUD: 5
+          GBP: 5
+          BTC: 0.002
+          ETH: 0.02
+          LTC: 0.1
+          UST: 5
+          USB: 5
+          IDK: 75
+  max_stake:
+    default_landing_company:
+      default_market:
+        multiplier:
+          USD: 2000
+          EUR: 2000
+          AUD: 2000
+          GBP: 2000
+          BTC: 0.3
+          ETH: 10
+          LTC: 40
+          UST: 2000
+          USB: 2000
+          IDK: 30000
   min_commission_amount:
     USD: 0.02 # 0.02 dollar
     EUR: 0.02
