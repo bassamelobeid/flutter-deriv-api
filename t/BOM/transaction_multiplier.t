@@ -677,12 +677,13 @@ subtest 'sell failure due to update' => sub {
     };
 };
 
-subtest 'buy multiplier with unsupported underlying' => sub {
-    # because the market of frxAUDJPY will be closed after Friday 20:55, we move back 3 days for safe
-    # if it is on Friday or weekend.
-    if (any { Date::Utility->new->day_of_week == $_ } (5, 6, 0)) {
-        set_relative_time(0 - 3 * 24 * 60 * 60);
-    }
+# because the market of forex will be closed after Friday 20:55, we move back 3 days for safe
+# if it is on Friday or weekend.
+if (any { Date::Utility->new->day_of_week == $_ } (5, 6, 0)) {
+    set_relative_time(0 - 3 * 24 * 60 * 60);
+}
+
+subtest 'buy multiplier for forex major pair' => sub {
     lives_ok {
         my $contract = produce_contract({
             underlying   => 'frxAUDJPY',
@@ -706,7 +707,60 @@ subtest 'buy multiplier with unsupported underlying' => sub {
 
         my $error = $txn->buy;
         ok $error, 'buy failed with error';
-        is $error->{-mesg}, 'multiplier commission not defined for frxAUDJPY', 'message is multiplier commission not defined for frxAUDJPY';
+        is $error->{-mesg}, 'multiplier out of range', 'message - multiplier out of range';
+        is $error->{-message_to_client}, 'Multiplier is not in acceptable range. Accepts 20,30,50,100,200.',
+            'message to client - Multiplier is not in acceptable range. Accepts 100,200,300,500,1000.';
+
+        $contract = produce_contract({
+            underlying   => 'frxAUDJPY',
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            multiplier   => 100,
+            amount       => 100,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+        });
+
+        $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        ok !$txn->buy;
+    }
+    'can buy frxAUDJPY';
+};
+
+subtest 'buy multiplier with unsupported underlying' => sub {
+    lives_ok {
+        my $contract = produce_contract({
+            underlying   => 'frxGBPPLN',
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            multiplier   => 10,
+            amount       => 100,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = $txn->buy;
+        ok $error, 'buy failed with error';
+        is $error->{-mesg}, 'multiplier commission not defined for frxGBPPLN', 'message is multiplier commission not defined for frxGBPPLN';
         is $error->{-message_to_client}, 'Trading is not offered for this asset.', 'message to client Trading is not offered for this asset.';
     };
     restore_time();
