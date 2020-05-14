@@ -10,7 +10,7 @@ __PACKAGE__->meta->setup(
 
     columns => [
         address          => { type => 'varchar', length => 100, not_null => 1 },
-        currency_code    => { type => 'varchar', length => 3, not_null => 1 },
+        currency_code    => { type => 'text', not_null => 1 },
         id               => { type => 'bigserial', not_null => 1 },
         client_loginid   => { type => 'varchar', length => 12 },
         amount           => { type => 'numeric' },

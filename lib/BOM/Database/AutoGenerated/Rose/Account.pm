@@ -11,7 +11,7 @@ __PACKAGE__->meta->setup(
     columns => [
         id             => { type => 'bigint', not_null => 1, sequence => 'sequences.account_serial' },
         client_loginid => { type => 'varchar', length => 12, not_null => 1 },
-        currency_code  => { type => 'varchar', length => 3, not_null => 1 },
+        currency_code  => { type => 'text', not_null => 1 },
         balance        => { type => 'numeric', default => '0', not_null => 1 },
         is_default     => { type => 'boolean', default => 'true', not_null => 1 },
         last_modified  => { type => 'timestamp' },

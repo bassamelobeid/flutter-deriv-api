@@ -20,7 +20,7 @@ __PACKAGE__->meta->setup(
         commission_withdrawal => { type => 'numeric', not_null => 1 },
         is_authenticated      => { type => 'boolean', not_null => 1 },
         api_ip                => { type => 'varchar', length => 64 },
-        currency_code         => { type => 'varchar', length => 3, not_null => 1 },
+        currency_code         => { type => 'text', not_null => 1 },
         target_country        => { type => 'varchar', default => '', length => 255, not_null => 1 },
         supported_banks       => { type => 'varchar', length => 500 },
         min_withdrawal        => { type => 'numeric' },

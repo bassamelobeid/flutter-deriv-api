@@ -15,7 +15,7 @@ __PACKAGE__->meta->setup(
         payment_type_code => { type => 'varchar', length => 50, not_null => 1 },
         status            => { type => 'varchar', length => 20, not_null => 1 },
         account_id        => { type => 'bigint', not_null => 1 },
-        payment_currency  => { type => 'varchar', length => 3, not_null => 1 },
+        payment_currency  => { type => 'text', not_null => 1 },
         payment_country   => { type => 'varchar', length => 12, not_null => 1 },
         remark            => { type => 'text' },
         transaction_id    => { type => 'varchar', length => 100 },
