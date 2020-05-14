@@ -127,7 +127,20 @@ is $res->{error}->{code}, 'InputValidationFailed', 'error code InputValidationFa
 is $res->{error}->{message}, 'Input validation failed: limit_order', 'message \'Input validation failed: limit_order\'';
 
 delete $req->{limit_order};
-$req->{symbol} = 'frxUSDJPY';
+
+$req->{symbol}     = 'frxAUDJPY';
+$req->{multiplier} = 100;
+$res               = $t->await::proposal($req);
+
+if (my $proposal = $res->{proposal}) {
+    ok $proposal->{id}, 'Should return id';
+    ok $proposal->{limit_order}->{stop_out}, 'has stop out';
+    ok $proposal->{limit_order}->{stop_out}->{value}, 'has stop out barrier value';
+} else {
+    diag Dumper($res);
+}
+
+$req->{symbol} = 'frxGBPPLN';
 $res = $t->await::proposal($req);
 ok $res->{error}, 'proposal error';
 is $res->{error}->{code}, 'OfferingsValidationError', 'error code OfferingsValidationError';

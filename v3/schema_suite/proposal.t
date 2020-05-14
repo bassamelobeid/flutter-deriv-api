@@ -178,7 +178,7 @@ test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_rec
 # multiplier
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'payout', '10',
     'ContractCreationFailure', 'Basis must be stake for this contract.';
-test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'frxUSDJPY', 'stake', '10',
+test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'frxGBPPLN', 'stake', '10',
     'OfferingsValidationError', 'Trading is not offered for this asset.';
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'stake', '5',
     'ContractBuyValidationError', 'Multiplier is not in acceptable range. Accepts 10,20,30,50,100.';
@@ -201,7 +201,7 @@ test_sendrecv_params 'proposal/test_send_multiplier_limit_order.json', 'proposal
 # multiplier
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'payout', '10',
     'ContractCreationFailure', 'Basis must be stake for this contract.';
-test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'frxUSDJPY', 'stake', '10',
+test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'frxGBPPLN', 'stake', '10',
     'OfferingsValidationError', 'Trading is not offered for this asset.';
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'stake', '5',
     'ContractBuyValidationError', 'Multiplier is not in acceptable range. Accepts 10,20,30,50,100.';
