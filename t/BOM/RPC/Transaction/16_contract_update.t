@@ -178,4 +178,41 @@ subtest 'contract_update' => sub {
     is $history->[1]->{value},        101.05;
 };
 
+subtest 'forex major pair - frxAUDJPY' => sub {
+    my $buy_params = {
+        client_ip           => '127.0.0.1',
+        token               => $token,
+        contract_parameters => {
+            contract_type => 'MULTUP',
+            basis         => 'stake',
+            amount        => 100,
+            multiplier    => 100,
+            symbol        => 'frxAUDJPY',
+            currency      => 'USD',
+        },
+        args => {price => 100},
+    };
+    my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
+
+    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
+    ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
+
+    my $update_params = {
+        client_ip => '127.0.0.1',
+        token     => $token,
+        args      => {
+            contract_id     => $buy_res->{contract_id},
+            contract_update => 1,
+            limit_order     => {
+                take_profit => 10,
+                stop_loss   => 5
+            },
+        }};
+    my $update_res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
+    is $update_res->{stop_loss}->{order_amount},   -5;
+    is $update_res->{stop_loss}->{value},          '99.980';
+    is $update_res->{take_profit}->{order_amount}, 10;
+    is $update_res->{take_profit}->{value},        '100.130';
+};
+
 done_testing();

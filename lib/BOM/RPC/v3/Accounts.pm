@@ -54,7 +54,7 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::UserConnect;
 use BOM::Config::Runtime;
-use BOM::Config::ContractPricingLimits qw(market_pricing_limits);
+use BOM::Config::Quants qw(market_pricing_limits);
 use BOM::RPC::v3::Services;
 use BOM::Config::Redis;
 use BOM::User::Onfido;

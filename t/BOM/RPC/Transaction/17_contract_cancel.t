@@ -43,6 +43,9 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 my $mocked = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked->mock('spot_tick', sub { return $current_tick });
 
+my $mocked_emp = Test::MockModule->new('VolSurface::Empirical');
+$mocked_emp->mock('get_volatility', sub { return 0.1 });
+
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -138,6 +141,37 @@ subtest 'contract_update' => sub {
     $cancel_params->{args}->{cancel} = $buy_res->{contract_id};
     $res = $c->call_ok('cancel', $cancel_params)->has_error->error_code_is('CancelFailed')
         ->error_message_is('Deal cancellation is not available for this contract.');
+};
+
+subtest 'forex major pair - frxAUDJPY' => sub {
+    my $buy_params = {
+        client_ip           => '127.0.0.1',
+        token               => $token,
+        contract_parameters => {
+            contract_type => 'MULTUP',
+            basis         => 'stake',
+            amount        => 100,
+            multiplier    => 100,
+            symbol        => 'frxAUDJPY',
+            currency      => 'USD',
+            cancellation  => '1h',
+        },
+        args => {price => 103.50},
+    };
+    my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
+
+    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
+    ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
+
+    sleep 1;
+    my $cancel_params = {
+        client_ip => '127.0.0.1',
+        token     => $token,
+        args      => {cancel => $buy_res->{contract_id}}};
+
+    my $cancel_res = $c->call_ok('cancel', $cancel_params)->has_no_error->result;
+    ok $cancel_res->{transaction_id};
+    is $cancel_res->{sold_for}, '100.00', 'sold for stake at buy';
 };
 
 done_testing();
