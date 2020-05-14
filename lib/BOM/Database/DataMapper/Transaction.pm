@@ -339,6 +339,8 @@ sub get_transactions_ws {
                 m.take_profit_order_amount,
                 m.stop_loss_order_date,
                 m.stop_loss_order_amount,
+                m.cancellation_price,
+                m.is_cancelled,
                 b.short_code,
                 b.buy_price,
                 b.purchase_time,

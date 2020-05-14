@@ -318,7 +318,9 @@ sub sell_bet {
         @{$bet}{qw/id sell_price sell_time/},
 
         # FMB child table
-        $bet->{absolute_barrier} ? Encode::encode_utf8($json->encode(+{absolute_barrier => $bet->{absolute_barrier}})) : undef,
+        $bet->{absolute_barrier}       ? Encode::encode_utf8($json->encode(+{absolute_barrier => $bet->{absolute_barrier}}))
+        : defined $bet->{is_cancelled} ? Encode::encode_utf8($json->encode(+{is_cancelled     => $bet->{is_cancelled}}))
+        : undef,
 
         $bet->{is_expired} // 1,
 
@@ -418,8 +420,8 @@ LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AN
             $shortcode,                       # -- 3
             $self->bet_data->{sell_price},    # -- 4
             $self->bet_data->{sell_time},     # -- 5
-            $self->bet_data->{absolute_barrier}
-            ? Encode::encode_utf8($json->encode(+{absolute_barrier => $self->bet_data->{absolute_barrier}}))
+              $self->bet_data->{absolute_barrier} ? Encode::encode_utf8($json->encode(+{absolute_barrier => $self->bet_data->{absolute_barrier}}))
+            : $self->bet_data->{is_cancelled}     ? Encode::encode_utf8($json->encode(+{is_cancelled     => $self->bet_data->{is_cancelled}}))
             : undef,                          # -- 6
             $self->bet_data->{is_expired} // 1,    # -- 7
 
