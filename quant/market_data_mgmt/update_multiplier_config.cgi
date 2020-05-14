@@ -24,18 +24,18 @@ my $r     = request();
 if ($r->param('save_multiplier_config')) {
     my $output;
     try {
-        my $multiplier_config = decode_json_utf8($r->param('multiplier_config_json'));
-        my $new_config;
-        foreach my $c (@$multiplier_config) {
-            my ($name, $value) = @{$c}{'name', 'value'};
-            my ($symbol, $config_type) = split '-', $name;
-            $new_config->{$symbol}{$config_type} = $config_type eq 'multiplier_range' ? decode_json_utf8($value) : $value;
-        }
+        my $symbol = $r->param('symbol') // die 'symbol is undef';
+        my $multiplier_config = {
+            commission                  => $r->param('commission'),
+            multiplier_range            => decode_json_utf8($r->param('multiplier_range')),
+            cancellation_commission     => $r->param('cancellation_commission'),
+            cancellation_duration_range => decode_json_utf8($r->param('cancellation_duration_range')),
+        };
         BOM::Config::QuantsConfig->new(
             recorded_date    => Date::Utility->new,
             chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
-        )->save_config('multiplier_config', $new_config);
-        BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeMultiplierConfig", $new_config);
+        )->save_config("multiplier_config::$symbol", $multiplier_config);
+        BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeMultiplierConfig", $multiplier_config);
         $output = {success => 1};
     }
     catch {
