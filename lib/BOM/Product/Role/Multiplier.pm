@@ -14,9 +14,9 @@ use BOM::Config::Chronicle;
 use Machine::Epsilon;
 use Scalar::Util qw(looks_like_number);
 use Time::Duration::Concise;
+use BOM::Config::Quants qw(minimum_stake_limit);
 
 use constant {
-    MIN_COMMISSION_AMOUNT     => 0.02,
     BARRIER_ADJUSTMENT_FACTOR => 0.5826,
 };
 
@@ -38,7 +38,10 @@ sub BUILD {
 
     # We want to charge a minimum commission for each contract.
     # Since, commission is a function of barrier calculation, we will need to fix it at BUILD
-    my $commission = $self->_multiplier_config->{commission};
+    my $commission =
+        (defined $self->_order->{stop_out} and defined $self->_order->{stop_out}->{commission})
+        ? $self->_order->{stop_out}->{commission}
+        : $self->_multiplier_config->{commission};
 
     unless (defined $commission) {
         $self->_add_error({
@@ -49,10 +52,11 @@ sub BUILD {
     }
 
     my $commission_amount = $commission * $self->_user_input_stake * $self->multiplier;
+    my $min_commission    = $self->_minimum_main_contract_commission;
 
-    if ($commission_amount < MIN_COMMISSION_AMOUNT) {
-        $commission = MIN_COMMISSION_AMOUNT / ($self->_user_input_stake * $self->multiplier);
-        $commission_amount = MIN_COMMISSION_AMOUNT;
+    if ($commission_amount < $min_commission) {
+        $commission = $min_commission / ($self->_user_input_stake * $self->multiplier);
+        $commission_amount = $min_commission;
     }
 
     $self->commission($commission);
@@ -271,8 +275,14 @@ sub is_expired {
             $self->value(financialrounding('price', $self->currency, $self->_user_input_stake));
             return 1;
         } else {
-            my $value =
-                $self->_user_input_stake + max($self->_calculate_pnl_at_tick({at_tick => $self->hit_tick}), -$self->_user_input_stake);
+            my $type = $self->hit_type;
+
+            my $pnl =
+                (abs($self->$type->barrier_value - $self->hit_tick->quote) < machine_epsilon())
+                ? $self->$type->order_amount
+                : $self->_calculate_pnl_at_tick({at_tick => $self->hit_tick});
+            $pnl = max($pnl, -$self->_user_input_stake);
+            my $value = $self->_user_input_stake + $pnl;
             $self->value(financialrounding('price', $self->currency, $value));
             return 1;
         }
@@ -312,35 +322,55 @@ sub _build_hit_tick {
         $end_time = $self->date_pricing->is_before($self->date_expiry) ? $self->date_pricing->epoch : $self->date_expiry->epoch;
     }
 
-    my $stop_out_tick = $self->_get_breaching_tick($self->stop_out->order_date->epoch,
-        $end_time, {$self->stop_out_side => $self->underlying->pipsized_value($self->stop_out->barrier_value)});
+    my $stop_out_tick =
+        $self->_get_breaching_tick($self->stop_out->order_date->epoch, $end_time, {$self->stop_out_side => $self->stop_out->barrier_value});
     my $take_profit_tick =
         ($self->take_profit and defined $self->take_profit->barrier_value)
-        ? $self->_get_breaching_tick($self->take_profit->order_date->epoch,
-        $end_time, {$self->take_profit_side => $self->underlying->pipsized_value($self->take_profit->barrier_value)})
+        ? $self->_get_breaching_tick($self->take_profit->order_date->epoch, $end_time, {$self->take_profit_side => $self->take_profit->barrier_value})
         : undef;
     my $stop_loss_tick =
         ($self->stop_loss and defined $self->stop_loss->barrier_value)
-        ? $self->_get_breaching_tick($self->stop_loss->order_date->epoch,
-        $end_time, {$self->stop_loss_side => $self->underlying->pipsized_value($self->stop_loss->barrier_value)})
+        ? $self->_get_breaching_tick($self->stop_loss->order_date->epoch, $end_time, {$self->stop_loss_side => $self->stop_loss->barrier_value})
         : undef;
 
     # there's a small chance both stop out and take profit can happen (mostly due to delay in sell)
     # let's not take any chances.
     if (($stop_loss_tick or $stop_out_tick) and $take_profit_tick) {
         # stop_loss_tick should always have higher priority over stop_out if both were breached
-        my $compare_tick = $stop_loss_tick // $stop_out_tick;
-        return ($compare_tick->epoch < $take_profit_tick->epoch) ? $compare_tick : $take_profit_tick;
+        if ($stop_loss_tick and $stop_loss_tick->epoch < $take_profit_tick->epoch) {
+            $self->hit_type('stop_loss');
+            return $stop_loss_tick;
+        } elsif ($stop_out_tick and $stop_out_tick->epoch < $take_profit_tick->epoch) {
+            $self->hit_type('stop_out');
+            return $stop_out_tick;
+        } else {
+            $self->hit_type('take_profit');
+            return $take_profit_tick;
+        }
     } elsif ($stop_out_tick) {
+        $self->hit_type('stop_out');
         return $stop_out_tick;
     } elsif ($take_profit_tick) {
+        $self->hit_type('take_profit');
         return $take_profit_tick;
     } elsif ($stop_loss_tick) {
+        $self->hit_type('stop_loss');
         return $stop_loss_tick;
     }
 
     return undef;
 }
+
+=head2 hit_type
+
+Did the contract thit take profit, stop loss or stop out.
+
+=cut
+
+has hit_type => (
+    is      => 'rw',
+    default => undef,
+);
 
 sub _get_breaching_tick {
     my ($self, $start_time, $end_time, $barrier_args) = @_;
@@ -566,6 +596,10 @@ sub available_orders {
         }
     }
 
+    if ($self->cancellation) {
+        push @available_orders, ('cancellation', ['price', $self->cost_of_cancellation]);
+    }
+
     return \@available_orders;
 }
 
@@ -577,7 +611,8 @@ sub _extract_details {
     return [
         'basis_spot', $order_object->basis_spot + 0, 'order_amount',
         financialrounding('price', $self->currency, $order_amount), 'order_date', int($order_object->order_date->epoch),
-        'order_type', $order_object->order_type
+        'order_type', $order_object->order_type, 'commission',
+        $order_object->commission,
     ];
 }
 
@@ -594,17 +629,6 @@ sub stop_loss_side {
 sub take_profit_side {
     my $self = shift;
     return $self->sentiment eq 'up' ? 'higher' : 'lower';
-}
-
-sub commission_amount {
-    my $self = shift;
-
-    my $commission = $self->commission // 0;
-    my $commission_amount = $commission * $self->_user_input_stake * $self->multiplier;
-
-    if ($commission_amount < MIN_COMMISSION_AMOUNT) {
-
-    }
 }
 
 =head2 cancellation
@@ -682,11 +706,16 @@ sub cost_of_cancellation {
     my $self = shift;
 
     # if there's no cancellation request, do not charge
-    return 0 unless $self->cancellation;
+    my $dc_ask = 0;
 
-    my $dc_model_price = $self->cancellation_tp ? $self->_american_binary_knockout + $self->_double_knockout : $self->_standard_barrier_option;
-    my $cost           = $self->_user_input_stake * $self->multiplier * $dc_model_price;
-    my $dc_ask         = $cost * (1 + $self->_multiplier_config->{cancellation_commission});
+    # do not recalculate cancellation price again if contract is not pricing new
+    if ($self->_order->{cancellation} and $self->_order->{cancellation}->{price}) {
+        $dc_ask = $self->_order->{cancellation}->{price};
+    } elsif ($self->cancellation) {
+        my $dc_model_price = $self->cancellation_tp ? $self->_american_binary_knockout + $self->_double_knockout : $self->_standard_barrier_option;
+        my $cost = $self->_user_input_stake * $self->multiplier * $dc_model_price;
+        $dc_ask = max($self->_minimum_cancellation_commission, $cost * (1 + $self->_multiplier_config->{cancellation_commission}));
+    }
 
     return financialrounding('price', $self->currency, $dc_ask);
 }
@@ -837,7 +866,7 @@ sub _build__multiplier_config {
         chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date),
     );
 
-    return $qc->get_config('multiplier_config', {underlying_symbol => $self->underlying->symbol}) // {};
+    return $qc->get_config('multiplier_config::' . $self->underlying->symbol) // {};
 }
 
 sub _limit_order_args {
@@ -873,12 +902,21 @@ has _formula_args => (
 sub _build_formula_args {
     my $self = shift;
 
-    # not sure when we will be implementing multiplier for financial instruments,
-    # don't over-complicate matters now.
-    my $sigma =
-          $self->underlying->volatility_surface_type eq 'flat'
-        ? $self->volsurface->get_volatility
-        : die 'you need to refactor volatility calculation for financial instrument';
+    # currently, only synthetic and forex.
+    my $sigma;
+    my $market = $self->underlying->market->name;
+    if ($market eq 'synthetic_index') {
+        $sigma = $self->volsurface->get_volatility;
+    } elsif ($market eq 'forex') {
+        $sigma = $self->empirical_volsurface->get_volatility({
+            from  => $self->date_start,
+            to    => $self->cancellation_expiry,
+            delta => 50,
+            ticks => $self->ticks_for_short_term_volatility_calculation,
+        });
+    } else {
+        die 'get_volatility for unknown market ' . $market;
+    }
 
     return {
         t => ($self->cancellation_expiry->epoch - $self->date_start->epoch) / (86400 * 365),
@@ -903,6 +941,27 @@ sub _barrier_continuity_adjustment {
     my $self = shift;
 
     return BARRIER_ADJUSTMENT_FACTOR * $self->_formula_args->{sigma} * sqrt($self->_generation_interval_in_years);
+}
+
+## The definition of minimum commission on the main contract
+## and deal cancellation is relative to minimum stake defined in quants config.
+
+sub _minimum_stake {
+    my $self = shift;
+
+    return minimum_stake_limit($self->currency, $self->landing_company, $self->underlying->market->name, $self->category->code);
+}
+
+sub _minimum_main_contract_commission {
+    my $self = shift;
+
+    return $self->_minimum_stake * 0.02;
+}
+
+sub _minimum_cancellation_commission {
+    my $self = shift;
+
+    return $self->_minimum_stake * 0.01;
 }
 
 1;

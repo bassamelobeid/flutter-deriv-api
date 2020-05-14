@@ -38,6 +38,7 @@ use BOM::MarketData qw(create_underlying);
 use BOM::Product::Exception;
 use LandingCompany::Registry;
 use YAML::XS qw(LoadFile);
+use BOM::Config::Quants qw(minimum_payout_limit maximum_payout_limit minimum_stake_limit maximum_stake_limit);
 
 my $epsilon                   = machine_epsilon();
 my $minimum_multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_minimum_multiplier.yml');
@@ -415,12 +416,6 @@ sub _initialize_other_parameters {
             details    => {field => 'amount'},
         ) if (not(exists $params->{amount_type} and exists $params->{amount}));
 
-        my $min_amount = $params->{category}->get_minimum_stake($params->{currency}, $params->{payout_currency_type});
-        BOM::Product::Exception->throw(
-            error_code => $params->{amount_type} eq 'stake' ? 'InvalidMinStake' : 'InvalidMinPayout',
-            error_args => [financialrounding('price', $params->{currency}, $min_amount)],
-            details => {field => 'amount'}) if exists $params->{amount} and $params->{amount} < $min_amount;
-
         my @allowed = @{$params->{category}->supported_amount_type};
         if (not any { $params->{amount_type} eq $_ } @allowed) {
             my $error_code = scalar(@allowed) > 1 ? 'WrongAmountTypeTwo' : 'WrongAmountTypeOne';
@@ -430,6 +425,25 @@ sub _initialize_other_parameters {
                 details    => {field => 'basis'},
             );
         }
+
+        my @limit_args = ($params->{currency}, $params->{landing_company}, $params->{underlying}->market->name, $params->{category}->code);
+        my $min_amount = $params->{amount_type} eq 'payout' ? minimum_payout_limit(@limit_args) : minimum_stake_limit(@limit_args);
+        BOM::Product::Exception->throw(
+            error_code => $params->{amount_type} eq 'stake' ? 'InvalidMinStake' : 'InvalidMinPayout',
+            error_args => [financialrounding('price', $params->{currency}, $min_amount)],
+            details => {field => 'amount'})
+            if defined $min_amount
+            and exists $params->{amount}
+            and $params->{amount} < $min_amount;
+
+        my $max_amount = $params->{amount_type} eq 'payout' ? maximum_payout_limit(@limit_args) : maximum_stake_limit(@limit_args);
+        BOM::Product::Exception->throw(
+            error_code => $params->{amount_type} eq 'stake' ? 'StakeLimitExceeded' : 'PayoutLimitExceeded',
+            error_args => [financialrounding('price', $params->{currency}, $max_amount)],
+            details => {field => 'amount'})
+            if defined $max_amount
+            and exists $params->{amount}
+            and $params->{amount} > $max_amount;
     } else {
         BOM::Product::Exception->throw(
             error_code => 'InvalidInput',

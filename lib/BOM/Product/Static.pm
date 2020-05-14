@@ -98,6 +98,7 @@ my $config = {
         SelectedTickNumberLimits      => 'Tick prediction must be between [_1] and [_2].',
         SettlementError               => 'An error occurred during contract settlement.',
         PayoutLimitExceeded           => 'Maximum payout allowed is [_1].',
+        StakeLimitExceeded            => 'Maximum stake allowed is [_1].',
         StakeLimits                   => 'Minimum stake of [_1] and maximum payout of [_2]. Current stake is [_3].',
         PayoutLimits                  => 'Minimum stake of [_1] and maximum payout of [_2]. Current payout is [_3].',
         TicksNumberLimits             => 'Number of ticks must be between [_1] and [_2].',

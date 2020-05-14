@@ -1,13 +1,13 @@
 ---
 - data:
   - symbol:
-    - display_name: USD/CHF
-      name: frxUSDCHF
+    - display_name: GBP/USD
+      name: frxGBPUSD
     trade_durations:
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 5
+        min: 1
         name: m
       - display_name: Hours
         max: 24
@@ -35,7 +35,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 5
+        min: 3
         name: m
       - display_name: Hours
         max: 24
@@ -92,6 +92,14 @@
       trade_type:
         display_name: Stays Between/Goes Outside
         name: staysinout
+    - durations:
+      - display_name: No Expiry
+        max: 0
+        min: 0
+        name: no_expiry
+      trade_type:
+        display_name: Multiply Up/Multiply Down
+        name: multiplier
   - symbol:
     - display_name: AUD/JPY
       name: frxAUDJPY
@@ -222,14 +230,22 @@
       trade_type:
         display_name: Call Spread/Put Spread
         name: callputspread
+    - durations:
+      - display_name: No Expiry
+        max: 0
+        min: 0
+        name: no_expiry
+      trade_type:
+        display_name: Multiply Up/Multiply Down
+        name: multiplier
   - symbol:
-    - display_name: GBP/USD
-      name: frxGBPUSD
+    - display_name: USD/CHF
+      name: frxUSDCHF
     trade_durations:
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 1
+        min: 5
         name: m
       - display_name: Hours
         max: 24
@@ -257,7 +273,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 3
+        min: 5
         name: m
       - display_name: Hours
         max: 24
@@ -314,6 +330,14 @@
       trade_type:
         display_name: Stays Between/Goes Outside
         name: staysinout
+    - durations:
+      - display_name: No Expiry
+        max: 0
+        min: 0
+        name: no_expiry
+      trade_type:
+        display_name: Multiply Up/Multiply Down
+        name: multiplier
   market:
     display_name: Forex
     name: forex

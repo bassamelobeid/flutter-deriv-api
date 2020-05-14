@@ -180,7 +180,7 @@ sub _get_multiplier_config {
     my ($symbol, $type) = @_;
 
     my $config = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader())
-        ->get_config('multiplier_config', {underlying_symbol => $symbol}) // {};
+        ->get_config('multiplier_config::' . $symbol) // {};
 
     return $config->{$type};
 }

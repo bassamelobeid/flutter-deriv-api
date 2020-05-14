@@ -4,7 +4,7 @@ use Moose::Role;
 
 use BOM::Config;
 use BOM::Product::Static;
-use BOM::Config::ContractPricingLimits qw/market_pricing_limits/;
+use BOM::Config::Quants qw/market_pricing_limits/;
 
 use List::Util qw(min);
 use Scalar::Util qw(looks_like_number);
@@ -169,7 +169,7 @@ sub _build_staking_limits {
     my $lc     = $self->landing_company;
     my $market = $self->underlying->market->name;
 
-    my $bet_limits = market_pricing_limits([$curr], $lc, [$market])->{$market}->{$curr};
+    my $bet_limits = market_pricing_limits([$curr], $lc, [$market], [$self->category->code])->{$market}->{$curr};
     my $static = BOM::Config::quants;
 
     my $bl_min = $bet_limits->{min_stake};

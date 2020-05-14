@@ -89,7 +89,7 @@ subtest 'price check for 2 x base_commission' => sub {
         duration              => '1h',
         currency              => 'USD',
         amount_type           => 'stake',
-        amount                => 30000,
+        amount                => 3000,
         app_markup_percentage => 1,            # 1%
         base_commission       => 0.02,
         theo_probability      => $fake_theo,
@@ -107,7 +107,7 @@ subtest 'price check for 2 x base_commission' => sub {
         base_commission       => 0.02,
         theo_probability      => $fake_theo,
     });
-    is $c2->ask_price + 0, 30000, 'matched ask_price';
+    is $c2->ask_price + 0, 3000, 'matched ask_price';
 };
 
 subtest 'price check for 1 to 2 x base_commission' => sub {

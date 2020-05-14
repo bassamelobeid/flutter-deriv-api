@@ -16,15 +16,28 @@ my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings({
 my @symbols = $offerings->query({contract_category => 'multiplier'}, ['underlying_symbol']);
 
 subtest 'multiplier range' => sub {
-    my %expected = (
-        '1HZ10V'  => 1,
-        R_10      => 1,
-        R_25      => 1,
-        R_50      => 1,
-        R_75      => 0,
-        R_100     => 1,
-        '1HZ100V' => 1,
-    );
+    my $expected = {
+        'frxEURJPY' => [30,  50,  100, 150, 300],
+        'frxAUDUSD' => [50,  100, 150, 250, 500],
+        'R_25'      => [50,  100, 150, 250, 500],
+        'frxGBPAUD' => [20,  30,  50,  100, 200],
+        'frxUSDJPY' => [50,  100, 150, 250, 500],
+        'frxUSDCHF' => [50,  100, 150, 250, 500],
+        'R_50'      => [20,  40,  60,  100, 200],
+        'frxEURCAD' => [20,  30,  50,  100, 200],
+        'frxGBPUSD' => [50,  100, 150, 250, 500],
+        '1HZ100V'   => [10,  20,  30,  50,  100],
+        'R_10'      => [100, 200, 300, 500, 1000],
+        'frxEURGBP' => [30,  50,  100, 150, 300],
+        'frxEURUSD' => [50,  100, 150, 250, 500],
+        'frxGBPJPY' => [30,  50,  100, 150, 300],
+        'R_75'      => [15,  30,  50,  75,  150],
+        'frxEURAUD' => [20,  30,  50,  100, 200],
+        'frxAUDJPY' => [20,  30,  50,  100, 200],
+        'frxEURCHF' => [20,  30,  50,  100, 200],
+        'R_100'     => [10,  20,  30,  50,  100],
+        '1HZ10V'    => [100, 200, 300, 500, 1000],
+        'frxUSDCAD' => [50,  100, 150, 250, 500]};
     my $args = {
         bet_type   => 'multup',
         stake      => 100,
@@ -34,14 +47,14 @@ subtest 'multiplier range' => sub {
 
     foreach my $symbol (@symbols) {
         $args->{underlying} = $symbol;
-        my $c = produce_contract($args);
-        if ($expected{$symbol}) {
-            ok !$c->_validate_multiplier_range();
+        if (my $range = $expected->{$symbol}) {
+            foreach my $multiplier (@$range) {
+                $args->{multiplier} = $multiplier;
+                my $c = produce_contract($args);
+                ok !$c->_validate_multiplier_range();
+            }
         } else {
-            my $error = $c->_validate_multiplier_range();
-            is $error->{message}, 'multiplier out of range';
-            is $error->{message_to_client}->[0], 'Multiplier is not in acceptable range. Accepts [_1].', $symbol;
-            is $error->{message_to_client}->[1], '15,30,50,75,150';
+            fail "multiplier range config not found for $symbol";
         }
     }
 };

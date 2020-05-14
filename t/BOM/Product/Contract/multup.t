@@ -222,7 +222,7 @@ subtest 'deal cancellation' => sub {
 
     delete $args->{cancellation};
     $c = produce_contract($args);
-    is $c->cost_of_cancellation, 0, 'zero cost of cancellation';
+    is $c->cost_of_cancellation, '0.00', 'zero cost of cancellation';
     ok !$c->cancellation_expiry, 'cancellation expiry is undef';
     is $c->ask_price, 100, 'ask price is 100 as per user input';
     ok !$c->is_cancelled,       'not cancelled';
@@ -574,6 +574,44 @@ subtest 'deal cancellation suspension' => sub {
     ok $c->is_valid_to_buy, 'valid to buy';
 
     BOM::Config::Runtime->instance->app_config->quants->suspend_deal_cancellation->synthetic_index($suspend);
+};
+
+subtest 'deal cancellation with fx' => sub {
+    my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
+    $mocked_decimate->mock(
+        'get',
+        sub {
+            [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
+        });
+    my $now = Date::Utility->new('10-Mar-2015');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {recorded_date => $now});
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'currency',
+        {
+            recorded_date => $now,
+            symbol        => $_,
+        }) for qw( USD JPY JPY-USD );
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $_,
+            recorded_date => $now
+        }) for qw (frxUSDJPY frxAUDCAD frxUSDCAD frxAUDUSD);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'frxUSDJPY'], [102, $now->epoch + 1, 'frxUSDJPY'],);
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'frxUSDJPY',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+        cancellation => '1h',
+    };
+    my $c = produce_contract($args);
+    is $c->ask_price, 101.25, 'ask price is 101.25';
+    is $c->cost_of_cancellation , 1.25, 'cost of cancellation is 1.25';
 };
 
 done_testing();

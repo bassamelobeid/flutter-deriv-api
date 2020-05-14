@@ -17,13 +17,27 @@ my @symbols = $offerings->query({contract_category => 'multiplier'}, ['underlyin
 
 subtest 'commission for underlying' => sub {
     my %expected_comm = (
-        '1HZ10V'  => [100, 3.56144869308907e-05],
-        R_10      => [100, 5.0366490434625e-05],
-        R_25      => [50,  0.000125916226086562],
-        R_50      => [20,  0.000251832452173125],
-        R_75      => [15,  0.000377748678259687],
-        R_100     => [10,  0.000503664904346249],
-        '1HZ100V' => [10,  0.000356144869308907],
+        '1HZ10V'    => [100, 3.56144869308907e-05],
+        R_10        => [100, 5.0366490434625e-05],
+        R_25        => [50,  0.000125916226086562],
+        R_50        => [20,  0.000251832452173125],
+        R_75        => [15,  0.000377748678259687],
+        R_100       => [10,  0.000503664904346249],
+        '1HZ100V'   => [10,  0.000356144869308907],
+        'frxEURJPY' => [30,  0.0002],
+        'frxAUDUSD' => [50,  0.0002],
+        'frxGBPAUD' => [20,  0.0004],
+        'frxUSDJPY' => [50,  0.0002],
+        'frxUSDCHF' => [50,  0.00015],
+        'frxEURCAD' => [20,  0.0003],
+        'frxGBPUSD' => [50,  0.0002],
+        'frxEURGBP' => [30,  0.0003],
+        'frxEURUSD' => [50,  0.00015],
+        'frxGBPJPY' => [30,  0.00025],
+        'frxEURAUD' => [20,  0.0003],
+        'frxAUDJPY' => [20,  0.0003],
+        'frxEURCHF' => [20,  0.00025],
+        'frxUSDCAD' => [50,  0.0002],
     );
     my $args = {
         bet_type => 'multup',
@@ -33,9 +47,13 @@ subtest 'commission for underlying' => sub {
 
     foreach my $symbol (@symbols) {
         $args->{underlying} = $symbol;
-        $args->{multiplier} = $expected_comm{$symbol}->[0];
-        my $c = produce_contract($args);
-        is $c->commission + 0, $expected_comm{$symbol}->[1] + 0, "commission for $symbol is $expected_comm{$symbol}->[1]";
+        if ($expected_comm{$symbol}) {
+            $args->{multiplier} = $expected_comm{$symbol}->[0];
+            my $c = produce_contract($args);
+            is $c->commission + 0, $expected_comm{$symbol}->[1] + 0, "commission for $symbol is $expected_comm{$symbol}->[1]";
+        } else {
+            fail "config not found for $symbol";
+        }
     }
 };
 

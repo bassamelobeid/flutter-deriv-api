@@ -23,7 +23,6 @@ subtest 'amount_type - generic' => sub {
 
     $args->{payout}     = 1;
     $args->{multiplier} = 1;
-
     $error = exception { produce_contract($args) };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], '[_1] is not a valid input for contract type [_2].', 'specify multiplier for CALL';
@@ -104,6 +103,36 @@ subtest 'zero amount' => sub {
 
 };
 
+subtest 'max amount' => sub {
+    my $args = {
+        bet_type   => 'CALL',
+        underlying => 'R_100',
+        barrier    => 'S0P',
+        duration   => '5m',
+        currency   => 'USD',
+        payout     => 50000.01,
+    };
+
+    my $error = exception { produce_contract({%$args}) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Maximum payout allowed is [_1].', 'payout too big';
+    is $error->message_to_client->[1], '50000.00';
+
+    delete $args->{payout};
+    $args->{stake} = 100000;
+    lives_ok { produce_contract({%$args}) };
+
+    delete $args->{duration};
+    delete $args->{barrier};
+    $args->{bet_type}   = 'MULTUP';
+    $args->{multiplier} = 100;
+    $error = exception { produce_contract({%$args}) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Maximum stake allowed is [_1].', 'stake too big';
+    is $error->message_to_client->[1], '2000.00';
+
+};
+
 subtest 'cryto amount' => sub {
     my $args = {
         bet_type   => 'CALL',
@@ -116,9 +145,9 @@ subtest 'cryto amount' => sub {
     my $error = exception { produce_contract({%$args, payout => 0}) };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'Please enter a payout amount that\'s at least [_1].', 'zero payout not valid';
-    is $error->message_to_client->[1], '0.00000001';
+    is $error->message_to_client->[1], '0.00000200';
 
-    my $c = produce_contract({%$args, payout => 0.0000001});
+    my $c = produce_contract({%$args, payout => 0.000002});
     isa_ok $c, 'BOM::Product::Contract::Call';
 };
 
