@@ -6,13 +6,16 @@ no indirect;
 
 use Log::Any qw($log);
 use List::Util qw(any all first);
-use BOM::Database::ClientDB;
 use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/financialrounding/;
+use DataDog::DogStatsd::Helper qw/stats_inc/;
+
+use BOM::Database::ClientDB;
 use BOM::Platform::Event::Emitter;
 use BOM::CTC::Currency;
 use BOM::CTC::Helper;
 use BOM::Event::Utility qw(exception_logged);
+use BOM::CTC::Constants qw(:datadog);
 
 my $clientdb;
 my $collectordb;
@@ -107,6 +110,7 @@ sub set_pending_transaction {
                     "%s Transaction not found for address: %s and transaction: %s",
                     $transaction->{currency},
                     $transaction->{to}, $transaction->{hash});
+                stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
             }
             # we want to ignore the transaction anyway
             # since the sweeps and external transactions
@@ -143,12 +147,14 @@ sub set_pending_transaction {
             # the transaction as pending.
             if (any { $_->{currency_code} ne $currency_code } @payment) {
                 $log->warnf("Invalid currency for transaction: %s", $transaction->{hash});
+                stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
                 return undef;
             }
 
             # ignore transaction with 0 amount if it is not internal transfer
             unless ($currency->transaction_amount_not_zero($transaction)) {
                 $log->warnf("Amount is zero for transaction: %s", $transaction->{hash});
+                stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
                 return undef;
             }
 
@@ -157,6 +163,7 @@ sub set_pending_transaction {
                 && ($transaction->{property_id} + 0) != ($currency->get_property_id() + 0))
             {
                 $log->warnf("%s - Invalid property ID for transaction: %s", $currency_code, $transaction->{hash});
+                stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $currency_code, 'status:failed']});
                 return undef;
             }
 
@@ -188,6 +195,7 @@ sub set_pending_transaction {
                 ) unless $emit;
             } else {
                 $log->warnf("Can't set the status to pending for tx: %s", $transaction->{hash});
+                stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
 
                 # if we don't receive the response from the database we need to retry sending it
                 # creating a new event with the same transaction so it will try to set it as pending
@@ -209,6 +217,7 @@ sub set_pending_transaction {
             }
 
             $log->debugf("Transaction status changed to pending: %s", $transaction->{hash});
+            stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:success']});
 
             last;
         }
@@ -217,6 +226,7 @@ sub set_pending_transaction {
     catch {
         $log->errorf("Subscription error: %s", $@);
         exception_logged();
+        stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
         return undef;
     }
 
@@ -270,7 +280,10 @@ sub insert_new_deposit {
         # before this point
         unless ($result) {
             $log->warnf("Duplicate deposit rejected for %s transaction: %s", $currency_code, $transaction->{hash});
+            stats_inc(DD_METRIC_PREFIX . 'subscription.insert_new', {tags => ['currency:' . $currency_code, 'status:failed']});
             return 0;
+        } else {
+            stats_inc(DD_METRIC_PREFIX . 'subscription.insert_new', {tags => ['currency:' . $transaction->{currency}, 'status:success']});
         }
     }
 
