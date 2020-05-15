@@ -113,7 +113,8 @@ if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
 	<table class="Grey2Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
 		<tbody>
 			<tr class="GreyLabel">
-				<td class="whitelabel" colspan="2">CLIENT MANAGEMENT</td>
+				<td class="whitelabel">CLIENT MANAGEMENT</td>
+				<td class="whitelabel">CONTRACT DETAILS</td>
 			</tr>
 			<tr>
 				<td align="center" width="50%">
@@ -121,6 +122,12 @@ if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
 					<form action="~ . request()->url_for('backoffice/f_clientloginid.cgi') . qq~" method="get"><font size=2>
 						<b>$brokerselection</b>
 						&nbsp;<input type="submit" value="CLIENT DETAILS">
+					</font></form>
+				</td>
+				<td align="center" width="50%">
+					<p><b>BET PRICE OVER TIME</b></p>
+					<form action="~ . request()->url_for('backoffice/quant/pricing/bpot.cgi', {broker => $broker}) . qq~" method="post"><font size=2>
+						<input type="submit" value="BET PRICE OVER TIME">
 					</font></form>
 				</td>
 			</tr>
