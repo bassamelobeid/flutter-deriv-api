@@ -74,7 +74,7 @@ subtest 'hour_end_markup_start_now_contract' => sub {
     lives_ok {
         my $c = produce_contract($args);
         cmp_ok $c->ask_price, '==', 5.7, 'correct ask price';
-        cmp_ok $c->pricing_engine->hour_end_markup->peek_amount('hour_end_markup'), '==', 0.0, 'no end hour markup';
+        is $c->pricing_engine->risk_markup->peek_amount('hour_end_discount'), undef, 'no discount for CALL at X1=-0.4';
 
         $args->{date_start}   = Date::Utility->new('2018-09-18 15:57:00');
         $args->{date_pricing} = Date::Utility->new('2018-09-18 15:57:00');
@@ -112,7 +112,7 @@ subtest 'hour_end_markup_start_now_contract' => sub {
         $args->{date_start}   = Date::Utility->new('2018-11-16 16:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:01:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 10, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 6.25, 'correct ask price';
         is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup');
 
     };
@@ -120,15 +120,15 @@ subtest 'hour_end_markup_start_now_contract' => sub {
 
 subtest 'hour_end_markup_extra_test_after_logic_change' => sub {
     lives_ok {
-        
-        # Summer on AU , hour other than 7 or 19 
+
+        # Summer on AU , hour other than 7 or 19
         $args->{date_start}   = Date::Utility->new('2018-10-16 01:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-10-16 01:01:00');
-        my $c                    = produce_contract($args);
+        my $c = produce_contract($args);
         cmp_ok $c->ask_price, '==', 6.5, 'correct ask price';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.1, 'correct end hour markup';
-        
-         # Summer on AU , hour equal 7 or 19 
+
+        # Summer on AU , hour equal 7 or 19
         $args->{date_start}   = Date::Utility->new('2018-10-16 19:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-10-16 19:01:00');
         $c                    = produce_contract($args);
@@ -137,22 +137,22 @@ subtest 'hour_end_markup_extra_test_after_logic_change' => sub {
 
         #duration 30m
         $args->{duration} = '30m';
-        $c                    = produce_contract($args);
+        $c = produce_contract($args);
         cmp_ok $c->ask_price, '==', 7.5, 'correct ask price';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'correct end hour markup summer 30m';
 
-        #some more 
+        #some more
         $args->{duration} = '70m';
-        $c                    = produce_contract($args);
+        $c = produce_contract($args);
         cmp_ok $c->ask_price, '==', 5.89, 'correct ask price';
         is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup');
 
         # Winter on EU
-        $args->{duration} = '10m';
+        $args->{duration}     = '10m';
         $args->{date_start}   = Date::Utility->new('2018-11-16 16:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:01:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 10, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 6.25, 'correct ask price';
         is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup');
 
         # Winter on EU, hour equal 8 or 20
@@ -164,23 +164,22 @@ subtest 'hour_end_markup_extra_test_after_logic_change' => sub {
 
         #duration 30m
         $args->{duration} = '30m';
-        $c                    = produce_contract($args);
+        $c = produce_contract($args);
         cmp_ok $c->ask_price, '==', 7.5, 'correct ask price';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'correct end hour markup winter 30m';
 
-        #some more 
+        #some more
         $args->{duration} = '70m';
-        $c                    = produce_contract($args);
+        $c = produce_contract($args);
         cmp_ok $c->ask_price, '==', 5.89, 'correct ask price';
         is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup');
     };
 };
 
-
 subtest 'hour_end_markup_forward_starting_contract' => sub {
     $args->{date_start}   = $now->plus_time_interval('20m');
     $args->{date_pricing} = $now->plus_time_interval('10m');
-    $args->{duration} = '10m';
+    $args->{duration}     = '10m';
     lives_ok {
         my $c = produce_contract($args);
         cmp_ok $c->ask_price, '==', 5.5, 'correct ask price';
@@ -293,6 +292,10 @@ subtest 'test discount for current spot closer to previous high' => sub {
             });
         });
 
+    my $mocked_london = Test::MockModule->new('Pricing::Engine::Markup::LondonFix');
+
+    $mocked_london->mock('apply_london_fix', sub { return 0 });
+
     my $args = {
         bet_type     => 'PUT',
         underlying   => 'frxAUDJPY',
@@ -306,11 +309,23 @@ subtest 'test discount for current spot closer to previous high' => sub {
     };
 
     my $c = produce_contract($args);
-    is $c->pricing_engine->hour_end_markup->peek_amount('hour_end_discount'), 0, 'no discount for PUT at X1=-0.6';
+    is $c->pricing_engine->risk_markup->peek_amount('hour_end_discount'), 0, 'no discount for PUT at X1=-0.6';
     $args->{bet_type} = 'CALL';
     $c = produce_contract($args);
 
-    is $c->pricing_engine->hour_end_markup->peek_amount('hour_end_discount'), -0.01, '0.01 discount for CALL at X1=-0.6';
+    my $mrm = Test::MockModule->new('Pricing::Engine::Markup::IntradayMeanReversionMarkup');
+    $mrm->mock(
+        'markup',
+        sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'intraday_mean_reversion_markup',
+                description => 'test',
+                set_by      => __PACKAGE__,
+                base_amount => -0.2,
+            });
+        });
+
+    is $c->pricing_engine->risk_markup->peek_amount('hour_end_discount'), -0.01, '0.01 discount for CALL at X1=-0.6';
     $mocked->mock(
         '_x1',
         sub {
@@ -322,7 +337,6 @@ subtest 'test discount for current spot closer to previous high' => sub {
             });
         });
     $c = produce_contract($args);
-    is $c->pricing_engine->hour_end_markup->peek_amount('hour_end_discount'), 0, 'no discount for CALL at X1=-0.4';
+    is $c->pricing_engine->risk_markup->peek_amount('hour_end_discount'), 0, 'no discount for CALL at X1=-0.4';
 };
-
 

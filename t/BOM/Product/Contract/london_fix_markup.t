@@ -7,6 +7,7 @@ use Test::More tests => 2;
 use Test::Warnings;
 use Test::Exception;
 use Date::Utility;
+use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -87,14 +88,7 @@ subtest 'london_fix_markup' => sub {
         $args->{date_start}   = Date::Utility->new('2018-10-16 14:58:00');
         $args->{date_pricing} = Date::Utility->new('2018-10-16 14:58:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 6.16, 'correct ask price';
-        cmp_ok roundcommon(0.001,$c->pricing_engine->risk_markup->peek_amount('london_fix_markup')), '==', 0.087, 'correct london markup';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('trend_following_duration'), '==', 120, 'trend_following_duration';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('trend_reversal_duration'), '==', 60, 'trend_reversal_duration';
-        #max_trend_following_multiplier
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('max_trend_following_multiplier'), '==', 0.275, 'max_trend_following_multiplier';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('max_trend_reversal_multiplier'), '==', 0.15, 'max_trend_reversal_multiplier';
-
+        cmp_ok $c->ask_price, '==', 5.7, 'correct ask price';
 
         # Winter on EU
         $args->{duration}     = '10m';
@@ -103,13 +97,24 @@ subtest 'london_fix_markup' => sub {
         $c                    = produce_contract($args);
         cmp_ok $c->ask_price, '==', 6.25, 'correct ask price';
         cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_markup')), '==', 0.095, 'correct london fix markup';
-
+        cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_x1')), '==', 1, 'correct london fix markup';
+     
         # Winter on EU, hour other than 16
         $args->{date_start}   = Date::Utility->new('2018-11-16 20:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 20:01:00');
         $c                    = produce_contract($args);
         cmp_ok $c->ask_price, '==', 7.5, 'correct ask price';
         is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), undef, 'No hour end markup');
+
+        # testing edge case for x1
+        my $mocked_c = Test::MockModule->new('BOM::Product::Contract');
+        $mocked_c->mock('spot_min_max', sub { return {high => 100, low => 99} });
+        $args->{duration}     = '3m';
+        $args->{date_start}   = Date::Utility->new('2018-10-16 14:58:00');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 14:58:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('london_fix_x1'), '==', -1, 'max_trend_reversal_multiplier';
+
 
     };
 };

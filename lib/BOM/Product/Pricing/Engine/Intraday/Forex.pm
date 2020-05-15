@@ -166,30 +166,6 @@ sub _build_mean_reversion_markup {
     return $markup;
 }
 
-has hour_end_markup => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_hour_end_markup {
-    my $self = shift;
-
-    my $markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'hour_end_markup',
-        description => 'Intraday hour end markup.',
-        set_by      => __PACKAGE__,
-        base_amount => 0,
-    });
-    my $bet = $self->bet;
-    my %params = (hour_end_markup_parameters => $bet->hour_end_markup_parameters);
-    $markup->include_adjustment('add', Pricing::Engine::Markup::HourEndMarkup->new(%params)->markup);
-    # we do not apply discount for forward starting contracts.
-    $markup->include_adjustment('add', Pricing::Engine::Markup::HourEndDiscount->new(%params)->markup)
-        if not $bet->is_forward_starting and BOM::Config::Runtime->instance->app_config->quants->enable_hour_end_discount;
-
-    return $markup;
-}
-
 sub _build_base_probability {
     my $self = shift;
 
