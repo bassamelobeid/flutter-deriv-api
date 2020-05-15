@@ -13,9 +13,9 @@ use DataDog::DogStatsd::Helper qw/stats_inc/;
 use BOM::Database::ClientDB;
 use BOM::Platform::Event::Emitter;
 use BOM::CTC::Currency;
+use BOM::CTC::Constants qw(:transaction :datadog);
 use BOM::CTC::Helper;
 use BOM::Event::Utility qw(exception_logged);
-use BOM::CTC::Constants qw(:datadog);
 
 my $clientdb;
 my $collectordb;
@@ -65,7 +65,8 @@ sub set_pending_transaction {
         # inserted in the database
         my $cursor_result = collectordb()->run(
             ping => sub {
-                $_->selectall_arrayref('SELECT cryptocurrency.update_cursor(?, ?, ?)', undef, $currency_code, $transaction->{block}, 'deposit');
+                $_->selectall_arrayref('SELECT cryptocurrency.update_cursor(?, ?, ?)',
+                    undef, $currency_code, $transaction->{block}, TRANSACTION_TYPE_DEPOSIT);
             });
         $log->warnf("%s: Can't update the cursor to block: %s", $currency_code, $transaction->{block}) unless $cursor_result;
 
@@ -137,7 +138,7 @@ sub set_pending_transaction {
             # transaction already confirmed by confirmation daemon and does not have a transaction hash
             # in this case we can't risk to duplicate the transaction so we just ignore it
             # this is a check for the transactions done to before the subscription impl in place
-            if (any { $_->{status} ne 'NEW' && !$_->{blockchain_txn} && $_->{transaction_type} ne 'withdrawal' } @payment) {
+            if (any { $_->{status} ne 'NEW' && !$_->{blockchain_txn} && $_->{transaction_type} ne TRANSACTION_TYPE_WITHDRAWAL } @payment) {
                 $log->debugf("Address already confirmed by confirmation daemon for transaction: %s", $transaction->{hash});
                 return undef;
             }
