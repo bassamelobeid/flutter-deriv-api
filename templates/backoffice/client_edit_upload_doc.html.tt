@@ -39,11 +39,11 @@
   </select></td>
   <td align="right">
   <label name="doc_field_required_[% n %]">*</label>
-    <select name="page_type_[% n %]">
+    <select name="page_type_[% n %]" id="page_type_[% n %]">
       <option value="" selected>Page Type</option>
       <option value="front">Front Side</option>
       <option value="back">Back Side</option>
-      <option value="photo">Photo</option>
+      <option value="photo" disabled>Photo</option>
     </select>
   <td>
   <td>*<input type="FILE" name="FILE_[% n %]" style="width: 150px" onchange="file_size_validation(this)"></td>
@@ -84,13 +84,24 @@
 var regex_poi = /([% poi_doctypes %])/i;
 var regex_expirable =  /([% expirable_doctypes %])/i;
 var regex_no_date = /[% no_date_doctypes %]/i;
+var regex_selfie_with_id = /selfie_with_id/i;
 
 function doc_type_changed(i){
   let doc_type = document.getElementById('doctype_'+i).value;
   let is_expirable_doc = doc_type.match(regex_expirable);
   let is_no_date_doc = doc_type.match(regex_no_date);
   let is_poi_doc = doc_type.match(regex_poi);
-  
+  let is_selfie_with_id = doc_type.match(regex_selfie_with_id);
+  document.getElementById('page_type_' +i).value = '';
+
+  let enabled_options = [];
+  if(is_poi_doc || is_selfie_with_id) {
+    enabled_options = (is_poi_doc)?['front','back']:['photo'];
+  }
+  handle_page_type_control(i, enabled_options);
+  if(is_selfie_with_id) {
+    document.getElementById('page_type_' +i).value = 'photo';
+  }
   document.getElementById('expiration_date_div_'+i).style.display = 'none';
   document.getElementById('issue_date_div_'+i).style.display = 'none';
   
@@ -223,6 +234,13 @@ function validate_document_info() {
   }
   
   return true;
+}
+
+function handle_page_type_control(i, enabled_options) {
+  let options = document.getElementById('page_type_' +i ).getElementsByTagName("option");
+  for (var index = 1; index < options.length; index++) {
+          options[index].disabled = (enabled_options.indexOf(options[index].value) !== -1)?false:true ;
+    }
 }
 
 \$(document).ready(function() {
