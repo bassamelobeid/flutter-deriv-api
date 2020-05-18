@@ -864,7 +864,6 @@ subtest 'set financial assessment segment' => sub {
     my $loginid        = $test_client->loginid;
     my $args           = {
         'params' => {
-            'set_financial_assessment'             => 1,
             'binary_options_trading_frequency'     => '6-10 transactions in the past 12 months',
             'net_income'                           => '$100,001 - $500,000',
             'education_level'                      => 'Primary',
@@ -888,7 +887,11 @@ subtest 'set financial assessment segment' => sub {
 
     $action_handler->($args)->get;
     my ($customer, %returned_args) = @track_args;
-    is_deeply($args, $returned_args{properties}, 'track properties are properly set for set_financial_assessment');
+    is_deeply(
+        {$args->{params}->%*, loginid => $loginid},
+        $returned_args{properties},
+        'track properties are properly set for set_financial_assessment'
+    );
     is $returned_args{event}, 'set_financial_assessment', 'track event name is set correctly';
 };
 

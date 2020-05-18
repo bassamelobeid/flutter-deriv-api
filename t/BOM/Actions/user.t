@@ -282,25 +282,23 @@ subtest 'user profile change event' => sub {
     ($customer, %args) = @track_args;
     test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
-    is_deeply \%args,
-        {
+    is_deeply \%args, {
         context => {
             active => 1,
             app    => {name => 'deriv'},
             locale => 'id'
         },
-        event      => 'profile change',
+        event      => 'profile_change',
         properties => {
-            loginid          => $test_client->loginid,
-            'updated_fields' => {
-                'address_line_1' => 'street 1',
-                'address_city'   => 'Ambon',
-                'address_state'  => "Balkh",
-                'phone'          => '+15417541233',
-                'citizen'        => 'Afghanistan',
-                'place_of_birth' => 'Afghanistan',
-                'residence'      => 'Afghanistan'
-            },
+            loginid => $test_client->loginid,
+
+            'address_line_1' => 'street 1',
+            'address_city'   => 'Ambon',
+            'address_state'  => "Balkh",
+            'phone'          => '+15417541233',
+            'citizen'        => 'Afghanistan',
+            'place_of_birth' => 'Afghanistan',
+            'residence'      => 'Afghanistan',
         }
         },
         'properties are set properly for user profile change event';

@@ -20,6 +20,41 @@ use BOM::Event::Services;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Locale qw(get_state_by_id);
 
+my %EVENT_PROPERTIES = (
+    identify => [
+        qw (address age avatar birthday company created_at description email first_name gender id last_name name phone title username website currencies country)
+    ],
+    login                     => [qw (loginid browser device ip new_signin_activity location app_name)],
+    signup                    => [qw (loginid type currency landing_company date_joined first_name last_name phone address age country)],
+    transfer_between_accounts => [
+        qw(revenue currency value from_account to_account from_currency to_currency from_amount to_amount source fees is_from_account_pa
+            is_to_account_pa gateway_code remark time id)
+    ],
+    account_closure   => [qw(loginid closing_reason loginids_disabled  loginids_failed)],
+    app_registered    => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
+    app_updated       => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
+    app_deleted       => [qw(loginid app_id)],
+    account_closure   => [qw(loginid closing_reason loginids_disabled loginids_failed)],
+    api_token_created => [qw(loginid name scopes)],
+    api_token_deleted => [qw(loginid name scopes)],
+    profile_change    => [
+        qw(loginid first_name last_name date_of_birth account_opening_reason address_city address_line_1 address_line_2 address_postcode citizen
+            residence address_state allow_copiers email_consent phone place_of_birth request_professional_status tax_identification_number tax_residence)
+    ],
+    mt5_signup               => [qw(loginid account_type language mt5_group mt5_loginid sub_account_type)],
+    mt5_password_changed     => [qw(loginid mt5_loginid)],
+    document_upload          => [qw(loginid document_type expiration_date file_name id upload_date uploaded_manually_by_staff)],
+    set_financial_assessment => [
+        qw(loginid education_level employment_industry estimated_worth income_source net_income occupation account_turnover binary_options_trading_experience
+            binary_options_trading_frequency cfd_trading_experience cfd_trading_frequency employment_status forex_trading_experience forex_trading_frequency other_instruments_trading_experience
+            other_instruments_trading_frequency source_of_wealth)
+    ],
+    set_self_exclusion => [
+        qw(exclude_until max_30day_losses max_30day_turnover max_7day_losses max_7day_turnover max_balance max_deposit
+            max_deposit_end_date max_losses max_open_bets max_turnover session_duration_limit timeout_until )
+    ],
+);
+
 my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
 
@@ -237,7 +272,8 @@ sub profile_change {
             if (defined $properties->{updated_fields}->{$field} and $properties->{updated_fields}->{$field} ne '');
     }
     $log->debugf('Track profile_change event for client %s', $loginid);
-    return Future->needs_all(_send_identify_request($customer), _send_track_request($customer, $properties, 'profile change'));
+    return Future->needs_all(_send_identify_request($customer),
+        _send_track_request($customer, {$properties->{updated_fields}->%*, loginid => $loginid}, 'profile_change'));
 }
 
 =head2 transfer_between_accounts
@@ -374,7 +410,7 @@ sub set_financial_assessment {
     return track_event(
         event      => 'set_financial_assessment',
         loginid    => $args->{loginid},
-        properties => $args
+        properties => {$args->{params}->%*, loginid => $args->{loginid}},
     );
 }
 
@@ -469,7 +505,7 @@ sub _send_identify_request {
 
 =head2 _send_track_request
 
-A private method that makes a Segment B<track> API call.
+A private method that makes a Segment B<track> API call, just letting valid(known) properties to pass through.
 It is called with the following parameters:
 
 =over
@@ -487,12 +523,17 @@ It is called with the following parameters:
 =cut
 
 sub _send_track_request {
-    my ($customer, $properties, $event, $brand) = (@_);
+    my ($customer, $properties, $event, $brand) = @_;
     my $context = _create_context($brand);
+
+    die "Unknown event <$event> tracking request was triggered by the client $customer->{client_loginid}" unless $EVENT_PROPERTIES{$event};
+
+    # filter invalid or unknown properties out
+    my $valid_properties = {map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } $EVENT_PROPERTIES{$event}->@*};
 
     return $customer->track(
         event      => $event,
-        properties => $properties,
+        properties => $valid_properties,
         context    => $context,
     );
 }
@@ -600,6 +641,7 @@ sub _create_customer {
     $customer->{currency} = $client->account ? $client->account->currency_code : '';
     $customer->{landing_company} = $client->landing_company->short // '';
     $customer->{date_joined}     = $client->date_joined            // '';
+    $customer->{client_loginid}  = $client->loginid;
 
     return $customer;
 }

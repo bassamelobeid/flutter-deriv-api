@@ -83,6 +83,10 @@ subtest 'General event validation - filtering by brand' => sub {
         qr/login tracking triggered with an invalid loginid CR1234. Please inform backend team if it continues to occur./,
         'Invalid loginid exception';
 
+    like exception { BOM::Event::Services::Track::track_event(event => 'UNKNOWN', loginid => $test_client->loginid)->get },
+        qr/Unknown event <UNKNOWN> tracking request was triggered by the client CR10000/,
+        'Unknown event exception';
+
     $segment_response = Future->fail('dummy test failure');
     like exception { BOM::Event::Services::Track::track_event(event => 'login', loginid => $test_client->loginid)->get }, qr/dummy test failure/,
         'Correct exception raised';
@@ -97,8 +101,7 @@ subtest 'General event validation - filtering by brand' => sub {
             'locale' => 'id'
         },
         'event'      => 'login',
-        'properties' => undef
-    };
+        'properties' => {}};
     is_deeply \%args, $expected_args;
 
     undef @track_args;
@@ -106,24 +109,26 @@ subtest 'General event validation - filtering by brand' => sub {
     ok BOM::Event::Services::Track::track_event(
         event      => 'login',
         loginid    => $test_client->loginid,
-        properties => {a => 1})->get, 'event emitted successfully';
+        properties => {a => 1},
+    )->get, 'event emitted successfully';
     is @identify_args, 0, 'Segment identify is not invoked';
     ok @track_args, 'Segment tarck is invoked';
     ($customer, %args) = @track_args;
-    $expected_args->{properties} = {a => 1};
-    is_deeply \%args, $expected_args, 'track request args are correct';
+    $expected_args->{properties} = {};
+    is_deeply \%args, $expected_args, 'track request args are correct - invalid property filtered out';
     test_segment_customer($customer);
 
     undef @track_args;
     ok BOM::Event::Services::Track::track_event(
         event                => 'login',
         loginid              => $test_client->loginid,
-        properties           => {a => 1},
+        properties           => {browser => 'fire-chrome'},
         is_identify_required => 1
     )->get, 'event emitted successfully';
     ok @identify_args, 'Segment identify is invoked';
     ok @track_args,    'Segment tarck is invoked';
     ($customer, %args) = @track_args;
+    $expected_args->{properties}->{browser} = 'fire-chrome';
     is_deeply \%args, $expected_args, 'track request args are correct';
     test_segment_customer($customer);
 
@@ -155,7 +160,7 @@ subtest 'General event validation - filtering by brand' => sub {
         ok BOM::Event::Services::Track::track_event(
             event                => 'login',
             loginid              => $test_client->loginid,
-            properties           => {a => 1},
+            properties           => {browser => 'fire-chrome'},
             is_identify_required => 1,
             brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
         ok @identify_args, 'Segment identify is invoked (by setting brand to deriv in the args)';
