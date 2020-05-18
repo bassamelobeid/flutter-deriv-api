@@ -8,6 +8,16 @@ use Test::Exception;
 use BOM::Product::ContractFactory qw(produce_contract);
 use Test::Fatal;
 
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+
+my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'R_100',
+    quote      => 100,
+    epoch      => time,
+});
+
 subtest 'amount_type - generic' => sub {
     my $args = {
         bet_type   => 'CALL',
@@ -105,18 +115,22 @@ subtest 'zero amount' => sub {
 
 subtest 'max amount' => sub {
     my $args = {
-        bet_type   => 'CALL',
-        underlying => 'R_100',
-        barrier    => 'S0P',
-        duration   => '5m',
-        currency   => 'USD',
-        payout     => 50000.01,
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        barrier      => 'S0P',
+        duration     => '5m',
+        currency     => 'USD',
+        payout       => 50000.01,
+        current_tick => $current_tick,
     };
 
-    my $error = exception { produce_contract({%$args}) };
-    isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'Maximum payout allowed is [_1].', 'payout too big';
-    is $error->message_to_client->[1], '50000.00';
+    my $bet = produce_contract({%$args});
+    ok !$bet->is_valid_to_buy, 'not valid to buy';
+    is $bet->primary_validation_error->message_to_client->[0], 'Minimum stake of [_1] and maximum payout of [_2]. Current payout is [_3].',
+        'payout too big';
+    is $bet->primary_validation_error->message_to_client->[1], '0.35';
+    is $bet->primary_validation_error->message_to_client->[2], '50000.00';
+    is $bet->primary_validation_error->message_to_client->[3], '50000.01';
 
     delete $args->{payout};
     $args->{stake} = 100000;
@@ -126,7 +140,7 @@ subtest 'max amount' => sub {
     delete $args->{barrier};
     $args->{bet_type}   = 'MULTUP';
     $args->{multiplier} = 100;
-    $error = exception { produce_contract({%$args}) };
+    my $error = exception { produce_contract({%$args}) };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'Maximum stake allowed is [_1].', 'stake too big';
     is $error->message_to_client->[1], '2000.00';

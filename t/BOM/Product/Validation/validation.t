@@ -206,7 +206,7 @@ subtest 'valid bet passing and stuff' => sub {
 };
 
 subtest 'invalid bet payout hobbling around' => sub {
-    plan tests => 7;
+    plan tests => 6;
 
     my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
@@ -223,14 +223,14 @@ subtest 'invalid bet payout hobbling around' => sub {
         barrier      => '100.085',
         current_tick => $tick,
     };
-    my $bet = exception {produce_contract($bet_params)};
-    isa_ok $bet, 'BOM::Product::Exception';
-    is $bet->message_to_client->[0], 'Maximum payout allowed is [_1].';
-    is $bet->message_to_client->[1], '50000.00';
+    my $bet = produce_contract($bet_params);
+    my $expected_reasons     = [qr/payout/];
+    test_error_list('buy', $bet, $expected_reasons);
+    ok($bet->primary_validation_error->message =~ $expected_reasons->[0], '..and the primary one is the most severe.');
 
     $bet_params->{amount} = 0.75;
     $bet                  = produce_contract($bet_params);
-    my $expected_reasons     = [qr/stake.*is not within limits/];
+    $expected_reasons     = [qr/stake.*is not within limits/];
     test_error_list('buy', $bet, $expected_reasons);
     ok($bet->primary_validation_error->message =~ $expected_reasons->[0], '..and the primary one is the most severe.');
 

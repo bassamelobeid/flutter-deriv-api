@@ -436,14 +436,16 @@ sub _initialize_other_parameters {
             and exists $params->{amount}
             and $params->{amount} < $min_amount;
 
-        my $max_amount = $params->{amount_type} eq 'payout' ? maximum_payout_limit(@limit_args) : maximum_stake_limit(@limit_args);
-        BOM::Product::Exception->throw(
-            error_code => $params->{amount_type} eq 'stake' ? 'StakeLimitExceeded' : 'PayoutLimitExceeded',
-            error_args => [financialrounding('price', $params->{currency}, $max_amount)],
-            details => {field => 'amount'})
-            if defined $max_amount
-            and exists $params->{amount}
-            and $params->{amount} > $max_amount;
+        # Only check stake here. Pricing daemon override payout to 1000 irregardless of currency.
+        # Hence, it will fail here.
+        if ($params->{amount_type} eq 'stake' and my $max_stake = maximum_stake_limit(@limit_args)) {
+            BOM::Product::Exception->throw(
+                error_code => 'StakeLimitExceeded',
+                error_args => [financialrounding('price', $params->{currency}, $max_stake)],
+                details => {field => 'amount'})
+                if exists $params->{amount}
+                and $params->{amount} > $max_stake;
+        }
     } else {
         BOM::Product::Exception->throw(
             error_code => 'InvalidInput',
