@@ -322,8 +322,14 @@ sub startup {
                 # handled WrongResponse
                 $log->info(($error->{type} // '') . " [" . $req_storage->{msg_type} . "], details: $details")
                     unless ($error->{type} // '') eq 'WrongResponse';
-                DataDog::DogStatsd::Helper::stats_inc("bom_websocket_api.rpc_error.count",
-                    {tags => ["rpc:" . $req_storage->{msg_type}, 'error_type:' . ($error->{type} // '')]});
+                DataDog::DogStatsd::Helper::stats_inc(
+                    "bom_websocket_api.v_3.rpc.error.count",
+                    {
+                        tags => [
+                            sprintf("rpc:%s",    $req_storage->{method}),
+                            sprintf("source:%s", $c->stash('source')),
+                            sprintf("error_type:%s", ($error->{type} // 'UnhandledErrorType')),
+                        ]});
                 return undef;
             },
         });
