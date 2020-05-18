@@ -671,15 +671,27 @@ subtest 'Daily order limit' => sub {
 
     my $buyer = BOM::Test::Helper::Client::create_client();
 
-    for (1..2) {
-        my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(type => 'sell', amount => 100);
-        $buyer->p2p_order_create(advert_id => $advert_info->{id}, amount => 10);
+    for (1 .. 2) {
+        my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+            type   => 'sell',
+            amount => 100
+        );
+        $buyer->p2p_order_create(
+            advert_id => $advert_info->{id},
+            amount    => 10
+        );
     }
-    
-    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(type => 'sell', amount => 100);
+
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+        type   => 'sell',
+        amount => 100
+    );
 
     my $err = exception {
-        $buyer->p2p_order_create(advert_id => $advert_info->{id}, amount => 10);
+        $buyer->p2p_order_create(
+            advert_id => $advert_info->{id},
+            amount    => 10
+        );
     };
 
     is $err->{error_code}, 'ClientDailyOrderLimitExceeded', 'Could not create order, got error code ClientDailyOrderLimitExceeded';

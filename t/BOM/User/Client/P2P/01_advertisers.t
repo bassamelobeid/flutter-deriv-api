@@ -102,7 +102,10 @@ subtest 'Updating advertiser fields' => sub {
 
     cmp_deeply(
         exception {
-            $advertiser->p2p_advertiser_update(is_listed => 1, is_approved => 0);
+            $advertiser->p2p_advertiser_update(
+                is_listed   => 1,
+                is_approved => 0
+            );
         },
         {error_code => 'AdvertiserCannotListAds'},
         'Cannot enable is_listed if advertiser is not approved'
