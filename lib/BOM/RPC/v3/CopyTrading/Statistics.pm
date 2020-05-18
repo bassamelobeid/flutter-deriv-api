@@ -18,8 +18,10 @@ use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context qw (localize);
 use BOM::Config::Redis;
 use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::RPC::v3::Utility qw(log_exception);
 use DataDog::DogStatsd::Helper qw(stats_timing);
 use Time::Moment;
+
 rpc copytrading_statistics => sub {
     my $params = shift->{args};
 
@@ -206,6 +208,7 @@ rpc copytrading_statistics => sub {
         }
         catch {
             warn "Performance probability calculation error: $_";
+            log_exception();
         }
     }
 

@@ -25,6 +25,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::User;
+use BOM::RPC::v3::Utility qw(log_exception);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 
@@ -206,6 +207,9 @@ sub p2p_rpc {
         catch {
             my $exception = $@;
             my ($err_code, $err_code_db, $err_params, $err_details);
+
+            #log datadog metric
+            log_exception();
 
             # db errors come as [ BIxxx, message ]
             # bom-user and bom-rpc errors come as a hashref:

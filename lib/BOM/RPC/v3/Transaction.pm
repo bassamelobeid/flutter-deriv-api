@@ -14,7 +14,7 @@ use Format::Util::Numbers qw/formatnumber financialrounding/;
 use BOM::RPC::Registry '-dsl';
 
 use BOM::RPC::v3::Contract;
-use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::Transaction;
 use BOM::Transaction::Utility;
@@ -186,6 +186,7 @@ rpc "buy",
     catch {
         my $exception = $@;
         my $message_to_client;
+        log_exception();
         if (blessed($exception) && $exception->isa('BOM::Product::Exception')) {
             $message_to_client = $exception->message_to_client;
         } else {
@@ -216,6 +217,7 @@ rpc "buy",
         }
         catch {
             warn "Copiers trade buy error: " . $@;
+            log_exception();
         }
     }
 
@@ -348,6 +350,7 @@ rpc buy_contract_for_multiple_accounts => sub {
                 . " buy_contract_for_multiple_accounts failed with error [$exception], parameters: "
                 . (eval { $json->encode($contract_parameters) } // 'could not encode, ' . $@);
         }
+        log_exception();
         $error = BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize(@$message_to_client)});
@@ -569,6 +572,7 @@ rpc "sell",
     }
     catch {
         warn "Copiers trade sell error: " . $@;
+        log_exception();
     }
 
     my $trx_rec = $trx->transaction_record;
@@ -639,6 +643,7 @@ rpc contract_update => sub {
             $message_to_client = ['Sorry, an error occurred while processing your request.'];
             warn __PACKAGE__ . " contract update failed: '$exception', parameters: " . $json->encode($args->{limit_order});
         }
+        log_exception();
         $response = BOM::Pricing::v3::Utility::create_error({
             code              => 'ContractUpdateError',
             message_to_client => localize(@$message_to_client),
@@ -687,6 +692,7 @@ rpc contract_update_history => sub {
         }
     }
     catch {
+        log_exception();
         $response = BOM::Pricing::v3::Utility::create_error({
             code              => 'ContractUpdateHistoryError',
             message_to_client => localize("Sorry, an error occurred while processing your request."),
@@ -770,6 +776,7 @@ rpc cancel => sub {
     }
     catch {
         warn "Copiers trade cancel error: " . $_;
+        log_exception();
     };
 
     my $trx_rec = $trx->transaction_record;

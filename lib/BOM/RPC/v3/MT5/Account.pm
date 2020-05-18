@@ -24,7 +24,7 @@ use Log::Any qw($log);
 
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::MT5::Errors;
-use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
 use BOM::Config;
@@ -58,6 +58,8 @@ use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
 my $error_registry = BOM::RPC::v3::MT5::Errors->new();
 my $error_handler  = sub {
     my $err = shift;
+    log_exception();
+
     if (ref $err eq 'HASH' and $err->{code}) {
         create_error_future($err->{code}, {message => $err->{error}});
     } else {
@@ -1127,6 +1129,7 @@ async_rpc "mt5_deposit",
             }
             catch {
                 my $withdraw_error = $@;
+                log_exception();
                 return create_error_future(
                     $error_code,
                     {
@@ -1188,6 +1191,7 @@ async_rpc "mt5_deposit",
             }
             catch {
                 my $error = BOM::Transaction->format_error(err => $@);
+                log_exception();
                 return create_error_future($error_code, {message => $error->{-message_to_client}});
             }
 
@@ -1353,6 +1357,7 @@ async_rpc "mt5_withdrawal",
                     }
                     catch {
                         my $error = BOM::Transaction->format_error(err => $@);
+                        log_exception();
                         _send_email(
                             loginid      => $to_loginid,
                             mt5_id       => $fm_mt5,
@@ -1510,6 +1515,7 @@ sub _mt5_validate_and_get_amount {
 
             }
             catch {
+                log_exception();
                 return create_error_future(
                     'InvalidLoginid',
                     {
@@ -1603,6 +1609,7 @@ sub _mt5_validate_and_get_amount {
                     }
 
                     catch {
+                        log_exception();
                         # usually we get here when convert_currency() fails to find a rate within $rate_expiry, $mt5_amount is too low, or no transfer fee are defined (invalid currency pair).
                         $err        = $@;
                         $mt5_amount = undef;
@@ -1624,6 +1631,7 @@ sub _mt5_validate_and_get_amount {
                             financialrounding('amount', $client_currency, convert_currency($fees, $mt5_currency, $client_currency));
                     }
                     catch {
+                        log_exception();
                         # same as previous catch
                         $err = $@;
                     }

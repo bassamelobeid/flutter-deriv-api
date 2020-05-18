@@ -6,7 +6,7 @@ use warnings;
 
 use Syntax::Keyword::Try;
 
-use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Platform::Context qw (localize);
 use BOM::Database::Model::OAuth;
 use BOM::Database::ClientDB;
@@ -280,6 +280,7 @@ rpc app_markup_details => sub {
         $time_to   = Date::Utility->new($args->{date_to})->datetime_yyyymmdd_hhmmss;
     }
     catch {
+        log_exception();
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidDateFormat',
                 message_to_client => localize('Invalid date format.'),

@@ -22,6 +22,7 @@ use Log::Any qw($log);
 use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_gauge stats_event);
+use BOM::RPC::v3::Utility qw(log_exception);
 
 use BOM::RPC::Feed::Sendfile;
 
@@ -70,6 +71,7 @@ async sub on_stream {
         $log->errorf('Exception while handling stream requests from %s: %s', $client_info, $@);
         stats_event('Exception while handling stream requests', "from $client_info | $@", {alert_type => 'error'});
         stats_inc('local_feed.reader.request_exception');
+        log_exception();
     }
 
     $log->debugf('Closing client %s', $client_info);
@@ -87,6 +89,7 @@ async sub on_stream {
     catch {
         $log->errorf('Failed to close stream from %s: %s', $client_info, $@);
         stats_event('Failed to close stream', "from $client_info | $@", {alert_type => 'error'});
+        log_exception();
     }
     return;
 }

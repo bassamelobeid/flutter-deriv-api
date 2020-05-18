@@ -27,7 +27,7 @@ use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
 
 use BOM::RPC::Registry '-dsl';
 
-use BOM::RPC::v3::Utility qw(longcode);
+use BOM::RPC::v3::Utility qw(longcode log_exception);
 use BOM::RPC::v3::PortfolioManagement;
 use BOM::Transaction::History qw(get_transaction_history);
 use BOM::Platform::Context qw (localize request);
@@ -491,6 +491,7 @@ rpc account_statistics => sub {
     }
     catch {
         warn "Error caught : $@\n";
+        log_exception();
         return BOM::RPC::v3::Utility::client_error();
     }
 
@@ -1739,6 +1740,7 @@ rpc set_self_exclusion => sub {
             $exclusion_end = Date::Utility->new($exclude_until);
         }
         catch {
+            log_exception();
             $exclusion_end_error = 1;
         };
         return $error_sub->(localize('Exclusion time conversion error.'), 'exclude_until') if $exclusion_end_error;
@@ -1770,6 +1772,7 @@ rpc set_self_exclusion => sub {
             $exclusion_end = Date::Utility->new($max_deposit_end_date);
         }
         catch {
+            log_exception();
             $exclusion_end_error = 1;
         }
         return $error_sub->(localize('Exclusion time conversion error.'), 'max_deposit_end_date') if $exclusion_end_error;
@@ -2082,6 +2085,7 @@ rpc tnc_approval => sub {
                 $client->status->set('tnc_approval', 'system', $current_tnc_version);
             }
             catch {
+                log_exception();
                 return BOM::RPC::v3::Utility::client_error();
             }
         }
@@ -2196,6 +2200,7 @@ rpc account_closure => sub {
             $loginids_disabled_success .= $client->loginid . ' ';
         }
         catch {
+            log_exception();
             $error = BOM::RPC::v3::Utility::client_error();
             $loginids_disabled_failed .= $client->loginid . ' ';
         }
@@ -2260,6 +2265,7 @@ rpc set_account_currency => sub {
             });
     }
     catch {
+        log_exception();
         warn "Error caught in set_account_currency: $@\n";
     };
     return {status => $status};

@@ -15,7 +15,7 @@ use BOM::Platform::Context::Request;
 use BOM::RPC::Registry;
 use BOM::User::Client;
 use BOM::Database::Rose::DB;
-use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Static;
 use BOM::RPC::v3::TickStreamer;
@@ -179,6 +179,8 @@ sub wrap_rpc_sub {
                     $error_msg .= " $error";
                 }
                 warn $error_msg;
+
+                log_exception($def->caller);
 
                 $result = BOM::RPC::v3::Utility::create_error({
                         code              => 'InternalServerError',

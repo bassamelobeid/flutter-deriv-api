@@ -7,6 +7,7 @@ use BOM::Platform::Context qw (localize);
 use Date::Utility;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Event::Emitter;
+use BOM::RPC::v3::Utility qw(log_exception);
 use Syntax::Keyword::Try;
 use feature 'state';
 use base qw(Exporter);
@@ -67,6 +68,7 @@ sub start_document_upload {
         return create_upload_error('duplicate_document') unless ($upload_info);
     }
     catch {
+        log_exception();
         warn 'Document upload db query failed.' . $_;
         return create_upload_error();
     };
@@ -94,6 +96,7 @@ sub successful_upload {
         return create_upload_error() unless $finish_upload_result and ($args->{file_id} == $finish_upload_result);
     }
     catch {
+        log_exception();
         warn 'Document upload db query failed.';
         return create_upload_error();
     };
@@ -107,6 +110,7 @@ sub successful_upload {
             });
     }
     catch {
+        log_exception();
         warn 'Unable to change client status in the db';
         return create_upload_error();
     };

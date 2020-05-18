@@ -12,7 +12,7 @@ use Scalar::Util qw(blessed);
 use Struct::Dumb qw(readonly_struct);
 
 readonly_struct
-    ServiceDef        => [qw(name code category is_auth is_async)],
+    ServiceDef        => [qw(name code category is_auth is_async caller)],
     named_constructor => 1;
 
 =head1 DOMAIN-SPECIFIC-LANGUAGE
@@ -86,6 +86,7 @@ sub import_dsl_into {
         my %opts = @_;
 
         $opts{auth} //= $auth_all if $auth_all;
+        $opts{caller} = $caller;
 
         register($name, set_subname("RPC[$name]" => $code), %opts);
 
@@ -161,7 +162,7 @@ sub register {
         category => $args{category},
         is_auth  => !!$args{auth},
         is_async => !!$args{async},
-        );
+        caller   => $args{caller});
     return;
 }
 

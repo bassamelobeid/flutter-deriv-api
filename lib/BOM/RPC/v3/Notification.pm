@@ -14,7 +14,7 @@ use Syntax::Keyword::Try;
 use BOM::User::Client;
 use BOM::RPC::Registry '-dsl';
 
-use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Platform::Context qw (localize request);
 use BOM::Config::Runtime;
 use BOM::User;
@@ -67,6 +67,7 @@ rpc notification_event => sub {
             my $e = $@;
             $all_success_flag = 0;
             warn "Error caught in $action : " . $e;
+            log_exception();
         };
     }
 

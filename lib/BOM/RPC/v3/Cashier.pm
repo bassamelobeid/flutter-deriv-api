@@ -43,7 +43,7 @@ use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::RPC::v3::MT5::Account;
-use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
 use BOM::Database::DataMapper::Payment::DoughFlow;
@@ -505,6 +505,7 @@ rpc "paymentagent_list",
             $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
         }
         catch {
+            log_exception();
             $log->warnf('%s dropped from PA list. Failed to retrieve limits: %s', $loginid, $@);
             next;
         };
@@ -578,6 +579,7 @@ rpc paymentagent_transfer => sub {
         });
     }
     catch {
+        log_exception();
         $paymentagent_error = $@;
     }
     if ($paymentagent_error or not $payment_agent) {
@@ -718,6 +720,7 @@ rpc paymentagent_transfer => sub {
         );
     }
     catch {
+        log_exception();
         $error = $@;
     }
 
@@ -949,6 +952,7 @@ rpc paymentagent_withdraw => sub {
         });
     }
     catch {
+        log_exception();
         $paymentagent_error = $@;
     }
     if ($paymentagent_error or not $paymentagent) {
@@ -1061,6 +1065,7 @@ rpc paymentagent_withdraw => sub {
         );
     }
     catch {
+        log_exception();
         $withdraw_error = $@;
     }
 
@@ -1123,6 +1128,7 @@ rpc paymentagent_withdraw => sub {
         );
     }
     catch {
+        log_exception();
         $error = $@;
     };
 
@@ -1415,6 +1421,7 @@ rpc transfer_between_accounts => sub {
             )->catch(
             sub {
                 my $err = shift;
+                log_exception();
                 return Future->done(_transfer_between_accounts_error($err->{error}->{message_to_client}));
             })->get;
     }
@@ -1428,6 +1435,7 @@ rpc transfer_between_accounts => sub {
         $client_to   = BOM::User::Client->new({loginid => $siblings->{$loginid_to}->{loginid}});
     }
     catch {
+        log_exception();
         $res = _transfer_between_accounts_error();
     }
     return $res if $res;
@@ -1467,6 +1475,8 @@ rpc transfer_between_accounts => sub {
     }
     catch {
         my $err = $@;
+        log_exception();
+
         return $error_audit_sub->($err, localize('Sorry, transfers are currently unavailable. Please try again later.'))
             if ($err =~ /No rate available to convert/);
 
@@ -1516,6 +1526,7 @@ rpc transfer_between_accounts => sub {
     }
     catch {
         my $err = $@;
+        log_exception();
 
         my $limit;
         if ($err =~ /exceeds client balance/) {
@@ -1548,6 +1559,8 @@ rpc transfer_between_accounts => sub {
     }
     catch {
         my $err = $@;
+        log_exception();
+
         my $msg = localize("Transfer validation failed on [_1].", $loginid_to);
         if ($err =~ /Balance would exceed ([\S]+) limit/) {
             $msg = localize("Your account balance will exceed set limits. Please specify a lower amount.");
@@ -1584,6 +1597,7 @@ rpc transfer_between_accounts => sub {
     catch {
         my $err_str = (ref $@ eq 'ARRAY') ? "@$@" : $@;
         my $err = "$err_msg Account Transfer failed [$err_str]";
+        log_exception();
         return $error_audit_sub->($err);
     }
     BOM::User::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);

@@ -10,7 +10,7 @@ use Convert::Base32;
 use Format::Util::Numbers qw/formatnumber/;
 
 use BOM::RPC::Registry '-dsl';
-use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Config::Redis ();
 use BOM::Platform::Context qw (localize request);
 use BOM::User;
@@ -139,6 +139,7 @@ rpc authorize => sub {
     }
     catch {
         $log->errorf('Failed to record authorize stats: %s', $@);
+        log_exception();
     }
 
     my ($lc, $brand_name) = ($client->landing_company, request()->brand->name);

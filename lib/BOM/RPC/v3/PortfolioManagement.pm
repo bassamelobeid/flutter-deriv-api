@@ -9,7 +9,7 @@ use Format::Util::Numbers qw/formatnumber roundcommon/;
 
 use BOM::RPC::Registry '-dsl';
 
-use BOM::RPC::v3::Utility qw(longcode);
+use BOM::RPC::v3::Utility qw(longcode log_exception);
 use BOM::RPC::v3::Accounts;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
@@ -114,6 +114,7 @@ sub _sell_expired_contracts {
         $response->{count} = $res->{number_of_sold_bets} if ($res and exists $res->{number_of_sold_bets});
     }
     catch {
+        log_exception();
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'SellExpiredError',
                 message_to_client => localize('There was an error processing the request.')});
