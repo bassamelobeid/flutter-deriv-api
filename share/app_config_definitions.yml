@@ -165,6 +165,40 @@ payments:
               description: "Reserve balance for ETH sweep"
               default: 120
               global: 1
+        minimum_safe_amount:
+          description: "Minimum safe amount"
+          isa: section
+          contains:
+            BTC:
+              isa: Num
+              description: "BTC minimum safe amount"
+              default: 10
+              global: 1
+            LTC:
+              isa: Num
+              description: "LTC minimum safe amount"
+              default: 30
+              global: 1
+            ETH:
+              isa: Num
+              description: "ETH minimum safe amount"
+              default: 40
+              global: 1
+            UST:
+              isa: Num
+              description: "UST minimum safe amount"
+              default: 6500
+              global: 1
+            USB:
+              isa: Num
+              description: "USB minimum safe amount"
+              default: 0
+              global: 1
+            IDK:
+              isa: Num
+              description: "IDK minimum safe amount"
+              default: 0
+              global: 1
         restricted_countries:
           description: "Countries where crypto withdrawals are restricted, separated by comma. Clients in these countries must have made a prior crypto deposit. Country code can be in lower case."
           isa: ArrayRef

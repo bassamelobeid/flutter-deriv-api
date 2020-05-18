@@ -9,7 +9,6 @@ BTC:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
-    minimum_safe_amount: 10
     sweep:
         min_transfer: 1
         max_transfer: 100
@@ -25,7 +24,6 @@ LTC:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
-    minimum_safe_amount: 30
     sweep:
         min_transfer: 1
         max_transfer: 600
@@ -41,7 +39,6 @@ ETH:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 18
-    minimum_safe_amount: 60
     ethgasstation_api: https://ethgasstation.info/json/ethgasAPI.json
     thirdparty_api:
       etherscan:
@@ -66,7 +63,6 @@ UST:
         rpc_timeout: 100
     protocol_cost: 0.00000546
     decimal_places: 8
-    minimum_safe_amount: 6500
 USB:
     withdrawal:
         timeout: "3d"
