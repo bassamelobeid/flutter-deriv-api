@@ -25,7 +25,7 @@ $manager_module->mock(
     'withdrawal',
     sub {
         return Future->done({success => 1});
-});
+    });
 
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
@@ -34,7 +34,7 @@ my %DETAILS        = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
 
 subtest 'frozen free gift' => sub {
-    
+
     my $email  = 'promotest@binary.com';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
@@ -64,11 +64,11 @@ subtest 'frozen free gift' => sub {
         amount   => 200,
         remark   => 'Free gift',
     );
-    
+
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
-    
+
     my $params = {
         language => 'EN',
         token    => $token,
@@ -81,12 +81,12 @@ subtest 'frozen free gift' => sub {
             leverage     => 100,
         },
     };
-    $c->call_ok('mt5_new_account', $params)->has_no_error('no error for mt5_new_account');    
+    $c->call_ok('mt5_new_account', $params)->has_no_error('no error for mt5_new_account');
 
     $params->{args} = {
         from_binary => $client->loginid,
-        to_mt5 => 'MTR' . $ACCOUNTS{'real\svg'},
-        amount => 180,
+        to_mt5      => 'MTR' . $ACCOUNTS{'real\svg'},
+        amount      => 180,
     };
 };
 

@@ -70,7 +70,7 @@ my $first_entry_cr_mf_test2 = [
         ["staysinout",    "Stays Between/Goes Outside", "1d", "365d"],
         ["callputequal",  "Rise/Fall Equal",            "3m", "365d"],
         ["callputspread", "Call Spread/Put Spread",     "3m", "1d"],
-        ["multiplier", "Multiply Up/Multiply Down", "",""], # logged out will be default to virtual
+        ["multiplier",    "Multiply Up/Multiply Down",  "",   ""],       # logged out will be default to virtual
     ]];
 
 sub _test_asset_index {
