@@ -263,6 +263,12 @@ sub get_settings_by_group {
                 payments.crypto.sweep_reserve_balance.BTC
                 payments.crypto.sweep_reserve_balance.LTC
                 payments.crypto.sweep_reserve_balance.ETH
+                payments.crypto.minimum_safe_amount.BTC
+                payments.crypto.minimum_safe_amount.LTC
+                payments.crypto.minimum_safe_amount.ETH
+                payments.crypto.minimum_safe_amount.UST
+                payments.crypto.minimum_safe_amount.USB
+                payments.crypto.minimum_safe_amount.IDK
                 )
         ],
         # these settings are configured in separate pages. No need to reconfure them in Dynamic Settings/Others.
