@@ -110,7 +110,7 @@ subtest 'rollover_markup_between_17GMT_to_22GMT' => sub {
     my $interest_rate_diff = $risk_markup->peek_amount('interest_rate_difference');
     my $adustment_before   = $risk_markup->peek_amount('adjustment_before');
     my $adustment_after    = $risk_markup->peek_amount('adjustment_after');
-    is($c->ask_price,       54.39,                'correct ask price');
+    is($c->ask_price,       57.39,                'correct ask price');
     is($rollover_markup,    -0.00541409767718881, 'correct rollover markup');
     is($interest_rate_diff, 0.0108281953543776,   'correct interest rate diff');
     is($adustment_before,   0.027070488385944,    'correct adjustment before');

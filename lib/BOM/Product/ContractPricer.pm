@@ -429,6 +429,7 @@ sub _create_new_interface_engine {
                 volsurface                 => $self->volsurface->surface,
                 volsurface_creation_date   => $self->volsurface->creation_date,
                 hour_end_markup_parameters => $self->hour_end_markup_parameters,
+                for_sale                   => $self->for_sale,
             );
         } elsif ($self->pricing_engine_name eq 'Pricing::Engine::BlackScholes') {
             %pricing_parameters = (

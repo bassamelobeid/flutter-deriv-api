@@ -25,7 +25,16 @@ use Pricing::Engine::Markup::HourEndDiscount;
 use Pricing::Engine::Markup::IntradayMeanReversionMarkup;
 use Pricing::Engine::Markup::RollOverMarkup;
 use Pricing::Engine::Markup::IntradayForexRisk;
+use Pricing::Engine::Markup::ModelArbitrage;
 use Math::Util::CalculatedValue::Validatable;
+
+=head2 POTENTIAL_ARBITRAGE_DURATION
+
+Intraday switches model when duration exceeds 5 hours. This markup applies to contract with duration more than or equal to 4h59m.
+
+=cut
+
+use constant POTENTIAL_ARBITRAGE_DURATION => 17940;
 
 =head2 tick_source
 
@@ -122,48 +131,6 @@ sub _build_apply_equal_tie_markup {
                 or $self->bet->code eq 'PUTE'
         )
             and ($self->bet->underlying->submarket->name eq 'major_pairs' or $self->bet->underlying->submarket->name eq 'minor_pairs')) ? 1 : 0;
-}
-
-has mean_reversion_markup => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_mean_reversion_markup {
-    my $self = shift;
-
-    my $markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'mean_reversion_markup',
-        description => 'Intraday mean reversion markup.',
-        set_by      => __PACKAGE__,
-        base_amount => 0,
-    });
-
-    my $bet = $self->bet;
-
-    return $markup unless ($bet->market->name eq 'forex' or $bet->market->name eq 'commodities');
-
-    return $markup if $bet->is_forward_starting;
-
-    my $bet_duration = $bet->timeindays->amount * 24 * 60;
-    # Maximum lookback period is 30 minutes
-    my $lookback_duration = min(30, $bet_duration);
-    #  We did not do any ajdusment if there is nothing to lookback ie either monday morning or the next day after early close
-    return $markup
-        unless $bet->trading_calendar->is_open_at($bet->underlying->exchange, $bet->date_start->minus_time_interval($lookback_duration . 'm'));
-    my $bs_probability = $self->base_probability->base_amount;
-    my $min_max        = $bet->spot_min_max($bet->date_start->minus_time_interval($lookback_duration . 'm'));
-
-    my %params = (
-        min_max        => $min_max,
-        bs_probability => $bs_probability,
-        spot           => $bet->pricing_spot,
-        pricing_code   => $bet->pricing_code
-    );
-
-    $markup->include_adjustment('add', Pricing::Engine::Markup::IntradayMeanReversionMarkup->new(%params)->markup);
-
-    return $markup;
 }
 
 sub _build_base_probability {
@@ -374,9 +341,14 @@ sub _build_risk_markup {
         bs_probability         => $self->base_probability->base_amount,
     );
 
-    my $risk_markup = Pricing::Engine::Markup::IntradayForexRisk->new(%markup_params);
+    my $risk_markup = Pricing::Engine::Markup::IntradayForexRisk->new(%markup_params)->markup;
 
-    return $risk_markup->markup;
+    my $contract_duration = $bet->date_expiry->epoch - $bet->date_start->epoch;
+    if ($bet->pricing_new and $contract_duration >= POTENTIAL_ARBITRAGE_DURATION) {
+        $risk_markup->include_adjustment('add', Pricing::Engine::Markup::ModelArbitrage->new->markup);
+    }
+
+    return $risk_markup;
 }
 
 sub event_markup {

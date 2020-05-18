@@ -15,6 +15,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Test::MockModule;
 use BOM::Config::Runtime;
 use Math::Util::CalculatedValue::Validatable;
+use Pricing::Engine::Markup::IntradayMeanReversionMarkup;
 
 BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
     '{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}'
@@ -74,7 +75,7 @@ subtest 'hour_end_markup_start_now_contract' => sub {
     lives_ok {
         my $c = produce_contract($args);
         cmp_ok $c->ask_price, '==', 5.7, 'correct ask price';
-        is $c->pricing_engine->risk_markup->peek_amount('hour_end_discount'), undef, 'no discount for CALL at X1=-0.4';
+        ok !$c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), 'no end hour markup';
 
         $args->{date_start}   = Date::Utility->new('2018-09-18 15:57:00');
         $args->{date_pricing} = Date::Utility->new('2018-09-18 15:57:00');
@@ -281,6 +282,7 @@ subtest 'test discount for current spot closer to previous low' => sub {
 
 subtest 'test discount for current spot closer to previous high' => sub {
     my $mocked = Test::MockModule->new('Pricing::Engine::Markup::HourEndBase');
+
     $mocked->mock(
         '_x1',
         sub {
@@ -295,7 +297,6 @@ subtest 'test discount for current spot closer to previous high' => sub {
     my $mocked_london = Test::MockModule->new('Pricing::Engine::Markup::LondonFix');
 
     $mocked_london->mock('apply_london_fix', sub { return 0 });
-
     my $args = {
         bet_type     => 'PUT',
         underlying   => 'frxAUDJPY',
@@ -312,6 +313,9 @@ subtest 'test discount for current spot closer to previous high' => sub {
     is $c->pricing_engine->risk_markup->peek_amount('hour_end_discount'), 0, 'no discount for PUT at X1=-0.6';
     $args->{bet_type} = 'CALL';
     $c = produce_contract($args);
+
+    # since we have changed the way hour end markup was applied (now we will take the higher of hour_end_markup or mean_reversion_markup),
+    # mocking mean_reversion_markup for the validity of the test.
 
     my $mrm = Test::MockModule->new('Pricing::Engine::Markup::IntradayMeanReversionMarkup');
     $mrm->mock(
