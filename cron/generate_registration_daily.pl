@@ -17,8 +17,7 @@ binmode STDERR, ':encoding(UTF-8)';
 
 require Log::Any::Adapter;
 GetOptions(
-    'b|brand=s' => \my $brand,
-    'l|log=s'   => \my $log_level,
+    'l|log=s' => \my $log_level,
 );
 
 $log_level ||= 'error';
@@ -27,11 +26,59 @@ Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
 run() unless caller;
 
 sub run {
-    my $brand_object = Brands->new(name => $brand);
-    my $reporter = BOM::MyAffiliates::GenerateRegistrationDaily->new(
-        processing_date => Date::Utility->new(time - 86400),
-        brand           => $brand_object
+    my $processing_date = Date::Utility->new(time - 86400);
+    my $reporter        = BOM::MyAffiliates::GenerateRegistrationDaily->new(
+        processing_date => $processing_date,
+        brand           => Brands->new(name => 'binary'));
+
+    my $output_filepath = _get_output_file_path($reporter);
+
+    # we generate data only once
+    # it's the same data for both the brands
+    # myaffiliates to reflect data properly on their side expects
+    # all the registration - irrespective of brands
+    my @csv = $reporter->activity();
+
+    $output_filepath->spew_utf8(@csv);
+    $log->debugf('Data file name %s created.', $output_filepath);
+
+    my @attachments = ();
+    push @attachments, $output_filepath->stringify;
+
+    my $reporter_deriv = BOM::MyAffiliates::GenerateRegistrationDaily->new(
+        processing_date => $processing_date,
+        brand           => Brands->new(name => 'deriv'));
+
+    my $csv_object = Text::CSV->new;
+    my @output     = ();
+    foreach my $csv_record (@csv) {
+        my $status = $csv_object->parse($csv_record);
+        die "Cannot parse $csv_record" unless $status;
+
+        my @columns = $csv_object->fields();
+        # add deriv prefix
+        # mandatory for myaffiliates to work properly
+        $columns[1] = $reporter_deriv->prefix_field($columns[1]);
+        $csv_object->combine(@columns);
+        push @output, $reporter_deriv->format_data($csv_object->string);
+    }
+
+    $output_filepath = _get_output_file_path($reporter_deriv);
+    $output_filepath->spew_utf8(@output);
+    $log->debugf('Data file name %s created.', $output_filepath);
+
+    push @attachments, $output_filepath->stringify;
+
+    $log->debugf('Sending email for affiliate registration report');
+    $reporter->send_report(
+        subject    => 'CRON registrations: Report for ' . Date::Utility->new->datetime_yyyymmdd_hhmmss_TZ,
+        message    => ['Find CSV attached in "' . join(',', $reporter->headers()) . '" format '],
+        attachment => \@attachments,
     );
+}
+
+sub _get_output_file_path {
+    my $reporter = shift;
 
     my $output_dir = $reporter->directory_path();
     $output_dir->mkpath unless $output_dir->exists;
@@ -47,18 +94,7 @@ sub run {
             . Date::Utility->new($output_filepath->stat->mtime)->datetime;
     }
 
-    my @csv = $reporter->activity();
-
-    my $output_filepath = $reporter->output_file_path();
-    $output_filepath->spew_utf8(@csv);
-    $log->debugf('Data file name %s created.', $output_filepath);
-
-    $log->debugf('Sending email for affiliate registration report');
-    $reporter->send_report(
-        subject    => 'CRON registrations: Report for ' . Date::Utility->new->datetime_yyyymmdd_hhmmss_TZ,
-        message    => $reporter->report_output,
-        attachment => $output_filepath->stringify,
-    );
+    return $output_filepath;
 }
 
 1;

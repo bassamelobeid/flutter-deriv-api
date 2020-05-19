@@ -165,7 +165,7 @@ sub send_report {
     send_email({
         from    => $brand->emails('system'),
         to      => $brand->emails('affiliates'),
-        subject => $args{subject},
+        subject => $brand->name . ': ' . $args{subject},
         message => $args{message},
         $args{attachment} ? (attachment => $args{attachment}) : (),
     });

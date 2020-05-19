@@ -39,11 +39,12 @@ sub _build_new_clients {
 
     my $date_to = Date::Utility->new({datetime => $self->processing_date->date_ddmmmyy . ' 23:59:59GMT'})->datetime_yyyymmdd_hhmmss;
 
-    my $apps_by_brand = $self->get_apps_by_brand();
-    my $candidates    = $report_mapper->get_unregistered_client_token_pairs_before_datetime({
-        to_date      => $date_to,
-        include_apps => $apps_by_brand->{include_apps},
-        exclude_apps => $apps_by_brand->{exclude_apps},
+    # we don't filter data by brand for registration
+    # our client can use any brand - binary and deriv currently - to trade or sign-up
+    # myaffiliates to reflect properly in affiliates expect all the registration for
+    # brands, also known as channels on myaffiliate side
+    my $candidates = $report_mapper->get_unregistered_client_token_pairs_before_datetime({
+        to_date => $date_to,
     });
     return $candidates;
 }
@@ -79,22 +80,13 @@ sub _date_joined {
     return Date::Utility->new({datetime => $date_joined})->date_yyyymmdd;
 }
 
-has report_output => (
-    is       => 'rw',
-    lazy     => 1,
-    init_arg => undef,
-    default  => undef
-);
-
 sub register_tokens {
     my $self = shift;
 
-    my @overall_results = ('Registration Report:', '', 'Effective Date    LoginID     Creative?    Token');
     foreach my $broker (LandingCompany::Registry::all_broker_codes) {
         next if ($broker eq 'FOG');
 
         my @matched_tokens = grep { $_->{'loginid'} =~ /^$broker/ } @{$self->new_clients};
-        my @results_for_broker;
 
         my $connection_builder = BOM::Database::ClientDB->new({
             broker_code => $broker,
@@ -123,20 +115,9 @@ sub register_tokens {
                 ping => sub {
                     $_->do($sql, undef, $bind_param);
                 });
-            push @results_for_broker,
-                  $token_data->{'date_joined'} . ' '
-                . $token_data->{'loginid'} . ' '
-                . ' creative['
-                . $token_data->{'is_creative'} . '] '
-                . $token_data->{'myaffiliates_token'};
-        }
-
-        if (scalar @results_for_broker) {
-            push @overall_results, @results_for_broker;
         }
     }
 
-    $self->report_output(\@overall_results);
     return;
 }
 
