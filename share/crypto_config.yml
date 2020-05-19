@@ -81,3 +81,15 @@ IDK:
         required_confirmations: 3
     protocol_cost: 0
     decimal_places: 8
+PAX:
+    withdrawal:
+        timeout: "3d"
+        min_usd: 25
+        fee_limit_usd: 10
+    confirmation:
+       required_confirmations: 3
+    subscription:
+       rpc_timeout: 100
+    protocol_cost: 0
+    decimal_places: 18
+    minimum_safe_amount: 6500

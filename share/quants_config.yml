@@ -18,6 +18,7 @@ default_stake:
   UST: 10
   USB: 10
   IDK: 150
+  PAX: 10
 
 bet_limits:
   holiday_blackout_start: 345
@@ -35,6 +36,7 @@ bet_limits:
       UST: 1000
       USB: 1000
       IDK: 15000
+      PAX: 1000
     digits:
       USD: 30000
       EUR: 30000
@@ -47,6 +49,7 @@ bet_limits:
       UST: 5000
       USB: 5000
       IDK: 45000
+      PAX: 5000
   inefficient_period_payout_max:
     USD: 200
     EUR: 200
@@ -58,6 +61,7 @@ bet_limits:
     UST: 200
     USB: 200
     IDK: 3000
+    PAX: 200
 
 # The following limits is based on this exchange rates
 # (1 BTC = $7701.50)
@@ -80,6 +84,7 @@ bet_limits:
           UST: 0.01
           USB: 0.01
           IDK: 0.15
+          PAX: 0.01
   max_payout:
     default_landing_company:
       default_market:
@@ -94,6 +99,7 @@ bet_limits:
           UST: 5000
           USB: 5000
           IDK: 75000
+          PAX: 5000
   min_stake:
     default_landing_company:
       default_market:
@@ -108,6 +114,7 @@ bet_limits:
           UST: 0.5
           USB: 0.5
           IDK: 6
+          PAX: 0.5
         multiplier:
           USD: 1
           EUR: 1
@@ -119,6 +126,7 @@ bet_limits:
           UST: 1
           USB: 1
           IDK: 15
+          PAX: 1
       synthetic_index:
         default_contract_category:
           USD: 0.35
@@ -131,6 +139,7 @@ bet_limits:
           UST: 0.5
           USB: 0.5
           IDK: 6
+          PAX: 0.5
         multiplier:
           USD: 1
           EUR: 1
@@ -142,6 +151,7 @@ bet_limits:
           UST: 1
           USB: 1
           IDK: 15
+          PAX: 1
     maltainvest:
       default_market:
         default_contract_category:
@@ -155,6 +165,7 @@ bet_limits:
           UST: 5
           USB: 5
           IDK: 75
+          PAX: 5
   max_stake:
     default_landing_company:
       default_market:
@@ -169,6 +180,7 @@ bet_limits:
           UST: 2000
           USB: 2000
           IDK: 30000
+          PAX: 2000
   min_commission_amount:
     USD: 0.02 # 0.02 dollar
     EUR: 0.02
@@ -180,6 +192,7 @@ bet_limits:
     UST: 0.02
     USB: 0.02
     IDK: 0.3
+    PAX: 0.02
 
 #Lookback option limits – the Value-at-risk approach
 #
@@ -217,6 +230,7 @@ lookback_limits:
     UST: 300
     USB: 300
     IDK: 4500
+    PAX: 300
 
 risk_profile:
   no_business:
@@ -231,6 +245,7 @@ risk_profile:
           UST: 0
           USB: 0
           IDK: 0
+          PAX: 0
       payout:
           USD: 0
           EUR: 0
@@ -242,6 +257,7 @@ risk_profile:
           UST: 0
           USB: 0
           IDK: 0
+          PAX: 0
   extreme_risk:
       turnover:
           USD: 1000
@@ -254,6 +270,7 @@ risk_profile:
           UST: 1000
           USB: 1000
           IDK: 15000
+          PAX: 1000
       payout:
           USD: 100
           EUR: 100
@@ -265,6 +282,7 @@ risk_profile:
           UST: 100
           USB: 100
           IDK: 1500
+          PAX: 100
   high_risk:
       turnover:
           USD: 5000
@@ -277,6 +295,7 @@ risk_profile:
           UST: 5000
           USB: 5000
           IDK: 75000
+          PAX: 5000
       payout:
           USD: 1000
           EUR: 1000
@@ -288,6 +307,7 @@ risk_profile:
           UST: 1000
           USB: 1000
           IDK: 15000
+          PAX: 1000
   moderate_risk:
       turnover:
           USD: 50000
@@ -300,6 +320,7 @@ risk_profile:
           UST: 50000
           USB: 50000
           IDK: 750000
+          PAX: 50000
       payout:
           USD: 5000
           EUR: 5000
@@ -311,6 +332,7 @@ risk_profile:
           UST: 5000
           USB: 5000
           IDK: 75000
+          PAX: 5000
   medium_risk:
       turnover:
           USD: 100000
@@ -323,6 +345,7 @@ risk_profile:
           UST: 100000
           USB: 100000
           IDK: 1500000
+          PAX: 100000
       payout:
           USD: 20000
           EUR: 20000
@@ -334,6 +357,7 @@ risk_profile:
           UST: 20000
           USB: 20000
           IDK: 300000
+          PAX: 20000
   low_risk:
       turnover:
           USD: 500000
@@ -346,6 +370,7 @@ risk_profile:
           UST: 500000
           USB: 500000
           IDK: 7500000
+          PAX: 500000
       payout:
           USD: 50000
           EUR: 50000
@@ -357,3 +382,4 @@ risk_profile:
           UST: 50000
           USB: 50000
           IDK: 750000
+          PAX: 50000

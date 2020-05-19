@@ -9,6 +9,9 @@ currency_specific_limits:
     UST:
       minimum: 10
       maximum: 2000
+    PAX:
+      minimum: 10
+      maximum: 2000
 minimum_topup_balance:
   DEFAULT: 1000
 transaction_limits:

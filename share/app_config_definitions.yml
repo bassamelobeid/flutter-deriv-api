@@ -255,12 +255,12 @@ payments:
               description: 'Default values'
               contains:
                 fiat_fiat:
-                  description: 'Default fee for transfering between a pair of fiat currencies in percentage (currently only for MT5 deposit/withdrawal)'
+                  description: 'Default fee for transferring between a pair of fiat currencies in percentage (currently only for MT5 deposit/withdrawal)'
                   isa: Num
                   default: 1
                   global: 1
                 fiat_crypto:
-                  description: 'Default fee for transfering from a fiat to a crypto currency in percentage'
+                  description: 'Default fee for transferring from a fiat to a crypto currency in percentage'
                   isa: Num
                   default: 1
                   global: 1
@@ -275,7 +275,7 @@ payments:
                   default: 1
                   global: 1
                 stable_fiat:
-                  description: 'Default fee for transferring from a stablecoin to a fialt currency in percentage'
+                  description: 'Default fee for transferring from a stablecoin to a fiat currency in percentage'
                   isa: Num
                   default: 0.5
                   global: 1
@@ -303,7 +303,7 @@ payments:
               default: 2500
               global: 1
     experimental_currencies_allowed:
-      description: "List of emails that allowed to deposite using experimental currencies"
+      description: "List of emails that allowed to deposit using experimental currencies"
       isa: ArrayRef
       default: []
       global: 1
