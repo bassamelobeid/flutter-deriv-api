@@ -505,4 +505,26 @@ subtest 'Suspended Transfers Currencies' => sub {
     $demo_account_mock->unmock;
 };
 
+subtest 'Simple withdraw' => sub {
+
+    my $client = create_client('CR');
+    $client->set_default_account('USD');
+    $user->add_client($client);
+    my $token = $m->create_token($client->loginid, 'test token');
+    $client->status->set('mt5_withdrawal_locked', 'system', 'testing');
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_mt5  => 'MTR' . $ACCOUNTS{'real\svg'},
+            to_binary => $client->loginid,
+            amount    => 100,
+        },
+    };
+
+    $c->call_ok('mt5_withdrawal', $params)->has_no_error('can withdraw even when mt5_withdrawal_locked');
+};
+
+
 done_testing();

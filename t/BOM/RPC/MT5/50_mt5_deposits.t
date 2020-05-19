@@ -168,6 +168,13 @@ subtest 'deposit' => sub {
     $c->call_ok($method, $params)->has_error('error for mt5_deposit wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_deposit wrong login');
 
+    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
+
+    $test_client->status->set('mt5_withdrawal_locked', 'system', 'testing');
+    $c->call_ok($method, $params)->has_error('client is blocked from withdrawal')->error_code_is('MT5DepositError', 'error code is MT5DepositError')
+        ->error_message_is('You cannot perform this action, as your account is withdrawal locked.');
+    $test_client->status->clear_mt5_withdrawal_locked;
+
     $demo_account_mock->unmock;
 
 };
