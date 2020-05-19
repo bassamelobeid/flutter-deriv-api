@@ -76,6 +76,14 @@
                     if(value == "-1000") {
                         value = 'FLAT';
                     }
+                    if(headers[key].includes('vol_change')){
+                        value *= 100;
+                        value = Math.round(value);
+                    }
+                    if(headers[key].includes('duration')){
+                        value /= 60;
+                        value = Math.round(value);
+                    }
                     list.push(value);
                 } else if (key != 0) {
                     list.push('&nbsp;');
@@ -341,3 +349,213 @@
         }
     }
 
+    function updateEconomicEventPricePreview() {
+        var table = \$('table#economic_event_price_preview_form');
+        var date = table.find('select[name="date"]').val();
+        var underlying_symbol = table.find('select[name="underlying_symbol"]').val();
+        var event_timeframe = table.find('select[name="event_timeframe"]').val();
+        var event_type = table.find('select[name="event_type"]').val();
+        var event_name = table.find('select[name="event_name"]').val();
+        var result = table.find('td.result');
+        result.text('processing ...');
+
+        \$.ajax({
+            url: eco_preview_upload_url,
+            data: {
+                update_economic_event_price_preview: "1",
+                date : date,
+                underlying_symbol: underlying_symbol,
+                event_timeframe: event_timeframe,
+                event_type: event_type,
+                event_name: event_name
+            },
+            success: function(data) {
+                var event = \$.parseJSON(data);
+                if (event.error) {
+                    result.text(event.error).css('color', 'red');
+                } else {
+                    if(event.headers == undefined){
+                        result.text('Event not found').css('color', 'red'); 
+                    }else{
+                        result.text('Price updated').css('color', 'green');
+                        createEconomicEventPriceTable(event.headers, event.prices, 'economic_event_price_preview_original');
+                        createEconomicEventInfo(event.news_info, 'economic_event_info'); 
+
+                    }
+                }
+            }
+        });
+    }
+
+    function createEconomicEventPriceTable(headers, prices, id) {
+        var el = \$('div#'+id);
+        
+        var table = '<table class="economic_event_table"><tr><th>Start Time / Expiry Time</th>';
+        for (var i=0; i<headers.length; i++) {
+            table += '<th>'+headers[i]+'</th>';
+        }
+        table += '</tr>';
+
+        Object.keys(prices).sort().forEach(function (key) {
+            var data = prices[key];
+            table += '<tr><td>'+key+'</td>';
+            for (var i=0; i<headers.length; i++) {
+                table += '<td>Mid: '+prices[key][headers[i]]["mid_price"]+' Vol: '+prices[key][headers[i]]["vol"]+'</td>';
+            }
+            table += '</tr>';
+        });
+
+        table += '</table>';
+        el.html(table);
+    }
+
+   function createEconomicEventInfo(news_info, id) {
+
+        var el = \$('div#'+id);
+        var news_info_header = [['Symbol','symbol'],['Event Name','event_name'],['Underlying Symbol', 'underlying_symbol'],['Current Spot','current_spot'],['Release Date','release_date'],['Duration','duration'],['Vol Change','vol_change'],['Decay Factor','decay_factor'],['Vol Change Before','vol_change_before'],['Decay Factor Before','decay_factor_before']];
+        var table = '<p>Last Updated Time : <b>' + news_info['time_now'] + '</b> (Refresh Page to update) </p>';
+        table+='<p><b>News Info:</b></p>';
+        table += '<table class="economic_event_table">'; 
+        table += '<tr>';
+        for (var i=0; i<news_info_header.length; i++) {
+            table += '<th> '+news_info_header[i][0]+' </th>';
+        }   
+        table += '</tr>';
+        table += '<tr>';
+        for (var i=0; i<news_info_header.length; i++) {
+            if(news_info[news_info_header[i][1]] == undefined){
+                table += '<td> - </td>';
+            }else{
+                table += '<td> '+news_info[news_info_header[i][1]]+' </td>';
+            }
+        }   
+        table += '</tr>';
+        table += '</table>';
+        el.html(table);
+    }
+
+
+    function createEconomicEventForm(weekly_news, id) {
+    
+       var el = \$('div#'+id);
+       var table = '<table id="' + id + '" class="economic_event_table">';
+       
+       table += '<tr><td>Date</td><td><select id="date" name="date"></select></td/tr>';
+       table += '<tr><td>Underlying Symbol</td><td><select id="underlying_symbol" name="underlying_symbol"></select></td/tr>';
+       table += '<tr><td>Event Timeframe</td><td><select id="event_timeframe" name="event_timeframe"></select></div></td/tr>';
+       table += '<tr><td>Event Significance</td><td><select id="event_type" name="event_type"></select></div></td/tr>';
+       table += '<tr><td>Event</td><td><select id="event_name" name="event_name"></select></div></td/tr>';
+       table += '<tr><td><button onclick="updateEconomicEventPricePreview()">View</button></td><td class="result"></td></tr>';
+       table += '</table>'; 
+    
+       el.html(table);
+
+      date_select = document.querySelector('#date'),
+      underlying_select = document.querySelector('#underlying_symbol'),
+      event_timeframe_select = document.querySelector('#event_timeframe'),
+      event_type_select = document.querySelector('#event_type'),
+      event_select = document.querySelector('#event_name');
+    
+      
+      setOptions(date_select, Object.keys(weekly_news).sort());
+      setOptions(underlying_select, Object.keys(weekly_news[date_select.value]).sort());
+      setOptions(event_timeframe_select, ['incoming_event','ongoing_event','past_event']);
+      setOptions(event_type_select,['significant_event','insignificant_event']);
+      event_selection(); 
+     
+      date_select.addEventListener('change', function() {
+        event_selection();  
+      });
+      underlying_select.addEventListener('change', function() {
+        event_selection();  
+      });
+      event_timeframe_select.addEventListener('change', function() { 
+        event_selection();
+      });
+      event_type_select.addEventListener('change', function() { 
+        event_selection(); 
+      });
+      
+      function event_selection(){
+
+        if(weekly_news[date_select.value][underlying_select.value][event_timeframe_select.value][event_type_select.value] == undefined){
+            setOptions(event_select,['-']);
+        }else{
+            setOptions(event_select, Object.keys(weekly_news[date_select.value][underlying_select.value][event_timeframe_select.value][event_type_select.value]));
+        }
+      }
+
+      function setOptions(dropDown, options ) {
+
+        dropDown.innerHTML = '';
+        options.forEach(function(value) {
+            dropDown.innerHTML += '<option name="' + value + '">' + value + '</option>';
+        }) 
+      }  
+    };
+
+    function createEconomicEventChange(id) {
+
+       var el = \$('div#'+id);
+       var table = '<table id="' + id + '" class="economic_event_table">';
+       var parameter = ['vol_change','decay_factor','duration','vol_change_before','decay_factor_before'];
+
+       for (var i=0; i<parameter.length; i++) {
+            table += '<tr><td><div class="input_field">'+parameter[i]+'  </td><td><input size="10" type="text" name='+parameter[i]+'></div></td/tr>';
+       }
+       table += '<tr><td><button onclick="compareEconomicEventPricePreview()">Compare</button></td><td class="result"></td></tr>';
+
+       table += '</table>'; 
+       el.html(table); 
+
+    }
+
+    function compareEconomicEventPricePreview() {
+
+        var info = \$('table#economic_event_price_preview_form');
+        var date = info.find('select[name="date"]').val();
+        var underlying_symbol = info.find('select[name="underlying_symbol"]').val();
+        var event_timeframe = info.find('select[name="event_timeframe"]').val();
+        var event_type = info.find('select[name="event_type"]').val();
+        var event_name = info.find('select[name="event_name"]').val();
+        
+        var change = \$('table#economic_event_change');
+        var vol_change = change.find('input[name="vol_change"]').val();
+        var decay_factor = change.find('input[name="decay_factor"]').val();
+        var duration  = change.find('input[name="duration"]').val();
+        var vol_change_before = change.find('input[name="vol_change_before"]').val();
+        var decay_factor_before = change.find('input[name="decay_factor_before"]').val();
+
+        var result = change.find('td.result');
+        result.text('processing ...');
+        \$.ajax({
+            url: eco_preview_upload_url,
+            data: {
+                update_economic_event_price_preview: "1",
+                date : date,
+                underlying_symbol: underlying_symbol,
+                event_timeframe: event_timeframe,
+                event_type: event_type,
+                event_name: event_name,
+                vol_change: vol_change,
+                decay_factor: decay_factor,
+                duration: duration,
+                vol_change_before: vol_change_before,
+                decay_factor_before: decay_factor_before
+            },
+            success: function(data) {
+                var event = \$.parseJSON(data);
+                if (event.error) {
+                    result.text(event.error).css('color', 'red');
+                } else {
+                    if(event.headers == undefined){
+                        result.text('Event not found').css('color', 'red'); 
+                    }else{
+                        result.text('Comparison updated').css('color', 'green');
+                        updateEconomicEventPricePreview();
+                        createEconomicEventPriceTable(event.headers, event.prices, 'economic_event_price_preview_updated'); 
+                    }
+                }
+            }
+        });
+    }

@@ -23,6 +23,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::CustomCommissionTool;
 use BOM::Backoffice::PricePreview;
+use BOM::Backoffice::EconomicEventPricePreview;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -42,7 +43,8 @@ print '<p>BLOOMBERG DATA LICENSE (BBDL) is an FTP service where we can make requ
  <br>Note1: to view currently scheduled batch files, upload the JYSscheduled.req request file.
  Then wait a minute and download scheduled.out . </p>';
 
-master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}));
+master_live_server_error()
+    unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}));
 
 my $bbdl                  = Bloomberg::FileDownloader->new();
 my $directory_listing_url = request()->url_for('backoffice/f_bbdl_list_directory.cgi');
@@ -142,6 +144,10 @@ print generate_correlations_upload_form({
 
 Bar('Price Preview');
 print BOM::Backoffice::PricePreview::generate_form(request()->url_for('backoffice/quant/market_data_mgmt/update_price_preview.cgi'));
+
+Bar('Economic Event Price Preview');
+print BOM::Backoffice::EconomicEventPricePreview::generate_economic_event_form(
+    request()->url_for('backoffice/quant/market_data_mgmt/update_economic_event_price_preview.cgi'));
 
 Bar("Update the news events database");
 print BOM::Backoffice::EconomicEventTool::generate_economic_event_tool(

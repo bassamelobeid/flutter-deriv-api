@@ -85,17 +85,6 @@ sub get_info {
         $event->{info}->{$symbol} = $ev;
     }
 
-    for my $key (qw/info custom/) {
-        next unless defined $event->{$key};
-        my $data = $event->{$key};
-        for my $ul (keys %$data) {
-            for (keys %{$data->{$ul}}) {
-                $data->{$ul}->{$_} = $_ =~ /vol/ ? $data->{$ul}->{$_} * 100 : $_ =~ /duration/ ? $data->{$ul}->{$_} / 60 : $data->{$ul}->{$_}
-                    if defined $data->{$ul}->{$_};
-            }
-        }
-    }
-
     return $event;
 }
 

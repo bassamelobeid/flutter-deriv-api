@@ -1,0 +1,52 @@
+<p>Price table will calculate the Mid price ((vanilla call + vanilla put)/2) and volatilites during economic events.</p>
+<p>Comparison table calculates the updated values based on customized change of parameters</p>
+<p>News Info includes the adjustment information of economic event including default parameters.</p>
+<p></p>
+<p>The definition of event selection input is shown below.</p>
+<p>Event Timeframe: </p>
+<ul>
+    <li><b>Incoming Event:</b> Future economic event with release time greater than current time. </li>
+    <li><b>Ongoing Event:</b> Current economic event with ongoing volatilities adjustment that ends determining by *duration*.</li>
+    <li><b>Past Event:</b> Past economic event that volatilites adjustment ends.</li>
+</ul>
+
+<p>Event Significance: </p>
+<ul>
+    <li><b>Significant Event:</b> Economic event with calibrated value. </li>
+    <li><b>Insignificant Event:</b> Economic event without calibrated value or uncategorized. </li> 
+</ul>
+<p></p>
+<table>
+    <tr>
+    <th>Event Selection</th>
+    <th>Event Parameter Change</th>
+    </tr>
+    <tr>
+        <td>
+            <div id='economic_event_price_preview_form'></div>
+        </td>
+    
+         <td>
+            <div id='economic_event_change'></div>
+        </td>
+    </tr>
+</table>
+
+
+<p></p>
+<div id='economic_event_info'></div>
+
+<p><b>Price Table:</b></p>
+<div id='economic_event_price_preview_original'></div>
+
+<p><b>Comparison Table:</b></p>
+<div id='economic_event_price_preview_updated'></div>
+
+<script>
+    var eco_preview_upload_url = "[% upload_url | none %]";
+    [% PROCESS backoffice/economic_event_forms.js %];
+    createEconomicEventPriceTable([% headers | none %], [% prices | none %], 'economic_event_price_preview_original');
+    createEconomicEventInfo([% news_info | none %], 'economic_event_info');
+    createEconomicEventForm([% weekly_news | none %], 'economic_event_price_preview_form');
+    createEconomicEventChange('economic_event_change')
+</script>
