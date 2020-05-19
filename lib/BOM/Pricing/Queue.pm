@@ -15,6 +15,7 @@ use List::UtilsBy qw(extract_by);
 use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
 use Future::AsyncAwait;
+use Future::Utils qw(fmap0);
 use Net::Async::Redis;
 
 use Log::Any qw($log);
@@ -63,9 +64,9 @@ Returns a L<Net::Async::Redis> instance.
 =cut
 
 sub redis_instance {
-    my ($self) = @_;
+    my ($self, %args) = @_;
     try {
-        my $cfg = BOM::Config::redis_pricer_config()
+        my $cfg = $args{config} // BOM::Config::redis_pricer_config()
             or die 'no config found for Redis pricers';
         my $redis_cfg = $cfg->{write}
             or die 'pricer write config not found in BOM::Config';
@@ -110,6 +111,18 @@ Secondary Redis client for metrics.
 sub metrics_redis {
     my ($self) = @_;
     return $self->{metrics_redis} //= $self->redis_instance;
+}
+
+=head2 contract_redis
+
+Returns a L<Net::Async::Redis> instance for accessing
+open contract data.
+
+=cut
+
+sub contract_redis {
+    my ($self) = @_;
+    return $self->{contract_redis} //= $self->redis_instance(BOM::Config::redis_pricer_shared_config());
 }
 
 =head2 internal_ip
@@ -342,6 +355,38 @@ async sub process {
     return undef;
 }
 
+=head2 parameters_for_contract_id
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<< $contract_id >> - numeric contract ID to look up
+
+=item * C<< $landing_company >> - which landing company, e.g. C<virtual>
+
+=back
+
+Returns a L<Future> which will resolve to a hashref of contract parameters.
+
+=cut
+
+async sub parameters_for_contract_id {
+    my ($self, $contract_id, $landing_company) = @_;
+
+    my $redis      = $self->contract_redis;
+    my $params_key = join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company);
+    my $params     = await $redis->get($params_key)
+        or die 'Contract parameters not found';
+
+    # Refreshes the expiry if TTL is unexpectedly low.
+    # We don't need to wait for the ->expire step, that
+    # can happen in the background.
+    $redis->expire($params_key, 60)->retain if (await $redis->ttl($params_key)) < 10;
+
+    return +{decode_json_utf8($params)->@*};
+}
+
 =head2 send_stats
 
 If L</record_price_metrics> is set, will attempt to analyse
@@ -371,28 +416,42 @@ async sub send_stats {
     # There might be multiple occurrences of the same 'relative shortcode'
     # to achieve higher performance, we count them first, then update the redis
     my %queued;
-    my $count = 0;
+    my @pending = $keys->@*;
     METRIC:
-    for my $key ($keys->@*) {
-        unless ($count++ % KEYS_PER_METRICS_ITERATION) {
-            my $completion = (Time::HiRes::time() - $start) / $self->pricing_interval;
-            if ($completion >= $interval_fraction) {
-                $log->warnf('Too many keys to process all metrics, have reached %d%% of the pricing interval', 100.0 * $completion);
-                last METRIC;
-            }
+    while (@pending) {
+        my $completion = (Time::HiRes::time() - $start) / $self->pricing_interval;
+        if ($completion >= $interval_fraction) {
+            $log->warnf('Too many keys to process all metrics, have reached %d%% of the pricing interval', 100.0 * $completion);
+            last METRIC;
         }
 
-        my %params = decode_json_utf8($key =~ s/^PRICER_KEYS:://r)->@*;
-        # Exclude proposal_array
-        next if exists $params{barriers};
+        my @batch = splice @pending, 0, KEYS_PER_METRICS_ITERATION;
+        await fmap0(
+            async sub {
+                my $key = shift;
 
-        if ($params{contract_id} and $params{landing_company}) {
-            my $contract_params = BOM::Pricing::v3::Utility::get_contract_params(@params{qw(contract_id landing_company)});
-            @params{keys %$contract_params} = values %$contract_params;
-        }
+                try {
+                    my %params = decode_json_utf8($key =~ s/^PRICER_KEYS:://r)->@*;
+                    # Exclude proposal_array
+                    return if exists $params{barriers};
 
-        my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode(\%params);
-        $queued{$relative_shortcode}++;
+                    # Retrieve extra information for open contracts
+                    if ($params{contract_id} and $params{landing_company}) {
+                        my $contract_params = await $self->parameters_for_contract_id(@params{qw(contract_id landing_company)});
+                        @params{keys %$contract_params} = values %$contract_params;
+                    }
+
+                    my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode(\%params);
+                    $queued{$relative_shortcode}++;
+                }
+                catch {
+                    $log->warnf('Failed to extract metrics for contract %s - %s', $key, $@);
+                    stats_inc('pricing.queue.invalid_contract');
+                }
+            },
+            foreach    => \@batch,
+            concurrent => 32
+        );
     }
 
     await Future->needs_all(    #
