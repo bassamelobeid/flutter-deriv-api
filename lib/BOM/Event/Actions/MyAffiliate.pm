@@ -21,13 +21,9 @@ async sub affiliate_sync_initiated {
     my $affiliate_id        = $data->{affiliate_id};
     my $affiliate_mt5_login = $data->{mt5_login};
 
-    my $my_affiliate = BOM::MyAffiliates->new();
-    my $customers = $my_affiliate->get_customers(AFFILIATE_ID => $affiliate_id);
-
-    my @login_ids = map { $_->{CLIENT_ID} || () } @$customers;
-
+    my $login_ids = _get_clean_loginids($affiliate_id);
     my @results;
-    for my $login_id (@login_ids) {
+    for my $login_id (@$login_ids) {
         my $result = {
             loginid    => $login_id,
             mt5_logins => '',
@@ -119,6 +115,16 @@ async sub _set_affiliate_for_mt5 {
     });
 
     return 1;
+}
+
+sub _get_clean_loginids {
+    my ($affiliate_id) = @_;
+    my $my_affiliate = BOM::MyAffiliates->new();
+    my $customers = $my_affiliate->get_customers(AFFILIATE_ID => $affiliate_id);
+
+    my @login_ids = map { $_->{CLIENT_ID} || () } @$customers;
+    s/^deriv_//g for @login_ids;
+    return \@login_ids;
 }
 
 1;

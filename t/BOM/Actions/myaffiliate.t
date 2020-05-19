@@ -10,28 +10,45 @@ use BOM::Test::Email;
 use BOM::User;
 use BOM::Event::Actions::MyAffiliate;
 use BOM::Event::Utility qw(exception_logged);
+use BOM::User::Password;
 
+my $email    = 'abc' . rand . '@binary.com';
+my $hash_pwd = BOM::User::Password::hashpw('test');
+my $user     = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd,
+);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
+    broker_code    => 'CR',
+    binary_user_id => $user->id
 });
 $test_client->set_default_account('USD');
 
-my $test_user = BOM::User->create(
-    email          => $test_client->email,
-    password       => "hello",
-    email_verified => 1,
+$email = 'abc' . rand . '@binary.com';
+my $user_deriv = BOM::User->create(
+    email    => $email,
+    password => $hash_pwd,
 );
+my $test_client_deriv = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    binary_user_id => $user_deriv->id
+});
+$test_client_deriv->set_default_account('USD');
 
 my $mock_myaffiliate = Test::MockModule->new('BOM::MyAffiliates');
-my $customer_;
+
+# at MyAffiliates we are maintaining separate CLIENT_ID for deriv & binary.
+#the affiliates that are associated with deriv have CLIENT_ID prefixed with deriv_
+my $customers = [{"CLIENT_ID" => $test_client->loginid}, {"CLIENT_ID" => 'deriv_' . $test_client_deriv->loginid}];
 my $affiliate_id = 1234;
 $mock_myaffiliate->mock(
     'get_customers' => sub {
-        my $customers = [{"CLIENT_ID" => $test_client->loginid}];
-        $customer_ = $customers;
         return $customers;
     });
-
+subtest "clean loginids" => sub {
+    my $expected_result = [$test_client->loginid, $test_client_deriv->loginid];
+    is_deeply BOM::Event::Actions::MyAffiliate::_get_clean_loginids($affiliate_id), $expected_result, 'correct loginids after clean';
+};
 subtest "affiliate_sync_initiated" => sub {
     mailbox_clear();
     lives_ok {
