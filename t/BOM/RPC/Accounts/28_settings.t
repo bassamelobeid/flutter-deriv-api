@@ -394,7 +394,7 @@ subtest 'set settings' => sub {
         is($res->{error}{code},
             'RestrictedCountry', 'one restricted country (' . $restricted_country . ') in list of tax residences is also blocked as expected')
             or note explain $res;
-        like($res->{error}{message_to_client}, qr/"\Q\U$restricted_country"/, 'error message mentioned the country')
+        like($res->{error}{message_to_client}, qr/"\Q$restricted_country"/, 'error message mentioned the country')
             or note explain $res->{error};
     }
     for my $unrestricted_country (qw(id ru)) {
@@ -402,7 +402,6 @@ subtest 'set settings' => sub {
             tax_residence             => $unrestricted_country,
             tax_identification_number => '111-222-543',
         };
-
         my $res = $c->tcall($method, $params);
         is($res->{status}, 1, 'unrestricted country ' . $unrestricted_country . ' for tax residence is allowed') or note explain $res;
     }
@@ -446,6 +445,23 @@ subtest 'set settings' => sub {
     $test_client->set_authentication('ID_DOCUMENT')->status('pass');
     $test_client->save;
 
+    $params->{args}{tax_identification_number} = '111-222-543';
+    $params->{args}{tax_residence}             = 'de';
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Your tax residence cannot be changed.',
+        'Can not change tax residence for MF once it has been authenticated.'
+    );
+    $params->{args}{tax_identification_number} = '111-222-333';
+    $params->{args}{tax_residence}             = 'ru';
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Your tax identification number cannot be changed.',
+        'Can not change tax identification number for MF once it has been authenticated.'
+    );
+
+    $params->{args}{tax_identification_number} = '111-222-543';
+    $params->{args}{tax_residence}             = 'ru';
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     my $res = $c->tcall('get_settings', {token => $token});
     is($res->{tax_identification_number}, $params->{args}{tax_identification_number}, "Check tax information");

@@ -84,15 +84,17 @@ our %ImmutableFieldError = do {
     no warnings 'redefine';
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
     (
-        place_of_birth         => localize("Your place of birth cannot be changed."),
-        date_of_birth          => localize("Your date of birth cannot be changed."),
-        salutation             => localize("Your salutation cannot be changed."),
-        first_name             => localize("Your first name cannot be changed."),
-        last_name              => localize("Your last name cannot be changed."),
-        citizen                => localize("Your citizen cannot be changed."),
-        account_opening_reason => localize("Your account opening reason cannot be changed."),
-        secret_answer          => localize("Your secret answer cannot be changed."),
-        secret_question        => localize("Your secret question cannot be changed."),
+        place_of_birth            => localize("Your place of birth cannot be changed."),
+        date_of_birth             => localize("Your date of birth cannot be changed."),
+        salutation                => localize("Your salutation cannot be changed."),
+        first_name                => localize("Your first name cannot be changed."),
+        last_name                 => localize("Your last name cannot be changed."),
+        citizen                   => localize("Your citizen cannot be changed."),
+        account_opening_reason    => localize("Your account opening reason cannot be changed."),
+        secret_answer             => localize("Your secret answer cannot be changed."),
+        secret_question           => localize("Your secret question cannot be changed."),
+        tax_residence             => localize("Your tax residence cannot be changed."),
+        tax_identification_number => localize("Your tax identification number cannot be changed."),
     );
 };
 
@@ -1182,6 +1184,8 @@ rpc set_settings => sub {
     my $brand = request()->brand;
     my ($residence, $allow_copiers) =
         ($args->{residence}, $args->{allow_copiers});
+    my $tax_residence             = $args->{'tax_residence'}             // '';
+    my $tax_identification_number = $args->{'tax_identification_number'} // '';
 
     if ($current_client->is_virtual) {
         # Virtual client can update
@@ -1212,7 +1216,13 @@ rpc set_settings => sub {
 
         my $error = $current_client->format_input_details($args);
         return BOM::RPC::v3::Utility::create_error_by_code($error->{error}) if $error;
-
+        # This can be a comma-separated list - if that's the case, we'll just use the first failing residence in
+        # the error message.
+        if (my $bad_residence = first { $brand->countries_instance->restricted_country($_) } split /,/, $tax_residence || '') {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'RestrictedCountry',
+                    message_to_client => localize('The supplied tax residence "[_1]" is in a restricted country.', $bad_residence)});
+        }
         $error = $current_client->validate_fields_immutable($args);
         if ($error) {
             return BOM::RPC::v3::Utility::create_error({
@@ -1270,9 +1280,6 @@ rpc set_settings => sub {
 
     return {status => 1} if $current_client->is_virtual;
 
-    my $tax_residence             = $args->{'tax_residence'}             // '';
-    my $tax_identification_number = $args->{'tax_identification_number'} // '';
-
     # according to compliance, tax_residence and tax_identification_number can be changed
     # but cannot be removed once they have been set
     foreach my $field (qw(tax_residence tax_identification_number)) {
@@ -1287,13 +1294,6 @@ rpc set_settings => sub {
         }
     }
 
-    # This can be a comma-separated list - if that's the case, we'll just use the first failing residence in
-    # the error message.
-    if (my $bad_residence = first { $brand->countries_instance->restricted_country($_) } split /,/, $tax_residence || '') {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'RestrictedCountry',
-                message_to_client => localize('The supplied tax residence "[_1]" is in a restricted country.', uc $bad_residence)});
-    }
     return BOM::RPC::v3::Utility::create_error({
             code => 'TINDetailsMandatory',
             message_to_client =>
