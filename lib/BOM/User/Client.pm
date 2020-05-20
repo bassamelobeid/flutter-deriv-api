@@ -2861,12 +2861,12 @@ sub validate_payment {
         my $withdrawal_limits = BOM::Config::payment_limits()->{withdrawal_limits};
         $lc_limits = $withdrawal_limits->{$lc};
         die "Invalid landing company - $lc\n" unless $lc_limits;
+        my $lc_currency = $lc_limits->{currency};
 
         # for CR & CH only check for lifetime limits (in client's currency)
         if ($lc =~ /^(?:svg|champion)$/) {
             # Withdrawals to date
-            my $wd_epoch    = $account->total_withdrawals();
-            my $lc_currency = $lc_limits->{currency};
+            my $wd_epoch = $account->total_withdrawals();
 
             # If currency is not the same as the lc's currency, convert withdrawals so far and withdrawal amount
             if ($currency ne $lc_currency) {
@@ -2878,9 +2878,9 @@ sub validate_payment {
             my $total_wd = financialrounding('amount', $currency, $wd_epoch + $absamt);
             my $wd_left  = financialrounding('amount', $currency, $lc_limits->{lifetime_limit} - $wd_epoch);
 
-            $log->warnf("negative withdrawal left: %s, loginid: %s, currency: %s, lifetime_limit: %s, total_withdrawals: %s",
-                $wd_left, $self->loginid, $currency, $lc_limits->{lifetime_limit}, $wd_epoch)
-                if $wd_left < 0;
+            die sprintf("You've reached the maximum withdrawal limit of [%s %s]. Please authenticate your account to make unlimited withdrawals.\n",
+                $lc_currency, $lc_limits->{lifetime_limit})
+                if $wd_left <= 0;
 
             if (financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $wd_left)) {
                 if ($currency ne $lc_currency) {
@@ -2925,15 +2925,16 @@ sub validate_payment {
             # Withdrawable amount left between the two amounts - The smaller is used
             my $wd_eur_left = List::Util::min($wd_eur_since_left, $wd_eur_epoch_left);
 
+            die sprintf("You've reached the maximum withdrawal limit of [%s %s]. Please authenticate your account to make unlimited withdrawals.\n",
+                $lc_currency, $lc_limits->{lifetime_limit})
+                if $wd_eur_epoch_left <= 0;
+
+            die sprintf("You've reached the maximum withdrawal limit of [%s %s]. Please authenticate your account to make unlimited withdrawals.\n",
+                $lc_currency, $lc_limits->{limit_for_days})
+                if $wd_eur_since_left <= 0;
+
             # Withdrawable amount is converted from EUR to clients' currency and rounded
             my $wd_left = financialrounding('amount', $currency, convert_currency($wd_eur_left, 'EUR', $currency));
-
-            $log->warnf(
-                "negative withdrawal left: %s, loginid: %s, currency: EUR, lifetime_limit: %s, total_withdrawals: %s, since %s limit: %s, withdrawals: %s",
-                $wd_eur_left, $self->loginid, $lc_limits->{lifetime_limit},
-                $wd_eur_epoch, $since->date_yyyymmdd, $lc_limits->{limit_for_days},
-                $wd_eur_since
-            ) if $wd_left < 0;
 
             if (financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $wd_left)) {
                 # lock cashier and unwelcome if its MX (as per compliance, check with compliance if you want to remove it)

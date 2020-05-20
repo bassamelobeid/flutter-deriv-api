@@ -165,6 +165,8 @@ subtest 'CR withdrawal' => sub {
                 'total withdraw cannot > 10k';
             lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'second 5k withdrawal';
             is($emitted{$client->loginid}, 'withdrawal_limit_reached', 'An event is emitted to set the client as needs_action');
+            throws_ok { $client->validate_payment(%withdrawal, amount => -100) } qr/reached the maximum withdrawal limit of \[USD 10000\]/,
+                'withdrawal_limit_reached';
         };
 
         $mock_events->unmock_all();
@@ -355,7 +357,10 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
         throws_ok { $client->validate_payment(%withdrawal_eur, amount => -101) } qr/exceeds withdrawal limit \[EUR/,
             'Unauthed, total withdrawal (1900+101) > EUR2000.';
 
-        ok $client->validate_payment(%withdrawal_eur, amount => -100), 'Unauthed, allowed to withdraw total EUR (1900+100).';
+        ok $client->smart_payment(%withdrawal_eur, amount => -100), 'Unauthed, allowed to withdraw total EUR (1900+100).';
+        throws_ok { $client->smart_payment(%withdrawal_eur, amount => -101) } qr/reached the maximum withdrawal limit of \[EUR 2000\]/,
+            'withdrawal_limit_reached';
+
     };
 
     # Test for authenticated withdrawals
@@ -370,7 +375,7 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pending');
         $client->save;
 
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -100) } qr/exceeds withdrawal limit \[EUR/,
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -100) } qr/reached the maximum withdrawal limit of \[EUR 2000\]/,
             'Unauthed, not allowed to withdraw as limit already > EUR2000';
     };
 };
