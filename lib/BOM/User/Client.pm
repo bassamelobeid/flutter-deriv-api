@@ -1698,7 +1698,7 @@ sub validate_fields_immutable {
 
     #fields not allow to change once been set
     my @fields_immutable =
-        qw/place_of_birth date_of_birth salutation first_name last_name citizen account_opening_reason secret_answer secret_question/;
+        qw/place_of_birth date_of_birth salutation first_name last_name citizen account_opening_reason secret_answer secret_question tax_residence tax_identification_number/;
 
     for my $field (@fields_immutable) {
         #if the input field value is differnt from self setting, means it is been changed
