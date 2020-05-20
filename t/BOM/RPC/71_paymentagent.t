@@ -79,6 +79,8 @@ $mock_user_client->mock('add_note', sub { return 1 });
 ## We do not want to worry about this right now:
 $mock_user_client->mock('is_tnc_approval_required', sub { return 0; });
 
+my $mock_account = Test::MockModule->new('BOM::User::Client::Account');
+
 ## Used to simulate a payment agent not existing:
 my $mock_client_paymentagent = Test::MockModule->new('BOM::User::Client::PaymentAgent');
 
@@ -1157,6 +1159,11 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         ## Cashier.pm does some remapping to Payments.pm
         like($res->{error}{message_to_client}, qr/Your account balance is $test_currency $Alice_balance/, $test);
         top_up $Alice, $test_currency => $MAX_DAILY_WITHDRAW_AMOUNT_WEEKDAY + 1;    ## Should work for all currencies
+
+        $mock_account->mock('total_withdrawals', sub { return 54321 });
+        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        like($res->{error}{message_to_client}, qr/reached the maximum withdrawal limit/, 'reached maximum withdrawal limit');
+        $mock_account->unmock('total_withdrawals');
 
         ## These limits only make sense for USD, although all currencies are checked?!?
         if ($test_currency eq 'USD') {
