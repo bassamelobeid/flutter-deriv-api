@@ -78,7 +78,8 @@ jobs:
     - *3
     - run:
         background: true
-        command: perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1
+        command: >
+          perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1
           | grep -Ev '(connection has been closed unexpectedly)|(terminating connection
           due to administrator)'
         name: inotify dÃ¦mon    
@@ -99,7 +100,8 @@ jobs:
     - *3
     - run:
         background: true
-        command: perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1
+        command: >
+          perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1
           | grep -Ev '(connection has been closed unexpectedly)|(terminating connection
           due to administrator)'
         name: inotify dÃ¦mon
@@ -120,7 +122,8 @@ jobs:
     - *3
     - run:
         background: true
-        command: perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1
+        command: >
+          perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1
           | grep -Ev '(connection has been closed unexpectedly)|(terminating connection
           due to administrator)'
         name: inotify dÃ¦mon
