@@ -6,19 +6,33 @@ use Test::More;
 use APIHelper qw(balance deposit withdraw);
 use JSON::MaybeUTF8 qw(:v1);
 use BOM::User::Client;
-
+use Test::MockModule;
 my $loginid = 'CR0011';
+
+my $mock_account = Test::MockModule->new('BOM::User::Client::Account');
+$mock_account->mock('total_withdrawals', sub { return 54321 });
 
 my $cli = BOM::User::Client->new({loginid => $loginid});
 $cli->place_of_birth('id');
 $cli->save;
 
-my $user = BOM::User->create(email=>'unit_test@binary.com', password=>'asdaiasda');
+my $user = BOM::User->create(
+    email    => 'unit_test@binary.com',
+    password => 'asdaiasda'
+);
 $user->add_client($cli);
 my $r = deposit(loginid => $loginid);
 is($r->code,    201,       'correct status code');
 is($r->message, 'Created', 'Correct message');
 my $starting_balance = balance($loginid);
+
+$r = withdraw(
+    loginid     => $loginid,
+    is_validate => 1
+);
+is $r->code,              403;
+like $r->decoded_content, qr/reached the maximum withdrawal limit/;
+$mock_account->unmock('total_withdrawals');
 
 $r = withdraw(
     loginid     => $loginid,
