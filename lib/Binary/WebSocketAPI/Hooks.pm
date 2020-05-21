@@ -45,10 +45,6 @@ Returns version 4 schema
 sub _load_schema {
     my ($request_type, $direction) = @_;
 
-    # For an unknown reason, bom-rpc will return empty result `{}` .
-    # In such case the request_type will be undef.
-    # Please refer to the card https://trello.com/c/uZRt85Zg/42-logs-validatorerrors
-    # and the card https://trello.com/c/UTx5s4uM/10378-1-bugfix-debug-msg-type-1
     unless ($request_type) {
         $log->error('No request type when loading schema');
         return {};
@@ -434,6 +430,23 @@ sub get_doc_auth_s3_conf {
     };
 }
 
+=head2 output_validation
+
+Validate api_response with json schema.
+Will store error into api_response if there is.
+
+=over 4
+
+=item * C<req_storage> hashref - request storage hashref
+
+=item * C<api_response> hashref - api response hashref
+
+=back
+
+Return: undef
+
+=cut
+
 sub output_validation {
     my ($c, $req_storage, $api_response) = @_;
 
@@ -442,24 +455,32 @@ sub output_validation {
         return if exists $api_response->{error}{code};
     }
 
-    my $schema = {};
+    my $error_msg;
+    local $log->context->{args} = $req_storage->{origin_args} || $req_storage->{args};
+    local $log->context->{api_response} = $api_response;
+
     if ($api_response->{msg_type}) {
-        local $log->context->{args} = $req_storage->{origin_args} || $req_storage->{args};
-        local $log->context->{api_response} = $api_response;
-        $schema = _load_schema($api_response->{msg_type});
-    }
-
-    my $error = _validate_schema_error($schema, $api_response);
-
-    if ($error) {
-        my $error_msg = join(" - ", (map { "$_:$error->{details}{$_}" } keys %{$error->{details}}), @{$error->{general}});
+        my $schema = _load_schema($api_response->{msg_type});
+        my $error = _validate_schema_error($schema, $api_response);
+        return unless $error;
+        $error_msg = join("- ", (map { "$_:$error->{details}{$_}" } keys %{$error->{details}}), @{$error->{general}});
         $log->error("Schema validation failed for our own output [ "
                 . $json->encode($api_response)
                 . " error: $error_msg ], make sure backend are aware of this error!, schema may need adjusting");
-        %$api_response = %{
-            $c->new_error($req_storage->{msg_type} || $req_storage->{name},
-                'OutputValidationFailed', $c->l("Output validation failed: ") . $error_msg)};
+
+    } else {
+        # For an unknown reason, bom-rpc will return empty result `{}` .
+        # In such case the request_type will be undef.
+        # Please refer to the card https://trello.com/c/uZRt85Zg/42-logs-validatorerrors
+        # and the card https://trello.com/c/UTx5s4uM/10378-1-bugfix-debug-msg-type-1
+        $log->error("Schema validation failed because msg_type is null");
+        DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.validate_error.msg_type_null', {tags => [$req_storage->{name}]});
+        $error_msg = "An error occurred, please try again.";
     }
+
+    %$api_response =
+        %{$c->new_error($req_storage->{msg_type} || $req_storage->{name}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error_msg)
+        };
 
     return;
 }
@@ -700,10 +721,21 @@ sub _handle_error {
 Final processing of echo_req to ensure we don't send anything sensitive in response.
 Attributes marked with "sensitive" is in the send schema will be redacted.
 
+=over 4
+
+=item * C<params> hashref - data the need to be processed
+
+=item * C<msg_type> string - message type used to load schema
+
+=back
+
+Return: undef if no message type, processed data otherwise.
+
 =cut
 
 sub _sanitize_echo {
     my ($params, $msg_type) = @_;
+    return unless $msg_type;
     my $schema = _load_schema($msg_type, 'send');
     filter_sensitive_fields($schema, $params);
 

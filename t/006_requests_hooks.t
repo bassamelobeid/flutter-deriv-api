@@ -44,17 +44,19 @@ subtest 'add_req_data' => sub {
 };
 
 subtest 'output_validation with undefined msg_type' => sub {
-    my $req_storage  = {msg_type => 'ticks_history'};
+    my $req_storage = {
+        msg_type => 'ticks_history',
+        name     => 'ticks_history'
+    };
     my $api_response = {};
     my $c_mock       = Test::MockObject->new({});
     $c_mock->mock(l => sub { shift; shift });
     $c_mock->mock(new_error => sub { shift; {error => join "", @_} });
     $log->clear();
     Binary::WebSocketAPI::Hooks::output_validation($c_mock, $req_storage, $api_response);
-    $log->contains_ok(
-        qr/Schema validation failed for our own output \[ \{\} error: No validation rules defined. \], make sure backend are aware of this error!, schema may need adjusting/
-    );
-    like($api_response->{error}, qr/validation failed: No validation rules defined/, 'api_response will have an error');
+
+    $log->contains_ok(qr/Schema validation failed because msg_type is null/);
+    like($api_response->{error}, qr/validation failed: An error occurred/, 'api_response will have an error');
 };
 
 done_testing();
