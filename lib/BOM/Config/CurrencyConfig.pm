@@ -131,6 +131,11 @@ sub transfer_between_accounts_limits {
                 convert_currency($configs->{'payments.transfer_between_accounts.maximum.default'}, 'USD', $currency));
         };
 
+        if (is_currency_suspended($currency)) {
+            $min = 0 unless $min;
+            $max = 0 unless $max;
+        }
+
         $currency_limits->{$currency}->{min} = financialrounding('amount', $currency, $min);
         $currency_limits->{$currency}->{'max'} = $max if $max;
     }
@@ -231,6 +236,23 @@ sub rate_expiry {
 
     my @expiries = map { $config{$_ eq 'fiat' ? $fiat_key : $_} } @types;
     return min(@expiries);
+}
+
+sub get_suspended_crypto_currencies {
+    my @suspended_currencies = split /,/, BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    s/^\s+|\s+$//g for @suspended_currencies;
+
+    my %suspended_currencies_hash = map { $_ => 1 } @suspended_currencies;
+
+    return \%suspended_currencies_hash;
+}
+
+sub is_currency_suspended {
+    my $currency = shift;
+
+    my $suspended_currencies = get_suspended_crypto_currencies();
+
+    return $suspended_currencies->{$currency} ? 1 : 0;
 }
 
 1;
