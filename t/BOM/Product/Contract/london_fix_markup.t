@@ -16,6 +16,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Test::MockModule;
 use BOM::Config::Runtime;
 use Math::Util::CalculatedValue::Validatable;
+use Pricing::Engine::Markup::IntradayMeanReversionMarkup;
 use Format::Util::Numbers qw/roundcommon/;
 
 BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
@@ -66,15 +67,25 @@ my $args = {
     underlying   => 'frxUSDJPY',
     date_start   => $now,
     date_pricing => $now,
-    duration     => '10m',
+    duration     => '3m',
     currency     => 'USD',
     payout       => 10,
     barrier      => 'S0P',
 };
 
 subtest 'london_fix_markup' => sub {
+    my $mocked = Test::MockModule->new('Pricing::Engine::Markup::IntradayMeanReversionMarkup');
+    $mocked->mock(
+        'markup',
+        sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'mean_reversion_markup',
+                description => 'Intraday mean reversion markup.',
+                set_by      => __PACKAGE__,
+                base_amount => 0,
+            });
+        });
     lives_ok {
-
         # Summer on AU , hour other than 15
         $args->{date_start}   = Date::Utility->new('2018-10-16 01:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-10-16 01:01:00');
@@ -88,18 +99,36 @@ subtest 'london_fix_markup' => sub {
         $args->{date_start}   = Date::Utility->new('2018-10-16 14:58:00');
         $args->{date_pricing} = Date::Utility->new('2018-10-16 14:58:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 5.7, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 5.66, 'correct ask price';
+        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), 0.0366025403784438, 'correct london fix markup for CALL');
+
+        $args->{bet_type} = 'PUT';
+        $c = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 7.05, 'correct ask price';
+        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), 0.174536559755125, 'correct london fix markup for PUT');
 
         # Winter on EU
+        $args->{bet_type}     = 'CALL';
         $args->{duration}     = '10m';
         $args->{date_start}   = Date::Utility->new('2018-11-16 16:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:01:00');
         $c                    = produce_contract($args);
         cmp_ok $c->ask_price, '==', 6.25, 'correct ask price';
         cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_markup')), '==', 0.095, 'correct london fix markup';
-        cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_x1')), '==', 1, 'correct london fix markup';
-     
+        cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_x1')),     '==', 1,     'correct london fix markup';
+
+        #  When $X1 > 0 which means current spot is at spot_min, so we expect upward movement.
+        #  Hence, no markup for PUT.
+        $args->{bet_type}     = 'PUT';
+        $args->{duration}     = '10m';
+        $args->{date_start}   = Date::Utility->new('2018-11-16 16:01:00');
+        $args->{date_pricing} = Date::Utility->new('2018-11-16 16:01:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 5.3, 'correct ask price';
+        ok !$c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), 'no london fix markup for PUT';
+
         # Winter on EU, hour other than 16
+        $args->{bet_type}     = 'CALL';
         $args->{date_start}   = Date::Utility->new('2018-11-16 20:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 20:01:00');
         $c                    = produce_contract($args);
@@ -114,8 +143,6 @@ subtest 'london_fix_markup' => sub {
         $args->{date_pricing} = Date::Utility->new('2018-10-16 14:58:00');
         $c                    = produce_contract($args);
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('london_fix_x1'), '==', -1, 'max_trend_reversal_multiplier';
-
-
     };
 };
 
