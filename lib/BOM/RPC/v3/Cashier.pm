@@ -247,7 +247,8 @@ rpc "cashier", sub {
     Path::Tiny::path('/tmp/doughflow_tokens.txt')
         ->append_utf8(join(":", Date::Utility->new()->datetime_ddmmmyy_hhmmss, $df_client->loginid, $handoff_token_key, $action));
 
-    # build DF link
+    # build DF link.
+    # udef1 and udef2 are custom DF params we use for language and brand
     $url =
           $doughflow_loc
         . '/login.asp?Sportsbook='
@@ -260,7 +261,11 @@ rpc "cashier", sub {
         . '&Secret='
         . $secret
         . '&Action='
-        . $action;
+        . $action
+        . '&udef1='
+        . $params->{language}
+        . '&udef2='
+        . $brand->name;
     BOM::User::AuditLog::log('redirecting to doughflow', $df_client->loginid);
     return $url;
 };
