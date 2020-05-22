@@ -3,7 +3,7 @@ use warnings;
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
-use APIHelper qw(balance deposit withdraw request decode_json);
+use APIHelper qw(balance update_payout deposit request decode_json);
 use BOM::User::Client;
 use BOM::User;
 
@@ -13,7 +13,10 @@ my $cli = BOM::User::Client->new({loginid => $loginid});
 $cli->place_of_birth('id');
 $cli->save;
 
-my $user = BOM::User->create(email=>'unit_test@binary.com', password=>'asdaiasda');
+my $user = BOM::User->create(
+    email    => 'unit_test@binary.com',
+    password => 'asdaiasda'
+);
 $user->add_client($cli);
 # deposit first so that we can withdraw
 my $r = deposit(
@@ -27,14 +30,14 @@ my $starting_balance = balance($loginid);
 ok($starting_balance >= 2);    # since we deposit 2
 
 my $trace_id = time();
-$r = withdraw(
+$r = update_payout(
+    status   => 'inprogress',
     loginid  => $loginid,
     trace_id => $trace_id,
     amount   => 1
 );
-is($r->code,    201,       'correct status code');
-is($r->message, 'Created', 'Correct message');
-like($r->content, qr[<opt>\s*<data></data>\s*</opt>], 'Correct content');
+is($r->code,    200,  'correct status code');
+is($r->message, 'OK', 'Correct message');
 my $balance_now = balance($loginid);
 is(0 + $balance_now, $starting_balance - 1.00, 'Correct final balance');
 ok($balance_now >= 1);

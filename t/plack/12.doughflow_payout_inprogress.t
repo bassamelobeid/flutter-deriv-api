@@ -3,7 +3,7 @@ use warnings;
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
-use APIHelper qw(balance deposit withdraw request decode_json);
+use APIHelper qw(balance deposit update_payout request decode_json);
 use BOM::User::Client;
 
 my $loginid = 'CR0011';
@@ -24,29 +24,23 @@ my $r = deposit(
 is($r->code,    201,       'correct status code');
 is($r->message, 'Created', 'Correct message');
 
-sleep 1;    # so the payment_time DESC for get_last_payment_of_account will be correct
-
 my $starting_balance = balance($loginid);
-$r = withdraw(loginid => $loginid);
-is($r->code,    201,       'correct status code');
-is($r->message, 'Created', 'Correct message');
-like($r->content, qr[<opt>\s*<data></data>\s*</opt>], 'Correct content');
+
+$r = update_payout(
+    loginid => $loginid,
+    status  => 'inprogress'
+);
+is($r->code,    200,  'correct status code');
+is($r->message, 'OK', 'Correct message');
+like($r->content, qr[description="success"\s+status="0"], 'Correct content');
+
 my $balance_now = balance($loginid);
 is(0 + $balance_now, $starting_balance - 1.00, 'Correct final balance');
 
-my $location = $r->header('Location');
-ok($location);
-
-## test record_GET also
-$location =~ s{^(.*?)/transaction}{/transaction};
-$r = request('GET', $location);
-my $data = decode_json($r->content);
-is($data->{client_loginid}, $loginid);
-is($data->{type},           'withdrawal');
-
 # Failed tests
-$r = withdraw(
+$r = update_payout(
     loginid  => $loginid,
+    status   => 'inprogress',
     trace_id => ' 123'
 );
 is($r->code,    400,           'Correct failure status code');
@@ -59,12 +53,13 @@ like(
 is(balance($loginid), $balance_now, 'Correct final balance (unchanged)');
 
 # exceeds balance
-$r = withdraw(
+$r = update_payout(
     loginid => $loginid,
+    status  => 'inprogress',
     amount  => $balance_now + 1
 );
-is $r->code,              403;
-like $r->decoded_content, qr/exceeds client balance/;
+is($r->code, 403, 'Error code for balance exceeded');
+like($r->decoded_content, qr/exceeds client balance/, 'Message for balance exceeded');
 is(balance($loginid), $balance_now, 'Correct final balance (unchanged)');
 
 done_testing();

@@ -102,6 +102,7 @@ sub withdrawal_validate_GET {
 =head2 withdrawal_POST
 
 Receives a request for a DoughFlow withdrawal record, validates the request
+To be removed after new Doughflow version has been deployed, see https://trello.com/c/dHJd90uk
 
 =cut
 
@@ -121,10 +122,38 @@ sub withdrawal_reversal_POST {
     return _doughflow_backend($c, 'withdrawal_reversal');
 }
 
-=head2 create_payout_POST, update_payout_POST
+=head2 update_payout_POST
 
-The following two subs are placeholders for future implemention of the Doughflow requests CreatePayout and UpdatePayout.
-For now they just dump request params to the paymentapi_new_api_calls_trace log.
+Called by Doughflow when a payout is updated.
+If new status is 'inprogress', the payout is processed as a withdrawal.
+Otherwise request params are written to the paymentapi_new_api_calls_trace log.
+See https://trello.com/c/10Ex9IyA/8915-8-billmarriott-newdfendpoints-2 for more background.
+
+=cut
+
+sub update_payout_POST {
+    my $c = shift;
+
+    return _doughflow_backend($c, 'payout_inprogress')
+        if ($c->request_parameters->{status} // '') eq 'inprogress';
+
+    _log_new_api_request($c, 'update_payout');
+
+    unless (_is_authenticated($c)) {
+        $new_api_log->debugf('update_payout: Authorization required, please check if request has X-DoughFlow-Authorization-Passed header.');
+        return $c->throw(401, 'Authorization required');
+    }
+
+    return {
+        status      => 0,
+        description => 'success',
+    };
+}
+
+=head2 create_payout_POST
+
+Placeholder for future implemention of the Doughflow request CreatePayout.
+Writes request params to the paymentapi_new_api_calls_trace log.
 See https://trello.com/c/10Ex9IyA/8915-8-billmarriott-newdfendpoints-2 for more background.
 
 =cut
@@ -136,24 +165,6 @@ sub create_payout_POST {
 
     unless (_is_authenticated($c)) {
         $new_api_log->debugf('create_payout: Authorization required, please check if request has X-DoughFlow-Authorization-Passed header.');
-        return $c->throw(401, 'Authorization required');
-    }
-
-    # return success as of now, once we have evaluated all
-    # the error messages then we will update this accordingly
-    return {
-        status      => 0,
-        description => 'success',
-    };
-}
-
-sub update_payout_POST {
-    my $c = shift;
-
-    _log_new_api_request($c, 'update_payout');
-
-    unless (_is_authenticated($c)) {
-        $new_api_log->debugf('update_payout: Authorization required, please check if request has X-DoughFlow-Authorization-Passed header.');
         return $c->throw(401, 'Authorization required');
     }
 
@@ -213,6 +224,11 @@ sub _doughflow_backend {
 
     return $new_txn_id if ref($new_txn_id) and $new_txn_id->{status_code};    # Plack::Response
     return $new_txn_id if $type =~ 'validate';
+
+    return {
+        status      => 0,
+        description => 'success',
+    } if $type eq 'payout_inprogress';
 
     my $location = $c->req->base->clone;
     $location->path('/paymentapi/transaction/payment/doughflow/record/');

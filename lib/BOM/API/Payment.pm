@@ -214,7 +214,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                 $xs = XML::Simple->new(ForceArray => 0) unless $xs;
 
                 if (blessed($r)) {              # Plack::Response
-                    $r->content_type('text/xml');
+                    $r->content_type('text/xml; charset=utf-8');
                     $r->body($xs->XMLout({data => $r->body || {}}));
                     return $r->finalize;
                 }

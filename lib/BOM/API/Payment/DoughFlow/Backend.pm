@@ -16,6 +16,8 @@ use BOM::Config::Runtime;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Platform::Event::Emitter;
+use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context::Request;
 
 # one of deposit, withdrawal
 has 'type' => (
@@ -43,6 +45,13 @@ sub execute {
     my $log    = $c->env->{log};
     my $client = $c->user;
 
+    my $args = {};
+    $args->{language}   = $c->request_parameters->{udef1} if $c->request_parameters->{udef1};
+    $args->{brand_name} = $c->request_parameters->{udef2} if $c->request_parameters->{udef2};
+
+    my $r = BOM::Platform::Context::Request->new($args);
+    BOM::Platform::Context::request($r);
+
     if ($c->type eq 'deposit') {
         # if the client uses DF to deposit, unset flag to dont allow them withdrawal through PA
         $client->status->clear_pa_withdrawal_explicitly_allowed;
@@ -58,9 +67,10 @@ sub execute {
         if (ref($passed) and $passed->{status_code}) {    # Plack::Response
             return $passed unless $c->type =~ 'validate';
             # validate
-            $passed->{allowed} = 0;
-            $passed->{message} = delete $passed->{error};
-            return $passed;
+            return {
+                allowed => 0,
+                message => $passed->{error},
+            };
         }
         return {allowed => 1} if $c->type =~ 'validate';
     }
@@ -126,9 +136,9 @@ sub validate_as_payment {
 
     my $client = $c->user;
     my $action =
-          ($c->type =~ /deposit/i)    ? 'deposit'
-        : ($c->type =~ /withdrawal/i) ? 'withdraw'
-        :                               return 1;
+          ($c->type =~ /deposit/i)                        ? 'deposit'
+        : ($c->type =~ /(withdrawal|payout_inprogress)/i) ? 'withdraw'
+        :                                                   return 1;
 
     my $currency      = $c->request_parameters->{currency_code};
     my $signed_amount = $c->request_parameters->{amount};
@@ -231,7 +241,7 @@ sub write_transaction_line {
 
         _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
 
-    } elsif ($c->type eq 'withdrawal') {
+    } elsif ($c->type eq 'withdrawal' or $c->type eq 'payout_inprogress') {
 
         # Don't allow balances to ever go negative! Include any fee in this test.
         my $balance = $client->default_account->balance;

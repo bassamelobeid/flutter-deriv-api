@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Exporter 'import';
-our @EXPORT_OK = qw( request auth_request decode_json deposit withdraw balance new_client);
+our @EXPORT_OK = qw( request auth_request decode_json deposit withdraw_validate withdraw update_payout balance new_client);
 
 use Encode;
 use FindBin qw/$Bin/;
@@ -91,7 +91,12 @@ sub decode_json {
     eval { JSON::MaybeXS->new->decode(Encode::decode_utf8($_[0])) };
 }
 
-## common
+=head2
+
+deposit and deposit_validate request helper.
+
+=cut
+
 sub deposit {
     my %override    = @_;
     my $is_validate = delete $override{'is_validate'};
@@ -120,15 +125,17 @@ sub deposit {
     );
 }
 
-sub withdraw {
-    my %override    = @_;
-    my $is_validate = delete $override{'is_validate'};
-    my $url         = '/transaction/payment/doughflow/withdrawal';
-    $url .= '_validate' if $is_validate;
-    my $method = $is_validate ? 'GET' : 'POST';    # validate only support GET
-    my $headers = $is_validate ? {} : {'Content-Type' => 'text/xml'};
+=pod
+
+withdraw_validate request helper.
+
+=cut
+
+sub withdraw_validate {
+    my %override = @_;
     request(
-        $method, $url,
+        'GET',
+        '/transaction/payment/doughflow/withdrawal_validate',
         {
             amount            => 1,
             client_loginid    => delete $override{loginid},
@@ -137,12 +144,15 @@ sub withdraw {
             fee               => 0,
             ip_address        => '127.0.0.1',
             payment_processor => 'WebMonkey',
-            $is_validate ? () : (trace_id => time),
             %override,
-        },
-        $headers
-    );
+        });
 }
+
+=pod
+
+balance request helper.
+
+=cut
 
 sub balance {
     my ($loginid) = @_;
@@ -155,6 +165,57 @@ sub balance {
         });
     my $account = decode_json($r->content);
     return $account->{balance};
+}
+
+=pod
+
+update_payout request helper.
+
+=cut
+
+sub update_payout {
+    my %override = @_;
+    request(
+        'POST',
+        '/transaction/payment/doughflow/update_payout',
+        {
+            amount            => 1,
+            client_loginid    => delete $override{loginid},
+            siteid            => 1,
+            created_by        => 'derek',
+            currency_code     => 'USD',
+            trace_id          => 123,
+            ip_address        => '127.0.0.1',
+            payment_processor => 'WebMonkey',
+            %override,
+        },
+        {'Content-Type' => 'text/xml'});
+}
+
+=pod
+
+withdraw request helper.
+
+=cut
+
+# to be removed in https://trello.com/c/dHJd90uk
+sub withdraw {
+    my %override = @_;
+    request(
+        'POST',
+        '/transaction/payment/doughflow/withdrawal',
+        {
+            amount            => 1,
+            client_loginid    => delete $override{loginid},
+            siteid            => 1,
+            created_by        => 'derek',
+            currency_code     => 'USD',
+            trace_id          => 123,
+            ip_address        => '127.0.0.1',
+            payment_processor => 'WebMonkey',
+            %override,
+        },
+        {'Content-Type' => 'text/xml'});
 }
 
 1;

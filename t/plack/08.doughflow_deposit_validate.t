@@ -10,7 +10,10 @@ use JSON::MaybeXS;
 my $loginid = 'CR0011';
 
 my $client_db = BOM::Database::ClientDB->new({client_loginid => $loginid});
-my $user = BOM::User->create(email=>'unit_test@binary.com', password=>'asdaiasda');
+my $user = BOM::User->create(
+    email    => 'unit_test@binary.com',
+    password => 'asdaiasda'
+);
 $user->add_loginid($loginid);
 
 my $starting_balance = balance($loginid);
@@ -27,7 +30,8 @@ $r = deposit(
     amount      => 'Zzz',
     is_validate => 1
 );
-is($r->code, 400, 'Correct failure status code');
-like($r->content, qr[(Attribute \(amount\) does not pass the type constraint|Invalid money amount)], 'Correct error message on response body');
+my $resp = JSON::MaybeXS->new->decode(Encode::decode_utf8($r->content));
+is $resp->{allowed}, 0, 'failed status';
+like $resp->{message}, qr[(Attribute \(amount\) does not pass the type constraint|Invalid money amount)], 'Correct error message on response body';
 
 done_testing();
