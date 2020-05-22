@@ -11,6 +11,8 @@ use BOM::Database::ClientDB;
 use BOM::MyAffiliates;
 use LandingCompany::Registry;
 use BOM::User::Client;
+use Email::Stuffer;
+use Date::Utility;
 
 =head1 DESCRIPTION
 
@@ -33,6 +35,7 @@ This script is intended to be run daily. It will have no bad effects if run more
 =cut
 
 my %currency_types;
+my $report;
 
 =head2 run
 
@@ -95,7 +98,7 @@ sub run {
 
     my $all_codes = active_promocodes($dbs->{collector});
 
-    add_codes_to_clients([values %affiliates], $all_codes);
+    add_codes_to_clients(\%affiliates, $all_codes);
 
     my $promo_clients = clients_with_promo($dbs);
 
@@ -124,8 +127,68 @@ sub run {
                         WHERE client_loginid = ? AND promotion_code = ? AND status NOT IN ('CLAIM','REJECT','CANCEL')",
                         undef, $client->{loginid}, $code->{code});
                 });
+            push $report->{promos_approved}->@*,
+                {
+                loginid => $client->{loginid},
+                code    => $code->{code},
+                type    => $code->{promo_code_type}};
         }
     }
+
+    my $body = "<h3>Affiliate promo codes added to affiliated clients</h3>\n";
+    if ($report->{affiliate_promos_added}) {
+        $body .= "<table border=1 style=\"border-collapse:collapse;\"><tr><th>Client</th><th>Affiliate ID</th><th>Promo code</th></tr>\n";
+        for my $item ($report->{affiliate_promos_added}->@*) {
+            $body .= "<tr><td>" . $item->{loginid} . "</td><td>" . $item->{affiliate} . "</td><td>" . $item->{code} . "</td></tr>\n";
+        }
+        $body .= "</table>";
+    } else {
+        $body .= "<p>None</p>\n";
+    }
+
+    $body .= "<h3>Client promo codes moved to approval</h3>\n";
+    if ($report->{promos_approved}) {
+        $body .= "<table border=1 style=\"border-collapse:collapse;\"><tr><th>Client</th><th>Promo code</th><th>Promo type</th></tr>\n";
+        for my $item ($report->{promos_approved}->@*) {
+            $body .= "<tr><td>" . $item->{loginid} . "</td><td>" . $item->{code} . "</td><td>" . $item->{type} . "</td></tr>\n";
+        }
+        $body .= "</table>";
+    } else {
+        $body .= "<p>None</p>\n";
+    }
+
+    if ($report->{duplicate_tokens}) {
+        $body .= "<h3>Clients with multiple affiliate tokens</h3>\n";
+        $body .= "<table border=1 style=\"border-collapse:collapse;\"><tr><th>Clients</th><th>Affiliate tokens</th></tr>\n";
+        for my $item ($report->{duplicate_tokens}->@*) {
+            $body .= "<tr><td>";
+            $body .= join ', ', keys $item->{loginids}->%*;
+            $body .= "</td><td>";
+            $body .= join ', ', keys $item->{tokens}->%*;
+            $body .= "</td></tr>\n";
+        }
+        $body .= "</table>";
+    }
+
+    if ($report->{duplicate_promo}) {
+        $body .= "<h3>Clients with multiple promo codes</h3>\n";
+        $body .= "<table border=1 style=\"border-collapse:collapse;\"><tr><th>Clients</th><th>Promo codes</th></tr>\n";
+        for my $item ($report->{duplicate_promo}->@*) {
+            $body .= "<tr><td>";
+            $body .= join ', ', keys $item->{loginids}->%*;
+            $body .= "</td><td>";
+            $body .= join ', ', keys $item->{codes}->%*;
+            $body .= "</td></tr>\n";
+        }
+        $body .= "</table>";
+    }
+
+    my $from    = 'Nightly promo code processing script <x-backend@binary.com>';
+    my $to      = 'Affiliates team <x-affiliates@binary.com>';
+    my $subject = 'Promo code processing report for ' . Date::Utility->new->date;
+
+    Email::Stuffer->from($from)->to($to)->subject($subject)->html_body($body)->send
+        || warn "Sending email from $from to $to subject $subject failed";
 
     return 0;
 }
@@ -166,6 +229,7 @@ sub tokens_with_clients {
     my $dbs = shift;
 
     my %tokens;
+    my %duplicates;
 
     for my $broker (keys %$dbs) {
         next if $broker eq 'collector';
@@ -185,13 +249,19 @@ sub tokens_with_clients {
         for my $client (grep { ($currency_types{$_->{currency}} //= LandingCompany::Registry::get_currency_type($_->{currency}) eq 'fiat') }
             @$clients)
         {
+            $duplicates{$client->{buid}}{tokens}{$client->{token}}     = 1;
+            $duplicates{$client->{buid}}{loginids}{$client->{loginid}} = 1;
+
             if (exists $buid_check{$client->{buid}} && $buid_check{$client->{buid}} ne $client->{token}) {
-                warn "Binary user id " . $client->{buid} . " (" . $client->{loginid} . ") has more than one affiliate token!\n";
                 next;
             }
             $tokens{$client->{token}}{$client->{buid}}{$client->{loginid}} = $client;
             $buid_check{$client->{buid}} = $client->{token};
         }
+    }
+
+    for my $dup (grep { keys $duplicates{$_}{tokens}->%* > 1 } keys %duplicates) {
+        push $report->{duplicate_tokens}->@*, $duplicates{$dup};
     }
 
     return \%tokens;
@@ -305,7 +375,8 @@ For a list of affiliates, adds promocodes to client accounts if they don't have 
 sub add_codes_to_clients {
     my ($affiliates, $all_codes) = @_;
 
-    for my $aff (@$affiliates) {
+    for my $aff_id (keys %$affiliates) {
+        my $aff = $affiliates->{$aff_id};
         my @codes_to_check;
         my @codes_exist = grep { exists $all_codes->{$_} } ($aff->{codes} // [])->@*;
         next unless @codes_exist;
@@ -313,6 +384,7 @@ sub add_codes_to_clients {
 
         for my $buid (values $aff->{buid}->%*) {
             my ($client, $code) = code_for_account(\@codes_to_check, [values %$buid]);
+
             next unless $client && $code;
 
             try {
@@ -320,6 +392,11 @@ sub add_codes_to_clients {
                 unless ($client->client_promo_code) {
                     $client->promo_code($code->{code});
                     $client->save;
+                    push $report->{affiliate_promos_added}->@*,
+                        {
+                        affiliate => $aff_id,
+                        loginid   => $client->loginid,
+                        code      => $code->{code}};
                 }
             }
             catch {
@@ -339,6 +416,7 @@ sub clients_with_promo {
     my $dbs = shift;
 
     my %clients;
+    my %duplicates;
 
     for my $broker (keys %$dbs) {
         next if $broker eq 'collector';
@@ -358,8 +436,9 @@ sub clients_with_promo {
         for my $client (grep { ($currency_types{$_->{currency}} //= LandingCompany::Registry::get_currency_type($_->{currency}) eq 'fiat') }
             @$clients)
         {
+            $duplicates{$client->{buid}}{codes}{$client->{code}}       = 1;
+            $duplicates{$client->{buid}}{loginids}{$client->{loginid}} = 1;
             if (exists $clients{$client->{buid}}{code} && $clients{$client->{buid}}{code} ne $client->{code}) {
-                warn "Binary user id " . $client->{buid} . " (" . $client->{loginid} . ") has more than one promo code!\n";
                 next;
             }
             $clients{$client->{buid}}{code}                        = $client->{code};
@@ -367,6 +446,9 @@ sub clients_with_promo {
             $client->{broker}                                      = $broker;
             $clients{$client->{buid}}{clients}{$client->{loginid}} = $client;
         }
+    }
+    for my $dup (grep { keys $duplicates{$_}{codes}->%* > 1 } keys %duplicates) {
+        push $report->{duplicate_promo}->@*, $duplicates{$dup};
     }
 
     return \%clients;
