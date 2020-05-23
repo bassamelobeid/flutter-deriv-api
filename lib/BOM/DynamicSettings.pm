@@ -263,12 +263,6 @@ sub get_settings_by_group {
                 payments.crypto.sweep_reserve_balance.BTC
                 payments.crypto.sweep_reserve_balance.LTC
                 payments.crypto.sweep_reserve_balance.ETH
-                payments.crypto.minimum_safe_amount.BTC
-                payments.crypto.minimum_safe_amount.LTC
-                payments.crypto.minimum_safe_amount.ETH
-                payments.crypto.minimum_safe_amount.UST
-                payments.crypto.minimum_safe_amount.USB
-                payments.crypto.minimum_safe_amount.IDK
                 )
         ],
         # these settings are configured in separate pages. No need to reconfure them in Dynamic Settings/Others.
@@ -281,11 +275,17 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.fees.by_currency
                 )]};
 
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
+    # Add all `payments.crypto.minimum_safe_amount.*` keys to `payments`
+    my @safe_amount_list = keys $app_config->payments->crypto->minimum_safe_amount->{definition}->{contains}->%*;
+    push $group_settings->{payments}->@*, (map { "payments.crypto.minimum_safe_amount.$_" } @safe_amount_list);
+
     my $settings;
 
     if ($group eq 'others') {
         my @grouped_settings = map { @{$group_settings->{$_}} } keys %$group_settings;
-        my @all_settings = BOM::Config::Runtime->instance->app_config->all_keys();
+        my @all_settings = $app_config->all_keys();
 
         my @filtered_settings;
         #find other settings that are not in groups

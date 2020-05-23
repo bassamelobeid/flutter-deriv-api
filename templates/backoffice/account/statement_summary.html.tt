@@ -2,7 +2,7 @@
     <tr>
         <td colspan="2">
             <b>Profit & Loss since [% client.date_joined %]</b>:
-            [% currency %]&nbsp[% summary.pnl %]
+            [% currency %]&nbsp;[% summary.pnl %]
             <br/><br/>
             <b>Overview search</b>:
             [% client_summary_ranges.from %]

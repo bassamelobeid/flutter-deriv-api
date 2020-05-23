@@ -20,7 +20,7 @@
         <button type="submit" name="view_action" value="reconcil">Reconciliation</button>
         <input type="text" name="start_date" class="datepick" value="[% start_date %]" required pattern="\d{4}-\d{2}-\d{2}">
         <input type="text" name="end_date" class="datepick" value="[% end_date %]" required pattern="\d{4}-\d{2}-\d{2}">
-        <input type="checkbox" name="include_new"><label for="include_new">Show new addresses</label>
+        <input type="checkbox" name="include_new" id="include_new"><label for="include_new">Show new addresses</label>
     <br><br>
 <!-- Search -->
         <button type="submit" name="view_action" value="search">Search</button>
@@ -33,7 +33,7 @@
 <!-- Manual Confirmation -->
         <button type="submit" name="view_action" value="prioritize_confirmation">Prioritize Confirmation</button>
         <label for="prioritize_address">Address</label>
-        <input type="text" name="prioritize_address" >
+        <input type="text" name="prioritize_address" id="prioritize_address">
     <br><br>
 <!-- Deposit -->
     <button type="submit" name="view_action" value="deposits">Deposit Transactions</button>

@@ -19,8 +19,16 @@
     }
 </style>
 <div id="crypto" class="grd-parent grd-grid-12">
-    <div style="margin-bottom:10px"> <lable> <strong> Client: </strong> <a href="[% details_link %]" target="_blank"> [% loginid %] </a> <lable> &nbsp&nbsp&nbsp
-       [% IF fiat_loginid %] <lable> <strong> FIAT Login: </strong> <a href="[% fiat_link %]" target="_blank"> [% fiat_loginid %] </a> </lable>[% END %] </div>
+    <div style="margin-bottom:10px">
+        <label>
+            <strong>Client:</strong> <a href="[% details_link %]" target="_blank"> [% loginid %] </a>
+        </label> &nbsp;&nbsp;&nbsp;
+        [% IF fiat_loginid %]
+        <label>
+            <strong>FIAT Login:</strong> <a href="[% fiat_link %]" target="_blank"> [% fiat_loginid %] </a>
+        </label>
+        [% END %]
+    </div>
     <table class="hover alternate collapsed" border="1" width="100%">
         <thead>
             <tr>

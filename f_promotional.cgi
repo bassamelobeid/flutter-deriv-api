@@ -163,7 +163,7 @@ if (@$pcs) {
             . ($expiry_date                 || '&nbsp;') . '</td>' . '<td>'
             . $pc->promo_code_type . '</td>' . '<td>'
             . join(', ', @countries) . '</td>' . '<td>'
-            . ($pc->description || '&nbsp') . '</td>' . '<td>'
+            . ($pc->description || '&nbsp;') . '</td>' . '<td>'
             . ($pc->status ? 'TRUE' : 'FALSE') . '</td>' . '<td>'
             . $link . '</td>' . '</tr>';
     }
