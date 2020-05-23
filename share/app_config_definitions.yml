@@ -199,6 +199,11 @@ payments:
               description: "IDK minimum safe amount"
               default: 0
               global: 1
+            PAX:
+              isa: Num
+              description: "PAX minimum safe amount"
+              default: 6500
+              global: 1
         restricted_countries:
           description: "Countries where crypto withdrawals are restricted, separated by comma. Clients in these countries must have made a prior crypto deposit. Country code can be in lower case."
           isa: ArrayRef

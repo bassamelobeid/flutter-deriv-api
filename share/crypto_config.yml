@@ -92,4 +92,3 @@ PAX:
        rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 18
-    minimum_safe_amount: 6500
