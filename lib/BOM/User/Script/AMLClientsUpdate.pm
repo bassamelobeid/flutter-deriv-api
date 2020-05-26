@@ -58,7 +58,6 @@ sub update_aml_high_risk_clients_status {
             $locked = 1;
         }
         my $client_info->{login_ids} = join ',', sort(@loginid_list);
-        $log->infof('Withdrawal-locked high risk client : %s', $client_info->{login_ids}) if @loginid_list;
 
         push(@result, $client_info) if $locked;
     }
