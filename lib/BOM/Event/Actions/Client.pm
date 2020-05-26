@@ -2401,7 +2401,7 @@ sub aml_client_status_update {
     my $system_email    = $BRANDS->emails('no-reply');
     my $to              = $BRANDS->emails('compliance_alert');
     my $landing_company = $template_args->{landing_company} // '';
-    my $email_subject   = "Daily Withdrawal Locked AML risk update (" . $landing_company . ")";
+    my $email_subject   = "High risk status reached - pending KYC-FA - withdrawal locked accounts (" . $landing_company . ")";
 
     my $tt = Template::AutoFilter->new({
         ABSOLUTE => 1,

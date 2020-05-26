@@ -1040,7 +1040,7 @@ subtest 'aml risk becomes high withdrawal_locked email CR landing company' => su
                 landing_company     => $landing_company,
                 aml_updated_clients => @$aml_high_clients
             }});
-    my $subject = 'Daily Withdrawal Locked AML risk update';
+    my $subject = 'High risk status reached - pending KYC-FA - withdrawal locked accounts';
     my $msg     = mailbox_search(
         email   => 'compliance-alerts@binary.com',
         subject => qr/\Q$subject\E/
