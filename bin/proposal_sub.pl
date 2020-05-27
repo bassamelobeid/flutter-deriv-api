@@ -1,0 +1,482 @@
+#!/usr/bin/env perl 
+use strict;
+use warnings;
+
+use feature qw(say);
+
+no indirect;
+
+use Future;
+use Future::Utils qw(fmap0);
+
+use Data::Dumper;
+use IO::Async::Loop;
+use Binary::API;
+use Net::Async::BinaryWS;
+use Future::AsyncAwait;
+use Pod::Usage;
+use Syntax::Keyword::Try;
+use Getopt::Long;
+use Log::Any::Adapter qw(Stderr), log_level => 'info';
+use Log::Any qw($log);
+=head1 NAME
+
+proposal_sub.pl  - Load testing script for proposals
+
+=head1 DESCRIPTION
+
+This script is designed to create a load on Binary Pricing components via the proposal API call. It can create many connections with each connection having
+many subscriptions. Subscriptions are randomly forgotten and new ones established to take their place in order to emulate what would happen in production. 
+The script currently contains no measurement ability so that will need to be done externally via Datadog or other means.  
+
+=head1 SYNOPSIS
+
+    perl proposal_sub.pl -h -e -a -s -f -t -m -r -d
+
+=over 4
+
+=item * --token|-t  The API token to use for calls, this is optional and calls are not authorized by default.
+
+=item * --app_id|-a : The application ID to use for API calls, optional and is set to 1003 by default. 
+
+=item * --endpoint|-e : The endpoint to send calls to, optional by default is set to 'ws://127.0.0.1:5004 which is the local websocket server on QA. 
+
+=item * --connections|-c :  The number of  connections to establish, optional by default it is set to 1.
+
+=item * --subscriptions|-s : The number of subscriptions per connection, optional by default it is set to 5
+
+=item * --forget_time|-f : The upper bound of the random time in seconds to forget subscriptions. If 0 will not forget subscriptions. Default is 0;
+
+=item * --run_seconds|-r : The number of seconds to run the test for before exiting.  If 0 will not exit. Defaults to 0 
+
+=item * --markets|-m :  a comma separated list of markets to include choices are 'forex', 'synthetic_index', 'indices', 'commodities'.  If not supplied defaults to all. 
+
+=item * --debug|-d : Display some debug information.
+
+=back
+
+
+=cut
+
+use constant TIMEOUT => 10;
+GetOptions(
+    't|token=s'         => \my $token,
+    'a|app_id=i'        => \my $app_id,
+    'e|endpoint=s'      => \my $end_point,
+    'c|connections=i'   => \my $connections,
+    's|subscriptions=i' => \my $subscriptions,
+    'f|forget_time=i'   => \my $forget_time,
+    'm|markets=s'       => \my $markets,
+    'r|run_time=i'      => \my $run_seconds,
+    'd|debug'          =>  \my $debug,
+    'h|help'            => \my $help,
+);
+
+pod2usage({
+        -verbose  => 99,
+        -sections => "NAME|SYNOPSIS|DESCRIPTION"
+    }) if $help;
+
+# Set Defaults
+$app_id        = $app_id               // 1003;
+$end_point     = $end_point            // 'ws://127.0.0.1:5004';
+$connections   = $connections          // 1;
+$subscriptions = $subscriptions        // 5;
+$forget_time   = $forget_time          // 0;
+$run_seconds   = $run_seconds          // 0;
+
+Log::Any::Adapter->set('Stderr', log_level => 'debug') if $debug;
+my @markets_to_use;
+if ($markets) {
+    @markets_to_use = split(',', $markets);
+}
+
+my %valid_markets = (
+    'forex'           => 1,
+    'synthetic_index' => 1,
+    'indices'         => 1,
+    'commodities'     => 1
+);
+
+for (@markets_to_use) {
+    if (!defined($valid_markets{$_})) {
+        say 'Invalid Market Type: ' . $_;
+        pod2usage({
+            -verbose  => 99,
+            -sections => "NAME|SYNOPSIS|DESCRIPTION"
+        });
+    }
+}
+
+my %subs;    # Stores current subscriptions
+
+my $loop = IO::Async::Loop->new;
+
+my $main_connection = create_connection();
+my $active_symbols  = get_active_symbols($main_connection, \@markets_to_use);
+$log->debug( "Active Symbols \n"."@$active_symbols" );
+my $contracts_for   = get_contracts_for($main_connection, $active_symbols);
+
+# Will cause script to exit when run_seconds is reached. 
+my $run_timer_future;
+if ($run_seconds) {
+    $run_timer_future = $loop->delay_future( after => $run_seconds )->on_done( sub { say 'finished after '.$run_seconds; });
+} else {
+    $run_timer_future = $loop->new_future; #A Future that will never be done. 
+}
+
+# Main Loop starts up the number of connections to the Websocket API.
+fmap0 {
+        try {
+            create_subscriptions(shift);
+        }
+        catch {
+
+            warn 'Failed ' . $@;
+            return Future->done;
+        }
+    }
+    foreach    => [(1 .. $connections)],
+    concurrent => $connections;
+
+$loop->await($run_timer_future)->get;
+exit 1;
+
+=head1 Functions
+
+Functions from here down.
+
+=head2 create_subscriptions
+
+Description:  Creates a connection then triggers  the number of subscriptions passed
+as the -s parameter. 
+Takes the following argument.
+
+=over 4
+
+=item  $connection_number : the counter for the connection number. 
+
+=back
+
+Returns a L<Future>
+
+=cut
+
+async sub create_subscriptions {
+    my ($connection_number) = @_;
+    say 'Connection Number ' . $connection_number;
+    my $connection = create_connection();
+    fmap0 {
+        try {
+            subscribe($connection, $connection_number);
+        }
+        catch {
+            warn 'Creating a subscription Failed ' . $@;
+            return Future->done;
+        }
+    }
+    foreach        => [(1 .. $subscriptions)],
+    concurrent => $subscriptions;
+
+}
+
+=head2 create_connection
+
+Description: Responsible for creating the connections, times out if longer than TIMEOUT seconds
+will attempt to authorize if a token is passed via the -t parameter. 
+Takes no arguments.
+
+
+Returns a L<Net::Async::BinaryWS>
+
+=cut
+
+sub create_connection {
+
+    $loop->add(
+        my $connection = Net::Async::BinaryWS->new(
+            endpoint => $end_point,
+            app_id   => $app_id,
+        ));
+    Future->wait_any(
+        $connection->connected->then(
+            sub {
+                if ($token) {
+                    return $connection->api->authorize(authorize => $token)->on_fail(sub { warn 'Authorize Failed ' . shift->body->message; Future->done })
+                        
+                } else {
+                    return Future->done;
+                }
+
+            }
+        ),
+        $loop->timeout_future(after => TIMEOUT)->on_fail(
+            sub {
+                fail("timeout connecting to $end_point");
+            })
+        )->transform(
+        done => sub {
+            $connection;
+        })->get;
+
+    return $connection;
+}
+
+=head2 subscribe
+
+Description: Creates one subscription to a proposal,  subscriptions will randomly be forgotten ,  when they do
+another subscription will be created and the same will happen if an error occurs.  Since failed and forgotten
+subscriptions are recreated there should be a constant number of subscriptions during a run.  
+Takes the following arguments 
+
+=over 4
+
+=item - $connection :  An established L<Net::Async::BinaryWS> connection
+
+=item - $connection_number : A counter to indicate which connection this is on.
+
+=back
+
+Returns a L<Future>
+
+=cut
+
+sub subscribe {
+    my ($connection, $connection_number) = @_;
+    my $sub;
+    my $first         = 1;
+    my $future        = $loop->new_future;
+    my $symbol        = $active_symbols->[int(rand($active_symbols->@*))];
+    my $contract_type = 'PUT';                                               #just PUT for now
+
+    say 'Subscribing to ' . $symbol . ' using using connection number ' . $connection_number;
+    my $params = get_params($contract_type, $symbol, $contracts_for);
+    say Dumper($params);
+    my $subscription;
+    try {
+         $subscription = $connection->api->subscribe("proposal" => $params)->each(
+            sub {
+
+                my ($response) = @_;
+                say " current subscriptions " . keys(%subs);
+                $sub = $response->body->id;
+                say 'Symbol ' . $symbol;
+                $subs{$response->body->id} = $symbol;
+                if ($first && $forget_time) {
+                    
+                    $loop->delay_future(after => int(rand($forget_time)))->then(
+                        sub { 
+                            say 'time forgettting ' . $sub . ' ' . $symbol;
+                            $connection->api->forget(forget => $sub)->on_done(sub { delete $subs{$sub}; $subscription->done; })
+                                ->on_fail(sub { say " unable to forget $sub"; warn Dumper(@_) });
+                        })->retain;
+
+                    $first = 0;
+                }
+            }
+            )->completed()->on_fail(
+            sub {
+                warn "Failed to start subscription with params " . Dumper($params) . shift->body->message;
+                #retry to subscribe again with new params.
+                subscribe($connection, $connection_number)
+
+            }
+            )->on_done(
+            sub {
+                say "done";
+                subscribe($connection, $connection_number);
+            });
+    }
+    catch { warn $@ };
+    return $future;
+}
+
+=head2 get_params
+
+Description: Builds the send parameters for a certain contract type
+Takes the following arguments 
+
+=over 4
+
+=item - $contract_type : string representing the type of contract  EG. 'Call', 'Put' etc
+
+=item - $symbol : the Symbol to create the contract for EG. 'R_10', 'R_100' etc
+
+=item - $contract_for : a HashRef of L<Binary::API::AvailableContracts> keyed by symbol and then contract type. 
+see the L<contracts_for> subroutine. 
+
+=back
+
+Returns a HashRef of proposal attributes. 
+
+=cut
+
+sub get_params {
+    my ($contract_type, $symbol, $contracts_for) = @_;
+    my $min = $contracts_for->{$symbol}->{$contract_type}->min_contract_duration;
+    my $max = $contracts_for->{$symbol}->{$contract_type}->max_contract_duration;
+    my ($duration, $duration_unit) = durations($min, $max);
+    my $contract_params = {
+        PUT => {
+            "amount"        => 10,
+            "barrier"       => "+0.1",
+            "basis"         => "stake",
+            "contract_type" => "PUT",
+            "currency"      => "USD",
+            "duration"      => $duration,
+            "duration_unit" => $duration_unit,
+            "symbol"        => $symbol,
+
+            }
+
+    };
+    return $contract_params->{$contract_type};
+}
+
+=head2 get_active_symbols
+
+Description: Gets the currently active symbols via the API , this will be filtered by market types if supplied. 
+
+Takes the following argument
+
+=over 4
+
+=item - $connection :  A L<Net::Async::BinaryWS> object
+
+=item - $markets_to_use :  Arrayref of markets to get symbols from passed as an option to the script.  
+
+=back
+
+ returns an array of currently active symbols as string  ['R_10','R_100', ....] 
+
+=cut
+
+sub get_active_symbols {
+    my ($connection, $markets_to_use) = @_;
+    my $assets = $connection->api->active_symbols(
+        product_type => 'basic',
+    )->on_fail( sub {warn  'Get Active Symbols Failed  Message: '.shift->body->message; })->get;
+
+    my %market_check = map { $_ => 1 } @$markets_to_use;
+    my @active_symbols =
+        map { $_->symbol }
+        grep { $_->exchange_is_open and not $_->is_trading_suspended and (!@$markets_to_use or defined($market_check{$_->market})) }
+        $assets->body->symbols;
+
+    return \@active_symbols;
+}
+
+=head2 get_contracts_for
+
+Description: Gets the contracts available for each symbol passed to it. 
+Note that we can't just use the info from C<asset_index> as the durations
+are  not accurate, this is a known issue. 
+Takes the following arguments
+
+=over 4
+
+
+=item - $connection :  A L<Net::Async::BinaryWS> object
+
+=item - $symbols : an ArrayRef of currently active Symbols
+
+=back
+
+Returns a HashRef of L<Binary::API::AvailableContracts> keyed by symbol and then contract type
+
+=cut
+
+sub get_contracts_for {
+    my ($connection, $symbols) = @_;
+    my %contracts_for;
+    (
+        fmap0 {
+            my ($symbol) = @_;
+            my $response = $connection->api->contracts_for(contracts_for => $symbol)->then(
+                sub {
+                    my $response = shift;
+                    for my $contract ($response->body->available) {
+                        $contracts_for{$symbol}{$contract->contract_type} = $contract;
+                    }
+                    return Future->done;
+                });
+        }
+        foreach => [@$symbols])->get();
+
+    return \%contracts_for;
+}
+
+=head2 durations
+
+Description: Calculates a random duration that fits with in the min and max boundaries.
+Takes the following arguments
+
+=over 4
+
+=item - $min : A string with the minimum duration postfixed with the type eg. 10m (types can be t, m, h, d)
+
+=item - $max : A string with the maximum duration postfixed with the type eg. 10m (types can be t, m, h, d)
+
+=back
+
+Returns an Array with to items first is the number portion of the duration, second is the character defining the type.
+
+=cut
+
+sub durations {
+    my ($min, $max) = @_;
+
+    # min and max look like 1d , 2m etc
+    my (($min_amount, $min_unit), ($max_amount, $max_unit)) = map { $_ =~ /(\d+)(\w)$/ } ($min, $max);
+
+    if ($min_unit eq $max_unit) {
+        $max_amount = 1 if $max_unit eq 'd';    #if we go over 1 day then it complicates the contract.
+        return (random_generator($min_amount, $max_amount), $min_unit);
+    }
+
+    #how much to multiply to to get minutes (ticks no accounted for)
+    my %multipliers = (
+        m => 1,
+        h => 60,
+        d => 1440
+    );
+
+    my $min_minutes = $min_amount * $multipliers{$min_unit};
+    my $max_minutes = $min_amount * $multipliers{$max_unit};
+
+    my $random_duration = random_generator($min_minutes, $max_minutes);
+
+    my $duration_unit = 'm';
+    if ($random_duration >= 1440) {
+        $random_duration = 1;
+        $duration_unit   = 'd';
+    }
+    return ($random_duration, $duration_unit);
+
+}
+
+=head2 random_generator
+
+Description: Creates random numbers between min and max,  split into a separate sub so that it 
+can be overridden or mocked for testing. 
+Takes the following arguments
+
+=over 4
+
+=item - $min : The minimum number of the random range
+
+=item - $max : The Maximum number of the random range
+
+=back
+
+Returns an integer between min and max. 
+
+=cut
+
+sub random_generator {
+    my ($min, $max) = @_;
+    return int(rand($max - $min) + $min);
+
+}
+
+exit 0;
