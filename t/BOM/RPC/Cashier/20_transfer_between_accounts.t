@@ -350,7 +350,7 @@ subtest 'validation' => sub {
     $params->{args}->{amount} = $limits->{USD}->{min};
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
 
-    $params->{args}->{amount} = $limits->{USD}->{max};
+    $params->{args}->{amount} = 10;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code insufficient balance';
     like $result->{error}->{message_to_client}, qr/The maximum amount you may transfer is: USD 0.00/, 'Correct error message for an empty account';
