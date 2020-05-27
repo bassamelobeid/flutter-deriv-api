@@ -14,10 +14,10 @@
             "prompt_client_to_authenticate",
             "status",
             "risk_classification",
-            "experimental_suspended"
+            "currency_config"
          ],
          "properties" : {
-            "experimental_suspended" : {
+            "currency_config" : {
                "type" : "object",
                "patternProperties" : {
                    "^[a-zA-Z0-9]{2,20}$" : {

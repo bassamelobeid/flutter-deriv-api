@@ -369,7 +369,7 @@ is $call_params->{token}, $token;
     status                        => [],
     risk_classification           => 1,
     prompt_client_to_authenticate => '1',
-    experimental_suspended        => {},
+    currency_config        => {},
 );
 $res = $t->await::get_account_status({get_account_status => 1});
 ok(ref $res->{get_account_status});
