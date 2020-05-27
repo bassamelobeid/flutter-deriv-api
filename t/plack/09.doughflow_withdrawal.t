@@ -1,70 +1,101 @@
 use strict;
 use warnings;
-use FindBin qw/$Bin/;
-use lib "$Bin/lib";
-use Test::More;
-use APIHelper qw(balance deposit withdraw request decode_json);
-use BOM::User::Client;
 
+use Test::More;
+
+use FindBin qw/ $Bin /;
+use lib "$Bin/lib";
+
+use APIHelper qw/ balance deposit request decode_json withdraw/;
+
+# prepare test env
 my $loginid = 'CR0011';
 
-my $cli = BOM::User::Client->new({loginid => $loginid});
-$cli->place_of_birth('id');
-$cli->save;
-
+my $client_db = BOM::Database::ClientDB->new({client_loginid => $loginid});
 my $user = BOM::User->create(
     email    => 'unit_test@binary.com',
-    password => 'asdaiasda'
+    password => 'asdaiasda',
 );
-$user->add_client($cli);
-my $r = deposit(
+$user->add_loginid($loginid);
+
+# Deposit initial amount
+deposit(
     loginid => $loginid,
-    amount  => 2
+    amount  => 10
 );
-is($r->code,    201,       'correct status code');
-is($r->message, 'Created', 'Correct message');
 
-sleep 1;    # so the payment_time DESC for get_last_payment_of_account will be correct
+subtest 'Successful attempt' => sub {
+    my $start_balance = balance $loginid;
 
-my $starting_balance = balance($loginid);
-$r = withdraw(loginid => $loginid);
-is($r->code,    201,       'correct status code');
-is($r->message, 'Created', 'Correct message');
-like($r->content, qr[<opt>\s*<data></data>\s*</opt>], 'Correct content');
-my $balance_now = balance($loginid);
-is(0 + $balance_now, $starting_balance - 1.00, 'Correct final balance');
+    my $req = withdraw(
+        loginid => $loginid,
+        amount  => 1,
+    );
 
-my $location = $r->header('Location');
-ok($location);
+    is $req->code, 201, 'Correct created status code';
+    like $req->content, qr/<opt>\s*<data><\/data>\s*<\/opt>/, 'Correct response body';
 
-## test record_GET also
-$location =~ s{^(.*?)/transaction}{/transaction};
-$r = request('GET', $location);
-my $data = decode_json($r->content);
-is($data->{client_loginid}, $loginid);
-is($data->{type},           'withdrawal');
+    my $current_balance = balance $loginid;
+    is 0 + $current_balance, $start_balance - 1, 'Correct final balance';
 
-# Failed tests
-$r = withdraw(
-    loginid  => $loginid,
-    trace_id => ' 123'
-);
-is($r->code,    400,           'Correct failure status code');
-is($r->message, 'Bad Request', 'Correct message');
-like(
-    $r->content,
-    qr[(Attribute \(trace_id\) does not pass the type constraint|trace_id must be a positive integer)],
-    'Correct error message on response body'
-);
-is(balance($loginid), $balance_now, 'Correct final balance (unchanged)');
+    # Record withdrawal
+    my $location = $req->header('Location');
+    ok($location);
 
-# exceeds balance
-$r = withdraw(
-    loginid => $loginid,
-    amount  => $balance_now + 1
-);
-is $r->code,              403;
-like $r->decoded_content, qr/exceeds client balance/;
-is(balance($loginid), $balance_now, 'Correct final balance (unchanged)');
+    $location =~ s/^(.*?)\/transaction/\/transaction/;
+    $req = request 'GET', $location;
+
+    my $body = decode_json $req->content;
+    is $body->{client_loginid}, $loginid, "{client_loginid} is present and correct in response body";
+    is $body->{type}, 'withdrawal', '{type} is present and correct in response body';
+};
+
+subtest 'Wrong trace id' => sub {
+    my $current_balance = balance $loginid;
+    my $req             = withdraw(
+        loginid  => $loginid,
+        trace_id => ' 123',
+    );
+
+    is $req->code, 400, 'Correct bad request status code';
+    like $req->content,
+        qr/(Attribute \(trace_id\) does not pass the type constraint|trace_id must be a positive integer)/,
+        'Correct error message in response body';
+
+    is balance($loginid), $current_balance, 'Correct unchanged balance';
+};
+
+subtest 'Exceed balance' => sub {
+    my $current_balance = balance $loginid;
+    my $req             = withdraw(
+        loginid => $loginid,
+        amount  => $current_balance + 1000,
+    );
+
+    is $req->code, 403, 'Correct forbidden status code';
+    like $req->decoded_content, qr/exceeds client balance/, 'Correspond error message to balance exceeding';
+    is balance($loginid), $current_balance, 'Correct unchanged balance';
+};
+
+subtest 'Duplicate transaction' => sub {
+    my $trace_id        = 6588;
+
+    withdraw(
+        loginid  => $loginid,
+        trace_id => $trace_id,
+    );
+
+    my $current_balance = balance $loginid;
+
+    my $req = withdraw(
+        loginid  => $loginid,
+        trace_id => $trace_id,
+    );
+
+    is $req->code, 400, 'Correct bad request status code';
+    like $req->content, qr/Detected duplicate transaction/, 'Correspond error message to duplicate transaction';
+
+    is balance($loginid), $current_balance, 'Correct unchanged balance';
+};
 
 done_testing();

@@ -1,10 +1,14 @@
 use strict;
 use warnings;
-use FindBin qw/$Bin/;
-use lib "$Bin/lib";
-use Test::More;
-use APIHelper qw(balance deposit request decode_json);
 
+use Test::More;
+
+use FindBin qw/ $Bin /;
+use lib "$Bin/lib";
+
+use APIHelper qw/ balance deposit request decode_json /;
+
+# prepare test env
 my $loginid = 'CR0012';
 
 my $client_db = BOM::Database::ClientDB->new({client_loginid => $loginid});
@@ -13,36 +17,69 @@ my $user = BOM::User->create(
     password => 'asdaiasda'
 );
 $user->add_loginid($loginid);
-my $starting_balance = balance($loginid);
-my $r = deposit(loginid => $loginid);
-is($r->code,    201,       'correct status code');
-is($r->message, 'Created', 'Correct message');
-like($r->content, qr[<opt>\s*<data></data>\s*</opt>], 'Correct content');
-my $balance_now = balance($loginid);
-is(0 + $balance_now, $starting_balance + 1.00, 'Correct final balance');
 
-my $location = $r->header('Location');
-ok $location, "Location header present";
+subtest 'Successful attempt' => sub {
+    my $start_balance = balance $loginid;
+    my $req           = deposit(
+        loginid  => $loginid,
+        trace_id => 1234
+    );
 
-## test record_GET also
-$location =~ s{^(.*?)/transaction}{/transaction};
-$r = request('GET', $location);
-my $data = decode_json($r->content);
-is($data->{client_loginid}, $loginid,  "client_loginid present in returned data and is $loginid");
-is($data->{type},           'deposit', "type present in returned data and is 'deposit'");
+    is $req->code, 201, 'Correct created status code';
+    like $req->content, qr/<opt>\s*<data><\/data>\s*<\/opt>/, 'Correct content';
 
-# Failed
-$r = deposit(
-    loginid  => $loginid,
-    trace_id => ' 123'
-);
-is($r->code,    400,           'Correct failure status code');
-is($r->message, 'Bad Request', 'Correct message');
-like(
-    $r->content,
-    qr[(Attribute \(trace_id\) does not pass the type constraint|trace_id must be a positive integer)],
-    'Correct error message on response body'
-);
-is(balance($loginid), $balance_now, 'Correct final balance (unchanged)');
+    my $current_balance = balance $loginid;
+    is 0 + $current_balance, $start_balance + 1, 'Correct final balance';
 
+    # Record transaction
+    my $location = $req->header('location');
+    ok $location, 'Request header location is present';
+
+    $location =~ s/^(.*?)\/transaction/\/transaction/;
+    $req = request 'GET', $location;
+
+    my $body = decode_json $req->content;
+    is $body->{client_loginid}, $loginid, "{client_loginid} is present and correct in response body";
+    is $body->{type}, 'deposit', '{type} is present and correct in response body';
+};
+
+subtest 'Wrong trace id' => sub {
+    my $current_balance = balance $loginid;
+
+    my $req = deposit(
+        loginid  => $loginid,
+        trace_id => ' 123',
+    );
+
+    is $req->code, 400, 'Correct bad request status code';
+    like $req->content,
+        qr/(Attribute \(trace_id\) does not pass the type constraint|trace_id must be a positive integer)/,
+        'Correct error message about wrong {trace_id} in response body';
+
+    is balance($loginid), $current_balance, 'Correct unchanged balance';
+};
+
+subtest 'Duplicate transaction' => sub {
+    my $trace_id        = 987;
+    my $txn_id = 567876;
+
+    deposit(
+        loginid  => $loginid,
+        trace_id => $trace_id,
+        transaction_id => $txn_id
+    );
+
+    my $current_balance = balance $loginid;
+
+    my $req = deposit(
+        loginid  => $loginid,
+        trace_id => $trace_id,
+        transaction_id=>$txn_id
+    );
+
+    is $req->code, 400, 'Correct bad request status code';
+    like $req->content, qr/Detected duplicate transaction/, 'Correspond error message to duplicate transaction';
+
+    is balance($loginid), $current_balance, 'Correct unchanged balance';
+};
 done_testing();
