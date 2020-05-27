@@ -201,7 +201,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "USD" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -236,7 +236,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "EUR" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -269,7 +269,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "EUR" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -300,7 +300,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "EUR" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -340,7 +340,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "EUR" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -373,7 +373,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "USD" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -403,7 +403,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "USD" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -435,7 +435,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "USD" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -466,7 +466,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "USD" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -498,7 +498,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "USD" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -531,7 +531,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "USD" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -567,7 +567,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "USD" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -600,7 +600,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "USD" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -636,7 +636,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "USD" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -671,7 +671,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "EUR" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -705,7 +705,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "EUR" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -737,7 +737,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "EUR" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -772,7 +772,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "GBP" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -811,7 +811,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "GBP" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,
@@ -855,7 +855,7 @@ subtest 'get account status' => sub {
                 cmp_deeply(
                     $result,
                     {
-                        experimental_suspended => {
+                        currency_config => {
                             "EUR" => {
                                 is_deposit_suspended    => 0,
                                 is_withdrawal_suspended => 0,
@@ -923,7 +923,7 @@ subtest 'get account status' => sub {
                 cmp_deeply(
                     $result,
                     {
-                        experimental_suspended => {
+                        currency_config => {
                             "EUR" => {
                                 is_deposit_suspended    => 0,
                                 is_withdrawal_suspended => 0,
@@ -1046,7 +1046,7 @@ subtest 'get account status' => sub {
                 cmp_deeply(
                     $result,
                     {
-                        experimental_suspended => {
+                        currency_config => {
                             "EUR" => {
                                 is_deposit_suspended    => 0,
                                 is_withdrawal_suspended => 0,
@@ -1101,7 +1101,7 @@ subtest 'get account status' => sub {
                     cmp_deeply(
                         $result,
                         {
-                            experimental_suspended => {
+                            currency_config => {
                                 "EUR" => {
                                     is_deposit_suspended    => 0,
                                     is_withdrawal_suspended => 0,
@@ -1155,7 +1155,7 @@ subtest 'get account status' => sub {
                     cmp_deeply(
                         $result,
                         {
-                            experimental_suspended => {
+                            currency_config => {
                                 "EUR" => {
                                     is_deposit_suspended    => 0,
                                     is_withdrawal_suspended => 0,
@@ -1197,7 +1197,7 @@ subtest 'get account status' => sub {
             cmp_deeply(
                 $result,
                 {
-                    experimental_suspended => {
+                    currency_config => {
                         "EUR" => {
                             is_deposit_suspended    => 0,
                             is_withdrawal_suspended => 0,

@@ -774,7 +774,7 @@ rpc get_account_status => sub {
         }
     }
 
-    my %experimental_suspended = map {
+    my %currency_config = map {
         $_ => {
             is_deposit_suspended    => BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $_),
             is_withdrawal_suspended => BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $_),
@@ -789,7 +789,7 @@ rpc get_account_status => sub {
             client                            => $client,
             is_document_expiry_check_required => $is_document_expiry_check_required
         ),
-        experimental_suspended => \%experimental_suspended,
+        currency_config => \%currency_config,
     };
 };
 
