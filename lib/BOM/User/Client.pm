@@ -3620,4 +3620,24 @@ sub anonymize_associated_user_return_list_of_siblings {
         })->@*;
 }
 
+=head2 lifetime_internal_withdrawals
+
+Gets the total amount of internal transfer (withdrawal)
+The amount is in the client's currency
+
+=cut
+
+sub lifetime_internal_withdrawals {
+    my $self = shift;
+
+    my $lifetime_transfer_amount = $self->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare("SELECT * FROM payment.get_internal_transfer_withdrawal_amount(?)");
+            $sth->execute($self->loginid);
+            return $sth->fetchrow_array;
+        });
+
+    return $lifetime_transfer_amount // 0;
+}
+
 1;
