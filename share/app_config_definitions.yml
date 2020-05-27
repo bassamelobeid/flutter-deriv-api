@@ -227,6 +227,11 @@ payments:
               description: 'Limits the numbers of daily transfers between binary accounts and MT5 accounts'
               default: 6
               global: 1
+            fiat_to_crypto:
+              isa: Num
+              description: 'Limits the cumulative amount for transferring Fiat to Crypto for unauthenticated clients. Amount is in USD.'
+              default: 200
+              global: 1
         exchange_rate_expiry:
           isa: section
           description: 'Exchange Rates expiry age in seconds e.g. allow conversion from BTC to USD if last known rate IS NOT OLDER THAN 1800 second'
