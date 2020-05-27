@@ -12,6 +12,7 @@ use ExchangeRates::CurrencyConverter qw/in_usd/;
 
 use LandingCompany::Registry;
 use BOM::Config::Runtime;
+use BOM::Config::CurrencyConfig;
 
 sub DailyTurnOverReport {
     my ($args, $options) = @_;
@@ -21,7 +22,7 @@ sub DailyTurnOverReport {
     }
 
     my $initial_note   = '(BUY-SELL represents the company profit)';
-    my @all_currencies = LandingCompany::Registry->new()->all_currencies;
+    my @all_currencies = grep { !BOM::Config::CurrencyConfig::is_currency_suspended($_) } LandingCompany::Registry->new()->all_currencies;
     my %rates          = map { $_ => in_usd(1, $_) } grep { $_ !~ /^(?:ETC)$/ } @all_currencies;
 
     my %template = (

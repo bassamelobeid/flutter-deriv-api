@@ -17,6 +17,7 @@ use strict;
 use warnings;
 
 use BOM::Config;
+use BOM::Config::CurrencyConfig;
 use ExchangeRates::CurrencyConverter qw(in_usd);
 
 use LandingCompany::Registry;
@@ -63,7 +64,10 @@ has _usd_rates => (
 );
 
 sub _build__usd_rates {
-    return {map { $_ => in_usd(1, $_) } grep { $_ ne 'ETC' } LandingCompany::Registry->new()->all_currencies};
+    return {
+        map { $_ => in_usd(1, $_) }
+        grep { !BOM::Config::CurrencyConfig::is_currency_suspended($_) } LandingCompany::Registry->new()->all_currencies
+    };
 }
 
 sub amount_in_usd {
