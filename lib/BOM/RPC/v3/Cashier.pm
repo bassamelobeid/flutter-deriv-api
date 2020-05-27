@@ -1610,18 +1610,6 @@ rpc transfer_between_accounts => sub {
     }
     BOM::User::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
 
-    BOM::Platform::Event::Emitter::emit(
-        'client_transfer',
-        {
-            loginid_from      => $loginid_from,
-            loginid_to        => $loginid_to,
-            from_currency     => $client_from->currency,
-            to_currency       => $client_to->currency,
-            is_mt5_login_from => $is_mt5_loginid_from,
-            is_mt5_login_to   => $is_mt5_loginid_to,
-            lc_short          => $lc_short,
-            amount            => in_usd($amount, $currency)});
-
     $client_from->user->daily_transfer_incr();
 
     return {
@@ -1805,6 +1793,48 @@ sub _validate_transfer_between_accounts {
             'Provided amount is not within permissible limits. Maximum transfer amount for [_1] currency is [_2].',
             $currency, formatnumber('amount', $currency, $max_allowed_amount))
     ) if (($amount > $max_allowed_amount) and ($from_currency_type ne $to_currency_type));
+
+    # this check is only for svg and unauthenticated clients
+    if (    $current_client->landing_company->short eq 'svg'
+        and not $current_client->fully_authenticated
+        and $from_currency_type eq 'fiat'
+        and $to_currency_type eq 'crypto')
+    {
+        my $limit_amount = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->fiat_to_crypto;
+
+        $limit_amount = convert_currency($limit_amount, 'USD', $from_currency) if $from_currency ne 'USD';
+
+        my $is_over_transfer_limit;
+
+        # checks if the amount itself is already over the limit, skips accessing lifetime transfer amount if true
+        if ($amount > $limit_amount) {
+
+            $is_over_transfer_limit = 1;
+
+        } else {
+
+            my $lifetime_transfer_amount = $current_client->lifetime_internal_withdrawals();
+
+            $is_over_transfer_limit = 1 if (($lifetime_transfer_amount + $amount) > $limit_amount);
+        }
+
+        if ($is_over_transfer_limit) {
+
+            $current_client->status->set('allow_document_upload', 'system', 'Allow client to document upload');
+
+            my $message_to_client = localize(
+                'You have exceeded [_1] [_2] in cumulative transactions. To continue, you will need to verify your identity and address.',
+                formatnumber('amount', $from_currency, $limit_amount),
+                $from_currency
+            );
+
+            return BOM::RPC::v3::Utility::create_error({
+                code              => 'Fiat2CryptoTransferOverLimit',
+                message_to_client => $message_to_client,
+            });
+        }
+
+    }
 
     return undef;
 }

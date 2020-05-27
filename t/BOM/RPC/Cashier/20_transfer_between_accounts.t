@@ -352,7 +352,7 @@ subtest 'validation' => sub {
 
     $params->{args}->{amount} = $limits->{USD}->{max};
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code insufficient balance';
     like $result->{error}->{message_to_client}, qr/The maximum amount you may transfer is: USD 0.00/, 'Correct error message for an empty account';
 
     $client_cr->payment_free_gift(
@@ -364,7 +364,7 @@ subtest 'validation' => sub {
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
 
-    #set an invalid value to minimum
+    # set an invalid value to minimum
     my $invalid_min = 0.01;
     my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig', no_auto => 1);
     $mock_fees->mock(

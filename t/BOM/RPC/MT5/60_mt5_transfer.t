@@ -526,5 +526,4 @@ subtest 'Simple withdraw' => sub {
     $c->call_ok('mt5_withdrawal', $params)->has_no_error('can withdraw even when mt5_withdrawal_locked');
 };
 
-
 done_testing();

@@ -19,7 +19,7 @@ use LandingCompany::Registry;
 set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 scope_guard { restore_time() };
 
-# unlimit daily transfer
+# Unlimited daily transfer
 BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts(999);
 
 populate_exchange_rates({BTC => 5500});
@@ -98,7 +98,7 @@ subtest 'Basic transfers' => sub {
 
 subtest 'Fiat <-> Crypto account transfers' => sub {
 
-    # ----- Test 1: Fiat -> Crypto -----
+    # Test 1: Fiat -> Crypto
 
     my $email       = 'new_email' . rand(999) . '@binary.com';
     my $client_fiat = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -129,28 +129,7 @@ subtest 'Fiat <-> Crypto account transfers' => sub {
         remark   => 'free gift',
     );
 
-    my %emitted;
-    my %mocked_storage;
-    my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
-    $mock_events->mock(
-        'emit',
-        sub {
-            my ($event_name, $args) = @_;
-            return 1 if $event_name ne 'client_transfer';
-            my $client_from = BOM::User::Client->new({loginid => $args->{loginid_from}});
-            my $client_to   = BOM::User::Client->new({loginid => $args->{loginid_to}});
-            my $currencies  = LandingCompany::Registry::get($args->{lc_short})->legal_allowed_currencies;
-
-            my $fiat_client = $currencies->{$client_from->currency}->{type} eq 'fiat' ? $client_from : $client_to;
-
-            $mocked_storage{$fiat_client->loginid} += $args->{amount};
-            if ($mocked_storage{$fiat_client->loginid} >= 1000) {
-                $fiat_client->status->set('withdrawal_locked', 'test', 'internal_transfer over 1k');
-            }
-            $emitted{$event_name} = $fiat_client->loginid;
-        });
-
-    my $amount_to_transfer = 500;
+    my $amount_to_transfer = 199;
     $params->{token}      = BOM::Platform::Token::API->new->create_token($client_fiat->loginid, 'test token');
     $params->{token_type} = 'oauth_token';
     $params->{args}       = {
@@ -160,76 +139,33 @@ subtest 'Fiat <-> Crypto account transfers' => sub {
         amount       => $amount_to_transfer
     };
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts');
-    is($emitted{client_transfer}, $client_fiat->loginid, 'Event triggered to check for lifetime internal transfer');
-    # reloads client
+    # Reloads client
     $client_fiat = BOM::User::Client->new({loginid => $client_fiat->loginid});
-    is($client_fiat->status->withdrawal_locked, undef, 'client is not withdrawal_locked');
+    is($client_fiat->status->allow_document_upload, undef, 'client is not allowed to upload documents');
 
-    $amount_to_transfer = 600;
+    # Transaction should be blocked as client is unauthenticated and >200usd
+    $amount_to_transfer = 100;
     $params->{args}->{amount} = $amount_to_transfer;
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts 2');
-    # reloads client
+    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    like $result->{error}->{message_to_client}, qr/To continue, you will need to verify your identity and address/,
+        'Correct error message for 200USD transfer limit';
+
+    # Attempted transfer will trigger allow_document_upload status
     $client_fiat = BOM::User::Client->new({loginid => $client_fiat->loginid});
-    is($client_fiat->status->withdrawal_locked->{reason}, 'internal_transfer over 1k', 'client is withdrawal_locked');
+    is($client_fiat->status->allow_document_upload->{reason}, 'Allow client to document upload', 'client is allowed to upload documents');
 
-    # ----- Test 2: Fiat -> Crypto -> Fiat -----
+    # Clear the status for further checks
+    $client_fiat->status->clear_allow_document_upload;
+    is($client_fiat->status->allow_document_upload, undef, 'client is not allowed to upload documents 1');
 
-    $email = 'new_email' . rand(999) . '@binary.com';
-    my $client_fiat2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email
-    });
-    $client_fiat2->set_default_account('USD');
+    # Total of 201 usd, client should be allowed to upload document
+    $amount_to_transfer = 2;
+    $params->{args}->{amount} = $amount_to_transfer;
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
 
-    my $client_crypto2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email
-    });
-    $client_crypto2->set_default_account('BTC');
-
-    my $user2 = BOM::User->create(
-        email          => $email,
-        password       => BOM::User::Password::hashpw('hello'),
-        email_verified => 1,
-    );
-
-    for ($client_fiat2, $client_crypto2) {
-        $user->add_client($_);
-    }
-
-    $client_fiat2->payment_free_gift(
-        currency => 'USD',
-        amount   => 10000,
-        remark   => 'free gift',
-    );
-
-    $amount_to_transfer = 800;
-    $params->{token}      = BOM::Platform::Token::API->new->create_token($client_fiat2->loginid, 'test token');
-    $params->{token_type} = 'oauth_token';
-    $params->{args}       = {
-        account_from => $client_fiat2->loginid,
-        account_to   => $client_crypto2->loginid,
-        currency     => 'USD',
-        amount       => $amount_to_transfer
-    };
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('simple transfer between sibling account 3');
-    is($emitted{client_transfer}, $client_fiat2->loginid, 'Event triggered to check for lifetime internal transfer');
-    # reloads client
-    $client_fiat2 = BOM::User::Client->new({loginid => $client_fiat2->loginid});
-    is($client_fiat2->status->withdrawal_locked, undef, 'client is not withdrawal_locked');
-
-    $amount_to_transfer = 0.125;    #625USD according to the custom rate set
-    $params->{args} = {
-        account_from => $client_crypto2->loginid,
-        account_to   => $client_fiat2->loginid,
-        currency     => 'BTC',
-        amount       => $amount_to_transfer
-    };
-
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts 4');
-    # reloads client
-    $client_fiat2 = BOM::User::Client->new({loginid => $client_fiat->loginid});
-    is($client_fiat2->status->withdrawal_locked->{reason}, 'internal_transfer over 1k', 'client is withdrawal_locked');
+    # Reloads client
+    $client_fiat = BOM::User::Client->new({loginid => $client_fiat->loginid});
+    is($client_fiat->status->allow_document_upload->{reason}, 'Allow client to document upload', 'client is allowed to upload documents 2');
 
 };
 
