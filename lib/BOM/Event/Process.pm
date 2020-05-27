@@ -78,7 +78,6 @@ my $action_mapping = {
     p2p_order_expired           => \&BOM::Event::Actions::P2P::order_expired,
     p2p_advertiser_created      => \&BOM::Event::Actions::P2P::advertiser_created,
     p2p_advertiser_updated      => \&BOM::Event::Actions::P2P::advertiser_updated,
-    client_transfer             => \&BOM::Event::Actions::Client::check_lifetime_internal_transfer,
     api_token_created           => \&BOM::Event::Actions::Client::api_token_created,
     api_token_deleted           => \&BOM::Event::Actions::Client::api_token_deleted,
     app_registered              => \&BOM::Event::Actions::App::app_registered,
