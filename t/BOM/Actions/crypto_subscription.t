@@ -193,7 +193,7 @@ subtest "change_address_status" => sub {
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, undef, "Error inserting transaction in the database";
 
-    is_deeply $emitted_event{set_pending_transaction}, $transaction, 'Event found after emit it again';
+    is_deeply $emitted_event{crypto_subscription}, $transaction, 'Event found after emit it again';
 
     $mock_platform->unmock_all();
     $mock_subscription->unmock_all();
@@ -299,18 +299,18 @@ subtest "change_address_status" => sub {
         to           => ['36ob9DZcMYQkRHGFNJHjrEKP7N9RyTihHo'],
         type         => 'send',
         amount       => 10,
-        fee          => 0.0145288,
+        fee          => 247621000000000,
         fee_currency => 'ETH',
         block        => 10,
     };
 
     _insert_withdrawal_transaction($transaction);
 
-    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, undef, "Just updating the fee for withdrawal transaction";
+    $response = BOM::Event::Actions::CryptoSubscription::set_transaction_fee($transaction);
+    is $response, 1, "Just updating the fee for withdrawal transaction";
 
     my $updated_transaction = _fetch_withdrawal_transaction($transaction->{hash});
-    is $updated_transaction->{fee}, $transaction->{fee};
+    is $updated_transaction->{fee}, 0.000247621;
 };
 
 sub _set_withdrawal_verified {

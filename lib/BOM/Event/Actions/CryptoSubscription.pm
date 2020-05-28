@@ -37,7 +37,45 @@ sub collectordb {
     };
 }
 
+sub subscription {
+    my $transaction = shift;
+
+    set_pending_transaction($transaction);
+    set_transaction_fee($transaction);
+}
+
+=head2 set_transaction_fee
+
+We store in the database just the estimation fee since we can't wait until
+the transaction to be completed in the sync process, here in this function
+we have the final fee returned from the node so we need to update the final fee
+in the database.
+
+=over 4
+
+=item * C<transaction> - transaction reference containing the blockchain data
+
+=back
+
+=cut
+
+sub set_transaction_fee {
+    my $transaction = shift;
+    my $currency = BOM::CTC::Currency->new(currency_code => $transaction->{currency});
+
+    # we are specifying the currency here just for performance purpose, since for the other currencies
+    # this value is supposed to be correct, we check using the fee_currency because of the ERC20 contracts;
+    if ($transaction->{type} eq 'send' && $transaction->{fee_currency} eq 'ETH' && $transaction->{fee}) {
+        clientdb()->run(
+            ping => sub {
+                my $sth = $_->prepare('select payment.ctc_update_transaction_fee(?, ?, ?)');
+                $sth->execute($transaction->{hash}, $transaction->{currency}, $currency->get_unformatted_fee($transaction->{fee}));
+            });
+    }
+}
+
 =head2 set_pending_transaction
+
 Set the transaction as pending in payment.cryptocurrency if the transaction
 
 pass for all the requirements:
@@ -49,6 +87,13 @@ pass for all the requirements:
 - No zero amount
 On issue setting the transaction as pending in the database a new event will be triggered to
 try it again after some seconds.
+
+=over 4
+
+=item * C<transaction> - transaction reference containing the blockchain data
+
+=back
+
 =cut
 
 sub set_pending_transaction {
@@ -69,21 +114,6 @@ sub set_pending_transaction {
                     undef, $currency_code, $transaction->{block}, TRANSACTION_TYPE_DEPOSIT);
             });
         $log->warnf("%s: Can't update the cursor to block: %s", $currency_code, $transaction->{block}) unless $cursor_result;
-
-        # for ETH at the moment we store the fee in the database we store just
-        # the estimation, to not hold the process in the withdrawal daemon waiting
-        # for the transaction to be send, we added the fee update here, so once
-        # we received the transaction by the subscription we can update with the
-        # final gas.
-        # the second condition here is more to add some performance since
-        # we don't need to update the fee for all currencies just for ETH
-        if ($transaction->{type} eq 'send' && $transaction->{fee_currency} eq 'ETH' && $transaction->{fee}) {
-            clientdb()->run(
-                ping => sub {
-                    my $sth = $_->prepare('select payment.ctc_update_transaction_fee(?, ?, ?)');
-                    $sth->execute($transaction->{hash}, $transaction->{currency}, $transaction->{fee});
-                });
-        }
 
         return undef if (!$transaction->{type} || $transaction->{type} eq 'send');
 
@@ -204,7 +234,7 @@ sub set_pending_transaction {
                 my $emit;
                 my $error = "No error returned";
                 try {
-                    $emit = BOM::Platform::Event::Emitter::emit('set_pending_transaction', $transaction);
+                    $emit = BOM::Platform::Event::Emitter::emit('crypto_subscription', $transaction);
                 }
                 catch {
                     $error = $@;
