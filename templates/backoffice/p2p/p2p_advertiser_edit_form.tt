@@ -32,10 +32,11 @@ table#p2p_advertiser_edit td{
                     [% ELSE %]
                         <strong style="color: red">NO</strong>
                     [% END %]
+                    &nbsp;&nbsp;(Allows the advertiser to create ads)
                 </td>
             </tr>
             <tr>
-                <td class="label">Advertiser's Adverts Are Listed: </td>
+                <td class="label">Adverts Are Listed: </td>
                 <td>
                     <select name="is_listed">
                         <option value="1" [% is_listed && 'selected' %]>YES</option>
@@ -46,6 +47,7 @@ table#p2p_advertiser_edit td{
                     [% ELSE %]
                         <strong style="color: red">NO</strong>
                     [% END %]
+                    &nbsp;&nbsp;(Ads will be listed when both this setting and APPROVED are YES)
                 </td>
             </tr>
             <tr>

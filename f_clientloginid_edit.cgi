@@ -504,6 +504,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             # key set for email already sent for POA
             BOM::Config::Redis::redis_replicated_write()->hdel("EMAIL_NOTIFICATION_POA", $client->binary_user_id);
         }
+
+        $client->p2p_advertiser_approve if $client->fully_authenticated;
     }
 
     if (exists $input{professional_client}) {
