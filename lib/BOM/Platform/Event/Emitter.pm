@@ -43,7 +43,7 @@ my %event_queue_mapping = (
     ready_for_authentication  => 'DOCUMENT_AUTHENTICATION_QUEUE',
     client_verification       => 'DOCUMENT_AUTHENTICATION_QUEUE',
     affiliate_sync_initiated  => 'AFFILIATE_SYNC_LONG_RUNNING_QUEUE',
-    set_pending_transaction   => 'CRYPTO_EVENTS_QUEUE',
+    crypto_subscription       => 'CRYPTO_EVENTS_QUEUE',
     new_crypto_address        => 'CRYPTO_EVENTS_QUEUE',
     client_promo_codes_upload => 'PROMO_CODE_IMPORT_LONG_RUNNING_QUEUE',
 );
@@ -180,7 +180,7 @@ sub _get_connection_by_type {
     return $connections->{$type};
 }
 
-=head2 get
+=head2 _queue_name
 
 Bind event name to its queue
 
