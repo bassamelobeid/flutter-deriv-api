@@ -136,8 +136,13 @@ if ($email ne $new_email) {
         . $input{DCcode}
         . ") $ENV{REMOTE_ADDR}";
     BOM::User::AuditLog::log($msg, $new_email, $clerk);
+    #CS: for every email address change request, we will disable the client's
+    #    account and once receiving a confirmation from his new email address, we will change it and enable the account.
+    my $default_client_loginid = $user->get_default_client(
+        include_disabled   => 1,
+        include_duplicated => 1
+    )->loginid;
 
-    my $default_client_loginid = $user->get_default_client->loginid;
     BOM::Platform::Event::Emitter::emit('sync_user_to_MT5',    {loginid => $default_client_loginid});
     BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $default_client_loginid});
     BOM::Backoffice::Request::template()->process(
