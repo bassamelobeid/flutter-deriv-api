@@ -401,6 +401,7 @@ The categories are:
 - virtual accounts
 - self excluded accounts
 - disabled accounts
+- duplicated accounts
 
 =cut
 
@@ -464,20 +465,31 @@ sub accounts_by_category {
 Returns default client for particular user
 Act as replacement for using "$siblings[0]" or "$clients[0]"
 
+=over 4
+
+=item * C<include_disabled> - include disabled clients
+
+=item * C<include_duplicated> - include duplicated clients
+
+=back
+
+Returns An array of L<BOM::User::Client> s
+
 =cut
 
 sub get_default_client {
     my ($self, %args) = @_;
+    my $include_duplicated = $args{include_duplicated} // 0;
 
     return $self->{_default_client_include_disabled} if exists($self->{_default_client_include_disabled}) && $args{include_disabled};
     return $self->{_default_client_without_disabled} if exists($self->{_default_client_without_disabled}) && !$args{include_disabled};
 
-    my $client_lists = $self->accounts_by_category([$self->bom_loginids]);
+    my $client_lists = $self->accounts_by_category([$self->bom_loginids], include_duplicated => $include_duplicated);
     my %tmp;
     foreach my $k (keys %$client_lists) {
         $tmp{$k} = pop(@{$client_lists->{$k}});
     }
-    $self->{_default_client_include_disabled} = $tmp{enabled} // $tmp{disabled} // $tmp{virtual} // $tmp{self_excluded};
+    $self->{_default_client_include_disabled} = $tmp{enabled} // $tmp{disabled} // $tmp{virtual} // $tmp{self_excluded} // $tmp{duplicated};
     $self->{_default_client_without_disabled} = $tmp{enabled} // $tmp{virtual} // $tmp{self_excluded};
     return $self->{_default_client_include_disabled} if $args{include_disabled};
     return $self->{_default_client_without_disabled};
