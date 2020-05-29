@@ -42,10 +42,6 @@ sub _get_upgradeable_landing_companies {
         && !(any { $_->landing_company->short eq $gaming_company } @$client_list))
     {
         push @upgradeable_landing_companies, $gaming_company;
-        # TODO: Should remove hard coded gaming company once we want to enable having both financial and gaming account for all landing companies
-        if ($financial_company && $gaming_company eq 'malta' && !(any { $_->landing_company->short eq $financial_company } @$client_list)) {
-            push @upgradeable_landing_companies, $financial_company;
-        }
     }
 
     # Some countries have financial but not gaming account
@@ -86,16 +82,6 @@ sub _get_upgradeable_landing_companies {
         # Push to upgradeable_landing_companies, if possible to open another CR account
         push @upgradeable_landing_companies, 'svg'
             if BOM::RPC::v3::Utility::get_available_currencies($siblings, $client->landing_company->short);
-    }
-
-    # Malta clients can have financial account without gaming account
-    if (   !@upgradeable_landing_companies
-        && !$client->is_virtual
-        && $gaming_company
-        && $gaming_company eq 'malta'
-        && !(any { $_->landing_company->short eq $gaming_company } @$client_list))
-    {
-        push @upgradeable_landing_companies, $gaming_company;
     }
 
     return \@upgradeable_landing_companies;
