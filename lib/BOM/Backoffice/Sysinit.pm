@@ -55,6 +55,7 @@ my $permissions = {
     'f_bo_enquiry.cgi'                => ['CS'],
     'f_clientloginid.cgi'             => ['CS'],
     'f_clientloginid_edit.cgi'        => ['CS'],
+    'f_client_comments.cgi'           => ['CS'],
     'f_clientloginid_newpassword.cgi' => ['CS'],
     'f_send_statement.cgi'            => ['CS'],
     'f_investigative.cgi'             => ['CS'],

@@ -1,0 +1,101 @@
+
+[% WRAPPER layout title='' %]
+   <a href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => input.loginid }) | url %]">return to client details</a>
+[% END %]
+[% IF error %]
+    [% WRAPPER layout title='Error' %]
+       <b style="color:red; font-size: medium"> [% error %]</b>
+    [% END %]
+[% END %]
+
+[% IF action ==  'show_edit_form' %]
+    [% WRAPPER layout title='Edit comment' %]
+    <form method="post">
+        <input type="hidden" name="loginid" value="[% input.loginid %]" />
+        <input type="hidden" name="action" value="update_comment" />
+        <input type="hidden" name="csrf" value="[% csrf %]" />
+        <input type="hidden" name="id" value="[% result.id %]" />
+        <input type="hidden" name="checksum" value="[% result.checksum %]" />
+        <label>Comment:</label>
+        <div>
+            <textarea rows="10" cols="100" name="comment" maxlength="1000" minlength="1" autofocus>[% input.comment || result.comment %]</textarea>
+        </div>
+        <div style="margin-top: 10px">
+        </div>
+        <input type="submit" value="Save changes">
+    </form>
+    <form method="get">
+        <input type="hidden" name="loginid" value="[% input.loginid %]" />
+        <input type="submit" value="Cancel">
+    </form>
+    [% END %]
+[% ELSE %]
+    [% WRAPPER layout title='Add new comment' %]
+    <form method="post">
+        <input type="hidden" name="loginid" value="[% input.loginid %]" />
+        <input type="hidden" name="action" value="add_comment" />
+        <input type="hidden" name="csrf" value="[% csrf %]" />
+        <label>Comment:</label>
+        <div>
+            <textarea rows="10" cols="100" name="comment" maxlength="1000" minlength="1" autofocus placeholder="Enter new comment here" >[% error ?  input.comment : '' %]</textarea>
+        </div>
+        <div style="margin-top: 10px">
+            <input type="submit" value="Add new comment">
+        </div>
+    </form>
+    [% END %]
+[% END %]
+
+
+[% WRAPPER layout title='Review Comments' %]
+    <table>
+<table class="collapsed hover alternate" border="1">
+    <tbody><tr>
+        <th>Comment</th>
+        <th>Author</th>
+        <th>Date</th>
+        <th>Actions</th>
+    </tr>
+    [% FOREACH record IN comments %]
+        <tr>
+            <td width=800>[% record.comment | html | html_line_break %]</td>
+            <td>[% record.author %]</td>
+            <td>[% record.creation_datetime %]</td>
+            <td>
+                <form method="post" onSubmit="return confirm('Are you sure you want to delete the comment?');">
+                    <input type="hidden" name="loginid" value="[% input.loginid %]" />
+                    <input type="hidden" name="action" value="delete_comment" />
+                    <input type="hidden" name="csrf" value="[% csrf %]" />
+                    <input type="hidden" name="id" value="[% record.id %]" />
+                    <input type="hidden" name="checksum" value="[% record.checksum %]" />
+                    <input type="submit" value="Delete">
+                </form>
+                <form method="post">
+                    <input type="hidden" name="loginid" value="[% input.loginid %]" />
+                    <input type="hidden" name="action" value="show_edit_form" />
+                    <input type="hidden" name="csrf" value="[% csrf %]" />
+                    <input type="hidden" name="id" value="[% record.id %]" />
+                    <input type="submit" value="Edit">
+                </form>
+            </td>
+        </tr>
+    [% END %]
+</tbody></table>
+[% END %]
+
+
+
+[% BLOCK layout %]
+    <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="97%">
+        <tbody>
+           <tr class="Blacklabel">
+                <td class="whitelabel" colspan="2">[% title %]</td>
+            </tr>
+            <tr>
+                <td align="left" style="padding: 10px;">
+                [% content | none %]
+                </td>
+            </tr>
+        </tbody>
+    </table>
+[% END %]

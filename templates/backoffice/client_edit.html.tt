@@ -78,7 +78,7 @@ function init_text_validations() {
         if (!validation_info[field].is_valid){
             element.classList.add('invalid');
         }
-        
+
         let value = escape_regex(element.value);
         // let the current value be accepted anyway
         element.pattern = `^\${value}\$|\${pattern}`;
