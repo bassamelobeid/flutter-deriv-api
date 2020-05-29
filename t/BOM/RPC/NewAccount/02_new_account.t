@@ -53,7 +53,6 @@ $mock_datadog->mock(
     'stats_inc' => sub {
         my $key  = shift;
         my $args = shift;
-        #do{use Data::Dumper; warn Dumper($key); warn Dumper($args); warn 'BBBBBBBBBBBBBBBBBBB'} if $key eq $empty_pep_declartion_dd_key;
         $datadog_args{$key} = $args;
     },
 );
@@ -941,6 +940,62 @@ subtest $method => sub {
         my $cl = BOM::User::Client->new({loginid => $result->{client_id}});
         ok $cl->non_pep_declaration_time,
             'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args (test create_account call)';
+    };
+
+    subtest 'Create new account maltainvest without MLT' => sub {
+        my $password = 'jskjd8292922';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+        #create a virtual cz client
+        $email = 'virtual_de_email' . rand(999) . '@binary.com';
+        # call with totally random values - our client still should have correct one
+        ($params->{args}->{$_} = $_ . rand(9)) =~ s/_// for qw/first_name last_name residence address_city/;
+        $params->{args}->{phone}         = '+62 21 12098999';
+        $params->{args}->{date_of_birth} = '1990-09-09';
+
+        $user = BOM::User->create(
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1,
+        );
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $email,
+            residence   => 'at',
+        });
+        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+        $user->add_client($client);
+
+        $params->{token}                   = $auth_token;
+        $params->{args}->{residence}       = 'at';
+        $params->{args}->{secret_answer}   = 'test';
+        $params->{args}->{secret_question} = 'test';
+
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_error->result;
+        ok $result->{client_id}, "Czech users can create MF account from the virtual account";
+
+        $auth_token = BOM::Platform::Token::API->new->create_token($result->{client_id}, 'test token');
+
+        ok $emitted{'register_details_' . $result->{client_id}}, "register_details event emitted";
+    };
+
+    subtest 'Create new account malta from MF' => sub {
+        $params->{args}->{accept_risk} = 1;
+        $params->{token}               = $auth_token;
+        $params->{args}->{residence}   = 'at';
+        $method                        = 'new_account_real';
+        mailbox_clear();
+
+        # call with totally random values - our client still should have correct one
+        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
+        $params->{args}->{phone}         = '+62 21 12345678';
+        $params->{args}->{date_of_birth} = '1990-09-09';
+        $params->{args}->{residence}     = 'at';
+        # We have to delete these fields here as our test helper function creates clients with different fields than what is declared above in this file. Should change this.
+        delete $params->{args}->{secret_question};
+        delete $params->{args}->{secret_answer};
+
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_error->result;
+        ok $result->{client_id}, "Create MLT with MF token";
     };
 };
 

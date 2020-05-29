@@ -244,7 +244,7 @@ subtest 'upgradeable_landing_companies' => sub {
 
     # Test 1
     my $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['malta'], 'Client can upgrade to malta.';
+    is_deeply $result->{upgradeable_landing_companies}, ['malta', 'maltainvest'], 'Client can upgrade to malta and maltainvest.';
 
     # Create MLT account
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -275,6 +275,42 @@ subtest 'upgradeable_landing_companies' => sub {
     # Test 3
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, [], 'Client has upgraded all accounts.';
+
+    my $email2 = 'belgium@binary.com';
+
+    my $user2 = BOM::User->create(
+        email    => $email2,
+        password => '1234',
+    );
+
+    # Create MLT account (Belgium) since MLT can upgrade to maltainvest then mlt
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+        residence   => 'be',
+        email       => $email2
+    });
+
+    $user2->add_client($client2);
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client2->loginid);
+
+    # Test 4
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['malta'], 'Client can upgrade to malta.';
+
+    $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+        residence   => 'be',
+        email       => $email2
+    });
+
+    $user2->add_client($client2);
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client2->loginid);
+
+    # Test 5
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, [], 'Client has upgraded all accounts.';
+
 };
 
 my $new_token;

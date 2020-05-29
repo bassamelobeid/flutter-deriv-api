@@ -352,6 +352,7 @@ filters out different landing company siblings
 
 sub filter_siblings_by_landing_company {
     my ($landing_company_name, $siblings) = @_;
+
     return {map { $_ => $siblings->{$_} } grep { $siblings->{$_}->{landing_company_name} eq $landing_company_name } keys %$siblings};
 }
 
@@ -368,6 +369,7 @@ sub get_available_currencies {
 
     # Get all the currencies (as per the landing company) and from client
     my $legal_allowed_currencies = LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies;
+
     my @client_currencies = map { $siblings->{$_}->{currency} } keys %$siblings;
 
     # Get available currencies for this landing company
@@ -424,11 +426,17 @@ sub validate_make_new_account {
 
     return create_error_by_code('InvalidResidence') if ($countries_instance->restricted_country($residence));
 
-    if ($client->is_virtual && $account_type eq 'financial' && $gaming_company && ($financial_company // '') eq 'maltainvest') {
+    if (   $client->is_virtual
+        && $account_type eq 'financial'
+        && $gaming_company
+        && $gaming_company ne 'malta'
+        && ($financial_company // '') eq 'maltainvest')
+    {
         # if the gaming_company is none this means that the user can create an maltainvest account without
         # needs to create an MX account first from an virtual account.
         # if the gaming_company has some data, the client needs first create the gaming account and after that
         # create the financial account, can't create the financial account from the virtual account directly.
+        # if the gaming_company is malta the user can create MLT and MF from virual.
         return permission_error();
     }
 
@@ -463,7 +471,7 @@ sub validate_make_new_account {
     # directly from virtual for Germany as residence, from iom
     # or from maltainvest itself as we support multiple account now
     # so upgrade is only allow once
-    if (($account_type and $account_type eq 'financial') and $landing_company_name =~ /^(?:malta|iom)$/) {
+    if (($account_type and $account_type eq 'financial') and $landing_company_name =~ /^(?:malta|iom|maltainvest)$/) {
         # return error if client already has maltainvest account
         return create_error_by_code('FinancialAccountExists')
             if (grep { $siblings->{$_}->{landing_company_name} eq 'maltainvest' } keys %$siblings);
@@ -473,6 +481,17 @@ sub validate_make_new_account {
         # if from malta and account type is maltainvest, assign
         # maltainvest to landing company as client is upgrading
         $landing_company_name = 'maltainvest';
+
+    }
+
+    # If from maltainvest and account type is gaming, assign
+    # malta to landing company as client is able to have both
+    # gaming and financial without upgrading.
+    if (    ($account_type and $account_type eq 'real')
+        and ($gaming_company and $gaming_company eq 'malta')
+        and $landing_company_name =~ /^maltainvest$/)
+    {
+        $landing_company_name = 'malta';
     }
 
     if ($client->is_virtual) {
