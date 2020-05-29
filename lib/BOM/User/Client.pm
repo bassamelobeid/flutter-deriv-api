@@ -3650,6 +3650,114 @@ sub anonymize_associated_user_return_list_of_siblings {
         })->@*;
 }
 
+=head2 get_comments
+
+Returns a list of comments for a given client
+
+=cut
+
+sub get_comments {
+    my ($self, $section) = @_;
+
+    $self->set_db('replica');
+
+    my $sql      = q{SELECT * FROM betonmarkets.get_client_comments(?, ?)};
+    my $comments = $self->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($self->loginid, $section);
+            return $sth->fetchall_arrayref({});
+        });
+    return $comments // [];
+}
+
+=head2 add_comment
+
+Add a new MLRO comment for a given client
+
+=cut
+
+sub add_comment {
+    my ($self, %args) = @_;
+
+    my $old_db = $self->get_db;
+    $self->set_db('write') if 'write' ne $old_db;
+
+    die "CommentRequired\n" unless $args{comment};
+    die "AuthorRequired\n"  unless $args{author};
+
+    $args{section} //= '';
+    $args{creation_time} //= Date::Utility->new->datetime;
+
+    my $sql    = q{SELECT * FROM betonmarkets.add_client_comment(?,?,?,?,?)};
+    my $result = $self->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($self->loginid, @args{qw(comment author section creation_time)});
+            return $sth->fetch->[0];
+        });
+
+    $self->set_db($old_db) if 'write' ne $old_db;
+
+    return $result;
+}
+
+=head2 edit_comment
+
+Adjust an existing MLRO comment with a specified ID
+
+=cut
+
+sub update_comment {
+    my ($self, %args) = @_;
+
+    my $old_db = $self->get_db;
+    $self->set_db('write') if 'write' ne $old_db;
+
+    die "CommentRequired\n"   unless $args{comment};
+    die "AuthorRequired\n"    unless $args{author};
+    die "CommentIDRequired\n" unless $args{id};
+    die "ChecksumRequired\n"  unless $args{checksum};
+
+    my $sql    = q{SELECT * FROM betonmarkets.update_client_comment(?,?,?,?)};
+    my $result = $self->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute(@args{qw(id comment author checksum)});
+            return $sth->fetch->[0];
+        });
+    $self->set_db($old_db) if 'write' ne $old_db;
+
+    return $result;
+}
+
+=head2 delete_comment
+
+Remove a MLRO comment by ID
+
+=cut
+
+sub delete_comment {
+    my ($self, $id, $checksum) = @_;
+
+    my $old_db = $self->get_db;
+    $self->set_db('write') if 'write' ne $old_db;
+
+    die "CommentIDRequired\n" unless $id;
+    die "ChecksumRequired\n"  unless $checksum;
+
+    my $sql    = q{SELECT * FROM betonmarkets.delete_client_comment(?, ?)};
+    my $result = $self->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($id, $checksum);
+            return $sth->fetch->[0];
+        });
+    $self->set_db($old_db) if 'write' ne $old_db;
+
+    return $result;
+}
+
 =head2 lifetime_internal_withdrawals
 
 Gets the total amount of internal transfer (withdrawal)
