@@ -26,6 +26,9 @@
          "phone_idd" : {
             "type" : "integer"
          },
+         "tin_format" : {
+            "type" : "array"
+         },
          "text" : {
             "type" : "string"
          },

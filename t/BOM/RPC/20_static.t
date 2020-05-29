@@ -18,9 +18,10 @@ subtest 'residence_list' => sub {
     is_deeply(
         $cn,
         {
-            'value'     => 'cn',
-            'text'      => "China",
-            'phone_idd' => '86'
+            'value'      => 'cn',
+            'text'       => "China",
+            'phone_idd'  => '86',
+            'tin_format' => ['^\d{17}[Xx\d]$', '^[CcWwHhMmTt]\d{16}[xX\d]$', '^[Jj]\d{14}$', '^(\d{15}|\d{18})$', '^\d{8}\w{10}$'],
         },
         'cn is correct'
     );

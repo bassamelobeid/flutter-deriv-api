@@ -72,12 +72,12 @@ rpc residence_list => sub {
         next if $country_code eq '';
         my $country_name = $country_selection->{translated_name};
         my $phone_idd    = $countries->idd_from_code($country_code);
-
-        my $option = {
+        my $tin_format   = $countries_instance->get_tin_format($country_code);
+        my $option       = {
             value => $country_code,
             text  => $country_name,
-            $phone_idd ? (phone_idd => $phone_idd) : ()};
-
+            $phone_idd  ? (phone_idd  => $phone_idd)  : (),
+            $tin_format ? (tin_format => $tin_format) : ()};
         if ($countries_instance->restricted_country($country_code)) {
             $option->{disabled} = 'DISABLED';
         } elsif (request()->country_code eq $country_code) {

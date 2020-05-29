@@ -319,12 +319,23 @@ async_rpc "mt5_new_account",
             and $countries_instance->is_tax_detail_mandatory($residence)
             and not $client->status->crs_tin_information);
     }
-
     if ($account_type ne 'demo' and $company_name eq 'labuan' and not $client->fully_authenticated()) {
         $client->status->set('allow_document_upload', 'system', 'Allow client to document upload');
         return create_error_future('AuthenticateAccount');
     }
-
+    if ($client->tax_residence and $account_type ne 'demo' and $group eq 'real\labuan_advanced') {
+        # In case of having more than a tax residence, client residence will be replaced.
+        my $selected_tax_residence = $client->tax_residence =~ /\,/g ? $client->residence : $client->tax_residence;
+        my $tin_format = $countries_instance->get_tin_format($selected_tax_residence);
+        if (    $countries_instance->is_tax_detail_mandatory($selected_tax_residence)
+            and $client->tax_identification_number
+            and $tin_format)
+        {
+            # Some countries has multiple tax format and we should check all of them
+            my $client_tin = $countries_instance->clean_tin_format($client->tax_identification_number);
+            stats_inc('bom_rpc.v_3.new_mt5_account.called_with_wrong_TIN_format.count') unless (any { $client_tin =~ m/$_/ } @$tin_format);
+        }
+    }
     # Check if client is throttled before sending MT5 request
     if (_throttle($client->loginid)) {
         return create_error_future('Throttle', {override_code => $error_code});

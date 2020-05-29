@@ -407,7 +407,9 @@
       },
       "config" : {
          "required" : [
-            "tax_details_required"
+            "tax_details_required",
+            "tin_format",
+            "tin_format_description"
          ],
          "properties" : {
             "tax_details_required" : {
@@ -416,6 +418,12 @@
                   1
                ],
                "type" : "integer"
+            },
+            "tin_format" : {
+                "type" : "array"
+            },
+            "tin_format_description" : {
+                "type" : "string"
             }
          },
          "type" : "object",

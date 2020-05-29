@@ -24,6 +24,7 @@ use BOM::User::FinancialAssessment qw(is_section_complete update_financial_asses
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use BOM::RPC::Registry '-dsl';
 
@@ -1181,7 +1182,7 @@ rpc set_settings => sub {
     # TODO Please rename this to updated_fields once you refactor this function to remove deriv set settings email.
     my $updated_fields_for_track = _find_updated_fields($params);
 
-    my $brand = request()->brand;
+    my $countries_instance = request()->brand->countries_instance();
     my ($residence, $allow_copiers) =
         ($args->{residence}, $args->{allow_copiers});
     my $tax_residence             = $args->{'tax_residence'}             // '';
@@ -1193,7 +1194,7 @@ rpc set_settings => sub {
         # - email_consent (common to real account as well)
         if (not $current_client->residence and $residence) {
 
-            if ($brand->countries_instance->restricted_country($residence)) {
+            if ($countries_instance->restricted_country($residence)) {
                 return BOM::RPC::v3::Utility::create_error_by_code('InvalidResidence');
             } else {
                 $current_client->residence($residence);
@@ -1218,7 +1219,7 @@ rpc set_settings => sub {
         return BOM::RPC::v3::Utility::create_error_by_code($error->{error}) if $error;
         # This can be a comma-separated list - if that's the case, we'll just use the first failing residence in
         # the error message.
-        if (my $bad_residence = first { $brand->countries_instance->restricted_country($_) } split /,/, $tax_residence || '') {
+        if (my $bad_residence = first { $countries_instance->restricted_country($_) } split /,/, $tax_residence || '') {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'RestrictedCountry',
                     message_to_client => localize('The supplied tax residence "[_1]" is in a restricted country.', $bad_residence)});
@@ -1300,6 +1301,13 @@ rpc set_settings => sub {
                 localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')}
     ) if ($current_client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
 
+    # Shold not allow client to change TIN number if we have TIN format for the country and it doesnt match
+    # In case of having more than a tax residence, client residence will replaced.
+    my $selected_tax_residence = $tax_residence =~ /\,/g ? $current_client->residence : $tax_residence;
+    if ($selected_tax_residence and $tax_identification_number and (my $tin_format = $countries_instance->get_tin_format($selected_tax_residence))) {
+        my $client_tin = $countries_instance->clean_tin_format($tax_identification_number, $selected_tax_residence) // '';
+        stats_inc('bom_rpc.v_3.set_settings.called_with_wrong_TIN_format.count') unless any { $client_tin =~ m/$_/ } @$tin_format;
+    }
     my $now                    = Date::Utility->new;
     my $address1               = $args->{'address_line_1'} // $current_client->address_1;
     my $address2               = ($args->{'address_line_2'} // $current_client->address_2) // '';
