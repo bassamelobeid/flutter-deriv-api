@@ -306,18 +306,17 @@ rpc new_account_real => sub {
 
     $args->{client_type} //= 'retail';
 
-    $client->residence($args->{residence}) unless $client->residence;
-    my $countries_instance = request()->brand->countries_instance;
-
-    # send error if maltainvest client tried to make this call except whom has malta as gaming company
+    # send error if maltainvest client tried to make this call
     # as they have their own separate api call for account opening
     return BOM::RPC::v3::Utility::permission_error()
-        if ($client->landing_company->short eq 'maltainvest' and not $countries_instance->gaming_company_for_country($client->residence) eq 'malta');
+        if $client->landing_company->short eq 'maltainvest';
 
+    $client->residence($args->{residence}) unless $client->residence;
     my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'real', $args);
     return $error if $error;
 
-    my $company = $countries_instance->gaming_company_for_country($client->residence)
+    my $countries_instance = request()->brand->countries_instance;
+    my $company            = $countries_instance->gaming_company_for_country($client->residence)
         // $countries_instance->financial_company_for_country($client->residence);
     my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
