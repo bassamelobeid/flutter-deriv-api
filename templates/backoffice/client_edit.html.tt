@@ -294,9 +294,35 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </td>
     </tr>
     <tr>
-        <td class="label">Tax Identification Number</td>
-        <td>: <input type="text" name="tax_identification_number" value="[% client.tax_identification_number %]" size="10" /></td>
+        <td class="label" style="padding-top:13px;">Tax Identification Number</td>
+        <td>
+            <table style="float:left;">
+                <tbody>
+                    <tr>
+                        <td>: <input type="text" name="tax_identification_number" value="[% tax_identification_number %]" size="15" /></td>
+                        <td>
+                            [% IF is_valid_tin %]
+                                <td style="color:green;">Tax format is correct</td>
+                            [% END %]
+                            [% IF tin_validation_required AND not is_valid_tin %]
+                                <td style="color: red;">Tax format is not provided or invalid</td>
+                            [% END %]
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </td>
     </tr>
+    [% IF tin_validation_required %]
+        <tr>
+            <td class="label">Tax Identification Format</td>
+            <td>: [% tin_format_info %]</td>
+        </tr>
+        <tr>
+            <td class="label">Tips</td>
+            <td>: X = letter, 9 = digit, / = or </td>
+        </tr>
+    [% END %]
     <tr>
         <td class="small_header" colspan="2">#KYC/IDENTITY VERIFICATION</td>
     </tr>

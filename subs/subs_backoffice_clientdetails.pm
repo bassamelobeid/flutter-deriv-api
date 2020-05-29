@@ -290,9 +290,26 @@ sub print_client_details {
         $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>|;
     }
 
-    my $tnc_status     = $client->status->tnc_approval;
-    my $crs_tin_status = $client->status->crs_tin_information;
-
+    my $tnc_status              = $client->status->tnc_approval;
+    my $crs_tin_status          = $client->status->crs_tin_information;
+    my $is_valid_tin            = 0;
+    my $tin_validation_required = 0;
+    my $tin_format_description;
+    my $country = request()->brand->countries_instance();
+    # Remove leading and trailing space
+    my $tax_identification_number = $client->tax_identification_number;
+    $tax_identification_number =~ s/^\s+|\s+$//g if $tax_identification_number;
+    if ($client->tax_residence) {
+        # In case of having more than a tax residence, client residence will replaced.
+        my $selected_tax_residence = $client->tax_residence =~ /\,/g ? $client->residence : $client->tax_residence;
+        my $tin_format = $country->get_tin_format($selected_tax_residence);
+        if ($tin_format) {
+            $tin_format_description = $country->get_tin_format_description($selected_tax_residence) // 'Please check TIN documents';
+            my $client_tin = $country->clean_tin_format($tax_identification_number) // '';
+            $is_valid_tin = any { $client_tin =~ m/$_/ } @$tin_format;
+            $tin_validation_required = 1;
+        }
+    }
     my @tax_residences =
         $client->tax_residence
         ? split ',', $client->tax_residence
@@ -346,9 +363,13 @@ sub print_client_details {
         state_options                      => set_selected_item($client->state, $stateoptions),
         client_state                       => $state_name,
         tnc_approval_status                => $tnc_status,
+        is_valid_tin                       => $is_valid_tin,
+        tin_format_info                    => $tin_format_description,
+        tin_validation_required            => $tin_validation_required,
         ukgc_funds_status                  => $client->status->ukgc_funds_protection,
         tax_residence                      => \@tax_residences,
         tax_residences_countries_name      => $tax_residences_countries_name,
+        tax_identification_number          => $tax_identification_number,
         cashier_allow_payment_agent_status => $client->status->pa_withdrawal_explicitly_allowed,
         address_verification_status        => $client->status->address_verified,
         onfido_check_result                => $onfido_check->{result},
