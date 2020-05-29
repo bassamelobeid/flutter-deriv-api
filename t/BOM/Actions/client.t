@@ -11,6 +11,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::Test::Email;
 use BOM::Database::UserDB;
+use BOM::Database::ClientDB;
 use BOM::User;
 use BOM::Test::Script::OnfidoMock;
 use BOM::Platform::Context qw(request);
@@ -326,6 +327,16 @@ subtest 'client_verification after upload document himself' => sub {
             $result->execute($test_client2->binary_user_id, $applicant_id2);
             return $result->fetchall_hashref('id');
         });
+
+    my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
+    my $doc_file_name = $clientdb->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare('select file_name from betonmarkets.client_authentication_document where client_loginid=? and document_type=?');
+            $sth->execute($test_client2->loginid, 'photo');
+            return $sth->fetchall_arrayref({})->[0]{file_name};
+        });
+
+    like ($doc_file_name, qr{\.jpg$}, 'uploaded document has expected jpg extension');
 
     is_deeply([keys %$existing_onfido_docs], [$doc->id], 'now the doc is stored in db');
 

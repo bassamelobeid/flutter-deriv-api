@@ -746,8 +746,19 @@ async sub _sync_onfido_bo_document {
         die "Unsupported document type";
     }
 
-    my $file_type    = $onfido_res->file_type;
-    my $fh           = File::Temp->new(DIR => '/var/lib/binary');
+    my $file_type = lc $onfido_res->file_type;
+    ## Convert to a better extension in case it comes back as image/*
+    ## Media::Type::Simple is buggy, else we might have considered it here
+    if ($file_type =~ m{/jpe?g}i) {
+        $file_type = 'jpg';
+    } elsif ($file_type =~ m{/png}i) {
+        $file_type = 'png';
+    } elsif ($file_type !~ /^[a-z]{3,4}$/) {
+        ## If we are sent anything else not a three-or-four-letter code, throw a warning
+        $log->warnf('Unexpected file type "%s"', $file_type);
+    }
+
+    my $fh = File::Temp->new(DIR => '/var/lib/binary');
     my $tmp_filename = $fh->filename;
     print $fh $image_blob;
     seek $fh, 0, 0;
