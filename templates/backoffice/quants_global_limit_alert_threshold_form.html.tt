@@ -8,6 +8,7 @@
 
 <p>Update alert threshold with the tool below:</p>
 
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table id="global_limits_threshold_form">
     <tr>
         <td>
@@ -24,6 +25,7 @@
         <td class="result"></td>
     </tr>
 </table>
+</fieldset>
 
 <script>
     function SaveThreshold() {

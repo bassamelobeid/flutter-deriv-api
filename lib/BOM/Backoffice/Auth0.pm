@@ -87,6 +87,10 @@ sub has_authorisation {
     return 0;
 }
 
+sub has_quants_write_access {
+    return has_authorisation(['QuantsWrite']);
+}
+
 =head2 check_staff
 
 Will get the logged in staff info from the Redis server or return C<undef>.

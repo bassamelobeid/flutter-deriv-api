@@ -214,7 +214,8 @@ sub is_dividend_in_bounds {
 }
 
 sub generate_dividend_upload_form {
-    my $args = shift;
+    my $args           = shift;
+    my $disabled_write = shift;
 
     my $form;
     BOM::Backoffice::Request::template()->process(
@@ -222,6 +223,7 @@ sub generate_dividend_upload_form {
         {
             broker     => $args->{broker},
             upload_url => $args->{upload_url},
+            disabled   => $disabled_write,
         },
         \$form
     ) || die BOM::Backoffice::Request::template()->error;

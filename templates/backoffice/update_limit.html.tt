@@ -1,5 +1,6 @@
 <p>Update custom limits (Please set either risk profile or commission for your entry): </p>
 <form action="[% url | none %]" method="POST">
+    <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr>
             <td>Name: </td>
@@ -75,11 +76,13 @@
             <td><input type="submit" name="update_limit" value="Update"></td>
         </tr>
     </table>
+    </fieldset>
 </form>
 
 <p>Delete custom limit by ID: </p>
 
 <form action="[% url | none %]" method="POST">
+    <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr>
             <td>ID: </td>
@@ -95,11 +98,13 @@
             <td><input type="submit" name="delete_limit" value="Update"></td>
         </tr>
     </table>
+    </fieldset>
 </form>
 
 <p>Delete client from custom client limits: </p>
 
 <form action="[% url | none %]" method="POST">
+    <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr>
             <td>Client loginid: </td>
@@ -110,4 +115,5 @@
             <td><input type="submit" name="delete_client" value="Update"></td>
         </tr>
     </table>
+    </fieldset>
 </form>

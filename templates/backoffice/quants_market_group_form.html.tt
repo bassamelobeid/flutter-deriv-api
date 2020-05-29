@@ -5,6 +5,7 @@
     <li>new category: set contract type's group as 'new category'. This is used to limit new product.</li>
 </ul>
 
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table id="market_group_form">
     <tr>
         <td>Underlying symbol: </td>
@@ -33,6 +34,7 @@
         <td><button onClick="UpdateMarketGroup()" type="button">Update</button></td><td class="result"></td>
     </tr>
 </table>
+</fieldset>
 
 <script>
     function UpdateMarketGroup() {

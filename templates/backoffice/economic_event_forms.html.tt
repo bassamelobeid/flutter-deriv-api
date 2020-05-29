@@ -35,15 +35,15 @@
 
 <p><H2>Add New Economic Event</H2></p>
 
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table id='economic_event_form'>
     <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR)</td></tr>
     <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. epoch or 2012-11-14 01:15:00.)</td></tr>
     <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
     <INPUT type="hidden" name="source" value="binary">
     <tr><td></td><td><button onclick="saveEvent()">Save</td><td class='save_result'></td></tr>
-
 </table>
-
+</fieldset>
 
 <p><H2>Economic Event Factors</H2></p>
     
@@ -52,13 +52,19 @@
 <p>Display for date: <select onchange="updateTable(this.value)">[% FOREACH date IN dates %]<option value="[% date %]">[% date %]</option>[% END %]</select></p>
 
 <p><b>List of Scheduled Categorized Economic Events</b></p>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <div id='scheduled_event_list'></div>
+</fieldset>
 
 <p><b>List of Scheduled Uncategorized Economic Events</b></p>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <div id='scheduled_uncategorized_event_list'></div>
+</fieldset>
 
 <p><b>List of Deleted Economic Events</b></p>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <div id='deleted_event_list'></div>
+</fieldset>
 
 <script>
     var underlyings = [% underlying_symbols | none %];

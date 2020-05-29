@@ -21,8 +21,15 @@ BOM::Backoffice::Sysinit::init();
 my $staff = BOM::Backoffice::Auth0::get_staffname();
 my $r     = request();
 
+my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+
 if ($r->param('save_multiplier_config')) {
     my $output;
+    if ($disabled_write) {
+        $output = {error => "permission denied: no write access"};
+        print encode_json_utf8($output);
+        return;
+    }
     try {
         my $symbol = $r->param('symbol') // die 'symbol is undef';
         my $multiplier_config = {

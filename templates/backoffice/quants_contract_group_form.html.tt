@@ -5,6 +5,7 @@
     <li>new category: set contract type's group as 'new category'. This is used to limit new product.</li>
 </ul>
 
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table id="contract_group_form">
     <tr>
         <td>Contract type: </td>
@@ -24,6 +25,7 @@
         <td><button onClick="UpdateContractGroup()" type="button">Update</button></td><td class="result"></td>
     </tr>
 </table>
+</fieldset>
 
 <p><b>IMPORTANT NOTICE! Please read!</b></p>
 <p>Rebuilding open and closed aggregate tables will lock buy & sell transactions. Please read the following carefully:</p>

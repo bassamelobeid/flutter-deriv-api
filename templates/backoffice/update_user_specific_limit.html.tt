@@ -1,6 +1,7 @@
 <p>Update user specific limits: </p>
 [% IF update_error %]<p style="color: red;">[% update_error %]</p>[% END %]
 <form action="[% url | none %]" method="POST" onsubmit="return validate_date()">
+    <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr>
             <td>Client Login ID: </td>
@@ -36,6 +37,7 @@
             <td><input type="submit" name="new_user_limit" value="Add New Limit/Update"></td>
         </tr>
     </table>
+    </fieldset>
 </form>
 
 <script>
@@ -64,6 +66,7 @@
 
 [% IF delete_error %]<p style="color: red;">[% delete_error %]</p>[% END %]
 <form action="[% url | none %]" method="POST">
+    <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr>
             <td>Client Login ID: </td>
@@ -84,4 +87,5 @@
             <td><input type="submit" name="delete_limit" value="Delete"></td>
         </tr>
     </table>
+    </fieldset>    
 </form>

@@ -37,6 +37,7 @@
 </ul>
 
 <br/><br/>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table class="pretty">
     <tr>
         <th>Market</th>
@@ -92,6 +93,7 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
         </td>
     </tr>
 </table>
+</fieldset>
 
 </br></br>
 <p><b>Landing company wide limits</b></p>

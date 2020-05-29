@@ -1,9 +1,11 @@
 <p> Upload Excel file representing correlations for indicies and payout currencies (AUD|EUR|GBP|USD) from SuperDerivatives </p> 
 <form action="[% upload_url | none %]" method="POST" enctype="multipart/form-data" id="upload_correlations_excel_form">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr><td colspan=2><INPUT type=hidden name="broker" value="[% broker %]"></td></tr>
         <tr><td colspan=2><INPUT type=hidden name="whattodo" value="process_superderivatives_correlations"></td></tr>
         <tr><td>Please select the file to upload</td><td><INPUT type="file" name="filetoupload" id="upload_correlations_excel_file_field" value="" size="45"></td></tr>
         <tr><td colspan=2><INPUT type="submit" id="upload_correlations_excel_submit" value="Process Excel File"></td></tr>
     </table>
+</fieldset>
 </form>

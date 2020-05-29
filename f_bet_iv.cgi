@@ -30,6 +30,9 @@ PrintContentType();
 BrokerPresentation('I.V. DATABASE');
 my $broker = request()->broker_code;
 
+my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $disabled = $disabled_write ? "disabled title='no write access'" : "";
+
 Bar("Update volatilities");
 my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names;
 print get_update_volatilities_form({'all_markets' => \@all_markets});
@@ -77,7 +80,7 @@ print qq~<br><form method=post action=$request_files_upload_url>
             <option value=request>request file</option>
             <option value=cancel>cancel file</option>
         </select>
-    <input type=submit value='Upload Request files'>
+    <input type=submit $disabled value='Upload Request files'>
     <br><font color=gray>Note 1: Type of request options:
     <br> Scheduled: Select this option if you would like those master request files to be run with scheduled program flag such as daily, weekday and weekend and repeatly based on the flag.
     <br> Oneshot: Select this option if you just want to upload those master request files with program flag one shot and it will not repeat.
@@ -92,7 +95,7 @@ print qq~<P><LI>
 <input type=hidden name=broker value=~ . encode_entities($broker) . qq~>
 Upload a file to the Bloomberg Data License FTP folder:<br>
 Filename: <input type=text size=20 name=filename value='scheduled.req'>
-<input type=submit value='Upload File'><br>
+<input type=submit $disabled value='Upload File'><br>
 <textarea rows=10 cols=90 name=bbdl_file_content>START-OF-FILE
 FIRMNAME=dl623471
 REPLYFILENAME=scheduled.out
@@ -114,9 +117,11 @@ Download Filename: <input type=text size=20 name=filename value='scheduled.out'>
 # Currently we can get a list of forecast dividend from Bloomberg but in excel format
 Bar("Upload Dividend");
 print generate_dividend_upload_form({
-    broker     => $broker,
-    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
-});
+        broker     => $broker,
+        upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+    },
+    $disabled_write
+);
 
 # Upload calendar
 #
@@ -128,6 +133,7 @@ BOM::Backoffice::Request::template()->process(
     {
         broker     => $broker,
         upload_url => request()->url_for('backoffice/f_upload_holidays.cgi'),
+        disabled   => $disabled_write,
     },
     \$form
 ) || die BOM::Backoffice::Request::template()->error();
@@ -138,9 +144,11 @@ print $form;
 # Currently we can get a table of correlation data from SuperDerivatives but in excel format
 Bar("Upload Correlations");
 print generate_correlations_upload_form({
-    broker     => $broker,
-    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
-});
+        broker     => $broker,
+        upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+    },
+    $disabled_write
+);
 
 Bar('Price Preview');
 print BOM::Backoffice::PricePreview::generate_form(request()->url_for('backoffice/quant/market_data_mgmt/update_price_preview.cgi'));
@@ -151,11 +159,13 @@ print BOM::Backoffice::EconomicEventPricePreview::generate_economic_event_form(
 
 Bar("Update the news events database");
 print BOM::Backoffice::EconomicEventTool::generate_economic_event_tool(
-    request()->url_for('backoffice/quant/market_data_mgmt/update_economic_events.cgi'));
+    request()->url_for('backoffice/quant/market_data_mgmt/update_economic_events.cgi'),
+    $disabled_write);
 
 Bar("Custom Commission Tool");
 print BOM::Backoffice::CustomCommissionTool::generate_commission_form(
-    request()->url_for('backoffice/quant/market_data_mgmt/update_custom_commission.cgi'));
+    request()->url_for('backoffice/quant/market_data_mgmt/update_custom_commission.cgi'),
+    $disabled_write);
 
 code_exit_BO();
 

@@ -40,10 +40,13 @@ my $broker_db = BOM::Database::ClientDB->new({
 # reassign this via the function just before display.
 my $expired_unsold = current_unsaleable($broker_db);
 
+my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+
 if (request()->param('perform_actions')) {
     try {
         my $staff_name = BOM::Backoffice::Auth0::get_staffname();
         die 'Do not know who you are; cannot proceed' unless $staff_name;
+        die "permission denied: no write access" if $disabled_write;
         foreach my $todo (grep { /^fmb_/ } (keys %{request()->params})) {
             my $action = request()->param($todo);
             next if ($action eq 'skip');
@@ -92,6 +95,7 @@ if (request()->param('perform_actions')) {
 my $cancel_info = {};
 $cancel_info->{unsettled}   = current_unsaleable($broker_db);
 $cancel_info->{broker_code} = request()->param('broker');
+$cancel_info->{disabled}    = $disabled_write;
 BOM::Backoffice::Request::template()->process('backoffice/settle_contracts.html.tt', $cancel_info);
 
 code_exit_BO();

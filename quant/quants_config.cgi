@@ -45,6 +45,8 @@ my $supported_config = $quants_config->supported_config_type;
 
 my @config_status = BOM::Backoffice::QuantsConfigHelper::get_global_config_status();
 
+my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+
 Bar('Quants Config Switch');
 
 BOM::Backoffice::Request::template()->process(
@@ -53,6 +55,7 @@ BOM::Backoffice::Request::template()->process(
         upload_url    => request()->url_for('backoffice/quant/update_quants_config.cgi'),
         config_status => \@config_status,
         old_config    => $old_config,
+        disabled      => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
 Bar('Quants Config');
@@ -97,6 +100,7 @@ BOM::Backoffice::Request::template()->process(
             limit_types       => \@limit_types,
             landing_companies => $json->encode(BOM::Backoffice::QuantsConfigHelper::get_config_input('landing_company')),
         },
+        disabled => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
 my $available_user_limits = $quants_config->supported_config_type->{per_user};
@@ -116,6 +120,7 @@ BOM::Backoffice::Request::template()->process(
         data       => {
             duration => Time::Duration::Concise->new(interval => $app_config->quants->ultra_short_duration)->as_string(),
         },
+        disabled => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
 Bar('Update Contract Group');
@@ -123,6 +128,7 @@ BOM::Backoffice::Request::template()->process(
     'backoffice/quants_contract_group_form.html.tt',
     {
         upload_url => request()->url_for('backoffice/quant/update_quants_config.cgi'),
+        disabled   => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
 Bar('Update Market Group');
@@ -130,6 +136,7 @@ BOM::Backoffice::Request::template()->process(
     'backoffice/quants_market_group_form.html.tt',
     {
         upload_url => request()->url_for('backoffice/quant/update_quants_config.cgi'),
+        disabled   => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
 my $available_global_limits = $quants_config->supported_config_type->{per_landing_company};
@@ -150,6 +157,7 @@ BOM::Backoffice::Request::template()->process(
             global_limits  => $available_global_limits,
             current_limits => \%current_global_limits,
         },
+        disabled => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
 ## PRIVATE ##
@@ -179,6 +187,7 @@ BOM::Backoffice::Request::template()->process(
             user_limits    => $available_user_limits,
             current_limits => \%current_user_limits,
         },
+        disabled => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
 my $db = BOM::Database::ClientDB->new({broker_code => $broker})->db;
@@ -192,6 +201,7 @@ if ($r->params->{'new_user_limit'}) {
     if ($r->params->{market_type} !~ /^(?:financial|non_financial)$/ or $r->params->{client_type} !~ /^(?:old|new)$/) {
         $update_error = 'Market Type and Client Type are required parameters with restricted values';
     }
+    $update_error = "permission denied: no write access" if $disabled_write;
 
     BOM::Backoffice::QuantsAuditLog::log($staff, "updatenewclientlimit",
               "client_lodinid:"
@@ -225,6 +235,7 @@ if ($r->params->{'delete_limit'}) {
     if ($r->params->{market_type} !~ /^(?:financial|non_financial)$/ or $r->params->{client_type} !~ /^(?:old|new)$/) {
         $delete_error = 'Market Type and Client Type are required parameters with restricted values';
     }
+    $delete_error = "permission denied: no write access" if $disabled_write;
 
     $args_content = join(q{, }, map { qq{$_ => $r->params->{$_}} } keys %{$r->params});
     BOM::Backoffice::QuantsAuditLog::log($staff, "deleteclientlimit", $args_content);
@@ -240,7 +251,7 @@ if ($r->params->{'delete_limit'}) {
 }
 
 my $delete_multiple_error;
-if ($r->params->{'delete_multiple'}) {
+if ($r->params->{'delete_multiple'} and not $disabled_write) {
     my $ids = ref($r->params->{id}) ne 'ARRAY' ? [$r->params->{id}] : $r->params->{id};
 
     foreach my $data (@$ids) {
@@ -272,4 +283,5 @@ BOM::Backoffice::Request::template()->process(
         default_user_limit => $default_user_limit,
         update_error       => $update_error,
         delete_error       => $delete_error,
+        disabled           => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;

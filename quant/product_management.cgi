@@ -55,9 +55,11 @@ my %allowed_multiple = (
 my $current_config           = $app_config->get(['quants.custom_client_profiles', 'quants.custom_product_profiles']);
 my $current_client_profiles  = $json->decode($current_config->{'quants.custom_client_profiles'});
 my $current_product_profiles = $json->decode($current_config->{'quants.custom_product_profiles'});
+my $disabled_write           = not BOM::Backoffice::Auth0::has_quants_write_access();
 
 if ($r->param('update_limit')) {
 
+    code_exit_BO("permission denied: no write access") if $disabled_write;
     my $landing_company           = $r->param('landing_company');
     my $contract_category         = $r->param('contract_category');
     my $non_binary_contract_limit = $r->param('non_binary_contract_limit');
@@ -158,6 +160,7 @@ if ($r->param('update_limit')) {
 }
 
 if ($r->param('delete_limit')) {
+    code_exit_BO("permission denied: no write access") if $disabled_write;
     my $id = $r->param('id');
     code_exit_BO('ID is required. Nothing is deleted.') if not $id;
 
@@ -182,6 +185,7 @@ if ($r->param('delete_limit')) {
 }
 
 if ($r->param('delete_client')) {
+    code_exit_BO("permission denied: no write access") if $disabled_write;
     my $client_loginid = $r->param('client_loginid');
     delete $current_client_profiles->{$client_loginid};
     $app_config->set({'quants.custom_client_profiles' => $json->encode($current_client_profiles)});
@@ -238,7 +242,8 @@ Bar("Update Limit");
 BOM::Backoffice::Request::template()->process(
     'backoffice/update_limit.html.tt',
     {
-        url => request()->url_for('backoffice/quant/product_management.cgi'),
+        url      => request()->url_for('backoffice/quant/product_management.cgi'),
+        disabled => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
 Bar("Multiplier Config");
@@ -248,6 +253,7 @@ BOM::Backoffice::Request::template()->process(
     {
         multiplier_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_multiplier_config.cgi'),
         existing_config       => _get_existing_multiplier_config(),
+        disabled              => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
 sub _get_existing_multiplier_config {

@@ -33,17 +33,21 @@ my @users_limit = BOM::Database::Helper::UserSpecificLimit->new({db => $db})->se
 
 my @output = get_limited_client_list($custom_client_limits, @users_limit);
 
+my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+
 BOM::Backoffice::Request::template()->process(
     'backoffice/existing_user_limit.html.tt',
     {
         profit_table_url => request()->url_for('backoffice/f_profit_table.cgi?loginID='),
         url              => request()->url_for('backoffice/quant/client_limit.cgi'),
         output           => \@output,
+        disabled         => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
 my $r = request();
 
 if ($r->params->{'deleteclientlimit'}) {
+    code_exit_BO("permission denied: no write access") if $disabled_write;
     my ($client_id, $market_type, $client_type, $limit_id) = split '-', $r->params->{'deleteclientlimit'};
     my @multiple = split(' ', $client_id);
 

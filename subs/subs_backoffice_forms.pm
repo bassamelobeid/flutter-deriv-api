@@ -36,13 +36,15 @@ sub get_update_interest_rates_form {
 }
 
 sub generate_correlations_upload_form {
-    my $args = shift;
+    my $args           = shift;
+    my $disabled_write = shift;
     my $form;
     BOM::Backoffice::Request::template()->process(
         'backoffice/correlations_upload_form.html.tt',
         {
             broker     => $args->{broker},
             upload_url => $args->{upload_url},
+            disabled   => $disabled_write,
         },
         \$form
     );

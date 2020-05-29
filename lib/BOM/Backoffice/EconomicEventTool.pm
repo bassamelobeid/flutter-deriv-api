@@ -55,7 +55,8 @@ sub get_economic_events_for_date {
 }
 
 sub generate_economic_event_tool {
-    my $url = shift;
+    my $url            = shift;
+    my $disabled_write = shift;
 
     my $events = get_economic_events_for_date(Date::Utility->new);
     my $today  = Date::Utility->new->truncate_to_day;
@@ -67,6 +68,7 @@ sub generate_economic_event_tool {
             ee_upload_url => $url,
             dates         => \@dates,
             %$events,
+            disabled => $disabled_write,
         },
     ) || die BOM::Backoffice::Request::template()->error;
 }

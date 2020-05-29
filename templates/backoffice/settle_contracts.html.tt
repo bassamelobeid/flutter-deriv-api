@@ -4,6 +4,7 @@
 <p><strong>"As Loss"</strong>: sell the contract for <strong>0</strong></p>
 <p><strong>"As Win"</strong>: sell the contract for <strong>full payout</strong></p>
 <form METHOD="POST">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table cellspacing=0 cellpadding=5 border="1">
     <tr>
         <th>Contract Ref. No.</th>
@@ -37,5 +38,6 @@
 <hr/>
 <input type="submit" name="perform_actions"  value="Perform Selected Actions"/>
 <input type="hidden" name="broker"  value="[% broker_code %]"/>
+</fieldset>
 </form>
 </div>

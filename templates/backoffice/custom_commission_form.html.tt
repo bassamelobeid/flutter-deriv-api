@@ -12,6 +12,7 @@
 </ul>
 <p><b>Add new custom commission with the tool below: </b></p>
 
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table id='custom_commission_form'>
     <tr><td>Name</td><td> : <input type="text" name="name"></td><td>Accepts only words and integers (required)</td></tr>
     <tr><td>Start Time</td><td> : <input type="text" name="start_time" id="custom_commission_start_time"></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
@@ -31,6 +32,7 @@
     <tr><td>ITM_max </td><td> : <input type="text" name="ITM_max"></td><td> The commission to be charged if barriers goes out of the tiered commission as spot moves.</td></tr>
     <tr><td></td><button onclick="saveCustom()" style="margin-left: 20px;">Save</button></td><td class="result"></td></tr>
 </table>
+</fieldset>
 
 <div id='custom_commission_table'>
 </div>

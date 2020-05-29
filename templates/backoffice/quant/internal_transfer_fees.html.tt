@@ -210,6 +210,7 @@ window.onload = initialize_values;
 </script>
 
 <form id="fees_form" name="fees_form" action="$action" onsubmit="return validate_input()" method="post">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <input type="hidden" name='_form_submit' value='_form_submit'></input>
 <p style='color:black'><strong>DEFAULT VALUES</strong> <i>(The default transfer fees per currency type in percent)</i></p>
 <p  id='default_msg'>$defaults_msg</p>
@@ -254,4 +255,5 @@ New/updated non-default fees:
 <br/>
 <input type="submit" name='submit' value='Apply Changes'></input>
 <br/>
+</fieldset>
 </form>

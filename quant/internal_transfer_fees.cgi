@@ -49,7 +49,11 @@ my $action = request()->url_for('backoffice/quant/internal_transfer_fees.cgi');
 
 my $defaults_msg = '';
 my $currency_msg = '';
+
+my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+
 if ($submit) {
+    code_exit_BO("permission denied: no write access") if $disabled_write;
     my $new_fee_by_currency = request()->param('fee_by_currency');
     $new_fee_by_currency =~ s/\s//g;
 
@@ -102,7 +106,8 @@ BOM::Backoffice::Request::template()->process(
         crypto_fiat       => $crypto_fiat,
         stable_fiat       => $stable_fiat,
         fee_by_currency   => $fee_by_currency,
-        max_percent       => $max_fee_percent
+        max_percent       => $max_fee_percent,
+        disabled          => $disabled_write,
     });
 
 code_exit_BO();

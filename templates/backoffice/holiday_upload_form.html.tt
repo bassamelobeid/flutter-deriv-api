@@ -1,5 +1,6 @@
 <p><b> Upload Excel file contains exchange or currencies holiday from Bloomberg </b></p> 
 <form  name="upload_file" action="[% upload_url | none %]" method="POST" enctype="multipart/form-data">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr><input type="hidden" name="upload_excel" value="1"></input></tr>
         <tr>
@@ -12,10 +13,12 @@
         <tr><td>Please select the file to upload</td><td><INPUT type="file" name="filetoupload" id="upload_exchnage_currencies_excel_file_field" value="" size="45"></td></tr>
         <tr><td colspan=2><INPUT type="submit" name="upload_exchange_currencies_excel_file" value="Process Excel File"></td></tr>
     </table>
+</fieldset>
 </form>
 <p><b>Manual holiday calendar update tool: </b></p>
 
 <form name="manual_update" action="[% upload_url | none %]" METHOD="POST" ENCTYPE="multipart/form-data">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr><input type="hidden" name="manual_holiday_upload" value="1"></input></tr>
         <tr>
@@ -31,11 +34,13 @@
         <tr><td></td><td><INPUT type="submit" name='save' value="save"></td></tr>
         <tr><td></td><td><INPUT type="submit" name='delete' value="delete"></td></tr>
     </table>
+</fieldset>
 </form>
 
 <p><b>Manual partial trading calendar update tool: </b></p>
 
 <form name="manual_update" action="[% upload_url | none %]" METHOD="POST" ENCTYPE="multipart/form-data">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr><input type="hidden" name="manual_partial_trading_upload" value="1"></input></tr>
         <tr>
@@ -51,6 +56,7 @@
         <tr><td></td><td><INPUT type="submit" name='save' value="save"></td></tr>
         <tr><td></td><td><INPUT type="submit" name='delete' value="delete"></td></tr>
     </table>
+</fieldset>
 </form>
 
 <script type="text/javascript" language="javascript">

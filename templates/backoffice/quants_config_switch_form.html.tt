@@ -1,3 +1,4 @@
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table class='pretty' id='config_status_form'>
     [% IF old_config %]
         <p>Not the latest copy of app config. Please refresh this page!</p>
@@ -15,6 +16,7 @@
         </tr>
     [% END %]
 </table>
+</fieldset>
 
 <script>
     function UpdateConfigStatus(config_type, status){

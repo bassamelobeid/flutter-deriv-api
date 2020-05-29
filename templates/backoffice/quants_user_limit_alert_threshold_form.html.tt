@@ -8,6 +8,7 @@
 
 <p>Update alert threshold with the tool below:</p>
 
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table id="user_limits_threshold_form">
     <tr>
         <td>
@@ -25,6 +26,7 @@
     </tr>
 </table>
 
+</fieldset>
 <script>
     function SaveUserThreshold() {
         var el = \$('table#user_limits_threshold_form');

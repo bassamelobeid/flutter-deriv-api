@@ -1,4 +1,5 @@
 <form id="user-limit-form">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table>
     <tr>
         <td><b>Binary user id &nbsp;</b></td>
@@ -42,6 +43,7 @@
         </tr>
     [% END %]
 </table>
+</fieldset>
 </form>
 
 <script>
