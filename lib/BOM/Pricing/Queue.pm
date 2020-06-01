@@ -284,35 +284,36 @@ async sub process {
     my @all_keys;
     my $cursor = 0;
     my $deleted;
-    KEY_BATCH:
-    do {
-        my $details = await $self->redis->scan(
-            $cursor,
-            match => 'PRICER_KEYS::*',
-            count => $self->keys_per_batch,
-        );
-        ($cursor, my $keys) = $details->@*;
+    KEY_BATCH: {
+        do {
+            my $details = await $self->redis->scan(
+                $cursor,
+                match => 'PRICER_KEYS::*',
+                count => $self->keys_per_batch,
+            );
+            ($cursor, my $keys) = $details->@*;
 
-        # Track these for metrics processing later
-        push @all_keys, $keys->@*;
+            # Track these for metrics processing later
+            push @all_keys, $keys->@*;
 
-        # Defer the delete until after we have the first batch
-        # of keys - might as well give pricers as much opportunity
-        # to finish up as possible
-        await $self->redis->del('pricer_jobs') unless $deleted++;
+            # Defer the delete until after we have the first batch
+            # of keys - might as well give pricers as much opportunity
+            # to finish up as possible
+            await $self->redis->del('pricer_jobs') unless $deleted++;
 
-        await $self->submit_jobs($keys);
+            await $self->submit_jobs($keys);
 
-        # We may have a *lot* of keys, and the processing time here
-        # could vary significantly. We can't assume that we get through
-        # the full list within the allotted time, nice though that would
-        # be, so we check for that here.
-        my $now = Time::HiRes::time();
-        if (($now - $start) > 0.8 * $self->pricing_interval) {
-            $log->errorf('Too many keys, we have used 80% of the pricing interval so we are bailing out');
-            last KEY_BATCH;
-        }
-    } while $cursor;
+            # We may have a *lot* of keys, and the processing time here
+            # could vary significantly. We can't assume that we get through
+            # the full list within the allotted time, nice though that would
+            # be, so we check for that here.
+            my $now = Time::HiRes::time();
+            if (($now - $start) > 0.8 * $self->pricing_interval) {
+                $log->error('Too many keys, we have used 80% of the pricing interval so we are bailing out');
+                last KEY_BATCH;
+            }
+        } while $cursor;
+    }
 
     $log->trace('pricer_jobs queue updating...');
 
