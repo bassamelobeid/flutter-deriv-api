@@ -122,7 +122,7 @@ open contract data.
 
 sub contract_redis {
     my ($self) = @_;
-    return $self->{contract_redis} //= $self->redis_instance(BOM::Config::redis_pricer_shared_config());
+    return $self->{contract_redis} //= $self->redis_instance(config => BOM::Config::redis_pricer_shared_config());
 }
 
 =head2 internal_ip
