@@ -404,7 +404,7 @@ EOF
         my $encoded_address = encode_entities($address);
         print '<td><a href="' . $address_uri . $encoded_address . '" target="_blank">' . $encoded_address . '</a></td>';
 
-        my $amount = formatnumber('amount', $currency, financialrounding('price', $currency, $db_tran->{amount}));
+        my $amount = $db_tran->{amount};
         my $usd_amount = formatnumber('amount', 'USD', financialrounding('price', 'USD', in_usd($db_tran->{amount}, $currency)));
         # for recon only, we can't consider fee as a 8 decimal places value
         # for ethereum the fees values has more than that, and since we can't
