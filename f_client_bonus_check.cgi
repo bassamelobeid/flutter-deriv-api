@@ -141,12 +141,12 @@ print qq{<p>Click for <a href="$new_log_href">history of changes</a> to $encoded
 
 my $statement_to_date   = Date::Utility->new();
 my $statement_from_date = $statement_to_date->_minus_months(3);
-my $statement           = client_statement_for_backoffice({
-    client              => $client,
-    after               => $statement_from_date->minus_time_interval('1s')->datetime_yyyymmdd_hhmmss(),
-    before              => $statement_to_date->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss(),
-    currency            => $currency,
-    max_number_of_lines => 99999,
+my $transactions        = get_transactions_details({
+    client   => $client,
+    from     => $statement_from_date->minus_time_interval('1s')->datetime_yyyymmdd_hhmmss(),
+    to       => $statement_to_date->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss(),
+    currency => $currency,
+    limit    => 99999,
 });
 
 # first we try to get bonus info from Myaffiliates failing that we check if the client already
@@ -190,7 +190,7 @@ BOM::Backoffice::Request::template()->process(
         client                       => $client,
         country_residence            => $country_residence,
         affiliate_promo              => $affiliate_promo,
-        transactions                 => $statement->{transactions},
+        transactions                 => $transactions,
         today                        => Date::Utility->new(),
         join_date                    => $join_date,
         request                      => request(),

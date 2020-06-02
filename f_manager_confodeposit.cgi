@@ -375,20 +375,23 @@ print qq[<p class="success_message">$success_message</p>];
 
 Bar("Today's entries for $loginID");
 
-my $after  = $today->datetime_yyyymmdd_hhmmss;
-my $before = $today->plus_time_interval('1d')->datetime_yyyymmdd_hhmmss;
+my $from_datetime = $today->datetime_yyyymmdd_hhmmss;
+my $to_datetime   = $today->plus_time_interval('1d')->datetime_yyyymmdd_hhmmss;
 
-my $statement = client_statement_for_backoffice({
+my $transactions = get_transactions_details({
     client => $client,
-    before => $before,
-    after  => $after
+    from   => $from_datetime,
+    to     => $to_datetime,
 });
+
+my $balance = client_balance($client, $client->currency);
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/statement.html.tt',
     {
-        transactions            => $statement->{transactions},
-        balance                 => $statement->{balance},
+        transactions            => $transactions,
+        balance                 => $balance,
+        now                     => $today,
         currency                => $client->currency,
         loginid                 => $client->loginid,
         depositswithdrawalsonly => request()->param('depositswithdrawalsonly'),

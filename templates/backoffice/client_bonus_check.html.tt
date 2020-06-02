@@ -296,9 +296,9 @@ table#client_edit td{
          <td>[% transaction.staff_loginid %]</td>
          [% IF transaction.action_type == 'deposit' %]
             <td></td>
-            <td > [% currency %] <b>[% formatnumber('amount', currency, transaction.amount) %]</b> </td>
+            <td > [% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b> </td>
          [% ELSE %]
-            <td>[% currency %] [% formatnumber('amount', currency, transaction.amount) %] </td>
+            <td>[% currency %] [% formatnumber('amount', currency, transaction.absolute_amount) %] </td>
             <td></td>
          [% END %]
          <td>[% currency %] [% formatnumber('amount', currency, transaction.balance_after) %] </td>

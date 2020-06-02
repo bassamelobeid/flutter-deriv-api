@@ -76,10 +76,10 @@
 
 <div class="grd-parent grd-grid-12 table-header grd-row-padding">
     <div class="grd-grid-10">
-        <b>Balance on [% balance.date.date %]</b>
+        <b>Balance on [% now.date %]</b>
     </div>
     <div class="grd-grid-2 right-aligned">
-        <b>[% currency %] [% formatnumber('amount', currency, balance.amount) %]</b>
+        <b>[% currency %] [% formatnumber('amount', currency, balance) %]</b>
     </div>
 </div>
 <div id="statement_navigation" class="grd-parent grd-grid-12">
@@ -137,13 +137,13 @@
                     [% contract_details(transaction, currency).description %]
                 </td>
                 <td class="right-aligned"></td>
-                <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.amount) %]</b></td>
+                <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
             [% ELSE %]
                 <td>
                     [% details = contract_details(transaction, currency) %]
                     Buy<br/>[% details.longcode %]
                 </td>
-                <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.amount) %]</b></td>
+                <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
                 <td class="right-aligned"></td>
             [% END %]
 
@@ -152,11 +152,11 @@
             <td></td>
             <td>[% transaction.payment_remark.replace('\s+:\s+', ': ').replace('(payment_processor=)(\w+) ', '$1<b>$2</b> ') | none %]</td>
 
-            [% IF transaction.action_type == 'deposit' OR ( transaction.action_type == 'escrow' AND transaction.orig_amount > 0 ) %]
+            [% IF transaction.action_type == 'deposit' OR ( transaction.action_type == 'escrow' AND transaction.amount > 0 ) %]
                 <td class="right-aligned"></td>
-                <td class="right-aligned credit-amount-st">[% currency %] <b>[% formatnumber('amount', currency, transaction.amount) %]</b></td>
+                <td class="right-aligned credit-amount-st">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
             [% ELSE %]
-                <td class="right-aligned debit-amount-st">[% currency %] <b>[% formatnumber('amount', currency, transaction.amount) %]</b></td>
+                <td class="right-aligned debit-amount-st">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
                 <td class="right-aligned"></td>
             [% END %]
 

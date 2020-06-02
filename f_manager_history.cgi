@@ -34,7 +34,9 @@ my $loginID = uc(request()->param('loginID') // '');
 $loginID =~ s/\s//g;
 
 my $encoded_loginID = encode_entities($loginID);
-my $depositswithdrawalsonly = request()->param('depositswithdrawalsonly') // '';
+
+my $dw_param = request()->param('depositswithdrawalsonly');
+my $deposit_withdrawal_only = $dw_param && $dw_param eq 'yes' ? 1 : 0;
 
 my $from_date = trim(request()->param('startdate'));
 my $to_date   = trim(request()->param('enddate'));
@@ -83,7 +85,7 @@ if (not $client) {
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 
 my $loginid_bar = $loginID;
-$loginid_bar .= ' (DEPO & WITH ONLY)' if ($depositswithdrawalsonly eq 'yes');
+$loginid_bar .= ' (DEPO & WITH ONLY)' if ($deposit_withdrawal_only);
 my $pa = $client->payment_agent;
 
 Bar($loginid_bar);
@@ -134,28 +136,33 @@ my $client_email = $client->email;
 
 my $all_in_one_page = request()->checkbox_param('all_in_one_page');
 
-# since client_statement_for_backoffice uses after (> sign) and before (< sign)
+my $summary = client_statement_summary({
+    client   => $client,
+    currency => $currency,
+    from     => $overview_from_date->datetime(),
+    to       => $overview_to_date->datetime(),
+});
+
+# since get_transactions_details uses `from` (> sign) and `to` (< sign)
 # we want the time to be inclusive of from_date (>= sign) and to_date (<= sign)
 # so we add and minus 1 second to make it same as >= or <=
-# underlying of client_statement_for_backoffice uses get_transactions and get_payments
+# underlying of get_transactions_details uses get_transactions and get_payments
 # which handles undef accordingly.
-my $statement = client_statement_for_backoffice({
-        client => $client,
-        after  => (not $all_in_one_page and $from_date)
-        ? $from_date->minus_time_interval('1s')->datetime_yyyymmdd_hhmmss()
-        : undef,
-        before => (not $all_in_one_page and $to_date) ? $to_date->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss() : undef,
-        currency            => $currency,
-        max_number_of_lines => ($all_in_one_page ? 99999 : 200),
-    });
-my $summary = client_statement_summary({
+my $transactions = get_transactions_details({
         client   => $client,
         currency => $currency,
-        after    => $overview_from_date->datetime(),
-        before   => $overview_to_date->datetime()});
+        from     => (not $all_in_one_page and $from_date) ? $from_date->minus_time_interval('1s')->datetime_yyyymmdd_hhmmss()
+        : undef,
+        to => (not $all_in_one_page and $to_date) ? $to_date->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss()
+        : undef,
+        dw_only => $deposit_withdrawal_only,
+        limit   => $all_in_one_page ? 99999 : 200,
+    });
+
+my $balance = client_balance($client, $currency);
 
 my $appdb = BOM::Database::Model::OAuth->new();
-my @ids   = map { $_->{source} || () } @{$statement->{transactions}};
+my @ids   = map { $_->{source} || () } @{$transactions};
 my $apps  = $appdb->get_names_by_app_id(\@ids);
 
 BOM::Backoffice::Request::template()->process(
@@ -165,13 +172,14 @@ BOM::Backoffice::Request::template()->process(
             from => $overview_from_date->date_yyyymmdd(),
             to   => $overview_to_date->date_yyyymmdd()
         },
-        transactions            => $statement->{transactions},
+        transactions            => $transactions,
         apps                    => $apps,
-        balance                 => $statement->{balance},
+        balance                 => $balance,
+        now                     => Date::Utility->today,
         currency                => $currency,
         loginid                 => $client->loginid,
         broker                  => $broker,
-        depositswithdrawalsonly => $depositswithdrawalsonly,
+        depositswithdrawalsonly => $deposit_withdrawal_only ? 'yes' : 'no',
         contract_details        => \&BOM::ContractInfo::get_info,
         clientedit_url          => request()->url_for('backoffice/f_clientloginid_edit.cgi'),
         self_post               => request()->url_for('backoffice/f_manager_history.cgi'),

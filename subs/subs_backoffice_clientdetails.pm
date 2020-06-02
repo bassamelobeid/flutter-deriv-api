@@ -21,6 +21,7 @@ use BOM::User::AuditLog;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
+use BOM::Database::DataMapper::Payment;
 use BOM::User::Utility;
 use BOM::Platform::Locale;
 use BOM::Platform::S3Client;
@@ -793,147 +794,119 @@ sub get_onfido_check_latest {
 }
 
 sub client_statement_summary {
-    my $args = shift;
-    my ($client, $before, $after) = @{$args}{'client', 'before', 'after'};
-    my $max_number_of_lines = 65535;    #why not?
-    my $currency;
+    my ($args) = @_;
+    my ($client, $from, $to, $currency) = @{$args}{'client', 'from', 'to', 'currency'};
 
-    $currency = $args->{currency} if exists $args->{currency};
     $currency //= $client->currency;
-    my $clientdb = BOM::Database::ClientDB->new({
+
+    my $client_db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
+        operation      => 'backoffice_replica',
     });
 
-    my $txn_dm = BOM::Database::DataMapper::Transaction->new({
+    my $dm_params = {
         client_loginid => $client->loginid,
         currency_code  => $currency,
-        db             => $clientdb->db,
+        db             => $client_db->db,
+    };
+
+    my $payment_mapper = BOM::Database::DataMapper::Payment->new($dm_params);
+    my $account_mapper = BOM::Database::DataMapper::Account->new($dm_params);
+
+    my $raw_summary = $payment_mapper->get_summary({
+        from_date => $from,
+        to_date   => $to
     });
-    my $transactions = $txn_dm->get_payments({
-        before => $before,
-        after  => $after,
-        limit  => $max_number_of_lines
-    });
+
     my $summary = {};
+    foreach my $item (@$raw_summary) {
+        my ($amount, $type, $system) = @{$item}{'amount', 'action_type', 'payment_system'};
 
-    foreach my $transaction (@{$transactions}) {
-        my $k = $transaction->{action_type} eq 'deposit' ? 'deposits' : 'withdrawals';
-        my $payment_system = $transaction->{payment_type} // '(unknown)';
+        if ($type) {
+            if ($system) {
 
-        # DoughFlow
-        $payment_system = $1
-            if $transaction->{payment_remark} =~ /payment_processor=(\S+)/;
+                $summary->{$type}->{systems}->{$system} = $amount;
+                next;
+            }
 
-        # bank wire
-        $payment_system = $1
-            if $transaction->{payment_remark} =~ /Wire\s+payment\s+from\s+([\S]+\s[\d\-]+) on/;
-        $payment_system = $1
-            if $transaction->{payment_remark} =~ /Wire\s+deposit\s+.+\s+Recieved\s+by\s+([\S]+\s[\d\-]+)/;
-
-        $summary->{$k}{$payment_system} += $transaction->{amount};
-    }
-    foreach my $type (keys %$summary) {
-        my $ps_summary = [];
-        my $total      = 0;
-        foreach (sort keys %{$summary->{$type}}) {
-            push @$ps_summary, [$_, $summary->{$type}->{$_}];
-            $total += $summary->{$type}->{$_};
+            $summary->{$type}->{total} = $amount;
+            next;
         }
-        push @$ps_summary, ['total', $total];
-        $summary->{$type} = $ps_summary;
+
+        $summary->{total} = $amount;
     }
 
-    # include client's profit & loss in the summary for easier analysis
-    my $dbic       = $clientdb->db->dbic;
-    my $account_id = $dbic->run(
-        fixup => sub {
-            my $sth = $_->prepare(q{SELECT id FROM transaction.account WHERE client_loginid=? AND is_default});
-            $sth->execute($client->loginid);
-            my $out = $sth->fetchall_arrayref();
-            return $out->[0][0];
-        });
-    my $pnl_summary = $dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref("SELECT * FROM get_close_trades_profit_or_loss(?,?,?,?)",
-                undef, $account_id, $client->currency, $client->date_joined, Date::Utility->new->datetime);
-        });
-
-    $summary->{pnl} =
-          $pnl_summary->{get_close_trades_profit_or_loss}
-        ? $pnl_summary->{get_close_trades_profit_or_loss}
-        : '0.00';
+    # {income} is sum of profits and losses
+    $summary->{income} = $account_mapper->get_total_trades_income({
+        from => $client->date_joined,
+    });
 
     return $summary;
 }
 
-sub client_statement_for_backoffice {
-    my $args = shift;
-    my ($client, $before, $after, $max_number_of_lines) =
-        @{$args}{'client', 'before', 'after', 'max_number_of_lines'};
+sub get_transactions_details {
+    my ($args) = @_;
+    my ($client, $from, $to, $currency, $dw_only, $limit) = @{$args}{'client', 'from', 'to', 'currency', 'dw_only', 'limit'};
 
-    if (not $max_number_of_lines) {
-        $max_number_of_lines = 200;
-    }
-
-    my $currency;
-    $currency = $args->{currency} if exists $args->{currency};
     $currency //= $client->currency;
+    $dw_only  //= 0;
+    $limit    //= 20;
 
-    my $depositswithdrawalsonly = request()->param('depositswithdrawalsonly') // '';
-
-    my $db = BOM::Database::ClientDB->new({
-            client_loginid => $client->loginid,
-        })->db;
-
-    my $txn_dm = BOM::Database::DataMapper::Transaction->new({
+    my $client_db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
-        currency_code  => $currency,
-        db             => $db,
+        operation      => 'backoffice_replica',
     });
 
-    my $transactions = [];
-    if ($depositswithdrawalsonly eq 'yes') {
-        $transactions = $txn_dm->get_payments({
-            before => $before,
-            after  => $after,
-            limit  => $max_number_of_lines
-        });
-        foreach my $transaction (@{$transactions}) {
-            $transaction->{amount} = abs($transaction->{amount});
+    my $tranxs_dm = BOM::Database::DataMapper::Transaction->new({
+        client_loginid => $client->loginid,
+        currency_code  => $currency,
+        db             => $client_db->db,
+    });
 
+    my $transactions;
+    if ($dw_only) {
+        $transactions = $tranxs_dm->get_payments({
+            after  => $from,
+            before => $to,
+            limit  => $limit
+        });
+
+        foreach (@$transactions) {
+            $_->{absolute_amount} = abs($_->{amount});
         }
+
     } else {
-        $transactions = $txn_dm->get_transactions({
-            after  => $after,
-            before => $before,
-            limit  => $max_number_of_lines
+        $transactions = $tranxs_dm->get_transactions({
+            after  => $from,
+            before => $to,
+            limit  => $limit,
         });
 
-        foreach my $transaction (@{$transactions}) {
-            $transaction->{orig_amount} = $transaction->{amount};
-            $transaction->{amount}      = abs($transaction->{amount});
-            $transaction->{remark}      = $transaction->{bet_remark};
-            $transaction->{limit_order} = encode_json_utf8(BOM::Transaction::extract_limit_orders($transaction))
-                if defined $transaction->{bet_class}
-                and $transaction->{bet_class} eq 'multiplier';
+        foreach (@$transactions) {
+            $_->{absolute_amount} = abs($_->{amount});
+            $_->{limit_order}     = encode_json_utf8(BOM::Transaction::extract_limit_orders($_))
+                if $_->{bet_class} and $_->{bet_class} eq 'multiplier';
         }
     }
 
-    my $acnt_dm = BOM::Database::DataMapper::Account->new({
+    return $transactions;
+}
+
+sub client_balance {
+    my ($client, $currency) = @_;
+
+    my $client_db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
-        currency_code  => $currency,
-        db             => $db,
+        operation      => 'backoffice_replica',
     });
 
-    my $balance = {
-        date   => Date::Utility->today,
-        amount => $acnt_dm->get_balance(),
-    };
+    my $account_dm = BOM::Database::DataMapper::Account->new({
+        client_loginid => $client->loginid,
+        currency_code  => $currency,
+        db             => $client_db->db,
+    });
 
-    return {
-        transactions => $transactions,
-        balance      => $balance,
-    };
+    return $account_dm->get_balance();
 }
 
 sub get_untrusted_types {

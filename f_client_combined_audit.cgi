@@ -48,16 +48,16 @@ catch {
 
 my $currency = $client->currency;
 
-my $statement = client_statement_for_backoffice({
-    client              => $client,
-    before              => Date::Utility->new({datetime => $enddate})->plus_time_interval('1d')->date,
-    after               => $startdate,
-    currency            => $currency,
-    max_number_of_lines => 10000,
+my $transactions = get_transactions_details({
+    client   => $client,
+    from     => $startdate,
+    to       => Date::Utility->new({datetime => $enddate})->plus_time_interval('1d')->date,
+    currency => $currency,
+    limit    => 10000,
 });
 
 my @audit_entries;
-foreach my $transaction (@{$statement->{transactions}}) {
+foreach my $transaction (@{$transactions}) {
     if (defined $transaction->{financial_market_bet_id}) {
         my $key       = $transaction->{date}->datetime;
         my $key_value = $key . " staff: " . $transaction->{staff_loginid} . " ref: " . $transaction->{id};
@@ -80,7 +80,7 @@ foreach my $transaction (@{$statement->{transactions}}) {
             . " description: "
             . $transaction->{payment_remark}
             . " amount: $currency "
-            . $transaction->{amount};
+            . $transaction->{absolute_amount};
         push @audit_entries,
             {
             timestring  => $key,

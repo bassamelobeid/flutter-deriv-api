@@ -2,7 +2,7 @@
     <tr>
         <td colspan="2">
             <b>Profit & Loss since [% client.date_joined %]</b>:
-            [% currency %]&nbsp;[% summary.pnl %]
+            [% currency %]&nbsp;[% summary.income %]
             <br/><br/>
             <b>Overview search</b>:
             [% client_summary_ranges.from %]
@@ -22,14 +22,13 @@
         <td>
             <table>
                 <tr>
-                    <td colspan="2" style="border-bottom: 1px solid #888888;">[% t %] [% currency %]</td>
+                    <th style="border-bottom: 1px solid #888888;">[% t %] [% currency %]</th>
+                    <th style="border-bottom: 1px solid #888888;"><b>TOTAL:</b> [% summary.$t.total %]</th>
                 </tr>
-                [% FOR ps IN summary.$t %]
+                [% FOR sys_key IN summary.$t.systems.keys %]
                 <tr>
-                    <td width="180" style="border-right: 1px solid #888888;">[% IF ps.0 == 'total' %]<b>TOTAL</b>[%
-                        ELSE; ps.0; END %]
-                    </td>
-                    <td width="30">[% formatnumber('amount', currency, ps.1) %]</td>
+                    <td width="180" style="border-right: 1px solid #888888;">[% sys_key %]</td>
+                    <td width="30">[% summary.$t.systems.$sys_key %]</td>
                 </tr>
                 [% END %]
             </table>
