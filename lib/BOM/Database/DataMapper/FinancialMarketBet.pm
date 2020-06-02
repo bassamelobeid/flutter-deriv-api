@@ -266,7 +266,7 @@ sub get_sold_contracts {
     try {
         return $dbic->run(
             fixup => sub {
-                my $statement = "SELECT * FROM betonmarkets.get_client_sold_contracts_v2(?, ?, ?, ?, ?, ?)";
+                my $statement = "SELECT * FROM betonmarkets.get_client_sold_contracts_v3(?, ?, ?, ?, ?, ?)";
                 my @bind_values = ($self->account->id, $first_purchase_time, $last_purchase_time, $order_type, $limit, $offset);
 
                 return $_->selectall_arrayref($statement, {Slice => {}}, @bind_values);
