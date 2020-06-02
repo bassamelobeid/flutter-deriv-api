@@ -7,7 +7,6 @@ no indirect;
 use Log::Any qw($log);
 use List::Util qw(any all first);
 use Syntax::Keyword::Try;
-use Format::Util::Numbers qw/financialrounding/;
 use DataDog::DogStatsd::Helper qw/stats_inc/;
 
 use BOM::Database::ClientDB;
@@ -300,10 +299,20 @@ sub insert_new_deposit {
     my $is_txn_exists = any { $_->{blockchain_txn} and $_->{blockchain_txn} eq $transaction->{hash} and $_->{status} eq 'NEW' } @payment;
 
     unless ($no_new_found || $is_txn_exists) {
+
+        my $record = first { $_->{transaction_type} eq 'deposit' } @payment;
+        unless ($record and $record->{client_loginid}) {
+            $log->warnf(
+                "Deposit rejected for %s transaction: %s , Error: Cannot get the client loginid. Please inform the crypto team to investigate the transaction.",
+                $currency_code, $transaction->{hash});
+            stats_inc(DD_METRIC_PREFIX . 'subscription.insert_new', {tags => ['currency:' . $currency_code, 'status:failed']});
+            return 0;
+        }
+
         my $result = clientdb()->run(
             ping => sub {
                 my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit(?, ?, ?, ?, ?)');
-                $sth->execute($payment[0]->{address}, $currency_code, $payment[0]->{client_loginid}, $transaction->{fee}, $transaction->{hash});
+                $sth->execute($payment[0]->{address}, $currency_code, $record->{client_loginid}, $transaction->{fee}, $transaction->{hash});
             });
 
         # this is just a safe check in case we get some error from the database
@@ -335,8 +344,7 @@ sub update_transaction_status_to_pending {
         ping => sub {
             $_->selectrow_array(
                 'SELECT payment.ctc_set_deposit_pending(?, ?, ?, ?)',
-                undef, $address, $currency_code,
-                $transaction->{amount} > 0 ? financialrounding('amount', $transaction->{currency}, $transaction->{amount}) : undef,
+                undef, $address, $currency_code, $transaction->{amount} > 0 ? $transaction->{amount} : undef,
                 $transaction->{hash});
         });
     return $result;
