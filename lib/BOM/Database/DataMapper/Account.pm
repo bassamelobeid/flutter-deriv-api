@@ -54,6 +54,30 @@ sub get_balance {
     return $account_record->[0]->balance;
 }
 
+=item get_total_trades_income
+
+get account's profit or loss earned from total trades
+
+=cut
+
+sub get_total_trades_income {
+    my ($self, $args) = @_;
+    my ($from_date, $to_date) = @{$args}{'from', 'to'};
+
+    $from_date //= '1970-01-01 00:00:00';
+    $to_date   //= Date::Utility->new()->datetime;
+
+    my $dbic   = $self->db->dbic;
+    my $result = $dbic->run(
+        fixup => sub {
+            $_->selectrow_arrayref('SELECT * FROM get_close_trades_profit_or_loss(?,?,?,?)',
+                undef, $self->account->id, $self->currency_code, $from_date, $to_date);
+        },
+    );
+
+    return $result->[0] // '0.00';
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 

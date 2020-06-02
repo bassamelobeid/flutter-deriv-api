@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 11;
+use Test::More tests => 12;
 use Test::Exception;
 use Test::Warnings;
 
@@ -31,6 +31,24 @@ lives_ok {
 'Create a client with no payment';
 
 my $payment_data_mapper;
+
+subtest 'get payments summary' => sub {
+    lives_ok {
+        $payment_data_mapper = BOM::Database::DataMapper::Payment->new({
+                'client_loginid' => 'CR0111',
+                'currency_code'  => 'USD',
+            })
+    }
+    'Initializing payment data mapper for CR0111 USD';
+
+    my $summary = $payment_data_mapper->get_summary();
+    is scalar @$summary, 6, '6 items as expected of dml data';
+
+    my $total =
+        (grep { not defined $_->{action_type} and not defined $_->{payment_system} } @$summary)[0];
+
+    is $total->{amount} + 0, -25, 'total of deposits and withdraws is as expected.';
+};
 
 subtest 'get total deposit & withdrawal' => sub {
     lives_ok {
