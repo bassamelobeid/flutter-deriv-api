@@ -466,8 +466,8 @@ rpc new_account_maltainvest => sub {
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
 
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
-
     return $val if $val;
+
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         ip => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),
@@ -531,6 +531,17 @@ rpc new_account_maltainvest => sub {
         {
             loginid    => $new_client->loginid,
             properties => {type => 'real'}});
+
+    # We want to have stats of number of clients that provide wrong tax number
+    my $countries_instance = request()->brand->countries_instance();
+    # In case of having more than a tax residence, client residence will replaced.
+    my $selected_tax_residence = $args->{tax_residence} =~ /\,/g ? $args->{residence} : $args->{tax_residence};
+    my $tin_format             = $countries_instance->get_tin_format($selected_tax_residence);
+    my $client_tin             = $countries_instance->clean_tin_format($args->{tax_identification_number}, $selected_tax_residence);
+    if ($tin_format) {
+        stats_inc('bom_rpc.v_3.new_account_maltainvest.called_with_wrong_TIN_format.count')
+            unless (any { $client_tin =~ m/$_/ } @$tin_format);
+    }
 
     return {
         client_id                 => $new_client->loginid,

@@ -6,7 +6,8 @@
       "virtual_company",
       "id",
       "minimum_age",
-      "financial_company"
+      "financial_company",
+      "config"
    ],
    "description" : null,
    "type" : "object",
@@ -30,6 +31,22 @@
       "name" : {
          "type" : "string",
          "pattern" : "^Germany"
+      },
+      "config" : {
+         "required" : [
+            "tin_format",
+            	"tin_format_description"
+         ],
+         "properties" : {
+            "tin_format" : {
+                "type" : "array"
+            },
+            "tin_format_description" : {
+                "type" : "string"
+            }
+         },
+         "type" : "object",
+         "additionalProperties" : false
       },
       "mt_financial_company" : {
           "standard" : {
@@ -311,6 +328,7 @@
                "pattern" : "^Malta$",
                "type" : "string"
             },
+
             "address" : {
                "items" : {
                   "type" : "string"
