@@ -18,13 +18,18 @@ use List::Util qw(first max);
 use JSON::MaybeXS;
 use Format::Util::Numbers qw/formatnumber/;
 
+use ExchangeRates::CurrencyConverter qw/in_usd/;
 use Finance::Asset::Market::Registry;
 use Finance::Asset::SubMarket::Registry;
 use LandingCompany::Registry;
 
+use BOM::Config::QuantsConfig;
+use BOM::Config::Chronicle;
 use BOM::Config::Runtime;
 use BOM::Config;
 use Syntax::Keyword::Try;
+use List::Util qw/min/;
+use Date::Utility;
 
 use constant RISK_PROFILES => [qw(no_business extreme_risk high_risk moderate_risk medium_risk low_risk)];
 
@@ -130,10 +135,15 @@ sub _build_non_binary_custom_profiles {
     return \@profiles;
 }
 
-has [qw(raw_custom_risk_profiles raw_custom_commission_profiles)] => (
+has [qw(
+        raw_custom_risk_profiles
+        raw_custom_commission_profiles
+        raw_custom_volume_limits
+        )
+    ] => (
     is         => 'ro',
     lazy_build => 1,
-);
+    );
 
 sub _build_raw_custom_risk_profiles {
     my $self = shift;
@@ -145,6 +155,20 @@ sub _build_raw_custom_commission_profiles {
     my $self = shift;
 
     return [grep { $_->{commission} } values %{$self->raw_custom_profiles}];
+}
+
+# this is a cache to avoid decode for each contract
+my $custom_volume_limits_txt      = '';
+my $custom_volume_limits_compiled = {};
+
+sub _build_raw_custom_volume_limits {
+    my $self = shift;
+
+    my $ptr = \BOM::Config::Runtime->instance->app_config->quants->custom_volume_limits;
+    $custom_volume_limits_compiled = $json->decode($custom_volume_limits_txt = $$ptr)
+        unless $$ptr eq $custom_volume_limits_txt;
+
+    return $custom_volume_limits_compiled;
 }
 
 has raw_custom_profiles => (
@@ -286,18 +310,24 @@ sub get_turnover_limit_parameters {
 my $custom_limits_txt      = '';
 my $custom_limits_compiled = {};
 
+sub custom_client_profiles {
+    my ($self, $loginid) = @_;
+
+    my $ptr = \BOM::Config::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
+    $custom_limits_compiled = $json->decode($custom_limits_txt = $$ptr)                       # copy and compile
+        unless $$ptr eq $custom_limits_txt;
+
+    return $custom_limits_compiled->{$loginid};
+}
+
 sub get_client_profiles {
     my ($self, $loginid, $landing_company_short) = @_;
 
     if ($loginid && $landing_company_short) {
-        my $ptr = \BOM::Config::Runtime->instance->app_config->quants->custom_client_profiles;    # use a pointer to avoid copying
-        $custom_limits_compiled = $json->decode($custom_limits_txt = $$ptr)                       # copy and compile
-            unless $$ptr eq $custom_limits_txt;
-
         my @client_limits = do {
             my @limits = ();
             my $cl;
-            if ($cl = $custom_limits_compiled->{$loginid} and $cl = $cl->{custom_limits}) {
+            if ($cl = $self->custom_client_profiles($loginid) and $cl = $cl->{custom_limits}) {
                 @limits = grep { $self->_match_conditions($_) } values %$cl;
             }
             @limits;
@@ -314,6 +344,80 @@ sub get_client_profiles {
     }
 
     return;
+}
+
+sub get_client_volume_limits {
+    my ($self, $client) = @_;
+
+    my $volume_limits = {};
+
+    my $custom_volume_limits = $self->raw_custom_volume_limits();
+    my $user_id              = 'binary_user_id::' . $client->binary_user_id;
+
+    my $client_limits = $custom_volume_limits->{clients}{$user_id};
+    if ($client_limits and keys %{$client_limits}) {
+        foreach my $key (keys %{$client_limits}) {
+            my $custom = $client_limits->{$key};
+            next unless defined $custom->{'volume_limit'};
+
+            if ($custom->{symbol}) {
+                if (first { $self->symbol eq $_ } (split ',', $custom->{symbol})) {
+                    $volume_limits->{per_user_symbol} = $custom->{volume_limit};
+                }
+            } else {
+                $volume_limits->{per_user} = $custom->{volume_limit};
+            }
+        }
+    }
+
+    my $limit_defs = BOM::Config::quants()->{risk_profile};
+
+    my $config = BOM::Config::QuantsConfig->new(
+        recorded_date    => Date::Utility->new,
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+    )->get_config("multiplier_config::" . $self->symbol);
+
+    if (!$config) {
+        warn __PACKAGE__ . " multiplier_config::" . $self->symbol . " NOT FOUND.";
+        return $volume_limits;
+    }
+
+    my $max_multiplier = max @{$config->{multiplier_range}};
+
+    my $default_limit;
+    my $market_limit = $custom_volume_limits->{markets}{$self->market_name};
+    my $symbol_limit = $custom_volume_limits->{symbols}{$self->symbol};
+
+    if (defined $market_limit && defined $market_limit->{risk_profile}) {
+        my $max_stake = $limit_defs->{$market_limit->{risk_profile}}{multiplier}{$client->currency};
+        $default_limit = $market_limit->{max_volume_positions} * $max_stake * $max_multiplier;
+    }
+    if (defined $symbol_limit && defined $symbol_limit->{risk_profile}) {
+        my $max_stake = $limit_defs->{$symbol_limit->{risk_profile}}{multiplier}{$client->currency};
+        my $limit     = $symbol_limit->{max_volume_positions} * $max_stake * $max_multiplier;
+
+        $default_limit = defined $default_limit ? min($limit, $default_limit) : $limit;
+    }
+
+    if (!defined $default_limit) {
+        my $max_volume_positions = 5;
+        my $risk_profile         = Finance::Asset::Market::Registry->get($self->market_name)->{risk_profile};
+
+        my $max_stake = $limit_defs->{$risk_profile}{multiplier}{$client->currency};
+        my $limit     = $max_volume_positions * $max_stake * $max_multiplier;
+
+        $default_limit = $limit;
+    }
+
+    if (defined $default_limit) {
+        $default_limit = in_usd($default_limit, $client->currency);
+        $volume_limits->{per_user_symbol} =
+            defined $volume_limits->{per_user_symbol}
+            ? min($volume_limits->{per_user_symbol}, $default_limit)
+            : $default_limit;
+    }
+
+    return $volume_limits;
 }
 
 sub get_current_profile_definitions {
