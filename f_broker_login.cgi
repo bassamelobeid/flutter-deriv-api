@@ -274,6 +274,12 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 						&nbsp;<input type="submit" value="EXISTING LIMITED CLIENTS">
 					</font></form>
 				</td>
+                               <td align="center" width="50%">
+					<p><b>MULTIPLIER RISK MANAGEMENT TOOL</b></p>
+					<form action="~ . request()->url_for('backoffice/quant/multiplier_risk_management.cgi') . qq~" method="post"><font size=2>
+						&nbsp;<input type="submit" value="GO">
+					</font></form>
+				</td>
                          </tr>
 		</tbody>
 	</table>~;

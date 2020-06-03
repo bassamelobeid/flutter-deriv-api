@@ -246,41 +246,6 @@ BOM::Backoffice::Request::template()->process(
         disabled => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
 
-Bar("Multiplier Config");
-
-BOM::Backoffice::Request::template()->process(
-    'backoffice/update_multiplier_config.html.tt',
-    {
-        multiplier_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_multiplier_config.cgi'),
-        existing_config       => _get_existing_multiplier_config(),
-        disabled              => $disabled_write,
-    }) || die BOM::Backoffice::Request::template()->error;
-
-sub _get_existing_multiplier_config {
-    my $qc = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
-    my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
-
-    my @existing;
-    foreach my $market ($offerings->query({contract_category => 'multiplier'}, ['market'])) {
-        foreach my $symbol (
-            $offerings->query({
-                    contract_category => 'multiplier',
-                    market            => $market
-                },
-                ['underlying_symbol']))
-        {
-            my $config = $qc->get_config('multiplier_config::' . $symbol);
-            $config->{multiplier_range_json} = encode_json_utf8($config->{multiplier_range}) unless $config->{multiplier_range_json};
-            $config->{cancellation_duration_range_json} = encode_json_utf8($config->{cancellation_duration_range})
-                unless $config->{cancellation_duration_range_json};
-            $config->{symbol} = $symbol;
-            push @existing, $config;
-
-        }
-    }
-    return \@existing;
-}
-
 sub send_notification_email {
     my $limit = shift;
     my $for   = shift;

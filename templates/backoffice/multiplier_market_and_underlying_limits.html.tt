@@ -1,0 +1,183 @@
+<p> 
+
+
+<b>max volume</b>, is calculated as follows:
+
+<h3>max volume = max stake * max volume positions * max multiplier</h3>
+
+<ul>
+  <li>Risk profile, defines the "max stake" per contract - see the table at the top of the page.</li>
+  <li>We define "max multiplier" as the highest number in "multiplier range" setting above.</li>
+  <li><b>max volume positions</b> is usually a constant, set to 5.</li>
+</ul>
+
+</p>
+<p> 
+You can set a risk_profile for a "market" or an "underlying". <br/>
+Setting it for a market is a shortcut for setting it on the individual underlyings within that market.
+</p>
+
+<p>
+If there is no risk profile defined for a given underlying (or it's corresponding market), the default limits will be used.
+</p>
+
+<form id='multiplier_market_or_underlying_limits'>
+<table>
+    <tr>
+        <td>Risk profile:</td>
+        <td><input type="text" name="risk_profile"></input></td>
+        <td> e.g. [% risk_profiles.join(' | ') %].</td>
+    </tr>
+    <tr>
+        <td>Max Volume Positions: </td>
+        <td><input type="text" name="max_volume_positions"></input></td>
+        <td>Number of maximum volume positions (i.e 5).</td>
+    </tr>
+    <tr>
+        <td>★ Market: </td>
+        <td><input type="text" name="market"></input></td>
+        <td>
+            (optional) e.g. forex.
+        </td>
+    </tr>
+    <tr>
+        <td>★ Underlying Symbol: </td>
+        <td><input type="text" name="underlying_symbol"></input></td>
+        <td>(optional) e.g. R_100.</td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <p> <b>★</b> You can only put either Market or Underlying symbol. <br/>
+            Setting the limit for a market is a <b>shortcut</b> for setting it on the individual underlyings within that market.
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <td><input type="button" onClick="SaveMultiplierOrUnderlyingLimit()" value="Add New Limit / Override Existing Limit"></td>
+        <td class="save_market_and_underlying_limit_result"></td>
+    </tr>
+</table>
+</form>
+
+<hr/>
+<br/>
+
+<b>DEFAULT LIMITS</b>
+<table>
+    <tr>
+        <th>Market</th>
+        <th>Risk Profile</th>
+        <th>Max Volume Positions</th>
+    </tr>
+    [% FOREACH data IN market_limits_default %]
+        <tr>
+            <td>[% data.market %]</td>
+            <td>[% data.risk_profile %]</td>
+            <td>[% data.max_volume_positions %]</td>
+        </tr>
+    [% END %]
+</table>
+
+<br/>
+<b>EXISTING LIMITS</b>
+<form>
+<table>
+    <tr>
+        <th>Market</th>
+        <th>Risk Profile</th>
+        <th>Max Volume Positions</th>
+    </tr>
+    [% FOREACH data IN market_limits %]
+    <tr id='multiplier-limit-[% data.market %]'>
+        <td>[% data.market %]</td>
+        <td>[% data.risk_profile %]</td>
+        <td>[% data.max_volume_positions %]</td>
+        <td><button
+            onClick="DeleteMarketOrUnderlyingLimit({ market: '[% data.market %]' })"
+            type="button">delete</button>
+        </td>
+        <td class='delete_market_or_underlying_limit_result'></td>
+    </tr>
+    [% END %]
+</table>
+
+<table>
+    <tr>
+        <th>Underlying</th>
+        <th>Risk Profile</th>
+        <th>Max Volume Positions</th>
+    </tr>
+    [% FOREACH data IN symbol_limits %]
+    <tr id='multiplier-limit-[% data.symbol %]'>
+        <td>[% data.symbol %]</td>
+        <td>[% data.risk_profile %]</td>
+        <td>[% data.max_volume_positions %]</td>
+        <td><button
+            onClick="DeleteMarketOrUnderlyingLimit({ symbol: '[% data.symbol %]' })"
+            type="button">delete</button>
+        </td>
+        <td class='delete_market_or_underlying_limit_result'></td>
+    </tr>
+    [% END %]
+</table>
+</form>
+
+<script>
+var multiplier_upload_url = "[% multiplier_upload_url | none %]";
+
+function SaveMultiplierOrUnderlyingLimit(){
+    var el = \$('#multiplier_market_or_underlying_limits');
+    var result = el.find('.save_market_and_underlying_limit_result');
+
+    var risk_profile = el.find('input[name="risk_profile"]').val();
+    var market = el.find('input[name="market"]').val();
+    var symbol = el.find('input[name="underlying_symbol"]').val();
+    var max_volume_positions = el.find('input[name="max_volume_positions"]').val();
+
+    result.text('processing ...').css('color', 'black');
+    var data = {
+        save_multiplier_market_or_underlying_limit: 1,
+        risk_profile: risk_profile,
+        max_volume_positions: max_volume_positions,
+        market: market,
+        symbol: symbol,
+    };
+
+    \$.ajax({
+        url: multiplier_upload_url,
+        data: data,
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'red');
+            } else {
+                result.text('saved').css('color', 'green');
+            }
+        }
+    });
+}
+
+function DeleteMarketOrUnderlyingLimit(data) {
+    var el = \$('tr#multiplier-limit-' + (data.market || data.symbol));
+    var result = el.find('td.delete_market_or_underlying_limit_result');
+    result.text('processing ...');
+
+    data.delete_multiplier_market_or_underlying_limit = 1;
+
+    \$.ajax({
+        url: multiplier_upload_url,
+        data: data,
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'red');
+            } else {
+                result.text('removed').css('color', 'green');
+                el.remove();
+            }
+        }
+    });
+}
+
+</script>
+

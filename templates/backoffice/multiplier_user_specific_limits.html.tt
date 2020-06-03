@@ -1,0 +1,118 @@
+<form id='multiplier_user_specific_limits'>
+<table>
+    <tr>
+        <td>Client Login ID: </td>
+        <td><input type="text" name="client_loginid"></input></td>
+        <td> e.g. client login id, example: CR12345.</td>
+    </tr>
+    <tr>
+        <td>Volume Limit: </td>
+        <td><input type="text" name="volume_limit"></input></td>
+        <td>Volume limit in USD for multiplier contracts</td>
+    </tr>
+    <tr>
+        <td>Underlying Symbol: </td>
+        <td><input type="text" name="underlying_symbol"></input></td>
+        <td>(optional) underlying symbol. Supports comma separated string.</td>
+    </tr>
+    <tr>
+        <td>comment </td>
+        <td><input type="text" name="comment"></input></td>
+        <td>(optional) comment</td>
+    </tr>
+    <tr>
+        <td><input type="button" onClick="SaveMultiplierUserLmit()" value="Add New Limit/Update"></td>
+        <td class="user_limit_result"></td>
+    </tr>
+</table>
+</form>
+
+<hr/>
+<br/>
+<h3>EXISTING LIMITS</h3>
+<br/>
+
+<form id='custom_volume_limits'>
+<table style="width:100%">
+    <tr>
+        <th>Client loginid</th>
+        <th>Volume limit</th>
+        <th>Underlying symbol</th>
+        <th>Comment</th>
+    </tr>
+    [% FOREACH data IN existing_volume_limits %]
+    <tr id='limit-[% data.uniq_key %]'>
+        <td>[% data.loginid %]</td>
+        <td>[% data.volume_limit %]</td>
+        <td>[% data.symbol || '-' %]</td>
+        <td>[% data.comment || '-' %]</td>
+        <td><button
+            onClick="DeleteCustomLimit('[% data.loginid %]', '[% data.uniq_key %]')"
+            type="button">delete</button>
+        </td>
+        <td class='user_limit_result'></td>
+    </tr>
+    [% END %]
+</table>
+</form>
+
+<script>
+var multiplier_upload_url = "[% multiplier_upload_url | none %]";
+
+function SaveMultiplierUserLmit(){
+    var el = \$('#multiplier_user_specific_limits');
+    var result = el.find('.user_limit_result');
+
+    var loginid = el.find('input[name="client_loginid"]').val();
+    var volume_limit = el.find('input[name="volume_limit"]').val();
+    var symbol = el.find('input[name="underlying_symbol"]').val();
+    var comment = el.find('input[name="comment"]').val();
+
+    result.text('processing ...').css('color', 'black');
+
+    \$.ajax({
+        url: multiplier_upload_url,
+        data: {
+            save_multiplier_user_limit: 1,
+            volume_limit: volume_limit,
+            loginid: loginid,
+            symbol: symbol,
+            comment: comment,
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'red');
+            } else {
+                result.text('saved').css('color', 'green');
+            }
+        }
+    });
+}
+
+function DeleteCustomLimit(loginid, uniq_key) {
+    var el = \$('tr#limit-' + uniq_key);
+    var result = el.find('td.user_limit_result');
+    result.text('processing ...');
+
+    \$.ajax({
+        url: multiplier_upload_url,
+        data: {
+            delete_multiplier_user_limit: 1,
+            loginid: loginid,
+            uniq_key: uniq_key,
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'red');
+            } else {
+                result.text('removed').css('color', 'green');
+                el.remove();
+            }
+        }
+    });
+}
+
+</script>
+

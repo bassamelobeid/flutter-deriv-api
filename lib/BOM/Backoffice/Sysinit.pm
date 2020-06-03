@@ -120,6 +120,7 @@ my $permissions = {
     'quant/update_quants_config.cgi'                                          => ['QuantsWrite'],
     'quant/internal_transfer_fees.cgi'                                        => ['Quants'],
     'quant/client_limit.cgi'                                                  => ['Quants'],
+    'quant/multiplier_risk_management.cgi'                                    => ['Quants'],
 };
 
 sub init {
