@@ -176,7 +176,7 @@
                             <br/>
                             <label for="set_remark">Set Remark:</label>
                             <br/>
-                            <input type="text" id="set_remark" name="set_remark" placeholder="Replaces current remark"/>
+                            <textarea id="set_remark" name="set_remark" placeholder="Replaces current remark"></textarea>
                             <br/>
                             <input type="submit" name="action" value="Save"/>
                             [% IF trx.authorisers.grep("^$staff\$").size > 0 %]
@@ -184,6 +184,13 @@
                             [% ELSE %]
                                 <input type="submit" name="action" value="Verify"/>
                             [% END %]
+                            </br>
+                            <select name="rejection_reason">
+                            <option>-Select Rejection Reason-</option>
+                            <option> less trade/no trade </option>
+                            <option> back to fiat account </option>
+                            <option> contact CS </option>
+                            </select>
                             <input type="submit" name="action" value="Reject"/>
                         </form>
                         [% END %]

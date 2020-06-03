@@ -34,11 +34,58 @@ use BOM::DualControl;
 use LandingCompany::Registry;
 use f_brokerincludeall;
 use BOM::Cryptocurrency::Helper qw( prioritize_address );
+use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Context;
+use Brands;
 
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
+
+sub notify_crypto_withdrawal_rejected {
+    my $loginid = shift;
+    my $remark = shift // "unknown";
+
+    my $rejection_reason = "there is an issue with your account that needs to be resolved first.
+                            \n\nPlease contact Customer Support for help.";
+    if ($remark eq 'less trade/no trade') {
+        $rejection_reason = "there was insufficient trading activity on your account.
+             \n\nNote that this account was created for trading, and not banking, purposes.
+             \n\nWe recommend that you take advantage of our trading facilities before making further withdrawals.";
+    } elsif ($remark eq 'back to fiat account') {
+        $rejection_reason = "the deposit and withdrawal methods did not match.
+        \n\nNote that withdrawals can only be made from the FIAT account where funds were deposited.
+        \n\nTo ensure smooth payouts, we suggest transferring the funds to your FIAT account and make the withdrawal from there.";
+    }
+
+    my $client = BOM::User::Client->new({loginid => $loginid});
+    my $brand = Brands->new_from_app_id($client->source);
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => $brand->name,
+        app_id     => $client->source,
+    );
+    BOM::Platform::Context::request($req);
+
+    my $email_subject = localize("Withdrawal request declined - [_1]", $client->loginid);
+    my $email_data = {
+        name           => $client->full_name,
+        remark         => $rejection_reason,
+        client_loginid => $client->loginid,
+        brand_name     => ucfirst $brand->name,
+    };
+    send_email({
+        to                    => $client->email,
+        subject               => $email_subject,
+        template_name         => 'withdrawal_reject',
+        template_args         => $email_data,
+        template_loginid      => $client->loginid,
+        email_content_is_html => 1,
+        use_email_template    => 1,
+        use_event             => 1,
+    });
+}
 
 my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::get_staffname();
@@ -215,12 +262,18 @@ if ($view_action eq 'withdrawals') {
         if not $view_type or $view_type !~ /^(?:pending|verified|rejected|cancelled|processing|performing_blockchain_txn|sent|error)$/;
 
     if ($action and $action =~ /^(?:Save|Verify|Reject)$/) {
-        my $amount     = request()->param('amount');
-        my $loginid    = request()->param('loginid');
-        my $set_remark = request()->param('set_remark');
+        my $amount           = request()->param('amount');
+        my $loginid          = request()->param('loginid');
+        my $set_remark       = request()->param('set_remark');
+        my $rejection_reason = request()->param('rejection_reason');
 
-        # Error for rejection with no reason
-        code_exit_BO("Please enter a remark explaining reason for rejection") if ($action eq 'Reject' && $set_remark eq '');
+        if ($action eq 'Reject') {
+            # Error for rejection with no reason
+            if (uc($rejection_reason) =~ /SELECT REJECTION REASON/) {
+                code_exit_BO("Please select a reason for rejection to notify client");
+            }
+            $set_remark .= "[$rejection_reason]";
+        }
 
         # Check payment limit
         my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_usd($amount, $currency));
@@ -242,6 +295,8 @@ if ($view_action eq 'withdrawals') {
 
         code_exit_BO("ERROR: $error. Please check with someone from IT team before proceeding.")
             if ($error);
+
+        notify_crypto_withdrawal_rejected($loginid, $rejection_reason) if $action eq 'Reject';
     }
 
     my $ctc_status = $view_type eq 'pending' ? 'LOCKED' : uc($view_type);
