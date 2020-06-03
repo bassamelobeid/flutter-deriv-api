@@ -2,7 +2,7 @@ package BOM::Product::Role::Multiplier;
 
 use Moose::Role;
 
-use List::Util qw(max first);
+use List::Util qw(min max first);
 use Date::Utility;
 use BOM::Product::Exception;
 use BOM::Product::LimitOrder;
@@ -729,7 +729,7 @@ sub _validation_methods {
     # - trading times (if market is open)
     # - feed (if feed is too old)
     return [
-        qw(_validate_offerings _validate_input_parameters _validate_trading_times _validate_feed _validate_commission _validate_multiplier_range _validate_orders _validate_cancellation)
+        qw(_validate_offerings _validate_input_parameters _validate_trading_times _validate_feed _validate_commission _validate_multiplier_range _validate_maximum_stake _validate_orders _validate_cancellation)
     ];
 }
 
@@ -830,6 +830,36 @@ sub _validate_multiplier_range {
             message           => 'multiplier out of range',
             message_to_client => [$ERROR_MAPPING->{MultiplierOutOfRange}, join(',', @$available_multiplier)],
             details => {field => 'multiplier'},
+        };
+    }
+
+    return;
+}
+
+sub _validate_maximum_stake {
+    my $self                 = shift;
+    my $market               = $self->underlying->market->name;
+    my $symbol               = $self->underlying->symbol;
+    my $custom_volume_limits = $self->risk_profile->raw_custom_volume_limits;
+
+    my @risk_profiles;
+    push @risk_profiles, $custom_volume_limits->{markets}{$market}{risk_profile};
+    push @risk_profiles, $custom_volume_limits->{symbols}{$symbol}{risk_profile};
+    if (!$risk_profiles[0] && !$risk_profiles[1]) {
+        push @risk_profiles, $self->market->{risk_profile};
+    }
+
+    my $limit_definitions = BOM::Config::quants()->{risk_profile};
+    my $max_stake         = min(
+        map  { $limit_definitions->{$_}{multiplier}{$self->currency} }
+        grep { defined $_ } @risk_profiles
+    );
+
+    if ($self->_user_input_stake > $max_stake) {
+        return {
+            message           => 'maximum stake limit',
+            message_to_client => [$ERROR_MAPPING->{StakeLimitExceeded}, financialrounding('price', $self->currency, $max_stake)],
+            details => {field => 'stake'},
         };
     }
 

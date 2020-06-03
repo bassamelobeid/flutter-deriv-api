@@ -438,7 +438,9 @@ sub _initialize_other_parameters {
 
         # Only check stake here. Pricing daemon override payout to 1000 irregardless of currency.
         # Hence, it will fail here.
-        if ($params->{amount_type} eq 'stake' and my $max_stake = maximum_stake_limit(@limit_args)) {
+        if ($params->{amount_type} eq 'stake'
+            and my $max_stake = maximum_stake_limit(@limit_args))
+        {
             BOM::Product::Exception->throw(
                 error_code => 'StakeLimitExceeded',
                 error_args => [financialrounding('price', $params->{currency}, $max_stake)],
