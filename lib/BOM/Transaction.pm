@@ -557,6 +557,11 @@ sub calculate_limits {
                 $limits{$check_name}{warning_threshold} = $threshold;
             }
         }
+
+        # volume limits only apply to multiplier contracts.
+        if ($self->contract->category_code eq 'multiplier') {
+            $limits{volume} = $contract->risk_profile->get_client_volume_limits($client);
+        }
     }
 
     defined($lim = $client->get_limit_for_daily_losses)
@@ -1741,6 +1746,22 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         -type              => 'SellFailureDueToUpdate',
         -mesg              => 'Contract is updated while attempting to sell',
         -message_to_client => BOM::Platform::Context::localize('Sell failed because contract was updated.'),
+    ),
+    BI024 => Error::Base->cuss(
+        -quiet             => 1,
+        -type              => 'ClientVolumeLimitReached',
+        -mesg              => 'Client volume limit reached.',
+        -message_to_client => BOM::Platform::Context::localize(
+            'You will exceed the maximum exposure limit if you purchase this contract. Please close some of your positions and try again.',
+        ),
+    ),
+    BI025 => Error::Base->cuss(
+        -quiet             => 1,
+        -type              => 'ClientUnderlyingVolumeLimitReached',
+        -mesg              => 'Client underlying volume limit reached',
+        -message_to_client => BOM::Platform::Context::localize(
+            'You will exceed the maximum exposure limit for this market if you purchase this contract. Please close some of your positions and try again.',
+        ),
     ),
 );
 

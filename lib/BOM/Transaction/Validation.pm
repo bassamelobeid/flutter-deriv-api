@@ -148,6 +148,9 @@ sub validate_trx_buy {
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
 
+        $res = $self->_validate_no_volume_limit($c->{client});
+        return $res if $res;
+
         foreach my $method (@contract_validation_methods) {
 
             next unless $self->transaction->contract->is_binary;
@@ -162,7 +165,6 @@ sub validate_trx_buy {
             }
 
             return $res;
-
         }
     }
 
@@ -563,6 +565,33 @@ sub _validate_stake_limit {
                 $landing_company->name,
                 financialrounding('amount', $currency, $stake_limit)
             ),
+        );
+    }
+    return undef;
+}
+
+sub _validate_no_volume_limit {
+    my ($self, $client) = (shift, shift);
+    my $volume = $self->transaction->limits->{volume};
+
+    return undef if !defined $volume;
+
+    if (defined $volume->{per_user} && $volume->{per_user} == 0) {
+        return Error::Base->cuss(
+            -quiet             => 1,
+            -type              => 'NoBusiness',
+            -mesg              => $client->loginid . ' manually disabled by quants',
+            -message_to_client => localize('This contract is unavailable on this account.'),
+        );
+    }
+
+    if (defined $volume->{per_user_symbol} && $volume->{per_user_symbol} == 0) {
+        my $display_name = $self->transaction->contract->underlying->display_name;
+        return Error::Base->cuss(
+            -quiet             => 1,
+            -type              => 'NoBusiness',
+            -mesg              => "multiplier options on $display_name manually disabled by quants",
+            -message_to_client => localize("Trading multiplier options on [_1] is disabled. Please choose another market.", $display_name,),
         );
     }
     return undef;

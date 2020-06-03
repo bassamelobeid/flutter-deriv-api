@@ -6,6 +6,7 @@ use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More;
 use Test::Exception;
+use Test::Warnings;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -736,6 +737,7 @@ subtest 'buy multiplier for forex major pair' => sub {
     'can buy frxAUDJPY';
 };
 
+Test::Warnings::allow_warnings(1);
 subtest 'buy multiplier with unsupported underlying' => sub {
     lives_ok {
         my $contract = produce_contract({
@@ -765,6 +767,7 @@ subtest 'buy multiplier with unsupported underlying' => sub {
     };
     restore_time();
 };
+Test::Warnings::allow_warnings(0);
 
 subtest 'buy deal cancellation when it is disabled' => sub {
     lives_ok {
