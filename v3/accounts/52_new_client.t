@@ -78,6 +78,28 @@ my $res = $t->await::profit_table({
 
 is $res->{error}->{code}, 'DisabledClient', 'you can not call any authenticated api after disabled.';
 
+subtest 'mt5 new account dry run' => sub {
+    $client_cr->set_default_account('USD');
+    $token = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr_1);
+    $authorize = $t->await::authorize({authorize => $token});
+    is $authorize->{authorize}->{loginid}, $cr_1;
+
+    my $params = {
+        account_type    => 'gaming',
+        country         => 'mt',
+        email           => 'test.account@binary.com',
+        name            => 'Meta traderman',
+        mainPassword    => 'Efgh4567',
+        leverage        => 100,
+        dry_run         => 1,
+        mt5_new_account => 1,
+    };
+    $res = $t->await::mt5_new_account($params);
+    is $res->{msg_type}, 'mt5_new_account';
+    is $res->{error}, undef, 'has no error in response';
+    test_schema('mt5_new_account', $res);
+};
+
 $t->finish_ok;
 
 done_testing();
