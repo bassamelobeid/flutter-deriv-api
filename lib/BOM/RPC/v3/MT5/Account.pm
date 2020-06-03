@@ -343,13 +343,11 @@ async_rpc "mt5_new_account",
 
     if ($args->{dry_run}) {
         return Future->done({
-            account_type     => $account_type,
-            mt5_account_type => $mt5_account_type,
-            balance          => 0,
-            currency         => 'USD',
-            display_balance  => '0.00',
-            login            => 'dry_run_login',
-        });
+                account_type    => $account_type,
+                balance         => 0,
+                currency        => 'USD',
+                display_balance => '0.00',
+                ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
     }
 
     return get_mt5_logins($client, $user)->then(

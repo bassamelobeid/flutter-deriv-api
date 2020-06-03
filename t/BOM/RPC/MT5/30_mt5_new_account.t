@@ -183,10 +183,9 @@ subtest 'new account dry_run' => sub {
         },
     };
     $c->call_ok($method, $params)->has_no_error('mt5 new account dry run only runs validations');
-    is($c->result->{login},           'dry_run_login', 'dry run result->{login}');
-    is($c->result->{balance},         0,               'Balance is 0 upon dry run');
-    is($c->result->{display_balance}, '0.00',          'Display balance is "0.00" upon dry run');
-    is($c->result->{currency},        'USD',           'Currency is "USD" upon dry run');
+    is($c->result->{balance},         0,      'Balance is 0 upon dry run');
+    is($c->result->{display_balance}, '0.00', 'Display balance is "0.00" upon dry run');
+    is($c->result->{currency},        'USD',  'Currency is "USD" upon dry run');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
