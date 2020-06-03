@@ -258,6 +258,18 @@ risk_profile:
           USB: 0
           IDK: 0
           PAX: 0
+      multiplier:
+          USD: 0
+          EUR: 0
+          AUD: 0
+          GBP: 0
+          BTC: 0
+          ETH: 0
+          LTC: 0
+          UST: 0
+          USB: 0
+          IDK: 0
+          PAX: 0
   extreme_risk:
       turnover:
           USD: 1000
@@ -283,6 +295,18 @@ risk_profile:
           USB: 100
           IDK: 1500
           PAX: 100
+      multiplier:
+          USD: 50
+          EUR: 50
+          AUD: 50
+          GBP: 50
+          BTC: 0.01
+          ETH: 0.25
+          LTC: 1.25
+          UST: 50
+          USB: 50
+          IDK: 750
+          PAX: 50
   high_risk:
       turnover:
           USD: 5000
@@ -308,6 +332,18 @@ risk_profile:
           USB: 1000
           IDK: 15000
           PAX: 1000
+      multiplier:
+          USD: 200
+          EUR: 200
+          AUD: 200
+          GBP: 200
+          BTC: 0.02
+          ETH: 1
+          LTC: 5
+          UST: 200
+          USB: 200
+          IDK: 3000
+          PAX: 200
   moderate_risk:
       turnover:
           USD: 50000
@@ -333,6 +369,18 @@ risk_profile:
           USB: 5000
           IDK: 75000
           PAX: 5000
+      multiplier:
+          USD: 500
+          EUR: 500
+          AUD: 500
+          GBP: 500
+          BTC: 0.05
+          ETH: 2.5
+          LTC: 12.5
+          UST: 500
+          USB: 500
+          IDK: 7500
+          PAX: 500
   medium_risk:
       turnover:
           USD: 100000
@@ -358,6 +406,18 @@ risk_profile:
           USB: 20000
           IDK: 300000
           PAX: 20000
+      multiplier:
+          USD: 1000
+          EUR: 1000
+          AUD: 1000
+          GBP: 1000
+          BTC: 0.1
+          ETH: 5
+          LTC: 25
+          UST: 1000
+          USB: 1000
+          IDK: 15000
+          PAX: 1000
   low_risk:
       turnover:
           USD: 500000
@@ -383,3 +443,15 @@ risk_profile:
           USB: 50000
           IDK: 750000
           PAX: 50000
+      multiplier:
+          USD: 2000
+          EUR: 2000
+          AUD: 2000
+          GBP: 2000
+          BTC: 0.2
+          ETH: 10
+          LTC: 50
+          UST: 2000
+          USB: 2000
+          IDK: 30000
+          PAX: 2000

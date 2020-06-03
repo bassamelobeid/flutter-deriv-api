@@ -439,6 +439,11 @@ quants:
       isa: json_string
       global: 1
       default: '{}'
+    custom_volume_limits:
+      description: "Multiplier contracts volume limits."
+      isa: json_string
+      global: 1
+      default: '{}'
     global_potential_loss_alert_threshold:
       description: "Alert threshold for global potential loss (in decimal, e.g. 0.5 is equivalent to 50%)"
       isa: Num

@@ -6,8 +6,6 @@ use warnings;
 use Exporter qw(import);
 our @EXPORT_OK = qw(market_pricing_limits minimum_payout_limit maximum_payout_limit minimum_stake_limit maximum_stake_limit);
 
-use BOM::Config;
-
 sub market_pricing_limits {
     my ($currencies, $lc, $markets, $contract_categories) = @_;
 
