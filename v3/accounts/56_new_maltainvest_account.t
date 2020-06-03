@@ -162,10 +162,10 @@ subtest 'VR upgrade to MF - Germany' => sub {
     subtest 'upgrade to MF' => sub {
         my %details = (%client_details, %$mf_details);
         delete $details{new_account_real};
-        $details{first_name} = 'first name DE';
-        $details{residence}  = 'de';
-        $details{phone}      = '+442072343457';
-
+        $details{first_name}                = 'first name DE';
+        $details{residence}                 = 'de';
+        $details{phone}                     = '+442072343457';
+        $details{tax_identification_number} = '11122233344';
         my $res = $t->await::new_account_maltainvest(\%details);
         ok($res->{new_account_maltainvest});
         test_schema('new_account_maltainvest', $res);
@@ -255,7 +255,8 @@ subtest 'MX client can upgrade to MF' => sub {
 
         subtest 'MX upgrade to MF' => sub {
             my %details = (%client_details, %$mf_details);
-            $details{residence} = 'gb';
+            $details{residence}                 = 'gb';
+            $details{tax_identification_number} = '1112223334';
             delete $details{new_account_real};
             my $res = $t->await::new_account_maltainvest(\%details);
 

@@ -10,7 +10,7 @@
   "citizen": "at",
   "place_of_birth": "id",
   "tax_residence": "de,nl",
-  "tax_identification_number": "111-333-555",
+  "tax_identification_number": "[_5]",
   "address_line_1": "20 Broadway Av",
   "address_line_2": "East Melbourne VIC",
   "address_city": "Melbourne",

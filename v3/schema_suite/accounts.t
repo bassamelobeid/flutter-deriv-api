@@ -178,9 +178,11 @@ fail_test_sendrecv_params 'reality_check/test_send.json', 'reality_check/test_re
 test_sendrecv_params 'reality_check/test_send.json',      'reality_check/test_receive.json', 'EUR';
 
 # FINANCIAL ACCOUNT OPENING (MF)
-test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive_error.json', '0', 'Jack', 'dk', '+61234567006';
-test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json',       '1', 'Jack', 'dk', '+61234567008';
-test_sendrecv_params 'authorize/test_send.json',               'authorize/test_receive_mf.json',
+test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive_error.json', '0', 'Jack', 'dk', '+61234567006',
+    '1112223334';
+test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'Jack', 'dk', '+61234567008',
+    '1112223334';
+test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mf.json',
     $suite->get_stashed('new_account_maltainvest/new_account_maltainvest/oauth_token'), 'test-mlt@binary.com', 'Jack';
 test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', '', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies/test_receive_vrt.json', '(USD|EUR|GBP)', 3;
