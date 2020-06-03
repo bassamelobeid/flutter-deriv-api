@@ -299,7 +299,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             <table style="float:left;">
                 <tbody>
                     <tr>
-                        <td>: <input type="text" name="tax_identification_number" value="[% tax_identification_number %]" size="15" /></td>
+                        <td>: <input type="text" name="tax_identification_number" value="[% client.tax_identification_number %]" size="15" /></td>
                         <td>
                             [% IF is_valid_tin %]
                                 <td style="color:green;">Tax format is correct</td>
