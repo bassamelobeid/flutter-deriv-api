@@ -10,6 +10,7 @@ use BOM::User::Client;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Transaction;
+use BOM::Transaction::Utility;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -80,7 +81,7 @@ my $open_bets = get_open_contracts($client);
 foreach my $open_bet (@$open_bets) {
     my $bet_parameters = shortcode_to_parameters($open_bet->{short_code}, $client->currency);
     if ($open_bet->{bet_class} eq 'multiplier') {
-        $bet_parameters->{limit_order} = BOM::Transaction::extract_limit_orders($open_bet);
+        $bet_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($open_bet);
         $open_bet->{limit_order} =
             encode_json_utf8($bet_parameters->{limit_order});
     }

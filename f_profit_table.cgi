@@ -20,7 +20,7 @@ use Finance::Asset::Market::Registry;
 use BOM::ContractInfo;
 use Syntax::Keyword::Try;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Transaction;
+use BOM::Transaction::Utility;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use Performance::Probability qw(get_performance_probability);
 
@@ -148,7 +148,8 @@ if (defined $do_calculation && $sold_contracts_size) {
 
             my $c = eval {
                 my $contract_parameters = shortcode_to_parameters($contract->{short_code}, 'USD');
-                $contract_parameters->{limit_order} = BOM::Transaction::extract_limit_orders($contract) if $contract->{bet_class} eq 'multiplier';
+                $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($contract)
+                    if $contract->{bet_class} eq 'multiplier';
                 produce_contract($contract_parameters);
             };
 
@@ -198,7 +199,11 @@ if (defined $do_calculation && $sold_contracts_size) {
 my $open_contracts = get_open_contracts($client);
 foreach my $contract (@$open_contracts) {
     $contract->{purchase_time} = Date::Utility->new($contract->{purchase_time})->datetime_yyyymmdd_hhmmss;
-    $contract->{limit_order} = encode_json_utf8(BOM::Transaction::extract_limit_orders($contract)) if $contract->{bet_class} eq 'multiplier';
+    $contract->{limit_order} = encode_json_utf8(BOM::Transaction::Utility::extract_limit_orders($contract)) if $contract->{bet_class} eq 'multiplier';
+}
+
+foreach my $contract (@$sold_contracts) {
+    $contract->{limit_order} = encode_json_utf8(BOM::Transaction::Utility::extract_limit_orders($contract)) if $contract->{bet_class} eq 'multiplier';
 }
 #Sort open contracts according to desceding order of purchase time
 @$open_contracts = sort { $b->{purchase_time} cmp $a->{purchase_time} } @$open_contracts;

@@ -36,7 +36,7 @@ BrokerPresentation('Bet Price Over Time');
 
 Bar("Bet Parameters");
 
-my ($loginid, $broker) = map { request()->param($_) } qw(loginid broker);
+my ($loginid, $broker, $transaction_id) = map { request()->param($_) } qw(loginid broker transaction_id);
 
 my $landing_company;
 my $lc_registry;
@@ -56,9 +56,23 @@ my $bet = do {
 
     if ($landing_company and $shortcode and $currency) {
         my $contract_parameters = shortcode_to_parameters($shortcode, $currency);
-        $contract_parameters->{limit_order}     = decode_json_utf8($limit_order) if $limit_order;
+        if ($limit_order) {
+            $limit_order = decode_json_utf8($limit_order);
+
+            # because we are pricing at start we need to make a few adjustment.
+            $contract_parameters->{basis_spot}  = $limit_order->{stop_out}->{basis_spot};
+            $contract_parameters->{limit_order} = {
+                  ($limit_order->{take_profit} and $limit_order->{take_profit}->{order_amount})
+                ? (take_profit => $limit_order->{take_profit}->{order_amount})
+                : (),
+                ($limit_order->{stop_loss} and $limit_order->{stop_loss}->{order_amount})
+                ? (stop_loss => $limit_order->{stop_loss}->{order_amount} * -1)
+                : (),
+            };
+        }
+
         $contract_parameters->{landing_company} = $landing_company;
-        $contract_object                        = produce_contract($contract_parameters);
+        $contract_object = produce_contract($contract_parameters);
     }
     $contract_object;
 };
@@ -89,8 +103,11 @@ if ($bet) {
                 date_pricing    => $start,
                 landing_company => $landing_company
             });
-
-        $debug_link = BOM::PricingDetails->new({bet => $start_bet})->debug_link;
+        $debug_link = BOM::PricingDetails->new({
+                bet            => $start_bet,
+                transaction_id => $transaction_id,
+                client_loginid => $loginid
+            })->debug_link();
 
     }
     catch {
@@ -107,7 +124,7 @@ BOM::Backoffice::Request::template()->process(
         end      => $end      ? $end->datetime               : '',
         timestep => $timestep ? $timestep->as_concise_string : '',
         defined $limit_order ? (limit_order => $limit_order) : (),
-        debug_link => ($bet and $bet->category_code ne 'multiplier') ? $debug_link : undef,
+        debug_link => $debug_link,
     }) || die BOM::Backoffice::Request::template()->error;
 
 code_exit_BO();

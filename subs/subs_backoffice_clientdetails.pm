@@ -15,7 +15,7 @@ use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 use List::MoreUtils qw(any);
 
-use BOM::Transaction;
+use BOM::Transaction::Utility;
 use BOM::Config;
 use BOM::User::AuditLog;
 use BOM::Database::ClientDB;
@@ -882,10 +882,11 @@ sub get_transactions_details {
             limit  => $limit,
         });
 
-        foreach (@$transactions) {
-            $_->{absolute_amount} = abs($_->{amount});
-            $_->{limit_order}     = encode_json_utf8(BOM::Transaction::extract_limit_orders($_))
-                if $_->{bet_class} and $_->{bet_class} eq 'multiplier';
+        foreach my $transaction (@{$transactions}) {
+            $transaction->{absolute_amount} = abs($_->{amount});
+            $transaction->{limit_order}     = encode_json_utf8(BOM::Transaction::Utility::extract_limit_orders($transaction))
+                if defined $transaction->{bet_class}
+                and $transaction->{bet_class} eq 'multiplier';
         }
     }
 

@@ -125,7 +125,7 @@
 
         [% IF transaction.financial_market_bet_id.defined %]
             <td>
-                <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, limit_order => transaction.limit_order, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid}) | none %]">
+                <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, limit_order => transaction.limit_order, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid, transaction_id => transaction.id}) | none %]">
                     [% transaction.id %]
                 </a>
             </td>

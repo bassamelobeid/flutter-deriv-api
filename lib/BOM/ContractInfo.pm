@@ -5,6 +5,8 @@ use warnings;
 
 use Syntax::Keyword::Try;
 use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Transaction::Utility;
+use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::Backoffice::Request;
 
 # Get:
@@ -23,7 +25,9 @@ sub get_info {
         $info->{is_legacy} = 1;
     } else {
         try {
-            my $contract = produce_contract($fmb->{short_code}, $currency);
+            my $contract_parameters = shortcode_to_parameters($fmb->{short_code}, $currency);
+            $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
+            my $contract = produce_contract($contract_parameters);
             $info->{longcode} = BOM::Backoffice::Request::localize($contract->longcode);
             if (not $fmb->{is_sold}) {
                 if ($contract and $contract->may_settle_automatically) {

@@ -31,6 +31,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 use BOM::Config::Chronicle;
 use Volatility::EconomicEvents;
+use BOM::Transaction::ContractUpdateHistory;
 
 use BOM::MarketData::Display::VolatilitySurface;
 
@@ -42,6 +43,10 @@ has bet => (
     is       => 'ro',
     isa      => 'BOM::Product::Contract',
     required => 1,
+);
+
+has [qw(client_loginid transaction_id)] => (
+    is => 'ro',
 );
 
 has number_format => (
@@ -79,23 +84,54 @@ sub _build_master_surface {
     return $master_surface;
 }
 
-sub debug_link {
-    my ($self) = @_;
+sub _debug_content_for_multiplier {
+    my $self = shift;
+
+    my $bet = $self->bet;
+
+    my $attr_content = $self->_get_multiplier_overview();
+
+    my @tabs_content = ({
+        label   => 'Overview',
+        url     => 'ov',
+        content => $attr_content,
+    });
+
+    if ($bet->cancellation) {
+        my $cancellation_content = $self->_get_price({
+            id          => 'dealcancellation' . $bet->id,
+            contract    => $bet,
+            amount_type => 'cancellation_cv',
+        });
+
+        push @tabs_content,
+            +{
+            label   => 'Deal Cancellation',
+            url     => 'dc',
+            content => $cancellation_content,
+            };
+    }
+
+    return \@tabs_content;
+}
+
+sub _debug_content {
+    my $self = shift;
 
     my $bet = $self->bet;
 
     my $attr_content = $self->_get_overview();
 
     my $ask_price_content = $self->_get_price({
-        id       => 'buildask' . $bet->id,
-        contract => $bet,
-        type     => $bet->is_binary ? 'ask_probability' : 'ask_price',
+        id          => 'buildask' . $bet->id,
+        contract    => $bet,
+        amount_type => $bet->is_binary ? 'ask_probability' : 'ask_price',
     });
 
     my $bid_price_content = $self->_get_price({
-        id       => 'buildbid' . $bet->id,
-        contract => $bet,
-        type     => $bet->is_binary ? 'bid_probability' : 'bid_price',
+        id          => 'buildbid' . $bet->id,
+        contract    => $bet,
+        amount_type => $bet->is_binary ? 'bid_probability' : 'bid_price',
     });
 
     my $tabs_content = [{
@@ -141,6 +177,16 @@ sub debug_link {
             content => $self->_get_rates(),
             };
     }
+
+    return $tabs_content;
+}
+
+sub debug_link {
+    my $self = shift;
+
+    my $bet = $self->bet;
+
+    my $tabs_content = $bet->category_code eq 'multiplier' ? $self->_debug_content_for_multiplier() : $self->_debug_content();
 
     my $debug_link;
     BOM::Backoffice::Request::template()->process(
@@ -281,12 +327,15 @@ sub _get_price {
     my ($self, $args) = @_;
     my $id = $args->{id};
 
-    my $contract = $args->{contract};
-    my $type     = $args->{type};
+    my $contract    = $args->{contract};
+    my $amount_type = $args->{amount_type};
+
+    my $content =
+        (ref($contract->$amount_type) eq 'Math::Util::CalculatedValue::Validatable')
+        ? $self->_debug_prob(['reset', $contract->$amount_type])
+        : $self->_debug_price([$contract, $amount_type]);
 
     my $price_content;
-    my $content = $contract->is_binary ? $self->_debug_prob(['reset', $contract->$type]) : $self->_debug_price([$contract, $type]);
-
     BOM::Backoffice::Request::template()->process(
         'backoffice/container/tree_builder.html.tt',
         {
@@ -297,6 +346,112 @@ sub _get_price {
     ) || die BOM::Backoffice::Request::template()->error;
 
     return $price_content;
+}
+
+# Because of the distinct nature of multiplier options,
+# most of the overview parameters on binary options are not application
+sub _get_multiplier_overview {
+    my $self = shift;
+
+    my $bet = $self->bet;
+
+    my @pricing_attributes = ({
+            label => 'Ask Price',
+            value => $bet->ask_price
+        },
+        {
+            label => $bet->is_sold ? 'Sell Price' : 'Bid Price',
+            value => $bet->bid_price
+        }
+
+    );
+
+    my @contract_params = ({
+            label => 'Stake',
+            value => $bet->_user_input_stake,
+        },
+        {
+            label => 'Multiplier',
+            value => $bet->multiplier,
+        },
+        {
+            label => 'Reference Spot (spot price used to calculate all limit orders)',
+            value => $bet->stop_out->basis_spot,
+        },
+        {
+            label => 'Pricing vol',
+            value => $bet->pricing_vol,
+        },
+        {
+            label => 'Stop Out',
+            value => $bet->stop_out->barrier_value,
+        },
+    );
+
+    if ($bet->stop_loss) {
+        push @contract_params,
+            +{
+            label => 'Stop Loss (last updated)',
+            value => $bet->stop_loss->barrier_value
+            },
+            +{
+            label => 'Order date',
+            value => $bet->stop_loss->order_date->datetime
+            };
+    }
+
+    if ($bet->take_profit) {
+        push @contract_params,
+            +{
+            label => 'Take Profit (last updated)',
+            value => $bet->take_profit->barrier_value
+            },
+            +{
+            label => 'Order date',
+            value => $bet->take_profit->order_date->datetime
+            };
+    }
+
+    # We get audit details for limit order here.
+    my $audit_params = BOM::Transaction::ContractUpdateHistory->new(
+        client => BOM::User::Client->new({loginid => $self->client_loginid}),
+        )->get_history_by_transaction_id({
+            transaction_id => $self->transaction_id,
+        });
+
+    my @contract_update_history;
+    foreach (@$audit_params) {
+        my $value = $_->{order_amount} ? 'Order value [' . $_->{order_amount} . '] Barrier Value [' . $_->{value} . ']' : 'Order cancelled';
+        push @contract_update_history,
+            +{
+            label => $_->{display_name} . ' updated on ' . Date::Utility->new($_->{order_date})->datetime,
+            value => $value,
+            };
+    }
+
+    my @tables = ({
+            title => 'Pricing Attributes',
+            rows  => [@pricing_attributes],
+        },
+        {
+            title => 'Contract Parameters',
+            rows  => [@contract_params],
+        },
+        {
+            title => 'Contract Update History',
+            rows  => [@contract_update_history],
+        });
+
+    my $overview;
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/container/multiple_tables.html.tt',
+        {
+            tables => [@tables],
+        },
+        \$overview
+    ) || die BOM::Backoffice::Request::template()->error;
+
+    return $overview;
 }
 
 sub _get_overview {
