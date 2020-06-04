@@ -146,6 +146,11 @@ payments:
       description: 'Cryptocurrencies related config'
       isa: section
       contains:
+        deposit_required_confirmations:
+          description: "Number of required confirmations needed to approve a deposit based on its equivalent amount in USD. 'Keys' are the minimum deposit amount in USD and 'values' are the number of confirmations needed. The amount will be checked to be greater than or equal to the maximum key (amount)."
+          isa: json_string
+          default: '{"0":1,"10":2,"100":3}'
+          global: 1
         sweep_reserve_balance:
           description: "Reserve Balance of Sweep"
           isa: section
