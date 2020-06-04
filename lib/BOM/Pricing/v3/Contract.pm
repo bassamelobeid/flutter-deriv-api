@@ -231,7 +231,7 @@ sub _get_ask {
 
                 if ($contract->cancellation) {
                     $response->{cancellation} = {
-                        ask_price   => $contract->cost_of_cancellation,
+                        ask_price   => $contract->cancellation_price,
                         date_expiry => $contract->cancellation_expiry->epoch,
                     };
                 }
@@ -939,7 +939,7 @@ sub _build_bid_response {
         # deal cancellation
         if ($contract->cancellation) {
             $response->{cancellation} = {
-                ask_price   => $contract->cost_of_cancellation,
+                ask_price   => $contract->cancellation_price,
                 date_expiry => $contract->cancellation_expiry->epoch,
             };
         }
