@@ -883,7 +883,7 @@ sub get_transactions_details {
         });
 
         foreach my $transaction (@{$transactions}) {
-            $transaction->{absolute_amount} = abs($_->{amount});
+            $transaction->{absolute_amount} = abs($transaction->{amount});
             $transaction->{limit_order}     = encode_json_utf8(BOM::Transaction::Utility::extract_limit_orders($transaction))
                 if defined $transaction->{bet_class}
                 and $transaction->{bet_class} eq 'multiplier';
