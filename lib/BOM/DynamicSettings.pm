@@ -260,6 +260,7 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.minimum.by_currency
                 payments.transfer_between_accounts.maximum.default
                 payments.experimental_currencies_allowed
+                payments.crypto.deposit_required_confirmations
                 payments.crypto.restricted_countries
                 payments.crypto.sweep_reserve_balance.BTC
                 payments.crypto.sweep_reserve_balance.LTC
