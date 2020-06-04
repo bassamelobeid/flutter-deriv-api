@@ -144,13 +144,13 @@ subtest 'deal cancellation' => sub {
     };
 
     my $c = produce_contract($args);
-    is $c->cost_of_cancellation, 4.48, 'cost of cancellation is 4.48';
+    is $c->cancellation_price, 4.48, 'cost of cancellation is 4.48';
     is $c->cancellation_expiry->epoch, $now->plus_time_interval('1h')->epoch, 'cancellation expiry is correct';
     is $c->ask_price, 104.48, 'ask price is 104.48';
 
     delete $args->{cancellation};
     $c = produce_contract($args);
-    is $c->cost_of_cancellation, '0.00', 'zero cost of cancellation';
+    is $c->cancellation_price, '0.00', 'zero cost of cancellation';
     ok !$c->cancellation_expiry, 'cancellation expiry is undef';
     is $c->ask_price, 100, 'ask price is 100 as per user input';
     ok !$c->is_cancelled,       'not cancelled';
@@ -208,7 +208,7 @@ subtest 'take profit cap' => sub {
         },
     };
     my $c = produce_contract($args);
-    my $error = exception {$c->is_valid_to_buy};
+    my $error = exception { $c->is_valid_to_buy };
     is $error->message_to_client->[0], 'Please enter a take profit amount that\'s lower than [_1].';
     is $error->message_to_client->[1], '90.00', 'max at 90.00';
 };
@@ -291,6 +291,6 @@ subtest 'deal cancellation with fx' => sub {
     };
     my $c = produce_contract($args);
     is $c->ask_price, 101.25, 'ask price is 101.25';
-    is $c->cost_of_cancellation , 1.25, 'cost of cancellation is 1.25';
+    is $c->cancellation_price , 1.25, 'cost of cancellation is 1.25';
 };
 done_testing();

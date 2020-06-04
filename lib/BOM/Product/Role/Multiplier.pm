@@ -13,6 +13,7 @@ use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 use Machine::Epsilon;
 use Scalar::Util qw(looks_like_number);
+use Math::Util::CalculatedValue::Validatable;
 use Time::Duration::Concise;
 use BOM::Config::Quants qw(minimum_stake_limit);
 
@@ -426,7 +427,7 @@ override '_build_bid_price' => sub {
 override '_build_ask_price' => sub {
     my $self = shift;
 
-    return $self->_user_input_stake + $self->cost_of_cancellation;
+    return $self->_user_input_stake + $self->cancellation_price;
 };
 
 =head2 pricing engine
@@ -597,7 +598,7 @@ sub available_orders {
     }
 
     if ($self->cancellation) {
-        push @available_orders, ('cancellation', ['price', $self->cost_of_cancellation]);
+        push @available_orders, ('cancellation', ['price', $self->cancellation_price]);
     }
 
     return \@available_orders;
@@ -695,29 +696,83 @@ sub close_tick {
     return undef;
 }
 
-=head2 cost_of_cancellation
+=head2 cancellation_cv
 
 We allow client to purchase deal cancellation on top of their main contract
 at a premium.
 
+returns <Math::Util::CalculatedValue::Validatable>
+
 =cut
 
-sub cost_of_cancellation {
+sub cancellation_cv {
     my $self = shift;
 
     # if there's no cancellation request, do not charge
-    my $dc_ask = 0;
-
-    # do not recalculate cancellation price again if contract is not pricing new
-    if ($self->_order->{cancellation} and $self->_order->{cancellation}->{price}) {
-        $dc_ask = $self->_order->{cancellation}->{price};
-    } elsif ($self->cancellation) {
-        my $dc_model_price = $self->cancellation_tp ? $self->_american_binary_knockout + $self->_double_knockout : $self->_standard_barrier_option;
-        my $cost = $self->_user_input_stake * $self->multiplier * $dc_model_price;
-        $dc_ask = max($self->_minimum_cancellation_commission, $cost * (1 + $self->_multiplier_config->{cancellation_commission}));
+    unless ($self->cancellation) {
+        return Math::Util::CalculatedValue::Validatable->new({
+            name        => 'cancellation_ask',
+            description => 'ask price for deal cancellation',
+            set_by      => __PACKAGE__,
+            base_amount => 0,
+        });
     }
 
-    return financialrounding('price', $self->currency, $dc_ask);
+    my $backprice = $self->underlying->for_date ? 1 : 0;
+    my $cancellation_price =
+        ($self->_order->{cancellation} and $self->_order->{cancellation}->{price}) ? $self->_order->{cancellation}->{price} : undef;
+
+    # for backprice, we want the breakdown of deal cancellation calculation
+    if (not $backprice and defined $cancellation_price) {
+        return Math::Util::CalculatedValue::Validatable->new({
+            name        => 'cancellation_ask',
+            description => 'ask price for deal cancellation',
+            set_by      => __PACKAGE__,
+            base_amount => $cancellation_price,
+        });
+    }
+
+    my $cost_cv = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'cancellation_ask',
+        description => 'ask price for deal cancellation',
+        set_by      => __PACKAGE__,
+        minimum     => $self->_minimum_cancellation_commission,
+        base_amount => 0,
+    });
+
+    if ($self->cancellation_tp) {
+        $cost_cv->include_adjustment('reset', $self->_american_binary_knockout);
+        $cost_cv->include_adjustment('add',   $self->_double_knockout);
+    } else {
+        $cost_cv->include_adjustment('reset', $self->_standard_barrier_option);
+    }
+
+    my $volume_cv = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'volume',
+            description => 'stake x multiplier',
+            set_by      => __PACKAGE__,
+            base_amount => $self->_user_input_stake * $self->multiplier,
+
+    });
+
+    $cost_cv->include_adjustment('multiply', $volume_cv);
+
+    my $comm_multiplier_cv = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'commission_multiplier',
+        description => 'commission markup on the cost',
+        set_by      => __PACKAGE__,
+        base_amount => 1 + $self->_multiplier_config->{cancellation_commission},
+    });
+
+    $cost_cv->include_adjustment('multiply', $comm_multiplier_cv);
+
+    return $cost_cv;
+}
+
+sub cancellation_price {
+    my $self = shift;
+
+    return financialrounding('price', $self->currency, $self->cancellation_cv->amount);
 }
 
 ### PRIVATE METHODS ###
@@ -932,6 +987,18 @@ has _formula_args => (
 sub _build_formula_args {
     my $self = shift;
 
+    return {
+        t => ($self->cancellation_expiry->epoch - $self->date_start->epoch) / (86400 * 365),
+        r => 0,
+        q => 0,
+        mu    => 0,
+        sigma => $self->pricing_vol,
+    };
+}
+
+override 'pricing_vol' => sub {
+    my $self = shift;
+
     # currently, only synthetic and forex.
     my $sigma;
     my $market = $self->underlying->market->name;
@@ -948,14 +1015,8 @@ sub _build_formula_args {
         die 'get_volatility for unknown market ' . $market;
     }
 
-    return {
-        t => ($self->cancellation_expiry->epoch - $self->date_start->epoch) / (86400 * 365),
-        r => 0,
-        q => 0,
-        mu    => 0,
-        sigma => $sigma,
-    };
-}
+    return $sigma;
+};
 
 sub _spot_proxy {
     return 1;

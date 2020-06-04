@@ -178,7 +178,7 @@ subtest 'shortcode to parameters' => sub {
         },
     };
     my $c2 = produce_contract($params);
-    is $c->cost_of_cancellation, $c2->cost_of_cancellation, 'same deal cancellation price';
+    is $c->cancellation_price, $c2->cancellation_price, 'same deal cancellation price';
     ok $c->take_profit->order_amount != $c2->take_profit->order_amount, 'take profit amount different';
 };
 
@@ -214,7 +214,7 @@ subtest 'deal cancellation' => sub {
     };
 
     my $c = produce_contract($args);
-    is $c->cost_of_cancellation, 4.48, 'cost of cancellation is 4.48';
+    is $c->cancellation_price, 4.48, 'cost of cancellation is 4.48';
     is $c->cancellation_expiry->epoch, $now->plus_time_interval('1h')->epoch, 'cancellation expiry is correct';
     is $c->ask_price, 104.48, 'ask price is 104.48';
     ok !$c->is_cancelled, 'not cancelled';
@@ -222,7 +222,7 @@ subtest 'deal cancellation' => sub {
 
     delete $args->{cancellation};
     $c = produce_contract($args);
-    is $c->cost_of_cancellation, '0.00', 'zero cost of cancellation';
+    is $c->cancellation_price, '0.00', 'zero cost of cancellation';
     ok !$c->cancellation_expiry, 'cancellation expiry is undef';
     is $c->ask_price, 100, 'ask price is 100 as per user input';
     ok !$c->is_cancelled,       'not cancelled';
@@ -611,7 +611,7 @@ subtest 'deal cancellation with fx' => sub {
     };
     my $c = produce_contract($args);
     is $c->ask_price, 101.25, 'ask price is 101.25';
-    is $c->cost_of_cancellation , 1.25, 'cost of cancellation is 1.25';
+    is $c->cancellation_price , 1.25, 'cost of cancellation is 1.25';
 };
 
 done_testing();
