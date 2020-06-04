@@ -20,12 +20,12 @@
     <tr>
         [% FOR t IN ['deposits', 'withdrawals'] %]
         <td>
-            <table>
+            <table class="sortable">
                 <tr>
                     <th style="border-bottom: 1px solid #888888;">[% t %] [% currency %]</th>
                     <th style="border-bottom: 1px solid #888888;"><b>TOTAL:</b> [% summary.$t.total %]</th>
                 </tr>
-                [% FOR sys_key IN summary.$t.systems.keys %]
+                [% FOR sys_key IN summary.$t.systems.keys.sort %]
                 <tr>
                     <td width="180" style="border-right: 1px solid #888888;">[% sys_key %]</td>
                     <td width="30">[% summary.$t.systems.$sys_key %]</td>
