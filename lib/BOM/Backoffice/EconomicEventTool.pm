@@ -30,9 +30,10 @@ sub get_economic_events_for_date {
     return _err('Date is undefined') unless $date;
     $date = Date::Utility->new($date);
 
-    my $eec             = _eec();
-    my $from            = $date->truncate_to_day;
-    my $to              = $from->plus_time_interval('23h59m59s');
+    my $eec  = _eec();
+    my $from = $date->truncate_to_day;
+    my $to   = $from->plus_time_interval('23h59m59s');
+    $eec->clear_ee_cache;
     my $economic_events = $eec->get_latest_events_for_period({
         from => $from,
         to   => $to,
