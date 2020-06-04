@@ -7,10 +7,9 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Helper::FinancialMarketBet;
 
 use BOM::Config::Runtime;
-use Machine::Epsilon;
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
-use BOM::Transaction;
+use BOM::Transaction::Utility;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::Product::ContractFactory qw(produce_contract);
 use ExpiryQueue qw(enqueue_open_contract dequeue_open_contract);
@@ -88,7 +87,7 @@ sub _build_contract {
     $self->fmb($fmb);
 
     my $contract_params = shortcode_to_parameters($fmb->{short_code}, $self->client->currency);
-    my $limit_order = BOM::Transaction::extract_limit_orders($fmb);
+    my $limit_order = BOM::Transaction::Utility::extract_limit_orders($fmb);
     $contract_params->{limit_order} = $limit_order if %$limit_order;
 
     $contract_params->{is_sold}    = $fmb->{is_sold};
@@ -308,53 +307,6 @@ has [qw(take_profit stop_loss)] => (
     is       => 'rw',
     init_arg => undef,
 );
-
-sub get_history {
-    my $self = shift;
-
-    my $fmb_dm  = $self->_fmb_datamapper;
-    my @allowed = sort keys %{$self->allowed_update};
-
-    my $results = $fmb_dm->get_multiplier_audit_details_by_contract_id($self->contract_id);
-    my @history;
-    my $prev;
-    for (my $i = 0; $i <= $#$results; $i++) {
-        my $current = $results->[$i];
-        my @entry;
-        foreach my $order_type (@allowed) {
-            next unless $current->{$order_type . '_order_date'};
-            my $order_amount_str = $order_type . '_order_amount';
-            my $display_name = $order_type eq 'take_profit' ? localize('Take profit') : localize('Stop loss');
-            my $order_amount;
-            unless ($prev) {
-                $order_amount = $current->{$order_amount_str} ? $current->{$order_amount_str} + 0 : 0;
-            } else {
-                if (defined $prev->{$order_amount_str} and defined $current->{$order_amount_str}) {
-                    next if (abs($prev->{$order_amount_str} - $current->{$order_amount_str}) <= machine_epsilon());
-                    $order_amount = $current->{$order_amount_str} + 0;
-                } elsif (defined $prev->{$order_amount_str}) {
-                    $order_amount = 0;
-                } elsif (defined $current->{$order_amount_str}) {
-                    $order_amount = $current->{$order_amount_str} + 0;
-                }
-            }
-
-            push @entry,
-                +{
-                display_name => $display_name,
-                order_amount => $order_amount,
-                order_date   => Date::Utility->new($current->{$order_type . '_order_date'})->epoch,
-                value        => $self->contract->new_order({$order_type => abs($order_amount)})->barrier_value,
-                order_type   => $order_type,
-                }
-                if (defined $order_amount);
-        }
-        $prev = $current;
-        push @history, @entry;
-    }
-
-    return [reverse @history];
-}
 
 has requeue_stop_out => (
     is        => 'rw',

@@ -25,6 +25,7 @@ use BOM::User;
 
 use BOM::Transaction;
 use BOM::Transaction::ContractUpdate;
+use BOM::Transaction::ContractUpdateHistory;
 use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Platform::Client::IDAuthentication;
@@ -352,11 +353,10 @@ subtest 'update take profit', sub {
         cmp_ok $audit_details->[1][9], "lt", $audit_details->[0][9], "timestamp are in order";
 
         subtest "get update history for $fmb->{id}" => sub {
-            $updater = BOM::Transaction::ContractUpdate->new(
+            my $update_history = BOM::Transaction::ContractUpdateHistory->new(
                 client      => $cl,
-                contract_id => $fmb->{id},
             );
-            my $history = $updater->get_history();
+            my $history = $update_history->get_history_by_contract_id({contract_id => $fmb->{id}});
             is scalar(@$history), 3, 'has three entries';
             is $history->[0]->{display_name}, 'Take profit';
             is $history->[0]->{order_amount}, 0;
@@ -376,11 +376,11 @@ subtest 'update take profit', sub {
             );
             ok $updater->is_valid_to_update, 'valid to update';
             $updater->update;
-            $res = $updater->get_history;
-            is $res->[0]->{display_name}, 'Take profit';
-            is $res->[0]->{order_amount}, 11;
-            is $res->[1]->{display_name}, 'Stop loss';
-            is $res->[1]->{order_amount}, -52;
+            $res = $update_history->get_history_by_contract_id({contract_id => $fmb->{id}});
+            is $res->[1]->{display_name}, 'Take profit';
+            is $res->[1]->{order_amount}, 11;
+            is $res->[0]->{display_name}, 'Stop loss';
+            is $res->[0]->{order_amount}, -52;
             is $res->[2]->{display_name}, 'Take profit';
             is $res->[2]->{order_amount}, 0;
             is $res->[3]->{display_name}, 'Take profit';
