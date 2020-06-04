@@ -335,22 +335,54 @@ sub get_multiplier_audit_details_by_contract_id {
     my $contract_id = shift;
 
     my $sql = q{
-        (
-            SELECT take_profit_order_date, take_profit_order_amount, stop_loss_order_date, stop_loss_order_amount, stop_out_order_date, stop_out_order_amount
-                FROM  audit.multiplier
-                WHERE financial_market_bet_id=? ORDER BY timestamp
-        ) UNION ALL
-        (
-            SELECT take_profit_order_date, take_profit_order_amount, stop_loss_order_date, stop_loss_order_amount, stop_out_order_date, stop_out_order_amount
-                FROM bet.multiplier
-                WHERE financial_market_bet_id =?
-        )
+        SELECT * from bet_v1.get_multiplier_audit_details_by_contract_id(?)
     };
 
     my $results = $self->db->dbic->run(
         fixup => sub {
             my $sth = $_->prepare($sql);
-            $sth->execute($contract_id, $contract_id);
+            $sth->execute($contract_id);
+            return $sth->fetchall_arrayref({});
+        });
+
+    return $results;
+}
+
+=head2 get_multiplier_audit_details_by_transaction_id
+
+Fetch historical updates for multiplier for a specific transaction id
+
+=cut
+
+sub get_multiplier_audit_details_by_transaction_id {
+    my $self           = shift;
+    my $transaction_id = shift;
+
+    my $sql = q{
+        SELECT * from bet_v1.get_multiplier_audit_details_by_transaction_id(?)
+    };
+
+    my $results = $self->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($transaction_id);
+            return $sth->fetchall_arrayref({});
+        });
+
+    return $results;
+}
+
+sub get_contract_by_account_id_transaction_id {
+    my ($self, $account_id, $transaction_id) = @_;
+
+    my $sql = q{
+        SELECT * from bet_v1.get_contract_by_account_id_transaction_id(?,?)
+    };
+
+    my $results = $self->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($account_id, $transaction_id);
             return $sth->fetchall_arrayref({});
         });
 
@@ -361,27 +393,13 @@ sub get_contract_by_account_id_contract_id {
     my ($self, $account_id, $contract_id) = @_;
 
     my $sql = q{
-        SELECT fmb.*,
-               m.multiplier,
-               m.basis_spot,
-               m.stop_out_order_date,
-               m.stop_out_order_amount,
-               m.take_profit_order_date,
-               m.take_profit_order_amount,
-               m.stop_loss_order_date,
-               m.stop_loss_order_amount
-        FROM
-            bet.financial_market_bet as fmb
-            LEFT JOIN bet.multiplier as m ON fmb.id=m.financial_market_bet_id
-        WHERE
-            fmb.id=?
-            AND fmb.account_id=?
+        SELECT * from bet_v1.get_contract_by_account_id_contract_id(?,?)
     };
 
     my $results = $self->db->dbic->run(
         fixup => sub {
             my $sth = $_->prepare($sql);
-            $sth->execute($contract_id, $account_id);
+            $sth->execute($account_id, $contract_id);
             return $sth->fetchall_arrayref({});
         });
 
