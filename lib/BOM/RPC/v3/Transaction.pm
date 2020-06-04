@@ -28,6 +28,7 @@ use BOM::Pricing::v3::Utility;
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
 use BOM::User::Client;
 use BOM::Transaction::ContractUpdate;
+use BOM::Transaction::ContractUpdateHistory;
 use Date::Utility;
 
 my $json = JSON::MaybeXS->new;
@@ -535,7 +536,7 @@ rpc "sell",
         landing_company => $client->landing_company->short,
     };
 
-    $contract_parameters->{limit_order} = BOM::Transaction::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
+    $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
 
     my $purchase_date = time;
     my $trx           = BOM::Transaction->new({
@@ -677,18 +678,15 @@ rpc contract_update_history => sub {
 
     my $response;
     try {
-        my $updater = BOM::Transaction::ContractUpdate->new(
-            client      => $client,
-            contract_id => $contract_id,
-        );
+        $response = BOM::Transaction::ContractUpdateHistory->new(
+            client => $client,
+        )->get_history_by_contract_id({contract_id => $contract_id});
 
-        if (my $error = $updater->validation_error) {
+        if (ref $response eq 'HASH' and my $localized_error = $response->{error}) {
             $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'ContractUpdateHistoryFailure',
-                message_to_client => localize($error->{message_to_client}),
+                message_to_client => $localized_error,
             });
-        } else {
-            $response = $updater->get_history;
         }
     }
     catch {
@@ -745,7 +743,7 @@ rpc cancel => sub {
         landing_company => $client->landing_company->short,
     };
 
-    $contract_parameters->{limit_order} = BOM::Transaction::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
+    $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
 
     my $purchase_date = time;
     my $trx           = BOM::Transaction->new({
