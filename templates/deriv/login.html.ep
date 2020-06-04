@@ -131,8 +131,10 @@
                 showError(element, 'required');
             } else if (!regex.test(value)) {
                 showError(element, 'invalid');
+                raiseLabel(element, 1);
             } else {
                 hasError = false;
+                raiseLabel(element, 0);
             }
 
             return !hasError;
@@ -152,6 +154,9 @@
         if (el) {
             el.classList.remove('hide');
         }
+    }
+    function raiseLabel(element, should_raise) {
+        element.parentNode.querySelector('label').classList[should_raise ? 'add' : 'remove']('raised-label');
     }
 
     function togglePasswordVisibility() {

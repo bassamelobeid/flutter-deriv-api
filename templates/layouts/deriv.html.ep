@@ -184,6 +184,10 @@
             div.input-wrapper #btnToggle.icon_visible {
                 background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICAgIDxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPHBhdGggZD0iTTAgMGgxNnYxNkgweiIvPgogICAgICAgIDxwYXRoIGZpbGw9IiM5OTkiIGZpbGwtcnVsZT0ibm9uemVybyIgZD0iTTggNGMyLjU3OCAwIDQuODc4IDEuNTUgNiA0LTEuMTIyIDIuNDUtMy40MTUgNC02IDRzLTQuODc4LTEuNTUtNi00YzEuMTIyLTIuNDUgMy40MjItNCA2LTRtMC0xQzQuNjY3IDMgMS44MiA1LjA3My42NjcgOGMxLjE1MyAyLjkyNyA0IDUgNy4zMzMgNXM2LjE4LTIuMDczIDcuMzMzLTVjLTEuMTUzLTIuOTI3LTQtNS03LjMzMy01em0wIDNhMiAyIDAgMSAxLS4wMDEgNC4wMDFBMiAyIDAgMCAxIDggNm0wLTFDNi4zNDcgNSA1IDYuMzQ3IDUgOHMxLjM0NyAzIDMgMyAzLTEuMzQ3IDMtMy0xLjM0Ny0zLTMtM3oiLz4KICAgIDwvZz4KPC9zdmc+Cg==");
             }
+            input[type=password]::-ms-reveal,
+            input[type=password]::-ms-clear {
+              display: none;
+            }
             input {
                 background: none;
                 color: var(--color-black-3);
@@ -251,7 +255,7 @@
                 opacity: 0.4;
             }
             input:focus ~ label,
-            input:-webkit-autofill ~ label,
+            label.raised-label,
             input:not(:focus):not(:invalid) ~ label {
                 background-color: var(--color-white);
                 -webkit-transform: translate(0, -1.8rem) scale(0.75);
@@ -261,6 +265,14 @@
                 -webkit-transform-origin: top left;
                 -ms-transform-origin: top left;
                 transform-origin: top left;
+            }
+            /* somehow this `input:-webkit-autofill` was not picked on focus in Edge
+            if we add it with other classes as above. it worked separately. */
+            input:-webkit-autofill ~ label {
+                background-color: var(--color-white);
+                -webkit-transform: translate(0, -1.8rem) scale(0.75);
+                padding: 0 4px;
+                -webkit-transform-origin: top left;
             }
             input[style*="background"] ~ .input-button {
                 right: 32px;
