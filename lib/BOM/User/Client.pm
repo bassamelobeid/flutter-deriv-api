@@ -577,7 +577,8 @@ sub documents_uploaded {
             my $type                = 'other';
             my %doc_type_categories = DOCUMENT_TYPE_CATEGORIES();
             $type = 'proof_of_identity' if (first { $_ eq $single_document->document_type } @{$doc_type_categories{POI}{doc_types_appreciated}});
-            $type = 'proof_of_address'  if (first { $_ eq $single_document->document_type } qw(proofaddress payslip bankstatement cardstatement));
+            $type = 'proof_of_address'
+                if (first { $_ eq $single_document->document_type } qw(proofaddress payslip utility_bill bankstatement cardstatement));
 
             $documents{$type}{documents}{$single_document->file_name} = $doc_structure->($single_document);
 
