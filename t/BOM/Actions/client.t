@@ -336,7 +336,7 @@ subtest 'client_verification after upload document himself' => sub {
             return $sth->fetchall_arrayref({})->[0]{file_name};
         });
 
-    like ($doc_file_name, qr{\.jpg$}, 'uploaded document has expected jpg extension');
+    like($doc_file_name, qr{\.jpg$}, 'uploaded document has expected jpg extension');
 
     is_deeply([keys %$existing_onfido_docs], [$doc->id], 'now the doc is stored in db');
 

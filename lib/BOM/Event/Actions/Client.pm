@@ -99,7 +99,7 @@ use constant ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX => 'ONFIDO::POI::EMAIL::N
 
 # List of document types that we use as proof of address
 use constant POA_DOCUMENTS_TYPE => qw(
-    proofaddress payslip bankstatement cardstatement
+    proofaddress payslip bankstatement cardstatement utility_bill
 );
 
 # List of document types that we use as proof of identity
@@ -141,6 +141,7 @@ my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
     professional_eu_qualified_investor           => 'unknown',
     misc                                         => 'unknown',
     code_of_conduct                              => 'unknown',
+    utility_bill                                 => 'unknown',
     other                                        => 'unknown',
 );
 
@@ -997,10 +998,10 @@ async sub _get_onfido_applicant {
     my $client                     = $args{client};
     my $onfido                     = $args{onfido};
     my $uploaded_manually_by_staff = $args{uploaded_manually_by_staff};
-
-    my $country = $client->place_of_birth // $client->residence;
+    my $country                    = $client->place_of_birth // $client->residence;
     try {
         my $is_supported_country = BOM::Config::Onfido::is_country_supported($country);
+
         unless ($is_supported_country) {
             DataDog::DogStatsd::Helper::stats_inc('onfido.unsupported_country', {tags => [$country]});
             await _send_email_onfido_unsupported_country_cs($client) unless $uploaded_manually_by_staff;
@@ -1009,8 +1010,7 @@ async sub _get_onfido_applicant {
         }
         # accessing applicant_data from onfido_applicant table
         my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
-
-        my $applicant_id = $applicant_data->{id};
+        my $applicant_id   = $applicant_data->{id};
 
         if ($applicant_id) {
             $log->debugf('Applicant id already exists, returning that instead of creating new one');
@@ -1020,7 +1020,6 @@ async sub _get_onfido_applicant {
         my $start     = Time::HiRes::time();
         my $applicant = await $onfido->applicant_create(%{_client_onfido_details($client)});
         my $elapsed   = Time::HiRes::time() - $start;
-
         # saving data into onfido_applicant table
         BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id);
 
@@ -1090,6 +1089,8 @@ sub _update_client_status {
     $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $args{status}, $args{message});
     if ($args{status} eq 'age_verification') {
         _email_client_age_verified($client);
+        # send to CS if its regulated client (client of MX, MF, MLT)
+        _send_CS_email_POI_passed($client) if $client->landing_company->is_eu;
     }
     $client->status->set($args{status}, 'system', $args{message});
 
@@ -1313,35 +1314,66 @@ async sub _send_report_automated_age_verification_failed {
         await $redis_events_write->setex($redis_key, ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT, 1);
 
         # POI email sent, will be valid for 6 hours
-        await $redis_events_write->setex(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id, ONFIDO_STOP_SENDING_EMAIL_TIMEOUT, 1);
+        await $redis_events_write->setex(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id, ONFIDO_STOP_SENDING_EMAIL_TIMEOUT, 1)
+            unless ($client->landing_company->is_eu);
+
     } else {
-        $log->warn('failed to send Onfido age verification email.');
+        $log->warn('Failed to send Onfido age verification email.');
         return 0;
     }
 
     return undef;
 }
 
-async sub _send_poa_email {
+=head2 _send_CS_email_POI_passed
+
+Send email to notify CS as POI check passed
+** Note that this sub is only called for regulated clients (MX,MLT,MF) 
+
+=cut
+
+sub _send_CS_email_POI_passed {
+    my $client = shift;
+
+    my $loginid = $client->loginid;
+
+    my $email_content = sprintf("[%s]'s successfully marked as age verified", $loginid);
+
+    my $email_subject = sprintf("Automated age verification passed for %s", $loginid);
+
+    my $from_email   = $BRANDS->emails('no-reply');
+    my $to_email     = $BRANDS->emails('authentications');
+    my $email_status = Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->text_body($email_content)->send();
+
+    $log->warn('Failed to send Onfido age verification email.') unless ($email_status);
+
+    return undef;
+}
+
+async sub _send_CS_email_POA_uploaded {
     my ($client) = @_;
-    my $redis_events_read = _redis_events_read();
-    await $redis_events_read->connect;
 
-    # We should not send any POA notification if we already sent POI notification.
-    return if await $redis_events_read->get(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id);
-
+    # Checking if we already sent a notification for POA
+    # redis replicated is used as this key is used in BO too
     my $redis_replicated_write = _redis_replicated_write();
     await $redis_replicated_write->connect;
 
-    my $need_to_send_email = await $redis_replicated_write->hsetnx('EMAIL_NOTIFICATION_POA', $client->binary_user_id, 1);
+    return undef unless await $redis_replicated_write->hsetnx('EMAIL_NOTIFICATION_POA', $client->binary_user_id, 1);
+
+    unless ($client->landing_company->is_eu) {
+
+        my $redis_events_read = _redis_events_read();
+        await $redis_events_read->connect;
+
+        # We should not send any POA notification if we already sent POI notification.
+        return if await $redis_events_read->get(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id);
+    }
 
     my $from_email = $BRANDS->emails('no-reply');
     my $to_email   = $BRANDS->emails('authentications');
-    # using replicated one
-    # as this key is used in backoffice as well
+
     Email::Stuffer->from($from_email)->to($to_email)->subject('New uploaded POA document for: ' . $client->loginid)
-        ->text_body('New proof of address document was uploaded for ' . $client->loginid)->send()
-        if $need_to_send_email;
+        ->text_body('New proof of address document was uploaded for ' . $client->loginid)->send();
 
     return undef;
 }
@@ -1372,7 +1404,7 @@ async sub _send_email_notification_for_poa {
 
     # send email for all landing company
     if ($client->landing_company->short) {
-        await _send_poa_email($client);
+        await _send_CS_email_POA_uploaded($client);
         return undef;
     }
 
@@ -1388,7 +1420,7 @@ async sub _send_email_notification_for_poa {
     # non demo mt5 group has advanced|standard then
     # its considered as financial
     if (any { defined && /^(?!demo).*(_standard|_advanced)/ } @$mt5_groups) {
-        await _send_poa_email($client);
+        await _send_CS_email_POA_uploaded($client);
     }
     return undef;
 }
