@@ -303,6 +303,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
                             <option value=it>IT</option>
                             <option value=others>Others</option>
                             <option value=payments>Payments</option>
+                            <option value=crypto>Cryptocurrency</option>
                         </select>
 						<input type=hidden name=broker value=FOG>
 						<input type=hidden name=page value=global>

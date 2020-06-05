@@ -193,11 +193,7 @@ sub get_settings_by_group {
                 system.suspend.trading
                 system.suspend.payments
                 system.suspend.payment_agents
-                system.suspend.cryptocashier
                 system.suspend.cashier
-                system.suspend.cryptocurrencies
-                system.suspend.cryptocurrencies_deposit
-                system.suspend.cryptocurrencies_withdrawal
                 system.suspend.new_accounts
                 system.suspend.expensive_api_calls
                 system.suspend.all_logins
@@ -211,7 +207,6 @@ sub get_settings_by_group {
                 system.mt5.suspend.all
                 system.mt5.suspend.deposits
                 system.mt5.suspend.withdrawals
-                system.suspend.experimental_currencies
                 )
         ],
         quant => [qw(
@@ -260,11 +255,22 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.minimum.by_currency
                 payments.transfer_between_accounts.maximum.default
                 payments.experimental_currencies_allowed
+                )
+        ],
+        crypto => [qw(
+                system.suspend.cryptocashier
+                system.suspend.cryptocurrencies
+                system.suspend.cryptocurrencies_deposit
+                system.suspend.cryptocurrencies_withdrawal
+                system.suspend.experimental_currencies
                 payments.crypto.deposit_required_confirmations
                 payments.crypto.restricted_countries
                 payments.crypto.sweep_reserve_balance.BTC
                 payments.crypto.sweep_reserve_balance.LTC
                 payments.crypto.sweep_reserve_balance.ETH
+                payments.crypto_withdrawal_approvals_required
+                payments.transfer_between_accounts.limits.fiat_to_crypto
+                payments.transfer_between_accounts.exchange_rate_expiry.crypto
                 )
         ],
         # these settings are configured in separate pages. No need to reconfure them in Dynamic Settings/Others.
@@ -279,9 +285,9 @@ sub get_settings_by_group {
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
-    # Add all `payments.crypto.minimum_safe_amount.*` keys to `payments`
+    # Add all `payments.crypto.minimum_safe_amount.*` keys to `crypto`
     my @safe_amount_list = keys $app_config->payments->crypto->minimum_safe_amount->{definition}->{contains}->%*;
-    push $group_settings->{payments}->@*, (map { "payments.crypto.minimum_safe_amount.$_" } @safe_amount_list);
+    push $group_settings->{crypto}->@*, (map { "payments.crypto.minimum_safe_amount.$_" } @safe_amount_list);
 
     my $settings;
 

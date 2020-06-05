@@ -33,6 +33,7 @@ if (request()->param('page') eq 'global') {
         it               => ['IT'],
         others           => ['IT'],
         payments         => ['IT'],
+        crypto           => ['IT'],
     };
 
     if ($authorisations->{$group_to_display} && BOM::Backoffice::Auth0::has_authorisation($authorisations->{$group_to_display})) {
