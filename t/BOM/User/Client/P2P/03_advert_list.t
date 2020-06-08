@@ -10,12 +10,14 @@ use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Config::Runtime;
+use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 my $max_order  = $app_config->payments->p2p->limits->maximum_order;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
+populate_exchange_rates();
 
 subtest 'Seller lists ads and those with a min order amount greater than its balance are excluded' => sub {
     my $seller_balance = 10;

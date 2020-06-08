@@ -1918,7 +1918,7 @@ sub p2p_advertiser_update {
     my $update = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM p2p.advertiser_update(?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advertiser_update(?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)',
                 undef,
                 $advertiser_info->{id},
                 @param{qw/is_approved is_listed name default_advert_description payment_info contact_info/});
@@ -2146,14 +2146,24 @@ sub p2p_order_create {
             [$advert_info->{account_currency}, formatnumber('amount', $advert_info->{account_currency}, $advert_info->{min_order_amount}),]}
         if $amount < ($advert_info->{min_order_amount} // 0);
 
-    if ($advert_info->{type} eq 'buy') {
+    my $advert_type = $advert_info->{type};
+
+    my $advertiser_info = $client->_p2p_advertisers(id => $advert_info->{advertiser_id})->[0];
+
+    my $limit_remaining = $advertiser_info->{'daily_' . $advert_type . '_limit'} - $advertiser_info->{'daily_' . $advert_type};
+    die +{
+        error_code     => 'OrderMaximumTempExceeded',
+        message_params => [$advert_info->{account_currency}, formatnumber('amount', $advert_info->{account_currency}, $limit_remaining),]}
+        if $amount > $limit_remaining;
+
+    if ($advert_type eq 'buy') {
         die +{error_code => 'OrderPaymentInfoRequired'} if !trim($param{payment_info});
         die +{error_code => 'OrderContactInfoRequired'} if !trim($param{contact_info});
-    } elsif ($advert_info->{type} eq 'sell') {
+    } elsif ($advert_type eq 'sell') {
         die +{error_code => 'OrderPaymentContactInfoNotAllowed'} if $payment_info or $contact_info;
         ($payment_info, $contact_info) = $advert_info->@{qw/payment_info contact_info/};
     } else {
-        die 'Invalid advert type ' . ($advert_info->{type} // 'undef') . ' for advert ' . $advert_info->{id};
+        die 'Invalid advert type ' . ($advert_type // 'undef') . ' for advert ' . $advert_info->{id};
     }
 
     my $escrow = $client->p2p_escrow;
@@ -2453,10 +2463,16 @@ Returns a list of advertisers filtered by id and/or loginid.
 sub _p2p_advertisers {
     my ($client, %param) = @_;
 
-    return $client->db->dbic->run(
+    my $advertisers = $client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref('SELECT * FROM p2p.advertiser_list(?, ?, ?)', {Slice => {}}, @param{qw/id loginid name/});
         });
+
+    for my $item (@$advertisers) {
+        $item->{daily_buy_limit}  = convert_currency($item->{daily_buy_limit},  $item->{limit_currency}, $item->{account_currency});
+        $item->{daily_sell_limit} = convert_currency($item->{daily_sell_limit}, $item->{limit_currency}, $item->{account_currency});
+    }
+    return $advertisers;
 }
 
 =head2 _p2p_adverts
@@ -2624,27 +2640,32 @@ Takes and returns single advertiser.
 sub _advertiser_details {
     my ($client, $advertiser) = @_;
 
-    return +{
+    my $details = {
         id                         => $advertiser->{id},
         name                       => $advertiser->{name},
         created_time               => Date::Utility->new($advertiser->{created_time})->epoch,
         is_approved                => $advertiser->{is_approved},
         is_listed                  => $advertiser->{is_listed},
         default_advert_description => $advertiser->{default_advert_description} // '',
-        (
-            # only advertiser themself can see these fields
-            # We will manualy clean up this field in websocket
-            # If you're adding any new field here please add it to websocket subscription clean up as well
-            $client->loginid eq $advertiser->{client_loginid}
-            ? (
-                payment_info => $advertiser->{payment_info} // '',
-                contact_info => $advertiser->{contact_info} // '',
-                chat_user_id => $advertiser->{chat_user_id},
-                chat_token   => $advertiser->{chat_token}   // '',
-                )
-            : ()
-        ),
     };
+
+    # only advertiser themself can see these fields
+    # We will manualy clean up this field in websocket
+    # If you're adding any new field here please add it to websocket subscription clean up as well
+    if ($client->loginid eq $advertiser->{client_loginid}) {
+        $details->{payment_info} = $advertiser->{payment_info} // '';
+        $details->{contact_info} = $advertiser->{contact_info} // '';
+        $details->{chat_user_id} = $advertiser->{chat_user_id};
+        $details->{chat_token}   = $advertiser->{chat_token}   // '';
+        # band limits are not returned by all db functions
+        if ($advertiser->{limit_currency}) {
+            $details->{daily_buy}        = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_buy});
+            $details->{daily_sell}       = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_buy});
+            $details->{daily_buy_limit}  = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_buy_limit});
+            $details->{daily_sell_limit} = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_sell_limit});
+        }
+    }
+    return $details;
 }
 
 =head2 _advert_details

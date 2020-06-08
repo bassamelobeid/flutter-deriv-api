@@ -670,6 +670,7 @@ subtest 'Daily order limit' => sub {
     BOM::Test::Helper::P2P::create_escrow();
 
     my $buyer = BOM::Test::Helper::Client::create_client();
+    $buyer->account('USD');
 
     for (1 .. 2) {
         my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(

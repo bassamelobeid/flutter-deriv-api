@@ -70,12 +70,16 @@ subtest 'advertiser Registration' => sub {
     ok my $adv = $adv_client->p2p_advertiser_create(%params), 'create advertiser';
 
     my $expected = {
-        id           => $adv->{id},
-        is_listed    => bool(1),
-        is_approved  => bool(0),
-        created_time => bool(1),
-        chat_user_id => 'dummy',
-        chat_token   => 'dummy',
+        id               => $adv->{id},
+        is_listed        => bool(1),
+        is_approved      => bool(0),
+        created_time     => bool(1),
+        chat_user_id     => 'dummy',
+        chat_token       => 'dummy',
+        daily_buy        => num(0),
+        daily_sell       => num(0),
+        daily_buy_limit  => num(100),
+        daily_sell_limit => num(100),
         %params
     };
 
@@ -84,7 +88,7 @@ subtest 'advertiser Registration' => sub {
 
     my $other_client = BOM::Test::Helper::P2P::create_client();
     $advertiser_info = $other_client->p2p_advertiser_info(id => $adv->{id});
-    delete $expected->@{qw/payment_info contact_info chat_user_id chat_token/};
+    delete $expected->@{qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit/};
     cmp_deeply($advertiser_info, $expected, 'sensitve fields hidden in advertiser_info for other client');
 };
 
