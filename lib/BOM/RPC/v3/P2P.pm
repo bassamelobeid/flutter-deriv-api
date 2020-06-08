@@ -114,6 +114,7 @@ our %ERROR_MAP = do {
         OrderMinimumNotMet          => localize("Minimum ad amount is [_1] [_2]. Please adjust the value."),
         OrderNoEditExpired          => localize("This order has expired and cannot be changed."),
         OrderNotFound               => localize("This order does not exist."),
+        OrderMaximumTempExceeded    => localize("Maximum ad amount at this time is [_1] [_2]. Please adjust the value or try up to 24 hours later."),
 
         # TODO these messages needs to be checked with copywritter team
         AdvertiserCreateChatError        => localize('An error occurred (chat user not created). Please try again later.'),
