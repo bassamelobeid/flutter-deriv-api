@@ -160,14 +160,15 @@ rpc "cashier", sub {
         SSL_verify_mode => SSL_VERIFY_NONE
     );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
 
-    my $doughflow_loc = BOM::Config::third_party()->{doughflow}->{$brand->name};
+    my $doughflow_loc   = BOM::Config::third_party()->{doughflow}->{$brand->name};
     my $is_white_listed = any { $params->{domain} and $params->{domain} eq $_ } BOM::Config->domain->{white_list}->@*;
-
-    $doughflow_loc = "https://cashier.@{[ $params->{domain} ]}" if $is_white_listed;
+    my $domain          = $params->{domain} // '';
+    DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.empty_doughflow_domain.count') unless ($domain);
     unless ($is_white_listed) {
-        warn "Trying to access doughflow from an unrecognized domain: @{[ $params->{domain} ]}";
-        DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.invalid_doughflow_domain.count', {tags => ["domain:@{[ $params->{domain} ]}"]});
+        $log->infof('Trying to access doughflow from an unrecognized domain: %s', $domain);
+        DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.invalid_doughflow_domain.count', {tags => ["domain:@{[ $domain ]}"]});
     }
+    $doughflow_loc = "https://cashier.@{[ $domain ]}" if $is_white_listed;
 
     my $doughflow_pass    = BOM::Config::third_party()->{doughflow}->{passcode};
     my $url               = $doughflow_loc . '/CreateCustomer.asp';

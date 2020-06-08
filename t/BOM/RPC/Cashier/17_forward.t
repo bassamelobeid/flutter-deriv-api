@@ -55,6 +55,7 @@ my $params = {
     language => 'EN',
     source   => 1,
     args     => {},
+    domain   => 'binary.com'
 };
 
 my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
@@ -194,9 +195,47 @@ subtest 'common' => sub {
 
     $client_cr->status->clear_disabled;
     $client_cr->save;
+
+    # Sometimes we do not get domain in params, so in that case we will set domain to valid default.
+    $params->{domain} = undef;
+    warning {
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Domain not provided')
+            ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
+            'Attempted to forward request to the cashier to default dogflow url when Domain not provided.');
+    };
+    # set domain to valid default incase invalid domain is provided
+    $params->{domain} = 'dummydomain.com';
+    warning {
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Invalid domain provided')
+            ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
+            'Attempted to forward request to the cashier to default dogflow url when Domain is not whitelisted.');
+    };
+    # set valid domain
+    $params->{domain} = 'binary.com';
+    warning {
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Valid domain provided')
+            ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
+            'Attempted to forward request to the cashier after setting whitelisted domain:binary.com.');
+    };
+    # set valid domain
+    $params->{domain} = 'binary.me';
+    warning {
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Valid domain provided')
+            ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
+            'Attempted to forward request to the cashier after setting whitelisted domain:binary.me.');
+    };
+    # set valid domain
+    $params->{domain} = 'deriv.app';
+    warning {
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Valid domain provided')
+            ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
+            'Attempted to forward request to the cashier after setting whitelisted domain:deriv.app.');
+    };
+
 };
 
 subtest 'deposit' => sub {
+    $params->{domain} = 'binary.com';
     $runtime_system->suspend->cashier(1);
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
         ->error_message_is('Sorry, cashier is temporarily unavailable due to system maintenance.',
