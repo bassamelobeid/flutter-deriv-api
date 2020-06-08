@@ -139,7 +139,20 @@ INSERT INTO prune.worklist
 SELECT id FROM transaction.account
 SQL
 
-my ($db, $next_account, $prune_account, $log_it);
+my $prune_cursor = <<'SQL';
+DECLARE prune_csr CURSOR WITHOUT HOLD FOR
+SELECT op FROM public.prune_transaction($1::BIGINT, $2::TIMESTAMP, $3::BIGINT)
+SQL
+
+my $prune_fetch = <<'SQL';
+FETCH 1000 FROM prune_csr
+SQL
+
+my $prune_close = <<'SQL';
+CLOSE prune_csr
+SQL
+
+my ($db, $next_account, $log_it);
 sub opendb {
     $db = DBI->connect('dbi:Pg:', undef, undef, {RaiseError=>1, PrintError=>0});
 
@@ -158,10 +171,6 @@ DELETE FROM prune.worklist AS b
  USING a
  WHERE b.account_id = a.account_id
 RETURNING *
-SQL
-
-    $prune_account = $db->prepare(<<'SQL');
-SELECT op FROM public.prune_transaction($1::BIGINT, $2::TIMESTAMP, $3::BIGINT)
 SQL
 
     $log_it = $db->prepare(<<'SQL');
@@ -211,18 +220,24 @@ sub prune {
     my $fh;
     my $n = 0;
 
-    $prune_account->execute($accid, $cutoff_time, $cutoff_length);
-    while (my $row = $prune_account->fetchrow_arrayref) {
-        unless ($n) {           # open the file only if needed
-            open $fh, '|-', @transfer_cmd, $fn
-                or die "Cannot open pipe to gzip to write $fn: $!\n";
-            binmode $fh, 'encoding(utf-8)';
-        }
+    $db->do($prune_cursor, undef, $accid, $cutoff_time, $cutoff_length);
+    while (1) {
+	my $sth = $db->prepare($prune_fetch);
+	$sth->execute;
+	last if 0 == $sth->rows;
+	while (my $row = $sth->fetchrow_arrayref) {
+	        unless ($n) {           # open the file only if needed
+		    open $fh, '|-', @transfer_cmd, $fn
+			    or die "Cannot open pipe to gzip to write $fn: $!\n";
+		    binmode $fh, 'encoding(utf-8)';
+		        }
 
-        print $fh $row->[0], "\n"
-            or die "Cannot write to pipe to gzip to write $outdir/$accid.gz: $!\n";
-        $n++;
+		    print $fh $row->[0], "\n"
+			or die "Cannot write to pipe to gzip to write $outdir/$accid.gz: $!\n";
+		    $n++;
+		}
     }
+    $db->do($prune_close);
 
     if ($n) {
         close $fh
