@@ -1,0 +1,79 @@
+<form action="[% request.url_for('backoffice/p2p_band_management.cgi', {broker => broker}) %]" method="post">
+    
+<table border="0">
+    <tr>
+        <td class="label">Country</td>
+        <td>
+            [% IF item.action == 'edit' %]
+                <b>
+                [% IF countries_list.${item.country} %]
+                    [% countries_list.${item.country}.name %] ([% item.country %])
+                [% ELSE %]
+                    [% item.country %]
+                [% END %]
+                </b>
+                <input type="hidden" name="country" value="[% item.country %]"/>
+            [% ELSE %]
+            <select name="country">
+                <option value="" "selected">choose...</option>
+                <option value="default">default (all countries)</option>
+                [% FOREACH c = countries %]
+                <option value="[% c.code %]">[% c.name %] ([% c.code %])</option>
+                [% END %]
+            </select>
+            [% END %] 
+        </td>        
+    </tr>
+    <tr>
+        <td class="label">Level</td>
+        <td>
+            [% IF item.action == 'edit' %]
+                <b>[% item.trade_band %]</b>
+                <input type="hidden" name="trade_band" value="[% item.trade_band %]"/>
+            [% ELSE %]
+            <select name="trade_band">
+                <option value="low" [% item.action == 'copy' && item.trade_band=='low' && 'selected' %]>Low</option>
+                <option value="medium" [% item.action == 'copy' && item.trade_band=='medium' && 'selected' %]>Medium</option>
+                <option value="high" [% item.action == 'copy' && item.trade_band=='high' && 'selected' %]>High</option>                                                
+            </select>
+            [% END %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Currency</td>
+        <td>
+            [% IF item.action == 'edit' %]
+                <b>[% item.currency %]</b>
+                <input type="hidden" name="currency" value="[% item.currency %]"/>
+            [% ELSE %]
+            <select name="currency">
+                <option value="" [% !item.action && 'selected' %]>choose...</option>
+                [% FOREACH c = currencies %]
+                <option value="[% c %]" [% item.action == 'copy' && item.currency==c && 'selected' %]>[% c %]</option>
+                [% END %]
+            </select>
+            [% END %]
+        </td>        
+    </tr> 
+    <tr>
+        <td class="label">Buy Limit</td>
+        <td>
+            <input type="text" name="max_daily_buy" value="[% item.action && item.max_daily_buy %]" size=20/>
+        </td>
+    </tr> 
+    <tr>
+        <td class="label">Sell Limit </td>
+        <td>
+            <input type="text" name="max_daily_sell" value="[% item.action && item.max_daily_sell %]" size=20/>
+        </td>
+    </tr> 
+</table>
+
+[% IF item.action %]
+<button type="submit" name="[% item.action %]" value="1">Save</button>
+<button type="submit" name="cancel" value="1">Cancel</button>
+[% ELSE %]
+<button type="submit" name="save" value="1">Submit</button></td>
+[% END %]
+    
+</form>

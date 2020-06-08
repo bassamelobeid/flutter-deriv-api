@@ -15,6 +15,7 @@ use List::UtilsBy qw(rev_sort_by);
 use List::Util qw(sum0);
 use LandingCompany::Registry;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
+use Format::Util::Numbers qw(financialrounding);
 
 use f_brokerincludeall;
 
@@ -1310,12 +1311,19 @@ if (not $client->is_virtual) {
 if (!$client->is_virtual) {
     Bar('P2P Advertiser');
 
-    if (my $advertiser_info = $client->p2p_advertiser_info) {
+    if (my $advertiser_info = $client->_p2p_advertisers(loginid => $client->loginid)->[0]) {
+
+        for my $k (qw( daily_buy daily_sell daily_buy_limit daily_sell_limit )) {
+            $advertiser_info->{$k} = financialrounding('amount', $advertiser_info->{limit_currency}, $advertiser_info->{$k});
+        }
+
         BOM::Backoffice::Request::template()->process(
             'backoffice/p2p/p2p_advertiser_edit_form.tt',
             {
                 advertiser_info => $advertiser_info,
-                loginid         => $client->loginid
+                loginid         => $client->loginid,
+                client_currency => $client->account->currency_code,
+                band_editable   => BOM::Backoffice::Auth0::has_authorisation(['QuantsWrite']),
             });
     } else {
         BOM::Backoffice::Request::template()->process('backoffice/p2p/p2p_advertiser_register_form.tt', {loginid => $client->loginid});

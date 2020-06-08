@@ -1,0 +1,54 @@
+<p>Bands will be assigned to an advertiser by the first matching condition:</p>
+    <ol>
+        <li>Band matches client's country, currency and band level</li>
+        <li>Band has USD currency, and matches client's country and band level</li>
+        <li>Band is default country, low level, USD currency</li>
+    </ol>
+
+<table border="1" class="sortable collapsed">
+    <thead>
+        <tr>
+            <th scope="col">Country</th>
+            <th scope="col">Level</th>
+            <th scope="col">Currency</th>
+            <th scope="col">Buy Limit</th>
+            <th scope="col">Sell Limit</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+
+    [% FOREACH b = bands %]
+        <tr[% IF b.country == 'default' %] style="background-color:palegreen;"[% END %]>
+            <td>
+                [% IF countries_list.${b.country} %]
+                    [% countries_list.${b.country}.name %] ([% b.country %])
+                [% ELSE %]
+                    [% b.country %]
+                [% END %]
+            </td>
+            <td>[% b.trade_band %]</td>
+            <td>[% b.currency %]</td>
+            <td>[% b.max_daily_buy %]</td>
+            <td>[% b.max_daily_sell %]</td>
+            <td>
+                <form style="margin-block-end:0;" action="[% request.url_for('backoffice/p2p_band_management.cgi', {broker => broker}) %]" method="post">
+                    <input type="hidden" name="country" value="[% b.country %]"/>
+                    <input type="hidden" name="trade_band" value="[% b.trade_band %]"/>
+                    <input type="hidden" name="currency" value="[% b.currency %]"/>
+                    <input type="hidden" name="max_daily_buy" value="[% b.max_daily_buy %]"/>
+                    <input type="hidden" name="max_daily_sell" value="[% b.max_daily_sell %]"/>
+                    <select name="action" style="width:80;">
+                        <option value="edit">Edit</option>
+                        [% IF b.country != 'default' %]<option value="delete">Delete</option>[% END %]
+                        <option value="copy">Copy</option>
+                    </select>
+                    <button type="submit">Go</button>
+                </form>
+                
+            </td>
+        </tr>
+    [% END %]
+    </tbody>
+</table>
+

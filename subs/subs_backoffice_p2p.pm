@@ -42,19 +42,21 @@ sub p2p_advertiser_update {
     my $client = shift;
 
     try {
-        my $advertiser = $client->p2p_advertiser_update(
-            name                       => request->param('advertiser_name'),
-            is_approved                => request->param('is_approved'),
-            is_listed                  => request->param('is_listed'),
-            default_advert_description => request->param('default_advert_description'),
-            payment_info               => request->param('payment_info'),
-            contact_info               => request->param('contact_info'),
-        );
+        $client->db->dbic->run(
+            fixup => sub {
+                $_->do(
+                    'UPDATE p2p.p2p_advertiser SET name = ?, is_approved = ?, is_listed = ?, default_advert_description = ?, 
+                        payment_info = ?, contact_info = ?, trade_band = ? WHERE id = ?',
+                    undef,
+                    map { request->param($_) }
+                        qw/advertiser_name is_approved is_listed default_advert_description payment_info contact_info trade_band advertiser_id/
+                );
+            });
 
         BOM::Platform::Event::Emitter::emit(
             p2p_advertiser_updated => {
                 client_loginid => $client->loginid,
-                advertiser_id  => $advertiser->{id},
+                advertiser_id  => request->param('advertiser_id'),
             },
         );
 
@@ -65,18 +67,9 @@ sub p2p_advertiser_update {
     }
     catch {
         my $error = $@;
-
-        my $error_msg = 'P2P advertiser for ' . $client->loginid . ' could not be updated. ';
-
-        if (ref $error eq 'HASH' and $BOM::RPC::v3::P2P::ERROR_MAP{$error->{error_code}}) {
-            $error_msg .= ' Message: "' . $BOM::RPC::v3::P2P::ERROR_MAP{$error->{error_code}} . '", code: ' . $error->{error_code};
-        } else {
-            $error_msg .= 'Error: ' . Dumper($error);
-        }
-
         return {
             success => 0,
-            message => $error_msg
+            message => 'P2P advertiser for ' . $client->loginid . ' could not be updated: ' . $error,
         };
     }
 }

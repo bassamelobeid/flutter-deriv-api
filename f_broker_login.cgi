@@ -199,6 +199,31 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
 	</table>~;
 }
 
+# P2P
+if (BOM::Backoffice::Auth0::has_authorisation(['QuantsWrite'])) {
+    print qq~
+	<table class="GreyCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
+		<tbody>
+			<tr class="GreenLabel">
+				<td class="whitelabel">P2P</td>
+				<td class="whitelabel"></td>
+			</tr>
+			<tr>
+				<td align="center" width="50%">
+					<p><b>BAND CONFIGURATION</b></p>
+					<form action="~ . request()->url_for('backoffice/p2p_band_management.cgi') . qq~" method="get"><font size=2>
+						<b>$brokerselection</b>
+						&nbsp;<input type="submit" value="GO">
+					</font></form>
+				</td>
+				<td align="center" width="50%">
+					 <!-- dashboard goes here -->
+				</td>
+			</tr>
+		</tbody>
+	</table>~;
+}
+
 if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
     print qq~
 	<table class="Grey3Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
