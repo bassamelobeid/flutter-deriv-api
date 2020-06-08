@@ -145,7 +145,7 @@ subtest 'create advertiser' => sub {
         p2p_advertiser_create => 1,
         %advertiser_params
     });
-
+    
     test_schema('p2p_advertiser_create', $resp);
     $advertiser = $resp->{p2p_advertiser_create};
 
@@ -158,6 +158,7 @@ subtest 'create advertiser' => sub {
 
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
     test_schema('p2p_advertiser_info', $resp);
+    delete $resp->{p2p_advertiser_info}->@{ qw( daily_buy daily_sell daily_buy_limit daily_sell_limit ) };
 
     cmp_deeply($resp->{p2p_advertiser_info}, $advertiser, 'advertiser info is correct');
 
