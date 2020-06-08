@@ -111,20 +111,21 @@ sub create_client {
     $log->infof('User %s', $user->id);
 
     my %details = (
-        client_password    => $hashed_password,
-        first_name         => '',
-        last_name          => '',
-        myaffiliates_token => '',
-        email              => $email,
-        residence          => $residence,
-        address_line_1     => '',
-        address_line_2     => '',
-        address_city       => '',
-        address_state      => '',
-        address_postcode   => '',
-        phone              => '',
-        secret_question    => '',
-        secret_answer      => '',
+        client_password          => $hashed_password,
+        first_name               => '',
+        last_name                => '',
+        myaffiliates_token       => '',
+        email                    => $email,
+        residence                => $residence,
+        address_line_1           => '',
+        address_line_2           => '',
+        address_city             => '',
+        address_state            => '',
+        address_postcode         => '',
+        phone                    => '',
+        secret_question          => '',
+        secret_answer            => '',
+        non_pep_declaration_time => Date::Utility->today->date_yyyymmdd,
     );
 
     my $vr = $user->create_client(
