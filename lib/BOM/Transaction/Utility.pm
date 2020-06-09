@@ -14,6 +14,8 @@ use JSON::MaybeXS;
 
 use BOM::Platform::Event::Emitter;
 use BOM::Config::Redis;
+use DataDog::DogStatsd::Helper qw(stats_inc);
+use BOM::Config;
 
 use constant KEY_RETENTION_SECOND => 60;
 
@@ -165,4 +167,42 @@ sub _serialized_args {
     return Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
 }
 
+=head2 report_validation_stats
+
+Utility method to send buy/sell validation stats to DataDog.
+
+=cut
+
+sub report_validation_stats {
+    my ($contract, $which, $valid) = @_;
+
+    # This should all be fast, since everything should have been pre-computed.
+
+    my @bool_attrs = qw(is_intraday is_forward_starting is_atm_bet);
+    my $stats_name = 'pricing_validation.' . $which . '.';
+
+    # These attempt to be close to the Transaction stats without compromising their value.
+    # It may be worth adding a free-form 'source' identification, but I don't want to go
+    # down that road just yet.
+    my $tags = {
+        tags => [
+            'rmgenv:' . BOM::Config::env,
+            'contract_class:' . $contract->code,
+            map { substr($_, 3) . ':' . ($contract->$_ ? 'yes' : 'no') } (@bool_attrs)]};
+
+    stats_inc($stats_name . 'attempt', $tags);
+    if ($valid) {
+        stats_inc($stats_name . 'success', $tags);
+    } else {
+        # We can be a tiny bit slower here as we're already reporting an error
+        my $error = $contract->primary_validation_error->message;
+        $error =~ s/(?<=[^A-Z])([A-Z])/ $1/g;    # camelCase to words
+        $error =~ s/\[[^\]]+\]//g;               # Bits between [] should be dynamic
+        $error = join('_', split /\s+/, lc $error);
+        push @{$tags->{tags}}, 'reason:' . $error;
+        stats_inc($stats_name . 'failure', $tags);
+    }
+
+    return;
+}
 1;

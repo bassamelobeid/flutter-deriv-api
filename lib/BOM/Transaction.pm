@@ -1904,8 +1904,11 @@ sub sell_expired_contracts {
         $logging_class //= 'INVALID';
         $stats_attempt{$logging_class}++;
 
+        my $valid = $contract->is_valid_to_sell;
+        BOM::Transaction::Utility::report_validation_stats($contract, 'sell', $valid);
+
         try {
-            if ($contract->is_valid_to_sell) {
+            if ($valid) {
                 @{$bet}{qw/sell_price sell_time is_expired/} =
                     ($contract->bid_price, $contract->date_pricing->db_timestamp, $contract->is_expired);
                 $bet->{absolute_barrier} = $contract->barrier->as_absolute

@@ -18,6 +18,7 @@ use Locale::Country::Extra;
 use BOM::Database::ClientDB;
 use Date::Utility;
 use BOM::Config;
+use BOM::Transaction::Utility;
 
 has clients => (
     is       => 'ro',
@@ -450,12 +451,14 @@ sub _is_valid_to_buy {
 
     my $contract = $self->transaction->contract;
 
-    unless (
-        $contract->is_valid_to_buy({
-                landing_company => $client->landing_company->short,
-                country_code    => $client->residence
-            }))
-    {
+    my $valid = $contract->is_valid_to_buy({
+        landing_company => $client->landing_company->short,
+        country_code    => $client->residence,
+    });
+
+    BOM::Transaction::Utility::report_validation_stats($contract, 'buy', $valid);
+
+    unless ($valid) {
         return $self->_write_to_rejected({
             type   => 'invalid_contract',
             action => 'buy',
@@ -469,7 +472,11 @@ sub _is_valid_to_sell {
     my $self     = shift;
     my $contract = $self->transaction->contract;
 
-    unless ($contract->is_valid_to_sell) {
+    my $valid = $contract->is_valid_to_sell;
+
+    BOM::Transaction::Utility::report_validation_stats($contract, 'sell', $valid);
+
+    unless ($valid) {
         return $self->_write_to_rejected({
             type   => 'invalid_contract',
             action => 'sell',
