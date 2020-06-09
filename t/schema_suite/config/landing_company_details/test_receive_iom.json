@@ -47,21 +47,46 @@
          "minItems" : 2
       },
       "legal_allowed_markets" : {
-         "type" : "array",
          "items" : {
             "type" : "string",
-            "pattern" : "^synthetic_index$"
+            "pattern" : "^(commodities|forex|indices|synthetic_index)$"
          },
-         "minItems" : 1
+         "type" : "array",
+         "minItems" : 4
       },
       "country" : {
          "type" : "string",
          "pattern" : "^Isle of Man$"
       },
       "currency_config" : {
-         "type" : "object",
          "additionalProperties" : false,
+         "type" : "object",
          "properties" : {
+            "indices" : {
+               "additionalProperties" : false,
+               "type" : "object",
+               "patternProperties" : {
+                  "^[a-zA-Z0-9]{2,20}$" : {
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ],
+                     "properties" : {
+                        "min_stake" : {
+                           "minimum" : 0,
+                           "type" : "number"
+                        },
+                        "max_payout" : {
+                           "type" : "number",
+                           "minimum" : 0
+                        }
+                     },
+                     "additionalProperties" : false,
+                     "type" : "object"
+                  }
+               },
+               "properties" : {}
+            },
             "synthetic_index" : {
                "patternProperties" : {
                   "^[a-zA-Z0-9]{2,20}$" : {
@@ -87,10 +112,63 @@
                "properties" : {},
                "additionalProperties" : false,
                "type" : "object"
+            },
+            "commodities" : {
+               "type" : "object",
+               "additionalProperties" : false,
+               "properties" : {},
+               "patternProperties" : {
+                  "^[A-Z]{3,4}$" : {
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ],
+                     "properties" : {
+                        "max_payout" : {
+                           "type" : "number",
+                           "minimum" : 0
+                        },
+                        "min_stake" : {
+                           "type" : "number",
+                           "minimum" : 0
+                        }
+                     },
+                     "additionalProperties" : false,
+                     "type" : "object"
+                  }
+               }
+            },
+            "forex" : {
+               "additionalProperties" : false,
+               "type" : "object",
+               "patternProperties" : {
+                  "^[A-Z]{3,4}$" : {
+                     "type" : "object",
+                     "additionalProperties" : false,
+                     "properties" : {
+                        "min_stake" : {
+                           "minimum" : 0,
+                           "type" : "number"
+                        },
+                        "max_payout" : {
+                           "minimum" : 0,
+                           "type" : "number"
+                        }
+                     },
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ]
+                  }
+               },
+               "properties" : {}
             }
          },
          "required" : [
-            "synthetic_index"
+            "indices",
+            "synthetic_index",
+            "commodities",
+            "forex"
          ]
       },
       "stash" : {
