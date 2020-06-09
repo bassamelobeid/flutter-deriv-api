@@ -8,6 +8,7 @@ use Date::Utility;
 use HTML::Entities;
 
 use BOM::User::Client;
+use BOM::Database::ClientDB;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Form;
@@ -53,45 +54,101 @@ my $client_details_link = request()->url_for(
         loginID => $loginid
     });
 
+my $db = $client->db->dbic;
+
 my $page =
       "<h2> The Client loginid: <a href='$client_details_link'>"
     . encode_entities($loginid)
     . ' </a> self-exclusion settings are as follows. You may change it by editing the corresponding value.</h2>';
 
+=head2 make_row
+
+get values required for creating self-exclusion table
+
+=over
+
+=item * C<name> - required. Name of a limit.
+
+=item * C<values> - required. List of values including amount and expiration date for each limit
+
+=back
+
+=cut
+
 sub make_row {
     my ($name, @values) = @_;
-    return '<tr><td>' . $name . '</td><td><strong>' . (join ' ', @values) . '</strong></td></tr>';
+    my $expiration_date = $values[2] // '';
+    return
+          '<tr><td>'
+        . $name
+        . '</td><td><strong>'
+        . (join ' ', @values[0 .. 1])
+        . '</strong></td><td><strong>'
+        . $expiration_date
+        . '</strong></td></tr>';
 }
-
 # to generate existing limits
 if (my $self_exclusion = $client->get_self_exclusion) {
     my $info;
+    $info .= '<tr><td><strong>Limit name</strong></td><td><strong>Limit value</strong></td><td><strong>Expiration date</strong></td></tr>';
+    $info .= make_row(
+        'Maximum account cash balance',
+        $client->currency,
+        $self_exclusion->max_balance,
+        get_limit_expiration_date($db, $loginid, 'max_balance', 30)) if $self_exclusion->max_balance;
+    $info .= make_row(
+        'Daily turnover limit',
+        $client->currency,
+        $self_exclusion->max_turnover,
+        get_limit_expiration_date($db, $loginid, 'max_turnover', 1)) if $self_exclusion->max_turnover;
+    $info .=
+        make_row('Daily limit on losses', $client->currency, $self_exclusion->max_losses, get_limit_expiration_date($db, $loginid, 'max_losses', 1))
+        if $self_exclusion->max_losses;
+    $info .= make_row(
+        '7-Day turnover limit',
+        $client->currency,
+        $self_exclusion->max_7day_turnover,
+        get_limit_expiration_date($db, $loginid, 'max_7day_turnover', 7)) if $self_exclusion->max_7day_turnover;
+    $info .= make_row(
+        '7-Day limit on losses',
+        $client->currency,
+        $self_exclusion->max_7day_losses,
+        get_limit_expiration_date($db, $loginid, 'max_7day_losses', 7)) if $self_exclusion->max_7day_losses;
+    $info .= make_row(
+        '30-Day turnover limit',
+        $client->currency,
+        $self_exclusion->max_30day_turnover,
+        get_limit_expiration_date($db, $loginid, 'max_30day_turnover', 30)) if $self_exclusion->max_30day_turnover;
+    $info .= make_row(
+        '30-Day limit on losses',
+        $client->currency,
+        $self_exclusion->max_30day_losses,
+        get_limit_expiration_date($db, $loginid, 'max_30day_losses', 30)) if $self_exclusion->max_30day_losses;
 
-    $info .= make_row('Maximum account cash balance', $client->currency, $self_exclusion->max_balance)        if $self_exclusion->max_balance;
-    $info .= make_row('Daily turnover limit',         $client->currency, $self_exclusion->max_turnover)       if $self_exclusion->max_turnover;
-    $info .= make_row('Daily limit on losses',        $client->currency, $self_exclusion->max_losses)         if $self_exclusion->max_losses;
-    $info .= make_row('7-Day turnover limit',         $client->currency, $self_exclusion->max_7day_turnover)  if $self_exclusion->max_7day_turnover;
-    $info .= make_row('7-Day limit on losses',        $client->currency, $self_exclusion->max_7day_losses)    if $self_exclusion->max_7day_losses;
-    $info .= make_row('30-Day turnover limit',        $client->currency, $self_exclusion->max_30day_turnover) if $self_exclusion->max_30day_turnover;
-    $info .= make_row('30-Day limit on losses',       $client->currency, $self_exclusion->max_30day_losses)   if $self_exclusion->max_30day_losses;
-
-    $info .= make_row('Maximum number of open positions', $self_exclusion->max_open_bets)
+    $info .=
+        make_row('Maximum number of open positions', $self_exclusion->max_open_bets, '', get_limit_expiration_date($db, $loginid, 'max_open_bets', 1))
         if $self_exclusion->max_open_bets;
 
-    $info .= make_row('Session duration limit', $self_exclusion->session_duration_limit, 'minutes')
-        if $self_exclusion->session_duration_limit;
+    $info .= make_row(
+        'Session duration limit',
+        $self_exclusion->session_duration_limit,
+        'minutes', get_limit_expiration_date($db, $loginid, 'session_duration_limit', 1)) if $self_exclusion->session_duration_limit;
 
-    $info .= make_row('Website exclusion', Date::Utility->new($self_exclusion->exclude_until)->date)
+    $info .= make_row('Website exclusion', '', '', Date::Utility->new($self_exclusion->exclude_until)->date)
         if $self_exclusion->exclude_until;
-    $info .= make_row('Website Timeout until', Date::Utility->new($self_exclusion->timeout_until)->datetime_yyyymmdd_hhmmss)
+
+    $info .= make_row('Website Timeout until', '', '', Date::Utility->new($self_exclusion->timeout_until)->datetime_yyyymmdd_hhmmss)
         if $self_exclusion->timeout_until;
 
-    $info .= make_row('Maximum deposit limit', $self_exclusion->max_deposit)
-        if $self_exclusion->max_deposit;
-    $info .= make_row('Maximum deposit limit start date', Date::Utility->new($self_exclusion->max_deposit_begin_date)->date)
+    $info .= make_row(
+        'Maximum deposit limit',
+        $client->currency,
+        $self_exclusion->max_deposit,
+        Date::Utility->new($self_exclusion->max_deposit_end_date)->date
+    ) if $self_exclusion->max_deposit;
+
+    $info .= make_row('Maximum deposit limit start date', Date::Utility->new($self_exclusion->max_deposit_begin_date)->date, '', '')
         if $self_exclusion->max_deposit_begin_date;
-    $info .= make_row('Maximum deposit limit expiration', Date::Utility->new($self_exclusion->max_deposit_end_date)->date)
-        if $self_exclusion->max_deposit_end_date;
 
     if ($info) {
         $page .= '<h3>Currently set values are:</h3><table cellspacing="0" cellpadding="5" border="1" class="GreyCandy">' . $info . '</table>';
@@ -197,4 +254,39 @@ if ($client->save) {
     warn("Error: cannot write to self_exclusion table $!");
 }
 
-code_exit_BO();
+=head2 get_limit_expiration_date
+
+get limit name and find first modified date for current value, add number of days the
+value is valid and return expiration date to be used in exclusion table
+
+=over
+
+=item * C<db> - required. Database handler object.
+
+=item * C<loginid> - required. Client loginid.
+
+=item * C<limit_name> - required. The name of limit we want to calculate expiration date for.
+
+=item * C<added_day> - Number of day the data is valid for a certain limit. 0 if none provided.
+
+=back
+
+=cut
+
+sub get_limit_expiration_date {
+    my ($db, $loginid, $limit_name, $added_day) = @_;
+
+    return undef unless ($db and $loginid and $limit_name);
+    return undef
+        unless any { $_ eq $limit_name }
+    qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_turnover max_30day_losses max_open_bets session_duration_limit/;
+
+    my $latest_modified_date = $db->run(
+        ping => sub {
+            $_->selectrow_array('SELECT * FROM betonmarkets.get_self_exclusion_expiry_date(?,?)', undef, $loginid, $limit_name);
+        });
+    return undef if !defined $latest_modified_date;
+    return Date::Utility->new($latest_modified_date)->plus_time_interval(($added_day // 0) . 'd')->date;
+}
+
+code_exit_BO;
