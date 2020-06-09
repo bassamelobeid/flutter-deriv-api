@@ -78,11 +78,11 @@
                }
             },
             "legal_allowed_markets" : {
-               "minItems" : 1,
+               "minItems" : 4,
                "type" : "array",
                "items" : {
                   "type" : "string",
-                  "pattern" : "^synthetic_index$"
+                  "pattern" : "^(commodities|forex|indices|synthetic_index)$"
                }
             }
          },
