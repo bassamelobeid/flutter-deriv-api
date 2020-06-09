@@ -42,7 +42,7 @@ sub is_valid_to_buy {
 
     my $valid = $self->_confirm_validity($args);
 
-    return ($self->for_sale) ? $valid : $self->_report_validation_stats('buy', $valid);
+    return $valid;
 }
 
 sub is_valid_to_sell {
@@ -51,7 +51,7 @@ sub is_valid_to_sell {
 
     my $valid = $self->_confirm_sell_validity($args);
 
-    return $self->_report_validation_stats('sell', $valid);
+    return $valid;
 }
 
 sub _is_valid_to_settle {

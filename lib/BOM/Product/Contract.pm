@@ -1608,9 +1608,6 @@ sub _get_underlying_instance {
     return $underlyings->{$symbol};
 }
 
-# Don't mind me, I just need to make sure my attributes are available.
-with 'BOM::Product::Role::Reportable';
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
