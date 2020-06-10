@@ -310,7 +310,7 @@ subtest "change_address_status" => sub {
     is $response, 1, "Just updating the fee for withdrawal transaction";
 
     my $updated_transaction = _fetch_withdrawal_transaction($transaction->{hash});
-    is $updated_transaction->{fee}, 0.000247621;
+    is $updated_transaction->{txn_fee}, 0.000247621;
 };
 
 sub _set_withdrawal_verified {
