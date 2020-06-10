@@ -14,10 +14,10 @@
 [% END %]
 
 <style>
-    table.internal th {
+    .table.internal th {
         padding: 0 5px;
     }
-    #warning_tag {
+    .warning_tag {
         color:red;
         font-weight:bold;
         text-align: center;
@@ -124,7 +124,7 @@
                 <td valign="top">
                     <table class="internal"><tbody>
                         [% IF trx.is_internal_transfer == 1 %]
-                        <tr><td>&nbsp;</td><td><span id="warning_tag">INTERNAL TRANSFER</span></td></tr>
+                        <tr><td>&nbsp;</td><td><span class="warning_tag">INTERNAL TRANSFER</span></td></tr>
                         [% END %]
                         <tr><th>Address:</th><td>[% address_link(addr = trx.address) %]</td></tr>
                         <tr><th>Blockchain ID:</th><td>[% transaction_link(tx = trx.blockchain_txn) %]</td></tr>
@@ -179,7 +179,9 @@
                             <textarea id="set_remark" name="set_remark" placeholder="Replaces current remark"></textarea>
                             <br/>
                             <input type="submit" name="action" value="Save"/>
-                            [% IF trx.authorisers.grep("^$staff\$").size > 0 %]
+                            [% IF trx.is_withdrawal_locked %]
+                                <span class="warning_tag">The client withdrawal is locked</span>
+                            [% ELSIF trx.authorisers.grep("^$staff\$").size > 0 %]
                                 <input type="submit" name="action" value="Verify" disabled="disabled"/>
                             [% ELSE %]
                                 <input type="submit" name="action" value="Verify"/>

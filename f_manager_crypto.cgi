@@ -192,6 +192,11 @@ my $display_transactions = sub {
             {
                 broker  => $broker,
                 loginID => $trx->{client_loginid}});
+
+        # We should prevent verifying the withdrawal transaction by the payment team
+        # if the client withdrawal is locked
+        my $client = BOM::User::Client->new({loginid => $trx->{client_loginid}});
+        $trx->{is_withdrawal_locked} = $client->status->withdrawal_locked if $trx->{transaction_type} eq 'withdrawal';
     }
 
     # Render template page with transactions
@@ -266,6 +271,9 @@ if ($view_action eq 'withdrawals') {
         my $loginid          = request()->param('loginid');
         my $set_remark       = request()->param('set_remark');
         my $rejection_reason = request()->param('rejection_reason');
+        my $client           = BOM::User::Client->new({loginid => $loginid});
+
+        code_exit_BO("The client withdrawal is locked") if $action eq 'Verify' and $client->status->withdrawal_locked;
 
         if ($action eq 'Reject') {
             # Error for rejection with no reason
