@@ -87,9 +87,9 @@ subtest "change_address_status" => sub {
 
     my $btc_address;
     lives_ok {
-        $btc_address = $helper->get_deposit_address;
+        $btc_address = $helper->get_deposit_id_and_address;
     }
-    'survived get_deposit_address';
+    'survived get_deposit_id_and_address';
 
     $transaction->{to} = [$btc_address];
 
@@ -120,10 +120,11 @@ subtest "change_address_status" => sub {
             return '2N7MPismngmXWAHzUmyQ2wVG8s81CvqUkQS',;
         });
     my $btc_address2;
+    my $id2;
     lives_ok {
-        $btc_address2 = $helper->get_deposit_address;
+        ($id2, $btc_address2) = $helper->get_deposit_id_and_address;
     }
-    'survived get_deposit_address 2';
+    'survived get_deposit_id_and_address 2';
 
     $transaction->{to} = [$btc_address2];
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
@@ -374,10 +375,11 @@ subtest "internal_transactions" => sub {
     };
 
     my $btc_address;
+    my $id;
     lives_ok {
-        $btc_address = $helper->get_deposit_address;
+        ($id, $btc_address) = $helper->get_deposit_id_and_address;
     }
-    'survived get_deposit_address';
+    'survived get_deposit_id_and_address';
 
     $transaction->{to} = [$btc_address];
 

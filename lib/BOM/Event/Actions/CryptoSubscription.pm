@@ -311,7 +311,7 @@ sub insert_new_deposit {
 
         my $result = clientdb()->run(
             ping => sub {
-                my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit(?, ?, ?, ?, ?)');
+                my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit_address(?, ?, ?, ?, ?)');
                 $sth->execute($payment[0]->{address}, $currency_code, $record->{client_loginid}, $transaction->{fee}, $transaction->{hash});
             });
 
@@ -372,7 +372,8 @@ sub new_crypto_address {
 
     try {
         my $helper = BOM::CTC::Helper->new(client => $client);
-        return $helper->get_deposit_address()
+        my ($id, $address) = $helper->get_deposit_id_and_address();
+        return $address;
     }
     catch {
         $log->errorf('Failed to generate address for new_crypto_address event. Details: loginid %s, currency: %s, and error: %s',
