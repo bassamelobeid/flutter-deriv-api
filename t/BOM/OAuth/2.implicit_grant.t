@@ -10,6 +10,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Database::Model::OAuth;
 use BOM::Config::Runtime;
+use Mojo::Base 'Mojolicious::Controller';
 use utf8;
 
 ## init
@@ -122,18 +123,92 @@ ok $code, 'got access code';
 ($code) = ($t->tx->res->headers->location =~ /token2=(.*?)$/);
 ok $code, 'got access code for another loginid';
 
+my $mocked_mojo_cont = Test::MockModule->new('Mojolicious::Controller');
+my $sessions_hash    = {};
+$mocked_mojo_cont->mock(
+    'session',
+    sub {
+        my $self = shift;
+
+        my $stash = $self->stash;
+        $self->app->sessions->load($self) unless exists $stash->{'mojo.active_session'};
+
+        # Hash
+        my $session = $stash->{'mojo.session'} ||= {};
+        return $session unless @_;
+
+        # Get
+        return $session->{$_[0]} unless @_ > 1 || ref $_[0];
+
+        # Set
+        my $values = ref $_[0] ? $_[0] : {@_};
+        @$session{keys %$values}       = values %$values;
+        @$sessions_hash{keys %$values} = values %$values;
+        return $self;
+    });
 ## second time we'll see login again and POST will not require confirm scopes
 $t = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
 
 $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
 $t->post_ok(
     "/authorize?app_id=$app_id" => form => {
-        login      => 1,
-        email      => $email,
-        password   => $password,
-        csrf_token => $csrf_token
+        login           => 1,
+        email           => $email,
+        password        => $password,
+        csrf_token      => $csrf_token,
+        affiliate_token => 'eU5Z1WAL-BPPj8EvNdDvbWNd7ZgqdRLk'
     });
 
 ok $t->tx->res->headers->location =~ 'https://www.example.com/', 'redirect to example w/o confirm scopes';
+#token validated & session set
+ok $sessions_hash->{myaffiliates_token} =~ 'eU5Z1WAL-BPPj8EvNdDvbWNd7ZgqdRLk', 'affiliate_token  containing - validated & session set';
+#reset session hash
+$sessions_hash = {};
+$t             = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
+
+$csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
+$t->post_ok(
+    "/authorize?app_id=$app_id" => form => {
+        login           => 1,
+        email           => $email,
+        password        => $password,
+        csrf_token      => $csrf_token,
+        affiliate_token => 'eU5Z1WAL_BPPj8EvNdDvbWNd7ZgqdRLk'
+    });
+#token validated & session set
+ok $sessions_hash->{myaffiliates_token} =~ 'eU5Z1WAL_BPPj8EvNdDvbWNd7ZgqdRLk', 'affiliate_token containing _  validated & session set';
+
+#reset session hash
+$sessions_hash = {};
+$t             = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
+
+$csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
+$t->post_ok(
+    "/authorize?app_id=$app_id" => form => {
+        login           => 1,
+        email           => $email,
+        password        => $password,
+        csrf_token      => $csrf_token,
+        affiliate_token => 'eU5Z1WAL_BPPj8EvNdDvbWNd7ZgqdRLk3'
+    });
+#token validated & session set
+is $sessions_hash->{myaffiliates_token}, undef, 'affiliate_token length > 32 characters so session not set';
+
+#reset session hash
+$sessions_hash = {};
+$t             = $t->get_ok("/authorize?app_id=$app_id")->content_like(qr/login/);
+
+$csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
+$t->post_ok(
+    "/authorize?app_id=$app_id" => form => {
+        login           => 1,
+        email           => $email,
+        password        => $password,
+        csrf_token      => $csrf_token,
+        affiliate_token => 'eU5Z1WAL_BPPj8EvNdDvbWNd7ZgqdRL#'
+    });
+#token validated & session set
+is $sessions_hash->{myaffiliates_token}, undef, 'affiliate_token having invalid characters so session not set';
+$mocked_mojo_cont->unmock_all();
 
 done_testing();
