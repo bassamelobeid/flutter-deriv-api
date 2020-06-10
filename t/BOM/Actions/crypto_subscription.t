@@ -330,13 +330,11 @@ sub _insert_withdrawal_transaction {
 
     my $address = @{$transaction->{to}}[0];
 
-    $helper->insert_new_withdraw($address, $transaction->{currency}, $client->loginid, $transaction->{amount}, 0);
+    my $txn_db_id = $helper->insert_new_withdraw($address, $transaction->{currency}, $client->loginid, $transaction->{amount}, 0);
 
     _set_withdrawal_verified($address, $transaction->{currency});
 
-    $helper->dbic->run(
-        ping => sub { $_->selectrow_array('SELECT payment_id FROM payment.ctc_process_withdrawal(?, ?)', undef, $address, $transaction->{currency}) }
-    );
+    $helper->dbic->run(ping => sub { $_->selectrow_array('SELECT payment_id FROM payment.ctc_process_withdrawal(?)', undef, $txn_db_id) });
 
     return $helper->dbic->run(
         ping => sub {
