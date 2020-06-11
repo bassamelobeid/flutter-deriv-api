@@ -72,7 +72,12 @@ sub actions_config {
             }
         ],
         ['get_settings'],
-        ['mt5_get_settings'],
+        [
+            'mt5_get_settings',
+            {
+                msg_group => 'mt5',
+            }
+        ],
         [
             'set_settings',
             {
@@ -83,18 +88,21 @@ sub actions_config {
             'mt5_password_check',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],
+                msg_group    => 'mt5',
             }
         ],
         [
             'mt5_password_change',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],
+                msg_group    => 'mt5',
             }
         ],
         [
             'mt5_password_reset',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],
+                msg_group    => 'mt5',
             }
         ],
         ['get_self_exclusion'],
@@ -234,12 +242,14 @@ sub actions_config {
             'mt5_login_list',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],
+                msg_group    => 'mt5',
             }
         ],
         [
             'mt5_new_account',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],
+                msg_group    => 'mt5',
             }
         ],
         [
@@ -247,6 +257,7 @@ sub actions_config {
             {
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('mt5_deposit'),
                 stash_params => [qw/ server_name client_ip user_agent /],
+                msg_group    => 'mt5',
             }
         ],
         [
@@ -254,6 +265,7 @@ sub actions_config {
             {
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('mt5_withdrawal'),
                 stash_params => [qw/ server_name client_ip user_agent /],
+                msg_group    => 'mt5',
             }
         ],
         [
