@@ -19,6 +19,7 @@ use Clone::PP qw(clone);
 use List::UtilsBy qw(bundle_by);
 use List::Util qw(min);
 use Scalar::Util qw(weaken);
+use Log::Any qw($log);
 
 use Future::Mojo          ();
 use Future::Utils         ();
@@ -486,8 +487,14 @@ sub _process_proposal_open_contract_response {
                         qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode)};
 
                 $cache->{limit_order} = $contract->{limit_order} if $contract->{limit_order};
-
-                if (not $uuid = pricing_channel_for_proposal_open_contract($c, $args, $cache)->{uuid}) {
+                my $channel_info = pricing_channel_for_proposal_open_contract($c, $args, $cache);
+                if ($channel_info->{error}) {
+                    my $error =
+                        $c->new_error('proposal_open_contract', 'InternalError',
+                        $c->l('Internal error happened when subscribing to [_1].', 'proposal_open_contract'));
+                    $c->send({json => $error}, $req_storage);
+                    return;
+                } elsif (not $uuid = $channel_info->{uuid}) {
                     my $error =
                         $c->new_error('proposal_open_contract', 'AlreadySubscribed',
                         $c->l('You are already subscribed to [_1].', 'proposal_open_contract'));
@@ -580,6 +587,13 @@ sub pricing_channel_for_proposal_open_contract {
 
     my $contract_id     = $cache->{contract_id};
     my $landing_company = $c->landing_company_name;
+
+    unless ($landing_company) {
+        local $log->context->{longinid} = $c->stash->{loginid};
+        $log->error('landing company is null when get pricing channel for proposal_open_contract');
+        stats_inc('bom_websocket_api.v_3.proposal_open_contract.no_lc');
+        return {error => 'LandingCompanyMissed'};
+    }
 
     my $redis_channel = 'CONTRACT_PRICE::' . $contract_id . '_' . $landing_company;
     my $pricer_args   = _serialized_args({
