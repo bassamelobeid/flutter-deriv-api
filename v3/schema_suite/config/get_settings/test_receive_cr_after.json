@@ -91,6 +91,12 @@
             "address_city" : {
                "type" : "string",
                "pattern" : "^Test City$"
+            },
+            "non_pep_declaration": {
+                "type": "integer",
+                "enum": [
+                    1
+                ]
             }
          },
          "required" : [
@@ -110,7 +116,8 @@
             "is_authenticated_payment_agent",
             "salutation",
             "country_code",
-            "address_city"
+            "address_city",
+            "non_pep_declaration"
          ]
       },
       "msg_type" : {

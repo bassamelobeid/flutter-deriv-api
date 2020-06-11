@@ -31,7 +31,8 @@
             "phone",
             "address_line_2",
             "first_name",
-            "account_opening_reason"
+            "account_opening_reason",
+            "non_pep_declaration"
          ],
          "properties" : {
             "address_line_1" : {
@@ -104,6 +105,12 @@
             },
             "citizen" : {
                "type" : "string"
+            },
+            "non_pep_declaration": {
+                "type": "integer",
+                "enum": [
+                    1
+                ]
             }
          },
          "type" : "object"
