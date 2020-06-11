@@ -65,7 +65,7 @@ use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION
 
 use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
 
-my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers/;
+my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers|non_pep_declaration/;
 my $email_field_labels         = {
     exclude_until          => 'Exclude from website until',
     max_balance            => 'Maximum account cash balance',
@@ -1164,8 +1164,11 @@ rpc get_settings => sub {
                 tax_residence     => $client->tax_residence,
                 tax_identification_number   => $client->tax_identification_number,
                 account_opening_reason      => $client->account_opening_reason,
-                request_professional_status => $client->status->professional_requested ? 1 : 0
-            ))};
+                request_professional_status => $client->status->professional_requested ? 1 : 0,
+                non_pep_declaration         => ($client->non_pep_declaration_time) ? 1 : 0,
+            ),
+        ),
+    };
 };
 
 rpc set_settings => sub {
@@ -1402,6 +1405,14 @@ rpc set_settings => sub {
         $client->secret_question($secret_question) if $secret_question;
 
         $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
+
+        # non-pep declaration is shared among siblings of the same landing complany.
+        if (   $args->{non_pep_declaration}
+            && !$client->non_pep_declaration_time
+            && $client->landing_company->short eq $current_client->landing_company->short)
+        {
+            $client->non_pep_declaration_time(time);
+        }
 
         # As per CRS/FATCA regulatory requirement we need to
         # save this information as client status, so updating

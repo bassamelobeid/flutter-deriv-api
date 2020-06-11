@@ -22,7 +22,8 @@
       "stash",
       "salutation",
       "is_authenticated_payment_agent",
-      "client_tnc_status"
+      "client_tnc_status",
+      "non_pep_declaration"
    ],
    "properties" : {
       "date_of_birth" : {
@@ -102,6 +103,13 @@
       "address_state" : {
          "pattern" : "^BT$",
          "type" : "string"
+      },
+      "non_pep_declaration": {
+        "description": "Indicates client's self-declaration of not being a PEP/RCA (Politically Exposed Person/Relatives and Close Associates).",
+        "type": "integer",
+        "enum": [
+            1
+        ]
       }
    }
 }

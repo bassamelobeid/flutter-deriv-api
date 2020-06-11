@@ -18,7 +18,8 @@
       "account_opening_reason",
       "country",
       "date_of_birth",
-      "first_name"
+      "first_name",
+      "non_pep_declaration"
    ],
    "description" : null,
    "type" : "object",
@@ -102,6 +103,13 @@
             318124800
          ],
          "type" : "integer"
+      },
+      "non_pep_declaration": {
+        "description": "Indicates client's self-declaration of not being a PEP/RCA (Politically Exposed Person/Relatives and Close Associates).",
+        "type": "integer",
+        "enum": [
+            1
+        ]
       }
    }
 }

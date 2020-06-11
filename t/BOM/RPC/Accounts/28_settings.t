@@ -5,6 +5,7 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
+use Test::MockTime qw(set_fixed_time restore_time);
 use Test::BOM::RPC::Client;
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::Test::Helper::Token;
@@ -30,7 +31,8 @@ $test_client->email($email);
 $test_client->save;
 
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
+    broker_code              => 'VRTC',
+    non_pep_declaration_time => undef
 });
 $test_client_vr->email($email);
 $test_client_vr->save;
@@ -42,9 +44,7 @@ my $user = BOM::User->create(
 $user->add_client($test_client);
 $user->add_client($test_client_vr);
 
-my $test_client_cr_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-});
+my $test_client_cr_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
 
 $test_client_cr_vr->email('sample@binary.com');
 $test_client_cr_vr->save;
@@ -85,9 +85,8 @@ my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $test_client_mx->email($email);
 
-my $test_client_vr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRTC',
-});
+my $test_client_vr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
+
 $test_client_vr_2->email($email);
 $test_client_vr_2->set_default_account('USD');
 $test_client_vr_2->save;
@@ -200,6 +199,7 @@ subtest 'get settings' => sub {
             'citizen'                        => 'at',
             'user_hash'                      => hmac_sha256_hex($user_cr->email, BOM::Config::third_party()->{elevio}->{account_secret}),
             'has_secret_answer'              => 1,
+            'non_pep_declaration'            => 1,
         });
 
     $params->{token} = $token;
@@ -215,7 +215,7 @@ subtest 'get settings' => sub {
             'country_code'      => 'id',
             'email_consent'     => '0',
             'has_secret_answer' => '1',
-            'user_hash'         => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+            'user_hash'         => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}->{account_secret})
         },
         'vr client return less messages'
     );
@@ -300,7 +300,7 @@ subtest 'set settings' => sub {
         address_state   => 'BA',
         secret_question => 'testq',
         secret_answer   => 'testa',
-        place_of_birth  => undef,
+        place_of_birth  => undef
     );
 
     $params->{args}{residence} = 'kr';
@@ -510,8 +510,55 @@ subtest 'set settings' => sub {
 
             }
         };
-
     };
+    subtest 'non-pep declaration' => sub {
+        is $test_client_vr->non_pep_declaration_time, undef, 'non-pep declaration time is undefined for virtual accounts';
+        $params->{token} = $token_vr;
+        $params->{args} = {non_pep_declaration => 1};
+        is($c->tcall($method, $params)->{status}, 1, 'vr account updated successfully');
+        $test_client_vr->load;
+        is $test_client_vr->non_pep_declaration_time, undef, 'non-pep declaration is not changed for virtual accounts';
+
+        for my $client ($test_client_cr, $test_client_cr_2) {
+            $client->non_pep_declaration_time('1999-01-01 00:00:00');
+            $client->save;
+            $client->load;
+            is $client->non_pep_declaration_time, '1999-01-01 00:00:00', 'Declaration time is set to a test value';
+        }
+        $params->{token} = $token_cr;
+        $params->{args} = {%full_args, non_pep_declaration => 1};
+        is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+
+        for my $client ($test_client_cr, $test_client_cr_2) {
+            $client->load;
+            is $client->non_pep_declaration_time, '1999-01-01 00:00:00', 'Decaration time is not changed if it isnt empty';
+        }
+
+        # simulate a client with empty non-pep declaration time (because it's impossible to set it to null for real accounts in DB)
+        my $mocked_client = Test::MockModule->new(ref($test_client));
+        $mocked_client->mock(
+            non_pep_declaration_time => sub {
+                my ($self) = @_;
+                # return undef only the first time it's read and let it act normally afterwards.
+                if (scalar @_ == 1 && !$self->{__non_pep_called}) {
+                    $self->{__non_pep_called} = 1;
+                    return undef;
+                }
+                return $mocked_client->original('non_pep_declaration_time')->(@_);
+            });
+        my $fixed_time = Date::Utility->new('2018-02-15');
+        set_fixed_time($fixed_time->epoch);
+        is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+        $mocked_client->unmock_all;
+        restore_time();
+
+        for my $client ($test_client_cr, $test_client_cr_2) {
+            $client->load;
+            is $client->non_pep_declaration_time, '2018-02-15 00:00:00', 'Decaration time is changed for siblings if it is null';
+        }
+    };
+
+    $params->{token} = $token;
     $test_client->load();
 
     isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
@@ -563,18 +610,27 @@ subtest 'set settings' => sub {
     $params->{token} = $token_mx;
     $params->{args}{account_opening_reason} = 'Income Earning';
 
+    delete $emitted->{profile_change};
     # setting account settings for one client also updates for clients that have a different landing company
     $params->{token} = $token_mlt;
+    $params->{args}->{place_of_birth} = 'ir';
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+    ok($emitted->{profile_change}, 'profile_change emit exist');
+
+    is_deeply $emitted->{profile_change}->{properties}->{updated_fields}, $params->{args}, "updated fields are correctly sent to track event";
     is($c->tcall('get_settings', {token => $token_mlt})->{address_line_1}, "address line 1", "Was able to set settings for MLT client");
     is($c->tcall('get_settings', {token => $token_mf})->{address_line_1},  "address line 1", "Was able to set settings for MF client");
 
     # setting account settings for one client updates for all clients with the same landing company
     $params->{token} = $token_cr_2;
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
-    delete $params->{args}->{place_of_birth};
     ok($emitted->{profile_change}, 'profile_change emit exist');
-    is_deeply $emitted->{profile_change}->{properties}->{updated_fields}, $params->{args}, "updated fields are correctly sent to track event";
+    is_deeply $emitted->{profile_change}->{properties}->{updated_fields},
+        {
+        'place_of_birth'   => 'ir',
+        'address_postcode' => ''
+        },
+        "updated fields are correctly sent to track event";
     is($c->tcall('get_settings', {token => $token_cr})->{address_line_1}, "address line 1", "Was able to set settings correctly for CR client");
     is(
         $c->tcall('get_settings', {token => $token_cr_2})->{address_line_1},

@@ -7,7 +7,7 @@ use Test::MockModule;
 use Test::FailWarnings;
 use Test::Warn;
 use Test::Fatal qw(lives_ok exception);
-use Test::MockTime qw(set_fixed_time);
+use Test::MockTime qw(set_fixed_time restore_time);
 
 use Date::Utility;
 use MojoX::JSON::RPC::Client;
