@@ -191,8 +191,14 @@ subtest "format and validate" => sub {
     $client->format_input_details($args);
     is $args->{first_name}, 'newname', 'trim firstname';
 
+    $args = {phone => '+442087712924'};
+    is $client->format_input_details($args), undef, 'Valid UK phone number returns undef';
+
     $args = {phone => 123456};
-    is $client->format_input_details($args)->{error}, 'InvalidPhone', 'InvalidPhone';
+    is $client->format_input_details($args)->{error}, 'InvalidPhone', 'Bad phone format returns InvalidPhone error';
+
+    $args = {phone => '+26777951234'};
+    is $client->format_input_details($args), undef, 'Valid Botswana phone number returns undef';
 
     $args = {date_of_birth => '2010-15-15'};
     is $client->format_input_details($args)->{error}, 'InvalidDateOfBirth', 'InvalidDateOfBirth';
