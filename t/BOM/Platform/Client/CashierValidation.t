@@ -12,12 +12,12 @@ use ExchangeRates::CurrencyConverter;
 use Format::Util::Numbers qw/get_min_unit roundcommon/;
 
 use BOM::User::Client;
+use BOM::Config::CurrencyConfig;
 use BOM::Config::Runtime;
 use BOM::Platform::Client::CashierValidation;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_2, $cr_client_jpy, $mlt_client, $mf_client, $mx_client) =
-    ('CashierForwardError');
+my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_2, $mlt_client, $mf_client, $mx_client) = ('CashierForwardError');
 
 subtest prepare => sub {
     $new_email = 'test' . rand . '@binary.com';
@@ -68,60 +68,12 @@ subtest prepare => sub {
     pass "Prepration successful";
 };
 
-subtest 'Check Types of Suspension' => sub {
-
-    subtest 'When payments is suspended' => sub {
-
-        BOM::Config::Runtime->instance->app_config->system->suspend->payments(1);
-        my $res = BOM::Platform::Client::CashierValidation::validate($vr_client->loginid, 'deposit');
-        is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-        is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.', 'Correct error message';
-        ok BOM::Platform::Client::CashierValidation::is_payment_suspended,        'Payments is suspended';
-        ok BOM::Platform::Client::CashierValidation::is_crypto_cashier_suspended, 'Crypto Cashier is suspended';
-        ok BOM::Platform::Client::CashierValidation::is_cashier_suspended,        'Cashier is suspended';
-        BOM::Config::Runtime->instance->app_config->system->suspend->payments(0);
-    };
-
-    subtest 'When cryptocashier is suspended' => sub {
-        BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier(1);
-        ok BOM::Platform::Client::CashierValidation::is_crypto_cashier_suspended, 'Crypto Cashier is suspended';
-        BOM::Config::Runtime->instance->app_config->system->suspend->cryptocashier(0);
-    };
-
-    subtest 'When cashier is suspended' => sub {
-        BOM::Config::Runtime->instance->app_config->system->suspend->cashier(1);
-        ok BOM::Platform::Client::CashierValidation::is_cashier_suspended, 'Cashier is suspended';
-        BOM::Config::Runtime->instance->app_config->system->suspend->cashier(0);
-    };
-
-    subtest 'When cryptocurrency is suspended' => sub {
-        BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies("BTC");
-        ok BOM::Platform::Client::CashierValidation::is_crypto_currency_suspended("BTC"),            'Crypto Currency BTC is suspended';
-        ok BOM::Platform::Client::CashierValidation::is_crypto_currency_deposit_suspended("BTC"),    'Deposit for cryptocurrency is suspended';
-        ok BOM::Platform::Client::CashierValidation::is_crypto_currency_withdrawal_suspended("BTC"), 'Withdrawal for cryptocurrency is suspended';
-        BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies("");
-    };
-    subtest 'Only when cryptocurrency deposit is suspended' => sub {
-        BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies_deposit(['BTC']);
-        ok BOM::Platform::Client::CashierValidation::is_crypto_currency_deposit_suspended("BTC"), 'Deposit for cryptocurrency is suspended';
-        ok !(BOM::Platform::Client::CashierValidation::is_crypto_currency_withdrawal_suspended("BTC")),
-            'Withdrawal for cryptocurrency is not suspended';
-        ok !(BOM::Platform::Client::CashierValidation::is_crypto_cashier_suspended()), 'Cryptocashier is not suspended';
-        BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies_deposit([]);
-    };
-    subtest 'Only when cryptocurrency withdrawal is suspended' => sub {
-        BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies_withdrawal(['BTC']);
-        ok BOM::Platform::Client::CashierValidation::is_crypto_currency_withdrawal_suspended("BTC"), 'Withdrawal for cryptocurrency is suspended';
-        ok !(BOM::Platform::Client::CashierValidation::is_crypto_currency_deposit_suspended("BTC")), 'Deposit for cryptocurrency is not suspended';
-        ok !(BOM::Platform::Client::CashierValidation::is_crypto_cashier_suspended()), 'Cryptocashier is not suspended';
-        BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies_withdrawal([]);
-    };
-    subtest 'Only when currency is experimental' => sub {
-        BOM::Config::Runtime->instance->app_config->system->suspend->experimental_currencies(['USB']);
-        ok BOM::Platform::Client::CashierValidation::is_experimental_currency("USB"), 'Currency USB is experimental';
-        ok !(BOM::Platform::Client::CashierValidation::is_experimental_currency("UST")), 'Currency UST is not experimental';
-        BOM::Config::Runtime->instance->app_config->system->suspend->experimental_currencies([]);
-    };
+subtest 'When payments is suspended' => sub {
+    BOM::Config::Runtime->instance->app_config->system->suspend->payments(1);
+    my $res = BOM::Platform::Client::CashierValidation::validate($vr_client->loginid, 'deposit');
+    is $res->{error}->{code}, $generic_err_code, 'Correct error code';
+    is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.', 'Correct error message';
+    BOM::Config::Runtime->instance->app_config->system->suspend->payments(0);
 };
 
 subtest 'Cashier validation common' => sub {
