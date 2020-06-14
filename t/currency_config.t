@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Fatal;
 use Test::MockModule;
 use JSON::MaybeUTF8;
 use Format::Util::Numbers qw(get_min_unit financialrounding);
@@ -59,12 +60,11 @@ $mock_app_config->mock(
     });
 
 subtest 'transfer_between_accounts_limits' => sub {
-
     my $minimum = {
-        "USD" => 10,
-        "GBP" => 11,
-        "BTC" => 12,
-        "UST" => 15
+        USD => 10,
+        GBP => 11,
+        BTC => 12,
+        UST => 15
     };
 
     my $app_config = BOM::Config::Runtime->instance->app_config();
@@ -79,7 +79,6 @@ subtest 'transfer_between_accounts_limits' => sub {
     my $min_default     = 1;
 
     for my $currency_code (@all_currencies) {
-
         my $currency_min_default = convert_currency($minimum->{$currency_code} // $min_default, 'USD', $currency_code);
 
         cmp_ok(
@@ -104,8 +103,7 @@ subtest 'transfer_between_accounts_limits' => sub {
         is($transfer_limits->{GBP}->{max}, undef, "No error thrown when there is no exchange rate");
 
         $mock_convert_currency->unmock_all();
-        }
-
+    };
 };
 
 subtest 'transfer_between_accounts_fees' => sub {
@@ -191,5 +189,78 @@ subtest 'is_valid_currency' => sub {
     ok !BOM::Config::CurrencyConfig::is_valid_currency('usd'),     "Currency with wrong case 'usd' is not valid";
 };
 
+subtest 'is_valid_crypto_currency' => sub {
+    ok BOM::Config::CurrencyConfig::is_valid_crypto_currency($_), "Currency '$_' is valid" for LandingCompany::Registry::all_crypto_currencies();
+
+    ok !BOM::Config::CurrencyConfig::is_valid_crypto_currency('INVALID'), "Currency 'INVALID' is not valid";
+    ok !BOM::Config::CurrencyConfig::is_valid_crypto_currency('USD'),     "Fiat currency is not a valid crypto currency";
+};
+
+subtest 'Check Types of Suspension' => sub {
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+
+    subtest 'When payments is suspended' => sub {
+        $app_config->system->suspend->payments(1);
+        ok BOM::Config::CurrencyConfig::is_payment_suspended,        'Payments is suspended';
+        ok BOM::Config::CurrencyConfig::is_crypto_cashier_suspended, 'Crypto Cashier is suspended';
+        ok BOM::Config::CurrencyConfig::is_cashier_suspended,        'Cashier is suspended';
+        $app_config->system->suspend->payments(0);
+    };
+
+    subtest 'When cryptocashier is suspended' => sub {
+        $app_config->system->suspend->cryptocashier(1);
+        ok BOM::Config::CurrencyConfig::is_crypto_cashier_suspended, 'Crypto Cashier is suspended';
+        $app_config->system->suspend->cryptocashier(0);
+    };
+
+    subtest 'When cashier is suspended' => sub {
+        $app_config->system->suspend->cashier(1);
+        ok BOM::Config::CurrencyConfig::is_cashier_suspended, 'Cashier is suspended';
+        $app_config->system->suspend->cashier(0);
+    };
+
+    subtest 'When cryptocurrency is suspended' => sub {
+        like(
+            exception { BOM::Config::CurrencyConfig::is_crypto_currency_suspended() },
+            qr/Expected currency code parameter/,
+            'Dies when no currency is passed'
+        );
+        like(
+            exception { BOM::Config::CurrencyConfig::is_crypto_currency_suspended('USD') },
+            qr/Failed to accept USD as a cryptocurrency/,
+            'Dies when is not a crypto currency'
+        );
+        $app_config->system->suspend->cryptocurrencies('BTC');
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_suspended('BTC'),            'Crypto Currency BTC is suspended';
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended('BTC'),    'Deposit for cryptocurrency is suspended';
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended('BTC'), 'Withdrawal for cryptocurrency is suspended';
+        $app_config->system->suspend->cryptocurrencies("");
+    };
+
+    subtest 'Only when cryptocurrency deposit is suspended' => sub {
+        $app_config->system->suspend->cryptocurrencies_deposit(['BTC']);
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended('BTC'), 'Deposit for cryptocurrency is suspended';
+        ok !(BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended('BTC')), 'Withdrawal for cryptocurrency is not suspended';
+        ok !(BOM::Config::CurrencyConfig::is_crypto_cashier_suspended()), 'Cryptocashier is not suspended';
+        $app_config->system->suspend->cryptocurrencies_deposit([]);
+    };
+
+    subtest 'Only when cryptocurrency withdrawal is suspended' => sub {
+        $app_config->system->suspend->cryptocurrencies_withdrawal(['BTC']);
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended('BTC'), 'Withdrawal for cryptocurrency is suspended';
+        ok !(BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended('BTC')), 'Deposit for cryptocurrency is not suspended';
+        ok !(BOM::Config::CurrencyConfig::is_crypto_cashier_suspended()), 'Cryptocashier is not suspended';
+        $app_config->system->suspend->cryptocurrencies_withdrawal([]);
+    };
+
+    subtest 'Only when currency is experimental' => sub {
+        $app_config->system->suspend->experimental_currencies(['USB']);
+        ok BOM::Config::CurrencyConfig::is_experimental_currency("USB"), 'Currency USB is experimental';
+        ok !(BOM::Config::CurrencyConfig::is_experimental_currency("UST")), 'Currency UST is not experimental';
+        $app_config->system->suspend->experimental_currencies([]);
+    };
+};
+
 $mock_app_config->unmock_all();
+
 done_testing();

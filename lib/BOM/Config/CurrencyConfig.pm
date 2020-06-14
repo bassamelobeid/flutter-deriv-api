@@ -39,6 +39,7 @@ my $_app_config;
 #lazy loading $_app_config
 sub app_config {
     $_app_config = BOM::Config::Runtime->instance->app_config() unless $_app_config;
+    $_app_config->check_for_update();
     return $_app_config;
 }
 
@@ -86,6 +87,25 @@ sub is_valid_currency {
     return (any { $_ eq $currency } LandingCompany::Registry->new()->all_currencies);
 }
 
+=head2 is_valid_crypto_currency
+
+Checks if the crypto currency is valid.
+
+=over 4
+
+=item * C<currency> - The crypto currency code to check the validity of. (case-sensitive)
+
+=back
+
+Returns 1 if currency is valid, otherwise 0.
+
+=cut
+
+sub is_valid_crypto_currency {
+    my ($currency) = @_;
+    return (any { $_ eq $currency } LandingCompany::Registry->new()->all_crypto_currencies);
+}
+
 =head2 transfer_between_accounts_limits
 
 Transfer limits are returned as a {currency => {min => 1, max => 2500}, ... } hash ref.
@@ -120,8 +140,6 @@ sub transfer_between_accounts_limits {
 
     my $currency_limits = {};
     foreach my $currency (@all_currencies) {
-        my $type = LandingCompany::Registry::get_currency_type($currency);
-
         my $min = $configs_json->{$currency} // $configs->{"payments.transfer_between_accounts.minimum.default"};
 
         $min = eval { financialrounding('amount', $currency, convert_currency($min, 'USD', $currency)); };
@@ -131,13 +149,13 @@ sub transfer_between_accounts_limits {
                 convert_currency($configs->{'payments.transfer_between_accounts.maximum.default'}, 'USD', $currency));
         };
 
-        if (is_currency_suspended($currency)) {
+        if (is_valid_crypto_currency($currency) && is_crypto_currency_suspended($currency)) {
             $min = 0 unless $min;
             $max = 0 unless $max;
         }
 
         $currency_limits->{$currency}->{min} = financialrounding('amount', $currency, $min);
-        $currency_limits->{$currency}->{'max'} = $max if $max;
+        $currency_limits->{$currency}->{max} = $max if $max;
     }
 
     $currency_limits->{revision} = $loaded_revision;
@@ -238,8 +256,44 @@ sub rate_expiry {
     return min(@expiries);
 }
 
+=head2 is_payment_suspended
+
+Returns whether payment is currently suspended or not.
+
+=cut
+
+sub is_payment_suspended {
+    return app_config()->system->suspend->payments;
+}
+
+=head2 is_cashier_suspended
+
+Returns whether fiat cashier is currently suspended or not.
+
+=cut
+
+sub is_cashier_suspended {
+    return is_payment_suspended() || app_config()->system->suspend->cashier;
+}
+
+=head2 is_crypto_cashier_suspended
+
+Returns whether crypto cashier is currently suspended or not.
+
+=cut
+
+sub is_crypto_cashier_suspended {
+    return is_payment_suspended() || app_config()->system->suspend->cryptocashier;
+}
+
+=head2 get_suspended_crypto_currencies
+
+Returns a hashref containing the suspended crypto currencies as keys, values are C<1>.
+
+=cut
+
 sub get_suspended_crypto_currencies {
-    my @suspended_currencies = split /,/, BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies;
+    my @suspended_currencies = split /,/, app_config()->system->suspend->cryptocurrencies;
     s/^\s+|\s+$//g for @suspended_currencies;
 
     my %suspended_currencies_hash = map { $_ => 1 } @suspended_currencies;
@@ -247,12 +301,115 @@ sub get_suspended_crypto_currencies {
     return \%suspended_currencies_hash;
 }
 
-sub is_currency_suspended {
+=head2 is_crypto_currency_suspended
+
+To check if the given crypto currency is suspended in the crypto cashier.
+Dies when the C<currency> is not provided or not a valid crypto currency.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns 1 if the currency is currently suspended, otherwise 0.
+
+=cut
+
+sub is_crypto_currency_suspended {
     my $currency = shift;
+
+    die 'Expected currency code parameter.' unless $currency;
+    die "Failed to accept $currency as a cryptocurrency." unless is_valid_crypto_currency($currency);
 
     my $suspended_currencies = get_suspended_crypto_currencies();
 
     return $suspended_currencies->{$currency} ? 1 : 0;
+}
+
+=head2 _is_crypto_currency_action_suspended
+
+To check if the specified action for the given crypto currency is suspended
+in the crypto cashier.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=item * C<action> - Action name. Can be one of C<cryptocurrencies_deposit> or C<cryptocurrencies_withdrawal>
+
+=back
+
+Return true if the C<currency> is currently suspended for the C<action>.
+
+=cut
+
+sub _is_crypto_currency_action_suspended {
+    my ($currency, $action) = @_;
+
+    return 1 if is_crypto_currency_suspended($currency);
+
+    return any { $currency eq $_ } app_config()->system->suspend->$action->@*;
+}
+
+=head2 is_crypto_currency_deposit_suspended
+
+To check if deposit for the given crypto currency is suspended in the crypto cashier.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Return true if the currency is currently suspended for deposit.
+
+=cut
+
+sub is_crypto_currency_deposit_suspended {
+    my $currency = shift;
+
+    return _is_crypto_currency_action_suspended($currency, 'cryptocurrencies_deposit');
+}
+
+=head2 is_crypto_currency_withdrawal_suspended
+
+To check if withdrawal for the given crypto currency is suspended in the crypto cashier.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Return true if the currency is currently suspended for withdrawal.
+
+=cut
+
+sub is_crypto_currency_withdrawal_suspended {
+    my $currency = shift;
+
+    return _is_crypto_currency_action_suspended($currency, 'cryptocurrencies_withdrawal');
+}
+
+=head2 is_experimental_currency
+
+To check if the currency is experimental.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns true if the currency is experimental.
+
+=cut
+
+sub is_experimental_currency {
+    my $currency = shift;
+
+    return any { $currency eq $_ } app_config()->system->suspend->experimental_currencies->@*;
 }
 
 1;
