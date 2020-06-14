@@ -11,13 +11,13 @@ use LandingCompany::Registry;
 
 use BOM::CTC::Helper;
 use BOM::CTC::Currency;
-use BOM::Platform::Client::CashierValidation;
+use BOM::Config::CurrencyConfig;
 use BOM::Database::ClientDB;
 use Syntax::Keyword::Try;
 
 our @EXPORT_OK = qw( wait_miner deploy_test_contract set_pending );
 
-my $mock_cashier_validation = Test::MockModule->new('BOM::Platform::Client::CashierValidation');
+my $mock_cashier_validation = Test::MockModule->new('BOM::Config::CurrencyConfig');
 $mock_cashier_validation->mock(
     is_crypto_currency_suspended => sub {
         return 0;
@@ -52,15 +52,17 @@ set transaction as pending in payment.cryptocurrency
 
 =over
 
-=item* C<broker_code> broker_code
+=item * C<broker_code> - broker_code
 
-=item* C<address> blockchain address
+=item * C<address> - blockchain address
 
-=item* C<currency_code> currency code
+=item * C<currency_code> - currency code
 
-=item* C<amount> amount transacted
+=item * C<amount> - amount transacted
 
-=item* C<transaction> blockchain transaction hash
+=item * C<transaction> - blockchain transaction hash
+
+=back
 
 =cut
 
@@ -85,8 +87,8 @@ sub set_pending {
 =head2 deploy_all_test_contracts
 
 Generates test contract addresses for ERC20 currencies. It is supposed to be invoked
-on QA box rebuild as a preparatory step for for cryto cashier manual tests 
-(no problem if invoked manually afterwards). 
+on QA box rebuild as a preparatory step for crypto cashier manual tests
+(no problem if invoked manually afterwards).
 It returns a hash ref containing the addresses just created for ERC20 currencies.
 
 =cut
