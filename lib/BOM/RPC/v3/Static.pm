@@ -145,7 +145,7 @@ sub _currencies_config {
     # Get available currencies
     my @all_currencies = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
 
-    my $suspended_currencies = BOM::RPC::v3::Utility::get_suspended_crypto_currencies();
+    my $suspended_currencies = BOM::Config::CurrencyConfig::get_suspended_crypto_currencies();
 
     my %currencies_config = map {
         $_ => {
@@ -175,7 +175,7 @@ Returns limits for cryptocurrencies in USD
 
 =item * amount (minimum withdrawal)
 
-=back 
+=back
 
 Returns a HASH.
 

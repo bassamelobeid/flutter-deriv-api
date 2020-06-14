@@ -35,6 +35,7 @@ use Finance::Contract::Longcode qw(shortcode_to_longcode);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
 use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Config::CurrencyConfig;
 use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Platform::Token::API;
@@ -43,7 +44,6 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Token::API;
 use BOM::Platform::Token;
 use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Client::CashierValidation;
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Event::Emitter;
 use BOM::User;
@@ -102,15 +102,6 @@ sub validation_checks {
     }
 
     return undef;
-}
-
-sub get_suspended_crypto_currencies {
-    my @suspended_currencies = split /,/, BOM::Config::Runtime->instance->app_config->system->suspend->cryptocurrencies;
-    s/^\s+|\s+$//g for @suspended_currencies;
-
-    my %suspended_currencies_hash = map { $_ => 1 } @suspended_currencies;
-
-    return \%suspended_currencies_hash;
 }
 
 sub get_token_details {
@@ -560,7 +551,7 @@ sub _is_currency_allowed {
     my $error;
     try {
         $error = localize("The provided currency [_1] is not selectable at the moment.", $currency)
-            if ($type eq 'crypto' and BOM::Platform::Client::CashierValidation::is_crypto_currency_suspended($currency));
+            if ($type eq 'crypto' and BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency));
     }
     catch {
         $error = localize("The provided currency [_1] is not a valid cryptocurrency.", $currency);
@@ -758,7 +749,7 @@ sub filter_out_suspended_cryptocurrencies {
     my $landing_company_name = shift;
     my @currencies           = keys %{LandingCompany::Registry::get($landing_company_name)->legal_allowed_currencies};
 
-    my $suspended_currencies = get_suspended_crypto_currencies();
+    my $suspended_currencies = BOM::Config::CurrencyConfig::get_suspended_crypto_currencies();
 
     my @valid_payout_currencies =
         sort grep { !exists $suspended_currencies->{$_} } @currencies;
@@ -880,13 +871,9 @@ Check if the cashier is suspended for withdrawal or deposit.
 
 =over 4
 
-=item * C<currency>
+=item * C<currency> - The currency code.
 
-The currency code.
-
-=item * C<action>
-
-String and the possible values are: deposit, withdrawal
+=item * C<action> - Required for crypto currency, possible values are: deposit, withdrawal
 
 =back
 
@@ -900,22 +887,11 @@ sub verify_cashier_suspended {
     my $is_cryptocurrency = LandingCompany::Registry::get_currency_type($currency) eq 'crypto';
 
     if ($is_cryptocurrency) {
-
-        if ($action eq 'deposit') {
-            return 1
-                if (BOM::Platform::Client::CashierValidation::is_crypto_cashier_suspended()
-                || BOM::Platform::Client::CashierValidation::is_crypto_currency_deposit_suspended($currency));
-        }
-
-        if ($action eq 'withdrawal') {
-            return 1
-                if (BOM::Platform::Client::CashierValidation::is_crypto_cashier_suspended()
-                || BOM::Platform::Client::CashierValidation::is_crypto_currency_withdrawal_suspended($currency));
-        }
-
+        return 1 if BOM::Config::CurrencyConfig::is_crypto_cashier_suspended();
+        return 1 if ($action eq 'deposit' && BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended($currency));
+        return 1 if ($action eq 'withdrawal' && BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended($currency));
     } else {
-        return 1
-            if BOM::Platform::Client::CashierValidation::is_cashier_suspended();
+        return 1 if BOM::Config::CurrencyConfig::is_cashier_suspended();
     }
 
     return 0;
@@ -944,7 +920,7 @@ Returns 1 if experimental is in emails list and 0 if not.
 sub verify_experimental_email_whitelisted {
     my ($client, $currency) = @_;
 
-    if (BOM::Platform::Client::CashierValidation::is_experimental_currency($currency)) {
+    if (BOM::Config::CurrencyConfig::is_experimental_currency($currency)) {
         my $allowed_emails = BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed;
         my $client_email   = $client->email;
         return 1 if not any { $_ eq $client_email } @$allowed_emails;

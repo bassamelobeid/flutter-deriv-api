@@ -150,7 +150,7 @@ rpc "cashier", sub {
     }
 
     return $error_sub->(localize('Sorry, cashier is temporarily unavailable due to system maintenance.'))
-        if BOM::Platform::Client::CashierValidation::is_cashier_suspended();
+        if BOM::Config::CurrencyConfig::is_cashier_suspended();
 
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
     # hit DF's CreateCustomer API
@@ -1282,7 +1282,7 @@ rpc transfer_between_accounts => sub {
     my ($currency, $amount) = @{$args}{qw/currency amount/};
     my $status = $client->status;
 
-    if (BOM::Platform::Client::CashierValidation::is_payment_suspended()) {
+    if (BOM::Config::CurrencyConfig::is_payment_suspended()) {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
 
