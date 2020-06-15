@@ -135,7 +135,6 @@ sub get_graph_data_for_others {
         ask_probability  => [],
         bid_probability  => [],
         iv               => [],
-        mu               => [],
     );
 
     my $graph_more = 1;
@@ -171,7 +170,7 @@ sub get_graph_data_for_others {
                     next if not $bet->is_binary;
                     $amount = ($expired) ? $value : $bet->$attr->amount;
                 }
-                push @{$prices{$attr}}, financialrounding('amount', $bet->currency, (abs $amount > 3) ? $amount : $amount * 100);
+                push @{$prices{$attr}}, 0 + financialrounding('amount', $bet->currency, (abs $amount > 3) ? $amount : $amount * 100);
             }
 
             my $current_vs = $bet->volsurface->creation_date->datetime_iso8601;
@@ -205,7 +204,6 @@ sub get_graph_data_for_others {
             'Bid value'   => $prices{bid_probability},
             'Bet value'   => $prices{theo_probability},
             'Pricing IV'  => $prices{iv},
-            'Pricing mu'  => $prices{mu},
             'wins'        => \@wins,
             'losses'      => \@losses,
             'vs_changes'  => \@vs_changes,
