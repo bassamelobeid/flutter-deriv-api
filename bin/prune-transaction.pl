@@ -14,11 +14,14 @@ my $outdir = '.';
 my $cutoff_time;                   # before the beginning of time
 my $cutoff_length;                 # infinity
 my $aws_profile;
+my @accounts;
+my $account_mode;
 
 my $usage=<<'USAGE';
 Usage:
  PGDATABASE=... PGHOST=... \
  prune_transaction.pl [--init[=only]] [--aws-profile=...] [--directory=...] \
+                      [--client=...] \
                       [--time=...] [--length=...]
 
  All options can be abbreviated.
@@ -104,6 +107,7 @@ USAGE
 
 GetOptions ('init:s'=>\$init, 'directory=s'=>\$outdir,
             'aws-profile=s'=>\$aws_profile,
+            'client=s'=>\@accounts,
             'time=s'=>\$cutoff_time, 'length=s'=>\$cutoff_length)
     or die $usage;
 
@@ -152,7 +156,7 @@ my $prune_close = <<'SQL';
 CLOSE prune_csr
 SQL
 
-my ($db, $next_account, $log_it);
+my ($db, $next_account, $move_account, $log_it);
 sub opendb {
     $db = DBI->connect('dbi:Pg:', undef, undef, {RaiseError=>1, PrintError=>0});
 
@@ -170,6 +174,12 @@ WITH a AS (
 DELETE FROM prune.worklist AS b
  USING a
  WHERE b.account_id = a.account_id
+RETURNING *
+SQL
+
+    $move_account = $db->prepare(<<'SQL');
+DELETE FROM prune.worklist AS b
+ WHERE b.account_id = $1
 RETURNING *
 SQL
 
@@ -222,20 +232,20 @@ sub prune {
 
     $db->do($prune_cursor, undef, $accid, $cutoff_time, $cutoff_length);
     while (1) {
-	my $sth = $db->prepare($prune_fetch);
-	$sth->execute;
-	last if 0 == $sth->rows;
-	while (my $row = $sth->fetchrow_arrayref) {
-	        unless ($n) {           # open the file only if needed
-		    open $fh, '|-', @transfer_cmd, $fn
-			    or die "Cannot open pipe to gzip to write $fn: $!\n";
-		    binmode $fh, 'encoding(utf-8)';
-		        }
+        my $sth = $db->prepare($prune_fetch);
+        $sth->execute;
+        last if 0 == $sth->rows;
+        while (my $row = $sth->fetchrow_arrayref) {
+            unless ($n) {           # open the file only if needed
+                open $fh, '|-', @transfer_cmd, $fn
+                    or die "Cannot open pipe to gzip to write $fn: $!\n";
+                binmode $fh, 'encoding(utf-8)';
+            }
 
-		    print $fh $row->[0], "\n"
-			or die "Cannot write to pipe to gzip to write $outdir/$accid.gz: $!\n";
-		    $n++;
-		}
+            print $fh $row->[0], "\n"
+                or die "Cannot write to pipe to gzip to write $outdir/$accid.gz: $!\n";
+            $n++;
+        }
     }
     $db->do($prune_close);
 
@@ -256,19 +266,34 @@ sub prune {
 
 sub txn {
     $db->begin_work;
-    $next_account->execute;
-    my $accid = $next_account->fetchall_arrayref;
-    unless (defined $accid and @$accid) {   # all done
-        $db->rollback;
-        return 0;
-    }
-    if (prune $accid->[0]->[0]) {
-        $db->commit;
+    my $accid;
+
+    if ($account_mode) {
+        return 0 unless @accounts;
+        $accid = $accounts[0];
+        $move_account->execute($accid);
+        my $l = $move_account->fetchall_arrayref;
+        unless (defined $l and @$l and $l->[0]->[0] eq $accid) {
+            warn "account $accid not found in worklist\n";
+        }
     } else {
-        $db->rollback;
+        $next_account->execute;
+        $accid = $next_account->fetchall_arrayref;
+        unless (defined $accid and @$accid) {   # all done
+            $db->rollback;
+            return 0;
+        }
+        $accid = $accid->[0]->[0];
     }
 
-    return 1;                   # did something
+    if (prune $accid) {
+        $db->commit;
+        shift @accounts if $account_mode;
+        return 1;               # did something
+    }
+
+    $db->rollback;
+    return '0 but true';       # tried something but it was rolled back
 }
 
 sub once {
@@ -283,4 +308,8 @@ sub once {
     return 1;
 }
 
+if (@accounts) {
+    @accounts = map {split /[,\s]+/} @accounts;
+    $account_mode = 1;
+}
 1 while once;
