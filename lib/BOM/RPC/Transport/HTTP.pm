@@ -133,13 +133,14 @@ sub startup {
     my $cpu;
     my $vsz_start;
     my $on_production = $ENV{TEST_DATABASE} ? 0 : 1;
+    my $service_base_name = $ENV{BASE_NAME} || 'bom-rpc';
 
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
             $cpu  = Proc::CPUUsage->new();
             $call = $c->req->url->path;
-            $0    = "bom-rpc: " . $call if $on_production;    ## no critic (RequireLocalizedPunctuationVars)
+            $0    = "$service_base_name: " . $call if $on_production;    ## no critic (RequireLocalizedPunctuationVars)
             $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ["rpc:$call"]});
@@ -188,11 +189,13 @@ sub startup {
             $usage += $_->[1] for @recent;
             $usage = sprintf('%.2f', 100 * $usage / Time::HiRes::tv_interval($request_end, $recent[0]->[0]));
 
-            $0 = "bom-rpc: (idle since $end #req=$request_counter us=$usage%)" if $on_production;    ## no critic (RequireLocalizedPunctuationVars)
+            $0 = "$service_base_name: (idle since $end #req=$request_counter us=$usage%)"
+                if $on_production;    ## no critic (RequireLocalizedPunctuationVars)
         });
 
     # set $0 after forking children
-    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-rpc: (new)" })   ## no critic (RequireLocalizedPunctuationVars)
+    Mojo::IOLoop->timer(0,
+        sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "$service_base_name: (new)" })    ## no critic (RequireLocalizedPunctuationVars)
         if $on_production;
 
     return;
