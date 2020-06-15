@@ -376,11 +376,14 @@ sub _check_auth {
 }
 
 sub _rpc_suffix {
-    my ($c) = @_;
+    my ($c, $req_storage) = @_;
 
-    my $app_id    = $c->app_id // '';
-    my $processor = $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
-    my $suffix    = $processor ? '_' . $processor : '';
+    my $group_suffix = $Binary::WebSocketAPI::DIVERT_MSG_GROUP{$req_storage->{msg_group} // ''} // '';
+    my $app_id       = $c->app_id                                                               // '';
+    my $app_suffix   = $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
+    my $processor = join q{_} => (grep { $_ } ($group_suffix, $app_suffix));
+
+    my $suffix = $processor ? '_' . $processor : '';
     unless (exists $c->app->config->{"rpc_url" . $suffix}) {
         $log->warn("Suffix $suffix not found in config for app ID $app_id\n");
         $suffix = '';
@@ -389,16 +392,15 @@ sub _rpc_suffix {
 }
 
 sub get_rpc_url {
-    my ($c) = @_;
+    my ($c, $req_storage) = @_;
 
-    my $suffix = _rpc_suffix($c);
+    my $suffix = _rpc_suffix($c, $req_storage);
     return $ENV{RPC_URL} || $c->app->config->{"rpc_url" . $suffix};
 }
 
 sub assign_rpc_url {
     my ($c, $req_storage) = @_;
-
-    $req_storage->{url} = get_rpc_url($c);
+    $req_storage->{url} = get_rpc_url($c, $req_storage);
     return;
 }
 

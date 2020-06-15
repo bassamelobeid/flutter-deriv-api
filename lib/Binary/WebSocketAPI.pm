@@ -51,6 +51,7 @@ die 'Unexpected event loop class: had ' . ref($loop) . ', expected a subclass of
 # These are the apps that are hardcoded to point to a different server pool.
 # This list is overwritten by Redis.
 our %DIVERT_APP_IDS;
+our %DIVERT_MSG_GROUP = (mt5 => 'mt5');
 
 # These apps are blocked entirely.
 # This list is also overwritten by Redis.
