@@ -108,7 +108,7 @@ read_csv_row_and_callback(
         if ($format eq 'doughflow') {
             ($login_id, $action, $trace_id, $payment_processor, $currency, $amount, $statement_comment, $transaction_id) = @_;
             $payment_type = 'external_cashier';
-            if ($action eq 'credit' and $statement_comment !~ 'DoughFlow withdrawal_reversal') {
+            if (($action // '') eq 'credit' and ($statement_comment // '') !~ 'DoughFlow withdrawal_reversal') {
                 $is_transaction_id_required = 1;
                 $cols_expected              = 8;
             } else {
