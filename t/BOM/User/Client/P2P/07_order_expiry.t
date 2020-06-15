@@ -35,7 +35,7 @@ my @test_cases = (
             before => 0,
             after  => 100
         },
-        status => 'timed-out',
+        status => 'refunded',
     },
     {
         test_name          => 'Buy order expire at buyer-confirmed state',
@@ -47,7 +47,7 @@ my @test_cases = (
         advertiser_balance => 100,
         escrow             => {
             before => 100,
-            after  => 0
+            after  => 100
         },
         client => {
             before => 0,
@@ -55,9 +55,9 @@ my @test_cases = (
         },
         advertiser => {
             before => 0,
-            after  => 100
+            after  => 0
         },
-        status => 'refunded',
+        status => 'timed-out',
     },
     # Sell orders
     {
@@ -80,7 +80,7 @@ my @test_cases = (
             before => 0,
             after  => 0
         },
-        status => 'timed-out',
+        status => 'refunded',
     },
     {
         test_name          => 'Sell order expire at buyer-confirmed state',
@@ -92,21 +92,21 @@ my @test_cases = (
         advertiser_balance => 0,
         escrow             => {
             before => 100,
-            after  => 0
+            after  => 100
         },
         client => {
             before => 0,
-            after  => 100
+            after  => 0
         },
         advertiser => {
             before => 0,
             after  => 0
         },
-        status => 'refunded',
+        status => 'timed-out',
     },
 );
 
-for my $status (qw(timed-out refunded)) {
+for my $status (qw(timed-out refunded blocked)) {
     for my $type (qw(sell buy)) {
         push @test_cases,
             {

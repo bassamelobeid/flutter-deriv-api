@@ -239,7 +239,7 @@ for my $status (qw(completed)) {
 
 }
 
-for my $status (qw(cancelled timed-out refunded)) {
+for my $status (qw(cancelled timed-out blocked refunded)) {
     for my $type (qw(sell buy)) {
         for my $who_confirm (qw(client advertiser)) {
             push @test_cases,
@@ -273,7 +273,7 @@ for my $status (qw(cancelled timed-out refunded)) {
 
 # confirmation on expired orders
 
-for my $status (qw(pending buyer-confirmed completed cancelled timed-out refunded)) {
+for my $status (qw(pending buyer-confirmed completed cancelled timed-out blocked refunded)) {
     for my $type (qw(sell buy)) {
         for my $who_confirm (qw(client advertiser)) {
             push @test_cases,
