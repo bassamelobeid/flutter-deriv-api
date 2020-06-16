@@ -183,7 +183,8 @@ sub handle_error {
     my ($self, $err, $msg) = @_;
 
     if ($err->{code} eq 'TokenDeleted') {
-        if ($self->c->stash->{token} eq $err->{token}) {
+        # Maybe several transaction subscrptions will handle this error simultaneously, so we should check if the error is processed by checking stash->{token}
+        if ($self->c->stash->{token} && $err->{token} && $self->c->stash->{token} eq $err->{token}) {
             # this cannot be "use", because of our class structure
             require Binary::WebSocketAPI::v3::Wrapper::Authorize;
             Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success($self->c);
