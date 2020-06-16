@@ -77,6 +77,8 @@ my $permissions = {
     'email_templates.cgi'             => ['CS'],
     'send_emails.cgi'                 => ['CS'],
     'fetch_client_details.cgi'        => ['CS'],
+    'p2p_order_list.cgi'              => ['CS'],
+    'p2p_order_manage.cgi'            => ['CS'],
 
     'f_setting_selfexclusion_restricted.cgi' => ['Compliance'],
     'f_client_anonymization.cgi'             => ['Compliance'],
@@ -122,7 +124,6 @@ my $permissions = {
     'quant/client_limit.cgi'                                                  => ['Quants'],
     'p2p_band_management.cgi'                                                 => ['QuantsWrite'],
     'quant/multiplier_risk_management.cgi'                                    => ['Quants'],
-
 };
 
 sub init {

@@ -1,0 +1,162 @@
+<p><a href="[% request.url_for('backoffice/p2p_order_list.cgi') %]">Back to orders list</a></p>
+
+<form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker}) %]" method="get">
+Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20/>
+<button type="submit">Get order</button>
+</form>
+
+[% IF order %]
+
+    <h3>Details for order [% order.id %]</h3>
+    
+    <table border="1" class="collapsed">
+        <tr>
+            <td>Status</td>
+            <td><b>[% order.status %]</b></td>
+        </tr>
+        <tr>
+            <td>Type</td>
+            <td><b>[% order.type %]</b> (advert type: [% order.advert_type %] Binary [% order.account_currency %] using local [% order.local_currency %])</td>
+        </tr>
+        <tr>
+            <td>Client&nbsp;&nbsp;<span style="color:blue; font-weight:bold;">[% order.client_role %]</span></td>
+            <td>[% order.client_loginid %]
+                <form action="[% request.url_for('backoffice/f_clientloginid_edit.cgi') %]" method="get" style="display:inline;margin:0px;padding:0px;">
+                    <input type="hidden" name="broker" value="[% broker %]"/>
+                    <input type="hidden" name="loginID" value="[% order.client_loginid %]"/>
+                    <button type="submit">Profile</button>
+                </form>
+                <form action="[% request.url_for('backoffice/f_manager_history.cgi') %]" method="post" style="display:inline;margin:0px;padding:0px;">
+                    <input type="hidden" name="broker" value="[% broker %]"/>
+                    <input type="hidden" name="loginID" value="[% order.client_loginid %]"/>
+                    <input type="hidden" name="startdate" value="[% order.created_time %]"/>
+                    <button type="submit">Statement</button>
+                </form>
+            </td>
+        </tr>
+        <tr>
+            <td>Client confirmed</td>
+            <td><b>[% order.client_confirmed %]</b></td>
+        </tr>
+        <tr>
+            <td>Client P2P advertiser id</td>
+            <td>[% order.client_id %]</td>
+        </tr>    
+        <tr>
+            <td>Client advertiser name</td>
+            <td>[% order.client_name %]</td>
+        </tr> 
+        <tr>
+            <td>Advertiser&nbsp;&nbsp;<span style="color:blue; font-weight:bold;">[% order.advertiser_role %]</span></td>
+                <td>[% order.advertiser_loginid %]
+                <form action="[% request.url_for('backoffice/f_clientloginid_edit.cgi') %]" method="get" style="display:inline;margin:0px;padding:0px;">
+                    <input type="hidden" name="broker" value="[% broker %]"/>
+                    <input type="hidden" name="loginID" value="[% order.advertiser_loginid %]"/>
+                    <button type="submit">Profile</button>
+                </form>
+                <form action="[% request.url_for('backoffice/f_manager_history.cgi') %]" method="post" style="display:inline;margin:0px;padding:0px;">
+                    <input type="hidden" name="broker" value="[% broker %]"/>
+                    <input type="hidden" name="loginID" value="[% order.advertiser_loginid %]"/>
+                    <input type="hidden" name="startdate" value="[% order.created_time %]"/>
+                    <button type="submit">Statement</button>
+                </form>
+            </td>
+        </tr>
+        <tr>
+            <td>Advertiser id</td>
+            <td>[% order.advertiser_id %]</td>
+        </tr>
+        <tr>
+            <td>Advertiser name</td>
+            <td>[% order.advertiser_name %]</td>
+        </tr>
+        <tr>
+            <td>Advertiser confirmed</td>
+            <td><b>[% order.advertiser_confirmed %]</b></td>
+        </tr>
+        <tr>
+            <td>Amount</td>
+            <td>[% order.account_currency %] [% order.amount %]</td>
+        </tr>
+        <tr>
+            <td>Payment due</td>
+            <td>[% order.local_currency %] [% order.payment_due %] (advert rate: [% order.advert_rate %])</td>
+        </tr>
+        <tr>
+            <td>Payment method</td>
+            <td>[% order.advert_payment_method %]</td>
+        </tr>    
+        <tr>
+            <td>Creation time</td>
+            <td>[% order.created_time %]</td>
+        </tr>
+        <tr>
+            <td>Expiration time</td>
+            <td>[% order.expire_time %]
+            [% IF order.is_expired %]&nbsp;&nbsp;<span style="color:red; font-weight:bold;">EXPIRED</span>[% END %]
+            </td>
+        </tr>
+        <tr>
+            <td>Advert ID</td>
+            <td>[% order.advert_id %]</td>
+        </tr>
+        <tr>
+            <td>Payment info</td>
+            <td>[% order.payment_info %]</td>
+        </tr>
+        <tr>
+            <td>Contact info</td>
+            <td>[% order.contact_info %]</td>
+        </tr>
+    </table>
+    
+    <h3>Transactions</h3>
+    <table border="1" class="collapsed">
+        <thead>
+            <tr>
+                <th scope="col">Time</th>
+                <th scope="col">Type</th>
+                <th scope="col"></th>
+                <th scope="col">TX ID</th>
+                <th scope="col">Loginid</th>
+                <th scope="col">Amount</th>
+                <th scope="col">TX type</th>
+                <th scope="col">Payment ID</th>
+                <th scope="col">Staff</th>                
+            </tr>
+        </thead>
+        <tbody>
+            [% FOREACH t = transactions %]
+            <tr>
+                <td rowspan=2>[% t.transaction_time %]</td>
+                <td rowspan=2>[% t.type %]</td>
+                <td>From</td>
+                <td>[% t.src_id %]</td>
+                <td>[% t.src_loginid %]</td>
+                <td>[% t.src_amount %]</td>
+                <td>[% t.src_action_type %]</td>
+                <td>[% t.src_payment_id %]</td>
+                <td>[% t.src_staff %]</td>
+            </tr>
+            <tr>
+                <td>To</td>
+                <td>[% t.dest_id %]</td>
+                <td>[% t.dest_loginid %]</td>
+                <td>[% t.dest_amount %]</td>
+                <td>[% t.dest_action_type %]</td>
+                <td>[% t.dest_payment_id %]</td>
+                <td>[% t.dest_staff %]</td>
+            </tr>
+            [% END %]
+        </tbody>
+    </table>
+
+    [% IF p2p_write && order.status == 'Timed-out' %]
+    <h3>Blocked order resolution</h3>
+    <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker, order_id => order.id }) %]" method="post">
+        <button type="submit" name="action" value="cancel" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will refunded to [% order.seller %] and order status will change to \'refunded\'. This is irreversible.');">Resolve in favour of seller ([% order.seller %])</button>
+        <button type="submit" name="action" value="complete" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will credited to [% order.buyer %] and order status will change to \'completed\'. This is irreversible.');">Resolve in favour of buyer ([% order.buyer %])</button>
+    </form>
+    [% END %]
+
+[% END %]

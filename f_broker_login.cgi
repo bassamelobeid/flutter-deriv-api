@@ -200,14 +200,16 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
 }
 
 # P2P
-if (BOM::Backoffice::Auth0::has_authorisation(['QuantsWrite'])) {
-    print qq~
+print qq~
 	<table class="GreyCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
 		<tbody>
 			<tr class="GreenLabel">
 				<td class="whitelabel">P2P</td>
 				<td class="whitelabel"></td>
-			</tr>
+			</tr>~;
+
+if (BOM::Backoffice::Auth0::has_authorisation(['QuantsWrite'])) {
+    print qq~
 			<tr>
 				<td align="center" width="50%">
 					<p><b>BAND CONFIGURATION</b></p>
@@ -219,10 +221,27 @@ if (BOM::Backoffice::Auth0::has_authorisation(['QuantsWrite'])) {
 				<td align="center" width="50%">
 					 <!-- dashboard goes here -->
 				</td>
-			</tr>
+			</tr>~;
+}
+print qq~
+			<tr>
+				<td align="center" width="50%">
+					 	<p><b>SEARCH ORDER</b></p>
+					<form action="~ . request()->url_for('backoffice/p2p_order_list.cgi') . qq~" method="get"><font size=2>
+						<b>$brokerselection</b>
+						&nbsp;<input type="submit" value="GO">
+					</font></form>
+				</td>
+				<td align="center" width="50%">
+					 	<p><b>ORDER DETAILS/MANAGEMENT</b></p>
+					<form action="~ . request()->url_for('backoffice/p2p_order_manage.cgi') . qq~" method="get"><font size=2>
+						<b>$brokerselection</b>
+						&nbsp;<input type="submit" value="GO">
+					</font></form>
+				</td>
+			</tr>			
 		</tbody>
 	</table>~;
-}
 
 if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
     print qq~
