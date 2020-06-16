@@ -134,7 +134,6 @@ sub log_call_timing {
         'bom_websocket_api.v_3.rpc.call.timing',
         1000 * Time::HiRes::tv_interval($req_storage->{tv}),
         {tags => $tags});
-    DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => $tags});
     return;
 }
 
