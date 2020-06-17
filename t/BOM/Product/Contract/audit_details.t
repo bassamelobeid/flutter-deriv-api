@@ -6,6 +6,7 @@ use warnings;
 use Test::More;
 use Test::FailWarnings;
 use Test::MockModule;
+use Test::Exception;
 
 use JSON::MaybeXS;
 use Postgres::FeedDB::Spot::Tick;
@@ -188,9 +189,34 @@ subtest 'intraday expiring at end of day' => sub {
     });
     ok $c->is_expired, 'expired';
 
-    my $expected = $json->decode('{"contract_start":[{"name":["Start Time"],"tick":"100","flag":"highlight_time","epoch":1507679700,"tick_display_value":"100.00"},{"name":["Entry Spot"],"tick":"101","flag":"highlight_tick","epoch":1507679701,"tick_display_value":"101.00"},{"epoch":1507679998,"tick_display_value":"99.00","tick":"99"},{"epoch":1507680000,"tick_display_value":"98.00","tick":"98"}],"contract_end":[{"name":["Closing Spot"],"flag":"highlight_tick","epoch":1507679999,"tick_display_value":"99.00","tick":"99"}]}');
+    my $expected = $json->decode(
+        '{"contract_start":[{"name":["Start Time"],"tick":"100","flag":"highlight_time","epoch":1507679700,"tick_display_value":"100.00"},{"name":["Entry Spot"],"tick":"101","flag":"highlight_tick","epoch":1507679701,"tick_display_value":"101.00"},{"epoch":1507679998,"tick_display_value":"99.00","tick":"99"},{"epoch":1507680000,"tick_display_value":"98.00","tick":"98"}],"contract_end":[{"name":["Closing Spot"],"flag":"highlight_tick","epoch":1507679999,"tick_display_value":"99.00","tick":"99"}]}'
+    );
 
     is_deeply($c->audit_details, $expected, 'audit details as expected');
+};
+
+subtest 'Audit detail for contracts expire on Friday after expiration and before settlement' => sub {
+    my $date_start = Date::Utility->new('2020-05-07');
+    my $expiry     = $date_start->plus_time_interval('1d21h');
+    my $args       = {
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        barrier      => 'S0P',
+        date_start   => $date_start,
+        date_pricing => $expiry,
+        duration     => '1d',
+        currency     => 'USD',
+        payout       => 10
+    };
+
+    my @ticks = map { [100 + 0.001 * $_, $date_start->epoch + $_, 'frxUSDJPY'] } (-2 .. 2);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@ticks);
+
+    my $c = produce_contract({%$args});
+
+    ok $c->is_expired, 'contract expired';
+    lives_ok { $c->audit_details } 'audit details as expected';
 };
 
 done_testing();
