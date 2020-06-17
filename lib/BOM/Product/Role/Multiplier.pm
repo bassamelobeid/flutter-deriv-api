@@ -16,9 +16,13 @@ use Scalar::Util qw(looks_like_number);
 use Math::Util::CalculatedValue::Validatable;
 use Time::Duration::Concise;
 use BOM::Config::Quants qw(minimum_stake_limit);
+use Quant::Framework::Spread::Seasonality;
+use Quant::Framework::EconomicEventCalendar;
 
 use constant {
     BARRIER_ADJUSTMENT_FACTOR => 0.5826,
+    MIN_COMMISSION_MULTIPLIER => 0.75,
+    MAX_COMMISSION_MULTIPLIER => 3,
 };
 
 my $ERROR_MAPPING   = BOM::Product::Static::get_error_mapping();
@@ -39,17 +43,23 @@ sub BUILD {
 
     # We want to charge a minimum commission for each contract.
     # Since, commission is a function of barrier calculation, we will need to fix it at BUILD
-    my $commission =
-        (defined $self->_order->{stop_out} and defined $self->_order->{stop_out}->{commission})
-        ? $self->_order->{stop_out}->{commission}
-        : $self->_multiplier_config->{commission};
+    my $commission;
 
-    unless (defined $commission) {
-        $self->_add_error({
-            message           => 'multiplier commission not defined for ' . $self->underlying->symbol,
-            message_to_client => $ERROR_MAPPING->{InvalidInputAsset},
-        });
-        $commission = 0;
+    if (defined $self->_order->{stop_out} and defined $self->_order->{stop_out}->{commission}) {
+        $commission = $self->_order->{stop_out}->{commission};
+    } else {
+        my $base_commission       = $self->_multiplier_config->{commission};
+        my $commission_multiplier = $self->commission_multiplier;
+
+        unless (defined $base_commission and defined $commission_multiplier) {
+            $self->_add_error({
+                message           => 'multiplier commission not defined for ' . $self->underlying->symbol,
+                message_to_client => $ERROR_MAPPING->{InvalidInputAsset},
+            });
+            $commission = 0;
+        } else {
+            $commission = $base_commission * $commission_multiplier;
+        }
     }
 
     my $commission_amount = $commission * $self->_user_input_stake * $self->multiplier;
@@ -1053,6 +1063,38 @@ sub _minimum_cancellation_commission {
     my $self = shift;
 
     return $self->_minimum_stake * 0.01;
+}
+
+sub commission_multiplier {
+    my $self = shift;
+
+    # we do apply specific adjustment to forex commission
+    return 1 if $self->underlying->market->name ne 'forex';
+
+    my $for_date = $self->underlying->for_date;
+    my $ee_calendar = Quant::Framework::EconomicEventCalendar->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date));
+    my @high_impact_events = grep { $_->{impact} == 5 } @{
+        $ee_calendar->get_latest_events_for_period({
+                from => $self->date_start->minus_time_interval('2m'),
+                to   => $self->date_start->plus_time_interval('2m')
+            },
+            $for_date
+        )};
+
+    my $ee_multiplier = 0;
+    my ($asset_symbol, $quoted_currency) = ($self->underlying->asset_symbol, $self->underlying->quoted_currency_symbol);
+
+    if (@high_impact_events
+        and grep { $_->{symbol} =~ /(?:$asset_symbol|$quoted_currency|USD)/ } @high_impact_events)
+    {
+        $ee_multiplier = 3;
+    }
+
+    # Currently the multiplier for economic event is hard-coded to 3. In the future, this value might be configurable from the
+    # backoffice tool.
+    my $seasonality_multiplier = Quant::Framework::Spread::Seasonality->new->get_spread_seasonality($self->underlying->symbol, $self->date_start);
+
+    return min(MAX_COMMISSION_MULTIPLIER, max($ee_multiplier, $seasonality_multiplier, MIN_COMMISSION_MULTIPLIER));
 }
 
 1;

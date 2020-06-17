@@ -8,6 +8,7 @@ use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use LandingCompany::Registry;
+use Date::Utility;
 
 my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings({
     loaded_revision => 1,
@@ -39,10 +40,14 @@ subtest 'commission for underlying' => sub {
         'frxEURCHF' => [20,  0.00025],
         'frxUSDCAD' => [50,  0.0002],
     );
+    # fixed time because commission for forex is a function of spread seasonality and economic events
+    my $now  = Date::Utility->new('2020-06-10');
     my $args = {
-        bet_type => 'multup',
-        stake    => 100,
-        currency => 'USD',
+        bet_type     => 'multup',
+        stake        => 100,
+        currency     => 'USD',
+        date_start   => $now,
+        date_pricing => $now,
     };
 
     foreach my $symbol (@symbols) {
@@ -50,7 +55,7 @@ subtest 'commission for underlying' => sub {
         if ($expected_comm{$symbol}) {
             $args->{multiplier} = $expected_comm{$symbol}->[0];
             my $c = produce_contract($args);
-            is $c->commission + 0, $expected_comm{$symbol}->[1] + 0, "commission for $symbol is $expected_comm{$symbol}->[1]";
+            is $c->commission + 0, $expected_comm{$symbol}->[1] * $c->commission_multiplier, "commission for $symbol is $expected_comm{$symbol}->[1]";
         } else {
             fail "config not found for $symbol";
         }

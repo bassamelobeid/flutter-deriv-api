@@ -610,8 +610,91 @@ subtest 'deal cancellation with fx' => sub {
         cancellation => '1h',
     };
     my $c = produce_contract($args);
-    is $c->ask_price, 101.25, 'ask price is 101.25';
-    is $c->cancellation_price , 1.25, 'cost of cancellation is 1.25';
+    is $c->ask_price,            101.25, 'ask price is 101.25';
+    is $c->cancellation_price, 1.25,   'cost of cancellation is 1.25';
+};
+
+subtest 'commission multiplier' => sub {
+    $mocked->unmock_all;
+
+    note 'dst time';
+    my $now  = Date::Utility->new('2020-03-09');
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'frxUSDJPY',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+    };
+    my $c = produce_contract($args);
+    is $c->commission,            0.0002094, 'commission is at 0.0002094';
+    is $c->commission_multiplier, 1.047,     'commission multiplier is 1.047';
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'economic_events',
+        {
+            recorded_date => $now,
+            events        => [{
+                    impact       => 5,
+                    event_name   => 'test',
+                    symbol       => 'USD',
+                    source       => 'testff',
+                    release_date => $now->plus_time_interval('1m59s')->epoch
+                }]});
+
+    note "symbol $args->{underlying}";
+    $c = produce_contract($args);
+    is $c->commission,            0.0006, 'commission is at 0.0006';
+    is $c->commission_multiplier, 3,      'commission multiplier is 3';
+
+    # same commission multiplier applied to frxAUDJPY because of the dominant USD currency
+    $args->{underlying} = 'frxAUDJPY';
+    note "symbol $args->{underlying}";
+    $c = produce_contract($args);
+    is $c->commission,            0.0009, 'commission is at 0.0009';
+    is $c->commission_multiplier, 3,      'commission multiplier is 3';
+
+    $args->{underlying} = 'R_100';
+    note "symbol $args->{underlying}";
+    $c = produce_contract($args);
+    is $c->commission, 0.000503664904346249, 'commission is at 0.000503664904346249';
+    is $c->commission_multiplier, 1, 'commission multiplier is 1';
+
+    note "AUD event does not affect frxUSDJPY";
+    my $new_now = $now->plus_time_interval('1h');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'economic_events',
+        {
+            recorded_date => $new_now,
+            events        => [{
+                    impact       => 5,
+                    event_name   => 'test',
+                    symbol       => 'AUD',
+                    source       => 'testff',
+                    release_date => $new_now->minus_time_interval('1m59s')->epoch
+                }]});
+
+    $args->{date_start} = $args->{date_pricing} = $new_now;
+    $args->{underlying} = 'frxUSDJPY';
+    $c                  = produce_contract($args);
+    is $c->commission,            0.0002172, 'commission is at 0.0002172';
+    is $c->commission_multiplier, 1.086,     'commission multiplier is 1.086';
+
+    $args->{underlying} = 'frxAUDJPY';
+    note "AUD event affects $args->{underlying}";
+    note "symbol $args->{underlying}";
+    $c = produce_contract($args);
+    is $c->commission,            0.0009, 'commission is at 0.0009';
+    is $c->commission_multiplier, 3,      'commission multiplier is 3';
+
+    note "AUD event does not affect $args->{underlying} when it is out of range";
+    $args->{date_start} = $args->{date_pricing} = $new_now->plus_time_interval('1m');
+    $c = produce_contract($args);
+    is $c->commission,            0.0003279, 'commission is at 0.0003279';
+    is $c->commission_multiplier, 1.093,     'commission multiplier is 1.093';
 };
 
 done_testing();
