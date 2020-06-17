@@ -412,4 +412,24 @@ sub _future_error {
         error => $response->{error}};
 }
 
+=head2 get_account_type
+
+Get the account type (real, demo) by login id.
+
+=over 4
+
+=item * C<loginid> - e.g. `MTR0000001`
+
+=back
+
+Returns a string with either 'demo' or 'real'
+
+=cut
+
+sub get_account_type {
+    my ($loginid) = @_;
+    my $prefix = _get_prefix({login => $loginid});
+    return _get_server_type_by_prefix($prefix);
+}
+
 1;
