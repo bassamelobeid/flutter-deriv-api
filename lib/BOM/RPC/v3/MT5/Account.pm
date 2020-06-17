@@ -1040,7 +1040,7 @@ async_rpc "mt5_password_reset",
                     ],
                     use_email_template    => 1,
                     email_content_is_html => 1,
-                    template_loginid      => $login,
+                    template_loginid      => ucfirst BOM::MT5::User::Async::get_account_type($login) . ' ' . $login =~ s/${\BOM::User->MT5_REGEX}//r,
                 });
 
             return Future->done(1);
@@ -1064,7 +1064,7 @@ sub _send_email {
         message               => [$message, "Client login id: $loginid", "MT5 login: $mt5_id", "Amount: $amount", "error: $error"],
         use_email_template    => 1,
         email_content_is_html => 1,
-        template_loginid      => $acc_type . ' ' . $loginid =~ s/${\BOM::User->MT5_REGEX}//r,
+        template_loginid      => ucfirst $acc_type . ' ' . $loginid =~ s/${\BOM::User->MT5_REGEX}//r,
     });
 }
 

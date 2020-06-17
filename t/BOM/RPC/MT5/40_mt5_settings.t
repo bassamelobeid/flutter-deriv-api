@@ -18,6 +18,7 @@ use BOM::Platform::Token;
 use BOM::User;
 
 use Test::BOM::RPC::Accounts;
+use Email::Valid;
 
 my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
 
@@ -33,6 +34,16 @@ $mock_events->mock(
     sub {
         my ($type, $data) = @_;
         $emitted{$type}++;
+    });
+
+# send_email sub is imported into Account module, remarkable for reset password tests
+my $email_data;
+my $mocker_account = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+$mocker_account->mock(
+    'send_email',
+    sub {
+        $email_data = shift;
+        $mocker_account->original('send_email')->($email_data);
     });
 
 # Setup a test user
@@ -301,7 +312,22 @@ subtest 'password reset' => sub {
         email   => $DETAILS{email},
         subject => qr/\Q$subject\E/
     );
+
+    # Test for template_loginid, it should be something like Real 999999 or Demo 44444444
+    ok($email_data->{template_loginid} =~ /^(Real|Demo)\s\d+$/, 'email template loginid is correct');
+    ok(Email::Valid->address($email_data->{to}),                'email to is an email address');
+    ok(Email::Valid->address($email_data->{from}),              'email from is an email address');
+    is($email_data->{subject}, 'Your MT5 password has been reset.', 'email subject is correct');
+    is(
+        @{$email_data->{message}}[0],
+        sprintf(
+            'The password for your MT5 account %s has been reset. If this request was not performed by you, please immediately contact Customer Support.',
+            $email_data->{to}
+        ),
+        'email message is correct'
+    );
     ok($msg, "email received");
+
     $code = BOM::Platform::Token->new({
             email       => $DETAILS{email},
             expires_in  => 3600,
