@@ -993,7 +993,7 @@ sub _build_bid_response {
     } elsif ($contract->is_expired) {
         # it could be that the contract is not sold until/after expiry for path dependent
         $contract_close_tick = $contract->close_tick if $contract->is_path_dependent;
-        $contract_close_tick = $contract->exit_tick if not $contract_close_tick and $contract->exit_tick;
+        $contract_close_tick = $contract->exit_tick if not $contract_close_tick and $contract->exit_tick and $contract->is_valid_exit_tick;
     }
 
     # if the contract is still open, $contract_close_tick will be undefined
