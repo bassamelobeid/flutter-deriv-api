@@ -23,13 +23,19 @@ my $clientID           = uc request()->param('login_id');
 my $action             = request()->param('untrusted_action');
 my $removed            = request()->param('removed');
 my $client_status_type = request()->param('untrusted_action_type');
-my $reason             = request()->param('untrusted_reason');
+my $reason             = request()->param('untrusted_reason') // '';
 my $additional_info    = request()->param('additional_info');
-my $file_path          = BOM::Config::Runtime->instance->app_config->system->directory->db . "/f_broker/$broker/";
-my $file_name          = "$broker.$client_status_type";
+
+# check invalid reason
+print_error_and_exit("Reason is not specified.") if ($reason =~ /SELECT A REASON/);
+
+# check invalid action
+print_error_and_exit("The action to perform is not specified.") if (!$client_status_type || $client_status_type =~ /SELECT AN ACTION/);
+
+my $file_path = BOM::Config::Runtime->instance->app_config->system->directory->db . "/f_broker/$broker/";
+my $file_name = "$broker.$client_status_type";
 
 # append the input text if additional infomation exist
-$reason = '' unless ($reason);
 $reason = ($additional_info) ? $reason . ' - ' . $additional_info : $reason;
 
 local $\ = "\n";
@@ -44,18 +50,6 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         push @invalid_logins, encode_entities($login_id);
         next LOGIN;
     }
-    # check invalid reason
-    if ($reason =~ /SELECT A REASON/) {
-        print "<br /><font color=red><b>ERROR : Reason is not specified.</b></font><br /><br />";
-        code_exit_BO();
-    }
-
-    # check invalid action
-    if ($client_status_type =~ /SELECT AN ACTION/) {
-        print "<br /><font color=red><b>ERROR : The action to perform is not specified.</b></font><br /><br />";
-        code_exit_BO();
-    }
-
     my %common_args_for_execute_method = (
         client    => $client,
         clerk     => $clerk,
@@ -200,4 +194,10 @@ sub execute_remove_status {
     catch {
         return "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to enable this client <b>$encoded_login_id</b>. Please try again.";
     }
+}
+
+sub print_error_and_exit {
+    my $error_msg = shift;
+    print "<br /><font color=red><b>ERROR : $error_msg</b></font><br /><br />";
+    code_exit_BO();
 }
