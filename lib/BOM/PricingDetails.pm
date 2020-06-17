@@ -379,8 +379,8 @@ sub _get_multiplier_overview {
             value => $bet->stop_out->basis_spot,
         },
         {
-            label => 'Pricing vol',
-            value => $bet->pricing_vol,
+            label => $bet->cancellation ? 'Pricing vol'     : 'Pricing vol (set to 0 because no deal cancellation)',
+            value => $bet->cancellation ? $bet->pricing_vol : 0,
         },
         {
             label => 'Stop Out',

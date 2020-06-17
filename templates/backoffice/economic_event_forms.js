@@ -126,6 +126,7 @@
             result.text('processing ...').css('color', 'black');
             var name = el.find('input[name="event_name"]').val();
             var release_date = el.find('input[name="release_date"]').val();
+            var impact = el.find('input[name="impact"]').val();
             var date_re = /^(\d{10}|\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?)\$/;
             if(!date_re.test(release_date)){
                 result.text("Invaild DateTime entered").css('color', 'red');
@@ -139,6 +140,7 @@
                     save_event: "1",
                     event_name: name,
                     symbol: symbol,
+                    impact: impact,
                     release_date: release_date,
                     source: event_source,
                 },
