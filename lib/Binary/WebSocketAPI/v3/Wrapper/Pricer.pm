@@ -374,20 +374,33 @@ sub proposal_open_contract {
         return;
     }
 
-    my $args = $req_storage->{args};
+    my $args         = $req_storage->{args};
+    my $empty_answer = {
+        msg_type               => 'proposal_open_contract',
+        proposal_open_contract => {}};
 
     if ($args->{subscribe} && !$args->{contract_id}) {
         ### we can catch buy only if subscribed on transaction stream
-        Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction_channel($c, 'subscribe', $c->stash('account_id'), 'buy', $args)
+        my $uuid;
+        $uuid = Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction_channel($c, 'subscribe', $c->stash('account_id'), 'buy', $args)
             if $c->stash('account_id');
+
+        unless ($uuid) {
+            $c->send({
+                    json => $c->new_error(
+                        'proposal_open_contract', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'proposal_open_contract'))
+                },
+                $req_storage
+            );
+            return;
+        }
+
+        $empty_answer->{subscription}->{id} = $uuid;
         ### we need stream only in subscribed workers
         # we should not overwrite the previous subscriber.
         $c->stash(proposal_open_contracts_subscribed => $args) unless $c->stash('proposal_open_contracts_subscribed');
     }
 
-    my $empty_answer = {
-        msg_type               => 'proposal_open_contract',
-        proposal_open_contract => {}};
     # If we had a valid response, we can return it immediately
     if (%$response) {
         _process_proposal_open_contract_response($c, $response, $req_storage);
