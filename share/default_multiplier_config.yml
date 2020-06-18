@@ -1,9 +1,4 @@
 ---
-1HZ10V:
-  multiplier_range: [100, 200, 300, 500, 1000]
-  commission: 3.56144869308907e-05
-  cancellation_commission: 0.05
-  cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
 R_10:
   multiplier_range: [100, 200, 300, 500, 1000]
   commission: 5.0366490434625e-05
@@ -27,6 +22,26 @@ R_75:
 R_100:
   multiplier_range: [10, 20, 30, 50, 100]
   commission: 0.000503664904346249
+  cancellation_commission: 0.05
+  cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+1HZ10V:
+  multiplier_range: [100, 200, 300, 500, 1000]
+  commission: 3.56144869308907e-05
+  cancellation_commission: 0.05
+  cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+1HZ25V:
+  multiplier_range: [50, 100, 150, 250, 500]
+  commission: 0.000125916226086562
+  cancellation_commission: 0.05
+  cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+1HZ50V:
+  multiplier_range: [20, 40, 60, 100, 200]
+  commission: 0.000251832452173125
+  cancellation_commission: 0.05
+  cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
+1HZ75V:
+  multiplier_range: [15, 30, 50, 75, 150]
+  commission: 0.000377748678259687
   cancellation_commission: 0.05
   cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
 1HZ100V:
