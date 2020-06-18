@@ -322,8 +322,7 @@ subtest 'password reset' => sub {
         @{$email_data->{message}}[0],
         sprintf(
             'The password for your MT5 account %s has been reset. If this request was not performed by you, please immediately contact Customer Support.',
-            $email_data->{to}
-        ),
+            $email_data->{to}),
         'email message is correct'
     );
     ok($msg, "email received");

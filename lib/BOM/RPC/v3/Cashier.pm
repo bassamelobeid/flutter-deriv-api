@@ -1915,7 +1915,7 @@ sub _get_crypto_deposit_address {
 
     my ($address) = $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_array('SELECT payment.ctc_find_new_deposit(?, ?)', undef, $client->currency, $client->loginid);
+            $_->selectrow_array('SELECT address from payment.ctc_find_new_deposit_address(?, ?)', undef, $client->currency, $client->loginid);
         });
 
     return $address // '';

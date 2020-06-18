@@ -127,7 +127,7 @@ subtest 'Get deposit address' => sub {
     my $address = 'test_deposit_address';
     $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_array('SELECT payment.ctc_insert_new_deposit(?, ?, ?)', undef, $address, $client->currency, $client->loginid);
+            $_->selectrow_array('SELECT payment.ctc_insert_new_deposit_address(?, ?, ?)', undef, $address, $client->currency, $client->loginid);
         },
     );
 
