@@ -506,6 +506,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             BOM::Config::Redis::redis_replicated_write()->hdel("EMAIL_NOTIFICATION_POA", $client->binary_user_id);
         }
 
+        $client->save;
+        $client->update_status_after_auth_fa();
         $client->p2p_advertiser_approve if $client->fully_authenticated;
     }
 
