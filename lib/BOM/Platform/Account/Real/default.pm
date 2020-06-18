@@ -47,7 +47,7 @@ sub copy_status_from_siblings {
     for my $cl ($user->clients) {
         for my $status (@$status_list) {
             if ($cl->status->$status && !$cur_client->status->$status) {
-                $cur_client->status->set($status, 'system', 'copied from ' . $cl->loginid);
+                $cur_client->status->set($status, 'system', $cl->status->$status->{reason} . ' - copied from ' . $cl->loginid);
             }
         }
     }

@@ -147,6 +147,7 @@ sub proveid {
         if ($name_address_match >= NEEDED_MATCHES_FOR_ONLINE_AUTH) {
             $client->set_authentication('ID_ONLINE')->status('pass');
             $client->save();
+            $client->update_status_after_auth_fa();
             $client->p2p_advertiser_approve();
         } else {
             $client->status->set('unwelcome', 'system', "Experian results are insufficient to enable deposits.");
