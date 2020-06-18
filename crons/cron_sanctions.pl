@@ -38,7 +38,10 @@ my $reports_path = shift or die "Provide path for storing files as an argument";
 # Thus, it would be better to send the emails one at a time, with regulated ones first
 my @brokers = qw(MF MX MLT CR);
 
-my $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Config::sanction_file);
+my $sanctions = Data::Validate::Sanctions->new(
+    sanction_file => BOM::Config::sanction_file(),
+    eu_token      => BOM::Config::third_party()->{eu_sanctions}->{token},
+);
 
 my $file_flag = path('/tmp/last_cron_sanctions_check_run');
 my $last_run = $file_flag->exists ? $file_flag->stat->mtime : 0;
