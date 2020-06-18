@@ -1,4 +1,4 @@
-<h2>Following Clients are set withdrawal_locked & allow_document_upload as their AML Risk becomes high.<br/><br/></h2>
+<h2>Following high-risk clients are set withdrawal_locked & allow_document_upload because of pending authentication or FA.<br/><br/></h2>
 <table border='1'>
   <tr><th>Client-DB</th></tr>
   <tr><td>[% landing_company.upper %]</td></tr>
