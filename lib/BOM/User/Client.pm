@@ -3613,6 +3613,37 @@ sub has_siblings {
     return scalar(@{$self->siblings()}) > 0;
 }
 
+=head2 update_status_after_auth_fa
+
+Checks status of the client after authentication or financial assessment changes, removing B<withdrawal_locked> status if:
+
+=over
+
+=item * client is withdrawal-locked with reason containing: 'Pending authentication or FA'
+
+=item * client's financial assessment is completed
+
+=item * client is fully authenticated without expired documents
+
+=back
+
+=cut
+
+sub update_status_after_auth_fa() {
+    my $self = shift;
+
+    for my $sibling ($self->user->clients) {
+        if ($sibling->is_financial_assessment_complete && $sibling->fully_authenticated && !$sibling->documents_expired) {
+            $sibling->status->clear_withdrawal_locked
+                if $sibling->status->withdrawal_locked
+                && $sibling->status->withdrawal_locked->{reason} =~ 'Pending authentication or FA';
+            $sibling->status->clear_allow_document_upload
+                if $sibling->status->allow_document_upload
+                && $sibling->status->allow_document_upload->{reason} =~ 'Pending authentication or FA';
+        }
+    }
+}
+
 =head2 anonymize_client
 
 Anonymizes the client

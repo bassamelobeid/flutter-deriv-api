@@ -73,6 +73,8 @@ sub update_financial_assessment {
         && $client->status->unwelcome->{reason} eq SR_UNWELCOME_REASON
         && $redis->get($key_name);
 
+    $client->update_status_after_auth_fa();
+
     # Emails are sent for:
     # - Non-CR clients
     # - High risk CR with MT5 accounts

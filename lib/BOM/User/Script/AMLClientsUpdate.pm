@@ -49,10 +49,13 @@ sub update_aml_high_risk_clients_status {
         foreach my $client_loginid (split ',', $client_info->{login_ids}) {
             my $client = BOM::User::Client->new({loginid => $client_loginid});
 
-            next if $client->fully_authenticated and $client->is_financial_assessment_complete;
+            # filter out authenticated and FA-completed clients
+            next if $client->fully_authenticated && $client->is_financial_assessment_complete && !$client->documents_expired;
+            # filter out clients with risk classification = High Risk Override
+            next if $client->aml_risk_classification ne 'high';
 
-            $client->status->set('withdrawal_locked',     'system', 'Withdrawal locked due to AML risk become high.');
-            $client->status->set('allow_document_upload', 'system', 'Allow document upload due to AML risk become high.');
+            $client->status->set('withdrawal_locked',     'system', 'Pending authentication or FA');
+            $client->status->set('allow_document_upload', 'system', 'Pending authentication or FA');
 
             push @loginid_list, $client_loginid;
             $locked = 1;

@@ -12,6 +12,7 @@ use BOM::Test::Helper::FinancialAssessment;
 use BOM::User::Client;
 use BOM::User::Script::AMLClientsUpdate;
 use BOM::User::Password;
+use BOM::User::FinancialAssessment qw(update_financial_assessment);
 
 my $email    = 'abc' . rand . '@binary.com';
 my $hash_pwd = BOM::User::Password::hashpw('test');
@@ -84,25 +85,28 @@ subtest 'low aml risk client CR company' => sub {
     my $aml_high_clients = $c->update_aml_high_risk_clients_status($landing_company);
     ok(!@$aml_high_clients, 'no client found having aml risk high.');
     ok !$client_cr->status->withdrawal_locked, 'client is not withdrawal-locked';
+
+    clear_clients($client_cr);
 };
 
 subtest 'aml risk becomes high CR landing company' => sub {
     my $landing_company = 'CR';
 
     #no matter what client aml risk was previously, its latest should be high to be able to picked up
-    $client_cr->aml_risk_classification('low');
-    $client_cr->save;
     $client_cr->aml_risk_classification('high');
     $client_cr->save;
     $client_cr->status->clear_withdrawal_locked;
 
     $expected_db_rows = [{login_ids => $client_cr->loginid}];
     my $result = $c->update_aml_high_risk_clients_status($landing_company);
-    is @$result, @$expected_db_rows, 'Correct number of affected users';
-    is_deeply $result, $expected_db_rows, 'Returned client ids are correct';
+    is @$result, 1, 'Correct number of affected users';
+    is_deeply $result, [{login_ids => $client_cr->loginid}], 'Returned client ids are correct';
 
     ok $client_cr->status->withdrawal_locked,     "client is withdrawal_locked";
     ok $client_cr->status->allow_document_upload, "client is allow_document_upload";
+    is $client_cr->status->withdrawal_locked->{reason},     'Pending authentication or FA';
+    is $client_cr->status->allow_document_upload->{reason}, 'Pending authentication or FA';
+
     ok !$client_cr2->status->withdrawal_locked, "sibling account is not withdrawal_locked";
     ok $client_cr2->status->allow_document_upload, "slbling account is allow_document_upload";
 
@@ -120,8 +124,6 @@ subtest 'aml risk becomes high CR landing company' => sub {
     $client_cr2->status->clear_allow_document_upload();
 
     #Two high risk siblings
-    $client_cr2->aml_risk_classification('low');
-    $client_cr2->save;
     $client_cr2->aml_risk_classification('high');
     $client_cr2->save;
 
@@ -137,23 +139,45 @@ subtest 'aml risk becomes high CR landing company' => sub {
 
     test_event($result, $landing_company);
 
-    $client_cr->status->clear_withdrawal_locked();
-    $client_cr2->status->clear_withdrawal_locked();
-    $client_cr->status->clear_allow_document_upload();
-    $client_cr2->status->clear_allow_document_upload();
+    clear_clients($client_cr, $client_cr2);
+};
+
+subtest 'manual override high classifications are excluded' => sub {
+    my $landing_company = 'CR';
+
+    #no matter what client aml risk was previously, its latest should be high to be able to picked up
+    $client_cr->aml_risk_classification('manual override - high');
+    $client_cr->save;
+
+    my $result = $c->update_aml_high_risk_clients_status($landing_company);
+    is @$result, 0, 'Manual override high risk classification is filtered out';
+
+    ok !$client_cr->status->withdrawal_locked,     "client is not withdrawal_locked";
+    ok !$client_cr->status->allow_document_upload, "client is not allow_document_upload";
+
+    clear_clients($client_cr, $client_cr2);
 };
 
 subtest 'filter by authentication and financial_assessment' => sub {
+    $client_cr->aml_risk_classification('high');
+    $client_cr->save;
+    $client_cr2->aml_risk_classification('high');
+    $client_cr2->save;
+
+    # database returns the same rows throughout this subtest
+    $expected_db_rows = [{login_ids => join(',', sort($client_cr->loginid, $client_cr2->loginid))}];
+
     my $landing_company = 'CR';
     $client_cr->set_authentication('ID_DOCUMENT')->status('pass');
     $client_cr->save();
+    $client_cr2->set_authentication('ID_DOCUMENT')->status('pass');
+    $client_cr2->save();
     ok $client_cr->fully_authenticated,  'The account is fully authenticated';
     ok $client_cr2->fully_authenticated, 'Sibling account is fully authenticated';
 
-    my $expected_db_rows = [{login_ids => join(',', sort($client_cr->loginid, $client_cr2->loginid))}];
     my $result = $c->update_aml_high_risk_clients_status($landing_company);
     is @$result, @$expected_db_rows, 'Correct number of affected users';
-    is_deeply $result, $expected_db_rows, 'Authenticated client is not filtered out';
+    is_deeply $result, $expected_db_rows, 'Authenticated clients with incomplete FA are not filtered out';
     $client_cr->status->clear_withdrawal_locked();
     $client_cr2->status->clear_withdrawal_locked();
 
@@ -165,16 +189,85 @@ subtest 'filter by authentication and financial_assessment' => sub {
 
     ok !$client_cr->is_financial_assessment_complete, 'The account is not FA completed';
     ok $client_cr2->is_financial_assessment_complete, 'Sibling account is FA completed';
-
-    $expected_db_rows = [{login_ids => $client_cr->loginid}];
     $result = $c->update_aml_high_risk_clients_status($landing_company);
-    is @$result, @$expected_db_rows, 'Correct number of affected users';
-    is_deeply $result, $expected_db_rows, 'Client with both authentication and financial_assessment is filtered out';
+    is @$result, 1, 'Correct number of affected users';
+    is_deeply $result, [{login_ids => $client_cr->loginid}], 'Client with both authentication and financial_assessment is filtered out';
 
     $client_cr->status->clear_withdrawal_locked();
-    $client_cr2->status->clear_withdrawal_locked();
-    $client_cr->status->clear_allow_document_upload();
-    $client_cr2->status->clear_allow_document_upload();
+
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+    $mocked_client->mock('documents_expired' => sub { return 1 });
+    $result = $c->update_aml_high_risk_clients_status($landing_company);
+    is @$result, @$expected_db_rows, 'Correct number of affected users';
+    is_deeply $result, $expected_db_rows, 'No client is filtered if documents are expired';
+    $mocked_client->unmock_all;
+
+    clear_clients($client_cr, $client_cr2);
+};
+
+subtest 'withdrawal lock auto removal after authentication and FA' => sub {
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+    my @called_for_clients;
+    $mocked_client->mock(
+        update_status_after_auth_fa => sub {
+            push @called_for_clients, $_[0]->loginid;
+            return $mocked_client->original('update_status_after_auth_fa')->(@_);
+        });
+
+    $client_cr->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
+     $client_cr2->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
+
+    # financial assessment complete, unauthenticated
+    my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+    update_financial_assessment($user, $data);
+    $client_cr->save;
+    ok $client_cr->is_financial_assessment_complete, 'financial_assessment completed';
+    is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
+    ok $client_cr->status->withdrawal_locked, 'client is still withdrawal-locked (not authenticated yet)';
+    undef @called_for_clients;
+
+    # financial assessment incomplete, authenticated
+    $client_cr->set_authentication('ID_DOCUMENT')->status('pass');
+    $client_cr->save;
+    ok $client_cr->fully_authenticated, 'client is authenticated';
+    is @called_for_clients, 0, 'update_status_after_auth_fa is not called for authentication';
+    update_financial_assessment($user, {});
+    is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
+    ok $client_cr->status->withdrawal_locked, 'client is still withdrawal-locked (fa is incomplete)';
+    undef @called_for_clients;
+
+    # financial assessment incompelete, authenticated, different reason
+    $client_cr->status->set('withdrawal_locked', 'system', 'Some reason');
+    update_financial_assessment($user, $data);
+    is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
+    ok $client_cr->status->withdrawal_locked, 'withdrawal is locked for another reason - cannot be auto-removed';
+    undef @called_for_clients;
+
+    # financial assessment incompelete, authenticated, correct reason
+    $client_cr->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
+    update_financial_assessment($user, $data);
+    is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
+    ok !$client_cr->status->withdrawal_locked, 'withdrawal lock is auto-removed by financial_assessment';
+    ok !$client_cr2->status->withdrawal_locked, 'withdrawal lock is auto-removed by financial_assessment';
+    undef @called_for_clients;
+
+    #direct call (as done in backoffice upon authentication)
+    $client_cr->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
+    $client_cr2->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
+    $client_cr->update_status_after_auth_fa();
+    ok !$client_cr->status->withdrawal_locked, 'withdrawal lock is auto-removed by calling update_status_after_auth_fa';
+    ok !$client_cr2->status->withdrawal_locked, 'withdrawal lock is auto-removed by financial_assessment';
+    undef @called_for_clients;
+
+    # financial assessment incomplete, authenticated, correct reason, expired documents
+    $mocked_client->mock('documents_expired' => sub { return 1 });
+    $client_cr->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
+    update_financial_assessment($user, $data);
+    is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
+    ok $client_cr->status->withdrawal_locked, 'client is still withdrawal-lock (documents expired)';
+    undef @called_for_clients;
+
+    $mocked_client->unmock_all;
 };
 
 sub test_event {
@@ -195,6 +288,17 @@ sub test_event {
         },
         ],
         'Correct event is emitted with correct args';
+}
+
+sub clear_clients {
+    for my $client (@_) {
+        $client->status->clear_withdrawal_locked();
+        $client->status->clear_allow_document_upload();
+        $client->set_authentication('ID_DOCUMENT')->status('pending');
+        $client->financial_assessment({data => '{}'});
+        $client->aml_risk_classification('low');
+        $client->save;
+    }
 }
 
 $mock_aml->unmock_all;
