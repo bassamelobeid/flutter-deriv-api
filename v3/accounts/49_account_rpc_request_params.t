@@ -191,7 +191,7 @@ $rpc_response = {
             'loginid'                         => $client->loginid,
             'total'                           => {
                 'mt5' => {
-                    'amount'   => '0.00',
+                    'amount'   => '-10',  # MT5 balances can be negative in some cases
                     'currency' => 'USD'
                 },
                 'real' => {
@@ -207,7 +207,7 @@ $rpc_response = {
             'loginid'                         => 'CR12345678',
             'total'                           => {
                 'mt5' => {
-                    'amount'   => '0.00',
+                    'amount'   => '-10',
                     'currency' => 'USD'
                 },
                 'real' => {
@@ -229,7 +229,7 @@ my $expected_res = {
         'loginid'  => 'CR10000',
         'total'    => {
             'mt5' => {
-                'amount'   => '0',
+                'amount'   => '-10',
                 'currency' => 'USD'
             },
             'real' => {
@@ -265,7 +265,7 @@ $expected_res = {
         'loginid'  => 'CR12345678',
         'total'    => {
             'mt5' => {
-                'amount'   => '0',
+                'amount'   => '-10',
                 'currency' => 'USD'
             },
             'real' => {
