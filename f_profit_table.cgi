@@ -23,6 +23,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Transaction::Utility;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use Performance::Probability qw(get_performance_probability);
+use Volatility::LinearCache;
 
 use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
@@ -132,6 +133,9 @@ my $cumulative_pnl = 0;
 
 my $performance_probability;
 my $inv_performance_probability;
+
+#clear cache
+Volatility::LinearCache::clear_cache();
 
 if (defined $do_calculation && $sold_contracts_size) {
 
