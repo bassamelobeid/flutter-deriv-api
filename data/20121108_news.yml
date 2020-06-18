@@ -285,7 +285,7 @@
   id: 123456789012345a
   impact: 5
   recorded_date: 1491609604
-  release_date: 1352337945
+  release_date: 1352337900
   source: forexfactory
   symbol: CAD
 - event_name: Official Cash Rate
