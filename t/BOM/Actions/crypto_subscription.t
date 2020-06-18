@@ -144,7 +144,7 @@ subtest "change_address_status" => sub {
     my $start = Time::HiRes::time;
     my $rows  = $dbic->run(
         fixup => sub {
-            my $sth = $_->prepare(q{SELECT * FROM payment.ctc_find_deposit_pending_by_currency(?)});
+            my $sth = $_->prepare(q{SELECT * FROM payment.ctc_find_deposit_pending_by_currency_code(?)});
             $sth->execute('BTC');
             return $sth->fetchall_arrayref({});
         });
@@ -242,7 +242,7 @@ subtest "change_address_status" => sub {
         $client->set_default_account('BTC');
         $dbic->run(
             ping => sub {
-                my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit(?, ?, ?, ?, ?)');
+                my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit_address(?, ?, ?, ?, ?)');
                 $sth->execute($tx->{address}, $tx->{currency}, $client->loginid, $tx->{fee}, $tx->{hash})
                     or die $sth->errstr;
             });
@@ -250,7 +250,9 @@ subtest "change_address_status" => sub {
         is $response, 1, "response ok from the database";
     }
 
-    my ($address) = $dbic->run(fixup => sub { $_->selectrow_array('SELECT payment.ctc_find_new_deposit(?, ?)', undef, 'BTC', $client->loginid) });
+    my ($address) =
+        $dbic->run(
+        fixup => sub { $_->selectrow_array('SELECT address from payment.ctc_find_new_deposit_address(?, ?)', undef, 'BTC', $client->loginid) });
 
     is $address, '2N7MPismngmXWAHzUmyQ2wVG8s81CvqUkQS', 'new address created when previous deposit address was marked as pending';
 
@@ -391,7 +393,7 @@ subtest "internal_transactions" => sub {
 
     my $rows = $dbic->run(
         fixup => sub {
-            my $sth = $_->prepare(q{SELECT * FROM payment.ctc_find_deposit_pending_by_currency(?)});
+            my $sth = $_->prepare(q{SELECT * FROM payment.ctc_find_deposit_pending_by_currency_code(?)});
             $sth->execute('BTC');
             return $sth->fetchall_arrayref({});
         });
@@ -400,7 +402,9 @@ subtest "internal_transactions" => sub {
 
     is @address_entries, 1, "correct number of pending transactions for $btc_address";
 
-    my ($address) = $dbic->run(fixup => sub { $_->selectrow_array('SELECT payment.ctc_find_new_deposit(?, ?)', undef, 'BTC', $client->loginid) });
+    my ($address) =
+        $dbic->run(
+        fixup => sub { $_->selectrow_array('SELECT address from payment.ctc_find_new_deposit_address(?, ?)', undef, 'BTC', $client->loginid) });
 
     is $address, undef, 'no new address created when internal transactions was marked as pending';
 };
