@@ -24,10 +24,12 @@ GetOptions(
     "queues=s"               => \my $queues,
     "no-warmup=i"            => \my $nowarmup,
     'record_price_metrics:i' => \my $record_price_metrics,
+    'price_duplicate_spot:i' => \my $price_duplicate_spot,
 );
 $queues               ||= 'pricer_jobs';
 $workers              ||= max(1, Sys::Info->new->device("CPU")->count);
 $record_price_metrics ||= 0;
+$price_duplicate_spot ||= 0;
 
 my @running_forks;
 my @workers = (0) x $workers;
@@ -79,7 +81,8 @@ while (1) {
     ($index) = grep { $workers[$_] == 0 } 0 .. $#workers;
     my $daemon = BOM::Pricing::PriceDaemon->new(
         tags                 => ['tag:' . $internal_ip],
-        record_price_metrics => $record_price_metrics
+        record_price_metrics => $record_price_metrics,
+        price_duplicate_spot => $price_duplicate_spot,
     );
     # Allow graceful shutdown
     $SIG{TERM} = sub {

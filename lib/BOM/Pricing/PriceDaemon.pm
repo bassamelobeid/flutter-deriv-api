@@ -38,6 +38,22 @@ sub is_running {
     return shift->{is_running};
 }
 
+=head2 record_price_metrics
+
+Flag to enable or disable recording of pricing metrics.
+
+=cut
+
+sub record_price_metrics { shift->{record_price_metrics} }
+
+=head2 price_duplicate_spot
+
+Flag to enable or disable prcing duplicate spots.
+
+=cut
+
+sub price_duplicate_spot { shift->{price_duplicate_spot} }
+
 =head2 stop
 
 Stops the loop after the current price.
@@ -70,18 +86,20 @@ sub process_job {
     my $cmd          = $params->{price_daemon_cmd};
     my $current_time = time;
 
-    my $underlying           = $self->_get_underlying_or_log($next, $params) or return undef;
-    my $current_spot_ts      = $underlying->spot_tick->epoch;
-    my $last_priced_contract = eval { decode_json_utf8($redis_pricer->get($next) // die 'default') } || {time => 0};
-    my $last_price_ts        = $last_priced_contract->{time};
+    unless ($self->price_duplicate_spot) {
+        my $underlying           = $self->_get_underlying_or_log($next, $params) or return undef;
+        my $current_spot_ts      = $underlying->spot_tick->epoch;
+        my $last_priced_contract = eval { decode_json_utf8($redis_pricer->get($next) // die 'default') } || {time => 0};
+        my $last_price_ts        = $last_priced_contract->{time};
 
-    # For plain queue, if we have request for a price, and tick has not changed since last one, and it was not more
-    # than 10 seconds ago - just ignore it.
-    if (    $current_spot_ts == $last_price_ts
-        and $current_time - $last_price_ts <= DURATION_DONT_PRICE_SAME_SPOT)
-    {
-        stats_inc("pricer_daemon.skipped_duplicate_spot", {tags => $self->tags});
-        return undef;
+        # For plain queue, if we have request for a price, and tick has not changed since last one, and it was not more
+        # than 10 seconds ago - just ignore it.
+        if (    $current_spot_ts == $last_price_ts
+            and $current_time - $last_price_ts <= DURATION_DONT_PRICE_SAME_SPOT)
+        {
+            stats_inc("pricer_daemon.skipped_duplicate_spot", {tags => $self->tags});
+            return undef;
+        }
     }
 
     my $r = BOM::Platform::Context::Request->new({language => $params->{language} // 'EN'});
@@ -93,17 +111,20 @@ sub process_job {
     # contract parameters are stored after first call, no need to send them with every stream message
     delete $response->{contract_parameters};
 
-    # when it reaches here, contract is considered priced.
-    $redis_pricer->set(
-        $next => encode_json_utf8({
-                # - for proposal open contract, don't use $current_time here since we are using this time to check if we want to skip repricing contract with the same spot price.
-                # - for proposal, because $response doesn't have current_spot_time, we will resort to $current_time
-                time => $response->{current_spot_time} // $current_time,
-                contract => $response,
-            }
-        ),
-        'EX' => DURATION_DONT_PRICE_SAME_SPOT
-    );
+    unless ($self->price_duplicate_spot) {
+        # when it reaches here, contract is considered priced.
+        $redis_pricer->set(
+            $next => encode_json_utf8({
+                    # - for proposal open contract, don't use $current_time here since we are using this time to
+                    #   check if we want to skip repricing contract with the same spot price.
+                    # - for proposal, because $response doesn't have current_spot_time, we will resort to $current_time
+                    time => $response->{current_spot_time} // $current_time,
+                    contract => $response,
+                }
+            ),
+            'EX' => DURATION_DONT_PRICE_SAME_SPOT
+        );
+    }
     my $log_price_daemon_cmd = $params->{log_price_daemon_cmd} // $cmd;
     stats_inc("pricer_daemon.$log_price_daemon_cmd.call", {tags => $self->tags});
     stats_timing("pricer_daemon.$log_price_daemon_cmd.time", $response->{rpc_time}, {tags => $self->tags});
@@ -233,7 +254,7 @@ sub run {
         $redis_pricer->set("PRICER_STATUS::$args{ip}-$args{fork_index}", encode_json_utf8(\@stat_redis));
 
         # Should be after publishing the response to avoid causing additional delays
-        if ($self->{record_price_metrics} and not exists $response->{error}) {
+        if ($self->record_price_metrics and not exists $response->{error}) {
             my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode({$params->%*}, $response->{spot});
             BOM::Pricing::v3::Utility::update_price_metrics($relative_shortcode, $response->{rpc_time});
         }
