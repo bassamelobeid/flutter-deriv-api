@@ -746,7 +746,8 @@ async sub _sync_onfido_bo_document {
     } else {
         die "Unsupported document type";
     }
-
+    die "Invalid expiration date" if ($expiration_date
+        && $expiration_date ne (eval { Date::Utility->new($expiration_date)->date_yyyymmdd } // ''));
     my $file_type = lc $onfido_res->file_type;
     ## Convert to a better extension in case it comes back as image/*
     ## Media::Type::Simple is buggy, else we might have considered it here
