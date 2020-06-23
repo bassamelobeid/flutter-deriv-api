@@ -4,7 +4,9 @@ use warnings;
 
 use Scalar::Util qw( looks_like_number );
 
-use Test::More;
+# THIS IMPLIMENTATION OF RPC QUEUE WILL BE REMOVED.
+# https://trello.com/c/kqacriVL/152-24-rpc-removeoldrpcqueueimplementation
+use Test::More skip_all => 'Unstable test suite';
 
 use BOM::Test::Helper qw(build_wsapi_test call_instrospection);
 use BOM::Test::RPC::Client;
