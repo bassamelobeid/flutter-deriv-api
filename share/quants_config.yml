@@ -193,6 +193,18 @@ bet_limits:
     USB: 0.02
     IDK: 0.3
     PAX: 0.02
+  min_order_amount:
+    USD: 0.1 # 0.1 dollar
+    EUR: 0.1
+    AUD: 0.1
+    GBP: 0.1
+    BTC: 0.000075
+    ETH: 0.00075
+    LTC: 0.00375
+    UST: 0.1
+    USB: 0.1
+    IDK: 1.5
+    PAX: 0.1
 
 #Lookback option limits – the Value-at-risk approach
 #
