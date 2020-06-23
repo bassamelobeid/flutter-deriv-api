@@ -134,9 +134,11 @@ my $config = {
         CannotCancelContract       => 'Deal cancellation is not available for this contract.',
         LimitOrderIncorrectDecimal => 'Only [_1] decimal places allowed.',
         EitherStopLossOrCancel     => 'You may use either stop loss or deal cancellation, but not both. Please select either one.',
+        EitherTakeProfitOrCancel   => 'You may use either take profit or deal cancellation, but not both. Please select either one.',
         CancelIsBetter =>
             'The spot price has moved. We have not closed this contract because your profit is negative and deal cancellation is active. Cancel your contract to get your full stake back.',
         InvalidDealCancellation           => 'Deal cancellation is not offered at this duration.',
+        DealCancellationBlackout          => 'Deal cancellation is not available from [_1] to [_2].',
         DealCancellationPurchaseSuspended => 'Deal cancellation is not available at this moment.',
     },
     generic => {

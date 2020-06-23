@@ -6,7 +6,6 @@ with 'BOM::Product::Role::Multiplier';
 
 use Math::Util::CalculatedValue::Validatable;
 use Math::Business::BlackScholesMerton::NonBinaries;
-use Math::Business::BlackScholesMerton::Binaries;
 
 =head1 DESCRIPTION
 
@@ -166,44 +165,6 @@ sub _standard_barrier_option {
     return Math::Util::CalculatedValue::Validatable->new({
         name        => 'standard_barrier_option',
         description => 'standard barrier option price for stop output',
-        set_by      => __PACKAGE__,
-        base_amount => $price,
-    });
-}
-
-sub _american_binary_knockout {
-    my $self = shift;
-
-    my $spot                   = $self->_spot_proxy;
-    my $args                   = $self->_formula_args;
-    my $take_profit_percentage = $self->cancellation_tp / $self->_user_input_stake;
-    my $payout                 = $spot - $spot * (1 - $take_profit_percentage / $self->multiplier) * exp(-1 * $self->_barrier_continuity_adjustment);
-
-    my $price = Math::Business::BlackScholesMerton::Binaries::americanknockout($spot, $self->_stop_out_proxy, $self->_take_profit_proxy, $payout,
-        $args->{t}, $args->{sigma}, $args->{mu}, $self->_type);
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'american_binary_knockout',
-        description => 'american binary knockout price for take profit',
-        set_by      => __PACKAGE__,
-        base_amount => $price,
-    });
-}
-
-sub _double_knockout {
-    my $self = shift;
-
-    my $spot = $self->_spot_proxy;
-    my $args = $self->_formula_args;
-    my $K    = $spot * (1 - $self->commission);
-
-    my $price =
-        Math::Business::BlackScholesMerton::NonBinaries::doubleknockout($spot, $self->_stop_out_proxy, $self->_take_profit_proxy, $K, $args->{t},
-        $args->{mu}, $args->{sigma}, $args->{r}, $self->_type);
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'double_knockout',
-        description => 'double knockout price for take profit',
         set_by      => __PACKAGE__,
         base_amount => $price,
     });

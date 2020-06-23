@@ -697,4 +697,43 @@ subtest 'commission multiplier' => sub {
     is $c->commission_multiplier, 1.093,     'commission multiplier is 1.093';
 };
 
+subtest 'deal cancellation with TP and blackout condition' => sub {
+    my $now = Date::Utility->new('2020-06-05 10:00:00');
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+        cancellation => '1h',
+        limit_order  => {take_profit => 10},
+    };
+    my $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'deal cancellation set with take profit', 'message';
+    is $c->primary_validation_error->message_to_client,
+        'You may use either take profit or deal cancellation, but not both. Please select either one.', 'message to client';
+
+    delete $args->{limit_order};
+    $now = Date::Utility->new('2020-06-04 21:00:00');
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);
+    $args->{date_start} = $args->{date_pricing} = $now;
+    $c = produce_contract($args);
+    ok $c->is_valid_to_buy, 'valid to buy for synthetic index';
+
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'frxUSDJPY']);
+    $args->{underlying} = 'frxUSDJPY';
+    $args->{multiplier} = 50;
+    $c                  = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'deal cancellation blackout period', 'message';
+    is $c->primary_validation_error->message_to_client->[0], 'Deal cancellation is not available from [_1] to [_2].', 'message to client';
+    is $c->primary_validation_error->message_to_client->[1], '2020-06-04 21:00:00',                                   'message to client';
+    is $c->primary_validation_error->message_to_client->[2], '2020-06-04 23:59:59',                                   'message to client';
+};
+
 done_testing();

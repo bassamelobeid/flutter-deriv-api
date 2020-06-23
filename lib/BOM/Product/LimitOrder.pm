@@ -58,9 +58,14 @@ has order_date => (
 
 # Since we can't make limit order independent of the main contract, we will need
 # to live with these.
-has [qw(commission multiplier sentiment ask_price underlying order_precision)] => (
+has [qw(commission multiplier sentiment stake underlying order_precision)] => (
     is       => 'ro',
     required => 1,
+);
+
+has cancellation_price => (
+    is      => 'ro',
+    default => 0,
 );
 
 =head2 barrier_value
@@ -77,7 +82,9 @@ sub barrier_value {
     my $sentiment_multiplier = $self->sentiment eq 'up' ? 1 : -1;
     my $commission = $self->commission // 0;
     my $barrier_value =
-        ($self->order_amount / ($self->multiplier * $self->ask_price) + $commission) * $sentiment_multiplier * $self->basis_spot + $self->basis_spot;
+        (($self->order_amount + $self->cancellation_price) / ($self->multiplier * $self->stake) + $commission) *
+        $sentiment_multiplier *
+        $self->basis_spot + $self->basis_spot;
 
     return $self->underlying->pipsized_value($barrier_value);
 }
@@ -89,7 +96,7 @@ Validate if the limit order placed is valid.
 =cut
 
 sub is_valid {
-    my ($self, $current_pnl, $currency, $pricing_new) = @_;
+    my ($self, $pnl, $currency, $pricing_new) = @_;
 
     $pricing_new //= 0;
     # undef if we want to cancel and it should always be valid
@@ -102,10 +109,10 @@ sub is_valid {
         return 0;
     }
 
-    die 'current pnl is undefined' unless defined $current_pnl;
+    die 'current pnl is undefined' unless defined $pnl;
 
     my $validation_method = '_validate_' . $self->order_type;
-    if (my $error = $self->$validation_method($current_pnl, $currency, $pricing_new)) {
+    if (my $error = $self->$validation_method($pnl, $currency, $pricing_new)) {
         $self->validation_error($error);
         return 0;
     }
@@ -133,7 +140,7 @@ sub _validate_stop_out {
 }
 
 sub _validate_stop_loss {
-    my ($self, $current_pnl, $currency, $pricing_new) = @_;
+    my ($self, $total_pnl, $currency, $pricing_new) = @_;
 
     my $amount = $self->order_amount;
     my $details = {field => $self->order_type};
@@ -147,7 +154,7 @@ sub _validate_stop_loss {
     }
 
     # capping stop loss at stake amount
-    if (defined $amount and abs($amount) > $self->ask_price) {
+    if (defined $amount and abs($amount) > $self->stake) {
         return {
             message           => 'stop loss too high',
             message_to_client => $ERROR_MAPPING->{StopLossTooHigh},
@@ -158,11 +165,11 @@ sub _validate_stop_loss {
     my $error_string = $pricing_new ? 'InvalidInitialStopLoss' : 'InvalidStopLoss';
 
     # A floating pnl could be positive. Hence, we need to keep the value below zero.
-    $current_pnl = min(0, $current_pnl);
-    if ($amount >= $current_pnl) {
+    $total_pnl = min(0, $total_pnl);
+    if ($amount >= $total_pnl) {
         return {
             message           => 'stop loss lower than pnl',
-            message_to_client => [$ERROR_MAPPING->{$error_string}, financialrounding('price', $currency, abs($current_pnl))],
+            message_to_client => [$ERROR_MAPPING->{$error_string}, financialrounding('price', $currency, abs($total_pnl))],
             details           => $details,
         };
     }
@@ -171,7 +178,7 @@ sub _validate_stop_loss {
 }
 
 sub _validate_take_profit {
-    my ($self, $current_pnl, $currency) = @_;
+    my ($self, $total_pnl, $currency) = @_;
 
     my $amount = $self->order_amount;
     my $details = {field => $self->order_type};
@@ -186,16 +193,16 @@ sub _validate_take_profit {
 
     # 90% (because of commission) of multiplier or 50.
     my $max_amount = min(0.9 * $self->multiplier, 50);
-    if (defined $amount and $amount / $self->ask_price > $max_amount) {
+    if (defined $amount and $amount / $self->stake > $max_amount) {
         BOM::Product::Exception->throw(
             error_code => 'TakeProfitTooHigh',
-            error_args => [financialrounding('price', $currency, $max_amount * $self->ask_price)],
+            error_args => [financialrounding('price', $currency, $max_amount * $self->stake)],
             details => {field => 'take_profit'},
         );
     }
 
     # A floating pnl could be negative. Hence, we need to keep the value above zero.
-    my $pnl = max(0, $current_pnl);
+    my $pnl = max(0, $total_pnl);
     if ($amount <= $pnl) {
         return {
             message           => 'take profit lower than pnl',

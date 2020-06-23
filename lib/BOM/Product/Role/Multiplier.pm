@@ -189,7 +189,7 @@ sub new_order {
         order_amount => $order_amount,
         order_date   => $self->date_pricing,
         basis_spot   => $self->basis_spot,
-        %{$self->_limit_order_args});
+        %{$self->_limit_order_args($order_type)});
 }
 
 sub _build_stop_loss {
@@ -203,7 +203,7 @@ sub _build_stop_loss {
 
     my $args = $self->_order->{stop_loss};
 
-    return BOM::Product::LimitOrder->new({%$args, %{$self->_limit_order_args}});
+    return BOM::Product::LimitOrder->new({%$args, %{$self->_limit_order_args('stop_loss')}});
 }
 
 sub _build_take_profit {
@@ -217,7 +217,7 @@ sub _build_take_profit {
 
     my $args = $self->_order->{take_profit};
 
-    return BOM::Product::LimitOrder->new({%$args, %{$self->_limit_order_args}});
+    return BOM::Product::LimitOrder->new({%$args, %{$self->_limit_order_args('take_profit')}});
 }
 
 sub _build_stop_out {
@@ -240,7 +240,7 @@ sub _build_stop_out {
         );
     }
 
-    return BOM::Product::LimitOrder->new({%{$self->_order->{stop_out}}, %{$self->_limit_order_args}});
+    return BOM::Product::LimitOrder->new({%{$self->_order->{stop_out}}, %{$self->_limit_order_args('stop_out')}});
 }
 
 =head2 sell_time
@@ -408,7 +408,9 @@ sub _calculate_pnl_at_tick {
 
 =head2 current_pnl
 
-Current PnL of the contract.
+Current PnL of the contract. This is the pnl of the main contract (does not include cost of risk management E.g. deal protection or deal cancellation) and is used deal cancellation.
+
+If PnL is > 0, then you can close the contract, else cancelling is a better option
 
 =cut
 
@@ -421,6 +423,22 @@ sub current_pnl {
     return $self->_calculate_pnl_at_tick({at_tick => $self->current_tick});
 }
 
+=head2 total_pnl
+
+The pnl of the contract (includes cost of risk mangement).
+
+=cut
+
+sub total_pnl {
+    my $self = shift;
+
+    return '0.00' if $self->pricing_new;
+
+    my $total_pnl = $self->current_pnl - $self->cancellation_price;
+
+    return financialrounding('price', $self->currency, $total_pnl);
+}
+
 =head2 bid_price
 
 Bid price which will be saved into sell_price in financial_market_bet table.
@@ -430,7 +448,9 @@ Bid price which will be saved into sell_price in financial_market_bet table.
 override '_build_bid_price' => sub {
     my $self = shift;
 
-    return $self->value if $self->is_expired;
+    return $self->cancel_price if $self->is_cancelled;
+    return $self->sell_price   if $self->is_sold;
+    return $self->value        if $self->is_expired;
     return $self->_user_input_stake + $self->current_pnl();
 };
 
@@ -750,12 +770,7 @@ sub cancellation_cv {
         base_amount => 0,
     });
 
-    if ($self->cancellation_tp) {
-        $cost_cv->include_adjustment('reset', $self->_american_binary_knockout);
-        $cost_cv->include_adjustment('add',   $self->_double_knockout);
-    } else {
-        $cost_cv->include_adjustment('reset', $self->_standard_barrier_option);
-    }
+    $cost_cv->include_adjustment('reset', $self->_standard_barrier_option);
 
     my $volume_cv = Math::Util::CalculatedValue::Validatable->new({
             name        => 'volume',
@@ -809,7 +824,7 @@ sub _validate_cancellation {
         return {
             message           => 'deal cancellation suspension config not set',
             message_to_client => $ERROR_MAPPING->{DealCancellationPurchaseSuspended},
-            details           => {field => 'deal_cancellation'},
+            details           => {field => 'cancellation'},
         };
     }
 
@@ -817,7 +832,7 @@ sub _validate_cancellation {
         return {
             message           => 'deal cancellation suspended',
             message_to_client => $ERROR_MAPPING->{DealCancellationPurchaseSuspended},
-            details           => {field => 'deal_cancellation'},
+            details           => {field => 'cancellation'},
         };
     }
 
@@ -842,32 +857,59 @@ sub _validate_cancellation {
         };
     }
 
+    my $cancellation_blackout_start = 21;
+    if ($self->underlying->market->name eq 'forex' and $self->date_start->hour >= $cancellation_blackout_start) {
+        my $sod = $self->date_start->truncate_to_day;
+        return {
+            message           => 'deal cancellation blackout period',
+            message_to_client => [
+                $ERROR_MAPPING->{DealCancellationBlackout}, $sod->plus_time_interval($cancellation_blackout_start . 'h')->datetime,
+                $sod->plus_time_interval('23h59m59s')->datetime
+            ],
+            details => {field => 'cancellation'},
+        };
+    }
+
     return;
 }
 
 sub _validate_orders {
     my $self = shift;
 
-    foreach my $order_name (@supported_orders) {
-        # at the beginning of contract purchase, stop loss more be more than commission to
-        # avoid contract closing immediately after purchase.
-        my $pnl =
-            ($self->pricing_new and $order_name eq 'stop_loss')
-            ? -1 * $self->commission_amount
-            : $self->current_pnl;
-        if ($self->$order_name and not $self->$order_name->is_valid($pnl, $self->currency, $self->pricing_new)) {
-            return $self->$order_name->validation_error;
+    # validate stop out order
+    if ($self->stop_out and not $self->stop_out->is_valid($self->current_pnl, $self->currency, $self->pricing_new)) {
+        return $self->stop_out->validation_error;
+    }
+
+    # validate take profit order
+    if ($self->take_profit) {
+        if ($self->pricing_new and $self->cancellation) {
+            return {
+                message           => 'deal cancellation set with take profit',
+                message_to_client => $ERROR_MAPPING->{EitherTakeProfitOrCancel},
+                details           => {field => 'deal_cancellation'},
+            };
+        }
+
+        if (not $self->take_profit->is_valid($self->total_pnl, $self->currency, $self->pricing_new)) {
+            return $self->take_profit->validation_error;
         }
     }
 
-    # Deal cancellation order cannot be set together with stop loss even though these orders work independently.
-    # If a contract is closed when it hit stop loss while deal cancellation option is active, client would feel cheated.
-    if ($self->pricing_new and $self->cancellation and $self->stop_loss) {
-        return {
-            message           => 'deal cancellation set with stop loss',
-            message_to_client => $ERROR_MAPPING->{EitherStopLossOrCancel},
-            details           => {field => 'stop_loss'},
-        };
+    # validate stop loss order
+    if ($self->stop_loss) {
+        if ($self->pricing_new and $self->cancellation) {
+            return {
+                message           => 'deal cancellation set with stop loss',
+                message_to_client => $ERROR_MAPPING->{EitherStopLossOrCancel},
+                details           => {field => 'deal_cancellation'},
+            };
+        }
+
+        my $pnl = $self->pricing_new ? -1 * $self->commission_amount : $self->total_pnl;
+        if (not $self->stop_loss->is_valid($pnl, $self->currency, $self->pricing_new)) {
+            return $self->stop_loss->validation_error;
+        }
     }
 
     return;
@@ -965,10 +1007,11 @@ sub _build__multiplier_config {
 }
 
 sub _limit_order_args {
-    my $self = shift;
+    my ($self, $order_type) = @_;
 
     return {
-        ask_price       => $self->_user_input_stake,
+        stake => $self->_user_input_stake,
+        $order_type ne 'stop_out' ? (cancellation_price => $self->cancellation_price) : (),
         multiplier      => $self->multiplier,
         sentiment       => $self->sentiment,
         commission      => $self->commission,
