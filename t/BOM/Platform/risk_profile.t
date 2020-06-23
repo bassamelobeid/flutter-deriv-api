@@ -142,7 +142,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{name},  'test custom', 'correct name';
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok $param->[0]->{tick_expiry}, 'tick_expiry set to 1';
-    is scalar(@{$param->[0]->{symbols}}), 9, '9 symbols selected';
+    is scalar(@{$param->[0]->{symbols}}), 12, '12 symbols selected';
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"market": "synthetic_index", "expiry_type": "intraday", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'intraday');
@@ -152,7 +152,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok !$param->[0]->{daily},       'daily set to 0';
     ok !$param->[0]->{ultra_short}, 'daily set to 0';
-    is scalar(@{$param->[0]->{symbols}}), 9, '9 symbols selected';
+    is scalar(@{$param->[0]->{symbols}}), 12, '12 symbols selected';
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"market": "synthetic_index", "expiry_type": "daily", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'daily');
@@ -161,7 +161,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{name},  'test custom', 'correct name';
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok $param->[0]->{daily}, 'daily set to 1';
-    is scalar(@{$param->[0]->{symbols}}), 9, '9 symbols selected';
+    is scalar(@{$param->[0]->{symbols}}), 12, '12 symbols selected';
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"underlying_symbol": "R_100,R_10", "expiry_type": "daily", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'daily');
@@ -183,7 +183,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{limit}, 0, 'turnover limit correctly set to zero';
     ok !$param->[0]->{daily}, 'daily set to 0';
     ok $param->[0]->{ultra_short}, 'daily set to 1';
-    is scalar(@{$param->[0]->{symbols}}), 9, '9 symbols selected';
+    is scalar(@{$param->[0]->{symbols}}), 12, '12 symbols selected';
 };
 
 subtest 'Handling errors for companies with no offering' => sub {
