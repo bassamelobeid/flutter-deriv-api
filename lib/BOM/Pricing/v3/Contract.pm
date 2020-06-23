@@ -227,7 +227,7 @@ sub _get_ask {
                 my $display = $contract->available_orders_for_display;
                 $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
                 $response->{limit_order} = $display;
-                $response->{commission} = roundcommon(0.0001, $contract->commission * 100);    # commission in percentage term
+                $response->{commission} = $contract->commission_amount;    # commission in payout currency amount
 
                 if ($contract->cancellation) {
                     $response->{cancellation} = {

@@ -98,7 +98,7 @@ subtest 'multiplier - send_ask' => sub {
             'valid_source'               => 1,
             'app_markup_percentage'      => '0'
         },
-        'commission'  => '0.0504',
+        'commission'  => '0.50',
         'spot_time'   => ignore(),
         'limit_order' => {
             'stop_out' => {
@@ -143,7 +143,7 @@ subtest 'multiplier - send_ask' => sub {
             'valid_source'               => 1,
             'app_markup_percentage'      => '0'
         },
-        'commission'  => '0.0504',
+        'commission'  => '0.50',
         'spot_time'   => ignore(),
         'limit_order' => {
             'stop_out' => {
@@ -223,8 +223,8 @@ subtest 'multiplier - send_ask' => sub {
         skip_basis_override => 1,
     };
     $args->{cancellation} = '1h';
-    $res = $c->call_ok('send_ask', $params)->has_no_error->result;
-    cmp_deeply($res, $expected, 'send_ask output as expected');
+    $res = $c->call_ok('send_ask', $params)->has_error('ContractBuyValidationError')
+        ->error_message_is('You may use either take profit or deal cancellation, but not both. Please select either one.');
 };
 
 subtest 'multiplier - get_bid' => sub {
