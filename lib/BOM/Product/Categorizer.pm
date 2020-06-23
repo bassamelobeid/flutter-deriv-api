@@ -446,7 +446,7 @@ sub _initialize_other_parameters {
                 error_args => [financialrounding('price', $params->{currency}, $max_stake)],
                 details => {field => 'amount'})
                 if exists $params->{amount}
-                and $params->{amount} > $max_stake;
+                and $params->{amount} - $max_stake > $epsilon;
         }
     } else {
         BOM::Product::Exception->throw(

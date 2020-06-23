@@ -505,7 +505,7 @@ override 'shortcode' => sub {
         $self->_user_input_stake, $self->multiplier,
         $self->date_start->epoch,
         $self->date_expiry->epoch,
-        $self->cancellation, $self->cancellation_tp,
+        $self->cancellation, financialrounding('price', $self->currency, $self->cancellation_tp),
         );
 };
 

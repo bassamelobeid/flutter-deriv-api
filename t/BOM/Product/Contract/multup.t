@@ -130,19 +130,19 @@ subtest 'shortcode' => sub {
         currency     => 'USD',
     };
     my $c = produce_contract($args);
-    is $c->shortcode, 'MULTUP_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_0_0', 'shortcode populated correctly';
+    is $c->shortcode, 'MULTUP_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_0_0.00', 'shortcode populated correctly';
     lives_ok { produce_contract(shortcode_to_parameters($c->shortcode, $c->currency)) } 'can produce contract properly';
     $args->{cancellation} = '1h';
     $c = produce_contract($args);
-    is $c->shortcode, 'MULTUP_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_1h_0', 'shortcode populated correctly';
+    is $c->shortcode, 'MULTUP_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_1h_0.00', 'shortcode populated correctly';
     lives_ok { produce_contract(shortcode_to_parameters($c->shortcode, $c->currency)) } 'can produce contract properly';
     $args->{limit_order} = {take_profit => 20};
     $c = produce_contract($args);
-    is $c->shortcode, 'MULTUP_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_1h_20', 'shortcode populated correctly';
+    is $c->shortcode, 'MULTUP_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_1h_20.00', 'shortcode populated correctly';
     lives_ok { produce_contract(shortcode_to_parameters($c->shortcode, $c->currency)) } 'can produce contract properly';
     $args->{limit_order} = {take_profit => 20.4};
     $c = produce_contract($args);
-    is $c->shortcode, 'MULTUP_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_1h_20.4', 'shortcode populated correctly';
+    is $c->shortcode, 'MULTUP_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_1h_20.40', 'shortcode populated correctly';
     lives_ok { produce_contract(shortcode_to_parameters($c->shortcode, $c->currency)) } 'can produce contract properly';
 };
 

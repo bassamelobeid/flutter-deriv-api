@@ -8,8 +8,7 @@ use BOM::Product::Static;
 use List::Util qw(max min);
 use Scalar::Util::Numeric qw(isint);
 use Format::Util::Numbers qw(financialrounding);
-
-use constant MIN_ORDER_AMOUNT => 0.1;
+use BOM::Config;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
@@ -142,13 +141,14 @@ sub _validate_stop_out {
 sub _validate_stop_loss {
     my ($self, $total_pnl, $currency, $pricing_new) = @_;
 
-    my $amount = $self->order_amount;
-    my $details = {field => $self->order_type};
+    my $amount           = $self->order_amount;
+    my $details          = {field => $self->order_type};
+    my $min_order_amount = BOM::Config::quants()->{bet_limits}->{min_order_amount}->{$currency};
     # check minimum allowed
-    if ($amount > -MIN_ORDER_AMOUNT) {
+    if ($amount > -$min_order_amount) {
         return {
             message           => 'stop loss too low',
-            message_to_client => [$ERROR_MAPPING->{InvalidStopLoss}, financialrounding('price', $currency, MIN_ORDER_AMOUNT)],
+            message_to_client => [$ERROR_MAPPING->{InvalidStopLoss}, financialrounding('price', $currency, $min_order_amount)],
             details           => $details,
         };
     }
@@ -180,13 +180,14 @@ sub _validate_stop_loss {
 sub _validate_take_profit {
     my ($self, $total_pnl, $currency) = @_;
 
-    my $amount = $self->order_amount;
-    my $details = {field => $self->order_type};
+    my $amount           = $self->order_amount;
+    my $details          = {field => $self->order_type};
+    my $min_order_amount = BOM::Config::quants()->{bet_limits}->{min_order_amount}->{$currency};
     # check minimum allowed
-    if ($amount < MIN_ORDER_AMOUNT) {
+    if ($amount < $min_order_amount) {
         return {
             message           => 'take profit too low',
-            message_to_client => [$ERROR_MAPPING->{InvalidTakeProfit}, financialrounding('price', $currency, MIN_ORDER_AMOUNT)],
+            message_to_client => [$ERROR_MAPPING->{InvalidTakeProfit}, financialrounding('price', $currency, $min_order_amount)],
             details           => $details,
         };
     }
