@@ -675,8 +675,8 @@ sub _validate_jurisdictional_restrictions {
 
     my $lc = $client->landing_company;
 
-    my %legal_allowed_ct = map { $_ => 1 } @{$lc->legal_allowed_contract_types};
-    if (not $legal_allowed_ct{$contract->code}) {
+    my %legal_allowed_cc = map { $_ => 1 } @{$lc->legal_allowed_contract_categories};
+    if (not $legal_allowed_cc{$contract->category_code}) {
         return Error::Base->cuss(
             -quiet             => 1,
             -type              => 'NotLegalContractCategory',
@@ -714,16 +714,6 @@ sub _validate_jurisdictional_restrictions {
             -type              => 'FinancialBinariesRestrictedCountry',
             -mesg              => 'Clients are not allowed to place financial products contracts as their country is restricted.',
             -message_to_client => localize('Sorry, contracts on Financial Products are not available in your country of residence'),
-        );
-    }
-
-    my %legal_allowed_underlyings = map { $_ => 1 } @{$lc->legal_allowed_underlyings};
-    if (not $legal_allowed_underlyings{all} and not $legal_allowed_underlyings{$contract->underlying->symbol}) {
-        return Error::Base->cuss(
-            -quiet             => 1,
-            -type              => 'NotLegalUnderlying',
-            -mesg              => 'Clients are not allowed to trade on this underlying as its restricted for this landing company',
-            -message_to_client => localize('Please switch accounts to trade this underlying.'),
         );
     }
 

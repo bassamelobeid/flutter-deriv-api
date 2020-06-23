@@ -12,7 +12,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Helper::Client qw(top_up);
+use BOM::Test::Helper::Client qw(top_up create_client);
 
 use Guard;
 use Crypt::NamedKeys;
@@ -75,27 +75,6 @@ sub db {
         })->db;
 }
 
-sub create_client {
-    return $user->create_client(
-        broker_code      => 'VRTC',
-        client_password  => BOM::User::Password::hashpw('12345678'),
-        salutation       => 'Ms',
-        last_name        => 'Doe',
-        first_name       => 'Jane' . time . '.' . int(rand 1000000000),
-        email            => 'jane.doe' . time . '.' . int(rand 1000000000) . '@test.domain.nowhere',
-        residence        => 'in',
-        address_line_1   => '298b md rd',
-        address_line_2   => '',
-        address_city     => 'Place',
-        address_postcode => '65432',
-        address_state    => 'st',
-        phone            => '+9145257468',
-        secret_question  => 'What the f***?',
-        secret_answer    => BOM::User::Utility::encrypt_secret_answer('is that'),
-        date_of_birth    => '1945-08-06',
-    );
-}
-
 sub get_transaction_from_db {
     my $bet_class = shift;
     my $txnid     = shift;
@@ -156,7 +135,7 @@ my $acc_aud;
 ####################################################################
 
 lives_ok {
-    $cl = create_client;
+    $cl = create_client('VRTC');
 
     #make sure client can trade
     ok(!BOM::Transaction::Validation->new({clients => [$cl]})->check_trade_status($cl),      "client can trade: check_trade_status");
@@ -765,6 +744,7 @@ subtest 'buy multiplier with unsupported underlying' => sub {
         is $error->{-mesg}, 'multiplier commission not defined for frxGBPPLN', 'message is multiplier commission not defined for frxGBPPLN';
         is $error->{-message_to_client}, 'Trading is not offered for this asset.', 'message to client Trading is not offered for this asset.';
     };
+
     restore_time();
 };
 Test::Warnings::allow_warnings(0);
@@ -850,6 +830,93 @@ subtest 'buy deal cancellation when it is disabled' => sub {
         note 'reset deal cancellation';
         BOM::Config::Runtime->instance->app_config->quants->suspend_deal_cancellation->synthetic_index(0);
     };
+};
+
+subtest 'buy multiplier on FX with VRTC' => sub {
+    if (any { Date::Utility->new->day_of_week == $_ } (5, 6, 0)) {
+        set_relative_time(0 - 3 * 24 * 60 * 60);
+    }
+    lives_ok {
+        my $contract = produce_contract({
+            underlying   => 'frxAUDJPY',
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            multiplier   => 50,
+            amount       => 100,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = $txn->buy;
+        ok !$error, 'buy without error';
+    };
+
+    restore_time();
+};
+
+subtest 'buy multiplier on synthetic with CR' => sub {
+    my $cr = create_client('CR');
+    top_up $cr, 'USD', 5000;
+
+    my $contract = produce_contract({
+        underlying   => 'R_100',
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        multiplier   => 10,
+        amount       => 100,
+        amount_type  => 'stake',
+        current_tick => $current_tick,
+        cancellation => '1h',
+    });
+
+    my $txn = BOM::Transaction->new({
+        client        => $cr,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $txn->buy;
+    ok !$error, 'buy successful';
+
+    $contract = produce_contract({
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        multiplier   => 50,
+        amount       => 100,
+        amount_type  => 'stake',
+        current_tick => $current_tick,
+        cancellation => '1h',
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $cr,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    $error = $txn->buy;
+    ok $error, 'buy failed with error';
+    is $error->{-mesg}, 'trying unauthorised combination', 'message is trying unauthorised combination';
+    is $error->{-message_to_client}, 'Trading is not offered for this duration.', 'message to client Trading is not offered for this duration.';
 };
 
 done_testing();

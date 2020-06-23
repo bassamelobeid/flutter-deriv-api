@@ -211,7 +211,7 @@ sub _validate_update_parameter {
         }
 
         # is the new limit order valid?
-        unless ($new_order->is_valid($contract->total_pnl)) {
+        unless ($new_order->is_valid($contract->total_pnl, $self->client->currency)) {
             $error = {
                 code              => 'InvalidContractUpdate',
                 message_to_client => localize(
