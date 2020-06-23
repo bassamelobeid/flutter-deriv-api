@@ -165,7 +165,7 @@
                         "type" : "array",
                         "minItems" : 6,
                         "items" : {
-                           "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal)$",
+                           "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|multiplier)$",
                            "type" : "string"
                         }
                      },
@@ -230,7 +230,7 @@
                   },
                   "legal_allowed_contract_categories" : {
                      "items" : {
-                        "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|runs)$",
+                        "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|runs|multiplier)$",
                         "type" : "string"
                      },
                      "minItems" : 6,
@@ -293,7 +293,7 @@
                      "type" : "array",
                      "minItems" : 6,
                      "items" : {
-                        "pattern" : "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|runs)$",
+                        "pattern" : "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|runs|multiplier)$",
                         "type" : "string"
                      }
                   },
