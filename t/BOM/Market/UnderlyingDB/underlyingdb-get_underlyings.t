@@ -205,4 +205,18 @@ subtest 'including disabled' => sub {
     BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy($orig_buy);
 };
 
+subtest 'testing with suspend_trades' => sub {
+    my $orig_buy = BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_trades;
+    BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_trades(['frxXAUUSD']);
+
+    my @symbols = $udb->symbols_for_intraday_fx(1);
+
+    ok(
+        scalar grep { $_ eq 'frxXAUUSD' } @symbols,
+        "XAUUSD returned"
+    );
+    
+    BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_trades($orig_buy);
+};
+
 done_testing;

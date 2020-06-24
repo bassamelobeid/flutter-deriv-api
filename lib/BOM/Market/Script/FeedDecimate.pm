@@ -31,7 +31,7 @@ EOF
 
     my $decimate_cache = BOM::Market::DataDecimate->new(market => 'forex');
 
-    my @uls = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_fx;
+    my @uls = map { create_underlying($_) } create_underlying_db->symbols_for_intraday_fx(1);
 
     # back populate
     my $interval = $decimate_cache->sampling_frequency->seconds;

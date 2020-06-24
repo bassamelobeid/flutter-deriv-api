@@ -40,6 +40,8 @@ sub create_underlying_db {
     $result->chronicle_reader(BOM::Config::Chronicle::get_chronicle_reader());
     $result->quant_config($quant_config);
     $result->offerings_flyby(LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config));
+    $result->offerings_flyby_all(
+        LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config('buy', 1)));
 
     return $result;
 }
