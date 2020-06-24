@@ -167,7 +167,8 @@ my $check;
 subtest "ready for run authentication" => sub {
     $test_client->status->clear_age_verification;
     $loop->add(my $services = BOM::Event::Services->new);
-    my $redis = $services->redis_events_write();
+    my $redis        = $services->redis_events_write();
+    my $redis_r_read = $services->redis_replicated_read();
     $redis->del(BOM::Event::Actions::Client::ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id)->get;
     lives_ok {
         BOM::Event::Actions::Client::ready_for_authentication({
@@ -187,6 +188,9 @@ subtest "ready for run authentication" => sub {
     ok($check_data, 'get check data ok from db');
     is($check_data->{id},     $check->{id},  'check data correct');
     is($check_data->{status}, 'in_progress', 'check status is in_progress');
+
+    my $applicant_context = $redis_r_read->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+    ok $applicant_context, 'request context of applicant is present in redis';
 };
 
 my $services;
@@ -202,7 +206,7 @@ subtest "client_verification" => sub {
                 check_url => $check->{href},
             })->get;
     }
-    "ready_for_authentication no exception";
+    "client verification no exception";
     my $check_data = BOM::Database::UserDB::rose_db()->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('select * from users.get_onfido_checks(?::BIGINT, ?::TEXT, 1)', undef, $test_client->user_id, $applicant_id);
@@ -217,7 +221,72 @@ subtest "client_verification" => sub {
     is($report_data->{check_id}, $check->{id}, 'report is correct');
     my $msg = mailbox_search(subject => qr/Automated age verification failed/);
     ok($msg, 'automated age verification failed email sent');
+};
 
+subtest "document upload request context" => sub {
+    my $context = {
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => '16000'
+    };
+    my $req = BOM::Platform::Context::Request->new($context);
+    request($req);
+
+    $test_client->status->clear_age_verification;
+
+    $loop->add(my $services = BOM::Event::Services->new);
+    my $redis_r_read  = $services->redis_replicated_read();
+    my $redis_r_write = $services->redis_replicated_write();
+
+    lives_ok {
+        BOM::Event::Actions::Client::ready_for_authentication({
+                loginid      => $test_client->loginid,
+                applicant_id => $applicant_id,
+            })->get;
+    }
+    "ready for authentication emitted without exception";
+
+    my $applicant_context = $redis_r_read->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+    ok $applicant_context, 'request context of applicant is present in redis';
+
+    my $another_context = {
+        app_id     => '123',
+        language   => 'FA',
+        brand_name => 'binary'
+    };
+    my $another_req = BOM::Platform::Context::Request->new($another_context);
+    request($another_req);
+
+    my $request;
+    my $mocked_action = Test::MockModule->new('BOM::Event::Actions::Client');
+    $mocked_action->mock('_store_applicant_documents', sub { $request = request(); return undef });
+
+    lives_ok {
+        BOM::Event::Actions::Client::client_verification({
+                check_url => $check->{href},
+            })->get;
+    }
+    "client verification emitted without exception";
+
+    is $context->{brand_name}, $request->brand_name, 'brand name is correct';
+    is $context->{language},   $request->language,   'language is correct';
+    is $context->{app_id},     $request->app_id,     'app id is correct';
+
+    request($another_req);
+
+    $redis_r_write->del(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+    $redis_r_write->set(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id, ']non json format[');
+
+    lives_ok {
+        BOM::Event::Actions::Client::client_verification({
+                check_url => $check->{href},
+            })->get;
+    }
+    "client verification emitted without exception";
+
+    is $another_context->{brand_name}, $request->brand_name, 'brand name is correct';
+    is $another_context->{language},   $request->language,   'language is correct';
+    is $another_context->{app_id},     $request->app_id,     'app id is correct';
 };
 
 $onfido_doc->unmock_all();

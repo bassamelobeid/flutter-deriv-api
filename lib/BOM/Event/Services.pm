@@ -126,5 +126,18 @@ sub redis_replicated_write {
         }
 }
 
+sub redis_replicated_read {
+    my ($self) = @_;
+
+    return $self->{redis_replicated_read} //= do {
+        my $redis_config = BOM::Config::Redis::redis_config('replicated', 'read');
+        $self->add_child(
+            my $service = Net::Async::Redis->new(
+                uri  => $redis_config->{uri},
+                auth => $redis_config->{password}));
+        $service;
+        }
+}
+
 1;
 

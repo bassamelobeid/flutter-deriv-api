@@ -79,6 +79,7 @@ use constant ONFIDO_LIMIT_TIMEOUT  => $ENV{ONFIDO_LIMIT_TIMEOUT}  // 24 * 60 * 6
 use constant ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY => 'ONFIDO_AUTHENTICATION_REQUEST_CHECK';
 use constant ONFIDO_REQUEST_COUNT_KEY               => 'ONFIDO_REQUEST_COUNT';
 use constant ONFIDO_CHECK_EXCEEDED_KEY              => 'ONFIDO_CHECK_EXCEEDED';
+use constant ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY    => 'ONFIDO::APPLICANT_CONTEXT::ID::';
 use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
 use constant ONFIDO_DOCUMENT_ID_PREFIX              => 'ONFIDO::DOCUMENT::ID::';
 use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX   => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
@@ -92,6 +93,9 @@ use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AG
 use constant ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX         => 'ONFIDO::DOB::MISMATCH::EMAIL::PER::USER::';
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
+
+# Redis TTLs
+use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;    # 10 days in seconds
 
 # Redis keys to stop sending new emails in a specific time
 use constant ONFIDO_STOP_SENDING_EMAIL_TIMEOUT => $ENV{ONFIDO_STOP_SENDING_EMAIL_TIMEOUT} // 6 * 60 * 60;
@@ -203,6 +207,10 @@ $loop->add(my $services = BOM::Event::Services->new);
 
     sub _redis_replicated_write {
         return $services->redis_replicated_write();
+    }
+
+    sub _redis_replicated_read {
+        return $services->redis_replicated_read();
     }
 }
 
@@ -402,6 +410,8 @@ async sub ready_for_authentication {
             die 'We exceeded our Onfido authentication check request per day';
         }
 
+        await _save_request_context($applicant_id);
+
         await Future->wait_any(
             $loop->timeout_future(after => VERIFICATION_TIMEOUT)->on_fail(sub { $log->errorf('Time out waiting for Onfido verfication.') }),
 
@@ -430,6 +440,8 @@ async sub client_verification {
             check_id     => $check_id,
             applicant_id => $applicant_id,
         );
+
+        await _restore_request($applicant_id);
 
         try {
             my $result = $check->result;
@@ -478,6 +490,7 @@ async sub client_verification {
             }
 
             await $redis_events_write->del($pending_key);
+            await _clear_cached_context($applicant_id);
 
             $log->debugf('Onfido pending key cleared');
 
@@ -813,6 +826,7 @@ async sub _sync_onfido_bo_document {
                 loginid => $client->loginid,
                 file_id => $file_id
             );
+
             await BOM::Event::Services::Track::document_upload({
                 loginid    => $client->loginid,
                 properties => $document_info
@@ -2394,6 +2408,80 @@ sub aml_client_status_update {
         exception_logged();
         return undef;
     }
+}
+
+=head2 _save_request_context
+
+Store current request context.
+
+=over
+
+=item * C<applicant_id> - required. used as access key
+
+=back
+
+=cut
+
+sub _save_request_context {
+    my $applicant_id = shift;
+
+    my $request     = request();
+    my $context_req = {
+        brand_name => $request->brand->name,
+        language   => $request->language,
+        app_id     => $request->app_id,
+    };
+
+    _redis_replicated_write()
+        ->setex(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id, TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER, encode_json_utf8($context_req));
+}
+
+=head2 _restore_request
+
+Restore request by stored context.
+
+=over
+
+=item * C<applicant_id> - required. used as access key
+
+=back
+
+=cut
+
+async sub _restore_request {
+    my $applicant_id = shift;
+
+    my $context_req = await _redis_replicated_read()->get(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+    if ($context_req) {
+        try {
+            my $context  = decode_json_utf8 $context_req;
+            my %req_args = map { $_ => $context->{$_} } grep { $context->{$_} } qw(brand_name language app_id);
+            my $new_req  = BOM::Platform::Context::Request->new(%req_args);
+            request($new_req);
+        }
+        catch {
+            my $e = $@;
+            $log->debugf("Failed in restoring cached context ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY::%s: %s", $applicant_id, $e);
+            exception_logged();
+        }
+    }
+}
+
+=head2 _clear_cached_context
+
+Clear stored context
+
+=over
+
+=item * C<applicant_id> - required. used as access key
+
+=back
+
+=cut
+
+sub _clear_cached_context {
+    my $applicant_id = shift;
+    _redis_replicated_write()->del(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
 }
 
 1;
