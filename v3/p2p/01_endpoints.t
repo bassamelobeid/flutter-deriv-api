@@ -343,6 +343,8 @@ subtest 'create order (buy)' => sub {
     is $order->{type}, 'buy', 'type';
     is $order->{payment_info}, $advert->{payment_info}, 'payment_info copied from ad';
     is $order->{contact_info}, $advert->{contact_info}, 'contact_info copied from ad';
+    is $order->{client_details}{id}, '', 'client id';
+    is $order->{client_details}{name}, '', 'client name';
 
     $resp = $t->await::p2p_order_list({
         p2p_order_list => 1,
