@@ -670,6 +670,7 @@ p2p_rpc p2p_order_confirm => sub {
         p2p_order_updated => {
             client_loginid => $client->loginid,
             order_id       => $order_id,
+            order_event    => 'confirmed',
         });
 
     return {
@@ -707,6 +708,7 @@ p2p_rpc p2p_order_cancel => sub {
         p2p_order_updated => {
             client_loginid => $client->loginid,
             order_id       => $order_id,
+            order_event    => 'cancelled',
         });
 
     return {
