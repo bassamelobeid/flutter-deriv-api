@@ -32,6 +32,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Database::Model::HandoffToken;
 use BOM::Config::Redis;
 use BOM::User::Client;
+use 5.010;
 
 =head1 subs_backoffice_clientdetails
 
@@ -560,7 +561,7 @@ sub build_client_warning_message {
                 . (uc $output_rows->{'section'})
                 . '</strong></td>'
                 . '<td><b>'
-                . $output_rows->{'reason'}
+                . _get_detailed_reason($output_rows->{'reason'})
                 . '</b></td>'
                 . '<td><b>'
                 . $output_rows->{'clerk'}
@@ -1504,6 +1505,25 @@ sub check_update_needed {
     return $client_checked->broker eq $client->broker
         if ($sync_scope{$key} eq 'lc');
     die "don't know the scope $sync_scope{$key}";
+}
+
+=head2 _get_detailed_resaon
+
+Maps reason code to a detailed reasoning message
+Returns the code back if there's no detailed version present
+
+=cut
+
+sub _get_detailed_reason {
+    my $status_reason = shift;
+
+    # Mapping of status reason code to detailed reason
+    # Uses state as it will not have to initialize it everytime this sub is called
+    state $status_reason_map = {
+        FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT => 'Client reached the fiat to crypto internal transfer limit',
+    };
+
+    return $status_reason_map->{$status_reason} // $status_reason;
 }
 
 1;
