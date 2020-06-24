@@ -1797,7 +1797,7 @@ sub _validate_transfer_between_accounts {
 
     # this check is only for svg and unauthenticated clients
     if (    $current_client->landing_company->short eq 'svg'
-        and not $current_client->fully_authenticated
+        and not $current_client->status->age_verification
         and $from_currency_type eq 'fiat'
         and $to_currency_type eq 'crypto')
     {
@@ -1821,10 +1821,10 @@ sub _validate_transfer_between_accounts {
 
         if ($is_over_transfer_limit) {
 
-            $current_client->status->set('allow_document_upload', 'system', 'Allow client to document upload');
+            $current_client->status->set('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
 
             my $message_to_client = localize(
-                'You have exceeded [_1] [_2] in cumulative transactions. To continue, you will need to verify your identity and address.',
+                'You have exceeded [_1] [_2] in cumulative transactions. To continue, you will need to verify your identity.',
                 formatnumber('amount', $from_currency, $limit_amount),
                 $from_currency
             );

@@ -147,12 +147,12 @@ subtest 'Fiat <-> Crypto account transfers' => sub {
     $amount_to_transfer = 100;
     $params->{args}->{amount} = $amount_to_transfer;
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    like $result->{error}->{message_to_client}, qr/To continue, you will need to verify your identity and address/,
+    like $result->{error}->{message_to_client}, qr/To continue, you will need to verify your identity/,
         'Correct error message for 200USD transfer limit';
 
     # Attempted transfer will trigger allow_document_upload status
     $client_fiat = BOM::User::Client->new({loginid => $client_fiat->loginid});
-    is($client_fiat->status->allow_document_upload->{reason}, 'Allow client to document upload', 'client is allowed to upload documents');
+    is($client_fiat->status->allow_document_upload->{reason}, 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT', 'client is allowed to upload documents');
 
     # Clear the status for further checks
     $client_fiat->status->clear_allow_document_upload;
@@ -165,7 +165,7 @@ subtest 'Fiat <-> Crypto account transfers' => sub {
 
     # Reloads client
     $client_fiat = BOM::User::Client->new({loginid => $client_fiat->loginid});
-    is($client_fiat->status->allow_document_upload->{reason}, 'Allow client to document upload', 'client is allowed to upload documents 2');
+    is($client_fiat->status->allow_document_upload->{reason}, 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT', 'client is allowed to upload documents 2');
 
 };
 
