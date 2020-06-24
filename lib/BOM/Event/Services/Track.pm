@@ -50,9 +50,18 @@ my %EVENT_PROPERTIES = (
             other_instruments_trading_frequency source_of_wealth)
     ],
     set_self_exclusion => [
-        qw(exclude_until max_30day_losses max_30day_turnover max_7day_losses max_7day_turnover max_balance max_deposit
+        qw(loginid exclude_until max_30day_losses max_30day_turnover max_7day_losses max_7day_turnover max_balance max_deposit
             max_deposit_end_date max_losses max_open_bets max_turnover session_duration_limit timeout_until )
     ],
+    p2p_order_created =>
+        [qw(loginid user_role order_type  order_id amount currency advertiser_nickname advertiser_user_id client_nickname client_user_id )],
+    p2p_order_buyer_has_paid =>
+        [qw(loginid user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname)],
+    p2p_order_seller_has_released =>
+        [qw(loginid user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname)],
+    p2p_order_cancelled => [qw(loginid  user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname )],
+    p2p_order_expired =>
+        [qw(loginid user_role order_type  order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname)],
 );
 
 my $loop = IO::Async::Loop->new;
@@ -414,6 +423,142 @@ sub set_financial_assessment {
     );
 }
 
+sub p2p_order_created {
+    my %args = @_;
+    my ($loginid, $order, $parties) = @args{qw(loginid order parties)};
+
+    return track_event(
+        event      => 'p2p_order_created',
+        loginid    => $parties->{advertiser}->loginid,
+        properties => {
+            loginid    => $parties->{advertiser}->loginid,
+            user_role  => 'advertiser',
+            order_type => $order->{type},
+            order_id   => $order->{id},
+            amount     => $order->{amount_display},
+            currency   => $order->{account_currency},
+
+            advertiser_nickname => $parties->{advertiser_nickname},
+            advertiser_user_id  => $parties->{advertiser}->{binary_user_id},
+            client_nickname     => $parties->{client_nickname} // '',
+            client_user_id      => $parties->{client}->{binary_user_id},
+        });
+}
+
+sub p2p_order_buyer_has_paid {
+    my %args = @_;
+    my ($loginid, $order, $parties) = @args{qw(loginid order parties)};
+
+    return track_event(
+        event      => 'p2p_order_buyer_has_paid',
+        loginid    => $parties->{seller}->loginid,
+        properties => {
+            loginid    => $parties->{seller}->loginid,
+            user_role  => 'seller',
+            order_type => $order->{type},
+            order_id   => $order->{id},
+            amount     => $order->{amount_display},
+            currency   => $order->{account_currency},
+
+            seller_user_id  => $parties->{seller}->{binary_user_id},
+            seller_nickname => $parties->{seller_nickname} // '',
+            buyer_user_id   => $parties->{buyer}->{binary_user_id},
+            buyer_nickname  => $parties->{buyer_nickname} // '',
+        });
+}
+
+sub p2p_order_seller_has_released {
+    my %args = @_;
+    my ($loginid, $order, $parties) = @args{qw(loginid order parties)};
+
+    return track_event(
+        event      => 'p2p_order_seller_has_released',
+        loginid    => $parties->{buyer}->loginid,
+        properties => {
+            loginid    => $parties->{buyer}->loginid,
+            user_role  => 'buyer',
+            order_type => $order->{type},
+            order_id   => $order->{id},
+            amount     => $order->{amount_display},
+            currency   => $order->{account_currency},
+
+            seller_user_id  => $parties->{seller}->{binary_user_id},
+            seller_nickname => $parties->{seller_nickname} // '',
+            buyer_user_id   => $parties->{buyer}->{binary_user_id},
+            buyer_nickname  => $parties->{buyer_nickname} // '',
+        });
+}
+
+sub p2p_order_cancelled {
+    my %args = @_;
+    my ($loginid, $order, $parties) = @args{qw(loginid order parties)};
+
+    return track_event(
+        event      => 'p2p_order_cancelled',
+        loginid    => $parties->{seller}->loginid,
+        properties => {
+            loginid    => $parties->{seller}->loginid,
+            user_role  => 'seller',
+            order_type => $order->{type},
+            order_id   => $order->{id},
+            amount     => $order->{amount_display},
+            currency   => $order->{account_currency},
+
+            seller_user_id  => $parties->{seller}->{binary_user_id},
+            seller_nickname => $parties->{seller_nickname} // '',
+            buyer_user_id   => $parties->{buyer}->{binary_user_id},
+            buyer_nickname  => $parties->{buyer_nickname} // '',
+        });
+}
+
+sub p2p_order_expired {
+    my %args = @_;
+    my ($loginid, $order, $parties) = @args{qw(loginid order parties)};
+
+    my $buyer_has_confirmed = ($order->{status} eq 'refunded') ? 0 : 1;
+
+    return Future->needs_all(
+        track_event(
+            event      => 'p2p_order_expired',
+            loginid    => $parties->{buyer}->loginid,
+            properties => {
+                loginid    => $parties->{buyer}->loginid,
+                user_role  => 'buyer',
+                order_type => $order->{type},
+                order_id   => $order->{id},
+                amount     => $order->{amount_display},
+                currency   => $order->{account_currency},
+
+                buyer_has_confirmed => $buyer_has_confirmed // 0,
+
+                buyer_user_id   => $parties->{buyer}->{binary_user_id},
+                buyer_nickname  => $parties->{buyer_nickname} // '',
+                seller_user_id  => $parties->{seller}->{binary_user_id},
+                seller_nickname => $parties->{seller_nickname} // '',
+            }
+        ),
+        track_event(
+            event      => 'p2p_order_expired',
+            loginid    => $parties->{seller}->loginid,
+            properties => {
+                loginid    => $parties->{seller}->loginid,
+                user_role  => 'seller',
+                order_type => $order->{type},
+                order_id   => $order->{id},
+                amount     => $order->{amount_display},
+                currency   => $order->{account_currency},
+
+                buyer_has_confirmed => $buyer_has_confirmed // 0,
+
+                buyer_user_id   => $parties->{buyer}->{binary_user_id},
+                buyer_nickname  => $parties->{buyer_nickname} // '',
+                seller_user_id  => $parties->{seller}->{binary_user_id},
+                seller_nickname => $parties->{seller_nickname} // '',
+            }
+        ),
+    );
+}
+
 =head2 track_event
 
 A public method that performs event validation and tracking by Segment B<track> and (if requested) B<identify> API calls.
@@ -576,7 +721,8 @@ Arguments:
 sub _create_customer {
     my ($client) = @_;
 
-    my @siblings = $client->user->clients(include_disabled => 1);
+    my @siblings = $client->user ? $client->user->clients(include_disabled => 1) : ($client);
+    my @mt5_loginids = $client->user ? $client->user->get_mt5_loginids : ();
 
     # Get list of user currencies
     my %currencies = ();
@@ -635,7 +781,7 @@ sub _create_customer {
             # Custom traits
             country      => Locale::Country::code2country($client->residence),
             currencies   => join(',', sort(keys %currencies)),
-            mt5_loginids => join(',', sort($client->user->get_mt5_loginids)),
+            mt5_loginids => join(',', sort(@mt5_loginids)),
         });
     # Will use this attributes as properties in some events like signup
     $customer->{currency} = $client->account ? $client->account->currency_code : '';

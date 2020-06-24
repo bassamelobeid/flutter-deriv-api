@@ -16,6 +16,7 @@ use List::Util qw(uniq);
 use Syntax::Keyword::Try;
 
 use BOM::Config::Runtime;
+use BOM::Platform::Context qw(request);
 
 binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
@@ -44,6 +45,11 @@ use constant POLLING_INTERVAL => 60;
 # For now keeping it here,
 # When decided to add new companies better to move it to dynamic configuration.
 use constant ACTIVE_LANDING_COMPANIES => ['svg'];
+
+# request brand name should be changed to 'deriv', otherwise the event will not be sent to Segment.
+request(BOM::Platform::Context::Request->new(
+    brand_name => 'deriv'
+));
 
 my @broker_codes = uniq map { LandingCompany::Registry::get($_)->broker_codes->@* } @{ACTIVE_LANDING_COMPANIES()};
 my $app_config = BOM::Config::Runtime->instance->app_config;

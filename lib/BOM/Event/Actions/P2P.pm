@@ -29,6 +29,8 @@ use BOM::Platform::Event::Emitter;
 use BOM::User::Utility;
 use BOM::Platform::Email qw(send_email);
 use BOM::User::Client;
+use BOM::Event::Services::Track;
+
 use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 use Date::Utility;
@@ -145,6 +147,8 @@ sub advert_updated {
 
 An order has been created against an advert.
 
+It returns a Future object.
+
 =cut
 
 sub order_created {
@@ -156,6 +160,8 @@ sub order_created {
         return 0;
     }
 
+    $data->{order_event} = 'created';
+
     # Currently we have the same processing for this events
     # but maybe in future we will want to separete them
     return order_updated($data);
@@ -165,6 +171,8 @@ sub order_created {
 
 An existing order has been updated. Typically these would be status updates.
 
+It returns a Future object.
+
 =cut
 
 sub order_updated {
@@ -172,10 +180,11 @@ sub order_updated {
     my @args = qw(client_loginid order_id);
 
     if (grep { !$data->{$_} } @args) {
-        $log->info('Fail to procces order_updated: Invalid event data', $data);
+        $log->info('Fail to process order_updated: Invalid event data', $data);
         return 0;
     }
-    my ($loginid, $order_id) = @{$data}{@args};
+
+    my ($loginid, $order_id, $order_event) = @{$data}{@args, 'order_event'};
 
     my $client = BOM::User::Client->new({loginid => $loginid});
 
@@ -184,11 +193,15 @@ sub order_updated {
 
     my $redis     = BOM::Config::Redis->redis_p2p_write();
     my $redis_key = _get_order_channel_name($client);
+    my $parties;
     for my $client_type (qw(advertiser_loginid client_loginid)) {
         my $cur_client = $client;
         if ($order->{$client_type} ne $client->loginid) {
             $cur_client = BOM::User::Client->new({loginid => $order->{$client_type}});
         }
+
+        # set $parties->{advertiser} and $parties->{client}
+        $parties->{$client_type =~ s/_loginid//r} = $cur_client;
 
         $order_response = $cur_client->_order_details([$order])->[0];
         $order_response->{$client_type} = $order->{$client_type};
@@ -197,7 +210,13 @@ sub order_updated {
 
     stats_inc('p2p.order.status.updated.count', {tags => ["status:$order->{status}"]});
 
-    return 1;
+    return _track_p2p_order_event(
+        loginid       => $loginid,
+        order         => $order,
+        order_details => $order_response,
+        order_event   => $order_event,
+        parties       => $parties,
+    );
 }
 
 =head2 order_expired
@@ -243,9 +262,61 @@ sub order_expired {
         p2p_order_updated => {
             client_loginid => $client->loginid,
             order_id       => $updated_order->{id},
+            order_event    => 'expired',
         });
 
     return 1;
+}
+
+=head2 _track_p2p_order_event
+
+Emits p2p order events to Segment for tracking. It takes the following list of named arguments:
+    
+=over
+
+=item * C<loginid> - required. representing the client who has fired the event.
+
+=item * C<order> - required. A hashref containing order raw data.
+
+=item *C<order_details> - required. A hashref containing processed order details.
+
+=item * C<order_event> - required. Order event name (like B<created>, B<buyer-confirmed>, etc).
+
+=item * C<parties> - required. A hashref containing parties involved in the p2p order, namely the advertiser, client, buyer and seller.
+
+=back
+
+It returns a Future object.
+
+=cut
+
+sub _track_p2p_order_event {
+    my %args = @_;
+    my ($loginid, $order, $order_details, $order_event, $parties) = @args{qw(loginid order order_details order_event parties)};
+
+    # set seller/buyer objects and nicknames based on order type
+    my ($seller, $buyer) = ($order->{type} eq 'sell') ? qw(client advertiser) : qw(advertiser client);
+    @{$parties}{qw(seller buyer)} = @{$parties}{$seller, $buyer};
+    @{$parties}{qw(seller_nickname buyer_nickname)} = @{$order}{"${seller}_name", "${buyer}_name"};
+    @{$parties}{qw(advertiser_nickname client_nickname)} = @{$order}{qw(advertiser_name client_name)};
+
+    # buyer and seller confirmations are two different events in event tracking
+    if ($order_event eq 'confirmed') {
+        $order_event = ($loginid eq $parties->{buyer}->loginid) ? 'buyer_has_paid' : 'seller_has_released';
+    }
+
+    my $method = BOM::Event::Services::Track->can("p2p_order_${order_event}");
+    unless ($method) {
+        # There are order events that are not tracked yet. Let's log them just for information.
+        $log->infof("p2p order event '%s' raised by client %s is not trackable", $order_event, $loginid) if $order_event;
+        return Future->done(1);
+    }
+
+    return $method->(
+        loginid => $loginid,
+        order   => $order_details,
+        parties => $parties,
+    );
 }
 
 sub _get_order_channel_name {
