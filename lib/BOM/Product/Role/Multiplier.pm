@@ -963,9 +963,12 @@ sub _validate_maximum_stake {
     );
 
     if ($self->_user_input_stake > $max_stake) {
+        my $display_name = $self->underlying->display_name;
         return {
             message           => 'maximum stake limit',
-            message_to_client => [$ERROR_MAPPING->{StakeLimitExceeded}, financialrounding('price', $self->currency, $max_stake)],
+            message_to_client => !$max_stake
+            ? [$ERROR_MAPPING->{TradingMultiplierIsDisabled}, $display_name]
+            : [$ERROR_MAPPING->{StakeLimitExceeded}, financialrounding('price', $self->currency, $max_stake)],
             details => {field => 'stake'},
         };
     }

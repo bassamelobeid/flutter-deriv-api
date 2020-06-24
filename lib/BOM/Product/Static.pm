@@ -110,6 +110,7 @@ my $config = {
         TradingHoursExpiry            => 'Contract must expire during trading hours.',
         TradingNotAvailable           => 'Trading is not available from [_1] to [_2].',
         TradingSuspendedSpecificHours => 'Trading on forex contracts with duration less than 5 hours is not available from [_1] to [_2]',
+        TradingMultiplierIsDisabled   => 'Trading multiplier options on [_1] is disabled. Please choose another market.',
         WaitForContractSettlement     => 'Please wait for contract settlement. The final settlement price may differ from the indicative price.',
         WrongAmountTypeOne            => 'Basis must be [_1] for this contract.',
         WrongAmountTypeTwo            => 'Basis can either be [_1] or [_2] for this contract.',
