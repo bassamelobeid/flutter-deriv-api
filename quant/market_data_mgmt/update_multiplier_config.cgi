@@ -18,6 +18,7 @@ use BOM::Backoffice::Request qw(request);
 use Syntax::Keyword::Try;
 use Scalar::Util qw(looks_like_number);
 use Digest::MD5 qw(md5_hex);
+use Text::Trim qw(trim);
 
 BOM::Backoffice::Sysinit::init();
 my $staff = BOM::Backoffice::Auth0::get_staffname();
@@ -159,8 +160,8 @@ if ($r->param('save_multiplier_market_or_underlying_limit')) {
         my $risk_profile = $r->param('risk_profile');
         die "invalid risk_profile" unless $risk_profile and $limit_defs->{$risk_profile};
 
-        my $market = $r->param('market');
-        my $symbol = $r->param('symbol');
+        my $market = trim($r->param('market'));
+        my $symbol = trim($r->param('symbol'));
 
         my $max_volume_positions = $r->param('max_volume_positions');
         die "max_volume_positions is required"     if !$max_volume_positions;
@@ -169,6 +170,9 @@ if ($r->param('save_multiplier_market_or_underlying_limit')) {
 
         die "market and symbol can not be both set"   if $market  && $symbol;
         die "market and symbol can not be both empty" if !$market && !$symbol;
+
+        die "comma seperated markets are not allowed" if $market =~ /,/;
+        die "comma seperated symbols are not allowed" if $symbol =~ /,/;
 
         if ($market) {
             $market_limits->{$market} = {
