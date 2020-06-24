@@ -1041,5 +1041,17 @@ subtest 'aml risk becomes high withdrawal_locked email CR landing company' => su
     ok($msg, "email received");
 };
 
-done_testing();
+subtest 'client becomes transfers_blocked when deposits from QIWI' => sub {
+    ok !$test_client->status->transfers_blocked, 'client is not transfers_blocked before deposit from QIWI';
 
+    BOM::Event::Actions::Client::payment_deposit({
+        loginid           => $test_client->loginid,
+        is_first_deposit  => 0,
+        payment_processor => 'Qiwi',
+    });
+
+    $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+    ok $test_client->status->transfers_blocked, 'transfers_blocked status is set correctly after deposit from QIWI';
+};
+
+done_testing();

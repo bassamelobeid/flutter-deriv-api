@@ -2064,10 +2064,6 @@ sub qualifying_payment_check {
 
 Event to handle deposit payment type.
 
-Currently, it only handles first deposit
-but in future, it can be extended to handle
-post deposit events
-
 =cut
 
 async sub payment_deposit {
@@ -2092,6 +2088,12 @@ async sub payment_deposit {
         }
 
         BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication;
+    }
+
+    my $payment_processor = $args->{payment_processor};
+    if ($payment_processor and uc($payment_processor) =~ m/QIWI/) {
+        $client->status->set('transfers_blocked', 'SYSTEM', 'Internal account transfers are blocked because of QIWI deposit');
+        $client->save;
     }
 
     return;
