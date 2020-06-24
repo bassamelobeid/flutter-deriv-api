@@ -46,7 +46,7 @@ sub p2p_advertiser_update {
             fixup => sub {
                 $_->do(
                     'UPDATE p2p.p2p_advertiser SET name = ?, is_approved = ?, is_listed = ?, default_advert_description = ?, 
-                        payment_info = ?, contact_info = ?, trade_band = ? WHERE id = ?',
+                        payment_info = ?, contact_info = ?, trade_band = COALESCE(?,trade_band) WHERE id = ?',
                     undef,
                     map { request->param($_) }
                         qw/advertiser_name is_approved is_listed default_advert_description payment_info contact_info trade_band advertiser_id/
