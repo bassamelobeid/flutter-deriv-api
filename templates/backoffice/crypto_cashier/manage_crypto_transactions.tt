@@ -167,6 +167,7 @@
                         <br/>
                         [% IF trx.status == 'LOCKED' %]
                         <form action="[% controller_url %]" onsubmit="return confirm('Do you really want to continue?');" method="POST">
+                            <input type="hidden" name="db_row_id" value="[% trx.id %]"/>
                             <input type="hidden" name="broker" value="[% broker %]"/>
                             <input type="hidden" name="address" value="[% trx.address %]"/>
                             <input type="hidden" name="currency" value="[% trx.currency_code %]"/>

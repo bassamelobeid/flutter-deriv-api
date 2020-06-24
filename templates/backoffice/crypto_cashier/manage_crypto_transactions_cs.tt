@@ -90,6 +90,7 @@
                 <td valign="top" align="center">
                     [% IF trx.status == 'NEW' %]
                         <form action="[% controller_url %]" method="POST">
+                            <input type="hidden" id="db_row_id" name="db_row_id" value="[% trx.id %]" />
                             <input type="hidden" id="address" name="address" value="[% trx.address %]" />
                             <button type="submit" name="action" value="prioritize">Prioritize Confirmation</button>
                         </form>

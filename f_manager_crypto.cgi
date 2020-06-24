@@ -274,8 +274,11 @@ if ($view_action eq 'withdrawals') {
         my $loginid          = request()->param('loginid');
         my $set_remark       = request()->param('set_remark');
         my $rejection_reason = request()->param('rejection_reason');
-        my $client           = BOM::User::Client->new({loginid => $loginid});
+        my $db_row_id        = request()->param('db_row_id');
 
+        code_exit_BO("Invalid request. DB row id is null, please ask the IT team to investigate it.") unless $db_row_id;
+
+        my $client = BOM::User::Client->new({loginid => $loginid});
         code_exit_BO("The client withdrawal is locked") if $action eq 'Verify' and $client->status->withdrawal_locked;
 
         if ($action eq 'Reject') {
@@ -291,18 +294,17 @@ if ($view_action eq 'withdrawals') {
         code_exit_BO($over_limit->get_mesg()) if $over_limit;
 
         my $error;
-        ($error) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_remark(?, ?, ?)', undef, $address, $currency, $set_remark) })
+        ($error) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_remark(?, ?)', undef, $db_row_id, $set_remark) })
             if $action eq 'Save';
         my $approvals_required = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_approvals_required;
         ($error) = $dbic->run(
             ping => sub {
-                $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?, ?::JSONB, ?, ?)',
-                    undef, $address, $currency, $approvals_required, $staff, ($set_remark ne '' ? $set_remark : undef));
+                $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?)',
+                    undef, $db_row_id, $approvals_required, $staff, ($set_remark ne '' ? $set_remark : undef));
             }) if $action eq 'Verify';
         ($error) = $dbic->run(
-            ping =>
-                sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?, ?)', undef, $address, $currency, $set_remark, $staff) }
-        ) if $action eq 'Reject';
+            ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $db_row_id, $set_remark, $staff) })
+            if $action eq 'Reject';
 
         code_exit_BO("ERROR: $error. Please check with someone from IT team before proceeding.")
             if ($error);
@@ -354,12 +356,7 @@ if ($view_action eq 'withdrawals') {
         if ($trxn->{balance} < $trxn->{amount}) {
             my ($error) = $dbic->run(
                 ping => sub {
-                    $_->selectrow_array(
-                        'SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?, ?)',
-                        undef, $trxn->{address},
-                        $trxn->{currency_code},
-                        'Insufficient balance', $staff
-                    );
+                    $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $trxn->{id}, 'Insufficient balance', $staff);
                 });
 
             code_exit_BO(sprintf("ERROR: %s. Failed to auto-reject a withdrawal. %d were rejected so far.", $error, $count))
