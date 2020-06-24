@@ -1616,7 +1616,20 @@ sub validate_common_account_details {
             _validate_dob($args->{date_of_birth}, $residence);
         }
 
-        die "NeedBothSecret\n" if (($args->{secret_answer} // $client->secret_answer) xor($args->{secret_question} // $client->secret_question));
+        ## The secret question can start out as an empty string, but cannot be changed to empty
+        die "Secret question cannot be set to empty\n"
+            if (defined $args->{secret_question} && !$args->{secret_question} && length($client->secret_question));
+
+        ## Likewise, it is possible for the secret_answer to be blank
+        die "Secret answer cannot be set to empty\n"
+            if (defined $args->{secret_answer} && !$args->{secret_answer} && length($client->secret_answer));
+
+        ## Question must always come with an answer
+        ## Due to the way we decrypt and send the answer to backoffice,
+        ## it is common that secret_answer is set in $args but not the secret_question,
+        ## so we do not want to check for that combination
+        die "NeedBothSecret\n"
+            if (defined $args->{secret_question} && !($args->{secret_answer} // ''));
 
         die "InvalidPlaceOfBirth\n" if ($args->{place_of_birth} and not Locale::Country::code2country($args->{place_of_birth}));
 
