@@ -1009,6 +1009,130 @@ subtest 'Virtual account types - GB residence' => sub {
 
 };
 
+my %lc_company_specific_details = (
+    CR => {
+        email_prefix => "vrtc+cr2",
+        residence    => "id"
+    },
+    MF => {
+        email_prefix => "vrtc+mf2",
+        residence    => "de"
+    },
+    MLT => {
+        email_prefix => "vrtc+mlt2",
+        residence    => "at"
+    },
+    MX => {
+        email_prefix => "vrtc+mx2",
+        residence    => "gb"
+    });
+my ($email, $user, $vr_client, $client, $token_vr, $email_prefix, $residence);
+foreach my $broker_code (keys %lc_company_specific_details) {
+    subtest $broker_code. ': No real account enabled' => sub {
+        $email_prefix = $lc_company_specific_details{$broker_code}{email_prefix};
+        $residence    = $lc_company_specific_details{$broker_code}{residence};
+        $email        = $email_prefix . '@binary.com';
+        $user         = BOM::User->create(
+            email    => $email,
+            password => 'jskjd8292922',
+        );
+        $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code    => 'VRTC',
+            email          => $email,
+            residence      => $residence,
+            binary_user_id => $user->id
+        });
+
+        $user->add_client($vr_client);
+        $token_vr = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
+        $vr_client->set_default_account('USD');
+
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code    => $broker_code,
+            email          => $email,
+            residence      => $residence,
+            binary_user_id => $user->id
+        });
+        $user->add_client($client);
+        $client->status->set('disabled', 'system', 'test');
+        $client->save;
+        ok $client->status->disabled, "real account is disabled";
+
+        my $method = 'mt5_new_account';
+        my $params = {
+            language => 'EN',
+            token    => $token_vr,
+            args     => {
+                mainPassword   => 'Abc1234d',
+                investPassword => 'Abcd12345e',
+            },
+        };
+        my $error_code = 'RealAccountMissing';
+        my $message    = " MT5 account creation is not allowed from a virtual account since $broker_code account is ";
+        create_mt5_account->(
+            $c,
+            $token_vr,
+            $vr_client,
+            {
+                account_type     => 'financial',
+                mt5_account_type => 'standard'
+            },
+            $error_code,
+            'Real financial ' . $message . ' disabled'
+        );
+
+        #only CR can create gaming & financial advance account
+        if ($broker_code eq 'CR') {
+            create_mt5_account->($c, $token_vr, $vr_client, {account_type => 'gaming'}, $error_code, 'Real financial ' . $message . ' disabled');
+            create_mt5_account->(
+                $c,
+                $token_vr,
+                $vr_client,
+                {
+                    account_type     => 'financial',
+                    mt5_account_type => 'advanced'
+                },
+                $error_code,
+                'Real financial advanced ' . $message . ' disabled'
+            );
+        }
+        $client->status->clear_disabled;
+        $client->save;
+        $client->status->set('duplicate_account', 'system', 'test');
+        $client->save;
+        ok $client->status->duplicate_account, "real account is duplicate_account";
+        create_mt5_account->(
+            $c,
+            $token_vr,
+            $vr_client,
+            {
+                account_type     => 'financial',
+                mt5_account_type => 'standard'
+            },
+            $error_code,
+            'Real financial ' . $message . ' duplicate'
+        );
+
+        #only CR can create gaming & financial advance account
+        if ($broker_code eq 'CR') {
+            create_mt5_account->($c, $token_vr, $vr_client, {account_type => 'gaming'},, $error_code, 'Real financial ' . $message . ' disabled');
+            create_mt5_account->(
+                $c,
+                $token_vr,
+                $vr_client,
+                {
+                    account_type     => 'financial',
+                    mt5_account_type => 'advanced'
+                },
+                $error_code,
+                'Real financial advanced ' . $message . ' disabled'
+            );
+        }
+        $client->status->clear_duplicate_account;
+        $client->save;
+    };
+}
+
 sub create_mt5_account {
     my ($c, $token, $client, $args, $expected_error, $error_message) = @_;
 

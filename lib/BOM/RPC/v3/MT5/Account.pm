@@ -267,6 +267,8 @@ async_rpc "mt5_new_account",
     # in the top-right corner, so check if this user has a qualifying account and switch if they do.
     if ($company_matching_required and $client->landing_company->short ne $binary_company_name) {
         my @clients = $user->clients_for_landing_company($binary_company_name);
+        # remove disabled/duplicate accounts to make sure that atleast one Real account is active
+        @clients = grep { !$_->status->disabled && !$_->status->duplicate_account } @clients;
         $client = (@clients > 0) ? $clients[0] : undef;
     }
 
