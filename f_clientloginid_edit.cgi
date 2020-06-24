@@ -584,7 +584,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         $client->promo_code_status($input{promo_code_status});
     }
 
-# Prior to duplicate check and storing, strip off trailing and leading whitespace
+    # Prior to duplicate check and storing, strip off trailing and leading whitespace
     $error = $client->format_input_details(\%input)
         || $client->validate_common_account_details({
             secret_answer => $secret_answer // '',
@@ -681,7 +681,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         my @simple_updates = qw/last_name
             first_name
             phone
-            secret_question
             citizen
             address_1
             address_2
@@ -696,6 +695,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             && update_needed($client, $cli, $_, \%clients_updated)
             && $cli->$_($input{$_})
             for @simple_updates;
+
+        my $secret_question = trim($input{secret_question});
+        if (defined $secret_question and update_needed($client, $cli, $_, \%clients_updated)) {
+            $cli->secret_question($secret_question);
+        }
 
         my $tax_residence;
         if (exists $input{tax_residence}) {
