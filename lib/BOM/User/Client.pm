@@ -2773,6 +2773,10 @@ sub _order_details {
                 id   => $order->{advertiser_id},
                 name => $order->{advertiser_name},
             },
+            client_details => {
+                id   => $order->{client_id}   // '',
+                name => $order->{client_name} // '',
+            },
             advert_details => {
                 id             => $order->{advert_id},
                 description    => $order->{advert_description} // '',
@@ -2780,7 +2784,6 @@ sub _order_details {
                 payment_method => $order->{advert_payment_method},
             },
         };
-
         push @results, $result;
     }
 
