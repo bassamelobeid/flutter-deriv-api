@@ -1741,7 +1741,7 @@ async sub _upload_documents {
                 applicant_id    => $applicant->id,
                 data            => $file_data,
                 filename        => $document_entry->{file_name},
-                issuing_country => uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3')),
+                issuing_country => uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3') // ''),
                 side            => $side,
                 type            => $type,
             );
