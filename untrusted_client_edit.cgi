@@ -19,7 +19,7 @@ BrokerPresentation("UNTRUSTED/DISABLE CLIENT");
 my $broker = request()->broker_code;
 my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 
-my $clientID           = uc request()->param('login_id');
+my $clientID           = uc(request()->param('login_id') // '');
 my $action             = request()->param('untrusted_action');
 my $removed            = request()->param('removed');
 my $client_status_type = request()->param('untrusted_action_type');
@@ -42,6 +42,8 @@ local $\ = "\n";
 my ($printline, @invalid_logins);
 
 Bar("UNTRUSTED/DISABLE CLIENT");
+
+$clientID || code_exit_BO('Login id is mandatory.');
 
 LOGIN:
 foreach my $login_id (split(/\s+/, $clientID)) {
