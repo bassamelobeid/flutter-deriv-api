@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::MockModule;
 
 use FindBin qw/ $Bin /;
 use lib "$Bin/lib";
@@ -60,21 +61,21 @@ subtest 'Wrong trace id' => sub {
 };
 
 subtest 'Duplicate transaction' => sub {
-    my $trace_id        = 987;
-    my $txn_id = 567876;
+    my $trace_id = 987;
+    my $txn_id   = 567876;
 
     deposit(
-        loginid  => $loginid,
-        trace_id => $trace_id,
+        loginid        => $loginid,
+        trace_id       => $trace_id,
         transaction_id => $txn_id
     );
 
     my $current_balance = balance $loginid;
 
     my $req = deposit(
-        loginid  => $loginid,
-        trace_id => $trace_id,
-        transaction_id=>$txn_id
+        loginid        => $loginid,
+        trace_id       => $trace_id,
+        transaction_id => $txn_id
     );
 
     is $req->code, 400, 'Correct bad request status code';
@@ -82,4 +83,29 @@ subtest 'Duplicate transaction' => sub {
 
     is balance($loginid), $current_balance, 'Correct unchanged balance';
 };
+
+subtest 'emit payment_deposit' => sub {
+    my %last_event;
+    my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    $mock_events->mock(
+        'emit',
+        sub {
+            my ($type, $data) = @_;
+            %last_event = (
+                type => $type,
+                data => $data
+            );
+        });
+
+    my $req = deposit(
+        loginid           => $loginid,
+        trace_id          => 1235,
+        payment_processor => 'QIWI',
+    );
+    is $req->code, 201, 'Correct created status code';
+
+    is $last_event{type}, 'payment_deposit', 'event payment_deposit emitted';
+    is $last_event{data}->{payment_processor}, 'QIWI', 'event has correct payment_processor';
+};
+
 done_testing();

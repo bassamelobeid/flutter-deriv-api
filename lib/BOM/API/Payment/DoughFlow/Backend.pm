@@ -229,8 +229,9 @@ sub write_transaction_line {
         BOM::Platform::Event::Emitter::emit(
             'payment_deposit',
             {
-                loginid          => $client->loginid,
-                is_first_deposit => $fdp
+                loginid           => $client->loginid,
+                is_first_deposit  => $fdp,
+                payment_processor => $payment_processor,
             }) if $trx;
 
         # Social responsibility checks for MLT/MX clients
