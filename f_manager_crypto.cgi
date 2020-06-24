@@ -123,6 +123,8 @@ my $currency_wrapper = BOM::CTC::Currency->new(
     currency_code => $currency,
     broker_code   => $broker
 );
+
+my $main_address           = $currency_wrapper->account_config->{account}->{address};
 my $blockchain_address     = $currency_wrapper->get_address_blockchain_url();
 my $blockchain_transaction = $currency_wrapper->get_transaction_blockchain_url();
 code_exit_BO('No currency urls for ' . $currency) unless $blockchain_transaction and $blockchain_address;
@@ -239,6 +241,7 @@ $tt2->process(
         show_one_authorised       => $show_one_authorised,
         staff                     => $staff,
         pending_withdrawal_amount => $pending_withdrawal_amount,
+        main_address              => $main_address,
     }) || die $tt2->error();
 
 # Exchange rate should be populated according to supported cryptocurrencies.
@@ -519,6 +522,7 @@ EOF
     print
         '<p style="color:red"><strong>WARNING! An address has not been found. Please contact Devops to obtain a new address to update this in the configuration.</strong></p>'
         unless $new_address;
+
 } elsif ($view_action eq 'prioritize_confirmation') {
     my $prioritize_address = request()->param('prioritize_address');
     prioritize_address($currency_wrapper, $prioritize_address);

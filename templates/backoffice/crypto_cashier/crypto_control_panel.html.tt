@@ -1,6 +1,6 @@
 <br>
 <form action="[% controller_url %]" method="POST">
-    <select name="currency">
+    <select name="currency" id="ddl_crypto_currencies">
         [% FOR crypto IN all_crypto %]
             <option value="[% crypto.currency %]"[% IF currency == crypto.currency %] selected="selected"[% END %]>[% crypto.name %]</option>
         [% END %]
@@ -12,6 +12,11 @@
         <button type="submit" name="view_action" value="new_deposit_address">Get New Deposit Address</button>
     <br>
     <br>
+<!-- Main Address -->
+    [% currency %] main address: <strong>[% main_address %]</strong>
+    <br>
+    <br>
+<!-- Exchange Rate -->
     Exchange Rate: [% currency %]/USD: <strong>[% exchange_rate %]</strong>
     <br>
     <br>
@@ -62,5 +67,10 @@
 <script type="text/javascript" language="javascript">
   \$(document).ready(function() {
       \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+  });
+  document.getElementById('ddl_crypto_currencies').addEventListener('change', e => {
+      var search_params = new URLSearchParams(window.location.search);
+      search_params.set('currency', e.target.value);
+      window.location.search = search_params.toString();
   });
 </script>
