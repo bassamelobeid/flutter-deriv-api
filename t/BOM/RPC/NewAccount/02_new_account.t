@@ -26,6 +26,8 @@ use BOM::Database::Model::OAuth;
 use BOM::Platform::Token::API;
 use utf8;
 
+use IO::Pipe;
+
 my $app = BOM::Database::Model::OAuth->new->create_app({
     name    => 'test',
     scopes  => '{read,admin,trade,payments}',
@@ -942,6 +944,79 @@ subtest $method => sub {
         ok $cl->non_pep_declaration_time,
             'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args (test create_account call)';
     };
+};
+
+$method = 'new_account_real';
+
+subtest 'Duplicate accounts are not created in race condition' => sub {
+
+    $email                               = 'new_email' . rand(999) . '@binary.com';
+    $params->{args}->{client_password}   = 'verylongandhardpasswordDDD1!';
+    $params->{args}->{residence}         = 'id';
+    $params->{args}->{verification_code} = BOM::Platform::Token->new(
+        email       => $email,
+        created_for => 'account_opening'
+    )->token;
+
+    $rpc_ct->call_ok('new_account_virtual', $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
+        ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
+        ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+
+    my $user = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}})->user;
+    my $num_clients = $user->clients;
+
+    my $client_cr = {
+        first_name    => 'James' . rand(999),
+        last_name     => 'Brown' . rand(999),
+        date_of_birth => '1960-01-02',
+        phone         => sprintf("+792720756%02d", rand(99)),
+    };
+    @{$params->{args}}{keys %$client_cr} = values %$client_cr;
+    $params->{token} = $rpc_ct->result->{oauth_token};
+    $params->{args}->{currency} = 'USD';
+
+    is $num_clients, 1, 'number of clients before forking is 1';
+
+    my $mocked_system = Test::MockModule->new('BOM::Config');
+    $mocked_system->mock('on_production', sub { 1 });
+
+    my $pipe = IO::Pipe->new;
+
+    my $pid_sub = fork // die "Couldn't fork for testing race condition in duplicate accounts";
+
+    my $result = $rpc_ct->call_ok($method, $params)->{result};
+
+    my $result_child;
+
+    if ($pid_sub != 0) {    # self
+        $pipe->reader;
+        waitpid $pid_sub, 0;
+        while (<$pipe>) {
+            $result_child = $_;
+        }
+    } else {                # child
+        $pipe->writer;
+        if ($result->{error}) {
+            print $pipe $result->{error}->{code};
+        } else {
+            print $pipe $result->{client_id};
+        }
+        close $pipe;
+        exit;
+    }
+
+    my ($new_loginid, $error_code);
+
+    if ($result->{error}) {
+        $new_loginid = $result_child;
+        $error_code  = $result->{error}->{code};
+    } else {
+        $new_loginid = $result->{client_id};
+        $error_code  = $result_child;
+    }
+
+    ok $new_loginid =~ /^CR\d+$/, 'first account created successfully in race condition';
+    is $error_code, 'RateLimitExceeded', 'second account creation face error RateLimitExceeded in race condition';
 };
 
 done_testing();

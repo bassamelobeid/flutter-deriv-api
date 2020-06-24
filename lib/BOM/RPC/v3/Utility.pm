@@ -159,6 +159,12 @@ sub permission_error {
             message_to_client => localize('Permission denied.')});
 }
 
+sub rate_limit_error {
+    return create_error({
+            code              => 'RateLimitExceeded',
+            message_to_client => localize('Rate Limit Exceeded.')});
+}
+
 sub invalid_email {
     return create_error({
             code              => 'InvalidEmail',

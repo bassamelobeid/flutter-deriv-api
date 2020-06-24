@@ -28,6 +28,7 @@ use BOM::Platform::Account::Real::default;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
+use BOM::Platform::Redis;
 use BOM::User;
 use BOM::Config;
 use BOM::Platform::Context qw (request);
@@ -339,13 +340,23 @@ rpc new_account_real => sub {
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
 
     return $val if $val;
-    my $acc = BOM::Platform::Account::Real::default::create_account({
-        ip => $params->{client_ip} // '',
-        country => uc($client->residence // ''),
-        from_client => $client,
-        user        => $user,
-        details     => $details_ref->{details},
-    });
+
+    my $lock = BOM::Platform::Redis::acquire_lock($client->user_id, 10);
+    return BOM::RPC::v3::Utility::rate_limit_error() if not $lock;
+
+    my $acc;
+    try {
+        $acc = BOM::Platform::Account::Real::default::create_account({
+            ip => $params->{client_ip} // '',
+            country => uc($client->residence // ''),
+            from_client => $client,
+            user        => $user,
+            details     => $details_ref->{details},
+        });
+    }
+    finally {
+        BOM::Platform::Redis::release_lock($client->user_id);
+    }
 
     if (my $err_code = $acc->{error}) {
         return BOM::RPC::v3::Utility::create_error({
