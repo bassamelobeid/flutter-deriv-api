@@ -215,7 +215,7 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
         });
 
     $client_cr->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
-     $client_cr2->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
+    $client_cr2->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
 
     # financial assessment complete, unauthenticated
     my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
@@ -247,7 +247,7 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     $client_cr->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
     update_financial_assessment($user, $data);
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
-    ok !$client_cr->status->withdrawal_locked, 'withdrawal lock is auto-removed by financial_assessment';
+    ok !$client_cr->status->withdrawal_locked,  'withdrawal lock is auto-removed by financial_assessment';
     ok !$client_cr2->status->withdrawal_locked, 'withdrawal lock is auto-removed by financial_assessment';
     undef @called_for_clients;
 
@@ -255,7 +255,7 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     $client_cr->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
     $client_cr2->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
     $client_cr->update_status_after_auth_fa();
-    ok !$client_cr->status->withdrawal_locked, 'withdrawal lock is auto-removed by calling update_status_after_auth_fa';
+    ok !$client_cr->status->withdrawal_locked,  'withdrawal lock is auto-removed by calling update_status_after_auth_fa';
     ok !$client_cr2->status->withdrawal_locked, 'withdrawal lock is auto-removed by financial_assessment';
     undef @called_for_clients;
 

@@ -8,6 +8,8 @@ use Test::Deep qw(cmp_deeply);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::MT5::User::Async;
 use Syntax::Keyword::Try;
+use BOM::Config::Runtime;
+use Scope::Guard qw(guard);
 
 my $FAILCOUNT_KEY     = 'system.mt5.connection_fail_count';
 my $LOCK_KEY          = 'system.mt5.connection_status';
@@ -86,6 +88,57 @@ subtest 'MT5 Timeout logic handle' => sub {
     # Flags should be reset.
     is $redis->get($LOCK_KEY), 0, 'lock has been reset';
 
+};
+
+subtest 'MT5 suspended' => sub {
+    my $suspend_all_origin         = BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all;
+    my $suspend_deposits_origin    = BOM::Config::Runtime->instance->app_config->system->mt5->suspend->deposits;
+    my $suspend_withdrawals_origin = BOM::Config::Runtime->instance->app_config->system->mt5->suspend->withdrawals;
+    my $guard = guard {
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all($suspend_all_origin);
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->deposits($suspend_deposits_origin);
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->withdrawals($suspend_withdrawals_origin);
+    };
+
+    my @cmds = qw(UserDepositChange UserAdd UserGet UserUpdate UserPasswordCheck PositionGetTotal GroupGet UserLogins);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(1);
+    my $deposit_cmd = shift @cmds;
+    for my $cmd (@cmds) {
+        my $fail_result = BOM::MT5::User::Async::_is_suspended($cmd, {}) // {};
+        is($fail_result, 'MT5APISuspendedError', "mt5 $cmd suspeneded when set all as true");
+    }
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(0);
+    for my $cmd (@cmds) {
+        my $fail_result = BOM::MT5::User::Async::_is_suspended($cmd, {});
+        ok(!$fail_result, "mt5 $cmd not suspeneded when not set suspended");
+    }
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->deposits(1);
+    for my $cmd (@cmds) {
+        my $fail_result = BOM::MT5::User::Async::_is_suspended($cmd, {});
+        ok(!$fail_result, "mt5 $cmd not suspeneded when only set deposit suspended");
+    }
+    my $fail_result = BOM::MT5::User::Async::_is_suspended($deposit_cmd, {new_deposit => 1});
+    is($fail_result, 'MT5DepositSuspended', 'deposit suspended when set deposit suspended');
+    $fail_result = BOM::MT5::User::Async::_is_suspended($deposit_cmd, {new_deposit => -1});
+    ok(!$fail_result, 'withdrawals not suspended when set deposit suspended');
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->deposits(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->withdrawals(1);
+    for my $cmd (@cmds) {
+        my $fail_result = BOM::MT5::User::Async::_is_suspended($cmd, {});
+        ok(!$fail_result, "mt5 $cmd not suspeneded when only set withdrawals suspended");
+    }
+    $fail_result = BOM::MT5::User::Async::_is_suspended($deposit_cmd, {new_deposit => 1});
+    ok(!$fail_result, 'deposit not suspended when set withdrawals suspended');
+    $fail_result = BOM::MT5::User::Async::_is_suspended($deposit_cmd, {new_deposit => -1});
+    is($fail_result, 'MT5WithdrawalSuspended', 'withdrawals suspended when set withdrawals suspended');
+
+    $fail_result = {};
+    BOM::MT5::User::Async::_invoke_mt5($deposit_cmd, {new_deposit => -1})->else(sub { $fail_result = shift; return Future->done })->get;
+    is(
+        $fail_result->{code},
+        BOM::MT5::User::Async::_is_suspended($deposit_cmd, {new_deposit => -1}),
+        '_invoke_mt5 will fail with the value of  _is_suspended when _is_suspended return true'
+    );
 };
 
 done_testing;

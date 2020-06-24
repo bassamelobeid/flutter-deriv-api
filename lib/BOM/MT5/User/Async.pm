@@ -134,8 +134,60 @@ sub _prepare_params {
     return \%param;
 }
 
+=head2 _is_suspended
+
+Test whether the current cmd is suspended
+
+=over 4
+
+=item * C<cmd>
+
+=item * C<param> - the param of cmd. Used to tell it is deposit or withdrawal when cmd is  C<UserDepositChange>
+
+=back
+
+Returns the code string if suspended, C<undef> otherwise.
+
+=cut
+
+# The error code here is extracted from BOM::RPC::v3::MT5::Errors
+sub _is_suspended {
+    my ($cmd, $param) = @_;
+    my $app_config = BOM::Config::Runtime->instance->app_config->system->mt5->suspend;
+    return 'MT5APISuspendedError' if $app_config->all;
+    return undef if $cmd ne 'UserDepositChange';
+    if ($param->{new_deposit} > 0) {
+        return 'MT5DepositSuspended' if $app_config->deposits;
+    } else {
+        return 'MT5WithdrawalSuspended' if $app_config->withdrawals;
+    }
+    return undef;
+}
+
+=head2 _invoke_mt5
+
+Call mt5 api and return result wrapped in C<Future> object
+
+=over 4
+
+=item * C<cmd> - MT5 cmd
+
+=item * C<param> - The params in hashref used by cmd
+
+=back
+
+Returns Future object. Future object will be done if succeed, fail otherwise.
+
+=cut
+
 sub _invoke_mt5 {
     my ($cmd, $param) = @_;
+    if (my $suspended_code = _is_suspended($cmd, $param)) {
+        return Future->fail(
+            _future_error({
+                    code => $suspended_code,
+                }));
+    }
 
     my $in = encode_json(_prepare_params(%$param));
 
