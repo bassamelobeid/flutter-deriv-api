@@ -2867,6 +2867,8 @@ sub validate_payment {
     die "Payment currency [$currency] not client currency [$acccur].\n"
         if $currency ne $acccur;
 
+    die "Transfers are not allowed for these accounts.\n" if ($args{internal_transfer} and $self->status->transfers_blocked);
+
     if ($action_type eq 'deposit') {
 
         if (    $self->landing_company->short eq 'malta'
