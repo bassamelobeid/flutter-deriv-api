@@ -224,6 +224,10 @@ subtest 'multi currency transfers' => sub {
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error->error_message_is('Your account is restricted to withdrawals only.');
         $client_eur->status->clear_unwelcome;
 
+        $client_eur->status->set('transfers_blocked', 'system', 'transfers is blocked because of qiwi');
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error->error_message_is('Transfers are not allowed for these accounts.');
+        $client_eur->status->clear_transfers_blocked;
+
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->EUR with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->EUR with current rate - has transaction id');
         is financialrounding('amount', 'EUR', $client_eur->account->balance),

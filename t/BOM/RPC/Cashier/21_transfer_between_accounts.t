@@ -169,6 +169,73 @@ subtest 'Fiat <-> Crypto account transfers' => sub {
 
 };
 
+subtest 'In status transfers_blocked Fiat <-> Crypto transfers are not allowed' => sub {
+
+    my $email       = 'new_email' . rand(999) . '@binary.com';
+    my $client_fiat = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+    $client_fiat->set_default_account('USD');
+
+    $client_fiat->status->set('transfers_blocked', 'TEST', 'QIWI does not want funds to/from crypto');
+
+    my $client_crypto = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+    $client_crypto->set_default_account('BTC');
+
+    my $user = BOM::User->create(
+        email          => $email,
+        password       => BOM::User::Password::hashpw('hello'),
+        email_verified => 1,
+    );
+
+    for ($client_fiat, $client_crypto) {
+        $user->add_client($_);
+    }
+
+    $client_fiat->payment_free_gift(
+        currency => 'USD',
+        amount   => 10000,
+        remark   => 'free gift',
+    );
+
+    my $amount_to_transfer = 199;
+    $params->{token}      = BOM::Platform::Token::API->new->create_token($client_fiat->loginid, 'test token');
+    $params->{token_type} = 'oauth_token';
+    $params->{args}       = {
+        account_from => $client_fiat->loginid,
+        account_to   => $client_crypto->loginid,
+        currency     => 'USD',
+        amount       => $amount_to_transfer
+    };
+
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is('Transfers are not allowed for these accounts.',
+        'Correct error message when transfer from fiat to crypto when transfers is blocked');
+
+    $client_crypto->payment_free_gift(
+        currency => 'BTC',
+        amount   => 1,
+        remark   => 'free gift',
+    );
+
+    $amount_to_transfer = 0.2;
+    $params->{token}      = BOM::Platform::Token::API->new->create_token($client_crypto->loginid, 'test token');
+    $params->{token_type} = 'oauth_token';
+    $params->{args}       = {
+        account_from => $client_crypto->loginid,
+        account_to   => $client_fiat->loginid,
+        currency     => 'BTC',
+        amount       => $amount_to_transfer
+    };
+
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is('Transfers are not allowed for these accounts.',
+        'Correct error message when transfer from cryoto to fiat when transfers is blocked');
+
+};
+
 subtest 'Virtual accounts' => sub {
 
     my $email1     = 'new_email' . rand(999) . '@binary.com';

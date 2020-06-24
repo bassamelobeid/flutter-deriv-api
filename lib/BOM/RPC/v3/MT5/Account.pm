@@ -1271,6 +1271,14 @@ async_rpc "mt5_withdrawal",
     return create_error_future('Experimental')
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
 
+    my $to_client = BOM::User::Client->new({loginid => $to_loginid});
+
+    return create_error_future(
+        'TransfersBlocked',
+        {
+            override_code => $error_code,
+            message       => localize("Transfers are not allowed for these accounts.")}) if $to_client->status->transfers_blocked;
+
     return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code, $currency_check)->then(
         sub {
             my ($response) = @_;
@@ -1323,8 +1331,6 @@ async_rpc "mt5_withdrawal",
                 sub {
                     my ($status) = @_;
                     return create_error_future($status->{code}) if (ref $status eq 'HASH' and $status->{error});
-
-                    my $to_client = BOM::User::Client->new({loginid => $to_loginid});
 
                     # TODO(leonerd): This try block returns a Future in either case.
                     #   We might want to consider using Future->try somehow instead.

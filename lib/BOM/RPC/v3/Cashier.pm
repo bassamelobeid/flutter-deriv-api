@@ -1357,6 +1357,8 @@ rpc transfer_between_accounts => sub {
     return _transfer_between_accounts_error(localize('Transfer between two MT5 accounts is not allowed.'))
         if ($is_mt5_loginid_from and $is_mt5_loginid_to);
 
+    my $transfers_blocked_err = localize("Transfers are not allowed for these accounts.");
+
     # this transfer involves an MT5 account
     if ($is_mt5_loginid_from or $is_mt5_loginid_to) {
         delete @{$params->{args}}{qw/account_from account_to/};
@@ -1553,10 +1555,9 @@ rpc transfer_between_accounts => sub {
             }
         }
 
-        return $error_audit_sub->(
-            "$err_msg validate_payment failed for $loginid_from [$err]",
-            (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : ''
-        );
+        my $msg = (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : '';
+        $msg = $transfers_blocked_err if $err =~ m/transfers are not allowed/i;
+        return $error_audit_sub->("validate_payment failed for $loginid_from [$err]", $msg);
     }
 
     try {
@@ -1571,10 +1572,10 @@ rpc transfer_between_accounts => sub {
         log_exception();
 
         my $msg = localize("Transfer validation failed on [_1].", $loginid_to);
-        if ($err =~ /Balance would exceed ([\S]+) limit/) {
-            $msg = localize("Your account balance will exceed set limits. Please specify a lower amount.");
-        }
-        return $error_audit_sub->("$err_msg validate_payment failed for $loginid_to [$err]", $msg);
+        $msg = localize("Your account balance will exceed set limits. Please specify a lower amount.")
+            if ($err =~ /Balance would exceed ([\S]+) limit/);
+        $msg = $transfers_blocked_err if $err =~ m/transfers are not allowed/i;
+        return $error_audit_sub->("validate_payment failed for $loginid_to [$err]", $msg);
     }
     my $response;
     try {
