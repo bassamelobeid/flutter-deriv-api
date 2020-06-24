@@ -82,15 +82,6 @@ my $my_accept = sub {
 
     return unless $self->{active};
 
-    unless ($timer_set) {
-        $timer_set = 1;
-        $self->reactor->recurring(
-            10,
-            sub {
-                stats_histogram 'bom_websocket_api.ws_connection_count', $active_connections;
-            });
-    }
-
     weaken $self;
     my $acc = sub {
         return 0 unless $self;
