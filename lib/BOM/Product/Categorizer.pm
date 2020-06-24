@@ -466,7 +466,8 @@ sub _initialize_other_parameters {
         my $minimum_multiplier;
         $minimum_multiplier =
             $minimum_multiplier_config->{$params->{underlying}->symbol} / $minimum_multiplier_config->{$params->{payout_currency_type}}
-            if $params->{category}->has_minimum_multiplier;
+            # re calibrating minimum multiplier should not affect sold contracts.
+            if $params->{category}->has_minimum_multiplier && !$params->{is_sold};
 
         if (defined $minimum_multiplier) {
             # multiplier has non-zero minimum
