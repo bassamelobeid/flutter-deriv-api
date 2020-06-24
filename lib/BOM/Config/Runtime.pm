@@ -51,7 +51,7 @@ sub _build_quant_config {
 }
 
 sub get_offerings_config {
-    my ($runtime, $action) = @_;
+    my ($runtime, $action, $exclude_suspend) = @_;
 
     # default to buy action
     $action //= 'buy';
@@ -63,6 +63,10 @@ sub get_offerings_config {
         loaded_revision => $runtime->app_config->loaded_revision // 0,
         action          => $action,
     };
+
+    $config->{loaded_revision} = 0 if $exclude_suspend;
+
+    return $config if $exclude_suspend;
 
     my $quants_config = $runtime->app_config->quants;
 
