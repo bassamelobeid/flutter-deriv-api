@@ -61,6 +61,29 @@ my @test_cases = (
         },
         status => 'buyer-confirmed',
     },
+    {
+        test_name          => 'Client confirmation at timed-out status for buy order',
+        type               => 'sell',
+        amount             => 100,
+        who_confirm        => 'client',
+        error              => 'InvalidStateForConfirmation',
+        init_status        => 'timed-out',
+        client_balance     => 0,
+        advertiser_balance => 100,
+        escrow             => {
+            before => 100,
+            after  => 100
+        },
+        client => {
+            before => 0,
+            after  => 0
+        },
+        advertiser => {
+            before => 0,
+            after  => 0
+        },
+        status => 'timed-out',
+    },    
     #Sell orders advertiser confirmation:
     {
         test_name          => 'advertiser confirmation at pending status for buy order',
@@ -108,6 +131,30 @@ my @test_cases = (
         },
         status => 'completed',
     },
+    {
+        test_name          => 'advertiser confirmation at timed-out status for buy order',
+        type               => 'sell',
+        amount             => 100,
+        who_confirm        => 'advertiser',
+        error              => undef,
+        init_status        => 'timed-out',
+        client_balance     => 0,
+        advertiser_balance => 100,
+        escrow             => {
+            before => 100,
+            after  => 0
+        },
+        client => {
+            before => 0,
+            after  => 100
+        },
+        advertiser => {
+            before => 0,
+            after  => 0
+        },
+        status => 'completed',
+    },
+    
     #Buy orders client confirmation:
     {
         test_name          => 'Client confirmation at pending state for sell order',
@@ -155,6 +202,29 @@ my @test_cases = (
         },
         status => 'completed',
     },
+    {
+        test_name          => 'Client confirmation at timed-out status for sell order',
+        type               => 'buy',
+        amount             => 100,
+        who_confirm        => 'client',
+        error              => undef,
+        init_status        => 'timed-out',
+        client_balance     => 100,
+        advertiser_balance => 0,
+        escrow             => {
+            before => 100,
+            after  => 0
+        },
+        client => {
+            before => 0,
+            after  => 0
+        },
+        advertiser => {
+            before => 0,
+            after  => 100
+        },
+        status => 'completed',
+    },    
     #Buy orders advertiser confirmation:
     {
         test_name          => 'advertiser confirmation at pending status for sell order',
@@ -202,7 +272,29 @@ my @test_cases = (
         },
         status => 'buyer-confirmed',
     },
-
+    {
+        test_name          => 'advertiser confirmation at timed-out status for sell order',
+        type               => 'buy',
+        amount             => 100,
+        who_confirm        => 'advertiser',
+        error              => 'InvalidStateForConfirmation',
+        init_status        => 'timed-out',
+        client_balance     => 100,
+        advertiser_balance => 0,
+        escrow             => {
+            before => 100,
+            after  => 100
+        },
+        client => {
+            before => 0,
+            after  => 0
+        },
+        advertiser => {
+            before => 0,
+            after  => 0
+        },
+        status => 'timed-out',
+    },
 );
 
 #Adds for test for all states to be sure,
@@ -239,7 +331,7 @@ for my $status (qw(completed)) {
 
 }
 
-for my $status (qw(cancelled timed-out blocked refunded)) {
+for my $status (qw(cancelled blocked refunded)) {
     for my $type (qw(sell buy)) {
         for my $who_confirm (qw(client advertiser)) {
             push @test_cases,
@@ -249,41 +341,6 @@ for my $status (qw(cancelled timed-out blocked refunded)) {
                 amount             => 100,
                 who_confirm        => $who_confirm,
                 error              => 'InvalidStateForConfirmation',
-                init_status        => $status,
-                client_balance     => $type eq 'sell' ? 0 : 100,
-                advertiser_balance => $type eq 'sell' ? 100 : 0,
-                escrow             => {
-                    before => 100,
-                    after  => 100
-                },
-                client => {
-                    before => 0,
-                    after  => 0
-                },
-                advertiser => {
-                    before => 0,
-                    after  => 0
-                },
-                status => $status,
-                };
-        }
-    }
-
-}
-
-# confirmation on expired orders
-
-for my $status (qw(pending buyer-confirmed completed cancelled timed-out blocked refunded)) {
-    for my $type (qw(sell buy)) {
-        for my $who_confirm (qw(client advertiser)) {
-            push @test_cases,
-                {
-                test_name          => "$who_confirm confirmation at $status status for expired $type order",
-                type               => $type,
-                expire             => 1,
-                amount             => 100,
-                who_confirm        => $who_confirm,
-                error              => 'OrderNoEditExpired',
                 init_status        => $status,
                 client_balance     => $type eq 'sell' ? 0 : 100,
                 advertiser_balance => $type eq 'sell' ? 100 : 0,
@@ -330,7 +387,6 @@ for my $test_case (@test_cases) {
         cmp_ok($client->account->balance,     '==', $test_case->{client}{before},     'Client balance is correct');
 
         BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $test_case->{init_status});
-        BOM::Test::Helper::P2P::expire_order($client, $order->{id}) if $test_case->{expire};
 
         my $resp;
         my $err = exception {

@@ -2235,7 +2235,6 @@ sub p2p_order_confirm {
     my $id = $param{id} // die +{error_code => 'OrderNotFound'};
     my $order_info = $client->_p2p_orders(id => $id)->[0];
     die +{error_code => 'OrderNotFound'} unless $order_info;
-    die +{error_code => 'OrderNoEditExpired'} if $order_info->{is_expired};
 
     my $ownership_type = _order_ownership_type($client, $order_info);
 
@@ -2582,7 +2581,7 @@ sub _advertiser_buy_confirm {
     my ($client, $order_info, $source) = @_;
 
     die +{error_code => 'OrderAlreadyConfirmed'}       if $order_info->{status} eq 'completed';
-    die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} ne 'buyer-confirmed';
+    die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} !~ /^(buyer-confirmed|timed-out)$/;
 
     my $escrow   = $client->p2p_escrow;
     my $txn_time = Date::Utility->new->datetime;
@@ -2605,7 +2604,7 @@ sub _client_sell_confirm {
     my ($client, $order_info, $source) = @_;
 
     die +{error_code => 'OrderAlreadyConfirmed'}       if $order_info->{status} eq 'completed';
-    die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} ne 'buyer-confirmed';
+    die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} !~ /^(buyer-confirmed|timed-out)$/;
 
     my $escrow   = $client->p2p_escrow;
     my $txn_time = Date::Utility->new->datetime;
