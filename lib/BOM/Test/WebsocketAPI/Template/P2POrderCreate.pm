@@ -62,6 +62,10 @@ rpc_response {
             id   => $_->p2p_order->advertiser_id,
             name => $_->p2p_order->advertiser_name,
         },
+        client_details => {
+            id   => $_->p2p_order->client_id,
+            name => $_->p2p_order->client_name,
+        },
     };
 };
 
@@ -99,6 +103,10 @@ publish p2p => sub {
             advertiser_details => {
                 id   => $_->p2p_order->advertiser_id,
                 name => $_->p2p_order->advertiser_name,
+            },
+            client_details => {
+                id   => $_->p2p_order->client_id,
+                name => $_->p2p_order->client_name,
             },
             },
     };

@@ -114,6 +114,8 @@ struct P2POrder => [qw(
         advert_description
         advertiser_id
         advertiser_name
+        client_id
+        client_name
         is_incoming
         advert_type
         contact_info
@@ -299,7 +301,9 @@ for my $type (qw(buy sell)) {
             advert_type        => $type eq 'buy' ? 'sell' : 'buy',
             advert_description => 'Please contact via whatsapp 1234',
             advertiser_id      => '1',
-            advertiser_name    => 'name',
+            advertiser_name    => 'bob',
+            client_id          => '2',
+            client_name        => 'john',
             is_incoming      => sprintf("%.0f\n", rand(1)),
             contact_info     => 'Тестовый заказ', # to check UTF decoding
             payment_info     => 'Payment Information',
