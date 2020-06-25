@@ -73,11 +73,14 @@ sub get_transaction_history {
 
         if ($txn->{payment_id}) {
             push(@payments, $txn);
-        } elsif ($txn->{is_sold}) {
-            push(@close_trades, $txn);
-        } else {
-            push(@open_trades, $txn);
+        } elsif ($txn->{financial_market_bet_id}) {
+            if ($txn->{is_sold}) {
+                push(@close_trades, $txn);
+            } else {
+                push(@open_trades, $txn);
+            }
         }
+        # else nothing, we don't include other transactions for now e.g. internal transfers
     }
 
     return {
