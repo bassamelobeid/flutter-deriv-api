@@ -93,6 +93,10 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
 
 <table border="0" width="100%" id="client_edit" onload="init_text_validations()">
     <tr>
+        <td class="label">Balance</td>
+        <td>: <b style="color:#ef5350">[% balance %] [% client.default_account.currency_code %]</b></td>
+    </tr>
+    <tr>
         <td class="label">Email</td>
         <td>: <b>[% client.email %]</b> (To edit client's email, <a href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) | none %]">click here</a>) </td>
     </tr>

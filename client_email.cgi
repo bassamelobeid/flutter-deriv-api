@@ -8,6 +8,7 @@ use Email::Valid;
 use List::MoreUtils qw( uniq any firstval );
 use HTML::Entities;
 use Format::Util::Strings qw( defang );
+use Format::Util::Numbers qw/ formatnumber /;
 use Text::Trim;
 use Date::Utility;
 
@@ -61,9 +62,22 @@ my @bom_logins;
 
 foreach my $lid (sort @bom_login_ids) {
     my $client = BOM::User::Client->new({loginid => $lid});
+
+    my $formatted_balance;
+    unless ($client->default_account) {
+        $formatted_balance = '--- no currency selected';
+    } else {
+        my $balance = client_balance($client);
+        $formatted_balance =
+            $balance
+            ? formatnumber('amount', $client->default_account->currency_code, $balance)
+            : 'ZERO';
+    }
+
     push @bom_logins,
         {
         text     => encode_entities($lid),
+        balance  => $formatted_balance,
         currency => ' (' . ($client->default_account ? $client->default_account->currency_code : 'No currency selected') . ')',
         style => ($client->status->disabled ? ' style=color:red' : '')};
 }

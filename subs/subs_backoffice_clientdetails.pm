@@ -6,6 +6,7 @@ no indirect;
 use Encode;
 use Date::Utility;
 use Format::Util::Strings qw( set_selected_item );
+use Format::Util::Numbers qw/ formatnumber /;
 use Locale::Country 'code2country';
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 use LWP::UserAgent;
@@ -327,7 +328,12 @@ sub print_client_details {
     my $redis                          = BOM::Config::Redis::redis_replicated_write();
     my $onfido_allow_resubmission_flag = $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
+    my $balance =
+        $client->default_account
+        ? formatnumber('amount', $client->default_account->currency_code, client_balance($client))
+        : '--- no currency selected';
     my $template_param = {
+        balance              => $balance,
         client               => $client,
         client_phone_country => $client_phone_country,
         client_tnc_version   => $tnc_status ? $tnc_status->{reason} : '',
@@ -896,6 +902,8 @@ sub get_transactions_details {
 
 sub client_balance {
     my ($client, $currency) = @_;
+
+    $currency //= $client->currency;
 
     my $client_db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,

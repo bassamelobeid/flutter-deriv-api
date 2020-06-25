@@ -962,6 +962,17 @@ foreach my $lid ($user_clients->@*) {
         ? $client->default_account->currency_code
         : 'No currency selected';
 
+    my $formatted_balance;
+    unless ($client->default_account) {
+        $formatted_balance = '--- no currency selected';
+    } else {
+        my $balance = client_balance($client);
+        $formatted_balance =
+            $balance
+            ? formatnumber('amount', $client->default_account->currency_code, $balance)
+            : 'ZERO';
+    }
+
     my $link_href = request()->url_for(
         'backoffice/f_clientloginid_edit.cgi',
         {
@@ -973,7 +984,9 @@ foreach my $lid ($user_clients->@*) {
         . ($client->status->disabled ? ' style="color:red"' : '') . ">"
         . encode_entities($lid->loginid) . " ("
         . $currency
-        . ") </a></li>";
+        . ") </a><span style='margin-left:12px; color:#f44336'><strong>"
+        . $formatted_balance
+        . "</strong></span></li>";
 
 }
 
