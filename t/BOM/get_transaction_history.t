@@ -155,13 +155,6 @@ $test_client->payment_free_gift(
     remark   => 'giving money out',
 );
 
-# p2p escrow transaction
-my $escrow = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-});;
-$escrow->account('USD');
-$test_client->db->dbic->dbh->do("SELECT p2p.escrow_transfer(?,?,10,'testing',1,'staff')", undef, $test_client->loginid, $escrow->loginid);
-
 my $transaction_history = get_transaction_history($transac_param);
 
 my @all_transactions = (@{$transaction_history->{open_trade}}, @{$transaction_history->{close_trade}}, @{$transaction_history->{payment}});
