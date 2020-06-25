@@ -119,7 +119,7 @@ subtest 'contract_update' => sub {
         ->error_message_is('Only updates to these parameters are allowed take_profit,stop_loss.');
     $update_params->{args}->{limit_order} = {take_profit => -0.4};
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('InvalidContractUpdate')
-        ->error_message_is('Please enter a take profit amount that\'s higher than 0.1.');
+        ->error_message_is('Please enter a take profit amount that\'s higher than 0.10.');
     $update_params->{args}->{limit_order} = {take_profit => 10};
     $res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
     ok $res->{take_profit}, 'returns the new take profit value';
