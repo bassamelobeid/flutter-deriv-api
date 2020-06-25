@@ -185,6 +185,7 @@ sub order_updated {
     }
 
     my ($loginid, $order_id, $order_event) = @{$data}{@args, 'order_event'};
+    $order_event //= 'missing';
 
     my $client = BOM::User::Client->new({loginid => $loginid});
 
@@ -306,11 +307,9 @@ sub _track_p2p_order_event {
     }
 
     my $method = BOM::Event::Services::Track->can("p2p_order_${order_event}");
-    unless ($method) {
-        # There are order events that are not tracked yet. Let's log them just for information.
-        $log->infof("p2p order event '%s' raised by client %s is not trackable", $order_event, $loginid) if $order_event;
-        return Future->done(1);
-    }
+
+    # There are order events that are not tracked yet. Let's skip them.
+    return Future->done(1) unless ($method);
 
     return $method->(
         loginid => $loginid,

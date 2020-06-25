@@ -20,6 +20,7 @@ $mock_segment->redefine(
         push @track_args, ($customer, \%args);
         return Future->done(1);
     });
+
 my $mock_brands = Test::MockModule->new('Brands');
 $mock_brands->mock(
     'is_track_enabled' => sub {
@@ -38,6 +39,25 @@ my ($client, $order) = BOM::Test::Helper::P2P::create_order(
     advert_id => $advert->{id},
     amount    => 99.1,
 );
+
+subtest 'p2p order event validation' => sub {
+
+    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_order_updated};
+    undef @identify_args;
+    undef @track_args;
+
+    is $handler->({}), 0, 'retruns zero on error';
+    is scalar @identify_args, 0, 'Segment identify is not called';
+    is scalar @track_args,    0, 'Segment track is not called';
+
+    $handler->({
+            client_loginid => $client->loginid,
+            order_id       => $order->{id},
+        })->get;
+
+    is scalar @identify_args, 0, 'Segment identify is not called - order_type is missing';
+    is scalar @track_args,    0, 'Segment track is not called- order_type is missing';
+};
 
 subtest 'p2p order created' => sub {
     my $handler = BOM::Event::Process::get_action_mappings()->{p2p_order_created};
