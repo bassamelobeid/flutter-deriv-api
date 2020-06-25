@@ -2040,46 +2040,70 @@ async_rpc service_token => sub {
 
     my ($client, $args) = @{$params}{qw/client args/};
 
-    if ($args->{service} eq 'sendbird') {
-        try {
-            my $res = $client->p2p_chat_token();
-            return Future->done({
-                $res->%*,
-                service => $args->{service},
-            });
-        }
-        catch {
-            my $err = $@;
-            my $err_code = $err->{error_code} // '';
+    my @services = ref $args->{service} eq 'ARRAY' ? $args->{service}->@* : ($args->{service});
 
-            if (my $message = $BOM::RPC::v3::P2P::ERROR_MAP{$err_code}) {
-                return Future->fail(
-                    BOM::RPC::v3::Utility::create_error({
-                            code              => $err_code,
-                            message_to_client => localize($message),
-                        }));
+    my @service_futures;
+
+    for my $service (@services) {
+
+        if ($service eq 'sendbird') {
+            try {
+                push @service_futures,
+                    Future->done({
+                        service => $service,
+                        $client->p2p_chat_token->%*
+                    });
             }
-            die $@;
+            catch {
+                my $err = $@;
+                my $err_code = $err->{error_code} // '';
+
+                if (my $message = $BOM::RPC::v3::P2P::ERROR_MAP{$err_code}) {
+                    push @service_futures,
+                        Future->fail(
+                        BOM::RPC::v3::Utility::create_error({
+                                code              => $err_code,
+                                message_to_client => localize($message),
+                            }));
+                }
+                push @service_futures, Future->fail($@);
+            }
+        }
+
+        if ($service eq 'onfido') {
+            my $referrer = $args->{referrer} // $params->{referrer};
+            # The requirement for the format of <referrer> is https://*.<DOMAIN>/*
+            # as stated in https://documentation.onfido.com/#generate-web-sdk-token
+            $referrer =~ s/(\/\/).*?(\..*?)(\/|$).*/$1\*$2\/\*/g;
+
+            push @service_futures,
+                BOM::RPC::v3::Services::service_token(
+                $client,
+                {
+                    service  => $service,
+                    referrer => $referrer
+                }
+                )->then(
+                sub {
+                    my ($result) = @_;
+                    if ($result->{error}) {
+                        return Future->fail($result->{error});
+                    } else {
+                        return Future->done({
+                            token   => $result->{token},
+                            service => 'onfido',
+                        });
+                    }
+                });
         }
     }
 
-    $args->{referrer} //= $params->{referrer};
-    # The requirement for the format of <referrer> is https://*.<DOMAIN>/*
-    # as stated in https://documentation.onfido.com/#generate-web-sdk-token
-    $args->{referrer} =~ s/(\/\/).*?(\..*?)(\/|$).*/$1\*$2\/\*/g;
-
-    return BOM::RPC::v3::Services::service_token($client, $args)->then(
+    return Future->needs_all(@service_futures)->then(
         sub {
-            my ($result) = @_;
-            if ($result->{error}) {
-                return Future->done($result->{error});
-            } else {
-                return Future->done({
-                    token   => $result->{token},
-                    service => $args->{service},
-                });
-            }
+            my @results = @_;
+            return Future->done({map { delete $_->{service} => $_ } @results});
         });
+
 };
 
 rpc tnc_approval => sub {
