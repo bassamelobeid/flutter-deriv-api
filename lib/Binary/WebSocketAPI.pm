@@ -96,16 +96,18 @@ sub startup {
     my $app = shift;
     my $log = $app->log;
 
-    check_connections();                                              ### Raise and check redis connections
+    $app->moniker('websocket');
+    $app->plugin('Config' => {file => $ENV{WEBSOCKET_CONFIG} || '/etc/rmg/websocket.conf'});
+
+    my $skip_redis_connection_check = $ENV{WS_SKIP_REDIS_CHECK} // $app->config->{skip_redis_connection_check};
+
+    check_connections() unless $skip_redis_connection_check;    ### Raise and check redis connections
 
     Mojo::IOLoop->singleton->reactor->on(
         error => sub {
             my (undef, $err) = @_;
             $app->log->error("EventLoop error: $err");
         });
-
-    $app->moniker('websocket');
-    $app->plugin('Config' => {file => $ENV{WEBSOCKET_CONFIG} || '/etc/rmg/websocket.conf'});
 
     $log->info("Binary.com Websockets API: Starting.");
     $log->info("Mojolicious Mode is " . $app->mode);

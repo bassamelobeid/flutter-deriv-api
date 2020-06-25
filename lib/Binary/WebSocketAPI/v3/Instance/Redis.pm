@@ -21,6 +21,7 @@ use Exporter qw(import);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_dec);
 use Mojo::Redis2;
 use Scalar::Util qw(looks_like_number);
+use List::Util qw(any);
 
 # Add entries here if a new Redis instance is available, this will then be accessible
 # via a function of the same name.
@@ -128,29 +129,49 @@ sub create {
 
 sub check_connections {
     my $server;
-    for my $server_name (sort keys %$servers) {
-        try {
-            undef $server;
-            $server_name = $server_name;
-            $server      = __PACKAGE__->$server_name();
-            $server->ping() if $server;
-        }
-        catch {
-            my $e = $@;
-            if ($server) {
-                # Clear current_config from server if server ping fails
-                delete $servers->{$server_name}->{current_config};
-                die "Redis server $server_name does not work! Host: "
-                    . (eval { $server->url->host } // "(failed - $@)")
-                    . ", port: "
-                    . (eval { $server->url->port } // "(failed - $@)")
-                    . ", reason: "
-                    . $e;
-            } else {
-                die "$server_name is not available: " . $e;
+
+    my %run_checklist = map { $_ => 0 } keys %$servers;
+    my $seconds       = 0.5;
+    my $slept_seconds = 0;
+
+    # A retry mechanism checking the connection with the redis servers.
+    # We will keep checking the connection for a limited time after that
+    # the service will die due to timeout.
+    # We don't want to start the service if one of the redis is down
+    # because it can lead to inconsistent state among workers.
+    while (my @pending_servers = grep { !$run_checklist{$_} } keys %$servers) {
+
+        for my $server_name (@pending_servers) {
+            try {
+                undef $server;
+                $server_name = $server_name;
+                $server      = __PACKAGE__->$server_name();
+                $server->ping() if $server;
+                $run_checklist{$server_name} = 1;
+            }
+            catch {
+                my $e = $@;
+                if ($server) {
+                    # Clear current_config from server if server ping fails
+                    delete $servers->{$server_name}->{current_config};
+                    warn "Redis server $server_name does not work! Host: "
+                        . (eval { $server->url->host } // "(failed - $@)")
+                        . ", port: "
+                        . (eval { $server->url->port } // "(failed - $@)")
+                        . ", reason: "
+                        . $e;
+                } else {
+                    die "$server_name is not available: " . $e;
+                }
             }
         }
+
+        die "Timeout $slept_seconds sec while checking the connection with redis servers." if $seconds > 4;
+        sleep $seconds if any { !$run_checklist{$_} } keys %$servers;
+        $slept_seconds += $seconds;
+        $seconds *= 2;
     }
+
     return 1;
 }
 
