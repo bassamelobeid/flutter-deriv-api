@@ -2402,17 +2402,20 @@ sub p2p_chat_token {
     my ($client) = @_;
 
     my $advertiser_info = $client->_p2p_advertisers(loginid => $client->loginid)->[0] // die +{error_code => 'AdvertiserNotFoundForChatToken'};
+    my $sendbird_api = BOM::User::Utility::sendbird_api();
 
     my ($token, $expiry) = $advertiser_info->@{qw(chat_token chat_token_expiry)};
     if ($token and $expiry and ($expiry - time) >= P2P_TOKEN_MIN_EXPIRY) {
         return {
             token       => $token,
-            expiry_time => $expiry
+            expiry_time => $expiry,
+            app_id      => $sendbird_api->app_id,
         };
     } else {
         my $sb_user = WebService::SendBird::User->new(
             user_id    => $advertiser_info->{chat_user_id},
-            api_client => BOM::User::Utility::sendbird_api());
+            api_client => $sendbird_api
+        );
         try {
             ($token, $expiry) = $sb_user->issue_session_token()->@{qw(session_token expires_at)};
         }
@@ -2441,7 +2444,8 @@ sub p2p_chat_token {
 
     return {
         token       => $token,
-        expiry_time => $expiry
+        expiry_time => $expiry,
+        app_id      => $sendbird_api->app_id,
     };
 }
 
