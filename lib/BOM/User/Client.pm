@@ -2383,6 +2383,7 @@ sub p2p_chat_create {
         p2p_order_updated => {
             client_loginid => $client->loginid,
             order_id       => $order_id,
+            order_event    => 'chat_created',
         });
 
     return {
