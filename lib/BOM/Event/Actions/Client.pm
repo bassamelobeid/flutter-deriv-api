@@ -826,6 +826,10 @@ async sub _sync_onfido_bo_document {
                 loginid => $client->loginid,
                 file_id => $file_id
             );
+            unless ($document_info) {
+                $log->errorf('Could not get document %s from database for client %s', $file_id, $client->loginid);
+                return;
+            }
 
             await BOM::Event::Services::Track::document_upload({
                 loginid    => $client->loginid,
