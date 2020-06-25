@@ -1000,9 +1000,7 @@ foreach my $mt_ac ($mt_logins->@*) {
         # Example: status (483 => 1E3)
         $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
 
-        if (sum0(@rights{qw(enabled api)}) == 2
-            and not $rights{trade_disabled})
-        {
+        if ($rights{enabled}) {
             print " ( Enabled )";
         } else {
             print " ( Disabled )";
