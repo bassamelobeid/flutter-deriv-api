@@ -24,6 +24,9 @@ use WebService::SendBird;
 use BOM::Platform::Context qw(request);
 use BOM::Config::Runtime;
 
+use Exporter qw(import);
+our @EXPORT_OK = qw(parse_mt5_group);
+
 use constant GAMSTOP_DURATION_IN_MONTHS => 6;
 
 sub aes_keys {
@@ -180,6 +183,63 @@ sub sendbird_api {
         api_token => $config->{api_token},
         app_id    => $config->{app_id},
     );
+}
+
+=head2 parse_mt5_group
+
+Parses an mt5 group string, decomposing it into details. It takes a single argument:
+
+=over 4
+
+=item * C<$mt5_group> - an string representing an mt5 group (e.g. 'real/svg_standard')
+
+=back
+
+It returns a hashref with the following keys:
+
+=over 4
+
+=item * C<category>: real/demo category of the mt5 group (first component)
+
+=item * C<company>:landing company name, e.g. 'svg' (second component)
+
+=item * C<type>: gaming or financial (implicit, implied by the third component)
+
+=item * C<subtype>: standard or advanced (third component)
+
+=item * C<type_label>: account type as displayed in front-end labels (synthetic, financial or financial stp)
+
+=item * C<currency>: account currency (default value is USD)
+
+=back
+
+=cut
+
+sub parse_mt5_group {
+    my $group = shift // '';
+
+    my ($category, $company, undef, $subtype, undef, $currency) = $group =~ m/^([a-z]+)\\([a-z]+)(_([a-z]+))?(_([A-Z]+))?/;
+    $subtype = $subtype // '';
+
+    my %subtype_to_type_name = (
+        ''       => 'synthetic',
+        standard => 'financial',
+        advanced => 'financial stp',
+    );
+
+    my $type = $subtype ? 'financial' : 'gaming';
+
+    my $type_label = $subtype_to_type_name{$subtype} // '';
+
+    return {
+        company  => $company  // '',
+        category => $category // '',
+        type       => $company ? $type       : '',
+        subtype    => $company ? $subtype    : '',
+        type_label => $company ? $type_label : '',
+
+        currency => $company ? ($currency // 'USD') : '',
+    };
 }
 
 1;

@@ -7,6 +7,7 @@ use Test::More;
 use Test::Deep qw(cmp_deeply);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::MT5::User::Async;
+use BOM::User::Utility qw(parse_mt5_group);
 use Syntax::Keyword::Try;
 use BOM::Config::Runtime;
 use Scope::Guard qw(guard);
@@ -88,6 +89,88 @@ subtest 'MT5 Timeout logic handle' => sub {
     # Flags should be reset.
     is $redis->get($LOCK_KEY), 0, 'lock has been reset';
 
+};
+
+subtest 'parse mt5 group' => sub {
+    my %dataset = (
+        'real\svg' => {
+            company    => 'svg',
+            category   => 'real',
+            type       => 'gaming',
+            subtype    => '',
+            type_label => 'synthetic',
+            currency   => 'USD',
+        },
+        'real\labuan_standard' => {
+            company    => 'labuan',
+            category   => 'real',
+            type       => 'financial',
+            subtype    => 'standard',
+            type_label => 'financial',
+            currency   => 'USD',
+        },
+        'demo\maltainvest_advanced_GBP' => {
+            company    => 'maltainvest',
+            category   => 'demo',
+            type       => 'financial',
+            subtype    => 'advanced',
+            type_label => 'financial stp',
+            currency   => 'GBP',
+        },
+        'real\maltainvest_advanced_gbp' => {
+            company    => 'maltainvest',
+            category   => 'real',
+            type       => 'financial',
+            subtype    => 'advanced',
+            type_label => 'financial stp',
+            currency   => 'USD',             # lower-case currency is not matched; it should fallback to the default value
+        },
+        'abc\cde_fgh_IJK' => {
+            company    => 'cde',
+            category   => 'abc',
+            type       => 'financial',
+            subtype    => 'fgh',
+            type_label => '',
+
+            currency => 'IJK',
+        },
+        'abc\cde' => {
+            company    => 'cde',
+            category   => 'abc',
+            type       => 'gaming',
+            subtype    => '',
+            type_label => 'synthetic',
+            currency   => 'USD',
+        },
+        'abc' => {
+            company    => '',
+            category   => '',
+            type       => '',
+            subtype    => '',
+            type_label => '',
+            currency   => '',
+        },
+        '' => {
+            company    => '',
+            category   => '',
+            type       => '',
+            subtype    => '',
+            type_label => '',
+            currency   => '',
+        },
+        undef => {
+            company    => '',
+            category   => '',
+            type       => '',
+            subtype    => '',
+            type_label => '',
+
+            type     => '',
+            currency => '',
+        },
+    );
+
+    is_deeply parse_mt5_group($_), $dataset{$_}, "MT5 group parsed successful: " . ($_ // 'undef') for (keys %dataset);
 };
 
 subtest 'MT5 suspended' => sub {
