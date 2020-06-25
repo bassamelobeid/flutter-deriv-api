@@ -30,6 +30,7 @@ use Net::Async::Redis;
 
 use List::Util qw(sum0);
 use HTML::Entities;
+use BOM::User::Utility qw(parse_mt5_group);
 
 use constant DAYS_TO_EXPIRE => 14;
 use constant SECONDS_IN_DAY => 86400;
@@ -220,6 +221,19 @@ sub new_mt5_signup {
         BOM::Config::Redis::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
     }
 
+    # Sending email to client about mt5 account opening
+    send_mt5_account_opening_email({
+        mt5_login_id => $id,
+        mt5_group    => $data->{mt5_group},
+        client       => $client
+    });
+
+    # Add email params to track signup event
+    my $mt5_details = parse_mt5_group($data->{mt5_group});
+    $data->{client_first_name} = $client->first_name;
+    $data->{type_label}        = ucfirst $mt5_details->{type_label};      # Frontend-ish label (Synthetic, Financial, Financial STP)
+    $data->{mt5_integer_id}    = $id =~ s/${\BOM::User->MT5_REGEX}//r;    # This one is just the numeric ID
+
     return BOM::Event::Services::Track::new_mt5_signup({
         loginid    => $data->{loginid},
         properties => $data
@@ -248,4 +262,61 @@ sub mt5_password_changed {
     });
 
 }
+
+=head2 send_mt5_account_opening_email
+
+Sends an email to client regarding mt5 account opening.
+It needs a hashref as param, expected keys:
+
+=over 4
+
+=item * C<mt5_login_id> - mt5 login id
+=item * C<mt5_group> - mt5 group
+=item * C<client> - the client itself, so we can email him/her and customize email template
+
+=back
+
+=cut
+
+sub send_mt5_account_opening_email {
+    my $params       = shift;
+    my $brand        = request()->brand;
+    my $mt5_login_id = $params->{mt5_login_id};
+    my $mt5_group    = $params->{mt5_group};
+    my $client       = $params->{client};
+
+    # This is just for Binary customers
+    # Deriv emails are handled by Segment
+    return unless $brand->send_signin_email_enabled;
+    return unless $mt5_login_id;
+    return unless $mt5_group;
+
+    my $mt5_details       = parse_mt5_group($mt5_group);
+    my $mt5_type_label    = ucfirst $mt5_details->{type_label} =~ s/stp$/STP/r;
+    my $mt5_category      = $mt5_details->{category};
+    my $mt5_loginid       = $mt5_login_id =~ s/${\BOM::User->MT5_REGEX}//r;
+    my $email             = $client->email;
+    my $client_first_name = $client->first_name;
+    my $lang              = lc(request()->language // 'en');
+    my $website_name      = $brand->website_name;
+
+    send_email({
+            from          => $brand->emails('no-reply'),
+            to            => $email,
+            subject       => localize('MT5 [_1] Account Created.', ucfirst $mt5_category),
+            template_name => 'mt5_account_opening',
+            template_args => {
+                mt5_loginid       => $mt5_loginid,
+                mt5_category      => $mt5_category,
+                mt5_type_label    => $mt5_type_label,
+                client_first_name => $client_first_name,
+                lang              => $lang,
+                website_name      => $website_name
+            },
+            use_email_template => 1,
+        });
+
+    return;
+}
+
 1;
