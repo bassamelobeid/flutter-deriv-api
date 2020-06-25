@@ -27,11 +27,26 @@
             "pattern": "^https?://(?:[0-9a-zA-Z\\.-]+|\\*)\\/[\\%\\/\\w \\.-]*[\\*]?$"
         },
         "service": {
-            "description": "The service name to retrieve the token for.",
-            "type": "string",
-            "enum": [
-                "onfido",
-                "sendbird"
+            "description": "The service(s) to retrieve token(s) for.",
+            "oneOf": [
+                {
+                    "type": "string",
+                    "enum": [
+                        "onfido",
+                        "sendbird"
+                    ]
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "onfido",
+                            "sendbird"
+                        ],
+                        "uniqueItems": true
+                    }
+                }
             ]
         },
         "passthrough": {

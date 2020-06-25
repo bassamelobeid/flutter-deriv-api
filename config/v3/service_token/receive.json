@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "Service Token (response)",
-    "description": "A message with Service Token",
+    "description": "A message with tokens and data for requested services",
     "type": "object",
     "required": [
         "echo_req",
@@ -9,30 +9,38 @@
     ],
     "properties": {
         "service_token": {
-            "title": "service_token",
-            "description": "The object containing the retrieved token",
+            "description": "Service specific tokens and data.",
             "type": "object",
             "additionalProperties": false,
-            "required": [
-                "service",
-                "token"
-            ],
+            "minProperties": 1,
             "properties": {
-                "expiry_time": {
-                    "description": "The epoch time in which the token will be expired. Note: the token could be expired sooner then than this, due to different reasons.",
-                    "type": "integer"
+                "onfido": {
+                    "description": "Onfido data.",
+                    "type": "object",
+                    "properties": {
+                        "token": {
+                            "description": "Onfido token.",
+                            "type": "string"
+                        }
+                    }
                 },
-                "service": {
-                    "description": "Name of the service that token is retrieved for.",
-                    "type": "string",
-                    "enum": [
-                        "onfido",
-                        "sendbird"
-                    ]
-                },
-                "token": {
-                    "description": "Retrieved token for the requested service.",
-                    "type": "string"
+                "sendbird": {
+                    "description": "Sendbird data.",
+                    "type": "object",
+                    "properties": {
+                        "app_id": {
+                            "description": "Sendbird application ID.",
+                            "type": "string"
+                        },
+                        "expiry_time": {
+                            "description": "The epoch time in which the token will be expired. Note: the token could be expired sooner than this, due to different reasons.",
+                            "type": "integer"
+                        },
+                        "token": {
+                            "description": "Sendbird token.",
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },
