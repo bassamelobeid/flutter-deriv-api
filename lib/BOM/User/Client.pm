@@ -1629,7 +1629,7 @@ sub validate_common_account_details {
         ## it is common that secret_answer is set in $args but not the secret_question,
         ## so we do not want to check for that combination
         die "NeedBothSecret\n"
-            if (defined $args->{secret_question} && !($args->{secret_answer} // ''));
+            if ($args->{secret_question} && !($args->{secret_answer} // ''));
 
         die "InvalidPlaceOfBirth\n" if ($args->{place_of_birth} and not Locale::Country::code2country($args->{place_of_birth}));
 
