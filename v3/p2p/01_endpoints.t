@@ -372,7 +372,7 @@ subtest 'create chat' => sub {
     # client needs to be an advertiser to chat about order
     $resp = $t->await::p2p_advertiser_create({
         p2p_advertiser_create => 1,
-        name                  => 'client advertiser name',
+        name                  => rand(999),
     });
 
     my $chat = $t->await::p2p_chat_create({
