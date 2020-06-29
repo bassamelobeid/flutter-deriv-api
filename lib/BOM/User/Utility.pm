@@ -14,7 +14,6 @@ use Date::Utility;
 use Encode;
 use Encode::Detect::Detector;
 use Syntax::Keyword::Try;
-use Time::HiRes qw(gettimeofday tv_interval);
 use Webservice::GAMSTOP;
 use Email::Address::UseXS;
 use Email::Stuffer;
@@ -93,7 +92,6 @@ sub set_gamstop_self_exclusion {
     return undef unless $landing_company_config;
 
     my $gamstop_response;
-    my $starting_time = [gettimeofday];
     try {
         my $instance = Webservice::GAMSTOP->new(
             api_url => $gamstop_config->{api_uri},
@@ -113,7 +111,6 @@ sub set_gamstop_self_exclusion {
     catch {
         stats_inc('GAMSTOP_CONNECT_FAILURE') if $@ =~ /^Error/;
     }
-    stats_timing('GAMSTOP_REQUEST_TIME', tv_interval($starting_time) * 1000, {tags => ["landing_company:$lc"]});
 
     return undef unless $gamstop_response;
 
