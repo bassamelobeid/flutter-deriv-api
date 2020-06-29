@@ -5,7 +5,6 @@ use warnings;
 use Cache::RedisDB;
 use ExpiryQueue qw( dequeue_expired_contract get_queue_id);
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
-use DataDog::DogStatsd::Helper qw/stats_timing/;
 
 use List::Util qw(max);
 use Time::HiRes;
@@ -83,17 +82,6 @@ sub _daemon_run {
                         my $future_epoch = $now + 2;
                         $redis->rpush('EXPIRYQUEUE::SELL_FAILURE_' . $future_epoch, $cid);
                     }
-                } else {
-                    # contract sold send data to datadog
-                    my $processing_duration = 1000 * Time::HiRes::tv_interval(\@processing_start, \@processing_done);
-                    my $time_difference = $processing_done[0] - $is_sold->{contract_expiry_epoch};
-                    my $expiry_type = $is_sold->{expiry_type};
-                    my $contract_type = $is_sold->{bet_type};
-
-                    stats_timing('bom.transactions.expiryd.processing_time',
-                        $processing_duration, {tags => ["expiry_type:$expiry_type", "contract_type:$contract_type"]});
-                    stats_timing('bom.transactions.expiryd.time_difference',
-                        $time_difference, {tags => ["expiry_type:$expiry_type", "contract_type:$contract_type"]});
                 }
             };    # No catch, let MtM pick up the pieces.
         }

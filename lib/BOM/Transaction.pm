@@ -13,7 +13,7 @@ use JSON::MaybeXS;
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
 use Syntax::Keyword::Try;
-use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_count);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
 
 use Brands;
 use BOM::User::Client;
@@ -414,9 +414,6 @@ sub stats_start {
         1 while defined scalar caller($stack_depth += 10);
         1 until defined scalar caller --$stack_depth;
 
-        # For a given set of tags these curves should be absolutely flat!
-        DataDog::DogStatsd::Helper::stats_gauge("transaction.$what.stack_depth", $stack_depth, $tags);
-
         if ($stack_depth > 70 and -w $fn) {
             my $basename = $$ % 1000;
             $fn .= "/$basename.stacktrace";
@@ -486,9 +483,6 @@ sub stats_stop {
         return $error;
     }
 
-    my $now = [gettimeofday];
-    stats_timing("transaction.$what.elapsed_time", 1000 * tv_interval($data->{start},           $now), $tags);
-    stats_timing("transaction.$what.db_time",      1000 * tv_interval($data->{validation_done}, $now), $tags);
     stats_inc("transaction.$what.success", $tags);
 
     if ($what eq 'batch_buy') {
@@ -833,7 +827,6 @@ sub buy {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
         my $e = $@;
-        stats_inc('database.consistency.inverted_transaction', {tags => ['broker_code:' . $client->broker_code]});
         BOM::Transaction::Utility::delete_contract_parameters($fmbid, $client) if $fmbid;
         $company_limits->reverse_buys($client);
         $error_status = $self->_recover($e);

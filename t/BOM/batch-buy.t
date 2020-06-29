@@ -516,7 +516,7 @@ subtest 'single contract fails in database', sub {
 };
 
 subtest 'batch-buy multiple databases and datadog', sub {
-    plan tests => 20;
+    plan tests => 18;
     lives_ok {
         my $clm = create_client 'VRTC';    # manager
         my @cl;
@@ -676,36 +676,6 @@ subtest 'batch-buy multiple databases and datadog', sub {
                 tags => [
                     qw/ broker:cr
                         virtual:no
-                        rmgenv:production
-                        contract_class:higher_lower_bet
-                        landing_company:virtual
-                        market:forex
-                        amount_type:payout
-                        expiry_type:duration
-                        /
-                ]}];
-        check_datadog
-            action_name => 'timing',
-            data        => [
-            "transaction.batch_buy.elapsed_time" => {
-                tags => [
-                    qw/ broker:vrtc
-                        virtual:yes
-                        rmgenv:production
-                        contract_class:higher_lower_bet
-                        landing_company:virtual
-                        market:forex
-                        amount_type:payout
-                        expiry_type:duration
-                        /
-                ]}];
-        check_datadog
-            action_name => 'timing',
-            data        => [
-            "transaction.batch_buy.db_time" => {
-                tags => [
-                    qw/ broker:vrtc
-                        virtual:yes
                         rmgenv:production
                         contract_class:higher_lower_bet
                         landing_company:virtual
