@@ -5,7 +5,6 @@ use warnings;
 
 no indirect;
 
-use DataDog::DogStatsd::Helper qw(stats_inc);
 use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
 use Log::Any qw($log);
@@ -140,20 +139,14 @@ sub process {
     my $req = BOM::Platform::Context::Request->new(@req_args);
     request($req);
 
-    my $response      = 0;
-    my $dd_metric_key = '';
+    my $response = 0;
     try {
         $response = get_action_mappings()->{$event_type}->($event_to_be_processed->{details});
         $response->retain if blessed($response) and $response->isa('Future');
-        $dd_metric_key = sprintf("bom.events.%s.processed.success", $queue_name);
-        stats_inc(lc $dd_metric_key);
     }
     catch {
         my $e = $@;
         $log->errorf("An error occurred processing %s: %s", $event_type, $e);
-        my @tags = ($event_type);
-        $dd_metric_key = sprintf("bom.events.%s.processed.failure", $queue_name);
-        stats_inc(lc $dd_metric_key, {tags => \@tags});
         exception_logged();
     }
 

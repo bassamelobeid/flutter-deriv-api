@@ -381,8 +381,6 @@ async sub ready_for_authentication {
         $request_count      //= 0;
         $user_request_count //= 0;
 
-        DataDog::DogStatsd::Helper::stats_inc('event.ready_for_authentication.onfido.applicant_check.count');
-
         if (!$args->{is_pending} && $user_request_count >= ONFIDO_REQUEST_PER_USER_LIMIT) {
             $log->debugf('No check performed as client %s exceeded daily limit of %d requests.', $loginid, ONFIDO_REQUEST_PER_USER_LIMIT);
             my $time_to_live = await $redis_events_write->ttl(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id);
@@ -978,8 +976,6 @@ async sub _address_verification {
         )->on_done(
         sub {
             DataDog::DogStatsd::Helper::stats_inc('smartystreet.lookup.success');
-            DataDog::DogStatsd::Helper::stats_timing("event.address_verification.smartystreet.verify." . $future_verify_ss->state . ".elapsed",
-                $future_verify_ss->elapsed);
         });
 
     my $addr = await $future_verify_ss;
@@ -1064,8 +1060,7 @@ sub _get_document_details {
     my $file_id = $args{file_id};
 
     return do {
-        my $start = Time::HiRes::time();
-        my $dbic  = BOM::Database::ClientDB->new({
+        my $dbic = BOM::Database::ClientDB->new({
                 client_loginid => $loginid,
                 operation      => 'replica',
             }
@@ -1090,8 +1085,6 @@ AND status != 'uploading'
 AND id = ?
 SQL
                 });
-            my $elapsed = Time::HiRes::time() - $start;
-            DataDog::DogStatsd::Helper::stats_timing("event.document_upload.database.document_lookup.elapsed", $elapsed);
         }
         catch {
             exception_logged();
@@ -1675,16 +1668,12 @@ sub _client_onfido_details {
 async sub _get_applicant_and_file {
     my (%args) = @_;
 
-    my $start_time = Time::HiRes::time();
-
     # Start with an applicant and the file data (which might come from S3
     # or be provided locally)
     my ($applicant, $file_data) = await Future->needs_all(
         _get_onfido_applicant(%args{onfido}, %args{client}, %args{uploaded_manually_by_staff}),
         _get_document_s3(%args{file_data}, %args{document_entry}),
     );
-
-    DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.upload.triggered.elapse ", Time::HiRes::time() - $start_time,);
 
     return ($applicant, $file_data);
 }
@@ -1702,11 +1691,7 @@ async sub _get_document_s3 {
     my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
     my $url       = $s3_client->get_s3_url($document_entry->{file_name});
 
-    my $file = await _http()->GET($url, connection => 'close')->on_ready(
-        sub {
-            my $f = shift;
-            DataDog::DogStatsd::Helper::stats_timing("event.document_upload.s3.download." . $f->state . ".elapsed", $f->elapsed,);
-        });
+    my $file = await _http()->GET($url, connection => 'close');
 
     return $file->decoded_content;
 }
@@ -1746,8 +1731,6 @@ async sub _upload_documents {
 
         my $future_upload_item;
 
-        my $start_time = Time::HiRes::time();
-
         if ($type eq 'live_photo') {
             $future_upload_item = $onfido->live_photo_upload(
                 applicant_id => $applicant->id,
@@ -1780,8 +1763,6 @@ async sub _upload_documents {
             });
 
         my $doc = await $future_upload_item;
-
-        DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.upload.triggered.elapse ", Time::HiRes::time() - $start_time);
 
         my $redis_events_write = _redis_events_write();
 
@@ -1876,8 +1857,6 @@ async sub _check_applicant {
 
             });
 
-        my $start_time = Time::HiRes::time();
-
         await $future_applicant_check;
 
         if (defined $error_type and $error_type eq 'incomplete_checks') {
@@ -1887,10 +1866,6 @@ async sub _check_applicant {
                 encode_json_utf8($args));
         }
 
-        DataDog::DogStatsd::Helper::stats_timing(
-            "event.ready_for_authentication.onfido.applicant_check.triggered.elapsed",
-            Time::HiRes::time() - $start_time,
-        );
     }
     catch {
         my $e = $@;

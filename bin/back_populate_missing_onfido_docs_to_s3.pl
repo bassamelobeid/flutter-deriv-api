@@ -324,8 +324,6 @@ AND status != 'uploading'
 AND id = ?
 SQL
                 });
-            my $elapsed = Time::HiRes::time() - $start;
-            DataDog::DogStatsd::Helper::stats_timing("event.document_upload.database.document_lookup.elapsed", $elapsed);
         }
         catch {
             die "An error occurred while getting document details ($file_id) from database for login ID $loginid.";
