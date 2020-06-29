@@ -314,7 +314,7 @@ for my $type (qw(buy sell)) {
 }
 
 my (@p2p_advertisers, $advertiser_id);
-for my $name (qw(name имя)) {
+for my $name (qw(ad_man bob@test.com)) {
     $advertiser_id++;
     push @p2p_advertisers,
         P2PAdvertiser(
