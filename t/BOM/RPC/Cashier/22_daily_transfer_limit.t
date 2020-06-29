@@ -58,8 +58,9 @@ my $user  = BOM::User->create(
 );
 
 my $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
-    email       => $email,
+    broker_code            => 'CR',
+    email                  => $email,
+    account_opening_reason => 'Speculative',
 });
 $client_usd->account('USD');
 $user->add_client($client_usd);

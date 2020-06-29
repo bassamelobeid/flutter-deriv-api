@@ -161,11 +161,12 @@ subtest 'new account' => sub {
     is $result->{error}->{code}, 'ASK_FIX_DETAILS', 'Correct error code if citizen is missing for financial advanced account';
     is $result->{error}->{message_to_client}, 'Your profile appears to be incomplete. Please update your personal details to continue.',
         'Correct error message if citizen is missing for financial advanced account';
-    cmp_bag($result->{error}{details}{missing}, ['citizen'], 'Missing citizen should be under details.');
+    cmp_bag($result->{error}{details}{missing}, ['citizen', 'account_opening_reason'], 'Missing citizen should be under details.');
 
     $params->{args}->{account_type} = 'gaming';
     delete $params->{args}->{mt5_account_type};
 
+    $test_client->account_opening_reason('speculatove');
     $test_client->citizen($citizen);
     $test_client->save;
 
@@ -305,6 +306,19 @@ subtest 'CR account types - low risk' => sub {
     ok $login, 'standard financial mt5 account is created without authentication and FA';
     is $mt5_account_info->{group}, 'real\svg_standard', 'correct CR standard financial group';
 
+   my $error = create_mt5_account->(
+        $c, $token, $client,
+        {
+            account_type     => 'financial',
+            mt5_account_type => 'advanced'
+        },
+        'ASK_FIX_DETAILS',
+        'Required fields missing for advanced financial account'
+    );
+    cmp_bag($error->{details}{missing}, ['account_opening_reason'], 'Missing account_opening_reason should appear in details.');
+    $client->account_opening_reason('Speculative');
+    $client->save();
+
     create_mt5_account->(
         $c, $token, $client,
         {
@@ -314,8 +328,8 @@ subtest 'CR account types - low risk' => sub {
         'AuthenticateAccount',
         'authentication is required for advanced mt5 accounts'
     );
+        authenticate($client);
 
-    authenticate($client);
     $login = create_mt5_account->(
         $c, $token, $client,
         {
@@ -390,6 +404,19 @@ subtest 'CR account types - high risk' => sub {
         });
     ok $login, 'standard financial mt5 account is created without authentication';
     is $mt5_account_info->{group}, 'real\svg_standard', 'correct CR standard financial group';
+    
+     my $error = create_mt5_account->(
+        $c, $token, $client,
+        {
+            account_type     => 'financial',
+            mt5_account_type => 'advanced'
+        },
+        'ASK_FIX_DETAILS',
+        'Required fields missing for advanced financial account'
+    );
+    cmp_bag($error->{details}{missing}, ['account_opening_reason'], 'Missing account_opening_reason should appear in details.');
+    $client->account_opening_reason('Speculative');
+    $client->save();
 
     create_mt5_account->(
         $c, $token, $client,
@@ -1159,7 +1186,7 @@ sub create_mt5_account {
 
     if ($expected_error) {
         $result->has_error->error_code_is($expected_error, $error_message);
-        return $c->result->{error}->{message_to_client};
+        return $c->result->{error};
     } else {
         $result->has_no_error;
         return $c->result->{login};

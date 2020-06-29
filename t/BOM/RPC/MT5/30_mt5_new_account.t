@@ -131,12 +131,13 @@ subtest 'new account with missing signup fields' => sub {
 
     $c->call_ok($method, $params)->has_error('error from missing signup details')
         ->error_code_is('ASK_FIX_DETAILS', 'error code for missing basic details')
-        ->error_details_is({missing => ['phone']}, 'missing field in response details');
+        ->error_details_is({missing => ['phone', 'account_opening_reason']}, 'missing field in response details');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $test_client->status->clear_crs_tin_information;
     $test_client->phone('12345678');
+    $test_client->account_opening_reason('no reason');
     $test_client->save;
 };
 

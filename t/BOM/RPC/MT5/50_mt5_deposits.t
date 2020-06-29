@@ -58,6 +58,7 @@ $test_client->binary_user_id(1);
 $test_client->tax_residence('mt');
 $test_client->tax_identification_number('111222333');
 $test_client->set_authentication('ID_DOCUMENT')->status('pass');
+$test_client->account_opening_reason('nothing');
 $test_client->save;
 
 my $test_client_vr = create_client('VRTC');

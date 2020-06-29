@@ -1255,9 +1255,10 @@ subtest 'MT5' => sub {
     );
 
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'CR',
-        email          => $email,
-        place_of_birth => 'id'
+        broker_code            => 'CR',
+        email                  => $email,
+        place_of_birth         => 'id',
+        account_opening_reason => 'no reason',
     });
     $test_client->set_default_account('USD');
     $test_client->payment_free_gift(
@@ -1368,7 +1369,6 @@ subtest 'MT5' => sub {
     # real -> MT5
     $params->{args}{account_from} = $test_client->loginid;
     $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\svg_standard'};
-
     _test_events_prepare();
 
     $test_client->status->set('transfers_blocked', 'system', 'testing transfers_blocked for real -> mt5');
