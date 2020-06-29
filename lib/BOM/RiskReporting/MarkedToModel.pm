@@ -105,7 +105,8 @@ sub generate {
                         my $bet = produce_contract($bet_params);
                         $cached_underlyings{$symbol} ||= $bet->underlying;
 
-                        my $current_value = $bet->is_binary ? $bet->theo_price : $bet->theo_price * $bet->multiplier;
+                        # $current_value is the value of the open contract if it is sold back to us. So, this should be bid price for all contract.
+                        my $current_value = $bet->bid_price;
                         my $value = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
                         $totals{value} += $value;
 
@@ -165,11 +166,16 @@ sub generate {
                                 push @mail_content, "Contract expired but could not be settled [$last_fmb_id,  $open_fmb->{short_code}]";
                             }
                         } else {
-                            # spreaed does not have greeks
-                            map { $totals{$_} += $bet->$_ } qw(delta theta vega gamma);
+                            my @greeks;
+                            foreach my $greek (qw(delta theta vega gamma)) {
+                                # callputspread and multiplier does not have greeks
+                                my $value = ($bet->category_code eq 'multiplier' or $bet->category_code eq 'callputspread') ? 0 : $bet->$greek;
+                                $totals{$greek} += $value;
+                                push @greeks, $value;
+                            }
                             $dbh->do(
                                 qq{INSERT INTO accounting.realtime_book (financial_market_bet_id, market_price, delta, theta, vega, gamma)  VALUES(?, ?, ?, ?, ?, ?)},
-                                undef, $open_fmb_id, $value, $bet->delta, $bet->theta, $bet->vega, $bet->gamma
+                                undef, $open_fmb_id, $value, @greeks
                             );
                         }
                     }
