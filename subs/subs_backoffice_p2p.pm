@@ -42,6 +42,12 @@ sub p2p_advertiser_update {
     my $client = shift;
 
     try {
+
+        if (my $existing = $client->_p2p_advertisers(unique_name => request->param('advertiser_name'))) {
+            die "There is already another advertiser with this nickname\n"
+                if grep { $_->{client_loginid} ne $client->loginid } $existing->@*;
+        }
+
         $client->db->dbic->run(
             fixup => sub {
                 $_->do(
