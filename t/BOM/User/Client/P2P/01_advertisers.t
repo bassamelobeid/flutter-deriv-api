@@ -30,7 +30,7 @@ my $user = BOM::User->create(
 
 $user->add_client($test_client_cr);
 
-my $advertiser_name = 'advertiser name';
+my $advertiser_name = 'Ad_man';
 
 subtest 'advertiser Registration' => sub {
     my $client = BOM::Test::Helper::P2P::create_client();
@@ -80,7 +80,7 @@ subtest 'Advertiser name already taken' => sub {
     my $client     = BOM::Test::Helper::P2P::create_client();
 
     cmp_deeply(
-        exception { $client->p2p_advertiser_create(name => $advertiser->p2p_advertiser_info->{name}) },
+        exception { $client->p2p_advertiser_create(name => 'ad_MAN') },
         {error_code => 'AdvertiserNameTaken'},
         "Can't create an advertiser with a name that's already taken"
     );

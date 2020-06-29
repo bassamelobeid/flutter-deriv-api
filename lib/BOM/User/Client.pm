@@ -1815,7 +1815,7 @@ sub p2p_advertiser_create {
 
     my $name = trim($param{name});
     die +{error_code => 'AdvertiserNameRequired'} unless $name;
-    die +{error_code => 'AdvertiserNameTaken'} if $client->_p2p_advertisers(name => $name)->[0];
+    die +{error_code => 'AdvertiserNameTaken'} if $client->_p2p_advertisers(unique_name => $name)->[0];
 
     my ($id) = $client->db->dbic->run(
         fixup => sub {
@@ -2488,7 +2488,7 @@ sub _p2p_advertisers {
 
     my $advertisers = $client->db->dbic->run(
         fixup => sub {
-            $_->selectall_arrayref('SELECT * FROM p2p.advertiser_list(?, ?, ?)', {Slice => {}}, @param{qw/id loginid name/});
+            $_->selectall_arrayref('SELECT * FROM p2p.advertiser_list(?, ?, ?, ?)', {Slice => {}}, @param{qw/id loginid name unique_name/});
         });
 
     for my $item (@$advertisers) {
