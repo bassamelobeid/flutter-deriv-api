@@ -1,5 +1,27 @@
 <form id="user-limit-form">
-<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+
+Limit type: 
+    <select name="limit_type_selection">
+    [% FOREACH entry IN limit_types.sort %]
+                   <option value="[% entry %]"  [% IF limit_type_selected == entry %] selected [% END %]> [% entry %] </option>
+            [% END %]
+    </select>
+
+Market type:
+    <select name="market_type_selection">
+    [% FOREACH entry IN market_types.sort %]
+                   <option value="[% entry %]" [% IF market_type_selected == entry %] selected [% END %]> [% entry %] </option>
+            [% END %]
+    </select>
+
+
+Comment : <input id="filter_comment" name="comment" type="text" size="10" value="[% comment_selected %]" >
+<input type="submit" name="filterclientlimit" value="FILTER"/>
+
+<p>
+<input type="submit" name="deleteclientlimit" [% IF disabled %] disabled=true [% END %] value="DELETE"/>
+</p>
+
 <table>
     <tr>
         <td><b>Binary user id &nbsp;</b></td>
@@ -17,6 +39,7 @@
         <td><b>Updated by &nbsp;</b></td>
         <td><b>Updated on &nbsp;</b></td>
         <td><b>Comment &nbsp;</b></td>
+        <td><b>Delete &nbsp;</b></td>
     </tr>
     [% FOREACH data IN output %]
         <tr>
@@ -39,7 +62,7 @@
             <td>[% data.updated_by %]</td>
             <td>[% data.updated_on %]</td>
             <td>[% data.comment %]</td>
-            <td><button class="_user-limit-button" name="deleteclientlimit" value="[% data.client_id.join() %]-[% data.market_type %]-[% data.client_type %]-[% data.limit_id %]"</button>DELETE</td>
+            <td><input type="checkbox" class="_user-limit-cb" name="deleteclientdata" [% IF disabled %] disabled=true [% END %] value="[% data.client_id.join() %]-[% data.market_type %]-[% data.client_type %]-[% data.limit_id %]"/></td>
         </tr>
     [% END %]
 </table>

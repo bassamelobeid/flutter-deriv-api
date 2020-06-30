@@ -12,6 +12,7 @@ use BOM::User::Client;
 use BOM::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config::Chronicle;
+use List::MoreUtils qw(uniq);
 
 BOM::Backoffice::Sysinit::init();
 
@@ -27,48 +28,84 @@ my $json       = JSON::MaybeXS->new(
     canonical => 1
 );
 
+my $http_req       = request();
+my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+
 my $custom_client_limits = $json->decode($app_config->get('quants.custom_client_profiles'));
+
+if ($http_req->params->{deleteclientlimit}) {
+    {
+        code_exit_BO("Permission denied: No write access") if $disabled_write;
+
+        my $delete_list = $http_req->params->{deleteclientdata};
+        $delete_list = ($delete_list and (ref($delete_list) ne 'ARRAY')) ? [$delete_list] : $delete_list;
+
+        next if not defined $delete_list;
+
+        foreach my $entry (@$delete_list) {
+
+            my ($client_id, $market_type, $client_type, $limit_id) = split '-', $entry;
+            my @multiple = split(' ', $client_id);
+
+            if ($limit_id eq 'N.A.') {
+
+                BOM::Database::Helper::UserSpecificLimit->new({
+                        db             => $db,
+                        client_loginid => $multiple[0],    # first client_loginid will do
+                        client_type    => $client_type,
+                        market_type    => $market_type,
+                    })->delete_user_specific_limit;
+
+            } else {
+
+                delete $custom_client_limits->{$client_id}->{custom_limits}->{$limit_id};
+                $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+                $app_config->set({'quants.custom_client_profiles' => $json->encode($custom_client_limits)});
+
+            }
+
+        }
+    }
+}
 
 my @users_limit = BOM::Database::Helper::UserSpecificLimit->new({db => $db})->select_user_specific_limit;
 
 my @output = get_limited_client_list($custom_client_limits, @users_limit);
 
-my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
+my $limit_types  = ['', uniq map { $_->{limit_type} } @output];
+my $market_types = ['', uniq map { $_->{market_type} } @output];
+
+#Filtering request will contains below paramaters:
+#       1. market_type_selection . With value either 'financial' or 'non_financial'
+#       2. limit_type_selection. With value 'turnover and payout limit' , 'realized_loss' or 'potential_loss'.
+#       3. comment. Comment can be anything and no specific value for this.
+my $market_type_input = '';
+my $limit_type_input  = '';
+my $comment_input     = '';
+
+if ($http_req->params->{filterclientlimit}) {
+    $market_type_input = $http_req->params->{market_type_selection};
+    $limit_type_input  = $http_req->params->{limit_type_selection};
+    $comment_input     = $http_req->params->{comment};
+
+    @output = grep { $_->{market_type} =~ /$market_type_input/ } @output if defined $market_type_input and $market_type_input ne '';
+    @output = grep { $_->{limit_type} =~ /$limit_type_input/ } @output   if defined $limit_type_input  and $limit_type_input ne '';
+    @output = grep { $_->{comment} =~ /$comment_input/ } @output         if defined $comment_input     and $comment_input ne '';
+}
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/existing_user_limit.html.tt',
     {
-        profit_table_url => request()->url_for('backoffice/f_profit_table.cgi?loginID='),
-        url              => request()->url_for('backoffice/quant/client_limit.cgi'),
-        output           => \@output,
-        disabled         => $disabled_write,
+        profit_table_url     => request()->url_for('backoffice/f_profit_table.cgi?loginID='),
+        url                  => request()->url_for('backoffice/quant/client_limit.cgi'),
+        output               => \@output,
+        disabled             => $disabled_write,
+        limit_types          => $limit_types,
+        market_types         => $market_types,
+        market_type_selected => $market_type_input,
+        limit_type_selected  => $limit_type_input,
+        comment_selected     => $comment_input
     }) || die BOM::Backoffice::Request::template()->error;
-
-my $r = request();
-
-if ($r->params->{'deleteclientlimit'}) {
-    code_exit_BO("permission denied: no write access") if $disabled_write;
-    my ($client_id, $market_type, $client_type, $limit_id) = split '-', $r->params->{'deleteclientlimit'};
-    my @multiple = split(' ', $client_id);
-
-    if ($limit_id eq 'N.A.') {
-
-        BOM::Database::Helper::UserSpecificLimit->new({
-                db             => $db,
-                client_loginid => $multiple[0],    # first client_loginid will do
-                client_type    => $client_type,
-                market_type    => $market_type,
-            })->delete_user_specific_limit;
-
-    } else {
-
-        delete $custom_client_limits->{$client_id}->{custom_limits}->{$limit_id};
-        $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
-        $app_config->set({'quants.custom_client_profiles' => $json->encode($custom_client_limits)});
-
-    }
-
-}
 
 sub get_limited_client_list {
     my ($custom_client_limits, @users_limit) = @_;
