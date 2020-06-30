@@ -92,11 +92,12 @@ sub _get_txn_time {
 
     # Time for financial market bet
     my $time_type = $txn->{action_type} eq 'sell' ? 'sell_time' : 'purchase_time';
-    return $txn->{$time_type} if $txn->{financial_market_bet_id};
+    return $txn->{$time_type}   if $txn->{financial_market_bet_id};
+    return $txn->{payment_time} if $txn->{payment_id};
 
     return $txn->{escrow_time} if $txn->{action_type} eq 'escrow';
 
-    return $txn->{payment_time};
+    return $txn->{transaction_time};
 }
 
 1;
