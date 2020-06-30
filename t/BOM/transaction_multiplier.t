@@ -903,20 +903,25 @@ subtest 'buy multiplier on synthetic with CR' => sub {
         cancellation => '1h',
     });
 
-    $txn = BOM::Transaction->new({
-        client        => $cr,
-        contract      => $contract,
-        price         => 100,
-        amount        => 100,
-        amount_type   => 'stake',
-        source        => 19,
-        purchase_date => $contract->date_start,
-    });
+    SKIP: {
+        # skipping forex test on non-trading day
+        skip "weekend on forex", 3, unless $contract->trading_calendar->is_open($contract->underlying->exchange);
 
-    $error = $txn->buy;
-    ok $error, 'buy failed with error';
-    is $error->{-mesg}, 'trying unauthorised combination', 'message is trying unauthorised combination';
-    is $error->{-message_to_client}, 'Trading is not offered for this duration.', 'message to client Trading is not offered for this duration.';
+        $txn = BOM::Transaction->new({
+            client        => $cr,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        $error = $txn->buy;
+        ok $error, 'buy failed with error';
+        is $error->{-mesg},              'trying unauthorised combination',           'message is trying unauthorised combination';
+        is $error->{-message_to_client}, 'Trading is not offered for this duration.', 'message to client Trading is not offered for this duration.';
+    }
 };
 
 done_testing();
