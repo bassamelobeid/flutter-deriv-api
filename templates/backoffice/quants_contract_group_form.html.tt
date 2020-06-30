@@ -9,7 +9,7 @@
 <table id="contract_group_form">
     <tr>
         <td>Contract type: </td>
-        <td> <input type="text" name="contract_type"></td>
+        <td> <input type="text" name="contract_type" data-lpignore="true" /></td>
         <td> (accepts comma separated values)</td>
     </tr>
     <tr>

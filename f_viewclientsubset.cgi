@@ -208,7 +208,7 @@ if ($total) {
             . '<input type="hidden" name="onlynonzerobalance" value="'
             . encode_entities(request()->param('onlynonzerobalance')) . '" />'
             . $prev_page . ' <em>'
-            . ' Page: <input size="3" maxlength="3" type="text" id="page_input" name="page" value="'
+            . ' Page: <input size="3" maxlength="3" type="text" id="page_input" name="page" data-lpignore="true" value="'
             . encode_entities($page_selected)
             . '" /> of '
             . encode_entities($total_page)

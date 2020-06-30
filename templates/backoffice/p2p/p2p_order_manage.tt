@@ -1,14 +1,14 @@
 <p><a href="[% request.url_for('backoffice/p2p_order_list.cgi') %]">Back to orders list</a></p>
 
 <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker}) %]" method="get">
-Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20/>
+Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data-lpignore="true" />
 <button type="submit">Get order</button>
 </form>
 
 [% IF order %]
 
     <h3>Details for order [% order.id %]</h3>
-    
+
     <table border="1" class="collapsed">
         <tr>
             <td>Status</td>
@@ -41,11 +41,11 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20/>
         <tr>
             <td>Client P2P advertiser id</td>
             <td>[% order.client_id %]</td>
-        </tr>    
+        </tr>
         <tr>
             <td>Client advertiser name</td>
             <td>[% order.client_name %]</td>
-        </tr> 
+        </tr>
         <tr>
             <td>Advertiser&nbsp;&nbsp;<span style="color:blue; font-weight:bold;">[% order.advertiser_role %]</span></td>
                 <td>[% order.advertiser_loginid %]
@@ -85,7 +85,7 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20/>
         <tr>
             <td>Payment method</td>
             <td>[% order.advert_payment_method %]</td>
-        </tr>    
+        </tr>
         <tr>
             <td>Creation time</td>
             <td>[% order.created_time %]</td>
@@ -109,7 +109,7 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20/>
             <td>[% order.contact_info %]</td>
         </tr>
     </table>
-    
+
     <h3>Transactions</h3>
     <table border="1" class="collapsed">
         <thead>
@@ -122,7 +122,7 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20/>
                 <th scope="col">Amount</th>
                 <th scope="col">TX type</th>
                 <th scope="col">Payment ID</th>
-                <th scope="col">Staff</th>                
+                <th scope="col">Staff</th>
             </tr>
         </thead>
         <tbody>

@@ -17,7 +17,7 @@ table#p2p_advertiser_edit td{
         <tr>
             <td class="label">Name: </td>
             <td>
-                <input type="text" name="advertiser_name" value="[% advertiser_name %]" /> [% advertiser_name %]
+                <input type="text" name="advertiser_name" value="[% advertiser_name %]" data-lpignore="true" /> [% advertiser_name %]
             </td>
         </tr>
         [% IF whattodo != 'register' %]
@@ -55,19 +55,19 @@ table#p2p_advertiser_edit td{
             <tr>
                 <td class="label">Default advert description: </td>
                 <td>
-                    <input type="text" name="default_advert_description" value="[% default_advert_description %]" size=80/> [% default_advert_description %]
+                    <input type="text" name="default_advert_description" value="[% default_advert_description %]" size=80 data-lpignore="true" /> [% default_advert_description %]
                 </td>
             </tr>
             <tr>
                 <td class="label">Payment Info: </td>
                 <td>
-                    <input type="text" name="payment_info" value="[% payment_info %]" size=80/> [% payment_info %]
+                    <input type="text" name="payment_info" value="[% payment_info %]" size=80 data-lpignore="true" /> [% payment_info %]
                 </td>
-            </tr> 
+            </tr>
             <tr>
                 <td class="label">Contact Info: </td>
                 <td>
-                    <input type="text" name="contact_info" value="[% contact_info %]" size=80/> [% contact_info %]
+                    <input type="text" name="contact_info" value="[% contact_info %]" size=80 data-lpignore="true" /> [% contact_info %]
                 </td>
             </tr>
             <tr>
@@ -77,7 +77,7 @@ table#p2p_advertiser_edit td{
                     <select name="trade_band">
                         <option value="low" [% trade_band == 'low' && 'selected' %]>Low</option>
                         <option value="medium" [% trade_band == 'medium' && 'selected' %]>Medium</option>
-                        <option value="high" [% trade_band == 'high' && 'selected' %]>High</option>                                                
+                        <option value="high" [% trade_band == 'high' && 'selected' %]>High</option>
                     </select>
                     [% END %]
                     [% trade_band | ucfirst %]
@@ -86,7 +86,7 @@ table#p2p_advertiser_edit td{
                     [% advertiser_info.limit_currency %] [% advertiser_info.daily_sell_limit %] for sell ads
                     (24h turnover: buy [% client_currency %] [% advertiser_info.daily_buy %], sell [% client_currency %] [% advertiser_info.daily_sell %])</p>
                 </td>
-            </tr>            
+            </tr>
         [% END %]
         <tr>
             <td colspan="2"><button type="submit">Update P2P advertiser details</button></td>

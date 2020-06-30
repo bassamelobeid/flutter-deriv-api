@@ -42,7 +42,9 @@ foreach my $symbol (@markets) {
     print "</textarea>";
 
     if ($existing_vol_surface->type eq 'moneyness') {
-        print 'Spot reference: <input type="text" name="spot_reference" value="' . encode_entities($existing_vol_surface->spot_reference) . '">';
+        print 'Spot reference: <input type="text" name="spot_reference" value="'
+            . encode_entities($existing_vol_surface->spot_reference)
+            . '" data-lpignore="true" />';
     }
     print '<input type="submit" value="Save">';
 

@@ -160,10 +160,10 @@
                     </tbody></table>
                 </td>
                 [% IF trx.transaction_type == 'withdrawal' %]
-                    <td valign="top"><table><tbody>
-                        <label for="authorisers">Authorisers:</label>
-                        <br/>
-                        <input type="textarea" id="authorisers" name="authorisers" readonly="readonly" placeholder="(None)" value="[% trx.authorisers.join(', ') %]"/>
+                    <td valign="top">
+                        <table class="internal"><tbody>
+                            <tr><th>Authorisers:</th><td>[% trx.authorisers.join(', ') %]</td></tr>
+                        </tbody></table>
                         <br/>
                         [% IF trx.status == 'LOCKED' %]
                         <form action="[% controller_url %]" onsubmit="return confirm('Do you really want to continue?');" method="POST">
@@ -189,15 +189,15 @@
                             [% END %]
                             </br>
                             <select name="rejection_reason">
-                            <option>-Select Rejection Reason-</option>
-                            <option> less trade/no trade </option>
-                            <option> back to fiat account </option>
-                            <option> contact CS </option>
+                                <option>-Select Rejection Reason-</option>
+                                <option> less trade/no trade </option>
+                                <option> back to fiat account </option>
+                                <option> contact CS </option>
                             </select>
                             <input type="submit" name="action" value="Reject"/>
                         </form>
                         [% END %]
-                    </tbody></table></td>
+                    </td>
                 [% ELSIF view_action == 'search' && trx.transaction_type == 'deposit' %]
                     [% #Empty Verification cell for deposit transactions in search listing %]
                     <td></td>

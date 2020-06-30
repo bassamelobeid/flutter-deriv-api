@@ -53,13 +53,13 @@
     <th>Transaction Date</th>
 </tr>
 <tr>
-    <td><input type="text" name="account" required placeholder="required"/></td>
+    <td><input type="text" name="account" required placeholder="required" data-lpignore="true" /></td>
     <td>
         <select name="currency">
             [% currency_options | none %]
         </select>
     </td>
-    <td><input type="text" name="amount" required placeholder="required"/></td>
+    <td><input type="text" name="amount" required placeholder="required" data-lpignore="true" /></td>
     <td>
         <select name="range">
             <option value="0-10">0-10</option>
@@ -72,8 +72,8 @@
             <option value="10000-99999">10000-99999</option>
         </select>
     </td>
-    <td><input type="text" name="DCcode" placeholder="required"/></td>
-    <td><input type="text" name="date_received" id="date_received" required class="datepick" placeholder="required" pattern="\d{4}-\d{2}-\d{2}"/></td>
+    <td><input type="text" name="DCcode" placeholder="required" data-lpignore="true" /></td>
+    <td><input type="text" name="date_received" id="date_received" required class="datepick" placeholder="required" pattern="\d{4}-\d{2}-\d{2}" data-lpignore="true" /></td>
 </tr>
 </table>
 
@@ -119,10 +119,10 @@
         <input type="number" name="trace_id" />
     </td>
     <td class="all_payment_types external_cashier">
-        <input type="text" name="payment_processor" insist/>
+        <input type="text" name="payment_processor" data-lpignore="true" insist />
     </td>
     <td class="all_payment_types external_cashier">
-        <input type="text" name="transaction_id"/>
+        <input type="text" name="transaction_id" data-lpignore="true" />
     </td>
     <td class="all_payment_types bank_money_transfer">
         <select name="bom_bank_info">
@@ -136,9 +136,9 @@
             <option value="Sparkasse MFGBP 10000030593080">Sparkasse MFGBP 10000030593080</option>
         </select>
     </td>
-    <td class="all_payment_types cash_transfer"><input type="text" name="mtcn_number" insist/></td>
+    <td class="all_payment_types cash_transfer"><input type="text" name="mtcn_number" data-lpignore="true" insist /></td>
     <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center">
-        <input type="text" name="reference_id" />
+        <input type="text" name="reference_id" data-lpignore="true" />
     </td>
     <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center">
         <input type="checkbox" name="informclientbyemail" value="on" id="informclientbyemail" />
@@ -155,7 +155,7 @@
 </tr>
 <tr>
     <td>
-        <input type="text" required id="remark" name="remark"/><br/>
+        <input type="text" required id="remark" name="remark" data-lpignore="true" /><br/>
         <em>Remarks will appear on client statement but are no longer used by the system</em>
     </td>
 </tr>

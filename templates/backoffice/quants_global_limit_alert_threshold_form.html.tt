@@ -18,7 +18,7 @@
                 [% END %]
             </select>
         </td>
-        <td><input type="text" name="threshold_amount"></input></td>
+        <td><input type="text" name="threshold_amount" data-lpignore="true" /></td>
     </tr>
     <tr>
         <td><button onClick="SaveThreshold()" type="button">save</button></td>

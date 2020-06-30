@@ -223,8 +223,8 @@ my $display_transactions = sub {
 };
 
 my @crypto_currencies =
-    map { my $def = LandingCompany::Registry::get_currency_definition($_); $def->{type} eq 'crypto' ? {currency => $_, name => $def->{name}} : () }
-    LandingCompany::Registry::all_currencies();
+    sort { $a->{currency} cmp $b->{currency} }
+    map { {currency => $_, name => LandingCompany::Registry::get_currency_definition($_)->{name}} } LandingCompany::Registry::all_crypto_currencies();
 my $tt2 = BOM::Backoffice::Request::template;
 $tt2->process(
     'backoffice/crypto_cashier/crypto_control_panel.html.tt',

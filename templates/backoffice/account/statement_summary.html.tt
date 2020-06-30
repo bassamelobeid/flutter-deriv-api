@@ -8,8 +8,8 @@
             [% client_summary_ranges.from %]
             [% client_summary_ranges.to %]
             <form action="[% self_post %]" method="get">
-                <input name="overview_fm_date" type="text" value="[% client_summary_ranges.from %]"  class='datepick'>
-                <input name="overview_to_date" type="text" value="[% client_summary_ranges.to %]" class='datepick'>
+                <input name="overview_fm_date" type="text" value="[% client_summary_ranges.from %]" class="datepick" data-lpignore="true" />
+                <input name="overview_to_date" type="text" value="[% client_summary_ranges.to %]" class="datepick" data-lpignore="true" />
                 <input name="loginID" type="hidden" value="[% loginid %]">
                 <input name="broker" type="hidden" value="[% broker %]">
                 <input name="currency" type="hidden" value="[% currency %]">

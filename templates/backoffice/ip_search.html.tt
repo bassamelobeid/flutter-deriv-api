@@ -1,16 +1,16 @@
 <FORM ACTION="[% ip_search_url %]" METHOD=POST>
 <b>IP SEARCH</b> Enter IP Address :
-<INPUT type=text size=15 maxlength=15 name=ip value='[% ip %]'>
-<br>Ignore clients who didn't log in during last <input type=text size=6 value=10 name=lastndays> days
+<INPUT type=text size=15 maxlength=15 name=ip value='[% ip %]' data-lpignore='true' />
+<br>Ignore clients who didn't log in during last <input type=text size=6 value=10 name=lastndays data-lpignore='true' /> days
 <input type=submit value='Search for Email'>
 <input type="hidden" name="search_type" value="ip">
 </form>
 <hr>
 <b>Get accounts logged in with the same IPs</b>
 <form action="[% ip_search_url %]" method="post">
-<input type=text size=50 maxlength=50 name=loginid value='[% loginid %]' placeholder="CR12345 -or- user@binary.com" required><br>
-<input type="text" name="date_from" placeholder="2016-01-01" value='[% date_from %]' required pattern="\d{4}-\d{2}-\d{2}" class="datepick">
-<input type="text" name="date_to" placeholder="2017-01-01" value='[% date_to %]' required pattern="\d{4}-\d{2}-\d{2}" class="datepick">
+<input type=text size=50 maxlength=50 name=loginid value='[% loginid %]' placeholder="CR12345 -or- user@binary.com" required data-lpignore='true' /><br>
+<input type="text" name="date_from" placeholder="2016-01-01" value='[% date_from %]' required pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore='true' />
+<input type="text" name="date_to" placeholder="2017-01-01" value='[% date_to %]' required pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore='true' />
 <input type="submit" value="Search for evidences">
 <input type="hidden" name="search_type" value="client">
 </form>

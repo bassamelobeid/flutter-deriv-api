@@ -59,8 +59,8 @@ print "<form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_
 print "<input type=hidden name=broker value=$encoded_broker>";
 print "<input type=hidden name=loginID value=\"$encoded_loginID\">";
 print "<INPUT type=\"submit\" value=\"EDIT $encoded_loginID DETAILS\">";
-print "</form><form style=\"float:right\" action=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" method=\"POST\">
-Quick jump to see another portfolio: <input name=loginID type=text size=10 value='$encoded_broker'>";
+print "</form> <form style=\"float:right\" action=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" method=\"POST\">
+Quick jump to see another portfolio: <input name=loginID type=text size=15 value='$encoded_broker' data-lpignore='true' />";
 print "<input type=hidden name=\"outputtype\" value=\"table\">";
 print "<input type=hidden name=\"broker\" value=\"$encoded_broker\">";
 print "<input type=hidden name=\"l\" value=\"EN\">";

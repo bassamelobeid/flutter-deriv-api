@@ -24,7 +24,7 @@
     <li><b>decay_factor_before:</b> It is exactly same concept for before news impact. The values are provided on yaml file.</li>
 <ol>
     <li>Default: This will keep existing decay factor value. For freshly added underlying to news it will be 20 for after and 10 for before.
-    <li>Fast: Most of variance belongs to 1 minute after or before news. 
+    <li>Fast: Most of variance belongs to 1 minute after or before news.
     <li>Slow: Most of variance belongs to half of time of duration after or before news.</li>
     <li>Flat: Variance is distributed evently all over the duration.</li>
 </ol>
@@ -37,19 +37,19 @@
 
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table id='economic_event_form'>
-    <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR)</td></tr>
-    <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. epoch or 2012-11-14 01:15:00.)</td></tr>
-    <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
-    <tr><td>Impact</td><td> : <INPUT type="text" name="impact"></td><td>(e.g. 1=low, 3=medium, 5=high)</td></tr>
+    <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol" data-lpignore="true" /></td><td>(e.g. USD GBP EUR)</td></tr>
+    <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date" data-lpignore="true" /></td><td>(e.g. epoch or 2012-11-14 01:15:00.)</td></tr>
+    <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name" data-lpignore="true" /></td><td>(e.g. German Trade Balance)</td></tr>
+    <tr><td>Impact</td><td> : <INPUT type="text" name="impact" data-lpignore="true" /></td><td>(e.g. 1=low, 3=medium, 5=high)</td></tr>
     <INPUT type="hidden" name="source" value="binary">
     <tr><td></td><td><button onclick="saveEvent()">Save</td><td class='save_result'></td></tr>
 </table>
 </fieldset>
 
 <p><H2>Economic Event Factors</H2></p>
-    
+
 <p>Those events which are not in yaml file are displayed with an asterisk '*'. </p>
-    
+
 <p>Display for date: <select onchange="updateTable(this.value)">[% FOREACH date IN dates %]<option value="[% date %]">[% date %]</option>[% END %]</select></p>
 
 <p><b>List of Scheduled Categorized Economic Events</b></p>

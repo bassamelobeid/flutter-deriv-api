@@ -39,7 +39,7 @@ print "<input type=hidden name=broker value=$encoded_broker>";
 my $today = Date::Utility->today;
 my $month = $today->year . '-' . sprintf("%02d", $today->month);
 
-print 'Month: <input type=text size=12 name=month value="' . $month . '" required pattern="\d{4}-\d{2}">';
+print 'Month: <input type=text size=12 name=month value="' . $month . '" required pattern="\d{4}-\d{2}" data-lpignore="true" />';
 print "<br /><input type=\"submit\" value=\"Daily Turnover Report\"> CLICK ONLY ONCE! Be patient if slow to respond.";
 print "</form>";
 
@@ -62,8 +62,8 @@ print "<form action=\""
     . request()->url_for('backoffice/f_rescind_freegift.cgi')
     . "\" method=post>"
     . "<input type=hidden name=broker value=$encoded_broker>"
-    . "Days of inactivity: <input type=text size=8 name=inactivedays value=90> "
-    . "<br />Message: <input type=text size=50 name=message value='Rescind of free gift for cause of inactivity'> "
+    . "Days of inactivity: <input type=text size=8 name=inactivedays value=90 data-lpignore='true' /> "
+    . "<br />Message: <input type=text size=50 name=message value='Rescind of free gift for cause of inactivity' data-lpignore='true' /> "
     . "<br /><select name=whattodo><option>Simulate<option>Do it for real !</select>"
     . "<input type=submit value='Rescind free gifts'>"
     . "</form>";
@@ -76,8 +76,8 @@ print "<form action=\""
     . request()->url_for('backoffice/f_rescind_listofaccounts.cgi')
     . "\" method=post>"
     . "<input type=hidden name=broker value=$encoded_broker>"
-    . "List of accounts: <input type=text size=60 name=listaccounts value='CBET1020,CBET1021'> (separate with commas)"
-    . "<br />Message: <input type=text size=65 name=message value='Account closed.'> "
+    . "List of accounts: <input type=text size=60 name=listaccounts value='CBET1020,CBET1021' data-lpignore='true' /> (separate with commas)"
+    . "<br />Message: <input type=text size=65 name=message value='Account closed.' data-lpignore='true' /> "
     . "<br /><select name=whattodo><option>Simulate<option>Do it for real !</select>"
     . " <input type=submit value='Rescind these accounts!'>"
     . "</form>";

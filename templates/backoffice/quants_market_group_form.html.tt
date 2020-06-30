@@ -9,16 +9,16 @@
 <table id="market_group_form">
     <tr>
         <td>Underlying symbol: </td>
-        <td> <input type="text" name="underlying_symbol"></input></td>
+        <td> <input type="text" name="underlying_symbol" data-lpignore="true" /></td>
         <td> (accepts comma separated values)</td>
     </tr>
     <tr>
         <td>Market group: </td>
-        <td> <input type="text" name="market_group"></input></td>
+        <td> <input type="text" name="market_group" data-lpignore="true" /></td>
     </tr>
     <tr>
         <td>Submarket group: </td>
-        <td> <input type="text" name="submarket_group"></input></td>
+        <td> <input type="text" name="submarket_group" data-lpignore="true" /></td>
     </tr>
     <tr>
         <td>Market type: </td>

@@ -28,7 +28,7 @@ my $today = Date::Utility->new->date_ddmmmyy;
 Bar("QUICK CHECK OF A CLIENT ACCOUNT");
 
 print "<FORM ACTION=\"" . request()->url_for('backoffice/f_manager_history.cgi') . "\" METHOD=\"POST\"><font size=2 face=verdana><B>";
-print "Check Statement of LoginID : <input name=loginID type=text size=10 value=''>";
+print "Check Statement of LoginID : <input name=loginID type=text size=15 value='' data-lpignore='true' /> ";
 print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
 print "<INPUT type=hidden name=\"l\" value=\"EN\">";
 print "<INPUT type=\"submit\" value=Go>";
@@ -36,14 +36,14 @@ print "</FORM>";
 
 #note : can only be used once in this script !!
 print "<FORM ACTION=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" METHOD=\"POST\">";
-print "Check Portfolio of LoginID : <input name=loginID type=text size=10 value=''>";
+print "Check Portfolio of LoginID : <input name=loginID type=text size=15 value='' data-lpignore='true' /> ";
 print "<input type=hidden name=outputtype value=table>";
 print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
 print "<INPUT type=hidden name=\"l\" value=\"EN\">";
 print "<INPUT type=\"submit\" value=\"Go\">";
 print "</FORM>";
 
-Bar("Make Dual Control Control Code");
+Bar("Make Dual Control Code");
 print "To comply with ISO17799 requirements, deposits/withdrawals to client accounts require 2 staff members to authorise.
 One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when inputting the transaction.";
 print "<form id=\"paymentDCC\" action=\""
@@ -51,14 +51,14 @@ print "<form id=\"paymentDCC\" action=\""
     . "\" method=\"post\" class=\"bo_ajax_form\">"
     . "<input type=\"hidden\" name=\"broker\" value=\"$encoded_broker\">"
     . "<input type=\"hidden\" name=\"l\" value=\"EN\">"
-    . " Amount: <select name=\"currency\">$currency_options</select> <input type=\"text\" name=\"amount\" size=\"7\">"
+    . " Amount: <select name=\"currency\">$currency_options</select> <input type=\"text\" name=\"amount\" size=\"7\" data-lpignore=\"true\" />"
     . " Type of transaction: <select name=\"transtype\">"
     . "<option value=\"CREDIT\">CREDIT (deposit)</option>"
     . "<option value=\"DEBIT\">DEBIT (withdrawal)</option>"
     . "<option value=\"TRANSFER\">TRANSFER</option>"
     . "</select>"
-    . " LoginID of the client: <input type=\"text\" size=\"12\" name=\"clientloginid\">"
-    . "<br>Input a comment/reminder about this DCC: <input type=\"text\" size=\"50\" name=\"reminder\">"
+    . " LoginID of the client: <input type=\"text\" size=\"12\" name=\"clientloginid\" data-lpignore=\"true\" />"
+    . "<br>Input a comment/reminder about this DCC: <input type=\"text\" size=\"50\" name=\"reminder\" data-lpignore=\"true\" />"
     . "<br><input type=\"submit\" value='Make Dual Control Code (by "
     . encode_entities($clerk) . ")'>"
     . "</form>";

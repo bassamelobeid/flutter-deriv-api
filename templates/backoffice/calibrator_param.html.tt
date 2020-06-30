@@ -69,7 +69,7 @@
         </tr>
         <tr id="altered_param">
             [% FOREACH param_name = params.$underlying.calibration_param.keys.sort %]
-                <td><input class="calib_param" name="[% param_name %]" type="text" value="[% params.$underlying.calibration_param.$param_name %]"/></td>
+                <td><input class="calib_param" name="[% param_name %]" type="text" value="[% params.$underlying.calibration_param.$param_name %]" data-lpignore="true"/></td>
             [% END %]
         </tr>
         <tr border='0'>

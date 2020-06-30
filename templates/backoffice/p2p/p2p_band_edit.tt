@@ -1,5 +1,5 @@
 <form action="[% request.url_for('backoffice/p2p_band_management.cgi', {broker => broker}) %]" method="post">
-    
+
 <table border="0">
     <tr>
         <td class="label">Country</td>
@@ -21,8 +21,8 @@
                 <option value="[% c.code %]">[% c.name %] ([% c.code %])</option>
                 [% END %]
             </select>
-            [% END %] 
-        </td>        
+            [% END %]
+        </td>
     </tr>
     <tr>
         <td class="label">Level</td>
@@ -34,7 +34,7 @@
             <select name="trade_band">
                 <option value="low" [% item.action == 'copy' && item.trade_band=='low' && 'selected' %]>Low</option>
                 <option value="medium" [% item.action == 'copy' && item.trade_band=='medium' && 'selected' %]>Medium</option>
-                <option value="high" [% item.action == 'copy' && item.trade_band=='high' && 'selected' %]>High</option>                                                
+                <option value="high" [% item.action == 'copy' && item.trade_band=='high' && 'selected' %]>High</option>
             </select>
             [% END %]
         </td>
@@ -53,20 +53,20 @@
                 [% END %]
             </select>
             [% END %]
-        </td>        
-    </tr> 
+        </td>
+    </tr>
     <tr>
         <td class="label">Buy Limit</td>
         <td>
-            <input type="text" name="max_daily_buy" value="[% item.action && item.max_daily_buy %]" size=20/>
+            <input type="text" name="max_daily_buy" value="[% item.action && item.max_daily_buy %]" size=20 data-lpignore="true" />
         </td>
-    </tr> 
+    </tr>
     <tr>
         <td class="label">Sell Limit </td>
         <td>
-            <input type="text" name="max_daily_sell" value="[% item.action && item.max_daily_sell %]" size=20/>
+            <input type="text" name="max_daily_sell" value="[% item.action && item.max_daily_sell %]" size=20 data-lpignore="true" />
         </td>
-    </tr> 
+    </tr>
 </table>
 
 [% IF item.action %]
@@ -75,5 +75,5 @@
 [% ELSE %]
 <button type="submit" name="save" value="1">Submit</button></td>
 [% END %]
-    
+
 </form>

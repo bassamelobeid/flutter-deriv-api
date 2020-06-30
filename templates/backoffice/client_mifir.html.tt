@@ -15,7 +15,7 @@
         [% FOREACH i IN data.keys %]
             [% NEXT IF i == 'country' %]
             [% IF i == 'CONCAT' %]
-                    <button type="submit" name="view_action" value="mifir_set_concat">CONCAT</button> 
+                    <button type="submit" name="view_action" value="mifir_set_concat">CONCAT</button>
                     <br>
                     [% NEXT %]
             [% END %]
@@ -42,7 +42,7 @@
             <span>[% client.mifir_id %]</span>
             <button type="submit" name="view_action" value="mifir_reset" value="DELETE">DELETE</button>
         [% ELSE %]
-            <input type="text" name="mifir_id" value=""><br>
+            <input type="text" name="mifir_id" value="" data-lpignore="true" /><br>
             up to 35 alphanumerical characters
         [% END %]
         </td>

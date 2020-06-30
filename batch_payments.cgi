@@ -297,7 +297,7 @@ if ($preview and @invalid_lines == 0) {
         . "<input type=hidden name=\"file_location\" value=\""
         . encode_entities($payments_csv_file) . "\">"
         . "Make sure you check the above details before you make dual control code<br>"
-        . "<br>Input a comment/reminder about this DCC: <input type=text size=50 name=reminder>"
+        . "<br>Input a comment/reminder about this DCC: <input type=text size=50 name=reminder data-lpignore='true' />"
         . "Type of transaction: <select name='transtype'>"
         . "<option value='BATCHACCOUNT'>Batch Account</option><option value='BATCHDOUGHFLOW'>Batch Doughflow</option>"
         . "</select>"
@@ -311,7 +311,7 @@ if ($preview and @invalid_lines == 0) {
          <input type="hidden" name="skip_validation" value="] . encode_entities($skip_validation) . qq["/>
          <table border=0 cellpadding=1 cellspacing=1><tr><td bgcolor=FFFFEE><font color=blue>
 				<b>DUAL CONTROL CODE</b>
-				Control Code: <input type=text name=DCcode required size=16>
+				Control Code: <input type=text name=DCcode required size=16 data-lpignore='true' />
 				Type of transaction: <select name="transtype">
 				<option value="BATCHACCOUNT">Batch Account</option><option value="BATCHDOUGHFLOW">Batch Doughflow</option>
 				</select>

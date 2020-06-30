@@ -1,4 +1,4 @@
-<p> 
+<p>
 
 
 <b>max volume</b>, is calculated as follows:
@@ -12,7 +12,7 @@
 </ul>
 
 </p>
-<p> 
+<p>
 You can set a risk_profile for a "market" or an "underlying". <br/>
 Setting it for a market is a shortcut for setting it on the individual underlyings within that market.
 </p>
@@ -25,24 +25,24 @@ If there is no risk profile defined for a given underlying (or it's correspondin
 <table>
     <tr>
         <td>Risk profile:</td>
-        <td><input type="text" name="risk_profile"></input></td>
+        <td><input type="text" name="risk_profile" data-lpignore="true" /></td>
         <td> e.g. [% risk_profiles.join(' | ') %].</td>
     </tr>
     <tr>
         <td>Max Volume Positions: </td>
-        <td><input type="text" name="max_volume_positions"></input></td>
+        <td><input type="text" name="max_volume_positions" data-lpignore="true" /></td>
         <td>Number of maximum volume positions (i.e 5).</td>
     </tr>
     <tr>
         <td>★ Market: </td>
-        <td><input type="text" name="market"></input></td>
+        <td><input type="text" name="market" data-lpignore="true" /></td>
         <td>
             (optional) e.g. forex.
         </td>
     </tr>
     <tr>
         <td>★ Underlying Symbol: </td>
-        <td><input type="text" name="underlying_symbol"></input></td>
+        <td><input type="text" name="underlying_symbol" data-lpignore="true" /></td>
         <td>(optional) e.g. R_100.</td>
     </tr>
     <tr>

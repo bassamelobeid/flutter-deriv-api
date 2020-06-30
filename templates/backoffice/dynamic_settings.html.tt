@@ -5,6 +5,7 @@
         width: 40%;
         font-weight: bold;
         padding: 10px;
+        word-break: break-word;
     }
     #saved {
         color:green;
@@ -153,7 +154,7 @@
             [% ELSIF item.type == 'json_string' or item.type == 'LongStr' %]
                 <textarea id="[% item.name %]" rows="3" cols="30" name="[% item.name %]" placeholder="[% item.default_value %]" [% IF item.disabled %] disabled [% END %]>[% item.value %]</textarea>
             [% ELSE %]
-                <input id="[% item.name %]" type="text" name="[% item.name %]" value="[% item.value %]" size="40" placeholder="[% item.default_value %]" [% IF item.disabled %] disabled [% END %]>
+                <input id="[% item.name %]" type="text" name="[% item.name %]" value="[% item.value %]" size="40" placeholder="[% item.default_value %]" data-lpignore="true" [% IF item.disabled %] disabled [% END %]>
             [% END %]
             <cite>
                 <strong>Type:</strong> <em>[% item.type %]</em><br />

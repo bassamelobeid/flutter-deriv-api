@@ -14,22 +14,22 @@
 
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table id='custom_commission_form'>
-    <tr><td>Name</td><td> : <input type="text" name="name"></td><td>Accepts only words and integers (required)</td></tr>
-    <tr><td>Start Time</td><td> : <input type="text" name="start_time" id="custom_commission_start_time"></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
-    <tr><td>End Time</td><td> : <input type="text" name="end_time" id="custom_commission_end_time"></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
-    <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol"></td></tr>
-    <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol"></td></tr>
-    <tr><td>Bias</td><td> : <input type="text" name="bias"></td><td>Leave it empty if bias is not intended. Accepts values long or short</td></tr>
+    <tr><td>Name</td><td> : <input type="text" name="name" data-lpignore="true" /></td><td>Accepts only words and integers (required)</td></tr>
+    <tr><td>Start Time</td><td> : <input type="text" name="start_time" id="custom_commission_start_time" data-lpignore="true" /></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
+    <tr><td>End Time</td><td> : <input type="text" name="end_time" id="custom_commission_end_time" data-lpignore="true" /></td><td>Accepts valid date utility format, e.g. epoch or '2017-09-14 10:00:30' (required)</td></tr>
+    <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol" data-lpignore="true" /></td></tr>
+    <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol" data-lpignore="true" /></td></tr>
+    <tr><td>Bias</td><td> : <input type="text" name="bias" data-lpignore="true" /></td><td>Leave it empty if bias is not intended. Accepts values long or short</td></tr>
     <tr><td>Barriers</td></tr>
-    <tr><td>OTM_max </td><td> : <input type="text" name="OTM_max"></td></tr>
-    <tr><td>OTM_3 </td><td> : <input type="text" name="OTM_3"></td></tr>
-    <tr><td>OTM_2 </td><td> : <input type="text" name="OTM_2"></td></tr>
-    <tr><td>OTM_1 </td><td> : <input type="text" name="OTM_1"></td></tr>
-    <tr><td>ATM </td><td> : <input type="text" name="ATM"></td></tr>
-    <tr><td>ITM_1 </td><td> : <input type="text" name="ITM_1"></td></tr>
-    <tr><td>ITM_2 </td><td> : <input type="text" name="ITM_2"></td></tr>
-    <tr><td>ITM_3 </td><td> : <input type="text" name="ITM_3"></td></tr>
-    <tr><td>ITM_max </td><td> : <input type="text" name="ITM_max"></td><td> The commission to be charged if barriers goes out of the tiered commission as spot moves.</td></tr>
+    <tr><td>OTM_max </td><td> : <input type="text" name="OTM_max" data-lpignore="true" /></td></tr>
+    <tr><td>OTM_3 </td><td> : <input type="text" name="OTM_3" data-lpignore="true" /></td></tr>
+    <tr><td>OTM_2 </td><td> : <input type="text" name="OTM_2" data-lpignore="true" /></td></tr>
+    <tr><td>OTM_1 </td><td> : <input type="text" name="OTM_1" data-lpignore="true" /></td></tr>
+    <tr><td>ATM </td><td> : <input type="text" name="ATM" data-lpignore="true" /></td></tr>
+    <tr><td>ITM_1 </td><td> : <input type="text" name="ITM_1" data-lpignore="true" /></td></tr>
+    <tr><td>ITM_2 </td><td> : <input type="text" name="ITM_2" data-lpignore="true" /></td></tr>
+    <tr><td>ITM_3 </td><td> : <input type="text" name="ITM_3" data-lpignore="true" /></td></tr>
+    <tr><td>ITM_max </td><td> : <input type="text" name="ITM_max" data-lpignore="true" /></td><td> The commission to be charged if barriers goes out of the tiered commission as spot moves.</td></tr>
     <tr><td></td><button onclick="saveCustom()" style="margin-left: 20px;">Save</button></td><td class="result"></td></tr>
 </table>
 </fieldset>

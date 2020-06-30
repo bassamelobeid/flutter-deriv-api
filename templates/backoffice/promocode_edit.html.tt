@@ -44,7 +44,7 @@ input.upper {
                     [% pc.code %]
                     <input type="hidden" name="promocode" value="[% pc.code %]" />
                 [% ELSE %]
-                    <input type="text" class="upper" name="promocode" />
+                    <input type="text" class="upper" name="promocode" data-lpignore="true" />
                 [% END %]
             </td>
         </tr>
@@ -60,7 +60,7 @@ input.upper {
         </tr>
         <tr>
             <td class="label">Amount</td>
-            <td>: <input type="text" name="amount" value="[% pc_json.amount %]" /> Note: Amount range: FREE_BET, GET_X_WHEN_DEPOSIT_Y (0 ~ 999) </td>
+            <td>: <input type="text" name="amount" value="[% pc_json.amount %]" data-lpignore="true" /> Note: Amount range: FREE_BET, GET_X_WHEN_DEPOSIT_Y (0 ~ 999) </td>
         </tr>
         <tr>
             <td class="label">Promocode Type</td>
@@ -74,11 +74,11 @@ input.upper {
         </tr>
         <tr>
             <td class="label">Mininum Deposit </td>
-            <td>: <input type="text" name="min_deposit" value="[% pc_json.min_deposit %]"> Note: Only applies for type: GET_X_WHEN_DEPOSIT_Y </td>
+            <td>: <input type="text" name="min_deposit" value="[% pc_json.min_deposit %]" data-lpignore="true" /> Note: Only applies for type: GET_X_WHEN_DEPOSIT_Y </td>
         </tr>
         <tr>
             <td class="label">Minimum Turnover</td>
-            <td>: <input type="text" name="min_turnover" value="[% pc_json.min_turnover %]" /> Note: Only applies for type: FREE_BET </td>
+            <td>: <input type="text" name="min_turnover" value="[% pc_json.min_turnover %]" data-lpignore="true" /> Note: Only applies for type: FREE_BET </td>
         </tr>
         <tr>
             <td class="label">Start Date</td>
@@ -86,13 +86,13 @@ input.upper {
                 [% IF pc.start_date %]
                     [% pc.start_date %]
                 [% ELSE %]
-                    <input class="datepick" type="text" name="start_date" pattern="\d{4}-\d{2}-\d{2}"/> Format: yyyy-mm-dd
+                    <input class="datepick" type="text" name="start_date" pattern="\d{4}-\d{2}-\d{2}" data-lpignore="true" /> Format: yyyy-mm-dd
                 [% END %]
-            </td> 
+            </td>
         </tr>
         <tr>
             <td class="label">Expiry Date</td>
-            <td>: <input class="datepick" type="text" name="expiry_date" value="[% pc.expiry_date %]" pattern="\d{4}-\d{2}-\d{2}"/> Format: yyyy-mm-dd</td> 
+            <td>: <input class="datepick" type="text" name="expiry_date" value="[% pc.expiry_date %]" pattern="\d{4}-\d{2}-\d{2}" data-lpignore="true" /> Format: yyyy-mm-dd</td>
         </tr>
         <tr>
             <td class="label">
@@ -113,7 +113,7 @@ input.upper {
         </tr>
         <tr>
             <td class="label">Description</td>
-            <td>: <input type="text" name="description" value="[% pc.description %]" size="100" /></td>
+            <td>: <input type="text" name="description" value="[% pc.description %]" size="100" data-lpignore="true" /></td>
         </tr>
         <tr>
             <td class="label">Status</td>

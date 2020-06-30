@@ -49,7 +49,7 @@ print '<form action="'
     . '<table>'
     . '<tr><td><b>LoginID</b></td><td> : ';
 
-print '<input type=text size=15 name="loginID" value="">'
+print '<input type=text size=15 name="loginID" value="" data-lpignore="true" />'
     . ' <a href="'
     . request()->url_for('backoffice/f_popupclientsearch.cgi')
     . '"><font class=smallfont>[Search]</font></a>'
@@ -61,13 +61,13 @@ print '</td></tr></table>';
 
 Bar("VIEW/EDIT CLIENT'S Email");
 print '<form action="' . request()->url_for('backoffice/client_email.cgi') . '" method="get">' . '<b>Client\'s Email : </b>';
-print '<input type=text size=30 name="email">';
+print '<input type=text size=30 name="email" data-lpignore="true" />';
 print '&nbsp;&nbsp;<input type="submit" value="View / Edit"></b>' . '</form>';
 
 Bar("IMPERSONATE CLIENT");
 print '<form action="' . request()->url_for('backoffice/client_impersonate.cgi') . '" method="get">';
 print '<b>Enter client loginid: </b>';
-print '<input type=text size=30 name="impersonate_loginid"><br>';
+print '<input type=text size=15 name="impersonate_loginid" data-lpignore="true" /> ';
 print "<input type='hidden' name='broker' value='$encoded_broker'>";
 print '<input type="submit" value="Impersonate"></b></form>';
 
@@ -85,9 +85,9 @@ print "<form id='clientdetailsDCC' action='"
     . " Type of transaction: <select name='transtype'>"
     . "<option value='UPDATECLIENTDETAILS'>Update client details</option>"
     . "</select>"
-    . "Loginid : <input type='text' name='clientloginid' placeholder='required'>"
-    . "<br><br>Email of the client, enter new email if you want to change email address: <input type='text' name='clientemail' placeholder='required'>"
-    . "<br><br>Input a comment/reminder about this DCC: <input type='text' size='50' name='reminder'>"
+    . " Loginid: <input type='text' name='clientloginid' size='15' placeholder='required' data-lpignore='true' />"
+    . "<br><br>Email of the client, enter new email if you want to change email address: <input type='text' name='clientemail' placeholder='required' data-lpignore='true' />"
+    . "<br><br>Input a comment/reminder about this DCC: <input type='text' size='50' name='reminder' data-lpignore='true' />"
     . "<br><br><input type='submit' value='Make Dual Control Code (by "
     . encode_entities($clerk) . ")'>"
     . "</form>";
@@ -141,8 +141,8 @@ print "<br /><br /><form action=\""
     . "<option value='no_trading'>Trading Disabled Accounts</option>"
     . "<option value='no_withdrawal_or_trading'>Trading Disabled and Withdrawal Locked Accounts</option>"
     . "</select>"
-    . '<br /><input type=checkbox value="1" name=onlyfunded>Only funded accounts'
-    . '<br /><input type=checkbox value="1" name=onlynonzerobalance>Only nonzero balance'
+    . '<br /><input type=checkbox value="1" name="onlyfunded" id="chk_onlyfunded" /><label for="chk_onlyfunded">Only funded accounts</label> '
+    . '<br /><input type=checkbox value="1" name="onlynonzerobalance" id="chk_onlynonzerobalance" /><label for="chk_onlynonzerobalance">Only nonzero balance</label> '
     . "<br /><input type=submit value='Monitor Clients on this list'>"
     . "</form>";
 
@@ -157,7 +157,7 @@ print qq~
             <b>Loginid</b>
             </td>
             <td>
-            <input type=text size=15 name="loginid" value="">
+            <input type=text size=15 name="loginid" value="" data-lpignore="true" />
             </td>
         </tr>
         <tr>
@@ -166,9 +166,11 @@ print qq~
             </td>
             <td>
 ~;
-print "<input name=startdate type=text size=10 value='" . Date::Utility->today()->minus_time_interval('30d')->date . "'/></td></tr>";
+print "<input name=startdate type=text data-lpignore='true' size=10 value='"
+    . Date::Utility->today()->minus_time_interval('30d')->date
+    . "'/></td></tr>";
 print "<tr><td><b>To</b></td><td>";
-print "<input name=enddate type=text size=10 value='" . Date::Utility->today()->date . "'/></td></tr>";
+print "<input name=enddate type=text data-lpignore='true' size=10 value='" . Date::Utility->today()->date . "'/></td></tr>";
 print "</table>";
 print "<input type=\"submit\" value=\"Submit\">";
 print "</form>";

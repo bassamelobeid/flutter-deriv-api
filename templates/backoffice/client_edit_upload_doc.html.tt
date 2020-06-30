@@ -53,22 +53,22 @@
       <span name="doc_field_required_[% n %]">
       <input type="checkbox" name="is_expiration_date_optional_[% n %]" onClick="check_is_expiration_date_optional([% n %])" title="Make optional" style="vertical-align:middle;margin:0;padding:0">
       <label id="required_star_[% n %]">*</label></span>
-      <input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick">
+      <input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true" />
     </div>
     <div id="issue_date_div_[% n %]" style="display:none">
       Issue date:
-      <input type="text" size=11 name="issue_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick">
+      <input type="text" size=11 name="issue_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true" />
       <label name="doc_field_required_[% n %]">*</label>
     </div>
   </td>
   <td align="right">
     Document ID:
     <label name="doc_field_required_[% n %]">*</label>
-    <input type="text" size=11 maxlength="30" name="document_id_[% n %]" placeholder="Document ID">
+    <input type="text" size=11 maxlength="30" name="document_id_[% n %]" placeholder="Document ID" data-lpignore="true" />
   </td>
   <td align="right">
     Comments:
-    <input type="text" size=25 maxlength="255" name="comments_[% n %]" placeholder="optional, up to 255 characters">
+    <input type="text" size=25 maxlength="255" name="comments_[% n %]" placeholder="optional, up to 255 characters" data-lpignore="true" />
   </td>
 </tr>
 [% END %]
@@ -104,12 +104,12 @@ function doc_type_changed(i){
   }
   document.getElementById('expiration_date_div_'+i).style.display = 'none';
   document.getElementById('issue_date_div_'+i).style.display = 'none';
-  
+
   if (is_expirable_doc)
     document.getElementById('expiration_date_div_'+i).style.display = 'inline';
   else if (!is_no_date_doc)
     document.getElementById('issue_date_div_'+i).style.display = 'inline';
-  
+
   let req_elements = document.getElementsByName('doc_field_required_'+i);
   for (let i = 0; i < req_elements.length; i++)
       req_elements[i].style.display = is_poi_doc ? 'inline': 'none';
@@ -121,7 +121,7 @@ function check_is_expiration_date_optional(i){
 
 function file_size_validation(file) {
   var FileSize = file.files[0].size / (1024 * 1024);
-  
+
   // Maximum is 8MB
   var max_size = 8;
   if(FileSize > max_size) {
@@ -136,7 +136,7 @@ function validate_expiry_date(date) {
       return "Invalid expiry date. Please match the requested format.\n"
   else if(expiry_date <= new Date())
     return "Expiry date must be a future date.\n";
-  
+
   return '';
 }
 
@@ -144,15 +144,15 @@ function validate_document_info() {
   let get_value = function(elm_name) {
     return (document.getElementsByName(elm_name)[0] || {}).value;
   }
-  
+
   let error_msg = "";
   let nationality = document.getElementsByName('docnationality')[0].value;
   let is_file_uploaded = false;
-  
+
   for (let i = 1; i <= 4; i++) {
-    
+
     let file_comments_errors = "";
-    
+
     let doc_type = get_value('doctype_' + i);
     let issue_date = get_value('issue_date_' + i);
     let expiry_date = get_value('expiration_date_' + i);
@@ -164,21 +164,21 @@ function validate_document_info() {
     let is_expirable_doc = doc_type.match(regex_expirable);
     let is_no_date_doc = doc_type.match(regex_no_date);
     let is_expiration_date_optional = document.getElementsByName('is_expiration_date_optional_' + i)[0].checked;
-    
-    
+
+
     // Check if file uploaded (if not, proceed to next file)
     if(!get_value('FILE_' + i)) {
-      
+
       if (expiry_date || doc_id || comments) {
         file_comments_errors = "Please upload a file for File " + i + "\n\n";
         error_msg += file_comments_errors;
       }
-      
+
       continue;
     }
-    
+
     is_file_uploaded = true;
-    
+
     // POI validation
     if(is_poi_doc) {
       if(!nationality) {
@@ -192,7 +192,7 @@ function validate_document_info() {
       if(!doc_id) {
         file_comments_errors += "Document ID is required.\n";
       }
-    
+
       if (!expiry_date && !is_expiration_date_optional)
         file_comments_errors += "Expiry date is required.\n";
       if (expiry_date)
@@ -214,25 +214,25 @@ function validate_document_info() {
     if (doc_id.length > 30) {
       file_comments_errors += "Document ID is too long.\n";
     }
-    
+
     if(comments.length > 255) {
       file_comments_errors += "Comments are too long.";
     }
-    
+
     if (file_comments_errors !== "") {
       error_msg += "Document upload failed for File " + i + ": \n\n" + file_comments_errors + "\n\n";
     }
   }
-  
+
   if(!is_file_uploaded) {
     error_msg = "No file is selected for uploading.";
   }
-  
+
   if (error_msg !== "") {
     alert(error_msg);
     return false;
   }
-  
+
   return true;
 }
 

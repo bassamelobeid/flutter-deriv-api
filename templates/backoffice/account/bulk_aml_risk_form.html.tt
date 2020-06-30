@@ -1,7 +1,7 @@
 <form action="[% edit_url %]" method=post>
-Login ID : <input type="text" size="45" name="risk_loginids" value="[% loginids %]" [% IF disabled %] readonly [% END %]><br />
+Login ID : <input type="text" size="45" name="risk_loginids" value="[% loginids %]" data-lpignore="true" [% IF disabled %] readonly [% END %]><br />
 * You can specify multiple loginids separated by space; for exmple <b> CR10001 CR10002 MLT30000 <b/>
-<table> 
+<table>
     <tr><td>
     <tr>
         <td class="label">AML Risk Classification : </td>

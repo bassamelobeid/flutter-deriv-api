@@ -1,6 +1,6 @@
 <form action="" method="post">
     <label for="last">Chart Last:</label>
-    <input type="text" name="last" id="last" size="10" value="5" />
+    <input type="text" name="last" id="last" size="10" value="5" data-lpignore="true" />
     <span>days</span>
     <a id="graph_url" style="display:none;" href=[% graph_url | none %]></a>
     <button id="bpot_graph_[% id %]" value="graph it" type="submit">Graph it!</button>

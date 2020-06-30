@@ -1,7 +1,7 @@
 <div>
     <p>View Daily Turnover Report</p>
     <form action="[% request.url_for('backoffice/f_dailyturnoverreport.cgi') | none %]" method="post" onsubmit="return validate_month()">
-        Month: <input type="text" size="12" name="month" value="[% this_month %]" required pattern="\d{4}-\d{2}"></input>
+        Month: <input type="text" size="12" name="month" value="[% this_month %]" required pattern="\d{4}-\d{2}" data-lpignore="true" />
         <br/><br/>
         <input type="submit" value="View Daily Turnover Report"></input>
     </form>

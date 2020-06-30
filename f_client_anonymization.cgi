@@ -29,7 +29,7 @@ print "<form id='generateDCC' action='"
     . "<option value='Anonymize client'>Anonymize client details</option>"
     . "<option value='Delete customerio record'>Delete client customerio record</option>"
     . "</select><br><br>"
-    . "Loginid : <input type='text' name='clientloginid' placeholder='required'>"
+    . "Loginid : <input type='text' name='clientloginid' size='15' placeholder='required' data-lpignore='true' />"
     . "<br><br><input type='submit' value='Make Dual Control Code (by "
     . encode_entities($clerk) . ")'>"
     . "</form>";
@@ -55,13 +55,13 @@ print "<form id='clientAnonymization' action='"
     . request()->url_for('backoffice/f_client_anonymization.cgi')
     . "' method='post'>"
     . "<input type='hidden' name='l' value='EN'>"
-    . "Loginid : <input type='text' name='clientloginid' placeholder='required' value='"
+    . "Loginid : <input type='text' name='clientloginid' size='15' placeholder='required' data-lpignore='true' value='"
     . $loginid . "'>"
-    . "<br><br>DCC : <input type='text' name='DCcode' placeholder='required' value='"
+    . "<br><br>DCC : <input type='text' name='DCcode' size='50' placeholder='required' data-lpignore='true' value='"
     . $prev_dcc . "'>"
-    . "<br><br><input type='checkbox' name='verification' value='true'> I understand this action is irreversible ("
+    . "<br><br><input type='checkbox' name='verification' id='chk_verify' value='true'> <label for='chk_verify'>I understand this action is irreversible ("
     . encode_entities($clerk)
-    . ")<br><br><input type='submit' name='transtype' value='Anonymize client'/>"
+    . ")</label><br><br><input type='submit' name='transtype' value='Anonymize client'/>"
     . "<br><br><input type='submit' name='transtype' value='Delete customerio record'/>"
     . "</form>";
 

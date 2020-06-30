@@ -3,7 +3,7 @@
 <form action="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {loginID => loginid, whattodo => 'p2p.advertiser.register'}) %]" method="post">
     <div>
         <label>Name: </label>
-        <input type="text" name="advertiser_name" value="" required/>
+        <input type="text" name="advertiser_name" value="" data-lpignore="true" required />
     </div>
     <br/>
     <button type="submit">Register</button>

@@ -22,6 +22,8 @@ BOM::Backoffice::Sysinit::init();
 
 my $staff = BOM::Backoffice::Auth0::get_staffname();
 
+PrintContentType();
+BrokerPresentation(' ');
 Bar("Make dual control code");
 
 my $now               = Date::Utility->new;

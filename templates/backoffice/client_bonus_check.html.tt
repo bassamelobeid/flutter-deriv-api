@@ -225,7 +225,7 @@ table#client_edit td{
     <form name="bonus_code" method="post">
         <tr>
             <td class="label">Input Bonus Code</td>
-            <td><input name ="apply_bonus_code" type="text"/>
+            <td><input name ="apply_bonus_code" type="text" data-lpignore="true" />
         </tr>
         <tr>
             <td class="label">Apply Bonus Code</td>

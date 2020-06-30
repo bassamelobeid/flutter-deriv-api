@@ -3,12 +3,12 @@
 <strong>Client Search</strong>
 <br>
 <form action="[% url %]" method="post">
-        <input type="text" size="14" name="partialfname" placeholder="First Name" onfocus="this.select()" value="[% params.first_name %]" />
-        <input type="text" size="14" name="partiallname" placeholder="Last Name" onfocus="this.select()" value="[% params.last_name %]"/>
-        <input type="text" size="20" name="partialemail" placeholder="Email" onfocus="this.select()" value="[% params.email %]" />
-        <input type="text" size="20" name="phone" placeholder="phone" onfocus="this.select()" value="[% params.phone %]" />
-        <input type="text" size="20" name="date_of_birth" placeholder="DOB YYYY-MM-DD" onfocus="this.select()" value="[% params.date_of_birth %]" class="datepick" pattern="^\d{4}-\d{2}-\d{2}\$"/>
-        <input type="text" size="20" name="broker" placeholder="Broker" onfocus="this.select()" value="[% broker %]" />
+        <input type="text" size="14" name="partialfname" placeholder="First Name" onfocus="this.select()" value="[% params.first_name %]" data-lpignore="true" />
+        <input type="text" size="14" name="partiallname" placeholder="Last Name" onfocus="this.select()" value="[% params.last_name %]" data-lpignore="true" />
+        <input type="text" size="20" name="partialemail" placeholder="Email" onfocus="this.select()" value="[% params.email %]" data-lpignore="true" />
+        <input type="text" size="20" name="phone" placeholder="phone" onfocus="this.select()" value="[% params.phone %]" data-lpignore="true" />
+        <input type="text" size="20" name="date_of_birth" placeholder="DOB YYYY-MM-DD" onfocus="this.select()" value="[% params.date_of_birth %]" class="datepick" pattern="^\d{4}-\d{2}-\d{2}\$" data-lpignore="true" />
+        <input type="text" size="20" name="broker" placeholder="Broker" onfocus="this.select()" value="[% broker %]" data-lpignore="true" />
         <input type="submit" value="Search" />
 </form>
 <p>Note: For best results, enter either only the Client's first name or last name</p>

@@ -15,7 +15,8 @@ sub get_update_volatilities_form {
         "<form method=post action='"
         . request()->url_for('backoffice/quant/market_data_mgmt/update_volatilities/update_used_volatilities.cgi') . "'>";
     $form .= "<input type=hidden name=warndifference value='" . encode_entities($warndifference) . "'>";
-    $form .= qq~Update volatility for following underlyings: <input type="text" size=30 name="markets" value="~ . encode_entities($markets) . qq~">~;
+    $form .= qq~Update volatility for following underlyings: <input type="text" size=30 name="markets" data-lpignore="true" value="~
+        . encode_entities($markets) . qq~">~;
     $form .= qq~</br>~;
     $form .= "<input type=submit name=submit value='Go'>";
     $form .= "</form>";
@@ -27,7 +28,8 @@ sub get_update_interest_rates_form {
     my $currencies;
 
     my $form = "<form method=post action='" . request()->url_for('backoffice/quant/market_data_mgmt/update_used_interest_rates.cgi') . "'>";
-    $form .= qq~Update interest rates for following currencies. E.g. AUD USD: <input type="text" size=30 name="currencies" value="~
+    $form .=
+        qq~Update interest rates for following currencies. E.g. AUD USD: <input type="text" size=30 name="currencies" data-lpignore="true" value="~
         . encode_entities($currencies) . qq~">~;
     $form .= "<input type=submit name=submit value='Go'>";
     $form .= "</form>";

@@ -15,14 +15,14 @@
     <th><label for="skip_validation2">Override Status Checks?</label></th>
 </tr>
 <tr>
-    <td><input type="text" name="account" placeholder="required"/></td>
-    <td><input type="text" name="to_account" placeholder="required"/></td>
+    <td><input type="text" name="account" placeholder="required" data-lpignore="true" /></td>
+    <td><input type="text" name="to_account" placeholder="required" data-lpignore="true" /></td>
     <td>
         <select name="currency">
             [% currency_options | none %]
         </select>
     </td>
-    <td><input type="text" name="amount" placeholder="required"/></td>
+    <td><input type="text" name="amount" placeholder="required" data-lpignore="true" /></td>
     <td>
         <select name="range">
             <option value="0-10">0-10</option>
@@ -35,7 +35,7 @@
             <option value="10000-99999">10000-99999</option>
         </select>
     </td>
-    <td><input type="text" name="DCcode" placeholder="required"/></td>
+    <td><input type="text" name="DCcode" placeholder="required" data-lpignore="true" /></td>
     <td style="text-align:center"><input type="checkbox" name="skip_validation" value="on" id="skip_validation2" /></td>
 </tr>
 </table>

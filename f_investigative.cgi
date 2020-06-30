@@ -35,14 +35,14 @@ Bar("ANTI FRAUD TOOLS");
 
 print "<P><LI><B>USER LOGIN HISTORY</B> - Login history per user (email) login";
 print "<FORM ACTION=\"" . request()->url_for('backoffice/f_viewloginhistory.cgi') . "\" METHOD=POST>";
-print "Email, or list of emails (space separated) :<TEXTAREA name='email' rows=2 cols=40></TEXTAREA>";
+print "Email, or list of emails (space separated): <TEXTAREA name='email' rows=2 cols=40></TEXTAREA> ";
 print "<INPUT type=submit value='View User Login History'>";
 print "</FORM>";
 
 print "<P><LI><b>Query UN Sanctions list</b><FORM ACTION=\"" . request()->url_for('backoffice/f_investigative.cgi') . "\" METHOD=POST>";
 print "<INPUT type=hidden name=whattodo value=unsanctions>";
-print "First name:<INPUT type=text size=15 maxlength=35 name=fname value='Usama'>";
-print " Last name:<INPUT type=text size=15 maxlength=35 name=lname value='bin Laden'>";
+print "First name: <INPUT type=text size=15 maxlength=35 name=fname value='Usama' data-lpignore='true' /> ";
+print "Last name: <INPUT type=text size=15 maxlength=35 name=lname value='bin Laden' data-lpignore='true' /> ";
 print "<input type=submit value='Query UN Sanctions Database'>";
 print "</form>";
 

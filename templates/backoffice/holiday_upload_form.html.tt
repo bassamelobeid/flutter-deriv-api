@@ -1,4 +1,4 @@
-<p><b> Upload Excel file contains exchange or currencies holiday from Bloomberg </b></p> 
+<p><b> Upload Excel file contains exchange or currencies holiday from Bloomberg </b></p>
 <form  name="upload_file" action="[% upload_url | none %]" method="POST" enctype="multipart/form-data">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
@@ -28,9 +28,9 @@
                 <option value='country_holiday'>Country Holiday</option>
             </select></td>
         </tr>
-        <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR NYSE TSE)</td></tr>
-        <tr><td>Holiday Date</td><td> : <INPUT type="text" name="holiday_date" pattern="\d{4}-\d{2}-\d{2}" class="datepick"></td><td>(e.g. 2014-12-12)</td></tr>
-        <tr><td>Holiday Description</td><td> : <INPUT type="text" name="holiday_desc"></td><td>(e.g. New Year's Eve)</td></tr>
+        <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol" data-lpignore="true" /></td><td>(e.g. USD GBP EUR NYSE TSE)</td></tr>
+        <tr><td>Holiday Date</td><td> : <INPUT type="text" name="holiday_date" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true" /></td><td>(e.g. 2014-12-12)</td></tr>
+        <tr><td>Holiday Description</td><td> : <INPUT type="text" name="holiday_desc" data-lpignore="true" /></td><td>(e.g. New Year's Eve)</td></tr>
         <tr><td></td><td><INPUT type="submit" name='save' value="save"></td></tr>
         <tr><td></td><td><INPUT type="submit" name='delete' value="delete"></td></tr>
     </table>
@@ -50,9 +50,9 @@
                 <option value='late_opens'>Late Open</option>
             </select></td>
         </tr>
-        <tr><td>Exchange symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. NYSE TSE)</td></tr>
-        <tr><td>Date</td><td> : <INPUT type="text" name="date" class="datepick" pattern="\d{4}-\d{2}-\d{2}"></td><td>(e.g. 2014-12-12)</td></tr>
-        <tr><td>Time</td><td> : <INPUT type="text" name="time"></td><td>(e.g. XXhYYm format, example 12h30m)</td></tr>
+        <tr><td>Exchange symbol</td><td> : <INPUT type="text" name="symbol" data-lpignore="true" /></td><td>(e.g. NYSE TSE)</td></tr>
+        <tr><td>Date</td><td> : <INPUT type="text" name="date" class="datepick" pattern="\d{4}-\d{2}-\d{2}" data-lpignore="true" /></td><td>(e.g. 2014-12-12)</td></tr>
+        <tr><td>Time</td><td> : <INPUT type="text" name="time" data-lpignore="true" /></td><td>(e.g. XXhYYm format, example 12h30m)</td></tr>
         <tr><td></td><td><INPUT type="submit" name='save' value="save"></td></tr>
         <tr><td></td><td><INPUT type="submit" name='delete' value="delete"></td></tr>
     </table>

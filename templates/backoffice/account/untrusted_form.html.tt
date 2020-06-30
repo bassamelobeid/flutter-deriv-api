@@ -10,7 +10,7 @@
 
 <form action="[% edit_url %]" method=post>
 [% IF show_login %]
-Login ID : <input type="text" size="45" name="login_id" value="[% clientid %]"><br />
+Login ID : <input type="text" size="45" name="login_id" value="[% clientid %]" data-lpignore="true" /><br />
 [% ELSE %]
 <input type="hidden" name="login_id" value="[% clientid %]">
 [% END %]
@@ -36,7 +36,7 @@ Reason : <select id="untrusted_reasonlist" name="untrusted_reason">
 [% END %]
 </select>
 <br />
-<input type="text" size="92" name="additional_info" placeholder="Please specify here (optional)">
+<input type="text" size="92" name="additional_info" placeholder="Please specify here (optional)" data-lpignore="true" />
 <input type="hidden" name="broker" value="[% broker %]">
 <input type="hidden" name="untrusted_action" value="insert_data">
 <br /><input type="submit" value="Go">

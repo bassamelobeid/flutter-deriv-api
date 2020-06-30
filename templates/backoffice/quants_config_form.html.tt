@@ -59,7 +59,7 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
         <td><div id="market"></div></td>
         <td>
             <div id="underlying_symbol">
-                <input type="text" name="underlying_symbol" size="10"></input>
+                <input type="text" name="underlying_symbol" size="10" data-lpignore="true" />
             </div>
         </td>
         <td><div id="expiry_type"></div></td>
@@ -74,17 +74,17 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
             </select>
         </td>
         <td>
-            <input type="text" name="limit_amount" size="12"></input>
+            <input type="text" name="limit_amount" size="12" data-lpignore="true" />
         </td>
         <td>
-            <input type="text" name="comment" size="15"></input>
+            <input type="text" name="comment" size="15" data-lpignore="true" />
         </td>
         <td style="text-align:center;">
-            <input type="text" name="start_time" class="datepick" size="15" maxlength="19" pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$"></input>
+            <input type="text" name="start_time" class="datepick" size="15" maxlength="19" pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$" data-lpignore="true" />
             <br /><span class="hint">Format: yyyy-mm-dd (HH:mm:ss)</span>
         </td>
         <td style="text-align:center;">
-            <input type="text" name="end_time" class="datepick" size="15" maxlength="19" pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$"></input>
+            <input type="text" name="end_time" class="datepick" size="15" maxlength="19" pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$" data-lpignore="true" />
             <br /><span class="hint">Format: yyyy-mm-dd (HH:mm:ss)</span>
          </td>
         <td>
@@ -232,7 +232,7 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
         for (var i=0; i<data.length; i++) {
             var input = data[i];
             if (input == 'new_market') {
-                table += '<tr><td><input type="text" name="new_market"></input></td></tr>';
+                table += '<tr><td><input type="text" name="new_market" data-lpignore="true" /></td></tr>';
             } else {
                 table += '<tr><td><input type="checkbox" name="'+id+'" value="'+input+'">'+input+'</input></td></tr>';
             }
@@ -335,7 +335,7 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
         var invalidDateNames = [];
         \$('.datepick').each(function(){
             var date = \$(this).val().trim();
-            
+
             // Ignore validation if field is empty and it's not required
             if(!date && !\$(this).prop('required')) return true;
 

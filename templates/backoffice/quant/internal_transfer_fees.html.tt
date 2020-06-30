@@ -215,11 +215,11 @@ window.onload = initialize_values;
 <p style='color:black'><strong>DEFAULT VALUES</strong> <i>(The default transfer fees per currency type in percent)</i></p>
 <p  id='default_msg'>$defaults_msg</p>
 <table>
-	<tr><td>fiat-fiat: </td><td><input type="text" size="10" name="fiat_fiat" id="fiat_fiat" /> % </td></tr>
-	<tr><td>fiat-crypto: </td><td><input type="text" size="10" name="fiat_crypto" id="fiat_crypto" /> % </td></tr>
-	<tr><td>fiat-stable: </td><td><input type="text" size="10" name="fiat_stable" id="fiat_stable" /> % </td></tr>
-	<tr><td>crypto_fiat: </td><td><input type="text" size="10" name="crypto_fiat" id="crypto_fiat" /> % </td></tr>
-	<tr><td>stable_fiat: </td><td><input type="text" size="10" name="stable_fiat" id="stable_fiat" /> % </td></tr>
+	<tr><td>fiat-fiat: </td><td><input type="text" size="10" name="fiat_fiat" id="fiat_fiat" data-lpignore="true" /> % </td></tr>
+	<tr><td>fiat-crypto: </td><td><input type="text" size="10" name="fiat_crypto" id="fiat_crypto" data-lpignore="true" /> % </td></tr>
+	<tr><td>fiat-stable: </td><td><input type="text" size="10" name="fiat_stable" id="fiat_stable" data-lpignore="true" /> % </td></tr>
+	<tr><td>crypto_fiat: </td><td><input type="text" size="10" name="crypto_fiat" id="crypto_fiat" data-lpignore="true" /> % </td></tr>
+	<tr><td>stable_fiat: </td><td><input type="text" size="10" name="stable_fiat" id="stable_fiat" data-lpignore="true" /> % </td></tr>
 </table>
 <br/>
 <hr>
@@ -243,7 +243,7 @@ New/updated non-default fees:
     <tr>
         <td><select id="first_currency"></select></td>
         <td><select id="second_currency"></select></td>
-        <td><input type="text" size=6 id="currency_fee" /> % </td>
+        <td><input type="text" size=6 id="currency_fee" data-lpignore="true" /> % </td>
         <td><button type="button" onclick="add_fee_by_crurrency()">ADD</button></td>
     </tr>
 </table>

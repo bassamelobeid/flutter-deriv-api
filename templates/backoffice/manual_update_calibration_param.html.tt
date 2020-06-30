@@ -19,7 +19,7 @@
                 </tr>
                 <tr>
                     [% FOREACH param_name = params.$underlying.values.keys.sort %]
-                    <td><input type='text' name="[% param_name %]" value="[% params.$underlying.values.$param_name %]"></td>
+                    <td><input type='text' name="[% param_name %]" value="[% params.$underlying.values.$param_name %]" data-lpignore="true" /></td>
                     [% END %]
                 </tr>
             </table>

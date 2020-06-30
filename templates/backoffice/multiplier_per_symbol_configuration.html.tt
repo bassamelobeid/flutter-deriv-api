@@ -14,10 +14,10 @@
     [% FOREACH data IN existing_config %]
     <tr id="[% data.symbol %]-multiplier_config">
         <td>[% data.symbol %]</td>
-        <td><input type="text" name="commission" value="[% data.commission %]"></input></td>
-        <td><input type="text" name="multiplier_range" value="[% data.multiplier_range_json %]"></input></td>
-        <td><input type="text" name="cancellation_commission" value="[% data.cancellation_commission %]"></input></td>
-        <td><input type="text" name="cancellation_duration_range" value="[% data.cancellation_duration_range_json %]"></input></td>
+        <td><input type="text" name="commission" value="[% data.commission %]" data-lpignore="true" /></td>
+        <td><input type="text" name="multiplier_range" value="[% data.multiplier_range_json %]" data-lpignore="true" /></td>
+        <td><input type="text" name="cancellation_commission" value="[% data.cancellation_commission %]" data-lpignore="true" /></td>
+        <td><input type="text" name="cancellation_duration_range" value="[% data.cancellation_duration_range_json %]" data-lpignore="true" /></td>
         <td><button onClick="SaveMultiplierConfig('[% data.symbol %]')" type="button">save</button></td>
         <td class="multiplier_config_result"></td>
     </tr>

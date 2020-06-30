@@ -1,8 +1,10 @@
 <br>
 <form action="[% controller_url %]" method="POST">
     <select name="currency" id="ddl_crypto_currencies">
+        [% USE String %]
         [% FOR crypto IN all_crypto %]
-            <option value="[% crypto.currency %]"[% IF currency == crypto.currency %] selected="selected"[% END %]>[% crypto.name %]</option>
+            [% space = String.new('&nbsp;').repeat(6 - crypto.currency.length) %]
+            <option value="[% crypto.currency %]"[% IF currency == crypto.currency %] selected="selected"[% END %]>[% crypto.currency _ space _ ': ' _ crypto.name | none %]</option>
         [% END %]
     </select>
 <!-- Manual wallet functions -->
@@ -23,8 +25,8 @@
     <input type="hidden" name="broker" value="[% broker %]">
 <!-- Recon -->
         <button type="submit" name="view_action" value="reconcil">Reconciliation</button>
-        <input type="text" name="start_date" class="datepick" value="[% start_date %]" required pattern="\d{4}-\d{2}-\d{2}">
-        <input type="text" name="end_date" class="datepick" value="[% end_date %]" required pattern="\d{4}-\d{2}-\d{2}">
+        <input type="text" name="start_date" class="datepick" value="[% start_date %]" required pattern="\d{4}-\d{2}-\d{2}" size="12" data-lpignore="true" />
+        <input type="text" name="end_date" class="datepick" value="[% end_date %]" required pattern="\d{4}-\d{2}-\d{2}" size="12" data-lpignore="true" />
         <input type="checkbox" name="include_new" id="include_new"><label for="include_new">Show new addresses</label>
     <br><br>
 <!-- Search -->
@@ -33,12 +35,12 @@
             <option value="loginid">Loginid</option>
             <option value="address">Address</option>
         </select>
-        <input type="text" name="search_query">
+        <input type="text" name="search_query" data-lpignore="true" size="40" />
     <br><br>
 <!-- Manual Confirmation -->
         <button type="submit" name="view_action" value="prioritize_confirmation">Prioritize Confirmation</button>
         <label for="prioritize_address">Address</label>
-        <input type="text" name="prioritize_address" id="prioritize_address">
+        <input type="text" name="prioritize_address" id="prioritize_address" data-lpignore="true" size="40" />
     <br><br>
 <!-- Deposit -->
     <button type="submit" name="view_action" value="deposits">Deposit Transactions</button>
@@ -63,6 +65,12 @@
         </select>
     <br>
 </form>
+
+<style type="text/css">
+    #ddl_crypto_currencies option {
+        font-family: monospace;
+    }
+</style>
 
 <script type="text/javascript" language="javascript">
   \$(document).ready(function() {

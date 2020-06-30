@@ -2,9 +2,9 @@
     <form method="get">
         <input type="hidden" name="page" value="1" />
         <label>Order ID:</label>
-        <input type="text" name="order_id" value="[% input.order_id %]" />
+        <input type="text" name="order_id" value="[% input.order_id %]" data-lpignore="true" />
         <label>Client Login ID:</label>
-        <input type="text" name="loginid" value="[% input.loginid %]" />
+        <input type="text" name="loginid" size="15" value="[% input.loginid %]" data-lpignore="true" />
         <label>Order Status:</label>
         <select name="status">
             <option value="">All</option>

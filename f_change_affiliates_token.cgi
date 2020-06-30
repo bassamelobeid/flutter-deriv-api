@@ -74,7 +74,7 @@ if ($input->{EditAffiliatesToken}) {
     code_exit_BO(
         qq[<p>ERROR: Client [$ClientLoginid] not found. </p>
                   <form action="$self_post" method="get">
-                  Try Again: <input type="text" name="loginID" value="$ClientLoginid"></input>
+                  Try Again: <input type="text" name="loginID" size="15" value="$ClientLoginid" data-lpignore="true" />
                   </form>]
     ) unless $client;
 

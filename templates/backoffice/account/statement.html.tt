@@ -35,9 +35,9 @@
     <div>
         <form action="[% self_post %]" method="get">
             <span>Quick jump to see another statement:</span>
-            <input name="loginID" type="text" size=15 value="[% loginid %]">
-            <input name="startdate" type="text" size=15 value="[% startdate %]" placeholder="2016-12-20" class='datepick'>
-            <input name="enddate" type="text" size=15 value="[% enddate %]" placeholder="2017-01-20" class='datepick'>
+            <input name="loginID" type="text" size=15 value="[% loginid %]" data-lpignore="true" />
+            <input name="startdate" type="text" size=15 value="[% startdate %]" placeholder="2016-12-20" class="datepick" data-lpignore="true" />
+            <input name="enddate" type="text" size=15 value="[% enddate %]" placeholder="2017-01-20" class="datepick" data-lpignore="true" />
             <input name="broker" type=hidden value="[% broker %]">
             <input name="currency" type="hidden" value="[% currency %]">
             <div style = "padding-left: 195px;">
@@ -58,10 +58,12 @@
 <div>
     <table class="hover collapsed" border="1">
         <tr>
+            <th>Login ID</th>
+            <td class="copy-on-click" title="Click to copy">[% loginid %]</td>
             <th>Name</th>
-            <td>[% client.name %]</td>
+            <td class="copy-on-click" title="Click to copy">[% client.name %]</td>
             <th>Email</th>
-            <td>[% client.email %]</td>
+            <td class="copy-on-click" title="Click to copy">[% client.email %]</td>
             <th>Country</th>
             <td>[% client.country %]</td>
             <th>Residence</th>
@@ -82,17 +84,18 @@
         <b>[% currency %] [% formatnumber('amount', currency, balance) %]</b>
     </div>
 </div>
-<div id="statement_navigation" class="grd-parent grd-grid-12">
+
+<div class="grd-parent grd-grid-12">
     <div class="grd-grid-2 left-aligned">
         <a class="pjaxload button"
-           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date=>client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>&laquo;Newer</span></a>
+           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date => client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>&laquo;Newer</span></a>
     </div>
     <div class="grd-grid-8 center-aligned">
         <b>[% transactions.first.date.datetime %] --- [% transactions.last.date.datetime %]</b>
     </div>
     <div class="grd-grid-2 right-aligned">
         <a class="pjaxload button"
-           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date=>client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
+           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date => client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
     </div>
 </div>
 
@@ -113,7 +116,11 @@
     <tbody>
 
     [% IF transactions.size == 0 %]
-    <td align="center" colspan="9" style="color: red;"><strong>[% l('There are no items during this period') %]</strong></td>
+    <tr>
+        <td align="center" colspan="9" style="color: red;">
+            <strong>[% l('There are no items during this period') %]</strong>
+        </td>
+    </tr>
     [% ELSE %]
 
     [% FOREACH transaction IN transactions %]
@@ -150,7 +157,7 @@
         [% ELSE %]
             <td>[% transaction.id %]</td>
             <td></td>
-            <td>[% transaction.payment_remark.replace('\s+:\s+', ': ').replace('(payment_processor=)(\w+) ', '$1<b>$2</b> ') | none %]</td>
+            <td>[% transaction.payment_remark.replace('\s+:\s+', ': ').replace('(payment_processor=)(\w+)', '$1<b>$2</b>') | none %]</td>
 
             [% IF transaction.action_type == 'deposit' OR ( transaction.action_type == 'escrow' AND transaction.amount > 0 ) %]
                 <td class="right-aligned"></td>
@@ -169,44 +176,54 @@
     </tbody>
 </table>
 
-    <div>
-        <div id="statement_navigation" class="grd-parent grd-grid-12">
-            <div class="grd-grid-2 left-aligned">
-                <a class="pjaxload button"
-                   href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date=>client_summary_ranges.from, overview_to_date=>client_summary_ranges.to,startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>&laquo;Newer</span></a>
-            </div>
-            <div class="grd-grid-8 center-aligned">
-                <b>[% transactions.first.date.datetime %] --- [% transactions.last.date.datetime %]</b>
-            </div>
-            <div class="grd-grid-2 right-aligned">
-                <a class="pjaxload button"
-                   href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date=>client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
-            </div>
-        </div>
-        <style>
-            #statement-table td {
-                padding: 15px;
-            }
-            .app-id .app-name {
-                visibility: hidden;
-                background-color: black;
-                color: #fff;
-                text-align: center;
-                border-radius: 6px;
-                padding: 5px 5px;
+<div class="grd-parent grd-grid-12">
+    <div class="grd-grid-2 left-aligned">
+        <a class="pjaxload button"
+           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date => client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>&laquo;Newer</span></a>
+    </div>
+    <div class="grd-grid-8 center-aligned">
+        <b>[% transactions.first.date.datetime %] --- [% transactions.last.date.datetime %]</b>
+    </div>
+    <div class="grd-grid-2 right-aligned">
+        <a class="pjaxload button"
+           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date => client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
+    </div>
+</div>
 
-                /* Position the tooltip */
-                position: absolute;
-                z-index: 1;
-            }
+<style>
+    #statement-table td {
+        padding: 15px;
+    }
+    .app-id .app-name {
+        visibility: hidden;
+        background-color: black;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 5px;
 
-            .app-id:hover .app-name {
-                visibility: visible;
-            }
-            .debit-amount-st{
-                color: #EB3322;
-            }
-            .credit-amount-st{
-                color: #377D21;
-            }
-        </style>
+        /* Position the tooltip */
+        position: absolute;
+        z-index: 1;
+    }
+    .app-id:hover .app-name {
+        visibility: visible;
+    }
+    .debit-amount-st{
+        color: #EB3322;
+    }
+    .credit-amount-st{
+        color: #377D21;
+    }
+    .copy-on-click {
+        cursor: pointer;
+    }
+</style>
+
+<script>
+    document.querySelectorAll('.copy-on-click').forEach(el => {
+        el.addEventListener('click', (e) => {
+            navigator.clipboard.writeText(e.target.textContent);
+        });
+    });
+</script>

@@ -59,7 +59,7 @@ if ($input{bonus_approve} or $input{bonus_reject}) {
 
     print qq[<p>Check Another Bonus</p>
             <form action="$input{back_url}" method="get">
-            Login ID: <input type="text" name="loginID" ></input>
+            Login ID: <input type="text" name="loginID" size=15 data-lpignore="true" />
             </form>]
 } else {    #bulk Approval.
 
@@ -88,7 +88,7 @@ code_exit_BO();
 =head2 process_bonus_claim
 
 Description: Process the Bonus either approval or rejection
-Takes the following arguments 
+Takes the following arguments
 
 =over 4
 

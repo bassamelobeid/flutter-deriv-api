@@ -29,7 +29,7 @@
     <div class="grd-grid-1">
         <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { currency => currency, limit_order => contract.limit_order, shortcode => contract.short_code, purchase_time => contract.purchase_time, loginid => loginid, transaction_id => ident}) | none %]">[% ident %]</a>
         <div>
-            <label for="investigate_list" class="investigate">
+            <label class="investigate">
                 <input type="checkbox" name="investigate_list"
                        value='[% ident %]:::[% contract.info.description FILTER truncate(70) %]:::[% contract.purchase_time %]'>QQ
             </label>
@@ -99,15 +99,15 @@
         when required.
     </div>
     Sold Contracts Between <input type=text name="first_purchase_time" title="First Purchase Date" size="20"
-                                  value="[% first_purchase_time %]"/>
+                                  value="[% first_purchase_time %]" data-lpignore="true" />
     and <input type="text" name="last_purchase_time" title="Last Purchase Date" size="20"
-               value="[% last_purchase_time %]">
+               value="[% last_purchase_time %]" data-lpignore="true" />
     <input type="hidden" name="page" value="1">
     <input type="hidden" name="loginID" value="[% loginid %]">
     <input type="hidden" name="broker" value="[% request.broker_code %]">
     <input type="hidden" name="l" value="EN">
     <input type="checkbox" name="all_in_one_page" title="Show All Transactions in one page" [% IF all_in_one_page %]
-           checked="checked" [% END %]>Show All Transactions
+           checked="checked" [% END %] id="chk_all_in_one_page_profit_table"><label for="chk_all_in_one_page_profit_table">Show All Transactions</label>
     <input type="submit" value="Update">
     <input type="submit" name="calc_performance_probability" value="Calculate Performance Probability">
     <p> Note: Performance probability calculation just taking into account CALL/PUT and Digit contracts.

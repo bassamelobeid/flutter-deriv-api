@@ -404,23 +404,23 @@ sub build_client_statement_form {
         . request()->url_for('backoffice/f_manager_history.cgi')
         . '" METHOD="POST" onsubmit="return validate_month(\'statement\')">'
         . '<span style="color:red;"><b>Show All Transaction</b>, may fail for clients with huge number of transaction, so use this feature only when required.</span><br/>'
-        . 'Check Statement of LoginID : <input id="statement_loginID" name="loginID" type="text" size="10" value="'
-        . $broker . '"/>'
-        . 'From : <input name="startdate" type="text" size="10" value="'
+        . 'Check Statement of LoginID: <input id="statement_loginID" name="loginID" type="text" size="15" data-lpignore="true" value="'
+        . $broker . '"/> '
+        . 'From: <input name="startdate" type="text" size="10" value="'
         . Date::Utility->today()->_minus_months(1)->date
-        . '" required pattern="\d{4}-\d{2}-\d{2}" class="datepick" id="statement_startdate"/>'
-        . 'To : <input name="enddate" type="text" size="10" value="'
+        . '" required pattern="\d{4}-\d{2}-\d{2}" class="datepick" id="statement_startdate" data-lpignore="true" /> '
+        . 'To: <input name="enddate" type="text" size="10" value="'
         . Date::Utility->today()->date
-        . '" required pattern="\d{4}-\d{2}-\d{2}" class="datepick" id="statement_enddate"/>'
+        . '" required pattern="\d{4}-\d{2}-\d{2}" class="datepick" id="statement_enddate" data-lpignore="true" /> '
         . '<input type="hidden" name="broker" value="'
         . $broker . '">'
         . '<SELECT name="currency_dropdown"><option value="default">client\'s default currency</option>'
         . get_currency_options()
         . '</SELECT>'
         . '<input type="hidden" name="l" value="EN">'
-        . '<input type="checkbox" name="all_in_one_page">Show All Transactions</input>'
-        . '&nbsp; <input type="checkbox" value="yes" name="depositswithdrawalsonly" id="depositswithdrawalsonly"><label for="depositswithdrawalsonly">Deposits and Withdrawals only</label>'
-        . '&nbsp; <input type="submit" value="Client Statement">'
+        . '<input type="checkbox" name="all_in_one_page" id="all_in_one_page_statement" /><label for="all_in_one_page_statement">Show All Transactions</label> '
+        . '<input type="checkbox" value="yes" name="depositswithdrawalsonly" id="depositswithdrawalsonly" /><label for="depositswithdrawalsonly">Deposits and Withdrawals only</label> '
+        . '<input type="submit" value="Client Statement">'
         . '</FORM>';
 }
 
@@ -660,7 +660,7 @@ sub date_html {
     }
 
     return
-        qq{ $label$required_mark<input type="text" $required style="width:100px" maxlength="15" name="${name}_${id}" value="$date" pattern="\\d{4}-\\d{2}-\\d{2}" class = "datepick" $extra>};
+        qq{ $label$required_mark<input type="text" $required style="width:100px" maxlength="15" name="${name}_${id}" value="$date" pattern="\\d{4}-\\d{2}-\\d{2}" class="datepick" data-lpignore="true" $extra>};
 }
 
 ## show_client_id_docs #######################################
@@ -761,8 +761,9 @@ SQL
         $input .= "</td>";
 
         $input .=
-            qq{<td align="right"> document id $required_mark<input type="text" style="width:100px" maxlength="30" name="document_id_$id" value="$document_id" $extra> </td>};
-        $input .= qq{<td> comments <input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" $extra> </td>};
+            qq{<td align="right"> document id $required_mark<input type="text" style="width:100px" maxlength="30" name="document_id_$id" value="$document_id" data-lpignore="true" $extra> </td>};
+        $input .=
+            qq{<td> comments <input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" data-lpignore="true" $extra> </td>};
 
         my $s3_client =
             BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
@@ -1168,7 +1169,7 @@ sub get_client_details {
         code_exit_BO(
             qq[<p>Login Id is required</p>
             <form action="$self_post" method="get">
-            Login ID: <input type="text" name="loginID" ></input>
+            Login ID: <input type="text" name="loginID" size="15" data-lpignore="true" />
             </form>]
         );
     }
@@ -1195,7 +1196,7 @@ sub get_client_details {
         code_exit_BO(
             qq[<p>ERROR: $message </p>
             <form action="$self_post" method="get">
-            Try Again: <input type="text" name="loginID" value="$encoded_loginid"></input>
+            Try Again: <input type="text" name="loginID" size="15" value="$encoded_loginid" data-lpignore="true" />
             </form>]
         );
     }
@@ -1378,15 +1379,15 @@ sub get_fiat_login_id_for {
 =head2 client_text_field_validation_info
 
 Returns a hash-ref representing information about validation of client's free text profile fields,
-containing a regex pattern, an error message, a name (display name) and a validation result (is_valid) 
+containing a regex pattern, an error message, a name (display name) and a validation result (is_valid)
 for each field. It takes following args:
-    
+
 =over 1
 
 =item C<client>: client object to take values form
 
-=item C<args>: a collection of named arguments, values of which override C<client>'s attributes 
-(used for letting input values be validated before they are saved to the C<client> object, 
+=item C<args>: a collection of named arguments, values of which override C<client>'s attributes
+(used for letting input values be validated before they are saved to the C<client> object,
 and dealing with the special field C<secret_answer>, whose value cannot be read directly from client object).
 
 =back
@@ -1478,7 +1479,7 @@ sub link_for_clientloginid_edit {
 =head2 check_update_needed
 
 Checks if a change in an account is allowed to be synced to a specific sibling.
-It takes following arguments: 
+It takes following arguments:
 
 =over 4
 

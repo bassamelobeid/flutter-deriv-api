@@ -2,22 +2,22 @@
 <table>
     <tr>
         <td>Client Login ID: </td>
-        <td><input type="text" name="client_loginid"></input></td>
+        <td><input type="text" name="client_loginid" size="15" data-lpignore="true" /></td>
         <td> e.g. client login id, example: CR12345.</td>
     </tr>
     <tr>
         <td>Volume Limit: </td>
-        <td><input type="text" name="volume_limit"></input></td>
+        <td><input type="text" name="volume_limit" data-lpignore="true" /></td>
         <td>Volume limit in USD for multiplier contracts</td>
     </tr>
     <tr>
         <td>Underlying Symbol: </td>
-        <td><input type="text" name="underlying_symbol"></input></td>
+        <td><input type="text" name="underlying_symbol" data-lpignore="true" /></td>
         <td>(optional) underlying symbol. Supports comma separated string.</td>
     </tr>
     <tr>
         <td>comment </td>
-        <td><input type="text" name="comment"></input></td>
+        <td><input type="text" name="comment" data-lpignore="true" /></td>
         <td>(optional) comment</td>
     </tr>
     <tr>

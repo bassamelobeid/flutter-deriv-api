@@ -24,27 +24,27 @@
     <table>
         <tr>
             <td>Market: </td>
-            <td><input type="text" name="market"></input></td>
+            <td><input type="text" name="market" data-lpignore="true" /></td>
             <td> e.g. forex. Supports comma separated string.</td>
         </tr>
         <tr>
             <td>Underlying symbol: </td>
-            <td><input type="text" name="underlying_symbol" value=''></input></td>
+            <td><input type="text" name="underlying_symbol" value='' data-lpignore="true" /></td>
             <td> e.g. frxUSDJPY. Supports comma separated string.</td>
         </tr>
         <tr>
             <td>Is ATM contract: </td>
-            <td><input type="text" name="is_atm_bet" value=''></input></td>
+            <td><input type="text" name="is_atm_bet" value='' data-lpignore="true" /></td>
             <td> e.g. Boolean, 1 or 0</td>
         </tr>
         <tr>
             <td>Expiry Type: </td>
-            <td><input type="text" name="expiry_type" value=''></input></td>
+            <td><input type="text" name="expiry_type" value='' data-lpignore="true" /></td>
             <td> e.g. daily | intraday | tick</td>
         </tr>
         <tr>
             <td>OTM value: </td>
-            <td><input type="text" name="otm_value" value=''></input></td>
+            <td><input type="text" name="otm_value" value='' data-lpignore="true" /></td>
             <td> e.g. 0.01 (maximum is 1)</td>
         </tr>
         <tr>
@@ -53,7 +53,7 @@
 
         <tr>
             <td>OTM id: </td>
-            <td><input type="text" name="otm_id" value=''></input></td>
+            <td><input type="text" name="otm_id" value='' data-lpignore="true" /></td>
             <td> required to delete OTM threshold</td>
         </tr>
         <tr>

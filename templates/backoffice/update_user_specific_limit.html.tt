@@ -5,32 +5,32 @@
     <table>
         <tr>
             <td>Client Login ID: </td>
-            <td><input type="text" name="client_loginid"></input></td>
+            <td><input type="text" name="client_loginid" size="15" data-lpignore="true" /></td>
             <td> e.g. client login id, example: CR12345. To update default limit, leave this blank</td>
         </tr>
         <tr>
             <td>Potential loss: </td>
-            <td><input type="text" name="potential_loss"></input></td>
+            <td><input type="text" name="potential_loss" data-lpignore="true" /></td>
             <td> potential loss limit in USD</td>
         </tr>
         <tr>
             <td>Realized loss: </td>
-            <td><input type="text" name="realized_loss"></input></td>
+            <td><input type="text" name="realized_loss" data-lpignore="true" /></td>
             <td> realized loss limit in USD</td>
         </tr>
         <tr>
             <td>Market type: </td>
-            <td><input type="text" name="market_type"></input></td>
+            <td><input type="text" name="market_type" data-lpignore="true" /></td>
             <td> (required) accepts 'financial' or 'non_financial'.</td>
         </tr>
         <tr>
             <td>Client type: </td>
-            <td><input type="text" name="client_type"></input></td>
+            <td><input type="text" name="client_type" data-lpignore="true" /></td>
             <td> (required) accepts 'old' or 'new'. If 'new' is selected, it will affect new client who places their first financial trade</td>
         </tr>
         <tr>
             <td>Expiry: </td>
-            <td><input type="text" name="expiry" id="expiry_date"></input></td>
+            <td><input type="text" name="expiry" id="expiry_date" data-lpignore="true" /></td>
             <td> Expiry of the limit. Accepts epoch or '2018-11-25 10:10:20' format</td>
         </tr>
         <tr>
@@ -70,22 +70,22 @@
     <table>
         <tr>
             <td>Client Login ID: </td>
-            <td><input type="text" name="client_loginid"></input></td>
+            <td><input type="text" name="client_loginid" size="15" data-lpignore="true" /></td>
             <td> e.g. Client login id, example: CR12345</td>
         </tr>
         <tr>
             <td>Market type: </td>
-            <td><input type="text" name="market_type"></input></td>
+            <td><input type="text" name="market_type" data-lpignore="true" /></td>
             <td> (required) accepts 'financial' or 'non_financial'.</td>
         </tr>
         <tr>
             <td>Client type: </td>
-            <td><input type="text" name="client_type"></input></td>
+            <td><input type="text" name="client_type" data-lpignore="true" /></td>
             <td> (required) accepts 'old' or 'new'. If 'new' is selected, it will affect new client who places their first financial trade</td>
         </tr>
         <tr>
             <td><input type="submit" name="delete_limit" value="Delete"></td>
         </tr>
     </table>
-    </fieldset>    
+    </fieldset>
 </form>

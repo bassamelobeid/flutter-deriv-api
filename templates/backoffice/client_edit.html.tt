@@ -173,11 +173,11 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     <tr>
         <td class="label">First Name</td>
-        <td>: <input type="text" name="first_name" value="[% client.first_name %]" size="50" /> [% client.first_name %]</td>
+        <td>: <input type="text" name="first_name" value="[% client.first_name %]" size="50" data-lpignore="true" /> [% client.first_name %]</td>
     </tr>
     <tr>
         <td class="label">Last Name</td>
-        <td>: <input type="text" name="last_name" value="[% client.last_name %]" size="50" /> [% client.last_name %]</td>
+        <td>: <input type="text" name="last_name" value="[% client.last_name %]" size="50" data-lpignore="true" /> [% client.last_name %]</td>
     </tr>
     <tr>
         <td class="label">Date of Birth</td>
@@ -218,15 +218,15 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     [% END %]
     <tr>
         <td class="label">Address 1</td>
-        <td>: <input type="text" name="address_1" value="[% client.address_1 %]" size="50" /> [% client.address_1 %]</td>
+        <td>: <input type="text" name="address_1" value="[% client.address_1 %]" size="50" data-lpignore="true" /> [% client.address_1 %]</td>
     </tr>
     <tr>
         <td class="label">Address 2</td>
-        <td>: <input type="text" name="address_2" value="[% client.address_2 %]" size="50" /> [% client.address_2 %]</td>
+        <td>: <input type="text" name="address_2" value="[% client.address_2 %]" size="50" data-lpignore="true" /> [% client.address_2 %]</td>
     </tr>
     <tr>
         <td class="label">Town/City</td>
-        <td>: <input type="text" name="city" value="[% client.city %]" size="50" /> [% client.city %]</td>
+        <td>: <input type="text" name="city" value="[% client.city %]" size="50" data-lpignore="true" /> [% client.city %]</td>
     </tr>
     <tr>
         <td class="label">State/Province</td>
@@ -234,7 +234,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     <tr>
         <td class="label">Postcode</td>
-        <td>: <input type="text" name="postcode" value="[% client.postcode %]" size="10" /></td>
+        <td>: <input type="text" name="postcode" value="[% client.postcode %]" size="10" data-lpignore="true" /></td>
     </tr>
     <tr>
         <td class="label">Residence</td>
@@ -303,7 +303,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             <table style="float:left;">
                 <tbody>
                     <tr>
-                        <td>: <input type="text" name="tax_identification_number" value="[% client.tax_identification_number %]" size="15" /></td>
+                        <td>: <input type="text" name="tax_identification_number" value="[% client.tax_identification_number %]" size="15" data-lpignore="true" /></td>
                         <td>
                             [% IF is_valid_tin %]
                                 <td style="color:green;">Tax format is correct</td>
@@ -484,27 +484,27 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     <tr>
         <td class="label">Tel</td>
-        <td>: <input type="text" name="phone" value="[% client.phone %]" size="20" /> Note: this number's intl. code can be: <b>[% client_phone_country %]</b></td>
+        <td>: <input type="text" name="phone" value="[% client.phone %]" size="20" data-lpignore="true" /> Note: this number's intl. code can be: <b>[% client_phone_country %]</b></td>
     </tr>
     <tr>
         <td class="small_header" colspan="2">#Secrets</td>
     </tr>
     <tr>
         <td class="label">Secret question</td>
-        <td>: <input type="text" name="secret_question" value="[% client.secret_question %]" size="50" /> [% secret_question %]</td>
+        <td>: <input type="text" name="secret_question" value="[% client.secret_question %]" size="50" data-lpignore="true" /> [% secret_question %]</td>
 
     </tr>
     <tr>
         <td class="label">Secret answer</td>
         [% IF can_decode_secret_answer %]
-            <td>: <input type="text" name="secret_answer" value="[% secret_answer %]" size="50" /> [% secret_answer %]</td>
+            <td>: <input type="text" name="secret_answer" value="[% secret_answer %]" size="50" data-lpignore="true" /> [% secret_answer %]</td>
         [% ELSE %]
             <td style="color:red"> Not able to decode secret answer. </td>
         [% END %]
     </tr>
     <tr>
         <td class="label">IP security</td>
-        <td>: <input type="text" name="restricted_ip_address" value="[% client.restricted_ip_address %]" size="50" /></td>
+        <td>: <input type="text" name="restricted_ip_address" value="[% client.restricted_ip_address %]" size="50" data-lpignore="true" /></td>
     </tr>
     <tr>
         <td class="small_header" colspan="2">#Promotional Code</td>
@@ -516,7 +516,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
 
             <td class="label">Promotional code</td>
             <td>:
-                <input type="text" name="promo_code" [% maybe_disabled %] value="[% client.promo_code %]" size="20" />
+                <input type="text" name="promo_code" [% maybe_disabled %] value="[% client.promo_code %]" size="20" data-lpignore="true" />
                 Description: [% client.client_promo_code.promotion.description %]
                 (<a href="[% request.url_for('backoffice/promocode_edit.cgi', {promocode=>client.promo_code}) %]">edit</a>)
                 [% IF maybe_auth_msg %]<font color="red"><b>[% maybe_auth_msg %]</b></font>[% END %]
@@ -582,9 +582,10 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     <tr>
       <td class="label">
-        <input type="checkbox" name="pa_withdrawal_explicitly_allowed" value="1" [% IF cashier_allow_payment_agent_status %]checked[% END %]/>
+        <input type="checkbox" name="pa_withdrawal_explicitly_allowed" id="chk_pa_withdrawal_explicitly_allowed" value="1" [% IF cashier_allow_payment_agent_status %]checked[% END %]/>
       </td>
-       <td>Check this to explicitly allow payment agent withdrawal for the client that deposited through external cashier like the premier cashier.</td>   </tr>
+       <td><label for="chk_pa_withdrawal_explicitly_allowed">Check this to explicitly allow payment agent withdrawal for the client that deposited through external cashier like the premier cashier.</label></td>
+    </tr>
     <tr>
         <td class="small_header" colspan="2">#Misc</td>
     </tr>
@@ -650,9 +651,9 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
 function get_checked_files() {
     var checkboxes = document.getElementsByClassName('files_checkbox');
     var doc_array = [];
-    for (var i=0, n=checkboxes.length;i<n;i++) 
+    for (var i=0, n=checkboxes.length;i<n;i++)
     {
-        if (checkboxes[i].checked) 
+        if (checkboxes[i].checked)
         {
             doc_array.push(checkboxes[i].value);
         }
