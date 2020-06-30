@@ -318,7 +318,7 @@ subtest 'MX accounts' => sub {
         ok !$vr_client->status->unwelcome, "VR welcomed";
 
         is $update_status_loginid, $mx_client->loginid, 'update_status_after_auth_fa called with the correct args';
-        is $p2p_approve_loginid, $mx_client->loginid, 'p2p_advertiser_approve called with the correct args';
+        is $p2p_approve_loginid,   $mx_client->loginid, 'p2p_advertiser_approve called with the correct args';
     };
 
     subtest "Sufficient DOB, Insufficient DATA" => sub {

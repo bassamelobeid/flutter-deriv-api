@@ -11,18 +11,30 @@ use BOM::Platform::Event::Emitter;
 use Digest::HMAC;
 use Digest::SHA1;
 use BOM::Config;
+use DataDog::DogStatsd::Helper qw/stats_inc/;
 
 =head2 check
 
-Entrypoint for checks.
+Onfido webhook Entrypoint for checks
+Validates the C<X-Signature> from the request
+Compares the $check's payload{action} to be check.completed & emit client_verification event otherwise returns ok
+
+=back
+
+Returns Mojolicious http response to onfido with `failed` or `ok`.
 
 =cut
 
 sub check {
     my ($self) = @_;
     try {
-        my $req = $self->req;
-        $self->validate_signature($req);
+        my $req       = $self->req;
+        my $validated = $self->validate_signature($req);
+        # Mostly this happens when we manually check webhook from onfido end. in that case signatures are missing.
+        unless ($validated) {
+            $self->render(text => 'failed');
+            return;
+        }
 
         my $check = $self->req->json;
         $log->debugf('Received check %s from Onfido', $check);
@@ -55,11 +67,25 @@ header based on our secret key.
 Will throw an exception if this does not match, returns true if everything is
 okay.
 
+=over 4
+
+=item C<Mojo::Message::Request> request object from onfido
+
+=back
+
+Returns 1 or 0
+
 =cut
 
 sub validate_signature {
     my ($self, $req) = @_;
-    my $sig           = $req->headers->header('X-Signature') or die 'no signature header found';
+    my $sig = $req->headers->header('X-Signature');
+    # Mostly this happens when we manually check webhook from onfido end. in that case signatures are missing.
+    unless ($sig) {
+        $log->debugf('no signature header found');
+        stats_inc("bom.platform", {tags => ['onfido.signature.header.notfound']});
+        return 0;
+    }
     my $config        = BOM::Config::third_party();
     my $webhook_token = $config->{onfido}->{webhook_token};
     $log->debugf('Signature is %s', $sig);
