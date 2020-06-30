@@ -154,16 +154,29 @@
                 <td class="right-aligned"></td>
             [% END %]
 
-        [% ELSE %]
+        [% ELSIF transaction.payment_id.defined %]
             <td>[% transaction.id %]</td>
             <td></td>
             <td>[% transaction.payment_remark.replace('\s+:\s+', ': ').replace('(payment_processor=)(\w+)', '$1<b>$2</b>') | none %]</td>
 
-            [% IF transaction.action_type == 'deposit' OR ( transaction.action_type == 'escrow' AND transaction.amount > 0 ) %]
+            [% IF transaction.action_type == 'deposit' %]
                 <td class="right-aligned"></td>
                 <td class="right-aligned credit-amount-st">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
             [% ELSE %]
                 <td class="right-aligned debit-amount-st">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
+                <td class="right-aligned"></td>
+            [% END %]
+
+        [% ELSE %]
+            <td>[% transaction.id %]</td>
+            <td></td>
+            <td>[% transaction.action_type | ucfirst %]<br/>[% transaction.remark %]</td>
+
+            [% IF transaction.amount > 0 %]
+                <td class="right-aligned"></td>
+                <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
+            [% ELSE %]
+                <td class="right-aligned">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
                 <td class="right-aligned"></td>
             [% END %]
 
