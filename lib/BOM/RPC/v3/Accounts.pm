@@ -413,9 +413,11 @@ rpc "statement",
         if ($params->{args}->{description}) {
             if ($txn->{short_code}) {
                 $struct->{longcode} = $longcodes->{longcodes}->{$txn->{short_code}} // localize('Could not retrieve contract details');
-            } else {
+            } elsif ($txn->{payment_id}) {
                 # withdrawal/deposit
                 $struct->{longcode} = localize($txn->{payment_remark} // '');
+            } else {
+                $struct->{longcode} = localize($txn->{remark} // '');
             }
 
             $struct->{shortcode} = $txn->{short_code};
