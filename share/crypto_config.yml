@@ -33,14 +33,15 @@ ETH:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 18
-    ethgasstation_api: https://ethgasstation.info/json/ethgasAPI.json
     thirdparty_api:
       etherscan:
           url: http://api.etherscan.io/api
           token: ZXEEVTNEGYKA7KRZB7HPKXPTSCH1RDRUFK
       blockscout:
           url: https://blockscout.com/eth/mainnet/api
-    safe_gas_price: 11000000000 # Wei
+      ethgasstation:
+          url: https://ethgasstation.info/json/ethgasAPI.json
+    safe_gas_price: 20000000000 # Wei
     internal_transaction_max_age: 8 # Hours
     cold_wallet:
         min_transfer: 10 # ETH
