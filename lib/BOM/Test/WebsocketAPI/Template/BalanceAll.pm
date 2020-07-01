@@ -26,31 +26,38 @@ rpc_request {
             subscribe => 1,
             account   => 'all',
         },
-        source  => '1',
-        logging => {},
-        token   => $_->client->token
+        source     => '1',
+        logging    => {},
+        token      => $_->client->token,
+        token_type => 'oauth_token',
     };
 }
 qw(client);
 
 rpc_response {
     return {
-        all => [
-            map {
-                currency       => $_->currency,
-                    account_id => $_->account_id,
-                    total      => {
-                    real => {
-                        amount   => $_->total_balance,
-                        currency => $_->currency
-                    }
-                    },
-                    balance                         => $_->balance,
-                    currency_rate_in_total_currency => 1,
-                    loginid                         => $_->loginid,
+        loginid    => $_->client->loginid,
+        balance    => $_->client->balance,
+        currency   => $_->client->currency,
+        account_id => $_->client->account_id,
+        total      => {
+            deriv => {
+                amount   => $_->client->total_balance,
+                currency => $_->client->currency,
             },
-            $_->param_lists->client->@*
-        ]};
+        },
+        accounts => {
+            $_->client->loginid => {
+                currency                        => $_->client->currency,
+                balance                         => $_->client->balance,
+                converted_amount                => $_->client->balance,
+                account_id                      => $_->client->account_id,
+                currency_rate_in_total_currency => 1,
+                demo_account                    => 0,
+                type                            => 'deriv',
+            },
+        },
+    };
 };
 
 publish transaction => sub {
@@ -72,7 +79,7 @@ publish transaction => sub {
             id             => ++$_->global->{transaction_id},
             payment_remark => 'published by balance template',
             total          => {
-                real => {
+                deriv => {
                     amount   => $client->total_balance,
                     currency => $client->currency,
                 },

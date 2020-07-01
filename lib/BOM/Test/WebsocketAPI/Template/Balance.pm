@@ -23,9 +23,10 @@ rpc_request {
             req_id    => 3,
             subscribe => 1
         },
-        source  => '1',
-        logging => {},
-        token   => $_->client->token
+        source     => '1',
+        logging    => {},
+        token      => $_->client->token,
+        token_type => 'oauth_token',
     };
 }
 qw(client);
