@@ -212,117 +212,125 @@ subtest 'balance' => sub {
     $result = $c->tcall(
         $method,
         {
-            token => $bal_token,
-            args  => $args
+            token      => $bal_token,
+            token_type => 'oauth_token',
+            args       => $args,
         });
-
     is_deeply(
         $result,
         {
-            'all' => [{
+            'account_id' => $bal_mlt->default_account->id,
+            'balance'    => '1000.00',
+            'currency'   => 'USD',
+            'loginid'    => $bal_mlt->loginid,
+            'total'      => {
+                'deriv' => {
+                    'amount'   => '2500.00',
+                    'currency' => 'USD'
+                },
+                'deriv_demo' => {
+                    'amount'   => '0.00',
+                    'currency' => 'USD'
+                },
+                'mt5' => {
+                    'amount'   => '0.00',
+                    'currency' => 'USD'
+                },
+                'mt5_demo' => {
+                    'amount'   => '0.00',
+                    'currency' => 'USD'
+                },
+            },
+            accounts => {
+                $bal_mf->loginid => {
+                    'currency_rate_in_total_currency' => 1.5,
                     'account_id'                      => $bal_mf->default_account->id,
                     'balance'                         => '1000.00',
                     'currency'                        => 'EUR',
-                    'currency_rate_in_total_currency' => '1.5',
-                    'loginid'                         => $bal_mf->loginid,
-                    'total'                           => {
-                        'mt5' => {
-                            'amount'   => '0.00',
-                            'currency' => 'USD'
-                        },
-                        'real' => {
-                            'amount'   => '2500.00',
-                            'currency' => 'USD'
-                        }}
+                    'type'                            => 'deriv',
+                    'demo_account'                    => 0,
+                    'converted_amount'                => '1500.00',
                 },
-                {
+                $bal_mlt->loginid => {
+                    'currency_rate_in_total_currency' => 1,
                     'account_id'                      => $bal_mlt->default_account->id,
                     'balance'                         => '1000.00',
                     'currency'                        => 'USD',
-                    'currency_rate_in_total_currency' => 1,
-                    'loginid'                         => $bal_mlt->loginid,
-                    'total'                           => {
-                        'mt5' => {
-                            'amount'   => '0.00',
-                            'currency' => 'USD'
-                        },
-                        'real' => {
-                            'amount'   => '2500.00',
-                            'currency' => 'USD'
-                        }}
+                    'type'                            => 'deriv',
+                    'demo_account'                    => 0,
+                    'converted_amount'                => '1000.00',
                 },
-                {
-                    'account_id' => $bal_vr->default_account->id,
-                    'balance'    => '0.00',
-                    'currency'   => 'USD',
-                    'loginid'    => $bal_vr->loginid,
-                    'total'      => {
-                        'mt5' => {
-                            'amount'   => '0.00',
-                            'currency' => 'USD'
-                        },
-                        'real' => {
-                            'amount'   => '2500.00',
-                            'currency' => 'USD'
-                        }}}]
+                $bal_vr->loginid => {
+                    'currency_rate_in_total_currency' => 1,
+                    'account_id'                      => $bal_vr->default_account->id,
+                    'balance'                         => '0.00',
+                    'currency'                        => 'USD',
+                    'type'                            => 'deriv',
+                    'demo_account'                    => 1,
+                    'converted_amount'                => '0.00',
+                }}
         },
-
         'result is correct for mix of real, virtual and disabled clients'
     );
 
     $result = $c->tcall(
         $method,
         {
-            token => $token_mlt,
-            args  => $args
+            token      => $token_mlt,
+            token_type => 'oauth_token',
+            args       => $args,
         });
 
     $expected_result = {
-        'all' => [{
-                'account_id' => '',
-                'balance'    => '0.00',
-                'currency'   => '',
-                'loginid'    => $test_client_mf->loginid,
-                'total'      => {
-                    'mt5' => {
-                        'amount'   => '0.00',
-                        'currency' => 'EUR'
-                    },
-                    'real' => {
-                        'amount'   => '0.00',
-                        'currency' => 'EUR'
-                    }}
+        'account_id' => $test_client_mlt->default_account->id,
+        'balance'    => '0.00',
+        'currency'   => 'EUR',
+        'loginid'    => $test_client_mlt->loginid,
+        'total'      => {
+            'deriv' => {
+                'amount'   => '0.00',
+                'currency' => 'EUR'
             },
-            {
+            'deriv_demo' => {
+                'amount'   => '0.00',
+                'currency' => 'EUR'
+            },
+            'mt5' => {
+                'amount'   => '0.00',
+                'currency' => 'EUR'
+            },
+            'mt5_demo' => {
+                'amount'   => '0.00',
+                'currency' => 'EUR'
+            },
+        },
+        accounts => {
+            $test_client_mlt->loginid => {
+                'currency_rate_in_total_currency' => 1,
                 'account_id'                      => $test_client_mlt->default_account->id,
                 'balance'                         => '0.00',
                 'currency'                        => 'EUR',
-                'currency_rate_in_total_currency' => 1,
-                'loginid'                         => $test_client_mlt->loginid,
-                'total'                           => {
-                    'mt5' => {
-                        'amount'   => '0.00',
-                        'currency' => 'EUR'
-                    },
-                    'real' => {
-                        'amount'   => '0.00',
-                        'currency' => 'EUR'
-                    }}
+                'type'                            => 'deriv',
+                'demo_account'                    => 0,
+                'converted_amount'                => '0.00',
             },
-            {
-                'account_id' => $test_client_vr->default_account->id,
-                'balance'    => '0.00',
-                'currency'   => 'USD',
-                'loginid'    => $test_client_vr->loginid,
-                'total'      => {
-                    'mt5' => {
-                        'amount'   => '0.00',
-                        'currency' => 'EUR'
-                    },
-                    'real' => {
-                        'amount'   => '0.00',
-                        'currency' => 'EUR'
-                    }}}]};
+            $test_client_vr->loginid => {
+                'currency_rate_in_total_currency' => 1.5,
+                'account_id'                      => $test_client_vr->default_account->id,
+                'balance'                         => '0.00',
+                'currency'                        => 'USD',
+                'type'                            => 'deriv',
+                'demo_account'                    => 1,
+                'converted_amount'                => '0.00',
+            },
+            $test_client_mf->loginid => {
+                'account_id'       => '',
+                'balance'          => '0.00',
+                'currency'         => '',
+                'type'             => 'deriv',
+                'demo_account'     => 0,
+                'converted_amount' => '0.00',
+            }}};
 
     is_deeply($result, $expected_result, 'mt5 result is ok');
 
@@ -357,11 +365,12 @@ subtest 'balance' => sub {
     $result = $c->tcall(
         $method,
         {
-            token => $cr_btc_token,
-            args  => $args
+            token      => $cr_btc_token,
+            token_type => 'oauth_token',
+            args       => $args
         });
 
-    is $result->{all}[0]{total}{real}{currency}, 'USD', 'USD currency used for total balance when no fiat accounts exist';
+    is $result->{total}{deriv}{currency}, 'USD', 'USD currency used for total balance when no fiat accounts exist';
 
     my $client_cr_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -375,11 +384,20 @@ subtest 'balance' => sub {
     $result = $c->tcall(
         $method,
         {
-            token => $cr_btc_token,
-            args  => $args
+            token      => $cr_btc_token,
+            token_type => 'oauth_token',
+            args       => $args
         });
 
-    is $result->{all}[0]{total}{real}{currency}, 'EUR', 'fiat account currency used for total balance';
+    is $result->{total}{deriv}{currency}, 'EUR', 'fiat account currency used for total balance';
+
+    $result = $c->tcall(
+        $method,
+        {
+            token => $cr_btc_token,
+            args  => $args,
+        });
+    is $result->{error}{code}, 'PermissionDenied', 'need oauth token for balance all';
 
 };
 

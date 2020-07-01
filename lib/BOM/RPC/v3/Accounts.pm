@@ -592,77 +592,48 @@ rpc "profit_table",
 
 =head2 balance
 
-    my $balance_obj = balance({ client => $client });
-
-Returns balance for the default account of the client. If there is no default account,
-balance as 0.00 with empty string as currency type is returned.
-
-Takes the following (named) parameters:
-
-=over 4
-
-=item * C<params> - A hashref with reference to BOM::User::Client object under the key C<client>
-
-=item * C<loginid>
-
-=back
-
-Returns a hashref with following items
-
-=over 4
-
-=item * C<loginid> - Login ID for the default account. E.g. : CR90000000
-
-=item * C<currency> - Currency in which the balance is being represented. E.g. : BTC
-
-=item * C<balance> - Balance for the default account. E.g. : 100.00
-
-=back
+    Returns balance for one or all accounts.
+    An oauth token is required for all accounts.
 
 =cut
-
-sub single_balance {
-    my ($params, $loginid) = @_;
-    my $client = $loginid eq $params->{client}->loginid ? $params->{client} : BOM::User::Client->new({
-        loginid      => $loginid,
-        db_operation => 'replica'
-    });
-
-    return if $params->{exclude_disabled} && $client->status->disabled;
-
-    return {
-        currency   => '',
-        loginid    => $client->loginid,
-        balance    => '0.00',
-        account_id => '',
-    } unless ($client->default_account);
-
-    return {
-        loginid    => $client->loginid,
-        currency   => $client->default_account->currency_code(),
-        balance    => formatnumber('amount', $client->default_account->currency_code(), $client->default_account->balance),
-        account_id => $client->default_account->id,
-    };
-}
 
 rpc balance => sub {
     my $params = shift;
     my $arg_account = $params->{args}{account} // 'current';
 
-    my $user = $params->{client}->user;
-    unless ($arg_account eq 'all') {
-        my $loginid = $arg_account eq 'current' ? $params->{client}->loginid : $arg_account;
-        unless (any { $loginid eq $_ } $user->loginids) {
-            return BOM::RPC::v3::Utility::permission_error();
-        }
+    my @user_logins = $params->{client}->user->bom_loginids;
 
-        return single_balance($params, $loginid);
+    my $loginid = ($arg_account eq 'current' or $arg_account eq 'all') ? $params->{client}->loginid : $arg_account;
+    unless (any { $loginid eq $_ } @user_logins) {
+        return BOM::RPC::v3::Utility::permission_error();
     }
 
-    # now is all
+    my $client = $loginid eq $params->{client}->loginid ? $params->{client} : BOM::User::Client->new({
+        loginid      => $loginid,
+        db_operation => 'replica'
+    });
 
-    # work on real bom accounts
-    my @results;
+    my $response = {loginid => $client->loginid};
+
+    if ($client->default_account) {
+        $response->{currency}   = $client->default_account->currency_code();
+        $response->{balance}    = formatnumber('amount', $client->default_account->currency_code(), $client->default_account->balance);
+        $response->{account_id} = $client->default_account->id;
+    } else {
+        $response->{currency}   = '';
+        $response->{balance}    = '0.00';
+        $response->{account_id} = '';
+    }
+
+    return $response unless ($arg_account eq 'all');
+
+    # now is all accounts - need OAuth token
+    unless (($params->{token_type} // '') eq 'oauth_token') {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => "PermissionDenied",
+                message_to_client => localize('Permission denied, balances of all accounts require oauth token')});
+    }
+
     #if (client has real account with USD OR doesn’t have fiat account) {
     #    use ‘USD’;
     #} elsif (there is more than one fiat account) {
@@ -670,23 +641,19 @@ rpc balance => sub {
     #} else {
     #    use currency of fiat account;
     #}
-
     my ($has_usd, $financial_currency, $fiat_currency);
-    $params->{exclude_disabled} = 1;
+    my $clients = $params->{client}->user->accounts_by_category(\@user_logins);
 
-    for my $loginid (sort $user->bom_loginids) {
-        my $result = single_balance($params, $loginid);
-        next unless $result;
-        push @results, $result;
-        next if $loginid =~ /^VR/;
-        next unless (LandingCompany::Registry::get_currency_type($result->{currency}) // '') eq 'fiat';
-        $has_usd            = 1                   if $result->{currency} eq 'USD';
-        $financial_currency = $result->{currency} if $loginid =~ /^(MF|CR)/;
-        $fiat_currency      = $result->{currency};
+    for my $sibling ($clients->{enabled}->@*) {
+        next unless $sibling->account;
+        my $currency = $sibling->account->currency_code;
+        next unless LandingCompany::Registry::get_currency_type($currency) eq 'fiat';
+        $has_usd            = 1         if $currency eq 'USD';
+        $financial_currency = $currency if $sibling->loginid =~ /^(MF|CR)/;
+        $fiat_currency      = $currency;
     }
 
     my $total_currency;
-
     if ($has_usd || !$fiat_currency) {
         $total_currency = 'USD';
     } elsif ($financial_currency) {
@@ -695,38 +662,82 @@ rpc balance => sub {
         $total_currency = $fiat_currency;
     }
 
-    my $real_total = {
-        amount   => 0,
-        currency => $total_currency,
-    };
+    my $real_total = 0;
+    my $demo_total = 0;
 
-    my $mt5_total = {
-        amount   => 0,
-        currency => $total_currency,
-    };
+    for my $sibling ($clients->{enabled}->@*, $clients->{virtual}->@*) {
 
-    for my $result (@results) {
-        if ($result->{account_id} && $result->{loginid} !~ /^VR/) {
-            $real_total->{amount} += convert_currency($result->{balance}, $result->{currency}, $total_currency);
-            $result->{currency_rate_in_total_currency} =
-                convert_currency(1, $result->{currency}, $total_currency);    # This rate is used for the future stream
+        unless ($sibling->account) {
+            $response->{accounts}{$sibling->loginid} = {
+                currency         => '',
+                balance          => '0.00',
+                converted_amount => '0.00',
+                account_id       => '',
+                demo_account     => $sibling->is_virtual ? 1 : 0,
+                type             => 'deriv',
+            };
+            next;
         }
-        $result->{total} = {
-            real => $real_total,
-            mt5  => $mt5_total,
+
+        my $converted = convert_currency($sibling->account->balance, $sibling->account->currency_code, $total_currency);
+        $real_total += $converted unless $sibling->is_virtual;
+        $demo_total += $converted if $sibling->is_virtual;
+
+        $response->{accounts}{$sibling->loginid} = {
+            currency         => $sibling->account->currency_code,
+            balance          => formatnumber('amount', $sibling->account->currency_code, $sibling->account->balance),
+            converted_amount => formatnumber('amount', $total_currency, $converted),
+            account_id       => $sibling->account->id,
+            demo_account     => $sibling->is_virtual ? 1 : 0,
+            type             => 'deriv',
+            currency_rate_in_total_currency =>
+                convert_currency(1, $sibling->account->currency_code, $total_currency),    # This rate is used for the future stream
         };
     }
-    $real_total->{amount} = formatnumber('amount', $total_currency, $real_total->{amount});
+
+    my $mt5_real_total = 0;
+    my $mt5_demo_total = 0;
 
     my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->get;
-    for my $result (grep { $_->{group} !~ /^demo/ } @mt5_accounts) {
-        $mt5_total->{amount} += convert_currency($result->{balance}, $result->{currency}, $total_currency);
-    }
-    $mt5_total->{amount} = formatnumber('amount', $total_currency, $mt5_total->{amount});
 
-    return {
-        all => \@results,
+    for my $mt5_account (@mt5_accounts) {
+        my $is_demo = $mt5_account->{group} =~ /^demo/ ? 1 : 0;
+        my $converted = convert_currency($mt5_account->{balance}, $mt5_account->{currency}, $total_currency);
+        $mt5_real_total += $converted unless $is_demo;
+        $mt5_demo_total += $converted if $is_demo;
+
+        $response->{accounts}{$mt5_account->{login}} = {
+            currency         => $mt5_account->{currency},
+            balance          => formatnumber('amount', $mt5_account->{currency}, $mt5_account->{balance}),
+            converted_amount => formatnumber('amount', $total_currency, $converted),
+            demo_account     => $is_demo,
+            type             => 'mt5',
+            currency_rate_in_total_currency =>
+                convert_currency(1, $mt5_account->{currency}, $total_currency),    # This rate is used for the future stream
+        };
+
+    }
+
+    $response->{total} = {
+        deriv => {
+            amount   => formatnumber('amount', $total_currency, $real_total),
+            currency => $total_currency,
+        },
+        deriv_demo => {
+            amount   => formatnumber('amount', $total_currency, $demo_total),
+            currency => $total_currency,
+        },
+        mt5 => {
+            amount   => formatnumber('amount', $total_currency, $mt5_real_total),
+            currency => $total_currency,
+        },
+        mt5_demo => {
+            amount   => formatnumber('amount', $total_currency, $mt5_demo_total),
+            currency => $total_currency,
+        },
     };
+
+    return $response;
 };
 
 rpc get_account_status => sub {
