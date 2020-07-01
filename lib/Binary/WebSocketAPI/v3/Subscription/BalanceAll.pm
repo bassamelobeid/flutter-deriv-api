@@ -77,7 +77,7 @@ sub update_balance {
             currency => $subscription->currency,
             balance  => formatnumber('amount', $subscription->currency, $payload->{balance_after}),
             total    => {
-                real => {
+                deriv => {
                     amount   => formatnumber('amount', $self->total_currency, $self->total_balance),
                     currency => $self->total_currency,
                     }

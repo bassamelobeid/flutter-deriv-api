@@ -52,11 +52,9 @@ sub actions_config {
         [
             'balance',
             {
-                before_forward         => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::before_forward_balance,
-                after_got_rpc_response => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::subscribe_transaction_channel,
-                error                  => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_error_handler,
-                success                => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_success_handler,
-                response               => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_response_handler,
+                stash_params => [qw/ token_type /],
+                success      => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_success_handler,
+                response     => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_response_handler,
             }
         ],
 

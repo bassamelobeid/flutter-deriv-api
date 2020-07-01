@@ -147,7 +147,8 @@ sub BUILD {
 sub _unique_key {
     my $self = shift;
     if ($self->type eq 'balance') {
-        return $self->type . ':' . $self->account_id;
+        my $type = $self->balance_all_proxy ? 'balanceall' : 'balance';
+        return $type . ':' . $self->account_id;
     }
     return $self->type . ':' . $self->poc_uuid;
 }

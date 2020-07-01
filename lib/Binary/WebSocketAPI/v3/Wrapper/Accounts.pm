@@ -19,152 +19,92 @@ sub set_self_exclusion_response_handler {
     return $api_response;
 }
 
-sub before_forward_balance {
-    my ($c, $req_storage) = @_;
+=head2 balance_response_handler
 
-    my $args = $req_storage->{args};
+Called on successful RPC response.
+Creates subscriptions and cleans up fields.
+Subscription errors will be set in $rpc_response to be handled in balance_response_handler().
 
-    # check the case that the loginid not same with the requested account id
-    my $arg_account = $args->{account} // 'current';
-    my $loginid     = $c->stash('loginid');
-    my $type        = 'balance';
-    if ($arg_account eq 'all') {
-        $type = 'balance_all';
-    } elsif ($arg_account ne 'current') {
-        $loginid = $arg_account;
-    }
-
-    # balance_all or not current loginid need oauth_token
-    if ($c->stash('token_type') ne 'oauth_token') {
-        if ($type eq 'balance_all') {
-            return $c->new_error('balance', 'PermissionDenied', $c->l('Permission denied, balances of all accounts require oauth token'));
-        } elsif ($type eq 'balance' && $loginid ne $c->stash('loginid')) {
-            return $c->new_error('balance', 'PermissionDenied', $c->l('Permission denied, balance of other account requires oauth token'));
-        }
-    }
-
-    my $already_registered;
-    if ($type eq 'balance_all') {
-        $already_registered = Binary::WebSocketAPI::v3::Subscription::BalanceAll->new(
-            c    => $c,
-            args => $args,
-        )->already_registered;
-
-    } elsif ($loginid eq $c->stash('loginid')) {
-        $already_registered = Binary::WebSocketAPI::v3::Subscription::Transaction->new(
-            c          => $c,
-            account_id => $c->stash('account_id'),
-            loginid    => $c->stash('loginid'),
-            currency   => $c->stash('currency'),
-            type       => 'balance',
-            args       => $args,
-        )->already_registered;
-    }
-    # else we will check again after bom-rpc response was got
-
-    if (    exists $args->{subscribe}
-        and $args->{subscribe}
-        and $already_registered)
-    {
-        return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to [_1] balance.', $arg_account));
-    }
-    return undef;
-}
-
-sub subscribe_transaction_channel {
-    my ($c, $req_storage, $rpc_response) = @_;
-    my $args = $req_storage->{args};
-    return undef unless exists $args->{subscribe} and $args->{subscribe};
-    unless ($rpc_response->result->{all}) {
-        my $result     = $rpc_response->result;
-        my $account_id = delete $result->{account_id};
-        return undef unless $account_id;
-        my $subscription = Binary::WebSocketAPI::v3::Subscription::Transaction->new(
-            c          => $c,
-            account_id => $account_id,
-            loginid    => $result->{loginid},
-            currency   => $result->{currency},
-            type       => 'balance',
-            args       => $args,
-        );
-        return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to [_1] balance.', $result->{loginid}))
-            if $subscription->already_registered;
-        $subscription->register;
-        $subscription->subscribe;
-        $req_storage->{transaction_channel_id} = $subscription->uuid;
-        return undef;
-    }
-    # now processing 'all'
-    my $results = $rpc_response->result->{all};
-    # First register a Transaction object to mark it as 'subscribed'
-    my $balance_all = Binary::WebSocketAPI::v3::Subscription::BalanceAll->new(
-        c              => $c,
-        args           => $args,
-        total_currency => $results->[0]{total}{real}{currency},
-        total_balance  => $results->[0]{total}{real}{amount},
-    );
-    $balance_all->register;
-    $req_storage->{transaction_channel_id} = $balance_all->uuid;
-    for my $r (@$results) {
-        my $account_id = delete $r->{account_id};
-        unless ($account_id) {
-            $r->{id} = '';
-            next;
-        }
-
-        my $subscription = Binary::WebSocketAPI::v3::Subscription::Transaction->new(
-            c                               => $c,
-            account_id                      => $account_id,
-            loginid                         => $r->{loginid},
-            currency                        => $r->{currency},
-            type                            => 'balance',
-            args                            => $args,
-            currency_rate_in_total_currency => $r->{currency_rate_in_total_currency},
-            balance_all_proxy               => $balance_all,
-        );
-        my $id = $subscription->already_registered ? '' : $subscription->uuid;
-
-        $r->{id} = $balance_all->uuid;
-        if ($id) {
-            $balance_all->add_subscription($subscription);
-        } else {
-            # TODO else we can set balance_all_proxy here
-            $r->{error} = $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'balance'));
-        }
-    }
-    return undef;
-}
-
-sub balance_error_handler {
-    my ($c, undef, $req_storage) = @_;
-    Binary::WebSocketAPI::v3::Subscription->unregister_by_uuid($c, $req_storage->{transaction_channel_id})
-        if $req_storage->{transaction_channel_id};
-    return;
-}
+=cut
 
 sub balance_success_handler {
     my ($c, $rpc_response, $req_storage) = @_;
-    my @results;
-    if ($rpc_response->{all}) {
-        @results = @{delete $rpc_response->{all}};
-    } else {
-        @results = $rpc_response;
-    }
-    for (@results) {
-        delete $_->{currency_rate_in_total_currency};
-        delete $_->{account_id};
-        $_->{id} = $req_storage->{transaction_channel_id} if $req_storage->{transaction_channel_id};
+
+    my $args       = $req_storage->{args};
+    my $account_id = delete $rpc_response->{account_id};
+
+    if ($args->{subscribe} and ($args->{account} // '') ne 'all') {
+
+        unless ($account_id) {
+            $rpc_response->{subscribe_error} =
+                $c->new_error('balance', 'NoAccountCurrency', $c->l('You cannot subscribe to an account with no currency selected.'));
+            return;
+        }
+
+        my $subscription = Binary::WebSocketAPI::v3::Subscription::Transaction->new(
+            c          => $c,
+            account_id => $account_id,
+            loginid    => $rpc_response->{loginid},
+            currency   => $rpc_response->{currency},
+            type       => 'balance',
+            args       => $args,
+        );
+
+        if ($subscription->already_registered) {
+            $rpc_response->{subscribe_error} =
+                $c->new_error('balance', 'AlreadySubscribed',
+                $c->l('You are already subscribed to balance for account [_1].', $rpc_response->{loginid}));
+            return;
+        }
+
+        $subscription->register;
+        $subscription->subscribe;
+        $rpc_response->{id} = $subscription->uuid;
     }
 
-    #send from 0 to -1, the last one will be sent by $rpc_response;
-    %$rpc_response = (%{pop @results});
-    for my $r (@results) {
-        my $api_response = {
-            balance  => $r,
-            msg_type => 'balance',
-            echo_req => $req_storage->{args}};
-        balance_response_handler($rpc_response, $api_response, $req_storage);
-        $c->send({json => $api_response});
+    my $balance_all;
+    if ($args->{subscribe} and ($args->{account} // '') eq 'all') {
+
+        $balance_all = Binary::WebSocketAPI::v3::Subscription::BalanceAll->new(
+            c              => $c,
+            args           => $args,
+            total_currency => $rpc_response->{total}{deriv}{currency},
+            total_balance  => $rpc_response->{total}{deriv}{amount},
+        );
+
+        if ($balance_all->already_registered) {
+            $rpc_response->{subscribe_error} =
+                $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance for all accounts.'));
+            return;
+        }
+
+        $balance_all->register;
+        $rpc_response->{id} = $balance_all->uuid;
+    }
+
+    if ($rpc_response->{accounts}) {
+        for my $loginid (keys $rpc_response->{accounts}->%*) {
+            my $account = $rpc_response->{accounts}{$loginid};
+
+            my $total_rate = delete $account->{currency_rate_in_total_currency};
+            my $account_id = delete $account->{account_id};
+            next unless $account_id;
+
+            if ($balance_all and $account->{type} eq 'deriv') {
+                my $subscription = Binary::WebSocketAPI::v3::Subscription::Transaction->new(
+                    c                               => $c,
+                    account_id                      => $account_id,
+                    loginid                         => $loginid,
+                    currency                        => $account->{currency},
+                    type                            => 'balance',
+                    args                            => $args,
+                    currency_rate_in_total_currency => $total_rate,
+                    balance_all_proxy               => $balance_all,
+                );
+
+                $balance_all->add_subscription($subscription);
+            }
+        }
     }
     return;
 }
@@ -172,17 +112,18 @@ sub balance_success_handler {
 =head2 balance_response_handler
 
 An event handler invoked by websocket API before sending B<balance> response.
-Currently it is used for adding a subscription attribute to the JSON.
+Used to add subscription id and return subscription errors.
 
 =cut
 
 sub balance_response_handler {
-    my ($rpc_response, $api_response, $req_storage) = @_;
+    my ($rpc_response, $api_response) = @_;
 
-    $api_response->{passthrough} = $req_storage->{args}->{passthrough};
-    return $api_response if $rpc_response->{error};
-    if (my $uuid = $rpc_response->{id}) {
-        $api_response->{subscription}->{id} = $uuid;
+    return $api_response if $api_response->{error};
+    return $rpc_response->{subscribe_error} if $rpc_response->{subscribe_error};
+    # subscription id is duplicated for backwards compatibility reasons
+    if (my $uuid = $api_response->{balance}{id}) {
+        $api_response->{subscription}{id} = $uuid;
     }
     return $api_response;
 }
