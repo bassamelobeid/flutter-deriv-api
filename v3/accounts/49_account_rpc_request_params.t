@@ -176,44 +176,45 @@ $rpc_response = {
 };
 $res = $t->await::balance({
     balance => 1,
-    #subscribe => 1,
 });
 ok(ref $res->{balance});
-#ok($res->{balance}->{id});
 is $call_params->{token}, $token;
 
 $rpc_response = {
-    'all' => [{
-            'account_id'                      => $client->default_account->id,
-            'balance'                         => '1000.00',
-            'currency'                        => 'EUR',
-            'currency_rate_in_total_currency' => '1.5',
-            'loginid'                         => $client->loginid,
-            'total'                           => {
-                'mt5' => {
-                    'amount'   => '-10',  # MT5 balances can be negative in some cases
-                    'currency' => 'USD'
-                },
-                'real' => {
-                    'amount'   => '2500.00',
-                    'currency' => 'USD'
-                }}
+    'account_id'                      => $client->default_account->id,
+    'balance'                         => '1000.00',
+    'currency'                        => 'EUR',
+    'loginid'                         => $client->loginid,
+    'total' => {
+        'deriv' => {
+            'amount'   => '2500.00',
+            'currency' => 'USD'
         },
-        {
-            'account_id'                      => '12345678',
-            'balance'                         => '1000.00',
-            'currency'                        => 'USD',
+        'mt5' => {
+            'amount'   => '-10',
+            'currency' => 'USD'
+        },
+    },
+    'accounts' => {
+        $client->loginid => {
+            'balance' => '1000.00',
+            'converted_amount' => '1000.00',
+            'currency' => 'EUR',
+            'demo_account' => 0,
+            'type' => 'deriv',
+            'account_id' => $client->default_account->id,
             'currency_rate_in_total_currency' => 1,
-            'loginid'                         => 'CR12345678',
-            'total'                           => {
-                'mt5' => {
-                    'amount'   => '-10',
-                    'currency' => 'USD'
-                },
-                'real' => {
-                    'amount'   => '2500.00',
-                    'currency' => 'USD'
-                }}}]};
+        },
+        'MTR00001' => {
+            'balance' => '-10',
+            'converted_amount' => '-10',
+            'currency' => 'USD',
+            'demo_account' => 0,
+            'type' => 'mt5',
+            'currency_rate_in_total_currency' => 1,
+        }        
+    }
+};
 
 $res = $t->await::balance({
     balance   => 1,
@@ -228,14 +229,31 @@ my $expected_res = {
         'currency' => 'EUR',
         'loginid'  => 'CR10000',
         'total'    => {
+            'deriv' => {
+                'amount'   => '2500',
+                'currency' => 'USD'
+            },
             'mt5' => {
                 'amount'   => '-10',
                 'currency' => 'USD'
+            },            
+        },
+        'accounts' => {
+            $client->loginid => {
+                'balance' => '1000',
+                'converted_amount' => '1000',
+                'currency' => 'EUR',
+                'demo_account' => 0,
+                'type' => 'deriv',
             },
-            'real' => {
-                'amount'   => '2500',
-                'currency' => 'USD'
-            }}
+            'MTR00001' => {
+                'balance' => '-10',
+                'converted_amount' => '-10',
+                'currency' => 'USD',
+                'demo_account' => 0,
+                'type' => 'mt5',
+            }             
+        }        
     },
     'echo_req' => {
         'account'   => 'all',
@@ -244,7 +262,6 @@ my $expected_res = {
         'subscribe' => 1
     },
     'msg_type'    => 'balance',
-    'passthrough' => undef,
     'req_id'      => 1000013
 };
 $expected_res->{balance}{id}      = $res->{balance}{id};
@@ -256,39 +273,6 @@ is_deeply(
 
 );
 
-$res = $t->await::balance();
-ok($res->{balance}->{id});
-$expected_res = {
-    'balance' => {
-        'balance'  => '1000',
-        'currency' => 'USD',
-        'loginid'  => 'CR12345678',
-        'total'    => {
-            'mt5' => {
-                'amount'   => '-10',
-                'currency' => 'USD'
-            },
-            'real' => {
-                'amount'   => '2500',
-                'currency' => 'USD'
-            }}
-    },
-    'echo_req' => {
-        'account'   => 'all',
-        'balance'   => 1,
-        'req_id'    => 1000013,
-        'subscribe' => 1,
-    },
-    'msg_type'    => 'balance',
-    'passthrough' => undef,
-    'req_id'      => 1000013
-};
-
-$expected_res->{balance}{id}      = $res->{balance}{id};
-$expected_res->{subscription}{id} = $res->{balance}{id};
-
-is_deeply($res, $expected_res, "the second result ok");
-
 use JSON::MaybeUTF8 qw(:v1);
 my $msg = {
     account_id    => $client->default_account->id,
@@ -299,6 +283,7 @@ $msg = encode_json_utf8($msg);
 # I tried to publish message by redis directly ,but the system cannot receive the message. I don't know why
 Binary::WebSocketAPI::v3::Subscription::Transaction->subscription_manager()
     ->on_message(undef, $msg, 'TXNUPDATE::transaction_' . $client->default_account->id);
+note 'waiting for sub';
 $res = $t->await::balance();
 my $expected_res2 = {
     'balance' => {
@@ -307,8 +292,8 @@ my $expected_res2 = {
         'id'       => $expected_res->{balance}{id},
         'loginid'  => $client->loginid,
         'total'    => {
-            'real' => {
-                'amount'   => '2800',
+            'deriv' => {
+                'amount'   => '2700',
                 'currency' => 'USD'
             }}
     },
