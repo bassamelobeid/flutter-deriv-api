@@ -58,6 +58,12 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol => 'R_100',
         date   => $now,
     });
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw(frxUSDJPY frxGBPPLN);
 
 my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => $underlying->symbol,
@@ -241,8 +247,8 @@ subtest 'buy MULTUP', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             10,    'multiplier is 10';
-            is $chld->{'basis_spot'},             100,   'basis_spot is 100';
+            is $chld->{'multiplier'}, 10, 'multiplier is 10';
+            is $chld->{'basis_spot'} + 0, 100, 'basis_spot is 100';
             is $chld->{'stop_loss_order_amount'}, undef, 'stop_loss_order_amount is undef';
             is $chld->{'stop_loss_basis_spot'},   undef, 'stop_loss_basis_spot is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
@@ -348,8 +354,8 @@ subtest 'buy MULTUP with take profit', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             10,    'multiplier is 10';
-            is $chld->{'basis_spot'},             100,   'basis_spot is 100';
+            is $chld->{'multiplier'}, 10, 'multiplier is 10';
+            is $chld->{'basis_spot'} + 0, 100, 'basis_spot is 100';
             is $chld->{'stop_loss_order_amount'}, undef, 'stop_loss_order_amount is undef';
             is $chld->{'stop_loss_order_date'},   undef, 'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
@@ -455,9 +461,9 @@ subtest 'buy MULTUP with stop loss', sub {
         # note explain $chld;
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},               10,   'multiplier is 10';
-            is $chld->{'basis_spot'},               100,  'basis_spot is 100';
-            is $chld->{'stop_loss_order_amount'},   -5,   'stop_loss_order_amount is -5';
+            is $chld->{'multiplier'}, 10, 'multiplier is 10';
+            is $chld->{'basis_spot'} + 0, 100, 'basis_spot is 100';
+            is $chld->{'stop_loss_order_amount'}, -5, 'stop_loss_order_amount is -5';
             cmp_ok $chld->{'stop_loss_order_date'}, "eq", $fmb->{start_time}, 'stop_loss_order_date is correctly set';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
@@ -890,7 +896,7 @@ subtest 'buy multiplier on synthetic with CR' => sub {
     });
 
     my $error = $txn->buy;
-    ok !$error, 'buy successful';
+    ok !$error, 'synthetic buy successful';
 
     $contract = produce_contract({
         underlying   => 'frxUSDJPY',
@@ -918,9 +924,7 @@ subtest 'buy multiplier on synthetic with CR' => sub {
         });
 
         $error = $txn->buy;
-        ok $error, 'buy failed with error';
-        is $error->{-mesg},              'trying unauthorised combination',           'message is trying unauthorised combination';
-        is $error->{-message_to_client}, 'Trading is not offered for this duration.', 'message to client Trading is not offered for this duration.';
+        ok !$error, 'major pair buy successful';
     }
 };
 
