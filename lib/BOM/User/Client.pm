@@ -2825,7 +2825,7 @@ sub _validate_advert_amounts {
     }
 
     my $maximum_advert = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert;
-    if (in_usd($param{amount}, uc $param{account_currency}) > $maximum_advert) {
+    if (in_usd($param{amount}, $param{account_currency}) > $maximum_advert) {
         die +{
             error_code     => 'MaximumExceeded',
             message_params => [$param{account_currency}, convert_currency($maximum_advert, 'USD', $param{account_currency})],
@@ -2833,7 +2833,7 @@ sub _validate_advert_amounts {
     }
 
     my $maximum_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
-    if (in_usd($param{max_order_amount}, uc $param{account_currency}) > $maximum_order) {
+    if (in_usd($param{max_order_amount}, $param{account_currency}) > $maximum_order) {
         die +{
             error_code     => 'MaxPerOrderExceeded',
             message_params => [$param{account_currency}, convert_currency($maximum_order, 'USD', $param{account_currency})],

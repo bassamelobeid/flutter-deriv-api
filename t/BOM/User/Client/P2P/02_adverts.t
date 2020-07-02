@@ -36,7 +36,7 @@ my %advertiser_params = (
 );
 
 my %advert_params = (
-    account_currency  => 'usd',
+    account_currency  => 'USD',
     amount            => 100,
     description       => 'test advert',
     local_currency    => 'myr',
@@ -223,7 +223,7 @@ subtest 'Creating advert' => sub {
         },
         {
             error_code     => 'MaximumExceeded',
-            message_params => [uc $params{account_currency}, $maximum_advert]
+            message_params => [$params{account_currency}, $maximum_advert]
         },
         'Error when amount exceeds BO advert limit'
     );
@@ -237,7 +237,7 @@ subtest 'Creating advert' => sub {
         },
         {
             error_code     => 'MaxPerOrderExceeded',
-            message_params => [uc $params{account_currency}, $maximum_order],
+            message_params => [$params{account_currency}, $maximum_order],
         },
         'Error when max_order_amount exceeds BO order limit'
     );
