@@ -610,8 +610,8 @@ subtest 'deal cancellation with fx' => sub {
         cancellation => '1h',
     };
     my $c = produce_contract($args);
-    is $c->ask_price,            101.25, 'ask price is 101.25';
-    is $c->cancellation_price, 1.25,   'cost of cancellation is 1.25';
+    is $c->ask_price,            102.25, 'ask price is 102.25';
+    is $c->cancellation_price, 2.25,   'cost of cancellation is 2.25';
 };
 
 subtest 'commission multiplier' => sub {
