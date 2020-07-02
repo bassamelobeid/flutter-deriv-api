@@ -15,10 +15,15 @@ default_stake:
   BTC: 0.003
   ETH: 0.05
   LTC: 0.25
-  UST: 10
-  USB: 10
+  DAI: 10
   IDK: 150
   PAX: 10
+  TUSD: 10
+  USB: 10
+  USDC: 10
+  USDK: 10
+  UST: 10
+  eUSDT: 10
 
 bet_limits:
   holiday_blackout_start: 345
@@ -33,10 +38,14 @@ bet_limits:
       ETH: 10
       LTC: 50
       DAI: 1000
-      UST: 1000
-      USB: 1000
       IDK: 15000
       PAX: 1000
+      TUSD: 1000
+      USB: 1000
+      USDC: 1000
+      USDK: 1000
+      UST: 1000
+      eUSDT: 1000
     digits:
       USD: 30000
       EUR: 30000
@@ -46,10 +55,14 @@ bet_limits:
       ETH: 50
       LTC: 50
       DAI: 5000
-      UST: 5000
-      USB: 5000
       IDK: 45000
       PAX: 5000
+      TUSD: 5000
+      USB: 5000
+      USDC: 5000
+      USDK: 5000
+      UST: 5000
+      eUSDT: 5000
   inefficient_period_payout_max:
     USD: 200
     EUR: 200
@@ -58,10 +71,15 @@ bet_limits:
     BTC: 0.05
     ETH: 0.5
     LTC: 2.5
-    UST: 200
-    USB: 200
+    DAI: 200
     IDK: 3000
     PAX: 200
+    TUSD: 200
+    USB: 200
+    USDC: 200
+    USDK: 200
+    UST: 200
+    eUSDT: 200
 
 # The following limits is based on this exchange rates
 # (1 BTC = $7701.50)
@@ -81,10 +99,15 @@ bet_limits:
           BTC: 0.000002
           ETH: 0.00006
           LTC: 0.00025
-          UST: 0.01
-          USB: 0.01
+          DAI: 0.01
           IDK: 0.15
           PAX: 0.01
+          TUSD: 0.01
+          USB: 0.01
+          USDC: 0.01
+          USDK: 0.01
+          UST: 0.01
+          eUSDT: 0.01
   max_payout:
     default_landing_company:
       default_market:
@@ -96,10 +119,15 @@ bet_limits:
           BTC: 6.5
           ETH: 250
           LTC: 1000
-          UST: 5000
-          USB: 5000
+          DAI: 5000
           IDK: 75000
           PAX: 5000
+          TUSD: 5000
+          USB: 5000
+          USDC: 5000
+          USDK: 5000
+          UST: 5000
+          eUSDT: 5000
   min_stake:
     default_landing_company:
       default_market:
@@ -111,10 +139,15 @@ bet_limits:
           BTC: 0.0002
           ETH: 0.002
           LTC: 0.01
-          UST: 0.5
-          USB: 0.5
+          DAI: 0.5
           IDK: 6
           PAX: 0.5
+          TUSD: 0.5
+          USB: 0.5
+          USDC: 0.5
+          USDK: 0.5
+          UST: 0.5
+          eUSDT: 0.5
         multiplier:
           USD: 1
           EUR: 1
@@ -123,10 +156,15 @@ bet_limits:
           BTC: 0.0002
           ETH: 0.006
           LTC: 0.025
-          UST: 1
-          USB: 1
+          DAI: 1
           IDK: 15
           PAX: 1
+          TUSD: 1
+          USB: 1
+          USDC: 1
+          USDK: 1
+          UST: 1
+          eUSDT: 1
       synthetic_index:
         default_contract_category:
           USD: 0.35
@@ -136,10 +174,15 @@ bet_limits:
           BTC: 0.0002
           ETH: 0.002
           LTC: 0.01
-          UST: 0.5
-          USB: 0.5
+          DAI: 0.35
           IDK: 6
-          PAX: 0.5
+          PAX: 0.35
+          TUSD: 0.35
+          USB: 0.35
+          USDC: 0.35
+          USDK: 0.35
+          UST: 0.35
+          eUSDT: 0.35
         multiplier:
           USD: 1
           EUR: 1
@@ -148,10 +191,15 @@ bet_limits:
           BTC: 0.0002
           ETH: 0.006
           LTC: 0.025
-          UST: 1
-          USB: 1
+          DAI: 1
           IDK: 15
           PAX: 1
+          TUSD: 1
+          USB: 1
+          USDC: 1
+          USDK: 1
+          UST: 1
+          eUSDT: 1
     maltainvest:
       default_market:
         default_contract_category:
@@ -162,10 +210,15 @@ bet_limits:
           BTC: 0.002
           ETH: 0.02
           LTC: 0.1
-          UST: 5
-          USB: 5
+          DAI: 5
           IDK: 75
           PAX: 5
+          TUSD: 5
+          USB: 5
+          USDC: 5
+          USDK: 5
+          UST: 5
+          eUSDT: 5
   max_stake:
     default_landing_company:
       default_market:
@@ -177,10 +230,15 @@ bet_limits:
           BTC: 0.3
           ETH: 10
           LTC: 40
-          UST: 2000
-          USB: 2000
+          DAI: 2000
           IDK: 30000
           PAX: 2000
+          TUSD: 2000
+          USB: 2000
+          USDC: 2000
+          USDK: 2000
+          UST: 2000
+          eUSDT: 2000
   min_commission_amount:
     USD: 0.02 # 0.02 dollar
     EUR: 0.02
@@ -189,10 +247,15 @@ bet_limits:
     BTC: 0.000015
     ETH: 0.00015
     LTC: 0.00075
-    UST: 0.02
-    USB: 0.02
+    DAI: 0.02
     IDK: 0.3
     PAX: 0.02
+    TUSD: 0.02
+    USB: 0.02
+    USDC: 0.02
+    USDK: 0.02
+    UST: 0.02
+    eUSDT: 0.02
   min_order_amount:
     USD: 0.1 # 0.1 dollar
     EUR: 0.1
@@ -201,10 +264,15 @@ bet_limits:
     BTC: 0.000075
     ETH: 0.00075
     LTC: 0.00375
+    DAI: 0.1
     UST: 0.1
     USB: 0.1
     IDK: 1.5
     PAX: 0.1
+    TUSD: 0.1
+    USDC: 0.1
+    USDK: 0.1
+    eUSDT: 0.1
 
 #Lookback option limits – the Value-at-risk approach
 #
@@ -239,10 +307,15 @@ lookback_limits:
     BTC: 3
     ETH: 3
     LTC: 3
-    UST: 300
-    USB: 300
+    DAI: 300
     IDK: 4500
     PAX: 300
+    TUSD: 300
+    USB: 300
+    USDC: 300
+    USDK: 300
+    UST: 300
+    eUSDT: 300
 
 risk_profile:
   no_business:
@@ -254,10 +327,15 @@ risk_profile:
           BTC: 0
           ETH: 0
           LTC: 0
-          UST: 0
-          USB: 0
+          DAI: 0
           IDK: 0
           PAX: 0
+          TUSD: 0
+          USB: 0
+          USDC: 0
+          USDK: 0
+          UST: 0
+          eUSDT: 0
       payout:
           USD: 0
           EUR: 0
@@ -266,10 +344,15 @@ risk_profile:
           BTC: 0
           ETH: 0
           LTC: 0
-          UST: 0
-          USB: 0
+          DAI: 0
           IDK: 0
           PAX: 0
+          TUSD: 0
+          USB: 0
+          USDC: 0
+          USDK: 0
+          UST: 0
+          eUSDT: 0
       multiplier:
           USD: 0
           EUR: 0
@@ -278,10 +361,15 @@ risk_profile:
           BTC: 0
           ETH: 0
           LTC: 0
-          UST: 0
-          USB: 0
+          DAI: 0
           IDK: 0
           PAX: 0
+          TUSD: 0
+          USB: 0
+          USDC: 0
+          USDK: 0
+          UST: 0
+          eUSDT: 0
   extreme_risk:
       turnover:
           USD: 1000
@@ -291,10 +379,15 @@ risk_profile:
           BTC: 0.2
           ETH: 2
           LTC: 10
-          UST: 1000
-          USB: 1000
+          DAI: 1000
           IDK: 15000
           PAX: 1000
+          TUSD: 1000
+          USB: 1000
+          USDC: 1000
+          USDK: 1000
+          UST: 1000
+          eUSDT: 1000
       payout:
           USD: 100
           EUR: 100
@@ -303,10 +396,15 @@ risk_profile:
           BTC: 0.02
           ETH: 0.2
           LTC: 1
-          UST: 100
-          USB: 100
+          DAI: 100
           IDK: 1500
           PAX: 100
+          TUSD: 100
+          USB: 100
+          USDC: 100
+          USDK: 100
+          UST: 100
+          eUSDT: 100
       multiplier:
           USD: 50
           EUR: 50
@@ -315,10 +413,15 @@ risk_profile:
           BTC: 0.01
           ETH: 0.25
           LTC: 1.25
-          UST: 50
-          USB: 50
+          DAI: 50
           IDK: 750
           PAX: 50
+          TUSD: 50
+          USB: 50
+          USDC: 50
+          USDK: 50
+          UST: 50
+          eUSDT: 50
   high_risk:
       turnover:
           USD: 5000
@@ -328,10 +431,15 @@ risk_profile:
           BTC: 1
           ETH: 10
           LTC: 50
-          UST: 5000
-          USB: 5000
+          DAI: 5000
           IDK: 75000
           PAX: 5000
+          TUSD: 5000
+          USB: 5000
+          USDC: 5000
+          USDK: 5000
+          UST: 5000
+          eUSDT: 5000
       payout:
           USD: 1000
           EUR: 1000
@@ -340,10 +448,15 @@ risk_profile:
           BTC: 0.2
           ETH: 2
           LTC: 10
-          UST: 1000
-          USB: 1000
+          DAI: 1000
           IDK: 15000
           PAX: 1000
+          TUSD: 1000
+          USB: 1000
+          USDC: 1000
+          USDK: 1000
+          UST: 1000
+          eUSDT: 1000
       multiplier:
           USD: 200
           EUR: 200
@@ -352,10 +465,15 @@ risk_profile:
           BTC: 0.02
           ETH: 1
           LTC: 5
-          UST: 200
-          USB: 200
+          DAI: 200
           IDK: 3000
           PAX: 200
+          TUSD: 200
+          USB: 200
+          USDC: 200
+          USDK: 200
+          UST: 200
+          eUSDT: 200
   moderate_risk:
       turnover:
           USD: 50000
@@ -365,10 +483,15 @@ risk_profile:
           BTC: 5
           ETH: 50
           LTC: 250
-          UST: 50000
-          USB: 50000
+          DAI: 50000
           IDK: 750000
           PAX: 50000
+          TUSD: 50000
+          USB: 50000
+          USDC: 50000
+          USDK: 50000
+          UST: 50000
+          eUSDT: 50000
       payout:
           USD: 5000
           EUR: 5000
@@ -377,10 +500,15 @@ risk_profile:
           BTC: 0.5
           ETH: 5
           LTC: 50
-          UST: 5000
-          USB: 5000
+          DAI: 5000
           IDK: 75000
           PAX: 5000
+          TUSD: 5000
+          USB: 5000
+          USDC: 5000
+          USDK: 5000
+          UST: 5000
+          eUSDT: 5000
       multiplier:
           USD: 500
           EUR: 500
@@ -389,10 +517,15 @@ risk_profile:
           BTC: 0.05
           ETH: 2.5
           LTC: 12.5
-          UST: 500
-          USB: 500
+          DAI: 500
           IDK: 7500
           PAX: 500
+          TUSD: 500
+          USB: 500
+          USDC: 500
+          USDK: 500
+          UST: 500
+          eUSDT: 500
   medium_risk:
       turnover:
           USD: 100000
@@ -402,10 +535,15 @@ risk_profile:
           BTC: 15
           ETH: 50
           LTC: 250
-          UST: 100000
-          USB: 100000
+          DAI: 100000
           IDK: 1500000
           PAX: 100000
+          TUSD: 100000
+          USB: 100000
+          USDC: 100000
+          USDK: 100000
+          UST: 100000
+          eUSDT: 100000
       payout:
           USD: 20000
           EUR: 20000
@@ -414,10 +552,15 @@ risk_profile:
           BTC: 2.5
           ETH: 5
           LTC: 50
-          UST: 20000
-          USB: 20000
+          DAI: 20000
           IDK: 300000
           PAX: 20000
+          TUSD: 20000
+          USB: 20000
+          USDC: 20000
+          USDK: 20000
+          UST: 20000
+          eUSDT: 20000
       multiplier:
           USD: 1000
           EUR: 1000
@@ -426,10 +569,15 @@ risk_profile:
           BTC: 0.1
           ETH: 5
           LTC: 25
-          UST: 1000
-          USB: 1000
+          DAI: 1000
           IDK: 15000
           PAX: 1000
+          TUSD: 1000
+          USB: 1000
+          USDC: 1000
+          USDK: 1000
+          UST: 1000
+          eUSDT: 1000
   low_risk:
       turnover:
           USD: 500000
@@ -439,10 +587,15 @@ risk_profile:
           BTC: 30
           ETH: 100
           LTC: 500
-          UST: 500000
-          USB: 500000
+          DAI: 500000
           IDK: 7500000
           PAX: 500000
+          TUSD: 500000
+          USB: 500000
+          USDC: 500000
+          USDK: 500000
+          UST: 500000
+          eUSDT: 500000
       payout:
           USD: 50000
           EUR: 50000
@@ -451,10 +604,15 @@ risk_profile:
           BTC: 5
           ETH: 10
           LTC: 50
-          UST: 50000
-          USB: 50000
+          DAI: 50000
           IDK: 750000
           PAX: 50000
+          TUSD: 50000
+          USB: 50000
+          USDC: 50000
+          USDK: 50000
+          UST: 50000
+          eUSDT: 50000
       multiplier:
           USD: 2000
           EUR: 2000
@@ -463,7 +621,12 @@ risk_profile:
           BTC: 0.2
           ETH: 10
           LTC: 50
-          UST: 2000
-          USB: 2000
+          DAI: 2000
           IDK: 30000
           PAX: 2000
+          TUSD: 2000
+          USB: 2000
+          USDC: 2000
+          USDK: 2000
+          UST: 2000
+          eUSDT: 2000

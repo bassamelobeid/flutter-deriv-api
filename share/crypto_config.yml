@@ -47,20 +47,11 @@ ETH:
         min_transfer: 10 # ETH
         max_transfer: 100 # ETH
         address: 0x067f48d1bbaab135cfbe43535cc34312facc54a1 # multis.co address
-UST:
+DAI:
     withdrawal:
         timeout: "3d"
         min_usd: 25
         fee_limit_usd: 10
-    subscription:
-        rpc_timeout: 100
-    protocol_cost: 0.00000546
-    decimal_places: 8
-USB:
-    withdrawal:
-        timeout: "3d"
-        min_usd: 5
-        fee_limit_usd: 2
     protocol_cost: 0
     decimal_places: 18
 IDK:
@@ -75,7 +66,51 @@ PAX:
         timeout: "3d"
         min_usd: 25
         fee_limit_usd: 10
+    protocol_cost: 0
+    decimal_places: 18
+TUSD:
+    withdrawal:
+        timeout: "3d"
+        min_usd: 25
+        fee_limit_usd: 10
+    protocol_cost: 0
+    decimal_places: 18
+USB:
+    withdrawal:
+        timeout: "3d"
+        min_usd: 25
+        fee_limit_usd: 10
     subscription:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 18
+USDC:
+    withdrawal:
+        timeout: "3d"
+        min_usd: 25
+        fee_limit_usd: 10
+    protocol_cost: 0
+    decimal_places: 6
+USDK:
+    withdrawal:
+        timeout: "3d"
+        min_usd: 25
+        fee_limit_usd: 10
+    protocol_cost: 0
+    decimal_places: 18
+UST:
+    withdrawal:
+        timeout: "3d"
+        min_usd: 25
+        fee_limit_usd: 10
+    subscription:
+        rpc_timeout: 100
+    protocol_cost: 0.00000546
+    decimal_places: 8
+eUSDT:
+    withdrawal:
+        timeout: "3d"
+        min_usd: 25
+        fee_limit_usd: 10
+    protocol_cost: 0
+    decimal_places: 6

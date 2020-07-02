@@ -189,15 +189,10 @@ payments:
               description: "ETH minimum safe amount"
               default: 40
               global: 1
-            UST:
+            DAI:
               isa: Num
-              description: "UST minimum safe amount"
+              description: "DAI minimum safe amount"
               default: 6500
-              global: 1
-            USB:
-              isa: Num
-              description: "USB minimum safe amount"
-              default: 0
               global: 1
             IDK:
               isa: Num
@@ -207,6 +202,36 @@ payments:
             PAX:
               isa: Num
               description: "PAX minimum safe amount"
+              default: 6500
+              global: 1
+            TUSD:
+              isa: Num
+              description: "TUSD minimum safe amount"
+              default: 6500
+              global: 1
+            USB:
+              isa: Num
+              description: "USB minimum safe amount"
+              default: 0
+              global: 1
+            USDC:
+              isa: Num
+              description: "USDC minimum safe amount"
+              default: 6500
+              global: 1
+            USDK:
+              isa: Num
+              description: "USDK minimum safe amount"
+              default: 6500
+              global: 1
+            UST:
+              isa: Num
+              description: "UST minimum safe amount"
+              default: 6500
+              global: 1
+            eUSDT:
+              isa: Num
+              description: "eUSDT minimum safe amount"
               default: 6500
               global: 1
         restricted_countries:

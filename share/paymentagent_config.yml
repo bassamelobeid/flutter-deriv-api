@@ -6,10 +6,25 @@ payment_limits:
       minimum: 0.002
       maximum: 5
 currency_specific_limits:
-    UST:
+    DAI:
       minimum: 10
       maximum: 2000
     PAX:
+      minimum: 10
+      maximum: 2000
+    TUSD:
+      minimum: 10
+      maximum: 2000
+    USDC:
+      minimum: 10
+      maximum: 2000
+    USDK:
+      minimum: 10
+      maximum: 2000
+    UST:
+      minimum: 10
+      maximum: 2000
+    eUSDT:
       minimum: 10
       maximum: 2000
 minimum_topup_balance:
