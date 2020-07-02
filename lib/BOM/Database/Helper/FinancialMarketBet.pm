@@ -150,7 +150,7 @@ sub buy_bet {
         #       are necessary.
         my $stmt = $_->prepare('
 SELECT (v_fmb).*, (v_trans).*
-  FROM bet_v1.buy_bet(  $1::VARCHAR(12), $2::VARCHAR(3), $3::BIGINT, $4::TIMESTAMP, $5::VARCHAR(50), $6::NUMERIC,
+  FROM bet_v1.buy_bet(  $1::VARCHAR(12), $2::TEXT, $3::BIGINT, $4::TIMESTAMP, $5::VARCHAR(50), $6::NUMERIC,
                         $7::NUMERIC, $8::TIMESTAMP, $9::TIMESTAMP, $10::TIMESTAMP, $11::BOOLEAN,
                         $12::VARCHAR(30), $13::VARCHAR(30), $14::VARCHAR(800), $15::VARCHAR(255), $16::BOOLEAN,
                         $17::INT, $18::JSON, $19::TIMESTAMP, $20::VARCHAR(24), $21::VARCHAR(800),
@@ -256,7 +256,7 @@ acc(fmbid, loginid, limits) AS (VALUES
 SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
   FROM acc
  CROSS JOIN LATERAL
-       bet_v1.buy_bet_nofail(   acc.loginid, $1::VARCHAR(3), acc.fmbid, $2::TIMESTAMP, $3::VARCHAR(50), $4::NUMERIC,
+       bet_v1.buy_bet_nofail(   acc.loginid, $1::TEXT, acc.fmbid, $2::TIMESTAMP, $3::VARCHAR(50), $4::NUMERIC,
                                 $5::NUMERIC, $6::TIMESTAMP, $7::TIMESTAMP, $8::TIMESTAMP, $9::BOOLEAN,
                                 $10::VARCHAR(30), $11::VARCHAR(30), $12::VARCHAR(800), $13::VARCHAR(255),
                                 $14::BOOLEAN, $15::INT, $16::JSON, $17::TIMESTAMP, $18::VARCHAR(24),
@@ -342,7 +342,7 @@ sub sell_bet {
         #       are necessary.
         my $stmt = $_->prepare('
 SELECT (s.v_fmb).*, (s.v_trans).*, t.id
-  FROM bet_v1.sell_bet( $1::VARCHAR(12), $2::VARCHAR(3), $3::BIGINT, $4::NUMERIC, $5::TIMESTAMP,
+  FROM bet_v1.sell_bet( $1::VARCHAR(12), $2::TEXT, $3::BIGINT, $4::NUMERIC, $5::TIMESTAMP,
                         $6::JSON, $7::BOOLEAN, $8::TIMESTAMP, $9::VARCHAR(24), $10::VARCHAR(800), $11::BIGINT,
                         $12::INT, $13::JSON, $14::INT, $15::JSONB) s
   LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(s.v_fmb).id AND t.action_type=$$buy$$');
@@ -399,7 +399,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, t.id, (b.v_fmb).*, (b.v_trans).
        bet_v1.sell_by_shortcode(
 
  acc.loginid,
- $1::VARCHAR(3),
+ $1::TEXT,
  $2::VARCHAR(255),
  $3::NUMERIC,
  $4::TIMESTAMP,
