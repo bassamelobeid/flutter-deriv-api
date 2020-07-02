@@ -67,7 +67,7 @@
             "synthetic_index" : {
                "properties" : {},
                "patternProperties" : {
-                  "^[A-Z]{3,4}$" : {
+                  "^[a-zA-Z0-9]{2,20}$" : {
                      "additionalProperties" : false,
                      "type" : "object",
                      "properties" : {
@@ -94,7 +94,7 @@
                "additionalProperties" : false,
                "properties" : {},
                "patternProperties" : {
-                  "^[A-Z]{3,4}$" : {
+                  "^[a-zA-Z0-9]{2,20}$" : {
                      "required" : [
                         "max_payout",
                         "min_stake"
@@ -118,7 +118,7 @@
                "additionalProperties" : false,
                "type" : "object",
                "patternProperties" : {
-                  "^[A-Z]{3,4}$" : {
+                  "^[a-zA-Z0-9]{2,20}$" : {
                      "type" : "object",
                      "additionalProperties" : false,
                      "properties" : {

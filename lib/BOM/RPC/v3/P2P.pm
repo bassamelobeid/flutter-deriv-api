@@ -778,7 +778,7 @@ sub _check_client_access {
 
     die +{
         error_code     => 'RestrictedCurrency',
-        message_params => [uc $client->currency]}
+        message_params => [$client->currency]}
         unless any { $_ eq lc($client->currency) } $app_config->payments->p2p->available_for_currencies->@*;
 
     die "NoCountry\n" unless $client->residence;
