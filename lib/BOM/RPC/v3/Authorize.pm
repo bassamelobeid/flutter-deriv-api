@@ -170,7 +170,7 @@ rpc authorize => sub {
         $token_type = 'oauth_token';
 
         my $oauth = BOM::Database::Model::OAuth->new;
-        $app_id = $oauth->get_app_id_by_token($params->{token});
+        $app_id = $oauth->get_app_id_by_token($params->{token}) // '';
 
         # App ID 4 comes from Backoffice, when client account is impersonated
         if ($app_id eq '4') {
