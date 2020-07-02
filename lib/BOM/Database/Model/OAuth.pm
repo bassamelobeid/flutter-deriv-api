@@ -401,6 +401,20 @@ sub has_other_login_sessions {
     return ($login_cnt >= 1);
 }
 
+=head2 get_app_id_by_token
+
+retrieve app_id from a given token
+
+=over 4
+
+=item * C<Token> I receives token to find app_id
+
+=back
+
+Returns app_id if it successfully found app_id and returns undef otherwise.
+
+=cut
+
 sub get_app_id_by_token {
     my ($self, $token) = @_;
 
