@@ -15,6 +15,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
 use BOM::Database::Model::OAuth;
 use BOM::User::Password;
+use BOM::User::Utility qw(parse_mt5_group);
 use Email::Stuffer::TestLinks;
 
 my %financial_data = (
@@ -62,6 +63,13 @@ my $assessment_keys = {
             cfd_trading_experience/
     ],
 };
+
+my @emit_args;
+my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_emitter->mock(
+    'emit' => sub {
+        @emit_args = @_;
+    });
 
 #mocking this module will let us avoid making calls to MT5 server.
 my $mt5_account_info;
@@ -164,7 +172,6 @@ subtest 'new account' => sub {
     cmp_bag($result->{error}{details}{missing}, ['citizen', 'account_opening_reason'], 'Missing citizen should be under details.');
 
     $params->{args}->{account_type} = 'gaming';
-    delete $params->{args}->{mt5_account_type};
 
     $test_client->account_opening_reason('speculatove');
     $test_client->citizen($citizen);
@@ -932,7 +939,7 @@ subtest 'Virtual account types - EU residences' => sub {
     $user->add_client($mf_client);
     BOM::RPC::v3::MT5::Account::reset_throttler($mf_client->loginid);
     $login = create_mt5_account->(
-        $c, $token, $client,
+        $c, $token, $mf_client,
         {
             account_type     => 'financial',
             mt5_account_type => 'standard'
@@ -1163,6 +1170,7 @@ foreach my $broker_code (keys %lc_company_specific_details) {
 sub create_mt5_account {
     my ($c, $token, $client, $args, $expected_error, $error_message) = @_;
 
+    undef @emit_args;
     my $params = {
         language => 'EN',
         token    => $token,
@@ -1186,9 +1194,26 @@ sub create_mt5_account {
 
     if ($expected_error) {
         $result->has_error->error_code_is($expected_error, $error_message);
+        is scalar @emit_args, 0, 'No event is emitted for failed requests';
         return $c->result->{error};
     } else {
         $result->has_no_error;
+        ok $mt5_account_info, 'mt5 api is called';
+
+        my $group_details = parse_mt5_group($mt5_account_info->{group});
+
+        is_deeply \@emit_args,
+        [
+        'new_mt5_signup',
+        {
+            cs_email         => 'support@binary.com',
+            language         => 'EN',
+            loginid          => $client->loginid,
+            mt5_group        => $mt5_account_info->{group},
+            mt5_login_id     => $c->result->{login},
+            account_type     => $params->{args}->{account_type} // '', #$group_details->{account_type},
+            sub_account_type => $params->{args}->{mt5_account_type} // '', #$params->{arg}->{mt5_account_type},
+        }];
         return $c->result->{login};
     }
 }
