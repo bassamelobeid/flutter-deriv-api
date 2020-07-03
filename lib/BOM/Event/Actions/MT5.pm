@@ -15,11 +15,14 @@ use BOM::MT5::User::Async;
 use BOM::Config::Redis;
 use BOM::Config;
 use BOM::Event::Services::Track;
+use BOM::User::Utility qw(parse_mt5_group);
+use BOM::Platform::Client::Sanctions;
 
 use Email::Stuffer;
 use YAML::XS;
 use Date::Utility;
 use Text::CSV;
+use List::Util qw(any);
 use Path::Tiny qw(tempdir);
 use JSON::MaybeUTF8 qw/encode_json_utf8/;
 use DataDog::DogStatsd::Helper;
@@ -221,6 +224,19 @@ sub new_mt5_signup {
         BOM::Config::Redis::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $id, time));
     }
 
+    my $group_details = parse_mt5_group($data->{mt5_group});
+    my $company_actions = LandingCompany::Registry->new->get($group_details->{company})->actions // {};
+    if ($group_details->{category} ne 'demo' && any { $_ eq 'sanctions' } ($company_actions->{signup} // [])->@*) {
+        BOM::Platform::Client::Sanctions->new(
+            client                        => $client,
+            brand                         => request()->brand,
+            recheck_authenticated_clients => 1
+            )->check(
+            comments     => "Triggered by a new MT5 signup - MT5 loginid: $id and MT5 group: $data->{mt5_group}",
+            triggered_by => "$id ($data->{mt5_group}) signup",
+            );
+    }
+
     # Sending email to client about mt5 account opening
     send_mt5_account_opening_email({
         mt5_login_id => $id,
@@ -229,9 +245,8 @@ sub new_mt5_signup {
     });
 
     # Add email params to track signup event
-    my $mt5_details = parse_mt5_group($data->{mt5_group});
     $data->{client_first_name} = $client->first_name;
-    $data->{type_label}        = ucfirst $mt5_details->{type_label};      # Frontend-ish label (Synthetic, Financial, Financial STP)
+    $data->{type_label}        = ucfirst $group_details->{type_label};    # Frontend-ish label (Synthetic, Financial, Financial STP)
     $data->{mt5_integer_id}    = $id =~ s/${\BOM::User->MT5_REGEX}//r;    # This one is just the numeric ID
 
     return BOM::Event::Services::Track::new_mt5_signup({

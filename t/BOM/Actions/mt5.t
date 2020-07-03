@@ -15,16 +15,15 @@ use BOM::Test::Email qw(mailbox_clear mailbox_search);
 use BOM::User::Utility qw(parse_mt5_group);
 
 my (@identify_args, @track_args);
-my $segment_response = Future->done(1);
-my $mock_segment     = new Test::MockModule('WebService::Async::Segment::Customer');
+my $mock_segment = new Test::MockModule('WebService::Async::Segment::Customer');
 $mock_segment->redefine(
     'identify' => sub {
         @identify_args = @_;
-        return $segment_response;
+        return Future->done(1);
     },
     'track' => sub {
         @track_args = @_;
-        return $segment_response;
+        return Future->done(1);
     });
 my $mock_brands = Test::MockModule->new('Brands');
 $mock_brands->mock(
@@ -123,8 +122,6 @@ subtest 'mt5 track event' => sub {
         undef @identify_args;
         undef @track_args;
 
-        $segment_response = Future->done(1);
-
         my $action_handler = BOM::Event::Process::get_action_mappings()->{new_mt5_signup};
         my $result         = $action_handler->($args)->get;
         is $result, 1, 'Success mt5 new account result';
@@ -195,6 +192,53 @@ subtest 'mt5 track event' => sub {
             },
             'properties are set properly for mt5 password change event';
     };
+};
+
+subtest 'sanctions' => sub {
+    my $mock_sanctions = Test::MockModule->new('BOM::Platform::Client::Sanctions');
+    my @sanct_args;
+    $mock_sanctions->mock(
+        'check' => sub {
+            @sanct_args = @_;
+        });
+
+    my $mock_company = Test::MockModule->new('LandingCompany');
+    my $lc_actions;
+    $mock_company->mock(
+        'actions' => sub {
+            return $lc_actions;
+        });
+
+    my $args = {
+        loginid            => $test_client->loginid,
+        'account_type'     => 'gaming',
+        'language'         => 'EN',
+        'mt5_group'        => 'real\svg',
+        'mt5_login_id'     => 'MTR90000',
+        'language'         => 'EN',
+        'cs_email'         => 'test_cs@bin.com',
+        'sub_account_type' => 'standard'
+    };
+
+    my $action_handler = BOM::Event::Process::get_action_mappings()->{new_mt5_signup};
+    is $action_handler->($args)->get, 1, 'Success mt5 new account result';
+
+    is scalar @sanct_args, 0, 'sanctions are not included in signup actions';
+
+    $lc_actions = {signup => [qw(sanctions)]};
+    is $action_handler->($args)->get, 1, 'Success mt5 new account result';
+    is scalar @sanct_args, 5, 'sanction check is called, because it is included in signup actions';
+    is ref($sanct_args[0]), 'BOM::Platform::Client::Sanctions', 'Sanctions object type is correct';
+    ok $sanct_args[0]->recheck_authenticated_clients, 'recheck for authenticated clients is enabled';
+    shift @sanct_args;
+    is_deeply \@sanct_args,
+        [
+        'comments'     => 'Triggered by a new MT5 signup - MT5 loginid: MTR90000 and MT5 group: real\svg',
+        'triggered_by' => "MTR90000 (real\\svg) signup"
+        ],
+        'Sanctions checked with correct comment';
+
+    $mock_sanctions->unmock_all;
 };
 
 subtest 'mt5 account opening mail' => sub {
