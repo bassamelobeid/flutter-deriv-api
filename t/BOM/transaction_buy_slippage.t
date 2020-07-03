@@ -434,9 +434,8 @@ subtest 'test CALL (binary) slippage' => sub {
         });
 
         $error = $txn->buy;
-        is $error->{-type}, 'PriceMoved';
-        like $error->{-message_to_client},
-            qr/The underlying market has moved too much since you priced the contract. The contract price has changed/;
+        is $error->{-type},                'PriceMoved';
+        like $error->{-message_to_client}, qr/The underlying market has moved too much since you priced the contract. The contract price has changed/;
 
         $price = $contract->ask_price + ($contract->allowed_slippage * $contract->payout + 0.01);
         $txn = BOM::Transaction->new({

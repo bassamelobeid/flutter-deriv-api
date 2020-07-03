@@ -926,6 +926,7 @@ subtest 'buy multiplier on synthetic with CR' => sub {
         $error = $txn->buy;
         ok !$error, 'major pair buy successful';
     }
+
 };
 
 done_testing();

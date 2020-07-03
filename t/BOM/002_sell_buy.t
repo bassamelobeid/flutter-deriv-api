@@ -23,8 +23,11 @@ use BOM::Transaction;
 my $now = Date::Utility->new;
 initialize_realtime_ticks_db();
 
-my $client  = BOM::User::Client->new({loginid => 'CR2002'});
-BOM::User->create(email=>$0.'@test.com',password =>'xxx')->add_client($client);
+my $client = BOM::User::Client->new({loginid => 'CR2002'});
+BOM::User->create(
+    email    => $0 . '@test.com',
+    password => 'xxx'
+)->add_client($client);
 my $account = $client->set_default_account('USD');
 my $db      = $client->set_db('write');
 my $comment_str =

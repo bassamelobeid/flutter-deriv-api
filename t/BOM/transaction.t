@@ -2019,8 +2019,8 @@ subtest 'buy/sell on suspend_trading' => sub {
         $txn->buy;
     };
 
-    is $error->{'-type'},              'InvalidOfferings',                          'type is InvalidOfferings';
-    is $error->{'-mesg'},              'Disabled platform',           'message is Disabled platform';
+    is $error->{'-type'},              'InvalidOfferings',                       'type is InvalidOfferings';
+    is $error->{'-mesg'},              'Disabled platform',                      'message is Disabled platform';
     is $error->{'-message_to_client'}, 'This trade is temporarily unavailable.', 'message to clien is This trade is temporarily unavailable.';
 
     $contract = produce_contract({
@@ -2052,7 +2052,7 @@ subtest 'buy/sell on suspend_trading' => sub {
     };
 
     is $error->{'-type'},              'InvalidOfferings',                        'type is InvalidOfferings';
-    is $error->{'-mesg'},              'Disabled platform',         'message is Disabled platform';
+    is $error->{'-mesg'},              'Disabled platform',                       'message is Disabled platform';
     is $error->{'-message_to_client'}, 'Resale of this contract is not offered.', 'message to clien is Resale of this contract is not offered.';
 
     note "reset app_config->system->suspend_trading to 0";
@@ -2141,8 +2141,7 @@ subtest 'suspend_buy & suspend_trades' => sub {
             };
             is $error->{'-type'}, 'InvalidOfferings', 'type is InvalidOfferings';
             like $error->{'-mesg'}, qr/Disabled (contract_type|market|underlying_symbol)/, 'message is Disabled ' . $type;
-            is $error->{'-message_to_client'}, 'This trade is temporarily unavailable.',
-                'message to clien is This trade is temporarily unavailable.';
+            is $error->{'-message_to_client'}, 'This trade is temporarily unavailable.', 'message to clien is This trade is temporarily unavailable.';
 
             $contract = produce_contract({
                 underlying   => $underlying,
@@ -2233,8 +2232,7 @@ subtest 'suspend_buy & suspend_trades' => sub {
             };
             is $error->{'-type'}, 'InvalidOfferings', 'type is InvalidOfferings';
             like $error->{'-mesg'}, qr/Disabled (underlying_symbol|market|contract_type)/, 'message is Disabled ' . $type;
-            is $error->{'-message_to_client'}, 'This trade is temporarily unavailable.',
-                'message to clien is This trade is temporarily unavailable.';
+            is $error->{'-message_to_client'}, 'This trade is temporarily unavailable.', 'message to clien is This trade is temporarily unavailable.';
 
             $contract = produce_contract({
                 underlying   => $underlying,
@@ -2275,10 +2273,10 @@ subtest 'suspend_buy & suspend_trades' => sub {
     };
 };
 
-#### Test for 1HZ contracts for China account ***** 
+#### Test for 1HZ contracts for China account *****
 my $china_account;
 my $underlying_symbol = "1HZ10V";
-$underlying      = create_underlying($underlying_symbol);
+$underlying = create_underlying($underlying_symbol);
 
 # Initialize random index for the 1HZ contract
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -2296,11 +2294,16 @@ my $tick_1HZ = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 
 lives_ok {
 
-    $china_account = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR' , residence =>'cn'});
+    $china_account = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'cn'
+    });
 
     #make sure client can trade
-    ok(!BOM::Transaction::Validation->new({clients => [$china_account]})->check_trade_status($china_account),      "China client can trade: check_trade_status");
-    ok(!BOM::Transaction::Validation->new({clients => [$china_account]})->_validate_client_status($china_account), "China client can trade: _validate_client_status");
+    ok(!BOM::Transaction::Validation->new({clients => [$china_account]})->check_trade_status($china_account),
+        "China client can trade: check_trade_status");
+    ok(!BOM::Transaction::Validation->new({clients => [$china_account]})->_validate_client_status($china_account),
+        "China client can trade: _validate_client_status");
 
     top_up $china_account, 'USD', 5000;
 
@@ -2311,19 +2314,18 @@ lives_ok {
 }
 'client created and funded';
 
-
 subtest 'buy a 1HZ bet for China account', sub {
 
     # print Dumper($underlying);
     lives_ok {
         my $contract = produce_contract({
-                underlying => $underlying,
-                bet_type   => 'CALL',
-                currency   => 'USD',
-                payout     => 1000,
-                duration   => '15m',
-                current_tick => $tick_1HZ,
-                barrier      => 'S0P',
+            underlying   => $underlying,
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 1000,
+            duration     => '15m',
+            current_tick => $tick_1HZ,
+            barrier      => 'S0P',
         });
 
         my $txn = BOM::Transaction->new({
@@ -2343,54 +2345,51 @@ subtest 'buy a 1HZ bet for China account', sub {
     }
     'survived';
 
+    subtest 'sell a 1HZ bet for China account', sub {
 
-subtest 'sell a 1HZ bet for China account', sub {
-  
-    lives_ok {
-        set_relative_time 1;
-        my $reset_time = guard { restore_time };
-        my $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'CALL',
-            currency     => 'USD',
-            payout       => 1000,
-            duration     => '15m',
-            date_start   => $now->epoch,
-            current_tick => $tick_1HZ,
-            entry_tick   => $tick_1HZ,
-            exit_tick    => $tick_1HZ,
-            barrier      => 'S0P',
-        });
-        my $txn;
-        #note 'bid price: ' . $contract->bid_price;
-        my $error = do {
-            my $mocked           = Test::MockModule->new('BOM::Transaction');
-            my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
-            $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
-            $mocked->mock('price', sub { $contract->bid_price });
-            $txn = BOM::Transaction->new({
-                purchase_date => $contract->date_start,
-                client        => $china_account,
-                contract      => $contract,
-                contract_id   => $fmb->{id},
-                price         => $contract->bid_price,
-                source        => 23,
+        lives_ok {
+            set_relative_time 1;
+            my $reset_time = guard { restore_time };
+            my $contract = produce_contract({
+                underlying   => $underlying,
+                bet_type     => 'CALL',
+                currency     => 'USD',
+                payout       => 1000,
+                duration     => '15m',
+                date_start   => $now->epoch,
+                current_tick => $tick_1HZ,
+                entry_tick   => $tick_1HZ,
+                exit_tick    => $tick_1HZ,
+                barrier      => 'S0P',
             });
-            $txn->sell;
-        };
-        is $error, undef, 'no error';
+            my $txn;
+            #note 'bid price: ' . $contract->bid_price;
+            my $error = do {
+                my $mocked           = Test::MockModule->new('BOM::Transaction');
+                my $mocked_validator = Test::MockModule->new('BOM::Transaction::Validation');
+                $mocked_validator->mock('_validate_trade_pricing_adjustment', sub { });
+                $mocked->mock('price', sub { $contract->bid_price });
+                $txn = BOM::Transaction->new({
+                    purchase_date => $contract->date_start,
+                    client        => $china_account,
+                    contract      => $contract,
+                    contract_id   => $fmb->{id},
+                    price         => $contract->bid_price,
+                    source        => 23,
+                });
+                $txn->sell;
+            };
+            is $error, undef, 'no error';
 
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
+            ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
-        is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
-        is $txn->transaction_id, $trx->{id},            'txn->transaction_id';
-        is $txn->balance_after,  $trx->{balance_after}, 'txn->balance_after';
-    }
-    'survived';
+            is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
+            is $txn->transaction_id, $trx->{id},            'txn->transaction_id';
+            is $txn->balance_after,  $trx->{balance_after}, 'txn->balance_after';
+        }
+        'survived';
+    };
 };
-};
-
-
 
 #######
 

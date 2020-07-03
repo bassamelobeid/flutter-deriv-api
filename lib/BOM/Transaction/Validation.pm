@@ -907,9 +907,15 @@ sub allow_paymentagent_withdrawal {
 
     return 1 if $client->status->pa_withdrawal_explicitly_allowed;
 
+    # Check if siblings have any transaction through doughflow/bankwire
+    my @all_loginids = $client->user->bom_real_loginids;
+
     return 1
-        unless BOM::Database::DataMapper::Payment->new({'client_loginid' => $client->loginid})
-        ->get_client_payment_count_by({payment_gateway_code => ['doughflow', 'bank_wire']});
+        unless any {
+        BOM::Database::DataMapper::Payment->new({'client_loginid' => $_})
+            ->get_client_payment_count_by({payment_gateway_code => ['doughflow', 'bank_wire']})
+    }
+    @all_loginids;
 
     return 0;
 }

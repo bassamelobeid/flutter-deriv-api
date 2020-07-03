@@ -36,7 +36,20 @@ $client->payment_legacy_payment(
     remark       => 'here is money',
     payment_type => 'ewallet',
 );
+
+$user->add_client($client);
 my $validation_obj = BOM::Transaction::Validation->new({clients => [$client]});
+
+my $sibling_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code        => 'CR',
+    date_joined        => '2000-01-02',
+    myaffiliates_token => 'token1',
+    residence          => 'id',
+    binary_user_id     => $user->id,
+});
+$sibling_client->account('BTC');
+
+my $sibling_validation_obj = BOM::Transaction::Validation->new({clients => [$sibling_client]});
 
 subtest 'no doughflow payment for client - no flag set - payment agent withdrawal allowed' => sub {
     my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
@@ -64,6 +77,11 @@ subtest 'doughflow payment exists for client - flag set - allow for payment agen
 Test::Exception::lives_ok { $client->status->clear_pa_withdrawal_explicitly_allowed };
 subtest 'doughflow payment exists for client - no flag set - dont allow for payment agent withdrawal' => sub {
     my $allow_withdraw = $validation_obj->allow_paymentagent_withdrawal($client);
+    is $allow_withdraw, 0, 'doughflow payment exist,no flag set, dont allow for payment agent withdrawal';
+};
+
+subtest 'doughflow payment exists for sibling - no flag set - dont allow for payment agent withdrawal' => sub {
+    my $allow_withdraw = $sibling_validation_obj->allow_paymentagent_withdrawal($sibling_client);
     is $allow_withdraw, 0, 'doughflow payment exist,no flag set, dont allow for payment agent withdrawal';
 };
 
