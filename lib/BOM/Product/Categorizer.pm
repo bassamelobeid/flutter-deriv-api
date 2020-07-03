@@ -39,9 +39,10 @@ use BOM::Product::Exception;
 use LandingCompany::Registry;
 use YAML::XS qw(LoadFile);
 use BOM::Config::Quants qw(minimum_payout_limit maximum_payout_limit minimum_stake_limit maximum_stake_limit);
+use BOM::Config;
 
 my $epsilon                   = machine_epsilon();
-my $minimum_multiplier_config = LoadFile('/home/git/regentmarkets/bom/config/files/lookback_minimum_multiplier.yml');
+my $minimum_multiplier_config = BOM::Config::quants()->{lookback_limits};
 
 use constant {
     MAX_DURATION => 60 * 60 * 24 * 365 * 2    #2 years in seconds
@@ -465,7 +466,8 @@ sub _initialize_other_parameters {
 
         my $minimum_multiplier;
         $minimum_multiplier =
-            $minimum_multiplier_config->{$params->{underlying}->symbol} / $minimum_multiplier_config->{$params->{payout_currency_type}}
+            $minimum_multiplier_config->{min_multiplier}->{$params->{underlying}->symbol} /
+            $minimum_multiplier_config->{$params->{payout_currency_type}}
             # re calibrating minimum multiplier should not affect sold contracts.
             if $params->{category}->has_minimum_multiplier && !$params->{is_sold};
 

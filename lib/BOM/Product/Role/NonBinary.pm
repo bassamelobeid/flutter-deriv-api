@@ -49,7 +49,8 @@ override _validate_price => sub {
         };
     }
 
-    if (abs($self->ask_price - $self->payout) < 0.001) {
+    my $precision = Format::Util::Numbers::get_precision_config()->{price}->{$self->currency} // 0;
+    if (abs($self->ask_price - $self->payout) < 1 / (10**$precision)) {
         return {
             message           => 'buy price is equals to payout',
             message_to_client => [$ERROR_MAPPING->{NoReturn}],

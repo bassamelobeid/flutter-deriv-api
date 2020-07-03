@@ -14,8 +14,9 @@ use YAML::XS qw(LoadFile);
 use Math::Util::CalculatedValue::Validatable;
 
 use BOM::Product::Exception;
+use BOM::Config::QuantsConfig;
+use BOM::Config;
 
-my $minimum_commission_config = LoadFile('/home/git/regentmarkets/bom/config/files/callputspread_minimum_commission.yml');
 use constant {
     MINIMUM_BID_PRICE => 0,
 };
@@ -38,7 +39,9 @@ has minimum_commission_per_contract => (
 sub _build_minimum_commission_per_contract {
     my $self = shift;
 
-    return $minimum_commission_config->{$self->currency};
+    my $static = BOM::Config::quants;
+
+    return $static->{bet_limits}->{min_commission_amount}->{callputspread}->{$self->currency};
 }
 
 override '_build_ask_price' => sub {

@@ -1002,7 +1002,7 @@ sub _build_min_commission_amount {
 
     my $static = BOM::Config::quants;
 
-    return $static->{bet_limits}->{min_commission_amount}->{$self->currency} // 0;
+    return $static->{bet_limits}->{min_commission_amount}->{default_contract_category}->{$self->currency} // 0;
 }
 
 has _custom_commission => (
