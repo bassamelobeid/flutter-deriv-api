@@ -19,6 +19,9 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use ExpiryQueue qw(queue_flush);
+use BOM::Config::Chronicle;
+use Quant::Framework;
+use Finance::Exchange;
 
 queue_flush();
 
@@ -178,42 +181,49 @@ subtest 'contract_update' => sub {
     is $history->[1]->{value},        101.05;
 };
 
-subtest 'forex major pair - frxAUDJPY' => sub {
-    note "commission on forex is a function of spread seasonality. So it changes throughout the day";
-    my $buy_params = {
-        client_ip           => '127.0.0.1',
-        token               => $token,
-        contract_parameters => {
-            contract_type => 'MULTUP',
-            basis         => 'stake',
-            amount        => 100,
-            multiplier    => 100,
-            symbol        => 'frxAUDJPY',
-            currency      => 'USD',
-        },
-        args => {price => 100},
-    };
-    my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
+SKIP: {
 
-    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
-    ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
+    my $exchange         = Finance::Exchange->create_exchange('FOREX');
 
-    my $update_params = {
-        client_ip => '127.0.0.1',
-        token     => $token,
-        args      => {
-            contract_id     => $buy_res->{contract_id},
-            contract_update => 1,
-            limit_order     => {
-                take_profit => 10,
-                stop_loss   => 5
+    skip 'market closed on weekend', unless $trading_calendar->is_open($exchange);
+
+    subtest 'forex major pair - frxAUDJPY' => sub {
+        note "commission on forex is a function of spread seasonality. So it changes throughout the day";
+        my $buy_params = {
+            client_ip           => '127.0.0.1',
+            token               => $token,
+            contract_parameters => {
+                contract_type => 'MULTUP',
+                basis         => 'stake',
+                amount        => 100,
+                multiplier    => 100,
+                symbol        => 'frxAUDJPY',
+                currency      => 'USD',
             },
-        }};
-    my $update_res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
-    is $update_res->{stop_loss}->{order_amount},   -5;
-    ok $update_res->{stop_loss}->{value};
-    is $update_res->{take_profit}->{order_amount}, 10;
-    ok $update_res->{take_profit}->{value};
-};
+            args => {price => 100},
+        };
+        my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
 
+        ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
+        ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
+
+        my $update_params = {
+            client_ip => '127.0.0.1',
+            token     => $token,
+            args      => {
+                contract_id     => $buy_res->{contract_id},
+                contract_update => 1,
+                limit_order     => {
+                    take_profit => 10,
+                    stop_loss   => 5
+                },
+            }};
+        my $update_res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
+        is $update_res->{stop_loss}->{order_amount}, -5;
+        ok $update_res->{stop_loss}->{value};
+        is $update_res->{take_profit}->{order_amount}, 10;
+        ok $update_res->{take_profit}->{value};
+    };
+}
 done_testing();
