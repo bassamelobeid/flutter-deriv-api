@@ -35,18 +35,33 @@ has brand => (
     required => 1,
 );
 
+has recheck_authenticated_clients => (
+    is      => 'ro',
+    default => 0
+);
+
 our $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Config::sanction_file);
 
 =head2 check
 
  Check client against sanctioned list. For virtual check is not done. For unauthenticated clients, client is blocked & email is sent.
 
+It takes following named args:
+
+=over 4
+
+=item - comments: (optional) additional comments to be appended to email body
+
+=item - triggered_by: (optional) the process in which the sanctions check is triggered, to be appended to email subject
+
+=back
+
  Returns none if not matched, and list id if matched.
 
 =cut
 
 sub check {
-    my $self   = shift;
+    my ($self, %args) = @_;
     my $client = $self->client;
 
     return if $client->is_virtual;
@@ -60,7 +75,7 @@ sub check {
     $client->save;
 
     # we don't mark or log fully_authenticated clients
-    return if (not $sanctioned_info->{matched} or $client->fully_authenticated);
+    return if (not $sanctioned_info->{matched} or $client->fully_authenticated and !$self->recheck_authenticated_clients);
 
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
@@ -69,14 +84,17 @@ sub check {
           "UN Sanctions: $client_loginid suspected (Client's name is $client_name) - similar to $sanctioned_info->{name}\n"
         . "Check possible match in UN sanctions list found in [$sanctioned_info->{list}, "
         . Date::Utility->new($sanctions->last_updated($sanctioned_info->{list}))->date . "].\n"
-        . "Reason: $sanctioned_info->{reason}";
+        . "Reason: $sanctioned_info->{reason} \n";
+
+    my $subject = $client->loginid . ' possible match in sanctions list';
+    $subject .= " - $args{triggered_by}" if $args{triggered_by};
 
     # do not send notification if client is already disabled
     send_email({
             from    => $self->brand->emails('system'),
             to      => $self->brand->emails('compliance'),
-            subject => $client->loginid . ' possible match in sanctions list',
-            message => [$message],
+            subject => $subject,
+            message => [$message, $args{comments} // ''],
         }) unless ($self->skip_email or $client->status->disabled);
 
     return $sanctioned_info->{list};
