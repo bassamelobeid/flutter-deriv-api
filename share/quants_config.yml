@@ -12,9 +12,9 @@ default_stake:
   EUR: 10
   AUD: 10
   GBP: 10
-  BTC: 0.003
-  ETH: 0.05
-  LTC: 0.25
+  BTC: 0.001
+  ETH: 0.04
+  LTC: 0.22
   DAI: 10
   IDK: 150
   PAX: 10
@@ -28,49 +28,14 @@ default_stake:
 bet_limits:
   holiday_blackout_start: 345
   holiday_blackout_end: 5
-  restricted_payout_contract_categories:
-    runs:
-      USD: 10000
-      EUR: 10000
-      AUD: 10000
-      GBP: 10000
-      BTC: 3
-      ETH: 10
-      LTC: 50
-      DAI: 1000
-      IDK: 15000
-      PAX: 1000
-      TUSD: 1000
-      USB: 1000
-      USDC: 1000
-      USDK: 1000
-      UST: 1000
-      eUSDT: 1000
-    digits:
-      USD: 30000
-      EUR: 30000
-      AUD: 30000
-      GBP: 30000
-      BTC: 10
-      ETH: 50
-      LTC: 50
-      DAI: 5000
-      IDK: 45000
-      PAX: 5000
-      TUSD: 5000
-      USB: 5000
-      USDC: 5000
-      USDK: 5000
-      UST: 5000
-      eUSDT: 5000
   inefficient_period_payout_max:
     USD: 200
     EUR: 200
     AUD: 200
     GBP: 200
-    BTC: 0.05
-    ETH: 0.5
-    LTC: 2.5
+    BTC: 0.02
+    ETH: 0.8
+    LTC: 4.5
     DAI: 200
     IDK: 3000
     PAX: 200
@@ -82,11 +47,11 @@ bet_limits:
     eUSDT: 200
 
 # The following limits is based on this exchange rates
-# (1 BTC = $7701.50)
-# (1 ETH = $194.36)
-# (1 LTC = $43.88)
+# (1 BTC = $10000)
+# (1 ETH = $250)
+# (1 LTC = $45)
 # (1 IDK = $0.066)
-# Date: 2020-04-28
+# Date: 2020-06-24 (Values are rounded)
 
   min_payout:
     default_landing_company:
@@ -96,18 +61,37 @@ bet_limits:
           EUR: 0.01
           AUD: 0.01
           GBP: 0.01
-          BTC: 0.000002
-          ETH: 0.00006
-          LTC: 0.00025
-          DAI: 0.01
+          BTC: 0.000001
+          ETH: 0.00004
+          LTC: 0.00022
+          UST: 0.01
+          USB: 0.01
           IDK: 0.15
           PAX: 0.01
+          DAI: 0.01
           TUSD: 0.01
           USB: 0.01
           USDC: 0.01
           USDK: 0.01
           UST: 0.01
           eUSDT: 0.01
+        callputspread:
+          USD: 1
+          EUR: 1
+          AUD: 1
+          GBP: 1
+          BTC: 0.0001
+          ETH: 0.004
+          LTC: 0.022
+          UST: 1
+          USB: 1
+          IDK: 15
+          PAX: 1
+          DAI: 1
+          TUSD: 1
+          USDC: 1
+          USDK: 1
+          eUSDT: 1
   max_payout:
     default_landing_company:
       default_market:
@@ -116,12 +100,48 @@ bet_limits:
           EUR: 50000
           AUD: 50000
           GBP: 50000
-          BTC: 6.5
-          ETH: 250
+          BTC: 5
+          ETH: 200
           LTC: 1000
           DAI: 5000
           IDK: 75000
           PAX: 5000
+          TUSD: 5000
+          USB: 5000
+          USDC: 5000
+          USDK: 5000
+          UST: 5000
+          eUSDT: 5000
+        runs:
+          USD: 10000
+          EUR: 10000
+          AUD: 10000
+          GBP: 10000
+          BTC: 1
+          ETH: 40
+          LTC: 220
+          DAI: 1000
+          IDK: 15000
+          PAX: 1000
+          TUSD: 1000
+          USB: 1000
+          USDC: 1000
+          USDK: 1000
+          UST: 1000
+          eUSDT: 1000
+        digits:
+          USD: 30000
+          EUR: 30000
+          AUD: 30000
+          GBP: 30000
+          BTC: 3
+          ETH: 120
+          LTC: 660
+          DAI: 5000
+          UST: 5000
+          USB: 5000
+          IDK: 45000
+          PAX: 5000 
           TUSD: 5000
           USB: 5000
           USDC: 5000
@@ -136,7 +156,7 @@ bet_limits:
           EUR: 0.5
           AUD: 0.5
           GBP: 0.5
-          BTC: 0.0002
+          BTC: 0.00005
           ETH: 0.002
           LTC: 0.01
           DAI: 0.5
@@ -153,8 +173,8 @@ bet_limits:
           EUR: 1
           AUD: 1
           GBP: 1
-          BTC: 0.0002
-          ETH: 0.006
+          BTC: 0.0001
+          ETH: 0.004
           LTC: 0.025
           DAI: 1
           IDK: 15
@@ -171,7 +191,7 @@ bet_limits:
           EUR: 0.35
           AUD: 0.35
           GBP: 0.35
-          BTC: 0.0002
+          BTC: 0.00005
           ETH: 0.002
           LTC: 0.01
           DAI: 0.35
@@ -188,8 +208,8 @@ bet_limits:
           EUR: 1
           AUD: 1
           GBP: 1
-          BTC: 0.0002
-          ETH: 0.006
+          BTC: 0.0001
+          ETH: 0.004
           LTC: 0.025
           DAI: 1
           IDK: 15
@@ -207,7 +227,7 @@ bet_limits:
           EUR: 5
           AUD: 5
           GBP: 5
-          BTC: 0.002
+          BTC: 0.0005
           ETH: 0.02
           LTC: 0.1
           DAI: 5
@@ -227,9 +247,9 @@ bet_limits:
           EUR: 2000
           AUD: 2000
           GBP: 2000
-          BTC: 0.3
-          ETH: 10
-          LTC: 40
+          BTC: 0.2
+          ETH: 8
+          LTC: 45
           DAI: 2000
           IDK: 30000
           PAX: 2000
@@ -240,30 +260,48 @@ bet_limits:
           UST: 2000
           eUSDT: 2000
   min_commission_amount:
-    USD: 0.02 # 0.02 dollar
-    EUR: 0.02
-    AUD: 0.02
-    GBP: 0.02
-    BTC: 0.000015
-    ETH: 0.00015
-    LTC: 0.00075
-    DAI: 0.02
-    IDK: 0.3
-    PAX: 0.02
-    TUSD: 0.02
-    USB: 0.02
-    USDC: 0.02
-    USDK: 0.02
-    UST: 0.02
-    eUSDT: 0.02
+    default_contract_category:
+      USD: 0.02 # 0.02 dollar
+      EUR: 0.02
+      AUD: 0.02
+      GBP: 0.02
+      BTC: 0.000005
+      ETH: 0.00008
+      LTC: 0.00045
+      IDK: 0.3
+      PAX: 0.02
+      DAI: 0.02
+      TUSD: 0.02
+      USB: 0.02
+      USDC: 0.02
+      USDK: 0.02
+      UST: 0.02
+      eUSDT: 0.02
+    callputspread:
+      USD: 0.05
+      EUR: 0.05
+      AUD: 0.05
+      GBP: 0.05
+      BTC: 0.000005
+      ETH: 0.0002
+      LTC: 0.0012
+      UST: 0.05
+      USB: 0.05
+      IDK: 0.75
+      PAX: 0.05
+      DAI: 0.05
+      TUSD: 0.05
+      USDC: 0.05
+      USDK: 0.05
+      eUSDT: 0.05
   min_order_amount:
     USD: 0.1 # 0.1 dollar
     EUR: 0.1
     AUD: 0.1
     GBP: 0.1
-    BTC: 0.000075
-    ETH: 0.00075
-    LTC: 0.00375
+    BTC: 0.00001
+    ETH: 0.0004
+    LTC: 0.0025
     DAI: 0.1
     UST: 0.1
     USB: 0.1
@@ -299,14 +337,47 @@ bet_limits:
 #      R_10: 0.03444191548393187
 
 lookback_limits:
+  crypto: 100
+  fiat: 1
+#
+#Note:
+#multipliers by underlying are chosen as the smallest possible denomination {0.1,0.01,0.001,…}
+#where a unit price of a 1 minute lookback float call contract would be above {currency}0.5
+#based on the latest spot on Jun 4th 2020 1:46pm MYT as below
+#
+#The miminum multiplier below are for fiat. For cryptos, we will divide below numbers by 100;
+
+#
+#R_10 : 7,362
+#R_25 : 2,348
+#R_50 : 213
+#R_75 : 406,808
+#R_100: 1,401
+#1HZ10V:  8,345
+#1HZ25V:  398,554
+#1HZ50V:  309,050
+#1HZ75V:  200,900
+#1HZ100V: 8,796
+  min_multiplier:
+    R_10 : 1.0
+    R_25 : 1.0
+    R_50 : 1
+    R_75 : 0.005
+    R_100 : 0.5
+    1HZ10V: 1.0
+    1HZ25V: 0.01
+    1HZ50V: 0.005
+    1HZ75V: 0.005
+    1HZ100V: 0.1
+
   open_position_limits:
     USD: 300
     EUR: 300
     AUD: 300
     GBP: 300
-    BTC: 3
-    ETH: 3
-    LTC: 3
+    BTC: 0.03
+    ETH: 1.2
+    LTC: 6.5
     DAI: 300
     IDK: 4500
     PAX: 300
@@ -376,9 +447,9 @@ risk_profile:
           EUR: 1000
           AUD: 1000
           GBP: 1000
-          BTC: 0.2
-          ETH: 2
-          LTC: 10
+          BTC: 0.1
+          ETH: 4
+          LTC: 22
           DAI: 1000
           IDK: 15000
           PAX: 1000
@@ -393,9 +464,9 @@ risk_profile:
           EUR: 100
           AUD: 100
           GBP: 100
-          BTC: 0.02
-          ETH: 0.2
-          LTC: 1
+          BTC: 0.01
+          ETH: 0.4
+          LTC: 2.5
           DAI: 100
           IDK: 1500
           PAX: 100
@@ -410,8 +481,8 @@ risk_profile:
           EUR: 50
           AUD: 50
           GBP: 50
-          BTC: 0.01
-          ETH: 0.25
+          BTC: 0.005
+          ETH: 0.2
           LTC: 1.25
           DAI: 50
           IDK: 750
@@ -428,9 +499,9 @@ risk_profile:
           EUR: 5000
           AUD: 5000
           GBP: 5000
-          BTC: 1
-          ETH: 10
-          LTC: 50
+          BTC: 0.5
+          ETH: 20
+          LTC: 110
           DAI: 5000
           IDK: 75000
           PAX: 5000
@@ -445,9 +516,9 @@ risk_profile:
           EUR: 1000
           AUD: 1000
           GBP: 1000
-          BTC: 0.2
-          ETH: 2
-          LTC: 10
+          BTC: 0.1
+          ETH: 4
+          LTC: 25
           DAI: 1000
           IDK: 15000
           PAX: 1000
@@ -463,7 +534,7 @@ risk_profile:
           AUD: 200
           GBP: 200
           BTC: 0.02
-          ETH: 1
+          ETH: 0.8
           LTC: 5
           DAI: 200
           IDK: 3000
@@ -481,8 +552,8 @@ risk_profile:
           AUD: 50000
           GBP: 50000
           BTC: 5
-          ETH: 50
-          LTC: 250
+          ETH: 200
+          LTC: 1250
           DAI: 50000
           IDK: 750000
           PAX: 50000
@@ -498,8 +569,8 @@ risk_profile:
           AUD: 5000
           GBP: 5000
           BTC: 0.5
-          ETH: 5
-          LTC: 50
+          ETH: 20
+          LTC: 125
           DAI: 5000
           IDK: 75000
           PAX: 5000
@@ -515,7 +586,7 @@ risk_profile:
           AUD: 500
           GBP: 500
           BTC: 0.05
-          ETH: 2.5
+          ETH: 2
           LTC: 12.5
           DAI: 500
           IDK: 7500
@@ -532,9 +603,9 @@ risk_profile:
           EUR: 100000
           AUD: 100000
           GBP: 100000
-          BTC: 15
-          ETH: 50
-          LTC: 250
+          BTC: 10
+          ETH: 400
+          LTC: 2250
           DAI: 100000
           IDK: 1500000
           PAX: 100000
@@ -549,9 +620,9 @@ risk_profile:
           EUR: 20000
           AUD: 20000
           GBP: 20000
-          BTC: 2.5
-          ETH: 5
-          LTC: 50
+          BTC: 2
+          ETH: 80
+          LTC: 450
           DAI: 20000
           IDK: 300000
           PAX: 20000
@@ -567,8 +638,8 @@ risk_profile:
           AUD: 1000
           GBP: 1000
           BTC: 0.1
-          ETH: 5
-          LTC: 25
+          ETH: 4
+          LTC: 22.5
           DAI: 1000
           IDK: 15000
           PAX: 1000
@@ -584,9 +655,9 @@ risk_profile:
           EUR: 500000
           AUD: 500000
           GBP: 500000
-          BTC: 30
-          ETH: 100
-          LTC: 500
+          BTC: 50
+          ETH: 2000
+          LTC: 11000
           DAI: 500000
           IDK: 7500000
           PAX: 500000
@@ -602,8 +673,8 @@ risk_profile:
           AUD: 50000
           GBP: 50000
           BTC: 5
-          ETH: 10
-          LTC: 50
+          ETH: 200
+          LTC: 1250
           DAI: 50000
           IDK: 750000
           PAX: 50000
@@ -619,8 +690,8 @@ risk_profile:
           AUD: 2000
           GBP: 2000
           BTC: 0.2
-          ETH: 10
-          LTC: 50
+          ETH: 8
+          LTC: 45
           DAI: 2000
           IDK: 30000
           PAX: 2000

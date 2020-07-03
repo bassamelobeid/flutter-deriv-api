@@ -29,8 +29,8 @@ sub market_pricing_limits {
             for my $currency (@$currencies) {
                 my $min_stake  = $cat_min->{$currency};
                 my $max_payout = $cat_max->{$currency};
-                $limits->{$market}->{$currency}->{max_payout} = $max_payout;
-                $limits->{$market}->{$currency}->{min_stake}  = $min_stake;
+                $limits->{$market}->{$currency}->{max_payout} = $max_payout + 0;    #add plus 0 to ensure it will always be a number instead of string
+                $limits->{$market}->{$currency}->{min_stake}  = $min_stake + 0;
             }
         }
     }
