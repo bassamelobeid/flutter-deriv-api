@@ -10,6 +10,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Database::ClientDB;
 use BOM::MyAffiliates;
+use BOM::Backoffice::PromoCodeEligibility;
 use JSON::MaybeXS;
 BOM::Backoffice::Sysinit::init();
 
@@ -161,6 +162,20 @@ if (!$affiliate_promo && $client->promo_code) {
     $affiliate_promo = get_promo_information($client->promo_code, $client->db->dbic);
 }
 
+code_exit_BO('<h3>Cient has no promo code assigned</h3>') unless $affiliate_promo;
+
+my $amount = $affiliate_promo->{config}{amount};
+
+# Amount for GET_X_OF_DEPOSITS is dependant on eligible deposits made
+if ($affiliate_promo->{promo_code_type} eq 'GET_X_OF_DEPOSITS') {
+    $amount = BOM::Backoffice::PromoCodeEligibility::get_dynamic_bonus(
+        db           => $client->db->dbic,
+        account_id   => $client->account->id,
+        code         => $affiliate_promo->{code},
+        promo_config => $affiliate_promo->{config},
+    );
+}
+
 my $countries_instance = request()->brand->countries_instance->countries;
 my $country_residence  = $countries_instance->country_from_code($client->residence);
 my $client_country_matches_promo;
@@ -188,6 +203,7 @@ BOM::Backoffice::Request::template()->process(
     'backoffice/client_bonus_check.html.tt',
     {
         client                       => $client,
+        amount                       => $amount,
         country_residence            => $country_residence,
         affiliate_promo              => $affiliate_promo,
         transactions                 => $transactions,
@@ -323,9 +339,7 @@ sub get_promo_information {
         $promo_code =~ s/;//g;
         $affiliate_promo = $dbic->run(
             fixup => sub {
-                $_->selectrow_hashref(
-                    "SELECT code, start_date, expiry_date, status, promo_code_config, description FROM betonmarkets.promo_code WHERE code = ?  ",
-                    undef, ($promo_code));
+                $_->selectrow_hashref("SELECT * FROM betonmarkets.promo_code WHERE code = ?", undef, ($promo_code));
             });
     }
 

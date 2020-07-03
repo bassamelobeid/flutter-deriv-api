@@ -60,7 +60,8 @@ if ($input{save}) {
                 $input{country} = join(',', @{$input{country}}) if ref $input{country};
             }
 
-            for (qw/currency amount country min_turnover min_deposit/) {
+            delete $input{payment_processor} if $input{promo_code_type} eq 'FREE_BET';
+            for (qw/currency amount country min_turnover min_deposit payment_processor min_amount max_amount/) {
                 if ($input{$_}) {
                     $pc->{_json}{$_} = $input{$_};
                 } else {
@@ -74,7 +75,10 @@ if ($input{save}) {
     }
 }
 
-$pc->{_json} ||= eval { JSON::from_json($pc->promo_code_config) } || {};
+if ($pc) {
+    $pc->{_json} ||= eval { JSON::from_json($pc->promo_code_config) } || {};
+    $pc->{$_} = Date::Utility->new($pc->$_)->date_yyyymmdd for grep { $pc->$_ } qw/start_date expiry_date/;
+}
 
 my $stash = {
     pc                 => $pc,
@@ -98,7 +102,7 @@ sub _validation_errors {
     }
 
     # some of these are stored as json thus aren't checked by the orm or the database..
-    for (qw/amount min_turnover min_deposit/) {
+    for (qw/amount min_turnover min_deposit min_amount max_amount/) {
         my $val = $input{$_} || next;
         next if looks_like_number($val);
         push @errors, "Field '$_' value '$val' is not numeric";
@@ -123,7 +127,15 @@ sub _validation_errors {
         if $input{min_turnover} && $input{promo_code_type} ne 'FREE_BET';
     push @errors, "MINUMUM DEPOSIT is only for GET_X_WHEN_DEPOSIT_Y promotions"
         if $input{min_deposit} && $input{promo_code_type} ne 'GET_X_WHEN_DEPOSIT_Y';
-    push @errors, "Amount must be integer and in between 0 and 999" if ($input{amount} and $input{amount} !~ /^[1-9](?:[0-9]){0,2}$/);
+    push @errors, "MINUMUM PAYOUT is only for GET_X_OF_DEPOSITS promotions"
+        if $input{min_amount} && $input{promo_code_type} ne 'GET_X_OF_DEPOSITS';
+    push @errors, "MAXIMUM PAYOUT is only for GET_X_OF_DEPOSITS promotions"
+        if $input{max_amount} && $input{promo_code_type} ne 'GET_X_OF_DEPOSITS';
+    if ($input{promo_code_type} eq 'GET_X_OF_DEPOSITS') {
+        push @errors, "Amount must be a percentage between 1 and 100" if ($input{amount} < 0.1 or $input{amount} > 100);
+    } else {
+        push @errors, "Amount must be a number between 0 and 999" if ($input{amount} < 0 or $input{amount} > 999);
+    }
     push @errors, "Promocode can only have: letters, underscore, minus and dot" unless is_valid_promocode(\%input);
     return @errors;
 }

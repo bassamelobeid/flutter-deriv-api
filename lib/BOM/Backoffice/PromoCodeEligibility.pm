@@ -1,11 +1,11 @@
-package BOM::Backoffice::Script::PromoCodeEligibility;
+package BOM::Backoffice::PromoCodeEligibility;
 use strict;
 use warnings;
 
 use Log::Any qw($log);
 use JSON::MaybeXS;
 use Syntax::Keyword::Try;
-use List::Util qw(any first all);
+use List::Util qw(any first all sum min);
 
 use BOM::Database::ClientDB;
 use BOM::MyAffiliates;
@@ -14,9 +14,13 @@ use BOM::User::Client;
 use Email::Stuffer;
 use Date::Utility;
 
-=head1 DESCRIPTION
+my %currency_types;
+my $report;
 
-This script is intended to be run daily. It will have no bad effects if run more than once. 
+=head2 approve_all
+
+Main entry point for cron script.
+Intended to be run daily. It will have no bad effects if run more than once. 
 
 =over 4
 
@@ -34,16 +38,7 @@ This script is intended to be run daily. It will have no bad effects if run more
 
 =cut
 
-my %currency_types;
-my $report;
-
-=head2 run
-
-Main entry point for script.
-
-=cut
-
-sub run {
+sub approve_all {
 
     my $myaff_api = BOM::MyAffiliates->new();
     my $dbs       = connect_dbs();
@@ -112,12 +107,25 @@ sub run {
 
         my $is_approved;
 
-        # At this point, welcome bonuses can be approved
-        $is_approved = 1 if $code->{promo_code_type} eq 'FREE_BET';
-
-        # deposit bonuses need further checks:
-        $is_approved = deposit_bonus_is_approved($dbs->{$client->{broker}}, $client, $code)
-            if $code->{promo_code_type} eq 'GET_X_WHEN_DEPOSIT_Y';
+        if ($code->{promo_code_type} eq 'FREE_BET') {
+            # At this point, welcome bonuses can be approved
+            $is_approved = 1;
+        } elsif ($code->{promo_code_type} eq 'GET_X_WHEN_DEPOSIT_Y') {
+            # Get all deposits with amount >= promocode deposit requirement
+            my @deposits = grep { $_ >= $code->{min_deposit} } get_deposits($dbs->{$client->{broker}}, $client->{account_id}, $code->{code}, $code);
+            # Approve is there is at least one and client has sufficient turnover
+            $is_approved = 1 if @deposits > 0 and turnover_requirement_met($dbs->{$client->{broker}}, $client, $code, $code->{amount});
+        } elsif ($code->{promo_code_type} eq 'GET_X_OF_DEPOSITS') {
+            # Get payout amount
+            my $bonus = get_dynamic_bonus(
+                db           => $dbs->{$client->{broker}},
+                account_id   => $client->{account_id},
+                code         => $code->{code},
+                promo_config => $code,
+            );
+            # Approve if there is a bonus and client has sufficient turnover
+            $is_approved = 1 if $bonus > 0 and turnover_requirement_met($dbs->{$client->{broker}}, $client, $code, $bonus);
+        }
 
         if ($is_approved) {
             $dbs->{$client->{broker}}->run(
@@ -301,6 +309,7 @@ sub active_promocodes {
             $config->{country} = [split ',', $config->{country}];
         }
         catch {
+            warn 'Invalid config for promocode ' . $code->{code} . ': ' . $@;
             next;
         }
         $result{$code->{code}} = $code;
@@ -384,7 +393,6 @@ sub add_codes_to_clients {
 
         for my $buid (values $aff->{buid}->%*) {
             my ($client, $code) = code_for_account(\@codes_to_check, [values %$buid]);
-
             next unless $client && $code;
 
             try {
@@ -454,13 +462,40 @@ sub clients_with_promo {
     return \%clients;
 }
 
-=head2 deposit_bonus_is_approved
+=head2 get_deposits
 
-Check if a client meets the requirements for a deposit promocode.
+Get amounts of eligible deposits
+
+=cut
+
+sub get_deposits {
+    my ($db, $account_id, $code, $promo_config) = @_;
+    my $pp = $promo_config->{payment_processor} // 'ALL';
+
+    return $db->run(
+        fixup => sub {
+            my $sth = $_->prepare_cached(
+                "SELECT p.amount FROM transaction.transaction t 
+                JOIN payment.payment p ON p.id = t.payment_id AND p.payment_gateway_code IN ('payment_agent_transfer', 'doughflow', 'bank_wire', 'p2p')
+                JOIN betonmarkets.promo_code pc ON pc.code = ?
+                WHERE (pc.start_date IS NULL OR p.payment_time >= pc.start_date)
+                AND (pc.expiry_date IS NULL OR p.payment_time <= pc.expiry_date)
+                AND t.account_id = ?
+                AND (? = 'ALL' or ( ? = REGEXP_REPLACE(p.remark,'(.+payment_processor=)(\\w+)(.*)', '\\2') AND p.payment_gateway_code = 'doughflow' ) )"
+            );
+            $sth->execute($code, $account_id, $pp, $pp);
+            my $res = $sth->fetchall_arrayref;
+            $sth->finish;
+            return map { $_->[0] } @$res;
+        });
+
+}
+
+=head2 turnover_requirement_met
+
+Check if a client has sufficient turnover
 
 =over 4
-
-=item * Must have at least one deposit with amount >= promocode deposit requirement
 
 =item * Turnover must be least 5 times the promocode bonus amount.
 
@@ -470,49 +505,45 @@ Check if a client meets the requirements for a deposit promocode.
 
 =cut
 
-sub deposit_bonus_is_approved {
-    my ($db, $client, $code) = @_;
+sub turnover_requirement_met {
+    my ($db, $client, $code, $payout) = @_;
 
-    my $deposits = $db->run(
+    my $tover = $db->run(
         fixup => sub {
             my $sth = $_->prepare_cached(
-                "SELECT COUNT(*) FROM transaction.transaction t 
-                JOIN payment.payment p ON p.id = t.payment_id AND payment_gateway_code IN ('payment_agent_transfer', 'doughflow', 'bank_wire', 'p2p')
+                "SELECT COALESCE(SUM(ABS(amount)),0) FROM transaction.transaction t
+                JOIN bet.financial_market_bet b ON b.id = t.financial_market_bet_id
                 JOIN betonmarkets.promo_code pc ON pc.code = ?
-                WHERE (pc.start_date IS NULL OR p.payment_time >= pc.start_date)
-                AND (pc.expiry_date IS NULL OR p.payment_time <= pc.expiry_date)
-                AND t.account_id = ?
-                AND p.amount >= ?"
+                WHERE t.action_type = 'buy'
+                AND (pc.start_date IS NULL OR b.purchase_time >= pc.start_date)
+                AND (pc.expiry_date IS NULL OR b.purchase_time <= pc.expiry_date)                            
+                AND t.account_id = ?"
             );
-            $sth->execute($code->{code}, $client->{account_id}, $code->{min_deposit});
+            $sth->execute($code->{code}, $client->{account_id});
             my $res = $sth->fetchrow_array;
             $sth->finish;
             return $res;
         });
 
-    if ($deposits > 0) {
+    return $tover >= ($payout * 5);
+}
 
-        my $tover = $db->run(
-            fixup => sub {
-                my $sth = $_->prepare_cached(
-                    "SELECT COALESCE(SUM(ABS(amount)),0) FROM transaction.transaction t
-                    JOIN bet.financial_market_bet b ON b.id = t.financial_market_bet_id
-                    JOIN betonmarkets.promo_code pc ON pc.code = ?
-                    WHERE t.action_type = 'buy'
-                    AND (pc.start_date IS NULL OR b.purchase_time >= pc.start_date)
-                    AND (pc.expiry_date IS NULL OR b.purchase_time <= pc.expiry_date)                            
-                    AND t.account_id = ?"
-                );
-                $sth->execute($code->{code}, $client->{account_id});
-                my $res = $sth->fetchrow_array;
-                $sth->finish;
-                return $res;
-            });
+=head2 get_dynamic_bonus
 
-        return 1 if $tover >= ($code->{amount} * 5);
-    }
+Calculate bonus amount for GET_X_OF_DEPOSITS promos.
+Used in this file as well as pages in BO where promocodes are manually approved.
 
-    return 0;
+=cut
+
+sub get_dynamic_bonus {
+    my %args = @_;
+
+    my @deposits = get_deposits($args{db}, $args{account_id}, $args{code}, $args{promo_config});
+    my $total = sum(@deposits) // 0;
+    my $bonus = $total * ($args{promo_config}{amount} / 100);
+    $bonus = min($bonus, $args{promo_config}{max_amount}) if $args{promo_config}{max_amount};
+    $bonus = 0 if $args{promo_config}{min_amount} and $args{promo_config}{min_amount} > $bonus;
+    return $bonus;
 }
 
 1;

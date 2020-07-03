@@ -208,7 +208,7 @@ table#client_edit td{
         <td class="label">Amount</td>
         <td>:
 
-                <b>[% affiliate_promo.config.amount %]</b>
+                <b>[% affiliate_promo.config.currency %] [% formatnumber('amount', affiliate_promo.config.currency, amount) %]</b>
         </td>
     </tr>
 [% ELSE %]
@@ -254,10 +254,9 @@ table#client_edit td{
 
             <td>
                     <input type="hidden" name="loginid" value="[% client.loginid %]">
-
+                    <input type="hidden" value="[% amount %]" name="amount" />
                     <button  type="submit" value="[% affiliate_promo.code %]" name="bonus_approve" onclick="return confirm('Approve Bonus for [% client.loginid %]?')"> Approve </button>
                     <button  type="submit" value="[% affiliate_promo.code %]"  name="bonus_reject" onclick="return confirm('Reject  Bonus for [% client.loginid %]?')"> Reject </button>
-
             </td>
            </tr>
         </form>
@@ -282,6 +281,7 @@ table#client_edit td{
          <th>Debit</th>
          <th>Credit</th>
          <th>Balance</th>
+         <th>Remark</th>
      </thead>
      <tbody>
 
@@ -302,6 +302,7 @@ table#client_edit td{
             <td></td>
          [% END %]
          <td>[% currency %] [% formatnumber('amount', currency, transaction.balance_after) %] </td>
+          <td>[% transaction.remark %] </td>
      </tr>
      [% END %]
 

@@ -46,16 +46,12 @@ if ($input{bonus_approve} or $input{bonus_reject}) {
     };
     $client->promo_code_status('APPROVAL');
     if ($input{bonus_approve}) {
-        process_bonus_claim($client, 1, $notify);
-        $status = "Approved";
+        $status = process_bonus_claim($client, 1, $input{amount}, $notify);
     } elsif ($input{bonus_reject}) {
-        process_bonus_claim($client, 0, $notify);
-        $status = "Rejected";
+        $status = process_bonus_claim($client, 0, $input{amount}, $notify);
     }
 
-    print '<br/>';
-
-    print '<b>' . $status . ' : bonus for </b>', $loginid, '<br/><br/>';
+    print '<br/><b>' . $status . '<br/><br/>';
 
     print qq[<p>Check Another Bonus</p>
             <form action="$input{back_url}" method="get">
@@ -68,19 +64,20 @@ if ($input{bonus_approve} or $input{bonus_reject}) {
     s/_promo$// for (@approved, @rejected);
 
     my $json = JSON::MaybeXS->new;
+    my @results;
     CLIENT:
     foreach my $loginid (@approved, @rejected) {
 
         my $client = BOM::User::Client->new({loginid => $loginid})
             || die "bad loginid $loginid";
         my $approved = $input{"${loginid}_promo"} eq 'A';
-        my $notify = $input{"${loginid}_notify"} ? 1 : 0;
-        process_bonus_claim($client, $approved, $notify);
+        my $amount   = $input{"${loginid}_amount"} || next CLIENT;
+        my $notify   = $input{"${loginid}_notify"} ? 1 : 0;
+
+        push @results, process_bonus_claim($client, $approved, $amount, $notify);
     }
     print '<br/>';
-
-    print '<b>Approved : </b>', join(' ', map { encode_entities($_) } @approved), '<br/><br/>';
-    print '<b>Rejected : </b>', join(' ', map { encode_entities($_) } @rejected), '<br/><br/>';
+    print join('<br/>', map { encode_entities($_) } @results), '<br/><br/>';
 }
 
 code_exit_BO();
@@ -103,25 +100,25 @@ Returns undef
 =cut
 
 sub process_bonus_claim {
-    my ($client, $approved, $notify) = @_;
+    my ($client, $approved, $amount, $notify) = @_;
     my $json        = JSON::MaybeXS->new();
     my $clerk       = BOM::Backoffice::Auth0::get_staffname();
     my $tac_url     = 'https://www.binary.com/en/terms-and-conditions.html?anchor=free-bonus#legal-binary';
     my $client_name = ucfirst join(' ', (BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name));
     my $email_subject = localize("Your bonus request - [_1]", $client->loginid);
     my $email_content;
+    my $loginid = $client->loginid;
+    my $result;
 
     if ($approved) {
 
-        my $cpc = $client->client_promo_code
-            || die "no promocode for client $client";
+        return "Failed to approve $loginid: bonus amount is $amount" if $amount <= 0;
+        my $cpc = $client->client_promo_code || return "Failed to approve $loginid: no promocode for client";
         my $pc = $cpc->promotion;
         $pc->{_json} = eval { $json->decode($pc->promo_code_config) } || {};
 
-        my $amount = $pc->{_json}->{amount}
-            || die "no amount for promocode $pc";
         my $currency = $pc->{_json}->{currency}
-            || die "no currency for promocode $pc";
+            || return "Failed to approve $loginid: no currency for promocode $pc";
         if ($currency eq 'ALL') {
             $currency = $client->currency;
         }
@@ -149,9 +146,9 @@ sub process_bonus_claim {
                 website_name => ucfirst BOM::Config::domain()->{default_domain},
             },
             \$email_content
-            )
-            || die "approving promocode for $client: "
-            . BOM::Backoffice::Request::template()->error
+        ) || return "$loginid: bonus credited but send email failed: " . BOM::Backoffice::Request::template()->error;
+
+        $result = "$loginid: bonus credited ($currency $amount)";
 
     } else {
         # reject client
@@ -169,7 +166,9 @@ sub process_bonus_claim {
                 website_name => ucfirst BOM::Config::domain()->{default_domain},
             },
             \$email_content
-        ) || die "rejecting promocode for $client: " . BOM::Backoffice::Request::template()->error;
+        ) || return "$loginid: failed to send rejection email: " . BOM::Backoffice::Request::template()->error;
+
+        $result = "$loginid: bonus rejected";
     }
 
     if ($notify) {
@@ -183,7 +182,7 @@ sub process_bonus_claim {
             use_email_template    => 1,
         });
     }
-    return undef;
+    return $result;
 }
 
 1;
