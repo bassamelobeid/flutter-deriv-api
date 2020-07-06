@@ -1114,7 +1114,7 @@ sub get_promocode_dependent_limit {
 
         my $pc = $cpc->promotion;
         try {
-            $pc->{_json} ||= JSON::MaybeXS->new->decode($pc->promo_code_config)
+            $pc->{_json} ||= JSON::MaybeXS->new->decode($pc->promo_code_config);
         }
         catch {
             $log->debugf('Unable to parse promo code config: %s', $pc->promo_code_config);
@@ -2882,9 +2882,8 @@ sub validate_payment {
         {
             $self->{mlt_affiliate_first_deposit} = 1;
         }
-
         my $max_balance = $self->get_limit({'for' => 'account_balance'});
-        die "Balance would exceed $max_balance limit [$currency] [" . $self->loginid . "] \n"
+        die sprintf("Balance would exceed limit [%s %s] for [%s] \n", $currency, $max_balance, $self->loginid)
             if ($amount + $accbal) > $max_balance;
 
         if ($self->landing_company->short eq 'iom') {
