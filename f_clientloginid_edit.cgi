@@ -508,7 +508,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         $client->save;
         $client->update_status_after_auth_fa();
-        $client->p2p_advertiser_approve if $client->fully_authenticated;
     }
 
     if (exists $input{professional_client}) {
