@@ -1,0 +1,42 @@
+<table style='max-width: 1000px; border-style: hidden;' class='BlackCandy collapsed hover'>
+    <tr><td>Affiliate ID:</td><td>[% affiliate.ID %]</td></tr>
+    <tr><td>Status:</td><td>[% affiliate.STATUS %]</td></tr>
+    <tr>
+        <td>IB Status:</td><td>
+            [% IF affiliate.mt5_account %] YES [% ELSE %] NO [% END %]
+        </td>
+    <tr>
+    <tr><td>MT5 account:</td><td>[% affiliate.mt5_account %]</td></tr>
+    <tr><td>User Name:</td><td>[% affiliate.USERNAME %]</td></tr>
+    <tr><td>Email:</td><td>[% affiliate.EMAIL %]</td></tr>
+    <tr><td>Join Date:</td><td>[% affiliate.JOIN_DATE %]</td></tr>
+    <tr><td>Country:</td><td>[% affiliate.COUNTRY %]</td></tr>
+    <tr><td>Language:</td><td>[% affiliate.LANGUAGE.content %]</td></tr>
+    <tr><td>Currency:</td><td>[% affiliate.CURRENCY %]</td></tr>
+    <tr><td>Balance:</td><td>[% affiliate.BALANCE %]</td></tr>
+    <tr><td>Payment Type:</td><td>[% affiliate.PAYMENT_TYPE %]</td></tr>
+     <tr><td>Minimum Payment:</td><td>[% affiliate.MINIMUM_PAYMENT %]</td></tr>
+    <tr><td>Parent ID:</td><td>[% affiliate.PARENT_ID %]</td></tr>
+    <tr><td>Parent Username:</td><td>[% affiliate.PARENT_USERNAME %]</td></tr>
+    <tr><td>Admin ID:</td><td>[% affiliate.ADMIN_ID %]</td></tr>
+    <tr><td>Admin Username:</td><td>[% affiliate.ADMIN_USERNAME %]</td></tr>
+    <tr><td colspan="2"><strong>Affiliate User Profile</strong></td><tr>
+    [% FOREACH detail IN affiliate.user_details %]
+        <tr><td>[% detail.NAME %]:</td><td style='word-break: break-word;'>[% detail.VALUE %]</td></tr>
+    [% END %]
+    <tr><td colspan="2"><strong>User comments</strong></td><tr>
+    [% FOREACH comment IN affiliate.USER_COMMENTS.COMMENT %]
+        <tr><td>[% comment.DATE %]:</td><td style='word-break: break-word;'>[% comment.COMMENT %]</td></tr>
+    [% END %]
+    <tr><td colspan="2"><strong>Subscriptions</strong></td><tr>
+    [% FOREACH subscription IN affiliate.SUBSCRIPTIONS.SUBSCRIPTION %]
+        <tr><td>[% subscription.PLAN_NAME %]:</td>
+            <td style='word-break: break-word;'>
+                PLAN ID=[% subscription.PLAN_ID %], CUSTOMER GROUP=[% subscription.CUSTOMER_GROUP %],
+                START DATE=[% subscription.START_DATE %], DESCRIPTION=[% subscription.DESCRIPTION %],
+            </td>
+        </tr>
+    [% END %]
+
+</table>
+<hr>

@@ -1535,4 +1535,63 @@ sub _get_detailed_reason {
     return $status_reason_map->{$status_reason} // $status_reason;
 }
 
+=head2 get_mt5_group_and_status
+
+Tries to get mt5 group and status from redis; if fails, queues a requests for retrieval of the missing info, returning nothing.
+
+It takes a single argument: 
+
+=over 4
+
+=item - mt5_loginid, an MT5 loginid
+
+=back
+
+And returns two values:
+
+=over 4
+
+=item - group: mt5 group of the input mt5_loginid
+
+=item - status: status of the mt5 account (Enabled or Disabled)
+
+=back
+
+=cut
+
+sub get_mt5_group_and_status {
+    my ($mt5_loginid) = @_;
+
+    return unless $mt5_loginid;
+
+    # If we have group information, retrieve it
+    my $cache_key  = "MT5_USER_GROUP::$mt5_loginid";
+    my $group      = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'group');
+    my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
+
+    my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
+
+    if ($group and $group->[0]) {
+        my $status = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'rights');
+
+        my %rights;
+
+        $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
+
+        if ($rights{enabled}) {
+            return $group->[0], 'Enabled';
+        } else {
+            return $group->[0], 'Disabled';
+
+        }
+    } else {
+        # ... and if we don't, queue up the request. This may lead to a few duplicates
+        # in the queue - that's fine, we check each one to see if it's already
+        # been processed.
+        BOM::Config::Redis::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $mt5_loginid, time));
+    }
+
+    return;
+}
+
 1;

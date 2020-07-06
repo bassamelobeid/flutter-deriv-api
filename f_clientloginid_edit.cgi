@@ -993,36 +993,11 @@ foreach my $lid ($user_clients->@*) {
 foreach my $mt_ac ($mt_logins->@*) {
     print "<li>" . encode_entities($mt_ac);
 
-    # If we have group information, display it
-    my $cache_key  = "MT5_USER_GROUP::$mt_ac";
-    my $group      = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'group');
-    my $hex_rights = BOM::Config::mt5_user_rights()->{'rights'};
+    my ($group, $status) = get_mt5_group_and_status($mt_ac);
 
-    my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
-
-    if ($group->[0]) {
-        print " (" . encode_entities($group->[0]) . ")";
-
-        my $status = BOM::Config::Redis::redis_mt5_user()->hmget($cache_key, 'rights');
-
-        my %rights;
-
-        # This should now have the following keys set:
-        # api,enabled,expert,password,reports,trailing
-        # Example: status (483 => 1E3)
-        $rights{$_} = 1 for grep { $status->[0] & $known_rights{$_} } keys %known_rights;
-
-        if ($rights{enabled}) {
-            print " ( Enabled )";
-        } else {
-            print " ( Disabled )";
-
-        }
+    if ($group) {
+        print " (" . encode_entities($group) . ")" . " ( $status )";
     } else {
-        # ... and if we don't, queue up the request. This may lead to a few duplicates
-        # in the queue - that's fine, we check each one to see if it's already
-        # been processed.
-        BOM::Config::Redis::redis_mt5_user_write()->lpush('MT5_USER_GROUP_PENDING', join(':', $mt_ac, time));
         print ' (<span title="Try refreshing in a minute or so">no group info yet</span>)';
     }
     print "</li>";
