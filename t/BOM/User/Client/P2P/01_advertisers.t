@@ -4,8 +4,6 @@ use warnings;
 use Test::More;
 use Test::Fatal;
 use Test::Deep;
-use Test::Exception;
-use Test::MockModule;
 
 use BOM::User::Client;
 use BOM::Test::Helper::P2P;
@@ -35,8 +33,6 @@ my $advertiser_name = 'Ad_man';
 subtest 'advertiser Registration' => sub {
     my $client = BOM::Test::Helper::P2P::create_client();
 
-    lives_ok(sub { $client->p2p_advertiser_approve }, 'no error trying to approve non advertiser');
-
     cmp_deeply(exception { $client->p2p_advertiser_create() }, {error_code => 'AdvertiserNameRequired'}, 'Error when advertiser name is blank');
 
     ok $client->p2p_advertiser_create(name => $advertiser_name), "create advertiser";
@@ -45,19 +41,15 @@ subtest 'advertiser Registration' => sub {
     ok $advertiser_info->{is_listed}, "advertiser adverts are listed";
     cmp_ok $advertiser_info->{name}, 'eq', $advertiser_name, "advertiser name";
 
-    is $client->status->allow_document_upload->{reason}, 'P2P advertiser created', 'Can upload auth docs';
-    $client->p2p_advertiser_approve;
-    ok $client->p2p_advertiser_info->{is_approved}, 'advertiser is approved';
-    ok !$client->status->allow_document_upload, 'allow_document_upload status removed after approval';
+    is $client->status->allow_document_upload->{reason}, 'P2P_ADVERTISER_CREATED', 'Can upload auth docs';
+    
 };
 
-subtest 'advertiser already authenticated' => sub {
-
-    my $mock_client = Test::MockModule->new('BOM::User::Client');
-    $mock_client->mock('fully_authenticated', sub { 1 });
+subtest 'advertiser already age verified' => sub {
 
     my $client = BOM::Test::Helper::P2P::create_client();
-    ok $client->p2p_advertiser_create(name => 'approved already')->{is_approved}, "create advertiser";
+    $client->status->set('age_verification', 'system', 'testing');
+    ok $client->p2p_advertiser_create(name => 'age_verified already')->{is_approved}, "create advertiser";
     my $advertiser_info = $client->p2p_advertiser_info;
     ok $client->p2p_advertiser_info->{is_approved}, 'advertiser is approved';
     ok !$client->status->allow_document_upload, 'allow_document_upload status not present';

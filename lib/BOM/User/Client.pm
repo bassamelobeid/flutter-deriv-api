@@ -1849,36 +1849,11 @@ sub p2p_advertiser_create {
             );
         });
 
-    if ($client->fully_authenticated) {
-        $advertiser = $client->db->dbic->run(
-            fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM p2p.advertiser_update(?,TRUE,NULL,NULL,NULL,NULL,NULL)', undef, $advertiser->{id});
-            });
-    } else {
-        $client->status->set('allow_document_upload', 'system', 'P2P advertiser created') unless $client->status->allow_document_upload;
+    unless ($client->status->age_verification or $client->status->allow_document_upload) {
+        $client->status->set('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
     }
 
     return $client->_advertiser_details($advertiser);
-}
-
-=head2 p2p_advertiser_approve
-
-Called when a client becomes authenticated.
-
-=cut
-
-sub p2p_advertiser_approve {
-    my ($client) = @_;
-
-    my $advertiser = $client->_p2p_advertisers(loginid => $client->loginid)->[0] or return;
-
-    $client->status->clear_allow_document_upload
-        if $client->status->allow_document_upload and $client->status->allow_document_upload->{reason} eq 'P2P advertiser created';
-
-    return $client->db->dbic->run(
-        fixup => sub {
-            $_->do('SELECT p2p.advertiser_update(?,TRUE,NULL,NULL,NULL,NULL,NULL)', undef, $advertiser->{id});
-        });
 }
 
 =head2 p2p_advertiser_info
