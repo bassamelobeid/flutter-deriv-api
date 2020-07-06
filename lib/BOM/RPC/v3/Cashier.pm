@@ -1573,7 +1573,7 @@ rpc transfer_between_accounts => sub {
 
         my $msg = localize("Transfer validation failed on [_1].", $loginid_to);
         $msg = localize("Your account balance will exceed set limits. Please specify a lower amount.")
-            if ($err =~ /Balance would exceed ([\S]+) limit/);
+            if ($err =~ /Balance would exceed limit/);
         $msg = $transfers_blocked_err if $err =~ m/transfers are not allowed/i;
         return $error_audit_sub->("validate_payment failed for $loginid_to [$err]", $msg);
     }
