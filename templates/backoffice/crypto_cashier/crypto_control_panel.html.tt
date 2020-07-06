@@ -59,9 +59,9 @@
 <!-- Tools -->
         <button type="submit" name="view_action" value="run">Run</button>
         <select name="command">
-        <option value="getbalance" [% IF cmd == "getbalance" %] selected="selected" [% END %]>Get balance</option>
-        <option value="..." disabled="disabled">---</option>
-        <option value="getinfo" [% IF cmd == "getinfo" %] selected="selected" [% END %]>Get info</option>
+        <option value="getbalance" [% IF cmd == "getbalance" %] selected="selected" [% END %]>Get Balance</option>
+        <option value="getwallet" [% IF cmd == "getwallet" %] selected="selected" [% END %]>Get Wallet Balance</option>
+        <option value="getinfo" [% IF cmd == "getinfo" %] selected="selected" [% END %]>Get Info</option>
         </select>
     <br>
 </form>
