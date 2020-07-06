@@ -279,16 +279,12 @@ subtest 'MX accounts' => sub {
         my ($vr_client, $mx_client) =
             @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_highdob_data@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
 
-        my ($update_status_loginid, $p2p_approve_loginid);
+        my $update_status_loginid;
         my $mock_client = Test::MockModule->new('BOM::User::Client');
         $mock_client->mock(
             update_status_after_auth_fa => sub {
                 $update_status_loginid = $_[0]->loginid;
                 return $mock_client->original('update_status_after_auth_fa')->(@_);
-            },
-            p2p_advertiser_approve => sub {
-                $p2p_approve_loginid = $_[0]->loginid;
-                return $mock_client->original('p2p_advertiser_approve')->(@_);
             });
 
         $vr_client->status->set('unwelcome', 'system', 'test');
@@ -318,7 +314,6 @@ subtest 'MX accounts' => sub {
         ok !$vr_client->status->unwelcome, "VR welcomed";
 
         is $update_status_loginid, $mx_client->loginid, 'update_status_after_auth_fa called with the correct args';
-        is $p2p_approve_loginid,   $mx_client->loginid, 'p2p_advertiser_approve called with the correct args';
     };
 
     subtest "Sufficient DOB, Insufficient DATA" => sub {
