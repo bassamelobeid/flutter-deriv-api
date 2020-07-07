@@ -32,7 +32,6 @@ sub script_run {
     _collect_rates_ages();
     _collect_correlation_ages();
     _collect_dividend_ages();
-    _collect_pipsize_stats();
     _on_vol_day_stat();
     return 0;
 }
@@ -138,21 +137,6 @@ sub _collect_rates_ages {
         stats_gauge('interest_rate_age', $currency_rate_age, {tags => ['tag:' . $currency_symbol_to_update]});
     }
 
-    my @smart_fx = create_underlying_db->get_symbols_for(
-        market    => 'forex',
-        submarket => 'smart_fx'
-    );
-    foreach my $smart_fx (@smart_fx) {
-        my $smart_fx_in_used = Quant::Framework::InterestRate->new(
-            symbol           => $smart_fx,
-            chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
-            chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
-        );
-        my $smart_fx_age = (time - $smart_fx_in_used->recorded_date->epoch) / 3600;
-
-        stats_gauge('smart_fx_interest_rate_age', $smart_fx_age, {tags => ['tag:' . $smart_fx]});
-    }
-
     return;
 }
 
@@ -164,24 +148,6 @@ sub _collect_correlation_ages {
     stats_gauge('correlation_matrix.age', $latest_correlation_matrix_age);
     return;
 
-}
-
-sub _collect_pipsize_stats {
-    my @symbols = create_underlying_db->get_symbols_for(
-        market            => ['synthetic_index'],
-        contract_category => 'ANY'
-    );
-    foreach my $symbol (@symbols) {
-        my $underlying               = create_underlying($symbol);
-        my $volsurface               = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
-        my $vol                      = $volsurface->get_volatility();
-        my $pipsize                  = $underlying->pip_size;
-        my $spot                     = $underlying->spot;
-        my $sigma                    = sqrt($vol**2 / 365 / 86400 * 10);
-        my $quants_volidx_digit_move = $spot * $sigma / $pipsize;
-        stats_gauge('quants_volidx_digit_move', $quants_volidx_digit_move, {tags => ['tag:' . $underlying->{symbol}]});
-    }
-    return;
 }
 
 sub _collect_dividend_ages {
