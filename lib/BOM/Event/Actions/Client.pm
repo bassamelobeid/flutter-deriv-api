@@ -2078,13 +2078,13 @@ async sub payment_deposit {
     return;
 }
 
-=head2 set_needs_action
+=head2 withdrawal_limit_reached
 
 Sets 'needs_action' to a client
 
 =cut
 
-sub set_needs_action {
+sub withdrawal_limit_reached {
     my ($args) = @_;
 
     my $client = BOM::User::Client->new({
@@ -2104,7 +2104,7 @@ sub set_needs_action {
     }
 
     # allow client to upload documents
-    $client->status->set('allow_document_upload', 'system', 'Allow client to document upload') unless ($client->status->allow_document_upload);
+    $client->status->set('allow_document_upload', 'system', 'WITHDRAWAL_LIMIT_REACHED') unless ($client->status->allow_document_upload);
 
     return;
 }
