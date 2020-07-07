@@ -54,7 +54,6 @@ $pm->run_on_start(
         ($index) = grep { $workers[$_] == 0 } 0 .. $#workers;
         $workers[$index] = $pid;
         push @running_forks, $pid;
-        DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => ['tag:' . $internal_ip]});
     });
 $pm->run_on_finish(
     sub {
@@ -66,7 +65,6 @@ $pm->run_on_finish(
             }
         }
         @running_forks = grep { $_ != $pid } @running_forks;
-        DataDog::DogStatsd::Helper::stats_gauge('pricer_daemon.forks.count', (scalar @running_forks), {tags => ['tag:' . $internal_ip]});
     });
 
 # warming up cache to eliminate pricing time spike on first price of underlying
