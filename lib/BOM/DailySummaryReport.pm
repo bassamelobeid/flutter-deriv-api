@@ -11,6 +11,8 @@ use Format::Util::Numbers qw/formatnumber/;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Database::DataMapper::Transaction;
+use BOM::Transaction::Utility;
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
 
 has save_file => (
     is      => 'ro',
@@ -92,14 +94,16 @@ sub _generate_report {
 
                     foreach my $bet_id (keys %{$bets_ref}) {
                         my $bet = $bets_ref->{$bet_id};
-                        my $theo;
+                        my $bid;
 
                         try {
-                            my $contract = produce_contract($bet->{short_code}, $currency);
-                            $theo = $contract->is_binary ? $contract->theo_price : $contract->theo_price * $contract->multiplier;
+                            my $contract_parameters = shortcode_to_parameters($bet->{short_code}, $currency);
+                            $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($bet);
+                            my $contract = produce_contract($contract_parameters);
+                            $bid = $contract->bid_price;
                         }
                         catch {
-                            warn("theo price error[$@], bet_id[" . $bet_id . "], account_id[$account_id], end_of_day_balance_id[" . $eod_id[0] . "]");
+                            warn("bid price error[$@], bet_id[" . $bet_id . "], account_id[$account_id], end_of_day_balance_id[" . $eod_id[0] . "]");
                             next;
                         }
 
@@ -110,13 +114,13 @@ sub _generate_report {
                 };
 
                         my $open_position_statement = $dbh->prepare($open_position_sql);
-                        $open_position_statement->execute(($eod_id[0], $bet_id, $theo));
+                        $open_position_statement->execute(($eod_id[0], $bet_id, $bid));
 
-                        my $portfolio = "1L $bet->{buy_price} $bet->{short_code} ($theo)";
+                        my $portfolio = "1L $bet->{buy_price} $bet->{short_code} ($bid)";
                         push @portfolios, $portfolio;
 
-                        $total_open_bets_value  += $theo;
-                        $total_open_bets_profit += ($theo - $bet->{buy_price});
+                        $total_open_bets_value  += $bid;
+                        $total_open_bets_profit += ($bid - $bet->{buy_price});
                     }
                 }
 

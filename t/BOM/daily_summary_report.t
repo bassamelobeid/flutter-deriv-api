@@ -85,7 +85,7 @@ subtest 'skip if it dies' => sub {
                 save_file   => 0,
             )->generate_report;
         }
-        [qr/^theo price error/], "Expected warning is thrown";
+        [qr/^bid price error/], "Expected warning is thrown";
         cmp_ok $total_pl->{CR}->{USD}, '==', 0;
     }
     'skip if it dies';
@@ -131,7 +131,7 @@ subtest 'successful run' => sub {
                 save_file   => 0,
             )->generate_report;
         }
-        [qr/^theo price error/], "Expected warning is thrown";
+        [qr/^bid price error/], "Expected warning is thrown";
         my @brokers = keys %$total_pl;
         ok @brokers, 'has element';
         cmp_ok scalar @brokers, '==', 1;
