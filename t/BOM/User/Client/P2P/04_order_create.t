@@ -34,8 +34,9 @@ subtest 'Creating new buy order' => sub {
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
 
-    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(%ad_params);
-    my $client = BOM::Test::Helper::P2P::create_client();
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(%ad_params, advertiser => {first_name=>'john',last_name=>'smith'});
+  
+    my $client = BOM::Test::Helper::P2P::create_client(undef, {first_name=>'mary', last_name=>'jane'});
 
     ok($escrow->account->balance == 0,                      'Escrow balance is correct');
     ok($advertiser->account->balance == $ad_params{amount}, 'advertiser balance is correct');
@@ -89,15 +90,20 @@ subtest 'Creating new buy order' => sub {
             payment_method => $ad_params{payment_method}
         },
         client_details => {
-            id   => '',
-            name => '',
+            id         => '',
+            name       => '',
+            first_name => 'mary',
+            last_name  => 'jane',
+            loginid    => $client->loginid,
         },
         advertiser_details => {
-            id   => $advertiser->p2p_advertiser_info->{id},
-            name => $advertiser->p2p_advertiser_info->{name},
+            id         => $advertiser->p2p_advertiser_info->{id},
+            name       => $advertiser->p2p_advertiser_info->{name},
+            first_name => 'john',
+            last_name  => 'smith',
+            loginid    => $advertiser->loginid,
         },
     };
-
     cmp_deeply($new_order, $expected_order, 'order_create expected response');
     cmp_deeply($client->p2p_order_list, [$expected_order], 'order_list() returns correct info');
     cmp_deeply($client->p2p_order_info(id => $new_order->{id}), $expected_order, 'order_info() returns correct info');
@@ -700,6 +706,22 @@ subtest 'Daily order limit' => sub {
     };
 
     is $err->{error_code}, 'ClientDailyOrderLimitExceeded', 'Could not create order, got error code ClientDailyOrderLimitExceeded';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Order view permissions' => sub {
+
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    my ($client1, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    my $client2 = BOM::Test::Helper::P2P::create_client();
+    
+    ok $client1->p2p_order_info(id => $order->{id}), "order_info: cannot see own order";
+    ok !$client2->p2p_order_info(id => $order->{id}), "order_info: cannot see other client's orders";
+
+    ok $client1->p2p_order_list(id => $order->{id}), "order_list: cannot see own order";
+    ok !$client2->p2p_order_list(id => $order->{id})->@*, "order_list: cannot see other client's orders";
 
     BOM::Test::Helper::P2P::reset_escrow();
 };

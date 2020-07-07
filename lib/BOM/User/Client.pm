@@ -2202,7 +2202,12 @@ sub p2p_order_info {
     my ($client, %param) = @_;
 
     my $id = $param{id} // return;
-    my $list = $client->_p2p_orders(id => $id);
+
+    # ensure client can only see their orders
+    my $list = $client->_p2p_orders(
+        id      => $id,
+        loginid => $client->loginid
+    );
     return $client->_order_details($list)->[0];
 }
 
@@ -2778,12 +2783,18 @@ sub _order_details {
             type             => $order->{type},
             chat_channel_url => $order->{chat_channel_url} // '',
             advertiser_details => {
-                id   => $order->{advertiser_id},
-                name => $order->{advertiser_name},
+                id         => $order->{advertiser_id},
+                name       => $order->{advertiser_name},
+                first_name => $order->{advertiser_first_name},
+                last_name  => $order->{advertiser_last_name},
+                loginid    => $order->{advertiser_loginid},
             },
             client_details => {
                 id   => $order->{client_id}   // '',
                 name => $order->{client_name} // '',
+                first_name => $order->{client_first_name},
+                last_name  => $order->{client_last_name},
+                loginid    => $order->{client_loginid},
             },
             advert_details => {
                 id             => $order->{advert_id},
