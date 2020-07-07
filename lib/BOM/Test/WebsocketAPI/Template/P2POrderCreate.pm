@@ -59,12 +59,18 @@ rpc_response {
             payment_method => $_->p2p_order->payment_method,
         },
         advertiser_details => {
-            id   => $_->p2p_order->advertiser_id,
-            name => $_->p2p_order->advertiser_name,
+            id         => $_->p2p_order->advertiser_id,
+            name       => $_->p2p_order->advertiser_name,
+            first_name => $_->p2p_order->advertiser_first_name,
+            last_name  => $_->p2p_order->advertiser_last_name,
+            loginid    => $_->p2p_order->advertiser_loginid,
         },
         client_details => {
-            id   => $_->p2p_order->client_id,
-            name => $_->p2p_order->client_name,
+            id         => $_->p2p_order->client_id,
+            name       => $_->p2p_order->client_name,
+            first_name => $_->p2p_order->client_first_name,
+            last_name  => $_->p2p_order->client_last_name,
+            loginid    => $_->p2p_order->client_loginid,
         },
     };
 };
@@ -101,12 +107,18 @@ publish p2p => sub {
                 payment_method => $_->p2p_order->payment_method,
             },
             advertiser_details => {
-                id   => $_->p2p_order->advertiser_id,
-                name => $_->p2p_order->advertiser_name,
+                id         => $_->p2p_order->advertiser_id,
+                name       => $_->p2p_order->advertiser_name,
+                first_name => $_->p2p_order->advertiser_first_name,
+                last_name  => $_->p2p_order->advertiser_last_name,
+                loginid    => $_->p2p_order->advertiser_loginid,
             },
             client_details => {
-                id   => $_->p2p_order->client_id,
-                name => $_->p2p_order->client_name,
+                id         => $_->p2p_order->client_id,
+                name       => $_->p2p_order->client_name,
+                first_name => $_->p2p_order->client_first_name,
+                last_name  => $_->p2p_order->client_last_name,
+                loginid    => $_->p2p_order->client_loginid,
             },
             },
     };

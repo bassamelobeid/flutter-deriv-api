@@ -114,8 +114,14 @@ struct P2POrder => [qw(
         advert_description
         advertiser_id
         advertiser_name
+        advertiser_first_name
+        advertiser_last_name
+        advertiser_loginid
         client_id
         client_name
+        client_first_name
+        client_last_name
+        client_loginid
         is_incoming
         advert_type
         contact_info
@@ -285,25 +291,31 @@ for my $type (qw(buy sell)) {
         my $amount = 10 + 10 * rand;
         my $price  = $rate * $amount;
         push @p2p_orders, P2POrder(
-            amount             => $amount,
-            amount_display     => "$amount",
-            created_time       => (time - 30),
-            expiry_time        => (time + 30),
-            id                 => $order_id,
-            local_currency     => 'IDR',
-            price              => $price,
-            price_display      => "$price",
-            rate               => $rate,
-            rate_display       => "$rate",
-            status             => $status,
-            type               => $type,
-            advert_id          => "$advert_id",
-            advert_type        => $type eq 'buy' ? 'sell' : 'buy',
-            advert_description => 'Please contact via whatsapp 1234',
-            advertiser_id      => '1',
-            advertiser_name    => 'bob',
-            client_id          => '2',
-            client_name        => 'john',
+            amount                => $amount,
+            amount_display        => "$amount",
+            created_time          => (time - 30),
+            expiry_time           => (time + 30),
+            id                    => $order_id,
+            local_currency        => 'IDR',
+            price                 => $price,
+            price_display         => "$price",
+            rate                  => $rate,
+            rate_display          => "$rate",
+            status                => $status,
+            type                  => $type,
+            advert_id             => "$advert_id",
+            advert_type           => $type eq 'buy' ? 'sell' : 'buy',
+            advert_description    => 'Please contact via whatsapp 1234',
+            advertiser_id         => '1',
+            advertiser_name       => 'bob',
+            advertiser_first_name => 'john',
+            advertiser_last_name  => 'smith',
+            advertiser_loginid    => 'CR001',
+            client_id             => '2',
+            client_name           => 'mazza',
+            client_first_name     => 'mary',
+            client_last_name      => 'jane',
+            client_loginid        => 'CR002',
             is_incoming      => sprintf("%.0f\n", rand(1)),
             contact_info     => 'Тестовый заказ', # to check UTF decoding
             payment_info     => 'Payment Information',

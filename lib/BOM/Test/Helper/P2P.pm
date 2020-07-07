@@ -35,9 +35,7 @@ my $mock_sb_user;
 sub create_advertiser {
     my %param = @_;
 
-    my $balance = $param{balance} // 0;
-
-    my $advertiser = create_client($balance);
+    my $advertiser = create_client($param{balance}, $param{advertiser});
 
     $advertiser->p2p_advertiser_create(name => $param{name} // 'test advertiser ' . (++$advertiser_num));
 
@@ -49,8 +47,9 @@ sub create_advertiser {
 }
 
 sub create_client {
-    my $balance = shift // 0;
-    my $client = BOM::Test::Helper::Client::create_client();
+    my ($balance, $param) = @_;
+
+    my $client = BOM::Test::Helper::Client::create_client(undef, undef, $param);
     $client->account('USD');
 
     if ($balance) {
@@ -67,7 +66,6 @@ sub create_advert {
     $param{description}      //= 'Test advert';
     $param{type}             //= 'sell';
     $param{rate}             //= 1;
-    $param{balance}          //= $param{type} eq 'sell' ? $param{amount} : 0;
     $param{min_order_amount} //= 0.1;
     $param{max_order_amount} //= 100;
     $param{payment_method}   //= 'bank_transfer';
@@ -76,7 +74,8 @@ sub create_advert {
     $param{payment_info} //= $param{type} eq 'sell' ? 'Bank: 123456' : undef;
     $param{contact_info} //= $param{type} eq 'sell' ? 'Tel: 123456'  : undef;
 
-    my $advertiser = create_advertiser(balance => $param{balance});
+    $param{balance} = $param{amount} if $param{type} eq 'sell';
+    my $advertiser = create_advertiser(%param);
 
     my $advert = $advertiser->p2p_advert_create(%param);
 
