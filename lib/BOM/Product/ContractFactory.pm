@@ -77,9 +77,9 @@ Produce a Contract Object from a set of parameters
 =cut
 
 sub produce_contract {
-    my ($build_arg, $maybe_currency, $maybe_sold) = @_;
+    my ($build_arg, $maybe_currency) = @_;
 
-    my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency, $maybe_sold)}};
+    my $params_ref = {%{_args_to_ref($build_arg, $maybe_currency)}};
 
     $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->get();
 
@@ -215,11 +215,11 @@ sub _validate_input_parameters {
 }
 
 sub _args_to_ref {
-    my ($build_arg, $maybe_currency, $maybe_sold) = @_;
+    my ($build_arg, $maybe_currency) = @_;
 
     my $params_ref =
           (ref $build_arg eq 'HASH') ? $build_arg
-        : (defined $build_arg) ? shortcode_to_parameters($build_arg, $maybe_currency, $maybe_sold)
+        : (defined $build_arg) ? shortcode_to_parameters($build_arg, $maybe_currency)
         :                        undef;
 
     # After all of that, we should have gotten a hash reference.

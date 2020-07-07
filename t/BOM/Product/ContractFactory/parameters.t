@@ -41,7 +41,6 @@ subtest 'shortcode_to_parameters' => sub {
         amount_type                => 'payout',
         amount                     => '100.00',
         fixed_expiry               => undef,
-        is_sold                    => 0,
         starts_as_forward_starting => 0,
     };
     cmp_deeply($call, $expected, 'CALL shortcode.');
@@ -65,7 +64,6 @@ subtest 'shortcode_to_parameters' => sub {
         amount                     => '100.00',
         fixed_expiry               => undef,
         duration                   => '9t',
-        is_sold                    => 0,
         starts_as_forward_starting => 0,
     };
     cmp_deeply($tickup, $expected, 'FLASH tick expiry shortcode.');
@@ -83,7 +81,6 @@ subtest 'shortcode_to_parameters' => sub {
         amount_type                => 'payout',
         amount                     => '100.00',
         fixed_expiry               => undef,
-        is_sold                    => 1,
         starts_as_forward_starting => 0,
     };
     cmp_deeply($call, $expected, 'CALL shortcode. for is_sold');
