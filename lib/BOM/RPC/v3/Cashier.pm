@@ -1290,14 +1290,6 @@ rpc transfer_between_accounts => sub {
 
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is currently disabled.'))
         if $status->disabled;
-    return _transfer_between_accounts_error(localize('Your account cashier is locked. Please contact us for more information.'))
-        if $status->cashier_locked;
-    return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
-        if ($status->withdrawal_locked || $status->no_withdrawal_or_trading);
-
-    if (my @missed_fields = $client->missing_requirements('withdrawal')) {
-        return BOM::RPC::v3::Utility::missing_details_error(details => \@missed_fields);
-    }
 
     my $siblings = $client->real_account_siblings_information(include_disabled => 0);
 
@@ -1334,11 +1326,6 @@ rpc transfer_between_accounts => sub {
             accounts => \@accounts
         };
     }
-
-    return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $currency;
-    return _transfer_between_accounts_error(localize('Please provide valid amount.'))
-        if (not looks_like_number($amount) or $amount <= 0);
-
     my @mt5_logins          = $client->user->get_mt5_loginids;
     my $is_mt5_loginid_from = any { $loginid_from eq $_ } @mt5_logins;
     my $is_mt5_loginid_to   = any { $loginid_to eq $_ } @mt5_logins;
@@ -1356,6 +1343,32 @@ rpc transfer_between_accounts => sub {
 
     return _transfer_between_accounts_error(localize('Transfer between two MT5 accounts is not allowed.'))
         if ($is_mt5_loginid_from and $is_mt5_loginid_to);
+
+    # create client from siblings so that we are sure that from and to loginid
+    # provided are for same user
+    my ($client_from, $client_to, $res);
+    try {
+        $client_from = BOM::User::Client->new({loginid => $siblings->{$loginid_from}->{loginid}}) if (!$is_mt5_loginid_from);
+        $client_to   = BOM::User::Client->new({loginid => $siblings->{$loginid_to}->{loginid}})   if (!$is_mt5_loginid_to);
+    }
+    catch {
+        log_exception();
+        $res = _transfer_between_accounts_error();
+    }
+    return $res if $res;
+
+    return _transfer_between_accounts_error(localize('Your account cashier is locked. Please contact us for more information.'))
+        if (($client_from && $client_from->status->cashier_locked) or ($client_to && $client_to->status->cashier_locked));
+    return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is withdrawal locked.'))
+        if ($client_from && ($client_from->status->withdrawal_locked || $client_from->status->no_withdrawal_or_trading));
+    if ($client_from) {
+        if (my @missed_fields = $client_from->missing_requirements('withdrawal')) {
+            return BOM::RPC::v3::Utility::missing_details_error(details => \@missed_fields);
+        }
+    }
+    return _transfer_between_accounts_error(localize('Please provide valid currency.')) unless $currency;
+    return _transfer_between_accounts_error(localize('Please provide valid amount.'))
+        if (not looks_like_number($amount) or $amount <= 0);
 
     my $transfers_blocked_err = localize("Transfers are not allowed for these accounts.");
 
@@ -1436,20 +1449,6 @@ rpc transfer_between_accounts => sub {
                 return Future->done(_transfer_between_accounts_error($err->{error}->{message_to_client}));
             })->get;
     }
-
-    # create client from siblings so that we are sure that from and to loginid
-    # provided are for same user
-    my ($client_from, $client_to, $res);
-    try {
-
-        $client_from = BOM::User::Client->new({loginid => $siblings->{$loginid_from}->{loginid}});
-        $client_to   = BOM::User::Client->new({loginid => $siblings->{$loginid_to}->{loginid}});
-    }
-    catch {
-        log_exception();
-        $res = _transfer_between_accounts_error();
-    }
-    return $res if $res;
 
     my ($from_currency, $to_currency) =
         ($siblings->{$client_from->loginid}->{currency}, $siblings->{$client_to->loginid}->{currency});
@@ -1702,7 +1701,6 @@ sub _validate_transfer_between_accounts {
     # error out if from and to loginid are same
     return _transfer_between_accounts_error(localize('Account transfers are not available within same account.'))
         unless ($client_from->loginid ne $client_to->loginid);
-
     # error out if current logged in client and loginid from passed are not same
     return _transfer_between_accounts_error(localize('From account provided should be same as current authorized client.'))
         unless ($current_client->loginid eq $client_from->loginid)

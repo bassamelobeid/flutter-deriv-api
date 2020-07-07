@@ -131,8 +131,8 @@ subtest 'call params validation' => sub {
     $user->add_client($client_mf);
 
     $token = BOM::Platform::Token::API->new->create_token($client_cr->loginid, _get_unique_display_name());
-    $params->{token} = $token;
-
+    $params->{token}      = $token;
+    $params->{token_type} = 'oauth_token';
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
     is @{$result->{accounts}}, 3, 'if no loginid from or to passed then it returns accounts';
 
@@ -1306,51 +1306,6 @@ subtest 'MT5' => sub {
     $params->{args}{mt5_account_type} = 'advanced';
     $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for advanced mt5_new_account');
 
-    my @real_accounts = ({
-            loginid      => $test_client->loginid,
-            balance      => num(1000),
-            currency     => 'USD',
-            account_type => 'binary',
-
-        },
-        {
-            loginid      => $test_client_btc->loginid,
-            balance      => num(10),
-            currency     => 'BTC',
-            account_type => 'binary'
-        },
-    );
-
-    my @mt5_accounts = ({
-            loginid      => 'MTR' . $ACCOUNTS{'real\svg_standard'},
-            balance      => num($DETAILS{balance}),
-            currency     => 'USD',
-            account_type => 'mt5',
-            mt5_group    => 'real\\svg_standard'
-        },
-        {
-            loginid      => 'MTR' . $ACCOUNTS{'real\labuan_advanced'},
-            balance      => num($DETAILS{balance}),
-            currency     => 'USD',
-            account_type => 'mt5',
-            mt5_group    => 'real\\labuan_advanced'
-        },
-    );
-
-    $params->{args} = {};
-    $rpc_ct->call_ok($method, $params)->has_no_error("no error for $method with no params");
-
-    cmp_bag($rpc_ct->result->{accounts}, [@real_accounts], "all real binary accounts by empty $method call");
-
-    $params->{args} = {accounts => 'all'};
-    $rpc_ct->call_ok($method, $params)->has_no_error("no error for $method with accounts=all");
-    cmp_bag($rpc_ct->result->{accounts}, [@real_accounts, @mt5_accounts], "accounts=all returns all binary + MT5 accounts");
-
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(1);
-    $rpc_ct->call_ok($method, $params)->has_no_error("no error for $method with accounts=all when mt5 suspended");
-    cmp_bag($rpc_ct->result->{accounts}, [@real_accounts], "accounts=all returns only binary accounts when MT5 suspended");
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(0);
-
     $params->{args} = {
         account_from => 'MTR' . $ACCOUNTS{'real\svg_standard'},
         account_to   => 'MTR' . $ACCOUNTS{'real\labuan_advanced'},
@@ -1367,8 +1322,35 @@ subtest 'MT5' => sub {
         ->error_message_like(qr/demo accounts/, 'MT5 demo -> real account transfer error message');
 
     # real -> MT5
-    $params->{args}{account_from} = $test_client->loginid;
+    # Token is used of USD account that is not withdrawal_locked but account_from is withdrawal_locked
+    $params->{args}{account_from} = $test_client_btc->loginid;
+    $params->{args}{currency}     = 'BTC';
+    $params->{args}{amount}       = 1;
     $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\svg_standard'};
+    #set withdrawal_locked status to make sure for Real  -> MT5 transfer is not allowed
+    $test_client_btc->status->set('withdrawal_locked', 'system', 'test');
+    ok $test_client_btc->status->withdrawal_locked, "Real BTC account is withdrawal_locked";
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+        ->error_message_like(
+        qr/You cannot perform this action, as your account is withdrawal locked./,
+        'Correct error message returned because Real BTC account is withdrawal locked.'
+        );
+    #remove withdrawal_locked
+    $test_client_btc->status->clear_withdrawal_locked;
+    #set cashier_locked status to make sure for Real  -> MT5 transfer is not allowed
+    $test_client_btc->status->set('cashier_locked', 'system', 'test');
+    ok $test_client_btc->status->cashier_locked, "Real BTC account is cashier_locked";
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+        ->error_message_like(
+        qr/Your account cashier is locked. Please contact us for more information./,
+        'Correct error message returned because Real BTC account is cashier_locked.'
+        );
+    #remove cashier_locked
+    $test_client_btc->status->clear_cashier_locked;
+
+    $params->{args}{account_from} = $test_client->loginid;
+    $params->{args}{currency}     = 'USD';
+    $params->{args}{amount}       = 180;
     _test_events_prepare();
 
     $test_client->status->set('transfers_blocked', 'system', 'testing transfers_blocked for real -> mt5');
@@ -1454,6 +1436,15 @@ subtest 'MT5' => sub {
     );
 
     cmp_ok $test_client->default_account->balance, '==', 970, 'real money account balance increased';
+
+    #set cashier locked status to make sure for MT5 -> Real transfer it is failed.
+    $test_client->status->set('cashier_locked', 'system', 'test');
+    ok $test_client->status->cashier_locked, "Real account is cashier_locked";
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+        ->error_message_like(qr/Your account cashier is locked. Please contact us for more information./,
+        'Correct error message returned because Real account is cashier_locked so no deposit/withdrawal allowed.');
+    #remove cashier_locked
+    $test_client->status->clear_cashier_locked;
 
     $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\labuan_advanced'};
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
