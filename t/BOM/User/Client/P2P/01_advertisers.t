@@ -42,7 +42,6 @@ subtest 'advertiser Registration' => sub {
     cmp_ok $advertiser_info->{name}, 'eq', $advertiser_name, "advertiser name";
 
     is $client->status->allow_document_upload->{reason}, 'P2P_ADVERTISER_CREATED', 'Can upload auth docs';
-    
 };
 
 subtest 'advertiser already age verified' => sub {

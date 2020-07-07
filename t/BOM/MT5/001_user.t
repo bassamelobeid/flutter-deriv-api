@@ -177,7 +177,7 @@ subtest 'MT5 suspended' => sub {
     my $suspend_all_origin         = BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all;
     my $suspend_deposits_origin    = BOM::Config::Runtime->instance->app_config->system->mt5->suspend->deposits;
     my $suspend_withdrawals_origin = BOM::Config::Runtime->instance->app_config->system->mt5->suspend->withdrawals;
-    my $guard = guard {
+    my $guard                      = guard {
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all($suspend_all_origin);
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->deposits($suspend_deposits_origin);
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->withdrawals($suspend_withdrawals_origin);

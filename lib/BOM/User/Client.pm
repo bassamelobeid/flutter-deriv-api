@@ -3650,7 +3650,7 @@ sub update_status_after_auth_fa() {
                 && $sibling->status->withdrawal_locked->{reason} =~ 'Pending authentication or FA';
             $sibling->status->clear_allow_document_upload
                 if $sibling->status->allow_document_upload
-                && $sibling->status->allow_document_upload->{reason} =~ 'Pending authentication or FA';
+                && $sibling->status->allow_document_upload->{reason} =~ /BECOME_HIGH_RISK|Pending authentication or FA/;
         }
     }
 }

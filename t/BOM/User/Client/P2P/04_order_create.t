@@ -91,7 +91,7 @@ subtest 'Creating new buy order' => sub {
         client_details => {
             id   => '',
             name => '',
-        },  
+        },
         advertiser_details => {
             id   => $advertiser->p2p_advertiser_info->{id},
             name => $advertiser->p2p_advertiser_info->{name},

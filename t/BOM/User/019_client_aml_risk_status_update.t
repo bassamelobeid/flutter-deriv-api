@@ -105,7 +105,7 @@ subtest 'aml risk becomes high CR landing company' => sub {
     ok $client_cr->status->withdrawal_locked,     "client is withdrawal_locked";
     ok $client_cr->status->allow_document_upload, "client is allow_document_upload";
     is $client_cr->status->withdrawal_locked->{reason},     'Pending authentication or FA';
-    is $client_cr->status->allow_document_upload->{reason}, 'Pending authentication or FA';
+    is $client_cr->status->allow_document_upload->{reason}, 'BECOME_HIGH_RISK';
 
     ok !$client_cr2->status->withdrawal_locked, "sibling account is not withdrawal_locked";
     ok $client_cr2->status->allow_document_upload, "slbling account is allow_document_upload";
@@ -214,8 +214,10 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
             return $mocked_client->original('update_status_after_auth_fa')->(@_);
         });
 
-    $client_cr->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
-    $client_cr2->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
+    $client_cr->status->set('withdrawal_locked',     'system', 'Pending authentication or FA');
+    $client_cr->status->set('allow_document_upload', 'system', 'BECOME_HIGH_RISK');
+    $client_cr2->status->set('withdrawal_locked',     'system', 'Pending authentication or FA');
+    $client_cr2->status->set('allow_document_upload', 'system', 'Pending authentication or FA');
 
     # financial assessment complete, unauthenticated
     my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
@@ -223,7 +225,8 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     $client_cr->save;
     ok $client_cr->is_financial_assessment_complete, 'financial_assessment completed';
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
-    ok $client_cr->status->withdrawal_locked, 'client is still withdrawal-locked (not authenticated yet)';
+    ok $client_cr->status->withdrawal_locked,     'client is still withdrawal-locked (not authenticated yet)';
+    ok $client_cr->status->allow_document_upload, 'client is still allow_document_upload (not authenticated yet)';
     undef @called_for_clients;
 
     # financial assessment incomplete, authenticated
@@ -233,7 +236,8 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     is @called_for_clients, 0, 'update_status_after_auth_fa is not called for authentication';
     update_financial_assessment($user, {});
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
-    ok $client_cr->status->withdrawal_locked, 'client is still withdrawal-locked (fa is incomplete)';
+    ok $client_cr->status->withdrawal_locked,     'client is still withdrawal-locked (fa is incomplete)';
+    ok $client_cr->status->allow_document_upload, 'client is still allow_document_upload, (fa is incomplete)';
     undef @called_for_clients;
 
     # financial assessment incompelete, authenticated, different reason
@@ -244,19 +248,26 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     undef @called_for_clients;
 
     # financial assessment incompelete, authenticated, correct reason
-    $client_cr->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
+    $client_cr->status->set('withdrawal_locked',     'system', 'Pending authentication or FA');
+    $client_cr->status->set('allow_document_upload', 'system', 'BECOME_HIGH_RISK');
     update_financial_assessment($user, $data);
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
-    ok !$client_cr->status->withdrawal_locked,  'withdrawal lock is auto-removed by financial_assessment';
-    ok !$client_cr2->status->withdrawal_locked, 'withdrawal lock is auto-removed by financial_assessment';
+    ok !$client_cr->status->withdrawal_locked,      'withdrawal lock is auto-removed by financial_assessment';
+    ok !$client_cr->status->allow_document_upload,  'allow_document_upload is auto-removed by financial_assessment';
+    ok !$client_cr2->status->withdrawal_locked,     'withdrawal lock is auto-removed by financial_assessment';
+    ok !$client_cr2->status->allow_document_upload, 'allow_document_upload is auto-removed by financial_assessment';
     undef @called_for_clients;
 
     #direct call (as done in backoffice upon authentication)
-    $client_cr->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
-    $client_cr2->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
+    $client_cr->status->set('withdrawal_locked',     'system', 'Pending authentication or FA');
+    $client_cr->status->set('allow_document_upload', 'system', 'BECOME_HIGH_RISK');
+    $client_cr2->status->set('withdrawal_locked',     'system', 'Pending authentication or FA');
+    $client_cr2->status->set('allow_document_upload', 'system', 'Pending authentication or FA');
     $client_cr->update_status_after_auth_fa();
-    ok !$client_cr->status->withdrawal_locked,  'withdrawal lock is auto-removed by calling update_status_after_auth_fa';
-    ok !$client_cr2->status->withdrawal_locked, 'withdrawal lock is auto-removed by financial_assessment';
+    ok !$client_cr->status->withdrawal_locked,      'withdrawal lock is auto-removed by calling update_status_after_auth_fa';
+    ok !$client_cr->status->allow_document_upload,  'allow_document_upload is auto-removed by financial_assessment';
+    ok !$client_cr2->status->withdrawal_locked,     'withdrawal lock is auto-removed by financial_assessment';
+    ok !$client_cr2->status->allow_document_upload, 'allow_document_upload is auto-removed by financial_assessment';
     undef @called_for_clients;
 
     # financial assessment incomplete, authenticated, correct reason, expired documents

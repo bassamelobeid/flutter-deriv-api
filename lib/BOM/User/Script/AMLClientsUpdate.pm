@@ -55,7 +55,7 @@ sub update_aml_high_risk_clients_status {
             next if $client->aml_risk_classification ne 'high';
 
             $client->status->set('withdrawal_locked',     'system', 'Pending authentication or FA');
-            $client->status->set('allow_document_upload', 'system', 'Pending authentication or FA');
+            $client->status->set('allow_document_upload', 'system', 'BECOME_HIGH_RISK');
 
             push @loginid_list, $client_loginid;
             $locked = 1;

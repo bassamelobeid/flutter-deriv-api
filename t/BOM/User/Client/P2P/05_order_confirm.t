@@ -83,7 +83,7 @@ my @test_cases = (
             after  => 0
         },
         status => 'timed-out',
-    },    
+    },
     #Sell orders advertiser confirmation:
     {
         test_name          => 'advertiser confirmation at pending status for buy order',
@@ -154,7 +154,7 @@ my @test_cases = (
         },
         status => 'completed',
     },
-    
+
     #Buy orders client confirmation:
     {
         test_name          => 'Client confirmation at pending state for sell order',
@@ -224,7 +224,7 @@ my @test_cases = (
             after  => 100
         },
         status => 'completed',
-    },    
+    },
     #Buy orders advertiser confirmation:
     {
         test_name          => 'advertiser confirmation at pending status for sell order',
