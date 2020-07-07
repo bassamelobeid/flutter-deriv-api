@@ -799,30 +799,6 @@ sub check_ip_country {
     return undef;
 }
 
-=head2 get_user_by_token
-
-Gets user by passing the VERIFICATION TOKEN
-
-Checks and gets the data stored in redis with the token
-
-Returns undef if the token is not found
-
-=cut
-
-sub get_user_by_token {
-    my $token = shift;
-    my $redis = BOM::Config::Redis::redis_replicated_read();
-    my $user;
-
-    if (my $token_details = decode_json_utf8($redis->get("VERIFICATION_TOKEN::$token"))) {
-        $user = BOM::User->new(
-            email => $token_details->{email},
-        );
-    }
-
-    return $user;
-}
-
 sub missing_details_error {
     my %args = @_;
 

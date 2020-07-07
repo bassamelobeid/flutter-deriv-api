@@ -20,13 +20,6 @@ my $language         = 'EN';
 my $source           = 1;
 my $brand            = Brands->new();
 
-my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
-$mock_utility->mock(
-    'get_user_by_token',
-    sub {
-        return bless {has_social_signup => 1}, 'BOM::User';
-    });
-
 my $user_mocked = Test::MockModule->new('BOM::User');
 $user_mocked->mock('clients', sub { bless {}, 'BOM::User::Client' });
 
@@ -145,14 +138,13 @@ subtest 'Password Reset Verification' => sub {
     is $verification->{subject}, "Reset your $website_name account password", 'reset password verification subject';
     is $verification->{message}, get_verification_message('reset_password'), 'Password Reset with token';
 
+    $user_mocked->mock('new', sub{ return bless {has_social_signup => 1}, 'BOM::User'});
+
     $verification = get_verification($verification_type, 1);
 
     is $verification->{message}, get_verification_message($verification_type, $verification_type, 1),
         'Password Reset with verification URI (social login)';
-
-    $mock_utility->unmock_all();
-    $mock_utility->mock('get_user_by_token', sub { return; });
-
+    $user_mocked->unmock('new');
     $verification = get_verification($verification_type, 1);
 
     is $verification->{message}, get_verification_message($verification_type, $verification_type), 'Password Reset with verification URI';

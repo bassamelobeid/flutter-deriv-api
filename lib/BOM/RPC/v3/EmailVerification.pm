@@ -71,11 +71,11 @@ email: C<subject>, C<template_name>, C<template_args>
 sub email_verification {
     my $args = shift;
 
-    my ($code, $website_name, $verification_uri, $language, $source, $app_name, $type) =
-        @{$args}{qw/code website_name verification_uri language source app_name type/};
+    my ($code, $website_name, $verification_uri, $language, $source, $app_name, $type, $email) =
+        @{$args}{qw/code website_name verification_uri language source app_name type email/};
 
     my ($has_social_signup, $user_name);
-    if ($code and my $user = BOM::RPC::v3::Utility::get_user_by_token($code)) {
+    if (my $user = BOM::User->new(email => $email)) {
         $has_social_signup = $user->{has_social_signup};
         $user_name = ($user->clients)[0]->last_name if $user->clients;
     }
