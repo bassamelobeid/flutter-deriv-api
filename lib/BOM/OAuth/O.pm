@@ -48,7 +48,6 @@ use constant BLOCK_TRIGGER_WINDOW => 5 * 60;
 
 sub authorize {
     my $c = shift;
-
     # APP_ID verification logic
     my ($app_id, $state) = map { defang($c->param($_)) // undef } qw/ app_id state /;
 
@@ -240,6 +239,11 @@ sub authorize {
         if defined $state;
 
     my $uri = Mojo::URL->new($redirect_uri);
+
+    if (my $nonce = $c->session('_sso_nonce')) {
+        push @params, (nonce => $nonce);
+    }
+
     $uri->query(\@params);
 
     stats_inc('login.authorizer.success', {tags => ["brand:$brand_name", "two_factor_auth:$is_verified"]});
@@ -249,6 +253,7 @@ sub authorize {
     delete $c->session->{_loginid};
     delete $c->session->{_oneall_user_id};
     delete $c->session->{_otp_verified};
+
     $c->session(expires => 1);
 
     $c->redirect_to($uri);
