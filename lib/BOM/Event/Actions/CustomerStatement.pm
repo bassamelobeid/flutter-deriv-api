@@ -6,16 +6,18 @@ use warnings;
 no indirect;
 
 use Syntax::Keyword::Try;
-use Email::Stuffer;
+
 use Date::Utility;
 use List::UtilsBy qw( rev_nsort_by );
 use Log::Any qw($log);
+use Email::Stuffer;
 
 use BOM::User::Client;
 use BOM::Transaction;
 use BOM::Platform::Context qw (localize request);
 use BOM::Transaction::History qw(get_transaction_history);
 use BOM::Product::ContractFactory qw(produce_contract);
+
 use Format::Util::Numbers qw(formatnumber);
 
 use Finance::Contract::Longcode qw(shortcode_to_longcode);
@@ -99,6 +101,7 @@ sub _send_email_statement {
             open_trades     => $transactions->{open_trade},
             closed_trades   => $transactions->{close_trade},
             payments        => $transactions->{payment},
+            escrow          => $transactions->{escrow},
             is_mf_client    => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
             estimated_value => $account ? formatnumber('price', $account->currency_code, $estimated_value) : '',
             name            => $client->first_name . ' ' . $client->last_name,
@@ -169,6 +172,7 @@ sub _retrieve_transaction_history {
     $transactions->{payment}     = [$sort_by_transaction->('payment')];
     $transactions->{close_trade} = [$sort_by_transaction->('close_trade')];
     $transactions->{open_trade}  = [$sort_by_transaction->('open_trade')];
+    $transactions->{escrow}      = [$sort_by_transaction->('escrow')];
 
     # return empty if account does not have any transactions
     return $transactions unless $client->account;
@@ -177,10 +181,11 @@ sub _retrieve_transaction_history {
     my $currency = $client->account->currency_code;
 
     $transactions->{estimated_profit} = 0;
-    for my $txn (@{$transactions->{open_trade}}, @{$transactions->{close_trade}}, @{$transactions->{payment}}) {
+    for my $txn (@{$transactions->{open_trade}}, @{$transactions->{close_trade}}, @{$transactions->{payment}}, @{$transactions->{escrow}}) {
 
         my $txn_time = Date::Utility->new($txn->{transaction_time});
         $txn->{transaction_date} = $txn_time->datetime_yyyymmdd_hhmmss;
+        next unless $txn->{financial_market_bet_id};
 
         # localize longcodes
         if ($txn->{short_code}) {
@@ -200,7 +205,7 @@ sub _retrieve_transaction_history {
         }
 
         # open contracts
-        if (!$txn->{is_sold} && !$txn->{payment_id}) {
+        if (!$txn->{is_sold}) {
 
             $txn->{expiry_time} = Date::Utility->new($txn->{expiry_time});
             $txn->{start_time}  = Date::Utility->new($txn->{start_time});

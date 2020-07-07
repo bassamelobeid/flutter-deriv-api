@@ -90,8 +90,9 @@
 </p>
 [% END -%]
 
-<h2>Closed Trades</h2> [% IF client.closed_trades -%]
+<h2>Closed Trades</h2> 
 
+[% IF client.closed_trades.size -%]
 <table>
  <tbody>
   <tr>
@@ -106,8 +107,7 @@
   </tr>
   [% FOREACH trade IN client.closed_trades -%]
   <tr>
-   <th scope="row">[% trade.transaction_date %]
-    <td>
+     <td scope="row">[% trade.transaction_date %]</td>
      <td>[% trade.id %]</td>
      <td>[% trade.action_type%]</td>
      <td style="text-align:left">[% trade.long_code %]</td>
@@ -119,17 +119,16 @@
   [% END -%]
  </tbody>
 </table>
-
  [% ELSE -%]
+<em>No trades for this period.</em> 
+[% END -%] 
 
-<em>No trades for this quarter.</em> [% END -%] [% IF client.open_trades -%]
+[% IF client.open_trades.size -%]
 <h2>Open Position Details as of ([% date %])</h2>
-
 <table>
  <tbody>
   <tr>
-   <th scope="col">Trade Date
-    <th>
+     <th scope="col">Trade Date</th>
      <th scope="col">Reference ID</th>
      <th scope="col">Description</th>
      <th scope="col">Buy Price</th>
@@ -141,8 +140,7 @@
   </tr>
   [% FOREACH trade IN client.open_trades -%]
   <tr>
-   <th scope="row">[% trade.transaction_date %]
-    <td>
+     <td scope="row">[% trade.transaction_date %]</td>
      <td>[% trade.id %]</td>
      <td style="text-align:left">[% trade.long_code %]</td>
      <td>[% trade.buy_price %]</td>
@@ -155,15 +153,13 @@
   [% END -%]
  </tbody>
 </table>
-
 <p>
  <em>* Quoted price is the last available price and does not necessarily reflect final price on expiration date.</em>
 </p>
-
 [% END -%]
 
 <h2>Credit/Debit Details</h2>
-
+[% IF client.payments.size -%] 
 <table>
  <tbody>
   <tr>
@@ -172,20 +168,42 @@
    <th>Credit</th>
    <th>Debit</th>
   </tr>
-  [% IF client.payments -%] [% FOREACH payment IN client.payments -%]
+   [% FOREACH payment IN client.payments -%]
+   <tr>
+     <td>[% payment.transaction_date %]</td>
+     <td>[% payment.id %]</td>
+     <td>[% IF payment.action_type == 'deposit' %] [% payment.amount %] [% END %]</td>
+     <td>[% IF payment.action_type == 'withdrawal' %] [% payment.amount %] [% END %]</td>
+   </tr>
+   [% END -%] 
+ </tbody>
+</table>
+[% ELSE -%]
+<em>No credits or debits within this period.</em> 
+[% END -%]
+
+[% IF client.escrow.size -%]
+<h2>P2P Escrow Transactions</h2>
+<table>
+ <tbody>
   <tr>
-   <td>[% payment.transaction_date %]</td>
-   <td>[% payment.id %]</td>
-   <td>[% IF payment.action_type == 'deposit' %] [% payment.amount %] [% END %]</td>
-   <td>[% IF payment.action_type == 'withdrawal' %] [% payment.amount %] [% END %]</td>
+     <th scope="col">Date</th>
+     <th scope="col">Reference ID</th>
+     <th scope="col">Type</th>
+     <th scope="col">Amount</th>
+     <th scope="col">Description</th>     
   </tr>
-  [% END -%] [% ELSE -%]
+  [% FOREACH tx IN client.escrow -%]
   <tr>
-   <td colspan="4">No credits or debits within this period</td>
-  </tr>
+     <td scope="row">[% tx.transaction_date %]</td>
+     <td>[% tx.id %]</td>
+     <td>[% tx.action_type %]</td>
+     <td>[% tx.amount %]</td>
+     <td style="text-align:left">[% tx.payment_remark %]</td>
   [% END -%]
  </tbody>
 </table>
+[% END -%]
 
 <p>
  Your funds are kept in segregated client money accounts with secure and licensed financial institutions.

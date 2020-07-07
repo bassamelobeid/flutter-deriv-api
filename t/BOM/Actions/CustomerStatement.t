@@ -16,6 +16,7 @@ use BOM::Transaction::History qw(get_transaction_history);
 use BOM::Transaction::Validation;
 use BOM::Event::Actions::CustomerStatement;
 use BOM::Test::Email;
+use BOM::Test::Helper::P2P;
 
 use Email::Stuffer::TestLinks;
 
@@ -216,6 +217,14 @@ $txn = BOM::Transaction->new({
 $error = $txn->buy(skip_validation => 1);
 is $error, undef, 'no error buying contract';
 
+# perform 2 p2p escrow transactions
+BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2P::create_escrow();
+my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type=>'buy');
+my $order = BOM::Test::Helper::P2P::create_order(amount=>50, advert_id=>$advert->{id}, client=>$test_client);
+$advertiser->p2p_order_cancel(id=>$order->{id});
+
+
 my $status = BOM::Event::Actions::CustomerStatement::_send_email_statement({
     client    => $test_client,
     source    => 1,
@@ -235,18 +244,18 @@ ok @msgs == 1, 'only one email has been sent';
 my $body = $msgs[0]->{body};
 
 my @matched_tables = $body =~ /<tbody>[<>="\/.*&;:\-\s\w()]*?<\/tbody>/g;
-is scalar @matched_tables, 5, 'there should be 5 tables in the template';
+is scalar @matched_tables, 6, 'there should be 6 tables in the template';
 
 my $tables = {};
 # tables relative to the regex matches
-my $table_names = ['profile', 'overview', 'close_trades', 'open_trades', 'payments'];
+my $table_names = ['profile', 'overview', 'close_trades', 'open_trades', 'payments', 'escrow'];
 
-for my $idx (0 .. 4) {
+for my $idx (0 .. 5) {
 
     # push all the header and content of table into the array
     my (@table_headers, @table_data);
     push @table_headers, $2 while ($matched_tables[$idx] =~ /(<th scope="col">|<th[\s\w="]*>)([\w\s:&;*\/]*)(<[\/]*th>)/g);
-    push @table_data,    $2 while ($matched_tables[$idx] =~ /(<th scope="row">|<td[\s\w="\-:]*>)([\w\s:&;*\/\.\-\(\)]*)(<[\/=\s]*td>)/g);
+    push @table_data,    $2 while ($matched_tables[$idx] =~ /(<td[\s\w="\-:]*>)([\w\s:&;*\/\.\-\(\)]*)(<[\/=\s]*td>)/g);
 
     $tables->{@{$table_names}[$idx]} = {
         table_headers => \@table_headers,
@@ -260,12 +269,14 @@ my @overview_th     = @{$tables->{overview}->{table_headers}};
 my @close_trades_th = @{$tables->{close_trades}->{table_headers}};
 my @open_trades_th  = @{$tables->{open_trades}->{table_headers}};
 my @payments_th     = @{$tables->{payments}->{table_headers}};
+my @escrow_th       = @{$tables->{escrow}->{table_headers}};
 
-is scalar @profile_th,      6, 'profile header has 6 table data';
-is scalar @overview_th,     7, 'overview header has 7 table data';
-is scalar @close_trades_th, 8, 'close trades header has 8 table data';
-is scalar @open_trades_th,  9, 'open trades header has 9 table data';
-is scalar @payments_th,     4, 'payments header has 4 table data';
+is scalar @profile_th,      6, 'profile header has 6 columns';
+is scalar @overview_th,     7, 'overview header has 7 columns';
+is scalar @close_trades_th, 8, 'close trades header has 8 columns';
+is scalar @open_trades_th,  9, 'open trades header has 9 columns';
+is scalar @payments_th,     4, 'payments header has 4 columns';
+is scalar @escrow_th,       5, 'escrow header has 5 columns';
 
 # table data
 my @profile      = @{$tables->{profile}->{table_data}};
@@ -273,13 +284,15 @@ my @overview     = @{$tables->{overview}->{table_data}};
 my @close_trades = @{$tables->{close_trades}->{table_data}};
 my @open_trades  = @{$tables->{open_trades}->{table_data}};
 my @payments     = @{$tables->{payments}->{table_data}};
+my @escrow       = @{$tables->{escrow}->{table_data}};
 
 # check if the total content count matches with each row
-is scalar @profile,      6,  'profile header count match';
-is scalar @overview,     7,  'overview header count match';
-is scalar @close_trades, 16, 'close trades header count match';
-is scalar @open_trades,  9,  'open trades header count match';
-is scalar @payments,     16, 'payments header count match';
+is scalar @profile,      6,  'profile cell count match';
+is scalar @overview,     7,  'overview cell count match';
+is scalar @close_trades, 16, 'close trades cell count match';
+is scalar @open_trades,  9,  'open trades cell count match';
+is scalar @payments,     16, 'payments cell count match';
+is scalar @escrow,       10,  'escrow cell count match';
 
 # check content of each row
 like $profile[2], qr/USD/,                             'account currency is USD';
@@ -327,6 +340,11 @@ for my $idx (0 .. $#expected) {
     next unless $expected[$idx];
     like $payments[$idx], qr/$expected[$idx]/, ($expected[$idx] . ' matches with ' . $payments[$idx]);
 }
+
+is $escrow[2], 'release', 'escrow release type';
+is $escrow[3], '50.00', 'escrow release amount';
+is $escrow[7], 'hold', 'escrow hold type';
+is $escrow[8], '-50.00', 'escrow hold amount';
 
 done_testing();
 1;
