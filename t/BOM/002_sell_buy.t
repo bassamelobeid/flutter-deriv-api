@@ -16,6 +16,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
+use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Transaction;
@@ -199,7 +200,9 @@ subtest 'check buy bet without quants bet params' => sub {
 };
 
 subtest 'check if is valid to sell is correct for sold contracts' => sub {
-    my $contract = produce_contract('UPORDOWN_FRXUSDJPY_2_1311834639_1311897600_784800_770900', 'USD', 1);
+    my $params = shortcode_to_parameters('UPORDOWN_FRXUSDJPY_2_1311834639_1311897600_784800_770900', 'USD');
+    $params->{is_sold} = 1;
+    my $contract = produce_contract($params);
     is $contract->is_valid_to_sell, 0, 'correct valid to sell for contract already marked as sold';
     is_deeply($contract->primary_validation_error->message_to_client, ['This contract has been sold.']);
 };
