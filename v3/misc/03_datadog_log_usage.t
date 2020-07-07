@@ -40,7 +40,6 @@ ok $timing->[1]->[1], 'Should log timing';
 is $timing->[1]->[2]->{tags}->[0], 'rpc:website_status', 'Should set tag with rpc method name';
 
 is $stats->[0]->[0], 'bom_websocket_api.unknown_ip.count';
-is $stats->[2]->[0], 'bom_websocket_api.v_3.call.website_status';
 is $stats->[2]->[1]->{tags}->[0], 'origin:test.com', 'Should set req origin';
 
 @$timing = ();
@@ -59,7 +58,7 @@ $res = $t->await::proposal({
     %contractParameters
 });
 
-is @$timing, 4, 'Should make 4 logs. Added pre_rpc log';
+is @$timing, 3, 'Should make 3 logs. Added pre_rpc log';
 
 is $timing->[1]->[0], 'bom_websocket_api.v_3.rpc.call.timing.connection';
 ok $timing->[1]->[1], 'Should log timing';
