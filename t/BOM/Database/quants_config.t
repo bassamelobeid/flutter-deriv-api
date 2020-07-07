@@ -16,7 +16,7 @@ use Test::FailWarnings;
 use Test::MockModule;
 
 my $test_start_time = '2012-07-04 0900';
-my $test_end_time   = '20200704 1700';
+my $test_end_time   = '20250704 1700';
 
 my $json = JSON::MaybeXS->new;
 
