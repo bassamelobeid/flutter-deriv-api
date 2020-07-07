@@ -106,6 +106,87 @@ subtest 'High band for country & currency' => sub {
     cmp_deeply($err, {error_code => 'AdvertNotFound'}, 'error is AdvertNotFound when the limit currency equals order currency');
 };
 
+subtest 'Check client band limits' => sub {
+    # Test client is buyer and after buying from ad_1 he will not be able to create another order for a different ad like ad_2
+    # Although advertiser 2 band limits are ok and there is no order for his add,
+    # test client will not be able to create order for ad2 because he will be exceeding himself daily buy limit
+
+    my $test_client = BOM::Test::Helper::Client::create_client();
+    $test_client->account('EUR');
+    $test_client->p2p_advertiser_create(name => 'euroman_cl');
+    $test_client->p2p_advertiser_update(is_approved => 1);
+    BOM::Test::Helper::Client::top_up($test_client, 'EUR', 1000);
+    my $ad_cl = $test_client->p2p_advert_create(
+        amount           => 500,
+        type             => 'sell',
+        rate             => 1,
+        min_order_amount => 1,
+        max_order_amount => 50,
+        local_currency   => 'myr',
+        payment_method   => 'bank_transfer',
+        payment_info     => 'test',
+        contact_info     => 'test'
+    );
+
+    my $advertiser_1 = BOM::Test::Helper::Client::create_client();
+    $advertiser_1->account('EUR');
+    $advertiser_1->p2p_advertiser_create(name => 'euroman_1');
+    $advertiser_1->p2p_advertiser_update(is_approved => 1);
+    BOM::Test::Helper::Client::top_up($advertiser_1, 'EUR', 1000);
+    my $ad_1 = $advertiser_1->p2p_advert_create(
+        amount           => 500,
+        type             => 'sell',
+        rate             => 1,
+        min_order_amount => 1,
+        max_order_amount => 50,
+        local_currency   => 'myr',
+        payment_method   => 'bank_transfer',
+        payment_info     => 'test',
+        contact_info     => 'test'
+    );
+
+    # test client can create order for ad_1
+    $test_client->p2p_order_create(
+        advert_id => $ad_1->{id},
+        amount    => 30
+    );
+
+    my $advertiser_2 = BOM::Test::Helper::Client::create_client();
+    $advertiser_2->account('EUR');
+    $advertiser_2->p2p_advertiser_create(name => 'euroman_2');
+    $advertiser_2->p2p_advertiser_update(is_approved => 1);
+    BOM::Test::Helper::Client::top_up($advertiser_2, 'EUR', 1000);
+    my $ad_2 = $advertiser_2->p2p_advert_create(
+        amount           => 500,
+        type             => 'sell',
+        rate             => 1,
+        min_order_amount => 1,
+        max_order_amount => 50,
+        local_currency   => 'myr',
+        payment_method   => 'bank_transfer',
+        payment_info     => 'test',
+        contact_info     => 'test'
+    );
+
+    # test client cannot create order for a different ad (ad2) because of exceding daily buy limit
+    my $err = exception {
+        $test_client->p2p_order_create(
+            advert_id => $ad_2->{id},
+            amount    => 25
+        );
+    };
+
+    cmp_deeply(
+        $err,
+        {
+            error_code     => 'OrderMaximumTempExceeded',
+            message_params => ['EUR', '20.00']
+        },
+        'client cannot create order if exceeds daily buy limit'
+    );
+
+};
+
 sub order {
     my ($advert_id, $amount) = @_;
     $client = BOM::Test::Helper::Client::create_client();

@@ -2144,14 +2144,29 @@ sub p2p_order_create {
         message_params => [$advert_info->{account_currency}, formatnumber('amount', $advert_info->{account_currency}, $limit_remaining),]}
         if $amount > $limit_remaining;
 
+    my $order_type;
+
     if ($advert_type eq 'buy') {
+        $order_type = 'sell';
         die +{error_code => 'OrderPaymentInfoRequired'} if !trim($param{payment_info});
         die +{error_code => 'OrderContactInfoRequired'} if !trim($param{contact_info});
     } elsif ($advert_type eq 'sell') {
+        $order_type = 'buy';
         die +{error_code => 'OrderPaymentContactInfoNotAllowed'} if $payment_info or $contact_info;
         ($payment_info, $contact_info) = $advert_info->@{qw/payment_info contact_info/};
     } else {
         die 'Invalid advert type ' . ($advert_type // 'undef') . ' for advert ' . $advert_info->{id};
+    }
+
+    my $client_ad_info = $client->_p2p_advertisers(loginid => $client->loginid)->[0];
+    if ($client_ad_info) {
+        # For client inverted advert type needs to be checked, for example in a sell advert, client is buyer, so we need to check their daily_buy_limit
+        my $client_limit_remaining = $client_ad_info->{'daily_' . $order_type . '_limit'} - $client_ad_info->{'daily_' . $order_type};
+        die +{
+            error_code => 'OrderMaximumTempExceeded',
+            message_params =>
+                [$client_ad_info->{account_currency}, formatnumber('amount', $client_ad_info->{account_currency}, $client_limit_remaining),]}
+            if $amount > $client_limit_remaining;
     }
 
     my $escrow = $client->p2p_escrow;
@@ -2658,7 +2673,7 @@ sub _advertiser_details {
         # band limits are not returned by all db functions
         if ($advertiser->{limit_currency}) {
             $details->{daily_buy}        = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_buy});
-            $details->{daily_sell}       = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_buy});
+            $details->{daily_sell}       = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_sell});
             $details->{daily_buy_limit}  = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_buy_limit});
             $details->{daily_sell_limit} = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_sell_limit});
         }
