@@ -1530,6 +1530,11 @@ sub _get_detailed_reason {
     # Uses state as it will not have to initialize it everytime this sub is called
     state $status_reason_map = {
         FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT => 'Client reached the fiat to crypto internal transfer limit',
+        P2P_ADVERTISER_CREATED            => 'Client applied to P2P',
+        BECOME_HIGH_RISK                  => 'Client become high rist',
+        MT5_ACCOUNT_IS_CREATED            => 'Client created MT5 account',
+        WITHDRAWAL_LIMIT_REACHED          => 'Client reached withdrawal limit',
+        MARKED_AS_NEEDS_ACTION            => 'Client was marked as Needs Action',
     };
 
     return $status_reason_map->{$status_reason} // $status_reason;
