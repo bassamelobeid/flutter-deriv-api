@@ -18,7 +18,6 @@ use Syntax::Keyword::Try;
 
 use YAML::XS qw(LoadFile);
 use Exporter qw(import);
-use DataDog::DogStatsd::Helper qw(stats_inc stats_dec);
 use Mojo::Redis2;
 use Scalar::Util qw(looks_like_number);
 use List::Util qw(any);
@@ -96,14 +95,9 @@ sub create {
     # message twice. So we disable it now
     $redis->encoding(undef) if $name =~ /^redis_(?:transaction|p2p)$/;
     $redis->on(
-        connection => sub {
-            stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.connections');
-        });
-    $redis->on(
         error => sub {
             my ($self, $err) = @_;
             warn("Redis $name error: $err");
-            stats_inc('bom_websocket_api.v_3.redis_instances.' . $name . '.errors');
             # When redis connection is lost wait until redis server become
             # available then terminate the service so that hypnotoad will
             # restart it.

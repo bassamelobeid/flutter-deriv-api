@@ -7,8 +7,6 @@ use feature qw(state);
 
 use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
-use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
-use Time::HiRes qw(gettimeofday tv_interval);
 use JSON::MaybeUTF8 qw(:v1);
 use Log::Any qw($log);
 use List::Util qw(min);
@@ -118,7 +116,6 @@ requires 'do_handle_message';
 sub _non_binary_price_adjustment {
     my ($self, $c, $contract_parameters, $results, $theo_price) = @_;
 
-    my $t = [gettimeofday];
     #do app markup adjustment here
     my $app_markup_percentage = $contract_parameters->{app_markup_percentage} // 0;
     my $multiplier            = $contract_parameters->{multiplier}            // 0;
@@ -134,7 +131,6 @@ sub _non_binary_price_adjustment {
 
     $results->{ask_price} = $results->{display_value} =
         financialrounding('price', $contract_parameters->{currency}, $adjusted_ask_price);
-    stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
 
     return $results;
 }
@@ -145,10 +141,8 @@ sub _binary_price_adjustment {
     # log the instances when pricing server doesn't return theo probability
     unless (defined $resp_theo_probability) {
         $log->warnf('missing theo probability from pricer. Contract parameter dump %s, pricer response: %s', $contract_parameters, $results);
-        stats_inc('price_adjustment.missing_theo_probability');
     }
 
-    my $t = [gettimeofday];
     # overrides the theo_probability which take the most calculation time.
     # theo_probability is a calculated value (CV), overwrite it with CV object.
     # TODO Is this something we'd want to do here? Looks like something straight out of BOM-Product-Contract...
@@ -204,7 +198,6 @@ sub _binary_price_adjustment {
     $results->{ask_price} = $results->{display_value} = $price_calculator->ask_price;
     $results->{payout} = $price_calculator->payout;
     $results->{$_} .= '' for qw(ask_price display_value payout);
-    stats_timing('price_adjustment.timing', 1000 * tv_interval($t));
 
     return $results;
 }

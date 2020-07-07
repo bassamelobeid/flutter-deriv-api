@@ -111,13 +111,6 @@ sub cleanup_stored_contract_ids {
 sub log_call_timing_before_forward {
     my ($c, $req_storage) = @_;
 
-    if ($req_storage && $req_storage->{tv} && $req_storage->{method}) {
-        DataDog::DogStatsd::Helper::stats_timing(
-            'bom_websocket_api.v_3.rpc.call.timing.before_forward',
-            1000 * Time::HiRes::tv_interval($req_storage->{tv}),
-            {tags => ["rpc:$req_storage->{method}"]});
-    }
-
     $req_storage->{passthrough}{profile}{wsproc_send_rpc} = Time::HiRes::gettimeofday
         if _is_profiling($c);
 
@@ -150,8 +143,6 @@ sub log_call_timing_connection {
             'bom_websocket_api.v_3.rpc.call.timing.connection',
             1000 * Time::HiRes::tv_interval($req_storage->{tv}) - $rpc_time - $auth_time,
             {tags => $tags});
-
-        DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.pre_rpc.call.timing.', $auth_time, {tags => $tags});
     }
 
     if (_is_profiling($c)) {
@@ -320,7 +311,6 @@ sub before_forward {
                 }
             }
 
-            DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $req_storage->{name}, {tags => [$tag]});
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$req_storage->{name}"]});
 
             my $loginid = $c->stash('loginid');

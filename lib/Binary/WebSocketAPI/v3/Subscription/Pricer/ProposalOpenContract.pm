@@ -3,7 +3,6 @@ use strict;
 use warnings;
 no indirect;
 
-use DataDog::DogStatsd::Helper qw/stats_timing/;
 use Format::Util::Numbers qw/formatnumber roundcommon/;
 use Binary::WebSocketAPI::v3::Subscription::Transaction;
 use Moo;
@@ -68,15 +67,6 @@ sub do_handle_message {
     $results->{$type}->{validation_error} = $c->l($results->{$type}->{validation_error}) if ($results->{$type}->{validation_error});
 
     $c->send({json => $results}, {args => $self->args});
-
-    if (exists $results->{$type} and exists $message->{current_spot_time} and not $message->{is_expired}) {
-        my $tags = [
-            'contract_type:' . ($message->{contract_type} // ''),
-            'underlying:' .    ($message->{underlying}    // ''),
-            'tick_count:' .    ($message->{tick_count}    // ''),
-        ];
-        stats_timing('bom_websocket_api.v_3.poc.timing', 1000 * (time - $message->{current_spot_time}), {tags => $tags});
-    }
 
     return;
 }

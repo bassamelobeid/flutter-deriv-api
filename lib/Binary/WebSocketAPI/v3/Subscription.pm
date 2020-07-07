@@ -24,7 +24,6 @@ use Binary::WebSocketAPI::v3::SubscriptionManager;
 use Scalar::Util qw(blessed weaken);
 use Log::Any qw($log);
 use Syntax::Keyword::Try;
-use DataDog::DogStatsd::Helper qw(stats_inc stats_dec);
 use Moo::Role;
 
 =head1 ATTRIBUTES
@@ -307,7 +306,6 @@ record some stats
 
 sub BUILD {
     my $self = shift;
-    stats_inc($self->stats_name . '.instances');
     return $self;
 }
 
@@ -322,7 +320,6 @@ sub DEMOLISH {
 
     return undef if $global;
     $log->tracef("Destroying the worker %s channel %s", $self->class, $self->channel);
-    stats_dec($self->stats_name . '.instance');
     delete __PACKAGE__->_uuid_channel_stash($self->c)->{$self->uuid} if $self->c;
     return undef unless $self->status;
     $self->unsubscribe();
