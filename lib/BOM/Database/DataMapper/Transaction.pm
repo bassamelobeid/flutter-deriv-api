@@ -330,7 +330,23 @@ sub get_transactions_ws {
 
     my $sql = q{
             SELECT
-                t.*,
+                t.id,
+                t.transaction_time,
+                t.amount,
+                t.balance_after,
+                t.financial_market_bet_id,
+                t.payment_id,
+                t.staff_loginid,
+                t.referrer_type,
+                t.source,
+                CASE
+                    WHEN t.action_type = 'escrow' THEN
+                        CASE 
+                            WHEN t.amount > 0 THEN 'release'
+                            ELSE 'hold' 
+                        END
+                    ELSE t.action_type
+                END action_type,
                 m.multiplier,
                 m.basis_spot,
                 m.stop_out_order_date,
