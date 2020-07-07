@@ -92,7 +92,11 @@ my $connection_lost = 1;
 
                         return BOM::MT5::User::Async::get_user($loginid)->else(
                             sub {
-                                $log->errorf('Failure when retrieving group for [%s] - %s', $loginid, [@_]);
+                                my ($response) = @_;
+                                my $resp_code = ($response && $response->{code}) ? $response->{code} : '';
+                                # if response is NotFound its most probably Archived account in MT5 , log level should be debugf otherwise errorf
+                                my $log_level = $resp_code eq 'NotFound' ? 'debugf' : 'errorf';
+                                $log->$log_level('Failure when retrieving group for [%s] - %s', $loginid, [@_]);
                                 stats_inc('mt5.group_populator.item_failed', 1);
                                 Future->done({});
                             }
@@ -138,4 +142,3 @@ my $connection_lost = 1;
     while => sub {
         1;
     })->get;
-
