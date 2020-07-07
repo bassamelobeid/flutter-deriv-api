@@ -717,20 +717,29 @@ sub get_payment_agent_registration_form {
         ],
     };
 
-    # Commision value options
-    my $commision_option = [map { {value => $_} } qw(0 0.1 0.25 0.5 0.75 1 2 2.5 3 3.5 4 4.5 5 6 7 8 9)];
-
     # input field for pa_comm_depo
     my $input_field_pa_comm_depo = {
         'label' => {
             'text' => 'Commission (%) you want to take on deposits',
             'for'  => 'pa_comm_depo',
         },
-        'input' => HTML::FormBuilder::Select->new(
-            'id'      => 'pa_comm_depo',
-            'name'    => 'pa_comm_depo',
-            'options' => $commision_option,
-        ),
+        'input' => {
+            'id'        => 'pa_comm_depo',
+            'name'      => 'pa_comm_depo',
+            'type'      => 'text',
+            'maxlength' => 4,
+        },
+        'validation' => [{
+                'type'    => 'regexp',
+                'regexp'  => '^[0-9](\.[0-9]{1,2})?$',
+                'err_msg' => 'Commission must be between 0 to 9 with at most two decimal digits',
+            },
+            {
+                'type'    => 'max_amount',
+                'amount'  => 9,
+                'err_msg' => 'Commission cannot be more than 9',
+            },
+        ],
         'error' => {
             'id'    => 'errorpa_comm_depo',
             'class' => 'errorfield'
@@ -743,11 +752,23 @@ sub get_payment_agent_registration_form {
             'text' => 'Commission (%) you want to take on withdrawals',
             'for'  => 'pa_comm_with',
         },
-        'input' => HTML::FormBuilder::Select->new(
-            'id'      => 'pa_comm_with',
-            'name'    => 'pa_comm_with',
-            'options' => $commision_option,
-        ),
+        'input' => {
+            'id'        => 'pa_comm_with',
+            'name'      => 'pa_comm_with',
+            'type'      => 'text',
+            'maxlength' => 4,
+        },
+        'validation' => [{
+                'type'    => 'regexp',
+                'regexp'  => '^[0-9](\.[0-9]{1,2})?$',
+                'err_msg' => 'Commission must be between 0 to 9 with at most two decimal digits',
+            },
+            {
+                'type'    => 'max_amount',
+                'amount'  => 9,
+                'err_msg' => 'Commission cannot be more than 9',
+            },
+        ],
         'error' => {
             'id'    => 'errorpa_comm_with',
             'class' => 'errorfield'

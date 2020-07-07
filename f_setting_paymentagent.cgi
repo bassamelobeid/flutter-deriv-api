@@ -38,6 +38,10 @@ if ($whattodo eq 'create') {
     code_exit_BO("Payment agents are suspended in client's residence country.") if is_payment_agents_suspended_in_country($client->residence);
 
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
+    $payment_agent_registration_form->set_input_fields({
+        'pa_comm_depo' => '0.00',
+        'pa_comm_with' => '0.00',
+    });
     print $payment_agent_registration_form->build();
 
     code_exit_BO();
@@ -54,8 +58,8 @@ if ($whattodo eq 'show') {
         pa_email           => $pa->email,
         pa_tel             => $pa->phone,
         pa_url             => $pa->url,
-        pa_comm_depo       => $pa->commission_deposit,
-        pa_comm_with       => $pa->commission_withdrawal,
+        pa_comm_depo       => $pa->commission_deposit || '0.00',
+        pa_comm_with       => $pa->commission_withdrawal || '0.00',
         pa_max_withdrawal  => $pa->max_withdrawal,
         pa_min_withdrawal  => $pa->min_withdrawal,
         pa_info            => $pa->information,
@@ -101,14 +105,19 @@ if ($whattodo eq 'show') {
     $max_withdrawal = $max_withdrawal || $min_max->{maximum};
     $min_withdrawal = $min_withdrawal || $min_max->{minimum};
 
+    my $pa_comm_depo = request()->param('pa_comm_depo') + 0;
+    my $pa_comm_with = request()->param('pa_comm_with') + 0;
+    code_exit_BO("Invalid deposint commission amount: it should be between 0 and 9")   unless $pa_comm_depo >= 0 and $pa_comm_depo <= 9;
+    code_exit_BO("Invalid withdrawal commission amount: it should be between 0 and 9") unless $pa_comm_with >= 0 and $pa_comm_with <= 9;
+
     # update payment agent file
     $pa->payment_agent_name(request()->param('pa_name'));
     $pa->summary(request()->param('pa_summary'));
     $pa->email(request()->param('pa_email'));
     $pa->phone(request->param('pa_tel'));
     $pa->url(request()->param('pa_url'));
-    $pa->commission_deposit(request()->param('pa_comm_depo')    || 0);
-    $pa->commission_withdrawal(request()->param('pa_comm_with') || 0);
+    $pa->commission_deposit(request()->param('pa_comm_depo') + 0);
+    $pa->commission_withdrawal(request()->param('pa_comm_with') + 0);
     $pa->max_withdrawal($max_withdrawal);
     $pa->min_withdrawal($min_withdrawal);
     $pa->information(request()->param('pa_info'));
