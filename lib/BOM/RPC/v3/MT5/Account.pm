@@ -322,7 +322,7 @@ async_rpc "mt5_new_account",
             and not $client->status->crs_tin_information);
     }
     if ($account_type ne 'demo' and $company_name eq 'labuan' and not $client->fully_authenticated()) {
-        $client->status->set('allow_document_upload', 'system', 'Allow client to document upload');
+        $client->status->set('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
         return create_error_future('AuthenticateAccount');
     }
     if ($client->tax_residence and $account_type ne 'demo' and $group eq 'real\labuan_advanced') {
