@@ -381,7 +381,7 @@ rpc "statement",
     my $currency_code = $client->default_account->currency_code();
     # combine all trades, and sort by transaction_id
     my @transactions = reverse sort { 0 + $a->{transaction_id} <=> 0 + $b->{transaction_id} }
-        (@{$transaction_res->{open_trade}}, @{$transaction_res->{close_trade}}, @{$transaction_res->{payment}});
+        (@{$transaction_res->{open_trade}}, @{$transaction_res->{close_trade}}, @{$transaction_res->{payment}}, @{$transaction_res->{escrow}});
 
     my @short_codes = map { $_->{short_code} || () } @transactions;
     my $longcodes;
