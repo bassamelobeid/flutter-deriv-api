@@ -60,7 +60,7 @@ sub get_transaction_history {
     my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($params->{args}, $account);
     return {} unless (scalar @{$results});
 
-    my (@close_trades, @open_trades, @payments);
+    my (@close_trades, @open_trades, @payments, @escrow);
 
     for my $txn (@$results) {
         $txn->{transaction_id} //= $txn->{id};
@@ -73,10 +73,15 @@ sub get_transaction_history {
 
         if ($txn->{payment_id}) {
             push(@payments, $txn);
-        } elsif ($txn->{is_sold}) {
-            push(@close_trades, $txn);
+        } elsif ($txn->{financial_market_bet_id}) {
+            if ($txn->{is_sold}) {
+                push(@close_trades, $txn);
+            } else {
+                push(@open_trades, $txn);
+            }
         } else {
-            push(@open_trades, $txn);
+            # no payment_id or financial_market_bet_id is assumed to be escrow
+            push(@escrow, $txn);
         }
     }
 
@@ -84,6 +89,7 @@ sub get_transaction_history {
         payment     => \@payments,
         close_trade => \@close_trades,
         open_trade  => \@open_trades,
+        escrow      => \@escrow,
     };
 }
 
@@ -95,7 +101,7 @@ sub _get_txn_time {
     return $txn->{$time_type}   if $txn->{financial_market_bet_id};
     return $txn->{payment_time} if $txn->{payment_id};
 
-    return $txn->{escrow_time} if $txn->{action_type} eq 'escrow';
+    return $txn->{escrow_time} if $txn->{action_type} =~ /^(hold|release)$/;
 
     return $txn->{transaction_time};
 }

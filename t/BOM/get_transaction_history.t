@@ -10,6 +10,7 @@ use BOM::User::Password;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context qw (localize);
+use BOM::Test::Helper::P2P;
 
 use BOM::Transaction;
 use BOM::Transaction::History qw(get_transaction_history);
@@ -155,10 +156,21 @@ $test_client->payment_free_gift(
     remark   => 'giving money out',
 );
 
+my ($advertiser, $advert);
+eval {
+#p2p
+    BOM::Test::Helper::P2P::bypass_sendbird();
+    BOM::Test::Helper::P2P::create_escrow();
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type=>'buy');
+    my $order = BOM::Test::Helper::P2P::create_order(amount=>50, advert_id=>$advert->{id}, client=>$test_client);
+    $advertiser->p2p_order_cancel(id=>$order->{id});
+};
+note explain $@;
+
 my $transaction_history = get_transaction_history($transac_param);
 
-my @all_transactions = (@{$transaction_history->{open_trade}}, @{$transaction_history->{close_trade}}, @{$transaction_history->{payment}});
-is scalar @all_transactions, 5, 'there are 5 transactions';
+my @all_transactions = (@{$transaction_history->{open_trade}}, @{$transaction_history->{close_trade}}, @{$transaction_history->{payment}}, @{$transaction_history->{escrow}});
+is scalar @all_transactions, 7, 'there are 7 transactions';
 
 # For this test case I'm defining what is expected, then compare with the result of get_transaction_history
 my $expected = [{
@@ -168,42 +180,49 @@ my $expected = [{
         referrer_type => 'financial_market_bet',
         amount        => '100.00',
         payout_price  => '100.00',
-        quantity      => 1
     },
     {
         staff_loginid => 'CR10000',
         source        => '19',
         action_type   => 'buy',
         referrer_type => 'financial_market_bet',
-        quantity      => 1,
         payout_price  => '1000.00',
-        amount        => '-514.00'
+        amount        => '-514.00',
     },
     {
-        'staff_loginid' => 'CR10000',
-        'action_type'   => 'buy',
-        'referrer_type' => 'financial_market_bet',
-        'quantity'      => 1,
-        'payout_price'  => '100.00',
-        'amount'        => '-100.00'
+        staff_loginid => 'CR10000',
+        action_type   => 'buy',
+        referrer_type => 'financial_market_bet',
+        payout_price  => '100.00',
+        amount        => '-100.00',
 
     },
     {
-        'staff_loginid'  => 'system',
-        'action_type'    => 'withdrawal',
-        'referrer_type'  => 'payment',
-        'quantity'       => 1,
-        'amount'         => '-143.00',
-        'payment_remark' => 'giving money out'
+        staff_loginid  => 'system',
+        action_type    => 'withdrawal',
+        referrer_type  => 'payment',
+        amount         => '-143.00',
+        payment_remark => 'giving money out',
 
     },
     {
-        'staff_loginid'  => 'system',
-        'action_type'    => 'deposit',
-        'referrer_type'  => 'payment',
-        'quantity'       => 1,
-        'payment_remark' => 'free gift',
-        'amount'         => '50000.00'
+        staff_loginid  => 'system',
+        action_type    => 'deposit',
+        referrer_type  => 'payment',
+        payment_remark => 'free gift',
+        amount         => '50000.00',
+    },
+    {
+        staff_loginid  => $test_client->loginid,
+        action_type    => 'hold',
+        referrer_type  => 'p2p',
+        amount         => '-50.00',
+    },
+    {
+        staff_loginid  => $advertiser->loginid,
+        action_type    => 'release',
+        referrer_type  => 'p2p',
+        amount         => '50.00',
     }];
 
 my @expected_transactions = sort { 0 + $a->{amount} <=> 0 + $b->{amount} } @$expected;
