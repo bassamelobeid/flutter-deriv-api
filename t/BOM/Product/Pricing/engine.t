@@ -198,15 +198,14 @@ subtest 'Intraday::Forex' => sub {
 };
 
 subtest 'Slope' => sub {
-    plan tests => 7;
+    plan tests => 6;
 
     ok $expiry_range->ask_probability->amount > 0, 'probability > 0';
     ok $expiry_range->ask_probability->amount < 1, 'probability < 1';
-    #We expect risk_markup, discounted_probability, CALL and PUT
+    #We expect risk_markup, CALL and PUT
     is scalar keys %{$expiry_range->debug_information}, 4;
     ok exists $expiry_range->debug_information->{CALL};
     ok exists $expiry_range->debug_information->{PUT};
-    ok exists $expiry_range->debug_information->{discounted_probability};
     ok exists $expiry_range->debug_information->{risk_markup};
 };
 

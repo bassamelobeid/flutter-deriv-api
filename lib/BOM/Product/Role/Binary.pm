@@ -14,12 +14,10 @@ use Syntax::Keyword::Try;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
-# discounted_probability - The discounted total probability, given the time value of the money at stake.
 has [qw(
         ask_probability
         theo_probability
         bid_probability
-        discounted_probability
         )
     ] => (
     is         => 'ro',
@@ -56,20 +54,9 @@ sub _build_theo_probability {
 sub _build_bid_probability {
     my $self = shift;
 
-    # bid_probability needs theo_probability, discounted_probability, and opposite_ask_probability
+    # bid_probability needs computed theo_probability
     $self->price_calculator->theo_probability($self->theo_probability);
-    $self->price_calculator->discounted_probability($self->discounted_probability);
-    $self->price_calculator->opposite_ask_probability($self->opposite_contract_for_sale->ask_probability);
     return $self->price_calculator->bid_probability;
-}
-
-sub _build_discounted_probability {
-    my $self = shift;
-
-    # discounted_probability needs timeinyears and discount_rate
-    $self->price_calculator->timeinyears($self->timeinyears);
-    $self->price_calculator->discount_rate($self->discount_rate);
-    return $self->price_calculator->discounted_probability;
 }
 
 # the attribute definition is in Finance::Contract

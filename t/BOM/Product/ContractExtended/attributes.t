@@ -123,7 +123,7 @@ subtest 'Numbers and stuff.' => sub {
 };
 
 subtest 'Probabilities etc.' => sub {
-    plan tests => 2;
+    plan tests => 1;
 
     my $bet_params = {
         bet_type     => 'RANGE',
@@ -139,7 +139,6 @@ subtest 'Probabilities etc.' => sub {
     };
 
     my $bet = produce_contract($bet_params);
-    isa_ok($bet->discounted_probability, 'Math::Util::CalculatedValue::Validatable', 'isa CalculatedValue.');
 
     lives_ok {
         warning { $res = $bet->bid_probability }, qr/Volatility error:/;

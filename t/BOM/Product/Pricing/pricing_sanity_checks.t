@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 3;
 use Test::Warnings;
 
 use BOM::Product::ContractFactory qw( produce_contract );
@@ -64,3 +64,52 @@ subtest 'sanity check' => sub {
         ok $c->theo_probability->amount < 0.6, 'theo is lower than 60%';
     }
 };
+
+subtest 'no_floor_for_bid_probability' => sub {
+    my $mock_pc = Test::MockModule->new('Price::Calculator');
+    $mock_pc->mock(
+        'theo_probability',
+        sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'theo_probability',
+                description => 'fake theo prob',
+                set_by      => 'Price::Calculator',
+                base_amount => 0.03
+            });
+        });
+    $mock_pc->mock(
+        'commission_markup',
+        sub {
+            return Math::Util::CalculatedValue::Validatable->new({
+                name        => 'commission_markup',
+                description => 'fake commission markup',
+                set_by      => 'Price::Calculator',
+                base_amount => 0.01,
+            });
+        });
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => 1404986402,
+        quote      => 100
+    });
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => 1404986404,
+        quote      => 103
+    });
+    my $bet_params = {
+        barrier      => "+2.02",
+        bet_type     => "ONETOUCH",
+        currency     => "USD",
+        date_pricing => 1404986404,
+        date_start   => 1404986400,
+        duration     => "5t",
+        payout       => 100,
+        underlying   => "R_100",
+    };
+
+    my $bet = produce_contract($bet_params);
+    is $bet->bid_probability->amount, 0.02;
+};
+

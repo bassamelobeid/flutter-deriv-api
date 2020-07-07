@@ -421,7 +421,7 @@ subtest 'Path dependent contracts settlement check' => sub {
     ok $bet_3->is_valid_to_sell, 'is valid to sell';
     ok !$bet_3->is_after_expiry,     'is not after expiry';
     ok !$bet_3->is_after_settlement, 'is not pass settlement';
-    is($bet_3->bid_price, '0.95', 'Bid price');
+    is($bet_3->bid_price, '0.96', 'Bid price');
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',

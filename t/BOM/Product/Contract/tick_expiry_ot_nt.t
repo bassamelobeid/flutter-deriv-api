@@ -75,10 +75,10 @@ subtest 'tick expiry one touch no touch' => sub {
     is $c->entry_tick->quote,  101,        'correct entry tick';
 
     my %expected_bid_price = (
-        2 => 42.24,
-        3 => 32.91,
-        4 => 16.86,
-        5 => 53.94,
+        2 => 40.24,
+        3 => 30.91,
+        4 => 14.86,
+        5 => 51.94,
     );
 
     for (2 .. 5) {

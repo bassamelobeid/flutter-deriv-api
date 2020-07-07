@@ -52,8 +52,8 @@ for my $type (qw(CALL PUT)) {
     }
 
     for my $underlying (qw(frxEURUSD frxUSDJPY frxBROUSD)) {
-        for my $duration (qw(3m 5m 10m 2h 6h)) {
-            for my $back_time (qw(3m)) {
+        for my $duration (qw(5m 10m 2h 6h)) {
+            for my $back_time (qw(3m 1m)) {
                 my $expiry_time = $start_time->plus_time_interval($duration);
                 my $times       = $start_time->epoch . '_' . $expiry_time->epoch;
                 my $shortcode   = $type . '_' . $underlying . '_10_' . $times . '_S0P_0';

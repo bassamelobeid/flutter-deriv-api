@@ -892,13 +892,12 @@ sub _build_price_calculator {
         min_commission_amount => $self->min_commission_amount,
         # due to discount on end of hour, we just want to have a safety net to make sure we don't go below 0.45
         ($self->priced_with_intraday_model and $self->is_atm_bet) ? (minimum_ask_probability => 0.45) : (),
-        ($self->has_commission_markup)      ? (commission_markup      => $self->commission_markup)      : (),
-        ($self->has_commission_from_stake)  ? (commission_from_stake  => $self->commission_from_stake)  : (),
-        ($self->has_payout)                 ? (payout                 => $self->payout)                 : (),
-        (defined $self->_user_input_stake)  ? (ask_price              => $self->ask_price)              : (),
-        ($self->has_theo_probability)       ? (theo_probability       => $self->theo_probability)       : (),
-        ($self->has_ask_probability)        ? (ask_probability        => $self->ask_probability)        : (),
-        ($self->has_discounted_probability) ? (discounted_probability => $self->discounted_probability) : (),
+        ($self->has_commission_markup)     ? (commission_markup     => $self->commission_markup)     : (),
+        ($self->has_commission_from_stake) ? (commission_from_stake => $self->commission_from_stake) : (),
+        ($self->has_payout)                ? (payout                => $self->payout)                : (),
+        (defined $self->_user_input_stake) ? (ask_price             => $self->ask_price)             : (),
+        ($self->has_theo_probability)      ? (theo_probability      => $self->theo_probability)      : (),
+        ($self->has_ask_probability)       ? (ask_probability       => $self->ask_probability)       : (),
     });
 }
 
