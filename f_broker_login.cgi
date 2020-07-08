@@ -360,5 +360,23 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
 	</table>~;
 }
 
+# WEBSITE STATUS
+if (BOM::Backoffice::Auth0::has_authorisation(['CSWrite'])) {
+    print qq~
+	<table class="Grey2Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
+		<tbody>
+			<tr class="GreyLabel">
+				<td class="whitelabel" colspan="2">WEBSITE STATUS</td>
+			</tr>
+			<tr>
+				<td align="center" width="50%">
+					<p><b>Website Status</b></p>
+					<a href="f_setting_website_status.cgi">Go to website status page</a>
+				</td>
+			</tr>
+		</tbody>
+	</table>~;
+}
+
 code_exit_BO();
 

@@ -1,0 +1,58 @@
+[% WRAPPER layout title='Web site status' %]
+    <form method="post">
+        <table>
+            <thead>
+                <tr>
+                    <td><b>Status</b></td>
+                    <td><b>Message</b></td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <select name="status" id="select_status">
+                            [% FOREACH status IN statuses %]
+                                <option value="[% status %]" [% site_status == status ? 'selected' : '' %]>[% status.ucfirst %]</option>
+                            [% END %]
+                        </select>
+                    </td>
+                    <td>
+                        <select name="reason" id="select_reason">
+                            <option value="">None</option>
+                            [% FOREACH reason IN reasons.sort %]
+                                <option value="[% reason %]" [% site_message == reason ? 'selected' : '' %]>[% reasons.$reason %]</option>
+                            [% END %]
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2">
+                        <input type="hidden" name="csrf" value="[% csrf %]" />
+                        <input type="submit" value="Change Site Status"/>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </form>
+[% END %]
+
+[% BLOCK layout %]
+    [% FOREACH msg IN flash %]
+        <p style="color:#eeee00; font-weight:bold;">[% msg %]</p>
+    [% END %]
+
+    <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="97%">
+        <tbody>
+           <tr class="Blacklabel">
+                <td class="whitelabel" colspan="2">[% title %]</td>
+            </tr>
+            <tr>
+                <td align="left" style="padding: 10px;">
+                [% content | none %]
+                </td>
+            </tr>
+        </tbody>
+    </table>
+[% END %]

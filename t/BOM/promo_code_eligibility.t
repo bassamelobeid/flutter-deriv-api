@@ -6,7 +6,7 @@ use Test::MockModule;
 use Test::MockTime qw(set_fixed_time);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Backoffice::PromoCodeEligibility;;
+use BOM::Backoffice::PromoCodeEligibility;
 use Date::Utility;
 use BOM::Database::Helper::FinancialMarketBet;
 
@@ -113,10 +113,17 @@ my @promos = (
     ['PROMO4', 'FREE_BET',             '{"country":"ALL","amount":"10","currency":"ALL"}',                    '2000-01-01', '2000-02-02', 't'],
     ['PROMO5', 'FREE_BET',             '{"country":"ALL","amount":"10","currency":"ALL"}',                    '2001-01-01', '2001-02-02', 't'],
     ['PROMO6', 'GET_X_WHEN_DEPOSIT_Y', '{"country":"ALL","currency":"ALL","min_deposit":"10","amount":"10"}', '2000-01-01', '2000-02-01', 't'],
-    ['PROMO7', 'GET_X_WHEN_DEPOSIT_Y', '{"country":"ALL","currency":"ALL","min_deposit":"10","amount":"10","payment_processor":"NETeller"}', '2000-01-01', '2000-02-01', 't'],
+    [
+        'PROMO7', 'GET_X_WHEN_DEPOSIT_Y', '{"country":"ALL","currency":"ALL","min_deposit":"10","amount":"10","payment_processor":"NETeller"}',
+        '2000-01-01', '2000-02-01', 't'
+    ],
     ['PROMO8', 'GET_X_OF_DEPOSITS', '{"country":"ALL","currency":"ALL","amount":"10","payment_processor":"ALL"}',    '2000-01-01', '2000-02-01', 't'],
     ['PROMO9', 'GET_X_OF_DEPOSITS', '{"country":"ALL","currency":"ALL","amount":"10","payment_processor":"Skrill"}', '2000-01-01', '2000-02-01', 't'],
-    ['PROMO10', 'GET_X_OF_DEPOSITS', '{"country":"ALL","currency":"ALL","amount":"10","payment_processor":"ALL","min_amount":"10","max_amount":"50"}','2000-01-01', '2000-02-01', 't'],
+    [
+        'PROMO10', 'GET_X_OF_DEPOSITS',
+        '{"country":"ALL","currency":"ALL","amount":"10","payment_processor":"ALL","min_amount":"10","max_amount":"50"}',
+        '2000-01-01', '2000-02-01', 't'
+    ],
 );
 
 for my $p (@promos) {
@@ -345,7 +352,6 @@ subtest 'double redemption' => sub {
 };
 
 done_testing;
-
 
 sub client_promo {
     my $c = shift;

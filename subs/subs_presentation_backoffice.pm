@@ -17,6 +17,7 @@ use Mojo::URL;
 use BOM::JavascriptConfig;
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Auth0;
+use BOM::Backoffice::CGI::SettingWebsiteStatus;
 
 our ($vk_BarIsDoneOnce, $vk_didBOtopPRES,);
 
@@ -111,13 +112,19 @@ sub BarEnd {
 }
 
 sub ServerWarningBar {
+    my $state_key = BOM::Backoffice::CGI::SettingWebsiteStatus::get_redis_keys()->{state};
+    my $reasons   = BOM::Backoffice::CGI::SettingWebsiteStatus::get_messages();
+    my $redis     = BOM::Config::Redis->redis_ws();
+    my $ipmessage = "Your IP: $ENV{'REMOTE_ADDR'}";
+    my $state     = eval { decode_json_utf8($redis->get($state_key) // '{}') };
+    $state->{site_status} //= 'up';
+    $state->{message}     //= '';
+
     #log out
     print qq~
  <table width=100\% cellpadding="0" cellspacing="0">
  <tr><td>
  </td><td>~;
-
-    my $ipmessage = "Your IP: $ENV{'REMOTE_ADDR'}";
 
     if (BOM::Config::on_qa()) {
         my $url = request()->url_for('backoffice/login.cgi?backprice=');
@@ -127,12 +134,17 @@ sub ServerWarningBar {
     }
 
     my $topbarbackground = '#0000BB';
+    my $status_banner = sprintf('Site status: %s', uc $state->{site_status});
+    $status_banner .= sprintf(', %s', $reasons->{$state->{message}}) if defined $reasons->{$state->{message}};
 
     print qq~
  <table width="100%" cellpadding="4" cellspacing="0" border="0">
- <tr><td width="100%" bgcolor="$topbarbackground" align="center"><font class="whitetop">
+ <tr><td width="50%" bgcolor="$topbarbackground" align="left"><font class="whitetop">
  <b>$ipmessage</b></font>
- </td></tr></table>
+ </td><td width="50%" bgcolor="$topbarbackground" align="right"><font class="whitetop">
+ <b>$status_banner</b></font>
+ </td></tr>
+ </table>
  </td></tr><tr>
  <td colspan="2" style="background-repeat: repeat-x;" background="~
         . request()->url_for('images/topborder.gif', undef, undef, {internal_static => 1}) . qq~">

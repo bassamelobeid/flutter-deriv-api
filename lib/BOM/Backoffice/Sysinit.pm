@@ -80,6 +80,7 @@ my $permissions = {
     'fetch_client_details.cgi'        => ['CS'],
     'p2p_order_list.cgi'              => ['CS'],
     'p2p_order_manage.cgi'            => ['CS'],
+    'f_setting_website_status.cgi'    => ['CSWrite'],
 
     'f_setting_selfexclusion_restricted.cgi' => ['Compliance'],
     'f_client_anonymization.cgi'             => ['Compliance'],
