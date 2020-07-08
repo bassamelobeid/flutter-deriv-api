@@ -19,6 +19,16 @@ use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use BOM::MT5::User::Async;
 
+my $redis = BOM::Config::Redis::redis_exchangerates_write();
+
+sub _offer_to_clients {
+    my $from_currency = shift;
+    my $to_currency = shift // 'USD';
+
+    $redis->hmset("exchange_rates::${from_currency}_${to_currency}", offer_to_clients => 1);
+}
+_offer_to_clients($_) for qw/BTC USD ETH UST/;
+
 my $custom_rates = {
     BTC => 1,
     ETH => 1

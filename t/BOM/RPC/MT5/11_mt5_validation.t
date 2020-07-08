@@ -314,7 +314,7 @@ subtest 'CR account types - low risk' => sub {
     ok $login, 'financial mt5 account is created without authentication and FA';
     is $mt5_account_info->{group}, 'real\svg_financial', 'correct CR financial group';
 
-   my $error = create_mt5_account->(
+    my $error = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
@@ -336,7 +336,7 @@ subtest 'CR account types - low risk' => sub {
         'AuthenticateAccount',
         'authentication is required for financial_stp mt5 accounts'
     );
-        authenticate($client);
+    authenticate($client);
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -410,11 +410,10 @@ subtest 'CR account types - high risk' => sub {
             account_type     => 'financial',
             mt5_account_type => 'financial'
         });
+    ok $login, 'standard financial mt5 account is created without authentication';
+    is $mt5_account_info->{group}, 'real\svg_standard', 'correct CR standard financial group';
 
-    ok $login, 'financial mt5 account is created without authentication';
-    is $mt5_account_info->{group}, 'real\svg_financial', 'correct CR standard financial group';
-    
-     my $error = create_mt5_account->(
+    my $error = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
@@ -942,7 +941,8 @@ subtest 'Virtual account types - EU residences' => sub {
     $user->add_client($mf_client);
     BOM::RPC::v3::MT5::Account::reset_throttler($mf_client->loginid);
     $login = create_mt5_account->(
-        $c, $token, $mf_client,
+        $c, $token,
+        $mf_client,
         {
             account_type     => 'financial',
             mt5_account_type => 'financial'
@@ -1205,18 +1205,17 @@ sub create_mt5_account {
 
         my $group_details = parse_mt5_group($mt5_account_info->{group});
 
-        is_deeply \@emit_args,
-        [
-        'new_mt5_signup',
-        {
-            cs_email         => 'support@binary.com',
-            language         => 'EN',
-            loginid          => $client->loginid,
-            mt5_group        => $mt5_account_info->{group},
-            mt5_login_id     => $c->result->{login},
-            account_type     => $params->{args}->{account_type} // '', #$group_details->{account_type},
-            sub_account_type => $params->{args}->{mt5_account_type} // '', #$params->{arg}->{mt5_account_type},
-        }];
+        is_deeply \@emit_args, [
+            'new_mt5_signup',
+            {
+                cs_email         => 'support@binary.com',
+                language         => 'EN',
+                loginid          => $client->loginid,
+                mt5_group        => $mt5_account_info->{group},
+                mt5_login_id     => $c->result->{login},
+                account_type     => $params->{args}->{account_type} // '',        #$group_details->{account_type},
+                sub_account_type => $params->{args}->{mt5_account_type} // '',    #$params->{arg}->{mt5_account_type},
+            }];
         return $c->result->{login};
     }
 }

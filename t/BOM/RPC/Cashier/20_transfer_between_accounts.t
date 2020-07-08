@@ -35,6 +35,15 @@ my ($t, $rpc_ct);
 
 my $redis = BOM::Config::Redis::redis_exchangerates_write();
 
+sub _offer_to_clients {
+    my $value         = shift;
+    my $from_currency = shift;
+    my $to_currency   = shift // 'USD';
+
+    $redis->hmset("exchange_rates::${from_currency}_${to_currency}", offer_to_clients => $value);
+}
+_offer_to_clients(1, $_) for qw/BTC USD ETH UST EUR/;
+
 # In the weekend the account transfers will be suspended. So we mock a valid day here
 set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
 scope_guard { restore_time() };
@@ -830,6 +839,7 @@ subtest 'transfer with fees' => sub {
         my $previous_balance_btc = $client_cr_pa_btc->default_account->balance;
         my $previous_balance_usd = $client_cr_usd->default_account->balance;
         my $amount               = $transfer_limits->{USD}->{min};
+
         $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr_usd->loginid, _get_unique_display_name());
         $params->{args} = {
             account_from => $client_cr_usd->loginid,
@@ -1558,5 +1568,43 @@ sub _test_events_tba {
         "transfer_between_accounts event provides data properly. ($remark)"
     );
 }
+
+subtest 'offer_to_clients' => sub {
+
+    my $cr_dummy = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+    $user->add_client($cr_dummy);
+
+    $cr_dummy->set_default_account('BTC');
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'id'
+    });
+
+    $user->add_client($client_cr);
+    $client_cr->set_default_account('USD');
+
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, _get_unique_display_name());
+
+    my $limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+
+    $params->{args} = {
+        account_from => $client_cr->loginid,
+        account_to   => $cr_dummy->loginid,
+        currency     => 'USD',
+        amount       => $limits->{USD}->{min}};
+
+    _offer_to_clients(0, 'BTC');
+    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code when offer_to_clients fails';
+    like $result->{error}->{message_to_client}, qr/Sorry, transfers are currently unavailable. Please try again later./;
+
+    _offer_to_clients(1, 'BTC');
+
+};
 
 done_testing();

@@ -25,6 +25,14 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::
 
 my $redis = BOM::Config::Redis::redis_exchangerates_write();
 
+sub _offer_to_clients {
+    my $value         = shift;
+    my $from_currency = shift;
+    my $to_currency   = shift // 'USD';
+
+    $redis->hmset("exchange_rates::${from_currency}_${to_currency}", offer_to_clients => $value);
+}
+
 my $manager_module = Test::MockModule->new('BOM::MT5::User::Async');
 $manager_module->mock(
     'deposit',
@@ -528,6 +536,49 @@ subtest 'Simple withdraw' => sub {
     };
 
     $c->call_ok('mt5_withdrawal', $params)->has_no_error('can withdraw even when mt5_withdrawal_locked');
+};
+
+subtest 'offer_to_clients' => sub {
+
+    my $client_cr = create_client('CR');
+    $client_cr->set_default_account('BTC');
+    top_up $client_cr, BTC => 10;
+    $user->add_client($client_cr);
+
+    my $token = $m->create_token($client_cr->loginid, 'test token');
+
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            to_mt5      => 'MTR' . $ACCOUNTS{'real\svg'},
+            from_binary => $client_cr->loginid,
+            amount      => 100,
+        },
+    };
+
+    _offer_to_clients(0, 'BTC');
+
+    $c->call_ok('mt5_deposit', $params)->has_error('Transfers should have been stopped')
+        ->error_code_is('NoExchangeRates', 'Transfer from suspended currency not allowed - correct error code')
+        ->error_message_like(qr/Sorry, transfers are currently unavailable. Please try again later./);
+
+    $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_mt5  => 'MTR' . $ACCOUNTS{'real\svg'},
+            to_binary => $client_cr->loginid,
+            amount    => 100,
+        },
+    };
+
+    $c->call_ok('mt5_withdrawal', $params)->has_error('Transfers should have been stopped')
+        ->error_code_is('NoExchangeRates', 'Transfer from suspended currency not allowed - correct error code')
+        ->error_message_like(qr/Sorry, transfers are currently unavailable. Please try again later./);
+
+    _offer_to_clients(1, 'BTC');
+
 };
 
 done_testing();

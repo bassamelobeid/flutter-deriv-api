@@ -226,4 +226,5 @@ SKIP: {
         ok $update_res->{take_profit}->{value};
     };
 }
+
 done_testing();

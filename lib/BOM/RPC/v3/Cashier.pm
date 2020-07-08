@@ -16,7 +16,7 @@ use Log::Any qw($log);
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use YAML::XS qw(LoadFile);
 use Scope::Guard qw/guard/;
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use JSON::MaybeXS;
 use Text::Trim;
@@ -25,7 +25,7 @@ use Math::BigFloat;
 use BOM::User qw( is_payment_agents_suspended_in_country );
 use LandingCompany::Registry;
 use BOM::User::Client::PaymentAgent;
-use ExchangeRates::CurrencyConverter qw/convert_currency in_usd/;
+use ExchangeRates::CurrencyConverter qw/convert_currency in_usd offer_to_clients/;
 use BOM::Config::CurrencyConfig;
 
 use BOM::RPC::Registry '-dsl';
@@ -1771,6 +1771,20 @@ sub _validate_transfer_between_accounts {
     return _transfer_between_accounts_error(localize('Account transfers are not available within accounts with cryptocurrency as default currency.'))
         if (($from_currency_type eq $to_currency_type)
         and ($from_currency_type eq 'crypto'));
+
+    # check for exchange rates offer
+    my $crypto_currency = $from_currency_type eq 'crypto' ? $from_currency : $to_currency;
+    unless ($from_currency eq $to_currency || offer_to_clients($crypto_currency)) {
+        my $val = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
+        push(@$val, $crypto_currency);
+        stats_event(
+            'Exchange Rates Issue - No offering to clients',
+            'Please inform Quants and Backend Teams to check the exchange_rates for the currency.',
+            {
+                alert_type => 'warning',
+                tags       => ['currency:' . $crypto_currency . '_USD']});
+        return _transfer_between_accounts_error(localize('Sorry, transfers are currently unavailable. Please try again later.'));
+    }
 
     # check for internal transactions number limits
     my $daily_transfer_limit = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;

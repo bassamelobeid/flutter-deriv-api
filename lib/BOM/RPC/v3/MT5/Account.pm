@@ -16,10 +16,10 @@ use WebService::MyAffiliates;
 use Future::Utils qw(fmap1);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 use JSON::MaybeXS;
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
 use Digest::SHA qw(sha384_hex);
 use LandingCompany::Registry;
-use ExchangeRates::CurrencyConverter qw/convert_currency/;
+use ExchangeRates::CurrencyConverter qw/convert_currency offer_to_clients/;
 use Log::Any qw($log);
 
 use BOM::RPC::Registry '-dsl';
@@ -1602,6 +1602,18 @@ sub _mt5_validate_and_get_amount {
             return create_error_future('TransferSuspended', {override_code => $error_code})
                 if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
                 and (($source_currency_type // '') ne ($mt5_currency_type // ''));
+
+            unless ($mt5_currency eq $client_currency || offer_to_clients($client_currency)) {
+                my $val = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
+                push(@$val, $client_currency);
+                stats_event(
+                    'Exchange Rates Issue - No offering to clients',
+                    'Please inform Quants and Backend Teams to check the exchange_rates for the currency.',
+                    {
+                        alert_type => 'warning',
+                        tags       => ['currency:' . $client_currency . '_USD']});
+                return create_error_future('NoExchangeRates');
+            }
 
             my $fees                    = 0;
             my $fees_percent            = 0;
