@@ -1,5 +1,6 @@
 <p> <b>Commission</b> is a percentage of <b>volume</b> <br/>
-<b>Deal cancelation commission</b> is a percentage of <b>theo price</b> </p>
+<b>Deal cancelation commission</b> is a percentage of <b>theo price</b> <br/>
+<b>Stop out level</b> is a percentage of <b>stake</b>. E.g. 0 means stop out level is set at the level where client can lose 100% of stake, whereas 5 means 95% of stake.</p>
 
 <form id='multiplier_config'>
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
@@ -10,6 +11,7 @@
         <th>Multiplier range</th>
         <th>Deal cancellation commission</th>
         <th>Deal cancellation duration range</th>
+        <th>Stop out level</th>
     </tr>
     [% FOREACH data IN existing_config %]
     <tr id="[% data.symbol %]-multiplier_config">
@@ -18,6 +20,7 @@
         <td><input type="text" name="multiplier_range" value="[% data.multiplier_range_json %]" data-lpignore="true" /></td>
         <td><input type="text" name="cancellation_commission" value="[% data.cancellation_commission %]" data-lpignore="true" /></td>
         <td><input type="text" name="cancellation_duration_range" value="[% data.cancellation_duration_range_json %]" data-lpignore="true" /></td>
+        <td><input type="text" name="stop_out_level" value="[% data.stop_out_level %]" data-lpignore="true" /></td>
         <td><button onClick="SaveMultiplierConfig('[% data.symbol %]')" type="button">save</button></td>
         <td class="multiplier_config_result"></td>
     </tr>
@@ -42,7 +45,8 @@ function SaveMultiplierConfig(symbol) {
             commission: el.find('input[name="commission"]').val(),
             multiplier_range: el.find('input[name="multiplier_range"]').val(),
             cancellation_commission: el.find('input[name="cancellation_commission"]').val(),
-            cancellation_duration_range: el.find('input[name="cancellation_duration_range"]').val()
+            cancellation_duration_range: el.find('input[name="cancellation_duration_range"]').val(),
+            stop_out_level: el.find('input[name="stop_out_level"]').val()
         },
         success: function(data) {
             var config = \$.parseJSON(data);
