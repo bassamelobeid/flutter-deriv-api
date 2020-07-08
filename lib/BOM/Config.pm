@@ -198,6 +198,11 @@ sub redis_p2p_config {
     return $config;
 }
 
+sub redis_ws_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_WS_REDIS} // '/etc/rmg/ws-redis.yml');
+    return $config;
+}
+
 sub mt5_user_rights {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/mt5_user_rights.yml');
     return $config;

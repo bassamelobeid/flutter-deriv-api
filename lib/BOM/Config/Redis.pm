@@ -433,4 +433,30 @@ sub redis_p2p {
     return _redis('p2p', 'read', 10);
 }
 
+=head2 redis_ws_write
+
+    my $redis = BOM::Config::Redis::redis_ws_write();
+
+Returns a writable L<RedisDB> handle to our WS Redis service.
+
+=cut
+
+sub redis_ws_write {
+    $config->{ws} //= BOM::Config::redis_ws_config();
+    return _redis('ws', 'write', 10);
+}
+
+=head2 redis_ws
+
+    my $redis = BOM::Config::Redis::redis_ws();
+
+Returns a read-only L<RedisDB> handle to our WS Redis service.
+
+=cut
+
+sub redis_ws {
+    $config->{ws} //= BOM::Config::redis_ws_config();
+    return _redis('ws', 'read', 10);
+}
+
 1;
