@@ -181,11 +181,11 @@ ok(ref $res->{balance});
 is $call_params->{token}, $token;
 
 $rpc_response = {
-    'account_id'                      => $client->default_account->id,
-    'balance'                         => '1000.00',
-    'currency'                        => 'EUR',
-    'loginid'                         => $client->loginid,
-    'total' => {
+    'account_id' => $client->default_account->id,
+    'balance'    => '1000.00',
+    'currency'   => 'EUR',
+    'loginid'    => $client->loginid,
+    'total'      => {
         'deriv' => {
             'amount'   => '2500.00',
             'currency' => 'USD'
@@ -197,24 +197,22 @@ $rpc_response = {
     },
     'accounts' => {
         $client->loginid => {
-            'balance' => '1000.00',
-            'converted_amount' => '1000.00',
-            'currency' => 'EUR',
-            'demo_account' => 0,
-            'type' => 'deriv',
-            'account_id' => $client->default_account->id,
+            'balance'                         => '1000.00',
+            'converted_amount'                => '1000.00',
+            'currency'                        => 'EUR',
+            'demo_account'                    => 0,
+            'type'                            => 'deriv',
+            'account_id'                      => $client->default_account->id,
             'currency_rate_in_total_currency' => 1,
         },
         'MTR00001' => {
-            'balance' => '-10',
-            'converted_amount' => '-10',
-            'currency' => 'USD',
-            'demo_account' => 0,
-            'type' => 'mt5',
+            'balance'                         => '-10',
+            'converted_amount'                => '-10',
+            'currency'                        => 'USD',
+            'demo_account'                    => 0,
+            'type'                            => 'mt5',
             'currency_rate_in_total_currency' => 1,
-        }        
-    }
-};
+        }}};
 
 $res = $t->await::balance({
     balance   => 1,
@@ -236,24 +234,23 @@ my $expected_res = {
             'mt5' => {
                 'amount'   => '-10',
                 'currency' => 'USD'
-            },            
+            },
         },
         'accounts' => {
             $client->loginid => {
-                'balance' => '1000',
+                'balance'          => '1000',
                 'converted_amount' => '1000',
-                'currency' => 'EUR',
-                'demo_account' => 0,
-                'type' => 'deriv',
+                'currency'         => 'EUR',
+                'demo_account'     => 0,
+                'type'             => 'deriv',
             },
             'MTR00001' => {
-                'balance' => '-10',
+                'balance'          => '-10',
                 'converted_amount' => '-10',
-                'currency' => 'USD',
-                'demo_account' => 0,
-                'type' => 'mt5',
-            }             
-        }        
+                'currency'         => 'USD',
+                'demo_account'     => 0,
+                'type'             => 'mt5',
+            }}
     },
     'echo_req' => {
         'account'   => 'all',
@@ -261,8 +258,8 @@ my $expected_res = {
         'req_id'    => 1000013,
         'subscribe' => 1
     },
-    'msg_type'    => 'balance',
-    'req_id'      => 1000013
+    'msg_type' => 'balance',
+    'req_id'   => 1000013
 };
 $expected_res->{balance}{id}      = $res->{balance}{id};
 $expected_res->{subscription}{id} = $res->{balance}{id};

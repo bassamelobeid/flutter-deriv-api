@@ -244,10 +244,10 @@ subtest 'chat token' => sub {
             service_token => 1,
             service       => 'sendbird',
         })->{service_token};
-        
+
     is $serivce_token->{sendbird}{token}, 'dummy', 'got token';    # from mocked sendbird
     ok $serivce_token->{sendbird}{expiry_time}, 'got expiry time';
-    ok $serivce_token->{sendbird}{app_id}, 'got app id';
+    ok $serivce_token->{sendbird}{app_id},      'got app id';
 
     $t->await::authorize({authorize => $token_advertiser});
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
@@ -344,7 +344,7 @@ subtest 'create order (buy)' => sub {
     is $order->{type}, 'buy', 'type';
     is $order->{payment_info}, $advert->{payment_info}, 'payment_info copied from ad';
     is $order->{contact_info}, $advert->{contact_info}, 'contact_info copied from ad';
-    is $order->{client_details}{id}, '', 'client id';
+    is $order->{client_details}{id},   '', 'client id';
     is $order->{client_details}{name}, '', 'client name';
 
     $resp = $t->await::p2p_order_list({

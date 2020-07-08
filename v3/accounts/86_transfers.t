@@ -19,6 +19,17 @@ use await;
 
 my $t = build_wsapi_test({language => 'EN'});
 
+my $redis = BOM::Config::Redis::redis_exchangerates_write();
+
+sub _offer_to_clients {
+    my $value         = shift;
+    my $from_currency = shift;
+    my $to_currency   = shift // 'USD';
+
+    $redis->hmset("exchange_rates::${from_currency}_${to_currency}", offer_to_clients => $value);
+}
+_offer_to_clients(1, $_) for qw/BTC USD ETH UST EUR/;
+
 #create client
 my $email      = 'dummy' . rand(999) . '@binary.com';
 my $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
