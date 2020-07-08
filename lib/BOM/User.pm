@@ -365,7 +365,7 @@ sub has_mt5_regulated_account {
     my @loginids = reverse sort grep { !/^MTD\d+/ } @all_mt5_loginids;
     for my $loginid (@loginids) {
         my $group = BOM::MT5::User::Async::get_user($loginid)->else(sub { Future->done({}) })->get->{group};
-        return 1 if defined($group) && $group =~ /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_standard|_advanced)/;
+        return 1 if defined($group) && $group =~ /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_financial)/;
     }
 
     return 0;
