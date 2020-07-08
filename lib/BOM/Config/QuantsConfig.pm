@@ -148,11 +148,16 @@ sub get_config {
 sub _process_multiplier_config {
     my ($self, $existing_config, $config_type, $args) = @_;
 
-    return $existing_config if %$existing_config;
     my (undef, $symbol) = split '::', $config_type;
+    my $default = $default_multiplier_config->{$symbol};
+
+    if (%$existing_config) {
+        return {%$default, %$existing_config} if scalar(keys %$default) != scalar(keys %$existing_config);
+        return $existing_config;
+    }
 
     # if there's no existing config in chronicle, loads it from default yaml file.
-    return $default_multiplier_config->{$symbol};
+    return $default;
 }
 
 sub _process_commission {
