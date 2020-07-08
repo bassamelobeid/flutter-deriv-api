@@ -190,9 +190,9 @@
                             </br>
                             <select name="rejection_reason">
                                 <option>-Select Rejection Reason-</option>
-                                <option> less trade/no trade </option>
-                                <option> back to fiat account </option>
-                                <option> contact CS </option>
+                                [% FOREACH option IN rejection_reasons %]
+                                    <option value="[% option.index %]">[% option.reason %]</option>
+                                [% END %]
                             </select>
                             <input type="submit" name="action" value="Reject"/>
                         </form>

@@ -37,6 +37,31 @@ use BOM::Cryptocurrency::Helper qw( prioritize_address );
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use Brands;
+use constant REJECTION_REASONS => {
+    low_trade => {
+        reason     => 'less trade/no trade',
+        email_text => "there was insufficient trading activity on your account.
+            \n\nNote that this account was created for trading, and not banking, purposes.
+            \n\nWe recommend that you take advantage of our trading facilities before making further withdrawals.",
+    },
+    back_to_fiat => {
+        reason     => 'back to fiat account',
+        email_text => "the deposit and withdrawal methods did not match.
+            \n\nNote that withdrawals can only be made from the FIAT account where funds were deposited.
+            \n\nTo ensure smooth payouts, we suggest transferring the funds to your FIAT account and make the withdrawal from there.",
+    },
+    crypto_low_trade => {
+        reason => 'insufficient trade (manual refund to card)',
+        email_text =>
+            "your account does not show sufficient trading activity and there is also an incompatibility between your deposit and withdrawal methods.
+            \n\nWe will need to process this request manually instead.
+            \n\nTo allow us to proceed, first transfer the funds back to your FIAT account. Then, reply to this email with permission for us to do a manual refund to your debit/credit card.",
+    },
+    default => {
+        reason     => 'contact CS',
+        email_text => "there is an issue with your account that needs to be resolved first.
+            \n\nPlease contact Customer Support for help.",
+    }};
 
 BOM::Backoffice::Sysinit::init();
 
@@ -44,20 +69,9 @@ PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
 sub notify_crypto_withdrawal_rejected {
-    my $loginid = shift;
-    my $remark = shift // "unknown";
-
-    my $rejection_reason = "there is an issue with your account that needs to be resolved first.
-                            \n\nPlease contact Customer Support for help.";
-    if ($remark eq 'less trade/no trade') {
-        $rejection_reason = "there was insufficient trading activity on your account.
-             \n\nNote that this account was created for trading, and not banking, purposes.
-             \n\nWe recommend that you take advantage of our trading facilities before making further withdrawals.";
-    } elsif ($remark eq 'back to fiat account') {
-        $rejection_reason = "the deposit and withdrawal methods did not match.
-        \n\nNote that withdrawals can only be made from the FIAT account where funds were deposited.
-        \n\nTo ensure smooth payouts, we suggest transferring the funds to your FIAT account and make the withdrawal from there.";
-    }
+    my $loginid          = shift;
+    my $remark           = shift // "unknown";
+    my $rejection_reason = REJECTION_REASONS->{$remark}->{email_text} // REJECTION_REASONS->{default}->{email_text};
 
     my $client = BOM::User::Client->new({loginid => $loginid});
     my $brand = Brands->new_from_app_id($client->source);
@@ -201,6 +215,12 @@ my $display_transactions = sub {
         $trx->{is_withdrawal_locked} = $client->status->withdrawal_locked if $trx->{transaction_type} eq 'withdrawal';
     }
 
+    #sort rejection reasons & grep only required data for template
+    my @rejection_reasons_tpl =
+        map { {index => $_, reason => REJECTION_REASONS->{$_}->{reason}} }
+        sort { REJECTION_REASONS->{$a}->{reason} cmp REJECTION_REASONS->{$b}->{reason} }
+        keys REJECTION_REASONS->%*;
+
     # Render template page with transactions
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
@@ -219,6 +239,7 @@ my $display_transactions = sub {
             show_all_pendings   => $show_all_pendings   // '',
             show_one_authorised => $show_one_authorised // '',
             fetch_url           => request()->url_for('backoffice/fetch_client_details.cgi'),
+            rejection_reasons   => \@rejection_reasons_tpl,
         }) || die $tt->error();
 };
 
