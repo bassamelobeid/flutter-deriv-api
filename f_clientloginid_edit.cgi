@@ -1467,8 +1467,8 @@ sub _residence_change_validation {
 # The change should not happen (Regulations)
     if ($data->{has_mt5_logins}) {
         return undef
-            unless ($allowed_to_trade_mt5->('standard')
-            || $allowed_to_trade_mt5->('advanced'));
+            unless ($allowed_to_trade_mt5->('financial')
+            || $allowed_to_trade_mt5->('financial_stp'));
     }
 
     # If the loop above passes, then it is valid to change
