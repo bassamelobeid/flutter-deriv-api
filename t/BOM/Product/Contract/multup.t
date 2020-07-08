@@ -321,8 +321,30 @@ subtest 'stop loss cap' => sub {
     my $c = produce_contract($args);
     ok !$c->is_valid_to_buy, 'invalid to buy';
     is $c->primary_validation_error->message, 'stop loss too high', 'message - stop loss too high';
-    is $c->primary_validation_error->message_to_client, 'Invalid stop loss. Stop loss cannot be more than stake.';
+    is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss cannot be more than [_1].';
+    is $c->primary_validation_error->message_to_client->[1], '10.00';
 
+    my $mocked_lo = Test::MockModule->new('BOM::Product::LimitOrder');
+    $mocked_lo->mock(
+        '_multiplier_config',
+        sub {
+            return {
+                multiplier_range            => [10],
+                commission                  => 5.0366490434625e-05,
+                cancellation_commission     => 0.05,
+                cancellation_duration_range => ['5m', '10m', '15m', '30m', '60m'],
+                stop_out_level              => 10
+            };
+        });
+
+    $c = produce_contract($args);
+
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'stop loss too high', 'message - stop loss too high';
+    is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss cannot be more than [_1].';
+    is $c->primary_validation_error->message_to_client->[1], '9.00';
+
+    $mocked_lo->unmock_all;
     $mocked->unmock_all;
     $args->{limit_order}->{stop_loss} = 0.09;
     $c = produce_contract($args);
@@ -610,7 +632,7 @@ subtest 'deal cancellation with fx' => sub {
         cancellation => '1h',
     };
     my $c = produce_contract($args);
-    is $c->ask_price,            102.25, 'ask price is 102.25';
+    is $c->ask_price,          102.25, 'ask price is 102.25';
     is $c->cancellation_price, 2.25,   'cost of cancellation is 2.25';
 };
 
@@ -734,6 +756,51 @@ subtest 'deal cancellation with TP and blackout condition' => sub {
     is $c->primary_validation_error->message_to_client->[0], 'Deal cancellation is not available from [_1] to [_2].', 'message to client';
     is $c->primary_validation_error->message_to_client->[1], '2020-06-04 21:00:00',                                   'message to client';
     is $c->primary_validation_error->message_to_client->[2], '2020-06-04 23:59:59',                                   'message to client';
+};
+
+subtest 'variable deal cancellation price with variable stop out level' => sub {
+    my $mocked_lo = Test::MockModule->new('BOM::Product::Contract::Multup');
+    $mocked_lo->mock(
+        '_multiplier_config',
+        sub {
+            return {
+                multiplier_range            => [200],
+                commission                  => 5.0366490434625e-05,
+                cancellation_commission     => 0.05,
+                cancellation_duration_range => ['5m', '10m', '15m', '30m', '60m'],
+                stop_out_level              => 10
+            };
+        });
+
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 200,
+        currency     => 'USD',
+        cancellation => '1h',
+    };
+    my $c  = produce_contract($args);
+    my $c1 = $c->cancellation_price;
+
+    $mocked_lo->mock(
+        '_multiplier_config',
+        sub {
+            return {
+                multiplier_range            => [200],
+                commission                  => 5.0366490434625e-05,
+                cancellation_commission     => 0.05,
+                cancellation_duration_range => ['5m', '10m', '15m', '30m', '60m'],
+                stop_out_level              => 99
+            };
+        });
+    $c = produce_contract($args);
+    my $c2 = $c->cancellation_price;
+    ok $c1 > $c2, 'price should be lower if contract is more likely to stop out';
 };
 
 done_testing();

@@ -225,9 +225,8 @@ sub _build_stop_out {
 
     # If it is a new contract, construct stop_out using configs from backoffice
     if ($self->pricing_new) {
-        # TODO: This should be changeable from backoffice
-        my $stop_out_percentage = 0;
-        my $order_amount        = (1 - $stop_out_percentage / 100) * $self->_user_input_stake;
+        my $stop_out_percentage = $self->_multiplier_config->{stop_out_level};
+        my $order_amount = financialrounding('price', $self->currency, (1 - $stop_out_percentage / 100) * $self->_user_input_stake);
 
         return $self->new_order({stop_out => $order_amount});
     }

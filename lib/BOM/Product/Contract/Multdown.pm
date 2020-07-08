@@ -190,7 +190,8 @@ sub _build__take_profit_proxy {
 sub _build__stop_out_proxy {
     my $self = shift;
 
-    return $self->_spot_proxy * (1 + 1 / $self->multiplier - $self->commission) * exp($self->_barrier_continuity_adjustment);
+    my $stop_out_level = 1 - $self->_multiplier_config->{stop_out_level} / 100;
+    return $self->_spot_proxy * (1 + $stop_out_level / $self->multiplier - $self->commission) * exp($self->_barrier_continuity_adjustment);
 }
 
 sub _type {
