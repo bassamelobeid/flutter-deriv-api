@@ -166,14 +166,14 @@ subtest 'mt5' => sub {
         token => $token_usd,
         args  => {
             account_type     => 'financial',
-            mt5_account_type => 'standard',
+            mt5_account_type => 'financial',
             investPassword   => $DETAILS{investPassword},
             mainPassword     => $DETAILS{password}{main},
         },
     };
-    my $login_std = $c->call_ok('mt5_new_account', $params)->has_no_system_error->has_no_error('create standard mt5 account')->result->{login};
-    $params->{args}{mt5_account_type} = 'advanced';
-    my $login_adv = $c->call_ok('mt5_new_account', $params)->has_no_system_error->has_no_error('create advanced mt5 account')->result->{login};
+    my $login_std = $c->call_ok('mt5_new_account', $params)->has_no_system_error->has_no_error('create financial mt5 account')->result->{login};
+    $params->{args}{mt5_account_type} = 'financial_stp';
+    my $login_adv = $c->call_ok('mt5_new_account', $params)->has_no_system_error->has_no_error('create financial_stp mt5 account')->result->{login};
 
     subtest 'mt5_deposit' => sub {
         initialize_user_transfer_limits();

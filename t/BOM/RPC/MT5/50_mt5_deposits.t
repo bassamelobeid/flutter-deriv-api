@@ -192,7 +192,7 @@ subtest 'demo account can not be tagged as an agent' => sub {
         token    => $token,
         args     => {
             account_type     => 'demo',
-            mt5_account_type => 'standard',
+            mt5_account_type => 'financial',
             country          => 'af',
             email            => $DETAILS{email},
             name             => $DETAILS{name},
@@ -217,7 +217,7 @@ subtest 'virtual_deposit' => sub {
         token    => $token,
         args     => {
             account_type     => 'demo',
-            mt5_account_type => 'advanced',
+            mt5_account_type => 'financial_stp',
             country          => 'af',
             email            => $DETAILS{email},
             name             => $DETAILS{name},
@@ -388,7 +388,7 @@ subtest 'labuan withdrawal' => sub {
         token    => $token,
         args     => {
             account_type     => 'financial',
-            mt5_account_type => 'advanced',
+            mt5_account_type => 'financial_stp',
             country          => 'af',
             email            => $DETAILS{email},
             name             => $DETAILS{name},
@@ -398,7 +398,7 @@ subtest 'labuan withdrawal' => sub {
     };
 
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword');
-    is($c->result->{login},           'MTR' . $ACCOUNTS{'real\labuan_advanced'}, 'result->{login}');
+    is($c->result->{login},           'MTR' . $ACCOUNTS{'real\labuan_financial_stp'}, 'result->{login}');
     is($c->result->{balance},         0,                                         'Balance is 0 upon creation');
     is($c->result->{display_balance}, '0.00',                                    'Display balance is "0.00" upon creation');
 
@@ -410,7 +410,7 @@ subtest 'labuan withdrawal' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => 'MTR' . $ACCOUNTS{'real\labuan_advanced'},
+            from_mt5  => 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'},
             to_binary => $test_client->loginid,
             amount    => 50,
         },
@@ -454,7 +454,7 @@ subtest 'labuan withdrawal' => sub {
             language => 'EN',
             token    => $token,
             args     => {
-                to_mt5      => 'MTR' . $ACCOUNTS{'real\labuan_advanced'},
+                to_mt5      => 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'},
                 from_binary => $test_client->loginid,
                 amount      => 50,
             },
@@ -604,7 +604,7 @@ subtest 'labuan deposit' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            to_mt5      => 'MTR' . $ACCOUNTS{'real\labuan_advanced'},
+            to_mt5      => 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'},
             from_binary => $test_client->loginid,
             amount      => 20,
         },
@@ -628,7 +628,7 @@ subtest 'labuan deposit' => sub {
             return Future->done({
                 'leverage' => 300,
                 'currency' => 'USD',
-                'group'    => 'real\labuan_advanced',
+                'group'    => 'real\labuan_financial_stp',
                 'company'  => 'Binary (SVG) Ltd.'
             });
         });
@@ -642,7 +642,7 @@ subtest 'labuan deposit' => sub {
                 balance => '1234',
                 country => 'Malta',
                 rights  => 999,
-                group   => 'real\labuan_advanced',
+                group   => 'real\labuan_financial_stp',
                 'login' => 'MTR00000015',
             });
         });

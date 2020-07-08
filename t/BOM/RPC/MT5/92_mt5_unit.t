@@ -7,10 +7,10 @@ use BOM::RPC::v3::MT5::Account;
 my %account_lc_short = (
     'real\malta'                    => 'malta',
     'real\iom'                      => 'iom',
-    'real\svg_standard'             => 'svg',
-    'real\labuan_advanced'          => 'labuan',
-    'real\maltainvest_standard'     => 'maltainvest',
-    'real\maltainvest_standard_GBP' => 'maltainvest',
+    'real\svg_financial'             => 'svg',
+    'real\labuan_financial_stp'          => 'labuan',
+    'real\maltainvest_financial'     => 'maltainvest',
+    'real\maltainvest_financial_GBP' => 'maltainvest',
     'real\svg'                      => 'svg',
 );
 

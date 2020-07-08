@@ -434,7 +434,7 @@
          "type" : "object",
          "description" : "Landing Company for MT5 gaming contracts (Volatility Indices)",
          "properties" : {
-            "standard" : {
+            "financial" : {
                "required" : [
                   "changeable_fields",
                   "has_reality_check",
@@ -630,23 +630,23 @@
                },
                "additionalProperties" : false,
                "type" : "object",
-               "description" : "Contain details for landing company for standard subtype. The Standard account is suitable for a wide range of traders, both new and experienced. It gives you mid-range leverage and variable spreads that give you a great deal of flexibility for whatever position you wish to take in the market."
+               "description" : "Contain details for landing company for financial subtype. The Financial account is suitable for a wide range of traders, both new and experienced. It gives you mid-range leverage and variable spreads that give you a great deal of flexibility for whatever position you wish to take in the market."
             }
          },
          "required" : [
-            "standard"
+            "financial"
          ]
       },
       "mt_financial_company" : {
          "additionalProperties" : false,
-         "description" : "Landing Company for MT5 financial contracts (all except Volatility Indices), currently divided into advanced and standard as subtypes.",
+         "description" : "Landing Company for MT5 financial contracts (all except Volatility Indices), currently divided into financial_stp and financial as subtypes.",
          "type" : "object",
          "required" : [
-            "standard",
-            "advanced"
+            "financial",
+            "financial_stp"
          ],
          "properties" : {
-            "standard" : {
+            "financial" : {
                "required" : [
                   "currency_config",
                   "country",
@@ -827,13 +827,13 @@
                      "description" : "Special conditions for changing sensitive fields"
                   }
                },
-               "description" : "Contain details for landing company for standard subtype. The Standard account is suitable for a wide range of traders, both new and experienced. It gives you mid-range leverage and variable spreads that give you a great deal of flexibility for whatever position you wish to take in the market.",
+               "description" : "Contain details for landing company for financial subtype. The Financial account is suitable for a wide range of traders, both new and experienced. It gives you mid-range leverage and variable spreads that give you a great deal of flexibility for whatever position you wish to take in the market.",
                "type" : "object",
                "additionalProperties" : false
             },
-            "advanced" : {
+            "financial_stp" : {
                "type" : "object",
-               "description" : "Contain details for landing company for advanced subtype. The Advanced account provides you with tight spreads, higher ticket size and offers a variety of FX pairs from majors to exotics. It is a straight through processing (STP) account with direct access to FX liquidity from various providers.",
+               "description" : "Contain details for landing company for financial_stp subtype. The Financial STP account provides you with tight spreads, higher ticket size and offers a variety of FX pairs from majors to exotics. It is a straight through processing (STP) account with direct access to FX liquidity from various providers.",
                "additionalProperties" : false,
                "properties" : {
                   "address" : {

@@ -157,19 +157,20 @@ subtest 'new account' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $params->{args}->{account_type}     = 'financial';
-    $params->{args}->{mt5_account_type} = 'standard';
+    $params->{args}->{mt5_account_type} = 'financial';
 
-    $c->call_ok($method, $params)->has_no_error('Citizenship is not required for creating financial standard accounts');
+    $c->call_ok($method, $params)->has_no_error('Citizenship is not required for creating financial accounts');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
-    $params->{args}->{mt5_account_type} = 'advanced';
+    $params->{args}->{mt5_account_type} = 'financial_stp';
 
     my $result = $c->call_ok($method, $params)->response->result;
-    is $result->{error}->{code}, 'ASK_FIX_DETAILS', 'Correct error code if citizen is missing for financial advanced account';
+    is $result->{error}->{code}, 'ASK_FIX_DETAILS', 'Correct error code if citizen is missing for financial_stp account';
     is $result->{error}->{message_to_client}, 'Your profile appears to be incomplete. Please update your personal details to continue.',
-        'Correct error message if citizen is missing for financial advanced account';
+        'Correct error message if citizen is missing for financial_stp account';
     cmp_bag($result->{error}{details}{missing}, ['citizen', 'account_opening_reason'], 'Missing citizen should be under details.');
+
 
     $params->{args}->{account_type} = 'gaming';
 
@@ -196,7 +197,7 @@ subtest 'new account' => sub {
     delete $params->{args}->{mt5_account_type};
     $c->call_ok($method, $params)->has_error->error_code_is('InvalidSubAccountType', 'Sub account mandatory for financial');
 
-    $params->{args}->{mt5_account_type} = 'advanced';
+    $params->{args}->{mt5_account_type} = 'financial_stp';
     $test_client->aml_risk_classification('high');
     $test_client->save();
     $c->call_ok($method, $params)
@@ -287,17 +288,17 @@ subtest 'CR account types - low risk' => sub {
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         });
-    is $mt5_account_info->{group}, 'demo\svg_standard', 'correct CR standard demo group';
+    is $mt5_account_info->{group}, 'demo\svg_financial', 'correct CR financial demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         });
-    is $mt5_account_info->{group}, 'demo\labuan_advanced', 'correct CR advanced demo group';
+    is $mt5_account_info->{group}, 'demo\labuan_financial_stp', 'correct CR financial_stp demo group';
 
     #real accounts
     financial_assessment($client, 'none');
@@ -308,19 +309,19 @@ subtest 'CR account types - low risk' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         });
-    ok $login, 'standard financial mt5 account is created without authentication and FA';
-    is $mt5_account_info->{group}, 'real\svg_standard', 'correct CR standard financial group';
+    ok $login, 'financial mt5 account is created without authentication and FA';
+    is $mt5_account_info->{group}, 'real\svg_financial', 'correct CR financial group';
 
    my $error = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'ASK_FIX_DETAILS',
-        'Required fields missing for advanced financial account'
+        'Required fields missing for financial_stp financial account'
     );
     cmp_bag($error->{details}{missing}, ['account_opening_reason'], 'Missing account_opening_reason should appear in details.');
     $client->account_opening_reason('Speculative');
@@ -330,10 +331,10 @@ subtest 'CR account types - low risk' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'AuthenticateAccount',
-        'authentication is required for advanced mt5 accounts'
+        'authentication is required for financial_stp mt5 accounts'
     );
         authenticate($client);
 
@@ -341,10 +342,10 @@ subtest 'CR account types - low risk' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         });
-    ok $login, 'advanced financial account created without financial assessment';
-    is $mt5_account_info->{group}, 'real\labuan_advanced', 'correct CR advanced financial group';
+    ok $login, 'financial_stp account created without financial assessment';
+    is $mt5_account_info->{group}, 'real\labuan_financial_stp', 'correct CR financial_stp group';
 };
 
 subtest 'CR account types - high risk' => sub {
@@ -376,17 +377,17 @@ subtest 'CR account types - high risk' => sub {
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         });
-    is $mt5_account_info->{group}, 'demo\svg_standard', 'correct CR standard demo group';
+    is $mt5_account_info->{group}, 'demo\svg_financial', 'correct CR financial demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         });
-    is $mt5_account_info->{group}, 'demo\labuan_advanced', 'correct CR advanced demo group';
+    is $mt5_account_info->{group}, 'demo\labuan_financial_stp', 'correct CR financial_stp demo group';
 
     #real accounts
 
@@ -407,29 +408,31 @@ subtest 'CR account types - high risk' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         });
-    ok $login, 'standard financial mt5 account is created without authentication';
-    is $mt5_account_info->{group}, 'real\svg_standard', 'correct CR standard financial group';
+
+    ok $login, 'financial mt5 account is created without authentication';
+    is $mt5_account_info->{group}, 'real\svg_financial', 'correct CR standard financial group';
     
      my $error = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'ASK_FIX_DETAILS',
-        'Required fields missing for advanced financial account'
+        'Required fields missing for financial_stp account'
     );
     cmp_bag($error->{details}{missing}, ['account_opening_reason'], 'Missing account_opening_reason should appear in details.');
     $client->account_opening_reason('Speculative');
     $client->save();
 
+
     create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'AuthenticateAccount',
         'authentication is required by labuan'
@@ -440,10 +443,10 @@ subtest 'CR account types - high risk' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         });
-    ok $login, 'advanced financial account created without full financial assessment';
-    is $mt5_account_info->{group}, 'real\labuan_advanced', 'correct CR standard financial group';
+    ok $login, 'financial_stp account created without full financial assessment';
+    is $mt5_account_info->{group}, 'real\labuan_financial_stp', 'correct CR labuan_financial_stp group';
 };
 
 subtest 'MLT account types - low risk' => sub {
@@ -470,19 +473,19 @@ subtest 'MLT account types - low risk' => sub {
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         });
-    ok $login, 'MLT client can create a starard financial demo account';
-    is $mt5_account_info->{group}, 'demo\maltainvest_standard', 'correct MLT demo group';
+    ok $login, 'MLT client can create a financial demo account';
+    is $mt5_account_info->{group}, 'demo\maltainvest_financial', 'correct MLT demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'MT5NotAllowed',
-        'MLT client cannot create an advanced financial demo account'
+        'MLT client cannot create a financial_stp demo account'
     );
 
     #real accounts
@@ -493,20 +496,20 @@ subtest 'MLT account types - low risk' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         },
         'FinancialAccountMissing',
-        'MLT client cannot create a standard financial real account before upgrading to MF'
+        'MLT client cannot create a financial real account before upgrading to MF'
     );
 
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'MT5NotAllowed',
-        'MLT client cannot create an advanced financial real account'
+        'MLT client cannot create a financial_stp real account'
     );
 };
 
@@ -534,19 +537,19 @@ subtest 'MLT account types - high risk' => sub {
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         });
-    ok $login, 'MLT client can create a starard financial demo account';
-    is $mt5_account_info->{group}, 'demo\maltainvest_standard', 'correct MLT demo group';
+    ok $login, 'MLT client can create a financial demo account';
+    is $mt5_account_info->{group}, 'demo\maltainvest_financial', 'correct MLT demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'MT5NotAllowed',
-        'MLT client cannot create an advanced financial demo account'
+        'MLT client cannot create a financial_stp demo account'
     );
 
     #real accounts
@@ -566,20 +569,20 @@ subtest 'MLT account types - high risk' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         },
         'FinancialAccountMissing',
-        'MLT client cannot create a standard financial real account before upgrading to MF'
+        'MLT client cannot create a financial real account before upgrading to MF'
     );
 
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'MT5NotAllowed',
-        'MLT client cannot create an advanced financial real account'
+        'MLT client cannot create a financial_stp real account'
     );
 };
 
@@ -609,19 +612,19 @@ subtest 'MF accout types' => sub {
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         });
-    ok($login, 'demo standard account successfully created for an MF client');
-    is $mt5_account_info->{group}, 'demo\maltainvest_standard', 'correct MF demo group';
+    ok($login, 'demo financial account successfully created for an MF client');
+    is $mt5_account_info->{group}, 'demo\maltainvest_financial', 'correct MF demo group';
 
     create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'MT5NotAllowed',
-        'non-professional MF clients cannot create demo advanced account'
+        'non-professional MF clients cannot create demo financial_stp account'
     );
 
     $client->status->set("professional");
@@ -630,10 +633,10 @@ subtest 'MF accout types' => sub {
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'MT5NotAllowed',
-        'professional MF clients cannot create demo advanced accounts either'
+        'professional MF clients cannot create demo financial_stp accounts either'
     );
     $client->status->clear_professional;
     $client->save;
@@ -649,7 +652,7 @@ subtest 'MF accout types' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         },
         'FinancialAssessmentMandatory',
         'Financial assessment is required for MF clients'
@@ -660,7 +663,7 @@ subtest 'MF accout types' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         },
         'FinancialAssessmentMandatory',
         'Financial info is not enough for MF clients'
@@ -671,7 +674,7 @@ subtest 'MF accout types' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         },
         'FinancialAssessmentMandatory',
         'Trading experience is not enough for MF clients'
@@ -682,19 +685,19 @@ subtest 'MF accout types' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         });
-    ok($login, 'real standard account successfully created for an MF client');
-    is $mt5_account_info->{group}, 'real\maltainvest_standard', 'correct MF standard group';
+    ok($login, 'real financial account successfully created for an MF client');
+    is $mt5_account_info->{group}, 'real\maltainvest_financial', 'correct MF financial group';
 
     create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'MT5NotAllowed',
-        'MF client cannot create a real advanced account'
+        'MF client cannot create a real financial_stp account'
     );
 
     $client->status->set("professional");
@@ -703,10 +706,10 @@ subtest 'MF accout types' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'MT5NotAllowed',
-        'MF client cannot create a real advanced account - even if they are professionals'
+        'MF client cannot create a real financial_stp account - even if they are professionals'
     );
     $client->status->clear_professional;
     $client->save;
@@ -732,20 +735,20 @@ subtest 'MX account types' => sub {
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         },
         'FinancialAccountMissing',
-        'MX client cannot create mt5 advanced demo account without any MF sibling'
+        'MX client cannot create mt5 financial_stp demo account without any MF sibling'
     );
 
     create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'MT5NotAllowed',
-        'MX client cannot create mt5 advanced demo account'
+        'MX client cannot create mt5 financial_stp demo account'
     );
 
     create_mt5_account->(
@@ -775,7 +778,7 @@ subtest 'MX account types' => sub {
         $c, $token, $client,
         {
             account_type     => 'gaming',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         },
         'MT5NotAllowed',
         'MF client upgraded from MX cannot create mt5 gaming account'
@@ -819,17 +822,17 @@ subtest 'VR account types - CR residence' => sub {
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         });
-    is $mt5_account_info->{group}, 'demo\svg_standard', 'correct VRTC standard demo group';
+    is $mt5_account_info->{group}, 'demo\svg_financial', 'correct VRTC financial demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         });
-    is $mt5_account_info->{group}, 'demo\labuan_advanced', 'correct VRTC advanced demo group';
+    is $mt5_account_info->{group}, 'demo\labuan_financial_stp', 'correct VRTC financial_stp demo group';
 
     #real accounts
     create_mt5_account->(
@@ -841,7 +844,7 @@ subtest 'VR account types - CR residence' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         },
         'RealAccountMissing',
         'Real financial MT5 account creation is not allowed from a virtual account'
@@ -851,10 +854,10 @@ subtest 'VR account types - CR residence' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'RealAccountMissing',
-        'Real advanced financial MT5 account creation is not allowed from a virtual account'
+        'Real financial_stp MT5 account creation is not allowed from a virtual account'
     );
 
 };
@@ -887,18 +890,18 @@ subtest 'Virtual account types - EU residences' => sub {
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         });
-    is $mt5_account_info->{group}, 'demo\maltainvest_standard', 'correct VRTC standard demo group';
+    is $mt5_account_info->{group}, 'demo\maltainvest_financial', 'correct VRTC financial demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'MT5NotAllowed',
-        'Advanced financial MT5 account is not available in this country'
+        'Financial STP MT5 account is not available in this country'
     );
 
     #real accounts
@@ -911,7 +914,7 @@ subtest 'Virtual account types - EU residences' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         },
         'RealAccountMissing',
         'Real financial MT5 account creation is not allowed from a virtual account'
@@ -921,10 +924,10 @@ subtest 'Virtual account types - EU residences' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'MT5NotAllowed',
-        'Advanced financial MT5 account is not available in this country'
+        'Financial STP MT5 account is not available in this country'
     );
 
     my $mf_client = create_client('MF');
@@ -942,9 +945,9 @@ subtest 'Virtual account types - EU residences' => sub {
         $c, $token, $mf_client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         });
-    is $mt5_account_info->{group}, 'real\maltainvest_standard_GBP', 'correct VRTC standard demo group with GBP currency';
+    is $mt5_account_info->{group}, 'real\maltainvest_financial_GBP', 'correct VRTC financial demo group with GBP currency';
 
 };
 
@@ -968,10 +971,10 @@ subtest 'Virtual account types - GB residence' => sub {
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         },
         'FinancialAccountMissing',
-        'Virtual GB client cannot create a standard financial MT5 accout'
+        'Virtual GB client cannot create a financial MT5 account'
     );
     $client->status->set('age_verification', 'test', 'test');
     $client->save();
@@ -990,20 +993,20 @@ subtest 'Virtual account types - GB residence' => sub {
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         },
         'FinancialAccountMissing',
-        'Unable to create MT5 financial standard account from GB even after age verification'
+        'Unable to create MT5 financial account from GB even after age verification'
     );
 
     $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'MT5NotAllowed',
-        'Advanced demo MT5 account is not available in this country'
+        'Financial STP demo MT5 account is not available in this country'
     );
 
     #real accounts
@@ -1025,7 +1028,7 @@ subtest 'Virtual account types - GB residence' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'standard'
+            mt5_account_type => 'financial'
         },
         'RealAccountMissing',
         'Real financial MT5 account creation is not allowed from a virtual account'
@@ -1035,10 +1038,10 @@ subtest 'Virtual account types - GB residence' => sub {
         $c, $token, $client,
         {
             account_type     => 'financial',
-            mt5_account_type => 'advanced'
+            mt5_account_type => 'financial_stp'
         },
         'MT5NotAllowed',
-        'Advanced financial MT5 account is not available in this country'
+        'Financial STP MT5 account is not available in this country'
     );
 
 };
@@ -1109,7 +1112,7 @@ foreach my $broker_code (keys %lc_company_specific_details) {
             $vr_client,
             {
                 account_type     => 'financial',
-                mt5_account_type => 'standard'
+                mt5_account_type => 'financial'
             },
             $error_code,
             'Real financial ' . $message . ' disabled'
@@ -1124,10 +1127,10 @@ foreach my $broker_code (keys %lc_company_specific_details) {
                 $vr_client,
                 {
                     account_type     => 'financial',
-                    mt5_account_type => 'advanced'
+                    mt5_account_type => 'financial_stp'
                 },
                 $error_code,
-                'Real financial advanced ' . $message . ' disabled'
+                'Real financial_stp ' . $message . ' disabled'
             );
         }
         $client->status->clear_disabled;
@@ -1141,7 +1144,7 @@ foreach my $broker_code (keys %lc_company_specific_details) {
             $vr_client,
             {
                 account_type     => 'financial',
-                mt5_account_type => 'standard'
+                mt5_account_type => 'financial'
             },
             $error_code,
             'Real financial ' . $message . ' duplicate'
@@ -1156,10 +1159,10 @@ foreach my $broker_code (keys %lc_company_specific_details) {
                 $vr_client,
                 {
                     account_type     => 'financial',
-                    mt5_account_type => 'advanced'
+                    mt5_account_type => 'financial_stp'
                 },
                 $error_code,
-                'Real financial advanced ' . $message . ' disabled'
+                'Real financial_stp ' . $message . ' disabled'
             );
         }
         $client->status->clear_duplicate_account;
@@ -1176,7 +1179,7 @@ sub create_mt5_account {
         token    => $token,
         args     => {
             account_type => 'demo',
-            #mt5_account_type => 'standard',
+            #mt5_account_type => 'financial',
             country        => 'mt',
             email          => 'test.account@binary.com',
             name           => 'MT5 lover',

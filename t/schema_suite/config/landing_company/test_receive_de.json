@@ -49,7 +49,7 @@
          "additionalProperties" : false
       },
       "mt_financial_company" : {
-          "standard" : {
+          "financial" : {
               "name" : "Binary Investments (Europe) Ltd",
               "shortcode" : "maltainvest",
               "changeable_fields" : {},

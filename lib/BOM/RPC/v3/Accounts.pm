@@ -203,22 +203,22 @@ rpc "landing_company",
     # mt5 structure as per country config
     # 'mt' => {
     #    'gaming' => {
-    #         'standard' => 'none'
+    #         'financial' => 'none'
     #    },
     #    'financial' => {
-    #         'advanced' => 'none',
-    #         'standard' => 'none'
+    #         'financial_stp' => 'none',
+    #         'financial' => 'none'
     #    }
     # }
 
     # need to send it like
     # {
     #   mt_gaming_company: {
-    #    standard: {}
+    #    financial: {}
     #   },
     #   mt_financial_company: {
-    #    advanced: {},
-    #    standard: {}
+    #    financial_stp: {},
+    #    financial: {}
     #   }
     # }
 

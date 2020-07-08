@@ -47,8 +47,8 @@ use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
 use constant MT5_MALTAINVEST_MOCK_LEVERAGE => 33;
 use constant MT5_MALTAINVEST_REAL_LEVERAGE => 30;
 
-use constant MT5_SVG_STANDARD_MOCK_LEVERAGE => 1;
-use constant MT5_SVG_STANDARD_REAL_LEVERAGE => 1000;
+use constant MT5_SVG_FINANCIAL_MOCK_LEVERAGE => 1;
+use constant MT5_SVG_FINANCIAL_REAL_LEVERAGE => 1000;
 
 # Defines mt5 account rights combination when trading is enabled
 use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
@@ -182,7 +182,7 @@ sub reset_throttler {
 
 sub _mt5_group {
     # account_type:     demo|gaming|financial
-    # sub_account_type: standard|advanced
+    # sub_account_type: financial|financial_stp
     my ($company_name, $account_type, $sub_account_type, $currency) = @_;
 
     # for Maltainvest if the client uses GBP as currency we should add this to the group name
@@ -232,7 +232,7 @@ async_rpc "mt5_new_account",
     return create_error_future('MT5SamePassword') if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
 
     return create_error_future('InvalidSubAccountType')
-        if ($mt5_account_type and $mt5_account_type !~ /^standard|advanced$/)
+        if ($mt5_account_type and $mt5_account_type !~ /^financial|financial_stp/)
         or ($account_type eq 'financial' and $mt5_account_type eq '');
 
     # legal validation
@@ -361,9 +361,9 @@ async_rpc "mt5_new_account",
 
                 # hacky way to compare and throw error for duplicate
                 # as client have only one of
-                # real\vanuatu_standard and real\svg_standard
+                # real\vanuatu_financial and real\svg_financial
                 my ($group_account_type, $group_mt5_account_type);
-                ($group_account_type, $group_mt5_account_type) = $group =~ /^([a-z]+)\\[a-z]+_([a-z]+)(?:_[A-Z]+)?$/ if $mt5_account_type;
+                ($group_account_type, $group_mt5_account_type) = $group =~ /^([a-z]+)\\[a-z]+_([a-z_]+)(?:_[A-Z]+)?$/ if $mt5_account_type;
 
                 if ($login_group eq $group or ($mt5_account_type and $login_group =~ /^$group_account_type\\[a-z]+_$group_mt5_account_type$/)) {
                     my $login = $_->{login};
@@ -388,9 +388,9 @@ async_rpc "mt5_new_account",
                     # but MT5 only support 33
                     if ($group_details->{leverage} == MT5_MALTAINVEST_MOCK_LEVERAGE) {
                         $group_details->{leverage} = MT5_MALTAINVEST_REAL_LEVERAGE;
-                    } elsif ($group_details->{leverage} == MT5_SVG_STANDARD_MOCK_LEVERAGE) {
+                    } elsif ($group_details->{leverage} == MT5_SVG_FINANCIAL_MOCK_LEVERAGE) {
                         # MT5 bug it should be solved by MetaQuote
-                        $group_details->{leverage} = MT5_SVG_STANDARD_REAL_LEVERAGE;
+                        $group_details->{leverage} = MT5_SVG_FINANCIAL_REAL_LEVERAGE;
                     }
 
                     my $client_info = $client->get_mt5_details();
@@ -1219,7 +1219,7 @@ async_rpc "mt5_deposit",
                     mt5_id        => $to_mt5,
                     action        => 'deposit',
                     amount_in_USD => convert_currency($amount, $fm_client->currency, 'USD'),
-                }) if ($response->{mt5_data}->{group} eq 'real\vanuatu_standard');
+                }) if ($response->{mt5_data}->{group} eq 'real\vanuatu_financial');
 
             my $txn_id = $txn->transaction_id;
             # 31 character limit for MT5 comments
@@ -1371,7 +1371,7 @@ async_rpc "mt5_withdrawal",
                                 mt5_id        => $fm_mt5,
                                 action        => 'withdraw',
                                 amount_in_USD => $amount,
-                            }) if ($mt5_group eq 'real\vanuatu_standard');
+                            }) if ($mt5_group eq 'real\vanuatu_financial');
 
                         return Future->done({
                             status                => 1,
@@ -1579,7 +1579,7 @@ sub _mt5_validate_and_get_amount {
                 and ($client->status->no_withdrawal_or_trading or $client->status->withdrawal_locked));
 
             # Deposit should be locked if mt5 vanuatu/labuan account is disabled
-            if ($action eq 'deposit' and any { $mt5_group eq $_ } qw/real\labuan_advanced real\vanuatu_standard/) {
+            if ($action eq 'deposit' and any { $mt5_group eq $_ } qw/real\labuan_financial_stp real\vanuatu_financial/) {
                 my $hex_rights   = BOM::Config::mt5_user_rights()->{'rights'};
                 my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
                 my %rights       = map { $_ => $setting->{rights} & $known_rights{$_} ? 1 : 0 } keys %known_rights;
@@ -1728,7 +1728,7 @@ sub _fetch_mt5_lc {
     my $lc_short;
 
     # This extracts the landing company name from the mt5 group name
-    # E.g. real\labuan -> labuan , real\vanuatu_standard -> vanuatu, real\svg_standard -> svg
+    # E.g. real\labuan -> labuan , real\vanuatu_financial -> vanuatu, real\svg_financial -> svg
 
     if ($settings->{group} =~ m/[a-zA-Z]+\\([a-zA-Z]+)($|_.+)/) {
         $lc_short = $1;

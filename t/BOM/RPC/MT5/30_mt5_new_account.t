@@ -80,7 +80,7 @@ subtest 'new account with invalid main or investor password format' => sub {
             company          => "Binary Limited",
             country          => "mt",
             mainPassword     => "abc123",
-            mt5_account_type => "standard",
+            mt5_account_type => "financial",
             phone            => "+6123456789",
             phonePassword    => "AbcDv1234",
             state            => "Valleta",
@@ -119,7 +119,7 @@ subtest 'new account with missing signup fields' => sub {
         token    => $token,
         args     => {
             account_type     => 'financial',
-            mt5_account_type => 'advanced',
+            mt5_account_type => 'financial_stp',
             country          => 'mt',
             email            => $DETAILS{email},
             name             => $DETAILS{name},
@@ -217,7 +217,7 @@ subtest 'status allow_document_upload is added upon mt5 create account dry_run a
             mainPassword     => $DETAILS{password},
             leverage         => 100,
             dry_run          => 1,
-            mt5_account_type => 'advanced',
+            mt5_account_type => 'financial_stp',
         },
     };
     $c->call_ok($method, $params)->has_error('You haven\'t authenticated your account. Please contact us for more information.');
@@ -334,7 +334,7 @@ subtest 'MF should be allowed' => sub {
         token    => $token,
         args     => {
             account_type     => 'financial',
-            mt5_account_type => 'standard',
+            mt5_account_type => 'financial',
             country          => 'es',
             email            => $DETAILS{email},
             name             => $DETAILS{name},
@@ -343,7 +343,7 @@ subtest 'MF should be allowed' => sub {
         },
     };
 
-    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account for financial standard with no tax information');
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account for financial with no tax information');
 
     $test_client->tax_residence('mt');
     $test_client->tax_identification_number('111222333');
@@ -405,12 +405,12 @@ subtest 'MF to MLT account switching' => sub {
 
     # MF client should be allowed to open financial account as well
     $params->{args}->{account_type}     = 'financial';
-    $params->{args}->{mt5_account_type} = 'standard';
+    $params->{args}->{mt5_account_type} = 'financial';
 
     BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
     BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
 
-    $c->call_ok($method, $params)->has_no_error('standard account should be created');
+    $c->call_ok($method, $params)->has_no_error('financial account should be created');
     is($c->result->{account_type}, 'financial', 'account type should be financial');
 };
 
@@ -449,7 +449,7 @@ subtest 'MLT to MF account switching' => sub {
         token    => $mlt_switch_token,
         args     => {
             account_type     => 'financial',
-            mt5_account_type => 'standard',
+            mt5_account_type => 'financial',
             country          => 'es',
             email            => $DETAILS{email},
             name             => $DETAILS{name},
@@ -554,7 +554,7 @@ subtest 'VRTC to MLT and MF account switching' => sub {
         token    => $vr_switch_token,
         args     => {
             account_type     => 'financial',
-            mt5_account_type => 'standard',
+            mt5_account_type => 'financial',
             country          => 'es',
             email            => $DETAILS{email},
             name             => $DETAILS{name},
