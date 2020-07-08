@@ -220,10 +220,13 @@ is $error, undef, 'no error buying contract';
 # perform 2 p2p escrow transactions
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
-my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type=>'buy');
-my $order = BOM::Test::Helper::P2P::create_order(amount=>50, advert_id=>$advert->{id}, client=>$test_client);
-$advertiser->p2p_order_cancel(id=>$order->{id});
-
+my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
+my $order = BOM::Test::Helper::P2P::create_order(
+    amount    => 50,
+    advert_id => $advert->{id},
+    client    => $test_client
+);
+$advertiser->p2p_order_cancel(id => $order->{id});
 
 my $status = BOM::Event::Actions::CustomerStatement::_send_email_statement({
     client    => $test_client,
@@ -292,7 +295,7 @@ is scalar @overview,     7,  'overview cell count match';
 is scalar @close_trades, 16, 'close trades cell count match';
 is scalar @open_trades,  9,  'open trades cell count match';
 is scalar @payments,     16, 'payments cell count match';
-is scalar @escrow,       10,  'escrow cell count match';
+is scalar @escrow,       10, 'escrow cell count match';
 
 # check content of each row
 like $profile[2], qr/USD/,                             'account currency is USD';
@@ -342,9 +345,9 @@ for my $idx (0 .. $#expected) {
 }
 
 is $escrow[2], 'release', 'escrow release type';
-is $escrow[3], '50.00', 'escrow release amount';
-is $escrow[7], 'hold', 'escrow hold type';
-is $escrow[8], '-50.00', 'escrow hold amount';
+is $escrow[3], '50.00',   'escrow release amount';
+is $escrow[7], 'hold',    'escrow hold type';
+is $escrow[8], '-50.00',  'escrow hold amount';
 
 done_testing();
 1;

@@ -132,14 +132,13 @@ sub set_pending_transaction {
         # generally a sweep transaction
         unless (scalar @rows) {
             my $reserved_addresses = $currency->get_reserved_addresses();
+            my $address            = shift $transaction->{to}->@*;
             # for transactions from our internal sweeps or external wallets
             # we don't want to print the error message since they are happening
             # correctly
-            unless (any { $_ && $transaction->{to} eq $_ } $reserved_addresses->@*) {
-                $log->warnf(
-                    "%s Transaction not found for address: %s and transaction: %s",
-                    $transaction->{currency},
-                    $transaction->{to}, $transaction->{hash});
+
+            unless (any { $currency->compare_addresses($address, $_) } $reserved_addresses->@*) {
+                $log->warnf("%s Transaction not found for address: %s and transaction: %s", $transaction->{currency}, $address, $transaction->{hash});
                 stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
             }
             # we want to ignore the transaction anyway

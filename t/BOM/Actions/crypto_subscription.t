@@ -322,8 +322,7 @@ sub _set_withdrawal_verified {
 
     $helper->dbic->run(
         fixup => sub {
-            $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?)',
-                undef, $txn_db_id, '{"":0}', undef, undef);
+            $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?)', undef, $txn_db_id, '{"":0}', undef, undef);
         });
 }
 
