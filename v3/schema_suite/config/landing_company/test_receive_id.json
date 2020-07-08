@@ -18,7 +18,7 @@
          "properties" : {
             "mt_financial_company" : {
                "properties" : {
-                  "standard" : {
+                  "financial" : {
                       "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"],
                       "type": "object",
                      "has_reality_check" : {
@@ -73,7 +73,7 @@
                         }
                      }
                   },
-                  "advanced" : {
+                  "financial_stp" : {
                       "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"],
                      "type" : "object",
                      "legal_allowed_markets" : {
@@ -129,11 +129,11 @@
                   }
                },
                "type" : "object",
-               "required" : ["standard", "advanced"]
+               "required" : ["financial", "financial_stp"]
             },
             "mt_gaming_company" : {
                "properties" : {
-                  "standard" : {
+                  "financial" : {
                      "type" : "object",
                      "legal_allowed_markets" : {
                         "type" : "array",
