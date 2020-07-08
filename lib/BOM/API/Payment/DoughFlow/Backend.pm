@@ -9,6 +9,7 @@ use Guard;
 use Syntax::Keyword::Try;
 use Date::Utility;
 use Data::Dumper;
+use Text::Trim;
 
 use Format::Util::Numbers qw/financialrounding/;
 
@@ -57,7 +58,7 @@ sub execute {
         $client->status->clear_pa_withdrawal_explicitly_allowed;
     }
 
-    if ($c->type eq 'withdrawal_reversal') {
+    if ($c->type =~ /^(withdrawal_reversal|payout_rejected)$/) {
         if (my $err = $c->validate_params) {
             return $c->status_bad_request($err);
         }
@@ -94,7 +95,14 @@ sub comment {
         $fields{$var} = $c->request_parameters->{$var};
     }
 
-    my $line = "DoughFlow " . $c->type . " trace_id=" . $c->request_parameters->{'trace_id'};
+    my %mapping = (
+        payout_inprogress => 'withdrawal',
+        payout_rejected   => 'withdrawal_reversal',
+    );
+
+    my $type = $mapping{$c->type} // $c->type;
+
+    my $line = "DoughFlow $type trace_id=" . $c->request_parameters->{'trace_id'};
 
     # Put all of the additional comment fields in alphabetic order after the trace ID
     my @non_empty_fields = (sort { $a cmp $b } (grep { defined($fields{$_}) and length($fields{$_}) } (keys %fields)));
@@ -110,6 +118,8 @@ sub validate_params {
 
     my $type   = $c->type;
     my $method = $c->req->method;
+
+    $c->request_parameters->{trace_id} = trim($c->request_parameters->{trace_id}) if $c->request_parameters->{trace_id};
 
     my @required = qw/reference_number currency_code/;
     if ($method eq 'POST' || $type eq 'deposit_validate' || $type eq 'withdrawal_validate') {
@@ -256,7 +266,7 @@ sub write_transaction_line {
 
         _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
 
-    } elsif ($c->type eq 'withdrawal_reversal') {
+    } elsif ($c->type =~ /^(withdrawal_reversal|payout_rejected)$/) {
         if ($bonus or $fee) {
             return $c->status_bad_request('Bonuses and fees are not allowed for withdrawal reversals');
         }
@@ -289,7 +299,7 @@ sub check_predicates {
     });
 
     my $rejection;
-    if ($c->type eq 'withdrawal_reversal') {
+    if ($c->type =~ /^(withdrawal_reversal|payout_rejected)$/) {
         # In order to process this withdrawal reversion, we must first find a currency
         # file entry that describes the withdrawal being reversed. That entry must be
         # be a 'DoughFlow withdrawal' and must have the same trace_id as the one sent

@@ -37,11 +37,21 @@ like($r->content, qr[description="success"\s+status="0"], 'Correct content');
 my $balance_now = balance($loginid);
 is(0 + $balance_now, $starting_balance - 1.00, 'Correct final balance');
 
+# exceeds balance
+$r = update_payout(
+    loginid => $loginid,
+    status  => 'inprogress',
+    amount  => $balance_now + 1
+);
+is($r->code, 403, 'Error code for balance exceeded');
+like($r->decoded_content, qr/exceeds client balance/, 'Message for balance exceeded');
+is(balance($loginid), $balance_now, 'Correct final balance (unchanged)');
+
 # Failed tests
 $r = update_payout(
     loginid  => $loginid,
     status   => 'inprogress',
-    trace_id => ' 123'
+    trace_id => ' -123 '
 );
 is($r->code,    400,           'Correct failure status code');
 is($r->message, 'Bad Request', 'Correct message');
@@ -52,14 +62,14 @@ like(
 );
 is(balance($loginid), $balance_now, 'Correct final balance (unchanged)');
 
-# exceeds balance
+# trim trace id
 $r = update_payout(
     loginid => $loginid,
+    trace_id => ' 123 ',
     status  => 'inprogress',
-    amount  => $balance_now + 1
+    amount  => 1
 );
-is($r->code, 403, 'Error code for balance exceeded');
-like($r->decoded_content, qr/exceeds client balance/, 'Message for balance exceeded');
-is(balance($loginid), $balance_now, 'Correct final balance (unchanged)');
+is($r->code,    200,  'correct status code');
+is balance($loginid)+0, 0, 'withdraw successful';
 
 done_testing();

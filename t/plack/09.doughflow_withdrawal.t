@@ -54,7 +54,7 @@ subtest 'Wrong trace id' => sub {
     my $current_balance = balance $loginid;
     my $req             = withdraw(
         loginid  => $loginid,
-        trace_id => ' 123',
+        trace_id => ' -123',
     );
 
     is $req->code, 400, 'Correct bad request status code';
