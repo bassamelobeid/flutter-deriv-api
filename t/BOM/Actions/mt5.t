@@ -117,7 +117,7 @@ subtest 'mt5 track event' => sub {
             'mt5_login_id'     => 'MTR90000',
             'language'         => 'EN',
             'cs_email'         => 'test_cs@bin.com',
-            'sub_account_type' => 'standard'
+            'sub_account_type' => 'financial'
         };
         undef @identify_args;
         undef @track_args;
@@ -142,7 +142,7 @@ subtest 'mt5 track event' => sub {
                 'language'          => 'EN',
                 'mt5_group'         => 'real\\svg',
                 'mt5_loginid'       => 'MTR90000',
-                'sub_account_type'  => 'standard',
+                'sub_account_type'  => 'financial',
                 'client_first_name' => $test_client->first_name,
                 'type_label'        => ucfirst $mt5_details->{type_label},
                 'mt5_integer_id'    => '90000',
