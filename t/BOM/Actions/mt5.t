@@ -217,7 +217,7 @@ subtest 'sanctions' => sub {
         'mt5_login_id'     => 'MTR90000',
         'language'         => 'EN',
         'cs_email'         => 'test_cs@bin.com',
-        'sub_account_type' => 'standard'
+        'sub_account_type' => 'financial'
     };
 
     my $action_handler = BOM::Event::Process::get_action_mappings()->{new_mt5_signup};
@@ -255,10 +255,10 @@ subtest 'mt5 account opening mail' => sub {
 
     # We'll permutate brands, mt5 account types and real/demo accounts
     my $setup = {
-        brands   => ['deriv',    'binary'],
-        types    => ['standard', 'advanced', ''],
-        category => ['real',     'demo'],
-        langs    => ['en',       'es']};
+        brands   => ['deriv',     'binary'],
+        types    => ['financial', 'financial_stp', ''],
+        category => ['real',      'demo'],
+        langs    => ['en',        'es']};
 
     # Perform tests
     for my $brand (@{$setup->{brands}}) {
