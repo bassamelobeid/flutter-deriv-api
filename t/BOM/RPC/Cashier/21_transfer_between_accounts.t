@@ -414,8 +414,8 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
 
     my $email       = 'new_email' . rand(999) . '@binary.com';
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => $email,
+        broker_code            => 'CR',
+        email                  => $email,
         account_opening_reason => 'no reason',
     });
     $test_client->set_default_account('USD');
@@ -477,7 +477,7 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
         token    => $token,
         args     => {
             account_type     => 'demo',
-            mt5_account_type => 'standard',
+            mt5_account_type => 'financial',
             investPassword   => $DETAILS{investPassword},
             mainPassword     => $DETAILS{password}{main},
         },
@@ -485,26 +485,26 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
     $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for demo mt5_new_account');
 
     $params->{args}{account_type}     = 'financial';
-    $params->{args}{mt5_account_type} = 'standard';
-    $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for standard mt5_new_account');
+    $params->{args}{mt5_account_type} = 'financial';
+    $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for financial mt5_new_account');
 
     $params->{args}{account_type}     = 'financial';
-    $params->{args}{mt5_account_type} = 'advanced';
-    $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for advanced mt5_new_account');
+    $params->{args}{mt5_account_type} = 'financial_stp';
+    $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for financial_stp mt5_new_account');
 
     my @mt5_accounts = ({
-            loginid      => 'MTR' . $ACCOUNTS{'real\svg_standard'},
+            loginid      => 'MTR' . $ACCOUNTS{'real\svg_financial'},
             balance      => num($DETAILS{balance}),
             currency     => 'USD',
             account_type => 'mt5',
-            mt5_group    => 'real\\svg_standard'
+            mt5_group    => 'real\\svg_financial'
         },
         {
-            loginid      => 'MTR' . $ACCOUNTS{'real\labuan_advanced'},
+            loginid      => 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'},
             balance      => num($DETAILS{balance}),
             currency     => 'USD',
             account_type => 'mt5',
-            mt5_group    => 'real\\labuan_advanced'
+            mt5_group    => 'real\\labuan_financial_stp'
         },
     );
     $params->{args} = {accounts => 'all'};

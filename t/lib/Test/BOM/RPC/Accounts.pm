@@ -9,15 +9,15 @@ use warnings;
 
 our %MT5_ACCOUNTS = (
     'demo\svg_financial'             => '00000001',
-    'demo\svg_financial_stp'             => '00000002',
+    'demo\svg_financial_stp'         => '00000002',
     'demo\labuan_financial'          => '00000003',
-    'demo\labuan_financial_stp'          => '00000004',
-    'real\malta'                    => '00000010',
+    'demo\labuan_financial_stp'      => '00000004',
+    'real\malta'                     => '00000010',
     'real\maltainvest_financial'     => '00000011',
     'real\maltainvest_financial_GBP' => '00000012',
-    'real\svg'                      => '00000013',
+    'real\svg'                       => '00000013',
     'real\svg_financial'             => '00000014',
-    'real\labuan_financial_stp'          => '00000015',
+    'real\labuan_financial_stp'      => '00000015',
 );
 
 our %ACCOUNT_DETAILS = (

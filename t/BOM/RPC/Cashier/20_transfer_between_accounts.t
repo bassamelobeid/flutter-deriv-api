@@ -1320,7 +1320,7 @@ subtest 'MT5' => sub {
         account_from => 'MTR' . $ACCOUNTS{'real\svg_financial'},
         account_to   => 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'},
         currency     => "USD",
-        amount       => 180                                          # this is the only deposit amount allowed by mock MT5
+        amount       => 180                                               # this is the only deposit amount allowed by mock MT5
     };
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5->MT5 transfer error code')
         ->error_message_is('Transfer between two MT5 accounts is not allowed.', 'MT5->MT5 transfer error message');
@@ -1357,7 +1357,6 @@ subtest 'MT5' => sub {
         );
     #remove cashier_locked
     $test_client_btc->status->clear_cashier_locked;
-
 
     $params->{args}{account_from} = $test_client->loginid;
     $params->{args}{currency}     = 'USD';
@@ -1403,7 +1402,7 @@ subtest 'MT5' => sub {
 
     $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\svg_financial'};
     $params->{args}{account_to}   = $test_client->loginid;
-    $params->{args}{amount}       = 150;                                      # this is the only withdrawal amount allowed by mock MT5
+    $params->{args}{amount}       = 150;                                       # this is the only withdrawal amount allowed by mock MT5
 
     _test_events_prepare();
     $test_client->status->set('transfers_blocked', 'system', 'testing transfers_blocked for mt5 -> real');

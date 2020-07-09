@@ -138,7 +138,7 @@ subtest 'Password Reset Verification' => sub {
     is $verification->{subject}, "Reset your $website_name account password", 'reset password verification subject';
     is $verification->{message}, get_verification_message('reset_password'), 'Password Reset with token';
 
-    $user_mocked->mock('new', sub{ return bless {has_social_signup => 1}, 'BOM::User'});
+    $user_mocked->mock('new', sub { return bless {has_social_signup => 1}, 'BOM::User' });
 
     $verification = get_verification($verification_type, 1);
 

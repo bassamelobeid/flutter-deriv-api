@@ -5,13 +5,13 @@ use Test::More;
 use BOM::RPC::v3::MT5::Account;
 
 my %account_lc_short = (
-    'real\malta'                    => 'malta',
-    'real\iom'                      => 'iom',
+    'real\malta'                     => 'malta',
+    'real\iom'                       => 'iom',
     'real\svg_financial'             => 'svg',
-    'real\labuan_financial_stp'          => 'labuan',
+    'real\labuan_financial_stp'      => 'labuan',
     'real\maltainvest_financial'     => 'maltainvest',
     'real\maltainvest_financial_GBP' => 'maltainvest',
-    'real\svg'                      => 'svg',
+    'real\svg'                       => 'svg',
 );
 
 subtest 'Extract landing company short' => sub {

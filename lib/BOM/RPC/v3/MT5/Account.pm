@@ -325,7 +325,7 @@ async_rpc "mt5_new_account",
         $client->status->set('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
         return create_error_future('AuthenticateAccount');
     }
-    if ($client->tax_residence and $account_type ne 'demo' and $group eq 'real\labuan_advanced') {
+    if ($client->tax_residence and $account_type ne 'demo' and $group eq 'real\labuan_financial_stp') {
         # In case of having more than a tax residence, client residence will be replaced.
         my $selected_tax_residence = $client->tax_residence =~ /\,/g ? $client->residence : $client->tax_residence;
         my $tin_format = $countries_instance->get_tin_format($selected_tax_residence);

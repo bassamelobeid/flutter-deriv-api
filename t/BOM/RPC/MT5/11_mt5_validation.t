@@ -171,7 +171,6 @@ subtest 'new account' => sub {
         'Correct error message if citizen is missing for financial_stp account';
     cmp_bag($result->{error}{details}{missing}, ['citizen', 'account_opening_reason'], 'Missing citizen should be under details.');
 
-
     $params->{args}->{account_type} = 'gaming';
 
     $test_client->account_opening_reason('speculatove');
@@ -410,8 +409,8 @@ subtest 'CR account types - high risk' => sub {
             account_type     => 'financial',
             mt5_account_type => 'financial'
         });
-    ok $login, 'standard financial mt5 account is created without authentication';
-    is $mt5_account_info->{group}, 'real\svg_standard', 'correct CR standard financial group';
+    ok $login, 'financial mt5 account is created without authentication';
+    is $mt5_account_info->{group}, 'real\svg_financial', 'correct CR financial group';
 
     my $error = create_mt5_account->(
         $c, $token, $client,
@@ -425,7 +424,6 @@ subtest 'CR account types - high risk' => sub {
     cmp_bag($error->{details}{missing}, ['account_opening_reason'], 'Missing account_opening_reason should appear in details.');
     $client->account_opening_reason('Speculative');
     $client->save();
-
 
     create_mt5_account->(
         $c, $token, $client,
