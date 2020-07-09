@@ -156,7 +156,7 @@ bet_limits:
           EUR: 0.5
           AUD: 0.5
           GBP: 0.5
-          BTC: 0.00005
+          BTC: 0.0002 # TODO: JB, This should be updated to 0.00005 after fixing scientific number in shortcode
           ETH: 0.002
           LTC: 0.01
           DAI: 0.5
@@ -191,7 +191,7 @@ bet_limits:
           EUR: 0.35
           AUD: 0.35
           GBP: 0.35
-          BTC: 0.00005
+          BTC: 0.0002 # TODO: JB, This should be updated to 0.00005 after fixing scientific number in shortcode
           ETH: 0.002
           LTC: 0.01
           DAI: 0.35
