@@ -469,9 +469,12 @@ sub output_validation {
         $error_msg = "An error occurred, please try again.";
     }
 
-    %$api_response =
-        %{$c->new_error($req_storage->{msg_type} || $req_storage->{name}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error_msg)
-        };
+    %$api_response = %{
+        $c->new_error(
+            $api_response->{msg_type} || $req_storage->{msg_type} || $req_storage->{name},
+            'OutputValidationFailed',
+            $c->l("Output validation failed: ") . $error_msg
+        )};
 
     return;
 }
