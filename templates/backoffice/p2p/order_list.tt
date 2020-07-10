@@ -18,6 +18,16 @@
 [% END %]
 [% WRAPPER layout title='P2P Orders' %]
 <table>
+    <tr><td><b>Status</b></td><td><b>Description</b></td><td><b>Funds location</b></td><tr/>
+    <tr><td>pending</td><td>Order newly created, no confirmations yet</td><td>Escrow</td></tr>
+    <tr><td>buyer-confirmed</td><td>The buyer has clicked "I've paid"</td><td>Escrow</td></tr>
+    <tr><td>completed</td><td>Seller confirmed receipt of payment before timeout, or CS resolved timed-out order in favour of buyer</td><td>Buyer</td></tr>
+    <tr><td>timed-out</td><td>Order timed out while in buyer-confirmed status</td><td>Escrow</td></tr>
+    <tr><td>refunded</td><td>Order timed out while in pending status, or CS resolved timed-out order in favour of seller</td><td>Seller</td></tr>
+    <tr><td>cancelled</td><td>Order cancelled by buyer while in pending status</td><td>Seller</td></tr>
+</table>
+</br>
+<table>
 <table class="collapsed hover alternate" border="1">
     <tbody><tr>
         <th>Order ID</th>
@@ -35,7 +45,7 @@
     </tr>
     [% FOREACH order IN orders %]
         <tr>
-            <td><a href="[% request.url_for('backoffice/p2p_order_manage.cgi', {order_id => order.id}) %]">[% order.id %]</a></td>
+            <td><a style="display:block;width:100%;" href="[% request.url_for('backoffice/p2p_order_manage.cgi', {order_id => order.id}) %]">[% order.id %]</a></td>
             <td>[% order.client_loginid %]</td>
             <td>[% order.created_time %]</td>
             <td [% order.is_expired ? 'style=color:red;' : 'style=color:green;' %]>[% order.expire_time %]</td>

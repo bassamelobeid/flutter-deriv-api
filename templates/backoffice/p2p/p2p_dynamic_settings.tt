@@ -1,0 +1,45 @@
+<style>
+    #message div {
+        background-color:white;
+        width: 40%;
+        font-weight: bold;
+        padding: 10px;
+        word-break: break-word;
+    }
+    #saved {
+        color:green;
+        }
+    #error {
+        color: red;
+    }
+</style>
+
+<form action="[% request.url_for('backoffice/p2p_dynamic_settings.cgi') %]" method="post">
+    [% FOR setting IN settings.keys.sort %]
+        <hr/>
+        <h3>[% setting %]</h3>
+        <p>[% settings.$setting.description %]</p>
+        [% IF settings.$setting.type == 'Bool' %]
+        <select name="[% setting %]" style="width: 70px;">
+            <option value="1" [% settings.$setting.value && 'selected' %]>Yes</option>
+            <option value="0" [% !settings.$setting.value && 'selected' %]>No</option>
+        </select>
+        &nbsp;&nbsp;current: [% IF settings.$setting.value %]Yes[% ELSE %]No[% END %]
+        [% ELSIF settings.$setting.type == 'ArrayRef' %]
+        <table border="0"><tr>
+        <td><textarea name="$setting" rows="[% settings.$setting.value.size + 1 %]">[% settings.$setting.value.join("\n") %]</textarea></td>
+        <td valign="top">current:
+        [% FOREACH v IN settings.$setting.value %]
+           <br/>[% loop.count %]. [% v %]
+            [% IF setting == 'payments.p2p.escrow' %] ([% escrow_currencies.$v %])[% ELSIF setting == 'payments.p2p.available_for_countries' %] ([% country_names.$v %])[% END %]
+        [% END %]
+        </td></tr></table>
+        [% ELSE %]
+        <input name="$setting" style="width: [% IF settings.$setting.type == 'Num' %]70px;[% ELSE %]300px;[% END %]" value="[% settings.$setting.value %]">
+        &nbsp;&nbsp;current: [% settings.$setting.value %]
+        [% END %]
+    [% END %]
+    <hr/>
+    <input type="hidden" name="revision" value="[% revision %]"/>
+    <button type="submit" name="save" value="1">Save Dynamic Settings</button></td>
+</form>

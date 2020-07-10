@@ -29,7 +29,7 @@ my $db = BOM::Database::ClientDB->new({
         operation   => 'write'
     })->db->dbic;
 
-my ($order, $transactions);
+my ($order, $escrow, $transactions);
 
 Bar('P2P Order details/management');
 
@@ -40,14 +40,9 @@ if (my $action = $input{action} and $p2p_write) {
             fixup => sub {
                 $_->selectrow_array('SELECT status, account_currency FROM p2p.order_list(?,NULL,NULL,NULL)', undef, $input{order_id});
             });
-        die "Order is in $status status and cannot be resolved now.\n" unless $status eq 'timed-out';
 
-        my @escrow_list = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow->@*;
-        my $escrow;
-        foreach my $loginid (@escrow_list) {
-            $escrow = BOM::User::Client->new({loginid => $loginid});
-            last if $escrow->broker eq $broker && $escrow->currency eq $currency;
-        }
+        die "Order is in $status status and cannot be resolved now.\n" unless $status eq 'timed-out';
+        $escrow = get_escrow($broker, $currency);
         die "No escrow account is defined for $currency.\n" unless $escrow;
 
         my $txn_time = Date::Utility->new->datetime;
@@ -56,14 +51,14 @@ if (my $action = $input{action} and $p2p_write) {
         if ($action eq 'cancel') {
             $db->run(
                 fixup => sub {
-                    $_->do('SELECT p2p.order_cancel(?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow->loginid, 4, $staff, 'f', $txn_time);
+                    $_->do('SELECT p2p.order_cancel(?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, 'f', $txn_time);
                 });
         }
 
         if ($action eq 'complete') {
             $db->run(
                 fixup => sub {
-                    $_->do('SELECT p2p.order_complete(?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow->loginid, 4, $staff, $txn_time);
+                    $_->do('SELECT p2p.order_complete(?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, $txn_time);
                 });
         }
     }
@@ -97,6 +92,7 @@ if ($input{order_id}) {
         ($order->{$_} = $order->{$_} ? 'Yes' : 'No') for qw( client_confirmed advertiser_confirmed );
         $order->{$_} = ucfirst($order->{$_}) for qw( type status );
         $order->{payment_due} = $order->{amount} * $order->{advert_rate};
+        $escrow = get_escrow($broker, $order->{account_currency});
 
         $transactions = $db->run(
             fixup => sub {
@@ -124,8 +120,18 @@ BOM::Backoffice::Request::template()->process(
     {
         broker       => $broker,
         order        => $order,
+        escrow       => $escrow,
         transactions => $transactions,
         p2p_write    => $p2p_write,
     });
 
 code_exit_BO();
+
+sub get_escrow {
+    my ($broker, $currency) = @_;
+    my @escrow_list = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow->@*;
+    foreach my $loginid (@escrow_list) {
+        my $c = BOM::User::Client->new({loginid => $loginid});
+        return $c->loginid if $c->broker eq $broker && $c->currency eq $currency;
+    }
+}

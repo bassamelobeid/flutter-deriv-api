@@ -114,7 +114,7 @@ sub save_settings {
                     my $staff = BOM::Backoffice::Auth0::get_staffname();
                     BOM::Backoffice::QuantsAuditLog::log($staff, "updatedynamicsettingpage", $log_content);
                     $app_config->set($values_to_set);
-                    $message .= '<div id="saved">Saved global settings to environment, offerings updated</div>';
+                    $message .= '<div id="saved">Saved global settings to environment.</div>';
                 }
                 catch {
                     $message .= "<div id=\"error\">Could not save global settings to environment: $@</div>";
@@ -234,17 +234,6 @@ sub get_settings_by_group {
         ],
         payments => [qw(
                 payments.payment_limits
-                payments.p2p.enabled
-                payments.p2p.available
-                payments.p2p.clients
-                payments.p2p.email_to
-                payments.p2p.order_timeout
-                payments.p2p.escrow
-                payments.p2p.limits.count_per_day_per_client
-                payments.p2p.limits.maximum_advert
-                payments.p2p.limits.maximum_order
-                payments.p2p.available_for_countries
-                payments.p2p.available_for_currencies
                 payments.transfer_between_accounts.limits.between_accounts
                 payments.transfer_between_accounts.limits.MT5
                 payments.transfer_between_accounts.limits.fiat_to_crypto
@@ -281,6 +270,17 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.fees.default.crypto_fiat
                 payments.transfer_between_accounts.fees.default.stable_fiat
                 payments.transfer_between_accounts.fees.by_currency
+                payments.p2p.enabled
+                payments.p2p.available
+                payments.p2p.clients
+                payments.p2p.email_to
+                payments.p2p.order_timeout
+                payments.p2p.escrow
+                payments.p2p.limits.count_per_day_per_client
+                payments.p2p.limits.maximum_advert
+                payments.p2p.limits.maximum_order
+                payments.p2p.available_for_countries
+                payments.p2p.available_for_currencies
                 )]};
 
     my $app_config = BOM::Config::Runtime->instance->app_config;

@@ -208,18 +208,30 @@ print qq~
 				<td class="whitelabel"></td>
 			</tr>~;
 
-if (BOM::Backoffice::Auth0::has_authorisation(['QuantsWrite'])) {
+my $band_mgt = BOM::Backoffice::Auth0::has_authorisation(['QuantsWrite']);
+my $p2p_settings = BOM::Backoffice::Auth0::has_authorisation(['Quants']) && BOM::Backoffice::Auth0::has_authorisation(['IT']);
+
+if ($band_mgt or $p2p_settings) {
     print qq~
 			<tr>
-				<td align="center" width="50%">
+				<td align="center" width="50%">~;
+    if ($band_mgt) {
+        print qq~
 					<p><b>BAND CONFIGURATION</b></p>
 					<form action="~ . request()->url_for('backoffice/p2p_band_management.cgi') . qq~" method="get"><font size=2>
 						<b>$brokerselection</b>
 						&nbsp;<input type="submit" value="GO">
-					</font></form>
+					</font></form>~;
+    }
+    print qq~
 				</td>
-				<td align="center" width="50%">
-					 <!-- dashboard goes here -->
+				<td align="center" valign="top" width="50%">~;
+    if ($p2p_settings) {
+        print qq~
+					<p><b>DYNAMIC SETTINGS</b></p>
+					<a href="p2p_dynamic_settings.cgi">Go to P2P dynamic settings</a>~;
+    }
+    print qq~
 				</td>
 			</tr>~;
 }

@@ -108,6 +108,10 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
             <td>Contact info</td>
             <td>[% order.contact_info %]</td>
         </tr>
+        <tr>
+            <td>Escrow</td>
+            <td>[% escrow %]</td>
+        </tr>        
     </table>
 
     <h3>Transactions</h3>
@@ -154,8 +158,15 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
     [% IF p2p_write && order.status == 'Timed-out' %]
     <h3>Blocked order resolution</h3>
     <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker, order_id => order.id }) %]" method="post">
-        <button type="submit" name="action" value="cancel" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will refunded to [% order.seller %] and order status will change to \'refunded\'. This is irreversible.');">Resolve in favour of seller ([% order.seller %])</button>
-        <button type="submit" name="action" value="complete" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will credited to [% order.buyer %] and order status will change to \'completed\'. This is irreversible.');">Resolve in favour of buyer ([% order.buyer %])</button>
+    <table style="background:LightCoral;" cellpadding=5><tr><td>
+    <b>Resolve in favour of:</b>
+    </td></tr><tr><td>
+    <button style="width:150px;" type="submit" name="action" value="cancel" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will refunded to [% order.seller %] and order status will change to \'refunded\'. This is irreversible.');">SELLER</button>
+    This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to seller [% order.seller %].
+    </td></tr><tr><td>
+    <button style="width:150px;" type="submit" name="action" value="complete" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will credited to [% order.buyer %] and order status will change to \'completed\'. This is irreversible.');">BUYER</button>
+    This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to buyer [% order.buyer %].
+    </td></tr></tbody></table>
     </form>
     [% END %]
 
