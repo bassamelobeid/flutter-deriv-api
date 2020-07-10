@@ -92,8 +92,11 @@ Bar($loginid_bar);
 print "<span style='color:red; font-weight:bold; font-size:14px'>PAYMENT AGENT</span>" if ($pa and $pa->is_authenticated);
 
 # We either choose the dropdown currency from transaction page or use the client currency for quick jump
-my $currency = $client->currency;
-my $currency_wrapper = BOM::CTC::Currency->new(currency_code => $client->currency);
+my $currency         = $client->currency;
+my $currency_wrapper = BOM::CTC::Currency->new(
+    currency_code => $client->currency,
+    broker_code   => $broker,
+);
 if (my $currency_dropdown = request()->param('currency_dropdown')) {
     $currency = $currency_dropdown unless $currency_dropdown eq 'default';
 }
@@ -252,6 +255,12 @@ if (@trxns) {
     }
 
     Bar('CRYPTOCURRENCY ACTIVITY');
+    my ($prioritize_trx_id, $prioritize_result);
+    if ($action && $action eq 'prioritize') {
+        $prioritize_trx_id = request()->param('db_row_id');
+        $prioritize_result = prioritize_address($currency_wrapper, request()->param('prioritize_address'));
+    }
+
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
         'backoffice/crypto_cashier/manage_crypto_transactions_cs.tt',
@@ -262,13 +271,12 @@ if (@trxns) {
             transaction_uri => $transaction_uri,
             address_uri     => $address_uri,
             testnet         => BOM::Config::on_qa() ? 1 : 0,
+            prioritize      => {
+                trx_id => $prioritize_trx_id,
+                result => $prioritize_result,
+            },
             %client_details,
         }) || die $tt->error();
-}
-
-if ($action && $action eq 'prioritize') {
-    my $prioritize_address = request()->param('address');
-    prioritize_address($currency_wrapper, $prioritize_address);
 }
 
 code_exit_BO();

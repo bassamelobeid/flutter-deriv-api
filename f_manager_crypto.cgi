@@ -592,6 +592,7 @@ EOF
 
 } elsif ($view_action eq 'prioritize_confirmation') {
     my $prioritize_address = request()->param('prioritize_address');
-    prioritize_address($currency_wrapper, $prioritize_address);
+    print prioritize_address($currency_wrapper, $prioritize_address);
 }
+
 code_exit_BO();

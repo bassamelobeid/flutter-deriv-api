@@ -42,11 +42,13 @@
         </thead>
         <tbody>
         [% FOREACH trx IN transactions %]
-            <tr>
-                <td valign="top"><table><tbody>
-                    <b>[% trx.transaction_type FILTER ucfirst %]: </b>
-                    [% IF trx.status == 'LOCKED' %]PENDING[% ELSE %][% trx.status %][% END %]
-                </tbody></table></td>
+            <tr id="trx_[% trx.id %]">
+                <td valign="top">
+                    <table><tbody><tr><td>
+                        <b>[% trx.transaction_type FILTER ucfirst %]: </b>
+                        [% IF trx.status == 'LOCKED' %]PENDING[% ELSE %][% trx.status %][% END %]
+                    </td></tr></tbody></table>
+                </td>
                 <td valign="top">
                     <table class="internal"><tbody>
                         <tr><th>Address:</th><td>[% address_link(addr = trx.address) %]</td></tr>
@@ -89,11 +91,20 @@
                 </td>
                 <td valign="top" align="center">
                     [% IF trx.status == 'NEW' %]
-                        <form action="[% controller_url %]" method="POST">
-                            <input type="hidden" id="db_row_id" name="db_row_id" value="[% trx.id %]" />
-                            <input type="hidden" id="address" name="address" value="[% trx.address %]" />
+                        <form method="POST">
+                            <input type="hidden" name="loginID" value="[% loginid %]" />
+                            <input type="hidden" name="db_row_id" value="[% trx.id %]" />
+                            <input type="hidden" name="prioritize_address" value="[% trx.address %]" />
                             <button type="submit" name="action" value="prioritize">Prioritize Confirmation</button>
                         </form>
+                    [% END %]
+                    [% IF prioritize and prioritize.trx_id == trx.id %]
+                        [% prioritize.result | none %]
+                        <script>
+                            \$([document.documentElement, document.body]).animate({
+                                scrollTop: \$('#trx_[% trx.id %]').offset().top,
+                            }, 700);
+                        </script>
                     [% END %]
                 </td>
             </tr>
