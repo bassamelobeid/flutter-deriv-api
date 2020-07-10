@@ -136,11 +136,15 @@ if (@$pcs) {
         # skip not wanted currency
         next POROMOCODES_TABLE if $input{currency_only} && $input{currency_only} ne $pc_currency;
 
+        # updating to old behaviour to fix Marketing tool for now
+        # format will be fixed in another card.
+        my $start_date = $pc->start_date;
+
         my $expiry_date;
-        if ($pc->expiry_date && $pc->expiry_date->epoch < time()) {
+        if ($pc->expiry_date && $pc->expiry_date->epoch < time() && $input{expiry_select}) {
             next POROMOCODES_TABLE if $input{expiry_select} == 2;
             $expiry_date = '<font color="red">' . $pc->expiry_date->ymd . '</font>';
-        } elsif ($pc->expiry_date) {
+        } elsif ($pc->expiry_date && $input{expiry_select}) {
             next POROMOCODES_TABLE if $input{expiry_select} == 1;
             $expiry_date = $pc->expiry_date->ymd;
         }
@@ -166,7 +170,7 @@ if (@$pcs) {
             . ($pc->{_json}->{min_amount}        || '&nbsp;') . '</td>' . '<td>'
             . ($pc->{_json}->{max_amount}        || '&nbsp;') . '</td>' . '<td>'
             . ($pc->{_json}->{payment_processor} || '&nbsp;') . '</td>' . '<td>'
-            . ($pc->start_date->ymd              || '&nbsp;') . '</td>' . '<td>'
+            . ($start_date                       || '&nbsp;') . '</td>' . '<td>'
             . ($expiry_date                      || '&nbsp;') . '</td>' . '<td>'
             . $pc->promo_code_type . '</td>' . '<td>'
             . join(', ', @countries) . '</td>' . '<td>'
