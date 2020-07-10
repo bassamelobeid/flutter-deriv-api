@@ -163,11 +163,12 @@ my $start_date = request()->param('start_date');
 my $end_date   = request()->param('end_date');
 
 my $pending_withdrawal_amount = request()->param('pending_withdrawal_amount');
+my $pending_estimated_fee;
 if ($view_action eq 'withdrawals') {
-    $pending_withdrawal_amount = $dbic->run(
+    ($pending_withdrawal_amount, $pending_estimated_fee) = $dbic->run(
         ping => sub {
             $_->selectrow_array(
-                "SELECT SUM(amount) FROM payment.cryptocurrency WHERE currency_code = ? AND blockchain_txn IS NULL AND status = 'LOCKED' AND transaction_type='withdrawal'",
+                "SELECT SUM(amount), SUM(estimated_fee) FROM payment.cryptocurrency WHERE currency_code = ? AND blockchain_txn IS NULL AND status = 'LOCKED' AND transaction_type='withdrawal'",
                 undef, $currency
             );
         }) // 0;
@@ -203,16 +204,30 @@ my $display_transactions = sub {
         $trx->{amount} //= 0;    # it will be undef on newly generated addresses
         $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
 
-        $trx->{details_link} = request()->url_for(
-            'backoffice/f_clientloginid_edit.cgi',
+        $trx->{statement_link} = request()->url_for(
+            'backoffice/f_manager_history.cgi',
             {
                 broker  => $broker,
-                loginID => $trx->{client_loginid}});
+                loginID => $trx->{client_loginid},
+            });
+
+        $trx->{profit_link} = request()->url_for(
+            'backoffice/f_profit_check.cgi',
+            {
+                broker    => $broker,
+                loginID   => $trx->{client_loginid},
+                startdate => Date::Utility->today()->_minus_months(1)->date,
+                enddate   => Date::Utility->today()->date,
+            });
 
         # We should prevent verifying the withdrawal transaction by the payment team
         # if the client withdrawal is locked
         my $client = BOM::User::Client->new({loginid => $trx->{client_loginid}});
         $trx->{is_withdrawal_locked} = $client->status->withdrawal_locked if $trx->{transaction_type} eq 'withdrawal';
+        $trx->{client_status} =
+              $client->fully_authenticated      ? 'Fully Authenticated'
+            : $client->status->age_verification ? 'Age Verified'
+            :                                     'Unauthenticated';
     }
 
     #sort rejection reasons & grep only required data for template
@@ -281,6 +296,32 @@ catch {
 }
 
 if ($view_action eq 'withdrawals') {
+    my $get_balance = $currency_wrapper->get_total_balance();
+    print "<b>Available Balance(s) for Payout:</b>";
+    for my $currency_of_balance (sort keys %$get_balance) {
+        my $balance        = $get_balance->{$currency_of_balance};
+        my $remaining_text = '';
+        if ($currency_of_balance eq $currency) {
+            my $remaining = $balance - $pending_withdrawal_amount;
+            $remaining_text = sprintf(
+                " (Remaining after <b>payout</b>: <b style='color: %s;'>%s</b>)",
+                $remaining >= 0 ? 'green' : 'red',
+                formatnumber('amount', $currency_of_balance, $remaining),
+            );
+        } else {
+            my $remaining = $balance - $pending_estimated_fee;
+            $remaining_text = sprintf(
+                " (Remaining after <b>total estimated fees</b>: <b style='color: %s;'>%s</b>)",
+                $remaining >= 0 ? 'green' : 'red',
+                formatnumber('amount', $currency_of_balance, $remaining),
+            );
+        }
+        print sprintf("<p>%s : <b>%s</b>$remaining_text</p>", $currency_of_balance, formatnumber('amount', $currency_of_balance, $balance));
+    }
+    print sprintf(
+        "<p><b>Note:</b> The above values calculated on <b>%s</b>, to get new values please click the <b>'Withdrawal Transactions'</b> button above.",
+        Date::Utility->new()->datetime_yyyymmdd_hhmmss);
+
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
     code_exit_BO("Invalid address.")
@@ -523,19 +564,19 @@ EOF
     if ($cmd eq 'getbalance') {
         my $get_balance = $currency_wrapper->get_total_balance();
         print "<b>Available Balance(s) for payout: </b>";
-        for my $currency_balance (keys %$get_balance) {
+        for my $currency_balance (sort keys %$get_balance) {
             print sprintf("<p>%s : <b>%s</b></p>", $currency_balance, formatnumber('amount', $currency_balance, $get_balance->{$currency_balance}));
         }
         #  We won't calculate for ETH and ERC20 as it will cost performance.
     } elsif ($cmd eq 'getwallet') {
         my $get_balance = $currency_wrapper->get_wallet_balance();
         print "<b>Total Balance(s) in Wallet: </b>";
-        for my $currency_balance (keys %$get_balance) {
+        for my $currency_balance (sort keys %$get_balance) {
             print sprintf("<p>%s : <b>%s</b></p>", $currency_balance, formatnumber('amount', $currency_balance, $get_balance->{$currency_balance}));
         }
     } elsif ($cmd eq 'getinfo') {
         my $get_info = $currency_wrapper->get_info;
-        for my $info (keys %$get_info) {
+        for my $info (sort keys %$get_info) {
             next if ref($get_info->{$info}) =~ /HASH|ARRAY/;
             print sprintf("<p><b>%s:</b><pre>%s</pre></p>", $info, $get_info->{$info});
         }

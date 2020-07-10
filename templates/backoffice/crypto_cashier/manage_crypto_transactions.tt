@@ -14,7 +14,7 @@
 [% END %]
 
 <style>
-    .table.internal th {
+    table.internal th {
         padding: 0 5px;
     }
     .warning_tag {
@@ -133,9 +133,16 @@
                 <td valign="top">
                     <table class="internal"><tbody>
                         <tr><th>Amount:</th><td>[% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount %])</td></tr>
-                        <tr><th>Client:</th><td> <a href="[% trx.details_link %]" target="_blank"> [% trx.client_loginid %] </a></td>
-                           <td><button onClick="viewFiatLogin(this, '[% trx.client_loginid %]', '[% broker %]', '[% fetch_url %]')"> FIAT login</button></td>
-                           <td></td> </tr>
+                        <tr>
+                            <th>Client:</th>
+                            <td style="line-height: 1.1rem;">
+                                [% trx.client_loginid %]<br />
+                                <a href="[% trx.statement_link %]" target="_blank">Statement</a><br />
+                                <a href="[% trx.profit_link %]" target="_blank">Profit</a>
+                            </td>
+                            <td><button onClick="viewFiatLogin(this, '[% trx.client_loginid %]', '[% broker %]', '[% fetch_url %]')"> FIAT login</button></td>
+                            <td></td>
+                        </tr>
                         <tr><th>Payment ID:</th><td>[% trx.payment_id %]</td></tr>
                     [% IF trx.transaction_type == 'withdrawal'%]
                         <tr><th>Estimated Fee:</th><td>[% trx.estimated_fee %]</td></tr>
@@ -163,6 +170,7 @@
                     <td valign="top">
                         <table class="internal"><tbody>
                             <tr><th>Authorisers:</th><td>[% trx.authorisers.join(', ') %]</td></tr>
+                            <tr><th>Client Status:</th><td>[% trx.client_status %]</td></tr>
                         </tbody></table>
                         <br/>
                         [% IF trx.status == 'LOCKED' %]
