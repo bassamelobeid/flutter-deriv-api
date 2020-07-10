@@ -11,6 +11,7 @@ use Date::Utility;
 use Log::Any qw($log);
 use Getopt::Long 'GetOptions';
 use DataDog::DogStatsd;
+use Archive::Zip qw( :ERROR_CODES );
 
 use Brands;
 
@@ -60,11 +61,46 @@ try {
     $output_filepath->spew_utf8(@csv);
     $log->debugf('Data file name %s created.', $output_filepath);
 
+    my $zip        = Archive::Zip->new();
+    $zip->addFile($output_filepath->stringify, $output_filepath->basename);
+
     $log->debugf('Sending email for affiliate turnover report');
+
+    my $output_zip = "myaffiliates_" . $brand_object->name . '_' . $reporter->output_file_prefix() . $processing_date->date_yyyymmdd . ".zip";
+    my $output_zip_path = path("/tmp")->child($output_zip)->stringify;
+
+    my $statsd          = DataDog::DogStatsd->new;
+
+    my @warn_msgs;
+    try {
+        unless ($zip->numberOfMembers) {
+            $statsd->event('Failed to generate MyAffiliates turnover report', 'MyAffiliates turnover report generated an empty zip archive');
+            warn "Generated empty zip file $output_zip_path, the related warnings are: \n", join "\n-", @warn_msgs;
+            exit 1;
+        }
+
+        unless ($zip->writeToFileNamed($output_zip_path) == AZ_OK) {
+            $statsd->event('Failed to generate MyAffiliates turnover report', "MyAffiliates turnover report failed to generate zip archive");
+            warn 'Failed to generate MyAffiliates turnover report: ', "MyAffiliates turnover report failed to generate zip archive";
+            exit 1;
+        }
+    }
+    catch {
+        my $error = $@;
+        $statsd->event('Failed to generate MyAffiliates turnover report', "MyAffiliates turnover report failed to generate zip archive with $error");
+        warn 'Failed to generate MyAffiliates turnover report: ', "MyAffiliates turnover report failed to generate zip archive with $error";
+        exit 1;
+    }
+
+    my $download_url = $reporter->download_url(
+        output_zip => {
+            name => $output_zip,
+            path => $output_zip_path
+        });
+
     $reporter->send_report(
         subject    => 'CRON generate_affiliate_turnover_daily (' . $brand_object->name . ') for date ' . $processing_date->date_yyyymmdd,
-        message    => ['Find attached the CSV that was generated.'],
-        attachment => $output_filepath->stringify,
+        message => ["Find links to download CSV that was generated:\n" . $download_url],
     );
 }
 catch {

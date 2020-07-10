@@ -45,7 +45,6 @@ my $from_date = Date::Utility->new('01-' . $to_date->month_as_string . '-' . $to
 my $statsd          = DataDog::DogStatsd->new;
 my $processing_date = Date::Utility->new($from_date->epoch);
 
-my $output_zip = "myaffiliates_" . $from_date->date_yyyymmdd . "-" . $to_date->date_yyyymmdd . ".zip";
 my $zip        = Archive::Zip->new();
 
 my $brand_object = Brands->new(name => $brand);
@@ -103,6 +102,7 @@ while ($to_date->days_between($processing_date) >= 0) {
     $processing_date = $next_date;
 }
 
+my $output_zip = "myaffiliates_" . $brand_object->name . '_' . $reporter->output_file_prefix() . $from_date->date_yyyymmdd . "-" . $to_date->date_yyyymmdd . ".zip";
 my $output_zip_path = path("/tmp")->child($output_zip)->stringify;
 try {
     unless ($zip->numberOfMembers) {
