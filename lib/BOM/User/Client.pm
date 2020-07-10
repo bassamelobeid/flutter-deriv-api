@@ -2066,7 +2066,7 @@ sub p2p_advert_update {
     if ($param{delete}) {
         my $open_orders = $client->_p2p_orders(
             advert_id => $id,
-            status => ['pending', 'buyer-confirmed'],
+            status => ['pending', 'buyer-confirmed', 'timed-out'],
         );
         die +{error_code => 'OpenOrdersDeleteAdvert'} if @$open_orders;
     }

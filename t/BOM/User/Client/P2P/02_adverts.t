@@ -455,20 +455,23 @@ subtest 'Deleting ads' => sub {
     BOM::Test::Helper::P2P::create_escrow();
     my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
 
-    cmp_deeply(
-        exception {
-            $advertiser->p2p_advert_update(
-                id     => $advert->{id},
-                delete => 1
-                )
-        },
-        {error_code => 'OpenOrdersDeleteAdvert'},
-        "cannot delete ad with open orders"
-    );
+    for my $status ( qw( pending buyer-confirmed timed-out ) ) {
+        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $status);
+        cmp_deeply(
+            exception {
+                $advertiser->p2p_advert_update(
+                    id     => $advert->{id},
+                    delete => 1
+                    )
+            },
+            {error_code => 'OpenOrdersDeleteAdvert'},
+            "cannot delete ad with $status order"
+        );        
+    }
 
     BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'cancelled');
 
-    is exception { $advertiser->p2p_advert_update(id => $advert->{id}, delete => 1) }, undef, 'delete ad ok';
+    is exception { $advertiser->p2p_advert_update(id => $advert->{id}, delete => 1) }, undef, 'can delete ad with cancelled order';
 
     is $advertiser->p2p_advert_info(id => $advert->{id}), undef, 'deleted ad is not seen';
 
@@ -480,7 +483,18 @@ subtest 'Deleting ads' => sub {
                 )
         },
         {error_code => 'AdvertNotFound'},
-        "cannot create order for deleted ad"
+        'cannot create order for deleted ad'
+    );
+    
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_update(
+                id     => $advert->{id},
+                delete => 0,
+                )
+        },
+        {error_code => 'AdvertNotFound'},
+        'cannot undelete ad'
     );
 
     BOM::Test::Helper::P2P::reset_escrow();
