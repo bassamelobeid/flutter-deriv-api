@@ -62,6 +62,7 @@ use BOM::User::Onfido;
 
 use constant DEFAULT_STATEMENT_LIMIT              => 100;
 use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
+use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX    => 'POA::ALLOW_RESUBMISSION::ID::';
 
 use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
 
@@ -845,7 +846,10 @@ sub _get_authentication {
                     is_country_supported => 0,
                     documents_supported  => []}}
         },
-        document => {status => "none"},
+        document => {
+            status                        => "none",
+            further_resubmissions_allowed => 0,
+        },
     };
 
     return $authentication_object if $client->is_virtual;
@@ -853,6 +857,9 @@ sub _get_authentication {
     my $redis = BOM::Config::Redis::redis_replicated_write();
     $authentication_object->{identity}{further_resubmissions_allowed} =
         $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id) // 0;
+
+    $authentication_object->{document}{further_resubmissions_allowed} =
+        $redis->get(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id) // 0;
 
     my $country_code = uc($client->place_of_birth // '');
     $authentication_object->{identity}{services}{onfido}{is_country_supported} = BOM::Config::Onfido::is_country_supported($country_code);

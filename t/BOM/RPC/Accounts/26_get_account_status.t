@@ -16,6 +16,8 @@ use BOM::User::Password;
 use BOM::User;
 use BOM::Test::Helper::Token;
 
+use BOM::Config::Redis;
+
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
 my $email       = 'abc@binary.com';
@@ -211,7 +213,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "none",
                             "further_resubmissions_allowed" => 0,
@@ -246,7 +251,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "none",
                             "further_resubmissions_allowed" => 0,
@@ -279,7 +287,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
-                        document => {status => "verified"},
+                        document => {
+                            status                          => "verified",
+                            "further_resubmissions_allowed" => 0
+                        },
                         identity => {
                             status                          => "verified",
                             "further_resubmissions_allowed" => 0,
@@ -310,7 +321,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
-                        document => {status => "verified"},
+                        document => {
+                            status                          => "verified",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "verified",
                             "further_resubmissions_allowed" => 0,
@@ -350,7 +364,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
-                        document => {status => "verified"},
+                        document => {
+                            status                          => "verified",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "verified",
                             "further_resubmissions_allowed" => 0,
@@ -383,7 +400,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "none",
                             "further_resubmissions_allowed" => 0,
@@ -413,7 +433,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "none",
                             "further_resubmissions_allowed" => 0,
@@ -445,7 +468,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "none",
                             "further_resubmissions_allowed" => 0,
@@ -476,7 +502,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "verified",
                             "further_resubmissions_allowed" => 0,
@@ -508,7 +537,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "none",
                             "further_resubmissions_allowed" => 0,
@@ -541,7 +573,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'high',
                     prompt_client_to_authenticate => '1',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "none",
                             "further_resubmissions_allowed" => 0,
@@ -577,7 +612,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "verified",
                             "further_resubmissions_allowed" => 0,
@@ -610,7 +648,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
-                        document => {status => "verified"},
+                        document => {
+                            status                          => "verified",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "verified",
                             "further_resubmissions_allowed" => 0,
@@ -646,7 +687,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "none",
                             "further_resubmissions_allowed" => 0,
@@ -661,6 +705,48 @@ subtest 'get account status' => sub {
                 'test if all manual status has been removed'
             );
 
+        };
+
+        subtest 'futher resubmission allowed' => sub {
+            # Redis key for poa resubmission flag
+            use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX => 'POA::ALLOW_RESUBMISSION::ID::';
+            my $redis = BOM::Config::Redis::redis_replicated_write();
+            $redis->set(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client_cr->binary_user_id, 1);    # Activate the flag
+
+            my $result = $c->tcall($method, {token => $token_cr});
+
+            cmp_deeply(
+                $result,
+                {
+                    currency_config => {
+                        "USD" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
+                    status                        => [qw(financial_information_not_complete trading_experience_not_complete)],
+                    risk_classification           => 'low',
+                    prompt_client_to_authenticate => '0',
+                    authentication                => {
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 1,
+                        },
+                        identity => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                            services                        => {
+                                onfido => {
+                                    is_country_supported => 0,
+                                    documents_supported  => []}}
+                        },
+                        needs_verification => [],
+                    }
+                },
+                'poa further_resubmissions_allowed is set to 1 correctly'
+            );
+
+            $redis->del(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client_cr->binary_user_id);
         };
 
         subtest 'malta account' => sub {
@@ -683,7 +769,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'high',
                     prompt_client_to_authenticate => '1',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "none",
                             "further_resubmissions_allowed" => 0,
@@ -715,7 +804,10 @@ subtest 'get account status' => sub {
                     risk_classification => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "none",
                             "further_resubmissions_allowed" => 0,
@@ -747,7 +839,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "none",
                             "further_resubmissions_allowed" => 0,
@@ -782,7 +877,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'high',
                     prompt_client_to_authenticate => '1',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "none",
                             "further_resubmissions_allowed" => 0,
@@ -821,7 +919,10 @@ subtest 'get account status' => sub {
                     risk_classification           => 'low',
                     prompt_client_to_authenticate => '1',
                     authentication                => {
-                        document => {status => "none"},
+                        document => {
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
+                        },
                         identity => {
                             status                          => "verified",
                             "further_resubmissions_allowed" => 0,
@@ -867,7 +968,10 @@ subtest 'get account status' => sub {
                         risk_classification           => 'low',
                         prompt_client_to_authenticate => '0',
                         authentication                => {
-                            document => {status => "verified"},
+                            document => {
+                                status                          => "verified",
+                                "further_resubmissions_allowed" => 0,
+                            },
                             identity => {
                                 status                          => "verified",
                                 "further_resubmissions_allowed" => 0,
@@ -934,8 +1038,9 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
-                                status      => "expired",
-                                expiry_date => $result->{authentication}{document}{expiry_date}
+                                status                          => "expired",
+                                "further_resubmissions_allowed" => 0,
+                                expiry_date                     => $result->{authentication}{document}{expiry_date}
                             },
                             identity => {
                                 status                        => "expired",
@@ -1001,7 +1106,8 @@ subtest 'get account status' => sub {
 
                     my $expected_result = {
                         document => {
-                            status => "verified",
+                            status                          => "verified",
+                            "further_resubmissions_allowed" => 0,
                         },
                         identity => {
                             status                        => "verified",
@@ -1057,7 +1163,8 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => 1,
                         authentication                => {
                             document => {
-                                status => "none",
+                                status                          => "none",
+                                "further_resubmissions_allowed" => 0,
                             },
                             identity => {
                                 status                        => "verified",
@@ -1112,8 +1219,9 @@ subtest 'get account status' => sub {
                             prompt_client_to_authenticate => 1,
                             authentication                => {
                                 document => {
-                                    status      => "expired",
-                                    expiry_date => $result->{authentication}{document}{expiry_date},
+                                    status                          => "expired",
+                                    expiry_date                     => $result->{authentication}{document}{expiry_date},
+                                    "further_resubmissions_allowed" => 0,
                                 },
                                 identity => {
                                     status                        => "verified",
@@ -1175,7 +1283,8 @@ subtest 'get account status' => sub {
                                             documents_supported  => []}}
                                 },
                                 document => {
-                                    status => "none",
+                                    status                          => "none",
+                                    "further_resubmissions_allowed" => 0,
                                 },
                                 needs_verification => ["document", "identity"]}
                         },
@@ -1208,7 +1317,8 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => 1,
                     authentication                => {
                         document => {
-                            status => "none",
+                            status                          => "none",
+                            "further_resubmissions_allowed" => 0,
                         },
                         identity => {
                             status                        => "none",
