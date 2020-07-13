@@ -41,9 +41,9 @@ A spot to place subroutines that might be useful for various client related oper
 
 =cut
 
-use constant ONFIDO_REPORT_KEY_PREFIX             => 'ONFIDO::REPORT::ID::';
-use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
-use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX    => 'POA::ALLOW_RESUBMISSION::ID::';
+use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
+use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX   => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
+use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
 
 my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
 my @expirable_doctypes  = @{$doc_type_categories{POI}{doc_types}};
@@ -328,7 +328,7 @@ sub print_client_details {
 
     my $redis                          = BOM::Config::Redis::redis_replicated_write();
     my $onfido_allow_resubmission_flag = $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
-    my $poa_resubmission_allowed       = $redis->get(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+    my $onfido_resubmission_counter    = $redis->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
 
     my $balance =
         $client->default_account
@@ -385,11 +385,11 @@ sub print_client_details {
         onfido_check_result                => $onfido_check->{result},
         onfido_check_url                   => $onfido_check->{results_uri} // '',
         onfido_resubmission                => $onfido_allow_resubmission_flag,
-        poa_resubmission_allowed           => $poa_resubmission_allowed,
         is_client_in_onfido_country        => is_client_in_onfido_country($client) // 1,
         text_validation_info               => client_text_field_validation_info($client, secret_answer => $secret_answer),
         aml_risk_levels                    => [get_aml_risk_classicications()],
         is_staff_compliance                => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
+        onfido_resubmission_counter        => $onfido_resubmission_counter // 0,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

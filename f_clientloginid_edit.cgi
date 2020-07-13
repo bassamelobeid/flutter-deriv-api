@@ -91,14 +91,11 @@ my $self_post       = $details{self_post};
 my $self_href       = $details{self_href};
 my $loginid         = $client->loginid;
 
+# Enabling onfido resubmission
 my $redis = BOM::Config::Redis::redis_replicated_write();
-# Disabled for now
-# to enable, replace condition with 'defined $input{allow_onfido_resubmission}'
-if (0) {
-    $input{allow_onfido_resubmission}
-        ? $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1)
-        : $redis->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
-}
+$redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1) if $input{allow_onfido_resubmission};
+$redis->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id)
+    if defined $input{allow_onfido_resubmission} && !$input{allow_onfido_resubmission};
 
 if ($input{allow_poa_resubmission}) {
     $redis->set(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1);

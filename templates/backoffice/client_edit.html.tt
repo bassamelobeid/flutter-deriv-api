@@ -390,11 +390,15 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td class="label"></td>
         <td><button name="run_onfido_check" type="submit" value="1">Run Onfido Check</button></td>
     </tr>
-    [% END %]
-    <tr>
-        <td class="label">Allow POI Resubmission : </td>
-        <td> <input type="checkbox" style="vertical-align:middle" name="allow_onfido_resubmission" value="1" [% IF onfido_resubmission %] checked="checked" [% END %]> <b>[DISABLED]</b> </td>
-    </tr>
+    [% END %]    
+    <tr>                                                                         
+        <td class="label">Allow Resubmission : </td>                             
+        <td> <input type="checkbox" style="vertical-align:middle" name="allow_onfido_resubmission" value="1" [% IF onfido_resubmission %] checked="checked" [% END %]> </td>
+    </tr>                                                                          
+    <tr>                                                                         
+        <td class="label">Resubmission Counter: </td>                            
+        <td> [% onfido_resubmission_counter %]</td>                              
+    </tr>                                                                        
     <tr>
         <td class="label">ID Authentication : </td>
         [%
@@ -479,7 +483,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
 <tr>
         <td class="label" style="vertical-align:middle">Allow POA Resubmission : </td>
-        <td> <input type="checkbox" name="allow_poa_resubmission" value="1" [% IF poa_resubmission_allowed %] checked="checked" [% END %]>
+        <td> <input type="checkbox" name="allow_poa_resubmission" value="1" [% IF onfido_resubmission_counter %] checked="checked" [% END %]>
         </td>
     </tr>
     <tr>
