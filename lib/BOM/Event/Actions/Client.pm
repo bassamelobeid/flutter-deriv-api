@@ -94,6 +94,8 @@ use constant ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX         => 'ONFIDO::DOB::
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
 
+use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX => 'POA::ALLOW_RESUBMISSION::ID::';
+
 # Redis TTLs
 use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;    # 10 days in seconds
 
@@ -266,6 +268,10 @@ async sub document_upload {
             $log->errorf('Could not get document %s from database for client %s', $file_id, $loginid);
             return;
         }
+
+        my $redis_replicated_write = _redis_replicated_write();
+        await $redis_replicated_write->connect;
+        await $redis_replicated_write->del(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
         await BOM::Event::Services::Track::document_upload({
                 loginid    => $loginid,

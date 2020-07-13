@@ -112,6 +112,7 @@ my $args = {
 my ($applicant, $applicant_id, $loop, $onfido);
 subtest 'upload document' => sub {
 
+    $loop = IO::Async::Loop->new;
     my $upload_info = $test_client->db->dbic->run(
         ping => sub {
             $_->selectrow_hashref(
@@ -123,6 +124,12 @@ subtest 'upload document' => sub {
             );
         });
 
+    # Redis key for resubmission flag
+    use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX => 'POA::ALLOW_RESUBMISSION::ID::';
+    $loop->add(my $services = BOM::Event::Services->new);
+    my $redis_write = $services->redis_replicated_write();
+    $redis_write->set(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;    # Activate the flag
+
     $test_client->db->dbic->run(
         ping => sub {
             $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
@@ -131,7 +138,6 @@ subtest 'upload document' => sub {
     my $mocked_action    = Test::MockModule->new('BOM::Event::Actions::Client');
     my $document_content = 'it is a proffaddress document';
     $mocked_action->mock('_get_document_s3', sub { return Future->done($document_content) });
-    $loop = IO::Async::Loop->new;
 
     $loop->add(
         $onfido = WebService::Async::Onfido->new(
@@ -147,6 +153,9 @@ subtest 'upload document' => sub {
     ok($applicant, 'There is an applicant data in db');
     $applicant_id = $applicant->{id};
     ok($applicant_id, 'applicant id ok');
+
+    my $resubmission_flag_after = $redis_write->get(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get;
+    ok !$resubmission_flag_after, 'poa resubmission flag is removed from redis after document uploading';
 
     my $doc = $onfido->document_list(applicant_id => $applicant_id)->as_arrayref->get->[0];
     ok($doc, "there is a document");
