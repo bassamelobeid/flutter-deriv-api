@@ -299,6 +299,22 @@ subtest 'documents uploaded' => sub {
         is($client_mf->documents_expired(), 1, $test);
     };
 
+    subtest 'for multiple poi documents the latest expiration date is taken into account to flag poi expired' => sub {
+        # Set the expiration_date to tomorrow for a specific document_id
+        my $dbh            = $client->db->dbic->dbh;
+        my $SQL            = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ? WHERE document_id = ?';
+        my $sth_doc_update = $dbh->prepare($SQL);
+        $sth_doc_update->execute('tomorrow', '66666');
+
+        # Ensure the remainding documents are expired
+        my $SQL2            = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ? WHERE document_id != ?';
+        my $sth_doc_update2 = $dbh->prepare($SQL2);
+        $sth_doc_update2->execute('yesterday', '66666');
+
+        $documents = $client->documents_uploaded();
+        is($documents->{proof_of_identity}->{is_expired}, 0, 'POI is not expired');
+    };
+
     $module->unmock_all();
 };
 

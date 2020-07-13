@@ -13,7 +13,7 @@ use Syntax::Keyword::Try;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use Date::Utility;
-use List::Util qw/all first min any uniq/;
+use List::Util qw/all first min any uniq max/;
 use Locale::Country::Extra;
 use Format::Util::Numbers qw(roundcommon);
 use Text::Trim qw(trim);
@@ -520,7 +520,7 @@ Returns
                 file_name2 => {},
             },
             is_expired => 0,
-            minimum_expiration_date => epoch,
+            minimum_expiry_date => epoch,
         },
         proof_of_address => {
             documents => {
@@ -528,7 +528,7 @@ Returns
                 file_name2 => {},
             },
             is_expired => 0,
-            minimum_expiration_date => epoch,
+            minimum_expiry_date => epoch,
         },
         others => {
             documents => {
@@ -536,7 +536,7 @@ Returns
                 file_name2 => {},
             },
             is_expired => 0,
-            minimum_expiration_date => epoch,
+            minimum_expiry_date => epoch,
         },
     }
 
@@ -589,7 +589,10 @@ sub documents_uploaded {
             next unless $expires;
 
             my $existing_expiry_date_epoch = $documents{$type}{minimum_expiry_date} // $expires;
-            my $minimum_expiry_date = min($expires, $existing_expiry_date_epoch);
+            # Even though the key is 'minimum_expiry_date' we are taking into account the latest date found for POI, hence max is used
+            my $minimum_expiry_date;
+            $minimum_expiry_date = max($expires, $existing_expiry_date_epoch) if $type eq 'proof_of_identity';
+            $minimum_expiry_date = min($expires, $existing_expiry_date_epoch) if $type ne 'proof_of_identity';
 
             $documents{$type}{minimum_expiry_date} = $minimum_expiry_date;
             $documents{$type}{is_expired} = Date::Utility->new->epoch > $minimum_expiry_date ? 1 : 0;
