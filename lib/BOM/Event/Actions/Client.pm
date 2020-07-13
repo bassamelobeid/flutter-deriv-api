@@ -83,6 +83,7 @@ use constant ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY    => 'ONFIDO::APPLICANT_CONTEX
 use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
 use constant ONFIDO_DOCUMENT_ID_PREFIX              => 'ONFIDO::DOCUMENT::ID::';
 use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX   => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
+use constant ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX    => 'ONFIDO::IS_A_RESUBMISSION::ID::';
 
 use constant ONFIDO_SUPPORTED_COUNTRIES_KEY                    => 'ONFIDO_SUPPORTED_COUNTRIES';
 use constant ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT                => $ENV{ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT} // 7 * 86400;                     # 1 week
@@ -102,6 +103,10 @@ use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;    # 10 days 
 # Redis keys to stop sending new emails in a specific time
 use constant ONFIDO_STOP_SENDING_EMAIL_TIMEOUT => $ENV{ONFIDO_STOP_SENDING_EMAIL_TIMEOUT} // 6 * 60 * 60;
 use constant ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX => 'ONFIDO::POI::EMAIL::NOTIFICATION::SENT::';
+
+# Redis key for resubmission counter
+use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
+use constant ONFIDO_RESUBMISSION_COUNTER_TTL        => 2592000;                                # 30 days (in seconds)
 
 # List of document types that we use as proof of address
 use constant POA_DOCUMENTS_TYPE => qw(
@@ -242,6 +247,7 @@ information to process this client.
 
 async sub document_upload {
     my ($args) = @_;
+
     BOM::Config::Runtime->instance->app_config->check_for_update();
     return if (BOM::Config::Runtime->instance->app_config->system->suspend->onfido);
     try {
@@ -286,6 +292,16 @@ async sub document_upload {
         }
         die 'Expired document ' . $document_entry->{expiration_date}
             if $document_entry->{expiration_date} and Date::Utility->new($document_entry->{expiration_date})->is_before(Date::Utility->today);
+
+        my $is_poi_doc =
+            any { $_ eq $document_entry->{document_type} } +{BOM::User::Client::DOCUMENT_TYPE_CATEGORIES()}->{POI}{doc_types_appreciated}->@*;
+
+        if ($is_poi_doc) {
+            # Consume resubmission context
+            my $redis_replicated_write = _redis_replicated_write();
+            await $redis_replicated_write->connect;
+            await $redis_replicated_write->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+        }
 
         await _send_email_notification_for_poa(
             document_entry => $document_entry,
@@ -365,12 +381,15 @@ async sub ready_for_authentication {
         # remove "ONFIDO::ALLOW_RESUBMISSION::ID::" upon check triggered, if there's any
         my $redis_replicated_write = _redis_replicated_write();
         await $redis_replicated_write->connect;
+        # We want to increment the resubmission counter when the resubmission flag is active.
+        my $resubmission_flag = await $redis_replicated_write->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
         await $redis_replicated_write->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
-        if ($client->status->age_verification) {
-            $log->debugf("Onfido request aborted because %s is already age-verified.", $loginid);
-            return "Onfido request aborted because $loginid is already age-verified.";
-        }
+        # Disabling this restriction by now
+        # if ($client->status->age_verification) {
+        #     $log->debugf("Onfido request aborted because %s is already age-verified.", $loginid);
+        #     return "Onfido request aborted because $loginid is already age-verified.";
+        # }
 
         my $residence = uc(country_code2code($client->residence, 'alpha-2', 'alpha-3'));
 
@@ -412,6 +431,27 @@ async sub ready_for_authentication {
             }
 
             die 'We exceeded our Onfido authentication check request per day';
+        }
+
+        if ($resubmission_flag) {
+            # The following redis keys block email sending on client verification failure. We might clear them for resubmission
+            my @delete_on_resubmission = (
+                ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
+                ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
+                ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
+                ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id,
+            );
+
+            await $redis_events_write->connect;
+            foreach my $email_blocker (@delete_on_resubmission) {
+                await $redis_events_write->del($email_blocker);
+            }
+            # Deal with resubmission counter and context
+            await $redis_replicated_write->incr(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
+            await $redis_replicated_write->set(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1);
+            await $redis_replicated_write->expire(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id, ONFIDO_RESUBMISSION_COUNTER_TTL);
+        } else {
+            await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
         }
 
         await _save_request_context($applicant_id);
@@ -498,6 +538,12 @@ async sub client_verification {
 
             $log->debugf('Onfido pending key cleared');
 
+            # Consume resubmission context
+            my $redis_replicated_write = _redis_replicated_write();
+            await $redis_replicated_write->connect;
+            my $resubmission = await $redis_replicated_write->get(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+            await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+
             # Skip facial similarity:
             # For current selfie we ask them to submit with ID document
             # that leads to sub optimal facial images and hence, it leads
@@ -545,9 +591,10 @@ async sub client_verification {
                         my $min_age = $BRANDS->countries_instance->minimum_age_for_country($client->residence);
                         if (Date::Utility->new($first_dob)->is_before(Date::Utility->new->_minus_years($min_age))) {
                             _update_client_status(
-                                client  => $client,
-                                status  => 'age_verification',
-                                message => 'Onfido - age verified'
+                                client       => $client,
+                                status       => 'age_verification',
+                                message      => 'Onfido - age verified',
+                                resubmission => $resubmission
                             );
 
                         } else {
@@ -592,6 +639,7 @@ async sub client_verification {
                         redis_key      => ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
                     });
                 }
+
                 # Update expiration_date and document_id of each document in DB
                 # Using corresponding values in Onfido response
                 @reports = grep { $_->result eq 'clear' } @reports;
@@ -603,8 +651,10 @@ async sub client_verification {
 
                     foreach my $onfido_doc ($report->{documents}->@*) {
                         my $onfido_doc_id = $onfido_doc->{id};
+
                         await $redis_events_write->connect;
                         my $db_doc_id = await $redis_events_write->get(ONFIDO_DOCUMENT_ID_PREFIX . $onfido_doc_id);
+
                         if ($db_doc_id) {
                             await $redis_events_write->del(ONFIDO_DOCUMENT_ID_PREFIX . $onfido_doc_id);
                             # There is a possibility that corresponding DB document of onfido document has been deleted (e.g. by BO user)
@@ -733,6 +783,7 @@ async sub _sync_onfido_bo_document {
     my $expiration_date;
     my $document_numbers;
     my @doc_ids;
+    my %all_ids;
 
     if ($type eq 'document') {
         $doc_type  = $onfido_res->type;
@@ -740,7 +791,7 @@ async sub _sync_onfido_bo_document {
         for my $each_report (@{$all_report}) {
             if ($each_report->documents) {
                 @doc_ids = grep { $_ && $_->{id} } @{$each_report->documents};
-                my %all_ids = map { $_->{id} => 1 } @doc_ids;
+                %all_ids = map { $_->{id} => 1 } @doc_ids;
 
                 if (exists($all_ids{$doc_id})) {
                     ($expiration_date, $document_numbers) = @{$each_report->{properties}}{qw(date_of_expiry document_numbers)};
@@ -800,12 +851,21 @@ async sub _sync_onfido_bo_document {
                     $file_checksum, '', $page_type,
                 );
             });
+
+        my $redis_events_write = _redis_events_write();
+        await $redis_events_write->connect;
+
         unless ($upload_info) {
             $log->warn("Document already exists");
             return;
         }
 
         ($file_id, $new_file_name) = @{$upload_info}{qw/file_id file_name/};
+
+        # This redis key allow further date/numbers update
+        foreach my $onfido_doc_id (keys %all_ids) {
+            await $redis_events_write->setex(ONFIDO_DOCUMENT_ID_PREFIX . $onfido_doc_id, ONFIDO_PENDING_REQUEST_TIMEOUT, $file_id);
+        }
 
         $log->debugf("Starting to upload file_id: $file_id to S3 ");
         $s3_uploaded = await $s3_client->upload($new_file_name, $tmp_filename, $file_checksum);
@@ -1107,11 +1167,42 @@ sub _update_client_status {
     $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $args{status}, $args{message});
     if ($args{status} eq 'age_verification') {
         _email_client_age_verified($client);
-        # send to CS if its regulated client (client of MX, MF, MLT)
-        _send_CS_email_POI_passed($client) if $client->landing_company->is_eu;
+
+        if (defined $args{resubmission} && $args{resubmission}) {
+            _send_CS_email_POI_resubmission_passed($client);
+        } else {
+            # send to CS if its regulated client (client of MX, MF, MLT)
+            _send_CS_email_POI_passed($client) if $client->landing_company->is_eu;
+        }
     }
     $client->status->set($args{status}, 'system', $args{message});
 
+    return;
+}
+
+=head2 _send_CS_email_POI_resubmission_passed
+
+Send email to notify CS about POI passed on resubmission
+
+=over 4
+
+=item C<$client> the client that has been authenticated
+
+=back
+
+=cut
+
+sub _send_CS_email_POI_resubmission_passed {
+    my $client = shift;
+
+    my $loginid       = $client->loginid;
+    my $email_content = sprintf("Resubmitted proof of identification document for %s has been verified by Onfido", $loginid);
+    my $email_subject = sprintf("Resubmitted POI document for: %s is verified", $loginid);
+
+    my $from_email   = $BRANDS->emails('no-reply');
+    my $to_email     = $BRANDS->emails('authentications');
+    my $email_status = Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->text_body($email_content)->send();
+    $log->warn('Failed to send Onfido age verification email.') unless ($email_status);
     return;
 }
 
@@ -1860,7 +1951,6 @@ async sub _check_applicant {
                 my ($check) = @_;
 
                 BOM::User::Onfido::store_onfido_check($applicant_id, $check);
-
             });
 
         await $future_applicant_check;

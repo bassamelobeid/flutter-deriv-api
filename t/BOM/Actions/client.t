@@ -1050,6 +1050,139 @@ subtest 'aml risk becomes high withdrawal_locked email CR landing company' => su
     ok($msg, "email received");
 };
 
+subtest 'onfido resubmission' => sub {
+    # Redis key for resubmission counter
+    use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
+    # Redis key for resubmission flag
+    use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
+    # Redis key for daily onfido submission per user
+    use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::DAILY::REQUEST::PER::USER::';
+
+    # These keys blocks email sending on client verification failure
+    use constant ONFIDO_AGE_EMAIL_PER_USER_PREFIX                => 'ONFIDO::AGE::VERIFICATION::EMAIL::PER::USER::';
+    use constant ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX       => 'ONFIDO::DOB::MISMATCH::EMAIL::PER::USER::';
+    use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
+    use constant ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX       => 'ONFIDO::POI::EMAIL::NOTIFICATION::SENT::';
+    # This key gives resubmission context to onfido webhook event
+    use constant ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX => 'ONFIDO::IS_A_RESUBMISSION::ID::';
+
+    # Global counters
+    use constant ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY => 'ONFIDO_AUTHENTICATION_REQUEST_CHECK';
+    use constant ONFIDO_REQUEST_COUNT_KEY               => 'ONFIDO_REQUEST_COUNT';
+    $loop->add($services = BOM::Event::Services->new);
+    my $redis_write  = $services->redis_replicated_write();
+    my $redis_events = $services->redis_events_write();
+    $redis_write->connect->get;
+    $redis_events->connect->get;
+
+    # Mock stuff
+    my $mock_client = Test::MockModule->new('BOM::Event::Actions::Client');
+    $mock_client->mock(
+        '_check_applicant',
+        sub {
+            Future->done;
+        });
+
+    # First test, we expect counter to be +1
+    $redis_write->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;
+    my $counter = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
+    my $call_args = {
+        loginid      => $test_client->loginid,
+        applicant_id => $applicant_id
+    };
+    my $action_handler = BOM::Event::Process::get_action_mappings()->{ready_for_authentication};
+    $redis_events->set(ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id,                1)->get;
+    $redis_events->set(ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id,       1)->get;
+    $redis_events->set(ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id, 1)->get;
+    $redis_events->set(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $test_client->binary_user_id,       1)->get;
+    $redis_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get;
+    $action_handler->($call_args)->get;
+    my $counter_after = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
+    my $ttl           = $redis_write->ttl(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
+    is($counter + 1, $counter_after, 'Resubmission Counter has been incremented by 1');
+
+    my $age_email_per_user          = $redis_events->get(ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id)->get;
+    my $dob_mismatch_email_per_user = $redis_events->get(ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id)->get;
+    my $age_below_eighteen_per_user = $redis_events->get(ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id)->get;
+    my $poi_email_sent              = $redis_events->get(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $test_client->binary_user_id)->get;
+    ok(!$age_email_per_user,          'Email blocker is gone');
+    ok(!$dob_mismatch_email_per_user, 'Email blocker is gone');
+    ok(!$age_below_eighteen_per_user, 'Email blocker is gone');
+    ok(!$poi_email_sent,              'Email blocker is gone');
+
+    my $resubmission_context = $redis_write->get(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get;
+    ok($resubmission_context, 'Resubmission Context is set');
+
+    # Resubmission flag should be off now and so we expect counter to remain the same
+    $action_handler->($call_args)->get;
+    my $counter_after2 = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
+    is($counter_after, $counter_after2, 'Resubmission Counter has not been incremented');
+
+    # TTL should be the same after running it twice (roughly 30 days)
+    # We, firstly, set a lower expire time
+    $redis_write->expire(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id, 100)->get;
+    my $lower_ttl = $redis_write->ttl(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
+    is($lower_ttl, 100, 'Resubmission Counter TTL has been set to 100');
+    # Activate the flag and run again
+    $redis_write->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;
+    $action_handler->($call_args)->get;
+    # After running it twice TTL should be set to full time again (roughly 30 days, whatever $ttl is)
+    my $ttl2 = $redis_write->ttl(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
+    is($ttl, $ttl2, 'Resubmission Counter TTL has been reset to its full time again');
+
+    # For this one user's onfido daily counter will be too high, so the checkup won't be made
+    my $counter_after3 = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
+    $redis_events->set(ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id, $ENV{ONFIDO_REQUEST_PER_USER_LIMIT} // 3)->get;
+    $redis_write->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;
+    $action_handler->($call_args)->get;
+    my $counter_after4 = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
+    is($counter_after3, $counter_after4, 'Resubmission Counter has not been incremented due to user limits');
+
+    # The last one, will be made upon the fact the whole company has its own onfido submit limit
+    $redis_events->hset(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY, $ENV{ONFIDO_REQUESTS_LIMIT} // 1000)->get;
+    $redis_events->set(ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id, 0)->get;
+    $redis_write->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;
+    $action_handler->($call_args)->get;
+    my $counter_after5 = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
+    is($counter_after4, $counter_after5, 'Resubmission Counter has not been incremented due to global limits');
+    $redis_events->hset(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY, 0)->get;
+    $redis_events->set(ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id, 0)->get;
+
+    subtest "client_verification on resubmission, verification failed" => sub {
+        mailbox_clear();
+
+        lives_ok {
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check->{href},
+                })->get;
+        }
+        "client verification no exception";
+
+        my $msg = mailbox_search(subject => qr/Automated age verification failed/);
+        ok($msg, 'automated age verification failed email sent');
+
+        my $resubmission_context = $redis_write->get(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
+        is($resubmission_context, 0, 'Resubmission Context is deleted');
+    };
+
+    subtest "client_verification on resubmission, verification success" => sub {
+        # As I don't have/know a valid payload from onfido, I'm going to test _update_client_status instead
+        mailbox_clear();
+
+        BOM::Event::Actions::Client::_update_client_status(
+            client       => $test_client,
+            status       => 'age_verification',
+            message      => 'Onfido - age verified',
+            resubmission => 1
+        );
+
+        my $msg = mailbox_search(subject => qr/Resubmitted POI document for: (.*) is verified/);
+        ok($msg, 'Valid email sent for resubmission');
+    };
+
+    $mock_client->unmock_all;
+};
+
 subtest 'client becomes transfers_blocked when deposits from QIWI' => sub {
     ok !$test_client->status->transfers_blocked, 'client is not transfers_blocked before deposit from QIWI';
 
