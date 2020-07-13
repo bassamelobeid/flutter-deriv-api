@@ -1603,7 +1603,10 @@ sub _mt5_validate_and_get_amount {
                 if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
                 and (($source_currency_type // '') ne ($mt5_currency_type // ''));
 
-            unless ($mt5_currency eq $client_currency || offer_to_clients($client_currency)) {
+            unless ((LandingCompany::Registry::get_currency_type($client_currency) ne 'crypto')
+                || $mt5_currency eq $client_currency
+                || offer_to_clients($client_currency))
+            {
                 my $val = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
                 push(@$val, $client_currency);
                 stats_event(
