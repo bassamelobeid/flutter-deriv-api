@@ -50,7 +50,7 @@ sub start_script {
     my $args = $self->args // '';
     system("$script --pid-file $pid_file $args &");
 
-    for (1 .. 5) {
+    for (1 .. 10) {
         return 1 if $pid_file->exists;
         sleep 1;
     }

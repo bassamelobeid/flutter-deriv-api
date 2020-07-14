@@ -10,7 +10,7 @@ my $script;
 BEGIN {
     if (BOM::Test::on_qa()) {
         $script = BOM::Test::Script->new(script => '/home/git/regentmarkets/bom-platform/bin/notify_pub.pl');
-        $script->start_script_if_not_running;
+        die 'Failed to start test notify_pub daemon' unless $script->start_script_if_not_running;
     }
 }
 

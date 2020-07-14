@@ -13,7 +13,7 @@ BEGIN {
             script => '/home/git/regentmarkets/bom-pricing/bin/price_daemon.pl',
             args   => '--workers=1 --no-warmup=1'
         );
-        $script->start_script_if_not_running;
+        die 'Failed to start test pricer daemon' unless $script->start_script_if_not_running;
     }
 }
 

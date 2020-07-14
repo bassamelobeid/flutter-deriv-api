@@ -10,7 +10,7 @@ my $script;
 BEGIN {
     if (BOM::Test::on_qa()) {
         $script = BOM::Test::Script->new(script => '/home/git/regentmarkets/bom-pricing/bin/price_queue.pl');
-        $script->start_script_if_not_running;
+        die 'Failed to start test pricer queue' unless $script->start_script_if_not_running;
     }
 }
 
