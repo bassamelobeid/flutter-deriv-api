@@ -1,8 +1,10 @@
 <p>Bands will be assigned to an advertiser by the first matching condition:</p>
     <ol>
-        <li>Band matches client's country, currency and band level</li>
-        <li>Band has USD currency, and matches client's country and band level</li>
-        <li>Band is default country, low level, USD currency</li>
+        <li>Level matches, country matches, curency matches</li>
+        <li>Level matches, country matches, band currency is USD</li>
+        <li>Level matches, band country is default, currency matches</li>
+        <li>Level matches, band country is default, band currency is USD</li>
+        <li>Band is low, country is default, currency is USD</li>
     </ol>
 
 <table border="1" class="sortable collapsed">

@@ -13,6 +13,7 @@ use BOM::Database::ClientDB;
 use Syntax::Keyword::Try;
 use Date::Utility;
 use BOM::Config::Runtime;
+use Scalar::Util qw(looks_like_number);
 
 my $cgi = CGI->new;
 
@@ -68,13 +69,14 @@ if (my $action = $input{action} and $p2p_write) {
     }
 }
 
-if ($input{order_id}) {
+if (my $id = $input{order_id}) {
     try {
+        die "Invalid id - $id\n" unless looks_like_number($id) and $id > 0;
         $order = $db->run(
             fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM p2p.order_list(?,NULL,NULL,NULL)', undef, $input{order_id});
+                $_->selectrow_hashref('SELECT * FROM p2p.order_list(?,NULL,NULL,NULL)', undef, $id);
             });
-        die "Order " . $input{order_id} . " not found\n" unless $order;
+        die "Order $id not found\n" unless $order;
         if ($order->{type} eq 'buy') {
             $order->{client_role}     = 'BUYER';
             $order->{advertiser_role} = 'SELLER';
@@ -107,7 +109,8 @@ if ($input{order_id}) {
                         JOIN transaction.account at ON at.id = tt.account_id 
                         WHERE pt.order_id = ?
                         ORDER BY pt.transaction_time',
-                    {Slice => {}}, $input{order_id});
+                    {Slice => {}}, $id
+                );
             });
     }
     catch {
