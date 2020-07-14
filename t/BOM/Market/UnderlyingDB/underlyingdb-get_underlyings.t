@@ -196,7 +196,7 @@ subtest 'including disabled' => sub {
             $udb->get_symbols_for(
                 market            => 'forex',
                 contract_category => 'endsinout',
-                exclude_disabled  => 1,
+                exclude_suspended => 1,
             )
         ),
         0,
@@ -209,7 +209,7 @@ subtest 'testing with suspend_trades' => sub {
     my $orig_buy = BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_trades;
     BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_trades(['frxXAUUSD']);
 
-    my @symbols = $udb->symbols_for_intraday_fx(1);
+    my @symbols = $udb->symbols_for_intraday_fx(0);
 
     ok(
         scalar grep { $_ eq 'frxXAUUSD' } @symbols,
