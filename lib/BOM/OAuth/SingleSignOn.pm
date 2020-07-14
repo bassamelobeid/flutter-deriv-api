@@ -9,8 +9,10 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::Parameters;
 
 use URI;
+use Path::Tiny;
 use Format::Util::Strings qw( defang );
 use Digest::SHA qw(hmac_sha256_hex);
+use Syntax::Keyword::Try;
 use Encode qw(encode);
 use Log::Any qw($log);
 
@@ -18,6 +20,21 @@ use BOM::User::Client;
 use BOM::Database::Model::OAuth;
 
 # Developer disclaimer: we needed this fast
+
+my %broker_mapping = (
+    VRTC => '1',
+    CR   => '2',
+    MX   => '3',
+    MF   => '4',
+    MLT  => '5',
+);
+
+my @dictionary;
+
+BEGIN {
+    my %bad_words = map { $_ => 1 } path('/opt/bad_words_en.text')->lines_utf8({chomp => 1});
+    @dictionary = grep { /^[a-z]{7}$/ && !exists $bad_words{$_} } path("/usr/share/dict/words")->lines_utf8({chomp => 1});
+}
 
 sub authorize {
     my $c = shift;
@@ -82,8 +99,10 @@ sub _verify_sso_request {
 sub _sso_params {
     my ($c, $app) = @_;
 
-    my $nonce   = defang($c->param('nonce'));
-    my $loginid = defang($c->param('acct1'));
+    my $nonce = defang($c->param('nonce'));
+    my $token = defang($c->param('token1'));
+
+    my $loginid = BOM::Database::Model::OAuth->new()->get_token_details($token)->{loginid};
 
     my $client = BOM::User::Client->new({
         loginid      => $loginid,
@@ -92,12 +111,14 @@ sub _sso_params {
 
     if ($app->{name} eq 'discourse') {
 
+        my ($fake_name) = _generate_pseudo_name($client->loginid);
+
         my $discourse_params = {
             nonce                    => $nonce,
             email                    => $client->user->email,
             external_id              => $client->binary_user_id,
-            username                 => $client->loginid,
-            name                     => $client->first_name . ' ' . $client->last_name,
+            username                 => $fake_name->{username},
+            name                     => $fake_name->{full_name},
             avatar_url               => '',
             bio                      => '',
             admin                    => 0,
@@ -117,6 +138,30 @@ sub _sso_params {
             sig => $sig
         );
     }
+}
+
+sub _generate_pseudo_name {
+    my $loginid = shift;
+
+    if (@dictionary eq 0) {
+        $log->warn("SingleSignOn random name generator name dictionary is empty!");
+        return "";
+    }
+
+    my ($broker, $id) = $loginid =~ /([A-Z]+)([0-9]+)/;
+
+    my @name;
+
+    while ($id) {
+        push @name, $dictionary[$id % 8192];
+        $id = int($id / 8192);
+    }
+    push @name, ($broker_mapping{$broker} // '');
+
+    return {
+        username  => (join "-", @name),
+        full_name => (join " ", @name),
+    };
 }
 
 1;
