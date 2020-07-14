@@ -7,17 +7,21 @@ use Mojo::JSON::MaybeXS;
 use DataDog::DogStatsd::Helper;
 use Date::Utility;
 use Getopt::Long;
-use LWP::Simple;
+use LWP::UserAgent;
 use List::Util qw(max);
 use Parallel::ForkManager;
 use Sys::Info;
-use Path::Tiny;
+use Path::Tiny qw(path);
 use Volatility::LinearCache;
 use Log::Any::Adapter qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
 use BOM::Pricing::PriceDaemon;
 
+my $ua = LWP::UserAgent->new(timeout => 2);
+$ua->env_proxy;
+my $response = $ua->get("http://169.254.169.254/latest/meta-data/local-ipv4");
+
 # Since this is only available in AWS, default to localhost for other environments
-my $internal_ip = get("http://169.254.169.254/latest/meta-data/local-ipv4") || '127.0.0.1';
+my $internal_ip = $response->is_success? $response->content: '127.0.0.1';
 
 GetOptions(
     "workers=i"              => \my $workers,
@@ -25,11 +29,14 @@ GetOptions(
     "no-warmup=i"            => \my $nowarmup,
     'record_price_metrics:i' => \my $record_price_metrics,
     'price_duplicate_spot:i' => \my $price_duplicate_spot,
+    'pid-file=s'             => \my $pid_file,
 );
 $queues               ||= 'pricer_jobs';
 $workers              ||= max(1, Sys::Info->new->device("CPU")->count);
 $record_price_metrics ||= 0;
 $price_duplicate_spot ||= 0;
+
+path($pid_file)->spew($$) if $pid_file;
 
 my @running_forks;
 my @workers = (0) x $workers;
