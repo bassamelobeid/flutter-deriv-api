@@ -60,6 +60,12 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 100,
 });
 
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch + 2,
+    underlying => 'R_100',
+    quote      => 100,
+});
+
 my $underlying = create_underlying('R_100');
 
 sub db {
