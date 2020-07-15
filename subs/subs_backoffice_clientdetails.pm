@@ -635,21 +635,52 @@ sub build_client_warning_message {
 ##############################################################
 sub get_untrusted_client_reason {
     return {
-        Disabled => [
-            'Account closure',
-            'Bonus code abuse',
-            'Compact state probably',
-            'Docs requested',
-            'Fraudulent account',
-            'Incomplete/false details',
-            'Multiple IPs',
-            'Pending investigation',
-            'Pending proof of age',
-            'Others'
-        ],
-        Duplicate      => ['Duplicate account'],
-        DocumentUpload => ['Allow document upload'],
-        Internal       => ['Internal client used for testing & learning']};
+        kyc => {
+            name    => 'KYC',
+            reasons => [
+                'Incomplete/false details',
+                'Pending proof of age',
+                'Pending EDD docs/info for withdrawal request',
+                'Pending EDD docs/info',
+                'Pending docs - qualifying threshold reached',
+                'Corporate account - pending info/docs/declarations',
+                'Pending disclaimer for Spanish clients with MT5',
+                'Allow document upload',
+                'Docs requested',
+            ],
+        },
+        sr => {
+            name    => 'SR',
+            reasons => ['Problem gambler', 'Negative target market',],
+        },
+        investigation => {
+            name    => 'Investigations',
+            reasons => ['Hacked account', 'Fraudulent account', 'Forged document', 'Pending investigation',],
+        },
+        payment => {
+            name    => 'Payments / transactions',
+            reasons => [
+                'PA withdrawal activation', 'Payment related', 'Sharing payment method', 'Duplicate account - currency change', 'Duplicate account',
+            ],
+        },
+        affiliate => {
+            name    => 'PAs / affiliates',
+            reasons => [
+                'PA application - pending info/documents',
+                'PA application - pending COC',
+                'Affiliate account - pending COC/ROD',
+                'Affiliate account - pending info/documents',
+            ],
+        },
+        account => {
+            name    => 'Account',
+            reasons => ['Email change request', 'Account closure', 'Incorrect broker code', 'MT5 advanced account', 'Multiple IPs',],
+        },
+        other => {
+            name    => 'Others',
+            reasons => ['Internal client used for testing & learning - internal test account', 'Others',],
+        },
+    };
 }
 
 sub date_html {

@@ -24,13 +24,11 @@ Action :
 </select>
 <br>
 Reason : <select id="untrusted_reasonlist" name="untrusted_reason">
-<optgroup label="select">
 <option>--------------------SELECT A REASON--------------------</option>
-</optgroup>
-[% FOREACH opt IN reasons.keys %]
-    <optgroup label="[% opt %]">
-    [% FOREACH r IN reasons.$opt %]
-        <option value="[% r %]">[% r %]</option>
+[% FOREACH key IN reasons.keys.sort %]
+    <optgroup label="[% reasons.$key.name %]">
+    [% FOREACH reason IN reasons.$key.reasons.sort %]
+        <option value="[% reason %]">[% reason %]</option>
     [% END %]
     </optgroup>
 [% END %]
