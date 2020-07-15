@@ -1,0 +1,155 @@
+<style type="text/css">
+table td{
+    padding-top:4px;
+}
+.label{
+    width:20%;
+    text-align:right;
+    text-transform:uppercase;
+    vertical-align:top;
+}
+#list_address{
+    height:2000px;
+    overflow:scroll;
+}
+</style>
+
+[% IF response.error %]
+
+<p style="color:red"><b>[%response.error%]</b></p>
+
+[% ELSE %]
+
+<div class="tab">
+      <button onclick="toggleResponse()" style="font-size:20px;">Show Alternate View</button>
+    </div>
+    <br>
+    <div id='fomatted_response'>
+[% SWITCH req_type %]
+    [% CASE 'get_balance' %]
+        <p>[% currency %] Address Balance: <b>[% response %]</b></p>
+    
+    [% CASE 'list_transactions' %]
+        [% FOREACH transaction IN response %]
+            <table>
+                <tr>
+                    <th>confirmations</th>
+                    <td>$transaction.confirmations</td>
+                </tr>
+                <tr>
+                    <th>fee</th>
+                    <td>$transaction.fee</td>
+                </tr>
+                <tr>
+                    <th>referenceaddress</th>
+                    <td>$transaction.referenceaddress</td>
+                </tr>
+                <tr>
+                    <th>valid</th>
+                    <td>$transaction.valid</td>
+                </tr>
+                <tr>
+                    <th>blockhash</th>
+                    <td>$transaction.blockhash</td>
+                </tr>
+                <tr>
+                    <th>type</th>
+                    <td>$transaction.type</td>
+                </tr>
+                <tr>
+                    <th>amount</th>
+                    <td>$transaction.amount</td>
+                </tr>
+                <tr>
+                    <th>positioninblock</th>
+                    <td>$transaction.positioninblock</td>
+                </tr>
+                <tr>
+                    <th>block</th>
+                    <td>$transaction.block</td>
+                </tr>
+                <tr>
+                    <th>ismine</th>
+                    <td>$transaction.ismine</td>
+                </tr>
+                <tr>
+                    <th>type_int</th>
+                    <td>$transaction.type_int</td>
+                </tr>
+                <tr>
+                    <th>version</th>
+                    <td>$transaction.version</td>
+                </tr>
+                <tr>
+                    <th>sendingaddress</th>
+                    <td>$transaction.sendingaddress</td>
+                </tr>
+                <tr>
+                    <th>propertyid</th>
+                    <td>$transaction.propertyid</td>
+                </tr>
+                <tr>
+                    <th>txid</th>
+                    <td>$transaction.txid</td>
+                </tr>
+                <tr>
+                    <th>divisible</th>
+                    <td>$transaction.divisible</td>
+                </tr>
+                <tr>
+                    <th>blocktime</th>
+                    <td>$transaction.blocktime</td>
+                </tr>
+            </table>
+            <hr style="height:2px;">
+        [% END %]
+    [% CASE 'get_transaction' %]
+        [% FOREACH transaction IN response %]
+            <table>
+                <tr>
+                    <th>confirmations</th>
+                    <td>$transaction.confirmations</td>
+                </tr>
+                <tr>
+                    <th>block</th>
+                    <td>$transaction.block</td>
+                </tr>
+                <tr>
+                    <th>type</th>
+                    <td>$transaction.type</td>
+                </tr>
+                <tr>
+                    <th>amount</th>
+                    <td>$transaction.amount</td>
+                </tr>
+            </table>
+        [% END %]
+        
+    [% CASE 'get_block_number' %]
+        <p>[% currency %] Last Block: <b>[% response %]</b></p>
+    
+    [% CASE 'get_syncing' %]
+        <p>Result: [% response %]</p>
+    
+[% END %]
+</div>
+    
+    <div id='raw_response' style="display:none; width:1200px; word-wrap: break-word;"><p>[% response_json %]</p></div>
+    
+[% END %]
+
+<script>
+    function toggleResponse() {
+      var formatted_content, raw_content;
+      raw_content = document.getElementById("raw_response");
+      formatted_content = document.getElementById("fomatted_response");
+      
+      if (typeof(raw_content) != 'undefined' && raw_content.style.display === "none"){
+          raw_content.style.display = "block";
+          formatted_content.style.display = "none";
+      } else {
+          raw_content.style.display = "none";
+          formatted_content.style.display = "block";
+      }
+    }
+</script>

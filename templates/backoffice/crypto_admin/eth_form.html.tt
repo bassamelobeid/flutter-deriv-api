@@ -1,0 +1,56 @@
+<form action="[% controller_url %]" method="POST">
+    <INPUT type=hidden name='currency' value='ETH'/>
+<!--get balance-->
+    <table>
+        <tr>
+            <th colspan=3>Get Balance</th>
+        </tr>
+        <tr>
+            <th>Address:</th>
+            <td><input type=text name='address'/></td>
+            <td><button type=submit name='req_type' value='get_balance'>Get address balance</button></td>
+        </tr>
+    </table>
+<br><br>
+<!--Get Trasaction by hash-->
+    <table>
+        <th colspan=3>Get transaction info</th>
+        <tr>
+            <th>Transaction hash</th>
+            <td><input type=text name='transaction_hash'/></td>
+            <td><button type=submit name='req_type' value='get_transactionbyhash'/>Get transaction info</button></td>
+        </tr>
+    </table>
+<br><br>
+<!--Get Trasaction by hash-->
+    <table>
+        <th colspan=3>Estimate gas</th>
+        <tr>
+            <th>To address: </th>
+            <td><input type=text name='to_address'/></td>
+            <td rowspan=2><button type=submit name='req_type' value='get_estimatedgas'/>Estimated Gas</button></td>
+        </tr>
+        <tr>
+            <th>Amount: </th>
+            <td><input type=text name='amount'/></td>
+        </tr>
+    </table>
+<br><br>
+<!--Wallet functions-->
+    <table>
+        <th colspan=3>Wallet functions</th>
+        <tr>
+            <td colspan=2>
+                <select name="req_type">
+                  <option disabled selected value> -- select an option -- </option>
+                  <option value="get_gas_price">Get gas price</option>
+                  <option value="get_accounts">Get all accounts</option>
+                  <option value="get_block_number">Get block number</option>
+                  <option value="get_syncing">Get syncing</option>
+                </select>
+            </td>
+            <td><button type=submit/>Get</button></td>
+        </tr>
+    </table>
+    
+</form>

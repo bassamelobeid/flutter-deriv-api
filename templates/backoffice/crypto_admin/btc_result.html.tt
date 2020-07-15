@@ -1,0 +1,244 @@
+<style type="text/css">
+table td{
+    padding-top:4px;
+}
+.label{
+    width:20%;
+    text-align:right;
+    text-transform:uppercase;
+    vertical-align:top;
+}
+#list_receivedby_address{
+    max-height:2000px;
+    overflow:scroll;
+}
+</style>
+
+[% IF response.error %]
+
+    <p style="color:red"><b>[%response.error%]</b></p>
+
+[% ELSE %]
+
+    <div class="tab">
+      <button onclick="toggleResponse()" style="font-size:20px;">Show Alternate View</button>
+    </div>
+    <br>
+    <div id='fomatted_response'>
+        [% SWITCH req_type %]
+            [% CASE 'list_unspent_utxo' %]
+                [% FOREACH unspent_utxo IN response %]
+                <table>
+                    <tr>
+                        <th>Address</th>
+                        <td><b>$unspent_utxo.address</b></td>
+                    </tr>
+                    <tr>
+                        <th>Amount</th>
+                        <td>$unspent_utxo.amount</td>
+                    </tr>
+                    <tr>
+                        <th>vout</th>
+                        <td>$unspent_utxo.vout</td>
+                    </tr>
+                    <tr>
+                        <th>txid</th>
+                        <td>$unspent_utxo.txid</td>
+                    </tr>
+                    <tr>
+                        <th>scriptPubKey</th>
+                        <td>$unspent_utxo.scriptPubKey</td>
+                    </tr>
+                    <tr>
+                        <th>solvable</th>
+                        <td>$unspent_utxo.solvable</td>
+                    </tr>
+                    <tr>
+                        <th>confirmations</th>
+                        <td>$unspent_utxo.confirmations</td>
+                    </tr>
+                    <tr>
+                        <th>label</th>
+                        <td>$unspent_utxo.label</td>
+                    </tr>
+                    <tr>
+                        <th>spendable</th>
+                        <td>$unspent_utxo.spendable</td>
+                    </tr>
+                    <tr>
+                        <th>safe</th>
+                        <td>$unspent_utxo.safe</td>
+                    </tr>
+                </table>
+                <hr>
+                [% END %]
+            
+            [% CASE 'get_transaction' %]
+                <table id='transaction'>
+                  <tr>
+                    <th>Address</th>
+                    <th>Amount</th>
+                    <th>Confirmations</th>
+                    <th>Block</th>
+                    <th>Type</th>
+                  </tr>
+                  
+                  [% FOREACH address IN response.keys %]
+                      <tr>
+                        <td><b>[%address%]</b></td>
+                        <td>[%response.$address.amount%]</td>
+                        <td>[%response.$address.confirmations%]</td>
+                        <td>[%response.$address.block%]</td>
+                        <td>[%response.$address.type%]</td>
+                      </tr>
+                  [% END %]
+                </table>
+                
+            [% CASE 'list_receivedby_address' %]
+                <div id='list_receivedby_address'>
+                    [% FOREACH record IN response %]
+                        <table>
+                            <tr>
+                                <th>Address</th>
+                                <td><b>[% record.address %]</b></td>
+                            </tr>
+                            <tr>
+                                <th>Amount</th>
+                                <td>[% record.amount %]</td>
+                            </tr>
+                            <tr>
+                                <th>Confirmations</th>
+                                <td>[% record.confirmations %]</td>
+                            </tr>
+                            <tr>
+                                <th>txids</th>
+                                <td>
+                                    [% FOREACH txid IN record.txids %]
+                                        [% txid %]<br>
+                                    [% END %]
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Label</th>
+                                <td>[% record.label %]</td>
+                            </tr>
+                        </table>
+                    <hr>
+                    [% END %]
+                </div>
+            
+            [% CASE 'get_balance' %]
+                <p>[% currency %] Wallet Balance: <b>[% response %]</b></p>
+            
+            [% CASE 'get_newaddress' %]
+                <p>[% currency %] New Address: <b>[% response %]</b></p>
+                
+            [% CASE 'get_estimate_smartfee' %]
+                <p>[% currency %] Estimated Smart Fee: <b>[% response %]</b></p>
+                
+            [% CASE 'get_blockcount' %]
+                <p>[% currency %] Last Block: <b>[% response %]</b></p>
+            
+            [% CASE 'get_blockchain_info' %]
+                <table>
+                    <tr>
+                        <th>size_on_disk</th>
+                        <td>[% response.size_on_disk %]</td>
+                    </tr>
+                    <tr>
+                        <th>mediantime</th>
+                        <td>[% response.mediantime %]</td>
+                    </tr>
+                    <tr>
+                        <th>chainwork</th>
+                        <td>[% response.chainwork %]</td>
+                    </tr>
+                    <tr>
+                        <th>blocks</th>
+                        <td>[% response.blocks %]</td>
+                    </tr>
+                    <tr>
+                        <th>difficulty</th>
+                        <td>[% response.difficulty %]</td>
+                    </tr>
+                    <tr>
+                        <th>chain</th>
+                        <td>[% response.chain %]</td>
+                    </tr>
+                    <tr>
+                        <th>warnings</th>
+                        <td>[% response.warnings %]</td>
+                    </tr>
+                    <tr>
+                        <th>bestblockhash</th>
+                        <td>[% response.bestblockhash %]</td>
+                    </tr>
+                    <tr>
+                        <th>automatic_pruning</th>
+                        <td>[% response.automatic_pruning %]</td>
+                    </tr>
+                    <tr>
+                        <th>prune_target_size</th>
+                        <td>[% response.prune_target_size %]</td>
+                    </tr>
+                    <tr>
+                        <th>pruneheight</th>
+                        <td>[% response.pruneheight %]</td>
+                    </tr>
+                    <tr>
+                        <th>pruned</th>
+                        <td>[% response.pruned %]</td>
+                    </tr>
+                    <tr>
+                        <th>headers</th>
+                        <td>[% response.headers %]</td>
+                    </tr>
+                    <tr>
+                        <th>verificationprogress</th>
+                        <td>[% response.verificationprogress %]</td>
+                    </tr>
+                    <tr>
+                        <th>softforks</th>
+                        <td>
+                            <table>
+                            [% FOREACH softfork IN response.softforks.keys %]
+                                <th rowspan=3>[% softfork %]</th>
+                                <th>height</th>
+                                    <td>[% response.softforks.$softfork.height %]</td>
+                                <tr>
+                                    <th>active</th>
+                                    <td>[% response.softforks.$softfork.active %]</td>
+                                </tr>
+                                <tr>
+                                    <th>type</th>
+                                    <td>[% response.softforks.$softfork.type %]</td>
+                                </tr>
+                                </td>
+                            [% END %]
+                            </table>
+                        </td>
+                    </tr>
+                    
+                </table>
+        [% END %]
+    </div>
+    
+    <div id='raw_response' style="display:none; width:1200px; word-wrap: break-word;"><p>[% response_json %]</p></div>
+    
+[% END %]
+
+<script>
+    function toggleResponse() {
+      var formatted_content, raw_content;
+      raw_content = document.getElementById("raw_response");
+      formatted_content = document.getElementById("fomatted_response");
+      
+      if (typeof(raw_content) != 'undefined' && raw_content.style.display === "none"){
+          raw_content.style.display = "block";
+          formatted_content.style.display = "none";
+      } else {
+          raw_content.style.display = "none";
+          formatted_content.style.display = "block";
+      }
+    }
+</script>

@@ -295,6 +295,18 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
         . qq~" class="Blue" style="margin-left: 10px;">Client Anonymization</a>
 								</td>
 							</tr>
+							
+							<tr>
+								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
+									<a href="~
+        . request()->url_for(
+        'backoffice/crypto_admin.cgi',
+        {
+            _r => $rand,
+        })
+        . qq~" class="Blue" style="margin-left: 10px;">Crypto Tools</a>
+								</td>
+							</tr>
       </tbody>
      </table>
     </td>

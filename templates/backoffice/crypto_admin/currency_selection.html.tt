@@ -1,0 +1,11 @@
+<form action="[% controller_url %]" method="POST">
+    <label>Select a currency to change tools</label><br>
+    <select onchange="this.form.submit()" name="currency">
+      [% FOREACH currency IN currency_options %]
+      <option value="[% currency %]" [% 'SELECTED' IF currency == currency_selected %]>
+        [% currency %]
+      </option>
+
+      [% END %]
+    </select>
+</form>
