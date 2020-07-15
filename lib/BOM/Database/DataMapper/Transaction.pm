@@ -120,10 +120,9 @@ sub get_accounts_with_open_bets_at_end_of {
 SELECT b.*
   FROM (
      SELECT *
-       FROM bet.financial_market_bet fmb
+       FROM bet.financial_market_bet_open fmb
        LEFT JOIN bet.multiplier m on m.financial_market_bet_id=fmb.id
-      WHERE is_sold IS FALSE
-        AND bet_class NOT IN ('legacy_bet', 'run_bet')
+      WHERE bet_class NOT IN ('legacy_bet', 'run_bet')
         AND purchase_time < $3::TIMESTAMP
 
       UNION ALL
