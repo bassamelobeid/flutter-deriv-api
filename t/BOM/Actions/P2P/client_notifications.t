@@ -30,14 +30,6 @@ my ($client, $order) = BOM::Test::Helper::P2P::create_order(
     amount    => 100
 );
 
-my $user = BOM::User->create(
-    email    => $client->email,
-    password => 'dummy_pass',
-);
-
-$user->add_client($client);
-$user->add_client($advertiser);
-
 my $expected_data = [
     {%{$advertiser->p2p_order_info(id => $order->{id})}, advertiser_loginid => $advertiser->loginid},
     {%{$client->p2p_order_info(id => $order->{id})}, client_loginid => $client->loginid},
