@@ -227,6 +227,13 @@ subtest 'update advertiser' => sub {
     $advertiser = $resp->{p2p_advertiser_update};
     ok $advertiser->{is_listed}, "enable is_listed";
 
+    subtest 'Empty request (response will have extra fields)' => sub {
+        $resp = $t->await::p2p_advertiser_update({
+            p2p_advertiser_update => 1,
+        });
+        test_schema('p2p_advertiser_update', $resp);
+    };
+    
     subtest 'Client use p2p_advertiser_info' => sub {
         $t->await::authorize({authorize => $token_client});
         $resp = $t->await::p2p_advertiser_info({
