@@ -103,6 +103,7 @@ sub notify_crypto_withdrawal_rejected {
 
 my $broker = request()->broker_code;
 my $staff  = BOM::Backoffice::Auth0::get_staffname();
+
 # Currency is utilised in Deposit and Withdrawal views accordingly
 # to distinguish information among supported cryptocurrencies.
 my $currency = request()->param('currency') // 'BTC';
@@ -372,6 +373,50 @@ if ($view_action eq 'withdrawals') {
             if ($error);
 
         notify_crypto_withdrawal_rejected($loginid, $rejection_reason) if $action eq 'Reject';
+    }
+
+    if ($action and $action eq 'bulkVerify') {
+
+        my $checked_ids = request->param('checked_ids');
+        code_exit_BO("<p style='color:red'>ERROR: No withdrawal transaction is selected for <b>bulkVerify</b>.</p>") unless $checked_ids;
+
+        my $list_to_verified;
+
+        # just a safety net just in case there is some invalid data sent from BO
+        try {
+            $list_to_verified = decode_json(request()->param('checked_ids'));
+        }
+        catch {
+            print "<p style='color:red'>ERROR: Invalid JSON format for id and amount received. Please contact BE. </p>";
+            code_exit_BO("");
+        }
+
+        my $combined_error = '';
+
+        my $approvals_required = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_approvals_required;
+
+        for my $each_withdrawal (@$list_to_verified) {
+
+            my $withdrawal_id     = $each_withdrawal->{id};
+            my $withdrawal_amount = $each_withdrawal->{amount};
+
+            my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_usd($withdrawal_amount, $currency));
+            # only skip those that does exceeds the staff's payment limit without stopping the operation
+            if ($over_limit) {
+                $combined_error = $combined_error . "Error in verifying transaction id: $withdrawal_id. " . $over_limit->get_mesg() . '<br>';
+                next;
+            }
+
+            my $error = $dbic->run(
+                ping => sub {
+                    $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?)',
+                        undef, $withdrawal_id, $approvals_required, $staff, undef);
+                });
+
+            $combined_error = $combined_error . "Error in verifying transaction id: $withdrawal_id. Error: " . $error . "<br>" if $error;
+        }
+
+        code_exit_BO($combined_error) if $combined_error;
     }
 
     my $ctc_status = $view_type eq 'pending' ? 'LOCKED' : uc($view_type);

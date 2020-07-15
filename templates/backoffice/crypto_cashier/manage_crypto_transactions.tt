@@ -103,6 +103,7 @@
                 [% IF view_action == 'search' %]
                     <th>Status</th>
                 [% END %]
+                [% IF view_type == 'pending' %]<td></td>[% END %]
                 <th>BlockchainInfo</th>
                 <th>PaymentInfo</th>
                 <th>Date</th>
@@ -114,12 +115,17 @@
         </thead>
         <tbody>
         [% FOREACH trx IN transactions %]
-            <tr>
+            <tr id=[% 'row_' _ trx.id %] data-selected=0>
                 [% IF view_action == 'search' %]
                     <td valign="top"><table><tbody>
                         <b>[% trx.transaction_type FILTER ucfirst %]: </b>
                         [% IF trx.status == 'LOCKED' %]PENDING[% ELSE %][% trx.status %][% END %]
                     </tbody></table></td>
+                [% END %]
+                [% IF view_type == 'pending' %]
+                    <td>
+                        <input type="checkbox" name="bulk_select" value=[%trx.id%] data-amount=[% trx.amount %] onClick=highlight_selected("row_[%trx.id%]") />
+                    </td>
                 [% END %]
                 <td valign="top">
                     <table class="internal"><tbody>
@@ -152,6 +158,7 @@
                 </td>
                 <td valign="top">
                     <table class="internal"><tbody>
+                        <tr><th>ID:</th><td>[% trx.id %]</td></tr>
                         <tr><th>Creation:</th><td>[% trx.creation_date %]</td></tr>
                     [% IF trx.transaction_type == 'deposit' %]
                         <tr><th>Pending:</th><td>[% trx.pending_date %]</td></tr>
@@ -221,6 +228,20 @@
         [% END %]
         </tbody>
     </table>
+    <br>
+    <table>
+        <tr>
+            <th id="selection_display_text">None selected</th>
+            <td>
+                <form action="[% controller_url %]" onsubmit="return confirm('Do you really want to continue?');" method="POST">
+                <input type="hidden" name="view_action" value="withdrawals"/>
+                <input type="hidden" id="checked_ids" name="checked_ids" value=""/>
+                <input type="submit" name="action" value='bulkVerify'/>
+            </form>
+            </td>
+        </tr>
+    </table>
+    <br>
 [% END %]
 
 [% url_base = '?broker=' _ broker _ '&currency=' _ currency _ '&show_all_pendings=' _ show_all_pendings _ '&show_one_authorised=' _ show_one_authorised _ '&view_action=' _ view_action %]
@@ -289,6 +310,40 @@ function viewFiatLogin(elem, loginID, brokerCode, fetchURL) {
            td_result.innerHTML = "<span style='color:red'>Error</span>";
         }
     });
+}
+
+function highlight_selected(row_selected) {
+    var row_selected = document.getElementById(row_selected);
+    var is_selected = row_selected.getAttribute('data-selected');
+
+    if(is_selected == 0){
+        row_selected.style="background-color: #D0E3C4 !important";
+        row_selected.setAttribute('data-selected', 1);
+    } else {
+        row_selected.style.backgroundColor= null;
+        row_selected.setAttribute('data-selected', 0);
+    }
+    
+    var selection_text = document.getElementById('selection_display_text');
+    
+    var checkboxes = document.getElementsByName('bulk_select');
+    var checkboxesChecked = [];
+    var numberOfSelectedBox = 0;
+    var totalAmount = 0;
+
+    for (var i=0; i<checkboxes.length; i++) {
+       if (checkboxes[i].checked) {
+          numberOfSelectedBox += 1;
+          checkboxesChecked.push({id:checkboxes[i].value, amount:checkboxes[i].getAttribute('data-amount')});
+          totalAmount = totalAmount + parseFloat(checkboxes[i].getAttribute('data-amount'));
+       }
+    }
+    // get decimal value from the amount
+    var decimal_place = checkboxes[0].getAttribute('data-amount').split(".")[1].length || 0;
+    // Populate hidden value
+    var hidden_value = document.getElementById('checked_ids');
+    hidden_value.value = JSON.stringify(checkboxesChecked);
+    selection_text.innerHTML = numberOfSelectedBox.toString() + " transaction(s) selected. Total amount is: " + totalAmount.toFixed(decimal_place) + " [%currency%]";
 }
 
 </script>
