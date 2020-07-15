@@ -425,6 +425,7 @@ sub get_config_input {
     my @input = uniq(map { $_->values_for_key($key) } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config)));
 
     if ($key eq 'expiry_type') {
+        @input = grep { $_ ne 'no_expiry' } @input;
         push @input, 'ultra_short';
     }
 
