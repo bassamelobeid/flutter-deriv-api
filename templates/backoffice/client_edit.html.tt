@@ -392,7 +392,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     [% END %]    
     <tr>                                                                         
-        <td class="label">Allow Resubmission : </td>                             
+        <td class="label">Allow POI Resubmission : </td>
         <td> <input type="checkbox" style="vertical-align:middle" name="allow_onfido_resubmission" value="1" [% IF onfido_resubmission %] checked="checked" [% END %]> </td>
     </tr>                                                                          
     <tr>                                                                         
