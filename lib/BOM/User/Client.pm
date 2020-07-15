@@ -2147,18 +2147,47 @@ sub p2p_order_create {
         message_params => [$advert_info->{account_currency}, formatnumber('amount', $advert_info->{account_currency}, $limit_remaining),]}
         if $amount > $limit_remaining;
 
-    my $order_type;
+    my ($order_type, $amount_advertiser, $amount_client);
 
     if ($advert_type eq 'buy') {
         $order_type = 'sell';
         die +{error_code => 'OrderPaymentInfoRequired'} if !trim($param{payment_info});
         die +{error_code => 'OrderContactInfoRequired'} if !trim($param{contact_info});
+        $amount_advertiser = $amount;
+        $amount_client     = -$amount;
     } elsif ($advert_type eq 'sell') {
         $order_type = 'buy';
         die +{error_code => 'OrderPaymentContactInfoNotAllowed'} if $payment_info or $contact_info;
         ($payment_info, $contact_info) = $advert_info->@{qw/payment_info contact_info/};
+        $amount_advertiser = -$amount;
+        $amount_client     = $amount;
     } else {
         die 'Invalid advert type ' . ($advert_type // 'undef') . ' for advert ' . $advert_info->{id};
+    }
+
+    try {
+        $client->validate_payment(
+            amount   => $amount_client,
+            currency => $advert_info->{account_currency});
+    }
+    catch {
+        chomp($@);
+        die +{
+            error_code     => 'OrderCreateFailClient',
+            message_params => [$@],
+        };
+    }
+
+    my $advertiser = BOM::User::Client->new({loginid => $advertiser_info->{client_loginid}});
+    try {
+        $advertiser->validate_payment(
+            amount   => $amount_advertiser,
+            currency => $advert_info->{account_currency});
+    }
+    catch {
+        die +{
+            error_code => 'OrderCreateFailAdvertiser',
+        };
     }
 
     my $client_ad_info = $client->_p2p_advertisers(loginid => $client->loginid)->[0];

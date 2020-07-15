@@ -7,7 +7,6 @@ use Test::Deep;
 
 use BOM::User::Client;
 use BOM::Test::Helper::P2P;
-use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
