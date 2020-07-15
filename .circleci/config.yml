@@ -469,7 +469,7 @@ jobs:
 workflows:
   version: 2
   build-workflow:
-    jobs:
+    jobs: &workflow_jobs
       - syntax:
           context: perl
       - filehash:
@@ -524,3 +524,12 @@ workflows:
           context: perl
       - perl-Pricing-Engine-TickExpiry:
           context: perl
+  daily:
+    jobs: *workflow_jobs
+    triggers:
+    - schedule:
+        cron: 30 22 * * *
+        filters:
+          branches:
+            only:
+            - master
