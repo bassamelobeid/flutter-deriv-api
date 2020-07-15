@@ -11,6 +11,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw(top_up);
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
+use BOM::Test::Helper::P2P;
 use BOM::User::Client;
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
@@ -106,6 +107,8 @@ subtest 'new real account for p2p' => sub {
         first_name             => 'first\'name',
         date_of_birth          => '1990-12-30',
         residence              => 'id',
+        address_line_1         => 'bournani',
+        address_city           => 'phraxos',
     );
 
     $token_vr = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token', ['admin']);
