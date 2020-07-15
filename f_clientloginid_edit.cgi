@@ -131,25 +131,25 @@ if ($input{delete_checked_documents} and $input{del_document_list}) {
 # if the checkbox is checked and unchecked, the EventListener will still send input value as 0.
 # this line is to escape this case.
         next unless $document;
-        my @tokens          = split(/\./, $document);
-        my $current_loginid = $tokens[0];
-        my ($doc_id)        = $tokens[2] =~ m{(\d+)};
+
+        my ($doc_id, $doc_loginid, $file_name) = $document =~ m/([0-9]+)-([A-Z0-9]+)-(.+)/;
+
         if (   (not defined $client)
-            or ($client->loginid ne $current_loginid))
+            or ($client->loginid ne $doc_loginid))
         {
-            $client = BOM::User::Client::get_instance({loginid => $current_loginid});
+            $client = BOM::User::Client::get_instance({loginid => $doc_loginid});
         }
         if ($client) {
             $client->set_db('write');
             my ($doc) = $client->find_client_authentication_document(query => [id => $doc_id]);    # Rose
             if ($doc) {
                 if ($doc->delete) {
-                    $full_msg .= "<p style=\"color:#eeee00; font-weight:bold;\">SUCCESS - $document is deleted!</p>";
+                    $full_msg .= "<p style=\"color:#eeee00; font-weight:bold;\">SUCCESS - $file_name is deleted!</p>";
                 } else {
-                    $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: did not remove $document record from db</p>";
+                    $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: did not remove $file_name record from db</p>";
                 }
             } else {
-                $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: could not find $document record in db</p>";
+                $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: could not find $file_name record in db</p>";
             }
 
         } else {

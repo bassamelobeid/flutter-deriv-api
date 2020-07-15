@@ -668,7 +668,8 @@ function get_checked_files() {
     {
         if (checkboxes[i].checked)
         {
-            doc_array.push(checkboxes[i].value);
+            let match = checkboxes[i].value.match(/([0-9]+)-([A-Z0-9]+)-(.+)/);
+            doc_array.push(match[3]);
         }
     }
     if (doc_array.length > 0){
