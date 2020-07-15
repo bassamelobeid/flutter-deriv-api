@@ -4,11 +4,13 @@ use strict;
 use warnings;
 
 use BOM::Test::Helper::Client;
+use BOM::User;
 use Carp;
 use Test::More;
 use Test::MockModule;
 
 my $advertiser_num;
+my $client_num;
 my $mock_sb;
 my $mock_sb_user;
 
@@ -47,10 +49,17 @@ sub create_advertiser {
 }
 
 sub create_client {
-    my ($balance, $param) = @_;
+    my ($balance, $param, $currency) = @_;
 
+    $param->{email} = 'p2p_' . (++$client_num) . '@binary.com';
     my $client = BOM::Test::Helper::Client::create_client(undef, undef, $param);
-    $client->account('USD');
+
+    BOM::User->create(
+        email    => $client->email,
+        password => 'test'
+    )->add_client($client);
+
+    $client->account($currency // 'USD');
 
     if ($balance) {
         BOM::Test::Helper::Client::top_up($client, $client->currency, $balance);
