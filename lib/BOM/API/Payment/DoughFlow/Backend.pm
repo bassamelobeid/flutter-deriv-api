@@ -26,6 +26,12 @@ has 'type' => (
     required => 1
 );
 
+# maps our internal type names to the transaction type names we store in the db
+my %type_mapping = (
+    payout_inprogress => 'withdrawal',
+    payout_rejected   => 'withdrawal_reversal',
+);
+
 =head2 _handle_qualifying_payments
 
 Handle the qualifying payments regulation check for clients that requires it.
@@ -95,13 +101,7 @@ sub comment {
         $fields{$var} = $c->request_parameters->{$var};
     }
 
-    my %mapping = (
-        payout_inprogress => 'withdrawal',
-        payout_rejected   => 'withdrawal_reversal',
-    );
-
-    my $type = $mapping{$c->type} // $c->type;
-
+    my $type = $type_mapping{$c->type} // $c->type;
     my $line = "DoughFlow $type trace_id=" . $c->request_parameters->{'trace_id'};
 
     # Put all of the additional comment fields in alphabetic order after the trace ID
@@ -333,10 +333,12 @@ sub check_predicates {
     }
 
     my $transaction_id = $args->{transaction_id} // '';
+    my $type           = $type_mapping{$c->type} // $c->type;
+
     if (
         $doughflow_datamapper->is_duplicate_payment({
                 payment_processor => $processor,
-                transaction_type  => $c->type,
+                transaction_type  => $type,
                 trace_id          => $trace_id,
                 transaction_id    => $transaction_id,
             }))
@@ -345,7 +347,7 @@ sub check_predicates {
               "Detected duplicate transaction ["
             . $c->comment
             . "] while processing request for "
-            . $c->type
+            . $type
             . " with trace id "
             . $trace_id
             . " and transaction id "
