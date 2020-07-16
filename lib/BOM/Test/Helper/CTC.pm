@@ -141,10 +141,14 @@ sub deploy_test_contract {
         $currency->account_config->{account}->{passphrase}, 0);
 
     my $total_supply = Math::BigFloat->new(1000000000000)->bmul(Math::BigInt->new(10)->bpow($decimals))->numify();
+
+    my $contract_currency_symbol = $currency_code eq 'eUSDT' ? 'USDT' : $currency_code;
+
     # the number 35 here is the time in seconds that we will wait to the contract be
     # deployed, for the tests since we are using a private node this works fine, this
     # will be removed on the future when we make the ethereum client async.
-    my $response = $contract->invoke_deploy($bytecode, $currency_code, $currency_code, $total_supply, $decimals)->get_contract_address(35);
+    my $response =
+        $contract->invoke_deploy($bytecode, $contract_currency_symbol, $contract_currency_symbol, $total_supply, $decimals)->get_contract_address(35);
 
     $contract->contract_address($response->get->response);
 
