@@ -1,0 +1,9 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use BOM::Platform::Sendbird::Webhook;
+
+return BOM::Platform::Sendbird::Webhook->new if caller;
+
+1;
