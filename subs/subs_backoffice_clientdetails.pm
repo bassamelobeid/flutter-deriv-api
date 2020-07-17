@@ -1636,4 +1636,39 @@ sub get_mt5_group_and_status {
     return;
 }
 
+=head2 get_limit_expiration_date
+
+get limit name and find first modified date for current value, add number of days the
+value is valid and return expiration date to be used in exclusion table
+
+=over
+
+=item * C<db> - required. Database handler object.
+
+=item * C<loginid> - required. Client loginid.
+
+=item * C<limit_name> - required. The name of limit we want to calculate expiration date for.
+
+=item * C<added_day> - Number of day the data is valid for a certain limit. 0 if none provided.
+
+=back
+
+=cut
+
+sub get_limit_expiration_date {
+    my ($db, $loginid, $limit_name, $added_day) = @_;
+
+    return undef unless ($db and $loginid and $limit_name);
+    return undef
+        unless any { $_ eq $limit_name }
+    qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_turnover max_30day_losses max_open_bets session_duration_limit max_deposit/;
+
+    my $latest_modified_date = $db->run(
+        ping => sub {
+            $_->selectrow_array('SELECT * FROM betonmarkets.get_self_exclusion_expiry_date(?,?)', undef, $loginid, $limit_name);
+        });
+    return undef if !defined $latest_modified_date;
+    return Date::Utility->new($latest_modified_date)->plus_time_interval(($added_day // 0) . 'd')->date;
+}
+
 1;

@@ -41,6 +41,25 @@ my $regulated_lc = $client->landing_company->is_eu;
 
 my $broker = $client->broker;
 
+my $self_exclusion = $client->get_self_exclusion;
+
+if (   !$regulated_lc
+    && request()->param('fix_begin_date')
+    && $self_exclusion
+    && $self_exclusion->max_deposit
+    && !$self_exclusion->max_deposit_begin_date)
+{
+    # calling get_limit_expiration_date to get the date at which max_deposit was updated for the last time
+    my $last_update_date = get_limit_expiration_date($client->db->dbic, $loginid, 'max_deposit');
+    $client->set_exclusion->max_deposit_begin_date($last_update_date);
+    $client->save;
+
+    my $self_exclusion_link = request()->url_for('backoffice/f_setting_selfexclusion.cgi', {loginid => $loginid});
+    print '<p>Maximum deposit begin date was successfully set to ' . $last_update_date . " for $loginid </p>";
+    print "<p><a href = '$self_exclusion_link'>Back to self exclusion settings </a></p>";
+    code_exit_BO();
+}
+
 my $self_exclusion_form = BOM::Backoffice::Form::get_self_exclusion_form({
     client          => $client,
     lang            => request()->language,
@@ -87,6 +106,7 @@ sub make_row {
         . $expiration_date
         . '</strong></td></tr>';
 }
+
 # to generate existing limits
 if (my $self_exclusion = $client->get_self_exclusion) {
     my $info;
@@ -147,8 +167,20 @@ if (my $self_exclusion = $client->get_self_exclusion) {
         Date::Utility->new($self_exclusion->max_deposit_end_date)->date
     ) if $self_exclusion->max_deposit;
 
-    $info .= make_row('Maximum deposit limit start date', Date::Utility->new($self_exclusion->max_deposit_begin_date)->date, '', '')
-        if $self_exclusion->max_deposit_begin_date;
+    if ($self_exclusion->max_deposit) {
+        my $begin_date =
+            $self_exclusion->max_deposit_begin_date
+            ? Date::Utility->new($self_exclusion->max_deposit_begin_date)->date
+            : '<span style="color:red">EMPTY<span>';
+        my $fix_url = request()->url_for(
+            'backoffice/f_setting_selfexclusion.cgi',
+            {
+                loginid        => $loginid,
+                fix_begin_date => 1
+            });
+        my $fix_link = ($regulated_lc || $self_exclusion->max_deposit_begin_date) ? '' : "<a href = '$fix_url'> Click to fix </a>";
+        $info .= make_row('Maximum deposit limit start date', $begin_date, $fix_link, '');
+    }
 
     if ($info) {
         $page .= '<h3>Currently set values are:</h3><table cellspacing="0" cellpadding="5" border="1" class="GreyCandy">' . $info . '</table>';
@@ -252,41 +284,6 @@ if ($client->save) {
 } else {
     print "<p class=\"aligncenter\">Sorry, the client settings have not been updated, please try it again.</p>";
     warn("Error: cannot write to self_exclusion table $!");
-}
-
-=head2 get_limit_expiration_date
-
-get limit name and find first modified date for current value, add number of days the
-value is valid and return expiration date to be used in exclusion table
-
-=over
-
-=item * C<db> - required. Database handler object.
-
-=item * C<loginid> - required. Client loginid.
-
-=item * C<limit_name> - required. The name of limit we want to calculate expiration date for.
-
-=item * C<added_day> - Number of day the data is valid for a certain limit. 0 if none provided.
-
-=back
-
-=cut
-
-sub get_limit_expiration_date {
-    my ($db, $loginid, $limit_name, $added_day) = @_;
-
-    return undef unless ($db and $loginid and $limit_name);
-    return undef
-        unless any { $_ eq $limit_name }
-    qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_turnover max_30day_losses max_open_bets session_duration_limit/;
-
-    my $latest_modified_date = $db->run(
-        ping => sub {
-            $_->selectrow_array('SELECT * FROM betonmarkets.get_self_exclusion_expiry_date(?,?)', undef, $loginid, $limit_name);
-        });
-    return undef if !defined $latest_modified_date;
-    return Date::Utility->new($latest_modified_date)->plus_time_interval(($added_day // 0) . 'd')->date;
 }
 
 code_exit_BO;
