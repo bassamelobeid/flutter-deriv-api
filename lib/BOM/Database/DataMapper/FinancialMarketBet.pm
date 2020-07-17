@@ -333,15 +333,16 @@ Fetch historical updates for multiplier for a specific financial market bet id
 sub get_multiplier_audit_details_by_contract_id {
     my $self        = shift;
     my $contract_id = shift;
+    my $limit       = shift;
 
     my $sql = q{
-        SELECT * from bet_v1.get_multiplier_audit_details_by_contract_id(?)
+        SELECT * from bet_v1.get_multiplier_audit_details_by_contract_id(?, ?)
     };
 
     my $results = $self->db->dbic->run(
         fixup => sub {
             my $sth = $_->prepare($sql);
-            $sth->execute($contract_id);
+            $sth->execute($contract_id, $limit);
             return $sth->fetchall_arrayref({});
         });
 
@@ -357,15 +358,16 @@ Fetch historical updates for multiplier for a specific transaction id
 sub get_multiplier_audit_details_by_transaction_id {
     my $self           = shift;
     my $transaction_id = shift;
+    my $limit          = shift;
 
     my $sql = q{
-        SELECT * from bet_v1.get_multiplier_audit_details_by_transaction_id(?)
+        SELECT * from bet_v1.get_multiplier_audit_details_by_transaction_id(?, ?)
     };
 
     my $results = $self->db->dbic->run(
         fixup => sub {
             my $sth = $_->prepare($sql);
-            $sth->execute($transaction_id);
+            $sth->execute($transaction_id, $limit);
             return $sth->fetchall_arrayref({});
         });
 
