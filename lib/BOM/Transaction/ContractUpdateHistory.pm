@@ -21,6 +21,8 @@ sub get_history_by_contract_id {
     my ($self, $args) = @_;
 
     die 'contract_id is required' unless $args->{contract_id};
+    die 'limit is required'       unless $args->{limit};
+
     my $contract = $args->{contract} // $self->_build_contract({contract_id => $args->{contract_id}});
     my $dm = $self->_fmb_datamapper;
 
@@ -28,15 +30,17 @@ sub get_history_by_contract_id {
         return {error => localize('This contract was not found among your open positions.')};
     }
 
-    my $results = $dm->get_multiplier_audit_details_by_contract_id($args->{contract_id});
+    my $results = $dm->get_multiplier_audit_details_by_contract_id($args->{contract_id}, $args->{limit});
 
-    return $self->_get_history($results, $contract);
+    return $self->_get_history($results, $contract, $args->{limit});
 }
 
 sub get_history_by_transaction_id {
     my ($self, $args) = @_;
 
     die 'transaction_id is required' unless $args->{transaction_id};
+    die 'limit is required'          unless $args->{limit};
+
     my $contract = $args->{contract} // $self->_build_contract({transaction_id => $args->{transaction_id}});
     my $dm = $self->_fmb_datamapper;
 
@@ -44,19 +48,19 @@ sub get_history_by_transaction_id {
         return {error => localize('This contract was not found among your open positions.')};
     }
 
-    my $results = $dm->get_multiplier_audit_details_by_transaction_id($args->{transaction_id});
+    my $results = $dm->get_multiplier_audit_details_by_transaction_id($args->{transaction_id}, $args->{limit});
 
-    return $self->_get_history($results, $contract);
+    return $self->_get_history($results, $contract, $args->{limit});
 }
 
 sub _get_history {
-    my ($self, $results, $contract) = @_;
+    my ($self, $results, $contract, $limit) = @_;
 
     my @history;
     my $prev;
+    OUTER:
     for (my $i = 0; $i <= $#$results; $i++) {
         my $current = $results->[$i];
-        my @entry;
         foreach my $order_type (@{$contract->category->allowed_update}) {
             next unless $current->{$order_type . '_order_date'};
             my $order_amount_str = $order_type . '_order_amount';
@@ -75,7 +79,7 @@ sub _get_history {
                 }
             }
 
-            push @entry,
+            push @history,
                 +{
                 display_name => $display_name,
                 order_amount => $order_amount,
@@ -84,12 +88,13 @@ sub _get_history {
                 order_type   => $order_type,
                 }
                 if (defined $order_amount);
+
+            last OUTER if $limit == scalar @history;
         }
         $prev = $current;
-        push @history, @entry;
     }
 
-    return [reverse @history];
+    return [@history];
 }
 
 sub _build_contract {

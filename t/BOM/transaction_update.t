@@ -356,7 +356,10 @@ subtest 'update take profit', sub {
             my $update_history = BOM::Transaction::ContractUpdateHistory->new(
                 client => $cl,
             );
-            my $history = $update_history->get_history_by_contract_id({contract_id => $fmb->{id}});
+            my $history = $update_history->get_history_by_contract_id({
+                contract_id => $fmb->{id},
+                limit       => 5000
+            });
             is scalar(@$history), 3, 'has three entries';
             is $history->[0]->{display_name}, 'Take profit';
             is $history->[0]->{order_amount}, 0;
@@ -376,11 +379,14 @@ subtest 'update take profit', sub {
             );
             ok $updater->is_valid_to_update, 'valid to update';
             $updater->update;
-            $res = $update_history->get_history_by_contract_id({contract_id => $fmb->{id}});
-            is $res->[1]->{display_name}, 'Take profit';
-            is $res->[1]->{order_amount}, 11;
-            is $res->[0]->{display_name}, 'Stop loss';
-            is $res->[0]->{order_amount}, -52;
+            $res = $update_history->get_history_by_contract_id({
+                contract_id => $fmb->{id},
+                limit       => 5000
+            });
+            is $res->[0]->{display_name}, 'Take profit';
+            is $res->[0]->{order_amount}, 11;
+            is $res->[1]->{display_name}, 'Stop loss';
+            is $res->[1]->{order_amount}, -52;
             is $res->[2]->{display_name}, 'Take profit';
             is $res->[2]->{order_amount}, 0;
             is $res->[3]->{display_name}, 'Take profit';
