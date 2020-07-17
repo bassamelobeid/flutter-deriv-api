@@ -153,11 +153,12 @@ subtest 'contract_update' => sub {
     $res = $c->call_ok('contract_update', $update_params)->has_error->error_code_is('ContractIsSold')->error_message_is('Contract has expired.');
 
     delete $update_params->{args}->{limit_order};
+    $update_params->{args}->{limit} = 5000;
     $res = $c->call_ok('contract_update_history', $update_params)->has_no_error->result;
-    is $res->[0]->{display_name}, 'Stop loss';
-    is $res->[0]->{order_amount}, -80;
-    is $res->[1]->{display_name}, 'Take profit';
-    is $res->[1]->{order_amount}, 10;
+    is $res->[0]->{display_name}, 'Take profit';
+    is $res->[0]->{order_amount}, 10;
+    is $res->[1]->{display_name}, 'Stop loss';
+    is $res->[1]->{order_amount}, -80;
 
     # contract update history
     my $update_history_params = {
@@ -166,6 +167,7 @@ subtest 'contract_update' => sub {
         args      => {
             contract_update_history => 1,
             contract_id             => 123,
+            limit                   => 5000,
         }};
 
     $c->call_ok('contract_update_history', $update_history_params)->has_error->error_code_is('ContractUpdateHistoryFailure')
@@ -173,12 +175,12 @@ subtest 'contract_update' => sub {
 
     $update_history_params->{args}{contract_id} = $buy_res->{contract_id};
     my $history = $c->call_ok('contract_update_history', $update_history_params)->has_no_error->result;
-    is $history->[0]->{display_name}, 'Stop loss';
-    is $history->[0]->{order_amount}, -80;
-    is $history->[0]->{value},        92.05;
-    is $history->[1]->{display_name}, 'Take profit';
-    is $history->[1]->{order_amount}, 10;
-    is $history->[1]->{value},        101.05;
+    is $history->[0]->{display_name}, 'Take profit';
+    is $history->[0]->{order_amount}, 10;
+    is $history->[0]->{value},        101.05;
+    is $history->[1]->{display_name}, 'Stop loss';
+    is $history->[1]->{order_amount}, -80;
+    is $history->[1]->{value},        92.05;
 };
 
 SKIP: {

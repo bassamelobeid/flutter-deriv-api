@@ -31,6 +31,7 @@ use BOM::Transaction::ContractUpdate;
 use BOM::Transaction::ContractUpdateHistory;
 use Date::Utility;
 
+use constant DEFAULT_CONTRACT_UPDATE_HISTORY_LIMIT => 500;
 my $json = JSON::MaybeXS->new;
 
 requires_auth();
@@ -659,6 +660,7 @@ rpc contract_update_history => sub {
 
     my $args        = $params->{args};
     my $contract_id = $args->{contract_id};
+    my $limit       = $args->{limit} // DEFAULT_CONTRACT_UPDATE_HISTORY_LIMIT;
 
     unless ($contract_id) {
         return BOM::Pricing::v3::Utility::create_error({
@@ -680,7 +682,10 @@ rpc contract_update_history => sub {
     try {
         $response = BOM::Transaction::ContractUpdateHistory->new(
             client => $client,
-        )->get_history_by_contract_id({contract_id => $contract_id});
+            )->get_history_by_contract_id({
+                contract_id => $contract_id,
+                limit       => $limit
+            });
 
         if (ref $response eq 'HASH' and my $localized_error = $response->{error}) {
             $response = BOM::Pricing::v3::Utility::create_error({
