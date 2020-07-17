@@ -182,44 +182,40 @@ subtest 'update advertiser' => sub {
     $token_advertiser = BOM::Platform::Token::API->new->create_token($client_advertiser->loginid, 'test token', ['payments']);
     $t->await::authorize({authorize => $token_advertiser});
 
-    my ($name, $payment, $contact) = ('new advertiser name', 'adv pay info', 'adv contact info');
-
     $resp = $t->await::p2p_advertiser_update({
             p2p_advertiser_update => 1,
-            name                  => $name,
+            contact_info          => '',
         })->{error};
     is $resp->{code}, 'AdvertiserNotApproved', 'Not approved advertiser cannot update the information';
 
     $client_advertiser->p2p_advertiser_update(is_approved => 1);
 
     $resp = $t->await::p2p_advertiser_update({
-            p2p_advertiser_update => 1,
-            name                  => ' ',
-        })->{error};
-    ok $resp->{code} eq 'InputValidationFailed' && $resp->{message} =~ /name/, 'Advertiser name cannot be blank';
-
-    $resp = $t->await::p2p_advertiser_update({
         p2p_advertiser_update      => 1,
+        is_listed                  => 0,
         contact_info               => '',
         default_advert_description => '',
         payment_info               => '',
     });
     test_schema('p2p_advertiser_update', $resp);
     $advertiser = $resp->{p2p_advertiser_update};
+    ok !$advertiser->{is_listed}, "is_listed updated";
     is $advertiser->{contact_info},               '', 'contact_info can be empty';
     is $advertiser->{default_advert_description}, '', 'default_advert_description can be empty';
     is $advertiser->{payment_info},               '', 'payment_info can be empty';
 
+    my ($desc, $payment, $contact) = ('ad descr', 'adv pay info', 'adv contact info');
+
     $advertiser = $t->await::p2p_advertiser_update({
-            p2p_advertiser_update => 1,
-            is_listed             => 0,
-            name                  => $name,
-            payment_info          => $payment,
-            contact_info          => $contact
-        })->{p2p_advertiser_update};
-    ok !$advertiser->{is_listed}, "is_listed updated";
-    is $advertiser->{name},         $name,    'advertiser name updated';
+        p2p_advertiser_update      => 1,
+        is_listed                  => 1,
+        contact_info               => $contact,
+        default_advert_description => $desc,
+        payment_info               => $payment,
+    })->{p2p_advertiser_update};
+    ok $advertiser->{is_listed}, "is_listed updated";
     is $advertiser->{payment_info}, $payment, 'advertiser payment_info updated';
+    is $advertiser->{default_advert_description}, $desc, 'advertiser default_advert_description updated';    
     is $advertiser->{contact_info}, $contact, 'advertiser contact_info updated';
 
     $resp = $t->await::p2p_advertiser_update({
@@ -242,7 +238,7 @@ subtest 'update advertiser' => sub {
         $resp = $t->await::p2p_advertiser_info({
                 p2p_advertiser_info => 1,
                 id                  => $advertiser->{id}});
-        test_schema('p2p_advertiser_info', $resp);
+        test_schema('p2p_advertiser_info', $resp);       
     };
 };
 
@@ -342,7 +338,7 @@ subtest 'create order (buy)' => sub {
     $order = $resp->{p2p_order_create};
     is $order->{account_currency}, $client_advertiser->account->currency_code, 'account currency';
     is $order->{advertiser_details}{id}, $advertiser->{id}, 'advertiser id';
-    is $order->{advertiser_details}{name}, 'new advertiser name', 'advertiser name';
+    is $order->{advertiser_details}{name}, $advertiser_params{name}, 'advertiser name';
     ok $order->{amount} == $amount && $order->{amount_display} == $amount, 'amount';
     ok $order->{expiry_time}, 'expiry time';
     is $order->{local_currency}, $advert_params{local_currency}, 'local currency';
