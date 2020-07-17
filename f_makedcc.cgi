@@ -22,8 +22,6 @@ BOM::Backoffice::Sysinit::init();
 
 my $staff = BOM::Backoffice::Auth0::get_staffname();
 
-PrintContentType();
-BrokerPresentation(' ');
 Bar("Make dual control code");
 
 my $now               = Date::Utility->new;
@@ -84,12 +82,13 @@ if ($input->{'dcctype'} eq 'file_content') {
             transactiontype => $input->{'transtype'}})->batch_payment_control_code(scalar @lines);
 
     $message =
-          "The dual control code created by $staff for "
+          "<b>The dual control code created by $staff for "
         . $input->{'purpose'}
-        . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
+        . " is:</b><p style='word-break: break-all;'>$code</p>This code is valid for 1 hour (from $current_timestamp) only.";
 
-    print encode_entities($message);
+    print $message;
 
+    $message =~ s/<[^>]*>/ /gs;
     BOM::User::AuditLog::log($message);
 
     # Logging

@@ -286,9 +286,9 @@ print $summary_table;
 print $client_account_table;
 
 if ($preview and @invalid_lines == 0) {
-    print "<div class=\"inner_bo_box bo_ajax_form\"><h2>Make Dual Control Code</h2><form action=\""
+    print "<div class=\"inner_bo_box\"><h2>Make Dual Control Code</h2><form action=\""
         . request()->url_for("backoffice/f_makedcc.cgi")
-        . "\" method=\"post\">"
+        . "\" method=\"post\" class=\"bo_ajax_form\">"
         . "<input type=hidden name=\"dcctype\" value=\"file_content\">"
         . "<input type=hidden name=\"broker\" value=\""
         . encode_entities($broker) . "\">"
