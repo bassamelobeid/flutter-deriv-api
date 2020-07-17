@@ -417,6 +417,7 @@ sub _get_multiplier_overview {
         client => BOM::User::Client->new({loginid => $self->client_loginid}),
         )->get_history_by_transaction_id({
             transaction_id => $self->transaction_id,
+            limit          => 4999,
         });
 
     my @contract_update_history;
