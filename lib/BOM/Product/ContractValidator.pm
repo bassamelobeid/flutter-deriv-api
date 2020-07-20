@@ -209,6 +209,7 @@ sub _validation_methods {
     push @validation_methods, '_validate_feed';
     push @validation_methods, '_validate_price'           unless $self->skips_price_validation;
     push @validation_methods, '_validate_volsurface'      unless $self->volsurface->type eq 'flat';
+    push @validation_methods, '_validate_rollover_blackout';
 
     return \@validation_methods;
 }
@@ -710,6 +711,33 @@ sub _validate_start_and_expiry_date {
                 };
             }
         }
+    }
+
+    return;
+}
+
+# we are blocking sellback on non-atm forex from volsurface rollover to midnight
+sub _validate_rollover_blackout {
+    my $self = shift;
+
+    return if $self->underlying->market->name ne 'forex' || $self->is_atm_bet;
+    return if not $self->for_sale;
+
+    # do not proceed if non delta surface is used for forex pricing.
+    BOM::Product::Exception->throw(
+        error_code => 'TradeTemporarilyUnavailable',
+        details    => {field => ''},                   # not an input error
+    ) if $self->volsurface->type ne 'delta';
+
+    my $rollover_date = $self->volsurface->rollover_date($self->date_pricing);
+    my $end_of_day    = $rollover_date->plus_time_interval('1d')->truncate_to_day;
+
+    if ($self->date_pricing->epoch >= $rollover_date->epoch and $self->date_pricing->epoch < $end_of_day->epoch) {
+        return {
+            message           => "resale not available for non-atm from rollover to end of day",
+            message_to_client => [$ERROR_MAPPING->{ResaleNotOffered}],
+            details           => {field => ''},                                                    # internal restriction
+        };
     }
 
     return;

@@ -628,4 +628,47 @@ subtest 'end of day two minute blackout' => sub {
     is $c->primary_validation_error->message_to_client->[2], '23:59:59';
 };
 
+subtest 'rollover blackout' => sub {
+    my $start      = Date::Utility->new('2020-07-15 20:45:00');
+    my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => $start->epoch,
+        quote      => 7195,
+    });
+    my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => $start->plus_time_interval('14m')->epoch,
+        quote      => 7195,
+    });
+    my $bet_params = {
+        bet_type     => 'CALL',
+        underlying   => 'frxUSDJPY',
+        date_start   => $start,
+        date_pricing => $start->plus_time_interval('14m'),
+        barrier      => 'S10P',
+        currency     => 'USD',
+        payout       => 10,
+        duration     => '5d',
+        current_tick => $current_tick,
+        entry_tick   => $entry_tick,
+    };
+    my $c = produce_contract($bet_params);
+    ok $c->is_valid_to_sell, 'valid to sell';
+
+    $bet_params->{date_pricing} = $start->plus_time_interval('15m');
+    $bet_params->{current_tick} = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => $start->plus_time_interval('15m')->epoch,
+        quote      => 7195,
+    });
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    is $c->primary_validation_error->message_to_client->[0], 'Resale of this contract is not offered.', 'message to client';
+    is $c->primary_validation_error->message, 'resale not available for non-atm from rollover to end of day', 'message';
+
+    $bet_params->{underlying} = 'R_100';
+    $c = produce_contract($bet_params);
+    ok $c->is_valid_to_sell, 'valid to sell';
+};
+
 done_testing();
