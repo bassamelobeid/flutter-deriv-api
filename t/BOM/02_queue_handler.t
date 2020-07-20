@@ -8,7 +8,8 @@ use Test::Warn;
 use Log::Any::Test;
 use BOM::Event::QueueHandler;
 use Log::Any qw($log);
-use Log::Any::Adapter ('Stderr', log_level => 'warn');
+use Log::Any::Adapter (qw(Stderr), log_level => 'warn');
+use JSON::MaybeUTF8 qw(decode_json_utf8);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Config::Redis;
 use IO::Async::Loop;
@@ -17,6 +18,14 @@ initialize_events_redis();
 my $redis = BOM::Config::Redis::redis_events_write();
 my $loop  = IO::Async::Loop->new;
 my $handler;
+my $mock_log_adapter_test = Test::MockModule->new('Log::Any::Adapter::Test');
+# Need to mock because in `Log::Any::Adapter::Test` is_debug always returns 1 that is used in OM::Event::QueueHandler->clean_data_for_logging.
+$mock_log_adapter_test->mock(
+    'is_debug',
+    sub {
+        return 0;
+    });
+
 subtest 'startup and shutdown' => sub {
     lives_ok { $handler = BOM::Event::QueueHandler->new(queue => 'GENERIC_EVENTS_QUEUE') } 'create new queue instance';
     $loop->add($handler);
@@ -206,5 +215,19 @@ subtest 'async_subs' => sub {
 
     $module->unmock_all();
 };
+
+subtest 'clean_data_for_logging' => sub {
+    my $event_data_json       = '{"details":{"loginid":"CR10000","properties":{"type":"real"},"email":"abc@def.com"}}';
+    my $expected_cleaned_data = '{"sanitised_details":{"loginid":"CR10000"}}';
+
+    my $cleaned_data = BOM::Event::QueueHandler->clean_data_for_logging($event_data_json);
+    is $cleaned_data, $expected_cleaned_data, 'cleaned data is correct for given json data';
+
+    my $event_data_hashref = decode_json_utf8($event_data_json);
+    $cleaned_data = BOM::Event::QueueHandler->clean_data_for_logging($event_data_hashref);
+    is $cleaned_data, $expected_cleaned_data, 'cleaned data is correct for given already decode data from json';
+};
+
+$mock_log_adapter_test->unmock_all;
 
 done_testing();

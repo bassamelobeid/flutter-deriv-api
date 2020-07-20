@@ -347,7 +347,8 @@ sub clean_data_for_logging {
     }
     my $decoded_data;
     try {
-        $decoded_data = decode_json_utf8($event_data);
+        # decode_json only when need.
+        $decoded_data = ref($event_data) ? $event_data : decode_json_utf8($event_data);
     }
     catch {
         exception_logged();
