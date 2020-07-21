@@ -173,7 +173,11 @@ if ($view_action eq 'withdrawals') {
                 "SELECT SUM(amount), SUM(estimated_fee) FROM payment.cryptocurrency WHERE currency_code = ? AND blockchain_txn IS NULL AND status = 'LOCKED' AND transaction_type='withdrawal'",
                 undef, $currency
             );
-        }) // 0;
+        }
+        ) // (
+        0,
+        0
+        );
 }
 
 try {
