@@ -18,14 +18,14 @@ sub cli_template {
 
 sub documentation {
     return qq#
-This script will apply the SQL patched from a speicfied diretory to database.
+This script will apply the SQL patched from a specific directory to a database.
 
 Patch files names must be like:
 schema_1_up.sql
 
 Note: We don't support the downgrading.
 
-Current version of database schema will be stored inside database in "dbix_migration" table. This table is used by Migration packge to keep the state of database.
+Current version of database schema will be stored inside database in "dbix_migration" table. This table is used by Migration package to keep the state of database.
 
 MAKE A BACKUP BEFORE ANY MAJOR CHANGE ON LIVE SERVER.
 #;
@@ -189,6 +189,7 @@ sub script_run {
         $self->print_info("Update from version [$version_old] to version [$version_new]\n");
     } else {
         $self->print_info("Update had been cancelled.");
+        exit 1;
     }
     return;
 }
@@ -200,7 +201,7 @@ sub _confirm_database_versioning_changes {
 
     $self->print_info("Please confirm the changes.");
 
-    $self->print_info("Upgrade statements from version $current_version to lastest version:");
+    $self->print_info("Upgrade statements from version $current_version to latest version:");
     $self->print_info("===============================================");
     $current_version++;
     my $c = '';
@@ -211,7 +212,7 @@ sub _confirm_database_versioning_changes {
     }
 
     $self->print_info("===============================================");
-    $self->print_info("Are you sure you want to apply this changes [y/N]?");
+    $self->print_info("Are you sure you want to apply these changes [y/N]?");
     my $confirm = readline(*STDIN);
     chomp $confirm;
 
