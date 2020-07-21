@@ -15,7 +15,6 @@ use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use Test::Fatal;
 
 use Test::MockModule;
 use Postgres::FeedDB::Spot::Tick;
@@ -212,7 +211,7 @@ subtest 'invalid barrier for tick expiry' => sub {
     ok $c->is_valid_to_buy, 'valid to buy';
     delete $bet_params->{barrier};
     $bet_params->{bet_type} = 'ASIANU';
-    $c                      = produce_contract($bet_params);
+    $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for asian';
     delete $bet_params->{date_pricing};
     $bet_params->{entry_tick} = $fake_tick;
@@ -278,7 +277,7 @@ subtest 'invalid payout currency' => sub {
     ok $c->is_valid_to_buy, 'valid multi-day ATM contract with relative barrier.';
     $bet_params->{currency} = 'BDT';
     $c = produce_contract($bet_params);
-    my $error = exception {$c->is_valid_to_buy};
+    my $error = exception { $c->is_valid_to_buy };
     is $error->message_to_client->[0], 'Invalid payout currency', 'message_to_client - Invalid payout currency';
     is $error->details->{field}, 'currency', 'error details is correct';
 };
@@ -326,7 +325,23 @@ subtest 'missing trading_period_start' => sub {
     };
     isa_ok $exception, 'BOM::Product::Exception';
     is $exception->error_code, "MissingTradingPeriodStart", 'error code is MissingTradingPeriodStart';
+};
 
+subtest "Minimum multiplier for very small numbers should not be shown in scientific notation" => sub {
+    my $bet_params = {
+        bet_type   => 'LBHIGHLOW',
+        date_start => $now,
+        duration   => '5m',
+        underlying => '1HZ50V',
+        currency   => 'BTC',
+        multiplier => 0,
+    };
+
+    my $exception = exception {
+        produce_contract($bet_params);
+    };
+    is $exception->{error_code}, 'MinimumMultiplier';
+    is $exception->{error_args}[0], '0.00005000';
 };
 
 done_testing();

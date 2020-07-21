@@ -109,7 +109,7 @@ subtest 'zero amount' => sub {
     $error = exception { produce_contract($args) };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'Minimum multiplier of [_1].', 'zero multiplier not valid';
-    is $error->message_to_client->[1], 0.5;
+    is $error->message_to_client->[1], '0.50';
 
 };
 

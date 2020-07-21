@@ -476,8 +476,8 @@ sub _initialize_other_parameters {
             if ($params->{multiplier} < $minimum_multiplier) {
                 BOM::Product::Exception->throw(
                     error_code => 'MinimumMultiplier',
-                    error_args => [$minimum_multiplier],
-                    details    => {field => 'amount'},
+                    error_args => [financialrounding('price', $params->{currency}, $minimum_multiplier)],
+                    details => {field => 'amount'},
                 );
             }
         }
