@@ -113,6 +113,7 @@ my $action = request()->param('action');
 my $address = request()->param('address');
 # Show new addresses in recon?
 my $show_new_addresses = request()->param('include_new');
+my $fee_recon          = request()->param('fee_recon');
 # view type is a filter option which is used to sort transactions
 # based on their status:it might be either pending, verified, rejected,
 # processing,performing_blockchain_txn, sent or error.
@@ -540,7 +541,7 @@ if ($view_action eq 'withdrawals') {
         code_exit_BO();
     }
 
-    my @recon_list = $currency_wrapper->recon_report($start_date, $end_date);
+    my @recon_list = $currency_wrapper->recon_report($start_date, $end_date, $fee_recon);
 
     unless (scalar @recon_list) {
         code_exit_BO("Empty reconciliation report. There is no record to display.");
@@ -574,8 +575,10 @@ EOF
         my $encoded_address = encode_entities($address);
         print '<td><a href="' . $address_uri . $encoded_address . '" target="_blank">' . $encoded_address . '</a></td>';
 
-        my $amount = $db_tran->{amount};
+        my $amount     = $db_tran->{amount};
+        my $currency   = $fee_recon ? $currency_wrapper->parent_currency : $currency;
         my $usd_amount = formatnumber('amount', 'USD', financialrounding('price', 'USD', in_usd($db_tran->{amount}, $currency)));
+
         # for recon only, we can't consider fee as a 8 decimal places value
         # for ethereum the fees values has more than that, and since we can't
         # get any difference in the recon report, better show the correct value
