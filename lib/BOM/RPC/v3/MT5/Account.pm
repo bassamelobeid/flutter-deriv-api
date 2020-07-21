@@ -50,6 +50,8 @@ use constant MT5_MALTAINVEST_REAL_LEVERAGE => 30;
 use constant MT5_SVG_FINANCIAL_MOCK_LEVERAGE => 1;
 use constant MT5_SVG_FINANCIAL_REAL_LEVERAGE => 1000;
 
+use constant MT5_VIRTUAL_MONEY_DEPOSIT_COMMENT => 'MT5 Virtual Money deposit';
+
 # Defines mt5 account rights combination when trading is enabled
 use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
     483 1503 2527 3555
@@ -453,7 +455,7 @@ async_rpc "mt5_new_account",
                             if ($account_type eq 'demo') {
                                 # funds in Virtual money
                                 $balance = 10000;
-                                do_mt5_deposit($mt5_login, $balance, 'Binary MT5 Virtual Money deposit.')->on_done(
+                                do_mt5_deposit($mt5_login, $balance, MT5_VIRTUAL_MONEY_DEPOSIT_COMMENT)->on_done(
                                     sub {
                                         # TODO(leonerd): It'd be nice to turn these into failed
                                         #   Futures from BOM::MT5::User::Async also.
@@ -1104,7 +1106,7 @@ async_rpc "mt5_deposit",
 
                 my $amount_to_topup = 10000;
 
-                return do_mt5_deposit($to_mt5, $amount_to_topup, 'Binary MT5 Virtual Money deposit.')->then(
+                return do_mt5_deposit($to_mt5, $amount_to_topup, MT5_VIRTUAL_MONEY_DEPOSIT_COMMENT)->then(
                     sub {
                         my ($status) = @_;
 
