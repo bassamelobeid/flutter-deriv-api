@@ -48,7 +48,7 @@ use BOM::User::Client;
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
-use BOM::Database::Model::OAuth;
+use BOM::Database::AuthDB;
 
 $SIG{__DIE__} = sub {
     return if $^S;
@@ -110,9 +110,10 @@ sub create_client {
         myaffiliates_token       => '',
         email                    => $email,
         residence                => 'za',
-        address_line_1           => '',
+        address_line_1           => '1 sesame st',
         address_line_2           => '',
         address_city             => '',
+        address_city             => 'cyberjaya',
         address_state            => '',
         address_postcode         => '',
         phone                    => '',
@@ -159,24 +160,26 @@ sub token_for_client {
         );
 
     section_title('OAuth App');
-    my $oauth = BOM::Database::Model::OAuth->new;
-    if ($oauth->is_name_taken($app_user->id, 'P2P Cashier')) {
-        my ($app) = $oauth->get_apps_by_user_id($app_user->id)->@*;
-        $log->infof('Existing OAuth app %d - %s', $app->{app_id}, $app);
-    } else {
-        my $app = $oauth->create_app({
-            user_id               => $app_user->id,
-            name                  => 'P2P Cashier',
-            scopes                => [qw(read payments)],
-            homepage              => 'https://www.binary.com',
-            github                => '',
-            appstore              => '',
-            googleplay            => '',
-            redirect_uri          => 'https://p2p-cashier.deriv.com',
-            verification_uri      => 'https://p2p-cashier.deriv.com',
-            app_markup_percentage => 0,
+    
+    my $app_id = 1408;
+    my $auth_db = BOM::Database::AuthDB::rose_db()->dbic;
+    
+    my $app = $auth_db->run(
+        fixup => sub {
+            $_->selectrow_hashref("SELECT * FROM oauth.apps WHERE id = $app_id");
         });
-        $log->infof('Created OAuth app ID %s', $app);
+    
+    if ($app) {
+        $log->infof('Found existing OAuth app ID %d - %s', $app->{id}, $app);
+    }
+    else {
+        $app = $auth_db->run(
+            fixup => sub {
+                $_->selectrow_hashref('INSERT INTO oauth.apps (id, binary_user_id, name, scopes, redirect_uri, verification_uri) VALUES (?,?,?,?,?,?) RETURNING *', 
+                    undef,
+                    $app_id, $app_user->id, 'P2P Cashier', [qw(read payments)], 'deriv://dp2p/redirect', 'https://p2p-cashier.deriv.com')
+            });
+        $log->infof('Created OAuth app ID %d - %s', $app->{id}, $app);
     }
 }
 
