@@ -48,6 +48,8 @@ sub p2p_advertiser_update {
                 if grep { $_->{client_loginid} ne $client->loginid } $existing->@*;
         }
 
+        my $advertiser_info = $client->p2p_advertiser_info;
+
         $client->db->dbic->run(
             fixup => sub {
                 $_->do(
@@ -65,6 +67,15 @@ sub p2p_advertiser_update {
                 advertiser_id  => request->param('advertiser_id'),
             },
         );
+
+        my $name = request->param('advertiser_name');
+        if ($name ne $advertiser_info->{name}) {
+            my $sendbird_api = BOM::User::Utility::sendbird_api();
+            WebService::SendBird::User->new(
+                user_id    => $advertiser_info->{chat_user_id},
+                api_client => $sendbird_api
+            )->update(nickname => $name);
+        }
 
         return {
             success => 1,
