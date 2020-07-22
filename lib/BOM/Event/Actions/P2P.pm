@@ -231,7 +231,7 @@ sub order_expired {
     my $data = shift;
 
     if ($data->{expiry_started}) {
-        stats_timing('p1p.order.expiry.delay', (1000 * Time::HiRes::tv_interval($data->{expiry_started})));
+        stats_timing('p2p.order.expiry.delay', (1000 * Time::HiRes::tv_interval($data->{expiry_started})));
     }
 
     BOM::Config::Runtime->instance->app_config->check_for_update;
