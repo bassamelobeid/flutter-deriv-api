@@ -189,9 +189,19 @@ payments:
               description: "ETH minimum safe amount"
               default: 40
               global: 1
+            BUSD:
+              isa: Num
+              description: "BUSD minimum safe amount"
+              default: 6500
+              global: 1
             DAI:
               isa: Num
               description: "DAI minimum safe amount"
+              default: 6500
+              global: 1
+            EURS:
+              isa: Num
+              description: "EURS minimum safe amount"
               default: 6500
               global: 1
             IDK:

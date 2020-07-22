@@ -6,7 +6,13 @@ payment_limits:
       minimum: 0.002
       maximum: 5
 currency_specific_limits:
+    BUSD:
+      minimum: 10
+      maximum: 2000
     DAI:
+      minimum: 10
+      maximum: 2000
+    EURS:
       minimum: 10
       maximum: 2000
     PAX:

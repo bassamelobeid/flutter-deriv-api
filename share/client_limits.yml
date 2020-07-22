@@ -6,7 +6,9 @@ maximum_daily_turnover:
   BTC: 10
   ETH: 100
   LTC: 500
+  BUSD: 500000
   DAI: 500000
+  EURS: 500000
   IDK: 7500000
   PAX: 500000
   TUSD: 500000
@@ -24,7 +26,9 @@ max_balance:
     BTC: 50
     ETH: 200
     LTC: 1000
+    BUSD: 1000000
     DAI: 1000000
+    EURS: 1000000
     IDK: 15000000
     PAX: 1000000
     TUSD: 1000000
@@ -41,7 +45,9 @@ max_balance:
     BTC: 50
     ETH: 100
     LTC: 500
+    BUSD: 300000
     DAI: 300000
+    EURS: 300000
     IDK: 4500000
     PAX: 300000
     TUSD: 300000
@@ -58,7 +64,9 @@ max_payout_open_positions:
     BTC: 1
     ETH: 10
     LTC: 50
+    BUSD: 50000
     DAI: 50000
+    EURS: 50000
     IDK: 750000
     PAX: 50000
     TUSD: 50000

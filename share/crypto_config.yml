@@ -47,6 +47,13 @@ ETH:
         min_transfer: 10 # ETH
         max_transfer: 100 # ETH
         address: 0x067f48d1bbaab135cfbe43535cc34312facc54a1 # multis.co address
+BUSD:
+    withdrawal:
+        timeout: "3d"
+        min_usd: 25
+        fee_limit_usd: 10
+    protocol_cost: 0
+    decimal_places: 18
 DAI:
     withdrawal:
         timeout: "3d"
@@ -54,6 +61,13 @@ DAI:
         fee_limit_usd: 10
     protocol_cost: 0
     decimal_places: 18
+EURS:
+    withdrawal:
+        timeout: "3d"
+        min_usd: 25
+        fee_limit_usd: 10
+    protocol_cost: 0
+    decimal_places: 2
 IDK:
     withdrawal:
         timeout: "3d"
