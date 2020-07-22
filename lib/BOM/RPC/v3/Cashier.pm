@@ -1775,8 +1775,6 @@ sub _validate_transfer_between_accounts {
     # check for exchange rates offer
     my $crypto_currency = $from_currency_type eq 'crypto' ? $from_currency : $to_currency;
     unless ($from_currency eq $to_currency || offer_to_clients($crypto_currency)) {
-        my $val = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
-        push(@$val, $crypto_currency);
         stats_event(
             'Exchange Rates Issue - No offering to clients',
             'Please inform Quants and Backend Teams to check the exchange_rates for the currency.',

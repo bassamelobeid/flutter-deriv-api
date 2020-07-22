@@ -1609,8 +1609,6 @@ sub _mt5_validate_and_get_amount {
                 || $mt5_currency eq $client_currency
                 || offer_to_clients($client_currency))
             {
-                my $val = BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies;
-                push(@$val, $client_currency);
                 stats_event(
                     'Exchange Rates Issue - No offering to clients',
                     'Please inform Quants and Backend Teams to check the exchange_rates for the currency.',
