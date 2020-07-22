@@ -22,6 +22,7 @@ use ExchangeRates::CurrencyConverter qw(in_usd);
 
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/financialrounding/;
+use List::MoreUtils qw/singleton/;
 
 local $\ = undef;    # Sigh.
 
@@ -104,15 +105,45 @@ sub _db_write {
         })->db;
 }
 
-has live_open_bets => (
-    isa        => 'HashRef',
+has production_servers => (
     is         => 'ro',
     lazy_build => 1,
+    isa        => 'ArrayRef',
 );
 
-sub _build_live_open_bets {
+has vr_server_name => (
+    is         => 'ro',
+    lazy_build => 1,
+    isa        => 'Str',
+);
+
+sub _build_production_servers {
     my $self = shift;
-    return $self->_db->dbic->run(fixup => sub { $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id') });
+    my $servers = $self->_db->dbic->run(fixup => sub { $_->selectall_hashref(qq{ SELECT * FROM betonmarkets.production_servers() }, 'srvname') });
+    return [sort keys %$servers];
+}
+
+sub _build_vr_server_name {
+    my $self         = shift;
+    my $prod_servers = $self->production_servers;
+    my $all_servers =
+        $self->_db->dbic->run(fixup => sub { $_->selectall_hashref(qq{ SELECT * FROM betonmarkets.production_servers(TRUE) }, 'srvname') });
+    my $vr_name = (singleton(keys %$all_servers, @$prod_servers))[0];
+    return $vr_name;
+}
+
+sub live_open_bets {
+    my ($self, @db_names) = @_;
+    @db_names = @{$self->production_servers} unless @db_names;
+
+    # placeholder for variable number of bind parameters
+    my $in = join ', ', ('?') x @db_names;
+    my $query = qq{ SELECT * FROM accounting.get_live_open_bets($in) };
+
+    return $self->_db->dbic->run(
+        fixup => sub {
+            $_->selectall_hashref($query, 'id', {}, @db_names);
+        });
 }
 
 sub historical_open_bets {
