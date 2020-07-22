@@ -6,8 +6,9 @@ rights:
   confirmed: 0x0010
   trailing: 0x0020
   expert: 0x0040
-  api: 0x0080
+  api_deprecated: 0x0080 # From MT5 build 2485 USER_RIGHT_API has changed to 0x4000
   reports: 0x0100
   readonly: 0x0200
   reset_pass: 0x0400
   otp_enabled: 0x0800
+  api: 0x4000
