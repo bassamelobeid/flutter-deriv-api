@@ -8,7 +8,7 @@ no indirect;
 use Guard;
 use YAML::XS;
 use Date::Utility;
-use List::Util qw(any first sum0);
+use List::Util qw(any first);
 use Syntax::Keyword::Try;
 use File::ShareDir;
 use Locale::Country::Extra;
@@ -51,11 +51,6 @@ use constant MT5_SVG_FINANCIAL_MOCK_LEVERAGE => 1;
 use constant MT5_SVG_FINANCIAL_REAL_LEVERAGE => 1000;
 
 use constant MT5_VIRTUAL_MONEY_DEPOSIT_COMMENT => 'MT5 Virtual Money deposit';
-
-# Defines mt5 account rights combination when trading is enabled
-use constant MT5_ACCOUNT_TRADING_ENABLED_RIGHTS_ENUM => qw(
-    483 1503 2527 3555
-);
 
 my $error_registry = BOM::RPC::v3::MT5::Errors->new();
 my $error_handler  = sub {
@@ -1585,9 +1580,7 @@ sub _mt5_validate_and_get_amount {
                 my $hex_rights   = BOM::Config::mt5_user_rights()->{'rights'};
                 my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
                 my %rights       = map { $_ => $setting->{rights} & $known_rights{$_} ? 1 : 0 } keys %known_rights;
-                unless (sum0(@rights{qw(enabled api)}) == 2
-                    and not $rights{trade_disabled})
-                {
+                if (not $rights{enabled} or $rights{trade_disabled}) {
                     return create_error_future('MT5DepositLocked');
                 }
             }
