@@ -96,13 +96,9 @@ override '_build_pricing_engine' => sub {
     my $self = shift;
 
     my @strikes = ($self->high_barrier->as_absolute, $self->low_barrier->as_absolute);
-    my $vol_args = {
-        from => $self->effective_start->epoch,
-        to   => $self->date_expiry->epoch,
-        spot => $self->current_spot,
-    };
+    my $pen = $self->pricing_engine_name;
 
-    my @vols = map { $self->volsurface->get_volatility(+{%$vol_args, strike => $_}) } @strikes;
+    my @vols = @{$self->pricing_vol_for_two_barriers}{'high_barrier_vol', 'low_barrier_vol'};
 
     my $bet_duration = $self->timeindays->amount * 24 * 60;
     # Maximum lookback period is 30 minutes

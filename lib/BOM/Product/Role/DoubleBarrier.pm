@@ -145,19 +145,28 @@ sub _validate_barrier {
     }
 
     my ($min_move, $max_move) = (0.25, 2.5);
+    my ($min_allowed_barrier, $max_allowed_barrier) = ($min_move * $current_spot, $max_move * $current_spot);
+    if ($self->category_code eq 'callputspread' and $self->underlying->market->name eq 'forex') {
+        my $max_allowed_pips = 400;
+        $min_allowed_barrier = $current_spot - $max_allowed_pips * $self->underlying->pip_size;
+        $max_allowed_barrier = $current_spot + $max_allowed_pips * $self->underlying->pip_size;
+    }
+
     foreach my $pair (['low' => $low_barrier], ['high' => $high_barrier]) {
         my ($label, $barrier) = @$pair;
         next unless $barrier;
         my $abs_barrier = $barrier->as_absolute;
-        if ($abs_barrier > $max_move * $current_spot or $abs_barrier < $min_move * $current_spot) {
+        if ($abs_barrier > $max_allowed_barrier or $abs_barrier < $min_allowed_barrier) {
             return {
                 message => 'Barrier too far from spot '
-                    . "[move: "
-                    . ($abs_barrier / $current_spot) . "] "
-                    . "[min: "
-                    . $min_move . "] "
-                    . "[max: "
-                    . $max_move . "]",
+                    . "[current "
+                    . $label
+                    . " barrier : "
+                    . $abs_barrier . "] "
+                    . "[min allowed barrier : "
+                    . $min_allowed_barrier . "] "
+                    . "[max_allowed_barrier: "
+                    . $max_allowed_barrier . "]",
                 severity          => 91,
                 message_to_client => ($label eq 'low')
                 ? [$ERROR_MAPPING->{InvalidLowBarrierRange}]
@@ -167,7 +176,7 @@ sub _validate_barrier {
         }
     }
 
-    if ($self->category_code eq 'callputspread' and $self->underlying->market->name eq 'forex' and $current_spot) {
+    if ($self->category_code eq 'callputspread' and $current_spot) {
         my $low_barrier_diff  = $self->underlying->pipsized_value(abs($low_barrier->as_absolute - $current_spot));
         my $high_barrier_diff = $self->underlying->pipsized_value(abs($high_barrier->as_absolute - $current_spot));
 

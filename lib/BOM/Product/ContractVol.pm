@@ -187,21 +187,42 @@ sub _build_economic_events_for_volatility_calculation {
 
 sub _build_pricing_vol_for_two_barriers {
     my $self = shift;
-
     return if not $self->two_barriers;
-    return if $self->pricing_engine_name ne 'Pricing::Engine::EuropeanDigitalSlope';
-
-    my $vol_args = {
-        from => $self->effective_start,
-        to   => $self->date_expiry,
-    };
-
-    $vol_args->{strike} = $self->barriers_for_pricing->{barrier1};
-    my $high_barrier_vol = $self->volsurface->get_volatility($vol_args);
-
-    $vol_args->{strike} = $self->barriers_for_pricing->{barrier2};
-    my $low_barrier_vol = $self->volsurface->get_volatility($vol_args);
-
+    my $pen = $self->pricing_engine_name;
+    return if $pen ne 'Pricing::Engine::EuropeanDigitalSlope' and $pen ne 'Pricing::Engine::Callputspread';
+    my ($high_barrier, $low_barrier) = ($self->barriers_for_pricing->{barrier1}, $self->barriers_for_pricing->{barrier2});
+    my ($high_barrier_vol, $low_barrier_vol);
+    if ($pen eq 'Pricing::Engine::EuropeanDigitalSlope') {
+        my $vol_args = {
+            from => $self->effective_start,
+            to   => $self->date_expiry,
+        };
+        $vol_args->{strike} = $high_barrier;
+        $high_barrier_vol   = $self->volsurface->get_volatility($vol_args);
+        $vol_args->{strike} = $low_barrier;
+        $low_barrier_vol    = $self->volsurface->get_volatility($vol_args);
+    } else {
+        my $market_name = $self->underlying->market->name;
+        my $vol_args    = {
+            from => $self->effective_start,
+            to   => $self->date_expiry,
+            spot => $self->current_spot,
+        };
+        my $volsurface_obj;
+        if ($market_name eq 'forex') {
+            # ticks in volatility calculation is only use for forex market using empirical volatility
+            $vol_args->{ticks} = $self->ticks_for_short_term_volatility_calculation;
+            $volsurface_obj = $self->empirical_volsurface;
+        } else {
+            $volsurface_obj = $self->volsurface;
+        }
+        $vol_args->{strike} = $high_barrier;
+        $high_barrier_vol   = $volsurface_obj->get_volatility($vol_args);
+        $vol_args->{strike} = $low_barrier;
+        $vol_args->{from}   = $self->effective_start;
+        $vol_args->{to}     = $self->date_expiry;
+        $low_barrier_vol    = $volsurface_obj->get_volatility($vol_args);
+    }
     return {
         high_barrier_vol => $high_barrier_vol,
         low_barrier_vol  => $low_barrier_vol

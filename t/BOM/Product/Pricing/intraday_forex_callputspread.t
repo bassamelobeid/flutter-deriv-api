@@ -197,8 +197,14 @@ subtest 'barrier too close and too far to spot' => sub {
         #  'high' => '1.1875',
         #  'low' => '1.1875'
         #};
-        $mocked_c->mock('spot_min_max', sub { return {'high' => '1.18752',
-          'low' => '1.18742'}; });
+        $mocked_c->mock(
+            'spot_min_max',
+            sub {
+                return {
+                    'high' => '1.18752',
+                    'low'  => '1.18742'
+                };
+            });
 
         my $duration = 180;
         lives_ok {
@@ -214,7 +220,7 @@ subtest 'barrier too close and too far to spot' => sub {
                 low_barrier  => 'S-1P',
             });
             isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
-            is $c->ask_price, 50.67, 'ask price for high => 1.18752, low => 1.18742';
+            is $c->ask_price, 50.97, 'ask price for high => 1.18752, low => 1.18742';
         }
         'survived';
 
@@ -222,9 +228,15 @@ subtest 'barrier too close and too far to spot' => sub {
         #  'low' => '1.18701',
         #  'high' => '1.18833'
         #};
-        $mocked_c->mock('spot_min_max', sub { return { 'low' => '1.18701',
-          'high' => '1.18833'}; });
-        $duration = 86400;
+        $mocked_c->mock(
+            'spot_min_max',
+            sub {
+                return {
+                    'low'  => '1.18701',
+                    'high' => '1.18833'
+                };
+            });
+        $duration = 7200;
         lives_ok {
             my $c = produce_contract({
                 bet_type     => $contract_type,
@@ -238,12 +250,18 @@ subtest 'barrier too close and too far to spot' => sub {
                 low_barrier  => 'S-1P',
             });
             isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
-            is $c->ask_price, 53.69, 'ask price for low => 1.18701, high => 1.18833';
+            is $c->ask_price, 53.62, 'ask price for low => 1.18701, high => 1.18833';
         }
         'survived';
 
-        $mocked_c->mock('spot_min_max', sub { return {'high' => '1.18752',
-          'low' => '1.18742'}; });
+        $mocked_c->mock(
+            'spot_min_max',
+            sub {
+                return {
+                    'high' => '1.18752',
+                    'low'  => '1.18742'
+                };
+            });
         $duration = 180;
         lives_ok {
             my $c = produce_contract({
@@ -254,17 +272,23 @@ subtest 'barrier too close and too far to spot' => sub {
                 duration     => $duration . 's',
                 currency     => 'USD',
                 payout       => $payout,
-                high_barrier => 'S5000P',
-                low_barrier  => 'S-5000P',
+                high_barrier => 'S400P',
+                low_barrier  => 'S-400P',
             });
             isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
             is $c->ask_price, 50.95, 'ask price for high => 1.18752, low => 1.18742';
         }
         'survived';
 
-        $mocked_c->mock('spot_min_max', sub { return { 'low' => '1.18701',
-          'high' => '1.18833'}; });
-        $duration = 86400;
+        $mocked_c->mock(
+            'spot_min_max',
+            sub {
+                return {
+                    'low'  => '1.18701',
+                    'high' => '1.18833'
+                };
+            });
+        $duration = 7200;
         lives_ok {
             my $c = produce_contract({
                 bet_type     => $contract_type,
@@ -274,8 +298,8 @@ subtest 'barrier too close and too far to spot' => sub {
                 duration     => $duration . 's',
                 currency     => 'USD',
                 payout       => $payout,
-                high_barrier => 'S5000P',
-                low_barrier  => 'S-5000P',
+                high_barrier => 'S400P',
+                low_barrier  => 'S-400P',
             });
             isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
             is $c->ask_price, 53.84, 'ask price for low => 1.18701, high => 1.18833';

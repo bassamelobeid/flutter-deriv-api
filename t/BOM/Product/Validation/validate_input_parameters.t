@@ -344,4 +344,61 @@ subtest "Minimum multiplier for very small numbers should not be shown in scient
     is $exception->{error_args}[0], '0.00005000';
 };
 
+subtest 'invalid barrier for callspread' => sub {
+    my $now        = Date::Utility->new($fake_tick->epoch);
+    my $bet_params = {
+        date_start   => $now,
+        date_pricing => $now,
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'CALLSPREAD',
+        duration     => '2h',
+        high_barrier => "S50P",
+        low_barrier  => "S-50P",
+        currency     => 'USD',
+        payout       => 10,
+        current_tick => $fake_tick,
+    };
+
+    my $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid callspread contract with barrier <= 400P.';
+ 
+    $bet_params->{high_barrier} = 'S401P';
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'invalid callspread contract with high barrier exceeded 400P';
+
+    like(
+        $c->primary_validation_error->{message},
+        qr/Barrier too far from spot \[current high barrier : 100.401\] \[min allowed barrier : 99.6\] \[max_allowed_barrier: 100.4\]/,
+        'Barrier too far from spot'
+    );
+};
+
+subtest 'invalid asymmetrical barrier for synthetic indices callspread contract' => sub {
+    my $bet_params = {
+        date_start   => $now,
+        date_pricing => $now,
+        underlying   => 'R_100',
+        bet_type     => 'CALLSPREAD',
+        duration     => '2h',
+        high_barrier => "S50P",
+        low_barrier  => "S-50P",
+        currency     => 'USD',
+        payout       => 10,
+        current_tick => $fake_tick,
+    };
+
+    my $c = produce_contract($bet_params);
+    ok $c->is_valid_to_buy, 'valid callspread contract with symmetrical barrier';
+ 
+    $bet_params->{high_barrier} = 'S51P';
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_buy, 'High and low barriers is not symmetrical';
+
+    like(
+        $c->primary_validation_error->{message},
+        qr/High and low barriers is not symmetrical/,
+        'High and low barriers are not symmetrical'
+    );
+};
+
 done_testing();

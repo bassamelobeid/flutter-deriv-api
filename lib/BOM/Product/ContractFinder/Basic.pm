@@ -128,7 +128,7 @@ sub _default_barrier {
 
     my ($underlying, $duration, $barrier_kind, $category) = @{$args}{'underlying', 'duration', 'barrier_kind', 'contract_category'};
 
-    if ($category eq 'callputspread' and $underlying->market->name eq 'forex') {
+    if ($category eq 'callputspread') {
         my $barrier = $underlying->pip_size;
         if ($barrier_kind eq 'high') {
             $barrier = '+' . $barrier;
