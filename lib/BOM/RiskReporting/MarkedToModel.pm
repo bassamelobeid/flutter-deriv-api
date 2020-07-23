@@ -27,7 +27,6 @@ use Syntax::Keyword::Try;
 
 use Email::Address::UseXS;
 use Email::Stuffer;
-use List::Util qw( head );
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
@@ -45,9 +44,6 @@ use ExchangeRates::CurrencyConverter qw (in_usd);
 use BOM::Transaction;
 use BOM::Transaction::Utility;
 
-use Exporter 'import';
-our @EXPORT_OK = qw(get_expired_virtual_contracts);
-
 use constant SECONDS_PAST_CONTRACT_EXPIRY => 15;
 
 # This report will only be run on the MLS.
@@ -57,9 +53,9 @@ sub generate {
     my $pricing_date = $self->end;
 
     my $open_bets_ref = $self->live_open_bets;
-    my @keys          = keys %$open_bets_ref;
+    my @keys          = keys %{$open_bets_ref};
 
-    my $open_bets_expired_ref = {};
+    my $open_bets_expired_ref;
 
     my $howmany = scalar @keys;
     my %totals  = (
@@ -216,25 +212,7 @@ sub generate {
 
     $self->cache_daily_turnover($pricing_date);
 
-    my $open_virtual_bets    = $self->live_open_bets($self->vr_server_name);
-    my $howmany_virtuals     = keys %$open_virtual_bets;
-    my $expired_virtual_bets = {};
-    my $virtuals_failed      = 0;
-    try {
-        $expired_virtual_bets = get_expired_virtual_contracts($open_virtual_bets);
-    }
-    catch {
-        $virtuals_failed = 1;
-        warn "Fetching expired virtual contracts failed\n" . "Total number of virtual keys: $howmany_virtuals\n" . "Error was: $@";
-    }
-    my $total_expired_virtuals = scalar keys %$expired_virtual_bets;
-    try {
-        $self->sell_expired_contracts($open_bets_expired_ref, \@manually_settle_fmbid);
-        $self->sell_expired_contracts($expired_virtual_bets, []);
-    }
-    catch {
-        warn "Settling contracts in BOM::RiskReporting::MarkedToModel::generate function failed: $@";
-    }
+    $self->sell_expired_contracts($open_bets_expired_ref, \@manually_settle_fmbid);
 
     return {
         full_count                => $howmany,
@@ -242,36 +220,7 @@ sub generate {
         expired                   => $total_expired,
         waiting_for_settlement    => $waiting_for_settlement,
         require_manual_settlement => $require_manual_settlement,
-        expired_virtual           => $total_expired_virtuals,
-        virtuals_full_count       => $howmany_virtuals,
-        virtuals_failed           => $virtuals_failed,
     };
-}
-
-sub get_expired_virtual_contracts {
-    my $open_bets_ref                 = shift;
-    my $virtual_open_bets_expired_ref = {};
-
-    # Todo: `head` can be removed later (and also List::Util)
-    # We did this to avoid processing to many contracts when we run  this for the first time
-    # Lots of unsettled virtual contracts piled up in db
-    my @open_bets_keys = head 1000, keys %$open_bets_ref;
-    for my $open_fmb_id (@open_bets_keys) {
-        my $open_fmb = $open_bets_ref->{$open_fmb_id};
-        my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
-        $bet_params->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($open_fmb);
-
-        my $bet = produce_contract($bet_params);
-
-        next if (time - $bet->date_expiry->epoch <= SECONDS_PAST_CONTRACT_EXPIRY || !$bet->is_expired);
-
-        $open_fmb->{market_price} = $bet->bid_price;
-        $open_fmb->{bet}          = $bet;
-
-        my $client_login_id = $open_fmb->{client_loginid};
-        $virtual_open_bets_expired_ref->{$client_login_id}{$open_fmb_id} = $open_fmb;
-    }
-    return $virtual_open_bets_expired_ref;
 }
 
 sub sell_expired_contracts {
@@ -282,7 +231,6 @@ sub sell_expired_contracts {
     # Now deal with them one by one.
 
     my @error_lines;
-    my $sells_results   = [];
     my @client_loginids = keys %{$open_bets_ref};
 
     my %map_to_bb = reverse Bloomberg::UnderlyingConfig::bloomberg_to_binary();
@@ -350,7 +298,6 @@ sub sell_expired_contracts {
                     $bet_info->{reason} = $failure->{reason};
                     push @error_lines, $bet_info;
                 }
-                push @$sells_results, $result;
             }
             catch {
                 warn "Failed to sell expired contracts for "
@@ -396,7 +343,7 @@ sub sell_expired_contracts {
         }
     }
 
-    return $sells_results;
+    return 0;
 }
 
 # cache query result for BO Daily Turnover Report
