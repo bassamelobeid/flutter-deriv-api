@@ -166,14 +166,14 @@ test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_off
     '100', 'PUTSPREAD', 'frxUSDJPY', '7', 'd', '97.200', '97.150';
 
 test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_receive_callputspread.json',
-    '100', 'CALLSPREAD', 'R_100', '7', 'd', '65258.00', '65208.19',
-    'Win up to USD 100 if Volatility 100 Index\'s exit tick is between 65208.19 and 65258.00 at close on 2016-08-16.',
-    '47.81', '47.81', '65258.19';
+    '100', 'CALLSPREAD', 'R_100', '2', 'h', '+0.01', '-0.01',
+    'Win up to USD 100 if Volatility 100 Index\'s exit tick is between entry spot minus 0.01 and entry spot plus 0.01 at 2 hours after contract start time.',
+    '50.29', '50.29', '65258.19';
 
 test_sendrecv_params 'proposal/test_send_callputspread.json', 'proposal/test_receive_callputspread.json',
-    '100', 'PUTSPREAD', 'R_100', '7', 'd', '65258.00', '65208.19',
-    'Win up to USD 100 if Volatility 100 Index\'s exit tick is between 65258.00 and 65208.19 at close on 2016-08-16.',
-    '53.38', '53.38', '65258.19';
+    '100', 'PUTSPREAD', 'R_100', '2', 'h', '+0.01', '-0.01',
+    'Win up to USD 100 if Volatility 100 Index\'s exit tick is between entry spot plus 0.01 and entry spot minus 0.01 at 2 hours after contract start time.',
+    '50.91', '50.91', '65258.19';
 
 # multiplier
 test_sendrecv_params 'proposal/test_send_multiplier.json', 'proposal/test_receive_error.json', 'MULTUP', 'R_100', 'payout', '10',
