@@ -7,7 +7,8 @@ use Test::MockModule;
 use File::Spec;
 
 use BOM::Test::Data::Utility::UnitTestRedis;
-use Test::More (tests => 5);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+use Test::More (tests => 6);
 use Test::Warnings;
 use Test::Exception;
 use Test::Differences;
@@ -17,9 +18,24 @@ use List::MoreUtils qw( all none );
 use BOM::Product::Offerings::DisplayHelper;
 use LandingCompany::Registry;
 
-my $o               = LandingCompany::Registry::get('svg')->basic_offerings({loaded_revision => 0, action => 'buy'});
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'partial_trading',
+    {
+        type          => 'early_closes',
+        recorded_date => Date::Utility->new('2020-01-01'),
+        calendar      => {
+            '03-Jul-2020' => {
+                '15h00m' => ['METAL'],
+            },
+        },
+    });
+
+my $o = LandingCompany::Registry::get('svg')->basic_offerings({
+    loaded_revision => 0,
+    action          => 'buy'
+});
 my $expected_levels = 4;
-my $offerings       = new_ok('BOM::Product::Offerings::DisplayHelper' => [{offerings => $o}]);
+my $offerings = new_ok('BOM::Product::Offerings::DisplayHelper' => [{offerings => $o}]);
 
 my $original_levels = $offerings->levels;
 subtest levels => sub {
@@ -70,6 +86,34 @@ subtest 'decorate_tree' => sub {
     eq_or_diff($offerings->tree, $original_tree, "Asking for the tree again produces the decorated_tree");
     my $new_offerings = new_ok('BOM::Product::Offerings::DisplayHelper', [{offerings => $o}]);
     isnt($new_offerings->tree, $original_tree, "..but asking the new copy does not have the decorations.");
+};
+
+subtest 'Early close dates on Fridays' => sub {
+    my $tree = BOM::Product::Offerings::DisplayHelper->new(
+        date      => Date::Utility->new('2020-07-03'),
+        offerings => $o
+        )->decorate_tree(
+        markets     => {name => 'name'},
+        submarkets  => {name => 'name'},
+        underlyings => {
+            name   => 'name',
+            times  => 'times',
+            events => 'events',
+        });
+
+    is_deeply(
+        $tree->[2]{submarkets}[0]{underlyings}[0]{events},
+        [{
+                'dates'   => '2020-07-03',
+                'descrip' => 'Closes early (at 15:00)'
+            },
+            {
+                'dates'   => 'Fridays',
+                'descrip' => 'Closes early (at 20:55)'
+            }
+        ],
+        'Early close on Fridays is shown with date'
+    );
 };
 
 1;

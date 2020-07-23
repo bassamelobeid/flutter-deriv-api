@@ -167,10 +167,13 @@ my %known_decorations = (
                 my $change_rules = $trading_calendar->regularly_adjusts_trading_hours_on($exchange, $when);
                 my $early_closes = $trading_calendar->closes_early_on($exchange, $when);
                 if ($early_closes) {
+                    my $is_partial_trading = $change_rules->{daily_close}->{to} ne $early_closes->time . 'm';
                     # Finance::Calendar does not have access to our localization methods, so we localize here instead
                     # Only set the rule as Friday if it is early close due to Friday.
                     $rule = $change_rules->{daily_close}->{rule}
-                        if (defined $change_rules->{daily_close}->{rule} and $change_rules->{daily_close}->{rule} eq 'Fridays');
+                        if (defined $change_rules->{daily_close}{rule}
+                        and $change_rules->{daily_close}{rule} eq 'Fridays'
+                        and not $is_partial_trading);
                     $message =
                           $self->c
                         ? $self->c->l('Closes early (at [_1])', $trading_calendar->closing_on($exchange, $when)->time_hhmm)
