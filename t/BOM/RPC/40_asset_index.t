@@ -40,7 +40,7 @@ my $first_entry_mlt = [
         ["digits",        "Digits",                     "1t",  "10t"],
         ["asian",         "Asians",                     "5t",  "10t"],
         ["reset",         "Reset Call/Reset Put",       "5t",  "2h"],
-        ["callputspread", "Call Spread/Put Spread",     "15s", "365d"],
+        ["callputspread", "Call Spread/Put Spread",     "15s", "1d"],
         ["highlowticks",  "High/Low Ticks",             "5t",  "5t"],
         ["lookback",      "Lookbacks",                  "1m",  "30m"],
         ["callputequal",  "Rise/Fall Equal",            "1t",  "1d"],
@@ -56,7 +56,7 @@ my $first_entry_cr = [
         ["endsinout",     "Ends Between/Ends Outside",  "1d", "365d"],
         ["staysinout",    "Stays Between/Goes Outside", "1d", "365d"],
         ["callputequal",  "Rise/Fall Equal",            "3m", "365d"],
-        ["callputspread", "Call Spread/Put Spread",     "3m", "1d"],
+        ["callputspread", "Call Spread/Put Spread",     "3m", "2h"],
     ]];
 
 my $first_entry_cr_mf_test2 = [
@@ -69,7 +69,7 @@ my $first_entry_cr_mf_test2 = [
         ["endsinout",     "Ends Between/Ends Outside",  "1d", "365d"],
         ["staysinout",    "Stays Between/Goes Outside", "1d", "365d"],
         ["callputequal",  "Rise/Fall Equal",            "3m", "365d"],
-        ["callputspread", "Call Spread/Put Spread",     "3m", "1d"],
+        ["callputspread", "Call Spread/Put Spread",     "3m", "2h"],
         ["multiplier",    "Multiply Up/Multiply Down",  "",   ""],       # logged out will be default to virtual
     ]];
 
