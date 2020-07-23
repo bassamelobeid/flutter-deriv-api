@@ -455,6 +455,25 @@ sub _get_multiplier_overview {
     return $overview;
 }
 
+sub _get_pricing_vol {
+    my $self          = shift;
+    my $number_format = $self->number_format;
+    my $bet           = $self->bet;
+    my $pricing_vol_value;
+
+    if ($bet->category_code eq 'callputspread') {
+        my @mapped =
+            map { ucfirst($_) . ' : ' . sprintf($number_format, $bet->pricing_vol_for_two_barriers->{$_} * 100) . '%' }
+            keys %{$bet->pricing_vol_for_two_barriers};
+        $pricing_vol_value = join ", ", sort(@mapped);
+    } else {
+        $pricing_vol_value = sprintf($number_format, $bet->_pricing_args->{iv} * 100) . '%';
+    }
+
+    return $pricing_vol_value;
+
+}
+
 sub _get_overview {
     my $self          = shift;
     my $number_format = $self->number_format;
@@ -486,7 +505,7 @@ sub _get_overview {
         },
         {
             label => 'Pricing IV (for this model)',
-            value => sprintf($number_format, $bet->_pricing_args->{iv} * 100) . '%'
+            value => $self->_get_pricing_vol
         },
         {
             label => 'Dividend rate (of base)',
@@ -634,7 +653,6 @@ sub _debug_price {
     my ($self, $args) = @_;
 
     my ($contract, $type) = @{$args};
-
     my $price_per_unit;
     if ($contract->is_binary) {
         if ($type eq 'ask_price') {
