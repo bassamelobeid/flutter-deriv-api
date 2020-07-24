@@ -754,16 +754,31 @@ sub get_limits_for_max_deposit {
     };
 }
 
+=head2 get_limit_for_account_banace
+
+Get client's balance limit from global configuration and self exclusion.
+
+Return: account balance limit
+
+=cut
+
 sub get_limit_for_account_balance {
     my $self = shift;
 
-    my @maxbalances = ();
-    my $max_bal     = BOM::Config::client_limits()->{max_balance};
-    my $curr        = $self->currency;
-    push @maxbalances, $self->is_virtual ? $max_bal->{virtual}->{$curr} : $max_bal->{real}->{$curr};
+    my @maxbalances        = ();
+    my $max_bal            = BOM::Config::client_limits()->{max_balance};
+    my $curr               = $self->currency;
+    my $config_max_balance = $self->is_virtual ? $max_bal->{virtual}->{$curr} : $max_bal->{real}->{$curr};
+    if (defined($config_max_balance)) {
+        push @maxbalances, $config_max_balance;
+    } else {
+        local $log->context->{loginid} = $self->loginid;
+        $log->warn("No such currency $curr in BOM::Config::Client_limits");
+    }
 
-    if ($self->get_self_exclusion and $self->get_self_exclusion->max_balance) {
-        push @maxbalances, $self->get_self_exclusion->max_balance;
+    my $self_max_balance = $self->get_self_exclusion ? $self->get_self_exclusion->max_balance : undef;
+    if (defined($self_max_balance)) {
+        push @maxbalances, $self_max_balance;
     }
 
     return List::Util::min(@maxbalances);
