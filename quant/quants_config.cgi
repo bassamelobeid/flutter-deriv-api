@@ -9,6 +9,7 @@ use Date::Utility;
 use JSON::MaybeXS;
 use LandingCompany::Registry;
 use f_brokerincludeall;
+use Text::Trim qw(trim);
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw(request);
@@ -219,7 +220,7 @@ if ($r->params->{'new_user_limit'}) {
 
     BOM::Database::Helper::UserSpecificLimit->new({
             db             => $db,
-            client_loginid => $r->params->{'client_loginid'},
+            client_loginid => trim($r->params->{'client_loginid'}),
             potential_loss => $r->params->{'potential_loss'},
             realized_loss  => $r->params->{'realized_loss'},
             client_type    => $r->params->{client_type},
