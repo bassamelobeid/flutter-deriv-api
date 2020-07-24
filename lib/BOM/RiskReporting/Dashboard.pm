@@ -42,6 +42,8 @@ use ExchangeRates::CurrencyConverter qw(in_usd);
 use BOM::MarketData qw(create_underlying);
 use LandingCompany::Registry;
 my $json = JSON::MaybeXS->new;
+use Finance::Contract::Longcode qw( shortcode_to_parameters );
+use BOM::Transaction::Utility;
 
 =head1 ATTRIBUTES
 
@@ -468,10 +470,14 @@ sub multibarrierreport {
 }
 
 sub open_contract_exposures {
-    my $self      = shift;
-    my @open_bets = @{$self->_open_bets_at_end};
+    my $self = shift;
+
+    my $open_bets = $self->_open_bets_at_end;
+    #Filter out multiplier contracts
+    $open_bets = [grep { $_->{bet_class} ne 'multiplier' } @$open_bets];
+
     my $final;
-    foreach my $open_contract (@open_bets) {
+    foreach my $open_contract (@$open_bets) {
         my $broker;
         if ($open_contract->{loginid} =~ /^(\D+)\d/) {
             $broker = $1;
@@ -597,6 +603,158 @@ sub sorting_data {
     my $final_report;
     my @sorted_broker = ['ALL', $report->{'ALL'}];
     push @sorted_broker, map { [$_, $report->{$_}] } rev_nsort_by { $report->{$_}->{$sorting_arg} } grep { $_ ne 'ALL' } keys %{$report};
+    for (my $i = 0; $i < scalar @sorted_broker; $i++) { $final_report->{$i} = {$sorted_broker[$i][0] => $sorted_broker[$i][1]}; }
+    return $final_report;
+}
+
+sub multiplier_open_pnl_report {
+
+    my $self = shift;
+
+    my $open_bets = $self->_open_bets_at_end;
+
+    $open_bets = [grep { $_->{bet_class} eq 'multiplier' } @$open_bets];
+
+    my $final;
+
+    foreach my $open_contract (@$open_bets) {
+        my $broker;
+        if ($open_contract->{loginid} =~ /^(\D+)\d/) {
+            $broker = $1;
+        }
+        my $bet_params = shortcode_to_parameters($open_contract->{short_code}, $open_contract->{currency_code});
+
+        $bet_params->{date_pricing} = $self->end;
+
+        $bet_params->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($open_contract);
+
+        my $contract = produce_contract($bet_params);
+
+        my $multiplier_open_pnl = financialrounding('price', 'USD', in_usd(-1 * $contract->total_pnl,    $open_contract->{currency_code})) // 0;
+        my $multiplier_stake    = financialrounding('price', 'USD', in_usd($contract->_user_input_stake, $open_contract->{currency_code})) // 0;
+        my $multiplier_cancellation_price = financialrounding('price', 'USD', in_usd($contract->cancellation_price, $open_contract->{currency_code}))
+            // 0;
+        my $multiplier = $contract->multiplier;
+
+        my $dc_status =
+            $contract->cancellation ? ($contract->date_pricing->is_after($contract->cancellation_expiry)) ? 'Expired DC' : 'Active DC' : 'No DC';
+
+        my $market_name       = $contract->underlying->market->name;
+        my $underlying_symbol = $contract->underlying->symbol;
+
+        foreach my $br ($broker, "ALL") {
+
+            $final->{$br}->{multiplier}->{open_pnl} += $multiplier_open_pnl;
+
+            $final->{$br}->{$dc_status}->{multiplier}->{open_pnl} += $multiplier_open_pnl;
+
+            $final->{$br}->{$dc_status}->{$market_name}->{multiplier}->{open_pnl} += $multiplier_open_pnl;
+
+            $final->{$br}->{$dc_status}->{$market_name}->{$underlying_symbol}->{multiplier}->{open_pnl}           += $multiplier_open_pnl;
+            $final->{$br}->{$dc_status}->{$market_name}->{$underlying_symbol}->{multiplier}->{stake}              += $multiplier_stake;
+            $final->{$br}->{$dc_status}->{$market_name}->{$underlying_symbol}->{multiplier}->{cancellation_price} += $multiplier_cancellation_price;
+            $final->{$br}->{$dc_status}->{$market_name}->{$underlying_symbol}->{multiplier}->{n}                  += 1;
+            $final->{$br}->{$dc_status}->{$market_name}->{$underlying_symbol}->{multiplier}->{average_multiplier} ||= 0;
+            $final->{$br}->{$dc_status}->{$market_name}->{$underlying_symbol}->{multiplier}->{average_multiplier} +=
+                ($multiplier - $final->{$br}->{$dc_status}->{$market_name}->{$underlying_symbol}->{multiplier}->{average_multiplier}) /
+                $final->{$br}->{$dc_status}->{$market_name}->{$underlying_symbol}->{multiplier}->{n};
+
+        }
+    }
+
+    my $report->{pl} = sorting_mutliplier_data($final);
+
+    $report->{generated_time} = $self->_report_mapper->get_last_generated_historical_marked_to_market_time;
+
+    return $report;
+}
+
+sub sorting_mutliplier_data {
+    my $final = shift;
+
+    foreach my $broker (keys %{$final}) {
+        foreach my $dc_status (keys %{$final->{$broker}}) {
+            if ($dc_status =~ /multiplier/) {
+                $final->{$broker}->{$dc_status}->{open_pnl} = financialrounding('price', 'USD', $final->{$broker}->{$dc_status}->{open_pnl});
+                next;
+            }
+            foreach my $market (keys %{$final->{$broker}->{$dc_status}}) {
+
+                if ($market =~ /multiplier/) {
+                    $final->{$broker}->{$dc_status}->{$market}->{open_pnl} =
+                        financialrounding('price', 'USD', $final->{$broker}->{$dc_status}->{$market}->{open_pnl});
+                    next;
+                }
+                my @sorted_by_underlying = map { [
+                        $_,
+                        $final->{$broker}->{$dc_status}->{$market}->{$_}->{multiplier}->{open_pnl},
+                        $final->{$broker}->{$dc_status}->{$market}->{$_}->{multiplier}->{stake},
+                        $final->{$broker}->{$dc_status}->{$market}->{$_}->{multiplier}->{average_multiplier},
+                        $final->{$broker}->{$dc_status}->{$market}->{$_}->{multiplier}->{cancellation_price}]
+                    }
+                    rev_nsort_by {
+                    $final->{$broker}->{$dc_status}->{$market}->{$_}->{multiplier}->{open_pnl}
+                }
+                grep { $_ !~ /multiplier/ } keys %{$final->{$broker}->{$dc_status}->{$market}};
+
+                map {
+                    $final->{$broker}->{$dc_status}->{$market}->{$_}->{open_pnl} =
+                        financialrounding('price', 'USD', $final->{$broker}->{$dc_status}->{$market}->{$_}->{open_pnl})
+                    }
+                    grep {
+                    $_ =~ /multiplier/
+                    } keys %{$final->{$broker}->{$dc_status}->{$market}};
+
+                for (my $i = 0; $i < scalar @sorted_by_underlying; $i++) {
+                    delete $final->{$broker}->{$dc_status}->{$market}->{$sorted_by_underlying[$i][0]};
+                    $final->{$broker}->{$dc_status}->{$market}->{$i}->{$sorted_by_underlying[$i][0]}->{multiplier} = {
+                        open_pnl           => financialrounding('price', 'USD', $sorted_by_underlying[$i][1]),
+                        stake              => financialrounding('price', 'USD', $sorted_by_underlying[$i][2]),
+                        average_multiplier => roundcommon(0,             $sorted_by_underlying[$i][3]),
+                        cancellation_price => financialrounding('price', 'USD', $sorted_by_underlying[$i][4])};
+                }
+            }
+        }
+    }
+    my $temp;
+    foreach my $broker (keys %{$final}) {
+        foreach my $dc_status (keys %{$final->{$broker}}) {
+            if ($dc_status !~ /multiplier/) {
+                my @sorted_market =
+                    map { [$_, $final->{$broker}->{$dc_status}->{$_}] }
+                    rev_nsort_by { $final->{$broker}->{$dc_status}->{$_}->{multiplier}->{open_pnl} }
+                grep { $_ !~ /multiplier/ } keys %{$final->{$broker}->{$dc_status}};
+                for (my $i = 0; $i < scalar @sorted_market; $i++) {
+                    $temp->{$broker}->{$dc_status}->{$i} = {$sorted_market[$i][0] => $sorted_market[$i][1]};
+                }
+
+                map {
+                    $temp->{$broker}->{$dc_status}->{$_}->{open_pnl} =
+                        financialrounding('price', 'USD', $final->{$broker}->{$dc_status}->{$_}->{open_pnl})
+                    }
+                    grep {
+                    $_ =~ /multiplier/
+                    } keys %{$final->{$broker}->{$dc_status}};
+            }
+
+        }
+    }
+
+    my $report;
+    foreach my $broker (keys %{$temp}) {
+        my @sorted_dc_status =
+            map { [$_, $temp->{$broker}->{$_}] } rev_nsort_by { $temp->{$broker}->{$_}->{multiplier}->{open_pnl} }
+        grep { $_ !~ /multiplier/ } keys %{$temp->{$broker}};
+        for (my $i = 0; $i < scalar @sorted_dc_status; $i++) { $report->{$broker}->{$i} = {$sorted_dc_status[$i][0] => $sorted_dc_status[$i][1]}; }
+
+        map { $report->{$broker}->{$_}->{open_pnl} = financialrounding('price', 'USD', $final->{$broker}->{$_}->{open_pnl}) }
+            grep { $_ =~ /multiplier/ } keys %{$final->{$broker}};
+
+    }
+
+    my $final_report;
+    my @sorted_broker = ['ALL', $report->{'ALL'}];
+    push @sorted_broker, map { [$_, $report->{$_}] } rev_nsort_by { $report->{$_}->{multiplier}->{open_pnl} } grep { $_ ne 'ALL' } keys %{$report};
     for (my $i = 0; $i < scalar @sorted_broker; $i++) { $final_report->{$i} = {$sorted_broker[$i][0] => $sorted_broker[$i][1]}; }
     return $final_report;
 }

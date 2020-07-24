@@ -21,9 +21,10 @@ my $report = BOM::RiskReporting::Dashboard->new->fetch;
 
 my $today = Date::Utility->today;
 
-$report->{dtr_link}         = request()->url_for('backoffice/f_dailyturnoverreport.cgi');
-$report->{multibarrier}     = BOM::RiskReporting::Dashboard->new->multibarrierreport();
-$report->{exposures_report} = BOM::RiskReporting::Dashboard->new->exposures_report();
+$report->{dtr_link}            = request()->url_for('backoffice/f_dailyturnoverreport.cgi');
+$report->{multibarrier}        = BOM::RiskReporting::Dashboard->new->multibarrierreport();
+$report->{exposures_report}    = BOM::RiskReporting::Dashboard->new->exposures_report();
+$report->{multiplier_open_pnl} = BOM::RiskReporting::Dashboard->new->multiplier_open_pnl_report();
 
 $report->{link_to_pnl} = sub {
     my $loginid = shift;

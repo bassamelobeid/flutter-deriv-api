@@ -6,6 +6,7 @@
     <li><a href="#rd-pivot">Pivot</a></li>
     <li><a href="#rd-multibarrier">Multibarrier's Exposures Report</a></li>
     <li><a href="#rd-exposure">Company's Exposure</a></li>
+    <li><a href="#rd-multiplier">Multipliers Open Profit & Loss</a></li>
   </ul>
   <div id="rd-summary">
         <p> Latest report generated at [% generated_time %] </p>
@@ -86,3 +87,7 @@
         background-color:yellow;
     }
 </style>
+
+<div id="rd-multiplier"> 
+[% INCLUDE 'backoffice/risk_dashboard_multiplier.html.tt' data = multiplier_open_pnl %]
+</div>

@@ -1,0 +1,103 @@
+<p><b> Multipliers Open Profit & Loss </b></p>
+<p> Latest report generated at [% data.generated_time %] </p>
+<div id="accordion_multiplier_broker" style="width: 550px">
+[% FOREACH broker_id IN data.pl.keys.sort %]
+[% FOREACH broker IN data.pl.$broker_id.keys.sort %]
+    <h3 style="outline: none">
+        <strong>[% broker %] :</strong>
+        <span style="color: [% data.pl.$broker_id.$broker.multiplier.open_pnl != '' AND data.pl.$broker_id.$broker.multiplier.open_pnl > 0 ? 'green' : 'red' %]">
+            Open Profit & Loss: USD [% data.pl.$broker_id.$broker.multiplier.open_pnl %]
+        </span>
+    </h3>
+   <div class="_accordion_multiplier_dc_status" style="width: 550px">
+   [% FOREACH index IN data.pl.$broker_id.$broker.keys.sort %]
+   [% IF index != 'multiplier'  %]
+      [% FOREACH dc_status  IN data.pl.$broker_id.$broker.$index.keys %]
+      [% IF dc_status != 'multiplier'%]
+      <h3 style="outline: none">
+        <strong>[% dc_status %] :</strong>
+        <span style="color: [% data.pl.$broker_id.$broker.$index.$dc_status.multiplier.open_pnl != '' AND data.pl.$broker_id.$broker.$index.$dc_status.multiplier.open_pnl > 0 ? 'green' : 'red' %]">
+            Open Profit & Loss: USD [% data.pl.$broker_id.$broker.$index.$dc_status.multiplier.open_pnl %]
+        </span>
+      </h3>
+     <div>
+        <div class="_accordion_multiplier_market" style="width: 550px">
+        [% FOREACH aindex IN data.pl.$broker_id.$broker.$index.$dc_status.keys.sort %]
+        [% IF aindex != 'multiplier'  %]
+           [% FOREACH market  IN data.pl.$broker_id.$broker.$index.$dc_status.$aindex.keys %]
+           [% IF market != 'multiplier'%]
+           <h3 style="outline: none">
+             <strong>[% market %] :</strong>
+             <span style="color: [% data.pl.$broker_id.$broker.$index.$dc_status.$aindex.$market.multiplier.open_pnl != '' AND data.pl.$broker_id.$broker.$index.$dc_status.$aindex.$market.multiplier.open_pnl > 0 ? 'green' : 'red' %]">
+                 Open Profit & Loss: USD [% data.pl.$broker_id.$broker.$index.$dc_status.$aindex.$market.multiplier.open_pnl %]
+             </span>
+           </h3>
+          <div>
+            <div class="_accordion_multiplier_underlying" style="width: 450px">
+            [% FOREACH uindex IN data.pl.$broker_id.$broker.$index.$dc_status.$aindex.$market.keys.sort %]
+                [% IF uindex != 'multiplier'%]
+                    [% FOREACH underlying IN data.pl.$broker_id.$broker.$index.$dc_status.$aindex.$market.$uindex.keys %]
+                        <h3 style="outline: none">
+                           <strong>[% underlying %] :</strong>
+                           <span style="color: [%  data.pl.$broker_id.$broker.$index.$dc_status.$aindex.$market.$uindex.$underlying.multiplier.open_pnl != '' AND
+                                                                            data.pl.$broker_id.$broker.$index.$dc_status.$aindex.$market.$uindex.$underlying.multiplier.open_pnl > 0 ? 'green' : 'red' %]">
+                               Open Profit & Loss: USD [% data.pl.$broker_id.$broker.$index.$dc_status.$aindex.$market.$uindex.$underlying.multiplier.open_pnl %]
+                           </span>
+                         </h3>
+                            <div style="line-height: 24px;">
+                                <b>Total Stake</b> :
+                                    <span>
+                                        [% data.pl.$broker_id.$broker.$index.$dc_status.$aindex.$market.$uindex.$underlying.multiplier.stake %]
+                                    </span></br>
+                                <b>Average Multiplier</b> :
+                                    <span>
+                                        [% data.pl.$broker_id.$broker.$index.$dc_status.$aindex.$market.$uindex.$underlying.multiplier.average_multiplier %]
+                                    </span></br>
+                                <b>Total Deal Cancellation Price</b> :
+                                    <span>
+                                        [% data.pl.$broker_id.$broker.$index.$dc_status.$aindex.$market.$uindex.$underlying.multiplier.cancellation_price %]
+                                    </span>
+                            </div>
+                    [% END %]
+                 [% END %]
+            [% END %]
+        </div>
+    </div>
+   [% END %]
+   [% END %]
+   [% END %]
+   [% END %]
+   </div>
+    </div>
+   [% END %]
+   [% END %]
+   [% END %]
+   [% END %]
+   </div>
+[% END %]
+[% END %]
+</div>
+
+<script type="text/javascript">
+\$(function() {
+                \$("._accordion_multiplier_underlying" ).accordion({
+				collapsible: true,
+				heightStyle: "content"
+		});
+
+		\$("._accordion_multiplier_market" ).accordion({
+				collapsible: true,
+				heightStyle: "content"
+		});
+                
+                \$("._accordion_multiplier_dc_status" ).accordion({
+				collapsible: true,
+				heightStyle: "content"
+		});
+
+		\$("#accordion_multiplier_broker" ).accordion({
+				collapsible: true,
+				heightStyle: "content"
+        });
+});
+</script>
