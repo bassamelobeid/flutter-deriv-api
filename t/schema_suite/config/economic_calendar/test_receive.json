@@ -1,0 +1,64 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "events": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "actual": {
+                        "type": "object",
+                        "properties": {
+                            "display_name": {
+                                "type": "string",
+                                "pattern": "^$",
+                                "required": 1
+                            }
+                        }
+                     },
+                    "currency": {
+                        "type": "string",
+                        "pattern": "^$",
+                        "required": 1
+                    },
+                    "event_name": {
+                        "type": "string",
+                        "pattern": "^$",
+                        "required": 1
+                     },
+                    "forecast": {
+                        "type": "object",
+                        "properties": {
+                            "display_name": {
+                                "type": "string",
+                                "pattern": "^$",
+                                "required": 1
+                            }
+                        }
+                     },
+                    "impact": {
+                        "type": "string",
+                        "pattern": "^$",
+                        "required": 1
+                    },
+                    "previous": {
+                        "type": "object",
+                        "properties": {
+                            "display_name": {
+                                "type": "string",
+                                "pattern": "^$",
+                                "required": 1
+                            }
+                        }
+                     },
+                    "release_date": {
+                        "type": "string",
+                        "pattern": "^$",
+                        "required": 1
+                    }
+                }
+            }
+        }
+    }
+}
