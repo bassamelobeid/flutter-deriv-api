@@ -430,7 +430,7 @@ sub validate_make_new_account {
     }
 
     # get all real account siblings
-    my $siblings = $client->real_account_siblings_information;
+    my $siblings = $client->real_account_siblings_information(exclude_disabled_no_currency => 1);
 
     # if no real sibling is present then its virtual
     if (scalar(keys %$siblings) == 0) {

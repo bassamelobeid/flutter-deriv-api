@@ -17,6 +17,17 @@ use LandingCompany::Registry;
 use BOM::RPC::v3::MT5::Account;
 use Test::BOM::RPC::Accounts;
 use BOM::Config::Runtime;
+use BOM::Config::Redis;
+
+my $redis = BOM::Config::Redis::redis_exchangerates_write();
+sub _offer_to_clients {
+    my $value         = shift;
+    my $from_currency = shift;
+    my $to_currency   = shift // 'USD';
+
+    $redis->hmset("exchange_rates::${from_currency}_${to_currency}", offer_to_clients => $value);
+}
+_offer_to_clients(1, $_) for qw/BTC USD ETH UST EUR/;
 
 # In the weekend the account transfers will be suspended. So we mock a valid day here
 set_absolute_time(Date::Utility->new('2018-02-15')->epoch);

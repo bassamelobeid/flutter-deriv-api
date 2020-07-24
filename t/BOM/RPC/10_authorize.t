@@ -11,7 +11,7 @@ use BOM::RPC::v3::Accounts;
 use BOM::Database::Model::OAuth;
 use Email::Stuffer::TestLinks;
 use utf8;
-use Data::Dumper;
+use LandingCompany::Registry;
 
 my $email       = 'dummy@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -24,6 +24,7 @@ my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_cl
     broker_code => 'CR',
 });
 $test_client_disabled->email($email);
+$test_client_disabled->account('USD');
 $test_client_disabled->status->set('disabled', 'system', 'reason');
 $test_client_disabled->save;
 
@@ -139,7 +140,7 @@ subtest $method => sub {
                 'loginid'              => $self_excluded_client->loginid,
             },
             {
-                'currency'             => '',
+                'currency'             => 'USD',
                 'is_disabled'          => '1',
                 'is_virtual'           => '0',
                 'landing_company_name' => $landing_company,
@@ -158,7 +159,7 @@ subtest $method => sub {
 
     cmp_deeply($c->call_ok($method, $params)->has_no_error->result, $expected_result, 'result is correct');
 
-    $test_client->set_default_account('USD');
+    $test_client->account('USD');
     $test_client->save;
     $test_client->payment_free_gift(
         currency => 'USD',
@@ -233,9 +234,10 @@ subtest 'upgradeable_landing_companies' => sub {
 
     # Create VRTC account (Denmark)
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        residence   => 'dk',
-        email       => $email
+        broker_code    => 'VRTC',
+        residence      => 'dk',
+        email          => $email,
+        binary_user_id => $user->id,
     });
 
     $user->add_client($client);
@@ -248,9 +250,10 @@ subtest 'upgradeable_landing_companies' => sub {
 
     # Create MLT account
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
-        residence   => 'dk',
-        email       => $email
+        broker_code    => 'MLT',
+        residence      => 'dk',
+        email          => $email,
+        binary_user_id => $user->id,
     });
 
     $user->add_client($client);
@@ -263,9 +266,10 @@ subtest 'upgradeable_landing_companies' => sub {
 
     # Create MF account
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MF',
-        residence   => 'dk',
-        email       => $email
+        broker_code    => 'MF',
+        residence      => 'dk',
+        email          => $email,
+        binary_user_id => $user->id,
     });
 
     $user->add_client($client);
@@ -275,6 +279,213 @@ subtest 'upgradeable_landing_companies' => sub {
     # Test 3
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, [], 'Client has upgraded all accounts.';
+
+};
+
+subtest 'upgradeable_landing_companies clients have not selected currency & disabled MLT' => sub {
+
+    my $params = {};
+    my $email  = 'hungary@binary.com';
+
+    my $user = BOM::User->create(
+        email    => $email,
+        password => '1234',
+    );
+
+    # Create VRTC account (Hungary)
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'VRTC',
+        residence      => 'hu',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+    $client_vr->account('USD');
+
+    $user->add_client($client_vr);
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
+
+    my $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['malta'], 'Not disabled Virtual Client can upgrade to malta.';
+
+    # Create MLT account
+    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'MLT',
+        residence      => 'hu',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+    $user->add_client($client_mlt);
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'],
+        'Real malta Client have not selected currency yet but not disabled so can upgrade to maltainvest.';
+    # make client disabled
+    $client_mlt->status->set('disabled', 1, 'test disabled');
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
+
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['malta'], 'Real client is disabled & has not selected currency yet so it can upgrade to malta.';
+    $client_mlt->account('USD');
+
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, [], 'Client has selected currency so cannot upgrade to maltainvest in this case.';
+
+    $client_mlt->status->clear_disabled;
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'],
+        'Client has mlt account already and is not disabled so can upgrade to maltainvest.';
+
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'MF',
+        residence      => 'hu',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+    $user->add_client($client_mf);
+    $client_mf->status->set('disabled', 1, 'test disabled');
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'],
+        'Maltainvest account is disabled & currency not selected  client can upgrade to maltainvest.';
+    $client_mf->status->clear_disabled;
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, [], 'Client upgraded to maltainvest.';
+
+};
+
+subtest 'upgradeable_landing_companies clients have not selected currency & disabled MF' => sub {
+    my $params = {};
+    my $email  = 'germany@binary.com';
+
+    my $user = BOM::User->create(
+        email    => $email,
+        password => '1234',
+    );
+
+    # Create VRTC account (Germany)
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'VRTC',
+        residence      => 'de',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+    $client_vr->account('USD');
+
+    $user->add_client($client_vr);
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
+
+    # Test 1
+    my $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client can upgrade to maltainvest.';
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'MF',
+        residence      => 'de',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+    $user->add_client($client_mf);
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mf->loginid);
+
+    # Test 2
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, [], 'Client already upgraded to maltainvest.';
+
+    $client_mf->status->set('disabled', 1, 'test disabled');
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
+
+    # Test 3
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client disabled & no currency set can create new maltainvest account.';
+    # create new MF account
+    my $client_mf2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'MF',
+        residence      => 'de',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+    #set MF acount currency
+    $client_mf2->account('USD');
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mf2->loginid);
+
+    # Test 4
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, [], 'Client already upgraded to maltainvest.';
+};
+
+subtest 'upgradeable_landing_companies svg' => sub {
+    my $landing_company_name = 'svg';
+    my $params               = {};
+    my $email                = 'indonesia@binary.com';
+
+    my $user = BOM::User->create(
+        email    => $email,
+        password => '1234',
+    );
+
+    # Create VRTC account (Indonesia)
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'VRTC',
+        residence      => 'id',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+
+    $user->add_client($client_vr);
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
+
+    # Test 1
+    my $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['svg'], 'Client can upgrade to svg.';
+
+    # Create CR account
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        residence      => 'id',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+    $user->add_client($client);
+    $client->status->set("disabled", 1, "test");
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
+    # Test 1
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['svg'],
+        'Client can upgrade to svg becasue his only Real svg account is disabled and he had not selected currency yet.';
+
+    # Create CR account
+    my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        residence      => 'id',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+    $client_cr2->account('USD');
+    $user->add_client($client_cr2);
+
+    my $siblings = $client->real_account_siblings_information;
+    my @available_currencies = BOM::RPC::v3::Utility::get_available_currencies($siblings, $client->landing_company->short);
+    foreach my $currency (@available_currencies) {
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code    => 'CR',
+            residence      => 'id',
+            email          => $email,
+            binary_user_id => $user->id,
+        });
+        $client->account($currency);
+        $user->add_client($client);
+    }
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_cr2->loginid);
+
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, [], 'Client already upgraded to all available svg.';
 };
 
 my $new_token;

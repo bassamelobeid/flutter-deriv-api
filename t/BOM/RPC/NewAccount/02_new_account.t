@@ -354,8 +354,23 @@ subtest $method => sub {
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
-    };
+        # check disabled case
+        $new_client = BOM::User::Client->new({loginid => $new_loginid});
+        $new_client->status->set('disabled', 'system', 'reason');
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
+            sub { shift->{landing_company} },
+            'Binary (SVG) Ltd.',
+            'It should return new account data'
+            )->result_value_is(sub { shift->{landing_company_shortcode} },
+            'svg', 'It should return new account data if one of the account is marked as disabled & account currency is not selected.');
+        $new_loginid = $rpc_ct->result->{client_id};
+        ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
+        # check disabled but account currency selected case
+        $new_client->set_default_account("USD");
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'correct error code.')
+            ->error_message_is('Permission denied.', 'It should return expected error message');
 
+    };
     subtest 'Create multiple accounts in CR' => sub {
         $email = 'new_email' . rand(999) . '@binary.com';
 
@@ -679,6 +694,22 @@ subtest $method => sub {
 
         ok $emitted{"register_details_$new_loginid"}, "register_details event emitted";
         ok $emitted{"signup_$new_loginid"},           "signup event emitted";
+
+        # check disabled case
+        my $new_client = BOM::User::Client->new({loginid => $new_loginid});
+        $new_client->status->set('disabled', 'system', 'reason');
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
+            sub { shift->{landing_company} },
+            'Binary Investments (Europe) Ltd',
+            'It should return new account data'
+            )->result_value_is(sub { shift->{landing_company_shortcode} },
+            'maltainvest', 'It should return new account data if one of the account is marked as disabled & account currency is not selected.');
+        $new_loginid = $rpc_ct->result->{client_id};
+        ok $new_loginid =~ /^MF\d+$/, 'new MF loginid';
+        # check disabled but account currency selected case
+        $new_client->set_default_account("USD");
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'correct error code.')
+            ->error_message_is('Permission denied.', 'It should return expected error message');
     };
 
     my $client_mlt;

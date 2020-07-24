@@ -190,28 +190,13 @@ rpc authorize => sub {
         }
     }
 
-    my $_get_account_details = sub {
-        my ($clnt, $curr) = @_;
-
-        my $exclude_until = $clnt->get_self_exclusion_until_date;
-
-        return {
-            loginid              => $clnt->loginid,
-            currency             => $curr,
-            landing_company_name => $clnt->landing_company->short,
-            is_disabled          => $clnt->status->disabled ? 1 : 0,
-            is_virtual           => $clnt->is_virtual ? 1 : 0,
-            $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : ()};
-    };
-
     my $client_list = $user->get_clients_in_sorted_order;
+    # if its a virtual account
+    # selected account currency
+    # not disabled & account currency not yet selected
+    my @active_client_list = grep { ($_->is_virtual || $_->account || !$_->status->disabled) } @$client_list;
 
-    my @account_list;
-    my $currency;
-    foreach my $clnt (@$client_list) {
-        $currency = $clnt->default_account ? $clnt->default_account->currency_code() : '';
-        push @account_list, $_get_account_details->($clnt, $currency);
-    }
+    my @account_list = map { BOM::User::Client::get_account_details($_) } @active_client_list;
 
     my $precisions = Format::Util::Numbers->get_precision_config;
     my %local_currencies =
@@ -232,7 +217,7 @@ rpc authorize => sub {
         landing_company_fullname => $lc->name,
         scopes                   => $scopes,
         is_virtual               => $client->is_virtual ? 1 : 0,
-        upgradeable_landing_companies => _get_upgradeable_landing_companies($client_list, $client),
+        upgradeable_landing_companies => _get_upgradeable_landing_companies(\@active_client_list, $client),
         account_list                  => \@account_list,
         stash                         => {
             loginid              => $client->loginid,
