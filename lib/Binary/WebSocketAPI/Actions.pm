@@ -30,6 +30,7 @@ sub actions_config {
             },
         ],
         ['trading_times'],
+        ['economic_calendar'],
         ['trading_durations', {stash_params => [qw/ token /]}],
         ['asset_index',       {stash_params => [qw/ token /]}],
         ['contracts_for',     {stash_params => [qw/ token /]}],
