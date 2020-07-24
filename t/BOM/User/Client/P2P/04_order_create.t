@@ -35,9 +35,19 @@ subtest 'Creating new buy order' => sub {
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
 
-    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(%ad_params, advertiser => {first_name=>'john',last_name=>'smith'});
-  
-    my $client = BOM::Test::Helper::P2P::create_client(undef, {first_name=>'mary', last_name=>'jane'});
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
+        %ad_params,
+        advertiser => {
+            first_name => 'john',
+            last_name  => 'smith'
+        });
+
+    my $client = BOM::Test::Helper::P2P::create_client(
+        undef,
+        {
+            first_name => 'mary',
+            last_name  => 'jane'
+        });
 
     ok($escrow->account->balance == 0,                      'Escrow balance is correct');
     ok($advertiser->account->balance == $ad_params{amount}, 'advertiser balance is correct');
@@ -716,7 +726,7 @@ subtest 'Order view permissions' => sub {
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
     my ($client1, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
     my $client2 = BOM::Test::Helper::P2P::create_client();
-    
+
     ok $client1->p2p_order_info(id => $order->{id}), "order_info: cannot see own order";
     ok !$client2->p2p_order_info(id => $order->{id}), "order_info: cannot see other client's orders";
 
@@ -728,18 +738,19 @@ subtest 'Order view permissions' => sub {
 
 subtest 'payment validation' => sub {
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
-    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type=>'sell');    
-    my $client = BOM::Test::Helper::P2P::create_client(1000);
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my $client      = BOM::Test::Helper::P2P::create_client(1000);
     my $mock_client = Test::MockModule->new('BOM::User::Client');
 
     $mock_client->mock(
-        'validate_payment', sub {
+        'validate_payment',
+        sub {
             my ($self, %args) = @_;
             if ($self->loginid eq $client->loginid) {
-                 ok $args{amount} > 0, 'sell ad is validated as client deposit';
-                 die "fail client reason\n";
+                ok $args{amount} > 0, 'sell ad is validated as client deposit';
+                die "fail client reason\n";
             }
-    });
+        });
 
     my $err = exception {
         $client->p2p_order_create(
@@ -747,16 +758,24 @@ subtest 'payment validation' => sub {
             amount    => 10
         );
     };
-    cmp_deeply($err, {error_code => 'OrderCreateFailClient', message_params => ['fail client reason']}, 'Client validate_payment failed error has details');
+    cmp_deeply(
+        $err,
+        {
+            error_code     => 'OrderCreateFailClient',
+            message_params => ['fail client reason']
+        },
+        'Client validate_payment failed error has details'
+    );
 
     $mock_client->mock(
-        'validate_payment', sub {
+        'validate_payment',
+        sub {
             my ($self, %args) = @_;
             if ($self->loginid eq $advertiser->loginid) {
-                 ok $args{amount} < 0, 'sell ad is validated as advertiser withdrawal';
-                 die "fail advertiser reason\n";
+                ok $args{amount} < 0, 'sell ad is validated as advertiser withdrawal';
+                die "fail advertiser reason\n";
             }
-    });
+        });
 
     $err = exception {
         $client->p2p_order_create(
@@ -765,25 +784,25 @@ subtest 'payment validation' => sub {
         );
     };
     cmp_deeply($err, {error_code => 'OrderCreateFailAdvertiser'}, 'Advertiser validate_payment failed error has no details');
-    
-    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type=>'buy');
-    
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
+
     $mock_client->mock(
-        'validate_payment', sub {
+        'validate_payment',
+        sub {
             my ($self, %args) = @_;
             if ($self->loginid eq $client->loginid) {
-                 ok $args{amount} < 0, 'buy ad is validated as client withdrawal';
-            }
-            elsif ($self->loginid eq $advertiser->loginid) {
+                ok $args{amount} < 0, 'buy ad is validated as client withdrawal';
+            } elsif ($self->loginid eq $advertiser->loginid) {
                 ok $args{amount} > 0, 'buy ad is validated as advertiser deposit';
             }
             return $mock_client->original('validate_payment')->(@_);
-    });    
-    
+        });
+
     $err = exception {
         $client->p2p_order_create(
-            advert_id => $advert->{id},
-            amount    => 10,
+            advert_id    => $advert->{id},
+            amount       => 10,
             payment_info => 'x',
             contact_info => 'x',
         );

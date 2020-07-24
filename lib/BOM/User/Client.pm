@@ -1227,8 +1227,9 @@ sub is_available {
 
 sub real_account_siblings_information {
     my ($self, %args) = @_;
-    my $include_disabled = $args{include_disabled} // 1;
-    my $include_self     = $args{include_self}     // 1;
+    my $include_disabled             = $args{include_disabled}             // 1;
+    my $include_self                 = $args{include_self}                 // 1;
+    my $exclude_disabled_no_currency = $args{exclude_disabled_no_currency} // 0;
 
     my $user = $self->user;
     # return empty if we are not able to find user, this should not
@@ -1239,6 +1240,11 @@ sub real_account_siblings_information {
 
     # filter out virtual clients
     @clients = grep { not $_->is_virtual } @clients;
+
+    if ($exclude_disabled_no_currency) {
+        # filter out disabled & no currency clients
+        @clients = grep { not($_->status->disabled && !$_->default_account) } @clients;
+    }
 
     my $siblings;
     foreach my $cl (@clients) {
@@ -3889,6 +3895,36 @@ sub lifetime_internal_withdrawals {
         });
 
     return $lifetime_transfer_amount // 0;
+}
+
+=head2 get_account_details
+
+Prepares a formatted hash for $client
+
+Takes the following arguments as named parameters
+
+=over 4
+
+=item * C<client> - L<BOM::User::Client> object for which formatted details are required
+
+=back
+
+Returns a Hashref of details of client.
+
+=cut
+
+sub get_account_details {
+    my ($client) = @_;
+
+    my $exclude_until = $client->get_self_exclusion_until_date;
+
+    return {
+        loginid => $client->loginid,
+        currency => $client->account ? $client->account->currency_code : '',
+        landing_company_name => $client->landing_company->short,
+        is_disabled          => $client->status->disabled ? 1 : 0,
+        is_virtual => $client->is_virtual ? 1 : 0,
+        $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : ()};
 }
 
 1;

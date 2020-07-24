@@ -33,7 +33,7 @@ scope_guard {
 my ($client, $advertiser, $ad);
 
 subtest 'Default band' => sub {
-    $advertiser = BOM::Test::Helper::P2P::create_client(1000,undef,'EUR');
+    $advertiser = BOM::Test::Helper::P2P::create_client(1000, undef, 'EUR');
     $advertiser->p2p_advertiser_create(name => 'euroman');
     $advertiser->p2p_advertiser_update(is_approved => 1);
 
@@ -109,7 +109,7 @@ subtest 'Check client band limits' => sub {
     # Although advertiser 2 band limits are ok and there is no order for his add,
     # test client will not be able to create order for ad2 because he will be exceeding himself daily buy limit
 
-    my $test_client = BOM::Test::Helper::P2P::create_client(1000,undef,'EUR');
+    my $test_client = BOM::Test::Helper::P2P::create_client(1000, undef, 'EUR');
     $test_client->p2p_advertiser_create(name => 'euroman_cl');
     $test_client->p2p_advertiser_update(is_approved => 1);
     my $ad_cl = $test_client->p2p_advert_create(
@@ -124,7 +124,7 @@ subtest 'Check client band limits' => sub {
         contact_info     => 'test'
     );
 
-    my $advertiser_1 = BOM::Test::Helper::P2P::create_client(1000,undef,'EUR');
+    my $advertiser_1 = BOM::Test::Helper::P2P::create_client(1000, undef, 'EUR');
     $advertiser_1->p2p_advertiser_create(name => 'euroman_1');
     $advertiser_1->p2p_advertiser_update(is_approved => 1);
     my $ad_1 = $advertiser_1->p2p_advert_create(
@@ -145,7 +145,7 @@ subtest 'Check client band limits' => sub {
         amount    => 30
     );
 
-    my $advertiser_2 = BOM::Test::Helper::P2P::create_client(1000,undef,'EUR');
+    my $advertiser_2 = BOM::Test::Helper::P2P::create_client(1000, undef, 'EUR');
     $advertiser_2->p2p_advertiser_create(name => 'euroman_2');
     $advertiser_2->p2p_advertiser_update(is_approved => 1);
     my $ad_2 = $advertiser_2->p2p_advert_create(
@@ -181,7 +181,7 @@ subtest 'Check client band limits' => sub {
 
 sub order {
     my ($advert_id, $amount) = @_;
-    $client = BOM::Test::Helper::P2P::create_client(undef,undef,'EUR');
+    $client = BOM::Test::Helper::P2P::create_client(undef, undef, 'EUR');
     $client->p2p_order_create(
         advert_id => $advert_id,
         amount    => $amount
