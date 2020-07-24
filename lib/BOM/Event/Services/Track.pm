@@ -19,13 +19,14 @@ use BOM::User::Client;
 use BOM::Event::Services;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Locale qw(get_state_by_id);
+use BOM::Database::Model::UserConnect;
 
 my %EVENT_PROPERTIES = (
     identify => [
-        qw (address age avatar birthday company created_at description email first_name gender id last_name name phone title username website currencies country)
+        qw (address age avatar birthday company created_at description email first_name gender id last_name name phone provider title username website currencies country)
     ],
     login                     => [qw (loginid browser device ip new_signin_activity location app_name)],
-    signup                    => [qw (loginid type currency landing_company date_joined first_name last_name phone address age country)],
+    signup                    => [qw (loginid type currency landing_company date_joined first_name last_name phone address age country provider)],
     transfer_between_accounts => [
         qw(revenue currency value from_account to_account from_currency to_currency from_amount to_amount source fees is_from_account_pa
             is_to_account_pa gateway_code remark time id)
@@ -128,6 +129,10 @@ sub signup {
     my $customer = _create_customer($client);
 
     $properties->{loginid} = $loginid;
+
+    my $user_connect = BOM::Database::Model::UserConnect->new;
+    $properties->{provider} = $client->user ? $user_connect->get_connects_by_user_id($client->user->{id})->[0] // 'email' : 'email';
+
     # Although we have user profile we also want to have some information on event itself
     my @items = grep { $customer->{$_} } qw(currency landing_company date_joined);
     @{$properties}{@items} = @{$customer}{@items};
@@ -721,8 +726,10 @@ Arguments:
 sub _create_customer {
     my ($client) = @_;
 
-    my @siblings = $client->user ? $client->user->clients(include_disabled => 1) : ($client);
-    my @mt5_loginids = $client->user ? $client->user->get_mt5_loginids : ();
+    my @siblings     = $client->user ? $client->user->clients(include_disabled => 1) : ($client);
+    my @mt5_loginids = $client->user ? $client->user->get_mt5_loginids               : ();
+    my $user_connect = BOM::Database::Model::UserConnect->new;
+    my $provider = $client->user ? $user_connect->get_connects_by_user_id($client->user->{id})->[0] // 'email' : 'email';
 
     # Get list of user currencies
     my %currencies = ();
@@ -782,6 +789,7 @@ sub _create_customer {
             country      => Locale::Country::code2country($client->residence),
             currencies   => join(',', sort(keys %currencies)),
             mt5_loginids => join(',', sort(@mt5_loginids)),
+            provider     => $provider,
         });
     # Will use this attributes as properties in some events like signup
     $customer->{currency} = $client->account ? $client->account->currency_code : '';

@@ -523,7 +523,8 @@ subtest 'signup event' => sub {
             landing_company => $virtual_client2->landing_company->short,
             country         => Locale::Country::code2country($virtual_client2->residence),
             date_joined     => $virtual_client2->date_joined,
-            'address'       => {
+            provider        => 'email',
+            address         => {
                 street      => ' ',
                 town        => '',
                 state       => '',
@@ -600,6 +601,7 @@ subtest 'signup event' => sub {
                 country     => Locale::Country::code2country($test_client->residence),
             },
             type => 'real',
+            provider => 'email',
         }
         },
         'properties is set properly for real account signup event';
@@ -905,6 +907,7 @@ sub test_segment_customer {
             'utm_source'         => 'direct',
             'date_first_contact' => '2019-11-28',
             mt5_loginids         => join(',', $test_client->user->mt5_logins),
+            provider             => 'email',
             },
             'Customer traits are set correctly for virtual account';
     } else {
@@ -935,6 +938,7 @@ sub test_segment_customer {
             'currencies' => $currencies,
             'country'    => Locale::Country::code2country($test_client->residence),
             mt5_loginids => join(',', $test_client->user->mt5_logins),
+            provider     => 'email',
             },
             'Customer traits are set correctly';
     }
