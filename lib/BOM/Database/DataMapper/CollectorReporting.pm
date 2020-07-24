@@ -37,9 +37,9 @@ sub get_open_bet_overviews {
 
     my $sql;
     if ($from_historical) {
-        $sql = q{ SELECT * FROM accounting.get_historical_open_bets_overview_v2(?) };
+        $sql = q{ SELECT * FROM accounting.get_historical_open_bets_overview_v3(?) };
     } else {
-        $sql = q{ SELECT * FROM accounting.get_open_bets_overview() };
+        $sql = q{ SELECT * FROM accounting.get_open_bets_overview_v2() };
     }
 
     return $self->db->dbic->run(
