@@ -14,6 +14,7 @@ use Locale::Codes::Country qw(code2country);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::User;
+use BOM::Platform::Event::Emitter;
 use Test::MockModule;
 
 get '/callback' => sub {
@@ -155,11 +156,22 @@ subtest "User sing up with social login, app_id is saved" => sub {
             $tx->req->headers->header('X-Client-Country' => $residence);
         });
 
+    my %emitted;
+    my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+        $mock_events->mock(
+        'emit',
+        sub {
+            my ($type, $data) = @_;
+            $emitted{$type}++;
+        });
+
     $t->get_ok("/oneall/callback?app_id=$app_id&connection_token=1")->status_is(302);
 
     my $user = eval { BOM::User->new(email => $email) };
     ok $user, 'User was created';
     is $user->{app_id}, $app_id, 'User has correct app_id';
+
+    ok $emitted{"signup"}, "signup event emitted";
 };
 
 done_testing();

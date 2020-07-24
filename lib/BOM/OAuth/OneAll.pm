@@ -119,6 +119,22 @@ sub callback {
 
         # connect oneall provider data to user identity
         $user_connect->insert_connect($user->{id}, $provider_data);
+
+        # track social signup on Segment
+        my $utm_tags = {};
+
+        foreach my $tag (qw( utm_source utm_medium utm_campaign gclid_url date_first_contact signup_device )) {
+            $utm_tags->{$tag} = $c->session($tag) if $c->session($tag);
+        }
+        BOM::Platform::Event::Emitter::emit(
+            'signup',
+            {
+                loginid    => $account->{client}->loginid,
+                properties => {
+                    type     => 'virtual',
+                    utm_tags => $utm_tags,
+                }});
+
         # initialize user_id and link account to social login.
         stats_inc('login.oneall.new_user_created', {tags => ["brand:$brand_name", "provider:$provider_name"]});
     }
