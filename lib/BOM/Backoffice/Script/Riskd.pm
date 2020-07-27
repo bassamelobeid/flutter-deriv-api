@@ -38,8 +38,18 @@ sub _build_last_run {
 
 sub run {
     my $self = shift;
+    my (%msgs, %old_msgs);
+    local $SIG{__WARN__} = sub {
+        my $msg = shift;
+        if (!$old_msgs{$msg} && !$msgs{$msg}) {
+            CORE::warn "$msg\n";
+        }
+        $msgs{$msg} = 1;
+    };
 
     while (1) {
+        %old_msgs = %msgs;
+        %msgs     = ();
         try {
             BOM::RiskReporting::MarkedToModel->new->generate;
             $self->send_log('MTM');
@@ -56,6 +66,7 @@ sub run {
         catch {
             warn "Failure in BOM::RiskReporting::Dashboard: $@\n";
         }
+
         $self->rest;
     }
 
