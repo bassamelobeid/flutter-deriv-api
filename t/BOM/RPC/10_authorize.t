@@ -326,7 +326,8 @@ subtest 'upgradeable_landing_companies clients have not selected currency & disa
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
 
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['malta'], 'Real client is disabled & has not selected currency yet so it can upgrade to malta.';
+    is_deeply $result->{upgradeable_landing_companies}, ['malta'],
+        'Real client is disabled & has not selected currency yet so it can upgrade to malta.';
     $client_mlt->account('USD');
 
     $result = $c->call_ok($method, $params)->has_no_error->result;

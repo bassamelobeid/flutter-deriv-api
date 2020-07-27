@@ -20,6 +20,7 @@ use BOM::Config::Runtime;
 use BOM::Config::Redis;
 
 my $redis = BOM::Config::Redis::redis_exchangerates_write();
+
 sub _offer_to_clients {
     my $value         = shift;
     my $from_currency = shift;

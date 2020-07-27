@@ -109,14 +109,14 @@ subtest 'account closure' => sub {
                 args  => $args
             });
 
-        is($res->{error}->{code}, 'AccountHasOpenPositions', 'Correct error code');
+        is($res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'Correct error code');
         my $loginid = $test_client->loginid;
         is(
             $res->{error}->{message_to_client},
-            "Please ensure all positions in your account(s) are closed before proceeding: $loginid.",
+            "Please close open positions and withdraw all funds from your $loginid account(s) before proceeding.",
             "Correct error message"
         );
-        is_deeply($res->{error}->{details}, {accounts => {$loginid => 1}}, "Correct error details");
+        is_deeply($res->{error}->{details}, {open_positions => {$loginid => 1}}, "Correct error details");
         ok(!$test_client->status->disabled,    'CR account is not disabled');
         ok(!$test_client_vr->status->disabled, 'Virtual account is also not disabled');
         ok(!$test_client_vr->status->closed,   'Virtual account has no self-closed status');
@@ -137,7 +137,7 @@ subtest 'account closure' => sub {
         });
 
     # Test with single real account (balance)
-    is($res->{error}->{code}, 'ExistingAccountHasBalance', 'Correct error code');
+    is($res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'Correct error code');
     ok(!$test_client->status->disabled,    'CR account is not disabled');
     ok(!$test_client_vr->status->disabled, 'Virtual account is also not disabled');
     ok(!$test_client_vr->status->closed,   'Virtual account has no self-closed status');
@@ -156,16 +156,16 @@ subtest 'account closure' => sub {
 
     # Test with real siblings account (balance)
     my $loginid = $test_client_2->loginid;
-    is($res->{error}->{code}, 'ExistingAccountHasBalance', 'Correct error code');
+    is($res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'Correct error code');
     is(
         $res->{error}->{message_to_client},
-        "Please withdraw all funds from your account(s) before proceeding: $loginid.",
+        "Please close open positions and withdraw all funds from your $loginid account(s) before proceeding.",
         'Correct error message for sibling account'
     );
     is_deeply(
         $res->{error}->{details},
         {
-            accounts => {
+            balance => {
                 $loginid => {
                     balance  => "1.00000000",
                     currency => 'BTC'
@@ -203,6 +203,119 @@ subtest 'account closure' => sub {
     ok($test_client_vr->status->closed,   'Virtual account self-closed status');
     ok($test_client->status->closed,      'CR account self-closed status');
 
+};
+
+subtest 'Account closure MT5 balance' => sub {
+
+    my $email = 'account_clouser_mt5_tests@example.com';
+    my $user  = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
+    $client->email($email);
+    $client->save;
+    $user->add_client($client);
+
+    my $token = $m->create_token($client->loginid, 'test token');
+    my $args = {
+        "account_closure" => 1,
+        "reason"          => 'Financial concerns',
+    };
+
+    my $mock_mt5_rpc = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $mock_mt5_rpc->mock(
+        get_mt5_logins => sub {
+            return Future->done({
+                login    => 'MTR1',
+                group    => 'real/gold_miners',
+                balance  => 1000,
+                currency => 'USD',
+            });
+        });
+
+    my $mock_mt5 = Test::MockModule->new('BOM::MT5::User::Async');
+    $mock_mt5->mock(get_open_positions_count => sub { return Future->done({total => 0}) });
+
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args,
+        });
+
+    my $expected = {
+        error => {
+            details => {
+                balance => {
+                    MTR1 => {
+                        balance  => '1000.00',
+                        currency => 'USD'
+                    }}
+            },
+            code              => 'AccountHasBalanceOrOpenPositions',
+            message_to_client => 'Please close open positions and withdraw all funds from your MTR1 account(s) before proceeding.'
+        }};
+    is_deeply($res, $expected, 'MT5 account has balance');
+
+    $mock_mt5_rpc->mock(
+        get_mt5_logins => sub {
+            return Future->done({
+                login    => 'MTR1',
+                group    => 'real/gold_miners',
+                balance  => 0,
+                currency => 'USD',
+            });
+        });
+    $mock_mt5->mock(get_open_positions_count => sub { return Future->done({total => 1}) });
+
+    $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args,
+        });
+
+    $expected = {
+        error => {
+            details           => {open_positions => {MTR1 => 1}},
+            code              => 'AccountHasBalanceOrOpenPositions',
+            message_to_client => 'Please close open positions and withdraw all funds from your MTR1 account(s) before proceeding.'
+        }};
+    is_deeply($res, $expected, 'MT5 account has open positions');
+
+    $mock_mt5_rpc->mock(
+        get_mt5_logins => sub {
+            return Future->done({
+                login    => 'MTR1',
+                group    => 'real/gold_miners',
+                balance  => 1000,
+                currency => 'USD',
+            });
+        });
+    $mock_mt5->mock(get_open_positions_count => sub { return Future->done({total => 1}) });
+    $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args,
+        });
+
+    $expected = {
+        error => {
+            details => {
+                open_positions => {MTR1 => 1},
+                balance        => {
+                    MTR1 => {
+                        balance  => '1000.00',
+                        currency => 'USD'
+                    }}
+            },
+            code              => 'AccountHasBalanceOrOpenPositions',
+            message_to_client => 'Please close open positions and withdraw all funds from your MTR1 account(s) before proceeding.'
+        }};
+    is_deeply($res, $expected, 'MT5 account has balance and open positions');
 };
 
 done_testing();

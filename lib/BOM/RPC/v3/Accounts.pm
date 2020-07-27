@@ -2223,30 +2223,36 @@ rpc account_closure => sub {
         } if $balance > 0;
     }
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'AccountHasOpenPositions',
-            message_to_client => localize(
-                'Please ensure all positions in your account(s) are closed before proceeding: [_1].',
-                join(', ', keys %accounts_with_positions)
-            ),
-            details => {accounts => \%accounts_with_positions}}) if %accounts_with_positions;
+    my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->get;
+    foreach my $mt5_account (@mt5_accounts) {
+        next if $mt5_account->{group} =~ /^demo/;
 
-    foreach my $loginid ($user->get_mt5_loginids) {
-        my $mt5_user = eval { BOM::MT5::User::Async::get_user($loginid)->get };
+        if ($mt5_account->{balance} > 0) {
+            $accounts_with_balance{$mt5_account->{login}} = {
+                balance  => formatnumber('amount', $mt5_account->{currency}, $mt5_account->{balance}),
+                currency => $mt5_account->{currency},
+            };
+        }
 
-        # TODO :: Include mt5 currency when we have better access to that data. FE will be mapping that for now (they already make a mt5_login_list API call every page)
-        $accounts_with_balance{$loginid} = {
-            balance  => $mt5_user->{balance},
-            currency => ""
-            }
-            if ($mt5_user && ($mt5_user->{group} =~ /^real/) && ($mt5_user->{balance} > 0));
+        my $number_open_position = BOM::MT5::User::Async::get_open_positions_count($mt5_account->{login})->get;
+        if ($number_open_position && $number_open_position->{total}) {
+            $accounts_with_positions{$mt5_account->{login}} = $number_open_position->{total};
+        }
     }
 
-    return BOM::RPC::v3::Utility::create_error({
-            code => 'ExistingAccountHasBalance',
-            message_to_client =>
-                localize('Please withdraw all funds from your account(s) before proceeding: [_1].', join(', ', keys %accounts_with_balance)),
-            details => {accounts => \%accounts_with_balance}}) if %accounts_with_balance;
+    if (%accounts_with_positions || %accounts_with_balance) {
+        my @accounts_to_fix = uniq(keys %accounts_with_balance, keys %accounts_with_positions);
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'AccountHasBalanceOrOpenPositions',
+                message_to_client => localize(
+                    'Please close open positions and withdraw all funds from your [_1] account(s) before proceeding.',
+                    join(', ', @accounts_to_fix)
+                ),
+                details => +{
+                    %accounts_with_balance   ? (balance        => \%accounts_with_balance)   : (),
+                    %accounts_with_positions ? (open_positions => \%accounts_with_positions) : (),
+                }});
+    }
 
     # This for-loop is for disabling the accounts
     # If an error occurs, it will be emailed to CS to disable manually
