@@ -646,26 +646,21 @@ sub set_professional_status {
     };
     return $error if $error;
 
-    send_professional_requested_email($client->loginid, $client->residence, $client->landing_company->short) if $set_prof_request;
+    send_professional_requested_email($client->loginid, $client->residence) if $set_prof_request;
 
     return undef;
 }
 
 sub send_professional_requested_email {
-    my ($loginid, $residence, $landing_company_short) = @_;
+    my ($loginid, $residence) = @_;
 
     return unless $loginid;
 
     my $brand = request()->brand;
 
-    my $to_email = $brand->emails('compliance');
-
-    # Notify customer support for non-CR clients who requested for professional status
-    $to_email .= ',' . $brand->emails('support') if ($landing_company_short ne 'svg');
-
     return send_email({
         from    => $brand->emails('system_generated'),
-        to      => $to_email,
+        to      => $brand->emails('compliance'),
         subject => "$loginid requested for professional status, residence: " . ($residence // 'No residence provided'),
         message => ["$loginid has requested for professional status, please check and update accordingly"],
     });

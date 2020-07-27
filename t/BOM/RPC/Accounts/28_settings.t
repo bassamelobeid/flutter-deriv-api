@@ -589,7 +589,7 @@ subtest 'set settings' => sub {
         subject => qr/\Q$subject\E/
     );
     ok($msg, 'send a email to client');
-    is_deeply($msg->{to}, ['compliance@binary.com', 'support@binary.com'], 'email to address is ok');
+    is_deeply($msg->{to}, ['compliance@binary.com'], 'email to address is ok');
     mailbox_clear();
 
     is(
