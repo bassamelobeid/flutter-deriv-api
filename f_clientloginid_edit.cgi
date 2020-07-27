@@ -820,6 +820,18 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             if ($cli->loginid eq $loginid);
     }
 
+    if (any { defined $input{$_} } qw/first_name last_name dob_month dob_year dob_day/) {
+        my $profile_change_args = {
+            loginid    => $loginid,
+            properties => {
+                updated_fields => {
+                    first_name => $client->first_name,
+                    last_name  => $client->last_name,
+                    (defined $client->date_of_birth ? (date_of_birth => $client->date_of_birth->ymd) : ()),
+                }}};
+
+        BOM::Platform::Event::Emitter::emit('profile_change', $profile_change_args);
+    }
     # Sync onfido with latest updates
     BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
 
