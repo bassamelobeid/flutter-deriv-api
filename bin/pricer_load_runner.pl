@@ -105,7 +105,26 @@ if ( !$hostname ) {
 }
 my @mails_to = split( ',', $mail_to ) if $mail_to;
 $iterations = $iterations // 1;
-my @markets = split( ',', $markets ) if $markets;
+my @markets_to_use = ("forex", "synthetic_index", "indices", "commodities");
+@markets_to_use = split( ',', $markets ) if ($markets);
+my %valid_markets = (
+    'forex'           => 1,
+    'synthetic_index' => 1,
+    'indices'         => 1,
+    'commodities'     => 1
+);
+
+for (@markets_to_use) {
+    if ( !defined( $valid_markets{$_} ) ) {
+        say 'Invalid Market Type: ' . $_;
+        pod2usage(
+            {
+                -verbose  => 99,
+                -sections => "NAME|SYNOPSIS|DESCRIPTION"
+            }
+        );
+    }
+}
 my $api_key = $ENV{DD_API_KEY};
 my $app_key = $ENV{DD_APP_KEY};
 if ( ( !$api_key || !$app_key ) and ( -e '/etc/rmg/loadtest_datadog.yml' ) ) {
@@ -142,12 +161,13 @@ my $queue_size_query    = "sum:pricer_daemon.queue.size{host:$hostname}";
 my $overflow_size_query = "sum:pricer_daemon.queue.overflow{host:$hostname}";
 my $start               = 1;
 my $timer;
+my $market = shift @markets_to_use;
 
 my $test_start_time = time;    #used to build the Datadog link in the email.
 my $test_end_time   = 0;
 my $pid =
   open( my $fh, "-|",
-    "$command -s $initial_subscriptions -c 5 -r $check_time&" )
+    "$command -s $initial_subscriptions -c 5 -r $check_time -m $market&" )
   or die $!;
 
 # I guess because this runs a shell then the script that the PID is always 1 higher than
@@ -174,7 +194,7 @@ END {
 my $run_recorder;
 my $subscriptions  = $initial_subscriptions;
 my $number_of_runs = 1;
-my $market         = 'all';
+my $new_market = 0;
 
 $timer = IO::Async::Timer::Periodic->new(
     interval => $check_time,
@@ -183,30 +203,31 @@ $timer = IO::Async::Timer::Periodic->new(
         my ( $overflow_amount, $max_queue_size ) = check_stats();
 
         # We have completed a cycle so kill off the current load test
-        `kill $pid`;
+        `kill $pid` if $pid;
         $pid = undef;
         if ( $overflow_amount == 0 || $start == 1 ) {
 
-            #this will catch it if we start with our 
-            #subscription number too high and overflow straight away.
+            #this will catch it if we start with our subscription number too high and overflow straight away.
             if ( $overflow_amount > 0 && $start ) {
                 say 'Overflowed on First run,  reducing subscription count';
                 $subscriptions -= int( $subscriptions * .3 );
             }
             else {
                 say ' No Overflow at ' . $max_queue_size;
-                $subscriptions += int( $subscriptions * .3 );
+                # check if its first run of next market. it should be running with $intial_subscription & dont need to increase the number.
+                $subscriptions += int( $subscriptions * .3 ) unless($new_market);
                 $start = 0;
             }
+            $new_market = 0;
             $pid =
               open( my $fh, "-|",
-                "$command -s $subscriptions -c 5 -r $check_time&" )
+                "$command -s $subscriptions -c 5 -r $check_time -m $market&" )
               or die $!;
             $pid++;
         }
         else {
             if ( $number_of_runs < $iterations ) {
-                say 'Run NUmber ' . $number_of_runs;
+                say 'Run Number ' . $number_of_runs;
 
                 say 'Overflowed at queue_size ' . $max_queue_size;
                 $run_recorder->{$market}->{$number_of_runs}
@@ -219,12 +240,20 @@ $timer = IO::Async::Timer::Periodic->new(
                 $test_end_time = time;
                 $run_recorder->{$market}->{$number_of_runs}
                   ->{overflowed_queue_size} = $max_queue_size;
-                email_result( $run_recorder, \@mails_to, $smtp_transport )
-                  if scalar(@mails_to);
                 say 'Overflowed at queue_size ' . $max_queue_size;
                 say Dumper($run_recorder);
-                $timer->stop;
-                $loop->stop;
+                if( $market = shift @markets_to_use) {
+                    say "trying to get next market ".$market;
+                    $start = 1;
+                    $number_of_runs = 1;
+                    $subscriptions = $initial_subscriptions;
+                    $new_market = 1;
+                } else {
+                    email_result( $run_recorder, \@mails_to, $smtp_transport )
+                      if scalar(@mails_to);
+                    $timer->stop;
+                    $loop->stop;
+                }
             }
         }
     },

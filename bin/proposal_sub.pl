@@ -32,7 +32,7 @@ The script currently contains no measurement ability so that will need to be don
 
 =head1 SYNOPSIS
 
-    perl proposal_sub.pl -h -e -a -s -f -t -m -r -d
+    perl proposal_sub.pl -h -e -a -c -s -f -t -m -r -d
 
 =over 4
 
