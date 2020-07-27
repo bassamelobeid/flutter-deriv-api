@@ -2969,7 +2969,8 @@ sub validate_payment {
 
     if ($action_type eq 'withdrawal') {
 
-        die "Withdrawal amount [$currency $absamt] exceeds client balance [$currency $accbal].\n"
+        my $formatted_accbal = formatnumber('amount', $currency, $accbal);
+        die "Withdrawal amount [$currency $absamt] exceeds client balance [$currency $formatted_accbal].\n"
             if financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $accbal);
 
         if (my $frozen = $self->get_withdrawal_limits->{frozen_free_gift}) {
@@ -2977,10 +2978,8 @@ sub validate_payment {
             die(
                 localize(
                     "Withdrawal is [_1] [_2] but balance [_3] includes frozen bonus [_4].",
-                    $currency,
-                    formatnumber('amount', $currency, $absamt),
-                    formatnumber('amount', $currency, $accbal),
-                    formatnumber('amount', $currency, $frozen))
+                    $currency, formatnumber('amount', $currency, $absamt),
+                    $formatted_accbal, formatnumber('amount', $currency, $frozen))
                     . "\n"
             ) if financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $unfrozen);
         }
