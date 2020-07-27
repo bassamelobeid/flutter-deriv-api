@@ -86,7 +86,6 @@
                     <table class="internal"><tbody>
                         <tr><th>Remark:</th><td>[% trx.remark %]</td></tr>
                         <tr><th>Error:</th><td>[% trx.error_text %]</td></tr>
-                        <tr><th>Resolution:</th><td>[% trx.resolution %]</td></tr>
                     </tbody></table>
                 </td>
                 <td valign="top" align="center">
