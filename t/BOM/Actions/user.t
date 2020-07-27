@@ -5,10 +5,12 @@ use Test::More;
 use Test::Warnings qw(warning);
 use Test::Fatal;
 use Test::MockModule;
+use Test::Deep;
 
 use WebService::Async::Segment::Customer;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Email;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
 use BOM::User;
@@ -303,6 +305,166 @@ subtest 'user profile change event' => sub {
         },
         'properties are set properly for user profile change event';
 
+    subtest 'apply sanctions on profile change' => sub {
+        my $sanctions_mock = Test::MockModule->new('BOM::Platform::Client::Sanctions');
+        my $validate_mock  = Test::MockModule->new('Data::Validate::Sanctions');
+        my %sanctions_args;
+        my $sanctioned_info;
+        my $user_mock = Test::MockModule->new('BOM::User');
+
+        $sanctions_mock->mock(
+            'check',
+            sub {
+                my $self = shift;
+                %sanctions_args = @_;
+                ok exists $sanctions_args{triggered_by}, 'triggered by param exists';
+                return $sanctions_mock->original('check')->(($self, %sanctions_args));
+            });
+
+        my $user = BOM::User->create(
+            email          => 'silly@ness.com',
+            password       => "Coconut9009",
+            email_verified => 1,
+        );
+
+        my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => 'silly@ness.com',
+        });
+
+        $user->add_client($test_client);
+        $test_client->city('Ciudad del Este');
+        $test_client->phone('+15417541233');
+        $test_client->address_state('Acre');
+        $test_client->address_line_1('some street');
+        $test_client->citizen('br');
+        $test_client->place_of_birth('br');
+        $test_client->residence('br');
+        $test_client->save();
+        my $test_loginid = $test_client->loginid;
+
+        # Sanctions shouldn't be called for address_line_1 updates
+        subtest 'address_line_1 update' => sub {
+            my $args = {
+                loginid    => $test_loginid,
+                properties => {
+                    loginid          => $test_loginid,
+                    'updated_fields' => {
+                        'address_line_1' => 'other st',
+                    },
+                }};
+
+            my $result = $action_handler->($args)->get;
+            is $result, 1, 'Success profile_change result';
+            is scalar keys %sanctions_args, 0, 'Sanctions not triggered for address_line_1 update';
+        };
+
+        # Sanctions called for update, but this data is innoffensive
+        subtest 'clean profile update' => sub {
+            $validate_mock->mock(
+                'get_sanctioned_info',
+                sub {
+                    {matched => 0};
+                });
+
+            mailbox_clear();
+            $args = {
+                loginid    => $test_loginid,
+                properties => {
+                    loginid          => $test_loginid,
+                    'updated_fields' => {
+                        'first_name' => 'innoffensive name',
+                    },
+                }};
+
+            $result = $action_handler->($args)->get;
+            is $result, 1, 'Success profile_change result';
+            cmp_deeply \%sanctions_args,
+                {
+                triggered_by => 'Triggered by profile update',
+                comments     => 'Triggered by profile update'
+                },
+                'Sanctions check called with expected params';
+
+            my $msg = mailbox_search(subject => qr/$test_loginid possible match in sanctions list - Triggered by profile update/);
+            ok !$msg, 'No sanctions email sent';
+        };
+
+        # Sanctions called for update, the dirty one
+        subtest 'dirty profile update' => sub {
+            $user_mock->mock(
+                'mt5_logins_with_group',
+                sub {
+                    {};
+                });
+
+            $validate_mock->unmock_all;
+            $validate_mock->mock(
+                'get_sanctioned_info',
+                sub {
+                    # I hope this 'private' mathod can be used in tests, this kindof simulate a sanction match
+                    return Data::Validate::Sanctions::_possible_match(('some list', 'my forbidden name', 'some reason', '1990-10-10'));
+                });
+
+            mailbox_clear();
+            $args = {
+                loginid    => $test_loginid,
+                properties => {
+                    loginid          => $test_loginid,
+                    'updated_fields' => {
+                        'first_name'    => 'Yakeen',
+                        'date_of_birth' => '1992-10-10'
+                    },
+                }};
+
+            $result = $action_handler->($args)->get;
+            is $result, 1, 'Success profile_change result';
+            cmp_deeply \%sanctions_args,
+                {
+                triggered_by => 'Triggered by profile update',
+                comments     => 'Triggered by profile update'
+                },
+                'Sanctions check called with expected params';
+            my $msg = mailbox_search(subject => qr/$test_loginid possible match in sanctions list - Triggered by profile update/);
+            ok $msg, 'Sanctions email sent';
+            ok $msg->{body} =~ qr/Triggered by profile update/, 'Correct reason appended to email body';
+            ok $msg->{body} !~ qr/MT5 Accounts/, 'Email does not show MT5 Accounts as user does not have any';
+        };
+
+        # Sanctions called for update, the dirty one, this time with mt5 accounts
+        subtest 'dirty profile update with mt5 accounts' => sub {
+            $user_mock->mock(
+                'mt5_logins_with_group',
+                sub {
+                    {
+                        'MTR10000' => 'real\svg',
+                        'MTD9000'  => 'demo'
+                    };
+                });
+
+            mailbox_clear();
+            $args = {
+                loginid    => $test_loginid,
+                properties => {
+                    loginid          => $test_loginid,
+                    'updated_fields' => {
+                        'first_name'    => 'Yakeen',
+                        'date_of_birth' => '1992-10-10'
+                    },
+                }};
+
+            $result = $action_handler->($args)->get;
+            is $result, 1, 'Success profile_change result';
+            my $msg = mailbox_search(subject => qr/$test_loginid possible match in sanctions list - Triggered by profile update/);
+            ok $msg, 'Sanctions email sent';
+            ok $msg->{body} =~ qr/Triggered by profile update/, 'Correct reason appended to email body';
+            ok $msg->{body} =~ qr/MT5 Accounts/,                'Email does show MT5 Accounts';
+        };
+
+        $user_mock->unmock_all;
+        $validate_mock->unmock_all;
+        $sanctions_mock->unmock_all;
+    };
 };
 
 sub test_segment_customer {
