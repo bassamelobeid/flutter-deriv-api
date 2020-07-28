@@ -11,6 +11,7 @@ use List::Util qw(first any all minstr);
 use Scalar::Util qw(blessed looks_like_number);
 use Carp qw(croak carp);
 use Log::Any qw($log);
+use JSON::MaybeXS qw(encode_json);
 
 use BOM::MT5::User::Async;
 use BOM::Database::UserDB;
@@ -65,8 +66,14 @@ sub create {
     my @new_values = @args{@fields};
     shift @new_values;    #remove id value
     my $placeholders = join ",", ('?') x @new_values;
-    my $sql          = "select * from users.create_user($placeholders)";
-    my $result       = $class->dbic->run(
+
+    if ($args{utm_data} && keys %{$args{utm_data}}) {
+        push @new_values => encode_json($args{utm_data});
+        $placeholders .= ",?::JSONB";
+    }
+
+    my $sql    = "select * from users.create_user($placeholders)";
+    my $result = $class->dbic->run(
         fixup => sub {
             $_->selectrow_hashref($sql, undef, @new_values);
         });
