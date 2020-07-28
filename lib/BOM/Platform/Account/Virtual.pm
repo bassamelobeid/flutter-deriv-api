@@ -79,7 +79,9 @@ sub create_account {
             $utm_campaign       ? (utm_campaign       => $utm_campaign)       : (),
             $gclid_url          ? (gclid_url          => $gclid_url)          : (),
             $date_first_contact ? (date_first_contact => $date_first_contact) : (),
-            $signup_device      ? (signup_device      => $signup_device)      : ());
+            $signup_device      ? (signup_device      => $signup_device)      : (),
+            $args->{utm_data}   ? (utm_data           => $args->{utm_data})   : (),
+        );
         my $landing_company = $residence ? $brand_country_instance->virtual_company_for_country($residence) : $default_virtual;
         my $broker_code = LandingCompany::Registry::get($landing_company)->broker_codes->[0];
         $client = $user->create_client(
