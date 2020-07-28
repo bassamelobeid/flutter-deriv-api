@@ -215,13 +215,14 @@ It returns a hashref with the following keys:
 sub parse_mt5_group {
     my $group = shift // '';
 
-    my ($category, $company, undef, $subtype, undef, $currency) = $group =~ m/^([a-z]+)\\([a-z]+)(_([a-z]+))?(_([A-Z]+))?/;
+    # group name can be like following patterns `demo/svg`, `real\vanuatu_financial`, `real\labuan_financial_stp` & `demo\maltainvest_financial_stp_GB` etc
+    my ($category, $company, undef, $subtype, undef, undef, $currency) = $group =~ m/^([a-z]+)\\([a-z]+)(_([a-z]+(_stp)?+))?(_([A-Z]+))?/;
     $subtype = $subtype // '';
 
     my %subtype_to_type_name = (
-        ''       => 'synthetic',
-        standard => 'financial',
-        advanced => 'financial stp',
+        ''            => 'synthetic',
+        financial     => 'financial',
+        financial_stp => 'financial stp',
     );
 
     my $type = $subtype ? 'financial' : 'gaming';
