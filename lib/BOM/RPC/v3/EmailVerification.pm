@@ -220,7 +220,11 @@ Returns   string representation of the URL.
 sub _build_verification_url {
     my ($action, $args) = @_;
     my $extra_params_string = '';
-    foreach my $extra_param (qw( utm_source utm_campaign utm_medium signup_device gclid_url date_first_contact affiliate_token)) {
+    foreach my $extra_param (
+        qw( utm_source utm_campaign utm_medium signup_device gclid_url date_first_contact affiliate_token utm_content
+        utm_term utm_campaign_id utm_adgroup_id utm_ad_id utm_gl_client_id  utm_msclk_id utm_fbcl_id utm_adrollclk_id)
+        )
+    {
         $extra_params_string .= "&$extra_param=" . $args->{$extra_param} if defined($args->{$extra_param});
     }
     return "$args->{verification_uri}?action=$action&lang=$args->{language}&code=$args->{code}$extra_params_string";

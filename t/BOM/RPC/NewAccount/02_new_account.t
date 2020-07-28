@@ -128,6 +128,19 @@ subtest $method => sub {
     $params->{args}->{date_first_contact} = $date_first_contact;
     $params->{args}->{signup_device}      = 'mobile';
 
+    my $expected_utm_data = {
+        utm_campaign_id  => 111017190001,
+        utm_content      => '2017_11_09_O_TGiving_NoSt_SDTest_NoCoup_2',
+        utm_term         => 'MyLink123',
+        utm_ad_id        => 'f521708e-db6e-478b-9731-8243a692c2d5',
+        utm_adgroup_id   => 45637,
+        utm_gl_client_id => 3541,
+        utm_msclk_id     => 5,
+        utm_fbcl_id      => 6,
+        utm_adrollclk_id => 7,
+    };
+    # $params->{args}->{utm_ad_id} = $expected_utm_data->{utm_ad_id};
+    map { $params->{args}->{$_} = $expected_utm_data->{$_} } keys %$expected_utm_data;
     $params->{args}->{verification_code} = BOM::Platform::Token->new(
         email       => $email,
         created_for => 'account_opening'
@@ -152,6 +165,7 @@ subtest $method => sub {
     is $user->{date_first_contact}, $date_first_contact, 'date first contact value returned as expected';
     is $user->{signup_device}, 'mobile', 'signup_device value returned as expected';
     is $user->{email_consent}, 1,        'email consent for new account is 1 for residence under svg';
+    is_deeply decode_json_utf8($user->{utm_data}), $expected_utm_data, 'utm data registered as expected';
 
     my ($resp_loginid, $t, $uaf) =
         @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};

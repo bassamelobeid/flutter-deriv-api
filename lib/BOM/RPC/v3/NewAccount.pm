@@ -65,19 +65,25 @@ rpc "new_account_virtual",
                 code              => $err->{code},
                 message_to_client => $err->{message_to_client}});
     }
+    my $acc_args = {
+        ip => $params->{client_ip} // '',
+        country => uc($params->{country_code} // ''),
+        details => {
+            email           => $email,
+            client_password => $args->{client_password},
+            residence       => $args->{residence},
+            source          => $params->{source},
+            $args->{affiliate_token} ? (myaffiliates_token => $args->{affiliate_token}) : (),
+            (map { $args->{$_} ? ($_ => $args->{$_}) : () } qw( utm_source utm_medium utm_campaign gclid_url date_first_contact signup_device )),
+        },
+        utm_data => {(
+                map { $args->{$_} ? ($_ => $args->{$_}) : () }
+                    qw( utm_content utm_term utm_campaign_id utm_adgroup_id utm_ad_id utm_gl_client_id utm_msclk_id utm_fbcl_id utm_adrollclk_id )
+            ),
+        },
+    };
 
-    my $acc = BOM::Platform::Account::Virtual::create_account({
-            ip => $params->{client_ip} // '',
-            country => uc($params->{country_code} // ''),
-            details => {
-                email           => $email,
-                client_password => $args->{client_password},
-                residence       => $args->{residence},
-                source          => $params->{source},
-                $args->{affiliate_token} ? (myaffiliates_token => $args->{affiliate_token}) : (),
-                (map { $args->{$_} ? ($_ => $args->{$_}) : () } qw( utm_source utm_medium utm_campaign gclid_url date_first_contact signup_device ))
-            },
-        });
+    my $acc = BOM::Platform::Account::Virtual::create_account($acc_args);
 
     return BOM::RPC::v3::Utility::create_error({
             code              => $acc->{error},
