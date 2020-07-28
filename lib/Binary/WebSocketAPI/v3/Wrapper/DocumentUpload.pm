@@ -2,7 +2,6 @@ package Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 
 use strict;
 use warnings;
-
 use Syntax::Keyword::Try;
 use Digest::MD5;
 use Net::Async::Webservice::S3;
@@ -92,16 +91,15 @@ sub document_upload {
 
 sub get_upload_info {
     my ($c, $frame) = @_;
-
     if (length $frame < 12) {
-        stats_inc('bom_websocket_api.v_3.document_upload_error', {tags => ['app_id:' . $c->app_id]});
+        stats_inc('bom_websocket_api.v_3.document_upload_error', {tags => ['source:' . $c->stash('source_type')]});
         return;
     }
 
     my ($call_type, $upload_id, $chunk_size, $data) = unpack "N3a*", $frame;
     my $upload_info = $c->stash->{document_upload}->{$upload_id};
     unless ($upload_info) {
-        stats_inc('bom_websocket_api.v_3.document_upload_error', {tags => ['app_id:' . $c->app_id]});
+        stats_inc('bom_websocket_api.v_3.document_upload_error', {tags => ['source:' . $c->stash('source_type')]});
         return;
     }
 

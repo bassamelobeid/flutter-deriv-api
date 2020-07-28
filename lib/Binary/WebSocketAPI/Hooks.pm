@@ -119,7 +119,7 @@ sub log_call_timing_before_forward {
 
 sub log_call_timing {
     my ($c, $req_storage) = @_;
-    my $tags = ["rpc:$req_storage->{method}", "app_name:" . ($c->stash('app_name') || ''), "app_id:" . ($c->stash('source') || ''),];
+    my $tags = ["rpc:$req_storage->{method}", "app_name:" . ($c->stash('app_name') || ''), "source:" . $c->stash('source_type'),];
 
     # extra tagging for buy for better visualization
     push @$tags, 'market:' . $c->stash('market') if $req_storage->{method} eq 'buy' and $c->stash('market');
@@ -246,7 +246,6 @@ my %rate_limit_map = (
 
 sub reached_limit_check {
     my ($c, $category, $is_real) = @_;
-
     my $limiting_service = $rate_limit_map{
         $category . '_'
             . (
@@ -258,7 +257,7 @@ sub reached_limit_check {
         my $f = $c->check_limits($limiting_service);
         $f->on_fail(
             sub {
-                stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service", {tags => ["app_id:" . ($c->app_id // 'undef')]});
+                stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service", {tags => ["source:" . ($c->stash('source_type') // '')]});
             });
         return $f;
     }
@@ -532,7 +531,7 @@ sub add_brand {
 sub _on_sanity_failed {
     my ($c) = @_;
     my $client_ip = $c->stash->{client_ip};
-    my $tags = ["client_ip:$client_ip", "app_name:" . ($c->stash('app_name') || ''), "app_id:" . ($c->stash('source') || ''),];
+    my $tags = ["client_ip:$client_ip", "app_name:" . ($c->stash('app_name') || ''), "source:" . $c->stash('source_type'),];
     DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.sanity_check_failed.count', {tags => $tags});
 
     return;
@@ -694,8 +693,6 @@ sub _validate_schema_error {
 
 sub _handle_error {
     my ($c, $all_data) = @_;
-    my $app_id = $c->{stash}->{source};
-
     my %error_mapping = (
         INVALID_UTF8    => 'websocket_proxy.utf8_decoding.failure',
         INVALID_UNICODE => 'websocket_proxy.unicode_normalisation.failure',
@@ -704,7 +701,7 @@ sub _handle_error {
 
     # 1007 means 'Invalid frame payload data'
     # reference: https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
-    my $tags = ['error_code:1007', "app_id:$app_id"];
+    my $tags = ['error_code:1007', "source:" . $c->stash('source_type')];
     stats_inc($error_mapping{$all_data->{details}->{error_code}}, {tags => $tags});
     $c->finish;
     return;

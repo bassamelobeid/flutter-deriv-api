@@ -2,6 +2,7 @@ package Binary::WebSocketAPI;
 
 use strict;
 use warnings;
+use Brands;
 
 no indirect;
 
@@ -200,6 +201,10 @@ sub startup {
                 ($app_id) ? (source => $app_id) : (),
                 brand => (($brand_name =~ /^\w{1,10}$/) ? $brand_name : $binary_brand->name),
             );
+
+            my $brand = Brands->new(name => $c->stash('brand'));
+            my $source_type = $brand->is_app_whitelisted($c->stash('source') // '') ? 'official' : 'unofficial';
+            $c->stash(source_type => $source_type);
         });
 
     $app->plugin(
