@@ -15,7 +15,6 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
 use BOM::Database::Model::OAuth;
 use BOM::User::Password;
-use BOM::User::Utility qw(parse_mt5_group);
 use Email::Stuffer::TestLinks;
 
 my %financial_data = (
@@ -1201,7 +1200,6 @@ sub create_mt5_account {
         $result->has_no_error;
         ok $mt5_account_info, 'mt5 api is called';
 
-        my $group_details = parse_mt5_group($mt5_account_info->{group});
 
         is_deeply \@emit_args, [
             'new_mt5_signup',
@@ -1211,8 +1209,8 @@ sub create_mt5_account {
                 loginid          => $client->loginid,
                 mt5_group        => $mt5_account_info->{group},
                 mt5_login_id     => $c->result->{login},
-                account_type     => $params->{args}->{account_type} // '',        #$group_details->{account_type},
-                sub_account_type => $params->{args}->{mt5_account_type} // '',    #$params->{arg}->{mt5_account_type},
+                account_type     => $params->{args}->{account_type} // '',
+                sub_account_type => $params->{args}->{mt5_account_type} // '',
             }];
         return $c->result->{login};
     }
