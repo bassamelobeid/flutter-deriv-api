@@ -24,15 +24,20 @@ get '/callback' => sub {
     BOM::Platform::Context::request($request);
     $c->stash(request => $request);
 
-    my $email     = $c->param('email');
-    my $brand     = $c->param('brand') || 'binary';
-    my $residence = $c->stash('request')->country_code;
-    my $one_all   = BOM::OAuth::OneAll->new($c);
-    my $account   = $one_all->__create_virtual_account(
+    my $email        = $c->param('email');
+    my $brand        = $c->param('brand') || 'binary';
+    my $residence    = $c->stash('request')->country_code;
+    my $one_all      = BOM::OAuth::OneAll->new($c);
+    my $user_details = {
         email     => $email,
         brand     => $brand,
         residence => $residence
-    );
+    };
+    my $utm_data = {
+        utm_term     => "utm_term test",
+        utm_msclk_id => 756,
+    };
+    my $account = $one_all->__create_virtual_account($user_details, $utm_data);
 
     if ($account->{error}) {
         if ($account->{error} eq 'invalid residence') {

@@ -113,11 +113,20 @@ sub authorize {
     };
     $c->session(signup_device => $c->param('signup_device')) if ($c->param('signup_device') // '') =~ /^\w+$/;
     # the regexes for the following fields should be the same as new_account_virtual send schema
-    $c->session(myaffiliates_token => $c->param('affiliate_token')) if ($c->param('affiliate_token') // '') =~ /^[\w\-]{1,32}$/;
-    $c->session(gclid_url          => $c->param('gclid_url'))       if ($c->param('gclid_url')       // '') =~ /^[\w\s\.\-_]{1,100}$/;
-    $c->session(utm_medium         => $c->param('utm_medium'))      if ($c->param('utm_medium')      // '') =~ /^[\w\s\.\-_]{1,100}$/;
-    $c->session(utm_source         => $c->param('utm_source'))      if ($c->param('utm_source')      // '') =~ /^[\w\s\.\-_]{1,100}$/;
-    $c->session(utm_campaign       => $c->param('utm_campaign'))    if ($c->param('utm_campaign')    // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(myaffiliates_token => $c->param('affiliate_token'))  if ($c->param('affiliate_token')  // '') =~ /^[\w\-]{1,32}$/;
+    $c->session(gclid_url          => $c->param('gclid_url'))        if ($c->param('gclid_url')        // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_medium         => $c->param('utm_medium'))       if ($c->param('utm_medium')       // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_source         => $c->param('utm_source'))       if ($c->param('utm_source')       // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_campaign       => $c->param('utm_campaign'))     if ($c->param('utm_campaign')     // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_ad_id          => $c->param('utm_ad_id'))        if ($c->param('utm_ad_id')        // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_adgroup_id     => $c->param('utm_adgroup_id'))   if ($c->param('utm_adgroup_id')   // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_adrollclk_id   => $c->param('utm_adrollclk_id')) if ($c->param('utm_adrollclk_id') // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_campaign_id    => $c->param('utm_campaign_id'))  if ($c->param('utm_campaign_id')  // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_content        => $c->param('utm_content'))      if ($c->param('utm_content')      // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_fbcl_id        => $c->param('utm_fbcl_id'))      if ($c->param('utm_fbcl_id')      // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_gl_client_id   => $c->param('utm_gl_client_id')) if ($c->param('utm_gl_client_id') // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_msclk_id       => $c->param('utm_msclk_id'))     if ($c->param('utm_msclk_id')     // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(utm_term           => $c->param('utm_term'))         if ($c->param('utm_term')         // '') =~ /^[\w\s\.\-_]{1,100}$/;
 
     # detect and validate social_login param if provided
     if (my $method = $c->param('social_signup')) {

@@ -90,9 +90,8 @@ sub callback {
         }
     } else {
         # Get client's residence automatically from cloudflare headers
-        my $residence = $c->stash('request')->country_code;
-        # Create virtual client if user not found
-        my $account = $c->__create_virtual_account(
+        my $residence    = $c->stash('request')->country_code;
+        my $user_details = {
             email              => $email,
             brand              => $brand_name,
             residence          => $residence,
@@ -104,7 +103,21 @@ sub callback {
             utm_source         => $c->session('utm_source'),
             utm_campaign       => $c->session('utm_campaign'),
             source             => $c->param('app_id'),
-        );
+        };
+        my $utm_data = {
+            utm_ad_id        => $c->session('utm_ad_id'),
+            utm_adgroup_id   => $c->session('utm_adgroup_id'),
+            utm_adrollclk_id => $c->session('utm_adrollclk_id'),
+            utm_campaign_id  => $c->session('utm_campaign_id'),
+            utm_content      => $c->session('utm_content'),
+            utm_fbcl_id      => $c->session('utm_fbcl_id'),
+            utm_gl_client_id => $c->session('utm_gl_client_id'),
+            utm_msclk_id     => $c->session('utm_msclk_id'),
+            utm_term         => $c->session('utm_term'),
+        };
+
+        # Create virtual client if user not found
+        my $account = $c->__create_virtual_account($user_details, $utm_data);
 
         if ($account->{error}) {
             my $error_msg =
@@ -139,7 +152,7 @@ sub callback {
         stats_inc('login.oneall.new_user_created', {tags => ["brand:$brand_name", "provider:$provider_name"]});
     }
 
-    # login client to the system
+# login client to the system
     $c->session(_oneall_user_id => $user->{id});
     stats_inc('login.oneall.success', {tags => ["brand:$brand_name"]});
     return $c->redirect_to($redirect_uri);
@@ -204,21 +217,23 @@ Device(platform) used for signing up on the website. It's optinal
 =cut
 
 sub __create_virtual_account {
-    my ($c, %user_details) = @_;
-
+    my ($c, $user_details, $utm_data) = @_;
     my $details = {
-        email             => $user_details{email},
-        client_password   => rand(999999),               # random password so you can't login without password
+        email             => $user_details->{email},
+        client_password   => rand(999999),                 # random password so you can't login without password
         has_social_signup => 1,
-        brand_name        => $user_details{brand},
-        residence         => $user_details{residence},
-        source            => $user_details{source},
+        brand_name        => $user_details->{brand},
+        residence         => $user_details->{residence},
+        source            => $user_details->{source},
     };
 
-    $details->{$_} = $user_details{$_}
-        for grep { $user_details{$_} } qw (date_first_contact signup_device myaffiliates_token gclid_url utm_medium utm_source utm_campaign);
+    $details->{$_} = $user_details->{$_}
+        for grep { $user_details->{$_} } qw (date_first_contact signup_device myaffiliates_token gclid_url utm_medium utm_source utm_campaign);
 
-    return BOM::Platform::Account::Virtual::create_account({details => $details});
+    return BOM::Platform::Account::Virtual::create_account({
+        details  => $details,
+        utm_data => $utm_data
+    });
 }
 
 1;
