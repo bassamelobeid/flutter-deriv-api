@@ -12,14 +12,14 @@ To set statistic of market data. For example age of vol file, age of dividend, a
 
 use Moose;
 
-use BOM::Config::Runtime;
 with 'App::Base::Script';
-use BOM::MarketData qw(create_underlying);
+use BOM::MarketData qw(create_underlying create_underlying_db);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::VolSurface::Flat;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
-use BOM::MarketData qw(create_underlying_db);
+use BOM::Config::Chronicle;
 use BOM::Config::Runtime;
+use Quant::Framework;
 use Quant::Framework::CorrelationMatrix;
 use Quant::Framework::ImpliedRate;
 use Quant::Framework::InterestRate;
@@ -63,6 +63,7 @@ sub _collect_vol_ages {
 
     my @offer_underlyings = (@offered_forex, @offered_others, @smart_fx);
 
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
     my @symbols = grep { !$skip_list{$_} } (@offer_underlyings, @quanto_currencies);
     foreach my $symbol (@symbols) {
         my $underlying = create_underlying($symbol);
@@ -79,7 +80,8 @@ sub _collect_vol_ages {
             }
         }
 
-        stats_gauge($market . '_vol_age', $vol_age, {tags => ['tag:' . $symbol]});
+        my $market_open = $trading_calendar->is_open($underlying->exchange) ? 1 : 0;
+        stats_gauge($market . '_vol_age', $vol_age, {tags => ['symbol:' . $symbol . ',market_open:' . $market_open]});
     }
     return;
 }
