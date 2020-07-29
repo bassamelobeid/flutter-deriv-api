@@ -27,7 +27,7 @@ my @limits = ({
     {
         market            => ['synthetic_index'],
         underlying_symbol => ['default'],
-        limit_amount      => 75000,
+        limit_amount      => 125000,
     },
     {
         market       => ['indices'],
