@@ -678,6 +678,11 @@ system:
               isa: Bool
               default: 0
               global: 1
+            auto_Bbook_svg_financial:
+              description: "Suspend B-booking new sign-up for svg financial"
+              isa: Bool
+              default: 0
+              global: 1
 marketing:
     description:  "Marketing Bonus Settings"
     isa: section
