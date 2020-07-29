@@ -190,7 +190,13 @@ sub _mt5_group {
         return "demo\\${company_name}_$sub_account_type${GBP}" if length $sub_account_type;
         return "demo\\$company_name";
     } else {
-        $sub_account_type = "_${sub_account_type}" if $account_type eq 'financial';
+        if ($account_type eq 'financial') {
+            $sub_account_type = "_${sub_account_type}";
+            # All svg financial account will be B-book upon sign-up. Decisions to A-book will be done
+            # on a case by case basis manually
+            my $app_config = BOM::Config::Runtime->instance->app_config;
+            $sub_account_type .= "_Bbook" if $company_name eq 'svg' and not $app_config->system->mt5->suspend->auto_Bbook_svg_financial;
+        }
 
         return "real\\${company_name}${sub_account_type}${GBP}";
     }
@@ -353,25 +359,34 @@ async_rpc "mt5_new_account",
         sub {
             my (@logins) = @_;
 
-            foreach (@logins) {
-                my $login_group = $_->{group} // '';
+            my %existing_groups = map { $_->{group} => $_->{login} } grep { $_->{group} } @logins;
 
-                # hacky way to compare and throw error for duplicate
-                # as client have only one of
-                # real\vanuatu_financial and real\svg_financial
-                my ($group_account_type, $group_mt5_account_type);
-                ($group_account_type, $group_mt5_account_type) = $group =~ /^([a-z]+)\\[a-z]+_([a-z_]+)(?:_[A-Z]+)?$/ if $mt5_account_type;
+            # can't create account on the same group
+            if (my $login = $existing_groups{$group}) {
+                return create_error_future(
+                    'MT5Duplicate',
+                    {
+                        override_code => $error_code,
+                        params        => [$account_type, $login]});
+            }
 
-                if ($login_group eq $group or ($mt5_account_type and $login_group =~ /^$group_account_type\\[a-z]+_$group_mt5_account_type$/)) {
-                    my $login = $_->{login};
-
+            # A client can only have either one of
+            # real\vanuatu_financial or real\svg_financial or real\svg_financial_Bbook
+            my ($acct_type, $landing_company_name) = $group =~ /^([a-z]+)\\([a-z]+)_?/;
+            my %check_similar_group = (
+                vanuatu => ['\svg_financial', '\svg_financial_Bbook'],
+                svg     => ['\vanuatu_financial'],
+            );
+            if (my $similar = $check_similar_group{$landing_company_name}) {
+                if (my $match = first { $existing_groups{$acct_type . $_} } @$similar) {
                     return create_error_future(
                         'MT5Duplicate',
                         {
                             override_code => $error_code,
-                            params        => [$account_type, $login]});
+                            params        => [$account_type, $existing_groups{$match}]});
                 }
             }
+
             # TODO(leonerd): This has to nest because of the `Future->done` in the
             #   foreach loop above. A better use of errors-as-failures might avoid
             #   this.

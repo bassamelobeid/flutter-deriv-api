@@ -18,6 +18,7 @@ our %MT5_ACCOUNTS = (
     'real\svg'                       => '00000013',
     'real\svg_financial'             => '00000014',
     'real\labuan_financial_stp'      => '00000015',
+    'real\svg_financial_Bbook'       => '00000016',
 );
 
 our %ACCOUNT_DETAILS = (

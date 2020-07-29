@@ -310,7 +310,7 @@ subtest 'CR account types - low risk' => sub {
             mt5_account_type => 'financial'
         });
     ok $login, 'financial mt5 account is created without authentication and FA';
-    is $mt5_account_info->{group}, 'real\svg_financial', 'correct CR financial group';
+    is $mt5_account_info->{group}, 'real\svg_financial_Bbook', 'correct CR financial group';
 
     my $error = create_mt5_account->(
         $c, $token, $client,
@@ -409,7 +409,7 @@ subtest 'CR account types - high risk' => sub {
             mt5_account_type => 'financial'
         });
     ok $login, 'financial mt5 account is created without authentication';
-    is $mt5_account_info->{group}, 'real\svg_financial', 'correct CR financial group';
+    is $mt5_account_info->{group}, 'real\svg_financial_Bbook', 'correct CR financial group';
 
     my $error = create_mt5_account->(
         $c, $token, $client,

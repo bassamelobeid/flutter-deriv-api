@@ -1317,7 +1317,7 @@ subtest 'MT5' => sub {
     $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for financial_stp mt5_new_account');
 
     $params->{args} = {
-        account_from => 'MTR' . $ACCOUNTS{'real\svg_financial'},
+        account_from => 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'},
         account_to   => 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'},
         currency     => "USD",
         amount       => 180                                               # this is the only deposit amount allowed by mock MT5
@@ -1336,7 +1336,7 @@ subtest 'MT5' => sub {
     $params->{args}{account_from} = $test_client_btc->loginid;
     $params->{args}{currency}     = 'BTC';
     $params->{args}{amount}       = 1;
-    $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\svg_financial'};
+    $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'};
     #set withdrawal_locked status to make sure for Real  -> MT5 transfer is not allowed
     $test_client_btc->status->set('withdrawal_locked', 'system', 'test');
     ok $test_client_btc->status->withdrawal_locked, "Real BTC account is withdrawal_locked";
@@ -1380,11 +1380,11 @@ subtest 'MT5' => sub {
             client_to_loginid   => $params->{args}{account_to},
             stash               => ignore(),
             accounts            => bag({
-                    loginid      => 'MTR' . $ACCOUNTS{'real\svg_financial'},
+                    loginid      => 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'},
                     balance      => num($DETAILS{balance}),
                     currency     => 'USD',
                     account_type => 'mt5',
-                    'mt5_group'  => 'real\\svg_financial'
+                    'mt5_group'  => 'real\\svg_financial_Bbook'
                 },
                 {
                     loginid      => $test_client->loginid,
@@ -1400,7 +1400,7 @@ subtest 'MT5' => sub {
     # MT5 -> real
     $mock_client->mock(fully_authenticated => sub { return 0 });
 
-    $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\svg_financial'};
+    $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'};
     $params->{args}{account_to}   = $test_client->loginid;
     $params->{args}{amount}       = 150;                                       # this is the only withdrawal amount allowed by mock MT5
 
@@ -1429,11 +1429,11 @@ subtest 'MT5' => sub {
             client_to_loginid   => $params->{args}{account_to},
             stash               => ignore(),
             accounts            => bag({
-                    loginid      => 'MTR' . $ACCOUNTS{'real\svg_financial'},
+                    loginid      => 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'},
                     balance      => num($DETAILS{balance}),
                     currency     => 'USD',
                     account_type => 'mt5',
-                    'mt5_group'  => 'real\\svg_financial'
+                    'mt5_group'  => 'real\\svg_financial_Bbook'
                 },
                 {
                     loginid      => $test_client->loginid,
@@ -1495,7 +1495,7 @@ subtest 'MT5' => sub {
 
         $params->{args}{amount}       = 180;
         $params->{args}{account_from} = $test_client->loginid;
-        $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\svg_financial'};
+        $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'};
 
         $params->{token_type} = 'oauth_token';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('with oauth token, ok if account_from is not the authenticated client');
@@ -1506,7 +1506,7 @@ subtest 'MT5' => sub {
         );
 
         $params->{args}{amount}       = 150;
-        $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\svg_financial'};
+        $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'};
         $params->{args}{account_to}   = $test_client->loginid;
 
         $params->{token_type} = 'oauth_token';
