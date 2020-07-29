@@ -32,7 +32,7 @@ my $permissions = {
     'f_manager_crypto.cgi'         => ['Payments'],
     'f_rescind_freegift.cgi'       => ['Payments'],
     'f_rescind_listofaccounts.cgi' => ['Payments'],
-    'crypto_admin.cgi'             => ['IT'],
+    'crypto_admin.cgi'             => ['Crypto'],
 
     'monthly_client_report.cgi'   => ['Accounts'],
     'monthly_payments_report.cgi' => ['Accounts'],
