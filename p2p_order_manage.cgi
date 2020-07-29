@@ -49,10 +49,10 @@ if (my $action = $input{action} and $p2p_write) {
         my $txn_time = Date::Utility->new->datetime;
         my $staff    = BOM::Backoffice::Auth0::get_staffname();
 
-        if ($action eq 'cancel') {
+        if ($action eq 'refund') {
             $db->run(
                 fixup => sub {
-                    $_->do('SELECT p2p.order_cancel(?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, 'f', $txn_time);
+                    $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, 't', $txn_time);
                 });
         }
 

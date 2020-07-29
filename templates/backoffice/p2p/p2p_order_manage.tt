@@ -161,7 +161,7 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
     <table style="background:LightCoral;" cellpadding=5><tr><td>
     <b>Resolve in favour of:</b>
     </td></tr><tr><td>
-    <button style="width:150px;" type="submit" name="action" value="cancel" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will refunded to [% order.seller %] and order status will change to \'refunded\'. This is irreversible.');">SELLER</button>
+    <button style="width:150px;" type="submit" name="action" value="refund" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will refunded to [% order.seller %] and order status will change to \'refunded\'. This is irreversible.');">SELLER</button>
     This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to seller [% order.seller %].
     </td></tr><tr><td>
     <button style="width:150px;" type="submit" name="action" value="complete" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will credited to [% order.buyer %] and order status will change to \'completed\'. This is irreversible.');">BUYER</button>
