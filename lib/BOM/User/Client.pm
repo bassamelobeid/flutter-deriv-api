@@ -2331,18 +2331,18 @@ sub p2p_order_cancel {
         or ($ownership_type eq 'advertiser' and $order->{type} eq 'sell');
     die +{error_code => 'PermissionDenied'} unless $order->{status} eq 'pending';
 
-    my $escrow    = $client->p2p_escrow;
-    my $timed_out = 0;                     # order will have cancelled status
+    my $escrow      = $client->p2p_escrow;
+    my $is_refunded = 0;                     # order will have cancelled status
 
     my $txn_time = Date::Utility->new->datetime;
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_cancel(?, ?, ?, ?, ?, ?)',
-                undef, $id, $escrow->loginid, $param{source}, $client->loginid, $timed_out, $txn_time);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_refund(?, ?, ?, ?, ?, ?)',
+                undef, $id, $escrow->loginid, $param{source}, $client->loginid, $is_refunded, $txn_time);
         });
 }
 
-=head2 expire_p2p_order
+=head2 p2p_expire_order
 
 Expire order in different states.
 Method returns order data in case if state of order was changed.
@@ -2362,13 +2362,13 @@ sub p2p_expire_order {
         my $escrow = $client->p2p_escrow;
         die +{error_code => 'EscrowNotFound'} unless $escrow;
 
-        my $txn_time  = Date::Utility->new->datetime;
-        my $timed_out = 1;                              # order will have timed-out status
+        my $txn_time    = Date::Utility->new->datetime;
+        my $is_refunded = 1;                              # order will have refunded status
 
         return $client->db->dbic->txn(
             fixup => sub {
-                $_->do('SELECT p2p.order_cancel(?, ?, ?, ?, ?, ?)',
-                    undef, $order->{id}, $escrow->loginid, $param{source}, $param{staff}, $timed_out, $txn_time);
+                $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?)',
+                    undef, $order->{id}, $escrow->loginid, $param{source}, $param{staff}, $is_refunded, $txn_time);
                 return $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?, ?)', undef, $id, 'refunded', undef);
             });
     } elsif ($status eq 'buyer-confirmed') {
