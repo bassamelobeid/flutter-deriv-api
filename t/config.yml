@@ -408,7 +408,7 @@ volsurface:
                    50: 0.129
                    75: 0.14513
 exchange:
-    EURONEXT:
+    EURONEXT_OTC:
         recorded_date: "23-JAN-12 21:00GMT"
         holidays:
             1-Jan-13: New Year's Day
@@ -458,7 +458,7 @@ exchange:
               dst_close: 13h05m
               standard_open: 8h
               standard_close: 14h05m
-    LSE:
+    LSE_OTC:
         recorded_date: "23-JAN-12 21:00GMT"
         holidays:
             1-Jan-13: New Year's Day
@@ -512,7 +512,7 @@ exchange:
               dst_close: 11h30m
               standard_open: 8h
               standard_close: 12h30m
-    NYSE:
+    NYSE_OTC:
         recorded_date: "23-JAN-12 21:00GMT"
         holidays:
             1-Jan-13: New Years Day
@@ -618,7 +618,7 @@ exchange:
               dst_close: 13h05m
               standard_open: 8h
               standard_close: 14h05m
-    NYSE_SPC:
+    NYSE_SPC_OTC:
         recorded_date: "23-JAN-12 21:00GMT"
         holidays:
             1-Jan-13: New Years Day
@@ -673,7 +673,7 @@ exchange:
               dst_close: 17h
               standard_open: 14h30m
               standard_close: 18h
-    TSE:
+    TSE_OTC:
         recorded_date: "23-JAN-12 21:00GMT"
         holidays:
             1-Jan-13: New Year's Day

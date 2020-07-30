@@ -1,12 +1,11 @@
 TESTS=merlin_benchmark \
       SDFX_benchmark_major \
       SDFX_benchmark_minor \
-      SDEQ_benchmark_DJI \
-      SDEQ_benchmark_FCHI \
-      SDEQ_benchmark_SPC \
-      SDEQ_benchmark_N225 \
+      SDEQ_benchmark_OTC_DJI \
+      SDEQ_benchmark_OTC_FCHI \
+      SDEQ_benchmark_OTC_SPC \
+      SDEQ_benchmark_OTC_N225 \
       SDEQ_benchmark_SSECOMP \
-      SDEQ_benchmark_FTSE \
       OVRA_benchmark \
 
 M=rm -f /tmp/l4p.log && [ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
@@ -35,22 +34,22 @@ SDFX_benchmark_major:
 SDFX_benchmark_minor:
 	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx --file=minor
 
-SDEQ_benchmark_DJI:
+SDEQ_benchmark_OTC_DJI:
 	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=DJI
 
-SDEQ_benchmark_FCHI:
+SDEQ_benchmark_OTC_FCHI:
 	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=FCHI
 
-SDEQ_benchmark_SPC:
+SDEQ_benchmark_OTC_SPC:
 	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=SPC
 
-SDEQ_benchmark_N225:
+SDEQ_benchmark_OTC_N225:
 	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=N225
 
 SDEQ_benchmark_SSECOMP:
 	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=SSECOMP
 
-SDEQ_benchmark_FTSE:
+SDEQ_benchmark_OTC_FTSE:
 	/etc/rmg/bin/perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=FTSE
 
 OVRA_benchmark:

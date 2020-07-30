@@ -99,7 +99,7 @@ mini:
                 max: 0.0142
         FCHI:
             ONETOUCH:
-                avg: 0.0207
+                avg: 0.0213
                 max: 0.1511
             CALL:
                 avg: 0.0025
