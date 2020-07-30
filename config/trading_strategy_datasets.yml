@@ -9,7 +9,7 @@ underlyings:
   - R_50
   - frxUSDJPY
   - frxEURUSD
-  - GDAXI
+  - OTC_GDAXI
 types:
   - CALL
   - PUT
