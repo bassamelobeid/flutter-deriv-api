@@ -93,7 +93,7 @@ is roundcommon(0.0001, $c->pricing_engine->market_supplement->amount), 0.0271, '
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol        => 'AEX',
+        symbol        => 'OTC_AEX',
         recorded_date => Date::Utility->new($params->{date_pricing}),
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -105,22 +105,22 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'AEX',
+        symbol        => 'OTC_AEX',
         recorded_date => $now,
     });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'AEX',
+    underlying => 'OTC_AEX',
     epoch      => $now->epoch,
     quote      => 100
 });
 
 $c = produce_contract({
     %$params,
-    underlying => 'AEX',
+    underlying => 'OTC_AEX',
     currency   => 'EUR',
 });
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
-is roundcommon(0.0001, $c->pricing_engine->bs_probability->amount),    0.6241,  'correct bs probability for indices contract';
+is roundcommon(0.0001, $c->pricing_engine->bs_probability->amount),    0.6239,  'correct bs probability for indices contract';
 is roundcommon(0.0001, $c->pricing_engine->market_supplement->amount), -0.0149, 'correct market supplement';
 
 $c = produce_contract({
@@ -128,7 +128,7 @@ $c = produce_contract({
     bet_type     => 'RANGE',
     high_barrier => 105.1,
     low_barrier  => 97.8,
-    underlying   => 'AEX',
+    underlying   => 'OTC_AEX',
     currency     => 'EUR',
 });
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';

@@ -32,7 +32,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol        => 'DJI',
+        symbol        => 'OTC_DJI',
         recorded_date => $now
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -44,7 +44,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'DJI',
+        symbol        => 'OTC_DJI',
         recorded_date => $now
     });
 my $bet_params = {
@@ -115,7 +115,7 @@ subtest 'max_feed_delay_seconds' => sub {
     $bet_params->{underlying} = 'frxUSDNOK';
     $c = produce_contract($bet_params);
     is $c->maximum_feed_delay_seconds, 30, '30 seconds for minor pairs';
-    $bet_params->{underlying} = 'DJI';
+    $bet_params->{underlying} = 'OTC_DJI';
     $c = produce_contract($bet_params);
     is $c->maximum_feed_delay_seconds, 300, '5 minutes for index';
 

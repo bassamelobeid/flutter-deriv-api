@@ -42,7 +42,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'GDAXI',
+        symbol        => 'OTC_GDAXI',
         recorded_date => Date::Utility->new('2008-02-18'),
     });
 
@@ -62,7 +62,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol        => 'GDAXI',
+        symbol        => 'OTC_GDAXI',
         recorded_date => Date::Utility->new('2008-02-18'),
     });
 
@@ -283,40 +283,40 @@ subtest 'FOREX settlement check on Friday' => sub {
 subtest 'Index settlement check on ' => sub {
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'GDAXI',
-        epoch      => 1203322200-600,    #entry tick
+        underlying => 'OTC_GDAXI',
+        epoch      => Date::Utility->new('2008-02-18 07:00:00')->epoch,
         quote      => 1000,
     });
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'GDAXI',
-        epoch      => 1203408600,    # open tick of 19-02-08
+        underlying => 'OTC_GDAXI',
+        epoch      => Date::Utility->new('2008-02-19 07:10:00')->epoch,    # open tick of 19-02-08
         quote      => 1005,
     });
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'GDAXI',
-        epoch      => 1203409200,    # second tick of 19-02-08
+        underlying => 'OTC_GDAXI',
+        epoch      => Date::Utility->new('2008-02-19 07:20:00')->epoch,
         quote      => 1006,
     });
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'GDAXI',
-        epoch      => 1203423000,    # third tick of 19-02-08
+        underlying => 'OTC_GDAXI',
+        epoch      => Date::Utility->new('2008-02-19 12:10:00')->epoch,
         quote      => 1010,
     });
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'GDAXI',
-        epoch      => 1203438600,    # tick at 19-02-08 16:30
+        underlying => 'OTC_GDAXI',
+        epoch      => Date::Utility->new('2008-02-19 20:30:00')->epoch,
         quote      => 1008,
     });
 
     my $bet_params = {
         bet_type     => 'CALL',
-        date_expiry  => Date::Utility->new('2008-02-19 16:30:00'),
-        date_start   => Date::Utility->new('2008-02-18 08:00:00'),
-        date_pricing => Date::Utility->new('2008-02-19 16:30:30'),
-        underlying   => 'GDAXI',
+        date_expiry  => Date::Utility->new('2008-02-19 20:30:00'),
+        date_start   => Date::Utility->new('2008-02-18 07:00:00'),
+        date_pricing => Date::Utility->new('2008-02-19 20:30:30'),
+        underlying   => 'OTC_GDAXI',
         payout       => 1,
         currency     => 'USD',
         barrier      => 1004,
@@ -328,27 +328,28 @@ subtest 'Index settlement check on ' => sub {
     ok !$bet->is_after_settlement, 'is not pass settlement time';
     is($bet->primary_validation_error->message, 'waiting for settlement', 'Not valid to sell as it is waiting for settlement');
     is($bet->exit_tick->quote,                  '1008',                   'exit tick is 1008');
-    is($bet->exit_tick->epoch,                  '1203438600',             'the exit tick is the one at 16:30');
+    is($bet->exit_tick->epoch, Date::Utility->new('2008-02-19 20:30:00')->epoch,'the exit tick is the one at 20:30');
     cmp_ok($bet->bid_price, '==', 1, 'Indicative outcome with full payout as the exit tick is 1008');
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
-            underlying => 'GDAXI',
-            epoch      => 1203379200,    # 19 Feb 2008 00:00:00 GMT
+            underlying => 'OTC_GDAXI',
+            epoch      => Date::Utility->new('2008-02-19 00:00:00')->epoch,
+                        # epoch      => 1203379200,    # 19 Feb 2008 00:00:00 GMT
             open       => 1008,
             high       => 1110,
             low        => 1002,
             close      => 1003,
-            official   => 1,
+            official   => 0,
 
     });
-    $bet_params->{date_pricing} = Date::Utility->new('2008-02-20 08:00:00');
+    $bet_params->{date_pricing} = Date::Utility->new('2008-02-20 07:00:00');
     $bet = produce_contract($bet_params);
     ok $bet->is_expired,          'is expired';
     ok $bet->is_valid_to_sell,    'is valid to sell';
     ok $bet->is_after_expiry,     'is after expiry';
     ok $bet->is_after_settlement, 'is pass settlement time';
     is($bet->exit_tick->quote, '1003',     'exit tick is 1003');
-    is($bet->exit_tick->epoch, 1203438600, 'the exit tick is the one at 16:30:00');
+    is($bet->exit_tick->epoch, Date::Utility->new('2008-02-19 20:30:00')->epoch, 'the exit tick is the one at 20:30:00');
     cmp_ok($bet->bid_price, '==', 0, 'Correct expiration with full payout as the exit tick is 1003');
 
 };

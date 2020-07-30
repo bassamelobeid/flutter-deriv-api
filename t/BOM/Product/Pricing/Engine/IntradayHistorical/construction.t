@@ -20,7 +20,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'FCHI',
+        symbol => 'OTC_FCHI',
         date   => Date::Utility->new,
     });
 
@@ -84,9 +84,9 @@ is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'forward 
 
 delete $bet_params->{date_start};
 $bet_params->{bet_type}   = 'CALL';
-$bet_params->{underlying} = 'FCHI';
+$bet_params->{underlying} = 'OTC_FCHI';
 
-lives_ok { $bet = produce_contract($bet_params); } 'Can create example FCHI bet';
+lives_ok { $bet = produce_contract($bet_params); } 'Can create example OTC_FCHI bet';
 is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'unsupported symbol';
 
 delete $bet_params->{date_start};

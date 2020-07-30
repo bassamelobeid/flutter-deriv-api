@@ -29,7 +29,7 @@ my %skip_category = (
 );
 
 my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/intraday_index_config.yml');
-my @underlying_symbols = ('AEX');
+my @underlying_symbols = ('OTC_AEX');
 my $payout_currency    = 'USD';
 my $spot               = 100;
 my $offerings_obj      = LandingCompany::Registry::get('svg')->basic_offerings($offerings_cfg);
@@ -50,7 +50,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     {
         my $category_obj = Finance::Contract::Category->new($contract_category);
         next if $category_obj->is_path_dependent;
-        my @duration = map { $_ * 60 } (15, 20, 25, 40, 60);
+        my @duration = map { $_ * 60 } (30, 40, 45, 50, 60);
         foreach my $duration (@duration) {
             my %equal = (
                 CALLE => 1,

@@ -30,7 +30,7 @@ my %skip_category = (
 );
 
 my $expectation        = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/vv_config.yml');
-my @underlying_symbols = ('frxBROUSD', 'AEX', 'frxXAUUSD', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
+my @underlying_symbols = ('frxBROUSD', 'OTC_AEX', 'frxXAUUSD', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
 my $payout_currency    = 'USD';
 my $spot               = 100;
 my $offerings_cfg      = BOM::Config::Runtime->instance->get_offerings_config;

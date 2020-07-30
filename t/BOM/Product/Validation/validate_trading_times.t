@@ -40,7 +40,7 @@ for my $date ($weekend, $weekday) {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol        => 'HSI',
+            symbol        => 'OTC_HSI',
             recorded_date => $date
         });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -59,7 +59,7 @@ for my $date ($weekend, $weekday) {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'HSI',
+            symbol        => 'OTC_HSI',
             recorded_date => $date
         });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -68,7 +68,7 @@ for my $date ($weekend, $weekday) {
             recorded_date => $date,
             symbol        => 'indices',
             correlations  => {
-                'HSI' => {
+                'OTC_HSI' => {
                     USD => {
                         '3M'  => 0.1,
                         '12M' => 0.1
@@ -114,11 +114,11 @@ subtest 'trading hours' => sub {
     my $hsi_open         = $weekday->plus_time_interval('1h30m');
     my $hsi_time         = $hsi_open->plus_time_interval('11m');
     my $hsi_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'HSI',
+        underlying => 'OTC_HSI',
         epoch      => $hsi_time->epoch,
         quote      => 7150
     });
-    $args->{underlying}   = 'HSI';
+    $args->{underlying}   = 'OTC_HSI';
     $args->{date_start}   = $args->{date_pricing} = $hsi_time;
     $args->{current_tick} = $hsi_weekday_tick;
     $args->{duration}     = '1h';
@@ -149,7 +149,7 @@ subtest 'trading hours' => sub {
     $args->{date_start} = $args->{date_pricing} = $valid_start;
     $args->{duration}   = '1h';
     $hsi_weekday_tick   = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'HSI',
+        underlying => 'OTC_HSI',
         epoch      => $valid_start->epoch,
         quote      => 7150
     });
@@ -222,7 +222,7 @@ subtest 'intraday must be same day' => sub {
 };
 
 subtest 'too many holiday for multiday indices contracts' => sub {
-    my $hsi              = create_underlying('HSI');
+    my $hsi              = create_underlying('OTC_HSI');
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
     my $monday_open      = $hsi->calendar->opening_on($hsi->exchange, Date::Utility->new('2016-04-04'))->plus_time_interval('15m');
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -234,7 +234,7 @@ subtest 'too many holiday for multiday indices contracts' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'HSI',
+            symbol        => 'OTC_HSI',
             recorded_date => $monday_open
         });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -243,23 +243,23 @@ subtest 'too many holiday for multiday indices contracts' => sub {
             recorded_date => $monday_open,
             calendar      => {
                 $monday_open->plus_time_interval('4d')->date => {
-                    'Test Holiday' => ['HKSE'],
+                    'Test Holiday' => ['HKSE_OTC'],
                 },
                 $monday_open->plus_time_interval('2d')->date => {
-                    'Test Holiday' => ['HKSE'],
+                    'Test Holiday' => ['HKSE_OTC'],
                 },
                 $monday_open->plus_time_interval('1d')->date => {
-                    'Test Holiday 2' => ['HKSE'],
+                    'Test Holiday 2' => ['HKSE_OTC'],
                 },
             },
         });
     my $hsi_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'HSI',
+        underlying => 'OTC_HSI',
         epoch      => $monday_open->epoch,
         quote      => 7150
     });
     my $bet_params = {
-        underlying   => 'HSI',
+        underlying   => 'OTC_HSI',
         bet_type     => 'CALL',
         barrier      => 'S10P',
         payout       => 100,

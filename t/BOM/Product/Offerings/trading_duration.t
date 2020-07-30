@@ -14,9 +14,7 @@ use YAML::XS qw(LoadFile);
 
 # suspend based on what we are currently suspend on system.
 BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_buy([
-    'DJI',  'frxAUDPLN', 'JCI',    'AS51', 'BSESENSEX30', 'HSI',  'N225', 'STI',   'BFX', 'AEX',
-    'FCHI', 'GDAXI',     'ISEQ',   'OBX',  'SPTSX60',     'SSMI', 'SPC',  'DFMGI', 'JCI', 'TOP40',
-    'DJI',  'FTSE',      'IBEX35', 'SX5E', 'NDX',         'frxGBPPLN', '1HZ100V', '1HZ10V', '1HZ25V', '1HZ50V', '1HZ75V'
+    'frxAUDPLN', 'frxGBPPLN', '1HZ100V', '1HZ10V', '1HZ25V', '1HZ50V', '1HZ75V'
 ]);
 subtest 'trading durations at quiet period' => sub {
     set_absolute_time(Date::Utility->new('2019-04-12 01:00:00')->epoch);

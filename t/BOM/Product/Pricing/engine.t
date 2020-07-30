@@ -32,7 +32,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix', {
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol        => 'FCHI',
+        symbol        => 'OTC_FCHI',
         recorded_date => Date::Utility->new($date_pricing),
     });
 
@@ -46,7 +46,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'FCHI',
+        symbol        => 'OTC_FCHI',
         recorded_date => Date::Utility->new($date_pricing),
     });
 
@@ -127,7 +127,7 @@ my $ot = produce_contract({
     barrier  => 77,
     bet_type => 'ONETOUCH'
 });
-$bet_params{underlying} = 'FCHI';
+$bet_params{underlying} = 'OTC_FCHI';
 my $equity_call = produce_contract({
     %bet_params,
     barrier  => 77,
@@ -149,12 +149,12 @@ $bet_params{underlying}  = 'frxUSDJPY';
 $bet_params{bet_type}    = 'CALL';
 $bet_params{date_expiry} = '1352345145';
 my $short_term = produce_contract({%bet_params, barrier => 77});
-$bet_params{underlying}  = 'FCHI';
+$bet_params{underlying}  = 'OTC_FCHI';
 $bet_params{bet_type}    = 'RANGE';       # This test sucks.
 $bet_params{date_expiry} = '12-Nov-12';
 
 subtest 'VannaVolga' => sub {
-    plan tests => 7;
+    # plan tests => 7;
 
     my $engine = BOM::Product::Pricing::Engine::VannaVolga->new(bet => $ot);
 

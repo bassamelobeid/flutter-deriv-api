@@ -35,7 +35,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 for my $type (qw(CALL PUT)) {
-    for my $underlying (qw(R_100 R_25 AEX WLDEUR)) {
+    for my $underlying (qw(R_100 R_25 OTC_AEX WLDEUR)) {
         for my $duration (qw(2m 5m 10m 2h 6h)) {
             for my $back_time (qw(1m)) {
                 my $expiry_time = $start_time->plus_time_interval($duration);

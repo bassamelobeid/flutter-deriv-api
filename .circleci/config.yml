@@ -209,7 +209,7 @@ jobs:
             make SDFX_benchmark_minor
       - store_test_results:
           path: /var/tmp/test-output
-  SDEQ_benchmark_DJI:
+  SDEQ_benchmark_OTC_DJI:
     <<: *default
     steps:
       - *ssh_keys
@@ -218,14 +218,14 @@ jobs:
       - *wait_services
       - run:
           <<: *tests
-          name: SDEQ benchmark DJI
+          name: SDEQ benchmark OTC_DJI
           command: |
             cd /home/git/regentmarkets/bom-quant-benchmark
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make SDEQ_benchmark_DJI
+            make SDEQ_benchmark_OTC_DJI
       - store_test_results:
           path: /var/tmp/test-output
-  SDEQ_benchmark_FCHI:
+  SDEQ_benchmark_OTC_FCHI:
     <<: *default
     steps:
       - *ssh_keys
@@ -234,14 +234,14 @@ jobs:
       - *wait_services
       - run:
           <<: *tests
-          name: SDEQ benchmark FCHI
+          name: SDEQ benchmark OTC_FCHI
           command: |
             cd /home/git/regentmarkets/bom-quant-benchmark
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make SDEQ_benchmark_FCHI
+            make SDEQ_benchmark_OTC_FCHI
       - store_test_results:
           path: /var/tmp/test-output
-  SDEQ_benchmark_SPC:
+  SDEQ_benchmark_OTC_SPC:
     <<: *default
     steps:
       - *ssh_keys
@@ -250,14 +250,14 @@ jobs:
       - *wait_services
       - run:
           <<: *tests
-          name: SDEQ benchmark SPC
+          name: SDEQ benchmark OTC_SPC
           command: |
             cd /home/git/regentmarkets/bom-quant-benchmark
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make SDEQ_benchmark_SPC
+            make SDEQ_benchmark_OTC_SPC
       - store_test_results:
           path: /var/tmp/test-output
-  SDEQ_benchmark_N225:
+  SDEQ_benchmark_OTC_N225:
     <<: *default
     steps:
       - *ssh_keys
@@ -266,11 +266,11 @@ jobs:
       - *wait_services
       - run:
           <<: *tests
-          name: SDEQ benchmark N225
+          name: SDEQ benchmark OTC_N225
           command: |
             cd /home/git/regentmarkets/bom-quant-benchmark
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make SDEQ_benchmark_N225
+            make SDEQ_benchmark_OTC_N225
       - store_test_results:
           path: /var/tmp/test-output
   SDEQ_benchmark_SSECOMP:
@@ -289,7 +289,7 @@ jobs:
             make SDEQ_benchmark_SSECOMP
       - store_test_results:
           path: /var/tmp/test-output
-  SDEQ_benchmark_FTSE:
+  SDEQ_benchmark_OTC_FTSE:
     <<: *default
     steps:
       - *ssh_keys
@@ -298,11 +298,11 @@ jobs:
       - *wait_services
       - run:
           <<: *tests
-          name: SDEQ benchmark FTSE
+          name: SDEQ benchmark OTC_FTSE
           command: |
             cd /home/git/regentmarkets/bom-quant-benchmark
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make SDEQ_benchmark_FTSE
+            make SDEQ_benchmark_OTC_FTSE
       - store_test_results:
           path: /var/tmp/test-output
   OVRA_benchmark:
@@ -492,17 +492,15 @@ workflows:
           context: perl
       - SDFX_benchmark_minor:
           context: perl
-      - SDEQ_benchmark_DJI:
+      - SDEQ_benchmark_OTC_DJI:
           context: perl
-      - SDEQ_benchmark_FCHI:
+      - SDEQ_benchmark_OTC_FCHI:
           context: perl
-      - SDEQ_benchmark_SPC:
-          context: perl
-      - SDEQ_benchmark_N225:
+      - SDEQ_benchmark_OTC_SPC:
           context: perl
       - SDEQ_benchmark_SSECOMP:
           context: perl
-      - SDEQ_benchmark_FTSE:
+      - SDEQ_benchmark_OTC_FTSE:
           context: perl
       - OVRA_benchmark:
           context: perl

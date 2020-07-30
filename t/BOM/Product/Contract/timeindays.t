@@ -249,11 +249,11 @@ subtest Equity => sub {
     plan tests => 1;
 
     # normal one day bet
-    my $underlying       = create_underlying('FCHI');
+    my $underlying       = create_underlying('OTC_FTSE');
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
     my $bet              = _sample_bet(
         underlying  => $underlying,
-        date_start  => Date::Utility->new('2012-01-11 10:30:00'),
+        date_start  => Date::Utility->new('2012-01-11 15:00:00'),
         date_expiry => $trading_calendar->closing_on($underlying->exchange, Date::Utility->new('18-Jan-12')),
     );
     cmp_ok($bet->timeindays->amount, '==', 7.25, 'One week EQ bet: does not follow integer days concept.');

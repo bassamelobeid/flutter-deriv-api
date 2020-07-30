@@ -139,14 +139,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'GDAXI',
+        symbol        => 'OTC_GDAXI',
         recorded_date => $that_morning->minus_time_interval('5d'),
     });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol        => 'GDAXI',
+        symbol        => 'OTC_GDAXI',
         date          => Date::Utility->new,
         recorded_date => $an_hour_earlier
     });
@@ -154,7 +154,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol         => 'GDAXI',
+        symbol         => 'OTC_GDAXI',
         recorded_date  => $an_hour_earlier,
         spot_reference => $tick->quote,
     });
@@ -446,16 +446,16 @@ subtest 'volsurfaces become old and invalid' => sub {
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol         => 'GDAXI',
+            symbol         => 'OTC_GDAXI',
             recorded_date  => Date::Utility->new('2013-03-22 18:00:34'),
             spot_reference => $tick->quote,
         });
-    my $gdaxi = create_underlying('GDAXI');
+    my $gdaxi = create_underlying('OTC_GDAXI');
     my $test_date = $trading_calendar->opening_on($gdaxi->exchange, Date::Utility->new('2013-03-25'));
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol        => 'GDAXI',
+            symbol        => 'OTC_GDAXI',
             date          => Date::Utility->new,
             recorded_date => $test_date->plus_time_interval('2h23m20s')});
 
@@ -477,16 +477,16 @@ subtest 'volsurfaces become old and invalid' => sub {
     $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol         => 'GDAXI',
+            symbol         => 'OTC_GDAXI',
             recorded_date  => Date::Utility->new('2013-03-27 06:00:34'),
             spot_reference => $tick->quote,
         });
-    $gdaxi = create_underlying('GDAXI');
+    $gdaxi = create_underlying('OTC_GDAXI');
     my $surface_too_old_date = $trading_calendar->opening_on($gdaxi->exchange, Date::Utility->new('2013-03-28'));
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol        => 'GDAXI',
+            symbol        => 'OTC_GDAXI',
             date          => Date::Utility->new,
             recorded_date => $surface_too_old_date->plus_time_interval('2h23m20s')});
 
@@ -509,7 +509,7 @@ subtest 'volsurfaces become old and invalid' => sub {
     $bet_params->{volsurface} = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol         => 'GDAXI',
+            symbol         => 'OTC_GDAXI',
             recorded_date  => $bet_params->{date_pricing},
             spot_reference => $tick->quote,
         });
@@ -633,7 +633,7 @@ subtest 'invalid start times' => sub {
     $expected_reasons = [qr/starts in the past/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $underlying = create_underlying('GDAXI');
+    $underlying = create_underlying('OTC_GDAXI');
 
     $bet_params->{underlying}   = $underlying;
     $bet_params->{bet_type}     = 'PUT';
@@ -643,20 +643,20 @@ subtest 'invalid start times' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol        => 'GDAXI',
+            symbol        => 'OTC_GDAXI',
             date          => Date::Utility->new,
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/blackout period \[symbol: GDAXI\] \[from: 1364457600\] \[to: 1364458200\]/];
+    $expected_reasons = [qr/blackout period \[symbol: OTC_GDAXI\] \[from: 1364454000\] \[to: 1364454600\]/];
     test_error_list('buy', $bet, $expected_reasons);
 
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol         => 'GDAXI',
+            symbol         => 'OTC_GDAXI',
             recorded_date  => Date::Utility->new('2013-03-30 15:00:34'),
             spot_reference => $tick->quote,
         });
@@ -671,7 +671,7 @@ subtest 'invalid start times' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol        => 'GDAXI',
+            symbol        => 'OTC_GDAXI',
             date          => Date::Utility->new,
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
@@ -687,7 +687,7 @@ subtest 'invalid start times' => sub {
     $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol         => 'GDAXI',
+            symbol         => 'OTC_GDAXI',
             recorded_date  => Date::Utility->new('2013-03-30 11:00:34'),
             spot_reference => $tick->quote,
         });
@@ -699,7 +699,7 @@ subtest 'invalid start times' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol        => 'GDAXI',
+            symbol        => 'OTC_GDAXI',
             date          => Date::Utility->new,
             recorded_date => Date::Utility->new($bet_params->{date_pricing})});
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
@@ -753,12 +753,12 @@ subtest 'invalid expiry times' => sub {
     $expected_reasons = [qr/must expire on same day/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $underlying = create_underlying('GDAXI');
+    $underlying = create_underlying('OTC_GDAXI');
 
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol         => 'GDAXI',
+            symbol         => 'OTC_GDAXI',
             recorded_date  => Date::Utility->new('2013-03-28 15:00:34'),
             spot_reference => $tick->quote,
         });
@@ -778,7 +778,7 @@ subtest 'invalid expiry times' => sub {
     $bet_params->{duration} = '59m34s';
 
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/blackout period \[symbol: GDAXI\] \[from: 1364488140\] \[to: 1364488200\]/];
+    $expected_reasons = [qr/blackout period \[symbol: OTC_GDAXI\] \[from: 1364502540\] \[to: 1364502600\]/];
     test_error_list('buy', $bet, $expected_reasons);
 
 };
@@ -825,7 +825,7 @@ subtest '10% barrier check for double barrier contract' => sub {
 };
 
 subtest 'expiry_daily expiration time' => sub {
-    my $now         = Date::Utility->new('2014-10-08 00:15:00');
+    my $now         = Date::Utility->new('2014-10-08 18:00:00');
     my $tick_params = {
         symbol => 'not_checked',
         epoch  => $now->epoch,
@@ -834,7 +834,7 @@ subtest 'expiry_daily expiration time' => sub {
     my $tick   = Postgres::FeedDB::Spot::Tick->new($tick_params);
     my $params = {
         bet_type     => 'CALL',
-        underlying   => 'AS51',
+        underlying   => 'OTC_AS51',
         date_start   => $now,
         date_pricing => $now,
         duration     => '23h',
@@ -846,7 +846,7 @@ subtest 'expiry_daily expiration time' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol        => 'AS51',
+            symbol        => 'OTC_AS51',
             recorded_date => Date::Utility->new($params->{date_pricing}),
         });
     my $c = produce_contract($params);
@@ -861,19 +861,19 @@ subtest 'spot reference check' => sub {
     my $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol         => 'DJI',
+            symbol         => 'OTC_DJI',
             recorded_date  => $now,
             spot_reference => 89.9,
         });
     my $tick_params = {
-        symbol => 'DJI',
+        symbol => 'OTC_DJI',
         epoch  => $now->epoch,
         quote  => 100
     };
 
     my $tick       = Postgres::FeedDB::Spot::Tick->new($tick_params);
     my $bet_params = {
-        underlying   => 'DJI',
+        underlying   => 'OTC_DJI',
         bet_type     => 'CALL',
         currency     => 'USD',
         payout       => 100,
@@ -887,7 +887,7 @@ subtest 'spot reference check' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol        => 'DJI',
+            symbol        => 'OTC_DJI',
             recorded_date => Date::Utility->new($bet_params->{date_pricing}),
         });
     my $c                = produce_contract($bet_params);
@@ -984,7 +984,7 @@ subtest 'integer barrier' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol         => 'AS51',
+            symbol         => 'OTC_AS51',
             recorded_date  => $now,
             spot_reference => $tick->quote,
         });
@@ -992,7 +992,7 @@ subtest 'integer barrier' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
         {
-            symbol        => 'AS51',
+            symbol        => 'OTC_AS51',
             recorded_date => $now,
         });
     my $tick_params = {
@@ -1004,7 +1004,7 @@ subtest 'integer barrier' => sub {
     my $tick   = Postgres::FeedDB::Spot::Tick->new($tick_params);
     my $params = {
         bet_type     => 'CALL',
-        underlying   => 'AS51',
+        underlying   => 'OTC_AS51',
         date_start   => $now,
         date_pricing => $now,
         duration     => '7d',

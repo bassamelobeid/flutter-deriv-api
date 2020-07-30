@@ -5,7 +5,7 @@ use warnings;
 BEGIN { $ENV{QUANT_FRAMEWORK_CACHE} = 0 }
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
-use Test::Most 0.22 (tests => 131);
+use Test::Most 0.22 (tests => 129);
 use Test::Warnings;
 use Test::MockModule;
 use File::Spec;
@@ -174,7 +174,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         symbol        => $_,
         recorded_date => $recorded_date,
         surface       => $volsurface->{$_}{surfaces},
-    }) for qw(FCHI GDAXI);
+    }) for qw(OTC_FCHI OTC_GDAXI);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
@@ -183,13 +183,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date          => Date::Utility->new,
         recorded_date => $recorded_date,
         rates         => $dividend->{$_}{rates},
-    }) for qw( FCHI GDAXI);
+    }) for qw( OTC_FCHI OTC_GDAXI);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'correlation_matrix',
     {
         recorded_date => $recorded_date,
         correlations  => {
-            FCHI => {
+            OTC_FCHI => {
                 GBP => {
                     '3M'  => 0.356,
                     '6M'  => 0.336,
@@ -203,21 +203,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                     '12M' => 0.516,
                 },
             },
-            DFMGI => {
-                GBP => {
-                    '3M'  => 0.356,
-                    '6M'  => 0.336,
-                    '9M'  => 0.32,
-                    '12M' => 0.307,
-                },
-                USD => {
-                    '3M'  => 0.554,
-                    '6M'  => 0.538,
-                    '9M'  => 0.525,
-                    '12M' => 0.516,
-                },
-            },
-            GDAXI => {
+            OTC_GDAXI => {
                 USD => {
                     '3M'  => 0.506,
                     '6M'  => 0.49,
@@ -225,7 +211,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                     '12M' => 0.467,
                 }
             },
-            FCHI => {
+            OTC_FCHI => {
                 GBP => {
                     '3M'  => 0.356,
                     '6M'  => 0.336,
@@ -242,7 +228,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         },
     });
 
-foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FCHI', 'GDAXI') {
+foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'OTC_FCHI', 'OTC_GDAXI') {
     foreach my $bet_type ('CALL', 'NOTOUCH', 'RANGE', 'EXPIRYRANGE', 'DIGITMATCH') {
         my $expectations = $expected_result->{$underlying}->{$bet_type};
         next unless scalar keys %$expectations;
@@ -326,51 +312,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         },
         recorded_date => Date::Utility->new('19-Nov-2015'),
     });
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'volsurface_moneyness',
-    {
-        symbol        => 'DFMGI',
-        recorded_date => $recorded_date,
-        surface_data  => {
-            1 => {
-                vol_spread => {100 => 0},
-                smile      => {
-                    80  => 0.1,
-                    90  => 0.1,
-                    95  => 0.1,
-                    100 => 0.1,
-                    110 => 0.1,
-                    115 => 0.1,
-                    120 => 0.1
-                }
-            },
-            365 => {
-                vol_spread => {100 => 0},
-                smile      => {
-                    80  => 0.1,
-                    90  => 0.1,
-                    95  => 0.1,
-                    100 => 0.1,
-                    110 => 0.1,
-                    115 => 0.1,
-                    120 => 0.1
-                }
-            },
-        },
-    });
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'index',
-    {
-        symbol => 'DFMGI',
-    });
-my $middle_east_intraday = produce_contract('CALL_DFMGI_10_1447921800F_1447929000_S0P_0', 'USD');
-cmp_ok(roundcommon(1e-4, $middle_east_intraday->commission_markup->amount), '==', 0.025, 'Commission markup for middle east is 5%');
-
-my $middle_east_daily = produce_contract('CALL_DFMGI_10_1447921800_1448022600F_S0P_0', 'USD');
-cmp_ok(roundcommon(1e-4, $middle_east_daily->commission_markup->amount), '==', 0.025, 'Commission markup for middle east is 5%');
-
-my $GDAXI_intraday = produce_contract('CALL_GDAXI_10_1448013600F_1448020800_S0P_0', 'USD');
+my $GDAXI_intraday = produce_contract('CALL_OTC_GDAXI_10_1448013600F_1448020800_S0P_0', 'USD');
 my $GDAXI_intraday_ask = $GDAXI_intraday->ask_probability;
 cmp_ok(roundcommon(1e-4, $GDAXI_intraday->commission_markup->amount), '==', 0.025, 'Commission markup for indices is 3%');
 

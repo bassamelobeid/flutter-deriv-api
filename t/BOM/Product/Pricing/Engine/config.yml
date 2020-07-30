@@ -313,7 +313,7 @@ volsurface:
                   '25': 0.003765
                   '50': 0.003
                   '75': 0.003765
-    GDAXI:
+    OTC_GDAXI:
         surfaces:
               '183':
                 smile:
@@ -490,7 +490,7 @@ volsurface:
                   '98': 0.0955082
                 vol_spread:
                   '100': 0.0039984375
-    FCHI:
+    OTC_FCHI:
         surfaces:
               '183':
                 smile:
@@ -823,7 +823,7 @@ currency:
            275: 0.5798
            365: 0.6435,
 index:
-    FCHI:
+    OTC_FCHI:
         rates:
            1: 44.34
            2: 22.17
@@ -1190,11 +1190,11 @@ index:
            363: 3.53
            364: 3.52
            365: 3.51
-    GDAXI:
+    OTC_GDAXI:
         rates:
            365: 0
 expected_result:
-  FCHI:
+  OTC_FCHI:
     CALL:
       ask_prob: 0.5587
       barrier: 6689
@@ -1203,7 +1203,7 @@ expected_result:
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.0073
       spot: 6685.31
-      theo_prob: 0.5367
+      theo_prob: 0.5368
       total_markup: 0.0328
     EXPIRYRANGE:
       ask_prob: 0.7824
@@ -1222,9 +1222,9 @@ expected_result:
       commission_markup: 0.025
       duration: 4d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.094
+      risk_markup: 0.0945
       spot: 6685.31
-      theo_prob: 0.8152
+      theo_prob: 0.8051
       total_markup: 0.147
     RANGE:
       ask_prob: 0.1
@@ -1237,7 +1237,7 @@ expected_result:
       spot: 6688.93
       theo_prob: 6.87819369331582e-18
       total_markup: 0.04
-  GDAXI:
+  OTC_GDAXI:
     CALL:
       ask_prob: 0.484
       barrier: 9516
@@ -1246,7 +1246,7 @@ expected_result:
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.0015
       spot: 9518.2
-      theo_prob: 0.4588
+      theo_prob: 0.4581
       total_markup: 0.0245
     DIGITMATCH:
       ask_prob: 0.11
@@ -1267,7 +1267,7 @@ expected_result:
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.00496465547160939
       spot: 9518.2
-      theo_prob: 0.744103018602309
+      theo_prob: 0.7443
       total_markup: 0.0249
     NOTOUCH:
       ask_prob: 0.6441
@@ -1275,9 +1275,9 @@ expected_result:
       commission_markup: 0.025
       duration: 17d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.0632
+      risk_markup: 0.0628
       spot: 9518.2
-      theo_prob: 0.6242
+      theo_prob: 0.6200
       total_markup: 0.0726
     RANGE:
       ask_prob: 0.457
@@ -1288,7 +1288,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0063
       spot: 9518.2
-      theo_prob: 0.4119
+      theo_prob: 0.4120
       total_markup: 0.0464
   frxEURUSD:
     CALL:

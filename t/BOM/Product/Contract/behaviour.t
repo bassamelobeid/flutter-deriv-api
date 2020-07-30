@@ -323,8 +323,8 @@ subtest 'longcode of 22 hours contract from Thursday 3GMT' => sub {
 };
 
 subtest 'longcode of index daily contracts' => sub {
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([166.27, 1469523600, 'GDAXI']);
-    my $c = produce_contract('PUT_GDAXI_166.27_1469523600_1469633400_S0P_0', 'USD');
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([166.27, 1469523600, 'OTC_GDAXI']);
+    my $c = produce_contract('PUT_OTC_GDAXI_166.27_1469523600_1469647800_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is daily contract';
     is_deeply($c2->longcode,

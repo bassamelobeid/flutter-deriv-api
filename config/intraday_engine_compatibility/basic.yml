@@ -1,29 +1,20 @@
 ---
 # Intraday Pricing Engine compatibility check.
 #
-# E.g. For AEX we will only price with Intraday pricing engine if it meets the following specifications:
+# E.g. For OTC_DJI we will only price with Intraday pricing engine if it meets the following specifications:
 # - contract_category: callput
 # - expiry_type: intraday
 # - start_type: spot
 # - barrier_category: euro_atm
 # - contract duration between 15 minutes to 1 hour (inclusive).
 
-AEX: &equities
+OTC_DJI: &15m_equities
   callput:
     intraday:
       spot:
         euro_atm:
           max: 1h
           min: 15m
-AS51: *equities
-DJI: *equities
-FCHI: *equities
-GDAXI: *equities
-HSI: *equities
-SSMI: *equities
-BFX: *equities
-STI: *equities
-ISEQ: *equities
 OTC_AEX: &30min_equities
   callput:
     intraday:
@@ -31,17 +22,16 @@ OTC_AEX: &30min_equities
         euro_atm:
           max: 1h
           min: 30m
-OTC_AS51: *equities
-OTC_DJI: *equities
-OTC_FCHI: *equities
-OTC_FTSE: *equities
-OTC_GDAXI: *equities
-OTC_HSI: *equities
-OTC_IBEX35: *equities
+OTC_AS51: *15m_equities
+OTC_FCHI: *15m_equities
+OTC_FTSE: *15m_equities
+OTC_GDAXI: *15m_equities
+OTC_HSI: *15m_equities
+OTC_IBEX35: *15m_equities
 OTC_N225: *30min_equities
-OTC_NDX: *equities
-OTC_SSMI: *equities
-OTC_SPC: *equities
+OTC_NDX: *15m_equities
+OTC_SSMI: *15m_equities
+OTC_SPC: *15m_equities
 OTC_SX5E: *30min_equities
 WLDAUD: &smart_fx
   callput:

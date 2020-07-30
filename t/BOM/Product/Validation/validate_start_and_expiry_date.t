@@ -42,7 +42,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol        => 'HSI',
+        symbol        => 'OTC_HSI',
         recorded_date => $weekday
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -54,7 +54,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'HSI',
+        symbol        => 'OTC_HSI',
         recorded_date => $weekday
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -63,7 +63,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $weekday,
         symbol        => 'indices',
         correlations  => {
-            'HSI' => {
+            'OTC_HSI' => {
                 USD => {
                     '3M'  => 0.1,
                     '12M' => 0.1
@@ -223,15 +223,15 @@ subtest 'date start blackouts' => sub {
     $c                          = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy a start now contract on Monday morning';
 
-    note('Testing date_start blackouts for HSI');
-    my $hsi              = create_underlying('HSI');
+    note('Testing date_start blackouts for OTC_HSI');
+    my $hsi              = create_underlying('OTC_HSI');
     my $hsi_open         = $trading_calendar->opening_on($hsi->exchange, $weekday);
     my $hsi_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'HSI',
+        underlying => 'OTC_HSI',
         epoch      => $hsi_open->epoch + 600,
         quote      => 7195,
     });
-    $bet_params->{underlying}   = 'HSI';
+    $bet_params->{underlying}   = 'OTC_HSI';
     $bet_params->{current_tick} = $hsi_weekday_tick;
     $bet_params->{date_start}   = $bet_params->{date_pricing} = $hsi_open->epoch + 599;
     $bet_params->{duration}     = '1h';
@@ -246,7 +246,7 @@ subtest 'date start blackouts' => sub {
     ok $c->is_valid_to_buy, 'valid to buy forward starting contract on first 1 minute of opening';
     my $hsi_close = $trading_calendar->closing_on($hsi->exchange, $weekday);
     $hsi_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'HSI',
+        underlying => 'OTC_HSI',
         epoch      => $hsi_close->epoch - 900,
         quote      => 7195,
     });
@@ -255,21 +255,21 @@ subtest 'date start blackouts' => sub {
     $bet_params->{current_tick} = $hsi_weekday_tick;
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '07:25:00', '07:40:00']);
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '07:45:00', '08:00:00']);
     is_deeply $c->primary_validation_error->{details}, {field => 'date_start'}, 'error detials is not correct';
 
-    note('Multiday contract on HSI');
+    note('Multiday contract on OTC_HSI');
     my $new_day = $weekday->plus_time_interval('1d');
     my $hour_before_close = $trading_calendar->closing_on($hsi->exchange, $new_day)->minus_time_interval('1h');
     $hsi_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'HSI',
+        underlying => 'OTC_HSI',
         epoch      => $hour_before_close->epoch,
         quote      => 7195,
     });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'HSI',
+            symbol        => 'OTC_HSI',
             recorded_date => $hour_before_close
         });
     $bet_params->{current_tick} = $hsi_weekday_tick;
@@ -384,25 +384,25 @@ subtest 'date start blackouts' => sub {
 };
 
 subtest 'date_expiry blackouts' => sub {
-    note('Testing date_expiry blackouts for HSI');
-    my $hsi               = create_underlying('HSI');
+    note('Testing date_expiry blackouts for OTC_HSI');
+    my $hsi               = create_underlying('OTC_HSI');
     my $new_week          = $weekday->plus_time_interval('7d');
     my $hsi_close         = $trading_calendar->closing_on($hsi->exchange, $new_week);
     my $hour_before_close = $hsi_close->minus_time_interval('1h');
     my $hsi_weekday_tick  = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'HSI',
+        underlying => 'OTC_HSI',
         epoch      => $hour_before_close->epoch,
         quote      => 7195,
     });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'HSI',
+            symbol        => 'OTC_HSI',
             recorded_date => $hour_before_close
         });
     my $bet_params = {
         bet_type     => 'CALL',
-        underlying   => 'HSI',
+        underlying   => 'OTC_HSI',
         date_start   => $hour_before_close,
         date_pricing => $hour_before_close,
         barrier      => 'S0P',
@@ -416,7 +416,7 @@ subtest 'date_expiry blackouts' => sub {
     $bet_params->{duration} = '59m1s';
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
-    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Contract may not expire between [_1] and [_2].', '07:39:00', '07:40:00']);
+    is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Contract may not expire between [_1] and [_2].', '07:59:00', '08:00:00']);
     is_deeply $c->primary_validation_error->{details}, {field => 'duration'}, 'error detials is not correct';
 
     my $usdjpy       = create_underlying('frxUSDJPY');
@@ -441,23 +441,23 @@ subtest 'date_expiry blackouts' => sub {
 };
 
 subtest 'date expiry blackout - year end holidays for equity' => sub {
-    my $hsi        = create_underlying('HSI');
+    my $hsi        = create_underlying('OTC_HSI');
     my $year_end   = Date::Utility->new('2016-12-30');
     my $date_start = $trading_calendar->opening_on($hsi->exchange, $year_end)->plus_time_interval('15m');
     my $tick       = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'HSI',
+        underlying => 'OTC_HSI',
         epoch      => $date_start->epoch,
         quote      => 7195,
     });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'HSI',
+            symbol        => 'OTC_HSI',
             recorded_date => $date_start
         });
     my $bet_params = {
         bet_type     => 'CALL',
-        underlying   => 'HSI',
+        underlying   => 'OTC_HSI',
         date_start   => $date_start,
         date_pricing => $date_start,
         barrier      => 7205,
@@ -544,22 +544,22 @@ subtest 'market_risk blackouts' => sub {
 subtest 'expiry daily contract on indices during christmas/new year period' => sub {
     note 'holiday period for equity starts on day-345 to day-5 of the next year';
     my $holiday_start = Date::Utility->new('2019-01-01')->plus_time_interval('345d');
-    my $hsi           = create_underlying('HSI');
+    my $hsi           = create_underlying('OTC_HSI');
     my $hsi_open      = $trading_calendar->opening_on($hsi->exchange, $holiday_start)->plus_time_interval('15m');
     my $tick          = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'HSI',
+        underlying => 'OTC_HSI',
         epoch      => $hsi_open->epoch,
         quote      => 7195,
     });
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'HSI',
+            symbol        => 'OTC_HSI',
             recorded_date => $hsi_open
         });
     my $bet_params = {
         bet_type     => 'CALL',
-        underlying   => 'HSI',
+        underlying   => 'OTC_HSI',
         date_start   => $hsi_open,
         date_pricing => $hsi_open,
         barrier      => 'S0P',
@@ -580,7 +580,7 @@ subtest 'expiry daily contract on indices during christmas/new year period' => s
 
     $bet_params->{date_pricing} = $hsi_open->plus_time_interval('1h');
     $bet_params->{entry_tick}   = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'HSI',
+        underlying => 'OTC_HSI',
         epoch      => $hsi_open->epoch + 1,
         quote      => 7196,
     });

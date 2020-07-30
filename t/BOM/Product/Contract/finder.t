@@ -16,7 +16,7 @@ use Scalar::Util::Numeric qw(isint);
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY AUD CAD EUR);
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc('index',    {symbol => $_}) for qw(AEX SYNAEX frxAUDUSD frxXPDUSD);
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc('index',    {symbol => $_}) for qw(OTC_AEX SYNAEX frxAUDUSD frxXPDUSD);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
@@ -28,7 +28,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw(AEX FPCS);
+    }) for qw(OTC_AEX FPCS);
 
 my $finder = BOM::Product::ContractFinder->new;
 
@@ -36,7 +36,7 @@ subtest "basic_contracts_for" => sub {
     my %input = (
         random      => ['R_100',     'RDBEAR'],
         forex       => ['frxUSDJPY', 'frxAUDCAD', 'frxEURUSD', 'WLDUSD'],
-        indices     => ['AEX',       'SYNAEX'],
+        indices     => ['OTC_AEX',       'SYNAEX'],
         commodities => ['frxXAUUSD', 'frxXPDUSD'],
     );
     my %expected = (
@@ -68,7 +68,7 @@ subtest "basic_contracts_for" => sub {
         WLDUSD => {
             callput => 4,
         },
-        AEX => {
+        OTC_AEX => {
             callput      => 8,
             touchnotouch => 2,    # only daily
             staysinout   => 2,
@@ -116,8 +116,8 @@ subtest "basic_contracts_for" => sub {
 };
 
 subtest 'default barrier(s)' => sub {
-    note("barriers for AEX");
-    my $aex_contracts = $finder->basic_contracts_for({symbol => 'AEX'});
+    note("barriers for OTC_AEX");
+    my $aex_contracts = $finder->basic_contracts_for({symbol => 'OTC_AEX'});
     my @daily_contracts = grep { $_->{expiry_type} eq 'daily' } @{$aex_contracts->{available}};
     foreach my $data (@daily_contracts) {
         ok isint($data->{barrier}),      'barrier is integer'      if $data->{barrier};

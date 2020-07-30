@@ -72,14 +72,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now,
-    }) for qw(FCHI);
+    }) for qw(OTC_FCHI);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol        => $_,
         recorded_date => $now,
-    }) for qw(FCHI);
+    }) for qw(OTC_FCHI);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix');
 
@@ -98,7 +98,7 @@ subtest 'payout' => sub {
     });
     is $c->commission_markup->amount, $min_commission_markup, 'commission_markup amount is floored 0.002 when payout is 10';
 
-    foreach my $underlying (qw(frxUSDJPY frxXAUUSD FCHI)) {
+    foreach my $underlying (qw(frxUSDJPY frxXAUUSD OTC_FCHI)) {
         $c = produce_contract({
             bet_type     => 'CALL',
             underlying   => $underlying,
@@ -269,7 +269,7 @@ subtest 'stake' => sub {
 
     $c = produce_contract({
         bet_type         => 'CALL',
-        underlying       => 'GDAXI',
+        underlying       => 'OTC_GDAXI',
         barrier          => 'S0P',
         duration         => '10m',
         currency         => 'USD',
@@ -487,13 +487,13 @@ subtest 'flexible commission check for different markets' => sub {
     test_flexible_commission 'frxEURUSD', 'forex',       30;
     test_flexible_commission 'frxUSDJPY', 'forex',       70;
     test_flexible_commission 'frxXAUUSD', 'commodities', 70;
-    test_flexible_commission 'FCHI',      'indices',     170;
+    test_flexible_commission 'OTC_FCHI',      'indices',     170;
 
     test_flexible_commission 'R_100',     'synthetic_index',      10000;
     test_flexible_commission 'frxEURUSD', 'forex',       10000;
     test_flexible_commission 'frxUSDJPY', 'forex',       10000;
     test_flexible_commission 'frxXAUUSD', 'commodities', 10000;
-    test_flexible_commission 'FCHI',      'indices',     10000;
+    test_flexible_commission 'OTC_FCHI',      'indices',     10000;
 };
 
 subtest 'Commission for Runs is 4.8%' => sub {
