@@ -48,10 +48,10 @@ subtest 'Initialization' => sub {
         my $work_dir = File::Temp->newdir();
         my $buffer = BOM::Populator::TickFile->new(base_dir => "$work_dir");
 
-        # Insert HSI data ticks
+        # Insert OTC_HSI data ticks
         $fill_start = $now->minus_time_interval('7h');
         $populator  = BOM::Populator::InsertTicks->new({
-            symbols            => [qw/ HSI /],
+            symbols            => [qw/ OTC_HSI /],
             last_migrated_time => $fill_start,
             buffer             => $buffer,
         });
@@ -63,7 +63,7 @@ subtest 'Initialization' => sub {
         $populator->insert_to_db({
             ticks  => \@ticks,
             date   => $fill_start,
-            symbol => 'HSI',
+            symbol => 'OTC_HSI',
         });
 
         # Insert R_100 data ticks
@@ -101,18 +101,7 @@ subtest 'ticks_history' => sub {
         ->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if there is wrong symbol param')
         ->error_message_is('Symbol wrong invalid.', 'It should return error if there is wrong symbol param');
 
-    $params->{args}->{ticks_history} = 'DFMGI';
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('StreamingNotAllowed', 'Streaming not allowed for chartonly contracts.')
-        ->error_message_is('Streaming for this symbol is not available due to license restrictions.',
-        'It should return error for chartonly contract');
-
-    $params->{args}->{ticks_history} = 'TOP40';
     $params->{args}->{subscribe}     = '1';
-    $rpc_ct->call_ok($method, $params)
-        ->has_no_system_error->has_error->error_code_is('NoRealtimeQuotes', 'It should return error if realtime quotes not available for this symbol')
-        ->error_message_is('Realtime quotes not available for TOP40.', 'It should return error if realtime quotes not available for this symbol');
-
     set_fixed_time(Date::Utility->new('2016-07-24')->epoch);
     $params->{args}->{ticks_history} = 'frxUSDJPY';
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('MarketIsClosed', 'It should return error if market is closed')
@@ -201,28 +190,25 @@ subtest '_validate_start_end' => sub {
     is $result->{data}->{candles}->[0]->{epoch}, $now->epoch - (4000 * 5), 'It should start at ' . (4000 * 5) . 's from end';
 
     $params->{args}->{style}         = 'ticks';
-    $params->{args}->{ticks_history} = 'HSI';
+    $params->{args}->{ticks_history} = 'OTC_HSI';
     $params->{args}->{start}         = $now->minus_time_interval('1h30m')->epoch;
     $params->{args}->{end}           = $now->plus_time_interval('1d')->epoch;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is substr($rpc_ct->result->{data}->{history}->{prices}->[-5], -1), '0', 'Quote with zero at end should be pipsized';
-    is $rpc_ct->result->{data}->{history}->{times}->[-1], $now->epoch - create_underlying('HSI')->delay_amount * 60,
+    is substr($rpc_ct->result->{data}->{history}->{prices}->[-35], -1), '0', 'Quote with zero at end should be pipsized';
+    is $rpc_ct->result->{data}->{history}->{times}->[-1], $now->epoch - create_underlying('OTC_HSI')->delay_amount * 60,
         'It should return last licensed tick for delayed symbol';
-    my $ticks_count_without_adjust_time = @{$rpc_ct->result->{data}->{history}->{times}};
 
     $params->{args}->{adjust_start_time} = 1;
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    ok @{$rpc_ct->result->{data}->{history}->{times}} > $ticks_count_without_adjust_time,
-        'If sent adjust_start_time param then it should return ticks with shifted start time';
 
     set_fixed_time($now->plus_time_interval('5h')->epoch);
-    my $ul               = create_underlying('HSI');
+    my $ul               = create_underlying('OTC_HSI');
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
     $params->{args}->{end}   = $trading_calendar->closing_on($ul->exchange, $now)->plus_time_interval('1m')->epoch;
-    $params->{args}->{start} = $trading_calendar->closing_on($ul->exchange, $now)->minus_time_interval('39m')->epoch;
+    $params->{args}->{start} = $trading_calendar->closing_on($ul->exchange, $now)->minus_time_interval('59m')->epoch;
     delete $params->{args}->{count};
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
-    is $result->{data}->{history}->{times}->[0], $trading_calendar->closing_on($ul->exchange, $now)->minus_time_interval('40m')->epoch,
+    is $result->{data}->{history}->{times}->[0], $trading_calendar->closing_on($ul->exchange, $now)->minus_time_interval('60m')->epoch,
         'If exchange close at end time and sent adjust_start_time then it should shift back start time';
 };
 
@@ -260,7 +246,7 @@ subtest 'history data style' => sub {
     my $end   = $start->plus_time_interval('2h');
 
     $params->{args}                  = {};
-    $params->{args}->{ticks_history} = 'HSI';
+    $params->{args}->{ticks_history} = 'OTC_HSI';
     $params->{args}->{end}           = $end->epoch;
     $params->{args}->{start}         = $start->epoch;
 
@@ -289,7 +275,7 @@ subtest 'history data style' => sub {
     $start                           = $now->minus_time_interval('5h');
     $end                             = $start->plus_time_interval('30m');
     $params->{args}                  = {};
-    $params->{args}->{ticks_history} = 'HSI';
+    $params->{args}->{ticks_history} = 'OTC_HSI';
     $params->{args}->{end}           = $end->epoch;
     $params->{args}->{start}         = $start->epoch;
     $params->{args}->{style}         = 'candles';

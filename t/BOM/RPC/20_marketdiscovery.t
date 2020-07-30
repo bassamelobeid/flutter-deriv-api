@@ -30,17 +30,17 @@ subtest $method => sub {
         qw(market submarket submarket_display_name pip symbol symbol_type market_display_name exchange_is_open display_name  is_trading_suspended allow_forward_starting)
         ];
 
-    my ($indices) = grep { $_->{symbol} eq 'AEX' } @$result;
+    my ($indices) = grep { $_->{symbol} eq 'OTC_AEX' } @$result;
     is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
     delete $params->{country_code};
     $params->{args}{active_symbols} = 'full';
     push @$expected_keys, qw(exchange_name delay_amount quoted_currency_symbol intraday_interval_minutes spot spot_time spot_age);
     $result = $c->call_ok($method, $params)->has_no_system_error->result;
-    ($indices) = grep { $_->{symbol} eq 'AEX' } @$result;
+    ($indices) = grep { $_->{symbol} eq 'OTC_AEX' } @$result;
     is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
     is($indices->{market_display_name},    'Stock Indices', 'the market_display_name is translated');
     is($indices->{submarket_display_name}, 'Europe',        'the submarket_display_name is translated');
-    is(scalar @$result,                    80,              'the default landing company is "svg", the number of result should be ok');
+    is(scalar @$result,                    63,              'the default landing company is "svg", the number of result should be ok');
 };
 
 # unauthenticated call for `active_symbols` for landing company like `maltainvest` doesn't have an offering
