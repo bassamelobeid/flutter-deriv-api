@@ -105,24 +105,24 @@ test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_re
     'RANGE', 'frxUSDJPY', '1', 'd', '98.350', '96.830', 'Win payout if USD/JPY stays between 96.830 to 98.350 through close on 2016-08-10.', '46.67',
     '46.67', 97.140;
 
-# FCHI
+# OTC_FCHI
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
-    '100', 'CALL', 'FCHI', '15', 'm', 'Win payout if French Index is strictly higher than entry spot at 15 minutes after contract start time.',
+    '100', 'CALL', 'OTC_FCHI', '15', 'm', 'Win payout if French Index is strictly higher than entry spot at 15 minutes after contract start time.',
     '54.99', '54.99', '3563.07';
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
-    '100', 'CALL', 'FCHI', '1', 'd', 'Win payout if French Index is strictly higher than entry spot at close on 2016-08-10.', '52.92', '52.92',
+    '100', 'CALL', 'OTC_FCHI', '1', 'd', 'Win payout if French Index is strictly higher than entry spot at close on 2016-08-10.', '52.89', '52.89',
     '3563.07';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
-    'CALL', 'FCHI', '7', 'd', '3564', 'Win payout if French Index is strictly higher than 3564.00 at close on 2016-08-16.', '51.12', '51.12',
+    'CALL', 'OTC_FCHI', '7', 'd', '3564', 'Win payout if French Index is strictly higher than 3564.00 at close on 2016-08-16.', '51.14', '51.14',
     '3563.07';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
-    'ONETOUCH', 'FCHI', '7', 'd', '3624', 'Win payout if French Index touches 3624.00 through close on 2016-08-16.', '40.89', '40.89', '3563.07';
+    'ONETOUCH', 'OTC_FCHI', '7', 'd', '3624', 'Win payout if French Index touches 3624.00 through close on 2016-08-16.', '40.99', '40.99', '3563.07';
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
-    'EXPIRYMISS', 'FCHI', '7', 'd', '3600', '3490', 'Win payout if French Index ends outside 3490.00 to 3600.00 at close on 2016-08-16.', '45.24',
-    '45.24', '3563.07';
+    'EXPIRYMISS', 'OTC_FCHI', '7', 'd', '3600', '3490', 'Win payout if French Index ends outside 3490.00 to 3600.00 at close on 2016-08-16.', '45.32',
+    '45.32', '3563.07';
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
-    'RANGE', 'FCHI', '7', 'd', '3600', '3490', 'Win payout if French Index stays between 3490.00 to 3600.00 through close on 2016-08-16.', '37.48',
-    '37.48', '3563.07';
+    'RANGE', 'OTC_FCHI', '7', 'd', '3600', '3490', 'Win payout if French Index stays between 3490.00 to 3600.00 through close on 2016-08-16.', '37.60',
+    '37.60', '3563.07';
 
 # frxXAUUSD
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
