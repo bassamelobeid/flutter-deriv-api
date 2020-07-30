@@ -361,7 +361,7 @@ sub _setup_market_data {
         {
             recorded_date  => Date::Utility->new,
             'correlations' => {
-                'FCHI' => {
+                'OTC_FCHI' => {
                     'GBP' => {
                         '12M' => 0.307,
                         '3M'  => 0.356,

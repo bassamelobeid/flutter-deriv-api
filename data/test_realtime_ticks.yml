@@ -1,5 +1,5 @@
 ---
-FCHI:
+OTC_FCHI:
   quote: 3563.07
   epoch: 1278660480
 cryBTCUSD:
@@ -24,28 +24,28 @@ RDBULL:
 R_75:
   quote: 953.8053
   epoch: 1268102279
-SPC:
+OTC_SPC:
   quote: 1144.98
   epoch: 1262970000
 SPGSCN:
   quote: 1144.98
   epoch: 1262970000
-GDAXI:
+OTC_GDAXI:
   quote: 7600
   epoch: 1205928000
-N225:
+OTC_N225:
   quote: 9580.6
   epoch: 1278911311
 frxAUDGBP:
   quote: 0.50181
   epoch: 1250586817
-FTSE:
+OTC_FTSE:
   quote: 7000
   epoch: 1205928000
 R_25:
   quote: 7600
   epoch: 1231516800
-SSMI:
+OTC_SSMI:
   quote: 6169.87
   epoch: 1278666500
 frxXAUUSD:
@@ -57,13 +57,7 @@ R_100:
 N150:
   quote: 1397.33
   epoch: 1278660480
-JCI:
-  quote: 2967.563
-  epoch: 1278910672
-BFX:
-  quote: 2467.12
-  epoch: 1278660480
-HSI:
+OTC_HSI:
   quote: 7000
   epoch: 944031764
 IXIC:
@@ -75,7 +69,7 @@ frxAUDUSD:
 frxEURJPY:
   quote: 134.224
   epoch: 1242022170
-AS51:
+OTC_AS51:
   quote: 4404.2
   epoch: 1278911285
 frxEURUSD:
@@ -87,7 +81,7 @@ FTSEMIB:
 frxEURGBP:
   quote: 0.88062
   epoch: 1252560730
-IBEX35:
+OTC_IBEX35:
   quote: 10069.3
   epoch: 1278666506
 N100:
@@ -99,7 +93,7 @@ UKBARC:
 frxGBPUSD:
   quote: 2
   epoch: 1205928000
-DJI:
+OTC_DJI:
   quote: 7600
   epoch: 1231516800
 R_50:

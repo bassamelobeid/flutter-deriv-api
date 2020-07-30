@@ -1,6 +1,6 @@
 ---
 - name: index
-  symbol: FCHI
+  symbol: OTC_FCHI
   rates:
     '10': 3.46
     '11': 3.14
@@ -44,7 +44,7 @@
     '60': 1.75
     '90': 1.79
 - name: volsurface_moneyness
-  symbol: FCHI
+  symbol: OTC_FCHI
   spot_reference: 3563
   surface_data:
     '31':
