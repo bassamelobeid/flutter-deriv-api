@@ -34,7 +34,7 @@ eq_or_diff [sort $udb->symbols_for_intraday_fx], [
     'Correct list of intraday historical symbols.';
 
 my @ul_indices_on_flash =
-    qw(AEX AS51 BFX FCHI GDAXI HSI ISEQ DJI OTC_AEX OTC_AS51 OTC_DJI OTC_FCHI OTC_FTSE OTC_GDAXI OTC_HSI OTC_IBEX35 OTC_N225 OTC_NDX OTC_SPC OTC_SSMI OTC_SX5E SSMI);
+    qw(OTC_AEX OTC_AS51 OTC_DJI OTC_FCHI OTC_FTSE OTC_GDAXI OTC_HSI OTC_IBEX35 OTC_N225 OTC_NDX OTC_SPC OTC_SSMI OTC_SX5E);
 cmp_bag [
     sort $udb->get_symbols_for(
         market            => 'indices',
@@ -75,7 +75,7 @@ eq_or_diff [
     \@ul_forex_on_endsinout, "Correct list of endsinout for forex on virtual accounts";
 
 my @ul_indices_on_endsinout = qw(
-    AEX AS51 DJI FCHI GDAXI HSI N225 OTC_AEX OTC_AS51 OTC_DJI OTC_FCHI OTC_FTSE OTC_GDAXI OTC_HSI OTC_IBEX35 OTC_N225 OTC_NDX OTC_SPC OTC_SSMI OTC_SX5E SPC SSMI
+    OTC_AEX OTC_AS51 OTC_DJI OTC_FCHI OTC_FTSE OTC_GDAXI OTC_HSI OTC_IBEX35 OTC_N225 OTC_NDX OTC_SPC OTC_SSMI OTC_SX5E
 );
 eq_or_diff [
     sort $udb->get_symbols_for(
@@ -158,12 +158,12 @@ subtest "sub market related" => sub {
         ],
         \@empty, "no matching sub market";
 
-    my @ul_indices = qw( DJI SPC);
+    my @ul_indices = qw(OTC_DJI OTC_NDX OTC_SPC);
     eq_or_diff [
         sort $udb->get_symbols_for(
             market            => 'indices',
             contract_category => 'endsinout',
-            submarket         => 'americas',
+            submarket         => 'americas_OTC',
         )
         ],
         \@ul_indices, "Correct list of endsinout for indices on VRTC accounts, for sub market americas";
