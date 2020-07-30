@@ -84,7 +84,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'GDAXI',
+        symbol => 'OTC_GDAXI',
         date   => Date::Utility->new,
     });
 
@@ -98,7 +98,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'GDAXI',
+        symbol        => 'OTC_GDAXI',
         recorded_date => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -167,7 +167,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $underlying        = create_underlying('frxUSDJPY');
-my $underlying_GDAXI  = create_underlying('GDAXI');
+my $underlying_OTC_GDAXI  = create_underlying('OTC_GDAXI');
 my $underlying_WLDUSD = create_underlying('WLDUSD');
 my $underlying_R50    = create_underlying('R_50');
 

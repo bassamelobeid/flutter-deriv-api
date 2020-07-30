@@ -35,7 +35,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'GDAXI',
+        symbol        => 'OTC_GDAXI',
         recorded_date => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -55,7 +55,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol => $_,
         date   => Date::Utility->new,
-    }) for qw(GDAXI R_75 R_50);
+    }) for qw(OTC_GDAXI R_75 R_50);
 
 my $bet_mapper;
 lives_ok {
@@ -211,14 +211,14 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol        => 'GDAXI',
+        symbol        => 'OTC_GDAXI',
         recorded_date => Date::Utility->new($start_time_5),
     });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'GDAXI',
+        symbol        => 'OTC_GDAXI',
         recorded_date => Date::Utility->new($start_time_5),
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -229,7 +229,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     });
 
 my $end_time_5 = $start_time_5 + 900;
-my $contract_5 = produce_contract('CALL_GDAXI_100_' . $start_time_5 . '_' . $end_time_5 . '_S0P_0', 'USD');
+my $contract_5 = produce_contract('CALL_OTC_GDAXI_100_' . $start_time_5 . '_' . $end_time_5 . '_S0P_0', 'USD');
 my $p_5        = $contract_5->build_parameters;
 
 my $tick_params_5 = {

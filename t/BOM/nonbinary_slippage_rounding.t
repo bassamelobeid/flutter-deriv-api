@@ -84,7 +84,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'GDAXI',
+        symbol => 'OTC_GDAXI',
         date   => Date::Utility->new,
     });
 
@@ -98,7 +98,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'GDAXI',
+        symbol        => 'OTC_GDAXI',
         recorded_date => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

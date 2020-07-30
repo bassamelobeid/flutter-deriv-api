@@ -44,17 +44,17 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'AS51',
+        symbol        => 'OTC_AS51',
         recorded_date => Date::Utility->new,
     });
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
-    underlying => 'AS51',
+    underlying => 'OTC_AS51',
 });
 my $currency   = 'USD';
-my $underlying = create_underlying('AS51');
+my $underlying = create_underlying('OTC_AS51');
 
 subtest 'validate client error message' => sub {
 

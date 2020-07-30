@@ -81,7 +81,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'GDAXI',
+        symbol => 'OTC_GDAXI',
         date   => Date::Utility->new,
     });
 
@@ -95,7 +95,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'GDAXI',
+        symbol        => 'OTC_GDAXI',
         recorded_date => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -132,7 +132,7 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 my $underlying        = create_underlying('frxUSDJPY');
-my $underlying_GDAXI  = create_underlying('GDAXI');
+my $underlying_OTC_GDAXI  = create_underlying('OTC_GDAXI');
 my $underlying_WLDUSD = create_underlying('WLDUSD');
 my $underlying_R50    = create_underlying('R_50');
 
@@ -410,7 +410,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
         note("mocked high_risk USD limit to 149.99");
         BOM::Config::quants()->{risk_profile}{high_risk}{turnover}{USD} = 149.99;
         my $contract = produce_contract({
-            underlying   => $underlying_GDAXI,
+            underlying   => $underlying_OTC_GDAXI,
             bet_type     => 'CALL',
             currency     => 'USD',
             payout       => 100,
@@ -512,7 +512,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
         $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
         my $daily_contract = produce_contract({
-            underlying   => $underlying_GDAXI,
+            underlying   => $underlying_OTC_GDAXI,
             bet_type     => 'CALL',
             currency     => 'USD',
             payout       => 100,

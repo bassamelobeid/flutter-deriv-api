@@ -211,7 +211,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
         })->_validate_jurisdictional_restrictions($client);
     is($error, undef, 'German clients are allowed to trade forex underlyings');
 
-    my $new_underlying3 = create_underlying('GDAXI');
+    my $new_underlying3 = create_underlying('OTC_GDAXI');
     my $new_contract3   = produce_contract({
         underlying   => $new_underlying3,
         bet_type     => 'CALL',
