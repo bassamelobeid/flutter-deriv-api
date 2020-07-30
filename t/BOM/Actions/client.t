@@ -477,7 +477,7 @@ subtest 'signup event' => sub {
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'id'
+        language   => 'ID'
     );
     request($req);
     undef @identify_args;
@@ -502,7 +502,7 @@ subtest 'signup event' => sub {
         'context' => {
             'active' => 1,
             'app'    => {'name' => 'deriv'},
-            'locale' => 'id'
+            'locale' => 'ID'
         }
         },
         'context is properly set for signup';
@@ -513,7 +513,7 @@ subtest 'signup event' => sub {
         context => {
             active => 1,
             app    => {name => 'deriv'},
-            locale => 'id'
+            locale => 'ID'
         },
         event      => 'signup',
         properties => {
@@ -561,7 +561,7 @@ subtest 'signup event' => sub {
         'context' => {
             'active' => 1,
             'app'    => {'name' => 'deriv'},
-            'locale' => 'id'
+            'locale' => 'ID'
         }
         },
         'identify context is properly set for signup';
@@ -574,7 +574,7 @@ subtest 'signup event' => sub {
         context => {
             active => 1,
             app    => {name => 'deriv'},
-            locale => 'id'
+            locale => 'ID'
         },
         event      => 'signup',
         properties => {
@@ -600,7 +600,7 @@ subtest 'signup event' => sub {
                 postal_code => $test_client->address_postcode,
                 country     => Locale::Country::code2country($test_client->residence),
             },
-            type => 'real',
+            type     => 'real',
             provider => 'email',
         }
         },
@@ -618,7 +618,7 @@ subtest 'signup event' => sub {
 subtest 'account closure' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'id'
+        language   => 'ID'
     );
     request($req);
 
@@ -645,7 +645,7 @@ subtest 'account closure' => sub {
         context => {
             active => 1,
             app    => {name => 'deriv'},
-            locale => 'id'
+            locale => 'ID'
         },
         event      => 'account_closure',
         properties => {
@@ -673,7 +673,7 @@ subtest 'account closure' => sub {
 subtest 'transfer between accounts event' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'id'
+        language   => 'ID'
     );
     request($req);
 
@@ -710,7 +710,7 @@ subtest 'transfer between accounts event' => sub {
             context => {
                 active => 1,
                 app    => {name => "deriv"},
-                locale => "id"
+                locale => "ID"
             },
             event      => "transfer_between_accounts",
             properties => {
@@ -747,7 +747,7 @@ subtest 'transfer between accounts event' => sub {
             context => {
                 active => 1,
                 app    => {name => "deriv"},
-                locale => "id"
+                locale => "ID"
             },
             event      => "transfer_between_accounts",
             properties => {
@@ -777,7 +777,7 @@ subtest 'transfer between accounts event' => sub {
 subtest 'api token create' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'id'
+        language   => 'ID'
     );
     request($req);
 
@@ -804,7 +804,7 @@ subtest 'api token create' => sub {
         context => {
             active => 1,
             app    => {name => 'deriv'},
-            locale => 'id'
+            locale => 'ID'
         },
         event      => 'api_token_created',
         properties => {
@@ -818,7 +818,7 @@ subtest 'api token create' => sub {
 
     $req = BOM::Platform::Context::Request->new(
         brand_name => 'binary',
-        language   => 'id'
+        language   => 'ID'
     );
     request($req);
     $result = $action_handler->($call_args)->get;
@@ -830,7 +830,7 @@ subtest 'api token create' => sub {
 subtest 'api token delete' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'id'
+        language   => 'ID'
     );
     request($req);
     undef @identify_args;
@@ -856,7 +856,7 @@ subtest 'api token delete' => sub {
         context => {
             active => 1,
             app    => {name => 'deriv'},
-            locale => 'id'
+            locale => 'ID'
         },
         event      => 'api_token_deleted',
         properties => {
@@ -870,7 +870,7 @@ subtest 'api token delete' => sub {
 
     $req = BOM::Platform::Context::Request->new(
         brand_name => 'binary',
-        language   => 'id'
+        language   => 'ID'
     );
     request($req);
     $result = $action_handler->($call_args)->get;
@@ -947,7 +947,7 @@ sub test_segment_customer {
 subtest 'set financial assessment segment' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'id'
+        language   => 'ID'
     );
     request($req);
 
@@ -992,7 +992,7 @@ subtest 'segment document upload' => sub {
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'id'
+        language   => 'ID'
     );
     request($req);
 
@@ -1173,6 +1173,9 @@ subtest 'onfido resubmission' => sub {
         # As I don't have/know a valid payload from onfido, I'm going to test _update_client_status instead
         mailbox_clear();
 
+        my $req = BOM::Platform::Context::Request->new(language => 'EN');
+        request($req);
+
         BOM::Event::Actions::Client::_update_client_status(
             client       => $test_client,
             status       => 'age_verification',
@@ -1180,8 +1183,8 @@ subtest 'onfido resubmission' => sub {
             resubmission => 1
         );
 
-        my $msg = mailbox_search(subject => qr/Resubmitted POI document for: (.*) is verified/);
-        ok($msg, 'Valid email sent for resubmission');
+        my $msg = mailbox_search(subject => qr/Age and identity verification/);
+        ok($msg, 'Valid email sent to client for resubmission passed');
     };
 
     $mock_client->unmock_all;

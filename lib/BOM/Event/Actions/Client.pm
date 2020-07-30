@@ -385,12 +385,6 @@ async sub ready_for_authentication {
         my $resubmission_flag = await $redis_replicated_write->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
         await $redis_replicated_write->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
-        # Disabling this restriction by now
-        # if ($client->status->age_verification) {
-        #     $log->debugf("Onfido request aborted because %s is already age-verified.", $loginid);
-        #     return "Onfido request aborted because $loginid is already age-verified.";
-        # }
-
         my $residence = uc(country_code2code($client->residence, 'alpha-2', 'alpha-3'));
 
         my ($request_count, $user_request_count);
@@ -1164,45 +1158,13 @@ sub _update_client_status {
     my (%args) = @_;
 
     my $client = $args{client};
-    $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $args{status}, $args{message});
-    if ($args{status} eq 'age_verification') {
-        _email_client_age_verified($client);
 
-        if (defined $args{resubmission} && $args{resubmission}) {
-            _send_CS_email_POI_resubmission_passed($client);
-        } else {
-            # send to CS if its regulated client (client of MX, MF, MLT)
-            _send_CS_email_POI_passed($client) if $client->landing_company->is_eu;
-        }
-    }
+    $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $args{status}, $args{message});
+
+    _email_client_age_verified($client) if $args{status} eq 'age_verification';
+
     $client->status->set($args{status}, 'system', $args{message});
 
-    return;
-}
-
-=head2 _send_CS_email_POI_resubmission_passed
-
-Send email to notify CS about POI passed on resubmission
-
-=over 4
-
-=item C<$client> the client that has been authenticated
-
-=back
-
-=cut
-
-sub _send_CS_email_POI_resubmission_passed {
-    my $client = shift;
-
-    my $loginid       = $client->loginid;
-    my $email_content = sprintf("Resubmitted proof of identification document for %s has been verified by Onfido", $loginid);
-    my $email_subject = sprintf("Resubmitted POI document for: %s is verified", $loginid);
-
-    my $from_email   = $BRANDS->emails('no-reply');
-    my $to_email     = $BRANDS->emails('authentications');
-    my $email_status = Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->text_body($email_content)->send();
-    $log->warn('Failed to send Onfido age verification email.') unless ($email_status);
     return;
 }
 
@@ -1434,33 +1396,12 @@ async sub _send_report_automated_age_verification_failed {
     return undef;
 }
 
-=head2 _send_CS_email_POI_passed
-
-Send email to notify CS as POI check passed
-** Note that this sub is only called for regulated clients (MX,MLT,MF) 
-
-=cut
-
-sub _send_CS_email_POI_passed {
-    my $client = shift;
-
-    my $loginid = $client->loginid;
-
-    my $email_content = sprintf("[%s]'s successfully marked as age verified", $loginid);
-
-    my $email_subject = sprintf("Automated age verification passed for %s", $loginid);
-
-    my $from_email   = $BRANDS->emails('no-reply');
-    my $to_email     = $BRANDS->emails('authentications');
-    my $email_status = Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->text_body($email_content)->send();
-
-    $log->warn('Failed to send Onfido age verification email.') unless ($email_status);
-
-    return undef;
-}
-
 async sub _send_CS_email_POA_uploaded {
     my ($client) = @_;
+
+    # don't send POA notification if client is not age verified
+    # POA don't make any sense if client is not age verified
+    return undef unless $client->status->age_verification;
 
     # Checking if we already sent a notification for POA
     # redis replicated is used as this key is used in BO too
