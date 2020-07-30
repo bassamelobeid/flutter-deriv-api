@@ -145,6 +145,10 @@ my $blockchain_address     = $currency_wrapper->get_address_blockchain_url();
 my $blockchain_transaction = $currency_wrapper->get_transaction_blockchain_url();
 code_exit_BO('No currency urls for ' . $currency) unless $blockchain_transaction and $blockchain_address;
 
+my $exchange_rate   = eval { in_usd(1.0, $currency) } // 'N.A.';
+my $sweep_limit_max = $currency_wrapper->config->{sweep}{max_transfer};
+my $sweep_limit_min = $currency_wrapper->config->{sweep}{min_transfer};
+
 my $transaction_uri = URI->new($blockchain_transaction);
 my $address_uri     = URI->new($blockchain_address);
 my $tt              = BOM::Backoffice::Request::template;
@@ -158,8 +162,19 @@ my $tt              = BOM::Backoffice::Request::template;
         }) || die $tt->error();
 }
 
+Bar("$currency Info");
+$tt->process(
+    'backoffice/crypto_cashier/crypto_info.html.tt',
+    {
+        exchange_rate   => $exchange_rate,
+        currency        => $currency,
+        main_address    => $main_address,
+        sweep_limit_max => $sweep_limit_max,
+        sweep_limit_min => $sweep_limit_min,
+    }) || die $tt->error();
+
 ## CTC
-Bar("Actions");
+Bar("$currency Actions");
 
 my $start_date = request()->param('start_date');
 my $end_date   = request()->param('end_date');
@@ -200,8 +215,6 @@ catch {
 if ($end_date->is_before($start_date)) {
     code_exit_BO("Invalid dates, the end date must be after the initial date");
 }
-
-my $exchange_rate = eval { in_usd(1.0, $currency) } // 'N.A.';
 
 my $display_transactions = sub {
     my $trxns = shift;
@@ -635,13 +648,6 @@ EOF
     } else {
         die 'Invalid ' . $currency . ' command: ' . $cmd;
     }
-} elsif ($view_action eq 'new_deposit_address') {
-    my $new_address = $currency_wrapper->get_new_bo_address();
-    print '<p>' . $currency . ' address for deposits: <strong>' . encode_entities($new_address) . '</strong></p>' if $new_address;
-    print
-        '<p style="color:red"><strong>WARNING! An address has not been found. Please contact Devops to obtain a new address to update this in the configuration.</strong></p>'
-        unless $new_address;
-
 } elsif ($view_action eq 'prioritize_confirmation') {
     my $prioritize_address = request()->param('prioritize_address');
     print prioritize_address($currency_wrapper, $prioritize_address);

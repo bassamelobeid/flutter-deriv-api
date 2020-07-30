@@ -1,4 +1,3 @@
-<br>
 <form action="[% controller_url %]" method="POST">
     <select name="currency" id="ddl_crypto_currencies">
         [% USE String %]
@@ -7,19 +6,6 @@
             <option value="[% crypto.currency %]"[% IF currency == crypto.currency %] selected="selected"[% END %]>[% crypto.currency _ space _ ': ' _ crypto.name | none %]</option>
         [% END %]
     </select>
-<!-- Manual wallet functions -->
-        <input type="hidden" name="wallet_command" value="getnewaddress">
-        &nbsp;&nbsp;&nbsp;&nbsp;
-        &nbsp;&nbsp;&nbsp;&nbsp;
-        <button type="submit" name="view_action" value="new_deposit_address">Get New Deposit Address</button>
-    <br>
-    <br>
-<!-- Main Address -->
-    [% currency %] main address: <strong>[% main_address %]</strong>
-    <br>
-    <br>
-<!-- Exchange Rate -->
-    Exchange Rate: [% currency %]/USD: <strong>[% exchange_rate %]</strong>
     <br>
     <br>
     <input type="hidden" name="broker" value="[% broker %]">
@@ -52,7 +38,7 @@
     <label for="show_all_pendings"> Show all pending payouts </label>
     <input type="checkbox" id="show_one_authorised" name="show_one_authorised" [% IF show_one_authorised %] checked [% END %]>
     <label for="show_one_authorised"> Show One Authorised pending payouts </label>
-    <br>
+    <br><br>
     <button type="submit" name="view_action" value="auto_reject_insufficient">Auto-reject withdrawals with insufficient balance</button>
     <br><br>
     Pending Client Payouts : <strong> [% pending_withdrawal_amount %] [% currency %] </strong>

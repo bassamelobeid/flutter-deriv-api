@@ -1,0 +1,44 @@
+<style type="text/css">
+
+#currency_info, #currency_info tr, #currency_info td{
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+
+#currency_info tr, #currency_info td{
+    padding: 6px;
+}
+
+</style>
+
+<table id="currency_info">
+    <tr><th colspan=2>[% currency %] Info</th></tr>
+    <tr>
+        <th>Main address</th>
+        <td><strong>[% main_address %]</strong></td>
+    </tr>
+    <tr>
+        <th>Exchange Rate ([% currency %]/USD)</th>
+        <td><strong>[% exchange_rate %]</strong></td>
+    </tr>
+    <tr>
+        <th>Min Sweep Limit</th>
+        <td>
+            [% IF sweep_limit_min %]
+                <strong>[% sweep_limit_min %] [% currency %]</strong>
+            [% ELSE %]
+                <strong>No limit specified</strong>
+            [% END %]
+        </td>
+    </tr>
+    <tr>
+        <th>Max Sweep Limit</th>
+        <td>
+            [% IF sweep_limit_min %]
+                <strong>[% sweep_limit_max %] [% currency %]</strong>
+            [% ELSE %]
+                <strong>No limit specified</strong>
+            [% END %]
+        </td>
+    </tr>
+</table>
