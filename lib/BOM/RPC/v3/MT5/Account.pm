@@ -326,7 +326,7 @@ async_rpc "mt5_new_account",
     }
     if ($account_type ne 'demo' and $company_name eq 'labuan' and not $client->fully_authenticated()) {
         $client->status->set('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
-        return create_error_future('AuthenticateAccount');
+        return create_error_future('AuthenticateAccount', {params => $client->loginid});
     }
     if ($client->tax_residence and $account_type ne 'demo' and $group eq 'real\labuan_financial_stp') {
         # In case of having more than a tax residence, client residence will be replaced.
@@ -1577,7 +1577,12 @@ sub _mt5_validate_and_get_amount {
             # check for fully authenticated only if it's not gaming account
             # as of now we only support gaming for binary brand, in future if we
             # support for champion please revisit this
-            return create_error_future('AuthenticateAccount', {override_code => $error_code})
+            return create_error_future(
+                'AuthenticateAccount',
+                {
+                    override_code => $error_code,
+                    params        => $client->loginid
+                })
                 if ($action eq 'withdrawal'
                 and ($mt5_group // '') !~ /^real\\svg/
                 and not $client->fully_authenticated);
@@ -1853,7 +1858,7 @@ sub _validate_client {
     }
 
     # Deposits and withdrawals are blocked for non-authenticated MF clients
-    return 'AuthenticateAccount'
+    return ('AuthenticateAccount', $loginid)
         if ($lc eq 'maltainvest' and not $client_obj->fully_authenticated);
 
     return ('AccountDisabled', $loginid) if ($client_obj->status->disabled);

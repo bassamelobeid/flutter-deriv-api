@@ -1473,7 +1473,7 @@ subtest 'MT5' => sub {
     $mock_client->mock(fully_authenticated => sub { return 0 });
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_like(
-        qr/You haven't authenticated your account. Please contact us for more information./,
+        qr/Please authenticate your $test_client->{loginid} account to proceed with the fund transfer./,
         'Error message returned from inner MT5 sub as financial_stp account needs to be authenticated'
         );
     $mock_client->mock(fully_authenticated => sub { return 1 });
