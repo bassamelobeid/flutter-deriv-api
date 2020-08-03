@@ -1581,7 +1581,7 @@ sub _get_detailed_reason {
 
 Tries to get mt5 group and status from redis; if fails, queues a requests for retrieval of the missing info, returning nothing.
 
-It takes a single argument: 
+It takes a single argument:
 
 =over 4
 

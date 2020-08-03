@@ -33,7 +33,7 @@ use BOM::Database::ClientDB;
 use BOM::DualControl;
 use LandingCompany::Registry;
 use f_brokerincludeall;
-use BOM::Cryptocurrency::Helper qw( prioritize_address );
+use BOM::Cryptocurrency::Helper qw(get_crypto_withdrawal_pending_total prioritize_address);
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use Brands;
@@ -179,22 +179,6 @@ Bar("$currency Actions");
 my $start_date = request()->param('start_date');
 my $end_date   = request()->param('end_date');
 
-my $pending_withdrawal_amount = request()->param('pending_withdrawal_amount');
-my $pending_estimated_fee;
-if ($view_action eq 'withdrawals') {
-    ($pending_withdrawal_amount, $pending_estimated_fee) = $dbic->run(
-        ping => sub {
-            $_->selectrow_array(
-                "SELECT SUM(amount), SUM(estimated_fee) FROM payment.cryptocurrency WHERE currency_code = ? AND blockchain_txn IS NULL AND status = 'LOCKED' AND transaction_type='withdrawal'",
-                undef, $currency
-            );
-        }
-        ) // (
-        0,
-        0
-        );
-}
-
 try {
     if ($start_date && $start_date =~ /[0-9]{4}-[0-1][0-9]{1,2}-[0-3][0-9]{1,2}$/) {
         $start_date = Date::Utility->new("$start_date 00:00:00");
@@ -277,6 +261,15 @@ my $display_transactions = sub {
         }) || die $tt->error();
 };
 
+my $pending_withdrawal_amount = request()->param('pending_withdrawal_amount');
+
+my $pending_estimated_fee;
+if ($view_action eq 'withdrawals') {
+    my $withdrawal_sum = get_crypto_withdrawal_pending_total($broker, $currency);
+    $pending_withdrawal_amount = $withdrawal_sum->{pending_withdrawal_amount};
+    $pending_estimated_fee     = $withdrawal_sum->{pending_estimated_fee};
+}
+
 my @crypto_currencies =
     sort { $a->{currency} cmp $b->{currency} }
     map { {currency => $_, name => LandingCompany::Registry::get_currency_definition($_)->{name}} } LandingCompany::Registry::all_crypto_currencies();
@@ -318,24 +311,24 @@ if ($view_action eq 'withdrawals') {
     my $get_balance = $currency_wrapper->get_total_balance();
     print "<b>Available Balance(s) for Payout:</b>";
     for my $currency_of_balance (sort keys %$get_balance) {
-        my $balance        = $get_balance->{$currency_of_balance};
+        my $balance        = Math::BigFloat->new($get_balance->{$currency_of_balance});
         my $remaining_text = '';
         if ($currency_of_balance eq $currency) {
-            my $remaining = $balance - $pending_withdrawal_amount;
+            my $remaining = $balance->copy->bsub($pending_withdrawal_amount);
             $remaining_text = sprintf(
                 " (Remaining after <b>payout</b>: <b style='color: %s;'>%s</b>)",
-                $remaining >= 0 ? 'green' : 'red',
-                formatnumber('amount', $currency_of_balance, $remaining),
+                $remaining->is_pos ? 'green' : 'red',
+                formatnumber('amount', $currency_of_balance, $remaining->bstr),
             );
         } else {
-            my $remaining = $balance - $pending_estimated_fee;
+            my $remaining = $balance->copy->bsub($pending_estimated_fee);
             $remaining_text = sprintf(
                 " (Remaining after <b>total estimated fees</b>: <b style='color: %s;'>%s</b>)",
-                $remaining >= 0 ? 'green' : 'red',
-                formatnumber('amount', $currency_of_balance, $remaining),
+                $remaining->is_pos ? 'green' : 'red',
+                formatnumber('amount', $currency_of_balance, $remaining->bstr),
             );
         }
-        print sprintf("<p>%s : <b>%s</b>$remaining_text</p>", $currency_of_balance, formatnumber('amount', $currency_of_balance, $balance));
+        print sprintf("<p>%s : <b>%s</b>$remaining_text</p>", $currency_of_balance, formatnumber('amount', $currency_of_balance, $balance->bstr));
     }
     print sprintf(
         "<p><b>Note:</b> The above values calculated on <b>%s</b>, to get new values please click the <b>'Withdrawal Transactions'</b> button above.",

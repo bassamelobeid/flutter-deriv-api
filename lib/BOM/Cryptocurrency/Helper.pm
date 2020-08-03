@@ -4,11 +4,13 @@ use strict;
 use warnings;
 
 use BOM::Config::Redis;
+use BOM::Database::ClientDB;
+
 use constant {PRIORITIZE_KEY_TTL => 300};
 
 use Exporter qw/import/;
 
-our @EXPORT_OK = qw(prioritize_address);
+our @EXPORT_OK = qw(prioritize_address get_crypto_withdrawal_pending_total);
 
 =head2 prioritize_address
 
@@ -77,6 +79,56 @@ sub _render_message {
 
     my ($color, $title) = $is_success ? ('green', 'SUCCESS') : ('red', 'ERROR');
     return "<p style='color: $color;'><strong>$title:</strong> $message</p>";
+}
+
+=head2 get_crypto_withdrawal_pending_total
+
+Get withdrawal total values for all C<LOCKED> transactions of a crypto currency.
+
+=over
+
+=item * C<broker> - Broker code
+
+=item * C<currency> - Currency code to check the withdrawals for
+
+=back
+
+Returns a hashref including the following keys:
+
+=over
+
+=item * C<pending_withdrawal_amount> - Total amount of C<LOCKED> withdrawals for the C<currency>
+
+=item * C<pending_estimated_fee> - Total amount of estimated fees for C<LOCKED> withdrawals
+
+=back
+
+=cut
+
+sub get_crypto_withdrawal_pending_total {
+    my ($broker, $currency) = @_;
+
+    my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
+    my $dbic = $clientdb->db->dbic;
+
+    my ($pending_withdrawal_amount, $pending_estimated_fee) = $dbic->run(
+        fixup => sub {
+            $_->selectrow_array(
+                "SELECT COALESCE(SUM(amount), 0), COALESCE(SUM(estimated_fee), 0)
+                FROM payment.cryptocurrency
+                WHERE
+                        currency_code = ?
+                    AND blockchain_txn IS NULL
+                    AND status = 'LOCKED'
+                    AND transaction_type='withdrawal'",
+                undef, $currency
+            );
+        });
+
+    return {
+        pending_withdrawal_amount => $pending_withdrawal_amount,
+        pending_estimated_fee     => $pending_estimated_fee,
+    };
 }
 
 1;
