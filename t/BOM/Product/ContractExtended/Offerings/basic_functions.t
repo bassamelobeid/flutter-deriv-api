@@ -27,6 +27,9 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             '03-Jul-2020' => {
                 '15h00m' => ['METAL'],
             },
+            '06-Jul-2020' => {
+                '15h00m' => ['METAL'],
+            },
         },
     });
 
@@ -104,7 +107,7 @@ subtest 'Early close dates on Fridays' => sub {
     is_deeply(
         $tree->[2]{submarkets}[0]{underlyings}[0]{events},
         [{
-                'dates'   => '2020-07-03',
+                'dates'   => '2020-07-03, 2020-07-06',
                 'descrip' => 'Closes early (at 15:00)'
             },
             {
