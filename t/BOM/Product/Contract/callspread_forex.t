@@ -80,14 +80,16 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc('economic_events', {rec
 subtest 'config' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'frxUSDJPY'], [100.10, $now->epoch + 1, 'frxUSDJPY']);
     my $c = produce_contract({
-        bet_type     => 'CALLSPREAD',
-        underlying   => 'frxUSDJPY',
-        duration     => '2h',
-        high_barrier => 'S100P',
-        low_barrier  => 'S-100P',
-        currency     => 'USD',
-        payout       => 100,
-    });
+            bet_type     => 'CALLSPREAD',
+            underlying   => 'frxUSDJPY',
+            duration     => '2h',
+            high_barrier => 'S100P',
+            low_barrier  => 'S-100P',
+            currency     => 'USD',
+            payout       => 100,
+            date_pricing => $now
+        },
+    );
     is $c->longcode->[0], 'Win up to [_7] [_6] if [_1]\'s exit tick is between [_5] and [_4] at [_3] after [_2].';
     is $c->longcode->[2][0], 'contract start time';
     is $c->longcode->[3]->{value}, 7200;
@@ -98,8 +100,8 @@ subtest 'config' => sub {
     is $c->category_code,      'callputspread', 'category code is callputspread';
     is $c->payout_type,        'non-binary', 'payout type is non-binary';
     is $c->payouttime,         'end', 'payout time is end';
-    is $c->ask_price,          56.24, 'correct ask price';
-    is $c->bid_price,          52.57, 'correct bid price';
+    is $c->ask_price,          54.24, 'correct ask price';
+    is $c->bid_price,          50.57, 'correct bid price';
     isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
     isa_ok $c->high_barrier,   'BOM::Product::Contract::Strike';
     isa_ok $c->low_barrier,    'BOM::Product::Contract::Strike';
