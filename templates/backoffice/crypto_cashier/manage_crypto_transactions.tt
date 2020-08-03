@@ -233,6 +233,7 @@
             <th id="selection_display_text">None selected</th>
             <td>
                 <form action="[% controller_url %]" onsubmit="return confirm('Do you really want to continue?');" method="POST">
+                <input type="hidden" name="currency" value="[%currency%]"/>
                 <input type="hidden" name="view_action" value="withdrawals"/>
                 <input type="hidden" id="checked_ids" name="checked_ids" value=""/>
                 <input type="submit" name="action" value='bulkVerify'/>
