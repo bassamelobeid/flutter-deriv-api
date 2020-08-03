@@ -1,6 +1,7 @@
 <% if (!$login_method || stash('error') || stash('social_error')) { %>
     <div id="container">
-        <h3 class="title-text"><%= l('Log in using your email') %></h3>
+        <h4 class="title-text"><%= l('Welcome back!') %></h4>
+        <p class="subtitle-text"><%= l('It\'s good to see you again. Log in to start trading.') %></p>
         <!--
             <p class="subtitle-text">
                 <%= l('But first check if you are on') %>
@@ -25,42 +26,51 @@
             </p>
         -->
         <div class="note-container">
-            <svg height="51" width="51" class="binary-logo" id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 51 51"><defs><style>.cls-1{fill:#fefefe;}.cls-1,.cls-2{fill-rule:evenodd;}.cls-2{fill:#293052;}</style></defs><title>binary-logo graph-51px</title><g id="Logo_Light" data-name="Logo/Light"><g id="logo"><g id="Group"><path id="Fill-44" class="cls-1" d="M43.52,7.48a25.48,25.48,0,1,0,0,36,25.45,25.45,0,0,0,0-36"/><path id="Combined-Shape" class="cls-2" d="M18.18,32.29a4.85,4.85,0,0,0,2.12,3.18l-.53-.85s1-2.44-1.59-2.33M26.56,16.7a4.75,4.75,0,0,1,2.65,2.86c-2.54.64-2-2-2-2ZM40.13,40l-.74.74C33.56,45.54,29.1,43.1,29.1,43.1c-3.07-.64-4.55-.64-5.4-1.17-.21-.1-.85-.53-1.06-.42a2.09,2.09,0,0,1-2.34-.11l-.21-.21a1.73,1.73,0,0,1-.32-2.33c.22-.21-.21-.85-.21-.85s-1.16-1.7-1.91-2.76a7.43,7.43,0,0,1-.95-3.39h0c-.85-1.06-.95-1.38-1.27-1.8s-.43-.53-.64-.85l-.42-.42v-.11A3.74,3.74,0,0,1,15.75,27c.31-.21,1.48-.84,1.48-.84A2.29,2.29,0,0,1,19,25.08a7.48,7.48,0,0,1,3.4.53l.74.21a24.94,24.94,0,0,1,3.18,1.27,9.46,9.46,0,0,0,1.8.64c1.49.42,4.14-.85,4.77-1.38a3.58,3.58,0,0,0,1.38-1.91A1.15,1.15,0,0,0,34,23.7l-.53-.53-.1-.11c-2.55-2.76-2.12-4.45-2.12-4.45.1-1.27-.64-2-1.38-2.86l-.11-.11-.1-.11a22.07,22.07,0,0,0,3.92.85,11.11,11.11,0,0,0,1.8.11c1.38,0,2.33-.21,2.44-.43A19.79,19.79,0,0,1,34.3,15c-1.27-.53-1.48-.53-2.33-.85a20,20,0,0,1-2.23-.84C34.3,14.47,35.89,15,38,15c.85,0,1.27-.1,1.59-.1s1.27-.21,1.38-.64a13.29,13.29,0,0,1-2.65-.42C32.92,12,32.5,11.19,29.53,10A26.72,26.72,0,0,0,25,8.54a11.4,11.4,0,0,0-3.92,0c-4-1-5-.85-6.15-.64a20.73,20.73,0,0,1,25.76,2.76,22.94,22.94,0,0,1,2.55,3.07l.1.11a20.67,20.67,0,0,1,3.4,11.45A23.61,23.61,0,0,1,40.13,40ZM42.68,8.32a24.22,24.22,0,1,0,0,34.25,24.27,24.27,0,0,0,0-34.25Z"/></g></g></g></svg>
+            <div class="binary-logo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="43" height="42"><g fill="none" fill-rule="evenodd"><path fill="#FEFEFE" d="M36.03 6.598C27.97-1.48 14.857-1.48 6.795 6.596c-8.06 8.074-8.06 21.216 0 29.29 8.062 8.08 21.179 8.078 29.235 0 8.07-8.074 8.07-21.216 0-29.288"/><path fill="#777" d="M15.652 26.674s.237 1.776 1.73 2.599l-.398-.742s.761-1.999-1.332-1.857"/><path fill="#777" d="M22.255 14.32c1.605.573 2.121 2.287 2.121 2.287-2.042.466-1.612-1.622-1.612-1.622l-.51-.665zM33 32.851c-.21.205-.415.405-.627.598-4.611 3.764-8.162 1.892-8.203 1.892-2.407-.482-3.602-.49-4.277-.942-.17-.114-.715-.407-.84-.336-.491.293-1.168.444-1.863-.11-.061-.05-.12-.107-.173-.158-.766-.765-.506-1.554-.252-1.829.177-.18-.134-.684-.134-.684s-.904-1.345-1.521-2.154c-.68-.889-.773-2.652-.781-2.675l-.01-.025c-.686-.817-.758-1.069-.995-1.467-.138-.236-.351-.456-.532-.646a3.35 3.35 0 01-.32-.353c-.018-.023-.023-.058-.016-.112.064-.382.882-1.224 1.06-1.34.216-.141 1.15-.71 1.15-.71s.525-.827 1.418-.827c.806.005 1.298-.044 2.688.41l.578.183c.969.311 1.823.678 2.502.972.576.248 1.037.45 1.39.542 1.2.316 3.314-.656 3.76-1.066.732-.667 1.048-1.114 1.052-1.48.006-.206-.085-.386-.292-.603-.108-.1-.247-.285-.421-.462-.028-.027-.057-.06-.092-.085-2.03-2.159-1.679-3.513-1.677-3.535.088-.971-.468-1.595-1.066-2.24l-.097-.122a.652.652 0 01-.07-.078c.864.141 1.453.49 3.141.678.959.103.656.094 1.422.076 1.055-.034 1.891-.127 1.948-.367-.102-.087-.569.026-2.81-.832a32.835 32.835 0 00-1.86-.676 27.01 27.01 0 01-1.768-.683c3.656.96 4.852 1.337 6.524 1.36a5.273 5.273 0 001.258-.112c.238-.043.976-.21 1.06-.466.025-.045-.708.12-2.065-.328-4.267-1.413-4.63-2.12-6.995-3.041-.826-.321-1.094-.497-3.586-1.142-1.142-.294-2.868-.125-3.103.023-3.235-.762-3.97-.679-4.919-.474C18.915 3.36 27.463 4.092 33 9.638c.75.754 1.415 1.564 1.997 2.423l.078.118a16.266 16.266 0 012.725 9.065A16.33 16.33 0 0133 32.851zm1.984-25.205c-7.486-7.5-19.657-7.5-27.142-.002-7.483 7.498-7.483 19.699 0 27.198 7.485 7.5 19.66 7.496 27.142-.002 7.493-7.497 7.493-19.698 0-27.194z"/></g></svg>
+            </div>
             <div class="note-wrapper">
-                <h5 class="note-title"><%== l('Got a [_1] account?', '<strong>Binary.com</strong>') %></h5>
-                <p class="note-text"><%== l('You can log in to [_1] with your [_2] username and password.', '<strong>Deriv</strong>', '<strong>Binary.com</strong>') %></p>
+                <h5 class="note-title"><%== l('If you\'re a [_1] user, log in with your [_2] username and password', '<strong>Binary.com</strong>', '<strong>Binary.com</strong>') %></h5>
             </div>
         </div>
         <form id="frmLogin" method="POST">
-            <div class="input-wrapper">
-                <input type="email" id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" required autocomplete="off" <% unless (stash('error')) { %> autofocus="autofocus" <% } %> maxlength="254" />
-                <label for="txtEmail"><%= l('Email') %></label>
-                <span class="bar"></span>
-                <p class='hide error error_invalid'><%= l("That doesn't look like an email address.") %></p>
-                <p class='hide error error_required'><%= l('Email is required.') %></p>
-                <% if (stash('error')) { %>
-                    <p class='error'><%= stash('error') %></p>
-                <% } %>
+            <div class='input-group'>
+                <div class="input-wrapper">
+                    <input type="email" id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" required autocomplete="off" <% unless (stash('error')) { %> autofocus="autofocus" <% } %> maxlength="254" />
+                    <label for="txtEmail"><%= l('Email') %></label>
+                    <span class="bar"></span>
+                </div>
+                <div class="input-error">
+                    <p class='hide error error_invalid'><%= l("That doesn't look like an email address.") %></p>
+                    <p class='hide error error_required'><%= l('Email is required.') %></p>
+                    <% if (stash('error')) { %>
+                        <p class='error'><%= stash('error') %></p>
+                    <% } %>
+                </div>
             </div>
-            <div class="input-wrapper">
-                <input type="password" id="txtPass" name="password" placeholder="<%= l('Password') %>" required autocomplete="off" />
-                <label for="txtPass"><%= l('Password') %></label>
-                <span class="bar"></span>
-                <span id="btnToggle" class="input-button icon_hidden"></span>
-                <p class='hide error error_required'><%= l('Password is required.') %></p>
+            <div class="input-group">
+                <div class="input-wrapper">
+                    <input type="password" id="txtPass" name="password" required autocomplete="off" />
+                    <label for="txtPass"><%= l('Password') %></label>
+                    <span class="bar"></span>
+                    <span id="btnToggle" class="input-button icon_hidden"></span>
+                </div>
+                <div class="input-error">
+                    <p class='hide error error_required'><%= l('Password is required.') %></p>
+                </div>
             </div>
             <div id="lost-password-container">
                 <% if ($is_reset_password_allowed) { %>
                     <a id="lost-password" href="https://deriv.com/reset-password"><%= l('Forgot password?') %></a>
                 <% } %>
-                <button type="submit" class="button secondary" name="login" value="<%= l('Login') %>"><%= l('Login') %></button>
+                <button type="submit" class="button secondary" name="login" value="<%= l('Log in') %>"><%= l('Log in') %></button>
             </div>
             <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
         </form>
         <% if ($use_social_login) { %>
             <div class="separator">
                 <p class="center-text social-text">
-                    <%= stash('error') ? l('Perhaps you signed up with a social account?') : l('Or use your social account') %>
+                    <%= stash('error') ? l('Perhaps you signed up with a social account?') : l('Or log in with') %>
                 </p>
             </div>
             <div id="oa_social_login_container"></div>
@@ -143,14 +153,14 @@
 
     function hideErrors(element) {
         element.parentNode.classList.remove('has_error');
-        element.parentNode.querySelectorAll('.error').forEach(function (el) {
+        element.parentNode.parentNode.querySelectorAll('.input-error .error').forEach(function (el) {
             el.classList.add('hide');
         });
     }
 
     function showError(element, errorType) {
         element.parentNode.classList.add('has_error');
-        var el = element.parentNode.querySelector('.error_' + errorType);
+        var el = element.parentNode.parentNode.querySelector('.input-error .error_' + errorType);
         if (el) {
             el.classList.remove('hide');
         }

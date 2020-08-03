@@ -47,7 +47,7 @@ my $config = {
         UNAUTHORIZED_ACCESS => 'Sorry, your account is not authorized to access this application. Currently, only USD accounts are allowed.',
         SUSPICIOUS_BLOCKED  => 'Suspicious activity detected from this device - for safety, login has been blocked temporarily.',
 
-        LOGIN_ERROR => "Your email and/or password is incorrect. Please check and try again. Perhaps you signed up with a social account?",
+        LOGIN_ERROR => "Your email and/or password is incorrect. Perhaps you signed up with a social account?",
     },
 };
 
