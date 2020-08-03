@@ -164,6 +164,9 @@ sub validate_account_details {
         return $error;
     }
 
+    return {error => 'P2PRestrictedCountry'}
+        if $args->{account_opening_reason} eq 'Peer-to-peer exchange' & !$lc->p2p_available;
+
     $args->{secret_answer} = BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) if $args->{secret_answer};
 
     # This exist to accommodate some rules in our database (mostly NOT NULL and NULL constraints). Should change to be more consistent. Also used to filter the args to return for new account creation.

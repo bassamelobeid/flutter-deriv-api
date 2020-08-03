@@ -341,7 +341,36 @@ subtest 'create account' => sub {
         $user->add_client($client_vr_new);
 
         ok !$client_vr_new->status->withdrawal_locked, 'withdrawal_locked status must not set or copied for virtual accounts';
-        }
+    };
+    
+    subtest 'P2P account opening reason' => sub {
+    
+        my $vr_acc = create_vr_acc({
+            email            => 'p2p_mlt@binary.com',
+            client_password  => 'test',
+            residence  => 'nl',
+        });
+        my ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+        
+        my %details = (
+            %real_client_details,
+            first_name => 'john',
+            residence  => 'nl',
+            citizen => 'nl',
+            non_pep_declaration_time => Date::Utility->today->date_yyyymmdd,
+            account_opening_reason => 'Peer-to-peer exchange',
+        );
+    
+        $details = BOM::Platform::Account::Real::default::validate_account_details(\%details, $vr_client, 'MLT', 1);
+        is $details->{error}, 'P2PRestrictedCountry', 'error for P2P on MLT';
+
+        $details = BOM::Platform::Account::Real::default::validate_account_details(\%details, $vr_client, 'CR', 1);
+        ok !$details->{error}, 'no error for P2P on CR';       
+
+        $details{account_opening_reason} = 'Hedging';
+        $details = BOM::Platform::Account::Real::default::validate_account_details(\%details, $vr_client, 'MLT', 1);
+        ok !$details->{error}, 'no error for other reason on MLT';
+    };
 };
 
 sub create_vr_acc {
