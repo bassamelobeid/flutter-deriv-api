@@ -10,14 +10,13 @@ use Binary::WebSocketAPI::BalanceConnections ();
 use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
-use Mojo::WebSocketProxy::Backend::JobAsync;
 use IO::Async::Loop::Mojo;
 
 use Binary::WebSocketAPI::Actions;
 use Binary::WebSocketAPI::Hooks;
 
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master redis_queue |;
+use Binary::WebSocketAPI::v3::Instance::Redis qw(check_connections ws_redis_master);
 
 use Brands;
 use Encode;
@@ -215,19 +214,6 @@ sub startup {
     $app->plugin('Binary::WebSocketAPI::Plugins::Helpers');
 
     my $actions = Binary::WebSocketAPI::Actions::actions_config();
-
-    my $backend_redis = redis_queue();
-    my $queue_prefix = $ENV{JOB_QUEUE_PREFIX} // $app->config->{queue_prefix};
-    $WS_BACKENDS = {
-        queue_backend => {
-            type  => "job_async",
-            redis => {
-                uri     => 'redis://' . $backend_redis->url->host . ':' . $backend_redis->url->port,
-                timeout => 5,
-                $queue_prefix ? (prefix => $queue_prefix) : (),
-            }
-        },
-    };
 
     my $json = JSON::MaybeXS->new;
 
