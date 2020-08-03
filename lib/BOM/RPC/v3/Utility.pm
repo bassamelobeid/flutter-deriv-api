@@ -336,7 +336,7 @@ sub error_map {
         'NewAccountLimitReached'     => localize('You have created all accounts available to you.'),
         'NoResidence'                => localize('Please set your country of residence.'),
         'SetExistingAccountCurrency' => localize('Please set the currency for your existing account [_1], in order to create more accounts.'),
-
+        'P2PRestrictedCountry'       => localize("P2P cashier is unavailable in your country. Please provide a different account opening reason."),
     };
 }
 

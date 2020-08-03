@@ -776,6 +776,8 @@ sub _check_client_access {
     die +{error_code => 'RestrictedCountry'}
         unless any { $_ eq lc($client->residence // '') } $app_config->payments->p2p->available_for_countries->@*;
 
+    die +{error_code => 'RestrictedCountry'} unless $client->landing_company->p2p_available;
+
     die +{error_code => 'NoCurrency'} unless $client->default_account;
 
     die +{

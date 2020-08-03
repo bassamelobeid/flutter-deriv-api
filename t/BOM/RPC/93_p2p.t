@@ -4,6 +4,7 @@ use BOM::Test::RPC::Client;
 use Log::Any::Test;
 use Test::More;
 use Test::Mojo;
+use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 use BOM::Platform::Token::API;
@@ -134,6 +135,14 @@ subtest 'Country not enabled' => sub {
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('RestrictedCountry', 'error code is RestrictedCountry');
 
     $app_config->payments->p2p->available_for_countries($P2P_AVAILABLE_COUNTRIES);
+};
+
+subtest 'Landing company does not allow p2p' => sub {
+    my $mock_lc = Test::MockModule->new('LandingCompany');
+
+    $mock_lc->mock( 'p2p_available' => sub { 0 } );
+    
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('RestrictedCountry', 'error code is RestrictedCountry');
 };
 
 subtest 'Client restricted statuses' => sub {
