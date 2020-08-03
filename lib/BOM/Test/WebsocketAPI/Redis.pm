@@ -10,7 +10,6 @@ use BOM::Test::WebsocketAPI::Redis::Feed;
 use BOM::Test::WebsocketAPI::Redis::Master;
 use BOM::Test::WebsocketAPI::Redis::Pricer;
 use BOM::Test::WebsocketAPI::Redis::Transaction;
-use BOM::Test::WebsocketAPI::Redis::RpcQueue;
 use BOM::Test::WebsocketAPI::Redis::P2P;
 
 =head1 NAME
@@ -84,18 +83,6 @@ Returns the singleton async client to the test p2p redis server (B<redis_p2p>);
 
 sub redis_p2p {
     state $redis = BOM::Test::WebsocketAPI::Redis::P2P->new();
-
-    return $redis->client;
-}
-
-=head2 redis_queue
-
-Returns the singleton async client to the test rpc queue redis server (B<redis_queue>);
-
-=cut
-
-sub redis_queue {
-    state $redis = BOM::Test::WebsocketAPI::Redis::RpcQueue->new();
 
     return $redis->client;
 }

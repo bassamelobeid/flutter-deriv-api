@@ -82,7 +82,6 @@ BEGIN {
         $ENV{BOM_TEST_REDIS_RAND}               = $config_dir . '/redis.yml';
         $ENV{BOM_TEST_REDIS_FEED}               = $config_dir . '/redis-feed.yml';
         $ENV{BOM_TEST_REDIS_EVENTS}             = $config_dir . '/redis-replicated.yml';
-        $ENV{BOM_TEST_REDIS_QUEUE}              = $config_dir . '/redis-replicated.yml';
         $ENV{BOM_TEST_REDIS_TRANSACTION}        = $config_dir . '/redis-replicated.yml';
         $ENV{BOM_TEST_REDIS_TRANSACTION_LIMITS} = $config_dir . '/redis-transaction-limits.yml';
         $ENV{BOM_TEST_REDIS_AUTH}               = $config_dir . '/redis.yml';
@@ -96,9 +95,7 @@ BEGIN {
         # This port is only valid in QA. In CI, we use the same ports as QA manual testing
         $ENV{DB_TEST_PORT} = 5451;
     }
-    $ENV{TEST_DATABASE}     = 1;                     ## no critic (RequireLocalizedPunctuationVars)
-    $ENV{JOB_QUEUE_PREFIX}  = 'TEST_' . uc(env());
-    $ENV{QUEUE_TIMEOUT}     = 2;
+    $ENV{TEST_DATABASE}     = 1;                 ## no critic (RequireLocalizedPunctuationVars)
     $ENV{SEGMENT_BASE_URL}  = 'http://dummy/';
     $ENV{SEGMENT_WRITE_KEY} = 'test';
 
