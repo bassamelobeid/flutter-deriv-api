@@ -140,8 +140,8 @@ subtest 'Country not enabled' => sub {
 subtest 'Landing company does not allow p2p' => sub {
     my $mock_lc = Test::MockModule->new('LandingCompany');
 
-    $mock_lc->mock( 'p2p_available' => sub { 0 } );
-    
+    $mock_lc->mock('p2p_available' => sub { 0 });
+
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('RestrictedCountry', 'error code is RestrictedCountry');
 };
 

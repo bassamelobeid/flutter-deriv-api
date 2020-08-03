@@ -1200,8 +1200,8 @@ sub create_mt5_account {
         $result->has_no_error;
         ok $mt5_account_info, 'mt5 api is called';
 
-
-        is_deeply \@emit_args, [
+        is_deeply \@emit_args,
+            [
             'new_mt5_signup',
             {
                 cs_email         => 'support@binary.com',

@@ -308,7 +308,7 @@ subtest 'get and set self_exclusion' => sub {
         subject => qr/Client $test_loginid set self-exclusion limits/,    # debug => 1,
     );
     ok($msg, "msg sent to marketing and compliance email");
-    is_deeply($msg->{to}, ['compliance@binary.com', 'marketing@binary.com'], "msg sent to marketing and compliance email");
+    is_deeply($msg->{to}, ['compliance@binary.com'], "msg sent to marketing and compliance email");
     like($msg->{body}, qr/.*Exclude from website until/s, 'email content is ok');
     ok($emitted->{self_exclude_set}, 'self_exclude_set event emitted');
 
@@ -398,7 +398,7 @@ subtest 'get and set self_exclusion' => sub {
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
     ok($msg, 'Email for MLT client limits with MT5 accounts');
-    is_deeply($msg->{to}, ['compliance@binary.com', 'marketing@binary.com', 'x-acc@binary.com'], 'email to address ok');
+    is_deeply($msg->{to}, ['compliance@binary.com', 'x-acc@binary.com'], 'email to address ok');
     like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
 
     ## Set some limits again, and another email should be sent to compliance listing
@@ -410,7 +410,7 @@ subtest 'get and set self_exclusion' => sub {
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
     ok($msg, 'Email for MLT client limits with MT5 accounts');
-    is_deeply($msg->{to}, ['compliance@binary.com', 'marketing@binary.com', 'x-acc@binary.com'], 'email to address ok');
+    is_deeply($msg->{to}, ['compliance@binary.com', 'x-acc@binary.com'], 'email to address ok');
     like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
     delete $params->{args};
     delete $emitted->{self_exclude_set};

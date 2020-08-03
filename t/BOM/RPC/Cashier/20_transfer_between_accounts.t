@@ -1402,7 +1402,7 @@ subtest 'MT5' => sub {
 
     $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'};
     $params->{args}{account_to}   = $test_client->loginid;
-    $params->{args}{amount}       = 150;                                       # this is the only withdrawal amount allowed by mock MT5
+    $params->{args}{amount}       = 150;                                             # this is the only withdrawal amount allowed by mock MT5
 
     _test_events_prepare();
     $test_client->status->set('transfers_blocked', 'system', 'testing transfers_blocked for mt5 -> real');

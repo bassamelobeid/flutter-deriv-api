@@ -1969,7 +1969,7 @@ sub send_self_exclusion_notification {
             $message .= "$_\n" for @mt5_logins;
         }
 
-        my $to_email = $brand->emails('compliance') . ',' . $brand->emails('marketing');
+        my $to_email = $brand->emails('compliance');
 
         # Include accounts team if client's brokercode is MLT/MX
         # As per UKGC LCCP Audit Regulations
