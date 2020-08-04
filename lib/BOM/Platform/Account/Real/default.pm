@@ -6,7 +6,7 @@ use feature 'state';
 use Date::Utility;
 use Locale::Country;
 use Syntax::Keyword::Try;
-use List::MoreUtils qw(any);
+use List::MoreUtils qw(any none);
 use Text::Trim qw(trim);
 
 use BOM::User::Client;
@@ -44,11 +44,22 @@ sub create_account {
 
 sub copy_status_from_siblings {
     my ($cur_client, $user, $status_list) = @_;
-    for my $cl ($user->clients) {
+    my @allowed_lc_to_sync;
+    # We should sync age verification for allowed landing companies and other statuses to all siblings
+    # Age verification sync if current client is one of existing client allowed landing companies for age verification
+    for my $client ($user->clients) {
+        @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
         for my $status (@$status_list) {
-            if ($cl->status->$status && !$cur_client->status->$status) {
-                $cur_client->status->set($status, 'system', $cl->status->$status->{reason} . ' - copied from ' . $cl->loginid);
-            }
+            next unless $client->status->$status;
+            next if $client->status->$status && $cur_client->status->$status;
+
+            my $cur_client_lc = $cur_client->landing_company->short;
+            next if ($status eq 'age_verification' && (none { $_ eq $cur_client_lc } @allowed_lc_to_sync));
+
+            my $reason = $client->status->$status ? $client->status->$status->{reason} : 'Sync upon signup';
+
+            $cur_client->status->set($status, 'system', $reason . ' - copied from ' . $client->loginid);
+
         }
     }
 }
@@ -59,7 +70,7 @@ sub after_register_client {
 
     unless ($client->is_virtual) {
         $client->status->set('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
-        copy_status_from_siblings($client, $user, ['no_trading', 'withdrawal_locked']);
+        copy_status_from_siblings($client, $user, ['no_trading', 'withdrawal_locked', 'age_verification']);
     }
 
     BOM::Platform::Client::Sanctions->new({
