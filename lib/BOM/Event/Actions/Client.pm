@@ -588,6 +588,7 @@ async sub client_verification {
                                 client       => $client,
                                 status       => 'age_verification',
                                 message      => 'Onfido - age verified',
+                                sync         => 1,
                                 resubmission => $resubmission
                             );
 
@@ -1165,6 +1166,18 @@ sub _update_client_status {
 
     $client->status->set($args{status}, 'system', $args{message});
 
+    $client->status->set($args{status}, 'system', $args{message});
+    # We should sync age verification between allowed landing companies.
+    if ($args{sync}) {
+        my @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
+        # Apply age verification for one client per each landing company since we have a DB trigger that sync age verification between the same landing companies.
+        my @clients_to_update =
+            map { [$client->user->clients_for_landing_company($_)]->[0] // () } @allowed_lc_to_sync;
+        push @clients_to_update, $client;
+        foreach my $cli (@clients_to_update) {
+            $cli->status->set($args{status}, 'system', $args{message});
+        }
+    }
     return;
 }
 
