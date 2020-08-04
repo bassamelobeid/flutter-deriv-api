@@ -46,6 +46,8 @@ my %event_queue_mapping = (
     crypto_subscription       => 'CRYPTO_EVENTS_QUEUE',
     new_crypto_address        => 'CRYPTO_EVENTS_QUEUE',
     client_promo_codes_upload => 'PROMO_CODE_IMPORT_LONG_RUNNING_QUEUE',
+    anonymize_client          => 'ANONYMIZATION_QUEUE',
+    bulk_anonymization        => 'ANONYMIZATION_QUEUE',
 );
 
 my $config = LoadFile($ENV{BOM_TEST_REDIS_EVENTS} // '/etc/rmg/redis-events.yml');
