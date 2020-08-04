@@ -530,58 +530,105 @@ sub get_self_exclusion_form {
     $fieldset->add_field($input_submit_button);
 
     my $server_side_validation_sub = sub {
-        my $session_duration = $form_self_exclusion->get_field_value('SESSIONDURATION') // '';
-        my $exclude_until    = $form_self_exclusion->get_field_value('EXCLUDEUNTIL')    // '';
-        my $timeout_until    = $form_self_exclusion->get_field_value('TIMEOUTUNTIL')    // '';
+        my $session_duration   = $form_self_exclusion->get_field_value('SESSIONDURATION') // '';
+        my $max_deposit_expiry = $form_self_exclusion->get_field_value('MAXDEPOSITDATE')  // '';
+        my $max_deposit        = $form_self_exclusion->get_field_value('MAXDEPOSIT')      // '';
+
+        my $now = Date::Utility->new;
 
         # This check is done both for BO and UI
         if (not $form_self_exclusion->is_error_found_in('SESSIONDURATION') and $session_duration and $session_duration > 1440 * 42) {
             $form_self_exclusion->set_field_error_message('SESSIONDURATION', 'Session duration limit cannot be more than 6 weeks.');
         }
 
-        if ($exclude_until
-            and not $form_self_exclusion->is_error_found_in('EXCLUDEUNTIL'))
-        {
-            my $now           = Date::Utility->new;
-            my $exclusion_end = Date::Utility->new($exclude_until);
-            my $six_month     = Date::Utility->new->plus_time_interval('6mo')->truncate_to_day;
+        _validate_date_field(
+            $form_self_exclusion,
+            'EXCLUDEUNTIL',
+            'min' => {
+                date    => $now->plus_time_interval('6mo')->truncate_to_day,
+                message => 'Exclude time cannot be less than 6 months.'
+            },
+            'max' => {
+                date    => $now->plus_time_interval('5y'),
+                message => 'Exclude time cannot be for more than five years.'
+            });
 
-            #server side checking for the exclude until date which must be larger than today's date
-            if (not $exclusion_end->is_after($now)) {
-                $form_self_exclusion->set_field_error_message('EXCLUDEUNTIL', 'Exclude time must be after today.');
-            }
+        _validate_date_field(
+            $form_self_exclusion,
+            'TIMEOUTUNTIL',
+            'min' => {
+                date    => $now->plus_time_interval('1d')->truncate_to_day,
+                message => 'Timeout time must be greater than current time.'
+            },
+            'max' => {
+                date    => $now->plus_time_interval('42d'),              # 6*7 days
+                message => 'Timeout time cannot be more than 6 weeks.'
+            });
 
-            #server side checking for the exclude until date could not be less than 6 months
-            elsif ($exclusion_end->epoch < $six_month->epoch) {
-                $form_self_exclusion->set_field_error_message('EXCLUDEUNTIL', 'Exclude time cannot be less than 6 months.');
-            }
-
-            #server side checking for the exclude until date could not be more than 5 years
-            elsif ($exclusion_end->days_between($now) > 365 * 5 + 1) {
-                $form_self_exclusion->set_field_error_message('EXCLUDEUNTIL', 'Exclude time cannot be for more than five years.');
-            }
+        if ($max_deposit_expiry xor $max_deposit) {
+            $form_self_exclusion->set_field_error_message($max_deposit ? 'MAXDEPOSIT' : 'MAXDEPOSITDATE',
+                "Max deposit and Max deposit end date must be set together.");
         }
 
-        if ($timeout_until
-            and not $form_self_exclusion->is_error_found_in('TIMEOUTUNTIL'))
-        {
-            my $now           = Date::Utility->new;
-            my $exclusion_end = Date::Utility->new($timeout_until);
-            my $six_week      = Date::Utility->new(time() + 6 * 7 * 86400);
-
-            #server side checking for the exclude until date which must be larger than today's date
-            if (not $exclusion_end->is_after($now)) {
-                $form_self_exclusion->set_field_error_message('TIMEOUTUNTIL', 'Timeout time must be greater than current time.');
-            }
-
-            if ($exclusion_end->is_after($six_week)) {
-                $form_self_exclusion->set_field_error_message('TIMEOUTUNTIL', 'Timeout time cannot be more than 6 weeks.');
-            }
-        }
+        _validate_date_field(
+            $form_self_exclusion,
+            'MAXDEPOSITDATE',
+            'min' => {
+                date    => $now->plus_time_interval('1d')->truncate_to_day,
+                message => 'The expiry date must be greater than current time.'
+            });
     };
 
     $form_self_exclusion->set_server_side_checks($server_side_validation_sub);
     return $form_self_exclusion;
+}
+
+=head2 _validate_date_field
+
+Taking a filed name with date type, checks if it's a valid date and lies between minimum and maximum limits. It takes folliwing args:
+
+=over
+
+=item *  C<form> - L<HTML::FormBuilder::Validation> represents an HTML form
+
+=item * C<field_id> - the HTML id of the field to be validated
+
+=item * C<limits> - (optional) a hash representing C<min> and C<max> limits, each with following properties:
+
+=over
+
+=item * C<value> - L<Date::Utility> a datetime object against which the field's value will be compared
+
+=item * C<message> - an error message to be displayed if the limit is crossed
+
+=back
+
+=back
+
+=cut
+
+sub _validate_date_field {
+    my ($form, $field_id, %limits) = @_;
+    my $text_value = $form->get_field_value($field_id);
+
+    return if not $text_value or $form->is_error_found_in($field_id);
+
+    my $date_value = eval { Date::Utility->new($text_value) };
+
+    unless ($date_value) {
+        $form->set_field_error_message($field_id, "Invalid date value $text_value.");
+        return;
+    }
+
+    if ($limits{min} and $date_value->is_before($limits{min}->{date})) {
+        $form->set_field_error_message($field_id, $limits{min}->{message});
+        return;
+    }
+
+    if ($limits{max} and $date_value->is_after($limits{max}->{date})) {
+        $form->set_field_error_message($field_id, $limits{max}->{message});
+        return;
+    }
 }
 
 sub get_payment_agent_registration_form {
