@@ -60,7 +60,7 @@ sub advertiser_created {
     my @args = qw(client_loginid name contact_info default_advert_description payment_info);
 
     if (grep { !exists $data->{$_} } @args) {
-        $log->info('Fail to procces advertiser_created: Invalid event data', $data);
+        $log->info('Fail to process advertiser_created: Invalid event data', $data);
         return 0;
     }
 
@@ -87,32 +87,21 @@ be relevant to anyone with an active order.
 
 sub advertiser_updated {
     my $data = shift;
-    my @args = qw(client_loginid advertiser_id);
 
-    if (grep { !$data->{$_} } @args) {
-        $log->info('Fail to procces advertiser_updated: Invalid event data', $data);
+    unless ($data->{client_loginid}) {
+        $log->info('Fail to process advertiser_updated: Invalid event data', $data);
         return 0;
     }
-    my ($loginid, $advertiser_id) = @{$data}{@args};
 
-    my $client = BOM::User::Client->new({loginid => $loginid});
+    my $client = BOM::User::Client->new({loginid => $data->{client_loginid}});
 
-    my $advertiser = $client->_p2p_advertisers(id => $advertiser_id)->[0];
+    my $details = $client->p2p_advertiser_info or return 0;
 
-    return 0 unless $advertiser;
-
-    if ($advertiser->{client_loginid} ne $loginid) {
-        # Probably we will never have this case, because update shuould be called by advertiser
-        # just to be sure that we will get all fields for notificaton
-        $client = BOM::User::Client->new({loginid => $advertiser->{client_loginid}});
-    }
-
-    my $advertiser_response = $client->_advertiser_details($advertiser);
-    $advertiser_response->{client_loginid} = $client->loginid;
-
+    # will be removed in websocket
+    $details->{client_loginid} = $client->loginid;
     my $redis     = BOM::Config::Redis->redis_p2p_write();
     my $redis_key = _get_advertiser_channel_name($client);
-    $redis->publish($redis_key, encode_json_utf8($advertiser_response));
+    $redis->publish($redis_key, encode_json_utf8($details));
 
     return 1;
 }
@@ -156,7 +145,7 @@ sub order_created {
     my @args = qw(client_loginid order_id);
 
     if (grep { !$data->{$_} } @args) {
-        $log->info('Fail to procces order_created: Invalid event data', $data);
+        $log->info('Fail to process order_created: Invalid event data', $data);
         return 0;
     }
 
@@ -251,7 +240,7 @@ sub order_expired {
     }
     catch {
         my $err = $@;
-        $log->info('Fail to procces order_expired: ' . $err, $data);
+        $log->info('Fail to process order_expired: ' . $err, $data);
         exception_logged();
     }
 

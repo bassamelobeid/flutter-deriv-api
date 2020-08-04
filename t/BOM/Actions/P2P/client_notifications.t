@@ -58,7 +58,6 @@ my @data_for_notification_tests = ({
         event => 'p2p_advertiser_updated',
         data  => {
             client_loginid => $advertiser->loginid,
-            advertiser_id  => $advertiser->p2p_advertiser_info->{id},
         },
         channel => join(q{::} => ('P2P::ADVERTISER::NOTIFICATION', uc($client->broker))),
         expected => [+{$advertiser->p2p_advertiser_info->%*, client_loginid => $advertiser->loginid}],

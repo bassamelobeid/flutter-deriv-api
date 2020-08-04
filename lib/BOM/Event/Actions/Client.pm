@@ -1162,6 +1162,9 @@ sub _update_client_status {
 
     $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $args{status}, $args{message});
 
+    # to push FE notification when advertiser becomes approved via db trigger
+    BOM::Platform::Event::Emitter::emit('p2p_advertiser_updated', {client_loginid => $client->loginid});
+
     _email_client_age_verified($client) if $args{status} eq 'age_verification';
 
     $client->status->set($args{status}, 'system', $args{message});
