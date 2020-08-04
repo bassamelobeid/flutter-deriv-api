@@ -133,28 +133,33 @@ subtest 'max_feed_delay_seconds' => sub {
     $mock->mock('current_tick', sub { $pg_tick });
     $c = produce_contract($bet_params);
     ok !$c->is_expired, 'contract is not yet expired';
-    SKIP: {
-        skip 'no forex feed available over weekend/holiday', 5 unless $c->trading_calendar->is_open_at($c->underlying->exchange, $c->date_pricing);
-        ok !$c->_validate_feed, 'no event and feed is 30 seconds delay';
-        $tick->{epoch} = $now->epoch - 31;
-        $pg_tick = Postgres::FeedDB::Spot::Tick->new($tick);
-        ok $c->_validate_feed, 'invalid if feed is more than 30 seconds delay';
-        my $event = {
-            event_name   => 'test',
-            vol_change   => 0.5,
-            release_date => $now->epoch
-        };
-        $mock->mock('_applicable_economic_events', sub { [$event] });
-        $tick->{epoch} = $now->epoch - 3;
-        $pg_tick = Postgres::FeedDB::Spot::Tick->new($tick);
-        ok $c->_validate_feed, 'invalid if feed is more than 15 seconds delay';
-        $tick->{epoch} = $now->epoch - 2;
-        $pg_tick = Postgres::FeedDB::Spot::Tick->new($tick);
-        ok !$c->_validate_feed, 'valid if tick is 2 seconds old if there is a level 5 economic event';
-        $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 1;
-        $c = produce_contract($bet_params);
-        ok $c->_validate_feed, 'invalid if feed is more than 2 seconds old if there is a level 5 economic event';
-    }
+
+    my $mock_calendar = Test::MockModule->new('Finance::Calendar');
+    $mock_calendar->mock(
+        is_open_at => sub { 1 },
+        is_open    => sub { 1 },
+        trades_on  => sub { 1 });
+
+    ok !$c->_validate_feed, 'no event and feed is 30 seconds delay';
+    $tick->{epoch} = $now->epoch - 31;
+    $pg_tick = Postgres::FeedDB::Spot::Tick->new($tick);
+    ok $c->_validate_feed, 'invalid if feed is more than 30 seconds delay';
+    my $event = {
+        event_name   => 'test',
+        vol_change   => 0.5,
+        release_date => $now->epoch
+    };
+    $mock->mock('_applicable_economic_events', sub { [$event] });
+    $tick->{epoch} = $now->epoch - 3;
+    $pg_tick = Postgres::FeedDB::Spot::Tick->new($tick);
+    ok $c->_validate_feed, 'invalid if feed is more than 15 seconds delay';
+    $tick->{epoch} = $now->epoch - 2;
+    $pg_tick = Postgres::FeedDB::Spot::Tick->new($tick);
+    ok !$c->_validate_feed, 'valid if tick is 2 seconds old if there is a level 5 economic event';
+    $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 1;
+    $c = produce_contract($bet_params);
+    ok $c->_validate_feed, 'invalid if feed is more than 2 seconds old if there is a level 5 economic event';
+
     $tick->{epoch}              = $now->epoch + 1;
     $pg_tick                    = Postgres::FeedDB::Spot::Tick->new($tick);
     $bet_params->{date_pricing} = $bet_params->{date_start} = $now->epoch + 5;

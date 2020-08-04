@@ -23,6 +23,9 @@ use BOM::MarketData::Types;
 use BOM::Market::DataDecimate;
 use Cache::RedisDB;
 
+my $mock_calendar = Test::MockModule->new('Finance::Calendar');
+$mock_calendar->mock(is_open_at => sub { 1 });
+
 note('always use market data');
 my $u_c = Test::MockModule->new('Quant::Framework::Underlying');
 $u_c->mock('uses_implied_rate', sub { 0 });
