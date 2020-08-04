@@ -1877,7 +1877,15 @@ sub p2p_advertiser_create {
         $client->status->set('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
     }
 
-    return $client->_advertiser_details($advertiser);
+    my $details = $client->_advertiser_details($advertiser);
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_advertiser_created => {
+            client_loginid => $client->loginid,
+            $details->%*
+        });
+
+    return $details;
 }
 
 =head2 p2p_advertiser_info
@@ -1935,6 +1943,12 @@ sub p2p_advertiser_update {
                 $advertiser_info->{id},
                 @param{qw/is_approved is_listed name default_advert_description payment_info contact_info/});
         });
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_advertiser_updated => {
+            client_loginid => $client->loginid,
+        },
+    );
 
     return $client->_advertiser_details($update);
 }
@@ -2242,6 +2256,12 @@ sub p2p_order_create {
                 $limit_per_day_per_client, $txn_time);
         });
 
+    BOM::Platform::Event::Emitter::emit(
+        p2p_order_created => {
+            client_loginid => $client->loginid,
+            order_id       => $order->{id},
+        });
+
     return $client->_order_details([$order])->[0];
 }
 
@@ -2302,7 +2322,16 @@ sub p2p_order_confirm {
     my $method = $client->can('_' . $ownership_type . '_' . $order_info->{type} . '_confirm');
     die +{error_code => 'PermissionDenied'} unless $method;
 
-    return $client->$method($order_info, $param{source});
+    my $update = $client->$method($order_info, $param{source});
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_order_updated => {
+            client_loginid => $client->loginid,
+            order_id       => $id,
+            order_event    => 'confirmed',
+        });
+
+    return $update;
 }
 
 =head2 p2p_order_cancel
@@ -2335,11 +2364,20 @@ sub p2p_order_cancel {
     my $is_refunded = 0;                     # order will have cancelled status
 
     my $txn_time = Date::Utility->new->datetime;
-    return $client->db->dbic->run(
+    my $update   = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_refund(?, ?, ?, ?, ?, ?)',
                 undef, $id, $escrow->loginid, $param{source}, $client->loginid, $is_refunded, $txn_time);
         });
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_order_updated => {
+            client_loginid => $client->loginid,
+            order_id       => $id,
+            order_event    => 'cancelled',
+        });
+
+    return $update;
 }
 
 =head2 p2p_expire_order
@@ -2487,7 +2525,6 @@ sub p2p_chat_token {
     BOM::Platform::Event::Emitter::emit(
         p2p_advertiser_updated => {
             client_loginid => $client->loginid,
-            advertiser_id  => $advertiser_info->{id},
         },
     );
 

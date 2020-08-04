@@ -90,7 +90,6 @@ subtest 'chat_token' => sub {
     is $resp->{expiry_time}, $expiry + 1, 'correct expiry time';
 
     is $last_event{type}, 'p2p_advertiser_updated', 'event emitted';
-    is $last_event{data}->{advertiser_id}, $advertiser->{id}, 'event advertiser id';
     is $last_event{data}->{client_loginid}, $client->loginid, 'event client loginid';
 
     $advertiser = $client->_p2p_advertisers(loginid => $client->loginid)->[0];

@@ -4,6 +4,8 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use Test::Warn;
+use Test::MockModule;
+use Test::Exception;
 use Format::Util::Numbers qw(formatnumber);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -19,6 +21,18 @@ populate_exchange_rates();
 
 BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
 BOM::Test::Helper::P2P::bypass_sendbird();
+
+my %last_event;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock(
+    'emit',
+    sub {
+        my ($type, $data) = @_;
+        %last_event = (
+            type => $type,
+            data => $data
+        );
+    });
 
 subtest 'Creating new buy order' => sub {
 
@@ -73,6 +87,12 @@ subtest 'Creating new buy order' => sub {
 
     ok($escrow->account->balance == $order_amount, 'Money is deposited to Escrow account');
     ok($advertiser->account->balance == 0,         'Money is withdrawn from advertiser account');
+
+    cmp_deeply(
+       \%last_event,
+        { type => 'p2p_order_created', data => { client_loginid => $client->loginid, order_id => $new_order->{id} } },
+        'p2p_order_created event emitted'
+    );
 
     BOM::Test::Helper::P2P::reset_escrow();
 

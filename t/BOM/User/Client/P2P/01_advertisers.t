@@ -4,12 +4,26 @@ use warnings;
 use Test::More;
 use Test::Fatal;
 use Test::Deep;
+use Test::MockModule;
+use Test::Exception;
 
 use BOM::User::Client;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
+
+my %last_event;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock(
+    'emit',
+    sub {
+        my ($type, $data) = @_;
+        %last_event = (
+            type => $type,
+            data => $data
+        );
+    });
 
 my $email = 'p2p_adverts_test@binary.com';
 
@@ -34,13 +48,23 @@ subtest 'advertiser Registration' => sub {
 
     cmp_deeply(exception { $client->p2p_advertiser_create() }, {error_code => 'AdvertiserNameRequired'}, 'Error when advertiser name is blank');
 
-    ok $client->p2p_advertiser_create(name => $advertiser_name), "create advertiser";
+    my $advertiser;
+    lives_ok { $advertiser = $client->p2p_advertiser_create(name => $advertiser_name) } 'create advertiser ok';
+
+    cmp_deeply(
+       \%last_event,
+        { type => 'p2p_advertiser_created', data => { client_loginid => $client->loginid, %$advertiser } },
+        'p2p_advertiser_created event emitted'
+    );
+
     my $advertiser_info = $client->p2p_advertiser_info;
     ok !$advertiser_info->{is_approved}, "advertiser not approved";
     ok $advertiser_info->{is_listed}, "advertiser adverts are listed";
     cmp_ok $advertiser_info->{name}, 'eq', $advertiser_name, "advertiser name";
 
     is $client->status->allow_document_upload->{reason}, 'P2P_ADVERTISER_CREATED', 'Can upload auth docs';
+    
+
 };
 
 subtest 'advertiser already age verified' => sub {
@@ -85,6 +109,12 @@ subtest 'Updating advertiser fields' => sub {
     ok $advertiser_info->{is_approved}, 'advertiser is approved';
     is $advertiser_info->{name},        $advertiser_name, 'advertiser name';
     ok $advertiser_info->{is_listed},   'advertiser is listed';
+
+    cmp_deeply(
+       \%last_event,
+        { type => 'p2p_advertiser_updated', data => { client_loginid => $advertiser->loginid } },
+        'p2p_advertiser_updated event emitted'
+    );
 
     cmp_deeply(
         exception {

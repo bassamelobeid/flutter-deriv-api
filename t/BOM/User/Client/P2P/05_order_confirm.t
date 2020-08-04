@@ -9,9 +9,23 @@ use BOM::Test::Helper::Client;
 use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
 use Test::Fatal;
-use Data::Dumper;
+use Test::MockModule;
+use Test::Exception;
+use Test::Deep;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
+
+my %last_event;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock(
+    'emit',
+    sub {
+        my ($type, $data) = @_;
+        %last_event = (
+            type => $type,
+            data => $data
+        );
+    });
 
 my @test_cases = (
     #Sell orders client confirmation:
@@ -364,7 +378,7 @@ for my $status (qw(cancelled blocked refunded)) {
 }
 
 for my $test_case (@test_cases) {
-    #next unless $test_case->{test_name} eq 'Client confirmation at pending state for buy order';
+
     subtest $test_case->{test_name} => sub {
         my $amount = $test_case->{amount};
         my $source = 1;
@@ -388,12 +402,15 @@ for my $test_case (@test_cases) {
 
         BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $test_case->{init_status});
 
-        my $resp;
+        %last_event = ();
+        my $loginid;
         my $err = exception {
             if ($test_case->{who_confirm} eq 'client') {
-                $resp = $client->p2p_order_confirm(id => $order->{id});
+                $client->p2p_order_confirm(id => $order->{id});
+                $loginid = $client->loginid;
             } elsif ($test_case->{who_confirm} eq 'advertiser') {
-                $resp = $advertiser->p2p_order_confirm(id => $order->{id});
+                $advertiser->p2p_order_confirm(id => $order->{id});
+                $loginid = $advertiser->loginid;
             } else {
                 die 'Invalid who_confirm value: ' . $test_case->{who_confirm};
             }
@@ -409,7 +426,18 @@ for my $test_case (@test_cases) {
         is($order_data->{status}, $test_case->{status}, 'Status for new order is correct');
         cmp_ok($order_data->{amount}, '==', $amount, 'Amount for new order is correct');
         is($order_data->{advert_details}{type}, $test_case->{type}, 'advert type is correct');
-
+        
+        if ($test_case->{error}) {
+            ok !%last_event, 'p2p_order_updated event not emitted'; 
+        }
+        else {
+             cmp_deeply(
+               \%last_event,
+                { type => 'p2p_order_updated', data => { client_loginid => $loginid, order_id => $order->{id}, order_event => 'confirmed' } },
+                'p2p_order_updated event is emitted'
+            );           
+        }
+        
         BOM::Test::Helper::P2P::reset_escrow();
     };
 }

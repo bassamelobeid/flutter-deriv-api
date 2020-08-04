@@ -9,12 +9,25 @@ use BOM::Test::Helper::Client;
 use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
 use Test::Fatal;
-use Data::Dumper;
+use Test::MockModule;
+use Test::Deep;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
+my %last_event;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock(
+    'emit',
+    sub {
+        my ($type, $data) = @_;
+        %last_event = (
+            type => $type,
+            data => $data
+        );
+    });
+
 my @test_cases = (
-    #Buy orders client cancellation:
+    #Buy orders client cancellation
     {
         test_name          => 'Client cancellation at pending state for buy order',
         type               => 'sell',
@@ -330,11 +343,15 @@ for my $test_case (@test_cases) {
         BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $test_case->{init_status});
         BOM::Test::Helper::P2P::expire_order($client, $order->{id}) if $test_case->{expire};
 
+        %last_event = ();
+        my $loginid;
         my $err = exception {
             if ($test_case->{who_cancel} eq 'client') {
                 $client->p2p_order_cancel(id => $order->{id});
+                $loginid = $client->loginid;
             } elsif ($test_case->{who_cancel} eq 'advertiser') {
                 $advertiser->p2p_order_cancel(id => $order->{id});
+                $loginid = $advertiser->loginid;
             } else {
                 die 'Invalid who_cancel value: ' . $test_case->{who_cancel};
             }
@@ -350,6 +367,17 @@ for my $test_case (@test_cases) {
         is($order_data->{status}, $test_case->{status}, 'Status for new order is correct');
         cmp_ok($order_data->{amount}, '==', $amount, 'Amount for new order is correct');
         is($order_data->{advert_details}{type}, $test_case->{type}, 'advert type is correct');
+
+        if ($test_case->{error}) {
+            ok !%last_event, 'p2p_order_updated event not emitted'; 
+        }
+        else {
+             cmp_deeply(
+               \%last_event,
+                { type => 'p2p_order_updated', data => { client_loginid => $loginid, order_id => $order->{id}, order_event => 'cancelled' } },
+                'p2p_order_updated event is emitted'
+            );           
+        }
 
         BOM::Test::Helper::P2P::reset_escrow();
     };
