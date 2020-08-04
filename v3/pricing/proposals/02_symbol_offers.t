@@ -81,15 +81,11 @@ $contracts_for = $t->await::contracts_for({
 });
 
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
-my $market_closed    = !$trading_calendar->is_open_at(create_underlying('frxUSDJPY')->exchange, Date::Utility->new);
-my $no_offerings     = ($contracts_for->{error}{code} // '') eq 'InvalidSymbol';
-ok(Date::Utility->new->time_hhmmss ge '18:15:00' || Date::Utility->new->time_hhmmss lt '00:15:00' || $market_closed,
-    "frxUSDJPY multi barrier is unavailable at this time")
-    if $no_offerings;
-my $skip = $market_closed || $no_offerings;
-
-SKIP: {
-    skip "Multi barrier test does not work on the weekends or contract unavailability.", 1 if $skip;
+my $market_closed    = !$trading_calendar->is_open(create_underlying('frxUSDJPY')->exchange);
+my $time_hhmmss      = Date::Utility->new->time_hhmmss;
+if ($time_hhmmss ge '18:15:00' || $time_hhmmss lt '00:15:00' || $market_closed) {
+    is $contracts_for->{error}{code}, 'InvalidSymbol', 'frxUSDJPY multi barrier is unavailable at this time';
+} else {
     subtest 'contracts_for multi_barrier' => sub {
         my $contracts_for_mb = $t->await::contracts_for({
             contracts_for => 'frxUSDJPY',
@@ -100,7 +96,7 @@ SKIP: {
         is($contracts_for_mb->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
         test_schema('contracts_for', $contracts_for_mb);
 
-# test contracts_for EURUSD for forward_starting_options
+        # test contracts_for EURUSD for forward_starting_options
         my $expected_blackouts = [['11:00:00', '13:00:00'], ['20:00:00', '23:59:59']];
 
         my $contracts_for_eurusd = $t->await::contracts_for({contracts_for => 'frxEURUSD'});

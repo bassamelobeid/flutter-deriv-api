@@ -92,15 +92,12 @@ $client->smart_payment(
     remark       => 'test deposit'
 );
 
-my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-
-my $authorize = $t->await::authorize({authorize => $token});
-
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
 my $underlying       = create_underlying('frxUSDJPY');
+my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
+$t->await::authorize({authorize => $token});
 
-SKIP: {
-    skip 'Forex test does not work on the weekends.', 1 if not $trading_calendar->is_open_at($underlying->exchange, Date::Utility->new);
+if ($trading_calendar->is_open($underlying->exchange)) {
     subtest 'buy forex trades with payout!' => sub {
 
         my %contract = (
@@ -377,5 +374,27 @@ SKIP: {
             'Payout from buy api is matching with the payout from actual payout from proposal open contract';
         $t->finish_ok;
         }
+} else {
+    subtest 'buy forex trades when market closed' => sub {
+
+        my %contract = (
+            "amount"        => "100",
+            "basis"         => "payout",
+            "contract_type" => "CALL",
+            "currency"      => "USD",
+            "symbol"        => "frxUSDJPY",
+            "duration"      => "7",
+            "duration_unit" => "d",
+        );
+
+        my $res = $t->await::proposal({
+            proposal => 1,
+            %contract
+        });
+        is $res->{error}->{code}, 'ContractBuyValidationError', 'proposal failed';
+        like $res->{error}{message}, qr/This market is presently closed/, 'This market is presently closed';
+
+        }
+
 }
 done_testing();

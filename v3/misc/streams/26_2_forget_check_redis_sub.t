@@ -186,12 +186,19 @@ $req = {
 
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
 my $underlying       = create_underlying('frxUSDJPY');
-$res = $t->await::proposal($req);
-my $quite_hour_error = ($res->{error}->{code} // '' eq 'ContractBuyValidationError') && ($res->{error}->{details}->{field} // '' eq 'duration');
-my $skip = !$trading_calendar->is_open_at($underlying->exchange, Date::Utility->new) || $quite_hour_error;
 
-SKIP: {
-    skip 'Forex test does not work on the weekends and quite hours.', 1 if $skip;
+$res = $t->await::proposal($req);
+if ($res->{error}) {
+
+    is $res->{error}->{code}, 'ContractBuyValidationError', 'ContractBuyValidationError';
+    if ($now->hour >= 21) {
+        like $res->{error}->{message}, qr/Trading on forex contracts with duration less than 5 hours is not available/, 'Trading not available';
+    } else {
+        ok !$trading_calendar->is_open($underlying->exchange), 'check calendar is_open false';
+        like $res->{error}{message}, qr/This market is presently closed/, 'This market is presently closed';
+    }
+
+} else {
     subtest 'forget' => sub {
         $t->await::forget_all({forget_all => 'proposal'});
         create_proposals();
