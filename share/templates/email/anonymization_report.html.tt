@@ -1,0 +1,36 @@
+<style>
+ table {
+  padding-bottom: 2%;
+ }
+
+ th {
+  background-color: lightgray;
+ }
+
+ td {
+  text-align: center;
+ }
+</style>
+
+[% IF success.number_of_successes > 0 -%]
+ <h3>Anonymization was successful for [% success.number_of_successes %] clients. you can find the list of loginids in attached file.</h3>
+[% END -%]
+
+[% IF error.number_of_failures > 0 -%]
+ <h3>Anonymization failed for [% error.number_of_failures %] clients</h3>
+<table>
+ <tbody>
+  <tr>
+     <th>Client</th>
+     <th>Failure reason</th>
+  </tr>
+  [% FOREACH loginid IN error.failures.keys -%]
+  <tr>
+     <td>[% loginid %]</td>
+     <td>[% error.failures.item(loginid) %]</td>
+  </tr>
+  [% END -%]
+ </tbody>
+</table>
+[% END -%]
+

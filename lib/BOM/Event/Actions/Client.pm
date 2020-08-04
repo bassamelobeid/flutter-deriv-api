@@ -2193,7 +2193,7 @@ async sub check_or_store_onfido_applicant {
 
 =head2 client_promo_codes_upload
 
-Bulik assigns client promo codes uploaded in backoffice.
+Bulk assigns client promo codes uploaded in backoffice.
 
 =cut
 

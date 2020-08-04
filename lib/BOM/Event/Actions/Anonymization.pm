@@ -13,11 +13,132 @@ use Syntax::Keyword::Try;
 use BOM::Platform::Token::API;
 use BOM::Platform::Context;
 use BOM::Event::Utility qw(exception_logged);
-
-#load Brands object globally,
+use List::Util qw(uniqstr);
+# Load Brands object globally
 my $BRANDS = BOM::Platform::Context::request()->brand();
 
-=head2 start
+use constant ERROR_MESSAGE_MAPPING => {
+    activeClient          => "The user you're trying to anonymize has at least one active client, and should not anonymize",
+    userNotFound          => "Can not find the associated user. Please check if loginid is correct.",
+    clientNotFound        => "Getting client object failed. Please check if loginid is correct or client exist.",
+    anonymizationFailed   => "Client anonymization failed. Please re-try or inform Backend team.",
+    userAlreadyAnonymized => "Client is already anonymized",
+};
+
+=head2 anonymize_client
+
+Removal of a client's personally identifiable information from Binary's systems.
+
+=over 4
+
+=item * C<arg> - A hash including loginid
+
+=back
+
+Returns B<1> on success.
+
+=cut
+
+sub anonymize_client {
+    my $arg     = shift;
+    my $loginid = $arg->{loginid};
+    return undef unless $loginid;
+    my ($success, $error);
+    my $result = _anonymize($loginid);
+    $result eq 'successful' ? $success->{$loginid} = $result : ($error->{$loginid} = ERROR_MESSAGE_MAPPING->{$result});
+    _send_anonymization_report($error, $success);
+    return 1;
+}
+
+=head2 bulk_anonymization
+
+Remove client's personally identifiable information (PII)
+
+=over 1
+
+=item * C<arg> - A hash including data about loginids to be anonymized.
+
+=back
+
+Returns **1** on success.
+
+=cut
+
+sub bulk_anonymization {
+    my $arg  = shift;
+    my $data = $arg->{data};
+    return undef unless $data;
+    my ($success, $error);
+
+    my @loginids = uniqstr grep { $_ } map { uc $_ } map { s/^\s+|\s+$//gr } map { $_->@* } $data->@*;
+    foreach my $loginid (@loginids) {
+        my $result = _anonymize($loginid);
+        $result eq 'successful' ? $success->{$loginid} = $result : $error->{$loginid} = ERROR_MESSAGE_MAPPING->{$result};
+    }
+    _send_anonymization_report($error, $success);
+    return 1;
+}
+
+=head2 _send_anonymization_report
+
+Send email to Compliance because of which we were not able to anonymize client
+
+=over 3
+
+=item * C<failures> - A hash of loginids with failure reason
+
+=item * C<successes> - A hash of loginids with successfull result
+
+=back
+
+return undef
+
+=cut
+
+sub _send_anonymization_report {
+    my ($failures, $successes) = @_;
+    my $number_of_failures  = scalar keys %$failures;
+    my $number_of_successes = scalar keys %$successes;
+    my $email_subject       = "Anonymization report for " . Date::Utility->new->date;
+
+    my $from_email = $BRANDS->emails('no-reply');
+    my $to_email   = $BRANDS->emails('compliance');
+    my $success_clients;
+    $success_clients = join(',', sort keys %$successes) if $number_of_successes > 0;
+
+    my $report = {
+        success => {
+            number_of_successes => $number_of_successes,
+        },
+        error => {
+            number_of_failures => $number_of_failures,
+            failures           => $failures,
+        }};
+
+    my $tt = Template->new(ABSOLUTE => 1);
+    $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/anonymization_report.html.tt', $report, \my $body);
+    if ($tt->error) {
+        $log->warn("Template error " . $tt->error);
+        return undef;
+    }
+    if ($success_clients) {
+        Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->html_body($body)->attach(
+            $success_clients,
+            filename     => 'success_loginids.csv',
+            content_type => 'text/plain',
+            disposition  => 'attachment',
+            charset      => 'UTF-8'
+            )->send
+            or warn "Sending email from $from_email to $to_email subject $email_subject failed";
+    } else {
+        Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->html_body($body)->send
+            or warn "Sending email from $from_email to $to_email subject $email_subject failed";
+    }
+
+    return undef;
+}
+
+=head2
 
 removal of a client's personally identifiable information from Binary's systems.
 Skip C<MT5> account untouched because we dont want to anonymize third parties yet.
@@ -34,52 +155,33 @@ This module will anonymize below information :
 - payment remarks for bank wires transactions available on the client's account statement in BO should be `deleted wire payment`
 - documents (delete)
 
-=over 4
+=over 1
 
 =item * C<loginid> - login id of client to trigger anonymization on
 
 =back
 
 Returns **1** on success.
-Returns **undef** on failure and sends an email which contains error message to the compliance team.
+Returns **error_code** on failure and sends an email which contains error message to the compliance team.
 
 =cut
 
-# TODO:As of now we anonymize all accounts for a userid but different landing companies may end up with different requirements.
-# As an example we might want to anonymize MF but not CR.
-# in that case we should queuing multiple events and in the backoffice we select which client records to anonymize.
-sub anonymize_client {
-    my $data    = shift;
-    my $loginid = $data->{loginid};
+sub _anonymize {
+    my $loginid = shift;
     my ($user, @clients_hashref);
-    return undef unless $loginid;
-
     try {
         my $client = BOM::User::Client->new({loginid => $loginid});
+        return "clientNotFound" unless ($client);
         $user = $client->user;
-
-        unless ($user->valid_to_anonymize) {
-            my $message = sprintf("The user id:%d you're trying to anonymize has at least one active client, and should not anonymize", $user->id);
-            $log->debugf($message);
-            _send_report_anonymization_failed($client->loginid, $message);
-
-            return undef;
-        }
-
+        return "userAlreadyAnonymized" if $user->email =~ /\@deleted\.binary\.user$/;
+        return "activeClient" unless ($user->valid_to_anonymize);
         @clients_hashref = $client->anonymize_associated_user_return_list_of_siblings();
-        unless (@clients_hashref) {
-            $log->debugf("Anonymize client, getting user failed for %s", $loginid);
-            _send_report_anonymization_failed($loginid, "Can not find the associated user. Please check if loginid is correct.",);
-            return undef;
-        }
+        return "userNotFound" unless (@clients_hashref);
         # Anonymize data for all the user's clients
         foreach my $cli (@clients_hashref) {
             $client = BOM::User::Client->new({loginid => $cli->{v_loginid}});
-            unless ($client) {
-                $log->debugf("Anonymize client getting client object failed for %s", $cli->{v_loginid});
-                _send_report_anonymization_failed($cli->{v_loginid}, "Can not find client. Please check if loginid is correct.");
-                next;
-            }
+            return "clientNotFound" unless ($client);
+
             # Skip mt5 because we dont want to anonymize third parties yet
             next if $client->is_mt5;
             # Delete documents from S3 because after anonymization the filename will be changed.
@@ -93,7 +195,6 @@ sub anonymize_client {
                 BOM::Platform::ProveID->new(client => $client)->delete_existing_reports()
                     if ($prove->has_saved_xml || ($client->status->proveid_requested && !$client->status->proveid_pending));
             }
-
             # Set client status to disabled to prevent user from doing any future actions
             $client->status->set('disabled', 'system', 'Anonymized client');
 
@@ -102,38 +203,12 @@ sub anonymize_client {
             $token->remove_by_loginid($client->loginid);
 
             $client->anonymize_client();
-            $log->infof('Anonymize data for user %d and loginid %s.', $cli->{v_buid}, $cli->{v_loginid});
         }
     }
     catch {
-        $log->debugf('Anonymize client failed %s.', $@);
         exception_logged();
-        _send_report_anonymization_failed($loginid, "Client anonymization failed. Please re-try or inform Backend team.");
-        return undef;
+        return "anonymizationFailed";
     };
-
-    return 1;
+    return "successful";
 }
-
-=head2 _send_report_anonymization_failed
-
-Send email to Compliance because of which we were not able to anonymize client
-
-=cut
-
-sub _send_report_anonymization_failed {
-    my ($loginid, $failure_reason) = @_;
-
-    my $email_subject = "Anonymization failed for $loginid";
-
-    my $from_email = $BRANDS->emails('no-reply');
-    my $to_email   = $BRANDS->emails('compliance');
-    my $email_status =
-        Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)
-        ->text_body("We were unable to anonymize client ($loginid), $failure_reason")->send();
-
-    $log->warn('failed to send anonymization failure email.') unless $email_status;
-    return undef;
-}
-
 1;

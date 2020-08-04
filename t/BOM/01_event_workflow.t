@@ -109,7 +109,7 @@ subtest 'process' => sub {
         [sort keys %$action_mappings],
         [
             sort qw/email_consent register_details email_statement sync_user_to_MT5 send_email
-                store_mt5_transaction new_mt5_signup mt5_password_changed anonymize_client
+                store_mt5_transaction new_mt5_signup mt5_password_changed anonymize_client bulk_anonymization
                 document_upload ready_for_authentication account_closure client_verification
                 verify_address social_responsibility_check sync_onfido_details
                 crypto_subscription authenticated_with_scans qualifying_payment_check payment_deposit login signup transfer_between_accounts profile_change

@@ -22,7 +22,7 @@ use BOM::Test::Helper::Utility qw(random_email_address);
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
-subtest return_undef_and_send_email_to_compliance_if_user_is_not_anonymizable => sub {
+subtest client_anonymization => sub {
     my $BRANDS = BOM::Platform::Context::request()->brand();
 
     # Mock BOM::User module
@@ -40,17 +40,86 @@ subtest return_undef_and_send_email_to_compliance_if_user_is_not_anonymizable =>
     });
     $user->add_client($cr_client);
 
-    mailbox_clear();
-    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid});
-    my $msg = mailbox_search(subject => qr/Anonymization failed for/);
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client();
+    is $result, undef, "Return undef when loginid is not provided.";
 
-    # It should return undef
-    is($result, undef, qq/Return undef if user shouldn't anonymize./);
+    mailbox_clear();
+    $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid});
+    my $msg = mailbox_search(subject => qr/Anonymization report for/);
 
     # It should send an notification email to compliance
-    like($msg->{subject}, qr/Anonymization failed for/,       qq/Compliance receive an email if user shouldn't anonymize./);
-    like($msg->{body},    qr/has at least one active client/, qq/Compliance receive an email if user shouldn't anonymize./);
+    like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance receive an email if user shouldn't anonymize./);
+    like($msg->{body},    qr/has at least one active client/,             qq/Compliance receive an email if user shouldn't anonymize./);
+
+    mailbox_clear();
+    $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => 'MX009'});
+    $msg = mailbox_search(subject => qr/Anonymization report for/);
+
+    # It should send an notification email to compliance
+    like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance receive an report of anonymization./);
+    like($msg->{body}, qr/Getting client object failed. Please check if loginid is correct or client exist./, qq/user not found failure/);
+
     cmp_deeply($msg->{to}, [$BRANDS->emails('compliance')], qq/Email should send to the compliance team./);
+};
+
+subtest bulk_anonymization => sub {
+    my $BRANDS = BOM::Platform::Context::request()->brand();
+    my (@lines, @clients, @users);
+    # Mock BOM::User module
+    my $mock_user_module = Test::MockModule->new('BOM::User');
+    $mock_user_module->mock('valid_to_anonymize', sub { return 0 });
+
+    # Create an array of active loginids to be like csv read output.
+    for (my $i = 0; $i <= 20; $i++) {
+        $users[$i] = BOM::User->create(
+            email    => random_email_address,
+            password => BOM::User::Password::hashpw('password'));
+
+        # Add a CR client to the user
+        $clients[$i] = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            date_joined => Date::Utility->new()->_minus_years(10)->datetime_yyyymmdd_hhmmss,
+        });
+        $users[$i]->add_client($clients[$i]);
+        push @lines, [$clients[$i]->loginid];
+    }
+    my $result = BOM::Event::Actions::Anonymization::bulk_anonymization();
+    is $result, undef, "Return undef when client's list is not provided.";
+
+    mailbox_clear();
+    $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines});
+    my $msg = mailbox_search(subject => qr/Anonymization report for/);
+
+    # It should send an notification email to compliance
+    like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance report including failures and successes./);
+    like($msg->{body},    qr/has at least one active client/,             qq/Failure reason is correct/);
+    cmp_deeply($msg->{to}, [$BRANDS->emails('compliance')], qq/Email should send to the compliance team./);
+
+    $mock_user_module->mock('valid_to_anonymize', sub { return 1 });
+
+    # Mock BOM::User::Client module
+    my $mock_client_module = Test::MockModule->new('BOM::User::Client');
+    $mock_client_module->mock('anonymize_client',                          sub { return 1 });
+    $mock_client_module->mock('remove_client_authentication_docs_from_S3', sub { return 1 });
+
+    $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines});
+    ok($result, 'Returns 1 after user anonymized.');
+
+    foreach my $user (@users) {
+        # Retrieve anonymized user from database by id
+        my $anonymized_user = BOM::User->new(id => $user->id);
+        my @anonymized_clients = $anonymized_user->clients(include_disabled => 1);
+
+        foreach my $anonymized_client (@anonymized_clients) {
+            my $disabled_status = $anonymized_client->status->disabled;
+            is($disabled_status->{staff_name}, 'system', sprintf("System disabled the client (%s).", $anonymized_client->loginid));
+            is(
+                $disabled_status->{reason},
+                'Anonymized client',
+                sprintf('Client (%s) is disabled because it was anonymized.', $anonymized_client->loginid));
+        }
+    }
+
 };
 
 subtest users_clients_will_set_to_disabled_after_anonymization => sub {
@@ -73,7 +142,7 @@ subtest users_clients_will_set_to_disabled_after_anonymization => sub {
         broker_code => 'VRTC',
     };
 
-    # We should create a user we call it user
+    # Create a user
     my $user = BOM::User->create(
         email    => $email,
         password => BOM::User::Password::hashpw('password'));
@@ -103,7 +172,6 @@ subtest users_clients_will_set_to_disabled_after_anonymization => sub {
     my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid});
 
     ok($result, 'Returns 1 after user anonymized.');
-
     # Retrieve anonymized user from database by id
     my $anonymized_user = BOM::User->new(id => $user_id);
     my @anonymized_clients = $anonymized_user->clients(include_disabled => 1);
