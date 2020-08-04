@@ -278,30 +278,15 @@ Takes the following named parameters:
 
 =back
 
-Returns a hashref with the following keys:
-
-=over 4
-
-=item * C<status> - usually C<pending>, unless this client is from a landing company
-that does not allow P2P advertiser yet, or they already have an advertiser account.
-
-=back
+Returns a hashref containing the created advertiser details.
 
 =cut
 
 p2p_rpc p2p_advertiser_create => sub {
     my (%args) = @_;
 
-    my $client     = $args{client};
-    my $advertiser = $client->p2p_advertiser_create($args{params}{args}->%*);
-
-    BOM::Platform::Event::Emitter::emit(
-        p2p_advertiser_created => {
-            client_loginid => $client->loginid,
-            $advertiser->%*
-        });
-
-    return $advertiser;
+    my $client = $args{client};
+    return $client->p2p_advertiser_create($args{params}{args}->%*);
 };
 
 =head2 p2p_advertiser_update
@@ -325,17 +310,8 @@ Returns a hashref containing the current advertiser details.
 p2p_rpc p2p_advertiser_update => sub {
     my (%args) = @_;
 
-    my $client     = $args{client};
-    my $advertiser = $client->p2p_advertiser_update($args{params}{args}->%*);
-
-    BOM::Platform::Event::Emitter::emit(
-        p2p_advertiser_updated => {
-            client_loginid => $client->loginid,
-            advertiser_id  => $advertiser->{id},
-        },
-    );
-
-    return $advertiser;
+    my $client = $args{client};
+    return $client->p2p_advertiser_update($args{params}{args}->%*);
 };
 
 =head2 p2p_advertiser_info
@@ -580,15 +556,7 @@ p2p_rpc p2p_order_create => sub {
 
     my $client = $args{client};
 
-    my $order = $client->p2p_order_create($args{params}{args}->%*, source => $args{params}{source});
-
-    BOM::Platform::Event::Emitter::emit(
-        p2p_order_created => {
-            client_loginid => $client->loginid,
-            order_id       => $order->{id},
-        });
-
-    return $order;
+    return $client->p2p_order_create($args{params}{args}->%*, source => $args{params}{source});
 };
 
 =head2 p2p_order_list
@@ -668,13 +636,6 @@ p2p_rpc p2p_order_confirm => sub {
         id     => $order_id,
         source => $params->{source});
 
-    BOM::Platform::Event::Emitter::emit(
-        p2p_order_updated => {
-            client_loginid => $client->loginid,
-            order_id       => $order_id,
-            order_event    => 'confirmed',
-        });
-
     return {
         id     => $order->{id},
         status => $order->{status},
@@ -705,13 +666,6 @@ p2p_rpc p2p_order_cancel => sub {
     my $order = $client->p2p_order_cancel(
         id     => $order_id,
         source => $params->{source});
-
-    BOM::Platform::Event::Emitter::emit(
-        p2p_order_updated => {
-            client_loginid => $client->loginid,
-            order_id       => $order_id,
-            order_event    => 'cancelled',
-        });
 
     return {
         id     => $order_id,
