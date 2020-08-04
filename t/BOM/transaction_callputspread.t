@@ -3,14 +3,12 @@
 use strict;
 use warnings;
 
-use Test::MockModule;
 use Test::More;
-use Test::FailWarnings;
+use Test::MockModule;
 use Test::Exception;
 
-use Crypt::NamedKeys;
-use Date::Utility;
 use BOM::Database::ClientDB;
+use BOM::Config::Chronicle;
 use BOM::Transaction;
 use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract );
@@ -20,6 +18,13 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Client qw(create_client top_up);
 use JSON::MaybeXS;
+use Crypt::NamedKeys;
+use Date::Utility;
+use Quant::Framework;
+use Finance::Exchange;
+
+my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
+my $exchange         = Finance::Exchange->create_exchange('FOREX');
 
 initialize_realtime_ticks_db();
 
@@ -40,7 +45,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    })for qw(frxUSDJPY frxGBPUSD);
+    }) for qw(frxUSDJPY frxGBPUSD);
 
 my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
@@ -50,6 +55,9 @@ my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 
 my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
 $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+my $mock_callputspread = Test::MockModule->new('Pricing::Engine::Callputspread');
+$mock_callputspread->mock(validate_contract_params => sub { });
 
 my $mock_transaction = Test::MockModule->new('BOM::Transaction');
 # _validate_trade_pricing_adjustment() is tested in trade_validation.t
@@ -296,7 +304,7 @@ subtest 'buy CALLSPREAD frxGBPUSD' => sub {
         is $trx->{account_id}, $acc_usd->id, 'account_id';
         is $trx->{action_type}, 'buy', 'action_type';
         is $trx->{amount} + 0, -50, 'amount';
-        is $trx->{balance_after} + 0, 5000 - 3*50, 'balance_after';
+        is $trx->{balance_after} + 0, 5000 - 3 * 50, 'balance_after';
         is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
         is $trx->{payment_id}, undef, 'payment_id';
 
@@ -325,7 +333,7 @@ subtest 'buy CALLSPREAD frxGBPUSD' => sub {
         cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
         like $fmb->{short_code}, qr/CALLSPREAD/, 'short_code';
         cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
-        is $fmb->{tick_count},        undef,   'tick_count';
+        is $fmb->{tick_count},        undef,       'tick_count';
         is $fmb->{underlying_symbol}, 'frxGBPUSD', 'underlying_symbol';
     };
 
@@ -388,7 +396,7 @@ subtest 'buy PUTSPREAD frxGBPUSD' => sub {
         is $trx->{account_id}, $acc_usd->id, 'account_id';
         is $trx->{action_type}, 'buy', 'action_type';
         is $trx->{amount} + 0, -50, 'amount';
-        is $trx->{balance_after} + 0, 5000 - 4*50, 'balance_after';
+        is $trx->{balance_after} + 0, 5000 - 4 * 50, 'balance_after';
         is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
         is $trx->{payment_id}, undef, 'payment_id';
 
@@ -417,7 +425,7 @@ subtest 'buy PUTSPREAD frxGBPUSD' => sub {
         cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
         like $fmb->{short_code}, qr/PUTSPREAD/, 'short_code';
         cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
-        is $fmb->{tick_count},        undef,   'tick_count';
+        is $fmb->{tick_count},        undef,       'tick_count';
         is $fmb->{underlying_symbol}, 'frxGBPUSD', 'underlying_symbol';
     };
 
@@ -434,7 +442,6 @@ subtest 'buy PUTSPREAD frxGBPUSD' => sub {
 
 };
 
-
 subtest 'offerings' => sub {
     my $args = {
         bet_type     => 'PUTSPREAD',
@@ -449,7 +456,7 @@ subtest 'offerings' => sub {
             ['R_100', '15s', 1],
             ['R_100',     '14s',   0, $invalid_duration],
             ['frxUSDJPY', '1m59s', 0, $invalid_duration],
-            ['OTC_AEX',       '1d',    0, $invalid_category],
+            ['OTC_AEX',   '1d',    0, $invalid_category],
             ['frxXAGUSD', '1d',    0, $invalid_category]))
     {
         $args->{underlying}   = $data->[0];
@@ -481,24 +488,32 @@ subtest 'offerings' => sub {
 
 $mock_contract->unmock('is_valid_to_buy');
 
-subtest 'invalid to buy' => sub {     
+subtest 'invalid to buy' => sub {
     my $args = {
-        bet_type     => 'PUTSPREAD',
-        currency     => 'USD',
-        payout       => 100,
+        bet_type => 'PUTSPREAD',
+        currency => 'USD',
+        payout   => 100,
     };
 
-    my $barrier_too_far = 'Barrier too far from spot [current low barrier : 99.599] [min allowed barrier : 99.6] [max_allowed_barrier: 100.4]';
+    my $frx_error;
+    if ($now->hour >= 21) {
+        $frx_error = 'blackout period';
+    } elsif (!$trading_calendar->is_open($exchange)) {
+        $frx_error = 'underlying is closed at start';
+    } else {
+        $frx_error = 'Barrier too far from spot';
+    }
+
     my $symmetrical_barrier_error = 'High and low barriers is not symmetrical';
-    foreach my $data ((    
-            ['frxUSDJPY', '3m', 0, 'S-401P', 'S401P', 'InvalidtoBuy' ,$barrier_too_far],
-            ['R_100', '3m', 0, 'S-11P', 'S10P', 'InvalidtoBuy' ,$symmetrical_barrier_error],
-            ))
+    foreach my $data ((
+            ['frxUSDJPY', '3m', 0, 'S-401P', 'S401P', 'InvalidtoBuy', $frx_error],
+            ['R_100',     '3m', 0, 'S-11P',  'S10P',  'InvalidtoBuy', $symmetrical_barrier_error],
+        ))
     {
         $args->{underlying}   = $data->[0];
         $args->{duration}     = $data->[1];
-        $args->{low_barrier} = $data->[3];
-        $args->{high_barrier}  = $data->[4];
+        $args->{low_barrier}  = $data->[3];
+        $args->{high_barrier} = $data->[4];
         $args->{current_tick} = $tick_r100;    # just a fake tick
 
         my $contract = produce_contract($args);
@@ -519,11 +534,11 @@ subtest 'invalid to buy' => sub {
         } else {
             ok $error, 'invalid buy';
             is $error->{'-type'}, $data->[5], 'InvalidOfferings';
-            is $error->{'-mesg'}, $data->[6], $data->[6];
+            like $error->{'-mesg'}, qr/$data->[6]/, $data->[6];
+
         }
     }
 };
-
 
 done_testing();
 
@@ -579,4 +594,3 @@ SQL
 
     return \%txn, \%fmb, \%chld, \%qv1, \%qv2, \%t2;
 }
-

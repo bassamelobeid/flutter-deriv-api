@@ -870,6 +870,16 @@ subtest 'buy multiplier on FX with VRTC' => sub {
     restore_time();
 };
 
+my $mock_calendar = Test::MockModule->new('Finance::Calendar');
+$mock_calendar->mock(
+    is_open_at => sub { 1 },
+    is_open    => sub { 1 },
+    trades_on  => sub { 1 });
+
+my $mock_date = Test::MockModule->new('Date::Utility');
+
+$mock_date->mock('hour' => sub { return 20 });
+
 subtest 'buy multiplier on synthetic with CR' => sub {
     my $cr = create_client('CR');
     top_up $cr, 'USD', 5000;
@@ -909,23 +919,18 @@ subtest 'buy multiplier on synthetic with CR' => sub {
         cancellation => '1h',
     });
 
-    SKIP: {
-        # skipping forex test on non-trading day
-        skip "weekend on forex", 3, unless $contract->trading_calendar->is_open($contract->underlying->exchange);
+    $txn = BOM::Transaction->new({
+        client        => $cr,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
 
-        $txn = BOM::Transaction->new({
-            client        => $cr,
-            contract      => $contract,
-            price         => 100,
-            amount        => 100,
-            amount_type   => 'stake',
-            source        => 19,
-            purchase_date => $contract->date_start,
-        });
-
-        $error = $txn->buy;
-        ok !$error, 'major pair buy successful';
-    }
+    $error = $txn->buy;
+    ok !$error, 'major pair buy successful';
 
 };
 
