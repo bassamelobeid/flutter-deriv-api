@@ -13,6 +13,7 @@ use BOM::Database::ClientDB;
 use Syntax::Keyword::Try;
 use Date::Utility;
 use BOM::Config::Runtime;
+use BOM::Config;
 use Scalar::Util qw(looks_like_number);
 
 my $cgi = CGI->new;
@@ -20,7 +21,9 @@ my $cgi = CGI->new;
 PrintContentType();
 BrokerPresentation(' ');
 
-my $p2p_write = BOM::Backoffice::Auth0::has_authorisation(['P2PWrite']);
+my $p2p_write      = BOM::Backoffice::Auth0::has_authorisation(['P2PWrite']);
+my $config         = BOM::Config::third_party();
+my $sendbird_token = $config->{sendbird}->{api_token};
 
 my %input  = %{request()->params};
 my $broker = request()->broker_code;
@@ -30,7 +33,14 @@ my $db = BOM::Database::ClientDB->new({
         operation   => 'write'
     })->db->dbic;
 
-my ($order, $escrow, $transactions);
+my $db_collector = BOM::Database::ClientDB->new({
+        broker_code => 'FOG',
+    })->db->dbic;
+
+my ($order, $escrow, $transactions, $chat_messages);
+my $chat_messages_limit = 20;
+my $chat_page = int($input{p} // 1);
+$chat_page = 1 unless $chat_page > 0;    # The default page is 1 so math is well adjusted
 
 Bar('P2P Order details/management');
 
@@ -112,23 +122,71 @@ if (my $id = $input{order_id}) {
                     {Slice => {}}, $id
                 );
             });
+
+        if ($order->{chat_channel_url}) {
+            $chat_messages = $db_collector->run(
+                fixup => sub {
+                    $_->selectall_arrayref(
+                        q{SELECT * FROM data_collection.p2p_chat_message_list(?,?,?)},
+                        {Slice => {}},
+                        $order->{chat_channel_url},
+                        $chat_messages_limit, $chat_messages_limit * ($chat_page - 1));
+                });
+        }
     }
     catch {
         print '<p style="color:red; font-weight:bold;">' . $@ . '</p>';
     }
 }
 
+# Resolve chat_user_id into client loginids and role
+$chat_messages //= [];
+$chat_messages = [map { prep_chat_message($_, $order) } @{$chat_messages}];
+
 BOM::Backoffice::Request::template()->process(
     'backoffice/p2p/p2p_order_manage.tt',
     {
-        broker       => $broker,
-        order        => $order,
-        escrow       => $escrow,
-        transactions => $transactions,
-        p2p_write    => $p2p_write,
+        broker             => $broker,
+        order              => $order,
+        escrow             => $escrow,
+        transactions       => $transactions,
+        p2p_write          => $p2p_write,
+        chat_messages      => $chat_messages,
+        chat_messages_next => scalar @{$chat_messages} < $chat_messages_limit ? undef : $chat_page + 1,    # When undef link won't be show
+        chat_messages_prev => $chat_page > 1 ? $chat_page - 1 : undef,                                     # When undef link won't be show
+        sendbird_token     => $sendbird_token,
     });
-
 code_exit_BO();
+
+=head2 prep_chat_message
+
+Resolves the chat user and role to display on UI.
+The chat_user_id value will be used as last resort, when no clientid is reached.
+The string 'other' will be role's last resort.
+
+=over 4
+
+=item C<$chat> a hashref for the chat message being parsed
+=item C<$order> the current p2p order
+
+=back
+
+Returns, 
+    The C<$chat> hashref properly parsed
+
+=cut
+
+sub prep_chat_message {
+    my ($chat, $order) = @_;
+    $chat->{chat_user} = $chat->{chat_user_id};
+    $chat->{chat_role} = 'other';
+    $chat->{chat_user} = $order->{client_loginid} if $order->{client_chat_user_id} eq $chat->{chat_user_id};
+    $chat->{chat_user} = $order->{advertiser_loginid} if $order->{advertiser_chat_user_id} eq $chat->{chat_user_id};
+    $chat->{chat_role} = $order->{client_role} if $order->{client_chat_user_id} eq $chat->{chat_user_id};
+    $chat->{chat_role} = $order->{advertiser_role} if $order->{advertiser_chat_user_id} eq $chat->{chat_user_id};
+
+    return $chat;
+}
 
 sub get_escrow {
     my ($broker, $currency) = @_;

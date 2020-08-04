@@ -170,4 +170,107 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
     </form>
     [% END %]
 
+    <h3>Chat Log</h3>
+
+    [% IF chat_messages.size %]
+        <table border="1" class="collapsed">
+            <thead>
+                <tr>
+                    <th scope="col">Time</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Chat User</th>
+                    <th scope="col">Role</th>
+                    <th scope="col">Message</th>
+                </tr>
+            </thead>
+            <tbody>
+                [% FOREACH chat = chat_messages %]
+                    <tr>
+                        <td>[% chat.created_time %]</td>
+                        <td>[% chat.message_type %]</td>
+                        <td>[% chat.chat_user %]</td>
+                        <td>[% chat.chat_role %]</td>
+                        <td>
+                            [% IF chat.message_type == 'FILE' %]
+                                <a target="_blank" class="chat_file_url" href="[% chat.file_url %]" onclick="download_handler(event)">DOWNLOAD</a>
+                            [% ELSE %]
+                                [% chat.message_text %]
+                            [% END %]
+                        </td>
+                    </tr>
+                [% END %]
+            </tbody>
+
+            <tfoot>
+                <tr>
+                    <td colspan="2">
+                        [% IF chat_messages_prev %]
+                            <a href="[% request.url_for('backoffice/p2p_order_manage.cgi', {p => chat_messages_prev, order_id => order.id }) %]">Previous</a>
+                        [% END %]
+                    </td>
+                    <td align="right" colspan="3">
+                        [% IF chat_messages_next %]
+                            <a href="[% request.url_for('backoffice/p2p_order_manage.cgi', {p => chat_messages_next, order_id => order.id }) %]">Next</a>
+                        [% END %]
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <script>
+            // Since file URL needs Api-Token as header an such thing is impossible for regular links,
+            // this tiny and rather ugly snippet makes an XHR request to get the file.
+            // Caveat: it requires to download the whole file before the UI reacts, so a couple seconds of lags are feasible
+            // Caveat: it may expose sendbird api token, a secondary api token is good enough though.
+
+            const download_handler = (event) => {
+                event.preventDefault();
+
+                const link = event.target;
+                if (link.disabled) return;
+
+                const token = '[% sendbird_token %]';
+                const url = event.toElement.href;
+                const xhr = new XMLHttpRequest();
+                let to = setTimeout(() => { xhr.abort() }, 10000);
+                link.innerHTML = 'downloading file...';
+                link.disabled = 'disabled';
+
+                xhr.addEventListener('load', (event) => {
+                    const current = event.currentTarget;
+                    var blob = current.response;
+                    var filename = url.split('/').pop();
+                    var a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = filename;
+                    a.dispatchEvent(new MouseEvent('click'));
+                    link.innerHTML = 'DOWNLOAD';
+                    delete link.disabled;
+                    clearTimeout(to);
+                    to = null;
+                });
+                
+                xhr.addEventListener('abort', (event) => {
+                    link.innerHTML = 'RETRY';
+                    delete link.disabled;
+                    clearTimeout(to);
+                    to = null;
+                });
+
+                xhr.open('GET', url);
+                xhr.responseType = 'blob';
+                xhr.setRequestHeader('Api-Token', token);
+                xhr.send();
+            };
+        </script>
+    [% ELSE %]
+        [% IF chat_messages_prev %]
+            <p>
+                No messages at this page,                                 
+                <a href="[% request.url_for('backoffice/p2p_order_manage.cgi', {p => chat_messages_prev, order_id => order.id }) %]">previous</a>
+            </p>
+        [% ELSE %]
+            <p>No chat was started about this order</p>
+        [% END %]
+    [% END %]
 [% END %]
