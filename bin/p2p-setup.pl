@@ -9,7 +9,8 @@ p2p-setup.pl - prepares environment for P2P testing.
 =head1 SYNOPSIS
 
     p2p-setup.pl
-    p2p-setup.pl -r    # resets the list of clients allowed to access P2P
+    p2p-setup.pl -r     # resets the list of clients allowed to access P2P
+    p2p-setup.pl -o     # creates an order
 
 =head1 DESCRIPTION
 
@@ -28,6 +29,8 @@ This script does the following:
 =item * turns on P2P functionality in the backoffice
 
 =item * adds the client and advertiser to the P2P enabled list
+
+=item * create orders (optional)
 
 =back
 
@@ -60,6 +63,7 @@ $SIG{__DIE__} = sub {
 GetOptions(
     "r|reset-clients" => \(my $reset_clients = 0),
     "s|sendbird" => \(my $use_sendbird = 0),
+    "o|order" => \(my $create_order = 0),
 );
 
 unless ($use_sendbird) {
@@ -112,7 +116,6 @@ sub create_client {
         residence                => 'za',
         address_line_1           => '1 sesame st',
         address_line_2           => '',
-        address_city             => '',
         address_city             => 'cyberjaya',
         address_state            => '',
         address_postcode         => '',
@@ -257,7 +260,7 @@ $advertiser->p2p_advert_create(
     country          => 'za',
 );
 
-$advertiser->p2p_advert_create(
+my $advert_sell = $advertiser->p2p_advert_create(
     account_currency => 'USD',
     local_currency   => 'ZAR',
     amount           => 3000,
@@ -272,5 +275,55 @@ $advertiser->p2p_advert_create(
     description      => 'Please contact via whatsapp 1234',
     country          => 'za',
 );
+
+# ===== Orders Create =====
+
+if ($create_order) {
+    section_title('Creating Buy Order');
+
+    my $order_buy = $client->p2p_order_create(
+        advert_id => $advert_sell->{id},
+        amount    => $advert_sell->{min_order_amount}
+    );
+
+    $log->infof('Order info: %s', $order_buy);
+
+    section_title('Creating Sell Order');
+    
+    # We'll create an ad for client so we can have a sell order as well
+    unless ($client->p2p_advertiser_info) {
+        $client->p2p_advertiser_create(name => 'advertiser '.$client->loginid);
+    }
+    $client->p2p_advertiser_update(
+        is_listed   => 1,
+        is_approved => 1,
+    );
+    $client->save;
+
+    # Create ad
+    my $advert_buy = $client->p2p_advert_create(
+        account_currency => 'USD',
+        local_currency   => 'ZAR',
+        amount           => 3000,
+        rate             => 14500,
+        type             => 'buy',
+        expiry           => 2 * 60 * 60,
+        min_order_amount => 10,
+        max_order_amount => 100,
+        payment_method   => 'bank_transfer',
+        description      => 'Please contact via whatsapp 1234',
+        country          => 'za',
+    );
+
+    # Sell order
+    my $order_sell = $advertiser->p2p_order_create(
+        advert_id => $advert_buy->{id},
+        amount    => $advert_buy->{min_order_amount},
+        payment_info => 'Come home with one of those giant checks',
+        contact_info => 'Yell my name three times'
+    );
+
+    $log->infof('Sell Order info: %s', $order_sell);
+}
 
 section_title('Success!');
