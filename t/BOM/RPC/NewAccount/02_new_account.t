@@ -770,9 +770,9 @@ subtest $method => sub {
                 non_pep_declaration_time => '2020-01-02',
             });
             $auth_token = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, 'test token');
-
             $user->add_client($client);
             $user->add_client($client_mlt);
+            $client_mlt->status->set('age_verification', 'system', 'Age verified client');
         }
         'Initial users and clients';
     };
@@ -816,7 +816,7 @@ subtest $method => sub {
             subject => qr/\Qhas submitted the assessment test\E/
         );
         ok($msg, "Risk disclosure email received");
-
+        ok $cl->status->age_verification, 'age verification synced between mlt and mf.';
         is $cl->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
             'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
         is_deeply $datadog_args{$empty_pep_declartion_dd_key}, {tags => ["app_id:$app_id", 'company:maltainvest']},
@@ -854,6 +854,7 @@ subtest $method => sub {
             is $client_mx->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
                 'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args (test create_account call)';
             $client_mx->non_pep_declaration_time('2020-01-02');
+            $client_mx->status->set('age_verification', 'system', 'Age verified client');
             $client_mx->save;
         }
         'Initial users and clients';
@@ -894,7 +895,7 @@ subtest $method => sub {
 
         ok $emitted{"register_details_$new_loginid"}, "register_details event emitted";
         ok $emitted{"signup_$new_loginid"},           "signup event emitted";
-
+        ok !$cl->status->age_verification, 'age verification not synced between mx(gb) and mf.';
         ok $cl->non_pep_declaration_time, 'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
         cmp_ok $cl->non_pep_declaration_time, 'ne', '2020-01-02T00:00:00', 'non_pep declaration time is different from MLT account';
         is_deeply $datadog_args{$empty_pep_declartion_dd_key}, {tags => ["app_id:$app_id", 'company:maltainvest']},,
