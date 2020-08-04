@@ -64,7 +64,6 @@ sub p2p_advertiser_update {
         BOM::Platform::Event::Emitter::emit(
             p2p_advertiser_updated => {
                 client_loginid => $client->loginid,
-                advertiser_id  => request->param('advertiser_id'),
             },
         );
 

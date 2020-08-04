@@ -90,6 +90,7 @@ my $clerk           = $details{clerk};
 my $self_post       = $details{self_post};
 my $self_href       = $details{self_href};
 my $loginid         = $client->loginid;
+my $p2p_advertiser  = $client->p2p_advertiser_info;
 
 # Enabling onfido resubmission
 my $redis = BOM::Config::Redis::redis_replicated_write();
@@ -803,6 +804,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
     }
 
+    # Setting age_verification may change p2p advertiser approval via db trigger.
+    # We need to fire an event if approval has changed.
+    $p2p_advertiser = $client->p2p_advertiser_info;
+    if ($input{p2p_approved} ne $p2p_advertiser->{is_approved}) {
+        BOM::Platform::Event::Emitter::emit('p2p_advertiser_updated', {client_loginid => $loginid});
+    }
+
     # Save details for all clients
     foreach my $cli (values %clients_updated) {
         my $sync_error;
@@ -845,6 +853,9 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         if (any { exists $input{$_} } qw(address_1 address_2 city state postcode));
 }
 
+# for hidden form fields
+my $p2p_approved = $p2p_advertiser ? $p2p_advertiser->{is_approved} : '';
+
 client_navigation($client, $self_post);
 
 # view client's statement/portfolio/profit table
@@ -880,11 +891,12 @@ if (my $statuses = build_client_warning_message($loginid)) {
 BOM::Backoffice::Request::template()->process(
     'backoffice/account/untrusted_form.html.tt',
     {
-        edit_url => request()->url_for('backoffice/untrusted_client_edit.cgi'),
-        reasons  => get_untrusted_client_reason(),
-        broker   => $broker,
-        clientid => $loginid,
-        actions  => [sort { $a->{comments} cmp $b->{comments} } @{get_untrusted_types()}],
+        edit_url     => request()->url_for('backoffice/untrusted_client_edit.cgi'),
+        reasons      => get_untrusted_client_reason(),
+        broker       => $broker,
+        clientid     => $loginid,
+        actions      => [sort { $a->{comments} cmp $b->{comments} } @{get_untrusted_types()}],
+        p2p_approved => $p2p_approved,
     }) || die BOM::Backoffice::Request::template()->error();
 
 # Show Self-Exclusion link
@@ -1053,7 +1065,8 @@ if ($payment_agent) {
 
 print qq[<form action="$self_post?loginID=$encoded_loginid" id="clientInfoForm" method="post">
     <input type="submit" value="Save Client Details">
-    <input type="hidden" name="broker" value="$encoded_broker">];
+    <input type="hidden" name="broker" value="$encoded_broker">
+    <input type="hidden" name="p2p_approved" value="$p2p_approved">];
 
 # Get latest client object to make sure it contains updated client info (after editing client details form)
 $client = BOM::User::Client->new({loginid => $loginid});
@@ -1323,16 +1336,15 @@ if (not $client->is_virtual) {
 if (!$client->is_virtual) {
     Bar('P2P Advertiser');
 
-    if (my $advertiser_info = $client->_p2p_advertisers(loginid => $client->loginid)->[0]) {
-
+    if ($p2p_advertiser) {
         for my $k (qw( daily_buy daily_sell daily_buy_limit daily_sell_limit )) {
-            $advertiser_info->{$k} = financialrounding('amount', $advertiser_info->{limit_currency}, $advertiser_info->{$k});
+            $p2p_advertiser->{$k} = financialrounding('amount', $p2p_advertiser->{limit_currency}, $p2p_advertiser->{$k});
         }
 
         BOM::Backoffice::Request::template()->process(
             'backoffice/p2p/p2p_advertiser_edit_form.tt',
             {
-                advertiser_info => $advertiser_info,
+                advertiser_info => $p2p_advertiser,
                 loginid         => $client->loginid,
                 client_currency => $client->account->currency_code,
                 band_editable   => BOM::Backoffice::Auth0::has_authorisation(['QuantsWrite']),

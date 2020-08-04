@@ -8,6 +8,7 @@ use BOM::User::Client;
 use HTML::Entities;
 use Syntax::Keyword::Try;
 use BOM::Platform::Token::API;
+use BOM::Platform::Event::Emitter;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -25,6 +26,7 @@ my $removed            = request()->param('removed');
 my $client_status_type = request()->param('untrusted_action_type');
 my $reason             = request()->param('untrusted_reason') // '';
 my $additional_info    = request()->param('additional_info');
+my $p2p_approved       = request()->param('p2p_approved');
 
 # check invalid reason
 print_error_and_exit("Reason is not specified.") if ($reason =~ /SELECT A REASON/);
@@ -137,6 +139,15 @@ foreach my $login_id (split(/\s+/, $clientID)) {
                 });
         }
     }
+
+    my $p2p_advertiser = $client->p2p_advertiser_info;
+    if ($p2p_advertiser and defined $p2p_approved) {
+        # Setting statuses may change p2p advertiser approval via db trigger.
+        # We need to fire an event if approval has changed.
+        BOM::Platform::Event::Emitter::emit('p2p_advertiser_updated', {client_loginid => $client->loginid})
+            if $p2p_approved ne $p2p_advertiser->{is_approved};
+    }
+
 }
 
 if (scalar @invalid_logins > 0) {

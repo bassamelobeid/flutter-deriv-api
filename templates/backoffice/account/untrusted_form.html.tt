@@ -37,6 +37,7 @@ Reason : <select id="untrusted_reasonlist" name="untrusted_reason">
 <input type="text" size="92" name="additional_info" placeholder="Please specify here (optional)" data-lpignore="true" />
 <input type="hidden" name="broker" value="[% broker %]">
 <input type="hidden" name="untrusted_action" value="insert_data">
+<input type="hidden" name="p2p_approved" value="[% p2p_approved %]">
 <br /><input type="submit" value="Go">
 </form>
 
