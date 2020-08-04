@@ -10,26 +10,31 @@ use HTML::Entities;
 use f_brokerincludeall;
 use BOM::Platform::Event::Emitter;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use Syntax::Keyword::Try;
+use Digest::SHA qw(sha1_hex);
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("CLIENT ANONYMIZATION");
 
-my $input = request()->params;
-my $clerk = BOM::Backoffice::Auth0::get_staffname();
-
+my $input            = request()->params;
+my $clerk            = BOM::Backoffice::Auth0::get_staffname();
+my $cgi              = CGI->new;
+my $transaction_type = $input->{transtype} // '';
 Bar("MAKE DUAL CONTROL CODE");
 print
-    "To anonymize a client we require 2 staff members to authorise. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when initiating the anonymization.<br><br>";
+    "To anonymize a client we require 2 staff members to authorize. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when initiating the anonymization.<br><br>";
 print "<form id='generateDCC' action='"
     . request()->url_for('backoffice/f_client_anonymization_dcc.cgi')
-    . "' method='get' class='bo_ajax_form'>"
+    . "' method='POST' class='bo_ajax_form' enctype='multipart/form-data'>"
     . "<input type='hidden' name='l' value='EN'>"
     . "Transaction type: <select name='transtype'>"
     . "<option value='Anonymize client'>Anonymize client details</option>"
     . "<option value='Delete customerio record'>Delete client customerio record</option>"
     . "</select><br><br>"
-    . "Loginid : <input type='text' name='clientloginid' size='15' placeholder='required' data-lpignore='true' />"
+    . "<p><b>Provide Loginid for individual anonymization or attach a file for bulk anonymization:</b></p>"
+    . "Loginid : <input type='text' name='clientloginid' size='15' data-lpignore='true'>"
+    . "<br><br>File : <input type='file' name='bulk_loginids' style='width: 150px'>"
     . "<br><br><input type='submit' value='Make Dual Control Code (by "
     . encode_entities($clerk) . ")'>"
     . "</form>";
@@ -53,11 +58,13 @@ my $loginid  = $input->{clientloginid} // '';
 my $prev_dcc = $input->{DCcode}        // '';
 print "<form id='clientAnonymization' action='"
     . request()->url_for('backoffice/f_client_anonymization.cgi')
-    . "' method='post'>"
+    . "' method='post' enctype='multipart/form-data'>"
     . "<input type='hidden' name='l' value='EN'>"
+    . "<p><b>Provide Loginid for individual anonymization or attach a file for bulk anonymization:</b></p>"
     . "Loginid : <input type='text' name='clientloginid' size='15' placeholder='required' data-lpignore='true' value='"
     . $loginid . "'>"
-    . "<br><br>DCC : <input type='text' name='DCcode' size='50' placeholder='required' data-lpignore='true' value='"
+    . "<br><br>File : <input type='file' name='bulk_anonymization' style='width: 150px'>"
+    . "<br><br>DCC : <input type='text' name='DCcode' size='50' data-lpignore='true' value='"
     . $prev_dcc . "'>"
     . "<br><br><input type='checkbox' name='verification' id='chk_verify' value='true'> <label for='chk_verify'>I understand this action is irreversible ("
     . encode_entities($clerk)
@@ -65,49 +72,81 @@ print "<form id='clientAnonymization' action='"
     . "<br><br><input type='submit' name='transtype' value='Delete customerio record'/>"
     . "</form>";
 
-if ($input->{transtype}) {
+if ($transaction_type eq 'Anonymize client') {
     #Error checking
-    code_exit_BO(_get_display_message("ERROR: Please provide client loginid"))       unless $input->{clientloginid};
+    code_exit_BO(_get_display_message("ERROR: Please provide client loginid or loginids file"))
+        if not $input->{clientloginid} and not $input->{bulk_anonymization};
+    code_exit_BO(_get_display_message("ERROR: You can not request for client and bulk anonymization at the same time. Please provide one of them."))
+        if $input->{clientloginid} and $input->{bulk_anonymization};
     code_exit_BO(_get_display_message("ERROR: Please provide a dual control code"))  unless $input->{DCcode};
     code_exit_BO(_get_display_message("ERROR: You must check the verification box")) unless $input->{verification};
-
-    my $dcc_error = BOM::DualControl->new({
-            staff           => $clerk,
-            transactiontype => $input->{transtype}})->validate_client_anonymization_control_code($input->{DCcode}, $input->{clientloginid});
-    code_exit_BO(_get_display_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
-
+    my ($file, $csv, $lines, $bulk_upload);
+    if ($input->{clientloginid}) {
+        my $dcc_error = BOM::DualControl->new({
+                staff           => $clerk,
+                transactiontype => $input->{transtype}})->validate_client_anonymization_control_code($input->{DCcode}, $input->{clientloginid});
+        code_exit_BO(_get_display_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
+    }
+    if ($bulk_upload = $input->{bulk_anonymization}) {
+        try {
+            $file  = $cgi->upload('bulk_anonymization');
+            $csv   = Text::CSV->new({binary => 1});
+            $lines = $csv->getline_all($file);
+        }
+        catch {
+            code_exit_BO(_get_display_message("ERROR: " . $@)) if $@;
+        }
+        my $dcc_error = BOM::DualControl->new({
+                staff           => $clerk,
+                transactiontype => $input->{transtype}}
+        )->validate_batch_anonymization_control_code($input->{DCcode}, sha1_hex(join q{} => map { join q{} => $_->@* } $lines->@*));
+        code_exit_BO(_get_display_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
+    }
     if ($input->{transtype} eq 'Anonymize client') {
-        #Start anonymization
-        my $success = BOM::Platform::Event::Emitter::emit(
-            'anonymize_client',
-            {
-                loginid => $loginid,
-            });
+        # Start anonymization for a client
+        if ($loginid) {
+            my $success = BOM::Platform::Event::Emitter::emit(
+                'anonymize_client',
+                {
+                    loginid => $loginid,
+                });
+            my $msg = sprintf '%s %s for %s by clerk=%s (DCcode=%s) %s',
+                Date::Utility->new->datetime,
+                $input->{transtype},
+                $input->{clientloginid},
+                $clerk,
+                $input->{DCcode},
+                $ENV{REMOTE_ADDR};
+            BOM::User::AuditLog::log($msg, '', $clerk);
 
-        my $msg =
-              Date::Utility->new->datetime . " "
-            . $input->{transtype} . " for "
-            . $input->{clientloginid}
-            . " by clerk=$clerk (DCcode="
-            . $input->{DCcode}
-            . ") $ENV{REMOTE_ADDR}";
-        BOM::User::AuditLog::log($msg, '', $clerk);
+            $msg = 'Client anonymization ' . ($success ? 'was started successfully.' : 'failed to start.');
+            code_exit_BO(_get_display_message($msg));
+        }
+        # Start anonymization for a list of client
+        if ($bulk_upload) {
+            try {
+                die "$bulk_upload: only csv files allowed\n" unless $bulk_upload =~ /\.csv$/i;
 
-        $msg = 'Client anonymization ' . ($success ? 'was started successfully.' : 'failed to start.');
-        code_exit_BO(_get_display_message($msg));
+                BOM::Platform::Event::Emitter::emit('bulk_anonymization', {data => $lines});
+                print '<p style="color:green; font-weight:bold;">'
+                    . " $bulk_upload is being processed. An email will be sent to compliance when the job completes.</p>";
+            }
+            catch {
+                print '<p style="color:red; font-weight:bold;">ERROR: ' . $@ . '</p>' if $@;
+            }
+        }
     }
+}
+if ($transaction_type eq 'Delete customerio record') {
+    # sending email consent as 0 delete record from customerio
+    BOM::Platform::Event::Emitter::emit(
+        'email_consent',
+        {
+            loginid       => $loginid,
+            email_consent => 0
+        });
 
-    if ($input->{transtype} eq 'Delete customerio record') {
-        # sending email consent as 0 delete record from customerio
-        BOM::Platform::Event::Emitter::emit(
-            'email_consent',
-            {
-                loginid       => $loginid,
-                email_consent => 0
-            });
-
-        code_exit_BO(_get_display_message("Process to delete customerio initiated. Please verify by logging into customer.io portal."));
-    }
+    code_exit_BO(_get_display_message("Process to delete customerio initiated. Please verify by logging into customer.io portal."));
 }
 
 sub _get_display_message {

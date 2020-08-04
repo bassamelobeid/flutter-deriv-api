@@ -95,6 +95,17 @@ sub client_anonymization_control_code {
     return $code;
 }
 
+sub batch_anonymization_control_code {
+    my ($self, $lines) = @_;
+
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')
+        ->encrypt_payload(data => join('_##_', time, $self->staff, $self->transactiontype, $lines, $self->_environment));
+
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    return $code;
+}
+
 sub validate_client_control_code {
     my ($self, $incode, $email, $user_id) = @_;
 
@@ -171,7 +182,7 @@ sub validate_batch_payment_control_code {
 }
 
 sub validate_client_anonymization_control_code {
-    my ($self, $incode, $loginid) = @_;
+    my ($self, $incode) = @_;
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
     my $error_status = $self->_validate_empty_code($code);
     return $error_status if $error_status;
@@ -183,10 +194,30 @@ sub validate_client_anonymization_control_code {
     return $error_status if $error_status;
     $error_status = $self->_validate_transaction_type($code);
     return $error_status if $error_status;
-    $error_status = $self->_validate_payment_loginid($code, $loginid);
+    $error_status = $self->_validate_code_already_used($incode);
+    return $error_status if $error_status;
+    return undef;
+}
+
+sub validate_batch_anonymization_control_code {
+    my ($self, $incode, $lines) = @_;
+
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+    my $error_status = $self->_validate_empty_code($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_code_element_count($code, 5);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_environment($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_fellow_staff($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_transaction_type($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_filelinescount($code, $lines);
     return $error_status if $error_status;
     $error_status = $self->_validate_code_already_used($incode);
     return $error_status if $error_status;
+
     return;
 }
 

@@ -4,40 +4,56 @@ use strict;
 use warnings;
 
 use Date::Utility;
+use CGI;
+use Digest::SHA qw(sha1_hex);
 
 BOM::Backoffice::Sysinit::init();
+use constant MAX_FILE_SIZE => 1024 * 1600;
 my $input = request()->params;
 my $clerk = BOM::Backoffice::Auth0::get_staffname();
-
+PrintContentType();
+my $cgi = CGI->new;
 Bar("Make dual control code");
 
 # Error checks
 
-code_exit_BO("Please provide a transaction type.")   unless $input->{transtype};
-code_exit_BO("Invalid transaction type")             unless ($input->{transtype} =~ /^Anonymize client|Delete customerio record/);
-code_exit_BO("ERROR: Please provide client loginid") unless ($input->{clientloginid});
+code_exit_BO("Please provide a transaction type.") unless $input->{transtype};
+code_exit_BO("Invalid transaction type") unless ($input->{transtype} =~ /^Anonymize client|Delete customerio record/);
+code_exit_BO("ERROR: Please provide client loginid or batch file") if (not defined $input->{clientloginid} and not defined $input->{bulk_loginids});
+code_exit_BO(_get_display_message("ERROR: You can not request for client and bulk anonymization at the same time. Please provide one of them."))
+    if $input->{clientloginid} and $input->{bulk_loginids};
+my ($code, $client);
+if ($input->{clientloginid}) {
+    $input->{clientloginid} = trim(uc $input->{clientloginid});
+    my $well_formatted = check_client_login_id($input->{clientloginid});
+    code_exit_BO("Invalid loginid provided!") unless $well_formatted;
 
-$input->{clientloginid} = trim(uc $input->{clientloginid});
-my $well_formatted = check_client_login_id($input->{clientloginid});
-code_exit_BO("Invalid loginid provided!") unless $well_formatted;
+    $client = eval { BOM::User::Client::get_instance({'loginid' => uc($input->{'clientloginid'}), db_operation => 'replica'}) };
+    code_exit_BO("ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist") unless $client;
 
-my $client = eval { BOM::User::Client::get_instance({'loginid' => uc($input->{'clientloginid'}), db_operation => 'replica'}) };
-code_exit_BO("ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist") if (not $client);
-
-my $code = BOM::DualControl->new({
-        staff           => $clerk,
-        transactiontype => $input->{transtype}})->client_anonymization_control_code($input->{clientloginid});
-
+    $code = BOM::DualControl->new({
+            staff           => $clerk,
+            transactiontype => $input->{transtype}})->client_anonymization_control_code($input->{clientloginid});
+}
+# It includes file name and type which is HTML and we dont want that
+my $batch_file = ref $input->{bulk_loginids} eq 'ARRAY' ? $input->{bulk_loginids}->[0] : $input->{bulk_loginids};
+if ($batch_file) {
+    code_exit_BO("ERROR: $batch_file: only csv files allowed\n") unless $batch_file =~ /(csv)$/i;
+    my $file = $cgi->upload('bulk_loginids');
+    if ($ENV{CONTENT_LENGTH} > MAX_FILE_SIZE) {
+        code_exit_BO("ERROR: " . encode_entities($batch_file) . " is too large.");
+    }
+    my $csv = Text::CSV->new({binary => 1});
+    my $lines = $csv->getline_all($file);
+    $code = BOM::DualControl->new({
+            staff           => $clerk,
+            transactiontype => $input->{'transtype'}})->batch_anonymization_control_code(sha1_hex(join q{} => map { join q{} => $_->@* } $lines->@*));
+}
 #Logging
 
 my $message =
-      "The dual control code created by $clerk  (for a "
-    . $input->{transtype}
-    . ") for "
-    . $input->{clientloginid}
-    . " is: $code This code is valid for 1 hour (from "
-    . Date::Utility->new->datetime_ddmmmyy_hhmmss
-    . ") only.";
+    "The dual control code created by $clerk  (for a " . $input->{transtype} . ") for " . $input->{clientloginid}
+    // $input->{bulk_loginids} . " is: $code This code is valid for 1 hour (from " . Date::Utility->new->datetime_ddmmmyy_hhmmss . ") only.";
 
 BOM::User::AuditLog::log($message, '', $clerk);
 
@@ -59,6 +75,7 @@ print "<p>Note: "
     . encode_entities($client->first_name) . ' '
     . encode_entities($client->last_name)
     . ' current email is '
-    . encode_entities($client->email);
+    . encode_entities($client->email)
+    if $input->{clientloginid};
 
 code_exit_BO();
