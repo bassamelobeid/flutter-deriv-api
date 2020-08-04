@@ -5,7 +5,6 @@ use warnings;
 use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
-use Test::MockTime::HiRes qw(set_relative_time restore_time);
 use Test::MockModule;
 use Test::Deep;
 
@@ -21,7 +20,6 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use ExpiryQueue qw(queue_flush);
 use BOM::Config::Chronicle;
 use Quant::Framework;
-use Finance::Exchange;
 
 queue_flush();
 
@@ -146,41 +144,50 @@ subtest 'contract_update' => sub {
         ->error_message_is('Deal cancellation is not available for this contract.');
 };
 
-SKIP: {
-    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
-    my $exchange         = Finance::Exchange->create_exchange('FOREX');
+my $mock_calendar = Test::MockModule->new('Finance::Calendar');
+$mock_calendar->mock(
+    is_open_at => sub { 1 },
+    is_open    => sub { 1 },
+    trades_on  => sub { 1 });
 
-    skip 'market closed on weekend', unless $trading_calendar->is_open($exchange);
+my $mock_date = Test::MockModule->new('Date::Utility');
 
-    subtest 'forex major pair - frxAUDJPY' => sub {
-        my $buy_params = {
-            client_ip           => '127.0.0.1',
-            token               => $token,
-            contract_parameters => {
-                contract_type => 'MULTUP',
-                basis         => 'stake',
-                amount        => 100,
-                multiplier    => 100,
-                symbol        => 'frxAUDJPY',
-                currency      => 'USD',
-                cancellation  => '1h',
-            },
-            args => {price => 103.50},
-        };
-        my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
-
-        ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
-        ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
-
-        sleep 1;
-        my $cancel_params = {
-            client_ip => '127.0.0.1',
-            token     => $token,
-            args      => {cancel => $buy_res->{contract_id}}};
-
-        my $cancel_res = $c->call_ok('cancel', $cancel_params)->has_no_error->result;
-        ok $cancel_res->{transaction_id};
-        is $cancel_res->{sold_for}, '100.00', 'sold for stake at buy';
+subtest 'forex major pair - frxAUDJPY' => sub {
+    my $buy_params = {
+        client_ip           => '127.0.0.1',
+        token               => $token,
+        contract_parameters => {
+            contract_type => 'MULTUP',
+            basis         => 'stake',
+            amount        => 100,
+            multiplier    => 100,
+            symbol        => 'frxAUDJPY',
+            currency      => 'USD',
+            cancellation  => '1h',
+        },
+        args => {price => 103.50},
     };
-}
+
+    # Deal cancellation is not available after 21:00
+    $mock_date->mock('hour' => sub { return 22 });
+    $c->call_ok('buy', $buy_params)->has_error->error_code_is('InvalidtoBuy', 'InvalidtoBuy')
+        ->error_message_like(qr/Deal cancellation is not available/, 'Deal cancellation is not available');
+
+    $mock_date->mock('hour' => sub { return 20 });
+    my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
+
+    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
+    ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
+
+    sleep 1;
+    my $cancel_params = {
+        client_ip => '127.0.0.1',
+        token     => $token,
+        args      => {cancel => $buy_res->{contract_id}}};
+
+    my $cancel_res = $c->call_ok('cancel', $cancel_params)->has_no_error->result;
+    ok $cancel_res->{transaction_id};
+    is $cancel_res->{sold_for}, '100.00', 'sold for stake at buy';
+};
+
 done_testing();
