@@ -40,8 +40,8 @@ $user->add_client($client);
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
 my $authorize = $t->await::authorize({authorize => $token});
 
-# Test 1 (Client should be able to upgrade to IOM)
-is_deeply $authorize->{authorize}->{upgradeable_landing_companies}, ['iom'], 'UK client can upgrade to IOM.';
+# Test 1 (Client should be able to upgrade to IOM and Maltainvest)
+is_deeply $authorize->{authorize}->{upgradeable_landing_companies}, ['iom', 'maltainvest'], 'UK client can upgrade to IOM.';
 
 # Create client (UK - MX)
 $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

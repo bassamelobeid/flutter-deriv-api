@@ -258,13 +258,8 @@ subtest 'MX client can upgrade to MF' => sub {
             $details{residence}                 = 'gb';
             $details{tax_identification_number} = '1112223334';
             delete $details{new_account_real};
-            my $res = $t->await::new_account_maltainvest(\%details);
-
-            is($res->{msg_type}, 'new_account_maltainvest');
-            is($res->{error}->{code}, 'UnwelcomeAccount', "Unable to upgrade MX to MF due to unwelcome");
 
             my $client = BOM::User::Client->new({loginid => $loginid});
-            $client->status->clear_unwelcome;
 
             $res = $t->await::new_account_maltainvest(\%details);
 
