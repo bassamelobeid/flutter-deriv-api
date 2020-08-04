@@ -512,7 +512,21 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         $client->save;
         $client->update_status_after_auth_fa();
     }
-
+    if ($input{age_verification} and not $client->is_virtual) {
+        my @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
+        # Apply age verification for one client per each landing company since we have a DB trigger that sync age verification between the same landing companies.
+        my @clients_to_update =
+            map { [$client->user->clients_for_landing_company($_)]->[0] // () } @allowed_lc_to_sync;
+        push @clients_to_update, $client;
+        foreach my $client_to_update (@clients_to_update) {
+            if ($input{'age_verification'} eq 'yes') {
+                $client_to_update->status->set('age_verification', $clerk, 'Age verified client from Backoffice.')
+                    unless $client_to_update->status->age_verification;
+            } else {
+                $client_to_update->status->clear_age_verification;
+            }
+        }
+    }
     if (exists $input{professional_client}) {
         try {
             if ($input{professional_client}) {
@@ -764,14 +778,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $cli->secret_answer(BOM::User::Utility::encrypt_secret_answer($input{$key}))
                     if ($input{$key} ne $secret_answer);
 
-            } elsif ($key eq 'age_verification') {
-
-                if ($input{$key} eq 'yes') {
-                    $cli->status->set($key, $clerk, 'No specific reason.')
-                        unless $cli->status->age_verification;
-                } else {
-                    $cli->status->clear_age_verification;
-                }
             } elsif ($key eq 'client_aml_risk_classification' && BOM::Backoffice::Auth0::has_authorisation(['Compliance'])) {
                 $cli->aml_risk_classification($input{$key});
             }
