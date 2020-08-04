@@ -20,9 +20,14 @@ use BOM::Platform::Token::API;
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
 # init db
-my $email       = 'abc@binary.com';
-my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::User::Password::hashpw($password);
+my $email    = 'abc@binary.com';
+my $password = 'jskjd8292922';
+my $hash_pwd = BOM::User::Password::hashpw($password);
+
+my $email_1    = 'abcd@binary.com';
+my $password_1 = 'jskjd82929223';
+my $hash_pwd_1 = BOM::User::Password::hashpw($password_1);
+
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
@@ -44,7 +49,13 @@ my $user = BOM::User->create(
 $user->add_client($test_client);
 $user->add_client($test_client_vr);
 
-my $test_client_cr_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
+my $user2 = BOM::User->create(
+    email    => $email_1,
+    password => $hash_pwd_1
+);
+my $test_client_cr_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+});
 
 $test_client_cr_vr->email('sample@binary.com');
 $test_client_cr_vr->save;
@@ -115,6 +126,15 @@ $user_mlt_mf->add_client($test_client_vr_2);
 $user_mlt_mf->add_client($test_client_mlt);
 $user_mlt_mf->add_client($test_client_mf);
 
+my $test_client_vr_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+    residence   => 'id'
+});
+$user2->add_client($test_client_vr_3);
+$test_client_vr_3->email($email_1);
+$test_client_vr_3->set_default_account('USD');
+$test_client_vr_3->save;
+
 my $m              = BOM::Platform::Token::API->new;
 my $token          = $m->create_token($test_client->loginid, 'test token');
 my $token_cr       = $m->create_token($test_client_cr->loginid, 'test token');
@@ -124,6 +144,7 @@ my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_mx       = $m->create_token($test_client_mx->loginid, 'test token');
 my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
 my $token_mf       = $m->create_token($test_client_mf->loginid, 'test token');
+my $token_vr_3     = $m->create_token($test_client_vr_3->loginid, 'test token');
 
 my $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
 my $c = Test::BOM::RPC::Client->new(ua => $t->app->ua);
@@ -205,20 +226,56 @@ subtest 'get settings' => sub {
     $params->{token} = $token;
     $test_client->status->set('tnc_approval', 'system', 1);
     is($c->tcall($method, $params)->{client_tnc_status}, 1, 'tnc status set');
-    $params->{token} = $token_vr;
+    $params->{token} = $token_vr_3;
     is_deeply(
         $c->tcall($method, $params),
         {
-            'email'             => 'abc@binary.com',
-            'country'           => 'Indonesia',
-            'residence'         => 'Indonesia',
-            'country_code'      => 'id',
-            'email_consent'     => '0',
-            'has_secret_answer' => '1',
-            'user_hash'         => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}->{account_secret})
+            'email'         => 'abcd@binary.com',
+            'country'       => 'Indonesia',
+            'residence'     => 'Indonesia',
+            'country_code'  => 'id',
+            'email_consent' => '0',
+            'user_hash'     => hmac_sha256_hex($user2->email, BOM::Config::third_party()->{elevio}->{account_secret}),
         },
-        'vr client return less messages'
+        'vr client return less messages when it does not have real sibling'
     );
+
+    $params->{token} = $token_vr;
+    $result = $c->tcall($method, $params);
+    is_deeply(
+        $result,
+        {
+            'country'                        => 'Indonesia',
+            'residence'                      => 'Indonesia',
+            'salutation'                     => 'MR',
+            'is_authenticated_payment_agent' => '0',
+            'country_code'                   => 'id',
+            'date_of_birth'                  => '267408000',
+            'address_state'                  => 'LA',
+            'address_postcode'               => '232323',
+            'phone'                          => '+15417543010',
+            'last_name'                      => 'pItT',
+            'email'                          => 'abc@binary.com',
+            'address_line_2'                 => '301',
+            'address_city'                   => 'Beverly Hills',
+            'address_line_1'                 => 'Civic Center',
+            'first_name'                     => 'bRaD',
+            'email_consent'                  => '0',
+            'allow_copiers'                  => '0',
+            'client_tnc_status'              => '1',
+            'place_of_birth'                 => undef,
+            'tax_residence'                  => undef,
+            'tax_identification_number'      => undef,
+            'account_opening_reason'         => undef,
+            'request_professional_status'    => 0,
+            'citizen'                        => 'at',
+            'user_hash'                      => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+            'has_secret_answer'              => 1,
+            'non_pep_declaration'            => 1,
+        },
+        'vr client return real account information when it has sibling'
+    );
+
 };
 
 $method = 'set_settings';

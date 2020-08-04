@@ -118,13 +118,26 @@ $user_mlt_mf->add_client($test_client_vr_2);
 $user_mlt_mf->add_client($test_client_mlt);
 $user_mlt_mf->add_client($test_client_mf);
 
-my $m          = BOM::Platform::Token::API->new;
-my $token      = $m->create_token($test_client->loginid, 'test token');
-my $token_cr   = $m->create_token($test_client_cr->loginid, 'test token');
-my $token_cr_2 = $m->create_token($test_client_cr_2->loginid, 'test token');
-my $token_vr   = $m->create_token($test_client_vr->loginid, 'test token');
-my $token_mlt  = $m->create_token($test_client_mlt->loginid, 'test token');
-my $token_mf   = $m->create_token($test_client_mf->loginid, 'test token');
+my $test_client_only_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+});
+$test_client_only_vr->email('only_vr@binary.com');
+$test_client_only_vr->save;
+
+my $user_only_vr = BOM::User->create(
+    email    => 'only_vr@binary.com',
+    password => $hash_pwd
+);
+$user_only_vr->add_client($test_client_vr);
+
+my $m             = BOM::Platform::Token::API->new;
+my $token         = $m->create_token($test_client->loginid, 'test token');
+my $token_cr      = $m->create_token($test_client_cr->loginid, 'test token');
+my $token_cr_2    = $m->create_token($test_client_cr_2->loginid, 'test token');
+my $token_vr      = $m->create_token($test_client_vr->loginid, 'test token');
+my $token_mlt     = $m->create_token($test_client_mlt->loginid, 'test token');
+my $token_mf      = $m->create_token($test_client_mf->loginid, 'test token');
+my $token_only_vr = $m->create_token($test_client_only_vr->loginid, 'test token');
 
 my $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
 my $c = Test::BOM::RPC::Client->new(ua => $t->app->ua);
@@ -142,10 +155,10 @@ subtest 'get financial assessment' => sub {
     my $res = $c->tcall(
         $method,
         {
-            token => $token_vr,
+            token => $token_only_vr,
             args  => $args
         });
-    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");
+    is($res->{error}->{code}, 'PermissionDenied', "Not allowed for an account that only has virtual.");
 
     $res = $c->tcall(
         $method,
@@ -213,7 +226,11 @@ subtest 'set financial assessment' => sub {
         "Company Ownership",
         "Financial assessment set for MLT client"
     );
-
+    is(
+        $c->tcall('get_financial_assessment', {token => $token_vr})->{source_of_wealth},
+        "Company Ownership",
+        "Financial assessment is accessible for VRTC client"
+    );
     # test that setting this for one client sets it for clients with same landing company
     is($c->tcall('get_financial_assessment', {token => $token_cr})->{source_of_wealth},   undef, "Financial assessment not set for CR client");
     is($c->tcall('get_financial_assessment', {token => $token_cr_2})->{source_of_wealth}, undef, "Financial assessment not set for second CR clinet");
@@ -248,7 +265,7 @@ subtest $method => sub {
     my $res = $c->tcall(
         $method,
         {
-            token => $token_vr,
+            token => $token_only_vr,
             args  => $args
         });
     is($res->{error}->{code}, 'PermissionDenied', "Not allowed for virtual account");

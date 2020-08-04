@@ -1150,45 +1150,48 @@ rpc get_settings => sub {
     my $client_tnc_status = $client->status->tnc_approval;
     my $user              = $client->user;
 
-    return {
-        email     => $client->email,
+    my $settings = {
+        email     => $user->email,
         country   => $country,
         residence => $country
         , # Everywhere else in our responses to FE, we pass the residence key instead of country. However, we need to still pass in country for backwards compatibility.
         country_code  => $country_code,
         email_consent => ($user and $user->{email_consent}) ? 1 : 0,
-        has_secret_answer => ($client->secret_answer) ? 1 : 0,
         (
               ($user and BOM::Config::third_party()->{elevio}{account_secret})
             ? (user_hash => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}{account_secret}))
-            : ()
-        ),
-        (
-            $client->is_virtual ? ()
-            : (
-                salutation                     => $client->salutation,
-                first_name                     => $client->first_name,
-                last_name                      => $client->last_name,
-                date_of_birth                  => $dob_epoch,
-                address_line_1                 => $client->address_1,
-                address_line_2                 => $client->address_2,
-                address_city                   => $client->city,
-                address_state                  => $client->state,
-                address_postcode               => $client->postcode,
-                phone                          => $client->phone,
-                allow_copiers                  => $client->allow_copiers // 0,
-                citizen                        => $client->citizen // '',
-                is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
-                client_tnc_status => $client_tnc_status ? $client_tnc_status->{reason} : '',
-                place_of_birth    => $client->place_of_birth,
-                tax_residence     => $client->tax_residence,
-                tax_identification_number   => $client->tax_identification_number,
-                account_opening_reason      => $client->account_opening_reason,
-                request_professional_status => $client->status->professional_requested ? 1 : 0,
-                non_pep_declaration         => ($client->non_pep_declaration_time) ? 1 : 0,
-            ),
-        ),
-    };
+            : ())};
+
+    # We should pick the information from the first created account to return account settings
+    my @clients = grep { not $_->is_virtual } $user->clients(include_disabled => 0);
+    my ($real_client) = sort { $b->date_joined cmp $a->date_joined } @clients;
+    if ($real_client) {
+        $settings = {
+            %$settings,
+            has_secret_answer => defined $real_client->secret_answer ? 1 : 0,
+            salutation        => $real_client->salutation,
+            first_name        => $real_client->first_name,
+            last_name         => $real_client->last_name,
+            address_line_1    => $real_client->address_1,
+            address_line_2    => $real_client->address_2,
+            address_city      => $real_client->city,
+            address_state     => $real_client->state,
+            address_postcode  => $real_client->postcode,
+            phone             => $real_client->phone,
+            allow_copiers => $real_client->allow_copiers // 0,
+            citizen       => $real_client->citizen       // '',
+            is_authenticated_payment_agent => ($real_client->payment_agent and $real_client->payment_agent->is_authenticated) ? 1 : 0,
+            client_tnc_status => $real_client->status->tnc_approval ? $real_client->status->tnc_approval->{reason} : '',
+            place_of_birth    => $real_client->place_of_birth,
+            tax_residence     => $real_client->tax_residence,
+            tax_identification_number   => $real_client->tax_identification_number,
+            account_opening_reason      => $real_client->account_opening_reason,
+            request_professional_status => $real_client->status->professional_requested ? 1 : 0,
+            date_of_birth               => $real_client->date_of_birth ? Date::Utility->new($real_client->date_of_birth)->epoch : undef,
+            non_pep_declaration         => ($real_client->non_pep_declaration_time) ? 1 : 0,
+        };
+    }
+    return $settings;
 };
 
 rpc set_settings => sub {
@@ -2386,9 +2389,17 @@ rpc get_financial_assessment => sub {
     my $params = shift;
 
     my $client = $params->{client};
-    return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual);
-
-    my $response = decode_fa($client->financial_assessment());
+    # We should return FA for VRTC that has financial or gaming account
+    # Since we have independent financial and gaming.
+    my @siblings = grep { not $_->is_virtual } $client->user->clients(include_disabled => 0);
+    return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual and not @siblings);
+    my $response;
+    foreach my $sibling (@siblings) {
+        if ($sibling->financial_assessment()) {
+            $response = decode_fa($sibling->financial_assessment());
+            last;
+        }
+    }
 
     # This is here to continue sending scores through our api as we cannot change the output of our calls. However, this should be removed with v4 as this is not used by front-end at all
     if (keys %$response) {

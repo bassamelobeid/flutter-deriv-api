@@ -6,7 +6,6 @@
       "country_code",
       "email_consent",
       "email",
-      "has_secret_answer",
       "residence",
       "user_hash"
    ],
@@ -18,12 +17,6 @@
       "residence" : {
          "type" : "string",
          "pattern" : "^[_1]$"
-      },
-      "has_secret_answer" : {
-         "type" : "integer",
-         "enum" : [
-            0
-         ]
       },
       "country" : {
          "pattern" : "^[_1]$",

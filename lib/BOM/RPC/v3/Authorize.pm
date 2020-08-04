@@ -34,56 +34,26 @@ sub _get_upgradeable_landing_companies {
     my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
     my $financial_company = $countries_instance->financial_company_for_country($client->residence);
 
-    # Check if client has a gaming account or financial account
-    # Otherwise, add them to the list
-    # NOTE: Gaming has higher priority over financial
-    if (   $gaming_company
-        && $client->is_virtual
-        && !(any { $_->landing_company->short eq $gaming_company } @$client_list))
-    {
-        push @upgradeable_landing_companies, $gaming_company;
-    }
-
-    # Some countries have financial but not gaming account
-    if (  !$gaming_company
-        && $financial_company
-        && $client->is_virtual
-        && !(any { $_->landing_company->short eq $financial_company } @$client_list))
-    {
-        push @upgradeable_landing_companies, $financial_company;
-    }
-
-    # In some cases, client has VRTC, MX/MLT, MF account
-    # MX/MLT account might get duplicated, so MF should not have any companies
-    if (@upgradeable_landing_companies && !$client->is_virtual) {
-        @upgradeable_landing_companies = ();
-    }
-
-    # Some countries have both financial and gaming. Financial is added:
-    # - if the list is empty
-    # - two companies are not same
-    # - current client is not virtual
-    if (   !@upgradeable_landing_companies
-        && ($gaming_company && $financial_company && $gaming_company ne $financial_company)
-        && !$client->is_virtual
-        && !(any { $_->landing_company->short eq $financial_company } @$client_list))
-    {
-        push @upgradeable_landing_companies, $financial_company;
-    }
-
     # Multiple CR account scenario:
+    # - virtual clients can upgrade to CR
     # - client's landing company is CR
     # - client can upgrade to other CR accounts, assuming no fiat currency OR other cryptocurrencies
-    if ($client->landing_company->short eq 'svg') {
-
+    if ($client->landing_company->short eq 'svg'
+        or ($client->is_virtual and $gaming_company and $gaming_company eq 'svg' or $financial_company and $financial_company eq 'svg'))
+    {
         # Get siblings of the current client
         my $siblings = $client->real_account_siblings_information;
 
         # Push to upgradeable_landing_companies, if possible to open another CR account
         push @upgradeable_landing_companies, 'svg'
             if BOM::RPC::v3::Utility::get_available_currencies($siblings, $client->landing_company->short);
+    } else {
+        for my $lc ($gaming_company, $financial_company) {
+            next unless $lc;
+            next if any { $_->landing_company->short eq $lc } @$client_list;
+            push @upgradeable_landing_companies, $lc;
+        }
     }
-
     return \@upgradeable_landing_companies;
 }
 
