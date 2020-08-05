@@ -195,6 +195,7 @@ my $run_recorder;
 my $subscriptions  = $initial_subscriptions;
 my $number_of_runs = 1;
 my $new_market = 0;
+my $overflow_buffer_amount = get_overflow_buffer_amount($check_time);
 
 $timer = IO::Async::Timer::Periodic->new(
     interval => $check_time,
@@ -267,7 +268,7 @@ $loop->run();
 
 =head2 check_stats
 
-Description: Gets the queue size and overflow from Datadog.
+Description: Gets the queue size and overflow from Datadog. Subtract the overflow_buffer_amount from overflow_amount to make sure its not momentary overflow.
 Takes no arguments. 
 
 
@@ -321,7 +322,12 @@ sub check_stats {
         }
       )->on_fail( sub { die "unable to get queue_overflow_stats" } );
     Future->needs_all( $queue_size_request, $overflow_size_request )->get();
-    return ( $overflow_amount, $max_queue_size );
+    #handle the case when there is momentary overflow
+    my $overflow_amount_minus_buffer = 0;
+    if($overflow_amount) {
+            $overflow_amount_minus_buffer = ($overflow_amount > $overflow_buffer_amount)? $overflow_amount - $overflow_buffer_amount:0;
+    }
+    return ( $overflow_amount_minus_buffer, $max_queue_size );
 }
 
 =head2 process_response
@@ -395,4 +401,25 @@ sub email_result {
     }
     $email_stuffer->send_or_die;
     return undef;
+}
+
+=head2 get_overflow_buffer_amount
+
+Description: we think that subtracting 1 from overflow_amount every 60 seconds can help us find momentary overflow. 
+Since checktime is variable so overflow amount should be calculated dynamically.
+TODO: this will serve our purpose as of now since our test runs for max 120 seconds but need to improve it if we go for running test for an hour or so.
+
+=over 4
+
+=item - $check_time_amount: the amount of time in seconds got from argments
+
+=back
+
+Returns integer value of buffer amount
+
+=cut
+
+sub get_overflow_buffer_amount {
+    my $check_time_amount = @_;
+    return int($check_time_amount/60);
 }
