@@ -16,6 +16,7 @@ use Path::Tiny;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Test::Helper::Utility qw(random_email_address);
 use BOM::User;
 use BOM::User::Password;
 use BOM::MT5::User::Async;
@@ -110,6 +111,11 @@ subtest 'default loginid' => sub {
 
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $cr_1, 'still first real acc as default';
+
+        $client_cr->account('BTC');
+        $client_cr_new->account('USD');
+        $def_client = ($user->clients)[0];
+        is $def_client->loginid, $cr_2, 'now the second real acc is default because it is fiat';
     };
 
     subtest 'with disabled acc' => sub {
@@ -151,7 +157,50 @@ subtest 'default loginid' => sub {
     };
 };
 
-# test load without password
+subtest 'accounts_by_category' => sub {
+    my $user_by_category = BOM::User->create(
+        email    => random_email_address({domain => 'binary.com'}),
+        password => $hash_pwd,
+    );
+
+    my %clients =
+        map { $_ => BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => $_ eq 'virtual' ? 'VRTC' : 'CR', email => $email}) }
+        qw(
+        virtual
+        crypto
+        fiat
+        disabled
+        duplicated
+        self_excluded
+    );
+
+    $user_by_category->add_client($clients{$_}) for keys %clients;
+
+    $clients{crypto}->account('BTC');
+    $clients{fiat}->account('USD');
+    $clients{disabled}->status->set('disabled', 'system', 'testing');
+    $clients{duplicated}->status->set('duplicate_account', 'system', 'testing');
+    $clients{self_excluded}->set_exclusion->exclude_until(Date::Utility->new()->plus_time_interval('365d')->date);
+    $clients{self_excluded}->save;
+
+    my $accounts = $user_by_category->accounts_by_category([$user_by_category->bom_loginids], include_duplicated => 1);
+
+    # Use loginids for comparison
+    my (%expected_loginids, %categorised_loginids);
+    for my $type (sort keys $accounts->%*) {
+        $categorised_loginids{$type} = [map { $_->loginid } $accounts->{$type}->@*];
+        $expected_loginids{$type} = [
+            $type eq 'enabled'
+            ? ($clients{fiat}->loginid, $clients{crypto}->loginid)
+            : $clients{$type}->loginid
+        ];
+    }
+
+    cmp_deeply(\%categorised_loginids, \%expected_loginids, 'all accounts categorised correctly');
+
+    $accounts = $user_by_category->accounts_by_category([$user_by_category->bom_loginids]);
+    is scalar $accounts->{duplicated}->@*, 0, 'duplicated list is empty when its param is not true';
+};
 
 subtest 'load user by loginid' => sub {
     lives_ok {
@@ -472,7 +521,6 @@ subtest 'GAMSTOP' => sub {
 };
 
 subtest 'MirrorBinaryUserId' => sub {
-    plan tests => 15;
     use YAML::XS qw/LoadFile/;
     use BOM::User::Script::MirrorBinaryUserId;
     use BOM::User::Client;
@@ -508,7 +556,7 @@ CONF
     # at this point we have 9 rows in the queue: 2x VRTC, 4x CR, 2x MT and 1x VRCH
     my $queue = $dbh->selectall_arrayref('SELECT binary_user_id, loginid FROM q.add_loginid');
 
-    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 12, 'got expected number of queue entries';
+    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 18, 'got expected number of queue entries';
 
     BOM::User::Script::MirrorBinaryUserId::run_once $dbh;
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';
@@ -533,6 +581,7 @@ subtest 'clients_for_landing_company' => sub {
     is_deeply([map { $_->loginid } @clients], [qw/CR10000 CR10001/], "clients are correct");
 };
 
+# test load without password
 subtest 'test load' => sub {
     $user = BOM::User->new(
         email => $email,
@@ -643,4 +692,3 @@ subtest 'fail if mt5 api return empty login' => sub {
 };
 
 done_testing;
-

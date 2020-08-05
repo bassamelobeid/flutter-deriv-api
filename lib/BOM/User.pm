@@ -382,7 +382,7 @@ sub has_mt5_regulated_account {
 
 Return an ARRAY reference that is a list of clients in following order
 
-- real enabled accounts
+- real enabled accounts (fiat first, then crypto)
 - virtual accounts
 - self excluded accounts
 - disabled accounts
@@ -404,7 +404,7 @@ sub get_clients_in_sorted_order {
 Given the loginid list, return the accounts grouped by the category in a HASH reference.
 The categories are:
 
-- real enabled accounts
+- real enabled accounts (fiat first, then crypto)
 - virtual accounts
 - self excluded accounts
 - disabled accounts
@@ -415,7 +415,7 @@ The categories are:
 sub accounts_by_category {
     my ($self, $loginid_list, %args) = @_;
 
-    my (@enabled_accounts, @virtual_accounts, @self_excluded_accounts, @disabled_accounts, @duplicated_accounts);
+    my (@enabled_accounts_fiat, @enabled_accounts_crypto, @virtual_accounts, @self_excluded_accounts, @disabled_accounts, @duplicated_accounts);
     foreach my $loginid (sort @$loginid_list) {
         my $cl;
         try {
@@ -455,8 +455,15 @@ sub accounts_by_category {
             next;
         }
 
-        push @enabled_accounts, $cl;
+        push @{
+            BOM::Config::CurrencyConfig::is_valid_crypto_currency($cl->currency)
+            ? \@enabled_accounts_crypto
+            : \@enabled_accounts_fiat
+            },
+            $cl;
     }
+
+    my @enabled_accounts = (@enabled_accounts_fiat, @enabled_accounts_crypto);
 
     return {
         enabled       => \@enabled_accounts,
