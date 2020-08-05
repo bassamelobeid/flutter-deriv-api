@@ -176,7 +176,7 @@ sub validate_account_details {
     }
 
     return {error => 'P2PRestrictedCountry'}
-        if $args->{account_opening_reason} eq 'Peer-to-peer exchange' & !$lc->p2p_available;
+        if ($args->{account_opening_reason} // '') eq 'Peer-to-peer exchange' & !$lc->p2p_available;
 
     $args->{secret_answer} = BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) if $args->{secret_answer};
 

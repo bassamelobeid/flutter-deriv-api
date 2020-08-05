@@ -370,6 +370,10 @@ subtest 'create account' => sub {
         $details{account_opening_reason} = 'Hedging';
         $details = BOM::Platform::Account::Real::default::validate_account_details(\%details, $vr_client, 'MLT', 1);
         ok !$details->{error}, 'no error for other reason on MLT';
+        
+        delete $details{account_opening_reason};
+        $details = BOM::Platform::Account::Real::default::validate_account_details(\%details, $vr_client, 'MLT', 1);
+        ok !$details->{error}, 'no warning if account_opening_reason is missing';
     };
 };
 
