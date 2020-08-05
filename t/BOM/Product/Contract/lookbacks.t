@@ -249,8 +249,8 @@ subtest 'lookback expiry conditions' => sub {
         ok $c->is_expired, 'contract is expired';
         is $c->exit_tick->quote, 104, 'exit tick is present';
         ok !$c->is_valid_exit_tick, 'not valid exit tick because we are still waiting for the next tick';
-        is $c->value, $test_case->[1], 'value is ' . $test_case->[1];
-        cmp_ok $c->bid_price, '==', $test_case->[1], 'bid price ' . $test_case->[1];
+        is $c->value, 0, 'value is ' . 0;
+        cmp_ok $c->bid_price, '==', 0, 'bid price ' . 0;
         ok !$c->is_valid_to_sell, 'not valid to sell';
         is $c->primary_validation_error->message_to_client->[0],
             'Please wait for contract settlement. The final settlement price may differ from the indicative price.', 'correct error message';

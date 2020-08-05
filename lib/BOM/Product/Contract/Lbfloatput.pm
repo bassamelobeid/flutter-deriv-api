@@ -19,7 +19,7 @@ sub ticks_to_expiry {
 sub check_expiry_conditions {
     my $self = shift;
 
-    if ($self->exit_tick) {
+    if ($self->exit_tick and $self->is_valid_exit_tick) {
         my ($high) = @{$self->get_ohlc_for_period()}{qw(high)};
         if (defined $high) {
             my $value = ($high - $self->exit_tick->quote) * $self->multiplier;
