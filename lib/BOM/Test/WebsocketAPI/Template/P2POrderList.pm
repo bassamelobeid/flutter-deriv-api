@@ -25,7 +25,6 @@ rpc_request {
         args                       => {
             p2p_order_list => 1,
             subscribe      => 1,
-            active         => 1,
             limit          => 10,
             offset         => 0,
         },
