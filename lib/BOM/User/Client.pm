@@ -2294,6 +2294,11 @@ sub p2p_order_list {
     my ($client, %param) = @_;
 
     $param{loginid} = $client->loginid;
+    $param{status} =
+        $param{active}
+        ? ['pending', 'buyer-confirmed', 'timed-out']
+        : ['completed', 'cancelled', 'refunded']
+        if exists $param{active};
 
     my $list = $client->_p2p_orders(%param);
     return $client->_order_details($list);
