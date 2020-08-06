@@ -499,7 +499,9 @@ sub test_segment_customer {
         'currencies' => $currencies,
         'country'    => Locale::Country::code2country($test_client->residence),
         mt5_loginids => join(',', sort($user->get_mt5_loginids)),
-        provider     => 'email',
+        landing_companies => 'svg',
+        available_landing_companies => 'labuan,svg',
+        provider        => 'email',
         },
         'Customer traits are set correctly';
 }

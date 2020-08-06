@@ -66,6 +66,13 @@ $mock_brands->mock(
     },
 );
 
+my $mock_mt5_groups = Test::MockModule->new('BOM::User');
+$mock_mt5_groups->mock(
+    mt5_logins_with_group => sub {
+        return {};
+    },
+);
+
 subtest 'General event validation - filtering by brand' => sub {
     undef @identify_args;
     undef @track_args;
@@ -242,7 +249,9 @@ sub test_segment_customer {
         'currencies'   => '',
         'country'      => Locale::Country::code2country($test_client->residence),
         'mt5_loginids' => join(',', sort($user->get_mt5_loginids)),
-        provider       => 'email',
+        landing_companies => 'svg',
+        available_landing_companies => 'labuan,svg',
+        provider        => 'email',
     };
 
     is_deeply $customer->traits, $expected_traits, 'Customer traits are set correctly';
@@ -251,5 +260,6 @@ sub test_segment_customer {
 
 $mock_segment->unmock_all;
 $mock_brands->unmock_all;
+$mock_mt5_groups->unmock_all;
 
 done_testing();

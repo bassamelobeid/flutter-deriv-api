@@ -529,7 +529,7 @@ subtest 'signup event' => sub {
         }
         },
         'properties is properly set for virtual account signup';
-    test_segment_customer($customer, $virtual_client2, '', $virtual_client2->date_joined);
+    test_segment_customer($customer, $virtual_client2, '', $virtual_client2->date_joined, 'virtual', 'labuan,svg');
 
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -549,7 +549,7 @@ subtest 'signup event' => sub {
 
     is $result, 1, 'Success signup result';
     ($customer, %args) = @identify_args;
-    test_segment_customer($customer, $test_client2, '', $virtual_client2->date_joined);
+    test_segment_customer($customer, $test_client2, '', $virtual_client2->date_joined, 'svg', 'labuan,svg');
 
     is_deeply \%args,
         {
@@ -562,7 +562,7 @@ subtest 'signup event' => sub {
         'identify context is properly set for signup';
 
     ($customer, %args) = @track_args;
-    test_segment_customer($customer, $test_client2, '', $virtual_client2->date_joined);
+    test_segment_customer($customer, $test_client2, '', $virtual_client2->date_joined, 'svg', 'labuan,svg');
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     my ($year, $month, $day) = split('-', $test_client2->date_of_birth);
     is_deeply \%args, {
@@ -606,8 +606,7 @@ subtest 'signup event' => sub {
     ok $handler->($real_args)->get, 'successful signup track after setting currency';
 
     ($customer, %args) = @track_args;
-    test_segment_customer($customer, $test_client2, 'EUR', $virtual_client2->date_joined);
-
+    test_segment_customer($customer, $test_client2, 'EUR', $virtual_client2->date_joined, 'svg', 'labuan,svg');
 };
 
 subtest 'account closure' => sub {
@@ -875,7 +874,7 @@ subtest 'api token delete' => sub {
 };
 
 sub test_segment_customer {
-    my ($customer, $test_client, $currencies, $created_at) = @_;
+    my ($customer, $test_client, $currencies, $created_at, $landing_companies, $available_landing_companies) = @_;
 
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     is $customer->user_id, $test_client->binary_user_id, 'User id is binary user id';
@@ -902,6 +901,8 @@ sub test_segment_customer {
             'utm_source'         => 'direct',
             'date_first_contact' => '2019-11-28',
             mt5_loginids         => join(',', $test_client->user->mt5_logins),
+            landing_companies => $landing_companies,
+            available_landing_companies => $available_landing_companies,
             provider             => 'email',
             },
             'Customer traits are set correctly for virtual account';
@@ -933,6 +934,8 @@ sub test_segment_customer {
             'currencies' => $currencies,
             'country'    => Locale::Country::code2country($test_client->residence),
             mt5_loginids => join(',', $test_client->user->mt5_logins),
+            landing_companies => $landing_companies,
+            available_landing_companies => $available_landing_companies,
             provider     => 'email',
             },
             'Customer traits are set correctly';

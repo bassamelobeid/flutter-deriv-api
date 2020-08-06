@@ -10,7 +10,7 @@ use Locale::Country qw(code2country);
 use Time::Moment;
 use Date::Utility;
 use Brands;
-use List::Util qw(first any);
+use List::Util qw(first any uniq);
 use Storable qw(dclone);
 use Format::Util::Numbers qw(formatnumber);
 
@@ -23,7 +23,7 @@ use BOM::Database::Model::UserConnect;
 
 my %EVENT_PROPERTIES = (
     identify => [
-        qw (address age avatar birthday company created_at description email first_name gender id last_name name phone provider title username website currencies country)
+        qw (address age available_landing_companies avatar birthday company created_at description email first_name gender id landing_companies last_name name phone provider title username website currencies country)
     ],
     login                     => [qw (loginid browser device ip new_signin_activity location app_name)],
     signup                    => [qw (loginid type currency landing_company date_joined first_name last_name phone address age country provider)],
@@ -590,7 +590,7 @@ sub track_event {
 
     my $client = _validate_params($args{loginid}, $args{event}, $args{brand});
     return Future->done unless $client;
-    my $customer = _create_customer($client);
+    my $customer = _create_customer($client, $args{brand});
 
     $log->debugf('Tracked %s for client %s', $args{event}, $args{loginid});
 
@@ -719,21 +719,43 @@ Arguments:
 
 =item * C<client> - required. A L<BOM::User::Client> object representing a client.
 
+=item *C<brand> - (optional) The request brand as a <Brands> object.
+
 =back
 
 =cut
 
 sub _create_customer {
-    my ($client) = @_;
+    my ($client, $brand) = @_;
+    $brand //= request->brand;
 
     my @siblings     = $client->user ? $client->user->clients(include_disabled => 1) : ($client);
     my @mt5_loginids = $client->user ? $client->user->get_mt5_loginids               : ();
     my $user_connect = BOM::Database::Model::UserConnect->new;
     my $provider = $client->user ? $user_connect->get_connects_by_user_id($client->user->{id})->[0] // 'email' : 'email';
 
-    # Get list of user currencies
-    my %currencies = ();
+    my $country_config = $brand->countries_instance->countries_list->{$client->residence};
+    my $available_landing_companies = join ',' => uniq sort grep { $_ ne 'none' } (
+        $country_config->{gaming_company},
+        $country_config->{financial_company},
+        $country_config->{mt}->{financial}->{financial}     // 'none',
+        $country_config->{mt}->{financial}->{financial_stp} // 'none',
+        $country_config->{mt}->{gaming}->{financial}        // 'none',
+    );
+
+    # Get list of user currencies & landing companies
+    my %currencies        = ();
+    my @landing_companies = ();
     my $created_at;
+
+    if (@mt5_loginids) {
+        my $mt5_real_accounts = $client->user->mt5_logins_with_group('real');
+        foreach my $acc (keys $mt5_real_accounts->%*) {
+            $mt5_real_accounts->{$acc} =~ m/\\([a-z]+)(_|$)/;
+            push @landing_companies, $1 if $1;
+        }
+    }
+
     foreach my $sibling (@siblings) {
         my $account = $sibling->account;
         if ($sibling->is_virtual) {
@@ -743,6 +765,7 @@ sub _create_customer {
             next;
         }
         $currencies{$account->currency_code} = 1 if $account && $account->currency_code;
+        push @landing_companies, $sibling->landing_company->short;
     }
     # Check DOB existance as virtual account does not have it
     my $client_age;
@@ -786,10 +809,12 @@ sub _create_customer {
             #website: website,
 
             # Custom traits
-            country      => Locale::Country::code2country($client->residence),
-            currencies   => join(',', sort(keys %currencies)),
-            mt5_loginids => join(',', sort(@mt5_loginids)),
-            provider     => $provider,
+            country                     => Locale::Country::code2country($client->residence),
+            currencies                  => join(',', sort(keys %currencies)),
+            mt5_loginids                => join(',', sort(@mt5_loginids)),
+            landing_companies           => @landing_companies ? join ',' => uniq sort @landing_companies : 'virtual',
+            available_landing_companies => $available_landing_companies,
+            provider                    => $provider,
         });
     # Will use this attributes as properties in some events like signup
     $customer->{currency} = $client->account ? $client->account->currency_code : '';
