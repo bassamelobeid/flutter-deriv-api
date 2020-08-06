@@ -180,7 +180,7 @@ sub token_for_client {
             fixup => sub {
                 $_->selectrow_hashref('INSERT INTO oauth.apps (id, binary_user_id, name, scopes, redirect_uri, verification_uri) VALUES (?,?,?,?,?,?) RETURNING *', 
                     undef,
-                    $app_id, $app_user->id, 'P2P Cashier', [qw(read payments)], 'deriv://dp2p/redirect', 'https://p2p-cashier.deriv.com')
+                    $app_id, $app_user->id, 'P2P Cashier', [qw(read payments admin)], 'deriv://dp2p/redirect', 'https://p2p-cashier.deriv.com')
             });
         $log->infof('Created OAuth app ID %d - %s', $app->{id}, $app);
     }
