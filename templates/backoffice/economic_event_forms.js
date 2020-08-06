@@ -415,8 +415,7 @@
 
         var el = \$('div#'+id);
         var news_info_header = [['Symbol','symbol'],['Event Name','event_name'],['Underlying Symbol', 'underlying_symbol'],['Current Spot','current_spot'],['Release Date','release_date'],['Duration','duration'],['Vol Change','vol_change'],['Decay Factor','decay_factor'],['Vol Change Before','vol_change_before'],['Decay Factor Before','decay_factor_before']];
-        var table = '<p>Last Updated Time : <b>' + news_info['time_now'] + '</b> (Refresh Page to update) </p>';
-        table+='<p><b>News Info:</b></p>';
+        var table = '<p><b>News Info:</b></p>';
         table += '<table class="economic_event_table">';
         table += '<tr>';
         for (var i=0; i<news_info_header.length; i++) {

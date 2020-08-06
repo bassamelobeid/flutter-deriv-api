@@ -20,34 +20,26 @@ use BOM::Backoffice::EconomicEventTool;
 use LandingCompany::Registry;
 use Storable qw(dclone);
 
-#Weekly news as global variable that is updated after page refresh
-my $weekly_news = {};
+#News generation
 
-my $underlying_symbol_list;
+sub generate_news {
 
-#Last page refresh time
-my $last_updated_time;
+    my $args = shift // 0;
 
-#Working days for next two weeks
-my $day_diff_matrix = [];
+    my $news = {};
 
-my $day_adjustment = [0 .. 5, -1];
+    if ($args) {
 
-for my $weekday (0 .. 6) {
+        $news->{$args->{date}}->{$args->{underlying_symbol}} =
+            event_retriever($args->{date}, $args->{underlying_symbol});
 
-    $day_diff_matrix->[$weekday] = [grep { $_ >= 0 } map { $_ - $day_adjustment->[$weekday] } 1 .. 5, 8 .. 12];
+        return $news;
+    }
 
-}
+    my $underlying_symbol_list;
 
-#generation of dashboard information
-sub generate_economic_event_form {
-    my $url = shift;
-
-    #update last updated time
-    $last_updated_time = Date::Utility->new()->datetime;
-
-    #update underlying symbol list
     my $landing_company = LandingCompany::Registry::get('virtual');
+
     $underlying_symbol_list = [
         $landing_company->basic_offerings({
                 loaded_revision => 1,
@@ -55,23 +47,41 @@ sub generate_economic_event_form {
             }
         )->query({submarket => 'major_pairs'}, ['underlying_symbol'])];
 
+    #Working days for next two weeks
+    my $day_diff_matrix = [];
+
+    my $day_adjustment = [0 .. 5, -1];
+
+    for my $weekday (0 .. 6) {
+
+        $day_diff_matrix->[$weekday] = [grep { $_ >= 0 } map { $_ - $day_adjustment->[$weekday] } 1 .. 5, 8 .. 12];
+
+    }
+
     ##Extraction of economic events for working days of next two weeks.
 
     my $weekday_today = Date::Utility->new()->day_of_week;
-
-    #Refresh the date
-    $weekly_news = {};
 
     foreach my $day_diff (@{$day_diff_matrix->[$weekday_today]}) {
 
         my $date = Date::Utility->new()->truncate_to_day->plus_time_interval($day_diff . 'd')->date;
 
         foreach my $underlying (@$underlying_symbol_list) {
-            $weekly_news->{$date}->{$underlying} =
+            $news->{$date}->{$underlying} =
                 event_retriever($date, $underlying);
         }
 
     }
+
+    return ($news, $underlying_symbol_list);
+}
+
+#generation of dashboard information
+sub generate_economic_event_form {
+    my $url = shift;
+
+    #update underlying symbol list
+    my ($weekly_news, $underlying_symbol_list) = generate_news();
 
     my $input = update_economic_event_price_preview();
     return BOM::Backoffice::Request::template()->process(
@@ -98,6 +108,7 @@ sub update_economic_event_price_preview {
     }
     catch {
         $prices = {error => 'Exception thrown while calculating prices: ' . $@};
+        warn $prices->{error};
     }
 
     return $prices if $prices->{error};
@@ -129,8 +140,10 @@ sub calculate_economic_event_prices {
     $args->{event_type}             ||= 'significant_event';
     $args->{event_parameter_change} ||= 0;
 
+    my $daily_news = generate_news($args);
+
     #default news event when initialization
-    my $filtered_news = $weekly_news->{$args->{date}}->{$args->{underlying_symbol}}->{$args->{event_timeframe}}->{$args->{event_type}};
+    my $filtered_news = $daily_news->{$args->{date}}->{$args->{underlying_symbol}}->{$args->{event_timeframe}}->{$args->{event_type}};
 
     if (not defined $filtered_news) {
         return;
@@ -141,7 +154,7 @@ sub calculate_economic_event_prices {
     $args->{event_name} ||= $filtered_news->[0];
 
     my $event =
-        dclone($weekly_news->{$args->{date}}->{$args->{underlying_symbol}}->{$args->{event_timeframe}}->{$args->{event_type}}->{$args->{event_name}});
+        dclone($daily_news->{$args->{date}}->{$args->{underlying_symbol}}->{$args->{event_timeframe}}->{$args->{event_type}}->{$args->{event_name}});
 
     #When there is customized change of parameter
     if ($args->{event_parameter_change}) {
@@ -151,6 +164,9 @@ sub calculate_economic_event_prices {
         foreach my $parameter (@$parameter_list) {
 
             if (my $value = $args->{event_parameter_change}->{$parameter}) {
+
+                die "duration should be less than 1000" if (($parameter =~ /duration/) and ($value > 1000));
+
                 $event->{custom}->{$args->{underlying_symbol}}->{$parameter} =
                     ($parameter =~ /duration/) ? $value * 60 : ($parameter =~ /vol_change/) ? $value / 100 : $value;
                 $event->{$parameter} = $value;
@@ -213,7 +229,6 @@ sub calculate_economic_event_prices {
     $event->{release_date} =
         Date::Utility->new($event->{release_date})->datetime;
     $event->{underlying_symbol} = $args->{underlying_symbol};
-    $event->{time_now}          = $last_updated_time;
 
     return ($output, $event);
 
