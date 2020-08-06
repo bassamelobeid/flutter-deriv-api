@@ -26,7 +26,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    }) for qw(USD UST);
+    }) for qw(USD UST JPY GBP JPY-USD USD-GBP);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
@@ -298,6 +298,196 @@ subtest 'stable crypto as payout currency' => sub {
     my $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid multi-day ATM contract with relative barrier.';
     lives_ok { $c->ask_price } 'ask price without exception';
+};
+
+
+subtest 'invalid barrier offset for single barrier contracts' => sub {
+    # my $now = Date::Utility->new;
+     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'R_100'], [100.10, $now->epoch + 1, 'R_100']);
+    my $expiry = $now->plus_time_interval('2m');
+    my $args   = {
+        bet_type     => 'CALL',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
+        date_expiry  => $expiry,
+        barrier => '+0.00001',
+        currency     => 'USD',
+        payout       => 100,
+    };
+
+    my $c = produce_contract($args);
+    lives_ok { $c->ask_price } 'create a single barrier contract without exception';
+     ok !$c->is_valid_to_buy, 'invalid multi-day non ATM contract with relative barrier.';
+
+    is $c->primary_validation_error->message_to_client->[0], '[_1] barrier offset can not have more than [_2] decimal places.';
+    is $c->primary_validation_error->message_to_client->[1], 'The';
+    is $c->primary_validation_error->message_to_client->[2], '2';
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxUSDJPY',
+        recorded_date => $now
+    });
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxUSDJPY',
+            epoch      => $now->epoch,
+            quote      => 100.020,
+        });
+
+     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxUSDJPY',
+            epoch      => $c->date_expiry->epoch,
+            quote      => 100.020,
+        });
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxUSDJPY',
+            epoch      => $c->date_expiry->epoch + 1,
+            quote      => 100.020,
+        });
+ 
+
+     $args   = {
+        bet_type     => 'PUT',
+        underlying   => 'frxUSDJPY',
+        date_start   => $now,
+        date_pricing => $now,
+        barrier => 100.00002,
+        duration     => '3d',
+        currency     => 'USD',
+        payout       => 100
+ 
+    };
+
+    my $c = produce_contract($args);
+    lives_ok { $c->ask_price } 'create a double barrier contract without exception';
+    ok !$c->is_valid_to_buy, 'invalid multi-day non ATM contract with relative barrier.';
+
+    is $c->primary_validation_error->message_to_client->[0], '[_1] barrier offset can not have more than [_2] decimal places.';
+    is $c->primary_validation_error->message_to_client->[1], 'The';
+    is $c->primary_validation_error->message_to_client->[2], '3';
+
+};
+
+subtest 'invalid negative barrier offset' => sub {
+    #  my $now = Date::Utility->new;
+     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'R_100'], [100.10, $now->epoch + 1, 'R_100']);
+    my $expiry = $now->plus_time_interval('2m');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxGBPUSD',
+        recorded_date => $now
+    });
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxGBPUSD',
+            epoch      => $now->epoch,
+            quote      => 1.27512,
+        });
+
+     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxGBPUSD',
+            epoch      => $c->date_expiry->epoch,
+            quote      => 1.27512,
+        });
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxGBPUSD',
+            epoch      => $c->date_expiry->epoch + 1,
+            quote      => 1.27512,
+        });
+ 
+    my $args   = {
+        bet_type     => 'CALLSPREAD',
+        underlying   => 'frxGBPUSD',
+        date_start   => $now,
+        date_pricing => $now,
+        date_expiry  => $expiry,
+        high_barrier => '+2.1',
+        low_barrier  => '-2.1',
+        currency     => 'USD',
+        payout       => 100,
+    };
+
+    my $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid multi-day non ATM contract with relative barrier.';
+    is $c->primary_validation_error->message_to_client->[0], 'Barrier offset [_1] exceeded quote price, contract barrier must be positive.';
+    is $c->primary_validation_error->message_to_client->[1], -2.1;
+};
+
+
+subtest 'invalid barrier offset for double barrier contracts' => sub {
+    # my $now = Date::Utility->new;
+     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch - 1, 'R_100'], [100.10, $now->epoch + 1, 'R_100']);
+    my $expiry = $now->plus_time_interval('2m');
+    my $args   = {
+        bet_type     => 'CALLSPREAD',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
+        date_expiry  => $expiry,
+        high_barrier => '+0.00001',
+        low_barrier  => '-0.01',
+        currency     => 'USD',
+        payout       => 100,
+    };
+
+    my $c = produce_contract($args);
+    lives_ok { $c->ask_price } 'create a double barrier contract without exception';
+     ok !$c->is_valid_to_buy, 'invalid multi-day non ATM contract with relative barrier.';
+
+    is $c->primary_validation_error->message_to_client->[0], '[_1] barrier offset can not have more than [_2] decimal places.';
+    is $c->primary_validation_error->message_to_client->[1], 'High';
+    is $c->primary_validation_error->message_to_client->[2], '2';
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxUSDJPY',
+        recorded_date => $now
+    });
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxUSDJPY',
+            epoch      => $now->epoch,
+            quote      => 100.020,
+        });
+
+     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxUSDJPY',
+            epoch      => $c->date_expiry->epoch,
+            quote      => 100.020,
+        });
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxUSDJPY',
+            epoch      => $c->date_expiry->epoch + 1,
+            quote      => 100.020,
+        });
+ 
+
+     $args   = {
+        bet_type     => 'EXPIRYMISS',
+        underlying   => 'frxUSDJPY',
+        date_start   => $now,
+        date_pricing => $now,
+        high_barrier => 100.00002,
+        duration     => '3d',
+        low_barrier  => 99.08,
+        currency     => 'USD',
+        payout       => 100
+ 
+    };
+
+    my $c = produce_contract($args);
+    lives_ok { $c->ask_price } 'create a double barrier contract without exception';
+    ok !$c->is_valid_to_buy, 'invalid multi-day non ATM contract with relative barrier.';
+
+    is $c->primary_validation_error->message_to_client->[0], '[_1] barrier offset can not have more than [_2] decimal places.';
+    is $c->primary_validation_error->message_to_client->[1], 'High';
+    is $c->primary_validation_error->message_to_client->[2], '3';
+
 };
 
 subtest 'missing trading_period_start' => sub {

@@ -23,20 +23,17 @@ sub BUILD {
             });
             $self->low_barrier($barrier1);
             $self->high_barrier($barrier2);
-        } elsif ($self->has_user_defined_barrier and $barrier1->as_absolute == $barrier2->as_absolute) {
+        } elsif ($self->has_user_defined_barrier
+            and $barrier1->as_absolute == $barrier2->as_absolute
+            and $barrier1->has_valid_decimals
+            and $barrier2->has_valid_decimals)
+        {
             $self->_add_error({
                 severity          => 100,
                 message           => 'High and low barriers must be different',
                 message_to_client => [$ERROR_MAPPING->{SameBarriersNotAllowed}],
                 details           => {field => 'barrier'},
             });
-            # these are dummy barriers that so that the calculation will not die
-            my $min_barrier = $self->underlying->market->integer_barrier ? 1 : $self->pip_size;
-            my $new_low_barrier  = $self->make_barrier($barrier1->as_absolute - $min_barrier, {barrier_kind => 'high'});
-            my $new_high_barrier = $self->make_barrier($barrier2->as_absolute + $min_barrier, {barrier_kind => 'low'});
-            $self->low_barrier($new_low_barrier);
-            $self->high_barrier($new_high_barrier);
-
         }
     }
 
@@ -172,6 +169,14 @@ sub _validate_barrier {
                 ? [$ERROR_MAPPING->{InvalidLowBarrierRange}]
                 : [$ERROR_MAPPING->{InvalidHighLowBarrierRange}],
                 details => {field => ($label eq 'low') ? 'barrier2' : 'barrier'},
+            };
+        }
+        if (not $barrier->has_valid_decimals) {
+            return {
+                severity          => 100,
+                message           => ucfirst($label) . ' barrier decimal error',
+                message_to_client => [$ERROR_MAPPING->{IncorrectBarrierOffsetDecimals}, ucfirst($label), $self->underlying->display_decimals],
+                details => {field => 'barrier'},
             };
         }
     }

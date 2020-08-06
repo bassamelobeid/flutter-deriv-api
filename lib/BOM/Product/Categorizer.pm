@@ -181,7 +181,7 @@ sub _initialize_barrier {
                     );
                 } elsif (abs($high_barrier - $low_barrier) < $epsilon) {
                     BOM::Product::Exception->throw(
-                        error_code => 'InvalidHighBarrier',
+                        error_code => 'SameBarriersNotAllowed',
                         details    => {field => 'barrier'},
                     );
                 }

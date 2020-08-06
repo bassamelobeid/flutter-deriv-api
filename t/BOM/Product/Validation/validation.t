@@ -318,7 +318,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
 };
 
 subtest 'invalid barriers knocked down for great justice' => sub {
-    plan tests => 9;
+    plan tests => 16;
 
     my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
@@ -337,6 +337,11 @@ subtest 'invalid barriers knocked down for great justice' => sub {
 
     my $bet = produce_contract($bet_params);
     my $expected_reasons = [qr/move below minimum/, qr/barrier.*spot.*start/, qr/stake.*same as.*payout/];
+    test_error_list('buy', $bet, $expected_reasons);
+
+    $bet_params->{barrier} = 110.123456;
+    $bet = produce_contract($bet_params);
+    $expected_reasons = [qr/Barrier decimal error/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{barrier} = 110;
@@ -365,12 +370,55 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     $bet_params->{low_barrier}  = 110;      # Surely this must be ok.
     $error = exception { produce_contract($bet_params) };
     isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'High barrier must be higher than low barrier.';
+    is $error->message_to_client->[0], 'High and low barriers must be different.';
+
+    $bet_params->{high_barrier} = 100.099001;    
+    $bet_params->{low_barrier}  = '99.99995';
+    $bet                        = produce_contract($bet_params);
+    $expected_reasons = [qr/High barrier decimal error/];
+    test_error_list('buy', $bet, $expected_reasons);
+
+    $bet_params->{low_barrier} =  99.000001;    
+    $bet                        = produce_contract($bet_params);
+    $expected_reasons = [qr/Low barrier decimal error/];
+    test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{high_barrier} = 110;                             # Ok, I think I get it now.
     $bet_params->{low_barrier}  = 90;
     $bet                        = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but with properly set barriers, it validates just fine.');
+
+    # Also test for relative barriers for single barrier contracts
+    $bet_params->{bet_type}     = 'ONETOUCH';
+    $bet_params->{underlying}   = 'R_100';
+    $bet_params->{duration}     = '5d';
+    $bet_params->{barrier}      = '+11.0001';
+    delete $bet_params->{high_barrier};
+    delete $bet_params->{low_barrier};
+    $bet = produce_contract($bet_params);
+    $expected_reasons = [qr/Barrier decimal error/];
+    test_error_list('buy', $bet, $expected_reasons);
+
+    # Now relative barriers for double barrier contracts
+    $bet_params->{bet_type}     = 'CALLSPREAD';
+    $bet_params->{underlying}   = 'R_100';
+    $bet_params->{duration}     = '3m';
+    $bet_params->{high_barrier} = '+0.0001';                            
+    $bet_params->{low_barrier}  = '-0.01';
+    $bet                        = produce_contract($bet_params);
+    $expected_reasons = [qr/High barrier decimal error/];
+    test_error_list('buy', $bet, $expected_reasons);
+
+    $bet_params->{low_barrier}  = '-0.001';             # Test for low barrier offset 
+    $bet                        = produce_contract($bet_params);
+    $expected_reasons = [qr/Low barrier decimal error/];
+    test_error_list('buy', $bet, $expected_reasons);
+
+    $bet_params->{high_barrier} = '+0.000';     # Test for zero barrier offsets
+    $bet_params->{low_barrier}  = '-0.000';             
+    $bet                        = produce_contract($bet_params);
+    $expected_reasons = [qr/High and low barriers must be different/];
+    test_error_list('buy', $bet, $expected_reasons);
 };
 
 subtest 'volsurfaces become old and invalid' => sub {

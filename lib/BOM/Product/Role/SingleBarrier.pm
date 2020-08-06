@@ -99,6 +99,17 @@ sub _validate_barrier {
             message_to_client => [$ERROR_MAPPING->{InvalidBarrierForSpot}, $self->minimum_allowable_move],
             details           => {field => 'barrier'},
         };
+    } elsif ($barrier->supplied_barrier ne 'S0P') {
+        if (not $barrier->has_valid_decimals) {
+            return {
+                severity          => 100,
+                message           => 'Barrier decimal error',
+                message_to_client => [$ERROR_MAPPING->{IncorrectBarrierOffsetDecimals}, 'The', $self->underlying->display_decimals],
+                details => {field => 'barrier'},
+            };
+
+        }
+
     }
 
     return;

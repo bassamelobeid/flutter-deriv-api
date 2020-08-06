@@ -7,12 +7,15 @@ use Readonly;
 use Date::Utility;
 use POSIX qw( floor );
 use Scalar::Util qw(looks_like_number);
+use Scalar::Util::Numeric qw(isint);
 use Format::Util::Numbers qw/roundcommon/;
 
 use BOM::MarketData qw(create_underlying);
+use Finance::Underlying;
 use Quant::Framework::Underlying;
 use BOM::MarketData::Types;
 use BOM::Product::Static;
+use Math::Round qw(round);
 
 with 'MooseX::Role::Validatable';
 
@@ -141,7 +144,7 @@ sub _build_as_absolute {
             $self->add_errors({
                 severity          => 100,
                 message           => "Non-positive barrier [value: $value]",
-                message_to_client => [BOM::Product::Static::get_error_mapping()->{NegativeContractBarrier}],
+                message_to_client => [BOM::Product::Static::get_error_mapping()->{NegativeContractBarrier}, $diff],
                 details           => {field => $self->barrier_kind eq 'low' ? 'barrier2' : 'barrier'},
             });
             $value = 10 * $underlying->pip_size;
@@ -208,6 +211,23 @@ sub strike_string {
 sub _proper_value {
     my ($self, $value) = @_;
     return $self->underlying->pipsized_value($value, $self->custom_pipsize);
+}
+
+has has_valid_decimals => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_has_valid_decimals {
+    my ($self) = @_;
+    my $is_valid = 1;
+
+    if ($self->supplied_type ne 'relative') {
+        my $precision_order      = $self->underlying->display_decimals;
+        my $precision_multiplier = 10**$precision_order;
+        $is_valid = isint($self->supplied_barrier * $precision_multiplier);
+    }
+    return $is_valid;
 }
 
 __PACKAGE__->meta->make_immutable;
