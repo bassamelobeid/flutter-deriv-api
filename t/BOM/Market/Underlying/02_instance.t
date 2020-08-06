@@ -45,9 +45,9 @@ subtest 'what happens to an undefined symbol name' => sub {
 
     is($symbol_undefined->instrument_type,  'config',   'an undefined symbol has correct instrument_type');
     is($symbol_undefined->feed_license,     'realtime', 'an undefined symbol has correct feed_license');
-    is($symbol_undefined->display_decimals, 4,          'an undefined symbol has correct display_decimals');
+    throws_ok { $symbol_undefined->display_decimals } qr/unknown underlying/, 'dies if unknown underlying calls display_decimals';
 
-    throws_ok { $symbol_undefined->pipsized_value(100.1234567) } qr/unknown underlying/, 'dies if unnown underlying calls pipsize';
+    throws_ok { $symbol_undefined->pipsized_value(100.1234567) } qr/unknown underlying/, 'dies if unknown underlying calls pipsize';
 
     is($symbol_undefined->spot_spread_size, 50,    'an undefined symbol has correct spot_spread_size');
     is($symbol_undefined->spot_spread,      0.005, 'an undefined symbol has correct spot_spread');
@@ -58,7 +58,8 @@ subtest 'display_decimals' => sub {
     subtest 'forex' => sub {
         my $symbols_decimals = {
             frxUSDJPY => 3,
-            frxAUDJPY => 3
+            frxAUDJPY => 3,
+            frxGBPUSD => 5
         };
         my $underlying;
         foreach my $symbol (keys %$symbols_decimals) {
@@ -122,7 +123,7 @@ subtest 'display_decimals' => sub {
 
 subtest 'all attributes on a variety of underlyings' => sub {
     # In case we want to randomly select symbols later, there's this:
-    my @symbols = ('frxUSDZAR', 'GDAXI', 'HSI', 'FRXUSDJPY', 'frxEURUSD', 'frxXAUUSD', 'R_100', 'frxHKDUSD', 'frxUSDEUR', 'FUTHSI_BOM', 'frxNZDAUD',);
+    my @symbols = ('frxUSDZAR', 'GDAXI', 'HSI', 'FRXUSDJPY', 'frxEURUSD', 'frxXAUUSD', 'R_100', 'frxHKDUSD', 'frxUSDEUR', 'frxNZDAUD',);
     foreach my $symbol (@symbols) {
 
         my $underlying = create_underlying($symbol);
