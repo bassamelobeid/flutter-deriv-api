@@ -167,4 +167,18 @@ function validate_month(){
 </script>
 QQ
 
+Bar("Ewallet.exchange Tool");
+my $form;
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/e_wallet_tool_form.html.tt',
+    {
+        broker     => $broker,
+        upload_url => request()->url_for('backoffice/f_upload_ewallet.cgi'),
+    },
+    \$form
+) || die BOM::Backoffice::Request::template()->error();
+
+print $form;
+
 code_exit_BO();

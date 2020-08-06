@@ -38,6 +38,7 @@ my $permissions = {
     'monthly_payments_report.cgi' => ['Accounts'],
     'f_accountingreports.cgi'     => ['Accounts'],
     'aggregate_balance.cgi'       => ['Accounts'],
+    'f_upload_ewallet.cgi'        => ['Accounts'],
 
     'promocode_edit.cgi'            => ['Marketing'],
     'f_promotional.cgi'             => ['Marketing'],

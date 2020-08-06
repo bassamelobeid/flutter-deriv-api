@@ -1,0 +1,147 @@
+<p><b> Process coinpayment HTML into CSV </b></p>
+
+<script type="text/javascript">
+
+        function calculate() {
+          var el = \$('table#calculator');
+          var result = el.find("span.save_result");
+
+          result.text('').css('color', 'black');
+
+          var result_table = \$('table#calculator_result');
+
+          var exchange_rate = Number(el.find('tr#'+'1').find('input[name="exchange_rate"]').val());
+          var amount_received = Number(el.find('tr#'+'2').find('input[name="amount_received"]').val());
+          var fee_in_percent = Number(el.find('tr#'+'3').find('input[name="fee_in_percent"]').val());
+          var fee_amount_in_percent_buy = Number(el.find('tr#'+'4').find('input[name="fee_amount_in_percent_buy"]').val());
+          var fee_amount_in_percent_sell = Number(el.find('tr#'+'5').find('input[name="fee_amount_in_percent_sell"]').val());
+
+          if(isNaN(exchange_rate) || isNaN(amount_received) || isNaN(fee_in_percent) || isNaN(fee_amount_in_percent_buy) || isNaN(fee_amount_in_percent_buy)){
+                result.text('All inputs must be a number').css('color', 'red');
+          }
+
+          /* Information sent */
+          var amount_to_send = amount_received * (1 - (fee_in_percent / 100)) / (1 + (fee_amount_in_percent_buy / 100));
+          var amount_to_send_str = amount_to_send.toFixed(8);
+
+          var add_fees_amount =
+            (amount_received * (1 - (fee_in_percent / 100))) - amount_to_send;
+          var add_fees_amount_str = add_fees_amount.toFixed(8);
+
+          var amount_with_add_fees        = amount_received * (1 - (fee_in_percent / 100));
+          var amount_with_add_fees_str = amount_with_add_fees.toFixed(8);
+
+          var ps_fees_amount_send              = (amount_received * fee_in_percent) / 100;
+          var ps_fees_amount_send_str = ps_fees_amount_send.toFixed(8);
+
+          var amount_with_add_and_ps_fees_send = amount_received;
+          var amount_with_add_and_ps_fees_send_str = amount_with_add_and_ps_fees_send.toFixed(8);
+
+          var amount_for_reserve_send          = amount_with_add_fees;
+          var amount_for_reserve_send_str = amount_for_reserve_send.toFixed(8);
+
+          /* Information received */
+          var amount_at_exchange_rate  = amount_to_send * exchange_rate;
+          var amount_at_exchange_rate_str = amount_at_exchange_rate.toFixed(8);
+
+          var amount_discount_included = amount_to_send * exchange_rate;
+          var amount_discount_included_str = amount_discount_included.toFixed(8);
+
+          var add_fees_amount_rec          = fee_amount_in_percent_sell;
+          var add_fees_amount_rec_str = add_fees_amount_rec.toFixed(8);
+
+          var amount_to_receive = amount_to_send * exchange_rate + fee_amount_in_percent_sell;
+          var amount_to_receive_str = amount_to_receive.toFixed(8);
+
+          var ps_fees_amount = (amount_to_send * exchange_rate + fee_amount_in_percent_sell) * fee_in_percent / 100;
+          var ps_fees_amount_str = ps_fees_amount.toFixed(8);
+
+          var amount_with_add_and_ps_fees = amount_to_receive - ps_fees_amount;
+          var amount_with_add_and_ps_fees_str = amount_with_add_and_ps_fees.toFixed(8);
+          
+          var amount_for_reserve = amount_with_add_and_ps_fees;
+          var amount_for_reserve_str = amount_for_reserve.toFixed(8);
+
+          /* Display the calculated result */
+          result_table.find('tr#'+'1').find('input[name="amount_to_send"]').val(amount_to_send_str);
+          result_table.find('tr#'+'2').find('input[name="add_fees_amount"]').val(add_fees_amount_str);
+          result_table.find('tr#'+'3').find('input[name="amount_with_add_fees"]').val(amount_with_add_fees_str);
+          result_table.find('tr#'+'4').find('input[name="ps_fees_amount"]').val(ps_fees_amount_send_str);
+          result_table.find('tr#'+'5').find('input[name="amount_with_add_ps_fees"]').val(amount_with_add_and_ps_fees_send_str);
+          result_table.find('tr#'+'6').find('input[name="amount_for_reserve"]').val(amount_for_reserve_send_str);
+
+          result_table.find('tr#'+'8').find('input[name="amount_at_exchange_rate"]').val(amount_at_exchange_rate_str);
+          result_table.find('tr#'+'9').find('input[name="amount_discount_included"]').val(amount_discount_included_str);
+          result_table.find('tr#'+'10').find('input[name="add_fees_amount"]').val(add_fees_amount_rec_str);
+          result_table.find('tr#'+'11').find('input[name="amount_to_receive"]').val(amount_to_receive_str);
+          result_table.find('tr#'+'12').find('input[name="ps_fees_amount"]').val(ps_fees_amount_str);
+          result_table.find('tr#'+'13').find('input[name="amount_with_add_and_ps_fees"]').val(amount_with_add_and_ps_fees_str);
+          result_table.find('tr#'+'14').find('input[name="amount_for_reserve"]').val(amount_for_reserve_str);
+
+          return;
+        }
+</script>
+
+<form  name="upload_html_file" action="[% upload_url | none %]" method="POST" enctype="multipart/form-data">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+    <table>
+        <tr><input type="hidden" name="upload_coinpayment_html" value="1"></input></tr>
+        <tr><td>Please select the file to upload</td><td><input type="file" name="filetoupload" id="upload_coinpayment_html_file" value="" size="45"></td></tr>
+        <tr><td colspan=2><input type="submit" name="submit_coinpayment_html" value="Process HTML File"></td></tr>
+    </table>
+</fieldset>
+</form>
+
+<p><b> Process ewallet.exchange CSV </b></p>
+
+<form  name="upload_csv_file" action="[% upload_url | none %]" method="POST" enctype="multipart/form-data">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+    <table>
+        <tr><input type="hidden" name="upload_ewallet_exchange_csv" value="1"></input></tr>
+        <tr><td>Please select the file to upload</td><td><input type="file" name="filetoupload" id="upload_ewallet_exchange_csv_file" value="" size="45"></td></tr>
+        <tr><td colspan=2><input type="submit" name="submit_ewallet_exchange_csv" value="Process CSV File"></td></tr>
+    </table>
+</fieldset>
+</form>
+
+<p><b>Exchange Amount Calculator </b></p>
+
+<form name="exchange_amount_calculator" action="[% upload_url | none %]" METHOD="POST" ENCTYPE="multipart/form-data">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+    <table id="calculator">
+        <tr><input type="hidden" name="calculator" value="1"></input></tr>
+
+        <tr id="1"><td>Exchange rate</td><td> : <INPUT type="text" name="exchange_rate" data-lpignore="true" /></td><td>(e.g. 7742.79)</td></tr>
+        <tr id="2"><td>Amount received in coinpayment</td><td> : <INPUT type="text" name="amount_received" data-lpignore="true" /></td><td>(e.g. 0.001)</td></tr>
+        <tr id="3"><td>Payment system fee (PS feed) in % (This is coinpayment payment system fee)</td><td> : <INPUT type="text" name="fee_in_percent" data-lpignore="true" /></td><td>(e.g. 0.5)</td></tr>
+        <tr id="4"><td>Fees (send) amount in % (This is our commision)</td><td> : <INPUT type="text" name="fee_amount_in_percent_buy" data-lpignore="true" /></td><td>(e.g. 0.1)</td></tr>   
+        <tr id="5"><td>Fees (receive) amount in % (This is our commision)</td><td> : <INPUT type="text" name="fee_amount_in_percent_sell" data-lpignore="true" /></td><td>(e.g. 0.1)</td></tr>
+
+        <tr><td></td><td><button onclick="calculate()" type="button">Calculate</button></td></tr>
+
+        <tr><td></td><td><br><span class="save_result"></span></td></tr>
+    </table>
+
+    <table id="calculator_result">
+        <tr id="0"><td><b> Information "sent" </b></td><td> </td><td></td></tr>
+
+        <tr id="1"><td>Amount to send </td><td> : <INPUT type="text" name="amount_to_send" data-lpignore="true" /> </td><td></td></tr>
+        <tr id="2"><td>Add. fees amount </td><td>: <INPUT type="text" name="add_fees_amount" data-lpignore="true" /> </td><td></td></tr>
+        <tr id="3"><td>Amount (with add. fees)  </td><td> : <INPUT type="text" name="amount_with_add_fees" data-lpignore="true" /></td><td></td></tr>
+        <tr id="4"><td>PS fees amount  </td><td> : <INPUT type="text" name="ps_fees_amount" data-lpignore="true" /> </td><td></td></tr>
+        <tr id="5"><td>Amount (with add. fees and PS fees)  </td><td> : <INPUT type="text" name="amount_with_add_ps_fees" data-lpignore="true" /> </td><td></td></tr>
+        <tr id="6"><td>Amount for reserve  </td><td> : <INPUT type="text" name="amount_for_reserve" data-lpignore="true" /> </td><td></td></tr>
+        <tr id="7"><td><b> Information "received" </b></td><td> </td><td></td></tr>
+
+        <tr id="8"><td>Amount at the Exchange Rate  </td><td> : <INPUT type="text" name="amount_at_exchange_rate" data-lpignore="true" /> </td><td></td></tr>
+        <tr id="9"><td>Amount (discount included)  </td><td> : <INPUT type="text" name="amount_discount_included" data-lpignore="true" /> </td><td></td></tr>
+        <tr id="10"><td>Add. fees amount  </td><td> : <INPUT type="text" name="add_fees_amount" data-lpignore="true" /> </td><td></td></tr>
+        <tr id="11"><td>Amount To receive (add. fees)  </td><td> : <INPUT type="text" name="amount_to_receive" data-lpignore="true" /> </td><td></td></tr>
+        <tr id="12"><td>PS fees amount  </td><td>  : <INPUT type="text" name="ps_fees_amount" data-lpignore="true" /></td><td></td></tr>
+        <tr id="13"><td>Amount To receive (add.fees and PS fees)  </td><td> : <INPUT type="text" name="amount_with_add_and_ps_fees" data-lpignore="true" /> </td><td></td></tr>
+        <tr id="14"><td>Amount for reserve  </td><td> : <INPUT type="text" name="amount_for_reserve" data-lpignore="true" /> </td><td></td></tr>
+
+    </table>
+</fieldset>
+</form>
+
