@@ -207,7 +207,6 @@ subtest "client_verification" => sub {
     $loop->add($services = BOM::Event::Services->new);
     my $redis_write = $services->redis_events_write();
     $redis_write->connect->get;
-    $redis_write->del(BOM::Event::Actions::Client::ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $test_client->user_id)->get;
     mailbox_clear();
 
     lives_ok {
@@ -228,8 +227,6 @@ subtest "client_verification" => sub {
             $_->selectrow_hashref('select * from users.get_onfido_reports(?::BIGINT, ?::TEXT)', undef, $test_client->user_id, $check->{id});
         });
     is($report_data->{check_id}, $check->{id}, 'report is correct');
-    my $msg = mailbox_search(subject => qr/Automated age verification failed/);
-    ok($msg, 'automated age verification failed email sent');
 };
 
 subtest "document upload request context" => sub {
@@ -360,8 +357,6 @@ subtest 'client_verification after upload document himself' => sub {
         filename     => 'photo1.jpg',
         data         => 'photo ' x 50
     )->get;
-
-    $redis_write->del(BOM::Event::Actions::Client::ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $test_client2->user_id)->get;
 
     my $existing_onfido_docs = $dbic->run(
         fixup => sub {
@@ -1063,8 +1058,6 @@ subtest 'onfido resubmission' => sub {
     use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::DAILY::REQUEST::PER::USER::';
 
     # These keys blocks email sending on client verification failure
-    use constant ONFIDO_AGE_EMAIL_PER_USER_PREFIX                => 'ONFIDO::AGE::VERIFICATION::EMAIL::PER::USER::';
-    use constant ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX       => 'ONFIDO::DOB::MISMATCH::EMAIL::PER::USER::';
     use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
     use constant ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX       => 'ONFIDO::POI::EMAIL::NOTIFICATION::SENT::';
     # This key gives resubmission context to onfido webhook event
@@ -1095,8 +1088,6 @@ subtest 'onfido resubmission' => sub {
         applicant_id => $applicant_id
     };
     my $action_handler = BOM::Event::Process::get_action_mappings()->{ready_for_authentication};
-    $redis_events->set(ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id,                1)->get;
-    $redis_events->set(ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id,       1)->get;
     $redis_events->set(ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id, 1)->get;
     $redis_events->set(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $test_client->binary_user_id,       1)->get;
     $redis_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get;
@@ -1105,12 +1096,8 @@ subtest 'onfido resubmission' => sub {
     my $ttl           = $redis_write->ttl(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     is($counter + 1, $counter_after, 'Resubmission Counter has been incremented by 1');
 
-    my $age_email_per_user          = $redis_events->get(ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id)->get;
-    my $dob_mismatch_email_per_user = $redis_events->get(ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id)->get;
     my $age_below_eighteen_per_user = $redis_events->get(ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id)->get;
     my $poi_email_sent              = $redis_events->get(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $test_client->binary_user_id)->get;
-    ok(!$age_email_per_user,          'Email blocker is gone');
-    ok(!$dob_mismatch_email_per_user, 'Email blocker is gone');
     ok(!$age_below_eighteen_per_user, 'Email blocker is gone');
     ok(!$poi_email_sent,              'Email blocker is gone');
 
@@ -1161,9 +1148,6 @@ subtest 'onfido resubmission' => sub {
                 })->get;
         }
         "client verification no exception";
-
-        my $msg = mailbox_search(subject => qr/Automated age verification failed/);
-        ok($msg, 'automated age verification failed email sent');
 
         my $resubmission_context = $redis_write->get(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
         is($resubmission_context, 0, 'Resubmission Context is deleted');

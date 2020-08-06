@@ -89,9 +89,7 @@ use constant ONFIDO_SUPPORTED_COUNTRIES_KEY                    => 'ONFIDO_SUPPOR
 use constant ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT                => $ENV{ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT} // 7 * 86400;                     # 1 week
 use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_PREFIX  => 'ONFIDO::UNSUPPORTED::COUNTRY::EMAIL::PER::USER::';
 use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT => $ENV{ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
-use constant ONFIDO_AGE_EMAIL_PER_USER_PREFIX                  => 'ONFIDO::AGE::VERIFICATION::EMAIL::PER::USER::';
 use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
-use constant ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX         => 'ONFIDO::DOB::MISMATCH::EMAIL::PER::USER::';
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
 
@@ -101,7 +99,6 @@ use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX => 'POA::ALLOW_RESUBMISSION::ID::
 use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;    # 10 days in seconds
 
 # Redis keys to stop sending new emails in a specific time
-use constant ONFIDO_STOP_SENDING_EMAIL_TIMEOUT => $ENV{ONFIDO_STOP_SENDING_EMAIL_TIMEOUT} // 6 * 60 * 60;
 use constant ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX => 'ONFIDO::POI::EMAIL::NOTIFICATION::SENT::';
 
 # Redis key for resubmission counter
@@ -431,8 +428,6 @@ async sub ready_for_authentication {
             # The following redis keys block email sending on client verification failure. We might clear them for resubmission
             my @delete_on_resubmission = (
                 ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
-                ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
-                ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
                 ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id,
             );
 
@@ -549,90 +544,70 @@ async sub client_verification {
                 # Extract all clear documents to check consistency between DOBs
                 if (my @valid_doc = grep { (defined $_->{properties}->{date_of_birth} and $_->result eq 'clear') } @reports) {
                     my %dob = map { ($_->{properties}{date_of_birth} // '') => 1 } @valid_doc;
-                    my ($first_dob, @other_dob) = keys %dob;
+                    my ($first_dob) = keys %dob;
                     # All documents should have the same date of birth
-                    if (@other_dob) {
-                        await _send_report_automated_age_verification_failed({
-                            client         => $client,
-                            short_reason   => 'dob_not_same',
-                            failure_reason => "as birth dates are not the same in the documents.",
-                            redis_key      => ONFIDO_DOB_MISMATCH_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
-                        });
-                    } else {
-                        # Override date_of_birth if there is mismatch between Onfido report and client submited data
-                        if ($client->date_of_birth ne $first_dob) {
-                            try {
-                                my $user = $client->user;
+                    # Override date_of_birth if there is mismatch between Onfido report and client submited data
+                    if ($client->date_of_birth ne $first_dob) {
+                        try {
+                            my $user = $client->user;
 
-                                foreach my $lid ($user->bom_real_loginids) {
-                                    my $current_client = BOM::User::Client->new({loginid => $lid});
-                                    $current_client->date_of_birth($first_dob);
-                                    $current_client->save;
-                                }
+                            foreach my $lid ($user->bom_real_loginids) {
+                                my $current_client = BOM::User::Client->new({loginid => $lid});
+                                $current_client->date_of_birth($first_dob);
+                                $current_client->save;
                             }
-                            catch {
-                                my $e = $@;
-                                $log->debugf('Error updating client date of birth: %s', $e);
-                                exception_logged();
-                            };
-
-                            # Update applicant data
-                            BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
-                            $log->debugf("Updating client's date of birth due to mismatch between Onfido's response and submitted information");
                         }
-                        # Age verified if report is clear and age is above minimum allowed age, otherwise send an email to notify cs
-                        # Get the minimum age from the client's residence
-                        my $min_age = $BRANDS->countries_instance->minimum_age_for_country($client->residence);
-                        if (Date::Utility->new($first_dob)->is_before(Date::Utility->new->_minus_years($min_age))) {
-                            _update_client_status(
-                                client       => $client,
-                                status       => 'age_verification',
-                                message      => 'Onfido - age verified',
-                                sync         => 1,
-                                resubmission => $resubmission
-                            );
+                        catch {
+                            my $e = $@;
+                            $log->debugf('Error updating client date of birth: %s', $e);
+                            exception_logged();
+                        };
 
-                        } else {
-
-                            my $siblings = $client->real_account_siblings_information(include_disabled => 0);
-
-                            # check if there is balance
-                            my $have_balance = (any { $siblings->{$_}->{balance} > 0 } keys %{$siblings}) ? 1 : 0;
-
-                            my $email_details = {
-                                client         => $client,
-                                short_reason   => 'under_18',
-                                failure_reason => "because Onfido reported the date of birth as $first_dob which is below age 18.",
-                                redis_key      => ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
-                                is_disabled    => 0,
-                                account_info   => $siblings,
-                            };
-
-                            unless ($have_balance) {
-                                # if all of the account doesn't have any balance, disable them
-                                for my $each_siblings (keys %{$siblings}) {
-                                    my $current_client = BOM::User::Client->new({loginid => $each_siblings});
-                                    $current_client->status->set('disabled', 'system', 'Onfido - client is underage');
-                                }
-
-                                # need to send email to client
-                                _send_email_underage_disable_account($client);
-
-                                $email_details->{is_disabled} = 1;
-                            }
-
-                            await _send_report_automated_age_verification_failed($email_details);
-                        }
+                        # Update applicant data
+                        BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
+                        $log->debugf("Updating client's date of birth due to mismatch between Onfido's response and submitted information");
                     }
-                } else {
-                    my $result = @reports ? $reports[0]->result : 'blank';
-                    my $failure_reason = "as onfido result was marked as $result.";
-                    await _send_report_automated_age_verification_failed({
-                        client         => $client,
-                        short_reason   => 'check_not_pass',
-                        failure_reason => $failure_reason,
-                        redis_key      => ONFIDO_AGE_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
-                    });
+                    # Age verified if report is clear and age is above minimum allowed age, otherwise send an email to notify cs
+                    # Get the minimum age from the client's residence
+                    my $min_age = $BRANDS->countries_instance->minimum_age_for_country($client->residence);
+                    if (Date::Utility->new($first_dob)->is_before(Date::Utility->new->_minus_years($min_age))) {
+                        _update_client_status(
+                            client       => $client,
+                            status       => 'age_verification',
+                            message      => 'Onfido - age verified',
+                            sync         => 1,
+                            resubmission => $resubmission
+                        );
+
+                    } else {
+                        my $siblings = $client->real_account_siblings_information(include_disabled => 0);
+
+                        # check if there is balance
+                        my $have_balance = (any { $siblings->{$_}->{balance} > 0 } keys %{$siblings}) ? 1 : 0;
+
+                        my $email_details = {
+                            client         => $client,
+                            short_reason   => 'under_18',
+                            failure_reason => "because Onfido reported the date of birth as $first_dob which is below age 18.",
+                            redis_key      => ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
+                            is_disabled    => 0,
+                            account_info   => $siblings,
+                        };
+
+                        unless ($have_balance) {
+                            # if all of the account doesn't have any balance, disable them
+                            for my $each_siblings (keys %{$siblings}) {
+                                my $current_client = BOM::User::Client->new({loginid => $each_siblings});
+                                $current_client->status->set('disabled', 'system', 'Onfido - client is underage');
+                            }
+
+                            # need to send email to client
+                            _send_email_underage_disable_account($client);
+
+                            $email_details->{is_disabled} = 1;
+                        }
+
+                    }
                 }
 
                 # Update expiration_date and document_id of each document in DB
@@ -1344,70 +1319,6 @@ sub _send_email_underage_disable_account {
         email_content_is_html => 1,
         use_event             => 1,
     });
-
-    return undef;
-}
-
-=head2 _send_report_automated_age_verification_failed
-
-Send email to CS because of which we were not able to mark client as age_verified
-
-=cut
-
-async sub _send_report_automated_age_verification_failed {
-    my $args = shift;
-
-    my ($client, $short_reason, $failure_reason, $redis_key, $is_disabled, $account_info) =
-        @{$args}{qw/client short_reason failure_reason redis_key is_disabled account_info/};
-
-    # Prevent sending multiple emails for the same user
-    my $redis_events_read = _redis_events_read();
-    await $redis_events_read->connect;
-    return undef if await $redis_events_read->exists($redis_key);
-
-    my $email_content;
-
-    if ($short_reason eq 'under_18') {
-        $email_content = "The client is detected as underage by Onfido ";
-
-        if ($is_disabled) {
-            $email_content .= "and was disabled as there is no balance. ";
-        } else {
-            $email_content .= "but not disabled as there is balance in: ";
-
-            for my $each_client (keys %{$account_info}) {
-                my $balance = $account_info->{$each_client}->{balance};
-                $email_content .= " $each_client" if ($balance > 0);
-            }
-            $email_content .= '.';
-        }
-    }
-
-    my $loginid = $client->loginid;
-
-    $email_content .= "We were unable to automatically mark client ($loginid) as age verified, $failure_reason Please check and verify.";
-
-    $log->debugf("Can not mark client (%s) as age verified, failure reason is %s", $loginid, $failure_reason);
-
-    my $email_subject = "Automated age verification failed for $loginid";
-
-    my $from_email   = $BRANDS->emails('no-reply');
-    my $to_email     = $BRANDS->emails('authentications');
-    my $email_status = Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->text_body($email_content)->send();
-
-    if ($email_status) {
-        my $redis_events_write = _redis_events_write();
-        await $redis_events_write->connect;
-        await $redis_events_write->setex($redis_key, ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT, 1);
-
-        # POI email sent, will be valid for 6 hours
-        await $redis_events_write->setex(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id, ONFIDO_STOP_SENDING_EMAIL_TIMEOUT, 1)
-            unless ($client->landing_company->is_eu);
-
-    } else {
-        $log->warn('Failed to send Onfido age verification email.');
-        return 0;
-    }
 
     return undef;
 }
