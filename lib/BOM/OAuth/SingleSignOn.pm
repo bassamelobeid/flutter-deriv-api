@@ -32,7 +32,28 @@ my %broker_mapping = (
 my @dictionary;
 
 BEGIN {
-    my %bad_words = map { $_ => 1 } path('/opt/bad_words_en.text')->lines_utf8({chomp => 1});
+    ## This is a list of "naughty" words with ROT-13 to obfuscate.
+    ## Because you do NOT want to look at this list of words.
+    my %bad_words = map { y/N-ZA-z/A-za-m/r => 1 } qw/
+        nohfref  nohfvir  nqhygre  nveurnq  nzchgrr  ncrfuvg  nerbyne  nebhfny  nebhfrq  nebhfre
+        nebhfrf  nfrkhny  nffurnq  nffubyr  ngurvfz  ngurvfg  nherbyn  nherbyr  onfgneq  ornaref
+        orqnzaf  oribzvg  ovgpurq  ovgpurf  oybjwbo  obvaxrq  obaqntr  oernfgf  ohpxnff  ohssbba
+        ohttref  ohttrel  pnepnff  prffcvg  puvaxvr  pubyren  pbaqbzf  pbbanff  pencbyn  pelonol
+        phzzref  phzzvat  qnzavat  qrnqrfg  qrnqzna  qrnqzra  qrobjry  qrsvyre  qrsvyrf  qrzbavp
+        qvpxref  qvcfuvg  qvegont  qvfrnfr  qbtfuvg  qhzonff  rarzngn  rebgvfz  rivyrfg  snttbgf
+        snttbgl  snegvat  srfgref  svttvat  svfgvat  shpxref  shpxvat  shpxbss  shpxhcf  shpxjvg
+        shaqvrf  trfgncb  tbqqnza  tbqyrff  uneqnff  uneybgf  unfvqvp  ungrshy  uryyobk  uryypng
+        uryyqbt  uryyvfu  ubbxref  uhzcvat  vqvbgvp  vaprfgf  vafnare  wnpxnff  wrexvre  wvtnobb
+        wvirnff  xvpxnff  xvyypbj  xvyywbl  xvffbss  yncpbpx  yrfovna  yrfvbaf  yvovqbf  yhpvsre
+        yhangvp  zheqref  anxrqyl  avttref  avccyrf  alzcubf  betnfzf  cnagvrf  crttvat  cravfrf
+        creireg  cvturnq  cvzcyrf  cvffnag  cvffref  cvffvat  cvffcbg  cynlobl  cbbsgnu  cbbsgre
+        cbbcvat  cbgurnq  cerqnza  chffvre  chffvrf  dhrreyl  enpvfzf  enturnq  encnoyr  encrshy
+        engsvax  engfuvg  erpghzf  ergneqf  eribzvg  evzzvat  fngnavp  fpuvmbf  fpuvmmb  fpuvmml
+        fphzont  frkvrfg  frkvfgf  frkyrff  frkcreg  frkcbgf  funtont  fuvggrq  fulfgre  fynttre
+        fyhggrq  fzrtznf  fcnfgvp  fgvaxre  fjvatre  grgnahf  gvggvrf  gbcyrff  gbegher  genvgbe
+        gjvaxvr  htyvrfg  haobjry  hatbqyl  hcibzvg  intvanr  intvany  intvanf  ivzhfre  ibzvgrq
+        ibzvgre  ibzvgbf  ibzvghf  jnaxref  jnaxvat  jrgonpx  jvfrnff
+        /;
     @dictionary = grep { /^[a-z]{7}$/ && !exists $bad_words{$_} } path("/usr/share/dict/words")->lines_utf8({chomp => 1});
 }
 
