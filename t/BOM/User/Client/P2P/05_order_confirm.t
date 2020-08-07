@@ -453,7 +453,7 @@ subtest 'Advertiser confirms pending buy order' => sub {
         type             => 'sell'
     );
 
-    my $client = BOM::Test::Helper::P2P::create_client();
+    my $client = BOM::Test::Helper::P2P::create_advertiser();
 
     my $order = $client->p2p_order_create(
         advert_id => $advert_info->{id},
@@ -480,7 +480,7 @@ subtest 'Client confirms not pending (cancelled) buy order' => sub {
         type             => 'sell'
     );
 
-    my $client = BOM::Test::Helper::P2P::create_client();
+    my $client = BOM::Test::Helper::P2P::create_advertiser();
 
     my $order = $client->p2p_order_create(
         advert_id => $advert_info->{id},
@@ -509,7 +509,7 @@ subtest 'Client confirms pending sell order' => sub {
         type             => 'buy'
     );
 
-    my $client = BOM::Test::Helper::P2P::create_client($ad_amount);
+    my $client = BOM::Test::Helper::P2P::create_advertiser(balance => $ad_amount);
 
     ok my $order = $client->p2p_order_create(
         advert_id    => $advert_info->{id},
@@ -538,7 +538,7 @@ subtest 'Advertiser confirms not pending (cancelled) sell order' => sub {
         type             => 'buy'
     );
 
-    my $client = BOM::Test::Helper::P2P::create_client($ad_amount);
+    my $client = BOM::Test::Helper::P2P::create_advertiser(balance => $ad_amount);
 
     my $order = $client->p2p_order_create(
         advert_id    => $advert_info->{id},

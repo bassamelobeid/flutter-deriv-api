@@ -44,7 +44,8 @@ $user->add_client($test_client_cr);
 my $advertiser_name = 'Ad_man';
 
 subtest 'advertiser Registration' => sub {
-    my $client = BOM::Test::Helper::P2P::create_client();
+    my $client = BOM::Test::Helper::Client::create_client();
+    $client->account('USD');
 
     cmp_deeply(exception { $client->p2p_advertiser_create() }, {error_code => 'AdvertiserNameRequired'}, 'Error when advertiser name is blank');
 
@@ -69,10 +70,10 @@ subtest 'advertiser Registration' => sub {
 
 subtest 'advertiser already age verified' => sub {
 
-    my $client = BOM::Test::Helper::P2P::create_client();
+    my $client = BOM::Test::Helper::Client::create_client();
+    $client->account('USD');
     $client->status->set('age_verification', 'system', 'testing');
-    ok $client->p2p_advertiser_create(name => 'age_verified already')->{is_approved}, "create advertiser";
-    my $advertiser_info = $client->p2p_advertiser_info;
+    ok $client->p2p_advertiser_create(name => 'age_verified already')->{is_approved};
     ok $client->p2p_advertiser_info->{is_approved}, 'advertiser is approved';
     ok !$client->status->allow_document_upload, 'allow_document_upload status not present';
 };
@@ -91,7 +92,8 @@ subtest 'Duplicate advertiser Registration' => sub {
 
 subtest 'Advertiser name already taken' => sub {
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
-    my $client     = BOM::Test::Helper::P2P::create_client();
+    my $client     = BOM::Test::Helper::Client::create_client();
+    $client->account('USD');
 
     cmp_deeply(
         exception { $client->p2p_advertiser_create(name => 'ad_MAN') },

@@ -2133,6 +2133,10 @@ sub p2p_order_create {
 
     my ($advert_id, $amount, $expiry, $payment_info, $contact_info, $source) = @param{qw/advert_id amount expiry payment_info contact_info source/};
 
+    my $client_info = $client->_p2p_advertisers(loginid => $client->loginid)->[0];
+    die +{error_code => 'AdvertiserNotFoundForOrder'}    unless $client_info;
+    die +{error_code => 'AdvertiserNotApprovedForOrder'} unless $client_info->{is_approved};
+
     my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
     $expiry //= $p2p_config->order_timeout;
     my $limit_per_day_per_client = $p2p_config->limits->count_per_day_per_client;

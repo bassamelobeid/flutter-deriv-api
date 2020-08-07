@@ -28,7 +28,8 @@ $mock_events->mock(
     });
 
 subtest 'create_advertiser' => sub {
-    my $client = BOM::Test::Helper::P2P::create_client();
+    my $client = BOM::Test::Helper::Client::create_client();
+    $client->account('USD');
     my %params = (name => 'advertiser 1 name');
 
     $mock_sb->mock('create_user', sub { die });
@@ -56,7 +57,8 @@ subtest 'create_advertiser' => sub {
 };
 
 subtest 'chat_token' => sub {
-    my $client = BOM::Test::Helper::P2P::create_client();
+    my $client = BOM::Test::Helper::Client::create_client();
+    $client->account('USD');
 
     is exception { $client->p2p_chat_token() }->{error_code} => 'AdvertiserNotFoundForChatToken',
         'client is non-advertiser';
@@ -67,7 +69,7 @@ subtest 'chat_token' => sub {
     is $advertiser->{chat_token}, 'dummy', 'token issued when advertiser created';
 
     $mock_sb_user->mock('issue_session_token', sub { die });
-    my $resp = $client->p2p_chat_token();
+    my $resp = eval { $client->p2p_chat_token() };
     is $resp->{token}, 'dummy', 'token not reissued';
     is $resp->{expiry_time}, $expiry, 'correct expiry time';
 
@@ -115,16 +117,10 @@ subtest 'create chat' => sub {
         'non-existent order';
     is exception { $client->p2p_chat_create(order_id => -1) }->{error_code} => 'OrderNotFound',
         'non-existent order';
-    is exception { $client->p2p_chat_create(order_id => $order->{id}) }->{error_code} => 'AdvertiserNotFoundForChat',
-        'client is non-advertiser';
 
-    my $other_client = BOM::Test::Helper::P2P::create_client();
+    my $other_client = BOM::Test::Helper::Client::create_client();
     is exception { $other_client->p2p_chat_create(order_id => $order->{id}) }->{error_code} => 'PermissionDenied',
         '3rd party client cannot create chat';
-
-    is exception { $advertiser->p2p_chat_create(order_id => $order->{id}) }->{error_code} => 'CounterpartyNotAdvertiserForChat',
-        'counterparty is non-advertiser';
-    $client->p2p_advertiser_create(name => 'advertiser 3 name');
 
     $mock_sb->mock('create_group_chat', sub { die });
     is exception { $advertiser->p2p_chat_create(order_id => $order->{id}); }->{error_code} => 'CreateChatError',

@@ -30,7 +30,7 @@ my @created_orders = ();
 
 my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(%ad_params, advertiser => {first_name=>'john',last_name=>'smith'});
 
-my $client = BOM::Test::Helper::P2P::create_client(undef, {first_name=>'mary', last_name=>'jane'});
+my $client = BOM::Test::Helper::P2P::create_advertiser(client_details => {first_name=>'mary', last_name=>'jane'});
 my $new_order = $client->p2p_order_create(
     advert_id => $advert_info->{id},
     amount    => 20,
@@ -38,7 +38,8 @@ my $new_order = $client->p2p_order_create(
 );
 push @created_orders, $new_order;
 
-my $second_client = BOM::Test::Helper::P2P::create_client(undef, {first_name=>'mary2', last_name=>'jane2'});
+note explain $@;
+my $second_client = BOM::Test::Helper::P2P::create_advertiser(client_details => {first_name=>'mary2', last_name=>'jane2'});
 my $new_order2 = $second_client->p2p_order_create(
     advert_id => $advert_info->{id},
     amount    => 20,
@@ -46,7 +47,7 @@ my $new_order2 = $second_client->p2p_order_create(
 );
 push @created_orders, $new_order2;
 
-my $third_client = BOM::Test::Helper::P2P::create_client(undef, {first_name=>'mary3', last_name=>'jane3'});
+my $third_client = BOM::Test::Helper::P2P::create_advertiser(client_details => {first_name=>'mary3', last_name=>'jane3'});
 my $new_order3 = $third_client->p2p_order_create(
     advert_id => $advert_info->{id},
     amount    => 20,
@@ -54,7 +55,7 @@ my $new_order3 = $third_client->p2p_order_create(
 );
 push @created_orders, $new_order3;
 
-my $fourth_client = BOM::Test::Helper::P2P::create_client(undef, {first_name=>'mary4', last_name=>'jane4'});
+my $fourth_client = BOM::Test::Helper::P2P::create_advertiser(client_details => {first_name=>'mary4', last_name=>'jane4'});
 my $new_order4 = $fourth_client->p2p_order_create(
     advert_id => $advert_info->{id},
     amount    => 20,

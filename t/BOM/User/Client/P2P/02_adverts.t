@@ -54,12 +54,14 @@ my %advert_params = (
 subtest 'Creating advert from non-advertiser' => sub {
     my %params = %advert_params;
 
-    my $client = BOM::Test::Helper::P2P::create_client();
+    my $client = BOM::Test::Helper::Client::create_client();
+    $client->account('USD');
     cmp_deeply(exception { $client->p2p_advert_create(%params) }, {error_code => 'AdvertiserNotRegistered'}, "non advertiser can't create advert");
 };
 
 subtest 'advertiser Registration' => sub {
-    my $adv_client = BOM::Test::Helper::P2P::create_client();
+    my $adv_client = BOM::Test::Helper::Client::create_client();
+    $adv_client->account('USD');
 
     cmp_deeply(exception { $adv_client->p2p_advertiser_create() }, {error_code => 'AdvertiserNameRequired'}, 'Error when advertiser name is blank');
 
@@ -86,7 +88,7 @@ subtest 'advertiser Registration' => sub {
     my $advertiser_info = $adv_client->p2p_advertiser_info;
     cmp_deeply($advertiser_info, $expected, 'correct advertiser_info for advertiser');
 
-    my $other_client = BOM::Test::Helper::P2P::create_client();
+    my $other_client = BOM::Test::Helper::P2P::create_advertiser();
     $advertiser_info = $other_client->p2p_advertiser_info(id => $adv->{id});
     delete $expected->@{qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit/};
     cmp_deeply($advertiser_info, $expected, 'sensitve fields hidden in advertiser_info for other client');
@@ -104,7 +106,8 @@ subtest 'Duplicate advertiser Registration' => sub {
         "cannot create second advertiser for a client"
     );
 
-    my $client = BOM::Test::Helper::P2P::create_client();
+    my $client = BOM::Test::Helper::Client::create_client();
+    $client->account('USD');
 
     cmp_deeply(
         exception {
@@ -406,9 +409,9 @@ subtest 'Updating advert' => sub {
     );
     ok $advert->{is_active}, 'advert is active';
 
-    my $client = BOM::Test::Helper::P2P::create_client();
+    my $client = BOM::Test::Helper::P2P::create_advertiser();
     cmp_deeply(
-        exception { $client->p2p_advert_update(id => $advert->{id}, is_active => 0) },
+        exception { $client->p2p_advert_update(id => $advert->{id}, is_listed => 0) },
         {error_code => 'PermissionDenied'},
         "Other client cannot edit advert"
     );

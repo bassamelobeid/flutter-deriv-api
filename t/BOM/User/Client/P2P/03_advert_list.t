@@ -22,7 +22,7 @@ populate_exchange_rates();
 subtest 'Seller lists ads and those with a min order amount greater than its balance are excluded' => sub {
     my $seller_balance = 10;
     my $escrow         = BOM::Test::Helper::P2P::create_escrow();
-    my $seller         = BOM::Test::Helper::P2P::create_client($seller_balance);
+    my $seller         = BOM::Test::Helper::P2P::create_advertiser(balance => $seller_balance);
 
     cmp_ok $seller->account->balance, '==', $seller_balance, "Seller balance is $seller_balance";
 
@@ -49,9 +49,11 @@ subtest 'Seller lists ads and those with a min order amount greater than its bal
 my ($advertiser1, $advert1) = BOM::Test::Helper::P2P::create_advert(amount => 100);
 my ($advertiser2, $advert2) = BOM::Test::Helper::P2P::create_advert(amount => 100);
 
-my $client1 = BOM::Test::Helper::P2P::create_client();
+my $client1 = BOM::Test::Helper::Client::create_client();
+$client1->account('USD');
 $client1->residence('ID');
-my $client2 = BOM::Test::Helper::P2P::create_client();
+my $client2 = BOM::Test::Helper::Client::create_client();
+$client2->account('USD');
 $client2->residence('MY');
 my $client3 = BOM::Test::Helper::Client::create_client();
 $client3->account('EUR');
