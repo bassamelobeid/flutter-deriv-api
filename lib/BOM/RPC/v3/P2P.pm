@@ -94,9 +94,10 @@ our %ERROR_MAP = do {
         OrderCreateFailClient     => localize("There was a problem in placing this order. [_1]"),
         AdvertiserNameRequired    => localize("Please provide your name."),
         AdvertiserNameTaken       => localize("This name is already in use. Please provide a different name."),
-        AdvertiserNotApproved     => localize("You've not been approved as an advertiser yet. Please contact our Customer Support team."),
-        AdvertiserNotFound        => localize("We can't find the advertiser. Please review the details and try again."),
-        AdvertiserNotListed       => localize("This advertiser is currently inactive. Please check again later or choose another advertiser."),
+        AdvertiserNotApproved =>
+            localize("Before you can post an ad, we need to verify your identity. Please complete your identity verification at Deriv.com."),
+        AdvertiserNotFound      => localize("We can't find the advertiser. Please review the details and try again."),
+        AdvertiserNotListed     => localize("This advertiser is currently inactive. Please check again later or choose another advertiser."),
         AdvertiserNotRegistered => localize("Please apply to be an advertiser. If you've already applied, please contact our Customer Support team."),
         AdvertMaxExceeded       => localize("You've reached the maximum ad limit. Please deactivate some ads."),
         AdvertNotFound          => localize("We can't find the ad. Please review the details or try another ad."),
@@ -116,6 +117,11 @@ our %ERROR_MAP = do {
         OrderMinimumNotMet          => localize("Minimum ad amount is [_1] [_2]. Please adjust the value."),
         OrderNoEditExpired          => localize("This order has expired and cannot be changed."),
         OrderNotFound               => localize("This order does not exist."),
+        AdvertiserNotFoundForOrder  => localize(
+            "You are using an old version of this app, which no longer supports placing orders. Please upgrade your app to place your order.")
+        ,    # Temporary error message should be removed after releasing KYC for p2p and we sure that clients updated mobile app.
+        AdvertiserNotApprovedForOrder =>
+            localize("Before you can place an order, we need to verify your identity. Please complete your identity verification at Deriv.com."),
         OrderMaximumTempExceeded => localize("Maximum order amount at this time is [_1] [_2]. Please adjust the value or try up to 24 hours later."),
 
         # TODO these messages needs to be checked with copywritter team

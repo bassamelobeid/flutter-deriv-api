@@ -322,7 +322,7 @@ subtest 'Adverts' => sub {
 subtest 'Create new order' => sub {
     BOM::Test::Helper::P2P::create_escrow();
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
-    my $client = BOM::Test::Helper::P2P::create_client();
+    my $client = BOM::Test::Helper::P2P::create_advertiser();
     my $params;
     $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
@@ -353,7 +353,7 @@ subtest 'Prevent create orders more than daily order limit number' => sub {
     is($app_config->payments->p2p->limits->count_per_day_per_client, 5, 'Change `count_per_day_per_client` setting value to 5');
 
     # Create client
-    my $client = BOM::Test::Helper::P2P::create_client(100);
+    my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
 
     for (my $i = 0; $i < $app_config->payments->p2p->limits->count_per_day_per_client - 1; $i++) {
         ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
