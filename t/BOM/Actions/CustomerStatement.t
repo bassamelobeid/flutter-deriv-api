@@ -221,6 +221,7 @@ is $error, undef, 'no error buying contract';
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
 my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
+$test_client->p2p_advertiser_create(name => 'test client');
 my $order = BOM::Test::Helper::P2P::create_order(
     amount    => 50,
     advert_id => $advert->{id},

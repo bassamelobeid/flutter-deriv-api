@@ -85,7 +85,7 @@ subtest 'p2p order created' => sub {
         currency            => 'USD',
         advertiser_nickname => $order->{advertiser_details}->{name},
         advertiser_user_id  => $advertiser->binary_user_id,
-        client_nickname     => $order->{client_name} // '',
+        client_nickname     => $order->{client_details}->{name} // '',
         client_user_id      => $client->binary_user_id,
         },
         'properties are set properly for p2p_order_create event';
