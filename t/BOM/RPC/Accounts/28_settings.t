@@ -74,6 +74,31 @@ my $test_client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client
 $test_client_cr_2->email('sample@binary.com');
 $test_client_cr_2->save;
 
+my $test_client_cr_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$test_client_cr_3->email('sample@binary.com');
+$test_client_cr_3->save;
+
+my $payment_agent_args = {
+    payment_agent_name    => $test_client_cr_3->first_name,
+    currency_code         => 'USD',
+    url                   => 'http://www.example.com/',
+    email                 => $test_client_cr_3->email,
+    phone                 => $test_client_cr_3->phone,
+    information           => 'Test Info',
+    summary               => 'Test Summary',
+    commission_deposit    => 0,
+    commission_withdrawal => 0,
+    is_authenticated      => 't',
+};
+
+#make him payment agent
+$test_client_cr_3->payment_agent($payment_agent_args);
+$test_client_cr_3->save;
+#set countries for payment agent
+$test_client_cr_3->get_payment_agent->set_countries(['id', 'in']);
+
 my $user_cr = BOM::User->create(
     email    => 'sample@binary.com',
     password => $hash_pwd
@@ -82,6 +107,7 @@ my $user_cr = BOM::User->create(
 $user_cr->add_client($test_client_cr_vr);
 $user_cr->add_client($test_client_cr);
 $user_cr->add_client($test_client_cr_2);
+$user_cr->add_client($test_client_cr_3);
 
 my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
@@ -139,6 +165,7 @@ my $m              = BOM::Platform::Token::API->new;
 my $token          = $m->create_token($test_client->loginid, 'test token');
 my $token_cr       = $m->create_token($test_client_cr->loginid, 'test token');
 my $token_cr_2     = $m->create_token($test_client_cr_2->loginid, 'test token');
+my $token_cr_3     = $m->create_token($test_client_cr_3->loginid, 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_mx       = $m->create_token($test_client_mx->loginid, 'test token');
@@ -262,7 +289,7 @@ subtest 'get settings' => sub {
             'first_name'                     => 'bRaD',
             'email_consent'                  => '0',
             'allow_copiers'                  => '0',
-            'client_tnc_status'              => '1',
+            'client_tnc_status'              => '',
             'place_of_birth'                 => undef,
             'tax_residence'                  => undef,
             'tax_identification_number'      => undef,
@@ -271,9 +298,45 @@ subtest 'get settings' => sub {
             'citizen'                        => 'at',
             'user_hash'                      => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}->{account_secret}),
             'has_secret_answer'              => 1,
-            'non_pep_declaration'            => 1,
+            'non_pep_declaration'            => 0,
         },
         'vr client return real account information when it has sibling'
+    );
+
+    $params->{token} = $token_cr_3;
+    $result = $c->tcall($method, $params);
+    is_deeply(
+        $result,
+        {
+            'country'                        => 'Indonesia',
+            'residence'                      => 'Indonesia',
+            'salutation'                     => 'MR',
+            'is_authenticated_payment_agent' => '1',
+            'country_code'                   => 'id',
+            'date_of_birth'                  => '267408000',
+            'address_state'                  => 'LA',
+            'address_postcode'               => '232323',
+            'phone'                          => '+15417543010',
+            'last_name'                      => 'pItT',
+            'email'                          => 'sample@binary.com',
+            'address_line_2'                 => '301',
+            'address_city'                   => 'Beverly Hills',
+            'address_line_1'                 => 'Civic Center',
+            'first_name'                     => 'bRaD',
+            'email_consent'                  => '0',
+            'allow_copiers'                  => '0',
+            'client_tnc_status'              => '',
+            'place_of_birth'                 => undef,
+            'tax_residence'                  => undef,
+            'tax_identification_number'      => undef,
+            'account_opening_reason'         => undef,
+            'request_professional_status'    => 0,
+            'citizen'                        => 'at',
+            'user_hash'                      => hmac_sha256_hex($user_cr->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+            'has_secret_answer'              => 1,
+            'non_pep_declaration'            => 1,
+        },
+        'return 1 for authenticated payment agent'
     );
 
 };

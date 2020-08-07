@@ -1147,8 +1147,7 @@ rpc get_settings => sub {
         $country = request()->brand->countries_instance->countries->localized_code2country($client->residence, $params->{language});
     }
 
-    my $client_tnc_status = $client->status->tnc_approval;
-    my $user              = $client->user;
+    my $user = $client->user;
 
     my $settings = {
         email     => $user->email,
@@ -1162,10 +1161,14 @@ rpc get_settings => sub {
             ? (user_hash => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}{account_secret}))
             : ())};
 
-    # We should pick the information from the first created account to return account settings
     my @clients = grep { not $_->is_virtual } $user->clients(include_disabled => 0);
     my ($real_client) = sort { $b->date_joined cmp $a->date_joined } @clients;
+
     if ($real_client) {
+        # We should pick the information from the first created account for
+        # account settings attributes/fields that sync between clients - personal information
+        # And, use current client to return account settings attributes/fields
+        # for others, like is_authenticated_payment_agent, since they account specific
         $settings = {
             %$settings,
             has_secret_answer => defined $real_client->secret_answer ? 1 : 0,
@@ -1178,17 +1181,17 @@ rpc get_settings => sub {
             address_state     => $real_client->state,
             address_postcode  => $real_client->postcode,
             phone             => $real_client->phone,
-            allow_copiers => $real_client->allow_copiers // 0,
-            citizen       => $real_client->citizen       // '',
-            is_authenticated_payment_agent => ($real_client->payment_agent and $real_client->payment_agent->is_authenticated) ? 1 : 0,
-            client_tnc_status => $real_client->status->tnc_approval ? $real_client->status->tnc_approval->{reason} : '',
             place_of_birth    => $real_client->place_of_birth,
             tax_residence     => $real_client->tax_residence,
-            tax_identification_number   => $real_client->tax_identification_number,
-            account_opening_reason      => $real_client->account_opening_reason,
-            request_professional_status => $real_client->status->professional_requested ? 1 : 0,
-            date_of_birth               => $real_client->date_of_birth ? Date::Utility->new($real_client->date_of_birth)->epoch : undef,
-            non_pep_declaration         => ($real_client->non_pep_declaration_time) ? 1 : 0,
+            tax_identification_number => $real_client->tax_identification_number,
+            account_opening_reason    => $real_client->account_opening_reason,
+            date_of_birth             => $real_client->date_of_birth ? Date::Utility->new($real_client->date_of_birth)->epoch : undef,
+            citizen       => $real_client->citizen  // '',
+            allow_copiers => $client->allow_copiers // 0,
+            non_pep_declaration         => $client->non_pep_declaration_time       ? 1                                       : 0,
+            client_tnc_status           => $client->status->tnc_approval           ? $client->status->tnc_approval->{reason} : '',
+            request_professional_status => $client->status->professional_requested ? 1                                       : 0,
+            is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
         };
     }
     return $settings;
