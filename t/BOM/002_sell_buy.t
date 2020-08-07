@@ -204,7 +204,11 @@ subtest 'check if is valid to sell is correct for sold contracts' => sub {
     $params->{is_sold} = 1;
     my $contract = produce_contract($params);
     is $contract->is_valid_to_sell, 0, 'correct valid to sell for contract already marked as sold';
-    is_deeply($contract->primary_validation_error->message_to_client, ['This contract has been sold.']);
+    # There is no entry tick for this contract, so we get market disruption
+    like(
+        $contract->primary_validation_error->message_to_client->[0],
+        qr/There was a market data disruption during the contract period./
+    );
 };
 
 done_testing();
