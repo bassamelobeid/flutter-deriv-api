@@ -13,6 +13,22 @@
 [% END %]
 [% END %]
 
+[% BLOCK bulk_verify_controls %]
+<table>
+    <tr>
+        <th class="selection_display_text">None selected</th>
+        <td>
+            <form action="[% controller_url %]" onsubmit="return confirm('Do you really want to continue?');" method="POST">
+            <input type="hidden" name="currency" value="[%currency%]"/>
+            <input type="hidden" name="view_action" value="withdrawals"/>
+            <input type="hidden" class="checked_ids" name="checked_ids" value=""/>
+            <input type="submit" name="action" value='bulkVerify'/>
+        </form>
+        </td>
+    </tr>
+</table>
+[% END %]
+
 <style>
     table.internal th {
         padding: 0 5px;
@@ -97,6 +113,10 @@
 [% IF transactions.size == 0 %]
     <p>There are no such transactions.</p>
 [% ELSE %]
+    [% IF view_type == 'pending' && view_action == 'withdrawals' %]
+        <br>
+        [% PROCESS bulk_verify_controls %]
+    [% END %]
     <table class="hover collapsed alternate" border="1" width="100%">
         <thead>
             <tr>
@@ -122,7 +142,7 @@
                         [% IF trx.status == 'LOCKED' %]PENDING[% ELSE %][% trx.status %][% END %]
                     </tbody></table></td>
                 [% END %]
-                [% IF view_type == 'pending' %]
+                [% IF view_type == 'pending' && trx.transaction_type == 'withdrawal' %]
                     <td>
                         <input type="checkbox" name="bulk_select" value=[%trx.id%] data-amount=[% trx.amount %] onClick=highlight_selected("row_[%trx.id%]") />
                     </td>
@@ -227,20 +247,11 @@
         [% END %]
         </tbody>
     </table>
-    <br>
-    <table>
-        <tr>
-            <th id="selection_display_text">None selected</th>
-            <td>
-                <form action="[% controller_url %]" onsubmit="return confirm('Do you really want to continue?');" method="POST">
-                <input type="hidden" name="currency" value="[%currency%]"/>
-                <input type="hidden" name="view_action" value="withdrawals"/>
-                <input type="hidden" id="checked_ids" name="checked_ids" value=""/>
-                <input type="submit" name="action" value='bulkVerify'/>
-            </form>
-            </td>
-        </tr>
-    </table>
+
+    [% IF view_type == 'pending' && view_action == 'withdrawals' %]
+        <br>
+        [% PROCESS bulk_verify_controls %]
+    [% END %]
     <br>
 [% END %]
 
@@ -323,9 +334,7 @@ function highlight_selected(row_selected) {
         row_selected.style.backgroundColor= null;
         row_selected.setAttribute('data-selected', 0);
     }
-    
-    var selection_text = document.getElementById('selection_display_text');
-    
+
     var checkboxes = document.getElementsByName('bulk_select');
     var checkboxesChecked = [];
     var numberOfSelectedBox = 0;
@@ -340,10 +349,15 @@ function highlight_selected(row_selected) {
     }
     // get decimal value from the amount
     var decimal_place = checkboxes[0].getAttribute('data-amount').split(".")[1].length || 0;
+    var message_text = numberOfSelectedBox.toString() + " transaction(s) selected. Total amount is: " + totalAmount.toFixed(decimal_place) + " [%currency%]";
     // Populate hidden value
-    var hidden_value = document.getElementById('checked_ids');
-    hidden_value.value = JSON.stringify(checkboxesChecked);
-    selection_text.innerHTML = numberOfSelectedBox.toString() + " transaction(s) selected. Total amount is: " + totalAmount.toFixed(decimal_place) + " [%currency%]";
+    document.querySelectorAll('.checked_ids').forEach((el_hidden) => {
+        el_hidden.value = JSON.stringify(checkboxesChecked);
+    });
+    //update the text
+    document.querySelectorAll('.selection_display_text').forEach((el_selection_text) => {
+        el_selection_text.innerHTML = message_text;
+    });
 }
 
 </script>
