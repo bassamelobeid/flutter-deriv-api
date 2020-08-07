@@ -209,6 +209,17 @@ section_title('Client Account');
 my $client = create_client(
     email => 'client+' . $idx . '@binary.com',
 );
+
+unless ($client->p2p_advertiser_info) {
+    $client->p2p_advertiser_create(name => 'client '.$client->loginid);
+}
+
+$client->p2p_advertiser_update(
+    is_listed   => 0,
+    is_approved => 1,
+);
+
+$log->infof('Client Advertiser info: %s', $client->p2p_advertiser_info);
 $log->infof('Client is %s - Token: %s', $client->loginid, token_for_client($client));
 
 # ===== App Config =====
@@ -236,9 +247,7 @@ $log->infof('Maximum order  configured is %s',   BOM::Config::Runtime->instance-
 
 # ===== Advertiser Create =====
 section_title('Advertiser Create');
-unless ($advertiser->p2p_advertiser_info) {
-    $advertiser->p2p_advertiser_create(name => 'advertiser '.$advertiser->loginid);
-}
+$advertiser->p2p_advertiser_create(name => 'advertiser '.$advertiser->loginid);
 $advertiser->p2p_advertiser_update(
     is_listed   => 1,
     is_approved => 1,

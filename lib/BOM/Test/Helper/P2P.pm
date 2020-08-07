@@ -22,7 +22,9 @@ my $mock_sb_user;
 
         $original_escrow = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow;
 
-        $current_escrow = create_client();
+        $current_escrow = BOM::Test::Helper::Client::create_client();
+        $current_escrow->account('USD');
+
         BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([$current_escrow->loginid]);
         return $current_escrow;
     }
@@ -37,33 +39,27 @@ my $mock_sb_user;
 sub create_advertiser {
     my %param = @_;
 
-    my $advertiser = create_client($param{balance}, $param{advertiser});
+    $param{balance}     //= 0;
+    $param{name}        //= 'test advertiser ' . (++$advertiser_num);
+    $param{currency}    //= 'USD';
+    $param{is_approved} //= 1;
 
-    $advertiser->p2p_advertiser_create(name => $param{name} // 'test advertiser ' . (++$advertiser_num));
-
-    $advertiser->account('USD');
-
-    $advertiser->p2p_advertiser_update(is_approved => 1);
-
-    return $advertiser;
-}
-
-sub create_client {
-    my ($balance, $param, $currency) = @_;
-
-    $param->{email} = 'p2p_' . (++$client_num) . '@binary.com';
-    my $client = BOM::Test::Helper::Client::create_client(undef, undef, $param);
+    $param{client_details}{email} //= 'p2p_' . (++$client_num) . '@binary.com';
+    my $client = BOM::Test::Helper::Client::create_client(undef, undef, $param{client_details});
 
     BOM::User->create(
         email    => $client->email,
         password => 'test'
     )->add_client($client);
 
-    $client->account($currency // 'USD');
+    $client->account($param{currency});
 
-    if ($balance) {
-        BOM::Test::Helper::Client::top_up($client, $client->currency, $balance);
+    if ($param{balance}) {
+        BOM::Test::Helper::Client::top_up($client, $client->currency, $param{balance});
     }
+
+    $client->p2p_advertiser_create(name => $param{name});
+    $client->p2p_advertiser_update(is_approved => $param{is_approved});
 
     return $client;
 }
@@ -83,8 +79,10 @@ sub create_advert {
     $param{payment_info} //= $param{type} eq 'sell' ? 'Bank: 123456' : undef;
     $param{contact_info} //= $param{type} eq 'sell' ? 'Tel: 123456'  : undef;
 
-    $param{balance} = $param{amount} if $param{type} eq 'sell';
-    my $advertiser = create_advertiser(%param);
+    my $advertiser = create_advertiser(
+        balance => $param{type} eq 'sell' ? $param{amount} : 0,
+        client_details => $param{advertiser},
+    );
 
     my $advert = $advertiser->p2p_advert_create(%param);
 
@@ -98,7 +96,7 @@ sub create_order {
     my $amount  = $param{amount}  // 100;
     my $expiry  = $param{expiry}  // 7200;
     my $balance = $param{balance} // $param{amount};
-    my $client  = $param{client}  // create_client($balance);
+    my $client  = $param{client}  // create_advertiser(balance => $balance);
 
     my $advert = $client->p2p_advert_info(id => $param{advert_id});
 
