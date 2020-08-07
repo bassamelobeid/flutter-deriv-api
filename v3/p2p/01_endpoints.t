@@ -328,6 +328,12 @@ subtest 'create advert (sell)' => sub {
 subtest 'create order (buy)' => sub {
     my $amount = 10;
     my $price  = $advert->{price} * $amount;
+    $resp = $t->await::p2p_advertiser_create({
+        p2p_advertiser_create => 1,
+        name                  => 'Testclient',
+    });
+    $client_client->p2p_advertiser_update(is_approved => 1);
+    my $client_adv_info = $resp->{p2p_advertiser_create};
 
     $resp = $t->await::p2p_order_create({
         p2p_order_create => 1,
@@ -350,8 +356,8 @@ subtest 'create order (buy)' => sub {
     is $order->{type}, 'buy', 'type';
     is $order->{payment_info}, $advert->{payment_info}, 'payment_info copied from ad';
     is $order->{contact_info}, $advert->{contact_info}, 'contact_info copied from ad';
-    is $order->{client_details}{id},   '', 'client id';
-    is $order->{client_details}{name}, '', 'client name';
+    is $order->{client_details}{id},  $client_adv_info->{id}, 'client id';
+    is $order->{client_details}{name}, 'Testclient', 'client name';
 
     $resp = $t->await::p2p_order_list({
         p2p_order_list => 1,
