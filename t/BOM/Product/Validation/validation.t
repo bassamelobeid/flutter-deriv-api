@@ -1273,11 +1273,37 @@ subtest 'sell back validation for volatility indices' => sub {
                 current_tick => $tick,	
             };	
 
-            my $c = produce_contract($bet_params);	
+            my $c = produce_contract($bet_params);
             ok !$o->validate_offerings($c->metadata('sell')), 'valid to sell for - ' . $contract_type . ' & ' . $symbol;	
         }	
     }	
 };	
+
+subtest 'In protfolio for manullay settled contracts, market disruption message must be shown' => sub {
+    my $now = Date::Utility->new;
+    my $c = produce_contract({
+        underlying   => 'R_100',
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $now->minus_time_interval('1h'),
+        date_pricing => $now,
+        duration     => '1m',
+        barrier      => 'S0P'
+    });
+    ok(!$c->is_valid_to_sell, 'Contract is not valid for sale');
+    ok($c->is_after_settlement, 'Pricing time for contract is after settlment');
+    is(
+        $c->primary_validation_error->message,
+        'entry tick is undefined',
+        'Error message of undefined entry tick'
+    );
+    like(
+        $c->primary_validation_error->message_to_client->[0],
+        qr/There was a market data disruption/,
+        'Client error message of market disruption'
+    );
+};
 
 my $counter = 0;
 

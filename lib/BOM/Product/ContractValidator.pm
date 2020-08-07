@@ -49,9 +49,19 @@ sub is_valid_to_sell {
     my $self = shift;
     my $args = shift;
 
-    my $valid = $self->_confirm_sell_validity($args);
+    # if the contract is sold (early close by client), then is_valid_to_sell is false
+    if ($self->is_sold) {
+        my $manually_settled = $self->is_after_settlement && !($self->_is_valid_to_settle);
+        return 0 if $manually_settled;
 
-    return $valid;
+        $self->_add_error({
+            message           => 'Contract already sold',
+            message_to_client => [$ERROR_MAPPING->{ContractAlreadySold}],
+        });
+        return 0;
+    }
+
+    return $self->_confirm_sell_validity($args);
 }
 
 sub _is_valid_to_settle {
@@ -102,15 +112,6 @@ sub _is_valid_to_settle {
 
 sub _confirm_sell_validity {
     my ($self, $args) = @_;
-
-    # if the contract is sold (early close by client), then is_valid_to_sell is false
-    if ($self->is_sold) {
-        $self->_add_error({
-            message           => 'Contract already sold',
-            message_to_client => [$ERROR_MAPPING->{ContractAlreadySold}],
-        });
-        return 0;
-    }
 
     # Because of indices where we get the official OHLC from the exchange, settlement time is always
     # 3 hours after the market close. Hence, there's a difference in date_expiry & date_settlement.
