@@ -157,15 +157,14 @@ $test_client->payment_free_gift(
 );
 
 my ($advertiser, $advert);
-eval {
+
 #p2p
-    BOM::Test::Helper::P2P::bypass_sendbird();
-    BOM::Test::Helper::P2P::create_escrow();
-    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type=>'buy');
-    my $order = BOM::Test::Helper::P2P::create_order(amount=>50, advert_id=>$advert->{id}, client=>$test_client);
-    $advertiser->p2p_order_cancel(id=>$order->{id});
-};
-note explain $@;
+BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2P::create_escrow();
+($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type=>'buy');
+$test_client->p2p_advertiser_create(name=>'bob');
+my $order = BOM::Test::Helper::P2P::create_order(amount=>50, advert_id=>$advert->{id}, client=>$test_client);
+$advertiser->p2p_order_cancel(id=>$order->{id});
 
 my $transaction_history = get_transaction_history($transac_param);
 
