@@ -70,18 +70,15 @@ $t = $t->content_like(qr/Email belum diberikan./, "no email ID");
 $t = callPost($t, $email, "", $csrf_token, "ID");
 $t = $t->content_like(qr/Kata sandi tidak diberikan./, "no password ID");
 
-TODO: {
-    local $TODO = 'These tests are in a TODO because we do not have the translations yet.' if 1;
-    $t = callPost($t, $email . "invalid", $password, $csrf_token, "ID");
-    $t = $t->content_like(qr#Email dan/atau kata sandi Anda tidak benar. Mungkin Anda mendaftar menggunakan akun sosial#,
-        "invalid login or password ID");
+$t = callPost($t, $email . "invalid", $password, $csrf_token, "ID");
+$t = $t->content_like(qr#Email dan/atau kata sandi Anda tidak benar. Mungkin Anda mendaftar menggunakan akun sosial#,
+    "invalid login or password ID");
 
-    $user->update_has_social_signup(1);
+$user->update_has_social_signup(1);
 
-    $t = callPost($t, $email, $password, $csrf_token, "ID");
-    $t = $t->content_like(qr#Email dan/atau kata sandi Anda tidak benar. Mungkin Anda mendaftar menggunakan akun sosial#,
-        "invalid social login ID");
-}
+$t = callPost($t, $email, $password, $csrf_token, "ID");
+$t = $t->content_like(qr#Email dan/atau kata sandi Anda tidak benar. Mungkin Anda mendaftar menggunakan akun sosial#,
+    "invalid social login ID");
 
 $user->update_has_social_signup(0);
 
