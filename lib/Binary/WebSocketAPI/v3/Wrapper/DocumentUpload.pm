@@ -8,6 +8,7 @@ use Net::Async::Webservice::S3;
 use Future;
 use JSON::MaybeXS qw/decode_json/;
 use List::Util qw/first/;
+use Plack::MIME;
 
 use Binary::WebSocketAPI::Hooks;
 use DataDog::DogStatsd::Helper qw(stats_inc);
@@ -283,6 +284,7 @@ sub wait_for_chunks_and_upload_to_s3 {
         key          => $upload_info->{file_name},
         value        => sub { wait_for_chunk($c, $pending_futures) },
         value_length => $upload_info->{file_size},
+        headers      => {'Content-Type' => Plack::MIME->mime_type($upload_info->{file_name}) // 'application/octet-stream'},
     )->on_fail(sub { send_upload_failure($c, $upload_info, 'unknown') });
 }
 
