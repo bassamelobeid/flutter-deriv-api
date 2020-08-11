@@ -811,7 +811,8 @@ SQL
             ? qq{ style="color:red" title="expired" }
             : "";
 
-        $links .= qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td><a href="$url">$file_name</a></td>$age_display$input};
+        $links .=
+            qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td><a href="$url" target="_blank">$file_name</a></td>$age_display$input};
 
         $links .= qq{<td><input type="checkbox" class='files_checkbox' name="del_document_list" value="$id-$loginid-$file_name"><td>};
 
