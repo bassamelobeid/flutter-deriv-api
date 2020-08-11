@@ -10,7 +10,7 @@ use constant {PRIORITIZE_KEY_TTL => 300};
 
 use Exporter qw/import/;
 
-our @EXPORT_OK = qw(prioritize_address get_crypto_withdrawal_pending_total);
+our @EXPORT_OK = qw(prioritize_address get_crypto_withdrawal_pending_total get_crypto_transactions);
 
 =head2 prioritize_address
 
@@ -129,6 +129,56 @@ sub get_crypto_withdrawal_pending_total {
         pending_withdrawal_amount => $pending_withdrawal_amount,
         pending_estimated_fee     => $pending_estimated_fee,
     };
+}
+
+=head2 get_crypto_transactions
+
+Get crypto currency transactions from DB based on the given parameters.
+
+=over 4
+
+=item * C<broker> - Broker code
+
+=item * C<trx_type> - The transaction type. Valid values are C<deposit> and C<withdrawal>
+
+=item * C<params> - A hash containing the query params to filter or limit by. Can include any number of the following keys:
+
+=over 4
+
+=item * C<loginid> - The client's loginid
+
+=item * C<address> - The crypto address
+
+=item * C<currency_code> - The currency code
+
+=item * C<status> - The status code of the transaction
+
+=item * C<limit> - An integer to limit the returned transactions by
+
+=item * C<offset> - An integer which denotes the offset value of the results
+
+=back
+
+=back
+
+Returns an arrayref list of transactions that meet the criteria. If nothing found, will return an empty arrayref.
+
+=cut
+
+sub get_crypto_transactions {
+    my ($broker, $trx_type, %params) = @_;
+
+    my $function_name = $trx_type eq 'deposit' ? 'payment.ctc_bo_get_deposit' : 'payment.ctc_bo_get_withdrawal';
+
+    my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
+
+    return $clientdb->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                "SELECT * FROM $function_name(?, ?, ?, ?, ?, ?)",
+                {Slice => {}},
+                @params{qw(loginid address currency_code status limit offset)});
+        }) // [];
 }
 
 1;

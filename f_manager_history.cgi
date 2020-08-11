@@ -11,6 +11,7 @@ use f_brokerincludeall;
 use HTML::Entities;
 use Date::Utility;
 use YAML::XS;
+use List::Util qw(max);
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use Format::Util::Numbers qw(formatnumber);
 use Syntax::Keyword::Try;
@@ -25,8 +26,10 @@ use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
 use BOM::CTC::Currency;
-use BOM::Cryptocurrency::Helper qw( prioritize_address );
+use BOM::Cryptocurrency::Helper qw(prioritize_address get_crypto_transactions);
 BOM::Backoffice::Sysinit::init();
+
+use constant CRYPTO_DEFAULT_TRANSACTION_COUNT => 50;
 
 PrintContentType();
 
@@ -202,25 +205,23 @@ BOM::Backoffice::Request::template()->process(
     },
 ) || die BOM::Backoffice::Request::template()->error();
 
-my @trxns;
-if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
-    @trxns = (
-        @{
-            $clientdb->db->dbic->run(
-                fixup => sub {
-                    $_->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_deposit(?)', {Slice => {}}, $client->loginid);
-                })
-        },
-        @{
-            $clientdb->db->dbic->run(
-                fixup => sub {
-                    $_->selectall_arrayref('SELECT * FROM payment.ctc_bo_get_withdrawal(?)', {Slice => {}}, $client->loginid);
-                })
-        },
-    );
-}
+# ========== Crypto Transactions ==========
+my $render_crypto_transactions = sub {
+    my ($trx_type) = @_;
 
-if (@trxns) {
+    return undef unless BOM::Config::CurrencyConfig::is_valid_crypto_currency($currency);
+
+    my $offset_param = "crypto_${trx_type}_offset";
+    my $offset       = max(request()->param($offset_param) // 0, 0);
+    my $limit        = max(request()->param('limit') // 0, 0) || CRYPTO_DEFAULT_TRANSACTION_COUNT;
+
+    my %params = (
+        loginid => $client->loginid,
+        limit   => $limit,
+        offset  => $offset,
+    );
+    my @trxns = get_crypto_transactions($broker, $trx_type, %params)->@*;
+
     my $exchange_rate;
     try {
         $exchange_rate = in_usd(1.0, $currency);
@@ -229,10 +230,8 @@ if (@trxns) {
         code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.");
     }
 
-    my $blockchain_address     = $currency_wrapper->get_address_blockchain_url();
-    my $blockchain_transaction = $currency_wrapper->get_transaction_blockchain_url();
-    my $transaction_uri        = URI->new($blockchain_transaction);
-    my $address_uri            = URI->new($blockchain_address);
+    my $transaction_uri = URI->new($currency_wrapper->get_transaction_blockchain_url);
+    my $address_uri     = URI->new($currency_wrapper->get_address_blockchain_url);
 
     my $details_link = request()->url_for(
         'backoffice/f_clientloginid_edit.cgi',
@@ -254,12 +253,25 @@ if (@trxns) {
         $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
     }
 
-    Bar('CRYPTOCURRENCY ACTIVITY');
     my ($prioritize_trx_id, $prioritize_result);
-    if ($action && $action eq 'prioritize') {
+    if ($trx_type eq 'deposit' && $action && $action eq 'prioritize') {
         $prioritize_trx_id = request()->param('db_row_id');
         $prioritize_result = prioritize_address($currency_wrapper, request()->param('prioritize_address'));
     }
+
+    my $make_pagination_url = sub {
+        my ($offset_value) = @_;
+        return request()->url_for(
+            'backoffice/f_manager_history.cgi',
+            {
+                request()->params->%*,
+                $offset_param => max($offset_value, 0),
+            })->fragment($trx_type);
+    };
+    my $prev_url = $offset ? $make_pagination_url->($offset - $limit) : undef;
+    my $next_url = $limit == scalar @trxns ? $make_pagination_url->($offset + $limit) : undef;
+
+    Bar('CRYPTOCURRENCY ACTIVITY: ' . uc $trx_type);
 
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
@@ -271,12 +283,20 @@ if (@trxns) {
             transaction_uri => $transaction_uri,
             address_uri     => $address_uri,
             testnet         => BOM::Config::on_qa() ? 1 : 0,
-            prioritize      => {
+            trx_type        => $trx_type,
+            pagination      => {
+                prev_url => $prev_url,
+                next_url => $next_url,
+                range    => ($offset + !!@trxns) . ' - ' . ($offset + @trxns),
+            },
+            prioritize => {
                 trx_id => $prioritize_trx_id,
                 result => $prioritize_result,
             },
             %client_details,
         }) || die $tt->error();
-}
+};
+
+$render_crypto_transactions->($_) for qw(deposit withdrawal);
 
 code_exit_BO();
