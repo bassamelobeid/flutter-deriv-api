@@ -372,18 +372,20 @@ async_rpc "mt5_new_account",
 
             # A client can only have either one of
             # real\vanuatu_financial or real\svg_financial or real\svg_financial_Bbook
-            my ($acct_type, $landing_company_name) = $group =~ /^([a-z]+)\\([a-z]+)_?/;
-            my %check_similar_group = (
-                vanuatu => ['\svg_financial', '\svg_financial_Bbook'],
-                svg     => ['\vanuatu_financial'],
-            );
-            if (my $similar = $check_similar_group{$landing_company_name}) {
-                if (my $match = first { $existing_groups{$acct_type . $_} } @$similar) {
-                    return create_error_future(
-                        'MT5Duplicate',
-                        {
-                            override_code => $error_code,
-                            params        => [$account_type, $existing_groups{$match}]});
+            if ($mt5_account_type eq 'financial') {
+                my ($acct_type, $landing_company_name) = $group =~ /^([a-z]+)\\([a-z]+)_?/;
+                my %check_similar_group = (
+                    vanuatu => ['\svg_financial', '\svg_financial_Bbook'],
+                    svg     => ['\vanuatu_financial'],
+                );
+                if (my $similar = $check_similar_group{$landing_company_name}) {
+                    if (my $match = first { $existing_groups{$acct_type . $_} } @$similar) {
+                        return create_error_future(
+                            'MT5Duplicate',
+                            {
+                                override_code => $error_code,
+                                params        => [$account_type, $existing_groups{$match}]});
+                    }
                 }
             }
 
