@@ -5,6 +5,7 @@ use warnings;
 use IO::Async::Loop;
 use Net::Async::Webservice::S3;
 use Amazon::S3::SignedURLGenerator;
+use Plack::MIME;
 use Fcntl 'SEEK_SET';
 use File::stat;
 use 5.010;
@@ -78,6 +79,7 @@ sub upload {
         value        => $gen_chunks,
         value_length => $file_size,
         meta         => {checksum => $checksum},
+        headers      => {'Content-Type' => Plack::MIME->mime_type($original_filename) // 'application/octet-stream'},
         )->then(
         sub {
             my $result = shift;
