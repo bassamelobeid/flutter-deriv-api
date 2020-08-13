@@ -15,7 +15,10 @@ subtest 'get_crypto_withdrawal_pending_total' => sub {
 };
 
 subtest 'get_crypto_transactions' => sub {
-    my %params = (loginid => 'CR123456', limit => 50);
+    my %params = (
+        loginid => 'CR123456',
+        limit   => 50
+    );
     my $trx_list = get_crypto_transactions('CR', 'deposit', %params);
 
     isa_ok $trx_list, 'ARRAY', 'Returns an arrayref';

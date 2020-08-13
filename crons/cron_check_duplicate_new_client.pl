@@ -25,7 +25,7 @@ if ($ENV{REQUEST_METHOD}) {
 
 my $check_date = Date::Utility->new(time - 86400)->date;
 my $email_from = request()->brand->emails('system_generated');
-my $email_to   = request()->brand->emails('support');
+my $email_to   = request()->brand->emails('support_new_account');
 my $template   = Template->new(ABSOLUTE => 1);
 
 # connect to collector for getting data
