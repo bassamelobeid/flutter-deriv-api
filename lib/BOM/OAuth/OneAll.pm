@@ -88,6 +88,9 @@ sub callback {
             $c->session(social_error => localize(get_message_mapping()->{INVALID_PROVIDER}, ucfirst $user_providers->[0]));
             return $c->redirect_to($redirect_uri);
         }
+
+        #Remove social signup session if it exists and user is logging in
+        delete $c->session->{_is_social_signup};
     } else {
         # Get client's residence automatically from cloudflare headers
         my $residence    = $c->stash('request')->country_code;
@@ -128,6 +131,8 @@ sub callback {
             return $c->redirect_to($redirect_uri);
         } else {
             $user = $account->{user};
+            #User has used oneAll to signup
+            $c->session(_is_social_signup => 1);
         }
 
         # connect oneall provider data to user identity

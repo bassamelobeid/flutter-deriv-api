@@ -534,17 +534,20 @@ sub _validate_login {
     my $bd           = HTTP::BrowserDetect->new($c->req->headers->header('User-Agent'));
     my $country_code = uc($c->stash('request')->country_code // '');
     my $brand        = $c->stash('brand');
-    BOM::Platform::Event::Emitter::emit(
-        'login',
-        {
-            loginid    => $client->loginid,
-            properties => {
-                ip                  => $ip,
-                location            => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
-                browser             => $bd->browser,
-                device              => $bd->device // $bd->os_string,
-                new_signin_activity => $unknown_location ? 1 : 0,
-            }});
+
+    if (!$c->session('_is_social_signup')) {
+        BOM::Platform::Event::Emitter::emit(
+            'login',
+            {
+                loginid    => $client->loginid,
+                properties => {
+                    ip                  => $ip,
+                    location            => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
+                    browser             => $bd->browser,
+                    device              => $bd->device // $bd->os_string,
+                    new_signin_activity => $unknown_location ? 1 : 0,
+                }});
+    }
 
     _notify_unknown_login_by_email($c, $app, $client, $bd) if $unknown_location && $brand->send_signin_email_enabled();
 
