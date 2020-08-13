@@ -28,6 +28,7 @@ use BOM::Config::Runtime;
 use BOM::User::Client;
 use BOM::MyAffiliates;
 use LandingCompany::Registry;
+use Text::Trim qw(trim);
 
 has ['from', 'to'] => (
     is       => 'ro',
@@ -112,7 +113,7 @@ sub _get_loginid_from_txn {
     if (ref($details) eq 'ARRAY') {
         foreach my $detail (@{$details}) {
             if ($detail->{DETAIL_NAME} and $detail->{DETAIL_NAME} eq 'bom_id') {
-                return $detail->{DETAIL_VALUE};
+                return trim($detail->{DETAIL_VALUE});
             }
         }
     }
