@@ -366,6 +366,45 @@ subtest 'precedence' => sub {
     is $custom_profile->{symbols}->[0], 'frxUSDJPY', 'symbol is frxUSDJPY even if market=forex is specified';
 };
 
+subtest 'Zero non-binary contract limit for lookbacks' => sub {
+    # There was a bug when disabling lookback contracts because of improper defined checking
+    my $ul = Quant::Framework::Underlying->new('R_100');
+    $landing_company = 'svg';
+
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles('{
+    "limit_id_xxx" : {
+        "contract_category" : "lookback",
+        "name" : "Block lookbacks",
+        "non_binary_contract_limit" : "0",
+        "risk_profile" : "no_business"
+    }}');
+
+    my $rp = BOM::Platform::RiskProfile->new(
+        contract_category              => 'lookback',
+        start_type                     => 'spot',
+        expiry_type                    => 'ultra_short',
+        currency                       => 'USD',
+        barrier_category               => 'lookback',
+        symbol                         => $ul->symbol,
+        market_name                    => $ul->market->name,
+        submarket_name                 => $ul->submarket->name,
+        underlying_risk_profile        => $ul->risk_profile,
+        underlying_risk_profile_setter => $ul->risk_profile_setter,
+    );
+
+    my $non_binary_limits_params = $rp->get_non_binary_limit_parameters;
+    my $limit = $rp->custom_profiles;
+    is scalar(@$limit), 2, 'Two riskd profile';
+    is $rp->get_risk_profile, 'no_business', 'ignore profile with no conditions';
+    is_deeply $non_binary_limits_params, [
+        {
+            'non_binary_contract_limit' => '0',
+            'name' => 'Block lookbacks'
+        },
+        undef
+    ], 'Non-binary contract limit of zero must be set for lookbacks';
+};
+
 done_testing();
 #cleanup
 BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles('{}');

@@ -216,7 +216,7 @@ sub get_non_binary_limit_parameters {
     return [
         map {
             my $params;
-            if ($_->{non_binary_contract_limit}) {
+            if (defined $_->{non_binary_contract_limit}) {
                 $params = {
                     name                      => $_->{name},
                     non_binary_contract_limit => $_->{non_binary_contract_limit},
