@@ -82,6 +82,7 @@ BEGIN {
         $ENV{BOM_TEST_REDIS_RAND}               = $config_dir . '/redis.yml';
         $ENV{BOM_TEST_REDIS_FEED}               = $config_dir . '/redis-feed.yml';
         $ENV{BOM_TEST_REDIS_EVENTS}             = $config_dir . '/redis-replicated.yml';
+        $ENV{BOM_TEST_REDIS_RPC}                = $config_dir . '/redis-rpc.yml';
         $ENV{BOM_TEST_REDIS_TRANSACTION}        = $config_dir . '/redis-replicated.yml';
         $ENV{BOM_TEST_REDIS_TRANSACTION_LIMITS} = $config_dir . '/redis-transaction-limits.yml';
         $ENV{BOM_TEST_REDIS_AUTH}               = $config_dir . '/redis.yml';
