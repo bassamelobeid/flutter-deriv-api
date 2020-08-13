@@ -55,10 +55,10 @@
             },
             "legal_allowed_contract_categories" : {
                "type" : "array",
-               "minItems" : 6,
+               "minItems" : 4,
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputspread|callputequal)$"
+                  "pattern" : "^(callput|digits|touchnotouch|callputequal)$"
                }
             },
             "legal_allowed_markets" : {

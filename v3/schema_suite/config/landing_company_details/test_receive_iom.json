@@ -35,23 +35,15 @@
             "legal_allowed_contract_categories" : {
                "items" : {
                   "enum" : [
-                     "asian",
                      "callput",
                      "digits",
-                     "endsinout",
-                     "staysinout",
                      "touchnotouch",
-                     "callputspread",
-                     "callputequal",
-                     "lookback",
-                     "highlowticks",
-                     "reset",
-                     "runs"
+                     "callputequal"
                   ],
                   "type" : "string"
                },
                "type" : "array",
-               "minItems" : 6
+               "minItems" : 4
             },
             "has_reality_check" : {
                "enum" : [1],
