@@ -165,10 +165,10 @@
       "legal_allowed_contract_categories" : {
          "items" : {
             "type" : "string",
-            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal)$"
+            "pattern" : "^(callput|digits|touchnotouch|callputequal)$"
          },
          "type" : "array",
-         "minItems" : 6
+         "minItems" : 4
       },
       "has_reality_check" : {
          "type" : "integer",

@@ -76,12 +76,9 @@
               ]
               },
               "legal_allowed_contract_categories" : [
-                  "asian",
                   "callput",
                   "callputequal",
                   "digits",
-                  "endsinout",
-                  "staysinout",
                   "touchnotouch"
               ],
               "has_reality_check" : 0,
@@ -176,10 +173,10 @@
             "legal_allowed_contract_categories" : {
                "type" : "array",
                "items" : {
-                  "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal)$",
+                  "pattern" : "^(callput|digits|touchnotouch|callputequal)$",
                   "type" : "string"
                },
-               "minItems" : 6
+               "minItems" : 4
             },
             "has_reality_check" : {
                "type" : "integer",
