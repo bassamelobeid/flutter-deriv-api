@@ -173,6 +173,11 @@ sub redis_events_config {
     return $config;
 }
 
+sub redis_rpc_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_RPC} // '/etc/rmg/redis-rpc.yml');
+    return $config;
+}
+
 sub redis_transaction_config {
     state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_TRANSACTION} // '/etc/rmg/redis-transaction.yml');
     return $config;

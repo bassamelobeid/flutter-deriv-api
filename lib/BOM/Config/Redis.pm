@@ -53,7 +53,10 @@ sub _redis {
         $timeout ? (timeout => $timeout) : (),
         host => $connection_config->{host},
         port => $connection_config->{port},
-        ($connection_config->{password} ? ('password' => $connection_config->{password}) : ()));
+        ($connection_config->{password} ? ('password' => $connection_config->{password}) : ()),
+        # This will issue a select on the desired index, maybe we can agree on a specific index to be the test database
+        # on each redis instance and perform extra initialization if required for tests.
+        (defined $connection_config->{select} ? ('database' => $connection_config->{select}) : ()));
 
     return $connections->{$key};
 }
@@ -81,11 +84,17 @@ sub redis_config {
     $config->{$redis_type} //= BOM::Config->can("redis_${redis_type}_config")->();
 
     my $redis = $config->{$redis_type}->{$access_type};
+    my $uri   = "redis://$redis->{host}:$redis->{port}";
+    # Take into account database select
+    $uri .= "?db=$redis->{select}" if defined $redis->{select};
+
     return {
-        uri  => "redis://$redis->{host}:$redis->{port}",
+        uri  => $uri,
         host => $redis->{host},
         port => $redis->{port},
-        ($redis->{password} ? ('password' => $redis->{password}) : ())};
+        ($redis->{password} ? ('password' => $redis->{password}) : ()),
+        # Take into account database select
+        (defined $redis->{select} ? ('database' => $redis->{select}) : ())};
 }
 
 =head2 redis_replicated_write
@@ -457,6 +466,20 @@ Returns a read-only L<RedisDB> handle to our WS Redis service.
 sub redis_ws {
     $config->{ws} //= BOM::Config::redis_ws_config();
     return _redis('ws', 'read', 10);
+}
+
+=head2 redis_rpc_write
+
+    my $redis = BOM::Config::Redis::redis_rpc_write();
+
+Returns a writable L<RedisDB> handle to our RPC Redis service.
+This should be a redis v6 instance.
+
+=cut
+
+sub redis_rpc_write {
+    $config->{rpc} //= BOM::Config::redis_rpc_config();
+    return _redis('rpc', 'write', 10);
 }
 
 1;
