@@ -28,7 +28,7 @@ ETH:
     withdrawal:
         timeout: "5d"
         min_usd: 5
-        fee_limit_usd: 2
+        fee_limit_usd: 3
     subscription:
         rpc_timeout: 100
     protocol_cost: 0
