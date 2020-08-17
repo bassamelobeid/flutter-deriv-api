@@ -278,10 +278,10 @@ subtest 'update take profit', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             10,    'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.0',   'basis_spot is 100.0';
-            is $chld->{'stop_loss_order_amount'}, undef, 'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_order_date'},   undef, 'stop_loss_order_date is undef';
+            is $chld->{'multiplier'},             10,      'multiplier is 10';
+            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
+            is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_order_date'},   undef,   'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, 10, 'take_profit_order_amount is 5';
@@ -307,10 +307,10 @@ subtest 'update take profit', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             10,    'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.0',   'basis_spot is 100.0';
-            is $chld->{'stop_loss_order_amount'}, undef, 'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_order_date'},   undef, 'stop_loss_order_date is undef';
+            is $chld->{'multiplier'},             10,      'multiplier is 10';
+            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
+            is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_order_date'},   undef,   'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, 15, 'take_profit_order_amount is 5';
@@ -337,10 +337,10 @@ subtest 'update take profit', sub {
 
         subtest 'chld row', sub {
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{'multiplier'},             10,    'multiplier is 10';
-            is $chld->{'basis_spot'},             '100.0',   'basis_spot is 100.0';
-            is $chld->{'stop_loss_order_amount'}, undef, 'stop_loss_order_amount is undef';
-            is $chld->{'stop_loss_order_date'},   undef, 'stop_loss_order_date is undef';
+            is $chld->{'multiplier'},             10,      'multiplier is 10';
+            is $chld->{'basis_spot'},             '100.0', 'basis_spot is 100.0';
+            is $chld->{'stop_loss_order_amount'}, undef,   'stop_loss_order_amount is undef';
+            is $chld->{'stop_loss_order_date'},   undef,   'stop_loss_order_date is undef';
             is $chld->{'stop_out_order_amount'} + 0, -100, 'stop_out_order_amount is -100';
             cmp_ok $chld->{'stop_out_order_date'}, "eq", $fmb->{start_time}, 'stop_out_order_date is correctly set';
             is $chld->{'take_profit_order_amount'}, undef, 'take_profit_order_amount is undef';

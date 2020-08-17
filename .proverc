@@ -1,3 +1,2 @@
 -It/lib
--MBOM::Test
---exec '/etc/rmg/bin/perl -Ilib -It/lib -MTest::Warnings'
+--exec '/etc/rmg/bin/perl -Ilib -It/lib -MTest::Warnings -MBOM::Test'

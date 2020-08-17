@@ -28,7 +28,6 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 
-use Test::MockTime qw(set_absolute_time);
 use Test::MockModule;
 
 initialize_realtime_ticks_db();
@@ -433,7 +432,6 @@ subtest 'Purchase Sell Contract' => sub {
     ok($trx->account_id, 'can retrieve the trx db record');
     ok($fmb->account_id, 'can retrieve the fmb db record');
 
-    set_absolute_time($now->epoch + 61);
     my $exit_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => $now->epoch + 1,
         underlying => 'R_50',
