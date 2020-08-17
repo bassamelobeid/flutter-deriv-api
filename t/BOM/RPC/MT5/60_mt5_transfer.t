@@ -304,6 +304,9 @@ subtest 'multi currency transfers' => sub {
             epoch => time
         );
 
+        _offer_to_clients(1, 'BTC');
+        _offer_to_clients(1, 'USD');
+
         # clear the cache for previous test
         BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1);
 
@@ -371,6 +374,7 @@ subtest 'multi currency transfers' => sub {
             quote => $UST_USD,
             epoch => time
         );
+        _offer_to_clients(1, 'UST');
 
         BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_deposit', $deposit_params)->has_no_error('deposit UST->USD with current rate - no error');

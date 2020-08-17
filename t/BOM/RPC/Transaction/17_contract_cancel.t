@@ -41,6 +41,17 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     1
 );
 
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
+    {
+        events => [{
+                symbol       => 'USD',
+                release_date => 1,
+                source       => 'forexfactory',
+                impact       => 1,
+                event_name   => 'FOMC',
+            }]});
+
 my $mocked = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked->mock('spot_tick', sub { return $current_tick });
 
