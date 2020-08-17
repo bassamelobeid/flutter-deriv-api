@@ -109,7 +109,7 @@ payments:
           global: 1
           default: ['usd']
         email_to:
-          description: "Internal email address to be sent notifications when new P2P advertisers are registered."
+          description: "Internal email address to receive notifications for p2p events needing manual actions or review."
           isa: Str
           global: 1
           default: "p2p-support@deriv.com"
