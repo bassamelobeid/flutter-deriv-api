@@ -8,12 +8,32 @@ with 'BOM::API::Payment::Role::Plack';
 use Scalar::Util qw/blessed/;
 use BOM::API::Payment::DoughFlow::Backend;
 use BOM::Database::DataMapper::Payment;
+use BOM::API::Payment::Metric;
 
 use Log::Any '$new_api_log',
     log_level => 'debug',
     category  => 'new_api_log';
 use Log::Any::Adapter;
 Log::Any::Adapter->set({category => 'new_api_log'}, 'File', '/var/lib/binary/paymentapi_new_api_calls_trace.log');
+
+=head2 _process_doughflow_request
+
+Wrapper around _doughflow_backend so that we don't need to
+repeat code to collect metrics.
+
+=cut
+
+sub _process_doughflow_request {
+    my ($c, $type) = @_;
+    my $tags = [
+        "payment_processor:$c->request_parameters->{payment_processor}", "language:$c->request_parameters->{udef1}",
+        "brand:$c->request_parameters->{udef2}",
+    ];
+
+    my $response = _doughflow_backend($c, $type);
+    BOM::API::Payment::Metric::collect_metric($type, $response, $tags);
+    return $response;
+}
 
 =head2 record
 
@@ -74,7 +94,7 @@ Receives a request for a DoughFlow deposit record, validates the request, and th
 
 sub deposit_POST {
     my $c = shift;
-    return _doughflow_backend($c, 'deposit');
+    return _process_doughflow_request($c, 'deposit');
 }
 
 =head2 deposit_validate_GET
@@ -85,7 +105,7 @@ Receives a request for a DoughFlow deposit record, validates the request
 
 sub deposit_validate_GET {
     my $c = shift;
-    return _doughflow_backend($c, 'deposit_validate');
+    return _process_doughflow_request($c, 'deposit_validate');
 }
 
 =head2 withdrawal_validate_GET
@@ -96,7 +116,7 @@ Receives a request for a DoughFlow withdrawal record, validates the request, and
 
 sub withdrawal_validate_GET {
     my $c = shift;
-    return _doughflow_backend($c, 'withdrawal_validate');
+    return _process_doughflow_request($c, 'withdrawal_validate');
 }
 
 =head2 withdrawal_POST
@@ -108,7 +128,7 @@ To be removed after new Doughflow version has been deployed, see https://trello.
 
 sub withdrawal_POST {
     my $c = shift;
-    return _doughflow_backend($c, 'withdrawal');
+    return _process_doughflow_request($c, 'withdrawal');
 }
 
 =head2 withdrawal_reversal_POST
@@ -119,7 +139,7 @@ Receives a request for a DoughFlow withdrawal reversal record, validates the req
 
 sub withdrawal_reversal_POST {
     my $c = shift;
-    return _doughflow_backend($c, 'withdrawal_reversal');
+    return _process_doughflow_request($c, 'withdrawal_reversal');
 }
 
 =head2 update_payout_POST
@@ -134,7 +154,7 @@ See https://trello.com/c/10Ex9IyA/8915-8-billmarriott-newdfendpoints-2 for more 
 sub update_payout_POST {
     my $c = shift;
 
-    return _doughflow_backend($c, 'payout_inprogress')
+    return _process_doughflow_request($c, 'payout_inprogress')
         if ($c->request_parameters->{status} // '') eq 'inprogress';
 
     return _doughflow_backend($c, 'payout_rejected')

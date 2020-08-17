@@ -1,28 +1,3 @@
-
-=head1 NAME
-
-doughflow_deposit.pl - mimic the doughflow paymentapi deposit call
-
-=head1 SYNOPSIS
-
-    perl doughflow_deposit.pl -e <url> -s <secret_key> -c <loginid> -l debug
-
-=head1 DESCRIPTION
-
-This script does the following:
-
-=over 4
-
-=item * make a deposit request to paymentapi directly (locally), no doughflow involved, script can be used to test paymentapi functionality.
-
-=back
-
-It will report the status code - 201 means success and anyother code means failure.
-
-It will credit client account. Transaction remark will have the payment processor and trace id
-
-=cut
-
 use strict;
 use warnings;
 
@@ -41,18 +16,37 @@ my $usage = "Usage: $0 -e <URL> -s <secret_key> -c <client_loginid> -l <debug|in
 
 require Log::Any::Adapter;
 GetOptions(
+    'a|action=s'         => \my $action,
     'e|endpoint=s'       => \my $endpoint_url,
     's|secret_key=s'     => \my $secret_key,
     'c|client_loginid=s' => \my $client_loginid,
-    'l|log=s'            => \my $log_level
+    'l|log=s'            => \my $log_level,
+    't|trace_id=i'       => \my $trace_id,
 ) or die $usage;
+
+# Note: The 'withdrawal' endpoint will be removed soon,
+# 'update_payout' is the one which does real withdrawal.
+my $actions = {
+	'deposit' => 'post',
+	'deposit_validate' => 'get',
+	'withdrawal' => 'post',
+	'withdrawal_validate' => 'get',
+	'withdrawal_reversal' => 'post',
+	'update_payout' => 'post',
+};
 
 $log_level ||= 'info';
 Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
 
+die "ERROR: action must be one of the actions in the actions list. $usage" unless $action and exists($actions->{$action});
 die "ERROR: endpoint url must be specified. $usage"   unless $endpoint_url;
 die "ERROR: secret phrase must be specified. $usage"  unless $secret_key;
 die "ERROR: client loginid must be specified. $usage" unless $client_loginid;
+if ($action =~ /^withdrawal_reversal$/ and not $trace_id) {
+    die "ERROR: trace_id must be specified if action is withdrawal_reversal. $usage";
+}
+
+#die 'Invalid url' unless $endpoint_url =~ /^https:\/\/paymentapi.binary.com\/paymentapi$/;
 
 my $client = BOM::User::Client->new({loginid => $client_loginid}) or die "Invalid login ID: $client_loginid";
 my $params = {
@@ -60,12 +54,16 @@ my $params = {
     amount            => 1,
     currency_code     => $client->account->currency_code,
     payment_processor => 'AirTM',
-    trace_id          => int(rand(999999)),
+    trace_id          => $trace_id ||int(rand(999999)),
 };
 
-$log->debugf('Trying deposit with %s', $params);
+$log->debugf('Trying $s with %s', $action, $params);
 
-my $url = "$endpoint_url/transaction/payment/doughflow/deposit";
+my $url = "$endpoint_url/transaction/payment/doughflow/$action";
+if ($action eq 'update_payout') {
+	$params->{status} = 'inprogress'
+}
+
 $log->debugf('Connecting to %s', $url);
 
 my $key       = $secret_key;
@@ -75,17 +73,19 @@ my $calc_hash = Digest::MD5::md5_hex($timestamp . $key);
 $calc_hash = substr($calc_hash, length($calc_hash) - 10, 10);
 
 my $ua = Mojo::UserAgent->new;
-my $tx = $ua->post($url => {'X-BOM-DoughFlow-Authorization' => "$timestamp:$calc_hash"} => form => $params);
+my $tx = ($actions->{$action} eq 'get')
+	? $ua->get($url => {'X-BOM-DoughFlow-Authorization' => "$timestamp:$calc_hash"} => form => $params)
+	: $ua->post($url => {'X-BOM-DoughFlow-Authorization' => "$timestamp:$calc_hash"} => form => $params);
 
 my $result      = $tx->result;
 my $result_code = $result->code;    # 201 means success
 
 $log->debugf('Transaction result is %s', $result);
 
-if ($result_code == 201) {
-    $log->infof('Deposit successful. Status code: %s', $result_code);
+if ($result_code =~ /^2/) {
+    $log->infof('%s successful. Status code: %s', $action, $result_code);
 } else {
-    $log->errorf('Deposit failed. Status code: %s', $result_code);
+    $log->errorf('%s failed. Status code: %s', $action, $result_code);
 }
 
 1;

@@ -41,7 +41,7 @@ like $resp->{message}, qr/reached the maximum withdrawal limit/;
 $mock_account->unmock('total_withdrawals');
 
 $r = withdraw_validate(
-    loginid     => $loginid,
+    loginid => $loginid,
 );
 is($r->code,                                 200,                   'correct status code');
 is(decode_json_utf8($r->content)->{allowed}, 1,                     'validate pass');

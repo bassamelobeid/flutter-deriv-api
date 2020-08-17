@@ -78,7 +78,7 @@ subtest 'Exceed balance' => sub {
 };
 
 subtest 'Duplicate transaction' => sub {
-    my $trace_id        = 6588;
+    my $trace_id = 6588;
 
     withdraw(
         loginid  => $loginid,

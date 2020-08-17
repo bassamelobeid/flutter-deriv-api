@@ -9,6 +9,11 @@ use lib "$Bin/lib";
 
 use APIHelper qw/ balance deposit request decode_json /;
 
+# mock datadog
+my $mocked_datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
+my @datadog_args;
+$mocked_datadog->mock('stats_inc', sub { @datadog_args = @_ });
+
 # prepare test env
 my $loginid = 'CR0012';
 
@@ -106,6 +111,10 @@ subtest 'emit payment_deposit' => sub {
 
     is $last_event{type}, 'payment_deposit', 'event payment_deposit emitted';
     is $last_event{data}->{payment_processor}, 'QIWI', 'event has correct payment_processor';
+};
+
+subtest 'datadog metric collected' => sub {
+    like($datadog_args[0], qr/bom.paymentapi.doughflow.deposit.success/, 'datadog collected metrics');
 };
 
 done_testing();

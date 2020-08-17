@@ -53,7 +53,7 @@ $r = update_payout(
 
 is $r->code, 400, 'error code for bad trace_id';
 like $r->decoded_content, qr/no corresponding original withdrawal could be found/, 'error message';
-is 0+balance($loginid), 1, 'balance unchanged';
+is 0 + balance($loginid), 1, 'balance unchanged';
 
 $r = update_payout(
     amount   => 0.5,
@@ -64,7 +64,7 @@ $r = update_payout(
 
 is $r->code, 400, 'error code for wrong amount';
 like $r->decoded_content, qr/this does not match the original DoughFlow withdrawal request amount/, 'error message';
-is 0+balance($loginid), 1, 'balance unchanged';     
+is 0 + balance($loginid), 1, 'balance unchanged';
 
 $r = update_payout(
     amount   => 1,
@@ -75,7 +75,7 @@ $r = update_payout(
 );
 is $r->code, 400, 'error code for fee not allowed';
 like $r->decoded_content, qr/Bonuses and fees are not allowed for withdrawal reversals/, 'erorr message';
-is 0+balance($loginid), 1, 'balance unchanged';  
+is 0 + balance($loginid), 1, 'balance unchanged';
 
 $r = update_payout(
     amount   => 1,
@@ -85,7 +85,7 @@ $r = update_payout(
 );
 
 is $r->code, 200, 'valid withdrawal reversal';
-is(0 + balance($loginid), 2, 'balance increased'); 
+is(0 + balance($loginid), 2, 'balance increased');
 
 $r = update_payout(
     amount   => 1,
@@ -96,6 +96,6 @@ $r = update_payout(
 
 is $r->code, 400, 'error code for duplicate request';
 like $r->decoded_content, qr/multiple corresponding original withdrawals were found/, 'error message';
-is(0 + balance($loginid), 2, 'balance unchanged'); 
+is(0 + balance($loginid), 2, 'balance unchanged');
 
 done_testing();
