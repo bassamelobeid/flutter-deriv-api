@@ -6,6 +6,7 @@ use warnings;
 use Date::Utility;
 use CGI;
 use Digest::SHA qw(sha1_hex);
+use Text::Trim qw(trim);
 
 BOM::Backoffice::Sysinit::init();
 use constant MAX_FILE_SIZE => 1024 * 1600;
@@ -15,28 +16,29 @@ PrintContentType();
 my $cgi = CGI->new;
 Bar("Make dual control code");
 
-# Error checks
+my $batch_file = ref $input->{bulk_loginids} eq 'ARRAY' ? trim($input->{bulk_loginids}->[0]) : trim($input->{bulk_loginids});
 
+my $loginid = trim uc($input->{clientloginid} // '');
+
+# Error checks
 code_exit_BO("Please provide a transaction type.") unless $input->{transtype};
 code_exit_BO("Invalid transaction type") unless ($input->{transtype} =~ /^Anonymize client|Delete customerio record/);
-code_exit_BO("ERROR: Please provide client loginid or batch file") if (not defined $input->{clientloginid} and not defined $input->{bulk_loginids});
+code_exit_BO("ERROR: Please provide client loginid or batch file") if (not $loginid and not $batch_file);
 code_exit_BO(_get_display_message("ERROR: You can not request for client and bulk anonymization at the same time. Please provide one of them."))
-    if $input->{clientloginid} and $input->{bulk_loginids};
+    if $loginid and $batch_file;
+
 my ($code, $client);
-if ($input->{clientloginid}) {
-    $input->{clientloginid} = trim(uc $input->{clientloginid});
-    my $well_formatted = check_client_login_id($input->{clientloginid});
+if ($loginid) {
+    my $well_formatted = check_client_login_id($loginid);
     code_exit_BO("Invalid loginid provided!") unless $well_formatted;
 
-    $client = eval { BOM::User::Client::get_instance({'loginid' => uc($input->{'clientloginid'}), db_operation => 'replica'}) };
+    $client = eval { BOM::User::Client::get_instance({'loginid' => uc($loginid), db_operation => 'replica'}) };
     code_exit_BO("ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist") unless $client;
 
     $code = BOM::DualControl->new({
             staff           => $clerk,
-            transactiontype => $input->{transtype}})->client_anonymization_control_code($input->{clientloginid});
+            transactiontype => $input->{transtype}})->client_anonymization_control_code($loginid);
 }
-# It includes file name and type which is HTML and we dont want that
-my $batch_file = ref $input->{bulk_loginids} eq 'ARRAY' ? $input->{bulk_loginids}->[0] : $input->{bulk_loginids};
 if ($batch_file) {
     code_exit_BO("ERROR: $batch_file: only csv files allowed\n") unless $batch_file =~ /(csv)$/i;
     my $file = $cgi->upload('bulk_loginids');

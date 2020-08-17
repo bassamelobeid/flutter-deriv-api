@@ -84,7 +84,7 @@ if ($transaction_type eq 'Anonymize client') {
     if ($input->{clientloginid}) {
         my $dcc_error = BOM::DualControl->new({
                 staff           => $clerk,
-                transactiontype => $input->{transtype}})->validate_client_anonymization_control_code($input->{DCcode}, $input->{clientloginid});
+                transactiontype => $input->{transtype}})->validate_client_anonymization_control_code($input->{DCcode}, $loginid);
         code_exit_BO(_get_display_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
     }
     if ($bulk_upload = $input->{bulk_anonymization}) {

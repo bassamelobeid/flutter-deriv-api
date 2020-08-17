@@ -182,13 +182,15 @@ sub validate_batch_payment_control_code {
 }
 
 sub validate_client_anonymization_control_code {
-    my ($self, $incode) = @_;
+    my ($self, $incode, $loginid) = @_;
     my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
     my $error_status = $self->_validate_empty_code($code);
     return $error_status if $error_status;
     $error_status = $self->_validate_code_element_count($code, 5);
     return $error_status if $error_status;
     $error_status = $self->_validate_environment($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_payment_loginid($code, $loginid);
     return $error_status if $error_status;
     $error_status = $self->_validate_fellow_staff($code);
     return $error_status if $error_status;
@@ -316,7 +318,7 @@ sub _validate_payment_loginid {
     my ($self, $code, $loginid) = @_;
 
     my @arry = split("_##_", $code);
-    if ($loginid ne $arry[3]) {
+    if (uc $loginid ne uc $arry[3]) {
         return Error::Base->cuss(
             -type => 'DifferentLoginid',
             -mesg => 'Loginid provided does not match with the loginid provided during code generation',
