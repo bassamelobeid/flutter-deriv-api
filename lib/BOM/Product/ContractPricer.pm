@@ -977,17 +977,6 @@ sub _build_q_rate {
     return $q_rate;
 }
 
-sub _build_pricing_new {
-    my $self = shift;
-
-    $self->date_pricing;
-    # do not use $self->date_pricing here because milliseconds matters!
-    # _date_pricing_milliseconds will not be set if date_pricing is not built.
-    my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
-    return 0 if $time > $self->date_start->epoch;
-    return 1;
-}
-
 sub _match_symbol {
     my ($lists, $symbol) = @_;
     for (@$lists) {

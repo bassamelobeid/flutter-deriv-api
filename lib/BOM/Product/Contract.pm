@@ -154,23 +154,6 @@ has current_spot => (
     lazy_build => 1,
 );
 
-=head2 for_sale
-
-Was this bet built using BOM-generated parameters, as opposed to user-supplied parameters?
-
-Be sure, as this allows us to relax some checks. Don't relax too much, as this still came from a
-user at some point.. and they are wily.
-
-This will contain the shortcode of the original bet, if we built it from one.
-
-=cut
-
-has for_sale => (
-    is      => 'ro',
-    isa     => 'Bool',
-    default => 0,
-);
-
 has build_parameters => (
     is  => 'ro',
     isa => 'HashRef',
@@ -606,16 +589,6 @@ sub _build__pricing_args {
     return $args;
 }
 
-sub _build_date_pricing {
-    my $self = shift;
-    my $time = Time::HiRes::time();
-    $self->_date_pricing_milliseconds($time);
-    my $now = Date::Utility->new($time);
-    return ($self->has_pricing_new and $self->pricing_new)
-        ? $self->date_start
-        : $now;
-}
-
 sub _build_is_intraday {
     my $self = shift;
 
@@ -762,10 +735,6 @@ sub _build_entry_tick {
     my $entry_epoch = $self->date_start->epoch;
     return $self->_tick_accessor->tick_at($entry_epoch) if $self->starts_as_forward_starting;
     return $self->_tick_accessor->next_tick_after($entry_epoch);
-}
-
-sub _build_date_start {
-    return Date::Utility->new;
 }
 
 sub _build_applicable_economic_events {
