@@ -72,7 +72,7 @@ subtest "change_address_status" => sub {
     my $transaction = {
         currency => 'LTC',
         hash     => $transaction_hash1,
-        to       => ['36ob9DZcMYQkRHGFNJHjrEKP7N9RyTihHW'],
+        to       => '36ob9DZcMYQkRHGFNJHjrEKP7N9RyTihHW',
         type     => 'receive',
         amount   => 0,
         block    => 10,
@@ -91,7 +91,7 @@ subtest "change_address_status" => sub {
     }
     'survived get_deposit_id_and_address';
 
-    $transaction->{to} = [$btc_address];
+    $transaction->{to} = $btc_address;
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, undef, "Invalid currency";
@@ -126,7 +126,7 @@ subtest "change_address_status" => sub {
     }
     'survived get_deposit_id_and_address 2';
 
-    $transaction->{to} = [$btc_address2];
+    $transaction->{to} = $btc_address2;
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, 1, "Able to set pending the same transaction to two different addresses";
 
@@ -299,7 +299,7 @@ subtest "change_address_status" => sub {
     $transaction = {
         currency     => 'ETH',
         hash         => "withdrawal_test",
-        to           => ['36ob9DZcMYQkRHGFNJHjrEKP7N9RyTihHo'],
+        to           => '36ob9DZcMYQkRHGFNJHjrEKP7N9RyTihHo',
         type         => 'send',
         amount       => 10,
         fee          => 247621000000000,
@@ -329,7 +329,7 @@ sub _set_withdrawal_verified {
 sub _insert_withdrawal_transaction {
     my $transaction = shift;
 
-    my $address = @{$transaction->{to}}[0];
+    my $address = $transaction->{to};
 
     my $txn_db_id = $helper->insert_new_withdraw($address, $transaction->{currency}, $client->loginid, $transaction->{amount}, 0);
 
@@ -380,7 +380,7 @@ subtest "internal_transactions" => sub {
     }
     'survived get_deposit_id_and_address';
 
-    $transaction->{to} = [$btc_address];
+    $transaction->{to} = $btc_address;
 
     my $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, undef, "transaction with balance 0 but type eq receipt";

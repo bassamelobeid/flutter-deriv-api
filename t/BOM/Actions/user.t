@@ -496,12 +496,12 @@ sub test_segment_customer {
             postal_code => $test_client->address_postcode,
             country     => Locale::Country::code2country($test_client->residence),
         },
-        'currencies' => $currencies,
-        'country'    => Locale::Country::code2country($test_client->residence),
-        mt5_loginids => join(',', sort($user->get_mt5_loginids)),
-        landing_companies => 'svg',
+        'currencies'                => $currencies,
+        'country'                   => Locale::Country::code2country($test_client->residence),
+        mt5_loginids                => join(',', sort($user->get_mt5_loginids)),
+        landing_companies           => 'svg',
         available_landing_companies => 'labuan,svg',
-        provider        => 'email',
+        provider                    => 'email',
         },
         'Customer traits are set correctly';
 }

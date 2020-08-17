@@ -100,6 +100,11 @@ sub set_pending_transaction {
     my $currency_code = $transaction->{currency};
     my $currency      = BOM::CTC::Currency->new(currency_code => $currency_code);
 
+    # This check is just to be able to process the existing data in the Queue
+    # to avoid any failure or missing transactions
+    # We should remove it after processing all the old data
+    my $address = ref $transaction->{to} eq 'ARRAY' ? $transaction->{to}->[0] : $transaction->{to};
+
     try {
 
         # the update cursor call is done before because
@@ -114,7 +119,7 @@ sub set_pending_transaction {
             });
         $log->warnf("%s: Can't update the cursor to block: %s", $currency_code, $transaction->{block}) unless $cursor_result;
 
-        return undef if (!$transaction->{type} || $transaction->{type} eq 'send');
+        return undef unless $transaction->{type} && $transaction->{type} ne 'send';
 
         # get all the payments related to the `to` address from the transaction
         # since this is only for deposits we don't care about the `from` address
@@ -122,17 +127,14 @@ sub set_pending_transaction {
         # transactions, so in this daemon we are going to always receive just 1 to 1 transactions.
         my $payment_rows = clientdb()->run(
             fixup => sub {
-                my $sth = $_->prepare('select * from payment.find_crypto_by_addresses(?::VARCHAR[])');
-                $sth->execute($transaction->{to});
+                my $sth = $_->prepare('select * from payment.ctc_get_deposit_by_address_and_currency(?,?)');
+                $sth->execute($address, $currency_code);
                 return $sth->fetchall_arrayref({});
             });
 
-        my @rows = $payment_rows->@*;
-
         # generally a sweep transaction
-        unless (scalar @rows) {
+        unless ($payment_rows && $payment_rows->@*) {
             my $reserved_addresses = $currency->get_reserved_addresses();
-            my $address            = shift $transaction->{to}->@*;
             # for transactions from our internal sweeps or external wallets
             # we don't want to print the error message since they are happening
             # correctly
@@ -147,109 +149,97 @@ sub set_pending_transaction {
             return undef;
         }
 
-        my %rows_ref;
-        push($rows_ref{$_->{address}}->@*, $_) for @rows;
+        my @payment = $payment_rows->@*;
 
-        for my $address (keys %rows_ref) {
-            my @payment = $rows_ref{$address}->@*;
-
-            return undef unless ($transaction->{type});
-
-            # ignores those that are not internal transfer and transactions that already confirmed by subscription
-            if ($transaction->{type} ne 'internal'
-                && any { $_->{blockchain_txn} && $_->{blockchain_txn} eq $transaction->{hash} && $_->{status} ne 'NEW' } @payment)
-            {
-                $log->debugf("Address already confirmed by subscription for transaction: %s", $transaction->{hash});
-                return undef;
-            }
-
-            # transaction already confirmed by confirmation daemon and does not have a transaction hash
-            # in this case we can't risk to duplicate the transaction so we just ignore it
-            # this is a check for the transactions done to before the subscription impl in place
-            if (any { $_->{status} ne 'NEW' && !$_->{blockchain_txn} && $_->{transaction_type} ne TRANSACTION_TYPE_WITHDRAWAL } @payment) {
-                $log->debugf("Address already confirmed by confirmation daemon for transaction: %s", $transaction->{hash});
-                return undef;
-            }
-
-            # TODO: when the user send a transaction to a correct address but using
-            # a different currency, we need to change the currency in the DATABASE and set
-            # the transaction as pending.
-            if (any { $_->{currency_code} ne $currency_code } @payment) {
-                $log->warnf("Invalid currency for transaction: %s", $transaction->{hash});
-                stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
-                return undef;
-            }
-
-            # ignore transaction with 0 amount if it is not internal transfer
-            unless ($currency->transaction_amount_not_zero($transaction)) {
-                $log->warnf("Amount is zero for transaction: %s", $transaction->{hash});
-                stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
-                return undef;
-            }
-
-            # for omnicore we need to check if the property id is correct
-            if ($transaction->{property_id}
-                && ($transaction->{property_id} + 0) != ($currency->get_property_id() + 0))
-            {
-                $log->warnf("%s - Invalid property ID for transaction: %s", $currency_code, $transaction->{hash});
-                stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $currency_code, 'status:failed']});
-                return undef;
-            }
-
-            # insert new duplicated deposit if needed
-            # requirements to insert a new deposit:
-            #  - database already contains one or more transactions to the same address
-            return undef unless insert_new_deposit($transaction, \@payment);
-
-            my $result = update_transaction_status_to_pending($transaction, $address);
-
-            if ($result) {
-                my ($emit, $error);
-                try {
-                    my $record = first { ($_->{transaction_type} // '') eq 'deposit' } @payment;
-
-                    $emit = BOM::Platform::Event::Emitter::emit(
-                        'new_crypto_address',
-                        {
-                            loginid => $record->{client_loginid},
-                        });
-                }
-                catch {
-                    $error = $@;
-                }
-
-                $log->warnf(
-                    'Failed to emit event - new_crypto_address - for currency: %s, loginid: %s, after marking transaction: %s as pending with error: %s',
-                    $currency_code, ($payment[0]->{client_loginid} // ''), $transaction->{hash}, $error
-                ) unless $emit;
-            } else {
-                $log->warnf("Can't set the status to pending for tx: %s", $transaction->{hash});
-                stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
-
-                # if we don't receive the response from the database we need to retry sending it
-                # creating a new event with the same transaction so it will try to set it as pending
-                # later again
-                my $emit;
-                my $error = "No error returned";
-                try {
-                    $emit = BOM::Platform::Event::Emitter::emit('crypto_subscription', $transaction);
-                }
-                catch {
-                    $error = $@;
-                    exception_logged();
-                }
-
-                $log->warnf('Failed to emit event for currency: %s, transaction: %s, error: %s', $currency_code, $transaction->{hash}, $error)
-                    unless $emit;
-
-                return undef;
-            }
-
-            $log->debugf("Transaction status changed to pending: %s", $transaction->{hash});
-            stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:success']});
-
-            last;
+        if (any { $_->{blockchain_txn} && $_->{blockchain_txn} eq $transaction->{hash} && $_->{status} ne 'NEW' } @payment) {
+            $log->debugf("Address already confirmed by subscription for transaction: %s", $transaction->{hash});
+            return undef;
         }
+
+        # transaction already confirmed by confirmation daemon and does not have a transaction hash
+        # in this case we can't risk to duplicate the transaction so we just ignore it
+        # this is a check for the transactions which done before implement the subscription daemon
+        if (any { $_->{status} ne 'NEW' && !$_->{blockchain_txn} } @payment) {
+            $log->debugf("Address already confirmed by confirmation daemon for transaction: %s", $transaction->{hash});
+            return undef;
+        }
+
+        # TODO: when the user send a transaction to a correct address but using
+        # a different currency, we need to change the currency in the DATABASE and set
+        # the transaction as pending.
+        if (any { $_->{currency_code} ne $currency_code } @payment) {
+            $log->warnf("Invalid currency for transaction: %s", $transaction->{hash});
+            stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
+            return undef;
+        }
+
+        # ignore transaction with 0 amount if it is not internal transfer
+        unless ($currency->transaction_amount_not_zero($transaction)) {
+            $log->warnf("Amount is zero for transaction: %s", $transaction->{hash});
+            stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
+            return undef;
+        }
+
+        # for omnicore we need to check if the property id is correct
+        if ($transaction->{property_id}
+            && ($transaction->{property_id} + 0) != ($currency->get_property_id() + 0))
+        {
+            $log->warnf("%s - Invalid property ID for transaction: %s", $currency_code, $transaction->{hash});
+            stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $currency_code, 'status:failed']});
+            return undef;
+        }
+
+        # insert new duplicated deposit if needed
+        # requirements to insert a new deposit:
+        #  - database already contains one or more transactions to the same address
+        return undef unless insert_new_deposit($transaction, \@payment);
+
+        my $result = update_transaction_status_to_pending($transaction, $address);
+
+        if ($result) {
+            my ($emit, $error);
+            try {
+                my $client_loginid = $payment[0]->{client_loginid};
+
+                $emit = BOM::Platform::Event::Emitter::emit(
+                    'new_crypto_address',
+                    {
+                        loginid => $client_loginid,
+                    });
+            }
+            catch {
+                $error = $@;
+            }
+
+            $log->warnf(
+                'Failed to emit event - new_crypto_address - for currency: %s, loginid: %s, after marking transaction: %s as pending with error: %s',
+                $currency_code, ($payment[0]->{client_loginid} // ''), $transaction->{hash}, $error
+            ) unless $emit;
+        } else {
+            $log->warnf("Can't set the status to pending for tx: %s", $transaction->{hash});
+            stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
+
+            # if we don't receive the response from the database we need to retry sending it
+            # creating a new event with the same transaction so it will try to set it as pending
+            # later again
+            my $emit;
+            my $error = "No error returned";
+            try {
+                $emit = BOM::Platform::Event::Emitter::emit('crypto_subscription', $transaction);
+            }
+            catch {
+                $error = $@;
+                exception_logged();
+            }
+
+            $log->warnf('Failed to emit event for currency: %s, transaction: %s, error: %s', $currency_code, $transaction->{hash}, $error)
+                unless $emit;
+
+            return undef;
+        }
+
+        $log->debugf("Transaction status changed to pending: %s", $transaction->{hash});
+        stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:success']});
 
     }
     catch {
@@ -299,8 +289,8 @@ sub insert_new_deposit {
 
     unless ($no_new_found || $is_txn_exists) {
 
-        my $record = first { $_->{transaction_type} eq 'deposit' } @payment;
-        unless ($record and $record->{client_loginid}) {
+        my $client_loginid = $payment[0]->{client_loginid};
+        unless ($client_loginid) {
             $log->warnf(
                 "Deposit rejected for %s transaction: %s , Error: Cannot get the client loginid. Please inform the crypto team to investigate the transaction.",
                 $currency_code, $transaction->{hash});
@@ -311,7 +301,7 @@ sub insert_new_deposit {
         my $result = clientdb()->run(
             ping => sub {
                 my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit_address(?, ?, ?, ?, ?)');
-                $sth->execute($payment[0]->{address}, $currency_code, $record->{client_loginid}, $transaction->{fee}, $transaction->{hash});
+                $sth->execute($payment[0]->{address}, $currency_code, $client_loginid, $transaction->{fee}, $transaction->{hash});
             });
 
         # this is just a safe check in case we get some error from the database
