@@ -203,7 +203,10 @@ sub startup {
 
             my $brand = Brands->new(name => $c->stash('brand'));
             my $source_type = $brand->is_app_whitelisted($c->stash('source') // '') ? 'official' : 'unofficial';
-            $c->stash(source_type => $source_type);
+            $c->stash(
+                app_name => ($brand // 'third-party'),
+                source_type => $source_type,
+            );
         });
 
     $app->plugin(

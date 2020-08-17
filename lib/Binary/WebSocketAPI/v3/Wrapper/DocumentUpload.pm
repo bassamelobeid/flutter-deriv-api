@@ -93,14 +93,16 @@ sub document_upload {
 sub get_upload_info {
     my ($c, $frame) = @_;
     if (length $frame < 12) {
-        stats_inc('bom_websocket_api.v_3.document_upload_error', {tags => ['source:' . $c->stash('source_type')]});
+        stats_inc('bom_websocket_api.v_3.document_upload_error',
+            {tags => ['source:' . $c->stash('source_type'), "app_name:" . $c->stash('app_name'),]});
         return;
     }
 
     my ($call_type, $upload_id, $chunk_size, $data) = unpack "N3a*", $frame;
     my $upload_info = $c->stash->{document_upload}->{$upload_id};
     unless ($upload_info) {
-        stats_inc('bom_websocket_api.v_3.document_upload_error', {tags => ['source:' . $c->stash('source_type')]});
+        stats_inc('bom_websocket_api.v_3.document_upload_error',
+            {tags => ['source:' . $c->stash('source_type'), "app_name:" . $c->stash('app_name'),]});
         return;
     }
 
