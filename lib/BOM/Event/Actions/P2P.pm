@@ -46,35 +46,12 @@ use constant {
 
 =head2 advertiser_created
 
-When there's a new request to sign up as an advertiser,
-we'd presumably want some preliminary checks and
-then mark their status as C<approved> or C<active>.
-
-Currently there's a placeholder email.
+Advertiser was created.
+Dummy handler for now.
 
 =cut
 
 sub advertiser_created {
-    my $data = shift;
-
-    my @args = qw(client_loginid name contact_info default_advert_description payment_info);
-
-    if (grep { !exists $data->{$_} } @args) {
-        $log->info('Fail to process advertiser_created: Invalid event data', $data);
-        return 0;
-    }
-
-    my $email_to = BOM::Config::Runtime->instance->app_config->payments->p2p->email_to;
-
-    return 1 unless $email_to;
-
-    send_email({
-        from    => '<no-reply@binary.com>',
-        to      => $email_to,
-        subject => 'New P2P advertiser registered',
-        message => ['New P2P advertiser registered.', 'Advertiser information:', map { $_ . ': ' . ($data->{$_} || '<none>') } @args,],
-    });
-
     return 1;
 }
 
