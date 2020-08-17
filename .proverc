@@ -1,3 +1,2 @@
---exec '/etc/rmg/bin/perl -Ilib -MTest::Warnings'
--MBOM::Test
+--exec '/etc/rmg/bin/perl -Ilib -MTest::Warnings -MBOM::Test'
 -MBOM::Test::Script::ExperianMock
