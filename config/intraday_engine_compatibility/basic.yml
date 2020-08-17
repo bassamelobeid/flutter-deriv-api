@@ -61,7 +61,7 @@ frxAUDCAD: &inactive_fx
       spot:
         euro_atm:
           max: 5h
-          min: 5m
+          min: 3m
 frxAUDCHF: *inactive_fx
 frxAUDNZD: *inactive_fx
 frxAUDPLN: *inactive_fx
