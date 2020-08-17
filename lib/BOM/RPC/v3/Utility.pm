@@ -137,7 +137,6 @@ sub get_token_details {
 
 sub create_error {
     my $args = shift;
-    stats_inc("bom_rpc.v_3.error", {tags => ['code:' . $args->{code},]});
 
     return {
         error => {

@@ -289,7 +289,7 @@ returns the time when the client has declared they are not a PEP/RCA for the req
 =cut
 
 sub _get_non_pep_declaration_time {
-    my ($client, $company, $non_pep_declaration, $app_id) = @_;
+    my ($client, $company, $non_pep_declaration) = @_;
 
     return time if $non_pep_declaration;
 
@@ -298,8 +298,6 @@ sub _get_non_pep_declaration_time {
     for (@same_lc_siblings) {
         return $_->non_pep_declaration_time if $_->non_pep_declaration_time;
     }
-
-    stats_inc('bom_rpc.v_3.new_real_account.called_without_non_pep_declaration.count', {tags => ["app_id:$app_id", "company:$company"]});
 
     #TODO(Mat): we will return undef here, provided that nothing is logged by the above line
     #           (non_pep_declaration is sent from all appls for the first real account per landing complany).

@@ -146,10 +146,6 @@ sub startup {
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ["rpc:$call"]});
             $vsz_start = current_vsz();
             BOM::Test::Time::set_date_from_file() if defined $INC{'BOM/Test/Time.pm'};    # check BOM::Test::Time for details
-            $c->tx->on(
-                'client_disconnect' => sub {
-                    DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.client_disconnect', {tags => ["rpc:$call"]});
-                });
         });
 
     $app->hook(
@@ -173,14 +169,11 @@ sub startup {
             # too low.
             warn sprintf "Large VSZ increase for %d - %d bytes, %s\n", $$, $vsz_increase, $call if $vsz_increase > (100 * 1024 * 1024);
             # We use timing for the extra statistics (min/max/avg) it provides
-            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.vsz.increase', $vsz_increase, {tags => ["rpc:$call"]});
 
-            DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_success.count', {tags => ["rpc:$call"]});
             DataDog::DogStatsd::Helper::stats_timing(
                 'bom_rpc.v_3.call.timing',
                 (1000 * Time::HiRes::tv_interval($request_start)),
                 {tags => ["rpc:$call"]});
-            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.cpuusage', $cpu->usage(), {tags => ["rpc:$call"]});
 
             push @recent, [$request_start, Time::HiRes::tv_interval($request_end, $request_start)];
             shift @recent if @recent > 50;

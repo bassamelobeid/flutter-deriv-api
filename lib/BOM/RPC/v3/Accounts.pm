@@ -24,7 +24,6 @@ use BOM::User::FinancialAssessment qw(is_section_complete update_financial_asses
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
-use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use BOM::RPC::Registry '-dsl';
 
@@ -1333,10 +1332,6 @@ rpc set_settings => sub {
     # Shold not allow client to change TIN number if we have TIN format for the country and it doesnt match
     # In case of having more than a tax residence, client residence will replaced.
     my $selected_tax_residence = $tax_residence =~ /\,/g ? $current_client->residence : $tax_residence;
-    if ($selected_tax_residence and $tax_identification_number and (my $tin_format = $countries_instance->get_tin_format($selected_tax_residence))) {
-        my $client_tin = $countries_instance->clean_tin_format($tax_identification_number, $selected_tax_residence) // '';
-        stats_inc('bom_rpc.v_3.set_settings.called_with_wrong_TIN_format.count') unless any { $client_tin =~ m/$_/ } @$tin_format;
-    }
     my $now                    = Date::Utility->new;
     my $address1               = $args->{'address_line_1'} // $current_client->address_1;
     my $address2               = ($args->{'address_line_2'} // $current_client->address_2) // '';
