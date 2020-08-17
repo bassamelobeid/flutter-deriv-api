@@ -114,17 +114,18 @@ sub approve_all {
             # Get all deposits with amount >= promocode deposit requirement
             my @deposits = grep { $_ >= $code->{min_deposit} } get_deposits($dbs->{$client->{broker}}, $client->{account_id}, $code->{code}, $code);
             # Approve is there is at least one and client has sufficient turnover
-            $is_approved = 1 if @deposits > 0 and turnover_requirement_met($dbs->{$client->{broker}}, $client, $code, $code->{amount});
+            $is_approved = 1
+                if @deposits > 0 and turnover_requirement_met($dbs->{$client->{broker}}, $client, $code, $code->{amount}, sum(@deposits));
         } elsif ($code->{promo_code_type} eq 'GET_X_OF_DEPOSITS') {
             # Get payout amount
-            my $bonus = get_dynamic_bonus(
+            my ($bonus, $deposit_total) = get_dynamic_bonus(
                 db           => $dbs->{$client->{broker}},
                 account_id   => $client->{account_id},
                 code         => $code->{code},
                 promo_config => $code,
             );
             # Approve if there is a bonus and client has sufficient turnover
-            $is_approved = 1 if $bonus > 0 and turnover_requirement_met($dbs->{$client->{broker}}, $client, $code, $bonus);
+            $is_approved = 1 if $bonus > 0 and turnover_requirement_met($dbs->{$client->{broker}}, $client, $code, $bonus, $deposit_total);
         }
 
         if ($is_approved) {
@@ -493,20 +494,15 @@ sub get_deposits {
 
 =head2 turnover_requirement_met
 
-Check if a client has sufficient turnover
-
-=over 4
-
-=item * Turnover must be least 5 times the promocode bonus amount.
-
-=item * (Turnover requirement is fixed at 5x payout per slack discussions with Marketing. BO config is ignored.)
-
-=back
+Check if a client has sufficient turnover.
+Turnover must be at least turnover_type x min_turnover.
+turnover_type is 'bonus' if undefined.
+min_turnover is 5 if undefined.
 
 =cut
 
 sub turnover_requirement_met {
-    my ($db, $client, $code, $payout) = @_;
+    my ($db, $client, $code, $payout, $deposit) = @_;
 
     my $tover = $db->run(
         fixup => sub {
@@ -525,7 +521,13 @@ sub turnover_requirement_met {
             return $res;
         });
 
-    return $tover >= ($payout * 5);
+    my $type   = $code->{turnover_type} // 'bonus';
+    my $factor = $code->{min_turnover}  // 5;
+    if ($type eq 'deposit') {
+        return $tover >= ($deposit * $factor);
+    } elsif ($type eq 'bonus') {
+        return $tover >= ($payout * $factor);
+    }
 }
 
 =head2 get_dynamic_bonus
@@ -543,7 +545,7 @@ sub get_dynamic_bonus {
     my $bonus = $total * ($args{promo_config}{amount} / 100);
     $bonus = min($bonus, $args{promo_config}{max_amount}) if $args{promo_config}{max_amount};
     $bonus = 0 if $args{promo_config}{min_amount} and $args{promo_config}{min_amount} > $bonus;
-    return $bonus;
+    return ($bonus, $total);
 }
 
 1;

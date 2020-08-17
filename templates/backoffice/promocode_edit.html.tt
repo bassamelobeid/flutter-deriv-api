@@ -60,7 +60,7 @@ input.upper {
         </tr>
         <tr>
             <td class="label">Amount</td>
-            <td>: <input type="text" name="amount" value="[% pc_json.amount %]" data-lpignore="true" /> Note: Amount range: <b>FREE_BET</b>, <b>GET_X_WHEN_DEPOSIT_Y</b>: 0-999; <b>GET_X_OF_DEPOSITS</b>: 1-100%</td>
+            <td>: <input type="text" name="amount" value="[% pc_json.amount %]" data-lpignore="true" /> For <b>FREE_BET</b> and <b>GET_X_WHEN_DEPOSIT_Y</b> this value is bonus amount (0-999), for <b>GET_X_OF_DEPOSITS</b> it is the percentage of deposit (1-100)</td>
         </tr>
         <tr>
             <td class="label">Promocode Type</td>
@@ -74,28 +74,41 @@ input.upper {
         </tr>
         <tr>
             <td class="label">Mininum Deposit </td>
-            <td>: <input type="text" name="min_deposit" value="[% pc_json.min_deposit %]" data-lpignore="true" /> Note: Only applies for type <b>GET_X_WHEN_DEPOSIT_Y</b></td>
+            <td>: <input type="text" name="min_deposit" value="[% pc_json.min_deposit %]" data-lpignore="true" /> Only applies for type <b>GET_X_WHEN_DEPOSIT_Y</b></td>
         </tr>
         <tr>
             <td class="label">Minimum Turnover</td>
-            <td>: <input type="text" name="min_turnover" value="[% pc_json.min_turnover %]" data-lpignore="true" /> Note: Only applies for type <b>FREE_BET</b>. Other types are fixed at 5x payout amount.</td>
+            <td>: <input type="text" name="min_turnover" value="[% pc_json.min_turnover %]" data-lpignore="true" /> For <b>FREE_BET</b> this value is the amount. For <b>GET_X_WHEN_DEPOSIT_Y</b> and <b>GET_X_OF_DEPOSITS</b> this value is the multipler (default 5).</td>
+        </tr>
+        <tr>
+            <td class="label">Turnover Type</td>
+            <td>: <select name="turnover_type">
+                    <option value=''>--select--</option>
+                    [% FOREACH type_option = ['bonus','deposit'] %]
+                        [% selected = type_option == pc_json.turnover_type ? 'selected="selected"': '' %]
+                        <option value="[% type_option %]" [% selected %] > [% type_option %] </option>
+                    [% END %]
+                </select> Only applies for types <b>GET_X_WHEN_DEPOSIT_Y</b> and <b>GET_X_OF_DEPOSITS</b>. The turnover multipler will be applied to the value of the selected item (default: bonus)
+                
+            </td>
         </tr>
         <tr>
             <td class="label">Minimum Payout</td>
-            <td>: <input type="text" name="min_amount" value="[% pc_json.min_amount %]" data-lpignore="true" /> Note: Only applies for type <b>GET_X_OF_DEPOSITS</b></td>
+            <td>: <input type="text" name="min_amount" value="[% pc_json.min_amount %]" data-lpignore="true" /> Only applies for type <b>GET_X_OF_DEPOSITS</b></td>
         </tr>         
         <tr>
             <td class="label">Maximum Payout</td>
-            <td>: <input type="text" name="max_amount" value="[% pc_json.max_amount %]" data-lpignore="true" /> Note: Only applies for type <b>GET_X_OF_DEPOSITS</b></td>
+            <td>: <input type="text" name="max_amount" value="[% pc_json.max_amount %]" data-lpignore="true" /> Only applies for type <b>GET_X_OF_DEPOSITS</b></td>
         </tr>        
         <tr>
             <td class="label">Payment Method</td>
             <td>: <select name="payment_processor">
+                    <option value=''>--select--</option>
                     [% FOREACH pp = ['ALL','Skrill','NETeller','NETellerDT','QIWI','PerfectM','FasaPay','ZingPay','Jeton','JetonWL','paysafe','SticPay','WebMoney','AirTM'] %]
                         [% selected = pp == pc_json.payment_processor ? 'selected="selected"': '' %]
                         <option value="[% pp %]" [% selected %] > [% pp %] </option>
                     [% END %]
-                </select> Note: Only applies for typs <b>GET_X_WHEN_DEPOSIT_Y</b> and <b>GET_X_OF_DEPOSITS</b>
+                </select> Only applies for types <b>GET_X_WHEN_DEPOSIT_Y</b> and <b>GET_X_OF_DEPOSITS</b>
             </td>
         </tr>
         <tr>

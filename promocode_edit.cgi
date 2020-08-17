@@ -60,8 +60,8 @@ if ($input{save}) {
                 $input{country} = join(',', @{$input{country}}) if ref $input{country};
             }
 
-            delete $input{payment_processor} if $input{promo_code_type} eq 'FREE_BET';
-            for (qw/currency amount country min_turnover min_deposit payment_processor min_amount max_amount/) {
+            delete @input{qw/payment_processor turnover_type/} if $input{promo_code_type} eq 'FREE_BET';
+            for (qw/currency amount country min_turnover turnover_type min_deposit payment_processor min_amount max_amount/) {
                 if ($input{$_}) {
                     $pc->{_json}{$_} = $input{$_};
                 } else {
@@ -123,8 +123,6 @@ sub _validation_errors {
     }
 
     # any more complex validation should go here..
-    push @errors, "MINUMUM TURNOVER is only for FREE_BET promotions"
-        if $input{min_turnover} && $input{promo_code_type} ne 'FREE_BET';
     push @errors, "MINUMUM DEPOSIT is only for GET_X_WHEN_DEPOSIT_Y promotions"
         if $input{min_deposit} && $input{promo_code_type} ne 'GET_X_WHEN_DEPOSIT_Y';
     push @errors, "MINUMUM PAYOUT is only for GET_X_OF_DEPOSITS promotions"
@@ -132,11 +130,22 @@ sub _validation_errors {
     push @errors, "MAXIMUM PAYOUT is only for GET_X_OF_DEPOSITS promotions"
         if $input{max_amount} && $input{promo_code_type} ne 'GET_X_OF_DEPOSITS';
     if ($input{promo_code_type} eq 'GET_X_OF_DEPOSITS') {
-        push @errors, "Amount must be a percentage between 1 and 100" if ($input{amount} < 0.1 or $input{amount} > 100);
+        push @errors, "Amount must be a percentage between 1 and 100"
+            if (looks_like_number($input{amount}) && ($input{amount} < 0.1 or $input{amount} > 100));
     } else {
-        push @errors, "Amount must be a number between 0 and 999" if ($input{amount} < 0 or $input{amount} > 999);
+        push @errors, "Amount must be a number between 0 and 999"
+            if (looks_like_number($input{amount}) && ($input{amount} < 0 or $input{amount} > 999));
     }
+    push @errors, "TURNOVER TYPE cannot be specified for FREE_BET promotions"
+        if $input{turnover_type} && $input{promo_code_type} eq 'FREE_BET';
+    push @errors, "TURNOVER TYPE must be specified for deposit promotions"
+        if !$input{turnover_type} && $input{promo_code_type} ne 'FREE_BET';
+    push @errors, "PAYMENT METHOD cannot be specified for FREE_BET promotions"
+        if $input{payment_processor} && $input{promo_code_type} eq 'FREE_BET';
+    push @errors, "PAYMENT METHOD must be specified for deposit promotions"
+        if !$input{payment_processor} && $input{promo_code_type} ne 'FREE_BET';
     push @errors, "Promocode can only have: letters, underscore, minus and dot" unless is_valid_promocode(\%input);
+
     return @errors;
 }
 

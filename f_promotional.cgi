@@ -107,7 +107,6 @@ if (@$pcs) {
         </li>
     </ul>';
 
-    print 'The Free Gift promotional codes are :';
     print '
         <table border=1 cellpading=0 cellspacing=0>
             <tr>
@@ -115,6 +114,7 @@ if (@$pcs) {
                 <td><b>AMOUNT</td>
                 <td><b>MIN DEPOSIT</td>
                 <td><b>MIN TURNOVER</td>
+                <td><b>TURNOVER TYPE</td>
                 <td><b>MIN PAYOUT</td>
                 <td><b>MAX PAYOUT</td>
                 <td><b>PAYMENT METHOD</td>
@@ -153,6 +153,12 @@ if (@$pcs) {
             map { /ALL/ ? 'ALL' : request()->brand->countries_instance->countries->country_from_code($_) }
             split(/,/, $pc->{_json}->{country});
 
+        # display defaults
+        if ($pc->promo_code_type =~ /^(GET_X_WHEN_DEPOSIT_Y|GET_X_OF_DEPOSITS)$/) {
+            $pc->{_json}->{min_turnover}  //= 5;
+            $pc->{_json}->{turnover_type} //= 'bonus';
+        }
+
         my $href = request()->url_for(
             'backoffice/promocode_edit.cgi',
             {
@@ -167,6 +173,7 @@ if (@$pcs) {
             . $pc->{_json}->{amount} . '</td>' . '<td>'
             . ($pc->{_json}->{min_deposit}       || '&nbsp;') . '</td>' . '<td>'
             . ($pc->{_json}->{min_turnover}      || '&nbsp;') . '</td>' . '<td>'
+            . ($pc->{_json}->{turnover_type}     || '&nbsp;') . '</td>' . '<td>'
             . ($pc->{_json}->{min_amount}        || '&nbsp;') . '</td>' . '<td>'
             . ($pc->{_json}->{max_amount}        || '&nbsp;') . '</td>' . '<td>'
             . ($pc->{_json}->{payment_processor} || '&nbsp;') . '</td>' . '<td>'
@@ -331,7 +338,7 @@ foreach my $client (@clients) {
     my $amount = $pc->{_json}->{amount};
     # Amount for GET_X_OF_DEPOSITS is dependant on eligible deposits made
     if ($pc->promo_code_type eq 'GET_X_OF_DEPOSITS') {
-        my $bonus = BOM::Backoffice::PromoCodeEligibility::get_dynamic_bonus(
+        my ($bonus) = BOM::Backoffice::PromoCodeEligibility::get_dynamic_bonus(
             db           => $client->db->dbic,
             account_id   => $client->account->id,
             code         => $pc->code,

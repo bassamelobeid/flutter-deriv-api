@@ -9,6 +9,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Backoffice::PromoCodeEligibility;
 use Date::Utility;
 use BOM::Database::Helper::FinancialMarketBet;
+use JSON::MaybeUTF8 qw(:v1);
 
 my $client_db    = BOM::Database::ClientDB->new({broker_code => 'CR'})->db->dbic->dbh;
 my $collector_db = BOM::Database::ClientDB->new({broker_code => 'FOG'})->db->dbic->dbh;
@@ -90,7 +91,7 @@ $clients{user3_c1} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $clients{user3_c1}->account('USD');
 
-for my $id (1 .. 7) {
+for my $id (1..9) {
     my $email = 'generic' . $id . '@binary.com';
     my $user  = BOM::User->create(
         email    => $email,
@@ -124,6 +125,8 @@ my @promos = (
         '{"country":"ALL","currency":"ALL","amount":"10","payment_processor":"ALL","min_amount":"10","max_amount":"50"}',
         '2000-01-01', '2000-02-01', 't'
     ],
+    ['PROMO11', 'GET_X_WHEN_DEPOSIT_Y', '{"country":"ALL","currency":"ALL","min_deposit":"1","amount":"15","min_turnover":"0.5","turnover_type":"deposit"}', '2000-01-01', '2000-02-01', 't'],
+    ['PROMO12', 'GET_X_OF_DEPOSITS',    '{"country":"ALL","currency":"ALL","min_deposit":"1","amount":"10","min_turnover":"1","turnover_type":"deposit"}', '2000-01-01', '2000-02-01', 't'],       
 );
 
 for my $p (@promos) {
@@ -251,6 +254,15 @@ subtest 'GET_X_OF_DEPOSITS promo approval' => sub {
     BOM::Backoffice::PromoCodeEligibility::approve_all();
     is client_promo('generic3')->{status}, 'APPROVAL', 'Approved after mixed deposits';
 
+    my ($bonus, $deposit) = BOM::Backoffice::PromoCodeEligibility::get_dynamic_bonus(
+         db           => $clients{generic3}->db->dbic,
+         account_id   => $clients{generic3}->account->id,
+         code         => 'PROMO8',
+         promo_config => decode_json_utf8($clients{generic3}->client_promo_code->promotion->promo_code_config),
+    );
+    is $deposit, 100, 'correct deposit amount';
+    is $bonus, 10, 'bonus is 10% of deposit';
+    
     # Skrill only promo
     $clients{generic4}->promo_code('PROMO9');
     $clients{generic4}->save;
@@ -290,6 +302,30 @@ subtest 'GET_X_OF_DEPOSITS promo approval' => sub {
     buy_contract($clients{generic7}, 50);
     BOM::Backoffice::PromoCodeEligibility::approve_all();
     is client_promo('generic7')->{status}, 'APPROVAL', 'Minimum reached';
+};
+
+subtest 'Deposit turnover eligibility' => sub {
+    # GET_X_WHEN_DEPOSIT_Y  turnover requirement: 0.5 x deposit
+    $clients{generic8}->promo_code('PROMO11');
+    $clients{generic8}->save;
+    deposit($clients{generic8}, 50, 'NETeller');
+    buy_contract($clients{generic8}, 20);
+    BOM::Backoffice::PromoCodeEligibility::approve_all();
+    is client_promo('generic8')->{status}, 'NOT_CLAIM', 'Turnover not hit';
+    buy_contract($clients{generic8}, 10);
+    BOM::Backoffice::PromoCodeEligibility::approve_all();
+    is client_promo('generic8')->{status}, 'APPROVAL', 'Minimum reached';
+
+    # GET_X_OF_DEPOSITS  turnover requirement: 1 x deposit
+    $clients{generic9}->promo_code('PROMO12');
+    $clients{generic9}->save;
+    deposit($clients{generic9}, 50, 'NETeller');
+    buy_contract($clients{generic9}, 40);
+    BOM::Backoffice::PromoCodeEligibility::approve_all();
+    is client_promo('generic9')->{status}, 'NOT_CLAIM', 'Turnover not hit';
+    buy_contract($clients{generic9}, 10);
+    BOM::Backoffice::PromoCodeEligibility::approve_all();
+    is client_promo('generic9')->{status}, 'APPROVAL', 'Minimum reached';
 };
 
 subtest 'client join date' => sub {

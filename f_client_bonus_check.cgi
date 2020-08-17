@@ -168,7 +168,7 @@ my $amount = $affiliate_promo->{config}{amount};
 
 # Amount for GET_X_OF_DEPOSITS is dependant on eligible deposits made
 if ($affiliate_promo->{promo_code_type} eq 'GET_X_OF_DEPOSITS') {
-    $amount = BOM::Backoffice::PromoCodeEligibility::get_dynamic_bonus(
+    ($amount) = BOM::Backoffice::PromoCodeEligibility::get_dynamic_bonus(
         db           => $client->db->dbic,
         account_id   => $client->account->id,
         code         => $affiliate_promo->{code},
