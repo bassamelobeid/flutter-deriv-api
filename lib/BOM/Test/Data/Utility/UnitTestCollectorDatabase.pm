@@ -1,12 +1,7 @@
 package BOM::Test::Data::Utility::UnitTestCollectorDatabase;
 
-use MooseX::Singleton;
-
 use BOM::Test;
-
-BEGIN {
-    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
-}
+use MooseX::Singleton;
 
 sub _db_name {
     return 'collector';

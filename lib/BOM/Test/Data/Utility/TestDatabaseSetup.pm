@@ -1,25 +1,20 @@
 package BOM::Test::Data::Utility::TestDatabaseSetup;
 
+use BOM::Test;
 use Moose::Role;
 use Carp;
 use DBI;
 use Path::Tiny;
 use Syntax::Keyword::Try;
 use DBIx::Migration;
-use BOM::Test;
 use Test::More;
 use List::Util qw( max );
 use File::stat;
-use BOM::Config;
 
 requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
 
 use constant DB_DIR_PREFIX    => '/home/git/regentmarkets/bom-postgres-';
 use constant COLLECTOR_DB_DIR => DB_DIR_PREFIX . 'collectordb/config/sql/';
-
-BEGIN {
-    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
-}
 
 sub prepare_unit_test_database {
     my $self = shift;
@@ -145,7 +140,7 @@ sub _create_dbs {
     # Because we have different database setups for devbox and CI, foreign servers need to configured differently
     # depending on the environment.
     my $foreign_server_setup_sql = $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql';
-    if (BOM::Config::on_development()) {    # Circle CI test
+    if (BOM::Test::on_development()) {    # Circle CI test
         $foreign_server_setup_sql = $self->_db_migrations_dir . '/circleci_foreign_servers_for_testdb.sql';
     }
 
@@ -344,15 +339,6 @@ sub _postgres_dbh {
     $dbh->{PrintError} = 0;
 
     return $dbh;
-}
-
-sub BUILD {
-    my $self = shift;
-
-    Carp::croak "Test DB trying to run to non development box"
-        unless (BOM::Test::env() eq 'development');
-    $ENV{TEST_DATABASE} = 1;    ## no critic (RequireLocalizedPunctuationVars)
-    return;
 }
 
 1;

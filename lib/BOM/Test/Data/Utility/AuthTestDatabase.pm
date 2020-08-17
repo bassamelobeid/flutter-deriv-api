@@ -5,10 +5,6 @@ use MooseX::Singleton;
 use BOM::Test;
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 
-BEGIN {
-    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
-}
-
 sub _db_name {
     return 'auth';
 }

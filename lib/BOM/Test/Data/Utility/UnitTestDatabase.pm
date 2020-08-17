@@ -3,6 +3,7 @@ package BOM::Test::Data::Utility::UnitTestDatabase;
 use strict;
 use warnings;
 
+use BOM::Test;
 use BOM::User;
 use BOM::User::Client;
 use Date::Utility;
@@ -17,12 +18,6 @@ use BOM::Database::Model::FinancialMarketBet::SpreadBet;
 use BOM::Database::Model::FinancialMarketBet::TouchBet;
 use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Helper::FinancialMarketBet;
-
-use BOM::Test;
-
-BEGIN {
-    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
-}
 
 sub _db_name {
     return 'cr';

@@ -2,8 +2,8 @@ package BOM::Test::Data::Utility::FeedTestDatabase;
 use strict;
 use warnings;
 
-use Syntax::Keyword::Try;
 use BOM::Test;
+use Syntax::Keyword::Try;
 use Cache::RedisDB;
 use MooseX::Singleton;
 use Postgres::FeedDB;
@@ -16,10 +16,6 @@ use BOM::Config::Redis;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw( setup_ticks );
-
-BEGIN {
-    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
-}
 
 my $encoder = Sereal::Encoder->new({
     canonical => 1,

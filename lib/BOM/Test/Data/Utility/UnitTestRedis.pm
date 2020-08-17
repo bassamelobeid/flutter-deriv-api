@@ -3,19 +3,17 @@ package BOM::Test::Data::Utility::UnitTestRedis;
 use strict;
 use warnings;
 
+use BOM::Test;
 use Dir::Self;
 use Cwd qw/abs_path/;
 
 use base qw( Exporter );
 use Quant::Framework::Underlying;
-use BOM::Test;
+use BOM::Config;
 use BOM::Config::Redis;
+use BOM::Config::RedisTransactionLimits;
 
 our @EXPORT_OK = qw(initialize_realtime_ticks_db initialize_events_redis initialize_user_transfer_limits);
-
-BEGIN {
-    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
-}
 
 sub initialize_realtime_ticks_db {
     my $dir_path      = __DIR__;

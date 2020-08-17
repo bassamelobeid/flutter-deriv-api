@@ -18,6 +18,7 @@ use 5.010;
 use strict;
 use warnings;
 
+use BOM::Test;
 use JSON::MaybeXS;
 use Carp qw( croak );
 use YAML::XS;
@@ -26,7 +27,6 @@ use List::Util qw(uniq);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Config::Chronicle;
-use BOM::Test;
 
 use Quant::Framework::VolSurface::Delta;
 use Quant::Framework::VolSurface::Moneyness;
@@ -39,10 +39,6 @@ use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods gen
 use BOM::Product::ContractFinder;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-
-BEGIN {
-    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
-}
 
 sub _initialize_symbol_dividend {
     my $symbol = shift;
