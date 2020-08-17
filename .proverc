@@ -1,4 +1,3 @@
 -It/lib
---exec '/etc/rmg/bin/perl -Ilib -MTest::Warnings -MMojo::JSON::MaybeXS'
--MBOM::Test
--MBOM::Test::Initializations
+--exec '/etc/rmg/bin/perl -Ilib -MTest::Warnings -MMojo::JSON::MaybeXS -MBOM::Test -MBOM::Test::Initializations'
+

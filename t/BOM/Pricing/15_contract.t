@@ -18,9 +18,7 @@ use Data::UUID;
 
 use BOM::Pricing::v3::Contract;
 use BOM::Platform::Context qw (request);
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Product::ContractFactory qw( produce_contract );
 use Quant::Framework;
 use BOM::Config::Chronicle;
@@ -31,9 +29,12 @@ BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
 );
 
 my $now = Date::Utility->new('2005-09-21 06:46:00');
+diag(Date::Utility->new->date);
 set_relative_time($now->epoch);
+diag(Date::Utility->new->date);
 
 initialize_realtime_ticks_db();
+
 
 my $landing_company = 'svg';
 
@@ -582,277 +583,9 @@ subtest $method => sub {
     foreach my $key (keys %$expected_result) {
         cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
     }
-
-    create_ticks([0.9936, $now->epoch - 499, 'frxAUDCAD'], [0.9938, $now->epoch - 100, 'frxAUDCAD'], [0.9934, $now->epoch - 99, 'frxAUDCAD']);
-
-    $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        quote      => 0.9935,
-        epoch      => $now->epoch,
-        underlying => 'frxAUDCAD',
-    });
-
-    $contract = _create_contract(
-        current_tick  => $tick,
-        underlying    => 'frxAUDCAD',
-        date_start    => $now->epoch - 500,
-        date_expiry   => $now->epoch - 98,
-        purchase_date => $now->epoch - 501,
-        date_pricing  => $now->epoch,
-    );
-    $params = {
-        short_code      => $contract->shortcode,
-        contract_id     => $contract->id,
-        currency        => 'USD',
-        is_sold         => 0,
-        country_code    => 'cr',
-        landing_company => $landing_company,
-    };
-    $res = $c->call_ok('get_bid', $params)->result;
-    $expected_result = {
-        'barrier'                  => '0.99360',
-        'bid_price'                => '0.00',
-        'is_expired'               => 1,
-        'contract_id'              => 10,
-        'currency'                 => 'USD',
-        'date_expiry'              => 1127288662,
-        'date_settlement'          => 1127288662,
-        'date_start'               => 1127288260,
-        'payout'                   => '178.15',
-        'entry_spot'               => '0.9936',
-        'entry_spot_display_value' => '0.99360',
-        'entry_tick'               => '0.9936',
-        'entry_tick_display_value' => '0.99360',
-        'entry_tick_time'          => 1127288261,
-        'exit_tick'                => '0.9934',
-        'exit_tick_display_value'  => '0.99340',
-        'exit_tick_time'           => 1127288661,
-        'longcode'                 => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
-        'shortcode'                => 'CALL_FRXAUDCAD_178.15_1127288260_1127288662_S0P_0',
-        'underlying'               => 'frxAUDCAD',
-        is_valid_to_sell           => 1,
-        expiry_time                => 1127288662,
-    };
-
-    foreach my $key (keys %$expected_result) {
-        cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
-    }
-
-    $params = {
-        short_code      => $contract->shortcode,
-        contract_id     => $contract->id,
-        currency        => 'USD',
-        is_sold         => 1,
-        country_code    => 'cr',
-        landing_company => $landing_company,
-    };
-    $res = $c->call_ok('get_bid', $params)->result;
-    $expected_result = {
-        'barrier'                  => '0.99360',
-        'is_expired'               => 1,
-        'bid_price'                => '0.00',
-        'contract_id'              => 10,
-        'currency'                 => 'USD',
-        'payout'                   => '178.15',
-        'date_expiry'              => 1127288662,
-        'date_settlement'          => 1127288662,
-        'date_start'               => 1127288260,
-        'entry_spot'               => '0.9936',
-        'entry_spot_display_value' => '0.99360',
-        'entry_tick'               => '0.9936',
-        'entry_tick_display_value' => '0.99360',
-        'entry_tick_time'          => 1127288261,
-        'exit_tick'                => '0.9934',
-        'exit_tick_display_value'  => '0.99340',
-        'exit_tick_time'           => 1127288661,
-        'longcode'                 => 'Win payout if AUD/CAD is strictly higher than entry spot at 6 minutes 42 seconds after contract start time.',
-        'shortcode'                => 'CALL_FRXAUDCAD_178.15_1127288260_1127288662_S0P_0',
-        'underlying'               => 'frxAUDCAD',
-        is_valid_to_sell           => 0,
-        validation_error           => 'This contract has been sold.',
-        expiry_time                => 1127288662,
-    };
-    foreach my $key (keys %$expected_result) {
-        cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
-    }
-
+    done_testing();
 };
 
-subtest 'app_markup_percentage' => sub {
-    my $params = {
-        "proposal"      => 1,
-        "amount"        => "100",
-        "basis"         => "payout",
-        "contract_type" => "CALL",
-        "currency"      => "USD",
-        "duration"      => "60",
-        "duration_unit" => "s",
-        "symbol"        => "R_50",
-    };
-    my $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
-    my $val    = $result->{ask_price};
-
-    # check for payout proposal - ask_price should increase
-    $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params), 1);
-    is $result->{ask_price} - $val, 1 / 100 * 100, "as app markup is added so client has to 1% of payout";
-
-    # check app_markup for stake proposal
-    $params = {
-        "proposal"      => 1,
-        "amount"        => "100",
-        "basis"         => "stake",
-        "contract_type" => "CALL",
-        "currency"      => "USD",
-        "duration"      => "60",
-        "duration_unit" => "s",
-        "symbol"        => "R_50",
-    };
-    $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
-    $val    = $result->{payout};
-
-    $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params), 2);
-    cmp_ok $val - $result->{payout}, ">", 2 / 100 * $val, "as app markup is added so client will get less payout as compared when there is no markup";
-
-    my $contract = _create_contract(app_markup_percentage => 1);
-    $params = {
-        short_code            => $contract->shortcode,
-        contract_id           => $contract->id,
-        currency              => 'USD',
-        is_sold               => 0,
-        sell_time             => undef,
-        app_markup_percentage => 1,
-        country_code          => 'cr',
-        landing_company       => $landing_company,
-    };
-    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
-
-    $contract = _create_contract();
-
-    cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
-
-    $contract = _create_contract(app_markup_percentage => 1);
-    $params = {
-        short_code            => $contract->shortcode,
-        contract_id           => $contract->id,
-        currency              => 'USD',
-        is_sold               => 0,
-        sell_time             => undef,
-        app_markup_percentage => 1,
-        country_code          => 'cr',
-        landing_company       => $landing_company,
-    };
-    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
-
-    $contract = _create_contract();
-    cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
-
-    $contract = _create_contract();
-    $contract = _create_contract(app_markup_percentage => 1);
-    $params   = {
-        short_code            => $contract->shortcode,
-        contract_id           => $contract->id,
-        currency              => 'USD',
-        is_sold               => 0,
-        sell_time             => undef,
-        app_markup_percentage => 1,
-        country_code          => 'cr',
-        landing_company       => $landing_company,
-    };
-    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
-
-    $contract = _create_contract();
-    cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
-
-    $contract = _create_contract();
-    $contract = _create_contract(app_markup_percentage => 1);
-    $params   = {
-        short_code            => $contract->shortcode,
-        contract_id           => $contract->id,
-        currency              => 'USD',
-        is_sold               => 0,
-        sell_time             => undef,
-        app_markup_percentage => 1,
-        country_code          => 'cr',
-        landing_company       => $landing_company,
-    };
-    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
-    is $contract->payout, $result->{payout}, "contract and get bid payout should be same when app_markup is included";
-
-    $contract = _create_contract();
-    cmp_ok $contract->payout, ">", $result->{payout}, "payout in case of stake contracts would be higher as compared to app_markup stake contracts";
-};
-
-subtest 'send_ask - country validation' => sub {
-    my $mocked_decimate = Test::MockModule->new('BOM::Market::DataDecimate');
-    $mocked_decimate->mock(
-        'get',
-        sub {
-            [map { {epoch => $_, decimate_epoch => $_, quote => 100 + 0.005 * $_} } (0 .. 80)];
-        });
-    my $mocked_contract = Test::MockModule->new('BOM::Product::Contract');
-    $mocked_contract->mock('is_valid_to_buy', 1);
-
-    my $args = {
-        "proposal"         => 1,
-        "amount"           => "100",
-        "basis"            => "payout",
-        "contract_type"    => "CALL",
-        "currency"         => "USD",
-        "duration"         => "29",
-        "duration_unit"    => "m",
-        "symbol"           => "frxUSDJPY",
-        "streaming_params" => {from_pricer => 1},
-        country_code       => 'cn',                 # china
-    };
-    my $params = {
-        client_ip => '127.0.0.1',
-        args      => $args,
-    };
-
-    $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
-    $args->{duration} = 30;
-    $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
-    $args->{symbol}        = 'R_100';
-    $args->{duration}      = 15;
-    $args->{duration_unit} = 's';
-    $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
-
-    $args->{country_code} = 'ca';    # canada
-    $c->call_ok('send_ask', $params)->has_no_system_error->has_no_error;
-    $args->{symbol}        = 'frxUSDJPY';
-    $args->{duration}      = 30;
-    $args->{duration_unit} = 'd';
-    $c->call_ok('send_ask', $params)->has_no_error;
-};
-
-subtest 'get_bid - expired contract' => sub {
-
-    # just one tick for missing market data
-    create_ticks([100, $now->epoch - 899, 'R_50'], [100.1, $now->epoch - 800, 'R_50'], [100, $now->epoch - 501, 'R_50']);
-    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch,
-        underlying => 'R_50',
-    });
-
-    my $contract = _create_contract(
-        current_tick  => $tick,
-        date_start    => $now->epoch - 900,
-        date_expiry   => $now->epoch - 500,
-        purchase_date => $now->epoch - 901
-    );
-    my $params = {
-        short_code      => $contract->shortcode,
-        contract_id     => $contract->id,
-        currency        => 'USD',
-        is_sold         => 0,
-        country_code    => 'cr',
-        landing_company => $landing_company,
-    };
-    my $result = $c->call_ok('get_bid', $params)->has_no_error->has_no_system_error->result;
-    ok $result->{is_expired}, 'contract expired';
-};
 
 done_testing();
 
