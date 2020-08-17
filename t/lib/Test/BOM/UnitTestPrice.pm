@@ -11,12 +11,6 @@ use BOM::MarketData qw(create_underlying);
 use List::MoreUtils qw(uniq);
 use YAML::XS qw(LoadFile);
 
-use BOM::Test;
-
-BEGIN {
-    die "wrong env. Can't run test" if (BOM::Test::env !~ /^(qa\d+|development)$/);
-}
-
 sub create_pricing_data {
     my ($underlying_symbol, $payout_currency, $for_date) = @_;
 
