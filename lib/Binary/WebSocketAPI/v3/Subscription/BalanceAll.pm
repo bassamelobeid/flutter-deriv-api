@@ -44,8 +44,8 @@ has total_balance => (
 );
 
 has subscriptions => (
-    is  => 'rw',
-    isa => sub { die "balances need an arrayref" unless ref($_[0]) eq 'ARRAY' },
+    is      => 'rw',
+    isa     => sub { die "balances need an arrayref" unless ref($_[0]) eq 'ARRAY' },
     default => sub { [] },
 );
 
@@ -80,7 +80,7 @@ sub update_balance {
                 deriv => {
                     amount   => formatnumber('amount', $self->total_currency, $self->total_balance),
                     currency => $self->total_currency,
-                    }
+                }
 
             }
         },

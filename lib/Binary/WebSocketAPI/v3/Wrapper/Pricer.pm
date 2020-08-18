@@ -86,7 +86,7 @@ sub proposal {
 
                 $api_response->{passthrough} = $req_storage->{args}->{passthrough} if defined($req_storage->{args}->{passthrough});
                 if (my $uuid = $req_storage->{uuid}) {
-                    $api_response->{proposal}->{id} = $uuid;
+                    $api_response->{proposal}->{id}     = $uuid;
                     $api_response->{subscription}->{id} = $uuid if $req_storage->{args}->{subscribe};
                 } else {
                     $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'proposal'));
@@ -132,13 +132,13 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
     # request and distribute between RPC servers and pricers.
     my $barrier_chunks = [List::UtilsBy::bundle_by { [@_] } BARRIERS_PER_BATCH, @barriers];
 
-    my $copy_args = {%{$req_storage->{args}}};
+    my $copy_args      = {%{$req_storage->{args}}};
     my @contract_types = ref($copy_args->{contract_type}) ? @{$copy_args->{contract_type}} : $copy_args->{contract_type};
 
     $copy_args->{skip_streaming} =
         1;    # only for proposal_array: do not create redis subscription, we need only information stored in subscription object
     my $channel_info = _pricing_channel_for_proposal($c, $copy_args, {}, 'ProposalArray');
-    my $uuid = $channel_info->{uuid};
+    my $uuid         = $channel_info->{uuid};
     unless ($uuid) {
         my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'proposal_array'));
         $c->send({json => $error}, $req_storage);
@@ -162,7 +162,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
         for my $contract_type (keys %{$rpc_response->{proposals}}) {
             for my $barrier (@{$rpc_response->{proposals}{$contract_type}}) {
                 my $barrier_key = make_barrier_key($barrier->{error} ? $barrier->{error}->{details} : $barrier);
-                my $entry = {
+                my $entry       = {
                     %{$rpc_response->{contract_parameters}},
                     longcode  => $barrier->{longcode},
                     ask_price => $barrier->{ask_price},
@@ -262,7 +262,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
             }
             foreach    => $barrier_chunks,
             concurrent => min(0 + @$barrier_chunks, PARALLEL_RPC_COUNT),
-            )->on_ready(
+        )->on_ready(
             sub {
                 my $f = shift;
                 try {
@@ -342,8 +342,7 @@ sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
                             map { ; $_ => $req_storage->{args}{$_} } grep { $req_storage->{args}{$_} } qw(req_id passthrough),
                         }};
                     $c->send($res) if $c and $c->tx;    # connection could be gone
-                }
-                catch {
+                } catch {
                     my $e = $@;
                     warn "proposal_array exception - $e";
                     $c->send(
@@ -583,7 +582,7 @@ sub _pricing_channel_for_proposal {
     $args_hash{price_daemon_cmd} = $price_daemon_cmd;
     $args_hash{landing_company}  = $c->landing_company_name;
     # use residence when available, fall back to IP country
-    $args_hash{country_code} = $c->stash('residence') || $c->stash('country_code');
+    $args_hash{country_code}           = $c->stash('residence') || $c->stash('country_code');
     $args_hash{skips_price_validation} = 1;
     my $redis_channel = _serialized_args(\%args_hash);
     my $subchannel    = $args->{amount} // $args->{multiplier};
@@ -695,8 +694,8 @@ sub send_proposal_open_contract_last_time {
                 }
                 return {
                     proposal_open_contract => $rpc_response->{$contract_id} || {},
-                    msg_type => 'proposal_open_contract',
-                    subscription => {id => $args->{uuid}}};
+                    msg_type               => 'proposal_open_contract',
+                    subscription           => {id => $args->{uuid}}};
             }
         });
     return;

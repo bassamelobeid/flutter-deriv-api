@@ -199,7 +199,7 @@ sub handle_message {
 
             return Future->done;
         }
-        )->on_fail(
+    )->on_fail(
         sub {
             $log->warn("ERROR - @_");
         })->retain;
@@ -362,19 +362,19 @@ sub _create_poc_stream {
             $payload->{longcode} = $c->l('Could not retrieve contract details');
             return Future->done;
         }
-        )->then(
+    )->then(
         sub {
             my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_proposal_open_contract(
                 $c,
                 $poc_args,
                 {
-                    shortcode   => $payload->{short_code},
-                    currency    => $payload->{currency_code},
-                    is_sold     => $payload->{sell_time} ? 1 : 0,
-                    contract_id => $payload->{financial_market_bet_id},
-                    buy_price   => $payload->{purchase_price},
-                    account_id  => $payload->{account_id},
-                    longcode => $payload->{longcode} || $payload->{payment_remark},
+                    shortcode       => $payload->{short_code},
+                    currency        => $payload->{currency_code},
+                    is_sold         => $payload->{sell_time} ? 1 : 0,
+                    contract_id     => $payload->{financial_market_bet_id},
+                    buy_price       => $payload->{purchase_price},
+                    account_id      => $payload->{account_id},
+                    longcode        => $payload->{longcode} || $payload->{payment_remark},
                     transaction_ids => {buy => $payload->{id}},
                     purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
                     sell_price      => undef,

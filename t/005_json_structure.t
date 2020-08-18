@@ -233,7 +233,7 @@ subtest 'common properties' => sub {
             if ($prop eq 'msg_type') {
                 my $exception_call = $msg_type_exceptions->{$schema->{method_name}};
                 $node_pattern->{description} = $schema_node->{description} if $exception_call;    # description is also different for exceptions
-                $node_pattern->{enum} = $exception_call // [$schema->{method_name}];
+                $node_pattern->{enum}        = $exception_call // [$schema->{method_name}];
             }
 
             is_deeply($schema_node, $node_pattern, "\"$prop\" structure is correct.");
@@ -252,7 +252,7 @@ subtest 'type and description' => sub {
         # There would be thousands of messages since we're recursively test the
         # properties. Hence, going with this approach to suppress ok messages
         # and report only the errors.
-        push $errors->{$path}->@*, "$path has type." unless $node->{type} // $node->{oneOf};
+        push $errors->{$path}->@*, "$path has type."        unless $node->{type} // $node->{oneOf};
         push $errors->{$path}->@*, "$path has description." unless $node->{description};
         push $errors->{$path}->@*, "$path description starts with capital letter."
             unless $node->{description} =~ /^((\[|\()[A-Z].*(\]|\)) |)[A-Z0-9`]/;
@@ -289,13 +289,13 @@ subtest 'schema titles and required' => sub {
     for my $schema (@json_schemas) {
         next unless $schema->{json_type} eq 'send';
 
-        my $method = $schema->{method_name};
+        my $method         = $schema->{method_name};
         my $receive_schema = first { $_->{method_name} eq $method && $_->{json_type} eq 'receive' } @json_schemas;
 
         like $schema->{json}{title},         qr/ \(request\)$/,  "$method: send.json title is correct.";
         like $receive_schema->{json}{title}, qr/ \(response\)$/, "$method: receive.json title is correct.";
 
-        my ($send_title)    = $schema->{json}{title} =~ /(.*) \(request\)$/;
+        my ($send_title)    = $schema->{json}{title}         =~ /(.*) \(request\)$/;
         my ($receive_title) = $receive_schema->{json}{title} =~ /(.*) \(response\)$/;
         is $receive_title, $send_title, "$method: send & receive titles are similar.";
 

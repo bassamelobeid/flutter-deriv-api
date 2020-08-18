@@ -50,7 +50,7 @@ subtest 'output_validation with undefined msg_type' => sub {
     };
     my $api_response = {};
     my $c_mock       = Test::MockObject->new({});
-    $c_mock->mock(l => sub { shift; shift });
+    $c_mock->mock(l         => sub { shift; shift });
     $c_mock->mock(new_error => sub { shift; {error => join "", @_} });
     $log->clear();
     Binary::WebSocketAPI::Hooks::output_validation($c_mock, $req_storage, $api_response);

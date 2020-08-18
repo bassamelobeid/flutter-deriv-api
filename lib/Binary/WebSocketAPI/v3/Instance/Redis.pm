@@ -104,8 +104,7 @@ sub create {
                         try {
                             $self->ping;
                             exit;
-                        }
-                        catch {
+                        } catch {
                             $ping_redis->();
                         }
                     });
@@ -137,8 +136,7 @@ sub check_connections {
                 $server      = __PACKAGE__->$server_name();
                 $server->ping() if $server;
                 $run_checklist{$server_name} = 1;
-            }
-            catch {
+            } catch {
                 my $e = $@;
                 if ($server) {
                     # Clear current_config from server if server ping fails
@@ -156,9 +154,9 @@ sub check_connections {
         }
 
         die "Timeout $slept_seconds sec while checking the connection with redis servers." if $seconds > 4;
-        sleep $seconds if any { !$run_checklist{$_} } keys %$servers;
+        sleep $seconds                                                                     if any { !$run_checklist{$_} } keys %$servers;
         $slept_seconds += $seconds;
-        $seconds *= 2;
+        $seconds       *= 2;
     }
 
     return 1;
@@ -167,7 +165,7 @@ sub check_connections {
 # Autopopulate remaining methods
 for my $name (sort keys %$servers) {
     my $code = sub {
-        my $server = $servers->{$name};
+        my $server      = $servers->{$name};
         my $config_file = $ENV{$server->{override}} // $server->{config};
         # Reload server if config file location has changed
         if (($server->{current_config} // '') ne $config_file) {

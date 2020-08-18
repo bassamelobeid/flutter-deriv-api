@@ -167,7 +167,7 @@ sub transaction {
     }
 
     return {
-        msg_type => 'transaction',
+        msg_type    => 'transaction',
         transaction => {$id ? (id => $id) : ()},
         $id ? (subscription => {(id => $id)}) : (),
     };
@@ -177,7 +177,7 @@ sub transaction_channel {
     my ($c, $action, $account_id, $type, $args, $contract_id, $poc_uuid) = @_;
 
     $contract_id //= $args->{contract_id};
-    $poc_uuid //= '';
+    $poc_uuid    //= '';
 
     my $worker = Binary::WebSocketAPI::v3::Subscription::Transaction->new(
         c           => $c,

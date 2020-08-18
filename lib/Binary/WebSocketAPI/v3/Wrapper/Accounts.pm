@@ -119,7 +119,7 @@ Used to add subscription id and return subscription errors.
 sub balance_response_handler {
     my ($rpc_response, $api_response) = @_;
 
-    return $api_response if $api_response->{error};
+    return $api_response                    if $api_response->{error};
     return $rpc_response->{subscribe_error} if $rpc_response->{subscribe_error};
     # subscription id is duplicated for backwards compatibility reasons
     if (my $uuid = $api_response->{balance}{id}) {

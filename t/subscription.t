@@ -390,9 +390,9 @@ subtest 'registering' => sub {
             args => {},
         ]);
 
-    ok(!Example1->get_by_class($c), 'no subscription got because it is not registered yet');
+    ok(!Example1->get_by_class($c),               'no subscription got because it is not registered yet');
     ok(!Example1->get_by_uuid($c, $worker->uuid), 'no subscription got because it is not regtistered yet');
-    ok(!$worker->already_registered, 'this channel not registered yet');
+    ok(!$worker->already_registered,              'this channel not registered yet');
     lives_ok { $worker->register; } 'register work';
     is_deeply([Example1->get_by_class($c)], [$worker], 'find this subscription because it is registered now');
     is(Example1->get_by_uuid($c, $worker->uuid), $worker, 'find subscription because it is regtistered now');
@@ -423,7 +423,7 @@ subtest 'registering' => sub {
         ]);
     ok(!$worker3->already_registered, 'has not  register such work with subchannel 2');
     $worker3->register;
-    is(scalar $worker3->get_by_class($c), 2, 'has 2 subscription in this class');
+    is(scalar $worker3->get_by_class($c),         2,        'has 2 subscription in this class');
     is(Example1->get_by_uuid($c, $worker3->uuid), $worker3, 'get_by_uuid worker');
     is_deeply([sort Example1->get_by_class($c)], [sort ($worker, $worker3)], 'there are only 2 registered workers');
 

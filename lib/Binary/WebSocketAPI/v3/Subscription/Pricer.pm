@@ -196,7 +196,7 @@ sub _binary_price_adjustment {
     }
 
     $results->{ask_price} = $results->{display_value} = $price_calculator->ask_price;
-    $results->{payout} = $price_calculator->payout;
+    $results->{payout}    = $price_calculator->payout;
     $results->{$_} .= '' for qw(ask_price display_value payout);
 
     return $results;

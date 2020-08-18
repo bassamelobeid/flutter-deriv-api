@@ -139,7 +139,7 @@ sub subscribe {
                     return;
                 });
             $f;
-            }
+        }
     );
     weaken($self->channel_subscriptions->{$channel}{refaddr($subscription)} = $subscription);
 

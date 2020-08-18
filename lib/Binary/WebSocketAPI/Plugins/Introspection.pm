@@ -113,8 +113,7 @@ sub handle_command {
     my $rslt = undef;
     try {
         $rslt = $self->$command($app, @args);
-    }
-    catch {
+    } catch {
         my $e = $@;
         $rslt = Future->fail(
             $e,
@@ -129,7 +128,7 @@ sub handle_command {
             my ($resp) = @_;
             $log->debugf('%s (%s) - %s', $command, \@args, $resp) if $write_to_log;
         }
-        )->else(
+    )->else(
         sub {
             my ($exception, $category, @details) = @_;
             my $rslt = {
@@ -163,8 +162,7 @@ sub register {
                 try {
                     $self->start_server($app);
                     undef $code;
-                }
-                catch {
+                } catch {
                     return unless $code;
                     return $code->() if $retries--;
                     $log->errorf('Unable to start introspection server after 100 retries - ', $_);
@@ -190,7 +188,7 @@ parameters to pass to the coderef.
 sub command {
     my ($name, $code, %args) = @_;
     {
-        die "Already registered $name" if exists $COMMANDS{$name};
+        die "Already registered $name"                if exists $COMMANDS{$name};
         die "Not registered but already ->can($name)" if __PACKAGE__->can($name);
         $COMMANDS{$name} = 1;
         my $code = sub {
@@ -294,9 +292,7 @@ command connections => sub {
         };
         $connection_info;
         }
-        grep {
-        defined
-        }
+        grep { defined }
         sort @active_connections;
 
     my $result = {
@@ -378,7 +374,7 @@ command backend => sub {
     my $redis = ws_redis_master();
 
     my %method_backends = map { $ws_actions->{$_}->{backend} ? ($_ => $ws_actions->{$_}->{backend}) : () } keys $ws_actions->%*;
-    my $f = Future::Mojo->new;
+    my $f               = Future::Mojo->new;
     $redis->set(
         'web_socket_proxy::backends' => encode_json_utf8(\%method_backends),
         sub {

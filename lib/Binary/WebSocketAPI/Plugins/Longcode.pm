@@ -127,7 +127,7 @@ sub trigger_longcode_lookup {
         }
         concurrent => CONCURRENT_REQUESTS,
         generate   => sub { keys(%pending_short_codes_by_currency_and_language) ? 1 : () }
-        )->on_ready(
+    )->on_ready(
         sub {
             $log->tracef("Done, clearing longcode_lookup key");
             delete $self->{longcode_lookup};
@@ -204,8 +204,7 @@ sub process_next_batch {
                     for my $idx (0 .. $#f) {
                         try {
                             $f[$idx]->done($longcodes->{$short_codes[$idx]}) unless $f[$idx]->is_ready;
-                        }
-                        catch {
+                        } catch {
                             warn "Had exception while processing index item $idx, shortcode was "
                                 . $short_codes[$idx]
                                 . " and longcode "

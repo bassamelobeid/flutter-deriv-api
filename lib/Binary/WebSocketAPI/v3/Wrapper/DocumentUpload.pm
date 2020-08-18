@@ -80,8 +80,7 @@ sub document_upload {
             return;
         }
         upload_chunk($c, $upload_info);
-    }
-    catch {
+    } catch {
         my $e = $@;
         warn "UploadError (app_id: " . $c->app_id . "): $e";
         send_upload_failure($c, $upload_info, 'unknown');
@@ -325,7 +324,7 @@ sub last_chunk_received {
             warn 'S3 etag does not match the checksum, this indicates a bug in the upload process';
             send_upload_failure($c, $upload_info, 'unknown');
         }
-        )->on_fail(
+    )->on_fail(
         sub {
             send_upload_failure($c, $upload_info, 'unknown');
         })->retain;

@@ -25,7 +25,7 @@ Please refer to L<Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalArray>
 # 2. run collector to collect the information from proposal array object and send to client
 sub do_handle_message {
     my ($self, $message) = @_;
-    my $c = $self->c;
+    my $c                  = $self->c;
     my $array_subscription = $self->get_by_uuid($self->c, $self->cache->{proposal_array_subscription});
     unless ($array_subscription) {
         $self->unregister;
@@ -67,12 +67,11 @@ sub do_handle_message {
 
                     # Make sure that we don't override any of the values for next time (e.g. ask_price)
                     my $copy = {contract_parameters => {%{$stashed_contract_parameters->{contract_parameters}}}};
-                    my $res = $self->_price_stream_results_adjustment($c, $copy, $price, $theo_probability);
+                    my $res  = $self->_price_stream_results_adjustment($c, $copy, $price, $theo_probability);
                     $res->{longcode} = $c->l($res->{longcode}) if $res->{longcode};
                     $result = $res;
                 }
-            }
-            catch {
+            } catch {
                 my $e = $@;
                 $log->warnf('%s Failed to apply price - $s - with a price struc containing %s', $self->class, $e, Dumper($price));
                 $result = +{
@@ -87,7 +86,7 @@ sub do_handle_message {
             }
 
             if (exists $result->{error}) {
-                $result->{error}{details}{barrier} //= $price->{barrier};
+                $result->{error}{details}{barrier}  //= $price->{barrier};
                 $result->{error}{details}{barrier2} //= $price->{barrier2} if exists $price->{barrier2};
             }
             push @$barriers, $result;
@@ -138,7 +137,7 @@ sub _proposal_array_collector {
                         for my $price (@{$proposal->{$contract_type}}) {
                             # Ensure we have barriers
                             if ($price->{error}) {
-                                $price->{error}{details}{barrier} //= $barriers->{barrier};
+                                $price->{error}{details}{barrier}  //= $barriers->{barrier};
                                 $price->{error}{details}{barrier2} //= $barriers->{barrier2} if exists $barriers->{barrier2};
                                 $price->{error}{message} = delete $price->{error}{message_to_client}
                                     if exists $price->{error}{message_to_client};

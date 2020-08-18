@@ -287,7 +287,7 @@ sub before_forward {
     # For authorized calls that are heavier we will limit based on loginid
     # For unauthorized calls that are less heavy we will use connection id.
     # None are much helpful in a well prepared DDoS.
-    my $is_real = $c->stash('loginid') && !$c->stash('is_virtual');
+    my $is_real  = $c->stash('loginid') && !$c->stash('is_virtual');
     my $category = $req_storage->{name};
 
     return reached_limit_check($c, $category, $is_real)->then(
@@ -370,8 +370,8 @@ sub _rpc_suffix {
 
     my $group_suffix = $Binary::WebSocketAPI::DIVERT_MSG_GROUP{$req_storage->{msg_group} // ''} // '';
     my $app_id       = $c->app_id                                                               // '';
-    my $app_suffix   = $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
-    my $processor = join q{_} => (grep { $_ } ($group_suffix, $app_suffix));
+    my $app_suffix = $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
+    my $processor  = join q{_} => (grep { $_ } ($group_suffix, $app_suffix));
 
     my $suffix = $processor ? '_' . $processor : '';
     unless (exists $c->app->config->{"rpc_url" . $suffix}) {
@@ -409,7 +409,7 @@ sub assign_ws_backend {
 }
 
 sub get_doc_auth_s3_conf {
-    my $c = shift;
+    my $c          = shift;
     my $access_key = $ENV{DOCUMENT_AUTH_S3_ACCESS} || $c->app->config->{document_auth_s3}->{aws_access_key_id} || die 'S3 Configuration Unavailable';
     my $secret_key =
         $ENV{DOCUMENT_AUTH_S3_SECRET} || $c->app->config->{document_auth_s3}->{aws_secret_access_key} || die 'S3 Configuration Unavailable';
@@ -447,12 +447,12 @@ sub output_validation {
     }
 
     my $error_msg;
-    local $log->context->{args} = $req_storage->{origin_args} || $req_storage->{args};
+    local $log->context->{args}         = $req_storage->{origin_args} || $req_storage->{args};
     local $log->context->{api_response} = $api_response;
 
     if ($api_response->{msg_type}) {
         my $schema = _load_schema($api_response->{msg_type});
-        my $error = _validate_schema_error($schema, $api_response);
+        my $error  = _validate_schema_error($schema, $api_response);
         return unless $error;
         $error_msg = join("- ", (map { "$_:$error->{details}{$_}" } keys %{$error->{details}}), @{$error->{general}});
         $log->error("Schema validation failed for our own output [ "
@@ -482,9 +482,9 @@ sub output_validation {
 sub forget_all {
     my $c = shift;
     # TODO I guess 'buy' type should be added here.
-    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, $_) for qw(balance transaction sell);
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, $_)  for qw(balance transaction sell);
     Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, $_) for qw(proposal proposal_open_contract proposal_array);
-    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, $_) for qw(ticks candles);
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, $_)         for qw(ticks candles);
     Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_website_status($c);
 
     return;
@@ -530,9 +530,9 @@ sub add_brand {
 }
 
 sub _on_sanity_failed {
-    my ($c) = @_;
+    my ($c)       = @_;
     my $client_ip = $c->stash->{client_ip};
-    my $tags = ["client_ip:$client_ip", "app_name:" . $c->stash('app_name'), "source:" . $c->stash('source_type'),];
+    my $tags      = ["client_ip:$client_ip", "app_name:" . $c->stash('app_name'), "source:" . $c->stash('source_type'),];
     DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.sanity_check_failed.count', {tags => $tags});
 
     return;
@@ -616,7 +616,7 @@ sub filter_sensitive_fields {
 
     foreach my $attr (keys(%{$properties})) {
         my $current_attr = $properties->{$attr};
-        my $attr_type = $current_attr->{'type'} // '';
+        my $attr_type    = $current_attr->{'type'} // '';
 
         if (ref($current_attr) eq 'HASH') {
             if ($attr_type eq 'object') {

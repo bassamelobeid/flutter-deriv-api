@@ -19,7 +19,7 @@ sub forget {
 
     return {
         msg_type => 'forget',
-        forget => forget_one($c, $req_storage->{args}->{forget}) ? 1 : 0,
+        forget   => forget_one($c, $req_storage->{args}->{forget}) ? 1 : 0,
     };
 }
 
@@ -58,7 +58,7 @@ sub forget_all {
             p2p_advertiser
         );
         my $accepted_types = qr/^${\join q{|} => @accepted_types}$/;
-        my @failed_types = grep { !/$accepted_types/ } @$types;
+        my @failed_types   = grep { !/$accepted_types/ } @$types;
         return $c->new_error('forget_all', 'InputValidationFailed', $c->l('Input validation failed: ') . join(', ', @failed_types)) if @failed_types;
 
         for my $type (@$types) {

@@ -95,15 +95,15 @@ sub website_status {
 
                     $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
                         if $current_state && !ref $current_state;
-                    $website_status->{site_status} = $current_state->{site_status} // 'up';
-                    $website_status->{message} = get_status_msg($c, $current_state->{message}) // '' if $current_state->{message};
+                    $website_status->{site_status} = $current_state->{site_status}                 // 'up';
+                    $website_status->{message}     = get_status_msg($c, $current_state->{message}) // '' if $current_state->{message};
 
                     return {
                         website_status => $website_status,
                         msg_type       => 'website_status',
                         #websocket test framework sets ws status in redis with a passthrough and expects to read it back.
-                        +($current_state->{passthrough} ? (passthrough => $current_state->{passthrough}) : ()),
-                        ($uuid ? (subscription => {id => $uuid}) : ()),
+                        +($current_state->{passthrough} ? (passthrough  => $current_state->{passthrough}) : ()),
+                        ($uuid                          ? (subscription => {id => $uuid})                 : ()),
                     };
                 }
             });
@@ -130,7 +130,7 @@ sub send_notification {
             next;
         }
         my $client_shared = $shared->{broadcast_notifications}{$c_addr};
-        my $c = $client_shared->{c} or return;
+        my $c             = $client_shared->{c} or return;
         unless (defined $c->tx) {
             delete $shared->{broadcast_notifications}{$c_addr};
             ws_redis_master->unsubscribe([$channel])
@@ -139,7 +139,7 @@ sub send_notification {
         }
 
         unless ($is_on_key) {
-            $is_on_key = "NOTIFY::broadcast::is_on";    ### TODO: to config
+            $is_on_key = "NOTIFY::broadcast::is_on";             ### TODO: to config
             return unless ws_redis_master()->get($is_on_key);    ### Need 1 for continuing
         }
 
@@ -149,7 +149,7 @@ sub send_notification {
         # message can be correctly localized depending on the connection
         my $website_status = {%{$client_shared->{website_status}}};
         $website_status->{site_status} = $message->{site_status};
-        $website_status->{message} = get_status_msg($c, $message->{message}) if $message->{message};
+        $website_status->{message}     = get_status_msg($c, $message->{message}) if $message->{message};
 
         my $uuid = $client_shared->{uuid};
 
@@ -169,7 +169,7 @@ sub send_notification {
 sub ticks {
     my ($c, $req_storage) = @_;
 
-    my $args = $req_storage->{args};
+    my $args    = $req_storage->{args};
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     foreach my $symbol (@symbols) {
         $c->call_rpc({
@@ -282,7 +282,7 @@ sub ticks_history {
                             @times{keys %$cache} = map { $_->{quote} } values %$cache;
                             # merge with response data
                             @times{@{$rpc_response->{data}->{history}->{times}}} = @{$rpc_response->{data}->{history}->{prices}};
-                            @{$rpc_response->{data}->{history}->{times}} = sort { $a <=> $b } keys %times;
+                            @{$rpc_response->{data}->{history}->{times}}  = sort { $a <=> $b } keys %times;
                             @{$rpc_response->{data}->{history}->{prices}} = @times{@{$rpc_response->{data}->{history}->{times}}};
                         } elsif ($rpc_response->{type} eq 'candles') {
                             my $index;

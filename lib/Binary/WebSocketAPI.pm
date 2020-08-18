@@ -170,7 +170,7 @@ sub startup {
 
             my $client_ip = $c->client_ip;
             #TODO is this brand that brand ? can be used to create a Brands object ?
-            my $brand_name = defang($c->req->param('brand')) // 'binary';
+            my $brand_name   = defang($c->req->param('brand')) // 'binary';
             my $binary_brand = Brands->new(name => $brand_name);
 
             if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
@@ -201,10 +201,10 @@ sub startup {
                 brand => (($brand_name =~ /^\w{1,10}$/) ? $brand_name : $binary_brand->name),
             );
 
-            my $brand = Brands->new(name => $c->stash('brand'));
+            my $brand       = Brands->new(name => $c->stash('brand'));
             my $source_type = $brand->is_app_whitelisted($c->stash('source') // '') ? 'official' : 'unofficial';
             $c->stash(
-                app_name => ($brand // 'third-party'),
+                app_name    => ($brand // 'third-party'),
                 source_type => $source_type,
             );
         });
@@ -266,7 +266,7 @@ sub startup {
             # We use empty string for the default UA since we'll be hashing anyway
             # and our highly-trained devops team can spot an md5('') from orbit
             my $user_agent = $c->req->headers->header('User-Agent') // '';
-            my $client_id = $ip . ':' . md5_hex($user_agent);
+            my $client_id  = $ip . ':' . md5_hex($user_agent);
             return "rate_limits::unauthorised::$app_id/$client_id";
         });
 
@@ -404,11 +404,10 @@ sub startup {
                         }
                     }
                     $backend_setup_finished = 1;
-                }
-                catch {
+                } catch {
                     my $e = $@;
                     $log->error("Error applying backends from master: $e");
-                };
+                }
             } else {    # there is nothing saved in redis yet.
                 $backend_setup_finished = 1;
             }
