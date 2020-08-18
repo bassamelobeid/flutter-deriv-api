@@ -49,7 +49,7 @@ subtest 'validate_oauth_token' => sub {
     is $res->{authorize}->{email}, $email, 'Correct email for oauth token';
     test_schema('authorize', $res);
 
-    $t = $t->send_ok({json => {balance => 1}})->message_ok;
+    $t   = $t->send_ok({json => {balance => 1}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{balance}->{loginid}, $loginid, 'Correct response for balance';
     test_schema('balance', $res);
@@ -57,18 +57,18 @@ subtest 'validate_oauth_token' => sub {
     # revoke oauth token
     BOM::Database::Model::OAuth->new->revoke_tokens_by_loginid_app($loginid, 1);
 
-    $t = $t->send_ok({json => {balance => 1}})->message_ok;
+    $t   = $t->send_ok({json => {balance => 1}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{error}->{code},    'InvalidToken',          'Can not request authenticated (like balance) call when token has expired';
     is $res->{error}->{message}, 'The token is invalid.', 'Correct invalid token message';
     test_schema('balance', $res);
 
-    $t = $t->send_ok({json => {logout => 1}})->message_ok;
+    $t   = $t->send_ok({json => {logout => 1}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     ok($res->{logout});
     test_schema('logout', $res);
 
-    $t = $t->send_ok({json => {balance => 1}})->message_ok;
+    $t   = $t->send_ok({json => {balance => 1}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is($res->{error}->{code}, 'AuthorizationRequired', 'Proper code for authorization rather than invalid token');
 };
@@ -93,12 +93,12 @@ subtest 'validate_api_token' => sub {
     test_schema('api_token', $res);
 
     # authorize with api token
-    $t = $t->send_ok({json => {authorize => $test_token->{token}}})->message_ok;
+    $t   = $t->send_ok({json => {authorize => $test_token->{token}}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{authorize}->{email}, $email, 'Correct email for api token';
     test_schema('authorize', $res);
 
-    $t = $t->send_ok({json => {balance => 1}})->message_ok;
+    $t   = $t->send_ok({json => {balance => 1}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{balance}->{loginid}, $loginid, 'Correct response for balance';
     test_schema('balance', $res);
@@ -115,18 +115,18 @@ subtest 'validate_api_token' => sub {
     is_deeply($res->{api_token}->{tokens}, [], 'empty');
     test_schema('api_token', $res);
 
-    $t = $t->send_ok({json => {balance => 1}})->message_ok;
+    $t   = $t->send_ok({json => {balance => 1}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{error}->{code},    'InvalidToken',          'Can not request authenticated (like balance) call when token has expired';
     is $res->{error}->{message}, 'The token is invalid.', 'Correct invalid token message';
     test_schema('balance', $res);
 
-    $t = $t->send_ok({json => {logout => 1}})->message_ok;
+    $t   = $t->send_ok({json => {logout => 1}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     ok($res->{logout});
     test_schema('logout', $res);
 
-    $t = $t->send_ok({json => {balance => 1}})->message_ok;
+    $t   = $t->send_ok({json => {balance => 1}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is($res->{error}->{code}, 'AuthorizationRequired', 'Proper code for authorization rather than invalid token');
 };

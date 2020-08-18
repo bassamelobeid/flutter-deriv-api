@@ -95,7 +95,7 @@ subtest 'contract_update' => sub {
                 something => 1,
             }});
     ok $res->{error}, 'error';
-    is $res->{error}->{code}, 'InputValidationFailed', 'error code - InputValidationFailed';
+    is $res->{error}->{code},    'InputValidationFailed',                'error code - InputValidationFailed';
     is $res->{error}->{message}, 'Input validation failed: limit_order', 'error message - Input validation failed: limit_order';
 
     $res = $t->await::contract_update({

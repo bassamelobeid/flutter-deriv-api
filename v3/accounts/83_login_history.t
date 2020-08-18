@@ -46,7 +46,7 @@ my $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $res->{authorize}->{email}, 'raunak@binary.com', 'Correct email for oauth token';
 test_schema('authorize', $res);
 
-$t = $t->send_ok({json => {login_history => 1}})->message_ok;
+$t   = $t->send_ok({json => {login_history => 1}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is scalar(@{$res->{login_history}}), 1, 'got correct number of login history records';
 ok $res->{login_history}->[0]->{action},      'login history record has action key';

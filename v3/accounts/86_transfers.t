@@ -96,7 +96,7 @@ subtest 'paymentagent_list' => sub {
     $t->await::authorize({authorize => $client_token});
     my $pa_list_response = $t->await::paymentagent_list({paymentagent_list => 'id'});
 
-    is($pa_list_response->{error} // 0, 0, 'Successful payment agent list call');
+    is($pa_list_response->{error} // 0,                                           0,                   'Successful payment agent list call');
     is($pa_list_response->{paymentagent_list}->{list}[0]->{paymentagent_loginid}, $agent_usd->loginid, 'Agent is included in the list');
     test_schema('paymentagent_list', $pa_list_response);
 
@@ -196,8 +196,8 @@ subtest 'transfer between accounts' => sub {
     });
 
     test_schema('transfer_between_accounts', $response);
-    is($response->{error} // 0, 0, 'Successful transfer between account call');
-    is($response->{client_to_loginid}, $to_id, 'Correct client_to loginid');
+    is($response->{error} // 0,          0,                      'Successful transfer between account call');
+    is($response->{client_to_loginid},   $to_id,                 'Correct client_to loginid');
     is($response->{client_to_full_name}, $client_btc->full_name, 'Correct client_to name');
     cmp_ok($client_balance - $amount, '==', $client_usd->default_account->balance, 'Client balance is correct after transfer.');
     $client_balance = $client_usd->default_account->balance;
@@ -227,7 +227,7 @@ sub check_last_statement {
 
     my $statement_res = $t->await::statement($statement_args);
     test_schema('statement', $statement_res);
-    is($statement_res->{statement}->{count}, 1, 'Statement result is not empty');
+    is($statement_res->{statement}->{count},                             1,               'Statement result is not empty');
     is($statement_res->{statement}->{transactions}[0]->{transaction_id}, $transaction_id, 'The same trasaction id in statement') if $transaction_id;
     cmp_ok(sprintf("%.5f", $statement_res->{statement}->{transactions}[0]->{amount}), '==', sprintf("%.5f", $amount), 'Correct amount in statement');
     cmp_ok(

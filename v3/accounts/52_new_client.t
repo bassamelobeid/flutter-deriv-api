@@ -80,7 +80,7 @@ is $res->{error}->{code}, 'DisabledClient', 'you can not call any authenticated 
 
 subtest 'mt5 new account dry run' => sub {
     $client_cr->set_default_account('USD');
-    $token = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr_1);
+    $token     = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr_1);
     $authorize = $t->await::authorize({authorize => $token});
     is $authorize->{authorize}->{loginid}, $cr_1;
 

@@ -94,7 +94,7 @@ $client->smart_payment(
 
 my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
 my $underlying       = create_underlying('frxUSDJPY');
-my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
+my ($token)          = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 $t->await::authorize({authorize => $token});
 
 if ($trading_calendar->is_open($underlying->exchange)) {
@@ -373,7 +373,7 @@ if ($trading_calendar->is_open($underlying->exchange)) {
         is $contract_details->{proposal_open_contract}->{payout}, $payout,
             'Payout from buy api is matching with the payout from actual payout from proposal open contract';
         $t->finish_ok;
-        }
+    }
 } else {
     subtest 'buy forex trades when market closed' => sub {
 
@@ -394,7 +394,7 @@ if ($trading_calendar->is_open($underlying->exchange)) {
         is $res->{error}->{code}, 'ContractBuyValidationError', 'proposal failed';
         like $res->{error}{message}, qr/This market is presently closed/, 'This market is presently closed';
 
-        }
+    }
 
 }
 done_testing();

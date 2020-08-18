@@ -70,7 +70,7 @@ $t = $t->send_ok({
 $res = decode_json_utf8($t->message->[1]);
 is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for duplicate subscription';
 
-$t = $t->send_ok({json => {forget_all => 'website_status'}})->message_ok;
+$t   = $t->send_ok({json => {forget_all => 'website_status'}})->message_ok;
 $res = decode_json_utf8($t->message->[1]);
 
 is $res->{forget_all}->[0], $uuid, 'The same id returned by forget_all';
@@ -92,7 +92,7 @@ $res = decode_json_utf8($t->message->[1]);
 cmp_ok $uuid, 'ne', $res->{subscription}->{id}, 'New subscription id is issued';
 $uuid = $res->{subscription}->{id};
 
-$t = $t->send_ok({json => {forget => $uuid}})->message_ok;
+$t   = $t->send_ok({json => {forget => $uuid}})->message_ok;
 $res = decode_json_utf8($t->message->[1]);
 is $res->{forget}, 1, 'Successfully forgotten';
 
@@ -102,7 +102,7 @@ is $res->{forget}, 1, 'Successfully forgotten';
 
 # wait app-cconfig refresh
 sleep 11;
-$t = $t->send_ok({json => {website_status => 1}})->message_ok;
+$t   = $t->send_ok({json => {website_status => 1}})->message_ok;
 $res = decode_json_utf8($t->message->[1]);
 
 is $res->{website_status}->{terms_conditions_version}, $updated_tcv, 'It should return updated terms_conditions_version';

@@ -207,7 +207,7 @@ $res = $t->await::sell({
 });
 ok $res->{sell};
 ok($res->{sell}{contract_id} && $res->{sell}{contract_id} == $contract_id, "check contract ID");
-ok($res->{sell}{reference_id} == $buy_txn_id, "check buy transaction ID");
+ok($res->{sell}{reference_id} == $buy_txn_id,                              "check buy transaction ID");
 test_schema('sell', $res);
 
 sleep 1;

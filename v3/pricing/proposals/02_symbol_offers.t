@@ -110,7 +110,7 @@ if ($time_hhmmss ge '18:15:00' || $time_hhmmss lt '00:15:00' || $market_closed) 
         }
 
         test_schema('contracts_for', $contracts_for_eurusd);
-        }
+    }
 }
 
 my $trading_times = $t->await::trading_times({trading_times => Date::Utility->new->date_yyyymmdd});

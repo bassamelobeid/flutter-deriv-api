@@ -63,7 +63,7 @@ subtest 'cancel' => sub {
     });
     is $res->{msg_type}, 'cancel', 'msg_type - cancel';
     ok $res->{error}, 'error';
-    is $res->{error}->{code}, 'ContractNotFound', 'error code - ContractNotFound';
+    is $res->{error}->{code},    'ContractNotFound',                         'error code - ContractNotFound';
     is $res->{error}->{message}, 'Contract not found for contract id: 123.', 'error message - Contract not found for contract id: 123.';
 
     my $proposal_res = $t->await::proposal({

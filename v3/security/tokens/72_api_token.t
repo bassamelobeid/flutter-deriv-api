@@ -95,7 +95,7 @@ test_schema('api_token', $res);
 $t->finish_ok;
 
 # try with the new token
-$t = build_wsapi_test();
+$t   = build_wsapi_test();
 $res = $t->await::authorize({authorize => $test_token->{token}});
 is $res->{authorize}->{email}, $email;
 

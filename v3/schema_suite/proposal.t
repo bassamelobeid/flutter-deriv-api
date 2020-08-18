@@ -121,7 +121,8 @@ test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_re
     'EXPIRYMISS', 'OTC_FCHI', '7', 'd', '3600', '3490', 'Win payout if French Index ends outside 3490.00 to 3600.00 at close on 2016-08-16.', '45.32',
     '45.32', '3563.07';
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
-    'RANGE', 'OTC_FCHI', '7', 'd', '3600', '3490', 'Win payout if French Index stays between 3490.00 to 3600.00 through close on 2016-08-16.', '37.60',
+    'RANGE', 'OTC_FCHI', '7', 'd', '3600', '3490', 'Win payout if French Index stays between 3490.00 to 3600.00 through close on 2016-08-16.',
+    '37.60',
     '37.60', '3563.07';
 
 # frxXAUUSD

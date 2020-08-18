@@ -36,7 +36,7 @@ test_schema('balance', $balance);
 
 ## test with faked token
 my $faked_token = 'ABCDABCDABCDABCDABCDABCDABCDABCDABCDABCDABCDABCD';
-my $authorize = $t->await::authorize({authorize => $faked_token});
+my $authorize   = $t->await::authorize({authorize => $faked_token});
 is $authorize->{msg_type}, 'authorize';
 is $authorize->{error}->{code}, 'InvalidToken';
 test_schema('authorize', $authorize);

@@ -80,8 +80,8 @@ for (my $i = 0; $i < 2; $i++) {
     $t->message_ok;
     $res = decode_json_utf8($t->message->[1]);
 
-    ok $res->{ohlc}->{open} =~ /\d+\.\d{4,}/
-        && $res->{ohlc}->{high} =~ /\d+\.\d{4,}/
+    ok $res->{ohlc}->{open}      =~ /\d+\.\d{4,}/
+        && $res->{ohlc}->{high}  =~ /\d+\.\d{4,}/
         && $res->{ohlc}->{close} =~ /\d+\.\d{4,}/
         && $res->{ohlc}->{low} =~ /\d+\.\d{4,}/, 'OHLC should be pipsized';
 }

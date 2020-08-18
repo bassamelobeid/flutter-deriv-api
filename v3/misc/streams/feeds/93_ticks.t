@@ -85,14 +85,14 @@ subtest 'ticks' => sub {
                 subscribe => 2
             }})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-    is $res->{error}->{code}, 'InputValidationFailed', 'Should return InputValidationFailed error';
+    is $res->{error}->{code},    'InputValidationFailed',              'Should return InputValidationFailed error';
     is $res->{error}->{message}, 'Input validation failed: subscribe', 'Should return ticks validation error';
 
     $t->send_ok({json => {ticks => ['R_50', 'R_100']}});
 
     $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-    is $res->{error}->{code}, 'AlreadySubscribed', 'Should return already subscribed error';
+    is $res->{error}->{code},    'AlreadySubscribed',                  'Should return already subscribed error';
     is $res->{error}->{message}, 'You are already subscribed to R_50', 'Should return already subscribed error';
 
     my $res = $t->await::forget_all({forget_all => 'ticks'});

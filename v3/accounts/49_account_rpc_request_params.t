@@ -332,7 +332,7 @@ ok(ref $res->{set_financial_assessment});
 is $call_params->{token}, $token;
 
 $rpc_response = [qw/ test /];
-$res = $t->await::payout_currencies({payout_currencies => 1});
+$res          = $t->await::payout_currencies({payout_currencies => 1});
 ok(ref $res->{payout_currencies});
 is $call_params->{token}, $token;
 
@@ -358,7 +358,7 @@ ok(ref $res->{get_account_status});
 is $call_params->{token}, $token;
 
 %$rpc_response = (status => 1);
-$res = $t->await::change_password({
+$res           = $t->await::change_password({
     change_password => 1,
     old_password    => '123456',
     new_password    => '654321'

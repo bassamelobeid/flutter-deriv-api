@@ -50,7 +50,7 @@ subtest "Buy subscriptions: Only R_* and frxUSD*" => sub {
                 }
             ),
             token => $_->token,
-            }
+        }
     } clients()->@*;
 
     $tester->configure(

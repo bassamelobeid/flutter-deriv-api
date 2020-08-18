@@ -177,7 +177,7 @@ subtest "3rd try: the real thing => success", sub {
 
     test_schema('buy_contract_for_multiple_accounts', $res);
 
-    $tokens_for_sell    = [map { $_->{token} } grep     { $_->{shortcode} } @{$res->{buy_contract_for_multiple_accounts}{result}}];
+    $tokens_for_sell    = [map { $_->{token} } grep { $_->{shortcode} } @{$res->{buy_contract_for_multiple_accounts}{result}}];
     $shortcode_for_sell = [map { $_->{shortcode} } grep { $_->{shortcode} } @{$res->{buy_contract_for_multiple_accounts}{result}}]->[0];
 
     my $forget = $t->await::forget({forget => $proposal_id});
@@ -193,10 +193,10 @@ subtest "3rd try: the real thing => success", sub {
 
     is_deeply([
             sort { $a->[0] <=> $b->[0] }
-            map { [$_->{contract_id}, $_->{transaction_id}, -$_->{amount}] } @{$stmt->{statement}->{transactions}}
+            map  { [$_->{contract_id}, $_->{transaction_id}, -$_->{amount}] } @{$stmt->{statement}->{transactions}}
         ],
         [
-            sort { $a->[0] <=> $b->[0] }
+            sort    { $a->[0] <=> $b->[0] }
                 map { $_->{code} ? () : [$_->{contract_id}, $_->{transaction_id}, $_->{buy_price}] }
                 @{$res->{buy_contract_for_multiple_accounts}->{result}}
         ],

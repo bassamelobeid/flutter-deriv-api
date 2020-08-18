@@ -43,20 +43,20 @@ note explain $res;
 is $res->{authorize}->{email}, 'dummy@binary.com', 'Correct email for session cookie token';
 test_schema('authorize', $res);
 
-$t = $t->send_ok({json => {set_account_currency => 'not_allowed'}})->message_ok;
+$t   = $t->send_ok({json => {set_account_currency => 'not_allowed'}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $res->{error}->{code}, 'InputValidationFailed', 'Not in allowed list of currency';
 
-$t = $t->send_ok({json => {set_account_currency => 'JPY'}})->message_ok;
+$t   = $t->send_ok({json => {set_account_currency => 'JPY'}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
-is $res->{error}->{code}, 'CurrencyTypeNotAllowed', 'Currency not applicable for this client';
+is $res->{error}->{code},    'CurrencyTypeNotAllowed',                                        'Currency not applicable for this client';
 is $res->{error}->{message}, 'The provided currency JPY is not applicable for this account.', 'Correct error message for invalid currency';
 
-$t = $t->send_ok({json => {set_account_currency => 'EUR'}})->message_ok;
+$t   = $t->send_ok({json => {set_account_currency => 'EUR'}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $res->{set_account_currency}, 1, 'Default currency set properly';
 
-$t = $t->send_ok({json => {set_account_currency => 'USD'}})->message_ok;
+$t   = $t->send_ok({json => {set_account_currency => 'USD'}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $res->{set_account_currency}, 1, 'Can set default currency again if no deposit yet';
 
@@ -70,7 +70,7 @@ $test_client->payment_doughflow(
     remark   => 'first deposit',
 );
 
-$t = $t->send_ok({json => {set_account_currency => 'GBP'}})->message_ok;
+$t   = $t->send_ok({json => {set_account_currency => 'GBP'}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 ok $res->{error}, 'Cannot change currency after deposit has been made';
 

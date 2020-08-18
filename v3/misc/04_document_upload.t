@@ -63,7 +63,7 @@ subtest 'Fail during upload' => sub {
 
     my %upload_info = request_upload($data);
 
-    my @frames = gen_frames($data, %upload_info);
+    my @frames    = gen_frames($data, %upload_info);
     my $upload_id = $upload_info{upload_id};
 
     $t->send_ok({binary => $frames[0]});
@@ -111,7 +111,7 @@ subtest 'binary frame should be sent correctly' => sub {
     my $error = $res->{error};
     is $error->{code}, 'UploadDenied', 'Upload frame should be at least 12 bytes';
 
-    $res = await_binary((pack 'N3A*', 1, 1, 1, 'A'));
+    $res   = await_binary((pack 'N3A*', 1, 1, 1, 'A'));
     $error = $res->{error};
     is $error->{code}, 'UploadDenied', 'Should ask for document_upload first';
 
@@ -119,7 +119,7 @@ subtest 'binary frame should be sent correctly' => sub {
 
     my ($call_type, $upload_id) = @upload_info{qw/call_type upload_id/};
 
-    $res = await_binary((pack 'N3A*', $call_type, 1111, 1, 'A'));
+    $res   = await_binary((pack 'N3A*', $call_type, 1111, 1, 'A'));
     $error = $res->{error};
     is $error->{code}, 'UploadDenied', 'Unknown upload request';
 
@@ -156,7 +156,7 @@ sub send_two_docs_at_once {
         my $upload_info = {request_upload($data[$i], undef, $ws)};
         receive_ok($data[$i], $upload_info, $conn);
         $requests[$i]->{upload_info} = $upload_info;
-        $requests[$i]->{frames} = [gen_frames($data[$i], %$upload_info)];
+        $requests[$i]->{frames}      = [gen_frames($data[$i], %$upload_info)];
     }
 
     $_->{ws}->send_ok({binary => $_->{frames}->[0]}) for @requests;
@@ -316,7 +316,7 @@ subtest 'Document with wrong checksum rejected' => sub {
     $res = get_response($t);
 
     my $error = $res->{error};
-    is $error->{code}, 'ChecksumMismatch', 'Error code for checksum fail';
+    is $error->{code},    'ChecksumMismatch',              'Error code for checksum fail';
     is $error->{message}, 'Checksum verification failed.', 'Error msg for checksum fail';
 };
 
@@ -335,7 +335,7 @@ subtest 'Attempt to restart a timed out upload' => sub {
     my $upload_info = {request_upload($data)};
     receive_ok($data, $upload_info);
     $request->{upload_info} = $upload_info;
-    $request->{frames} = [gen_frames($data, %$upload_info)];
+    $request->{frames}      = [gen_frames($data, %$upload_info)];
 
     $t->send_ok({binary => $request->{frames}->[0]});
 
@@ -388,7 +388,7 @@ sub upload_ok {
 
 sub request_upload {
     my ($data, $metadata, $ws) = @_;
-    $ws //= $t;
+    $ws       //= $t;
     $metadata //= {};
     my $req = {
         %generic_req, %$metadata,

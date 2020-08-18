@@ -18,7 +18,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use await;
 
 build_test_R_50_data();
-my $t = build_wsapi_test();
+my $t              = build_wsapi_test();
 my $empty_proposal = $t->await::proposal({proposal => 1});
 is($empty_proposal->{error}->{code}, 'InputValidationFailed');
 
@@ -33,13 +33,13 @@ my $req = {
 
 my $res = $t->await::proposal($req);
 ok $res->{error}, 'proposal error';
-is $res->{error}->{code}, 'ContractCreationFailure', 'error code ContractCreationFailure';
+is $res->{error}->{code},    'ContractCreationFailure',                'error code ContractCreationFailure';
 is $res->{error}->{message}, 'Basis must be stake for this contract.', 'message \'Basis must be stake for this contract.\'';
 
 $req->{basis} = 'stake';
 $res = $t->await::proposal($req);
 ok $res->{error}, 'proposal error';
-is $res->{error}->{code}, 'ContractCreationFailure', 'error code ContractCreationFailure';
+is $res->{error}->{code},    'ContractCreationFailure',                            'error code ContractCreationFailure';
 is $res->{error}->{message}, 'Missing required contract parameters (multiplier).', 'message \'Missing required contract parameters (multiplier).\'';
 
 $req->{multiplier}    = 5;
@@ -57,7 +57,7 @@ delete $req->{duration_unit};
 $req->{barrier} = 100;
 $res = $t->await::proposal($req);
 ok $res->{error}, 'proposal error';
-is $res->{error}->{code}, 'ContractCreationFailure', 'error code ContractCreationFailure';
+is $res->{error}->{code},    'ContractCreationFailure',                        'error code ContractCreationFailure';
 is $res->{error}->{message}, 'Barrier is not allowed for this contract type.', 'message \'Barrier is not allowed for this contract type.\'';
 
 delete $req->{barrier};
@@ -123,7 +123,7 @@ $req->{limit_order} = {
 };
 $res = $t->await::proposal($req);
 ok $res->{error}, 'proposal error';
-is $res->{error}->{code}, 'InputValidationFailed', 'error code InputValidationFailed';
+is $res->{error}->{code},    'InputValidationFailed',                'error code InputValidationFailed';
 is $res->{error}->{message}, 'Input validation failed: limit_order', 'message \'Input validation failed: limit_order\'';
 
 delete $req->{limit_order};
@@ -143,6 +143,6 @@ if (my $proposal = $res->{proposal}) {
 $req->{symbol} = 'frxGBPPLN';
 $res = $t->await::proposal($req);
 ok $res->{error}, 'proposal error';
-is $res->{error}->{code}, 'OfferingsValidationError', 'error code OfferingsValidationError';
+is $res->{error}->{code},    'OfferingsValidationError',               'error code OfferingsValidationError';
 is $res->{error}->{message}, 'Trading is not offered for this asset.', 'message \'Trading is not offered for this asset.\'';
 done_testing;

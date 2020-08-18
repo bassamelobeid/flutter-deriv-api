@@ -44,7 +44,7 @@ $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $res->{authorize}->{loginid}, $loginid;
 
-$t = $t->send_ok({json => {reality_check => 1}})->message_ok;
+$t   = $t->send_ok({json => {reality_check => 1}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 test_schema('reality_check', $res);
 

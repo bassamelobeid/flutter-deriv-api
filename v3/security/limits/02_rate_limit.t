@@ -9,7 +9,7 @@ use Test::MockModule;
 use Mojo::Redis2;
 use Path::Tiny;
 
-my $tmp_dir = Path::Tiny->tempdir(CLEANUP => 1);
+my $tmp_dir     = Path::Tiny->tempdir(CLEANUP => 1);
 my $rate_limits = <<RATE_LIMITS_END;
 virtual_buy_transaction:
     1m: 40
@@ -155,7 +155,7 @@ subtest "hit limits 'proposal' / 'proposal_open_contract' for virtual account" =
     my @futures;
     # 2 * 16 > 30
     for (1 .. 16) {
-        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 0);
+        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal',               0);
         push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal_open_contract', 0);
     }
 
@@ -178,7 +178,7 @@ subtest "limits are persisted across connnections for the same client" => sub {
     $process_queue->();
 
     my $c2 = $t->app->build_controller;
-    my $f = Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'portfolio', 0);
+    my $f  = Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'portfolio', 0);
     lives_ok { $f->get } "1st attempt is still allowed";
 
     $process_queue->();

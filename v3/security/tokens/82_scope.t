@@ -39,15 +39,15 @@ is $authorize->{authorize}->{loginid}, $cr_1;
 $t = $t->send_ok({json => {sell_expired => 1}})->message_ok;
 my $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $res->{error}->{code}, 'PermissionDenied', 'PermissionDenied b/c it is trade';
-$t = $t->send_ok({json => {get_account_status => 1}})->message_ok;
+$t   = $t->send_ok({json => {get_account_status => 1}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 ok $res->{get_account_status}, 'get_account_status is read scope';
 
 ($token) = BOM::Database::Model::OAuth->new->store_access_token_only($app_id, $cr_1);
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
+$t         = $t->send_ok({json => {authorize => $token}})->message_ok;
 $authorize = $json->decode(Encode::decode_utf8($t->message->[1]));
 is $authorize->{authorize}->{loginid}, $cr_1;
-$t = $t->send_ok({json => {tnc_approval => 1}})->message_ok;
+$t   = $t->send_ok({json => {tnc_approval => 1}})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 
 is $res->{error}->{code}, 'PermissionDenied', 'PermissionDenied b/c it is read';
@@ -61,7 +61,7 @@ subtest multiscope => sub {
     my $token = BOM::Platform::Token::API->new->create_token($cr_1, 'Test', ['admin', 'trade']);
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
     my $authorize = $json->decode(Encode::decode_utf8($t->message->[1]));
-    $t = $t->send_ok({json => {balance => 1}})->message_ok;
+    $t   = $t->send_ok({json => {balance => 1}})->message_ok;
     $res = $json->decode(Encode::decode_utf8($t->message->[1]));
     is $res->{error}->{code}, 'PermissionDenied', 'PermissionDenied Balance requires read or trading_information ';
 

@@ -66,7 +66,7 @@ my $contract_type_pairs = {
 };
 
 my $trading_frames = {};
-my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for($symbol, Date::Utility->new);
+my $tp             = BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for($symbol, Date::Utility->new);
 initialize_realtime_ticks_db();
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY);
@@ -97,7 +97,7 @@ my $contracts_for = $t->await::contracts_for({
     "product_type"    => $pt,
 });
 
-my @contract_types = (keys %$contract_type_pairs, values %$contract_type_pairs);
+my @contract_types          = (keys %$contract_type_pairs, values %$contract_type_pairs);
 my $proposal_array_variants = {};
 for my $i (0 .. $#{$contracts_for->{contracts_for}{available}}) {
     my $tf = $contracts_for->{contracts_for}{available}[$i]{trading_period}{duration};
@@ -178,7 +178,7 @@ unless (scalar @$put_array) {
 # Try avoid bail out below by using the latest window available for 2h contract duration.
 my $put = $put_array->[scalar(@{$put_array}) - 1];
 
-my $barriers = $put->{available_barriers};
+my $barriers   = $put->{available_barriers};
 my $fixed_bars = [map { {barrier => $_} } @$barriers];
 
 SKIP: {
@@ -227,7 +227,7 @@ SKIP: {
             $proposal_array_req_tpl->{currency}      = 'USD';
             $response                                = $t->await::proposal_array($proposal_array_req_tpl);
             test_schema('proposal_array', $response);
-            is $response->{error}->{code}, 'Deprecated', 'deprecated';
+            is $response->{error}->{code},    'Deprecated',                   'deprecated';
             is $response->{error}->{message}, 'This API call is deprecated.', 'message: This API call is deprecated.';
 
             $proposal_array_req_tpl->{barriers} = [{barrier => 111}];
@@ -235,13 +235,13 @@ SKIP: {
             $proposal_array_req_tpl->{amount} = 100;
             $response = $t->await::proposal_array($proposal_array_req_tpl);
             test_schema('proposal_array', $response);
-            is $response->{error}->{code}, 'Deprecated', 'deprecated';
+            is $response->{error}->{code},    'Deprecated',                   'deprecated';
             is $response->{error}->{message}, 'This API call is deprecated.', 'message: This API call is deprecated.';
 
             $proposal_array_req_tpl->{barriers} = [{barrier => 109}];
             $response = $t->await::proposal_array($proposal_array_req_tpl);
             test_schema('proposal_array', $response);
-            is $response->{error}->{code}, 'Deprecated', 'deprecated';
+            is $response->{error}->{code},    'Deprecated',                   'deprecated';
             is $response->{error}->{message}, 'This API call is deprecated.', 'message: This API call is deprecated.';
         };
 
@@ -253,7 +253,7 @@ SKIP: {
             $proposal_array_req_tpl->{date_expiry}          = $put->{trading_period}{date_expiry}{epoch};
             $proposal_array_req_tpl->{trading_period_start} = $put->{trading_period}{date_start}{epoch};
 
-            $proposal_array_req_tpl->{barriers} = [{barrier => 97}];
+            $proposal_array_req_tpl->{barriers}      = [{barrier => 97}];
             $proposal_array_req_tpl->{contract_type} = ['CALLE'];
 
             $proposal_array_req_tpl->{subscribe} = 1;
@@ -324,7 +324,7 @@ SKIP: {
 
             push @{$proposal_array_req_tpl->{barriers}}, {barrier2 => "97.0000000000000000000000000000000000000001"};
             $response = $t->await::proposal_array($proposal_array_req_tpl);
-            is $response->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with invalid barrier';
+            is $response->{error}->{code},    'InputValidationFailed',                        'Schema validation fails with invalid barrier';
             is $response->{error}->{message}, 'Input validation failed: barriers/1/barrier2', 'Schema validation fails with correct error message';
         };
     }

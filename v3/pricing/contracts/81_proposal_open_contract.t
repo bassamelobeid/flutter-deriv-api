@@ -140,7 +140,7 @@ subtest 'selling contract message' => sub {
     my ($url, $call_params);
 
     my $fake_res = Test::MockObject->new();
-    $fake_res->mock('result', sub { +{ok => 1} });
+    $fake_res->mock('result',   sub { +{ok => 1} });
     $fake_res->mock('is_error', sub { '' });
 
     my $fake_rpc_client = Test::MockObject->new();

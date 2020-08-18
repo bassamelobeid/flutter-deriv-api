@@ -17,7 +17,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use await;
 
 build_test_R_50_data();
-my $t = build_wsapi_test();
+my $t              = build_wsapi_test();
 my $empty_proposal = $t->await::proposal({proposal => 1});
 is($empty_proposal->{error}->{code}, 'InputValidationFailed');
 

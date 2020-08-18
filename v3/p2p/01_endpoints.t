@@ -207,16 +207,16 @@ subtest 'update advertiser' => sub {
     my ($desc, $payment, $contact) = ('ad descr', 'adv pay info', 'adv contact info');
 
     $advertiser = $t->await::p2p_advertiser_update({
-        p2p_advertiser_update      => 1,
-        is_listed                  => 1,
-        contact_info               => $contact,
-        default_advert_description => $desc,
-        payment_info               => $payment,
-    })->{p2p_advertiser_update};
-    ok $advertiser->{is_listed}, "is_listed updated";
-    is $advertiser->{payment_info}, $payment, 'advertiser payment_info updated';
-    is $advertiser->{default_advert_description}, $desc, 'advertiser default_advert_description updated';    
-    is $advertiser->{contact_info}, $contact, 'advertiser contact_info updated';
+            p2p_advertiser_update      => 1,
+            is_listed                  => 1,
+            contact_info               => $contact,
+            default_advert_description => $desc,
+            payment_info               => $payment,
+        })->{p2p_advertiser_update};
+    ok $advertiser->{is_listed},                  "is_listed updated";
+    is $advertiser->{payment_info},               $payment, 'advertiser payment_info updated';
+    is $advertiser->{default_advert_description}, $desc, 'advertiser default_advert_description updated';
+    is $advertiser->{contact_info},               $contact, 'advertiser contact_info updated';
 
     $resp = $t->await::p2p_advertiser_update({
         p2p_advertiser_update => 1,
@@ -232,13 +232,13 @@ subtest 'update advertiser' => sub {
         });
         test_schema('p2p_advertiser_update', $resp);
     };
-    
+
     subtest 'Client use p2p_advertiser_info' => sub {
         $t->await::authorize({authorize => $token_client});
         $resp = $t->await::p2p_advertiser_info({
                 p2p_advertiser_info => 1,
                 id                  => $advertiser->{id}});
-        test_schema('p2p_advertiser_info', $resp);       
+        test_schema('p2p_advertiser_info', $resp);
     };
 };
 
@@ -356,7 +356,7 @@ subtest 'create order (buy)' => sub {
     is $order->{type}, 'buy', 'type';
     is $order->{payment_info}, $advert->{payment_info}, 'payment_info copied from ad';
     is $order->{contact_info}, $advert->{contact_info}, 'contact_info copied from ad';
-    is $order->{client_details}{id},  $client_adv_info->{id}, 'client id';
+    is $order->{client_details}{id}, $client_adv_info->{id}, 'client id';
     is $order->{client_details}{name}, 'Testclient', 'client name';
 
     $resp = $t->await::p2p_order_list({

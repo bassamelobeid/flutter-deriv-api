@@ -134,12 +134,12 @@ subtest 'insufficient data' => sub {
     delete $create_vr->{residence};
 
     my $res = $t->await::new_account_virtual($create_vr);
-    is($res->{error}->{code}, 'InputValidationFailed', 'insufficient input');
-    is($res->{new_account_virtual}, undef, 'NO account created');
+    is($res->{error}->{code},       'InputValidationFailed', 'insufficient input');
+    is($res->{new_account_virtual}, undef,                   'NO account created');
 };
 
 sub _get_token {
-    my $redis = BOM::Config::Redis::redis_replicated_read();
+    my $redis  = BOM::Config::Redis::redis_replicated_read();
     my $tokens = $redis->execute('keys', 'VERIFICATION_TOKEN::*');
 
     my $code;

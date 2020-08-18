@@ -214,8 +214,8 @@ subtest 'CR client cannot upgrade to MF' => sub {
         my $res = $t->await::new_account_maltainvest(\%details);
 
         is($res->{msg_type}, 'new_account_maltainvest');
-        is($res->{error}->{code}, 'PermissionDenied', "no MF upgrade for CR");
-        is($res->{new_account_maltainvest}, undef, 'NO account created');
+        is($res->{error}->{code},           'PermissionDenied', "no MF upgrade for CR");
+        is($res->{new_account_maltainvest}, undef,              'NO account created');
     };
 };
 

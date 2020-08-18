@@ -55,7 +55,7 @@ subtest 'forget transaction stream at first' => sub {
     is(scalar @{$data->{forget_all}}, 0, 'Forget all returns empty because all streams forgot already');
     my @transaction_subscriptions = Binary::WebSocketAPI::v3::Subscription::Transaction->get_by_class($c);
     is(scalar @transaction_subscriptions, 0, "There is 0 transaction subscription");
-    my @pocs = Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalOpenContract->get_by_class($c);
+    my @pocs      = Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalOpenContract->get_by_class($c);
     my @poc_uuids = sort map { $_->uuid } @pocs;
     is(scalar(@poc_uuids), 0, 'There is 0 poc subscriptions now');
 };
@@ -179,8 +179,8 @@ sub parse_result {
 sub test_subscriptions {
     my ($c, $num_of_poc_uuid) = @_;
     my ($types, $poc_type, $poc_uuids_in_transaction_subscripton, $poc_uuids) = parse_result($c);
-    is(scalar(@$types), $num_of_poc_uuid + 1, 'There are ' . ($num_of_poc_uuid + 1) . ' streams');
-    is(scalar(@$poc_type), 1, 'there is one poc transaction stream');
+    is(scalar(@$types),    $num_of_poc_uuid + 1, 'There are ' . ($num_of_poc_uuid + 1) . ' streams');
+    is(scalar(@$poc_type), 1,                    'there is one poc transaction stream');
     is(scalar(@$poc_uuids_in_transaction_subscripton),
         $num_of_poc_uuid, "there are $num_of_poc_uuid transaction streams that track sell action already");
     # check the poc_uuids is in poc stream

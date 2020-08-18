@@ -48,7 +48,7 @@ initialize_realtime_ticks_db();
 
     my $t = build_wsapi_test();
 
-    my $req_tick = {ticks => 'R_50'};
+    my $req_tick   = {ticks => 'R_50'};
     my $req_candle = {
         ticks_history => 'R_50',
         end           => "latest",

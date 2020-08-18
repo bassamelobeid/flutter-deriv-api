@@ -122,7 +122,7 @@ my $fake_tx  = Test::MockObject->new();
 $fake_req->mock('url', sub { return "fake req url" });
 $fake_tx->mock('error', sub { return +{} });
 $fake_tx->mock('req',   sub { return $fake_req });
-$rpc_client_mock->mock('tx', sub { return $fake_tx });
+$rpc_client_mock->mock('tx',   sub { return $fake_tx });
 $rpc_client_mock->mock('call', sub { shift; return $_[2]->('') });
 {
     local $SIG{'__WARN__'} = sub { $warn_string = shift; };
