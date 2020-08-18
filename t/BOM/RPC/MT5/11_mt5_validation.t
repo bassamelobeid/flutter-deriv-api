@@ -84,7 +84,7 @@ $mocked_mt5->mock(
     },
     'get_group' => sub {
         return Future->done({
-            'group' => $mt5_account_info->{group} // 'demo\svg',
+            'group'    => $mt5_account_info->{group} // 'demo\svg',
             'currency' => 'USD',
             'leverage' => 500
         });
@@ -112,7 +112,7 @@ subtest 'new account' => sub {
     );
     $user->add_client($test_client);
 
-    my $m = BOM::Platform::Token::API->new;
+    my $m     = BOM::Platform::Token::API->new;
     my $token = $m->create_token($test_client->loginid, 'test token');
 
     my $method = 'mt5_new_account';

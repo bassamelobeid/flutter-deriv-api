@@ -127,7 +127,7 @@ rpc economic_calendar => sub {
     }
 
     my $economic_calendar = Quant::Framework::EconomicEventCalendar->new({chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader()});
-    my $events = $economic_calendar->get_economic_event_calendar_for_display({
+    my $events            = $economic_calendar->get_economic_event_calendar_for_display({
         currency   => $currency,
         start_date => $start_date,
         end_date   => $end_date

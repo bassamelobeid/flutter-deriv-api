@@ -71,7 +71,7 @@ Each entry is a L<Future> which will resolve once the current operation is compl
 async sub stream_tick_range {
     my ($self, %args) = @_;
 
-    my $stream = delete $args{stream} or die 'need a stream';
+    my $stream     = delete $args{stream} or die 'need a stream';
     my $underlying = $args{underlying};
     die 'duration should be > 0' unless 0 < (my $duration = delete $args{duration});
     my $start = Time::Moment->from_epoch($args{start} || die 'need a start time');

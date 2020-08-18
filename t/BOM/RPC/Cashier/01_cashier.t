@@ -21,7 +21,7 @@ my $mocked_call = Test::MockModule->new('LWP::UserAgent');
 my ($t, $rpc_ct);
 subtest 'Initialization' => sub {
     lives_ok {
-        $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
+        $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
         $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
     }
     'Initial RPC server and client connection';
@@ -46,8 +46,8 @@ $user_client_cr->add_client($client_cr);
 subtest 'Doughflow' => sub {
     my $params = {};
     $params->{args}->{cashier} = 'deposit';
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token123');
-    $params->{domain} = 'binary.com';
+    $params->{token}           = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token123');
+    $params->{domain}          = 'binary.com';
 
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_internal_message_like(qr/frontend not found/, 'No frontend error');
 
@@ -107,8 +107,8 @@ subtest 'Get deposit address' => sub {
     $params->{args}->{cashier}  = 'deposit';
     $params->{args}->{provider} = 'crypto';
     $params->{args}->{type}     = 'api';
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token123');
-    $params->{domain} = 'binary.com';
+    $params->{token}            = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token123');
+    $params->{domain}           = 'binary.com';
 
     my $expected_result = {
         stash => {

@@ -62,13 +62,12 @@ rpc notification_event => sub {
     for my $action (@$actions) {
         try {
             $action->($client, $args);
-        }
-        catch {
+        } catch {
             my $e = $@;
             $all_success_flag = 0;
             warn "Error caught in $action : " . $e;
             log_exception();
-        };
+        }
     }
 
     return {status => $all_success_flag};

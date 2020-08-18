@@ -37,7 +37,7 @@ sub onfido {
     return $self->{onfido} //= do {
         $self->add_child(my $service = WebService::Async::Onfido->new(token => BOM::Config::third_party()->{onfido}->{authorization_token}));
         $service;
-        }
+    }
 }
 
 =head2 service_token

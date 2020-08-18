@@ -219,7 +219,7 @@ subtest 'Account closure MT5 balance' => sub {
     $user->add_client($client);
 
     my $token = $m->create_token($client->loginid, 'test token');
-    my $args = {
+    my $args  = {
         "account_closure" => 1,
         "reason"          => 'Financial concerns',
     };

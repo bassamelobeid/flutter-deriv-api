@@ -65,7 +65,7 @@ rpc residence_list => sub {
     my $countries          = $countries_instance->countries;
     foreach my $country_selection (
         sort { $a->{translated_name} cmp $b->{translated_name} }
-        map { +{code => $_, translated_name => $countries->localized_code2country($_, request()->language)} } $countries->all_country_codes
+        map  { +{code => $_, translated_name => $countries->localized_code2country($_, request()->language)} } $countries->all_country_codes
         )
     {
         my $country_code = $country_selection->{code};
@@ -149,10 +149,10 @@ sub _currencies_config {
 
     my %currencies_config = map {
         $_ => {
-            fractional_digits => $amt_precision->{$_},
-            type              => LandingCompany::Registry::get_currency_type($_),
-            stake_default     => $default_stakes->{$_},
-            is_suspended      => $suspended_currencies->{$_} ? 1 : 0,
+            fractional_digits         => $amt_precision->{$_},
+            type                      => LandingCompany::Registry::get_currency_type($_),
+            stake_default             => $default_stakes->{$_},
+            is_suspended              => $suspended_currencies->{$_} ? 1 : 0,
             is_deposit_suspended      => BOM::RPC::v3::Utility::verify_cashier_suspended($_, 'deposit'),
             is_withdrawal_suspended   => BOM::RPC::v3::Utility::verify_cashier_suspended($_, 'withdrawal'),
             name                      => LandingCompany::Registry::get_currency_definition($_)->{name},

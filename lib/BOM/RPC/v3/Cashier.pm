@@ -105,7 +105,7 @@ rpc "cashier", sub {
     }
 
     my $client_loginid = $client->loginid;
-    my $validation = BOM::Platform::Client::CashierValidation::validate($client_loginid, $action);
+    my $validation     = BOM::Platform::Client::CashierValidation::validate($client_loginid, $action);
     return BOM::RPC::v3::Utility::create_error($validation->{error}) if exists $validation->{error};
 
     my ($brand, $currency) = (request()->brand, $client->default_account->currency_code());
@@ -418,7 +418,7 @@ rpc get_limits => sub {
     $limit->{lifetime_limit}    = formatnumber('price', $currency, convert_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
 
     # Withdrawal since $numdays
-    my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
+    my $payment_mapper        = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
     my $withdrawal_for_x_days = $payment_mapper->get_total_withdrawal({
         start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
         exclude    => ['currency_conversion_transfer', 'account_transfer'],
@@ -509,12 +509,11 @@ rpc "paymentagent_list",
         my $min_max;
         try {
             $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
-        }
-        catch {
+        } catch {
             log_exception();
             $log->warnf('%s dropped from PA list. Failed to retrieve limits: %s', $loginid, $@);
             next;
-        };
+        }
 
         push @{$payment_agent_table_row},
             {
@@ -583,8 +582,7 @@ rpc paymentagent_transfer => sub {
             'loginid'    => $loginid_fm,
             db_operation => 'replica'
         });
-    }
-    catch {
+    } catch {
         log_exception();
         $paymentagent_error = $@;
     }
@@ -724,8 +722,7 @@ rpc paymentagent_transfer => sub {
             lc_for_days        => $lc_for_days,
             lc_limit_for_days  => $lc_limit_for_days,
         );
-    }
-    catch {
+    } catch {
         log_exception();
         $error = $@;
     }
@@ -857,7 +854,7 @@ It gets the following args:
 
 sub _get_available_payment_agents {
     my ($country, $broker_code, $currency, $loginid, $is_listed) = @_;
-    my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
+    my $payment_agent_mapper              = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
     my $authenticated_paymentagent_agents = BOM::User::Client::PaymentAgent->get_payment_agents(
         country_code => $country,
         broker_code  => $broker_code,
@@ -867,7 +864,7 @@ sub _get_available_payment_agents {
 
     #if payment agents are suspended in client's country, we will keep only those agents that the client has previously transfered money with.
     if (is_payment_agents_suspended_in_country($country)) {
-        my $linked_pas = $payment_agent_mapper->get_payment_agents_linked_to_client($loginid);
+        my $linked_pas    = $payment_agent_mapper->get_payment_agents_linked_to_client($loginid);
         my %linked_agents = $loginid ? (map { $_->[0] => 1 } @$linked_pas) : ();
         foreach my $key (keys %$authenticated_paymentagent_agents) {
             #TODO: The condition ($key eq $loginid) is included to prevent returning
@@ -956,8 +953,7 @@ rpc paymentagent_withdraw => sub {
             'loginid'    => $paymentagent_loginid,
             db_operation => 'replica'
         });
-    }
-    catch {
+    } catch {
         log_exception();
         $paymentagent_error = $@;
     }
@@ -1069,8 +1065,7 @@ rpc paymentagent_withdraw => sub {
             currency => $currency,
             amount   => -$amount,    #withdraw action use negative amount
         );
-    }
-    catch {
+    } catch {
         log_exception();
         $withdraw_error = $@;
     }
@@ -1084,7 +1079,7 @@ rpc paymentagent_withdraw => sub {
                 }));
     }
 
-    my $day = Date::Utility->new->is_a_weekend ? 'weekend' : 'weekday';
+    my $day              = Date::Utility->new->is_a_weekend ? 'weekend' : 'weekday';
     my $withdrawal_limit = BOM::Config::payment_agent()->{transaction_limits}->{withdraw};
 
     my ($amount_transferred_in_usd, $count) = _get_amount_and_count($client_loginid);
@@ -1132,11 +1127,10 @@ rpc paymentagent_withdraw => sub {
             is_agent_to_client => 0,
             gateway_code       => 'payment_agent_transfer',
         );
-    }
-    catch {
+    } catch {
         log_exception();
         $error = $@;
-    };
+    }
 
     if ($error) {
         if (ref $error ne 'ARRAY') {
@@ -1276,7 +1270,7 @@ rpc transfer_between_accounts => sub {
 
     my ($client, $source, $token) = @{$params}{qw/client source token/};
     my $token_type = $params->{token_type} // '';
-    my $lc_short = $client->landing_company->short;
+    my $lc_short   = $client->landing_company->short;
 
     my $args = $params->{args};
     my ($currency, $amount) = @{$args}{qw/currency amount/};
@@ -1350,8 +1344,7 @@ rpc transfer_between_accounts => sub {
     try {
         $client_from = BOM::User::Client->new({loginid => $siblings->{$loginid_from}->{loginid}}) if (!$is_mt5_loginid_from);
         $client_to   = BOM::User::Client->new({loginid => $siblings->{$loginid_to}->{loginid}})   if (!$is_mt5_loginid_to);
-    }
-    catch {
+    } catch {
         log_exception();
         $res = _transfer_between_accounts_error();
     }
@@ -1427,7 +1420,7 @@ rpc transfer_between_accounts => sub {
                 BOM::RPC::v3::MT5::Account::mt5_get_settings({
                         client => $client,
                         args   => {login => $mt5_login}}
-                    )->then(
+                )->then(
                     sub {
                         my ($setting) = @_;
                         push @{$resp->{accounts}},
@@ -1442,7 +1435,7 @@ rpc transfer_between_accounts => sub {
                         return Future->done($resp);
                     });
             }
-            )->catch(
+        )->catch(
             sub {
                 my $err = shift;
                 log_exception();
@@ -1482,8 +1475,7 @@ rpc transfer_between_accounts => sub {
     try {
         ($to_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $from_currency, $to_currency, $client_from, $client_to);
-    }
-    catch {
+    } catch {
         my $err = $@;
         log_exception();
 
@@ -1533,8 +1525,7 @@ rpc transfer_between_accounts => sub {
             amount            => -1 * $amount,
             internal_transfer => 1,
         ) || die "validate_payment [$loginid_from]";
-    }
-    catch {
+    } catch {
         my $err = $@;
         log_exception();
 
@@ -1565,8 +1556,7 @@ rpc transfer_between_accounts => sub {
             amount            => $to_amount,
             internal_transfer => 1,
         ) || die "validate_payment [$loginid_to]";
-    }
-    catch {
+    } catch {
         my $err = $@;
         log_exception();
 
@@ -1602,10 +1592,9 @@ rpc transfer_between_accounts => sub {
             fees              => $fees,
             gateway_code      => 'account_transfer',
         );
-    }
-    catch {
+    } catch {
         my $err_str = (ref $@ eq 'ARRAY') ? "@$@" : $@;
-        my $err = "$err_msg Account Transfer failed [$err_str]";
+        my $err     = "$err_msg Account Transfer failed [$err_str]";
         log_exception();
         return $error_audit_sub->($err);
     }

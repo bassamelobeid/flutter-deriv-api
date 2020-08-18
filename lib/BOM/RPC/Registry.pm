@@ -63,7 +63,7 @@ any RPC registration that does not otherwise specify a C<auth>.
 sub import {
     my ($pkg, @syms) = @_;
     my $caller = caller;
-    my %syms = map { $_ => 1 } @syms;
+    my %syms   = map { $_ => 1 } @syms;
 
     if (delete $syms{"-dsl"}) {
         $pkg->import_dsl_into($caller);

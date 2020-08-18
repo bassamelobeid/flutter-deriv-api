@@ -493,8 +493,7 @@ rpc account_statistics => sub {
                 $sth->execute($account->id);
                 return @{$sth->fetchrow_arrayref};
             });
-    }
-    catch {
+    } catch {
         warn "Error caught : $@\n";
         log_exception();
         return BOM::RPC::v3::Utility::client_error();
@@ -579,7 +578,7 @@ rpc "profit_table",
 
         if ($args->{description}) {
             $trx{shortcode} = $row->{short_code};
-            $trx{longcode} = $res->{longcodes}->{$row->{short_code}} // localize('Could not retrieve contract details');
+            $trx{longcode}  = $res->{longcodes}->{$row->{short_code}} // localize('Could not retrieve contract details');
         }
 
         push @transactions, \%trx;
@@ -598,7 +597,7 @@ rpc "profit_table",
 =cut
 
 rpc balance => sub {
-    my $params = shift;
+    my $params      = shift;
     my $arg_account = $params->{args}{account} // 'current';
 
     my @user_logins = $params->{client}->user->bom_loginids;
@@ -701,7 +700,7 @@ rpc balance => sub {
     my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->get;
 
     for my $mt5_account (@mt5_accounts) {
-        my $is_demo = $mt5_account->{group} =~ /^demo/ ? 1 : 0;
+        my $is_demo   = $mt5_account->{group} =~ /^demo/ ? 1 : 0;
         my $converted = convert_currency($mt5_account->{balance}, $mt5_account->{currency}, $total_currency);
         $mt5_real_total += $converted unless $is_demo;
         $mt5_demo_total += $converted if $is_demo;
@@ -792,7 +791,7 @@ rpc get_account_status => sub {
         $_ => {
             is_deposit_suspended    => BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $_),
             is_withdrawal_suspended => BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $_),
-            }
+        }
     } $client->currency;
 
     return {
@@ -1143,7 +1142,7 @@ rpc get_settings => sub {
     $dob_epoch = Date::Utility->new($client->date_of_birth)->epoch if ($client->date_of_birth);
     if ($client->residence) {
         $country_code = $client->residence;
-        $country = request()->brand->countries_instance->countries->localized_code2country($client->residence, $params->{language});
+        $country      = request()->brand->countries_instance->countries->localized_code2country($client->residence, $params->{language});
     }
 
     my $user = $client->user;
@@ -1170,26 +1169,26 @@ rpc get_settings => sub {
         # for others, like is_authenticated_payment_agent, since they account specific
         $settings = {
             %$settings,
-            has_secret_answer => defined $real_client->secret_answer ? 1 : 0,
-            salutation        => $real_client->salutation,
-            first_name        => $real_client->first_name,
-            last_name         => $real_client->last_name,
-            address_line_1    => $real_client->address_1,
-            address_line_2    => $real_client->address_2,
-            address_city      => $real_client->city,
-            address_state     => $real_client->state,
-            address_postcode  => $real_client->postcode,
-            phone             => $real_client->phone,
-            place_of_birth    => $real_client->place_of_birth,
-            tax_residence     => $real_client->tax_residence,
-            tax_identification_number => $real_client->tax_identification_number,
-            account_opening_reason    => $real_client->account_opening_reason,
-            date_of_birth             => $real_client->date_of_birth ? Date::Utility->new($real_client->date_of_birth)->epoch : undef,
-            citizen       => $real_client->citizen  // '',
-            allow_copiers => $client->allow_copiers // 0,
-            non_pep_declaration         => $client->non_pep_declaration_time       ? 1                                       : 0,
-            client_tnc_status           => $client->status->tnc_approval           ? $client->status->tnc_approval->{reason} : '',
-            request_professional_status => $client->status->professional_requested ? 1                                       : 0,
+            has_secret_answer              => defined $real_client->secret_answer ? 1 : 0,
+            salutation                     => $real_client->salutation,
+            first_name                     => $real_client->first_name,
+            last_name                      => $real_client->last_name,
+            address_line_1                 => $real_client->address_1,
+            address_line_2                 => $real_client->address_2,
+            address_city                   => $real_client->city,
+            address_state                  => $real_client->state,
+            address_postcode               => $real_client->postcode,
+            phone                          => $real_client->phone,
+            place_of_birth                 => $real_client->place_of_birth,
+            tax_residence                  => $real_client->tax_residence,
+            tax_identification_number      => $real_client->tax_identification_number,
+            account_opening_reason         => $real_client->account_opening_reason,
+            date_of_birth                  => $real_client->date_of_birth ? Date::Utility->new($real_client->date_of_birth)->epoch : undef,
+            citizen                        => $real_client->citizen // '',
+            allow_copiers                  => $client->allow_copiers // 0,
+            non_pep_declaration            => $client->non_pep_declaration_time ? 1 : 0,
+            client_tnc_status              => $client->status->tnc_approval ? $client->status->tnc_approval->{reason} : '',
+            request_professional_status    => $client->status->professional_requested ? 1 : 0,
             is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
         };
     }
@@ -1230,12 +1229,7 @@ rpc set_settings => sub {
                     return BOM::RPC::v3::Utility::client_error();
                 }
             }
-        } elsif (
-            grep {
-                !/$allowed_fields_for_virtual/
-            } keys %$args
-            )
-        {
+        } elsif (grep { !/$allowed_fields_for_virtual/ } keys %$args) {
             # we only allow these keys in virtual set settings any other key will result in permission error
             return BOM::RPC::v3::Utility::permission_error();
         }
@@ -1279,7 +1273,7 @@ rpc set_settings => sub {
         and @{BOM::Database::DataMapper::Copier->new(
                 broker_code => $current_client->broker_code,
                 operation   => 'replica'
-                )->get_traders({copier_id => $current_client->loginid})
+            )->get_traders({copier_id => $current_client->loginid})
                 || []})
     {
         return BOM::RPC::v3::Utility::create_error({
@@ -1412,7 +1406,7 @@ rpc set_settings => sub {
         $client->address_1($address1);
         $client->address_2($address2);
         $client->city($addressTown);
-        $client->state($addressState) if defined $addressState;                       # FIXME validate
+        $client->state($addressState)       if defined $addressState;                 # FIXME validate
         $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
         $client->phone($phone);
         $client->citizen($citizen);
@@ -1538,7 +1532,7 @@ sub _send_update_account_settings_email {
         [localize('Citizen'),   $citizen_country,       _contains_any($updated_fields, 'citizen')]);
 
     my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($current_client->tax_residence || '');
-    my $pob_country = $current_client->place_of_birth ? Locale::Country::code2country($current_client->place_of_birth) : '';
+    my $pob_country      = $current_client->place_of_birth ? Locale::Country::code2country($current_client->place_of_birth) : '';
 
     push @email_updated_fields,
         (
@@ -1569,7 +1563,7 @@ sub _send_update_account_settings_email {
         (
                    $args->{request_professional_status}
                 or $current_client->status->professional_requested
-            ) ? localize("Yes") : localize("No"),
+        ) ? localize("Yes") : localize("No"),
         _contains_any($updated_fields, 'request_professional_status')];
 
     send_email({
@@ -1778,11 +1772,10 @@ rpc set_self_exclusion => sub {
         my ($exclusion_end, $exclusion_end_error);
         try {
             $exclusion_end = Date::Utility->new($exclude_until);
-        }
-        catch {
+        } catch {
             log_exception();
             $exclusion_end_error = 1;
-        };
+        }
         return $error_sub->(localize('Exclusion time conversion error.'), 'exclude_until') if $exclusion_end_error;
 
         # checking for the exclude until date which must be larger than today's date
@@ -1810,8 +1803,7 @@ rpc set_self_exclusion => sub {
         my ($exclusion_end, $exclusion_end_error);
         try {
             $exclusion_end = Date::Utility->new($max_deposit_end_date);
-        }
-        catch {
+        } catch {
             log_exception();
             $exclusion_end_error = 1;
         }
@@ -1948,7 +1940,7 @@ sub send_self_exclusion_notification {
     }
 
     if (@fields_to_email) {
-        my $statuses = join '/', map { uc $_ } @{$client->status->all};
+        my $statuses     = join '/',  map { uc $_ } @{$client->status->all};
         my $client_title = join ', ', $client->loginid, ($statuses ? "current status: [$statuses]" : '');
 
         my $brand = request()->brand;
@@ -2003,11 +1995,11 @@ rpc api_token => sub {
                 broker_code => $client->broker_code,
                 operation   => 'write'
             }
-            )->delete_copiers({
-                match_all => 1,
-                trader_id => $client->loginid,
-                token     => $token
-            });
+        )->delete_copiers({
+            match_all => 1,
+            trader_id => $client->loginid,
+            token     => $token
+        });
         $m->remove_by_token($token, $client->loginid);
         $rtn->{delete_token} = 1;
         # send notification to cancel streaming, if we add more streaming
@@ -2033,7 +2025,7 @@ rpc api_token => sub {
 
         ## for old API calls (we'll make it required on v4)
         my $scopes = $args->{new_token_scopes} || ['read', 'trading_information', 'trade', 'payments', 'admin'];
-        my $token = $m->create_token($client->loginid, $display_name, $scopes, ($args->{valid_for_current_ip_only} ? $client_ip : undef));
+        my $token  = $m->create_token($client->loginid, $display_name, $scopes, ($args->{valid_for_current_ip_only} ? $client_ip : undef));
 
         if (ref $token eq 'HASH' and my $error = $token->{error}) {
             return BOM::RPC::v3::Utility::create_error({
@@ -2074,9 +2066,8 @@ async_rpc service_token => sub {
                         service => $service,
                         $client->p2p_chat_token->%*
                     });
-            }
-            catch {
-                my $err = $@;
+            } catch {
+                my $err      = $@;
                 my $err_code = $err->{error_code} // '';
 
                 if (my $message = $BOM::RPC::v3::P2P::ERROR_MAP{$err_code}) {
@@ -2104,7 +2095,7 @@ async_rpc service_token => sub {
                     service  => $service,
                     referrer => $referrer
                 }
-                )->then(
+            )->then(
                 sub {
                     my ($result) = @_;
                     if ($result->{error}) {
@@ -2147,8 +2138,7 @@ rpc tnc_approval => sub {
         {
             try {
                 $client->status->set('tnc_approval', 'system', $current_tnc_version);
-            }
-            catch {
+            } catch {
                 log_exception();
                 return BOM::RPC::v3::Utility::client_error();
             }
@@ -2199,7 +2189,7 @@ rpc account_closure => sub {
 
     my $closing_reason = $args->{reason};
 
-    my $user = $client->user;
+    my $user                = $client->user;
     my @accounts_to_disable = $user->clients(include_disabled => 0);
 
     return BOM::RPC::v3::Utility::create_error({
@@ -2218,7 +2208,7 @@ rpc account_closure => sub {
         my $balance               = $client->account->balance;
 
         $accounts_with_positions{$client->loginid} = $number_open_contracts if $number_open_contracts;
-        $accounts_with_balance{$client->loginid} = {
+        $accounts_with_balance{$client->loginid}   = {
             balance  => $balance,
             currency => $client->currency
         } if $balance > 0;
@@ -2268,8 +2258,7 @@ rpc account_closure => sub {
             $client->status->set('disabled', $loginid, $closing_reason);
             $client->status->set('closed',   $loginid, $closing_reason);
             $loginids_disabled_success .= $client->loginid . ' ';
-        }
-        catch {
+        } catch {
             log_exception();
             $error = BOM::RPC::v3::Utility::client_error();
             $loginids_disabled_failed .= $client->loginid . ' ';
@@ -2333,11 +2322,10 @@ rpc set_account_currency => sub {
             {
                 loginid => $client->loginid,
             });
-    }
-    catch {
+    } catch {
         log_exception();
         warn "Error caught in set_account_currency: $@\n";
-    };
+    }
     return {status => $status};
 };
 

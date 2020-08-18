@@ -95,7 +95,7 @@ sub onfido_service_token {
             $onfido->sdk_token(
                 applicant_id => $applicant->id,
                 referrer     => $referrer,
-                )->then(
+            )->then(
                 sub {
                     my $response = shift;
 
@@ -108,7 +108,7 @@ sub onfido_service_token {
                     return Future->done({token => $response->{token}});
                 });
         }
-        )->else(
+    )->else(
         sub {
             return Future->done({
                     error => BOM::RPC::v3::Utility::create_error({
@@ -156,7 +156,7 @@ sub _get_onfido_applicant {
                 fixup => sub {
                     $_->do(
                         'select users.add_onfido_applicant(?::TEXT,?::TIMESTAMP,?::TEXT,?::BIGINT)',
-                        undef, $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
+                        undef,            $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
                         $applicant->href, $client->user_id
                     );
                 });

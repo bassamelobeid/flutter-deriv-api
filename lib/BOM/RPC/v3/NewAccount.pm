@@ -66,7 +66,7 @@ rpc "new_account_virtual",
                 message_to_client => $err->{message_to_client}});
     }
     my $acc_args = {
-        ip => $params->{client_ip} // '',
+        ip      => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),
         details => {
             email           => $email,
@@ -134,10 +134,10 @@ rpc "new_account_virtual",
             }});
 
     return {
-        client_id => $client->loginid,
-        email     => $email,
-        currency  => $account->currency_code(),
-        balance   => formatnumber('amount', $account->currency_code(), $account->balance),
+        client_id   => $client->loginid,
+        email       => $email,
+        currency    => $account->currency_code(),
+        balance     => formatnumber('amount', $account->currency_code(), $account->balance),
         oauth_token => _create_oauth_token($params->{source}, $client->loginid),
     };
     };
@@ -184,7 +184,7 @@ rpc "verify_email",
             created_for => $type,
         })->token;
 
-    my $loginid = $params->{token_details} ? $params->{token_details}->{loginid} : undef;
+    my $loginid          = $params->{token_details} ? $params->{token_details}->{loginid} : undef;
     my $extra_url_params = {};
     $extra_url_params = $args->{url_parameters} if defined $args->{url_parameters};
     my $verification = email_verification({
@@ -352,14 +352,13 @@ rpc new_account_real => sub {
     my $acc;
     try {
         $acc = BOM::Platform::Account::Real::default::create_account({
-            ip => $params->{client_ip} // '',
-            country => uc($client->residence // ''),
+            ip          => $params->{client_ip} // '',
+            country     => uc($client->residence // ''),
             from_client => $client,
             user        => $user,
             details     => $details_ref->{details},
         });
-    }
-    finally {
+    } finally {
         BOM::Platform::Redis::release_lock($client->user_id);
     }
 
@@ -407,7 +406,7 @@ rpc new_account_real => sub {
     if ($new_client->residence eq 'gb' or $new_client->landing_company->check_max_turnover_limit_is_set)
     {    # RTS 12 - Financial Limits - UK Clients and MLT Clients
         try { $new_client->status->set('max_turnover_limit_not_set', 'system', 'new GB client or MLT client - have to set turnover limit') }
-        catch { return BOM::RPC::v3::Utility::client_error() };
+        catch { return BOM::RPC::v3::Utility::client_error() }
     }
 
     BOM::User::AuditLog::log("successful login", "$client->email");
@@ -485,8 +484,8 @@ rpc new_account_maltainvest => sub {
     return $val if $val;
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
-        ip => $params->{client_ip} // '',
-        country => uc($params->{country_code} // ''),
+        ip          => $params->{client_ip} // '',
+        country     => uc($params->{country_code} // ''),
         from_client => $client,
         user        => $user,
         details     => $details_ref->{details},

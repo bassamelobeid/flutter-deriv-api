@@ -45,7 +45,7 @@ EOF
 require Log::Any::Adapter;
 Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
 
-my $loop = IO::Async::Loop->new;
+my $loop    = IO::Async::Loop->new;
 my @symbols = $symbols_list ? split(/,/, $symbols_list) : Finance::Asset->symbols;
 
 $log->infof("Running as %s at %s", $service_name, time);
@@ -63,8 +63,7 @@ try {
         ));
     $writer->run->get;
     $loop->run;
-}
-catch {
+} catch {
     $log->errorf("%s error: %s at %d", $service_name, $@, time);
 }
 $log->infof('%s finished at %d', $service_name, time);

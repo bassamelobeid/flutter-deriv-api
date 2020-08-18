@@ -90,7 +90,7 @@ sub wrap_rpc_sub {
 
     return sub {
         my @original_args = @_;
-        my $params = $original_args[0] // {};
+        my $params        = $original_args[0] // {};
 
         my $tv = [Time::HiRes::gettimeofday];
 
@@ -154,8 +154,7 @@ sub wrap_rpc_sub {
             } else {
                 $result = $code->(@args);
             }
-        }
-        catch {
+        } catch {
             my $error = $@;
             #Future->fail()  will raise exception here, in this case error is already formatted
             #otherwise die again, let outer catch handle it.

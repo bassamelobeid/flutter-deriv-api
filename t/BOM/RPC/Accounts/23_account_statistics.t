@@ -50,7 +50,7 @@ subtest 'account statistics' => sub {
             {
                 token => undef,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'The token is invalid.',
         'invalid token error if token undef'
     );
@@ -60,7 +60,7 @@ subtest 'account statistics' => sub {
             {
                 token => $token_disabled,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'This account is unavailable.',
         'check authorization'
     );

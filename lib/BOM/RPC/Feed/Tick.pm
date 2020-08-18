@@ -67,8 +67,8 @@ sub ticks_start_end_with_limit_for_charting {
 
     die 'start_time and end_time are required' unless $args->{start_time} && $args->{end_time};
 
-    my $start_time = $args->{start_time} == 1 ? Time::Moment->now->minus_days(1) : Time::Moment->from_epoch($args->{start_time});
-    my $end_time = $args->{end_time} eq 'latest' ? Time::Moment->now : Time::Moment->from_epoch($args->{end_time});
+    my $start_time = $args->{start_time} == 1      ? Time::Moment->now->minus_days(1) : Time::Moment->from_epoch($args->{start_time});
+    my $end_time   = $args->{end_time} eq 'latest' ? Time::Moment->now                : Time::Moment->from_epoch($args->{end_time});
     my $limit = $args->{limit} // $self->limit;
     $limit = 0 if $limit > $start_time->delta_seconds($end_time);
 
@@ -90,7 +90,7 @@ async sub feed_reader {
     my ($self, $symbol, $start, $duration) = @_;
 
     my $underlying = Finance::Underlying->by_symbol($symbol) or die 'No underlying found for ' . $symbol;
-    my $pip_size = $underlying->pip_size or die 'invalid pip size for ' . $symbol;
+    my $pip_size   = $underlying->pip_size                   or die 'invalid pip size for ' . $symbol;
 
     $log->debugf('Request from %d duration %d for %s', $start, $duration, $symbol);
     await $self->stream->write(

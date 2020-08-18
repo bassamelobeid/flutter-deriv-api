@@ -89,7 +89,7 @@ async sub subscribe_to_redis {
                 $self->_update_start_day($symbol);
             }
             my $tick_index = $tick_time->epoch - $self->start->{$symbol}->epoch;
-            my $price = int floor(0.5 + ($tick->{quote} / $pip_size));
+            my $price      = int floor(0.5 + ($tick->{quote} / $pip_size));
             $log->debugf('SYMBOL: %s | TICK: %s | EPOCH: %s | CALC: %s | INDEX: %s', $symbol, $tick->{quote}, $tick_time->epoch, $price, $tick_index);
             stats_timing(
                 'local_feed.writer.latest_tick_time',
@@ -341,7 +341,7 @@ order by ts
             $start->strftime('%Y-%m-%d'),
             $start->plus_days(1)->strftime('%Y-%m-%d'),
             $symbol,
-            )->row_arrayrefs->each(
+        )->row_arrayrefs->each(
             sub {
 
                 my $target = $_->[0];

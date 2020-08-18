@@ -37,7 +37,7 @@ rpc "portfolio",
     }
 
     my $portfolio = {contracts => []};
-    my $client = $params->{client} or return $portfolio;
+    my $client    = $params->{client} or return $portfolio;
 
     _sell_expired_contracts($client, $params->{source});
 
@@ -112,8 +112,7 @@ sub _sell_expired_contracts {
             source => $source,
         });
         $response->{count} = $res->{number_of_sold_bets} if ($res and exists $res->{number_of_sold_bets});
-    }
-    catch {
+    } catch {
         log_exception();
         $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'SellExpiredError',
@@ -128,7 +127,7 @@ rpc proposal_open_contract => sub {
 
     my $client = $params->{client};
 
-    my @fmbs = ();
+    my @fmbs        = ();
     my $contract_id = $params->{contract_id} || $params->{args}->{contract_id};
     if ($contract_id) {
         @fmbs = @{get_contract_details_by_id($client, $contract_id)};

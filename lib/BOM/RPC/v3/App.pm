@@ -278,8 +278,7 @@ rpc app_markup_details => sub {
     try {
         $time_from = Date::Utility->new($args->{date_from})->datetime_yyyymmdd_hhmmss;
         $time_to   = Date::Utility->new($args->{date_to})->datetime_yyyymmdd_hhmmss;
-    }
-    catch {
+    } catch {
         log_exception();
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidDateFormat',

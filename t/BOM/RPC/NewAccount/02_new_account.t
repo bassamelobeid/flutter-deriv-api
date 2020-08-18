@@ -89,7 +89,7 @@ $params = {
 
 subtest 'Initialization' => sub {
     lives_ok {
-        $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
+        $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
         $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
     }
     'Initial RPC server and client connection';
@@ -158,8 +158,8 @@ subtest $method => sub {
         email => $email,
     );
 
-    is $user->{utm_source}, 'google.com', 'utm registered as expected';
-    is $user->{gclid_url}, 'FQdb3wodOkkGBgCMrlnPq42q8C', 'gclid value returned as expected';
+    is $user->{utm_source}, 'google.com',                 'utm registered as expected';
+    is $user->{gclid_url},  'FQdb3wodOkkGBgCMrlnPq42q8C', 'gclid value returned as expected';
     is $user->{date_first_contact}, $date_first_contact, 'date first contact value returned as expected';
     is $user->{signup_device}, 'mobile', 'signup_device value returned as expected';
     is $user->{email_consent}, 1,        'email consent for new account is 1 for residence under svg';
@@ -359,7 +359,7 @@ subtest $method => sub {
             sub { shift->{landing_company} },
             'Binary (SVG) Ltd.',
             'It should return new account data'
-            )->result_value_is(sub { shift->{landing_company_shortcode} },
+        )->result_value_is(sub { shift->{landing_company_shortcode} },
             'svg', 'It should return new account data if one of the account is marked as duplicate');
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
@@ -371,7 +371,7 @@ subtest $method => sub {
             sub { shift->{landing_company} },
             'Binary (SVG) Ltd.',
             'It should return new account data'
-            )->result_value_is(sub { shift->{landing_company_shortcode} },
+        )->result_value_is(sub { shift->{landing_company_shortcode} },
             'svg', 'It should return new account data if one of the account is marked as disabled & account currency is not selected.');
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
@@ -693,7 +693,7 @@ subtest $method => sub {
             sub { shift->{landing_company} },
             'Binary Investments (Europe) Ltd',
             'It should return new account data'
-            )->result_value_is(sub { shift->{landing_company_shortcode} },
+        )->result_value_is(sub { shift->{landing_company_shortcode} },
             'maltainvest', 'It should return new account data if one of the account is marked as disabled & account currency is not selected.');
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^MF\d+$/, 'new MF loginid';
@@ -774,7 +774,7 @@ subtest $method => sub {
         delete $params->{args}->{secret_question};
         delete $params->{args}->{secret_answer};
         delete $params->{args}->{residence};
-        my $result = $rpc_ct->call_ok($method, $params)->result;
+        my $result      = $rpc_ct->call_ok($method, $params)->result;
         my $new_loginid = $result->{client_id};
 
         my $token_db = BOM::Database::Model::AccessToken->new();
@@ -1018,7 +1018,7 @@ subtest 'Duplicate accounts are not created in race condition' => sub {
         ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
         ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
-    my $user = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}})->user;
+    my $user        = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}})->user;
     my $num_clients = $user->clients;
 
     my $client_cr = {

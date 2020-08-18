@@ -186,7 +186,7 @@ subtest 'get settings' => sub {
             {
                 token => undef,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'The token is invalid.',
         'invalid token error'
     );
@@ -196,7 +196,7 @@ subtest 'get settings' => sub {
             {
                 token => $token,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'The token is invalid.',
         'no token error if token is valid'
     );
@@ -207,7 +207,7 @@ subtest 'get settings' => sub {
             {
                 token => $token_disabled,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'This account is unavailable.',
         'check authorization'
     );
@@ -364,7 +364,7 @@ subtest 'set settings' => sub {
             {
                 token => undef,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'The token is invalid.',
         'invalid token error'
     );
@@ -375,7 +375,7 @@ subtest 'set settings' => sub {
             {
                 token => $token_disabled,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'This account is unavailable.',
         'check authorization'
     );
@@ -597,7 +597,7 @@ subtest 'set settings' => sub {
 
         subtest 'empty/unspecified' => sub {
             $params->{token} = $token_mx;
-            $params->{args} = {%full_args, citizen => ''};
+            $params->{args}  = {%full_args, citizen => ''};
             is($c->tcall($method, $params)->{error}{message_to_client}, 'Citizenship is required.', 'empty value for citizenship');
         };
 
@@ -625,7 +625,7 @@ subtest 'set settings' => sub {
                 $params->{args} = {%full_args, citizen => $restricted_country};
                 $test_client->citizen('');
                 $test_client->save();
-                is($c->tcall($method, $params)->{status}, 1, 'update successfully');
+                is($c->tcall($method, $params)->{status},                   1,                   'update successfully');
                 is($c->tcall('get_settings', {token => $token})->{citizen}, $restricted_country, "Restricted country value for citizenship");
 
             }
@@ -634,7 +634,7 @@ subtest 'set settings' => sub {
     subtest 'non-pep declaration' => sub {
         is $test_client_vr->non_pep_declaration_time, undef, 'non-pep declaration time is undefined for virtual accounts';
         $params->{token} = $token_vr;
-        $params->{args} = {non_pep_declaration => 1};
+        $params->{args}  = {non_pep_declaration => 1};
         is($c->tcall($method, $params)->{status}, 1, 'vr account updated successfully');
         $test_client_vr->load;
         is $test_client_vr->non_pep_declaration_time, undef, 'non-pep declaration is not changed for virtual accounts';
@@ -646,7 +646,7 @@ subtest 'set settings' => sub {
             is $client->non_pep_declaration_time, '1999-01-01 00:00:00', 'Declaration time is set to a test value';
         }
         $params->{token} = $token_cr;
-        $params->{args} = {%full_args, non_pep_declaration => 1};
+        $params->{args}  = {%full_args, non_pep_declaration => 1};
         is($c->tcall($method, $params)->{status}, 1, 'update successfully');
 
         for my $client ($test_client_cr, $test_client_cr_2) {

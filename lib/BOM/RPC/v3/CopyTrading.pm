@@ -74,7 +74,7 @@ rpc copy_start => sub {
         });
     }
 
-    my @trade_types = ref($args->{trade_types}) eq 'ARRAY' ? @{$args->{trade_types}} : $args->{trade_types};
+    my @trade_types    = ref($args->{trade_types}) eq 'ARRAY' ? @{$args->{trade_types}} : $args->{trade_types};
     my $contract_types = Finance::Contract::Category::get_all_contract_types();
     for my $type (grep { $_ } @trade_types) {
         return BOM::RPC::v3::Utility::create_error({
@@ -119,7 +119,7 @@ rpc copy_stop => sub {
                     broker_code => $client->broker_code,
                     operation   => 'replica',
                 }
-                )->db,
+            )->db,
             query => [trader_token => $trader_token],
             limit => 1,
         );
@@ -137,7 +137,7 @@ rpc copy_stop => sub {
                 broker_code => $client->broker_code,
                 operation   => 'write',
             }
-            )->db,
+        )->db,
         where => [
             trader_id => $trader_id,
             copier_id => $client->loginid,
@@ -158,7 +158,7 @@ rpc copytrading_list => sub {
     });
 
     my $copiers_tokens = $copiers_data_mapper->get_copiers_tokens_all({trader_id => $current_client->loginid});
-    my @copiers = map { {loginid => $_->[0]} } @$copiers_tokens;
+    my @copiers        = map { {loginid => $_->[0]} } @$copiers_tokens;
 
     my $traders = [];
     unless (scalar @copiers) {

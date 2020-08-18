@@ -256,7 +256,7 @@ subtest 'profit table' => sub {
             {
                 token => undef,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'The token is invalid.',
         'invalid token error if token undef'
     );
@@ -266,7 +266,7 @@ subtest 'profit table' => sub {
             {
                 token => $token,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'The token is invalid.',
         'no token error if token is valid'
     );
@@ -277,7 +277,7 @@ subtest 'profit table' => sub {
             {
                 token => $token_disabled,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'This account is unavailable.',
         'check authorization'
     );
@@ -346,7 +346,7 @@ subtest 'profit table' => sub {
             {
                 token => $token_with_txn,
                 args  => {after => '2006-01-01 01:01:01'}}
-            )->{count},
+        )->{count},
         1,
         'result is correct for arg after'
     );
@@ -356,7 +356,7 @@ subtest 'profit table' => sub {
             {
                 token => $token_with_txn,
                 args  => {before => '2004-01-01 01:01:01'}}
-            )->{count},
+        )->{count},
         0,
         'result is correct for arg after'
     );

@@ -240,7 +240,7 @@ $c->call_ok(
         },
     })->has_no_system_error;
 
-$oauth = BOM::Database::Model::OAuth->new;                                # re-connect db
+$oauth        = BOM::Database::Model::OAuth->new;                         # re-connect db
 $is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 1, 'still confirmed';
 
@@ -253,7 +253,7 @@ $c->call_ok(
         },
     })->has_no_system_error;
 
-$oauth = BOM::Database::Model::OAuth->new;                                # re-connect db
+$oauth        = BOM::Database::Model::OAuth->new;                         # re-connect db
 $is_confirmed = $oauth->is_scope_confirmed($test_appid, $test_loginid);
 is $is_confirmed, 0, 'not confirmed after revoke';
 

@@ -178,7 +178,7 @@ subtest 'app_markup' => sub {
     my $payout    = $txn_con->contract->payout;
     my $ask_price = 63.73;
 
-    my $result = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
+    my $result        = $c->call_ok('buy', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(
             transaction_id
             contract_id

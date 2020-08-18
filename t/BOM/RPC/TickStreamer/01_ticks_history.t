@@ -36,7 +36,7 @@ my $params = {
 my $now = Date::Utility->new('2012-03-14 07:00:00');
 set_fixed_time($now->epoch);
 
-$t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
+$t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
 $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
 
 my $feed_dir = File::Temp->newdir;
@@ -46,7 +46,7 @@ subtest 'Initialization' => sub {
     lives_ok {
         my ($fill_start, $populator, @ticks, $fh);
         my $work_dir = File::Temp->newdir();
-        my $buffer = BOM::Populator::TickFile->new(base_dir => "$work_dir");
+        my $buffer   = BOM::Populator::TickFile->new(base_dir => "$work_dir");
 
         # Insert OTC_HSI data ticks
         $fill_start = $now->minus_time_interval('7h');
@@ -136,7 +136,7 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{style} = 'ticks';
     $params->{args}->{end}   = $end->minus_time_interval((365 * 4) . 'd')->epoch;
     $params->{args}->{start} = $start->minus_time_interval((365 * 4) . 'd')->epoch;
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    $result                  = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is $rpc_ct->result->{data}->{history}->{times}->[-1], $now->epoch, 'It should return latest ticks if client requested ticks older than 3 years';
 
     $params->{args}->{start} = $now->minus_time_interval('1m')->epoch;
@@ -146,19 +146,19 @@ subtest '_validate_start_end' => sub {
 
     $params->{args}->{start} = $end->epoch;
     $params->{args}->{end}   = $end->epoch;
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    $result                  = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is @{$result->{data}->{history}->{times}}, 1, 'It should return one tick when start == end';
     is $result->{data}->{history}->{times}->[0], $end->epoch, 'It should return correct tick when start == end time';
 
     $params->{args}->{end}   = 'invalid';
     $params->{args}->{count} = 10;
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    $result                  = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is $rpc_ct->result->{data}->{history}->{times}->[-1], $now->epoch, 'It should return latest ticks for last day if client sent invalid end time';
 
     $params->{args}->{start} = 'invalid';
     $params->{args}->{end}   = $now->minus_time_interval('6h30m')->epoch;
     $params->{args}->{count} = 2000;
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    $result                  = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is $rpc_ct->result->{data}->{history}->{times}->[0], 1331683200, 'It should return ticks which is 2000 seconds from the end time';
 
     $params->{args}->{start} = $now->minus_time_interval('1d')->epoch;
@@ -184,7 +184,7 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{style}       = "candles";
     $params->{args}->{count}       = 4000;
     $params->{args}->{granularity} = 5;
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    $result                        = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is substr($result->{data}->{candles}->[-3]->{low}, -1), '0', 'Quote with zero at end should be pipsized';
     is @{$result->{data}->{candles}}, 3941, 'It should return 3941 candles (due to missing ticks)';
     is $result->{data}->{candles}->[0]->{epoch}, $now->epoch - (4000 * 5), 'It should start at ' . (4000 * 5) . 's from end';
@@ -193,7 +193,7 @@ subtest '_validate_start_end' => sub {
     $params->{args}->{ticks_history} = 'OTC_HSI';
     $params->{args}->{start}         = $now->minus_time_interval('1h30m')->epoch;
     $params->{args}->{end}           = $now->plus_time_interval('1d')->epoch;
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    $result                          = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
     is substr($rpc_ct->result->{data}->{history}->{prices}->[-35], -1), '0', 'Quote with zero at end should be pipsized';
     is $rpc_ct->result->{data}->{history}->{times}->[-1], $now->epoch - create_underlying('OTC_HSI')->delay_amount * 60,
         'It should return last licensed tick for delayed symbol';

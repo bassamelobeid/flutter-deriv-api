@@ -132,7 +132,7 @@ sub startup {
     my $call;
     my $cpu;
     my $vsz_start;
-    my $on_production = $ENV{TEST_DATABASE} ? 0 : 1;
+    my $on_production     = $ENV{TEST_DATABASE} ? 0 : 1;
     my $service_base_name = $ENV{BASE_NAME} || 'bom-rpc';
 
     $app->hook(

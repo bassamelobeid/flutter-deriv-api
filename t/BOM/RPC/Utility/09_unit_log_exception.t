@@ -35,8 +35,7 @@ subtest 'log_exception tests' => sub {
     sub sub_log_exception {
         try {
             die "something is wrong!!";
-        }
-        catch {
+        } catch {
             my $e = $@;
             log_exception();
         }

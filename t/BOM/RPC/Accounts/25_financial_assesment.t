@@ -152,7 +152,7 @@ $mock_emitter->mock(
 my $method = 'get_financial_assessment';
 subtest 'get financial assessment' => sub {
     my $args = {"get_financial_assessment" => 1};
-    my $res = $c->tcall(
+    my $res  = $c->tcall(
         $method,
         {
             token => $token_only_vr,

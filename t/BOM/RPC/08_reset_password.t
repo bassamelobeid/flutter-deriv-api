@@ -82,7 +82,7 @@ subtest 'reset_password_vrtc' => sub {
 # refetch vrtc user
 subtest 'check_password' => sub {
     $user_vr = $test_client_vr->user;
-    $status = $user_vr->login(password => $new_password);
+    $status  = $user_vr->login(password => $new_password);
     is $status->{success}, 1, 'vrtc login with new password OK';
 };
 
@@ -177,7 +177,7 @@ subtest $method => sub {
 # refetch cr user
 subtest 'check_password' => sub {
     $user_cr = $test_client_cr->user;
-    $status = $user_cr->login(password => $new_password);
+    $status  = $user_cr->login(password => $new_password);
     is $status->{success}, 1, 'cr login with new password OK';
 };
 done_testing();

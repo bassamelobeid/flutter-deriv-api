@@ -237,9 +237,9 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
 
         ## In rough order of the code in Cashier.pm
 
-        $test = 'Transfer fails if client has a virtual broker (VRTC)';
+        $test               = 'Transfer fails if client has a virtual broker (VRTC)';
         $testargs->{client} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        $res                = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, 'Permission denied.', $test);
         reset_transfer_testargs();
 
@@ -378,9 +378,9 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->address_city('Beverly Hills');
         $Alice->save;
 
-        $test = "Withdraw fails if description is over $MAX_DESCRIPTION_LENGTH characters";
+        $test                          = "Withdraw fails if description is over $MAX_DESCRIPTION_LENGTH characters";
         $testargs->{args}{description} = 'A' x (1 + $MAX_DESCRIPTION_LENGTH);
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        $res                           = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         like($res->{error}{message_to_client}, qr/Notes must not exceed $MAX_DESCRIPTION_LENGTH/, $test);
         reset_withdraw_testargs();
 
@@ -618,7 +618,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
 
         $test = 'Transfer fails if given currency does not match payment agent currency';
         my $alt_currency = first { $_ ne $test_currency } shuffle @fiat_currencies, @crypto_currencies;
-        my $alt_amount = (grep { $alt_currency eq $_ } @crypto_currencies) ? 1 : 10;
+        my $alt_amount   = (grep { $alt_currency eq $_ } @crypto_currencies) ? 1 : 10;
         $testargs->{args}{currency} = $alt_currency;
         $testargs->{args}{amount}   = $alt_amount;
         ## We need to mock this, as going from fiat to crypto can boost our cumulative amounts sky high
@@ -718,8 +718,8 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         my ($lc_currency, $lc_lifetime_limit, $lc_for_days, $lc_limit_for_days) =
             @$test_lc_limits{qw/ currency  lifetime_limit  for_days  limit_for_days /};
         my $old_test_amount = $test_amount;
-        $test_amount = convert_currency($lc_lifetime_limit + 2, 'USD', $test_currency);
-        $test_amount = formatnumber('amount', $test_currency, $test_amount);
+        $test_amount              = convert_currency($lc_lifetime_limit + 2, 'USD', $test_currency);
+        $test_amount              = formatnumber('amount', $test_currency, $test_amount);
         $testargs->{args}{amount} = $test_amount;
         ## Make sure we have enough funds that we do not hit the balance limit:
         top_up $Alice, $test_currency => $test_amount;
@@ -730,7 +730,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
 
         my $show_left = convert_currency($lc_lifetime_limit, 'USD', $test_currency);
         $show_left = formatnumber('amount', $test_currency, $show_left - $Alice_transferred);
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        $res       = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is(
             $res->{error}{message_to_client},
             "Sorry, you cannot withdraw. Your withdrawal amount $test_currency $test_amount exceeds withdrawal limit $test_currency $show_left.",
@@ -858,7 +858,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
     $test_currency = $withdraw_currency;
 
     $test_amount = (grep { $_ eq $test_currency } @crypto_currencies) ? 0.003 : 101;
-    $dry_run = 1;
+    $dry_run     = 1;
 
     my $email    = 'abc3' . rand . '@binary.com';
     my $password = 'jskjd8292922';
@@ -905,9 +905,9 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         # set countries for payment agent
         $Bob->get_payment_agent->set_countries(['id', 'in']);
 
-        $test = 'Withdraw fails if client has a virtual broker';
+        $test               = 'Withdraw fails if client has a virtual broker';
         $testargs->{client} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
-        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        $res                = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         is($res->{error}{code}, 'PermissionDenied', $test);
         reset_withdraw_testargs();
 
@@ -1027,21 +1027,21 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         like($res->{error}{message_to_client}, qr/as $test_currency is not default currency for payment agent account $Bob_id/, $test);
         $mock_user_client->unmock('currency');
 
-        $test = 'Transfer fails if amount is under the payment agent minimum';
+        $test                     = 'Transfer fails if amount is under the payment agent minimum';
         $testargs->{args}{amount} = (grep { $test_currency eq $_ } @crypto_currencies) ? 0.001 : 1.0;
-        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        $res                      = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/Invalid amount. Minimum is [\d\.]+, maximum is \d+/, $test);
         reset_withdraw_testargs();
 
-        $test = 'Transfer fails if amount is over the payment agent maximum';
+        $test                     = 'Transfer fails if amount is over the payment agent maximum';
         $testargs->{args}{amount} = (grep { $test_currency eq $_ } @crypto_currencies) ? 10 : 10_000;
-        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        $res                      = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/Invalid amount. Minimum is [\d\.]+, maximum is \d+/, $test);
         reset_withdraw_testargs();
 
-        $test = "Withdraw fails if description is over $MAX_DESCRIPTION_LENGTH characters";
+        $test                          = "Withdraw fails if description is over $MAX_DESCRIPTION_LENGTH characters";
         $testargs->{args}{description} = 'A' x (1 + $MAX_DESCRIPTION_LENGTH);
-        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        $res                           = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
         like($res->{error}{message_to_client}, qr/instructions must not exceed $MAX_DESCRIPTION_LENGTH/, $test);
         reset_withdraw_testargs();
 
@@ -1182,7 +1182,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
             $test = 'Withdraw fails if amount requested is over withdrawal to date limit (weekend)';
             $testargs->{args}{amount} = $MAX_DAILY_WITHDRAW_AMOUNT_WEEKEND + 1;
             $mock_date_utility->mock('is_a_weekend', sub { return 1; });
-            $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+            $res         = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
             $show_amount = formatnumber('amount', 'USD', $MAX_DAILY_WITHDRAW_AMOUNT_WEEKEND);
             like($res->{error}{message_to_client}, qr/transfer amount USD$show_amount for today/, $test);
             $agent_info->{payment_limits}{$currency_type}{maximum} = $old_max;

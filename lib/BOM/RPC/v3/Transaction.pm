@@ -45,23 +45,23 @@ sub trade_copiers {
     my $copiers = BOM::Database::DataMapper::Copier->new(
         broker_code => $params->{client}->broker_code,
         operation   => 'replica',
-        )->get_trade_copiers({
-            trader_id  => $params->{client}->loginid,
-            trade_type => $params->{contract}{bet_type},
-            asset      => $params->{contract}->underlying->symbol,
-            # copier's min/max price condition is ignored for sell
-            price => $action eq 'buy' && $params->{price} ? $params->{price} : undef,
-        });
+    )->get_trade_copiers({
+        trader_id  => $params->{client}->loginid,
+        trade_type => $params->{contract}{bet_type},
+        asset      => $params->{contract}->underlying->symbol,
+        # copier's min/max price condition is ignored for sell
+        price => $action eq 'buy' && $params->{price} ? $params->{price} : undef,
+    });
 
     return unless $copiers && ref $copiers eq 'ARRAY' && scalar @$copiers;
 
     ### Note: this array of hashes will be modified by BOM::Transaction with the results per each client
     my @multiple = map { +{loginid => $_} } @$copiers;
-    my $trx = BOM::Transaction->new({
+    my $trx      = BOM::Transaction->new({
         client   => $params->{client},
         multiple => \@multiple,
         $action eq 'buy' ? (contract => $params->{contract}) : (contract_parameters => $params->{contract_parameters}),
-        price => ($params->{price} || 0),
+        price  => ($params->{price} || 0),
         source => $params->{source},
         (defined $params->{payout})      ? (payout      => $params->{payout})      : (),
         (defined $params->{amount_type}) ? (amount_type => $params->{amount_type}) : (),
@@ -134,7 +134,7 @@ rpc "buy",
     sub {
     my $params = shift;
 
-    my $tv = [Time::HiRes::gettimeofday];
+    my $tv     = [Time::HiRes::gettimeofday];
     my $client = $params->{client} // die "Client should have been authenticated at this stage.";
 
     my ($source, $contract_parameters, $args, $payout) = @{$params}{qw/source contract_parameters args payout/};
@@ -184,8 +184,7 @@ rpc "buy",
                 message_to_client => $err->{-message_to_client},
             });
         }
-    }
-    catch {
+    } catch {
         my $exception = $@;
         my $message_to_client;
         log_exception();
@@ -216,8 +215,7 @@ rpc "buy",
                 purchase_date       => $purchase_date,
                 source              => $source
             });
-        }
-        catch {
+        } catch {
             warn "Copiers trade buy error: " . $@;
             log_exception();
         }
@@ -261,8 +259,8 @@ rpc "buy",
         longcode         => localize($contract->longcode),
         shortcode        => $contract->shortcode,
         payout           => $trx->payout,
-        stash    => {market => $contract->market->name},
-        rpc_time => $tv_interval,
+        stash            => {market => $contract->market->name},
+        rpc_time         => $tv_interval,
     };
     };
 
@@ -271,7 +269,7 @@ rpc buy_contract_for_multiple_accounts => sub {
 
     my $client = $params->{client} // die "Client should have been authenticated at this stage.";
 
-    my $args = $params->{args};
+    my $args   = $params->{args};
     my $tokens = $args->{tokens} // [];
 
     # Validation still needs to be done on the client that instigated the rpc call
@@ -340,8 +338,7 @@ rpc buy_contract_for_multiple_accounts => sub {
                 message_to_client => $err->{-message_to_client},
             });
         }
-    }
-    catch {
+    } catch {
         my $exception = $@;
         my $message_to_client;
         if (blessed($exception) && $exception->isa('BOM::Product::Exception')) {
@@ -447,7 +444,7 @@ rpc sell_contract_for_multiple_accounts => sub {
     my ($source, $args) = ($params->{source}, $params->{args});
 
     my $shortcode = $args->{shortcode};
-    my $tokens = $args->{tokens} // [];
+    my $tokens    = $args->{tokens} // [];
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'TooManyTokens',
@@ -571,8 +568,7 @@ rpc "sell",
                 source              => $source,
                 purchase_date       => $purchase_date,
             }) if $client->allow_copiers;
-    }
-    catch {
+    } catch {
         warn "Copiers trade sell error: " . $@;
         log_exception();
     }
@@ -635,8 +631,7 @@ rpc contract_update => sub {
                 message_to_client => $error->{message_to_client},
             });
         }
-    }
-    catch {
+    } catch {
         my $exception = $@;
         my $message_to_client;
         if (blessed($exception) && $exception->isa('BOM::Product::Exception')) {
@@ -682,10 +677,10 @@ rpc contract_update_history => sub {
     try {
         $response = BOM::Transaction::ContractUpdateHistory->new(
             client => $client,
-            )->get_history_by_contract_id({
-                contract_id => $contract_id,
-                limit       => $limit
-            });
+        )->get_history_by_contract_id({
+            contract_id => $contract_id,
+            limit       => $limit
+        });
 
         if (ref $response eq 'HASH' and my $localized_error = $response->{error}) {
             $response = BOM::Pricing::v3::Utility::create_error({
@@ -693,8 +688,7 @@ rpc contract_update_history => sub {
                 message_to_client => $localized_error,
             });
         }
-    }
-    catch {
+    } catch {
         log_exception();
         $response = BOM::Pricing::v3::Utility::create_error({
             code              => 'ContractUpdateHistoryError',
@@ -776,11 +770,10 @@ rpc cancel => sub {
                 source              => $source,
                 purchase_date       => $purchase_date,
             }) if $client->allow_copiers;
-    }
-    catch {
+    } catch {
         warn "Copiers trade cancel error: " . $_;
         log_exception();
-    };
+    }
 
     my $trx_rec = $trx->transaction_record;
 

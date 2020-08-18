@@ -41,12 +41,12 @@ rpc active_symbols => sub {
     }
 
     $landing_company //= LandingCompany::Registry::get($landing_company_name);
-    $product_type //= $landing_company->default_product_type;
+    $product_type    //= $landing_company->default_product_type;
 
     my $active_symbols = [];    # API response expects an array eventhough it is empty
     return $active_symbols unless $product_type;
 
-    my $method = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
+    my $method        = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
     my $offerings_obj = $landing_company->$method($country_code, BOM::Config::Runtime->instance->get_offerings_config,);
 
     die 'Could not retrieve offerings for landing_company[' . $landing_company_name . '] product_type[' . $product_type . ']' unless ($offerings_obj);

@@ -77,7 +77,7 @@ sub email_verification {
     my ($has_social_signup, $user_name);
     if (my $user = BOM::User->new(email => $email)) {
         $has_social_signup = $user->{has_social_signup};
-        $user_name = ($user->clients)[0]->last_name if $user->clients;
+        $user_name         = ($user->clients)[0]->last_name if $user->clients;
     }
 
     my $brand = request()->brand;
@@ -126,8 +126,8 @@ sub email_verification {
         account_opening_existing => sub {
             my $subject =
                   $brand->name eq 'deriv' ? localize('Unsuccessful Deriv account creation')
-                : $source == 1 ? localize('Duplicate email address submitted - [_1]', $website_name)
-                :                localize('Duplicate email address submitted to [_1] (powered by [_2])', $app_name, $website_name);
+                : $source == 1            ? localize('Duplicate email address submitted - [_1]', $website_name)
+                :                           localize('Duplicate email address submitted to [_1] (powered by [_2])', $app_name, $website_name);
 
             return {
                 subject       => $subject,
@@ -139,8 +139,8 @@ sub email_verification {
             };
         },
         payment_withdraw => sub {
-            my $is_paymentagent = $type eq 'paymentagent_withdraw' ? 1 : 0;
-            my $action = $is_paymentagent ? 'payment_agent_withdraw' : $type;
+            my $is_paymentagent = $type eq 'paymentagent_withdraw' ? 1                        : 0;
+            my $action          = $is_paymentagent                 ? 'payment_agent_withdraw' : $type;
 
             return {
                 subject       => localize('Verify your withdrawal request - [_1]', $website_name),

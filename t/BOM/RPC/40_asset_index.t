@@ -32,11 +32,11 @@ my $first_entry_mlt = [
     "1HZ10V",
     "Volatility 10 (1s) Index",
     [
-        ["callput",       "Higher/Lower",               "5t",  "365d"],
-        ["callput",       "Rise/Fall",                  "1t",  "365d"],
-        ["touchnotouch",  "Touch/No Touch",             "5t",  "365d"],
-        ["digits",        "Digits",                     "1t",  "10t"],
-        ["callputequal",  "Rise/Fall Equal",            "1t",  "1d"],
+        ["callput",      "Higher/Lower",    "5t", "365d"],
+        ["callput",      "Rise/Fall",       "1t", "365d"],
+        ["touchnotouch", "Touch/No Touch",  "5t", "365d"],
+        ["digits",       "Digits",          "1t", "10t"],
+        ["callputequal", "Rise/Fall Equal", "1t", "1d"],
     ]];
 my $first_entry_cr = [
     "frxAUDJPY",

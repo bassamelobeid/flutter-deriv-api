@@ -59,7 +59,7 @@ my %services = map {
     my $method = $_->name;
     $method => {
         rpc_sub => BOM::RPC::wrap_rpc_sub($_),
-        }
+    }
 } BOM::RPC::Registry::get_service_defs();
 
 =head2 new
@@ -256,8 +256,7 @@ sub initialize_connection {
                 CREATE => $self->stream_name,
                 CONSUMER_GROUP, '$', 'MKSTREAM'
             ));
-    }
-    catch {
+    } catch {
         my $err = $@;
 
         if ($self->_is_redis_exception($err)) {
@@ -312,8 +311,7 @@ sub _setup_stream_reader {
 
             $self->_process_message($message);
             $self->backoff->reset_value;
-        }
-        catch {
+        } catch {
             my $err = $@;
 
             if ($self->_is_redis_exception($err)) {
@@ -355,8 +353,7 @@ sub _resolve_pending_messages {
         for ($result->@*) {
             $self->_ack_message($_->[0]);
         }
-    }
-    catch {
+    } catch {
         my $err = $@;
 
         $log->errorf('Failed while resolving pending messages in (%s) stream: %s',
@@ -401,8 +398,7 @@ sub _process_message {
         }
 
         $result = $self->_dispatch_request($params);
-    }
-    catch {
+    } catch {
         my $err = $@;
         chomp($err);
 
@@ -452,8 +448,7 @@ sub _dispatch_request {
     # DISPATCH
     try {
         $result = $services{$params->{rpc}}{rpc_sub}->($params->{args});
-    }
-    catch {
+    } catch {
         $log->errorf("An error occurred while RPC requesting for '%s', ERROR: %s", $params->{rpc}, $@);
         DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_failure.count', {tags => [sprintf("rpc:%s", $params->{rpc})]});
 
@@ -554,8 +549,7 @@ sub _parse_message {
     try {
         $decoded_args  = decode_json_utf8($params{args})  if $params{args};
         $decoded_stash = decode_json_utf8($params{stash}) if $params{stash};
-    }
-    catch {
+    } catch {
         my $troubled_param = 'unknown';
         if ($params{args} && !$decoded_args) {
             $troubled_param = 'args';
@@ -566,7 +560,7 @@ sub _parse_message {
         # remove sensitive data before log if was in production
         if (!$log->is_debug && $troubled_param ne 'unknown') {
             my $sensitive_keys_pattern = join "|", ('loginid', 'client_loginid');
-            my $troubled_value = $params{$troubled_param};
+            my $troubled_value         = $params{$troubled_param};
             $troubled_value =~ s/(?:"($sensitive_keys_pattern)")(?:\s*?:\s*?)(?:"([a-zA-Z0-9\s]*)")/"$1":"HIDDEN"/gm;
             $params{$troubled_param} = $troubled_value;
         }
@@ -605,8 +599,7 @@ sub _ack_message {
 
     try {
         $self->_exec_redis_command(XACK => ($self->stream_name, CONSUMER_GROUP, $id));
-    }
-    catch {
+    } catch {
         my $err = $@;
 
         $log->errorf('Failed while marking message (%s) as acknowledged: %s', $id,
@@ -637,8 +630,7 @@ sub _publish_response {
 
     try {
         $self->_exec_redis_command(PUBLISH => ($channel, $message))
-    }
-    catch {
+    } catch {
         my $err = $@;
 
         $log->errorf('Failed while publishing a message to channel (%s): %s',

@@ -53,7 +53,7 @@ subtest 'change password' => sub {
                 new_password => 'new_password',
                 user_pass    => '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjPQ='
             }
-            )->{error}->{message_to_client},
+        )->{error}->{message_to_client},
         'Provided password is incorrect.',
         'Provided password is incorrect.',
     );
@@ -63,7 +63,7 @@ subtest 'change password' => sub {
                 new_password => 'old_password',
                 user_pass    => $oldpass
             }
-            )->{error}->{message_to_client},
+        )->{error}->{message_to_client},
         'Current password and new password cannot be the same.',
         'Current password and new password cannot be the same.',
     );
@@ -73,7 +73,7 @@ subtest 'change password' => sub {
                 new_password => 'water',
                 user_pass    => $oldpass
             }
-            )->{error}->{message_to_client},
+        )->{error}->{message_to_client},
         'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'Password should be at least six characters, including lower and uppercase letters with numbers.',
     );
@@ -83,7 +83,7 @@ subtest 'change password' => sub {
                 new_password => 'New#_p$ssword',
                 user_pass    => $oldpass
             }
-            )->{error}->{message_to_client},
+        )->{error}->{message_to_client},
         'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'no number.',
     );
@@ -93,7 +93,7 @@ subtest 'change password' => sub {
                 new_password => 'pa$5A',
                 user_pass    => $oldpass
             }
-            )->{error}->{message_to_client},
+        )->{error}->{message_to_client},
         'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'too short.',
     );
@@ -103,7 +103,7 @@ subtest 'change password' => sub {
                 new_password => 'pass$5ss',
                 user_pass    => $oldpass
             }
-            )->{error}->{message_to_client},
+        )->{error}->{message_to_client},
         'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'no upper case.',
     );
@@ -113,7 +113,7 @@ subtest 'change password' => sub {
                 new_password => 'PASS$5SS',
                 user_pass    => $oldpass
             }
-            )->{error}->{message_to_client},
+        )->{error}->{message_to_client},
         'Password should be at least six characters, including lower and uppercase letters with numbers.',
         'no lower case.',
     );
@@ -124,7 +124,7 @@ subtest 'change password' => sub {
             {
                 token => undef,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'The token is invalid.',
         'invlaid token error'
     );
@@ -134,7 +134,7 @@ subtest 'change password' => sub {
             {
                 token => $token,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'The token is invalid.',
         'no token error if token is valid'
     );
@@ -144,7 +144,7 @@ subtest 'change password' => sub {
             {
                 token => $token_disabled,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'This account is unavailable.',
         'check authorization'
     );
@@ -156,7 +156,7 @@ subtest 'change password' => sub {
             {
                 token => $token_disabled,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'This account is unavailable.',
         'need a valid client'
     );

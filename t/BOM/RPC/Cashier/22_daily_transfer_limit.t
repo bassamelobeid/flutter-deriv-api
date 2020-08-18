@@ -23,7 +23,7 @@ my $redis = BOM::Config::Redis::redis_exchangerates_write();
 
 sub _offer_to_clients {
     my $from_currency = shift;
-    my $to_currency = shift // 'USD';
+    my $to_currency   = shift // 'USD';
 
     $redis->hmset("exchange_rates::${from_currency}_${to_currency}", offer_to_clients => 1);
 }

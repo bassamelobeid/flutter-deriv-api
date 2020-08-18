@@ -24,7 +24,7 @@ rpc copytrading_statistics => sub {
     my $params = shift->{args};
 
     my $trader_id = uc $params->{trader_id};
-    my $trader = eval { BOM::User::Client->new({loginid => $trader_id, db_operation => 'replica'}) };
+    my $trader    = eval { BOM::User::Client->new({loginid => $trader_id, db_operation => 'replica'}) };
     unless ($trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'WrongLoginID',
@@ -184,8 +184,7 @@ rpc copytrading_statistics => sub {
                         exit_tick_epoch => $contract_parameters->{exit_tick_epoch},
                         barriers        => $contract_parameters->{barriers},
                     }));
-        }
-        catch {
+        } catch {
             warn "Performance probability calculation error: $_";
             log_exception();
         }
@@ -197,7 +196,7 @@ rpc copytrading_statistics => sub {
     # trades profitable && total trades count
     my $win_trades  = BOM::Config::Redis::redis_replicated_read()->get("COPY_TRADING_PROFITABLE:$trader_id:win")  || 0;
     my $loss_trades = BOM::Config::Redis::redis_replicated_read()->get("COPY_TRADING_PROFITABLE:$trader_id:loss") || 0;
-    $result_hash->{total_trades} = $win_trades + $loss_trades;
+    $result_hash->{total_trades}      = $win_trades + $loss_trades;
     $result_hash->{trades_profitable} = sprintf("%.4f", $win_trades / ($result_hash->{total_trades} || 1));
     $result_hash->{avg_profit} =
         sprintf("%.4f", BOM::Config::Redis::redis_replicated_read()->get("COPY_TRADING_AVG_PROFIT:$trader_id:win") || 0);

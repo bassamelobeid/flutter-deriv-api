@@ -119,7 +119,7 @@ subtest 'contract_update' => sub {
 
     $buy_params->{contract_parameters}->{cancellation} = '1h';
     $buy_params->{args}->{price}                       = 104.35;
-    $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
+    $buy_res                                           = $c->call_ok('buy', $buy_params)->has_no_error->result;
 
     ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
     ok !$buy_res->{contract_details}->{is_sold}, 'not sold';

@@ -30,7 +30,7 @@ my $trans_file = path($trans_file_location);
 my %message;
 my @polines = $trans_file->lines_utf8;
 for my $line (@polines) {
-    next if $line !~ /msgid\s+"(.+)"/;
+    next if $line   !~ /msgid\s+"(.+)"/;
     (my $text = $1) =~ s/\\(['"])/$1/g;
     $message{$text} = 1;
 }
@@ -39,7 +39,7 @@ note sprintf 'Translated strings found in %s: %d', $trans_file->relative($trans_
 
 ## Loop through all files of interest, pull out localize() calls, and check their contents
 my $files_checked = 0;
-my $iter = $code_dir_location->iterator({recurse => 1});
+my $iter          = $code_dir_location->iterator({recurse => 1});
 while (my $file = $iter->()) {
 
     next if List::Util::none { $file =~ $_ } @file_whitelist;

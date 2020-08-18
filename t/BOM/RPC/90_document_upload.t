@@ -196,7 +196,7 @@ sub start_successful_upload {
     # Check doc is entered into database
     my ($doc) = $client->find_client_authentication_document(query => [id => $result->{file_id}]);
     is($doc->document_id, $params->{args}->{document_id}, 'document is saved in db');
-    is($doc->status, 'uploading', 'document status is set to uploading');
+    is($doc->status,      'uploading',                    'document status is set to uploading');
 
     return $result->{file_id};
 }

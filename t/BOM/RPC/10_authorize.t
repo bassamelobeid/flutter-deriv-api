@@ -167,8 +167,8 @@ subtest $method => sub {
         remark   => 'free gift',
     );
     $expected_result->{stash}->{account_id} = $test_client->default_account->id;
-    $expected_result->{currency} = $expected_result->{stash}->{currency} = 'USD';
-    $expected_result->{balance} = '1000.00';
+    $expected_result->{currency}            = $expected_result->{stash}->{currency} = 'USD';
+    $expected_result->{balance}             = '1000.00';
 
     $expected_result->{account_list}[0]->{currency} = 'USD';
 
@@ -624,7 +624,7 @@ subtest 'upgradeable_landing_companies svg' => sub {
     $client_cr2->account('USD');
     $user->add_client($client_cr2);
 
-    my $siblings = $client->real_account_siblings_information;
+    my $siblings             = $client->real_account_siblings_information;
     my @available_currencies = BOM::RPC::v3::Utility::get_available_currencies($siblings, $client->landing_company->short);
     foreach my $currency (@available_currencies) {
         $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

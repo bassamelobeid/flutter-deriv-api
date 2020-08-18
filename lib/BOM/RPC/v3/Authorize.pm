@@ -106,8 +106,7 @@ rpc authorize => sub {
             $redis_key => $hash_key,
             1
         );
-    }
-    catch {
+    } catch {
         $log->errorf('Failed to record authorize stats: %s', $@);
         log_exception();
     }
@@ -175,18 +174,18 @@ rpc authorize => sub {
 
     my $account = $client->default_account;
     return {
-        fullname => $client->full_name,
-        user_id  => $client->binary_user_id,
-        loginid  => $client->loginid,
-        balance  => $account ? formatnumber('amount', $account->currency_code(), $account->balance) : '0.00',
-        currency => ($account ? $account->currency_code() : ''),
-        local_currencies         => \%local_currencies,
-        email                    => $client->email,
-        country                  => $client->residence,
-        landing_company_name     => $lc->short,
-        landing_company_fullname => $lc->name,
-        scopes                   => $scopes,
-        is_virtual               => $client->is_virtual ? 1 : 0,
+        fullname                      => $client->full_name,
+        user_id                       => $client->binary_user_id,
+        loginid                       => $client->loginid,
+        balance                       => $account ? formatnumber('amount', $account->currency_code(), $account->balance) : '0.00',
+        currency                      => ($account ? $account->currency_code() : ''),
+        local_currencies              => \%local_currencies,
+        email                         => $client->email,
+        country                       => $client->residence,
+        landing_company_name          => $lc->short,
+        landing_company_fullname      => $lc->name,
+        scopes                        => $scopes,
+        is_virtual                    => $client->is_virtual ? 1 : 0,
         upgradeable_landing_companies => _get_upgradeable_landing_companies(\@active_client_list, $client),
         account_list                  => \@account_list,
         stash                         => {
@@ -210,7 +209,7 @@ rpc logout => sub {
 
     if (my $email = $params->{email}) {
         my $token_details = $params->{token_details};
-        my $loginid = ($token_details and exists $token_details->{loginid}) ? @{$token_details}{qw/loginid/} : ();
+        my $loginid       = ($token_details and exists $token_details->{loginid}) ? @{$token_details}{qw/loginid/} : ();
 
         # if the $loginid is not undef, then only check for ip_mismatch.
         # PS: changing password will trigger logout, however, in that process, $loginid is not sent in, causing error in this line
@@ -263,7 +262,7 @@ rpc(
         my $totp_action   = $params->{args}->{totp_action};
 
         my $client = BOM::User::Client->new({loginid => $loginid});
-        my $user = BOM::User->new(email => $client->email);
+        my $user   = BOM::User->new(email => $client->email);
 
         my $status = $user->{is_totp_enabled} // 0;
 
@@ -291,7 +290,7 @@ rpc(
                 if ($status == 0 && $totp_action eq 'disable');
 
             # verify the provided OTP with secret key from user
-            my $otp = $params->{args}->{otp};
+            my $otp    = $params->{args}->{otp};
             my $verify = BOM::User::TOTP->verify_totp($user->{secret_key}, $otp);
             return _create_error('InvalidOTP', BOM::Platform::Context::localize('OTP verification failed')) unless ($otp and $verify);
 

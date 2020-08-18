@@ -67,7 +67,7 @@ my $user = BOM::User->create(
 );
 $user->add_client($test_client);
 
-my $m = BOM::Platform::Token::API->new;
+my $m     = BOM::Platform::Token::API->new;
 my $token = $m->create_token($test_client->loginid, 'test token');
 
 # Throttle function limits requests to 1 per minute which may cause
@@ -296,7 +296,7 @@ subtest 'multi currency transfers' => sub {
             });
 
         $deposit_params->{args}->{from_binary} = $withdraw_params->{args}->{to_binary} = $client_btc->loginid;
-        $deposit_params->{args}->{amount} = $btc_test_amount;
+        $deposit_params->{args}->{amount}      = $btc_test_amount;
 
         $redis->hmset(
             'exchange_rates::BTC_USD',
@@ -367,7 +367,7 @@ subtest 'multi currency transfers' => sub {
             });
 
         $deposit_params->{args}->{from_binary} = $withdraw_params->{args}->{to_binary} = $client_ust->loginid;
-        $deposit_params->{args}->{amount} = $ust_test_amount;
+        $deposit_params->{args}->{amount}      = $ust_test_amount;
 
         $redis->hmset(
             'exchange_rates::UST_USD',

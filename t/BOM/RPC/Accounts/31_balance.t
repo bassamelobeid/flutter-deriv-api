@@ -87,7 +87,7 @@ subtest 'balance' => sub {
             {
                 token => undef,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'The token is invalid.',
         'invalid token error'
     );
@@ -98,7 +98,7 @@ subtest 'balance' => sub {
             {
                 token => $token,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'The token is invalid.',
         'no token error if token is valid'
     );
@@ -109,7 +109,7 @@ subtest 'balance' => sub {
             {
                 token => $token_disabled,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'This account is unavailable.',
         'check authorization'
     );

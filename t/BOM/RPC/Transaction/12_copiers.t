@@ -68,7 +68,7 @@ my $copier_MLT  = create_client('MLT',  0, {email => 'copier_mlt@binary.com'});
 my $copier_MF   = create_client('MLT',  0, {email => 'copier_mf@binary.com'});
 my $EUR_copier  = create_client('CR');
 my $unset_trader = create_client('CR');
-my $CR_client = create_client('CR', 0, {email => 'client@binary.com'});
+my $CR_client    = create_client('CR', 0, {email => 'client@binary.com'});
 
 my %tokens;
 for ($trader_CR, $copier_CR, $trader_VRTC, $copier_VRTC, $copier_MLT, $copier_MF, $EUR_copier, $unset_trader, $CR_client) {
@@ -268,11 +268,11 @@ sub copy_trading_test_routine {
         my $copiers = BOM::Database::DataMapper::Copier->new(
             broker_code => $trader->broker_code,
             operation   => 'replica',
-            )->get_trade_copiers({
-                trader_id => $trader->loginid,
-            });
-        is(scalar @$copiers, 1, 'get_trade_copiers');
-        is($copiers->[0], $copier->loginid, 'trade copier is correct');
+        )->get_trade_copiers({
+            trader_id => $trader->loginid,
+        });
+        is(scalar @$copiers, 1,                'get_trade_copiers');
+        is($copiers->[0],    $copier->loginid, 'trade copier is correct');
         note explain $copiers;
     };
 
@@ -296,7 +296,7 @@ sub buy_one_bet {
     my $buy_price    = delete $args->{buy_price}    // 20;
     my $payout_price = delete $args->{payout_price} // $buy_price * 10;
     my $limits       = delete $args->{limits};
-    my $duration     = delete $args->{duration}     // '15s';
+    my $duration = delete $args->{duration} // '15s';
 
     my $loginid = $client->loginid;
 

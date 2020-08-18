@@ -64,7 +64,7 @@ is_deeply $emit_args[1],
 undef @emit_args;
 
 my $copiers_data_mapper = create_test_copier($client, $test_token->{token});
-my $traders_tokens = $copiers_data_mapper->get_traders_tokens_all({copier_id => 'CR10001'});
+my $traders_tokens      = $copiers_data_mapper->get_traders_tokens_all({copier_id => 'CR10001'});
 is scalar(@$traders_tokens), 1, 'get tokens in copiers table';
 
 # delete wrong token

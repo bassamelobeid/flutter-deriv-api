@@ -125,7 +125,7 @@ $user_mlt_mf->add_client($test_client_vr_2);
 $user_mlt_mf->add_client($test_client_mlt);
 $user_mlt_mf->add_client($test_client_mf);
 
-my $m = BOM::Platform::Token::API->new;
+my $m     = BOM::Platform::Token::API->new;
 my $token = $m->create_token($test_client_cr->loginid, 'test token');
 
 my $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');

@@ -279,9 +279,9 @@ subtest 'Adverts' => sub {
     $res = $c->call_ok('p2p_advert_list', $params)->has_no_system_error->has_no_error->result->{list};
     cmp_ok $res->[0]->{id}, '==', $advert->{id}, 'p2p_advert_list returns advert';
 
-    $params->{args} = $advert_params;
+    $params->{args}       = $advert_params;
     $params->{args}{rate} = 12.000001;
-    $advert = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
+    $advert               = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
     is $advert->{rate_display}, '12.000001', 'advert rate_display is correct';
     push @offer_ids, $advert->{id};
 
@@ -422,10 +422,10 @@ subtest 'Prevent create orders more than daily order limit number' => sub {
 subtest 'Client confirm an order' => sub {
     BOM::Test::Helper::P2P::create_escrow();
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-    $params->{args} = {id => $order->{id}};
+    $params->{args}  = {id => $order->{id}};
     my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'buyer-confirmed', 'Order is confirmed';
 
@@ -438,19 +438,19 @@ subtest 'Client confirm an order' => sub {
 subtest 'Advertiser confirm' => sub {
     BOM::Test::Helper::P2P::create_escrow();
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
 
     my $client_token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token');
     my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
 
     $params->{token} = $client_token;
-    $params->{args} = {id => $order->{id}};
+    $params->{args}  = {id => $order->{id}};
     my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'buyer-confirmed', 'Order is buyer confirmed';
 
     $params->{token} = $advertiser_token;
-    $params->{args} = {id => $order->{id}};
-    $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
+    $params->{args}  = {id => $order->{id}};
+    $res             = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'completed', 'Order is completed';
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -458,12 +458,12 @@ subtest 'Advertiser confirm' => sub {
 subtest 'Client cancellation' => sub {
     BOM::Test::Helper::P2P::create_escrow();
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
 
     my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     $params->{token} = $client_token;
-    $params->{args} = {id => $order->{id}};
+    $params->{args}  = {id => $order->{id}};
     my $res = $c->call_ok(p2p_order_cancel => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'cancelled', 'Order is cancelled';
 
@@ -476,7 +476,7 @@ subtest 'Client cancellation' => sub {
 subtest 'Getting order list' => sub {
     BOM::Test::Helper::P2P::create_escrow();
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(
         advert_id => $advert->{id},
         amount    => 10
     );
@@ -485,7 +485,7 @@ subtest 'Getting order list' => sub {
     my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
 
     $params->{token} = $advertiser_token;
-    $params->{args} = {advert_id => $advert->{id}};
+    $params->{args}  = {advert_id => $advert->{id}};
     my $res1 = $c->call_ok(p2p_order_list => $params)->has_no_system_error->has_no_error->result;
     cmp_ok scalar(@{$res1->{list}}), '==', 1, 'count of adverts is correct';
 
@@ -498,7 +498,7 @@ subtest 'Getting order list' => sub {
     cmp_ok scalar(@{$res2->{list}}), '==', 2, 'count of orders is correct';
 
     $params->{token} = $client_token;
-    $params->{args} = {advert_id => $advert->{id}};
+    $params->{args}  = {advert_id => $advert->{id}};
     my $res3 = $c->call_ok(p2p_order_list => $params)->has_no_system_error->has_no_error->result;
     cmp_ok scalar(@{$res3->{list}}), '==', 1, 'count of orders is correct';
 
@@ -544,7 +544,7 @@ subtest 'Getting order list' => sub {
 
     my $advertiser1_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
     $params->{token} = $advertiser1_token;
-    $params->{args} = {advertiser_id => $advertiser->p2p_advertiser_info->{id}};
+    $params->{args}  = {advertiser_id => $advertiser->p2p_advertiser_info->{id}};
     my $res1 = $c->call_ok(p2p_advert_list => $params)->has_no_system_error->has_no_error->result;
     cmp_ok scalar(@{$res1->{list}}), '==', 1, 'count of adverts is correct';
 
@@ -552,7 +552,7 @@ subtest 'Getting order list' => sub {
 
     my $advertiser2_token = BOM::Platform::Token::API->new->create_token($advertiser2->loginid, 'test token');
     $params->{token} = $advertiser2_token;
-    $params->{args} = {advertiser_id => $advertiser2->p2p_advertiser_info->{id}};
+    $params->{args}  = {advertiser_id => $advertiser2->p2p_advertiser_info->{id}};
     my $res2 = $c->call_ok(p2p_advert_list => $params)->has_no_system_error->has_no_error->result;
     cmp_ok scalar(@{$res2->{list}}), '==', 1, 'count of adverts is correct';
 
@@ -577,13 +577,13 @@ subtest 'Sell orders' => sub {
     my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
 
     $params->{token} = $advertiser_token;
-    $params->{args} = {id => $order->{id}};
+    $params->{args}  = {id => $order->{id}};
     my $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'buyer-confirmed', 'Order is buyer confirmed';
 
     $params->{token} = $client_token;
-    $params->{args} = {id => $order->{id}};
-    $res = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
+    $params->{args}  = {id => $order->{id}};
+    $res             = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'completed', 'Order is completed';
 
     BOM::Test::Helper::P2P::reset_escrow();

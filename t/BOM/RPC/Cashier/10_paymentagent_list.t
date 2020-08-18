@@ -273,7 +273,7 @@ subtest 'suspend countries' => sub {
             source_bypass_verification => 0
         },
         'available_countries' => [['af', 'Afghanistan',], ['id', 'Indonesia',]],
-        'list' => [{
+        'list'                => [{
                 'telephone'             => '+12345678',
                 'supported_banks'       => undef,
                 'name'                  => 'Xoe',

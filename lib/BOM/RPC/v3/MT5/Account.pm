@@ -143,7 +143,7 @@ sub get_mt5_logins {
         return mt5_get_settings({
                 client => $client,
                 args   => {login => $login}}
-            )->then(
+        )->then(
             sub {
                 my ($setting) = @_;
                 $setting = _filter_settings($setting, qw/balance display_balance country currency email group leverage login name/);
@@ -213,7 +213,7 @@ async_rpc "mt5_new_account",
     my ($client, $args) = @{$params}{qw/client args/};
 
     # extract request parameters
-    my $account_type = delete $args->{account_type};
+    my $account_type     = delete $args->{account_type};
     my $mt5_account_type = delete $args->{mt5_account_type} // '';
 
     # input validation
@@ -272,7 +272,7 @@ async_rpc "mt5_new_account",
         my @clients = $user->clients_for_landing_company($binary_company_name);
         # remove disabled/duplicate accounts to make sure that atleast one Real account is active
         @clients = grep { !$_->status->disabled && !$_->status->duplicate_account } @clients;
-        $client = (@clients > 0) ? $clients[0] : undef;
+        $client  = (@clients > 0) ? $clients[0] : undef;
     }
 
     # No matching binary account was found; let's see what was the reason.
@@ -331,7 +331,7 @@ async_rpc "mt5_new_account",
     if ($client->tax_residence and $account_type ne 'demo' and $group eq 'real\labuan_financial_stp') {
         # In case of having more than a tax residence, client residence will be replaced.
         my $selected_tax_residence = $client->tax_residence =~ /\,/g ? $client->residence : $client->tax_residence;
-        my $tin_format = $countries_instance->get_tin_format($selected_tax_residence);
+        my $tin_format             = $countries_instance->get_tin_format($selected_tax_residence);
         if (    $countries_instance->is_tax_detail_mandatory($selected_tax_residence)
             and $client->tax_identification_number
             and $tin_format)
@@ -425,7 +425,7 @@ async_rpc "mt5_new_account",
 
                     return BOM::MT5::User::Async::create_user($args);
                 }
-                )->then(
+            )->then(
                 sub {
                     my ($status) = @_;
 
@@ -482,13 +482,13 @@ async_rpc "mt5_new_account",
                             } else {
                                 Future->done;
                             }
-                            }
-                        )->then(
+                        }
+                    )->then(
                         sub {
                             # Get currency from MT5 group
                             return BOM::MT5::User::Async::get_group($group);
                         }
-                        )->then(
+                    )->then(
                         sub {
                             my ($group_details) = @_;
                             return create_error_future('MT5CreateUserError', {message => $group_details->{error}})
@@ -683,7 +683,7 @@ sub _get_user_with_group {
             }
             return Future->done($settings);
         }
-        )->then(
+    )->then(
         sub {
             my ($settings) = @_;
             return BOM::MT5::User::Async::get_group($settings->{group})->then(
@@ -785,7 +785,7 @@ async_rpc "mt5_password_check",
             password => $args->{password},
             type     => $args->{password_type} // 'main'
         }
-        )->then(
+    )->then(
         sub {
             my ($status) = @_;
 
@@ -900,7 +900,7 @@ async_rpc "mt5_password_change",
             password => $args->{old_password},
             type     => $args->{password_type} // 'main',
         }
-        )->then(
+    )->then(
         sub {
             my ($status) = @_;
 
@@ -914,7 +914,7 @@ async_rpc "mt5_password_change",
                     type         => $args->{password_type} // 'main',
                 })->then_done(1);
         }
-        )->then(
+    )->then(
         sub {
             BOM::Platform::Event::Emitter::emit(
                 'mt5_password_changed',
@@ -1036,7 +1036,7 @@ async_rpc "mt5_password_reset",
             new_password => $args->{new_password},
             type         => $args->{password_type} // 'main',
         }
-        )->then(
+    )->then(
         sub {
             my ($status) = @_;
 
@@ -1159,8 +1159,7 @@ async_rpc "mt5_deposit",
                     amount            => -$amount,
                     internal_transfer => 1,
                 );
-            }
-            catch {
+            } catch {
                 my $withdraw_error = $@;
                 log_exception();
                 return create_error_future(
@@ -1221,8 +1220,7 @@ async_rpc "mt5_deposit",
                             gateway_code       => 'mt5_transfer',
                             id                 => $txn->{id},
                             time               => $txn->{transaction_time}}});
-            }
-            catch {
+            } catch {
                 my $error = BOM::Transaction->format_error(err => $@);
                 log_exception();
                 return create_error_future($error_code, {message => $error->{-message_to_client}});
@@ -1391,8 +1389,7 @@ async_rpc "mt5_withdrawal",
                             status                => 1,
                             binary_transaction_id => $txn->transaction_id
                         });
-                    }
-                    catch {
+                    } catch {
                         my $error = BOM::Transaction->format_error(err => $@);
                         log_exception();
                         _send_email(
@@ -1550,8 +1547,7 @@ sub _mt5_validate_and_get_amount {
                     db_operation => 'replica'
                 });
 
-            }
-            catch {
+            } catch {
                 log_exception();
                 return create_error_future(
                     'InvalidLoginid',
@@ -1574,7 +1570,7 @@ sub _mt5_validate_and_get_amount {
             return create_error_future('permission') if $authorized_client->is_virtual and not $client->is_virtual;
 
             my $client_currency = $client->account ? $client->account->currency_code() : undef;
-            my $brand = Brands->new(name => request()->brand);
+            my $brand           = Brands->new(name => request()->brand);
 
             # check for fully authenticated only if it's not gaming account
             # as of now we only support gaming for binary brand, in future if we
@@ -1659,9 +1655,8 @@ sub _mt5_validate_and_get_amount {
                             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $client_currency, $mt5_currency);
 
                         $mt5_amount = financialrounding('amount', $mt5_currency, $mt5_amount);
-                    }
 
-                    catch {
+                    } catch {
                         log_exception();
                         # usually we get here when convert_currency() fails to find a rate within $rate_expiry, $mt5_amount is too low, or no transfer fee are defined (invalid currency pair).
                         $err        = $@;
@@ -1682,8 +1677,7 @@ sub _mt5_validate_and_get_amount {
                         # if last rate is expiered calculate_to_amount_with_fees would fail.
                         $fees_in_client_currency =
                             financialrounding('amount', $client_currency, convert_currency($fees, $mt5_currency, $client_currency));
-                    }
-                    catch {
+                    } catch {
                         log_exception();
                         # same as previous catch
                         $err = $@;

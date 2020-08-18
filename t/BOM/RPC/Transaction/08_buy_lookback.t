@@ -73,7 +73,7 @@ subtest 'buy' => sub {
 
     $c->call_ok('buy', $params)->has_no_system_error->has_error->error_code_is('InvalidPrice', 'Invalid precision for price');
 
-    $params->{args}{price} = financialrounding('price', 'USD', 1.12);
+    $params->{args}{price}                     = financialrounding('price', 'USD', 1.12);
     $params->{contract_parameters}{multiplier} = 1;
 
     my $old_balance   = $client->default_account->balance;

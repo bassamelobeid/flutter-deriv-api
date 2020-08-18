@@ -66,12 +66,11 @@ sub start_document_upload {
                 );
             });
         return create_upload_error('duplicate_document') unless ($upload_info);
-    }
-    catch {
+    } catch {
         log_exception();
         warn 'Document upload db query failed.' . $_;
         return create_upload_error();
-    };
+    }
 
     return {
         file_name => $upload_info->{file_name},
@@ -94,12 +93,11 @@ sub successful_upload {
                 $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $args->{file_id});
             });
         return create_upload_error() unless $finish_upload_result and ($args->{file_id} == $finish_upload_result);
-    }
-    catch {
+    } catch {
         log_exception();
         warn 'Document upload db query failed.';
         return create_upload_error();
-    };
+    }
 
     my $client_id = $client->loginid;
 
@@ -108,12 +106,11 @@ sub successful_upload {
             ping => sub {
                 $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?)', undef, $client_id);
             });
-    }
-    catch {
+    } catch {
         log_exception();
         warn 'Unable to change client status in the db';
         return create_upload_error();
-    };
+    }
 
     BOM::Platform::Event::Emitter::emit(
         'document_upload',
@@ -180,11 +177,11 @@ sub create_upload_error {
     state $default_error_code = 'UploadDenied';
     state $default_error_msg  = localize('Sorry, an error occurred while processing your request.');
     state $errors             = {
-        virtual          => {message => localize("Virtual accounts don't require document uploads.")},
-        already_expired  => {message => localize('Expiration date cannot be less than or equal to current date.')},
-        missing_exp_date => {message => localize('Expiration date is required.')},
-        missing_doc_id   => {message => localize('Document ID is required.')},
-        max_size         => {message => localize("Maximum file size reached. Maximum allowed is [_1]", MAX_FILE_SIZE)},
+        virtual            => {message => localize("Virtual accounts don't require document uploads.")},
+        already_expired    => {message => localize('Expiration date cannot be less than or equal to current date.')},
+        missing_exp_date   => {message => localize('Expiration date is required.')},
+        missing_doc_id     => {message => localize('Document ID is required.')},
+        max_size           => {message => localize("Maximum file size reached. Maximum allowed is [_1]", MAX_FILE_SIZE)},
         duplicate_document => {
             message    => localize('Document already uploaded.'),
             error_code => 'DuplicateUpload'

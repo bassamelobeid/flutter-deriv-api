@@ -61,7 +61,7 @@ my $user = BOM::User->create(
 );
 $user->add_client($test_client);
 
-my $m = BOM::Platform::Token::API->new;
+my $m     = BOM::Platform::Token::API->new;
 my $token = $m->create_token($test_client->loginid, 'test token');
 
 # Throttle function limits requests to 1 per minute which may cause

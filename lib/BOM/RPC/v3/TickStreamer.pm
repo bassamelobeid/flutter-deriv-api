@@ -166,7 +166,7 @@ sub _candles {
                     })});
     } else {
         my $first_stop = $start_time + ($granularity - $start_time % $granularity);
-        my $last_stop = $first_stop + $granularity * int(($end_time - $first_stop) / $granularity);
+        my $last_stop  = $first_stop + $granularity * int(($end_time - $first_stop) / $granularity);
 
         my $first_ohlc = $ul->feed_api->ohlc_daily_list({
                 start_time => $start_time,
@@ -208,9 +208,7 @@ sub _candles {
                 low   => $ul->pipsized_value($_->low),
                 close => $ul->pipsized_value($_->close)}
             }
-            grep {
-            defined $_
-            } @all_ohlc
+            grep { defined $_ } @all_ohlc
     ];
 }
 

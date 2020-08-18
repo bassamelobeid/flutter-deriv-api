@@ -43,7 +43,7 @@ my ($t, $rpc_ct);
 
 subtest 'Initialization' => sub {
     lives_ok {
-        $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
+        $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
         $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
     }
     'Initial RPC server and client connection';
@@ -98,7 +98,7 @@ subtest 'Basic transfers' => sub {
     $client_cr1->status->set('disabled', 'system', 'test');
     ok $client_cr1->status->disabled, "account is disabled";
     my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'DisabledClient', 'Correct error code if account_from is disabled';
+    is $result->{error}->{code},              'DisabledClient',               'Correct error code if account_from is disabled';
     is $result->{error}->{message_to_client}, 'This account is unavailable.', 'Correct error message if account_from is disabled';
     $client_cr1->status->clear_disabled;
     $client_cr2->status->set('disabled', 'system', 'test');
@@ -249,7 +249,7 @@ subtest 'In status transfers_blocked Fiat <-> Crypto transfers are not allowed' 
         remark   => 'free gift',
     );
 
-    $amount_to_transfer = 0.2;
+    $amount_to_transfer   = 0.2;
     $params->{token}      = BOM::Platform::Token::API->new->create_token($client_crypto->loginid, 'test token');
     $params->{token_type} = 'oauth_token';
     $params->{args}       = {
@@ -588,7 +588,7 @@ subtest 'Current account is withdrawal_locked but its siblings can transfer betw
     $client_cr1->status->set('withdrawal_locked', 'system', 'test');
     ok $client_cr1->status->withdrawal_locked, "account is withdrawal_locked";
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
-    $params->{args} = {
+    $params->{args}  = {
         account_from => $client_cr2->loginid,
         account_to   => $client_cr3->loginid,
         currency     => 'BTC',
@@ -627,7 +627,7 @@ subtest 'Current account is withdrawal_locked but its siblings can transfer betw
     ok $client_cr5->status->withdrawal_locked, "account_to is withdrawal_locked";
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
-    $params->{args} = {
+    $params->{args}  = {
         account_from => $client_cr4->loginid,
         account_to   => $client_cr5->loginid,
         currency     => 'BTC',
@@ -715,7 +715,7 @@ subtest 'Current account is no_withdrawal_or_trading but its siblings can transf
     ok $client_cr5->status->no_withdrawal_or_trading, "account_to is no_withdrawal_or_trading";
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
-    $params->{args} = {
+    $params->{args}  = {
         account_from => $client_cr4->loginid,
         account_to   => $client_cr5->loginid,
         currency     => 'BTC',
@@ -825,7 +825,7 @@ subtest 'Transfer to Sibling account when current account is withdrawal_locked o
     $client_cr1->status->set('cashier_locked', 'system', 'test');
     ok $client_cr1->status->cashier_locked, "account is cashier_locked";
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
-    $params->{args} = {
+    $params->{args}  = {
         account_from => $client_cr1->loginid,
         account_to   => $client_cr2->loginid,
         currency     => 'USD',
@@ -900,7 +900,7 @@ subtest 'Transfer from Sibling account when current account is withdrawal_locked
     $client_cr1->status->set('cashier_locked', 'system', 'test');
     ok $client_cr1->status->cashier_locked, "account is cashier_locked";
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
-    $params->{args} = {
+    $params->{args}  = {
         account_from => $client_cr2->loginid,
         account_to   => $client_cr1->loginid,
         currency     => 'BTC',

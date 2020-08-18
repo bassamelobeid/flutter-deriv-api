@@ -212,8 +212,7 @@ sub p2p_rpc {
                 app_config => $app_config,
                 params     => $params
             );
-        }
-        catch {
+        } catch {
             my $exception = $@;
             my ($err_code, $err_code_db, $err_params, $err_details);
 

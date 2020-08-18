@@ -85,8 +85,7 @@ sub validation_checks {
         my $err;
         try {
             $err = BOM::Transaction::Validation->new({clients => $client})->$act($client);
-        }
-        catch {
+        } catch {
             warn "Error happened when call before_action $act";
             $err = Error::Base->cuss({
                 -type              => 'Internal Error',
@@ -177,7 +176,7 @@ my $rates_file_content;
 sub site_limits {
     my $now = time;
     if ($now - $rates_file_last_load > RATES_FILE_CACHE_TIME) {
-        $rates_file_content = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
+        $rates_file_content   = LoadFile($ENV{BOM_TEST_RATE_LIMITATIONS} // '/etc/rmg/perl_rate_limitations.yml');
         $rates_file_last_load = $now;
     }
 
@@ -233,7 +232,7 @@ sub is_verification_token_valid {
     my ($token, $email, $created_for) = @_;
 
     my $verification_token = BOM::Platform::Token->new({token => $token});
-    my $response = create_error({
+    my $response           = create_error({
             code              => "InvalidToken",
             message_to_client => localize('Your token has expired or is invalid.')});
 
@@ -559,8 +558,7 @@ sub _is_currency_allowed {
     try {
         $error = localize("The provided currency [_1] is not selectable at the moment.", $currency)
             if ($type eq 'crypto' and BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency));
-    }
-    catch {
+    } catch {
         $error = localize("The provided currency [_1] is not a valid cryptocurrency.", $currency);
     }
 
@@ -641,10 +639,9 @@ sub set_professional_status {
     try {
         $client->status->set('professional',           'SYSTEM', 'Mark as professional as requested') if $set_prof_status;
         $client->status->set('professional_requested', 'SYSTEM', 'Professional account requested')    if $set_prof_request;
-    }
-    catch {
+    } catch {
         $error = client_error();
-    };
+    }
     return $error if $error;
 
     send_professional_requested_email($client->loginid, $client->residence) if $set_prof_request;
@@ -681,8 +678,7 @@ sub _timed(&@) {    ## no critic (ProhibitSubroutinePrototypes)
     try {
         $rslt = $code->();
         $k .= '.success';
-    }
-    catch {
+    } catch {
         $exception = $@;
         $k .= '.error';
     }
@@ -722,8 +718,7 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
     foreach my $shortcode (@short_codes) {
         try {
             $longcodes{$shortcode} = localize(shortcode_to_longcode($shortcode, $params->{currency}));
-        }
-        catch {
+        } catch {
             # we do not want to warn for known error like legacy underlying
             if ($@ !~ /unknown underlying/) {
                 warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode . ' error: ' . $@;
@@ -836,7 +831,7 @@ sub create_error_by_code {
     }
 
     return BOM::RPC::v3::Utility::create_error({
-            code => $options{override_code} ? $options{override_code} : $error_code,
+            code              => $options{override_code} ? $options{override_code} : $error_code,
             message_to_client => $message,
             $options{message} ? (message => $options{message}) : (),
             $options{details} ? (details => $options{details}) : ()});
@@ -1020,10 +1015,10 @@ Returns array of tags which contains package and method name.
 
 sub _convert_caller_to_array_of_tags {
     my ($caller, $caller_package) = @_;
-    my @dd_tags = ();
+    my @dd_tags       = ();
     my @array_subname = split("::", $caller);
 
-    my $method = pop @array_subname;
+    my $method  = pop @array_subname;
     my $package = join("::", @array_subname);
     $package = $caller_package if $caller_package;
 

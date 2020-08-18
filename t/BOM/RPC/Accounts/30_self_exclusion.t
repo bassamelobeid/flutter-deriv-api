@@ -110,7 +110,7 @@ subtest 'get and set self_exclusion' => sub {
             {
                 token => undef,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'The token is invalid.',
         'invalid token error'
     );
@@ -121,7 +121,7 @@ subtest 'get and set self_exclusion' => sub {
             {
                 token => $token_disabled,
             }
-            )->{error}{message_to_client},
+        )->{error}{message_to_client},
         'This account is unavailable.',
         'check authorization'
     );
@@ -424,8 +424,8 @@ subtest 'get and set self_exclusion' => sub {
         exclude_until          => $exclude_until,
         timeout_until          => $timeout_until->epoch,
     };
-    is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
-    is($emitted->{self_exclude_set}, undef, 'self_exclude_set event not emitted because email_consent is not set for user');
+    is($c->tcall($method, $params)->{status}, 1,     'update self_exclusion ok');
+    is($emitted->{self_exclude_set},          undef, 'self_exclude_set event not emitted because email_consent is not set for user');
 };
 
 done_testing();

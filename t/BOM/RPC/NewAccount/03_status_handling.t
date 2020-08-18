@@ -54,7 +54,7 @@ sub new_client_details {
 
 subtest 'Initialization' => sub {
     lives_ok {
-        $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
+        $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
         $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
     }
     'Initial RPC server and client connection';
@@ -73,7 +73,7 @@ subtest 'MX' => sub {
         $params->{args}->{verification_code} = $verification_token;
         $params->{args}->{residence}         = 'gb';
 
-        my $result = $rpc_ct->call_ok('new_account_virtual', $params)->has_no_system_error->has_no_error('Virtual account created')->result;
+        my $result  = $rpc_ct->call_ok('new_account_virtual', $params)->has_no_system_error->has_no_error('Virtual account created')->result;
         my $loginid = $result->{client_id};
 
         my $vr_client = BOM::User::Client->new({loginid => $loginid});
@@ -83,7 +83,7 @@ subtest 'MX' => sub {
         _reset_params();
 
         $params->{token} = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
-        $params->{args} = new_client_details(residence => 'gb');
+        $params->{args}  = new_client_details(residence => 'gb');
 
         my $file_path = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianInsufficientDOB.xml";
 
@@ -95,7 +95,7 @@ subtest 'MX' => sub {
                 return $file_content;
             });
 
-        $result = $rpc_ct->call_ok("new_account_real", $params)->has_no_system_error->has_no_error('Real account created')->result;
+        $result  = $rpc_ct->call_ok("new_account_real", $params)->has_no_system_error->has_no_error('Real account created')->result;
         $loginid = $result->{client_id};
 
         my $mx_client = BOM::User::Client->new({loginid => $loginid});
@@ -119,7 +119,7 @@ subtest 'MX' => sub {
         $params->{args}->{verification_code} = $verification_token;
         $params->{args}->{residence}         = 'gb';
 
-        my $result = $rpc_ct->call_ok('new_account_virtual', $params)->has_no_system_error->has_no_error('Virtual account created')->result;
+        my $result  = $rpc_ct->call_ok('new_account_virtual', $params)->has_no_system_error->has_no_error('Virtual account created')->result;
         my $loginid = $result->{client_id};
 
         my $vr_client = BOM::User::Client->new({loginid => $loginid});
@@ -129,7 +129,7 @@ subtest 'MX' => sub {
         _reset_params();
 
         $params->{token} = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
-        $params->{args} = new_client_details(residence => 'gb');
+        $params->{args}  = new_client_details(residence => 'gb');
 
         my $file_path = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianValid.xml";
 
@@ -141,7 +141,7 @@ subtest 'MX' => sub {
                 return $file_content;
             });
 
-        $result = $rpc_ct->call_ok("new_account_real", $params)->has_no_system_error->has_no_error('Real account created')->result;
+        $result  = $rpc_ct->call_ok("new_account_real", $params)->has_no_system_error->has_no_error('Real account created')->result;
         $loginid = $result->{client_id};
         my $mx_client = BOM::User::Client->new({loginid => $loginid});
 
@@ -177,7 +177,7 @@ subtest 'MF' => sub {
     _reset_params();
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
-    $params->{args} = new_client_details(residence => 'es');
+    $params->{args}  = new_client_details(residence => 'es');
 
     # MF needs additional arguments to create
     $params->{args}->{accept_risk}               = 1;
@@ -186,7 +186,7 @@ subtest 'MF' => sub {
     my $fa = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
     $params->{args}->{$_} = $fa->{$_} for keys %$fa;
 
-    $result = $rpc_ct->call_ok("new_account_maltainvest", $params)->has_no_system_error->has_no_error('Real account created')->result;
+    $result  = $rpc_ct->call_ok("new_account_maltainvest", $params)->has_no_system_error->has_no_error('Real account created')->result;
     $loginid = $result->{client_id};
 
     my $mf_client = BOM::User::Client->new({loginid => $loginid});
@@ -222,9 +222,9 @@ subtest 'CR' => sub {
     _reset_params();
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
-    $params->{args} = new_client_details(residence => 'id');
-    $result = $rpc_ct->call_ok("new_account_real", $params)->has_no_system_error->has_no_error('Real account created')->result;
-    $loginid = $result->{client_id};
+    $params->{args}  = new_client_details(residence => 'id');
+    $result          = $rpc_ct->call_ok("new_account_real", $params)->has_no_system_error->has_no_error('Real account created')->result;
+    $loginid         = $result->{client_id};
 
     my $cr_client = BOM::User::Client->new({loginid => $loginid});
     $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
@@ -258,9 +258,9 @@ subtest 'MLT' => sub {
     _reset_params();
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($vr_client->loginid, 'test token');
-    $params->{args} = new_client_details(residence => 'be');
-    $result = $rpc_ct->call_ok("new_account_real", $params)->has_no_system_error->has_no_error('Real account created')->result;
-    $loginid = $result->{client_id};
+    $params->{args}  = new_client_details(residence => 'be');
+    $result          = $rpc_ct->call_ok("new_account_real", $params)->has_no_system_error->has_no_error('Real account created')->result;
+    $loginid         = $result->{client_id};
 
     my $mlt_client = BOM::User::Client->new({loginid => $loginid});
     $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
