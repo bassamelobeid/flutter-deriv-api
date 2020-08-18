@@ -94,7 +94,7 @@ sub run {
 
     foreach my $symbol (@{$self->symbols_for_moneyness}) {
         my $surface_data = {map { $_ => {vol_spread => _get_volspread('moneyness'), smile => _get_smile('moneyness')} } @tenors};
-        my $underlying = create_underlying($symbol);
+        my $underlying   = create_underlying($symbol);
         Quant::Framework::VolSurface::Moneyness->new({
                 underlying       => $underlying,
                 surface_data     => $surface_data,

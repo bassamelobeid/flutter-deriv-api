@@ -24,8 +24,8 @@ sub run {
 
     return 1 if ($self->is_a_weekend);    # don't do anything on weekend
 
-    my $market = (split /::/, ref $self)[-1];
-    my @keys_in_redis = ('QUANT_EMAIL', 'vol_' . $market);
+    my $market              = (split /::/, ref $self)[-1];
+    my @keys_in_redis       = ('QUANT_EMAIL', 'vol_' . $market);
     my $vol_email_frequency = Cache::RedisDB->get(@keys_in_redis);
 
     if (not $vol_email_frequency) {
@@ -59,7 +59,7 @@ sub run {
     if ($number_failures > 0 or $number_errors > 0) {
         Cache::RedisDB->set_nw(@keys_in_redis, time);
 
-        my $body = join "\n", (@successes, "\n\n", @failures, "\n\n", @errors);
+        my $body         = join "\n", (@successes, "\n\n", @failures, "\n\n", @errors);
         my $subject_line = $market . ' failed. Number of failures is ' . $number_failures . '. Number of errors is ' . $number_errors . '.';
 
         return Email::Stuffer->from('system@binary.com')->to('quants-market-data@binary.com')->subject($subject_line)->text_body($body)->send_or_die;

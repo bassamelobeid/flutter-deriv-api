@@ -70,7 +70,7 @@ sub run {
         }
 
         my %bloomberg_to_binary = Bloomberg::UnderlyingConfig::bloomberg_to_binary;
-        my $csv = Text::CSV::Slurp->load(file => $file);
+        my $csv                 = Text::CSV::Slurp->load(file => $file);
 
         foreach my $data (@$csv) {
             my $ohlc_data;

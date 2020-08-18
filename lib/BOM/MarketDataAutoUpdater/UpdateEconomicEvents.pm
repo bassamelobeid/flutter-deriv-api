@@ -41,7 +41,7 @@ sub run {
         $chronicle_writer->set(NAMESPACE, EE_KEY, $consolidate_events, Date::Utility->new, 0, TTL);
 
         # Only use data since yesterday for the rest of operations.
-        my $yesterday = Date::Utility->today->epoch - 86400;
+        my $yesterday                 = Date::Utility->today->epoch - 86400;
         my @three_weeks_future_events = grep { $_->{release_date} >= $yesterday } @$consolidate_events;
 
         Quant::Framework::EconomicEventCalendar->new(
@@ -63,8 +63,7 @@ sub run {
         });
 
         print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.\n";
-    }
-    catch {
+    } catch {
         my $e = $@;
         print 'Error occured while saving events: ' . $e . "\n";
     }
@@ -92,8 +91,7 @@ sub get_events_from_forex_factory {
     try {
         @multiweek_events =
             map { @{$parser->extract_economic_events($_->[0], $starting_date->plus_time_interval($_->[1] * 7 . 'd'))} } ([1, 0], [0, 2], [0, 4]);
-    }
-    catch {
+    } catch {
         @multiweek_events = ();
     }
 
@@ -122,8 +120,7 @@ sub get_events_from_bloomberg_data_license {
         # reads 3 weeks of economic events data
         my $err;
         ($events_received, $err) = $parser->parse_data_for($files[0], 3, Date::Utility->new()->minus_time_interval('4d'));
-    }
-    catch {
+    } catch {
         return $events_received;
 
     }

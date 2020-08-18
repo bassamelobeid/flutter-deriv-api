@@ -67,7 +67,7 @@ has symbols_to_update => (
 );
 
 sub _build_symbols_to_update {
-    my $self = shift;
+    my $self      = shift;
     my %skip_list = map { $_ => 1 } (@{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol});
 
     my @indices = grep { !$skip_list{$_} } create_underlying_db->get_symbols_for(
@@ -84,7 +84,7 @@ has surfaces_from_file => (
 );
 
 sub _build_surfaces_from_file {
-    my $self = shift;
+    my $self     = shift;
     my $vol_data = Bloomberg::VolSurfaces::BVOL->new->parser($self->update_for, $self->root_path);
     return $self->process_volsurface($vol_data);
 
@@ -167,8 +167,7 @@ sub run {
                 }
             }
 
-        }
-        catch {
+        } catch {
             # if it dies, catch it here.
             my $e = $@;
             $self->report->{$symbol} = {

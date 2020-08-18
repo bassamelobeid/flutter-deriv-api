@@ -109,7 +109,7 @@ sub _passes_sanity_check {
         market            => 'forex, commodities',
         contract_category => 'IV',
     );
-    my $offers_iv = grep { $symbol =~ /$_/ } @iv_symbols;
+    my $offers_iv         = grep { $symbol =~ /$_/ } @iv_symbols;
     my $required_iv_terms = notall { defined $data->{$_} } qw(30 90 180);
     my $error_message =
         ($offers_iv and $required_iv_terms) ? 'We offer iv contracts for' . $symbol . ', but we don\'t have interest rates data for 1M, 3M & 6M' : '';

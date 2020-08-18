@@ -56,7 +56,7 @@ sub script_run {
     my $world         = $self->world_symbols;
     my @smart_symbols = keys %$world;
     foreach my $symbol (@smart_symbols) {
-        my %neg = map { $_ => 1 } @{$world->{$symbol}->{negative}};
+        my %neg  = map { $_ => 1 } @{$world->{$symbol}->{negative}};
         my $date = Date::Utility->new();
         next if $date->is_a_weekend;
         my @source = map { create_underlying($_) } @{$self->world_symbols->{$symbol}->{source}};
@@ -70,7 +70,7 @@ sub script_run {
                 )->rates
             })
         {
-            my %rates = map { $_->symbol => $_->interest_rate_for($term / 365) - $_->dividend_rate_for($term / 365) } @source;
+            my %rates       = map { $_->symbol => $_->interest_rate_for($term / 365) - $_->dividend_rate_for($term / 365) } @source;
             my @rates_array = map { $neg{$_->symbol} ? -$rates{$_->symbol} : $rates{$_->symbol} } @source;
             $world_rate{$term} = ($rates_array[0] + $rates_array[1] + $rates_array[2] + $rates_array[3] + $rates_array[4]) / 5;
         }

@@ -164,8 +164,7 @@ sub _recover_correlation_matrix {
             chronicle_reader => $self->_chronicle_reader,
             chronicle_writer => $self->_chronicle_writer
         )->save($archive, $suppress_publish);
-    }
-    catch {
+    } catch {
         push @{$self->_exceptions}, 'Exception thrown while recovering correlation_matrices::indices';
     }
 
@@ -190,8 +189,7 @@ sub _recover_holiday {
                 chronicle_writer => $self->_chronicle_writer
             )->save($archive, $suppress_publish);
         }
-    }
-    catch {
+    } catch {
         push @{$self->_exceptions}, 'Exception thrown while recovering holidays';
     }
 
@@ -214,8 +212,7 @@ sub _recover_dividend {
                 chronicle_writer => $self->_chronicle_writer,
                 symbol           => $symbol,
             )->save($archive, $suppress_publish);
-        }
-        catch {
+        } catch {
             push @{$self->_exceptions}, 'Exception thrown while recovering ' . $name . '::' . $symbol;
         }
     }
@@ -240,8 +237,7 @@ sub _recover_interest_rate {
                 chronicle_writer => $self->_chronicle_writer,
                 symbol           => $symbol,
             )->save($archive, $suppress_publish);
-        }
-        catch {
+        } catch {
             push @{$self->_exceptions}, 'Exception thrown while recovering ' . $name . '::' . $symbol;
         }
     }
@@ -273,8 +269,7 @@ sub _recover_volsurface {
                 chronicle_writer => $self->_chronicle_writer,
                 underlying       => $underlying,
             )->save($archive, $suppress_publish);
-        }
-        catch {
+        } catch {
             push @{$self->_exceptions}, 'Exception thrown while recovering ' . $name . '::' . $symbol;
         }
     }

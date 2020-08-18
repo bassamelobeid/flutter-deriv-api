@@ -78,7 +78,7 @@ sub _build_symbols_to_update {
     my @symbols;
     if ($self->source eq 'BBDL') {
 
-        @symbols = grep { !$skip_list{$_} } (@quanto_currencies) if $self->update_for eq 'quanto';
+        @symbols = grep { !$skip_list{$_} } (@quanto_currencies)                       if $self->update_for eq 'quanto';
         @symbols = grep { !$skip_list{$_} } (@forex, @commodities, @quanto_currencies) if $self->update_for eq 'all';
 
     } elsif ($self->source eq 'BVOL') {
@@ -105,7 +105,7 @@ sub _build_surfaces_from_file {
     # For BBDL source, we are subscrbing full surface every 4 hours, the remaining hours , we only subscribe ON and 1W vol smile , hence it need to this appending with existing surface.
     if ($self->source eq 'BBDL') {
         $vol_data = Bloomberg::VolSurfaces::BBDL->new->parser($self->update_for, $self->root_path);
-        $surface = $self->process_volsurface($vol_data);
+        $surface  = $self->process_volsurface($vol_data);
 
         if ($self->update_for eq 'all') {
             foreach my $underlying (keys %{$surface}) {
@@ -119,7 +119,7 @@ sub _build_surfaces_from_file {
     } elsif ($self->source eq 'BVOL') {
         # For BVOL, due to pricing, we only get vol data of those offered pairs. For quanto, we still get from BBDL.
         $vol_data = Bloomberg::VolSurfaces::BVOL->new->parser($self->update_for, $self->root_path);
-        $surface = $self->process_volsurface($vol_data);
+        $surface  = $self->process_volsurface($vol_data);
         push @volsurface, $surface if defined $surface;
     }
     my $combined = {map { %$_ } @volsurface};
@@ -234,7 +234,7 @@ sub run {
 
 sub _append_to_existing_surface {
     my ($new_surface, $underlying_symbol) = @_;
-    my $underlying = create_underlying($underlying_symbol);
+    my $underlying       = create_underlying($underlying_symbol);
     my $existing_surface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying})->surface;
 
     foreach my $term (keys %{$existing_surface}) {
@@ -389,7 +389,7 @@ sub _check_vol_point {
     my ($vol_surf) = @_;
     my $rr_bf_flag = 0;
     foreach my $term (keys %{$vol_surf}) {
-        next if $term eq 'volupdate_time';
+        next                                                         if $term eq 'volupdate_time';
         return ({}, 0, "MISSING_ATM_VOL: Missing ATM vol for $term") if (not defined $vol_surf->{$term}->{smile}->{'ATM'});
 
         if (not defined $vol_surf->{$term}->{smile}->{'25RR'}) {
