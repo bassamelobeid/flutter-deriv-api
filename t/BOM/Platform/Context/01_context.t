@@ -26,7 +26,7 @@ subtest 'localize' => sub {
     ok !is_localized(localize(@bad_params)), 'invalid template message params';
     ok !is_localized(localize(\@bad_params)), 'invalid template message params (array ref)';
 
-    my $message = 'a message to localize';
+    my $message          = 'a message to localize';
     my @template_message = ('1=[_1] 2=[_2] 3=[_3]', 'one', 'two', 'three');
     is(localize(@template_message),  '<LOC>1=one 2=two 3=three</LOC>', 'template message is correctly localized');
     is(localize(\@template_message), '<LOC>1=one 2=two 3=three</LOC>', 'template message is correctly localized (array ref)');

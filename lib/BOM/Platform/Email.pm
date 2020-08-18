@@ -135,7 +135,7 @@ sub process_send_email {
         $fromemail = "\"" . $brand->website_name . "\" <$fromemail>";
     }
 
-    my $message = join("\n", @message);
+    my $message      = join("\n", @message);
     my $mail_message = $message;
     if ($use_email_template) {
         $template_name .= '.html.tt' if $template_name !~ /\.html\.tt$/;
@@ -184,8 +184,7 @@ sub process_send_email {
     return try {
         $email_stuffer->send_or_die;
         return 1;
-    }
-    catch {
+    } catch {
         warn("Error sending mail [$subject]: ", $_)
             unless $ENV{BOM_SUPPRESS_WARNINGS};
         return 0;

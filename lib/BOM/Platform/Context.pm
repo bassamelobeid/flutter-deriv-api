@@ -89,7 +89,7 @@ sub localize {
 
     return '' unless $content;
 
-    my $request = request();
+    my $request  = request();
     my $language = $request ? $request->language : 'EN';
 
     my $lh = BOM::Platform::Context::I18N::handle_for($language)

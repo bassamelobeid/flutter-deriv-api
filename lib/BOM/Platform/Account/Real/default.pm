@@ -79,7 +79,7 @@ sub after_register_client {
         })->check();
 
     my $client_loginid = $client->loginid;
-    my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
+    my $client_name    = join(' ', $client->salutation, $client->first_name, $client->last_name);
 
     if ($client->landing_company->short eq 'iom'
         and (length $client->first_name < 3 or length $client->last_name < 3))

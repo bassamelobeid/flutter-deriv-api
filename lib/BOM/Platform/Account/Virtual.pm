@@ -44,8 +44,7 @@ sub create_account {
             } elsif ($contact_date->is_after(Date::Utility->today)) {
                 $date_first_contact = Date::Utility->today->date_yyyymmdd;
             }
-        }
-        catch {
+        } catch {
             $date_first_contact = Date::Utility->today->date_yyyymmdd;
         }
     } else {
@@ -65,7 +64,7 @@ sub create_account {
         # Any countries covered by GDPR should default to not sending email, but we would like to
         # include other users in our default marketing emails.
         my $country_company = $brand_country_instance->real_company_for_country($residence);
-        my $email_consent = $country_company ? LandingCompany::Registry::get($country_company)->email_consent->{default} : 0;
+        my $email_consent   = $country_company ? LandingCompany::Registry::get($country_company)->email_consent->{default} : 0;
 
         $user = BOM::User->create(
             email             => $email,
@@ -83,7 +82,7 @@ sub create_account {
             $args->{utm_data}   ? (utm_data           => $args->{utm_data})   : (),
         );
         my $landing_company = $residence ? $brand_country_instance->virtual_company_for_country($residence) : $default_virtual;
-        my $broker_code = LandingCompany::Registry::get($landing_company)->broker_codes->[0];
+        my $broker_code     = LandingCompany::Registry::get($landing_company)->broker_codes->[0];
         $client = $user->create_client(
             broker_code        => $broker_code,
             client_password    => $password,
@@ -102,8 +101,7 @@ sub create_account {
             secret_answer      => ''
         );
 
-    }
-    catch {
+    } catch {
         warn("Virtual: create_client err [$@]");
         return {error => 'invalid'};
     }

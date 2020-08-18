@@ -30,7 +30,7 @@ my $hash_pwd         = BOM::User::Password::hashpw($password);
 
 sub email_list {
     my $transport = Email::Sender::Simple->default_transport;
-    my @emails = map { +{$_->{envelope}->%*, subject => '' . $_->{email}->get_header('Subject'),} } $transport->deliveries;
+    my @emails    = map { +{$_->{envelope}->%*, subject => '' . $_->{email}->get_header('Subject'),} } $transport->deliveries;
     $transport->clear_deliveries;
     @emails;
 }
@@ -40,7 +40,7 @@ subtest 'Constructor' => sub {
         throws_ok(sub { BOM::Platform::Client::IDAuthentication->new() }, qr/Missing required arguments: client/, "Constructor dies with no client");
     };
     subtest 'With Client' => sub {
-        my $c = create_client();
+        my $c   = create_client();
         my $obj = BOM::Platform::Client::IDAuthentication->new({client => $c});
         isa_ok($obj, "BOM::Platform::Client::IDAuthentication", "Constructor ok with client");
     };
@@ -207,7 +207,7 @@ subtest 'MX accounts' => sub {
 
     };
     subtest "Invalid ProveID Matches" => sub {
-        my $base_dir = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/";
+        my $base_dir        = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/";
         my @invalid_matches = ("ExperianDeceased", "ExperianOFSI", "ExperianPEP", "ExperianBOE");
 
         for my $match (@invalid_matches) {
@@ -443,7 +443,7 @@ sub create_user_and_clients {
     my $details = shift;
 
     my $user = BOM::User->create(
-        email => $email // 'mx_test' . rand(999) . '@binary.com',
+        email    => $email // 'mx_test' . rand(999) . '@binary.com',
         password => $hash_pwd
     );
 

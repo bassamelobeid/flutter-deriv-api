@@ -38,7 +38,7 @@ sub get_sportsbook {
     $landing_company =~ s/\.//g;
 
     $landing_company = 'Binary (CR) SA' if $landing_company =~ /SVG/;
-    $sportsbook = $landing_company . ' ' . $currency;
+    $sportsbook      = $landing_company . ' ' . $currency;
 
     # Because if length restriction in DF part and time limit in our part, we are shortening our name dirty like this.
     if ($broker eq 'MF') {
@@ -64,11 +64,7 @@ sub get_doughflow_language_code_for {
 
     if (exists $lang_code_for{$lang}) {
         $code = $lang_code_for{$lang};
-    } elsif (
-        grep {
-            $_ eq $lang
-        } @{BOM::Config::Runtime->instance->app_config->cgi->allowed_languages})
-    {
+    } elsif (grep { $_ eq $lang } @{BOM::Config::Runtime->instance->app_config->cgi->allowed_languages}) {
         $code = lc $lang;
     }
 

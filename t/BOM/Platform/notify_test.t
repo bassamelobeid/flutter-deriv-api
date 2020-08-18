@@ -102,7 +102,7 @@ sub test_notify {
             for my $name (qw/buy_price purchase_time sell_time short_code/) {
                 is $note->{$name}, $test->{fmb}->{$name}, "note{$name} eq fmb{$name}";
             }
-            }
+        }
     }
 }
 
@@ -133,7 +133,7 @@ sub test_payment_notify {
                 is $note->{$name}, $test->{txn}->{$name}, "note{$name} eq txn{$name}";
             }
             is $note->{payment_remark}, $test->{remark}, 'payment_remark';
-            }
+        }
     }
 }
 
@@ -143,7 +143,7 @@ sub buy_one_bet {
     my $buy_price    = delete $args->{buy_price}    // 20;
     my $payout_price = delete $args->{payout_price} // $buy_price * 10;
     my $limits       = delete $args->{limits};
-    my $duration     = delete $args->{duration}     // '15s';
+    my $duration = delete $args->{duration} // '15s';
 
     my $now      = Date::Utility->new;
     my $bet_data = +{

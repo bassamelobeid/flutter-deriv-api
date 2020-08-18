@@ -103,9 +103,9 @@ sub login_env {
 
     my $now = Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
 
-    my $ip_address = $params->{client_ip} || $self->client_ip || '';
+    my $ip_address         = $params->{client_ip} || $self->client_ip || '';
     my $ip_address_country = uc($params->{country_code} || $self->country_code || '');
-    my $lang               = uc($params->{language}     || $self->language     || '');
+    my $lang               = uc($params->{language} || $self->language || '');
 
     ## The User-Agent can be arbitrarily large, but we do not want to store anything
     ## too large in the database, so we truncate it here if the final environment
@@ -167,7 +167,7 @@ sub _build_domain_name {
     my $self = shift;
 
     my @host_name = split(/\./, Sys::Hostname::hostname);
-    my $name = $host_name[0];
+    my $name      = $host_name[0];
 
     if ($name =~ /^qa\d+$/) {
         return 'www.binary' . $name . '.com';

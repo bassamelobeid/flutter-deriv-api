@@ -34,7 +34,7 @@ subtest 'init' => sub {
             submarket_name                 => $ul->submarket->name,
             underlying_risk_profile        => $ul->risk_profile,
             underlying_risk_profile_setter => $ul->risk_profile_setter,
-            )
+        )
     }
     'ok if required args provided';
 };
@@ -126,7 +126,7 @@ subtest 'custom client profile' => sub {
     BOM::Config::Runtime->instance->app_config->quants->custom_client_profiles(
         '{"CR1": {"reason": "test XYZ", "custom_limits": {"xxx": {"market": "synthetic_index", "risk_profile": "no_business", "name": "test custom"}}}}'
     );
-    my $rp = BOM::Platform::RiskProfile->new(%args);
+    my $rp    = BOM::Platform::RiskProfile->new(%args);
     my @cl_pr = $rp->get_client_profiles('CR2', $landing_company);
     ok !@cl_pr, 'no custom client limit';
     @cl_pr = $rp->get_client_profiles('CR1', $landing_company);
@@ -179,8 +179,8 @@ subtest 'turnover limit parameters' => sub {
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'ultra_short');
     is $rp->contract_info->{expiry_type}, 'ultra_short', 'ultra_short  expiry';
     $param = $rp->get_turnover_limit_parameters;
-    is $param->[0]->{name}, 'test custom ultra_short', 'correct name';
-    is $param->[0]->{limit}, 0, 'turnover limit correctly set to zero';
+    is $param->[0]->{name},  'test custom ultra_short', 'correct name';
+    is $param->[0]->{limit}, 0,                         'turnover limit correctly set to zero';
     ok !$param->[0]->{daily}, 'daily set to 0';
     ok $param->[0]->{ultra_short}, 'daily set to 1';
     is scalar(@{$param->[0]->{symbols}}), 12, '12 symbols selected';
@@ -371,13 +371,15 @@ subtest 'Zero non-binary contract limit for lookbacks' => sub {
     my $ul = Quant::Framework::Underlying->new('R_100');
     $landing_company = 'svg';
 
-    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles('{
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{
     "limit_id_xxx" : {
         "contract_category" : "lookback",
         "name" : "Block lookbacks",
         "non_binary_contract_limit" : "0",
         "risk_profile" : "no_business"
-    }}');
+    }}'
+    );
 
     my $rp = BOM::Platform::RiskProfile->new(
         contract_category              => 'lookback',
@@ -393,16 +395,17 @@ subtest 'Zero non-binary contract limit for lookbacks' => sub {
     );
 
     my $non_binary_limits_params = $rp->get_non_binary_limit_parameters;
-    my $limit = $rp->custom_profiles;
+    my $limit                    = $rp->custom_profiles;
     is scalar(@$limit), 2, 'Two riskd profile';
     is $rp->get_risk_profile, 'no_business', 'ignore profile with no conditions';
-    is_deeply $non_binary_limits_params, [
-        {
+    is_deeply $non_binary_limits_params,
+        [{
             'non_binary_contract_limit' => '0',
-            'name' => 'Block lookbacks'
+            'name'                      => 'Block lookbacks'
         },
         undef
-    ], 'Non-binary contract limit of zero must be set for lookbacks';
+        ],
+        'Non-binary contract limit of zero must be set for lookbacks';
 };
 
 done_testing();

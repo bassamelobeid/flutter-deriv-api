@@ -54,13 +54,13 @@ $tokens = $m->get_tokens_by_loginid($test_loginid);
 is scalar @$tokens, 0, 'all removed';
 
 ### test scope
-$token = $m->create_token($test_loginid, 'Test Token X', ['read', 'admin']);
+$token  = $m->create_token($test_loginid, 'Test Token X', ['read', 'admin']);
 @scopes = $m->get_scopes_by_access_token($token);
 is_deeply([sort @scopes], ['admin', 'read'], 'scope is correct');
 
 ### test ip
 ok $m->remove_by_loginid($test_loginid), 'remove ok';
-$token = $m->create_token($test_loginid, 'Test Token X', ['read', 'admin'], '127.0.0.1');
+$token  = $m->create_token($test_loginid, 'Test Token X', ['read', 'admin'], '127.0.0.1');
 $tokens = $m->get_tokens_by_loginid($test_loginid);
 is $tokens->[0]->{valid_for_ip}, '127.0.0.1';
 

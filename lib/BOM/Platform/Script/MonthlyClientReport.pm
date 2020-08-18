@@ -35,11 +35,11 @@ sub go {
 
     return $dbic->run(
         fixup => sub {
-            my $sth = $_->prepare($sql);
+            my $sth         = $_->prepare($sql);
             my @bind_params = ($crdr, $broker, $start_date->date_yyyymmdd);
             $sth->execute(@bind_params);
             my @headers = qw/Date Loginid Description CrDr_Amount Amount Currency Broker Type/;
-            my $csv = Text::CSV->new({eol => "\n"});
+            my $csv     = Text::CSV->new({eol => "\n"});
             my $fh;
             while (my $row = $sth->fetchrow_arrayref) {
                 unless ($fh) {

@@ -17,7 +17,7 @@ my ($acc_data_mapper, $balance);
 subtest "Try MX, GBP" => sub {
     lives_ok {
         # Setup fixtures
-        my $client = BOM::User::Client->new({loginid => 'MX0012'});
+        my $client  = BOM::User::Client->new({loginid => 'MX0012'});
         my $account = $client->default_account;
 
         $client->payment_free_gift(
@@ -33,7 +33,7 @@ subtest "Try MX, GBP" => sub {
                     'client_loginid' => $account->client_loginid,
                     'currency_code'  => 'GBP'
                 }
-                )->get_balance,
+            )->get_balance,
             '==',
             (4191.05 + 5.04),
             'Check balance for account on MX, GBP'

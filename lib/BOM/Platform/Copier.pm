@@ -11,7 +11,7 @@ sub rnew { return shift->SUPER::new(@_) }
 
 sub new {
     my $class = shift;
-    my $args = shift || die 'BOM::Platform::Copier->new called without args';
+    my $args  = shift || die 'BOM::Platform::Copier->new called without args';
 
     my $operation = delete $args->{db_operation};
 
@@ -32,7 +32,7 @@ sub update_or_create {
                 broker_code => $args->{broker},
                 operation   => 'write',
             }
-            )->db,
+        )->db,
         where => [
             trader_id => $args->{trader_id},
             copier_id => $args->{copier_id},

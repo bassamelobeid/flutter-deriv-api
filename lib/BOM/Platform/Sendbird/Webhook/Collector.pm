@@ -26,8 +26,7 @@ sub collect {
         die 'not a valid sendbird request' unless $self->validates;
         $self->render(json => 'ok') if $self->save_message_data;
         $self->rendered(200);
-    }
-    catch {
+    } catch {
         $log->errorf('Request failure: %s', $@);
         $self->rendered(401);
     }
@@ -124,8 +123,8 @@ Returns,
 =cut
 
 sub validates {
-    my ($self) = @_;
-    my $req = $self->req;
+    my ($self)   = @_;
+    my $req      = $self->req;
     my $sig      = $req->headers->header('x-sendbird-signature') or die 'no signature header found';
     my $config   = BOM::Config::third_party();
     my $token    = $config->{sendbird}->{api_token} // die 'sendbird api token is missing';

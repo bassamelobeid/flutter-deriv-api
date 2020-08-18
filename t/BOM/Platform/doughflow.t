@@ -29,7 +29,7 @@ sub get_fiat_currencies {
 
 subtest 'doughflow_sportsbooks' => sub {
     my %doughflow_sportsbooks = map { $_ => 1 } @doughflow_sportsbooks_mock;
-    my @all_broker_codes = LandingCompany::Registry->all_broker_codes;
+    my @all_broker_codes      = LandingCompany::Registry->all_broker_codes;
 
     my $config_mocked = Test::MockModule->new('BOM::Config');
     $config_mocked->mock('on_production', sub { return 1 });

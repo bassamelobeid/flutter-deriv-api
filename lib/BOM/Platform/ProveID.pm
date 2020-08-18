@@ -296,8 +296,7 @@ sub get_result {
     $self->_save_xml_result;
     try {
         $self->get_pdf_result;
-    }
-    catch {
+    } catch {
         warn $@;
     }
 
@@ -350,13 +349,12 @@ sub get_xml_result {
     #   And the following namespace is needed to pass the signature :
     #   xmlns:head=http://xml.proveid.experian.com/xsd/Headers
     my $header_namespace = 'http://xml.proveid.experian.com/xsd/Headers';
-    my $soap = SOAP::Lite->readable(1)->uri($self->api_uri)->proxy($self->api_proxy)->ns($header_namespace, 'head');
+    my $soap             = SOAP::Lite->readable(1)->uri($self->api_uri)->proxy($self->api_proxy)->ns($header_namespace, 'head');
 
     my $som;
     try {
         $som = $soap->search(SOAP::Data->type('xml' => $request), $self->_2fa_header);
-    }
-    catch {
+    } catch {
         die "Connection error\n";    ## Do not echo $@ here, as it can contain a path
     }
 
@@ -550,7 +548,7 @@ sub _build_addresses_tag {
 sub _build_country_code_tag {
     my $self = shift;
 
-    my $two_letter_country_code = $self->client->residence;
+    my $two_letter_country_code   = $self->client->residence;
     my $three_letter_country_code = uc(Locale::Country::country_code2code($two_letter_country_code, LOCALE_CODE_ALPHA_2, LOCALE_CODE_ALPHA_3) // "");
 
     die "Client " . $self->client->loginid . " could not get three letter country code from residence $two_letter_country_code"
@@ -711,8 +709,7 @@ sub _build_xml_result {
     # for back compatible
     try {
         $result ||= $self->_old_xml_file ? $self->_old_xml_file->slurp_utf8 : '';
-    }
-    catch {
+    } catch {
         $result = '';
     }
 

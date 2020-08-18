@@ -174,8 +174,7 @@ sub run {
                     }
                 }
 
-            }
-            catch {
+            } catch {
                 warn "$0 ($$): saw exception: $@";
                 sleep 1;
             }

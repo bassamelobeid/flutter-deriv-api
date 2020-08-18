@@ -113,7 +113,7 @@ subtest 'PA withdrawal with long further instructions by client' => sub {
                 fees               => 0,
                 is_agent_to_client => 0,
                 gateway_code       => 'payment_agent_transfer'
-                )
+            )
         };
     }
     qr/value too long for type character varying\(800\)/, 'remark length cannot > 800';

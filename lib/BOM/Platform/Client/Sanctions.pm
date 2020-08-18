@@ -78,7 +78,7 @@ sub check {
     return if (not $sanctioned_info->{matched} or $client->fully_authenticated and !$self->recheck_authenticated_clients);
 
     my $client_loginid = $client->loginid;
-    my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
+    my $client_name    = join(' ', $client->salutation, $client->first_name, $client->last_name);
 
     my $message =
           "UN Sanctions: $client_loginid suspected (Client's name is $client_name) - similar to $sanctioned_info->{name}\n"

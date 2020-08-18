@@ -204,7 +204,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $mf_client->save;
 
         $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
-        is $res->{error}->{code}, 'ASK_AUTHENTICATE', 'Correct error code for not authenticated';
+        is $res->{error}->{code},              'ASK_AUTHENTICATE',                  'Correct error code for not authenticated';
         is $res->{error}->{message_to_client}, 'Please authenticate your account.', 'Correct error message for not authenticated';
 
         my $mock_client = Test::MockModule->new('BOM::User::Client');
@@ -338,7 +338,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
 
 subtest 'Calculate to amount and fees' => sub {
     my $mock_forex = Test::MockModule->new('BOM::Platform::Client::CashierValidation', no_auto => 1);
-    my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig', no_auto => 1);
+    my $mock_fees  = Test::MockModule->new('BOM::Config::CurrencyConfig',              no_auto => 1);
     $mock_fees->mock(
         transfer_between_accounts_fees => sub {
             return {
@@ -352,7 +352,7 @@ subtest 'Calculate to amount and fees' => sub {
                 'BTC' => {
                     'USD' => 0.4,
                     'BTC' => 0.7     # ineffective (crypto-crypto transfer is not supported)
-                    }
+                }
 
             };
         });

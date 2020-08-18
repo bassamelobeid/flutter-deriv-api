@@ -100,8 +100,7 @@ sub emit {
             details => $data,
             context => $context_info,
         });
-    }
-    catch {
+    } catch {
         die "Invalid data format: cannot convert to json";
     }
 
@@ -144,8 +143,7 @@ sub get {
         try {
             $decoded_data = decode_json_utf8($event_data->[1]);
             stats_inc(lc "$queue_name.read");
-        }
-        catch {
+        } catch {
             stats_inc(lc "$queue_name.invalid_data");
         }
     }
@@ -157,8 +155,7 @@ sub _write_connection {
     if ($connections->{write}) {
         try {
             $connections->{write}->ping();
-        }
-        catch {
+        } catch {
             $connections->{write} = undef;
         }
     }

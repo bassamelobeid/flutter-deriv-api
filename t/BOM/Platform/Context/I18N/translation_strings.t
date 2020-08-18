@@ -77,7 +77,7 @@ sub test_language_file {
 sub is_valid_string { return shift !~ /^__/; }
 
 sub prepare_params {
-    my $text = shift;
+    my $text     = shift;
     my $how_many = () = $text =~ /_\d/g;
     return 1 .. $how_many;
 }

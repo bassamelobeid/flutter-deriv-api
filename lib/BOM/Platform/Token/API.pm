@@ -47,7 +47,7 @@ sub create_token {
     die $self->_log->fatal("display_name is required") unless $display_name;
 
     return {error => localize('alphanumeric with space and dash, 2-32 characters')} if $display_name !~ /^[\w\s\-]{2,32}$/;
-    return {error => localize('Max 30 tokens are allowed.')} if $self->get_token_count_by_loginid($loginid) > 30;
+    return {error => localize('Max 30 tokens are allowed.')}                        if $self->get_token_count_by_loginid($loginid) > 30;
 
     $scopes = [grep { $supported_scopes{$_} } @$scopes];
     my $token = $self->generate_token(TOKEN_LENGTH);
@@ -84,14 +84,14 @@ sub get_token_details {
     my ($self, $token, $update_last_used) = @_;
 
     $update_last_used //= 0;
-    my $key = $self->_make_key($token);
+    my $key     = $self->_make_key($token);
     my %details = @{$self->_redis_read->hgetall($key) // []};
 
     return \%details unless keys %details;
 
     $details{scopes} = decode_json_utf8($details{scopes}) if $details{scopes};
 
-    my $now = time;
+    my $now          = time;
     my $last_updated = $last_updated_epoch{$key} // 0;
 
     # only update once per second

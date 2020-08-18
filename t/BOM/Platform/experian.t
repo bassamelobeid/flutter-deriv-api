@@ -33,7 +33,7 @@ subtest 'Constructor' => sub {
     };
     subtest 'With Client' => sub {
         my $client = create_client();
-        my $obj = BOM::Platform::ProveID->new(client => $client);
+        my $obj    = BOM::Platform::ProveID->new(client => $client);
         isa_ok($obj, "BOM::Platform::ProveID", "Constructor ok with client");
     };
 };
@@ -128,7 +128,7 @@ subtest 'Response' => sub {
             $tmp_pdf_file->spew($proveid->s3client->download($proveid->_pdf_file_name)->get);
             $tmp_pdf_file->copy("/tmp/tmp_$entry.pdf");
             is(XML::SemanticDiff->new()->compare($xml_file, "$tmp_xml_file"), 0, "xml saved ok");
-            is(compare($tmp_pdf_file, $pdf_file), 0, "pdf saved ok");
+            is(compare($tmp_pdf_file, $pdf_file),                             0, "pdf saved ok");
             $proveid->delete_existing_reports;
         };
     }
@@ -152,7 +152,7 @@ subtest 'Response' => sub {
             qr/Encountered SOAP Fault when sending XML request : Test Fault Code : Test Fault String/,
             "fault fails ok"
         );
-        }
+    }
 };
 
 subtest 'Replace Existing Result' => sub {
@@ -161,7 +161,7 @@ subtest 'Replace Existing Result' => sub {
     $client->first_name('ExperianBOE');
 
     my $proveid = BOM::Platform::ProveID->new(client => $client);
-    my $result = $proveid->get_result;
+    my $result  = $proveid->get_result;
     $client->first_name('ExperianValid');
 
     # Run again to replace existing files
@@ -209,7 +209,7 @@ subtest 'Other ProveID Methods' => sub {
         BOM::Platform::ProveID->new(
             client => $client,
             folder => '/tmp'
-            )->xml_result,
+        )->xml_result,
         "hello world",
         "xml result will be fetched from s3 first"
     );
@@ -218,7 +218,7 @@ subtest 'Other ProveID Methods' => sub {
         BOM::Platform::ProveID->new(
             client => $client,
             folder => '/tmp'
-            )->xml_result,
+        )->xml_result,
         "hello world",
         "xml result will then be fetched from local dir"
     );
@@ -272,7 +272,7 @@ if ($ARGV[0] and $ARGV[0] eq '-uat') {
                     private_key => $private_key,
                     public_key  => $public_key
 
-                    )->get_result,
+                )->get_result,
                 "Auth ok"
             );
         };

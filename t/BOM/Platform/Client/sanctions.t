@@ -134,7 +134,7 @@ subtest 'Arguments' => sub {
 sub test_sanctions_email {
     my ($client, $comment, $triggered_by) = @_;
     my $loginid = $client->loginid;
-    my $name = join(' ', $client->first_name, $client->last_name);
+    my $name    = join(' ', $client->first_name, $client->last_name);
 
     my $expected_subject = "$loginid possible match in sanctions list";
     $expected_subject .= " - $triggered_by" if $triggered_by;

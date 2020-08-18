@@ -52,8 +52,7 @@ sub check {
                 status    => $obj->{status},
             });
         $self->render(text => 'ok');
-    }
-    catch {
+    } catch {
         $log->errorf('Failed - %s', $@);
         $self->render(text => 'failed');
     }

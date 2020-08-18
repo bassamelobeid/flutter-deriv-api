@@ -134,7 +134,7 @@ subtest 'create account' => sub {
 
             lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
             is($real_acc->{client}->broker, 'MF', "Successfully create " . $real_acc->{client}->loginid);
-            my $cl = BOM::User::Client->new({loginid => $real_acc->{client}->loginid});
+            my $cl   = BOM::User::Client->new({loginid => $real_acc->{client}->loginid});
             my $data = decode_fa($cl->financial_assessment());
             is $data->{forex_trading_experience}, '0-1 year', "got the forex trading experience";
         }
@@ -342,35 +342,35 @@ subtest 'create account' => sub {
 
         ok !$client_vr_new->status->withdrawal_locked, 'withdrawal_locked status must not set or copied for virtual accounts';
     };
-    
+
     subtest 'P2P account opening reason' => sub {
-    
+
         my $vr_acc = create_vr_acc({
-            email            => 'p2p_mlt@binary.com',
-            client_password  => 'test',
-            residence  => 'nl',
+            email           => 'p2p_mlt@binary.com',
+            client_password => 'test',
+            residence       => 'nl',
         });
         my ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
-        
+
         my %details = (
             %real_client_details,
-            first_name => 'john',
-            residence  => 'nl',
-            citizen => 'nl',
+            first_name               => 'john',
+            residence                => 'nl',
+            citizen                  => 'nl',
             non_pep_declaration_time => Date::Utility->today->date_yyyymmdd,
-            account_opening_reason => 'Peer-to-peer exchange',
+            account_opening_reason   => 'Peer-to-peer exchange',
         );
-    
+
         $details = BOM::Platform::Account::Real::default::validate_account_details(\%details, $vr_client, 'MLT', 1);
         is $details->{error}, 'P2PRestrictedCountry', 'error for P2P on MLT';
 
         $details = BOM::Platform::Account::Real::default::validate_account_details(\%details, $vr_client, 'CR', 1);
-        ok !$details->{error}, 'no error for P2P on CR';       
+        ok !$details->{error}, 'no error for P2P on CR';
 
         $details{account_opening_reason} = 'Hedging';
         $details = BOM::Platform::Account::Real::default::validate_account_details(\%details, $vr_client, 'MLT', 1);
         ok !$details->{error}, 'no error for other reason on MLT';
-        
+
         delete $details{account_opening_reason};
         $details = BOM::Platform::Account::Real::default::validate_account_details(\%details, $vr_client, 'MLT', 1);
         ok !$details->{error}, 'no warning if account_opening_reason is missing';
@@ -394,7 +394,7 @@ sub create_real_acc {
 
     my %details = %real_client_details;
     $details{$_} = $vr_details->{$broker}->{$_} for qw(email residence);
-    $details{$_} = $broker for qw(broker_code first_name);
+    $details{$_} = $broker                      for qw(broker_code first_name);
     $details{client_password} = $vr_client->password;
 
     return BOM::Platform::Account::Real::default::create_account({
@@ -409,7 +409,7 @@ sub create_mf_acc {
     my ($from_client, $user) = @_;
 
     my %details = %real_client_details;
-    $details{$_} = $from_client->$_ for qw(email residence);
+    $details{$_}              = $from_client->$_ for qw(email residence);
     $details{broker_code}     = 'MF';
     $details{first_name}      = 'MF_' . $from_client->broker;
     $details{client_password} = $from_client->password;

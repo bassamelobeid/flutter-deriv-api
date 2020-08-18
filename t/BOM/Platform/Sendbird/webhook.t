@@ -86,7 +86,7 @@ subtest 'Correct signature, message saved' => sub {
         sdk => 'JavaScript'
     };
 
-    my $json = encode_json $payload;
+    my $json      = encode_json $payload;
     my $signature = hmac_sha256_hex($json, $token);
 
     $t->ua->on(
@@ -133,7 +133,7 @@ subtest 'Correct signature, file type message saved' => sub {
         sdk => 'JavaScript'
     };
 
-    my $json = encode_json $payload;
+    my $json      = encode_json $payload;
     my $signature = hmac_sha256_hex($json, $token);
 
     $t->ua->on(

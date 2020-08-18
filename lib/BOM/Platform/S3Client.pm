@@ -28,7 +28,7 @@ sub new {
 
     state %s3_services;
     my $s3_hash_key = sprintf("%s %s %s", $config->{aws_access_key_id}, $config->{aws_bucket}, $config->{aws_region});
-    my $s3 = $s3_services{$s3_hash_key};
+    my $s3          = $s3_services{$s3_hash_key};
     unless ($s3) {
         $s3 = Net::Async::Webservice::S3->new(
             access_key => $config->{aws_access_key_id},
@@ -80,17 +80,17 @@ sub upload {
         value_length => $file_size,
         meta         => {checksum => $checksum},
         headers      => {'Content-Type' => Plack::MIME->mime_type($original_filename) // 'application/octet-stream'},
-        )->then(
+    )->then(
         sub {
             my $result = shift;
             return Future->done($original_filename) if "\"$checksum\"" eq $result;
             return Future->fail("Checksum mismatch for: $original_filename");
         }
-        )->else(
+    )->else(
         sub {
             return Future->fail("Upload failed for $original_filename, error: " . shift);
         }
-        )->on_ready(
+    )->on_ready(
         sub {
             close($fh);
         });
@@ -109,7 +109,7 @@ sub _get_generator {
         aws_secret_access_key => $self->{config}->{aws_secret_access_key},
         # Here we do a special process on `us-east-1` because as a default region, its url has no rigion part
         # Please refer to https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html#access-bucket-intro
-        prefix => 'https://s3' . ($self->{config}->{aws_region} eq 'us-east-1' ? "" : '-' . $self->{config}{aws_region}) . '.amazonaws.com/',
+        prefix  => 'https://s3' . ($self->{config}->{aws_region} eq 'us-east-1' ? "" : '-' . $self->{config}{aws_region}) . '.amazonaws.com/',
         expires => $expiry,
     );
 }

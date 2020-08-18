@@ -31,7 +31,7 @@ sub buy_one_bet {
     my $buy_price    = delete $args->{buy_price}    // 20;
     my $payout_price = delete $args->{payout_price} // $buy_price * 10;
     my $limits       = delete $args->{limits};
-    my $duration     = delete $args->{duration}     // '15s';
+    my $duration = delete $args->{duration} // '15s';
 
     my $now      = Date::Utility->new;
     my $bet_data = +{
@@ -93,9 +93,9 @@ sub buy_multiple_bets {
         };
 
     my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
-        bet_data     => $bet_data,
-        account_data => [map { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
-        limits       => undef,
+        bet_data         => $bet_data,
+        account_data     => [map { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
+        limits           => undef,
         transaction_data => {staff_loginid => 'CL001'},
         db               => db,
     });
@@ -116,7 +116,7 @@ sub sell_by_shortcode {
                 'id'         => undef,
                 'quantity'   => 1,
             },
-            account_data     => [map           { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
+            account_data     => [map { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
             transaction_data => {staff_loginid => 'CL001'},
             db               => db,
         });

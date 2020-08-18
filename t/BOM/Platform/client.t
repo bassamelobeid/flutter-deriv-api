@@ -88,7 +88,7 @@ subtest 'prepare' => sub {
     'Expect to initialize the client data mapper';
 
     my $client_CR = BOM::User::Client->new({loginid => 'CR656234'});
-    my $account = $client_CR->set_default_account('USD');
+    my $account   = $client_CR->set_default_account('USD');
 
 };
 

@@ -242,7 +242,7 @@ sub calculate_to_amount_with_fees {
 
     my $fee_calculated_by_percent = $amount * $fee_percent / 100;
 
-    my $min_fee = get_min_unit($from_currency);
+    my $min_fee     = get_min_unit($from_currency);
     my $fee_applied = ($fee_calculated_by_percent < $min_fee) ? $min_fee : $fee_calculated_by_percent;
 
     $amount = convert_currency(($amount - $fee_applied), $from_currency, $to_currency, $rate_expiry);
@@ -285,7 +285,7 @@ sub _create_error {
 
     return {
         error => {
-            code => $code // 'CashierForwardError',
+            code              => $code // 'CashierForwardError',
             message_to_client => $message,
             $details ? (details => $details) : (),
         }};

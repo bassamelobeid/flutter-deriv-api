@@ -41,10 +41,10 @@ for (my $i = 0; $i < @{RISK_PROFILES()}; $i++) {
 
 has [
     qw(contract_category expiry_type start_type currency barrier_category symbol market_name submarket_name underlying_risk_profile underlying_risk_profile_setter)
-    ] => (
+] => (
     is       => 'ro',
     required => 1,
-    );
+);
 
 has [qw(contract_info)] => (
     is         => 'ro',
@@ -140,10 +140,10 @@ has [qw(
         raw_custom_commission_profiles
         raw_custom_volume_limits
         )
-    ] => (
+] => (
     is         => 'ro',
     lazy_build => 1,
-    );
+);
 
 sub _build_raw_custom_risk_profiles {
     my $self = shift;
@@ -193,7 +193,7 @@ sub _build_raw_custom_profiles {
 # this one is the risk profile including the client profile
 sub get_risk_profile {
     my $self = shift;
-    my $ap = shift || [];
+    my $ap   = shift || [];
 
     my $base = $self->base_profile;
 
@@ -211,7 +211,7 @@ sub get_risk_profile {
 
 sub get_non_binary_limit_parameters {
     my $self = shift;
-    my $ap = shift || [];
+    my $ap   = shift || [];
 
     return [
         map {
@@ -224,14 +224,14 @@ sub get_non_binary_limit_parameters {
             }
 
             $params;
-            } @{$self->non_binary_custom_profiles},
+        } @{$self->non_binary_custom_profiles},
         @$ap
     ];
 }
 
 sub get_turnover_limit_parameters {
     my $self = shift;
-    my $ap = shift || [];
+    my $ap   = shift || [];
 
     # Complince team establish turnover limits only for svg landing company
     # Therefore we are using svg for getting limits for all companies
@@ -253,7 +253,7 @@ sub get_turnover_limit_parameters {
                 } elsif ($exp eq 'daily') {
                     $params->{daily} = 1;
                 } else {
-                    $params->{daily} = 0;
+                    $params->{daily}       = 0;
                     $params->{ultra_short} = $exp eq 'ultra_short' ? 1 : 0;
                 }
             }
@@ -279,8 +279,7 @@ sub get_turnover_limit_parameters {
                         $svg_lc->default_offerings($offerings_config)->query({market => [split ',', $_->{market} =~ s/\s//gr]}, ['underlying_symbol'])
                     ];
                 }
-            }
-            catch {
+            } catch {
                 my $err = $@;
                 die if $err !~ m/^LANDING_COMPANY_DOES_NOT_HAVE_OFFERINGS/;
 
@@ -292,8 +291,7 @@ sub get_turnover_limit_parameters {
                     $params->{bet_type} =
                         [$svg_lc->default_offerings($offerings_config)->query({contract_category => $_->{contract_category}}, ['contract_type'])];
                 }
-            }
-            catch {
+            } catch {
                 my $err = $@;
                 die if $err !~ m/^LANDING_COMPANY_DOES_NOT_HAVE_OFFERINGS/;
 
@@ -301,7 +299,7 @@ sub get_turnover_limit_parameters {
             }
 
             $params;
-            } @{$self->custom_profiles},
+        } @{$self->custom_profiles},
         @$ap
     ];
 }
@@ -442,8 +440,7 @@ sub get_current_profile_definitions {
 
         @markets =
             map { Finance::Asset::Market::Registry->get($_) } $offerings_obj->values_for_key('market');
-    }
-    catch {
+    } catch {
         my $err = $@;
         die if $err !~ m/^LANDING_COMPANY_DOES_NOT_HAVE_OFFERINGS/;
 
