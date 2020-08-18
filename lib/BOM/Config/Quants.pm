@@ -65,8 +65,8 @@ sub maximum_stake_limit {
 sub _get_amount_limit {
     my ($amount_type, $currency, $lc, $market, $contract_category) = @_;
 
-    my $config = BOM::Config::quants()->{bet_limits}{$amount_type} // die $amount_type . ' not defined';
-    my $by_lc     = (defined $lc     and $config->{$lc})    ? $config->{$lc}    : $config->{'default_landing_company'};
+    my $config    = BOM::Config::quants()->{bet_limits}{$amount_type} // die $amount_type . ' not defined';
+    my $by_lc     = (defined $lc and $config->{$lc}) ? $config->{$lc} : $config->{'default_landing_company'};
     my $by_market = (defined $market and $by_lc->{$market}) ? $by_lc->{$market} : $by_lc->{'default_market'};
     my $by_cc =
         (defined $contract_category and $by_market->{$contract_category})

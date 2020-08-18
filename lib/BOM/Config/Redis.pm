@@ -38,13 +38,12 @@ my $connections = {};
 
 sub _redis {
     my ($redis_type, $access_type, $timeout) = @_;
-    my $key = join '_', ($redis_type, $access_type, $timeout ? $timeout : ());
+    my $key               = join '_', ($redis_type, $access_type, $timeout ? $timeout : ());
     my $connection_config = $config->{$redis_type}->{$access_type};
     if ($access_type eq 'write' && $connections->{$key}) {
         try {
             $connections->{$key}->ping();
-        }
-        catch {
+        } catch {
             warn "Redis::_redis $key died: $@, reconnecting";
             $connections->{$key} = undef;
         }

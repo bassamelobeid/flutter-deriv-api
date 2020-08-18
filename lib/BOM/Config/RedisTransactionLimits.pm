@@ -56,11 +56,10 @@ sub _get_redis_transaction_server {
     if ($connections->{$redis_key}) {
         try {
             $connections->{$redis_key}->ping();
-        }
-        catch {
+        } catch {
             warn "RedisTransactionLimits::_redis $redis_key died: $_, reconnecting";
             $connections->{$redis_key} = undef;
-        };
+        }
     }
 
     $connections->{$redis_key} //= RedisDB->new(

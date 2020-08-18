@@ -67,7 +67,7 @@ sub save_config {
 sub _commission {
     my ($self, $args) = @_;
 
-    my %args = %$args;
+    my %args            = %$args;
     my $existing_config = $self->chronicle_reader->get($namespace, 'commission') // {};
 
     my $identifier = $args{name} || die 'name is required';
@@ -80,8 +80,7 @@ sub _commission {
         $args{$time_name} =~ s/^\s+|\s+$//g;
         try {
             $args{$time_name} = Date::Utility->new($args{$time_name})->epoch;
-        }
-        catch {
+        } catch {
             die "Invalid $time_name format";
         }
     }
@@ -136,11 +135,11 @@ Retrieves config based on contract_type and underlying_symbol matching
 sub get_config {
     my ($self, $config_type, $args) = @_;
 
-    my $method = $self->for_date ? 'get_for' : 'get';
+    my $method          = $self->for_date ? 'get_for' : 'get';
     my $existing_config = $self->chronicle_reader->$method($namespace, $config_type, $self->for_date) // {};
 
     # custom commission requires some special treatment.
-    return $self->_process_commission($existing_config, $args) if $config_type eq 'commission';
+    return $self->_process_commission($existing_config, $args)                      if $config_type eq 'commission';
     return $self->_process_multiplier_config($existing_config, $config_type, $args) if $config_type =~ /multiplier_config/;
     return $existing_config;
 }
@@ -165,7 +164,7 @@ sub _process_commission {
 
     return [values %$existing_config] unless $args;
 
-    my $underlying_symbol = $args->{underlying_symbol};
+    my $underlying_symbol  = $args->{underlying_symbol};
     my $finance_underlying = eval { Finance::Underlying->by_symbol($underlying_symbol) } if $underlying_symbol and $underlying_symbol =~ /^(frx|WLD)/;
 
     my $foreign_curr  = '';
@@ -183,7 +182,7 @@ sub _process_commission {
 
     my @match;
     foreach my $key (keys %$existing_config) {
-        my $config = $existing_config->{$key};
+        my $config          = $existing_config->{$key};
         my %underlying_hash = map { $_ => 1 } @{$config->{underlying_symbol} // []};
 
         if (!$config->{bias}) {

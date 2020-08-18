@@ -188,7 +188,7 @@ sub transfer_between_accounts_fees {
 
     my $currency_config;
     for my $from_currency (@all_currencies) {
-        my $from_def = LandingCompany::Registry::get_currency_definition($from_currency);
+        my $from_def      = LandingCompany::Registry::get_currency_definition($from_currency);
         my $from_category = $from_def->{stable} ? 'stable' : $from_def->{type};
 
         my $fees;
@@ -198,7 +198,7 @@ sub transfer_between_accounts_fees {
             #Same-currency and crypto-to-crypto transfers are not supported: fee = undef.
             unless (($from_def->{type} eq 'crypto' and $to_def->{type} eq 'crypto') or $from_currency eq $to_currency) {
                 my $to_category = $to_def->{stable} ? 'stable' : $to_def->{type};
-                my $fee = $fee_by_currency->{"${from_currency}_$to_currency"}
+                my $fee         = $fee_by_currency->{"${from_currency}_$to_currency"}
                     // $configs->{"payments.transfer_between_accounts.fees.default.${from_category}_$to_category"};
                 if ($fee < 0) {
                     $log->tracef("The %s-%s transfer fee of %d in app_config->payements.transfer_between_accounts.fees was too low. Raised to 0",
@@ -244,7 +244,7 @@ Returns the allowed age for exchange rate quote in seconds.
 =cut
 
 sub rate_expiry {
-    my @types = map { LandingCompany::Registry::get_currency_type($_) } @_;
+    my @types  = map { LandingCompany::Registry::get_currency_type($_) } @_;
     my %config = map { $_ => app_config()->get('payments.transfer_between_accounts.exchange_rate_expiry.' . $_) } qw( fiat fiat_holidays crypto );
 
     my $reader   = BOM::Config::Chronicle::get_chronicle_reader;
