@@ -196,7 +196,7 @@ subtest 'test cancel functionality', sub {
         });
 
         my $error = $txn->buy;
-        is $error->{'-mesg'}, 'invalid deal cancellation duration', 'message';
+        is $error->{'-mesg'},              'invalid deal cancellation duration',                 'message';
         is $error->{'-message_to_client'}, 'Deal cancellation is not offered at this duration.', 'message to client';
     };
     subtest 'cancel without purchasing cancel option ' => sub {

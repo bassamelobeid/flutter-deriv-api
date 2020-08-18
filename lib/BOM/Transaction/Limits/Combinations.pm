@@ -40,7 +40,7 @@ sub get_global_limit_combinations {
 }
 
 sub get_user_limit_combinations {
-    my ($binary_user_id, $attributes) = @_;
+    my ($binary_user_id,   $attributes)  = @_;
     my ($underlying_group, $expiry_type) = @{$attributes}[0, 3];
 
     my $user_format = "%s,%s,$binary_user_id";

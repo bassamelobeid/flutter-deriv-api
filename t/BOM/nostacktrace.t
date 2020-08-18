@@ -58,9 +58,9 @@ rec(
         1 until defined scalar caller --$stack_depth;
         note "stack_depth=$stack_depth, elapsed: " . (1000000 * Time::HiRes::tv_interval($start));
     }
-    ) for (
+) for (
     90 .. 110,
     2091
-    );
+);
 
 done_testing;

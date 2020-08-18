@@ -135,11 +135,11 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
 });
 
-my $underlying        = create_underlying('frxUSDJPY');
-my $market            = $underlying->market->name;
-my $underlying_OTC_GDAXI  = create_underlying('OTC_GDAXI');
-my $underlying_WLDUSD = create_underlying('WLDUSD');
-my $underlying_R50    = create_underlying('R_50');
+my $underlying           = create_underlying('frxUSDJPY');
+my $market               = $underlying->market->name;
+my $underlying_OTC_GDAXI = create_underlying('OTC_GDAXI');
+my $underlying_WLDUSD    = create_underlying('WLDUSD');
+my $underlying_R50       = create_underlying('R_50');
 
 sub db {
     return BOM::Database::ClientDB->new({
@@ -234,7 +234,7 @@ subtest 'batch-buy success + multisell', sub {
             $txn->prepare_buy(1);
             foreach my $m (@{$txn->multiple}) {
                 next if $m->{code} && $m->{code} eq 'ignore';
-                ok(!$m->{code}, 'no error');
+                ok(!$m->{code},                                             'no error');
                 ok($m->{client} && ref $m->{client} eq 'BOM::User::Client', 'check client');
                 is($m->{limits}{max_balance}, $m->{client}->loginid, 'check_limit');
             }
@@ -309,7 +309,7 @@ subtest 'batch-buy success + multisell', sub {
             $_->{txn} = $_->{tnx} for @$m;
 
             ok(!$m->[1]->{fmb} && !$m->[1]->{tnx} && !$m->[1]->{buy_tr_id}, 'check undef fields for invalid sell');
-            is($m->[1]->{code}, 'NoOpenPosition', 'check error code');
+            is($m->[1]->{code},  'NoOpenPosition',                                         'check error code');
             is($m->[1]->{error}, 'This contract was not found among your open positions.', 'check error message');
             check_one_result 'result for client #1', $cl1, $acc1, $m->[2], 4960;
             check_one_result 'result for client #2', $cl2, $acc2, $m->[0], 4910;
@@ -501,7 +501,7 @@ subtest 'single contract fails in database', sub {
         subtest 'result for client #3', sub {
             ok !exists($m->[3]->{fmb}), 'fmb does not exist';
             ok !exists($m->[3]->{txn}), 'txn does not exist';
-            is $m->[3]->{code}, 'InsufficientBalance', 'code = InsufficientBalance';
+            is $m->[3]->{code},  'InsufficientBalance',                                                              'code = InsufficientBalance';
             is $m->[3]->{error}, 'Your account balance (USD40.00) is insufficient to buy this contract (USD50.00).', 'correct description';
         };
 

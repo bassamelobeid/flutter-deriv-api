@@ -44,7 +44,7 @@ sub new {
     my ($class, %params) = @_;
     return bless {}, __PACKAGE__ . '::Fake' if fake_it;
 
-    my $self = bless {}, $class;
+    my $self            = bless {}, $class;
     my $landing_company = $params{landing_company};
     $self->{landing_company} = $landing_company->short;
     $self->{is_virtual}      = $landing_company->is_virtual;

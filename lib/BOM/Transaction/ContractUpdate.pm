@@ -87,7 +87,7 @@ sub _build_contract {
     $self->fmb($fmb);
 
     my $contract_params = shortcode_to_parameters($fmb->{short_code}, $self->client->currency);
-    my $limit_order = BOM::Transaction::Utility::extract_limit_orders($fmb);
+    my $limit_order     = BOM::Transaction::Utility::extract_limit_orders($fmb);
     $contract_params->{limit_order} = $limit_order if %$limit_order;
 
     $contract_params->{is_sold}    = $fmb->{is_sold};
@@ -291,7 +291,7 @@ sub build_contract_update_response {
     );
 
     my %new_orders = map { $_ => $self->$_ } grep { $self->$_ } keys %{$self->update_params};
-    my $display = $contract->available_orders_for_display(\%new_orders);
+    my $display    = $contract->available_orders_for_display(\%new_orders);
     $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
 
     return {
@@ -334,7 +334,7 @@ sub _requeue_transaction {
     my ($in, $out);
     foreach my $order_type (keys %{$self->update_params}) {
         my $which_side = $order_type . '_side';
-        my $key = $contract->$which_side eq 'lower' ? 'down_level' : 'up_level';
+        my $key        = $contract->$which_side eq 'lower' ? 'down_level' : 'up_level';
 
         $expiry_queue_params->{$key} = $contract->$order_type->barrier_value if $contract->$order_type;
         $out = dequeue_open_contract($expiry_queue_params) // 0;

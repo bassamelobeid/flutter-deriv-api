@@ -152,7 +152,7 @@ subtest 'global potential loss' => sub {
     note("turn on global potential loss check");
     BOM::Config::Runtime->instance->app_config->quants->enable_global_potential_loss(1);
 
-    sleep(1);    # prevent race condition
+    sleep(1);                             # prevent race condition
     close_all_open_contracts('CR', 1);    #close with full payout
     foreach my $config ((
             {limit_amount => 100},
@@ -215,7 +215,7 @@ subtest 'global potential loss' => sub {
     sleep(1);
     close_all_open_contracts('CR', 1);    # close with full payout
     $contract = produce_contract({%$args, underlying => 'R_50'});
-    $error = do {
+    $error    = do {
         my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
@@ -232,7 +232,7 @@ subtest 'global potential loss' => sub {
     is $error->{'-message_to_client'}, 'No further trading is allowed on this contract type for the current trading session.';
 
     $contract = produce_contract({%$args, underlying => 'frxUSDJPY'});
-    $error = do {
+    $error    = do {
         my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
@@ -377,7 +377,7 @@ subtest 'global realized loss' => sub {
     sleep(1);
     close_all_open_contracts('CR');
     $contract = produce_contract({%$args, underlying => 'R_50'});
-    $error = do {
+    $error    = do {
         my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
@@ -405,7 +405,7 @@ subtest 'global realized loss' => sub {
     is $error->{'-message_to_client'}, 'No further trading is allowed on this contract type for the current trading session.';
 
     $contract = produce_contract({%$args, underlying => 'frxUSDJPY'});
-    $error = do {
+    $error    = do {
         my $txn = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,

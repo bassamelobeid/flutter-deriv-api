@@ -24,7 +24,7 @@ sub get_history_by_contract_id {
     die 'limit is required'       unless $args->{limit};
 
     my $contract = $args->{contract} // $self->_build_contract({contract_id => $args->{contract_id}});
-    my $dm = $self->_fmb_datamapper;
+    my $dm       = $self->_fmb_datamapper;
 
     unless ($contract) {
         return {error => localize('This contract was not found among your open positions.')};
@@ -42,7 +42,7 @@ sub get_history_by_transaction_id {
     die 'limit is required'          unless $args->{limit};
 
     my $contract = $args->{contract} // $self->_build_contract({transaction_id => $args->{transaction_id}});
-    my $dm = $self->_fmb_datamapper;
+    my $dm       = $self->_fmb_datamapper;
 
     unless ($contract) {
         return {error => localize('This contract was not found among your open positions.')};
@@ -64,7 +64,7 @@ sub _get_history {
         foreach my $order_type (@{$contract->category->allowed_update}) {
             next unless $current->{$order_type . '_order_date'};
             my $order_amount_str = $order_type . '_order_amount';
-            my $display_name = $order_type eq 'take_profit' ? localize('Take profit') : localize('Stop loss');
+            my $display_name     = $order_type eq 'take_profit' ? localize('Take profit') : localize('Stop loss');
             my $order_amount;
             unless ($prev) {
                 $order_amount = $current->{$order_amount_str} ? $current->{$order_amount_str} + 0 : 0;
@@ -106,13 +106,13 @@ sub _build_contract {
     my $account_id = $self->client->default_account->id;
     my $fmb =
           $args->{transaction_id} ? $fmb_dm->get_contract_by_account_id_transaction_id($account_id, $args->{transaction_id})->[0]
-        : $args->{contract_id} ? $fmb_dm->get_contract_by_account_id_contract_id($account_id, $args->{contract_id})->[0]
-        :                        die 'only support _build_contract with contract_id or transaction_id';
+        : $args->{contract_id}    ? $fmb_dm->get_contract_by_account_id_contract_id($account_id, $args->{contract_id})->[0]
+        :                           die 'only support _build_contract with contract_id or transaction_id';
 
     return undef unless $fmb;
 
     my $contract_params = shortcode_to_parameters($fmb->{short_code}, $self->client->currency);
-    my $limit_order = BOM::Transaction::Utility::extract_limit_orders($fmb);
+    my $limit_order     = BOM::Transaction::Utility::extract_limit_orders($fmb);
     $contract_params->{limit_order} = $limit_order if %$limit_order;
 
     $contract_params->{is_sold}    = $fmb->{is_sold};

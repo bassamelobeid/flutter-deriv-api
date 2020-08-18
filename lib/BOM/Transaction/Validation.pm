@@ -61,7 +61,7 @@ sub validate_trx_sell {
     CLI: for my $c (@$clients) {
         next CLI if !$c->{client} || $c->{code};
 
-        my $client = $c->{client};
+        my $client            = $c->{client};
         my @validation_checks = (@{$client->landing_company->transaction_checks}, @extra_validation_methods);
 
         foreach my $method (@validation_checks) {
@@ -523,7 +523,7 @@ sub _validate_iom_withdrawal_limit {
     }
 
     # withdrawal since $numdays
-    my $payment_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
+    my $payment_mapper     = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
     my $withdrawal_in_days = $payment_mapper->get_total_withdrawal({
         start_time => Date::Utility->new(Date::Utility->new->epoch - 86400 * $numdays),
         exclude    => ['currency_conversion_transfer', 'account_transfer'],
@@ -615,7 +615,7 @@ sub _validate_payout_limit {
 
     my $contract = $self->transaction->contract;
 
-    my $rp = $contract->risk_profile;
+    my $rp    = $contract->risk_profile;
     my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
 
     # setups client specific payout and turnover limits, if any.

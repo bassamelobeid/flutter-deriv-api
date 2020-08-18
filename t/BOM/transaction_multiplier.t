@@ -630,7 +630,7 @@ subtest 'sell failure due to update' => sub {
     $error = $sell_txn->sell;
     ok $error, 'sell failed after contract is updated';
     is $error->{-mesg}, 'Contract is updated while attempting to sell', 'error mesg Contract is updated while attempting to sell';
-    is $error->{-type}, 'SellFailureDueToUpdate', 'error type SellFailureDueToUpdate';
+    is $error->{-type}, 'SellFailureDueToUpdate',                       'error type SellFailureDueToUpdate';
 
     subtest 'sell_expired_contract with contract id' => sub {
         # expiring the contract by setting current tick to 101.15 (the value of take profit)

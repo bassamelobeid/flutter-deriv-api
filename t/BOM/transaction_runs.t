@@ -26,9 +26,9 @@ my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 my $mock_contract   = Test::MockModule->new('BOM::Product::Contract');
 
 $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
-$mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+$mock_validation->mock(validate_tnc           => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 $mock_validation->mock(_validate_date_pricing => sub { note "mocked Transaction::Validation->_validate_date_pricing returning nothing"; () });
-$mock_validation->mock(_is_valid_to_buy       => sub { note "mocked Transaction::Validation->_is_valid_to_buy returning nothing";       () });
+$mock_validation->mock(_is_valid_to_buy       => sub { note "mocked Transaction::Validation->_is_valid_to_buy returning nothing"; () });
 $mock_validation->mock(
     _validate_trade_pricing_adjustment => sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
 

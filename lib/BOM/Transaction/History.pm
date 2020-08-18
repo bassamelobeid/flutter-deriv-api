@@ -69,7 +69,7 @@ sub get_transaction_history {
         my $txn_time = _get_txn_time($txn);
 
         $txn->{transaction_time} = Date::Utility->new($txn_time)->epoch();
-        $txn->{short_code} = $txn->{short_code} // '';
+        $txn->{short_code}       = $txn->{short_code} // '';
 
         if ($txn->{payment_id}) {
             push(@payments, $txn);

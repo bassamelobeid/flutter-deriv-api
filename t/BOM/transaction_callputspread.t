@@ -123,7 +123,7 @@ subtest 'buy CALLSPREAD R_100' => sub {
         is $trx->{payment_id}, undef, 'payment_id';
 
         is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
-        is $trx->{remark}, undef, 'remark';
+        is $trx->{remark},        undef,                  'remark';
         is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
         cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
     };
@@ -215,7 +215,7 @@ subtest 'buy PUTSPREAD R_100' => sub {
         is $trx->{payment_id}, undef, 'payment_id';
 
         is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
-        is $trx->{remark}, undef, 'remark';
+        is $trx->{remark},        undef,                  'remark';
         is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
         cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
     };
@@ -309,7 +309,7 @@ subtest 'buy CALLSPREAD frxGBPUSD' => sub {
         is $trx->{payment_id}, undef, 'payment_id';
 
         is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
-        is $trx->{remark}, undef, 'remark';
+        is $trx->{remark},        undef,                  'remark';
         is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
         cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
     };
@@ -401,7 +401,7 @@ subtest 'buy PUTSPREAD frxGBPUSD' => sub {
         is $trx->{payment_id}, undef, 'payment_id';
 
         is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
-        is $trx->{remark}, undef, 'remark';
+        is $trx->{remark},        undef,                  'remark';
         is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
         cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
     };

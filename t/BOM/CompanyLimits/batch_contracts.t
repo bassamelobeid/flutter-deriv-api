@@ -100,7 +100,7 @@ subtest 'Batch buy on error must revert', sub {
     my $b_id7 = $client_list[2];
     # For binary_user_id 2 and 4, give only 3 USD, so second buy of contract
     # will throw insufficient balance error
-    top_up($_, 'USD', 4) foreach (@client_list);
+    top_up($_,     'USD', 4) foreach (@client_list);
     top_up($b_id7, 'USD', 3);
 
     # Set manager_client as binary_user_id = 1

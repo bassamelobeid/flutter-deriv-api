@@ -330,7 +330,7 @@ subtest 'sell a bet', sub {
     lives_ok {
         set_relative_time 1;
         my $reset_time = guard { restore_time };
-        my $contract = produce_contract({
+        my $contract   = produce_contract({
             underlying   => $underlying,
             bet_type     => 'CALL',
             currency     => 'USD',
@@ -1869,7 +1869,7 @@ subtest 'transaction slippage' => sub {
         my $mocked_tr = Test::MockModule->new('BOM::Transaction');
         $mocked_tr->mock('limits', sub { {} });
 
-        my $price = $contract->ask_price - ($allowed_move * $contract->payout / 2);
+        my $price       = $contract->ask_price - ($allowed_move * $contract->payout / 2);
         my $transaction = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
@@ -2139,7 +2139,7 @@ subtest 'suspend_buy & suspend_trades' => sub {
 
                 $txn->buy;
             };
-            is $error->{'-type'}, 'InvalidOfferings', 'type is InvalidOfferings';
+            is $error->{'-type'},   'InvalidOfferings',                                    'type is InvalidOfferings';
             like $error->{'-mesg'}, qr/Disabled (contract_type|market|underlying_symbol)/, 'message is Disabled ' . $type;
             is $error->{'-message_to_client'}, 'This trade is temporarily unavailable.', 'message to clien is This trade is temporarily unavailable.';
 
@@ -2230,7 +2230,7 @@ subtest 'suspend_buy & suspend_trades' => sub {
 
                 $txn->buy;
             };
-            is $error->{'-type'}, 'InvalidOfferings', 'type is InvalidOfferings';
+            is $error->{'-type'},   'InvalidOfferings',                                    'type is InvalidOfferings';
             like $error->{'-mesg'}, qr/Disabled (underlying_symbol|market|contract_type)/, 'message is Disabled ' . $type;
             is $error->{'-message_to_client'}, 'This trade is temporarily unavailable.', 'message to clien is This trade is temporarily unavailable.';
 
@@ -2262,7 +2262,7 @@ subtest 'suspend_buy & suspend_trades' => sub {
                 $txn->sell;
             };
 
-            is $error->{'-type'}, 'InvalidOfferings', 'type is InvalidOfferings';
+            is $error->{'-type'},   'InvalidOfferings',                                    'type is InvalidOfferings';
             like $error->{'-mesg'}, qr/Disabled (underlying_symbol|market|contract_type)/, 'message is Disabled ' . $type;
             is $error->{'-message_to_client'}, 'Resale of this contract is not offered.',
                 'message to clien is Resale of this contract is not offered.';
@@ -2350,7 +2350,7 @@ subtest 'buy a 1HZ bet for China account', sub {
         lives_ok {
             set_relative_time 1;
             my $reset_time = guard { restore_time };
-            my $contract = produce_contract({
+            my $contract   = produce_contract({
                 underlying   => $underlying,
                 bet_type     => 'CALL',
                 currency     => 'USD',

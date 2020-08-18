@@ -34,7 +34,7 @@ sub delete_contract_parameters {
     my ($contract_id, $client) = @_;
 
     my $redis_pricer = BOM::Config::Redis::redis_pricer_shared_write;
-    my $redis_key = join '::', ('CONTRACT_PARAMS', $contract_id, $client->landing_company->short);
+    my $redis_key    = join '::', ('CONTRACT_PARAMS', $contract_id, $client->landing_company->short);
 
     # we don't delete this right away because some service like pricing queue or transaction stream might still rely
     # on the contract parameters. We will give additional KEY_RETENTION_SECOND seconds for this to be done.
@@ -66,8 +66,8 @@ sub set_contract_parameters {
 
     # country code is needed in parameters for china because
     # we have special offerings conditions.
-    $hash{country_code} = $client->residence if $client->residence eq 'cn';
-    $hash{limit_order} = $contract_params->{limit_order} if $contract_params->{limit_order};
+    $hash{country_code} = $client->residence              if $client->residence eq 'cn';
+    $hash{limit_order}  = $contract_params->{limit_order} if $contract_params->{limit_order};
 
     my $redis_key = join '::', ('CONTRACT_PARAMS', $hash{contract_id}, $hash{landing_company});
 

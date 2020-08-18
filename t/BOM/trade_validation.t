@@ -184,7 +184,7 @@ subtest 'Is contract valid to buy' => sub {
         BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]}
-            )->_is_valid_to_buy($client),
+        )->_is_valid_to_buy($client),
         undef,
         'Contract is valid to buy'
     );
@@ -201,9 +201,9 @@ subtest 'Is contract valid to buy' => sub {
             transaction => $transaction,
             clients     => [$client]})->_is_valid_to_buy($client);
     is($error->get_type, 'InvalidtoBuy', 'Contract is invalid to buy as it contains errors: _is_valid_to_buy - error type');
-    my $db = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db;
+    my $db     = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db;
     my @output = $db->dbh->selectrow_array("select * from data_collection.rejected_trades where action_type = ?", undef, 'buy');
-    is $output[1], 'MX1001', 'client id stored';
+    is $output[1], 'MX1001',                             'client id stored';
     is $output[6], 'Error message to be sent to client', 'correct reason';
 };
 
@@ -233,7 +233,7 @@ subtest 'Is contract valid to sell' => sub {
         BOM::Transaction::Validation->new({
                 transaction => $transaction,
                 clients     => [$client]}
-            )->_is_valid_to_sell($client),
+        )->_is_valid_to_sell($client),
         undef,
         'Contract is valid to sell'
     );
@@ -242,7 +242,7 @@ subtest 'Is contract valid to sell' => sub {
     $mock_contract->mock('_validate_trading_times',         sub { undef });
     $mock_contract->mock('_validate_start_and_expiry_date', sub { undef });
 
-    $contract1 = make_similar_contract($contract1, {date_expiry => $now->epoch + 10});
+    $contract1   = make_similar_contract($contract1, {date_expiry => $now->epoch + 10});
     $transaction = BOM::Transaction->new({
         client        => $client,
         contract      => $contract1,
@@ -254,9 +254,9 @@ subtest 'Is contract valid to sell' => sub {
             clients     => [$client]})->_is_valid_to_sell($client);
     is($error->get_type, 'InvalidtoSell', 'Contract is invalid to sell as expiry is too low: _is_valid_to_sell - error type');
 
-    my $db = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db;
+    my $db     = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db;
     my @output = $db->dbh->selectrow_array("select * from data_collection.rejected_trades where action_type = ?", undef, 'sell');
-    is $output[1], 'MX1001', 'client id stored';
+    is $output[1], 'MX1001',                  'client id stored';
     is $output[6], 'Waiting for entry tick.', 'correct reason';
 };
 
@@ -504,7 +504,7 @@ subtest 'validate stake limit' => sub {
         like($err->{-message_to_client}, qr/This contract's price is/, 'correct error message');
     }
     'error out on 0.49 stake for non MF borker';
-    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
+    $client   = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MF'});
     $contract = produce_contract({
         underlying      => create_underlying('frxUSDJPY'),
         bet_type        => 'CALL',

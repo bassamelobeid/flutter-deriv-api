@@ -266,7 +266,7 @@ subtest 'test lookbacks slippage', sub {
         $error = $txn->buy;
         is $error, undef, 'case 2 no error';
         ok $txn->execute_at_better_price, 'executed at better price';
-        is $txn->price_slippage, financialrounding('price', $contract->currency, $contract->allowed_slippage + 0.01);
+        is $txn->price_slippage,          financialrounding('price', $contract->currency, $contract->allowed_slippage + 0.01);
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
@@ -360,7 +360,7 @@ subtest 'test callputspread slippage' => sub {
         $error = $txn->buy;
         is $error, undef, 'case 2 no error';
         ok $txn->execute_at_better_price, 'executed at better price';
-        is $txn->price_slippage, financialrounding('price', $contract->currency, $contract->allowed_slippage + 0.01);
+        is $txn->price_slippage,          financialrounding('price', $contract->currency, $contract->allowed_slippage + 0.01);
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db lookback_option => $txn->transaction_id;
 
@@ -430,7 +430,7 @@ subtest 'test CALL (binary) slippage' => sub {
         };
 
         $price = $contract->ask_price - ($contract->allowed_slippage * $contract->payout + 0.01);
-        $txn = BOM::Transaction->new({
+        $txn   = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => $price,
@@ -444,7 +444,7 @@ subtest 'test CALL (binary) slippage' => sub {
         like $error->{-message_to_client}, qr/The underlying market has moved too much since you priced the contract. The contract price has changed/;
 
         $price = $contract->ask_price + ($contract->allowed_slippage * $contract->payout + 0.01);
-        $txn = BOM::Transaction->new({
+        $txn   = BOM::Transaction->new({
             client        => $cl,
             contract      => $contract,
             price         => $price,

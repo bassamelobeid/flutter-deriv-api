@@ -131,10 +131,10 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
 });
 
-my $underlying        = create_underlying('frxUSDJPY');
-my $underlying_OTC_GDAXI  = create_underlying('OTC_GDAXI');
-my $underlying_WLDUSD = create_underlying('WLDUSD');
-my $underlying_R50    = create_underlying('R_50');
+my $underlying           = create_underlying('frxUSDJPY');
+my $underlying_OTC_GDAXI = create_underlying('OTC_GDAXI');
+my $underlying_WLDUSD    = create_underlying('WLDUSD');
+my $underlying_R50       = create_underlying('R_50');
 
 sub db {
     return BOM::Database::ClientDB->new({
@@ -352,7 +352,7 @@ subtest 'asian_daily_turnover_limit', sub {
             is $error->get_type, 'ProductSpecificTurnoverLimitExceeded', 'error is ProductSpecificTurnoverLimitExceeded';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg}, 'Exceeds turnover limit on asian_turnover_limit', 'mesg';
+            is $error->{-mesg},              'Exceeds turnover limit on asian_turnover_limit',                'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -505,7 +505,7 @@ subtest 'intraday_spot_index_turnover_limit', sub {
         # _validate_trade_pricing_adjustment() is tested in trade_validation.t
         $mock_validation->mock(_validate_trade_pricing_adjustment =>
                 sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; () });
-        $mock_validation->mock(_validate_offerings    => sub { note "mocked Transaction::Validation->_validate_offerings returning nothing";    () });
+        $mock_validation->mock(_validate_offerings    => sub { note "mocked Transaction::Validation->_validate_offerings returning nothing"; () });
         $mock_validation->mock(_validate_date_pricing => sub { note "mocked Transaction::Validation->_validate_date_pricing returning nothing"; () });
 
         my $mock_transaction = Test::MockModule->new('BOM::Transaction');

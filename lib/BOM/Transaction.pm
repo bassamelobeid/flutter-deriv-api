@@ -214,9 +214,9 @@ sub _build_contract {
     my $param = $self->contract_parameters;
 
     if ($param->{shortcode}) {
-        $param = shortcode_to_parameters($param->{shortcode}, $param->{currency});
+        $param                    = shortcode_to_parameters($param->{shortcode}, $param->{currency});
         $param->{landing_company} = $self->contract_parameters->{landing_company};
-        $param->{limit_order} = $self->contract_parameters->{limit_order} if $self->contract_parameters->{limit_order};
+        $param->{limit_order}     = $self->contract_parameters->{limit_order} if $self->contract_parameters->{limit_order};
     }
     return produce_contract($param);
 }
@@ -247,7 +247,7 @@ has transaction_record => (
 
 sub _build_transaction_record {
     my $self = shift;
-    my $id = $self->transaction_id || die 'transaction not written yet';
+    my $id   = $self->transaction_id || die 'transaction not written yet';
     return $self->client->default_account->find_transaction(query => [id => $id])->[0];
 }
 
@@ -488,7 +488,7 @@ sub stats_stop {
     if ($what eq 'batch_buy') {
         my @tags = grep { !/^(?:broker|virtual):/ } @{$tags->{tags}};
         for my $broker (keys %$extra) {
-            my $xd = $extra->{$broker};
+            my $xd   = $extra->{$broker};
             my $tags = {tags => ["broker:" . lc($broker), "virtual:" . ($broker =~ /^VR/ ? "yes" : "no"), @tags]};
             stats_count("transaction.buy.attempt", $xd->{attempt}, $tags);
             stats_count("transaction.buy.success", $xd->{success}, $tags);
@@ -506,7 +506,7 @@ sub calculate_max_open_bets {
 }
 
 sub calculate_limits {
-    my $self = shift;
+    my $self   = shift;
     my $client = shift || $self->client;
 
     my %limits;
@@ -520,7 +520,7 @@ sub calculate_limits {
     # It is normally used to stop trading activities of a client.
     $limits{max_balance} = $client->get_limit_for_account_balance;
     my $lim = $self->calculate_max_open_bets($client);
-    $limits{max_open_bets} = $lim if defined $lim;
+    $limits{max_open_bets}        = $lim if defined $lim;
     $limits{max_payout_open_bets} = $client->get_limit_for_payout;
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -571,7 +571,7 @@ sub calculate_limits {
 
     $limits{max_turnover} = $client->get_limit_for_daily_turnover;
 
-    my $rp = $contract->risk_profile;
+    my $rp    = $contract->risk_profile;
     my @cl_rp = $rp->get_client_profiles($client->loginid, $client->landing_company->short);
 
     if ($contract->apply_binary_limit) {
@@ -581,7 +581,7 @@ sub calculate_limits {
         $limits{lookback_open_position_limit} = $static_config->{lookback_limits}{open_position_limits}{$currency};
         my @non_binary_custom_limits = $rp->get_non_binary_limit_parameters(\@cl_rp);
 
-        my @limits_arr = map { $_->{non_binary_contract_limit} } grep { exists $_->{non_binary_contract_limit}; } @{$non_binary_custom_limits[0]};
+        my @limits_arr   = map { $_->{non_binary_contract_limit} } grep { exists $_->{non_binary_contract_limit}; } @{$non_binary_custom_limits[0]};
         my $custom_limit = min(@limits_arr);
         $limits{lookback_open_position_limit} = $custom_limit if defined $custom_limit;
     }
@@ -822,8 +822,7 @@ sub buy {
         $self->contract_details($fmb);
         $self->transaction_details($txn);
         $error = 0;
-    }
-    catch {
+    } catch {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
         my $e = $@;
@@ -953,7 +952,7 @@ sub batch_buy {
             my $currency = $self->contract->currency;
 
             my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
-            my @fmb_ids = map {
+            my @fmb_ids  = map {
                 my $fmb_id = $clientdb->get_next_fmbid();
                 $contract_params->{expiry_time} = $self->contract->date_expiry->epoch;
                 $contract_params->{contract_id} = $fmb_id;
@@ -970,7 +969,7 @@ sub batch_buy {
                 db           => $clientdb->db,
             );
 
-            my @clients = map { $_->{client} } @$list;
+            my @clients        = map { $_->{client} } @$list;
             my $company_limits = BOM::Transaction::CompanyLimits->new(
                 contract_data   => $bet_data->{bet_data},
                 landing_company => $clients[0]->landing_company,
@@ -1007,8 +1006,7 @@ sub batch_buy {
 
             $stat{$broker}->{success} = $success;
             enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
-        }
-        catch {
+        } catch {
             warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $@;    # log it
 
             for my $el (@$list) {
@@ -1023,7 +1021,7 @@ sub batch_buy {
 }
 
 sub prepare_bet_data_for_sell {
-    my $self = shift;
+    my $self     = shift;
     my $contract = shift || $self->contract;
 
     $self->price(financialrounding('price', $contract->currency, $self->price));
@@ -1152,8 +1150,7 @@ sub sell {
         ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
         BOM::Transaction::Utility::delete_contract_parameters($fmb->{id}, $client) if $fmb->{id};
         $error = 0;
-    }
-    catch {
+    } catch {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
         $error_status = $self->_recover($@);
@@ -1246,7 +1243,7 @@ sub sell_by_shortcode {
 
         my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
             %$bet_data,
-            account_data => [map                                      { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
+            account_data => [map { +{client_loginid => $_->{loginid}, currency_code => $currency} } @$list],
             db           => BOM::Database::ClientDB->new({broker_code => $broker})->db,
         );
         try {
@@ -1287,8 +1284,7 @@ sub sell_by_shortcode {
                 }
             }
             $stat{$broker}->{success} = $success;
-        }
-        catch {
+        } catch {
             warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $@;    # log it
             for my $el (@$list) {
                 @{$el}{qw/code error/} = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'))
@@ -1347,12 +1343,11 @@ sub cancel {
     try {
         ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
         $error = 0;
-    }
-    catch {
+    } catch {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
         $error_status = $self->_recover($_);
-    };
+    }
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     return $self->stats_stop(
@@ -1430,7 +1425,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = formatnumber('amount', $currency, $client->get_limit_for_daily_turnover);
+        my $limit    = formatnumber('amount', $currency, $client->get_limit_for_daily_turnover);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your daily turnover limit of [_1][_2].',
@@ -1483,7 +1478,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = formatnumber('amount', $currency, $client->get_limit_for_account_balance);
+        my $limit    = formatnumber('amount', $currency, $client->get_limit_for_account_balance);
 
         my $account = BOM::Database::DataMapper::Account->new({
             client_loginid => $client->loginid,
@@ -1506,7 +1501,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = formatnumber('amount', $currency, $client->get_limit_for_payout);
+        my $limit    = formatnumber('amount', $currency, $client->get_limit_for_payout);
 
         return Error::Base->cuss(
             -quiet             => 1,
@@ -1549,7 +1544,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = formatnumber('amount', $currency, $client->get_limit_for_daily_losses);
+        my $limit    = formatnumber('amount', $currency, $client->get_limit_for_daily_losses);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your daily limit on losses of [_1][_2].', $currency, $limit);
 
@@ -1565,7 +1560,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = formatnumber('amount', $currency, $client->get_limit_for_7day_turnover);
+        my $limit    = formatnumber('amount', $currency, $client->get_limit_for_7day_turnover);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your 7-day turnover limit of [_1][_2].',
@@ -1583,7 +1578,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = formatnumber('amount', $currency, $client->get_limit_for_7day_losses);
+        my $limit    = formatnumber('amount', $currency, $client->get_limit_for_7day_losses);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 7-day limit on losses of [_1][_2].', $currency, $limit);
 
@@ -1600,7 +1595,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = formatnumber('amount', $currency, $client->get_limit_for_30day_turnover);
+        my $limit    = formatnumber('amount', $currency, $client->get_limit_for_30day_turnover);
 
         my $error_message =
             BOM::Platform::Context::localize('Purchasing this contract will cause you to exceed your 30-day turnover limit of [_1][_2].',
@@ -1618,7 +1613,7 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $client = shift;
 
         my $currency = $self->contract->currency;
-        my $limit = formatnumber('amount', $currency, $client->get_limit_for_30day_losses);
+        my $limit    = formatnumber('amount', $currency, $client->get_limit_for_30day_losses);
 
         my $error_message = BOM::Platform::Context::localize('You have exceeded your 30-day limit on losses of [_1][_2].', $currency, $limit);
 
@@ -1784,8 +1779,7 @@ sub format_error {
     my $msg_to_client = $args{msg_to_client} // 'Internal Error';
     try {
         return $self->_recover($err, $client);
-    }
-    catch {
+    } catch {
         return Error::Base->cuss(
             -quiet             => 1,
             -type              => $type,
@@ -1841,7 +1835,7 @@ sub sell_expired_contracts {
     my $loginid  = $client->loginid;
 
     my $result = {
-        skip_contract => $contract_ids ? (scalar @$contract_ids) : 0,
+        skip_contract       => $contract_ids ? (scalar @$contract_ids) : 0,
         total_credited      => 0,
         number_of_sold_bets => 0,
         failures            => [],
@@ -1883,8 +1877,7 @@ sub sell_expired_contracts {
                 $bet_params->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($bet);
             }
             $contract = produce_contract($bet_params);
-        }
-        catch {
+        } catch {
             $failure->{reason} = 'Could not instantiate contract object';
             push @{$result->{failures}}, $failure;
             next;
@@ -1934,9 +1927,9 @@ sub sell_expired_contracts {
                 # this a hack that should be removed later when examination is done.
                 if ($collect_stats) {
                     $result->{contract_expiry_epoch} = $contract->exit_tick->epoch if $contract->exit_tick;
-                    $result->{contract_expiry_epoch} = $contract->hit_tick->epoch if $contract->is_path_dependent and $contract->hit_tick;
-                    $result->{bet_type}    = $bet->bet_type;
-                    $result->{expiry_type} = $contract->expiry_type;
+                    $result->{contract_expiry_epoch} = $contract->hit_tick->epoch  if $contract->is_path_dependent and $contract->hit_tick;
+                    $result->{bet_type}              = $bet->bet_type;
+                    $result->{expiry_type}           = $contract->expiry_type;
                 }
 
             } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
@@ -1972,8 +1965,7 @@ sub sell_expired_contracts {
                 }
                 push @{$result->{failures}}, $failure;
             }
-        }
-        catch {
+        } catch {
             my $err = $@;
             if ($err =~ /^Requesting for historical period data without a valid DB connection/) {
                 # seems an issue in /Quant/Framework/EconomicEventCalendar.pm get_latest_events_for_period:
@@ -2020,8 +2012,7 @@ sub sell_expired_contracts {
     try {
         $sold = $fmb_helper->batch_sell_bet;
         BOM::Transaction::Utility::delete_contract_parameters($_->{id}, $client) for (@bets_to_sell);
-    }
-    catch {
+    } catch {
         my $e = $@;
         warn(ref $e eq 'ARRAY' ? "@$e" : "$e");
         $sold = [];

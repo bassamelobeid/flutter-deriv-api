@@ -161,14 +161,20 @@ my ($advertiser, $advert);
 #p2p
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
-($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type=>'buy');
-$test_client->p2p_advertiser_create(name=>'bob');
-my $order = BOM::Test::Helper::P2P::create_order(amount=>50, advert_id=>$advert->{id}, client=>$test_client);
-$advertiser->p2p_order_cancel(id=>$order->{id});
+($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
+$test_client->p2p_advertiser_create(name => 'bob');
+my $order = BOM::Test::Helper::P2P::create_order(
+    amount    => 50,
+    advert_id => $advert->{id},
+    client    => $test_client
+);
+$advertiser->p2p_order_cancel(id => $order->{id});
 
 my $transaction_history = get_transaction_history($transac_param);
 
-my @all_transactions = (@{$transaction_history->{open_trade}}, @{$transaction_history->{close_trade}}, @{$transaction_history->{payment}}, @{$transaction_history->{escrow}});
+my @all_transactions = (
+    @{$transaction_history->{open_trade}}, @{$transaction_history->{close_trade}},
+    @{$transaction_history->{payment}},    @{$transaction_history->{escrow}});
 is scalar @all_transactions, 7, 'there are 7 transactions';
 
 # For this test case I'm defining what is expected, then compare with the result of get_transaction_history
@@ -212,16 +218,16 @@ my $expected = [{
         amount         => '50000.00',
     },
     {
-        staff_loginid  => $test_client->loginid,
-        action_type    => 'hold',
-        referrer_type  => 'p2p',
-        amount         => '-50.00',
+        staff_loginid => $test_client->loginid,
+        action_type   => 'hold',
+        referrer_type => 'p2p',
+        amount        => '-50.00',
     },
     {
-        staff_loginid  => $advertiser->loginid,
-        action_type    => 'release',
-        referrer_type  => 'p2p',
-        amount         => '50.00',
+        staff_loginid => $advertiser->loginid,
+        action_type   => 'release',
+        referrer_type => 'p2p',
+        amount        => '50.00',
     }];
 
 my @expected_transactions = sort { 0 + $a->{amount} <=> 0 + $b->{amount} } @$expected;
