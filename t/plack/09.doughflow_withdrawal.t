@@ -12,7 +12,7 @@ use APIHelper qw/ balance deposit request decode_json withdraw/;
 my $loginid = 'CR0011';
 
 my $client_db = BOM::Database::ClientDB->new({client_loginid => $loginid});
-my $user = BOM::User->create(
+my $user      = BOM::User->create(
     email    => 'unit_test@binary.com',
     password => 'asdaiasda',
 );
@@ -32,7 +32,7 @@ subtest 'Successful attempt' => sub {
         amount  => 1,
     );
 
-    is $req->code, 201, 'Correct created status code';
+    is $req->code,      201,                                  'Correct created status code';
     like $req->content, qr/<opt>\s*<data><\/data>\s*<\/opt>/, 'Correct response body';
 
     my $current_balance = balance $loginid;
@@ -72,7 +72,7 @@ subtest 'Exceed balance' => sub {
         amount  => $current_balance + 1000,
     );
 
-    is $req->code, 403, 'Correct forbidden status code';
+    is $req->code,              403,                        'Correct forbidden status code';
     like $req->decoded_content, qr/exceeds client balance/, 'Correspond error message to balance exceeding';
     is balance($loginid), $current_balance, 'Correct unchanged balance';
 };
@@ -92,7 +92,7 @@ subtest 'Duplicate transaction' => sub {
         trace_id => $trace_id,
     );
 
-    is $req->code, 400, 'Correct bad request status code';
+    is $req->code,      400,                                'Correct bad request status code';
     like $req->content, qr/Detected duplicate transaction/, 'Correspond error message to duplicate transaction';
 
     is balance($loginid), $current_balance, 'Correct unchanged balance';

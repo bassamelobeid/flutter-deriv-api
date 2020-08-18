@@ -99,7 +99,7 @@ sub validate {
 
     if (my $currency_code = $c->request_parameters->{'currency_code'}) {
         my @currencies = qw(AUD EUR GBP USD JPY);
-        my $regex = '(' . join('|', @currencies) . ')';
+        my $regex      = '(' . join('|', @currencies) . ')';
         return "Invalid currency $currency_code. Must be one of: " . join(', ', @currencies)
             unless $currency_code =~ /^$regex$/;
     }

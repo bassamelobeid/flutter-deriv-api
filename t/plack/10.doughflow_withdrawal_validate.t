@@ -52,7 +52,7 @@ $r = withdraw_validate(
     amount  => 'Zzz',
 );
 $resp = decode_json_utf8($r->content);
-is $resp->{allowed}, 0, 'validate failed';
+is $resp->{allowed},   0,                                                                                 'validate failed';
 like $resp->{message}, qr[(Attribute \(amount\) does not pass the type constraint|Invalid money amount)], 'Correct error message';
 
 my $balance_now = balance($loginid);
@@ -61,7 +61,7 @@ $r = withdraw_validate(
     amount  => $balance_now + 1,
 );
 $resp = decode_json_utf8($r->content);
-is $resp->{allowed}, 0, 'validate failed';
+is $resp->{allowed},   0,                          'validate failed';
 like $resp->{message}, qr/exceeds client balance/, "$balance_now plus 1 exceeds balance now";
 
 # < 0.01 or > 100000
@@ -70,7 +70,7 @@ $r = withdraw_validate(
     amount  => 0.009,
 );
 $resp = decode_json_utf8($r->content);
-is $resp->{allowed}, 0, 'validate failed';
+is $resp->{allowed},   0,                        'validate failed';
 like $resp->{message}, qr/Invalid money amount/, ".. bad little amount rejected helpfully";
 
 $r = withdraw_validate(
@@ -78,7 +78,7 @@ $r = withdraw_validate(
     amount  => 100001,
 );
 $resp = decode_json_utf8($r->content);
-is $resp->{allowed}, 0, 'validate failed';
+is $resp->{allowed},   0,                        'validate failed';
 like $resp->{message}, qr/Invalid money amount/, ".. bad big amount rejected helpfully";
 
 subtest 'free gift' => sub {
@@ -115,7 +115,7 @@ subtest 'free gift' => sub {
         amount  => 10,
     );
     my $resp = decode_json_utf8($r->content);
-    is $resp->{allowed}, 0, 'validation failed';
+    is $resp->{allowed},   0,                         'validation failed';
     like $resp->{message}, qr/includes frozen bonus/, 'frozen bonus message';
 
     $r = update_payout(

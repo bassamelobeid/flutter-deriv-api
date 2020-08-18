@@ -27,7 +27,7 @@ if ($lib_pattern) {
                 syntax_ok($_) if $_ =~ /\.pl$/;
                 critic_ok($_);
             }
-            }
+        }
     }
 }
 

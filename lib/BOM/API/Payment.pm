@@ -239,8 +239,7 @@ sub authen_cb {
     my $client = undef;
     try {
         $client = BOM::User::Client->new({loginid => $username});
-    }
-    catch {
+    } catch {
         return;
     }
     return unless Digest::SHA::sha256_hex($password) eq $client->client_password;

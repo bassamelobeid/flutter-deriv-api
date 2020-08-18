@@ -46,7 +46,7 @@ $r = request(
         client_loginid => $loginid,
         currency_code  => 'USD',
     });
-is $r->code, 400, 'missing token is a bad validate request';
+is $r->code,      400,                                     'missing token is a bad validate request';
 like $r->content, qr/Invalid or missing token in request/, '..and says why';
 
 $r = request(
@@ -57,7 +57,7 @@ $r = request(
         currency_code  => 'USD',
         token          => 'a' x 40,
     });
-is $r->code, 400, 'bad token is a bad validate request';
+is $r->code,      400,                'bad token is a bad validate request';
 like $r->content, qr/No token found/, '.. and says no token found';
 
 $r = request(

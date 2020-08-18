@@ -57,7 +57,7 @@ $r = request(
         payment_processor => 'WebMonkey',
         trace_id          => time(),
     });
-is $r->code, 400, 'reject withdrawal reversal using bad trace_id';
+is $r->code,              400,                                                     'reject withdrawal reversal using bad trace_id';
 like $r->decoded_content, qr/no corresponding original withdrawal could be found/, 'reject withdrawal reversal using bad trace_id nicely';
 
 $r = request(
@@ -90,7 +90,7 @@ $r = request(
         payment_processor => 'WebMonkey',
         trace_id          => $trace_id,
     });
-is $r->code, 400, 'reject withdrawal reversal using too-big amount';
+is $r->code,              400,                    'reject withdrawal reversal using too-big amount';
 like $r->decoded_content, qr/match the original/, '.. because does not match original?';
 
 $r = request(
@@ -106,7 +106,7 @@ $r = request(
         payment_processor => 'WebMonkey',
         trace_id          => $trace_id,
     });
-is $r->code, 400, 'cannot reverse withdrawal with fee';
+is $r->code,              400,                                                           'cannot reverse withdrawal with fee';
 like $r->decoded_content, qr/Bonuses and fees are not allowed for withdrawal reversals/, '.. no bonuses or fees allowed here';
 
 # success one

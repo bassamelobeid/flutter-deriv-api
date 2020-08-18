@@ -161,8 +161,7 @@ sub validate_as_payment {
             amount      => $signed_amount,
             action_type => $action,
         );
-    }
-    catch {
+    } catch {
         my $err = $@;
 
         return $c->throw(403, $err) if $err;
@@ -180,7 +179,7 @@ sub write_transaction_line {
     my $client = $c->user;
 
     # Lock the customer's account
-    my $client_db = BOM::Database::ClientDB->new({client_loginid => $client->loginid});
+    my $client_db     = BOM::Database::ClientDB->new({client_loginid => $client->loginid});
     my $freeze_status = $client_db->freeze;
 
     # unfreeze on exit no matter it's succeed or not

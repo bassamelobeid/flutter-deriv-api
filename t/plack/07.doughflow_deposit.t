@@ -18,7 +18,7 @@ $mocked_datadog->mock('stats_inc', sub { @datadog_args = @_ });
 my $loginid = 'CR0012';
 
 my $client_db = BOM::Database::ClientDB->new({client_loginid => $loginid});
-my $user = BOM::User->create(
+my $user      = BOM::User->create(
     email    => 'unit_test@binary.com',
     password => 'asdaiasda'
 );
@@ -31,7 +31,7 @@ subtest 'Successful attempt' => sub {
         trace_id => 1234
     );
 
-    is $req->code, 201, 'Correct created status code';
+    is $req->code,      201,                                  'Correct created status code';
     like $req->content, qr/<opt>\s*<data><\/data>\s*<\/opt>/, 'Correct content';
 
     my $current_balance = balance $loginid;
@@ -83,7 +83,7 @@ subtest 'Duplicate transaction' => sub {
         transaction_id => $txn_id
     );
 
-    is $req->code, 400, 'Correct bad request status code';
+    is $req->code,      400,                                'Correct bad request status code';
     like $req->content, qr/Detected duplicate transaction/, 'Correspond error message to duplicate transaction';
 
     is balance($loginid), $current_balance, 'Correct unchanged balance';

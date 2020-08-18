@@ -6,7 +6,7 @@ use Test::More;
 use APIHelper qw(decode_json request);
 
 my $loginid = 'CR0011';
-my $r = request('GET', '/client', {client_loginid => $loginid});
+my $r       = request('GET', '/client', {client_loginid => $loginid});
 
 my $cli_data = decode_json($r->content);
 

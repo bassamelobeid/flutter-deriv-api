@@ -65,7 +65,7 @@ sub record_GET {
             id            => $reference_number,
             referrer_type => 'payment'
         ]
-        )->[0]
+    )->[0]
         || do {
         return $c->status_bad_request("Unknown payment transaction number $reference_number");
         };

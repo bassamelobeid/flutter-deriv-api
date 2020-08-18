@@ -102,8 +102,8 @@ sub deposit {
     my $is_validate = delete $override{'is_validate'};
     my $url         = '/transaction/payment/doughflow/deposit';
     $url .= '_validate' if $is_validate;
-    my $method = $is_validate ? 'GET' : 'POST';    # validate only support GET
-    my $headers = $is_validate ? {} : {'Content-Type' => 'text/xml'};
+    my $method  = $is_validate ? 'GET' : 'POST';                           # validate only support GET
+    my $headers = $is_validate ? {}    : {'Content-Type' => 'text/xml'};
     # note.. we have declared content-type xml but we are failing to build xml into the body!
     # These request parameters get sent as uri query strings.  That works ok for now but does not
     # really simulate how doughflow sends requests!   TODO:  build xml into request body.
