@@ -24,7 +24,7 @@ our $req_id = 999999;    # desparately trying to avoid conflicts
 
 sub wsapi_wait_for {
     my ($t, $wait_for, $action_sub, $params, $messages_without_accidens) = @_;
-    $params //= {};
+    $params                    //= {};
     $messages_without_accidens //= 0;
 
     my $ioloop = IO::Async::Loop->new;
@@ -33,7 +33,7 @@ sub wsapi_wait_for {
 
     my $id = $ioloop->watch_time(
         after => ($params->{timeout} || 2),
-        code => sub {
+        code  => sub {
             if ($messages_without_accidens == ($params->{wait_max} || 10)) {
                 ok(0, 'Timeout');
                 return $f->fail("timeout");
@@ -74,7 +74,7 @@ sub AUTOLOAD {
     return unless ref $self;
 
     my $payload_copy = ref $payload eq 'HASH' ? {%{$payload}} : $payload;
-    my $params_copy = $params ? {%{$params}} : {};
+    my $params_copy  = $params                ? {%{$params}}  : {};
 
     if (ref $payload_copy eq 'HASH') {
         $payload_copy->{req_id} //= ++$req_id;

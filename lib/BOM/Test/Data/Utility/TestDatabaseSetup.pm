@@ -22,8 +22,7 @@ sub prepare_unit_test_database {
     try {
         $self->_migrate_changesets;
         $self->_post_import_operations;
-    }
-    catch {
+    } catch {
         Carp::croak '[' . $0 . '] preparing unit test database failed. ' . $@;
     }
     return 1;
@@ -73,15 +72,13 @@ sub _migrate_changesets {
             try {
                 $self->_do_quoted($pooler, 'DISABLE %s', $b_db);
                 #$self->_do_quoted($pooler, 'PAUSE  %s', $b_db);
-            }
-            catch {
+            } catch {
                 print "[pgbouncer] DISABLE $b_db error [$@]";
             }
 
             try {
                 $self->_do_quoted($pooler, 'KILL %s', $b_db);
-            }
-            catch {
+            } catch {
                 print "[pgbouncer] KILL $b_db error [$@]";
             }
         }
@@ -92,15 +89,13 @@ sub _migrate_changesets {
     for my $b_db (@bouncer_dbs) {
         try {
             $self->_do_quoted($pooler, 'ENABLE %s', $b_db);
-        }
-        catch {
+        } catch {
             print "[pgbouncer] ENABLE $b_db error [$@]";
         }
 
         try {
             $self->_do_quoted($pooler, 'RESUME %s', $b_db);
-        }
-        catch {
+        } catch {
             print "[pgbouncer] RESUME $b_db error [$@]";
         }
     }
@@ -219,8 +214,7 @@ sub _restore_dbs_from_template {
         $self->_do_quoted($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $db_name, $tmpl_name);
         $dbh->disconnect;
         $is_successful = 1;
-    }
-    catch {
+    } catch {
         note 'Falling back to restoring schemas, because restoring the db template failed for ' . $self->_db_name . ' with error: ' . $@;
     }
 
@@ -241,8 +235,7 @@ sub _create_template {
         $self->_do_quoted($dbh, 'ALTER DATABASE %s RENAME TO %s',      $db_name, $tmpl_name);
         $self->_do_quoted($dbh, 'CREATE DATABASE %s WITH TEMPLATE %s', $db_name, $tmpl_name);
         $dbh->disconnect;
-    }
-    catch {
+    } catch {
         note 'Creating the db template failed for ' . $self->_db_name . ' with error: ' . $@;
     }
     return;

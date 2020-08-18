@@ -83,7 +83,7 @@ sub has_error {
     $description ||= "response for /$method has error";
 
     my $result = $self->result;
-    my $error = ref $result eq 'HASH' && $result->{error};
+    my $error  = ref $result eq 'HASH' && $result->{error};
     $self->_test('ok', !!$error, $description)
         or Test::More::diag("Expected error, got\n", Data::Dumper->Dump([$result], [qw(result)]));
     return $self;
@@ -92,7 +92,7 @@ sub has_error {
 sub error_code_is {
     my ($self, $expected, $description) = @_;
     my $result = $self->result;
-    my $error = ref $result eq 'HASH' && $result->{error} || {};
+    my $error  = ref $result eq 'HASH' && $result->{error} || {};
     $self->_test('is', $error->{code}, $expected, $description);
     return $self;
 }
@@ -100,23 +100,23 @@ sub error_code_is {
 sub error_message_is {
     my ($self, $expected, $description) = @_;
     my $result = $self->result;
-    my $error = ref $result eq 'HASH' && $result->{error} || {};
+    my $error  = ref $result eq 'HASH' && $result->{error} || {};
     $self->_test('is', $error->{message_to_client}, $expected, $description);
     return $self;
 }
 
 sub error_internal_message_like {
     my ($self, $expected, $description) = @_;
-    my $result = $self->result || {};
-    my $error = ref $result eq 'HASH' && $result->{error} || {};
+    my $result = $self->result                             || {};
+    my $error  = ref $result eq 'HASH' && $result->{error} || {};
     $self->_test('like', $error->{message}, $expected, $description);
     return $self;
 }
 
 sub error_message_like {
     my ($self, $expected, $description) = @_;
-    my $result = $self->result || {};
-    my $error = ref $result eq 'HASH' && $result->{error} || {};
+    my $result = $self->result                             || {};
+    my $error  = ref $result eq 'HASH' && $result->{error} || {};
     $self->_test('like', $error->{message_to_client}, $expected, $description);
     return $self;
 }
@@ -124,7 +124,7 @@ sub error_message_like {
 sub error_details_is {
     my ($self, $expected, $description) = @_;
     my $result = $self->result;
-    my $error = ref $result eq 'HASH' && $result->{error} || {};
+    my $error  = ref $result eq 'HASH' && $result->{error} || {};
     $self->_test('is_deeply', $error->{details}, $expected, $description);
     return $self;
 }

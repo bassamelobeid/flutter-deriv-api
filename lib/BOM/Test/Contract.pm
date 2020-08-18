@@ -189,7 +189,7 @@ sub get_tick {
             epoch      => $epoch,
             underlying => $params{underlying},
         });
-        }
+    }
 }
 
 sub get_underlying {
@@ -323,7 +323,7 @@ sub sell_by_shortcode {
 sub sell_contract {
     my (%params) = @_;
     my $contract = $params{contract};
-    my $new_c = make_similar_contract($contract, {date_pricing => ($params{sell_time} ? $params{sell_time} : $contract->date_start->epoch + 1)});
+    my $new_c    = make_similar_contract($contract, {date_pricing => ($params{sell_time} ? $params{sell_time} : $contract->date_start->epoch + 1)});
 
     my $txn = BOM::Transaction->new({
         purchase_date => $new_c->date_start,

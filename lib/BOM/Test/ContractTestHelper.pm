@@ -29,11 +29,11 @@ sub close_all_open_contracts {
             @{$clientdb->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client_data->[0], $client_data->[1], 'false']) // []})
         {
             my $contract = produce_contract($fmbo->{short_code}, $client_data->[1]);
-            my $txn = BOM::Transaction->new({
-                client   => BOM::User::Client->new({loginid => $client_data->[0]}),
-                contract => $contract,
-                source   => 23,
-                price => ($fullpayout ? $fmbo->{payout_price} : $fmbo->{buy_price}),
+            my $txn      = BOM::Transaction->new({
+                client        => BOM::User::Client->new({loginid => $client_data->[0]}),
+                contract      => $contract,
+                source        => 23,
+                price         => ($fullpayout ? $fmbo->{payout_price} : $fmbo->{buy_price}),
                 contract_id   => $fmbo->{id},
                 purchase_date => $contract->date_start,
             });

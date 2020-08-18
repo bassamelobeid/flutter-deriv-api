@@ -252,7 +252,7 @@ sub create_fmb {
     my @cols = $rec->meta->columns;
 
     my %bet = map {
-        my $v = $rec->$_;    # some of the values are objects (DateTime) with overloaded "".
+        my $v = $rec->$_;                   # some of the values are objects (DateTime) with overloaded "".
         defined($v) ? ($_ => "$v") : ();    # Need to stringify but also keep undefined values.
     } @cols;
 
@@ -286,11 +286,11 @@ sub create_fmb {
     $fmb->financial_market_bet_id($fmb_rec->{id});
 
     if ($must_sell) {
-        $bet{id}                 = $fmb_rec->{id};
-        $bet{sell_price}         = $sell_price;
-        $bet{sell_time}          = Date::Utility->new->db_timestamp;
-        $bet{is_sold}            = 1;
-        $trans{transaction_time} = $sell_time;
+        $bet{id}                          = $fmb_rec->{id};
+        $bet{sell_price}                  = $sell_price;
+        $bet{sell_time}                   = Date::Utility->new->db_timestamp;
+        $bet{is_sold}                     = 1;
+        $trans{transaction_time}          = $sell_time;
         $fmb_helper->bet_data->{quantity} = $args->{quantity} // 1;
         ($fmb_rec, $trx_rec) = $fmb_helper->sell_bet;
     }

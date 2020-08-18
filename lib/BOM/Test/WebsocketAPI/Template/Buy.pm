@@ -151,7 +151,7 @@ publish transaction => sub {
             referrer_type           => 'financial_market_bet',
             action_type             => $action,
             # negative amount for buy, postive for sell
-            amount => ($contract->is_sold ? 1 : -1) * $contract->amount,
+            amount         => ($contract->is_sold ? 1 : -1) * $contract->amount,
             account_id     => $account_id,
             purchase_price => $contract->amount_str,
             payment_remark => "A $action transaction for testing",

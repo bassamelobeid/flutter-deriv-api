@@ -80,7 +80,7 @@ sub create_advert {
     $param{contact_info} //= $param{type} eq 'sell' ? 'Tel: 123456'  : undef;
 
     my $advertiser = create_advertiser(
-        balance => $param{type} eq 'sell' ? $param{amount} : 0,
+        balance        => $param{type} eq 'sell' ? $param{amount} : 0,
         client_details => $param{advertiser},
     );
 
@@ -93,10 +93,10 @@ sub create_order {
     my %param = @_;
 
     my $advert_id = $param{advert_id} || croak 'advert_id is required';
-    my $amount  = $param{amount}  // 100;
-    my $expiry  = $param{expiry}  // 7200;
-    my $balance = $param{balance} // $param{amount};
-    my $client  = $param{client}  // create_advertiser(balance => $balance);
+    my $amount    = $param{amount} // 100;
+    my $expiry    = $param{expiry} // 7200;
+    my $balance   = $param{balance} // $param{amount};
+    my $client    = $param{client} // create_advertiser(balance => $balance);
 
     my $advert = $client->p2p_advert_info(id => $param{advert_id});
 

@@ -61,7 +61,7 @@ sub schemas {
             $schemas->{$method} = $json->decode($path->slurp_utf8);
         }
         $schemas;
-        }
+    }
 }
 
 =head1 METHODS

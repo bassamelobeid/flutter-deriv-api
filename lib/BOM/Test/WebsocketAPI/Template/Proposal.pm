@@ -92,7 +92,7 @@ publish proposal => sub {
             'PRICER_KEYS::["amount","1000","basis","payout","contract_type","%s","currency","%s","duration","%s","duration_unit","%s","landing_company","%s","price_daemon_cmd","price","product_type","basic","proposal","1","skips_price_validation","1","subscribe","1","symbol","%s"]',
             $contract->contract_type, $contract->client->currency,             $contract->duration,
             $contract->duration_unit, $contract->client->landing_company_name, $contract->underlying->symbol
-            ) => {
+        ) => {
             ask_price        => '566.27',
             date_start       => $now_str,
             display_value    => '566.27',
@@ -103,7 +103,7 @@ publish proposal => sub {
             spot             => '78.555',
             spot_time        => $now_str,
             theo_probability => 0.531265531071756,
-            }};
+        }};
 };
 
 1;

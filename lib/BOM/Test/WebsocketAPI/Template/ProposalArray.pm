@@ -55,18 +55,14 @@ rpc_response {
                             ask_price        => 10,
                             longcode         => $pa->longcodes->{$contract_type}{$_}}
                     } $pa->barriers->@*
-                    ]
+                ]
             } $pa->contract_types->@*
         },
         contract_parameters => {
-            subscribe      => 1,
-            proposal_array => 1,
-            date_start     => $now,
-            barriers       => [
-                map {
-                    '' . $_
-                } $pa->barriers->@*
-            ],
+            subscribe             => 1,
+            proposal_array        => 1,
+            date_start            => $now,
+            barriers              => [map { '' . $_ } $pa->barriers->@*],
             app_markup_percentage => '0',
             currency              => $pa->client->currency,
             base_commission       => '0.015',
@@ -102,7 +98,7 @@ publish proposal_array => sub {
             $pa->duration_unit,
             $pa->client->landing_company_name,
             $pa->underlying->symbol
-            ) => {
+        ) => {
 
             rpc_time  => 62.07,
             proposals => {
@@ -117,11 +113,11 @@ publish proposal_array => sub {
                                 ask_price        => 10,
                                 longcode         => $pa->longcodes->{$contract_type}{$_}}
                         } $pa->barriers->@*
-                        ]
+                    ]
                 } $pa->contract_types->@*
             },
             price_daemon_cmd => 'price'
-            },
+        },
     };
 };
 

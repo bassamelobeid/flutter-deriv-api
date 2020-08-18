@@ -27,7 +27,7 @@ sub populate_exchange_rates {
 }
 
 sub populate_exchange_rates_db {
-    my $dbic = shift;
+    my $dbic        = shift;
     my $local_rates = shift || $rates;
     $local_rates = {%$rates, %$local_rates};
 

@@ -27,7 +27,7 @@ sub random_email_address {
     my $opts = shift;
 
     # Using company's domains to prevent hitting any possible existing domain out there.
-    my @domains = ('binary.com', 'deriv.com');
+    my @domains        = ('binary.com', 'deriv.com');
     my %default_values = (
         email  => random_regex('[a-zA-Z0-9]{15,30}'),
         domain => splice(@domains, rand @domains, 1),
@@ -56,8 +56,8 @@ Returns a randomly generated valid or invalid phone number string.
 
 sub random_phone {
     my $generate_valid_number = shift // 1;
-    my $length = $generate_valid_number ? 20 : 5;
-    my $regex = sprintf('\d{%d}', $length);
+    my $length                = $generate_valid_number ? 20 : 5;
+    my $regex                 = sprintf('\d{%d}', $length);
 
     return '+' . random_regex($regex);
 }

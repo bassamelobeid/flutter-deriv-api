@@ -394,14 +394,14 @@ sub update_ticks_history {
     my $state  = $self->publisher_state;
     my $symbol = $tick_to_publish->{symbol};
 
-    my $tick = {$tick_to_publish->%*};
+    my $tick            = {$tick_to_publish->%*};
     my $current_history = $state->{ticks_history}{$symbol} // Binary::API::Mapping::Response->new({
             echo_req => {
                 ticks_history => $symbol,
             },
             msg_type => 'history',
             history  => {(
-                    map { (times => $_->times, prices => $_->prices) }
+                    map  { (times => $_->times, prices => $_->prices) }
                     grep { $_->underlying->symbol eq $symbol } test_params()->{ticks_history}->@*
                 )
             },
@@ -420,7 +420,7 @@ sub update_ticks_history {
         {echo_req => {ticks_history => $symbol}});
 
     my $published_history = $self->published->{history} //= [];
-    my $published_index = first_index { $_->body->symbol eq $symbol } $published_history->@*;
+    my $published_index   = first_index { $_->body->symbol eq $symbol } $published_history->@*;
     splice $published_history->@*, $published_index, 1 if $published_index > -1;
     push $published_history->@*, $state->{ticks_history}->{$symbol};
 

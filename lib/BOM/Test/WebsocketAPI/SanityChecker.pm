@@ -80,11 +80,11 @@ sub check {
     my $result = 1;
     for my $responses ($responses_list->@*) {
         my @sorted_resps = sort { $a->arrival_time <=> $b->arrival_time } $responses->@*;
-        my %grouped = $self->group_by_type(@sorted_resps)->%*;
+        my %grouped      = $self->group_by_type(@sorted_resps)->%*;
         for my $type (keys %grouped) {
             my $class_name = __PACKAGE__ . '::' . $type =~ s/(_?)([^_]+)/ucfirst($2)/egr;
             next unless $class_name->isa(__PACKAGE__);
-            my $checker = $self->{$type} //= $class_name->new($self->tester, @sorted_resps,);
+            my $checker            = $self->{$type} //= $class_name->new($self->tester, @sorted_resps,);
             my @responses_per_type = grep { !$_->is_error } $grouped{$type}->@*;
             for my $check ($self->checks_list->@*) {
                 $result &&= $checker->$check(@responses_per_type) unless $self->is_sanity_ckeck_skipped($type, $check);

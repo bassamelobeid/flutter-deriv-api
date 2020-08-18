@@ -201,8 +201,8 @@ sub purge_redis {
                 print STDERR "$$ flushing redis $config->{host}:$config->{port}\n";
                 $redis->flushdb();
                 $flushed_redis{"$config->{host}:$config->{port}"} = 1;
+            } catch {
             }
-            catch {};
         }
     }
     return 1;

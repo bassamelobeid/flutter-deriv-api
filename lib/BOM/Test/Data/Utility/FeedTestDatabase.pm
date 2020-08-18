@@ -58,8 +58,7 @@ sub truncate_tables {
     foreach my $table (@tables) {
         try {
             $dbh->do('truncate table feed.' . $table);
-        }
-        catch {
+        } catch {
             warn "error when truncate table feed.$table: $@";
         }
 
@@ -74,7 +73,7 @@ sub setup_ticks {
     # get this file's path, not the path of script that is using this function
     # this is to make the path below a relative path
     my $feed_file = dirname(__FILE__) . "/../../../../../feed/combined/$currency_pair/$file_name";
-    my $port = $ENV{DB_TEST_PORT} // '5433';
+    my $port      = $ENV{DB_TEST_PORT} // '5433';
 
     my $command = qq{psql -p $port postgresql://write:mRX1E3Mi00oS8LG\@localhost/feed -c "\\COPY $table FROM '$feed_file'"};
     return 1 if system($command) == 0;
@@ -266,7 +265,7 @@ sub _create_table_for_date {
 
     if ($table_present->[0] < 1) {
         my $port = $ENV{DB_TEST_PORT} // '5433';
-        my $dbh = DBI->connect("dbi:Pg:dbname=feed;host=localhost;port=$port", 'postgres', 'mRX1E3Mi00oS8LG') or croak $DBI::errstr;
+        my $dbh  = DBI->connect("dbi:Pg:dbname=feed;host=localhost;port=$port", 'postgres', 'mRX1E3Mi00oS8LG') or croak $DBI::errstr;
 
         # This operation is bound to raise an warning about how index was created.
         # We can ignore it.
@@ -275,7 +274,7 @@ sub _create_table_for_date {
         $dbh->{RaiseError} = 1;
 
         my $partition_date = Date::Utility->new($date->epoch - (($date->day_of_month - 1) * 86400));
-        my $date_str = $partition_date->date_yyyymmdd;
+        my $date_str       = $partition_date->date_yyyymmdd;
         $dbh->do(
             qq{CREATE TABLE feed.$table_name (
             PRIMARY KEY (underlying, ts),

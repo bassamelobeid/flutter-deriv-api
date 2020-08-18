@@ -212,7 +212,7 @@ for my $ul (@underlying) {
         TicksHistory(
         underlying => $ul,
         prices     => [map { $ul->pipsized_value(10 + (100 * rand)) } (1 .. $history_count)],
-        times => [map { $now - $_ } reverse(1 .. $history_count)],
+        times      => [map { $now - $_ } reverse(1 .. $history_count)],
         );
 
     my @barriers = map { $ul->pipsized_value(10 + (100 * rand)) } (1 .. $barrier_count);
@@ -316,11 +316,11 @@ for my $type (qw(buy sell)) {
             client_first_name     => 'mary',
             client_last_name      => 'jane',
             client_loginid        => 'CR002',
-            is_incoming      => sprintf("%.0f\n", rand(1)),
-            contact_info     => 'Тестовый заказ', # to check UTF decoding
-            payment_info     => 'Payment Information',
-            payment_method   => 'bank_transfer',
-            chat_channel_url => 'chatty channel',
+            is_incoming           => sprintf("%.0f\n", rand(1)),
+            contact_info          => 'Тестовый заказ',        # to check UTF decoding
+            payment_info          => 'Payment Information',
+            payment_method        => 'bank_transfer',
+            chat_channel_url      => 'chatty channel',
         );
     }
 }

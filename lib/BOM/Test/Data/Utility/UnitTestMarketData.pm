@@ -82,7 +82,7 @@ sub _init {
                         'logins'         => []}
                 },
                 'cgi' => {
-                    'allowed_languages' => ['EN', 'ID', 'RU', 'ZH_CN'],
+                    'allowed_languages'        => ['EN', 'ID', 'RU', 'ZH_CN'],
                     'backoffice'               => {'static_url' => 'https://regentmarkets.github.io/binary-static-backoffice/'},
                     'terms_conditions_version' => 'Version 39 2015-12-04'
                 },
@@ -207,7 +207,7 @@ sub create_doc {
 sub create_predefined_parameters_for {
     my ($symbol, $date) = @_;
 
-    my $tp = create_trading_periods($symbol, $date);
+    my $tp          = create_trading_periods($symbol, $date);
     my @start_times = sort { $a <=> $b } uniq map { $_->{date_start}->{epoch} } @$tp;
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => $symbol,
@@ -223,7 +223,7 @@ sub create_predefined_parameters_for {
 sub create_predefined_barriers_by_contract_category {
     my ($symbol, $date) = @_;
 
-    my $data = BOM::Product::ContractFinder->new(for_date => $date)->multi_barrier_contracts_by_category_for({symbol => $symbol});
+    my $data      = BOM::Product::ContractFinder->new(for_date => $date)->multi_barrier_contracts_by_category_for({symbol => $symbol});
     my @redis_key = BOM::Product::Contract::PredefinedParameters::barrier_by_category_key($symbol);
     BOM::Config::Chronicle::get_chronicle_writer()->set(@redis_key, $data, $date, 1, 300);    # cached for 5 minutes
 
@@ -233,7 +233,7 @@ sub create_predefined_barriers_by_contract_category {
 sub create_trading_periods {
     my ($symbol, $date) = @_;
 
-    my $periods = BOM::Product::Contract::PredefinedParameters::generate_trading_periods($symbol, $date);
+    my $periods   = BOM::Product::Contract::PredefinedParameters::generate_trading_periods($symbol, $date);
     my @redis_key = BOM::Product::Contract::PredefinedParameters::trading_period_key($symbol, $date);
 
     # 1 - to save to chronicle database

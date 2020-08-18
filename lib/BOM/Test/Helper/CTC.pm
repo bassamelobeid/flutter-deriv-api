@@ -70,7 +70,7 @@ sub set_pending {
     my ($broker_code, $address, $currency_code, $amount, $transaction) = @_;
 
     my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker_code});
-    my $dbic = $clientdb->db->dbic;
+    my $dbic     = $clientdb->db->dbic;
     # since we are using bom-events for subscription we need to set
     # the transaction to pending manually here.
     try {
@@ -78,8 +78,7 @@ sub set_pending {
             ping => sub {
                 $_->selectrow_array('SELECT payment.ctc_set_deposit_pending(?, ?, ?, ?)', undef, $address, $currency_code, $amount, $transaction);
             });
-    }
-    catch {
+    } catch {
         return 0;
     }
 }

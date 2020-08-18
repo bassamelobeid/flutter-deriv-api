@@ -77,8 +77,8 @@ sub launch_redis {
         port    => $redis_port,
         logfile => '/tmp/redis.log'
     );
-    my $tmp_dir = tempdir(CLEANUP => 1);
-    my $ws_redis_path = path($tmp_dir, "ws-redis.yml");
+    my $tmp_dir         = tempdir(CLEANUP => 1);
+    my $ws_redis_path   = path($tmp_dir, "ws-redis.yml");
     my $ws_redis_config = {
         write => {
             host => '127.0.0.1',
@@ -107,8 +107,7 @@ sub launch_redis {
                     my $redis = Binary::WebSocketAPI::v3::Instance::Redis::ws_redis_master();
                     is_within_threshold 'ws_redis_master', $redis->backend->info('keyspace');
                     $redis_test_done = 1;
-                }
-                catch {
+                } catch {
                     diag "Could not run ws_redis_master keys test: $@\n";
                 }
             }
@@ -242,7 +241,7 @@ sub call_instrospection {
 
     return 'Websocket API repo is uavailable' unless (Binary::WebSocketAPI::v3::Instance::Redis->can('ws_redis_master'));
     my $redis_master = Binary::WebSocketAPI::v3::Instance::Redis->ws_redis_master() or die 'no redis connection';
-    my $loop = IO::Async::Loop::Mojo->new;
+    my $loop         = IO::Async::Loop::Mojo->new;
 
     $loop->add(my $redis         = Net::Async::Redis->new(uri => 'redis://127.0.0.1:' . $redis_master->url->port));
     $loop->add(my $redis_publish = Net::Async::Redis->new(uri => 'redis://127.0.0.1:' . $redis_master->url->port));
@@ -262,7 +261,7 @@ sub call_instrospection {
                         id      => 1,
                         channel => 'introspection_response',
                     })
-                )->then(
+            )->then(
                 sub {
                     ok 1, "Introspection message published: command = $cmd, args = " . join(', ', @$args);
                 })->retain;
@@ -272,7 +271,7 @@ sub call_instrospection {
                     $response = decode_json_utf8(shift);
                 })->completed;
         }
-        )->then(
+    )->then(
         sub {
             $redis->unsubscribe('introspection_response');
         })->get;
