@@ -47,7 +47,7 @@ has predefined_contracts => (
 sub _build_predefined_contracts {
     my $self = shift;
 
-    my $predefined_barriers = get_predefined_barriers_by_contract_category($self->underlying->symbol, $self->underlying->for_date);
+    my $predefined_barriers  = get_predefined_barriers_by_contract_category($self->underlying->symbol, $self->underlying->for_date);
     my $windows_for_category = $predefined_barriers->{$self->category->code};
 
     #no barriers for this category
@@ -130,7 +130,7 @@ sub _subvalidate_single_barrier {
     my @available_barriers = @{$info->{available_barriers} // []};
     my %expired_barriers   = map { $_ => 1 } @{$info->{expired_barriers} // []};
     # barriers are pipsized, make them numbers.
-    my $epsilon = 1e-10;
+    my $epsilon         = 1e-10;
     my $matched_barrier = first { abs($self->barrier->as_absolute - $_) < $epsilon } grep { not $expired_barriers{$_} } @available_barriers;
 
     unless ($matched_barrier) {

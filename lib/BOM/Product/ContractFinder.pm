@@ -54,14 +54,14 @@ sub _get_contracts {
     my $country_code          = $args->{country_code} // '';                               # might not be defined
     my $product_type          = $args->{product_type} // die 'product_type is required';
 
-    my $date = $self->for_date // Date::Utility->new;
+    my $date       = $self->for_date // Date::Utility->new;
     my $underlying = create_underlying($args->{symbol}, $self->for_date);
     my $exchange   = $underlying->exchange;
     my $calendar   = $self->_trading_calendar;
 
     my ($offerings, $open, $close) = ([]);
     if ($calendar->trades_on($exchange, $date)) {
-        $open = $calendar->opening_on($exchange, $date)->epoch;
+        $open  = $calendar->opening_on($exchange, $date)->epoch;
         $close = $calendar->closing_on($exchange, $date)->epoch;
     }
 
@@ -92,7 +92,7 @@ sub _get_multi_barrier_offerings {
 
     $landing_company_short //= 'virtual';
     my $landing_company = LandingCompany::Registry::get($landing_company_short);
-    my $offerings_obj = $landing_company->multi_barrier_offerings_for_country($country_code, BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings_obj   = $landing_company->multi_barrier_offerings_for_country($country_code, BOM::Config::Runtime->instance->get_offerings_config);
 
     my @offerings = map { $offerings_obj->query($_) } ({
             expiry_type       => 'daily',
@@ -127,7 +127,7 @@ sub _get_basic_offerings {
 
     $landing_company_short //= 'virtual';
     my $landing_company = LandingCompany::Registry::get($landing_company_short);
-    my $offerings_obj = $landing_company->basic_offerings_for_country($country_code, BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings_obj   = $landing_company->basic_offerings_for_country($country_code, BOM::Config::Runtime->instance->get_offerings_config);
 
     return [$offerings_obj->query({underlying_symbol => $symbol})];
 }

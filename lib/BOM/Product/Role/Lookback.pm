@@ -88,7 +88,7 @@ sub get_ohlc_for_period {
 
     # date_start + 1 because the first tick of the contract is the next tick.
     my $start_epoch = $self->date_start->epoch + 1;
-    my $end_epoch = $self->date_pricing->is_after($self->date_expiry) ? $self->date_expiry->epoch : $self->date_pricing->epoch;
+    my $end_epoch   = $self->date_pricing->is_after($self->date_expiry) ? $self->date_expiry->epoch : $self->date_pricing->epoch;
     $end_epoch = max($start_epoch, $end_epoch);
 
     return $self->underlying->get_high_low_for_period({

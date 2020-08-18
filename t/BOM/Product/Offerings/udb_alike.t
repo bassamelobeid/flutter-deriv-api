@@ -31,11 +31,11 @@ subtest 'Sets match' => sub {
 
     $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings($offerings_cfg);
 
-    eq_or_diff([ sort $offerings_obj->values_for_key('market')], [sort $udb->markets]);
-    eq_or_diff([ sort $offerings_obj->values_for_key('contract_category')], [sort $udb->available_contract_categories]);
-    eq_or_diff([ sort $offerings_obj->values_for_key('expiry_type')], [sort $udb->available_expiry_types]);
-    eq_or_diff([ sort $offerings_obj->values_for_key('start_type')], [sort $udb->available_start_types]);
-    eq_or_diff([ sort $offerings_obj->values_for_key('barrier_category')], [sort $udb->available_barrier_categories]);
+    eq_or_diff([sort $offerings_obj->values_for_key('market')],            [sort $udb->markets]);
+    eq_or_diff([sort $offerings_obj->values_for_key('contract_category')], [sort $udb->available_contract_categories]);
+    eq_or_diff([sort $offerings_obj->values_for_key('expiry_type')],       [sort $udb->available_expiry_types]);
+    eq_or_diff([sort $offerings_obj->values_for_key('start_type')],        [sort $udb->available_start_types]);
+    eq_or_diff([sort $offerings_obj->values_for_key('barrier_category')],  [sort $udb->available_barrier_categories]);
 };
 
 1;

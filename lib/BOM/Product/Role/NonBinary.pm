@@ -17,10 +17,10 @@ override '_build_bid_price' => sub {
         # if contract can be settled, then return the evaluated contract value
         $bid_price = $self->value;
     } else {
-        my $ask_price = $self->theo_price + $self->commission;
+        my $ask_price          = $self->theo_price + $self->commission;
         my $bid_price_per_unit = max($self->minimum_bid_price, ($ask_price - 2 * $self->commission) / $self->multiplier);
         $bid_price_per_unit = financialrounding('price', $self->currency, $bid_price_per_unit) if $self->user_defined_multiplier;
-        $bid_price = $bid_price_per_unit * $self->multiplier;
+        $bid_price          = $bid_price_per_unit * $self->multiplier;
     }
 
     if ($self->can('maximum_bid_price')) {
@@ -63,7 +63,7 @@ override _validate_price => sub {
     # NOTE: this evaluates only the contract-specific payout limit. There may be further
     # client-specific restrictions which are evaluated in B:P::Transaction.
     my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
-    my @possible_payout_maxes = ($bet_limits->{maximum_payout}->{$self->currency}, $per_contract_payout_limit);
+    my @possible_payout_maxes     = ($bet_limits->{maximum_payout}->{$self->currency}, $per_contract_payout_limit);
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
 

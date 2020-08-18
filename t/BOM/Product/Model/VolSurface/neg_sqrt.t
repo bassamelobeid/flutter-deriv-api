@@ -96,7 +96,7 @@ subtest 'same smile - forced negative variance' => sub {
             25 => 0.000816221496371159,
             50 => -0.000833104752070541,
             75 => 0.000911218164476226,
-            }
+        };
 
     };
     my $surface = _get_surface();
@@ -119,17 +119,22 @@ subtest 'same smile - forced negative variance' => sub {
 
 subtest 'economic event with non 5-minute interval starting date' => sub {
 
-    my $event = {symbol => 'USD',
-                 event_name => 'Non-Farm Employment Change',
-                 release_date => Date::Utility->new('2019-02-18 18:01:00')->epoch
-                };
+    my $event = {
+        symbol       => 'USD',
+        event_name   => 'Non-Farm Employment Change',
+        release_date => Date::Utility->new('2019-02-18 18:01:00')->epoch
+    };
 
-    my $surface = _get_surface( {}, $event );
+    my $surface = _get_surface({}, $event);
 
     my $from = Date::Utility->new('2019-02-18 18:02:00');
     my $to   = Date::Utility->new('2019-02-18 19:00:00');
 
-    my $vol = $surface->get_volatility({from => $from, to => $to, delta => 50});
+    my $vol = $surface->get_volatility({
+        from  => $from,
+        to    => $to,
+        delta => 50
+    });
 
     is $surface->validation_error, '', 'Negative variances should not occur';
 
@@ -155,7 +160,7 @@ sub _get_surface {
         chronicle_writer => $chronicle_w,
         for_date         => Date::Utility->new('2016-02-18 17:52:04'),
         $event ? (custom_event => $event) : (),
-        surface          => {
+        surface => {
             '14' => {
                 'vol_spread' => {
                     '25' => '0.00999999999999999',

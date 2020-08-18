@@ -16,7 +16,7 @@ sub ticks_to_expiry {
 }
 
 sub _build_barrier {
-    my $self = shift;
+    my $self    = shift;
     my $barrier = $self->make_barrier($self->supplied_barrier, {barrier_kind => 'high'});
 
     if ($self->reset_spot and $self->reset_spot->quote < $barrier->as_absolute) {

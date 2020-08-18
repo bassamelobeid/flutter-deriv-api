@@ -142,7 +142,7 @@ subtest 'put_call_parity_IH_basic' => sub {
 
         foreach my $currency ('AUD', 'USD') {
             my $c1 = produce_contract($shortcode, $currency);
-            my $p = $c1->build_parameters;
+            my $p  = $c1->build_parameters;
             $p->{date_pricing} = $c1->date_start;
             # test was done with the assumption of 10% pricing vol
             $p->{pricing_vol} = 0.1;
@@ -169,7 +169,7 @@ subtest 'put_call_parity_IH_multi_barrier' => sub {
     foreach my $shortcode (@shortcode) {
 
         my $c1 = produce_contract($shortcode, 'JPY');
-        my $p = $c1->build_parameters;
+        my $p  = $c1->build_parameters;
         $p->{date_pricing}         = $c1->date_start;
         $p->{product_type}         = 'multi_barrier';
         $p->{trading_period_start} = time;
@@ -198,7 +198,7 @@ subtest 'put_call_parity_slope_basic' => sub {
 
         foreach my $currency ('AUD', 'USD') {
             my $c1 = produce_contract($shortcode, $currency);
-            my $p = $c1->build_parameters;
+            my $p  = $c1->build_parameters;
             $p->{date_pricing} = $c1->date_start;
             my $c = produce_contract($p);
             isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
@@ -231,7 +231,7 @@ subtest 'put_call_parity_slope_multi_barrier' => sub {
     foreach my $shortcode (@shortcode) {
 
         my $c1 = produce_contract($shortcode, 'JPY');
-        my $p = $c1->build_parameters;
+        my $p  = $c1->build_parameters;
         $p->{date_pricing}         = $c1->date_start;
         $p->{product_type}         = 'multi_barrier';
         $p->{trading_period_start} = time;
@@ -258,13 +258,13 @@ subtest 'put_call_parity_vv_basic' => sub {
     foreach my $shortcode (@shortcode) {
         foreach my $currency ('AUD', 'USD') {
             my $c1 = produce_contract($shortcode, $currency);
-            my $p = $c1->build_parameters;
+            my $p  = $c1->build_parameters;
             $p->{date_pricing} = $c1->date_start;
             my $c = produce_contract($p);
             isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
             my $contract_theo_prob          = $c->pricing_engine->base_probability->amount;
             my $opposite_contract_theo_prob = $c->opposite_contract->pricing_engine->base_probability->amount;
-            my $discounted_prob = roundcommon(0.1, exp(-$c->discount_rate * $c->timeinyears->amount));
+            my $discounted_prob             = roundcommon(0.1, exp(-$c->discount_rate * $c->timeinyears->amount));
             is roundcommon(0.1, $contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob,
                 "put call parity hold for " . $c->shortcode . " with payout currency $currency";
         }
@@ -283,7 +283,7 @@ subtest 'put_call_parity_vv_multi_barrier' => sub {
     foreach my $shortcode (@shortcode) {
 
         my $c1 = produce_contract($shortcode, 'JPY');
-        my $p = $c1->build_parameters;
+        my $p  = $c1->build_parameters;
         $p->{date_pricing}         = $c1->date_start;
         $p->{product_type}         = 'multi_barrier';
         $p->{trading_period_start} = time;

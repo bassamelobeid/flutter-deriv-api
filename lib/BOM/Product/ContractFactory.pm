@@ -219,8 +219,8 @@ sub _args_to_ref {
 
     my $params_ref =
           (ref $build_arg eq 'HASH') ? $build_arg
-        : (defined $build_arg) ? shortcode_to_parameters($build_arg, $maybe_currency)
-        :                        undef;
+        : (defined $build_arg)       ? shortcode_to_parameters($build_arg, $maybe_currency)
+        :                              undef;
 
     # After all of that, we should have gotten a hash reference.
     die 'Improper arguments to produce_contract.' unless (ref $params_ref eq 'HASH');

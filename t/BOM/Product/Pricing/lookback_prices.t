@@ -76,7 +76,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
             });
             my @barriers = @{
                 Test::BOM::UnitTestPrice::get_barrier_range({
-                        type => ($category_obj->two_barriers ? 'double' : 'single'),
+                        type       => ($category_obj->two_barriers ? 'double' : 'single'),
                         underlying => $ul,
                         duration   => $duration,
                         spot       => $spot,
@@ -101,7 +101,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                         date_pricing => $now,
                         duration     => $duration . 's',
                         currency     => $payout_currency,
-                        multiplier       => $ul->symbol eq 'R_50' ? 5 : 1,
+                        multiplier   => $ul->symbol eq 'R_50' ? 5 : 1,
                     };
 
                     my $c = produce_contract($args);

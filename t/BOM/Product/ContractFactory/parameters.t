@@ -28,7 +28,7 @@ subtest 'shortcode_to_parameters' => sub {
     my $rmg_dated_call = shortcode_to_parameters('CALL_frxUSDJPY_100_10_OCT_12_17_OCT_12_S1P_S2P', 'USD');
     is($legacy->{bet_type}, 'Invalid', 'Legacy shortcode.');
 
-    my $call = shortcode_to_parameters('CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P', 'USD');
+    my $call     = shortcode_to_parameters('CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P', 'USD');
     my $expected = {
         underlying                 => $frxUSDJPY,
         high_barrier               => 'S1P',
@@ -68,7 +68,7 @@ subtest 'shortcode_to_parameters' => sub {
     };
     cmp_deeply($tickup, $expected, 'FLASH tick expiry shortcode.');
 
-    $call = shortcode_to_parameters('CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P', 'USD', 1);
+    $call     = shortcode_to_parameters('CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P', 'USD', 1);
     $expected = {
         underlying                 => $frxUSDJPY,
         high_barrier               => 'S1P',

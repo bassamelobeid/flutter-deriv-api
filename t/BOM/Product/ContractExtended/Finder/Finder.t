@@ -123,12 +123,12 @@ subtest "predefined trading_period" => sub {
 
     my %expected_trading_period = (
         call_intraday => {
-            duration => ['2h', '6h'],
+            duration    => ['2h', '6h'],
             date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 18:15:00', '2015-09-04 18:15:00',)],
             date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 16:15:00', '2015-09-04 12:15:00',)],
         });
 
-    my $now = Date::Utility->new('2015-09-04 17:00:00');
+    my $now        = Date::Utility->new('2015-09-04 17:00:00');
     my $underlying = create_underlying('frxUSDJPY', $now);
     BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($underlying->symbol, $now);
     my @new = @{BOM::Product::ContractFinder->new(for_date => $now)->multi_barrier_contracts_for({symbol => $underlying->symbol})->{available}};

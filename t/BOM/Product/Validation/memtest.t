@@ -115,10 +115,8 @@ my %correlations = map {
             '9M'  => 0.32,
             '12M' => 0.307,
         },
-        }
-    } grep {
-    $_->symbol !~ /frx/
-    } @market_data_underlyings;
+    }
+} grep { $_->symbol !~ /frx/ } @market_data_underlyings;
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'correlation_matrix',

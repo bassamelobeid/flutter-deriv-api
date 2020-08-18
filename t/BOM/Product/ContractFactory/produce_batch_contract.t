@@ -47,8 +47,8 @@ my $fake_tick = Postgres::FeedDB::Spot::Tick->new({
 
 subtest 'produce_batch_contract - price check' => sub {
     my $args = {
-        bet_types  => ['CALL', 'PUT'],
-        underlying => 'frxUSDJPY',
+        bet_types    => ['CALL', 'PUT'],
+        underlying   => 'frxUSDJPY',
         barriers     => [{barrier => 'S20P'}],
         date_start   => $now,
         date_pricing => $now,
@@ -79,7 +79,7 @@ subtest 'produce_batch_contract - price check' => sub {
 
     lives_ok {
         $args->{bet_types} = ['CALL', 'PUT'];
-        $args->{barriers} = [{barrier => 'S20P'}, {barrier => 'S15P'}];
+        $args->{barriers}  = [{barrier => 'S20P'}, {barrier => 'S15P'}];
         delete $args->{barrier};
         my $batch      = produce_batch_contract($args);
         my $ask_prices = $batch->ask_prices;
@@ -159,7 +159,7 @@ subtest 'produce_batch_contract - error check' => sub {
     is $error->message_to_client->[0], 'Invalid barrier (Single barrier input is expected).';
 
     $args->{bet_types} = ['CALL', 'ONETOUCH'];
-    $args->{barriers} = [
+    $args->{barriers}  = [
         {barrier => 100.12},
         {
             barrier  => 100.12,

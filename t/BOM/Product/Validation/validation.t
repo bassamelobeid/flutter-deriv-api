@@ -224,8 +224,8 @@ subtest 'invalid bet payout hobbling around' => sub {
         barrier      => '100.085',
         current_tick => $tick,
     };
-    my $bet = produce_contract($bet_params);
-    my $expected_reasons     = [qr/payout/];
+    my $bet              = produce_contract($bet_params);
+    my $expected_reasons = [qr/payout/];
     test_error_list('buy', $bet, $expected_reasons);
     ok($bet->primary_validation_error->message =~ $expected_reasons->[0], '..and the primary one is the most severe.');
 
@@ -335,13 +335,13 @@ subtest 'invalid barriers knocked down for great justice' => sub {
         current_tick => $tick,
     };
 
-    my $bet = produce_contract($bet_params);
+    my $bet              = produce_contract($bet_params);
     my $expected_reasons = [qr/move below minimum/, qr/barrier.*spot.*start/, qr/stake.*same as.*payout/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{barrier} = 110.123456;
-    $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/Barrier decimal error/];
+    $bet                   = produce_contract($bet_params);
+    $expected_reasons      = [qr/Barrier decimal error/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{barrier} = 110;
@@ -353,7 +353,7 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     $bet_params->{low_barrier}  = '99.99995';
     $bet_params->{duration}     = '7d';
     $bet                        = produce_contract($bet_params);
-    $expected_reasons = [qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
+    $expected_reasons           = [qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{low_barrier} = -100;    # Fine, we'll set our low barrier like you want.
@@ -361,26 +361,26 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'Invalid barrier (Contract can have only one type of barrier).';
 
-    $bet_params->{low_barrier} = 111;       # Sigh, ok, then, what about this one?
-    $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/barriers inverted/, qr/straddle.*spot/, qr/stake.*same as.*payout/];
+    $bet_params->{low_barrier} = 111;                                                                       # Sigh, ok, then, what about this one?
+    $bet                       = produce_contract($bet_params);
+    $expected_reasons          = [qr/barriers inverted/, qr/straddle.*spot/, qr/stake.*same as.*payout/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{high_barrier} = 110;
-    $bet_params->{low_barrier}  = 110;      # Surely this must be ok.
-    $error = exception { produce_contract($bet_params) };
+    $bet_params->{low_barrier}  = 110;                                                                      # Surely this must be ok.
+    $error                      = exception { produce_contract($bet_params) };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'High and low barriers must be different.';
 
-    $bet_params->{high_barrier} = 100.099001;    
+    $bet_params->{high_barrier} = 100.099001;
     $bet_params->{low_barrier}  = '99.99995';
     $bet                        = produce_contract($bet_params);
-    $expected_reasons = [qr/High barrier decimal error/];
+    $expected_reasons           = [qr/High barrier decimal error/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{low_barrier} =  99.000001;    
-    $bet                        = produce_contract($bet_params);
-    $expected_reasons = [qr/Low barrier decimal error/];
+    $bet_params->{low_barrier} = 99.000001;
+    $bet                       = produce_contract($bet_params);
+    $expected_reasons          = [qr/Low barrier decimal error/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{high_barrier} = 110;                             # Ok, I think I get it now.
@@ -389,13 +389,13 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     ok($bet->is_valid_to_buy, '..but with properly set barriers, it validates just fine.');
 
     # Also test for relative barriers for single barrier contracts
-    $bet_params->{bet_type}     = 'ONETOUCH';
-    $bet_params->{underlying}   = 'R_100';
-    $bet_params->{duration}     = '5d';
-    $bet_params->{barrier}      = '+11.0001';
+    $bet_params->{bet_type}   = 'ONETOUCH';
+    $bet_params->{underlying} = 'R_100';
+    $bet_params->{duration}   = '5d';
+    $bet_params->{barrier}    = '+11.0001';
     delete $bet_params->{high_barrier};
     delete $bet_params->{low_barrier};
-    $bet = produce_contract($bet_params);
+    $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/Barrier decimal error/];
     test_error_list('buy', $bet, $expected_reasons);
 
@@ -403,21 +403,21 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     $bet_params->{bet_type}     = 'CALLSPREAD';
     $bet_params->{underlying}   = 'R_100';
     $bet_params->{duration}     = '3m';
-    $bet_params->{high_barrier} = '+0.0001';                            
+    $bet_params->{high_barrier} = '+0.0001';
     $bet_params->{low_barrier}  = '-0.01';
     $bet                        = produce_contract($bet_params);
-    $expected_reasons = [qr/High barrier decimal error/];
+    $expected_reasons           = [qr/High barrier decimal error/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{low_barrier}  = '-0.001';             # Test for low barrier offset 
-    $bet                        = produce_contract($bet_params);
-    $expected_reasons = [qr/Low barrier decimal error/];
+    $bet_params->{low_barrier} = '-0.001';                          # Test for low barrier offset
+    $bet                       = produce_contract($bet_params);
+    $expected_reasons          = [qr/Low barrier decimal error/];
     test_error_list('buy', $bet, $expected_reasons);
 
-    $bet_params->{high_barrier} = '+0.000';     # Test for zero barrier offsets
-    $bet_params->{low_barrier}  = '-0.000';             
+    $bet_params->{high_barrier} = '+0.000';                                        # Test for zero barrier offsets
+    $bet_params->{low_barrier}  = '-0.000';
     $bet                        = produce_contract($bet_params);
-    $expected_reasons = [qr/High and low barriers must be different/];
+    $expected_reasons           = [qr/High and low barriers must be different/];
     test_error_list('buy', $bet, $expected_reasons);
 };
 
@@ -498,7 +498,7 @@ subtest 'volsurfaces become old and invalid' => sub {
             recorded_date  => Date::Utility->new('2013-03-22 18:00:34'),
             spot_reference => $tick->quote,
         });
-    my $gdaxi = create_underlying('OTC_GDAXI');
+    my $gdaxi     = create_underlying('OTC_GDAXI');
     my $test_date = $trading_calendar->opening_on($gdaxi->exchange, Date::Utility->new('2013-03-25'));
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'index',
@@ -518,9 +518,8 @@ subtest 'volsurfaces become old and invalid' => sub {
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
+    $bet = produce_contract($bet_params);
 
-    $bet                        = produce_contract($bet_params);
- 
     $bet->is_valid_to_buy;
     $volsurface = BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         'volsurface_moneyness',
@@ -788,11 +787,11 @@ subtest 'invalid expiry times' => sub {
     ok($bet->is_valid_to_buy, '..but when we are open at the end, validates just fine.');
 
     # Need a quotdian here.
-    $underlying               = create_underlying('RDBULL');
-    $bet_params->{underlying} = $underlying;
-    $bet_params->{bet_type}   = 'CALL';
-    $bet_params->{duration}   = '10h';
-    $bet_params->{date_start} = $trading_calendar->closing_on($underlying->exchange, Date::Utility->new('2013-03-28'))->minus_time_interval('9h');
+    $underlying                 = create_underlying('RDBULL');
+    $bet_params->{underlying}   = $underlying;
+    $bet_params->{bet_type}     = 'CALL';
+    $bet_params->{duration}     = '10h';
+    $bet_params->{date_start}   = $trading_calendar->closing_on($underlying->exchange, Date::Utility->new('2013-03-28'))->minus_time_interval('9h');
     $bet_params->{date_pricing} = $bet_params->{date_start}->epoch - 1776;
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('correlation_matrix',
         {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
@@ -1172,7 +1171,7 @@ subtest 'invalid digits barrier' => sub {
     };
     isa_ok $error, 'BOM::Product::Exception';
     like($error->message_to_client->[0], qr/Missing required contract parameters/, "correct error message");
-    like($error->error_code, qr/MissingRequiredDigit/, "correct error code");
+    like($error->error_code,             qr/MissingRequiredDigit/,                 "correct error code");
 
     $params->{barrier} = 0;
     $c = produce_contract($params);
@@ -1249,39 +1248,42 @@ subtest 'validate tick expiry barrier type' => sub {
     ok $c->is_valid_to_buy, 'valid to buy with absolute barrier';
 };
 
-subtest 'sell back validation for volatility indices' => sub {	
-    my $starting = Date::Utility->new('2014-10-08 13:00:00');	
-    my $date_pricing = $starting->plus_time_interval('2m');	
-    my $o = LandingCompany::Registry::get('virtual')->basic_offerings({loaded_revision => 0, action => 'sell'});	
+subtest 'sell back validation for volatility indices' => sub {
+    my $starting     = Date::Utility->new('2014-10-08 13:00:00');
+    my $date_pricing = $starting->plus_time_interval('2m');
+    my $o            = LandingCompany::Registry::get('virtual')->basic_offerings({
+        loaded_revision => 0,
+        action          => 'sell'
+    });
 
-    foreach my $contract_type (qw(CALLE PUTE CALL PUT ONETOUCH NOTOUCH)) {	
-        foreach my $symbol ($o->query({market => 'synthetic_index'}, ['underlying_symbol'])) {	
-            my $tick     = Postgres::FeedDB::Spot::Tick->new({	
-                underlying => $symbol,	
-                epoch      => $date_pricing->epoch,	
-                quote      => 100,	
-            });	
-            my $bet_params = {	
-                underlying   => $symbol,	
-                bet_type     => $contract_type,	
-                currency     => 'USD',	
-                payout       => 100,	
-                date_start   => $starting,	
-                date_pricing => $date_pricing,	
-                duration     => '20m',	
-                barrier      => 'S0P',	
-                current_tick => $tick,	
-            };	
+    foreach my $contract_type (qw(CALLE PUTE CALL PUT ONETOUCH NOTOUCH)) {
+        foreach my $symbol ($o->query({market => 'synthetic_index'}, ['underlying_symbol'])) {
+            my $tick = Postgres::FeedDB::Spot::Tick->new({
+                underlying => $symbol,
+                epoch      => $date_pricing->epoch,
+                quote      => 100,
+            });
+            my $bet_params = {
+                underlying   => $symbol,
+                bet_type     => $contract_type,
+                currency     => 'USD',
+                payout       => 100,
+                date_start   => $starting,
+                date_pricing => $date_pricing,
+                duration     => '20m',
+                barrier      => 'S0P',
+                current_tick => $tick,
+            };
 
             my $c = produce_contract($bet_params);
-            ok !$o->validate_offerings($c->metadata('sell')), 'valid to sell for - ' . $contract_type . ' & ' . $symbol;	
-        }	
-    }	
-};	
+            ok !$o->validate_offerings($c->metadata('sell')), 'valid to sell for - ' . $contract_type . ' & ' . $symbol;
+        }
+    }
+};
 
 subtest 'In protfolio for manullay settled contracts, market disruption message must be shown' => sub {
     my $now = Date::Utility->new;
-    my $c = produce_contract({
+    my $c   = produce_contract({
         underlying   => 'R_100',
         bet_type     => 'CALL',
         currency     => 'USD',
@@ -1291,18 +1293,10 @@ subtest 'In protfolio for manullay settled contracts, market disruption message 
         duration     => '1m',
         barrier      => 'S0P'
     });
-    ok(!$c->is_valid_to_sell, 'Contract is not valid for sale');
+    ok(!$c->is_valid_to_sell,   'Contract is not valid for sale');
     ok($c->is_after_settlement, 'Pricing time for contract is after settlment');
-    is(
-        $c->primary_validation_error->message,
-        'entry tick is undefined',
-        'Error message of undefined entry tick'
-    );
-    like(
-        $c->primary_validation_error->message_to_client->[0],
-        qr/There was a market data disruption/,
-        'Client error message of market disruption'
-    );
+    is($c->primary_validation_error->message, 'entry tick is undefined', 'Error message of undefined entry tick');
+    like($c->primary_validation_error->message_to_client->[0], qr/There was a market data disruption/, 'Client error message of market disruption');
 };
 
 my $counter = 0;

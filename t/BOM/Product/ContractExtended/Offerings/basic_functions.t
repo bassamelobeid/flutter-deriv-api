@@ -38,7 +38,7 @@ my $o = LandingCompany::Registry::get('svg')->basic_offerings({
     action          => 'buy'
 });
 my $expected_levels = 4;
-my $offerings = new_ok('BOM::Product::Offerings::DisplayHelper' => [{offerings => $o}]);
+my $offerings       = new_ok('BOM::Product::Offerings::DisplayHelper' => [{offerings => $o}]);
 
 my $original_levels = $offerings->levels;
 subtest levels => sub {
@@ -95,7 +95,7 @@ subtest 'Early close dates on Fridays' => sub {
     my $tree = BOM::Product::Offerings::DisplayHelper->new(
         date      => Date::Utility->new('2020-07-03'),
         offerings => $o
-        )->decorate_tree(
+    )->decorate_tree(
         markets     => {name => 'name'},
         submarkets  => {name => 'name'},
         underlyings => {

@@ -66,8 +66,8 @@ subtest 'ask/bid price' => sub {
     is $c->pricing_engine->theo_price, 7.71698539615923, 'theo price 7.71698539615923';
     is $c->commission_per_unit, 0.0926038247539108;
 
-    cmp_ok $c->ask_price,       '==', 7.81, 'correct ask price';
-    cmp_ok $c->bid_price,       '==', 7.62, 'correct bid price';
+    cmp_ok $c->ask_price, '==', 7.81, 'correct ask price';
+    cmp_ok $c->bid_price, '==', 7.62, 'correct bid price';
 };
 
 done_testing();

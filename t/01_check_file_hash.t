@@ -8,7 +8,7 @@ use Digest::SHA1;
 my %file_details = (
     runs => {
         filename => module_path('BOM::Product::Contract::Runhigh'),
-        hash => '27404d4a93be0860f01bf4c94bcd8454559a5bfe'
+        hash     => '27404d4a93be0860f01bf4c94bcd8454559a5bfe'
     },
     risefall => {
         filename => module_path('BOM::Product::Contract::Call'),
@@ -72,7 +72,10 @@ foreach my $entry (keys %file_details) {
     open(my $fh, "<", $file_details{$entry}{filename}) or die "File not found $_";
     binmode($fh);
 
-    is(Digest::SHA1->new->addfile($fh)->hexdigest, $file_details{$entry}{hash}, 'Game signature for ' . $entry . ' is correct: ' . $file_details{$entry}{hash})
+    is(
+        Digest::SHA1->new->addfile($fh)->hexdigest,
+        $file_details{$entry}{hash},
+        'Game signature for ' . $entry . ' is correct: ' . $file_details{$entry}{hash})
         or diag
         'Games must be recertified when this happens as part of UKGC compliance. Please contact compliance to discuss this before proceeding any further. Failed for: '
         . $entry;

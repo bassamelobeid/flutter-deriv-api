@@ -242,7 +242,7 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok $bet->is_after_expiry,     'is after expiry';
     ok $bet->is_after_settlement, 'is pass settlement time';
     is($bet->primary_validation_error->message, 'exit tick is inconsistent', 'Not valid to sell as it is waiting for exit tick');
-    is($bet->exit_tick->quote, '108', 'exit tick is 108');
+    is($bet->exit_tick->quote,                  '108',                       'exit tick is 108');
 
     $bet_params_2->{date_pricing} = Date::Utility->new('2008-02-18 00:00:00');    # monday morning
     $bet_2 = produce_contract($bet_params_2);
@@ -251,7 +251,7 @@ subtest 'FOREX settlement check on Friday' => sub {
     ok $bet_2->is_after_expiry,     'is after expiry';
     ok $bet_2->is_after_settlement, 'is pass settlement time';
     is($bet_2->primary_validation_error->message, 'exit tick is inconsistent', 'Not valid to sell as it is waiting for exit tick');
-    is($bet_2->exit_tick->quote, '108', 'exit tick is 108');
+    is($bet_2->exit_tick->quote,                  '108',                       'exit tick is 108');
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',
@@ -328,18 +328,18 @@ subtest 'Index settlement check on ' => sub {
     ok !$bet->is_after_settlement, 'is not pass settlement time';
     is($bet->primary_validation_error->message, 'waiting for settlement', 'Not valid to sell as it is waiting for settlement');
     is($bet->exit_tick->quote,                  '1008',                   'exit tick is 1008');
-    is($bet->exit_tick->epoch, Date::Utility->new('2008-02-19 20:30:00')->epoch,'the exit tick is the one at 20:30');
+    is($bet->exit_tick->epoch, Date::Utility->new('2008-02-19 20:30:00')->epoch, 'the exit tick is the one at 20:30');
     cmp_ok($bet->bid_price, '==', 1, 'Indicative outcome with full payout as the exit tick is 1008');
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
             underlying => 'OTC_GDAXI',
             epoch      => Date::Utility->new('2008-02-19 00:00:00')->epoch,
-                        # epoch      => 1203379200,    # 19 Feb 2008 00:00:00 GMT
-            open       => 1008,
-            high       => 1110,
-            low        => 1002,
-            close      => 1003,
-            official   => 0,
+            # epoch      => 1203379200,    # 19 Feb 2008 00:00:00 GMT
+            open     => 1008,
+            high     => 1110,
+            low      => 1002,
+            close    => 1003,
+            official => 0,
 
     });
     $bet_params->{date_pricing} = Date::Utility->new('2008-02-20 07:00:00');
@@ -348,7 +348,7 @@ subtest 'Index settlement check on ' => sub {
     ok $bet->is_valid_to_sell,    'is valid to sell';
     ok $bet->is_after_expiry,     'is after expiry';
     ok $bet->is_after_settlement, 'is pass settlement time';
-    is($bet->exit_tick->quote, '1003',     'exit tick is 1003');
+    is($bet->exit_tick->quote, '1003',                                           'exit tick is 1003');
     is($bet->exit_tick->epoch, Date::Utility->new('2008-02-19 20:30:00')->epoch, 'the exit tick is the one at 20:30:00');
     cmp_ok($bet->bid_price, '==', 0, 'Correct expiration with full payout as the exit tick is 1003');
 
@@ -462,7 +462,7 @@ subtest 'Path dependent contracts settlement check' => sub {
     ok $bet_3->is_after_expiry,     'is after expiry';
     ok $bet_3->is_after_settlement, 'is pass settlement time';
     is($bet_3->primary_validation_error->message, 'exit tick is inconsistent', 'Not valid to sell as it is waiting for exit tick');
-    is($bet_3->exit_tick->quote, '110', 'exit tick is last availble tick');
+    is($bet_3->exit_tick->quote,                  '110',                       'exit tick is last availble tick');
 
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',

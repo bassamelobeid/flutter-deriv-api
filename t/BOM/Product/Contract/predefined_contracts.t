@@ -92,7 +92,7 @@ subtest 'predefined_contracts' => sub {
     $bet_params->{bet_type}     = 'EXPIRYMISS';
     $bet_params->{high_barrier} = '101';
     $bet_params->{low_barrier}  = '99';
-    $c = produce_contract(+{%$bet_params, predefined_contracts => {available_barriers => [['99.100', '100.000']]}});
+    $c                          = produce_contract(+{%$bet_params, predefined_contracts => {available_barriers => [['99.100', '100.000']]}});
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply($c->primary_validation_error->message_to_client, ['Invalid barrier.']);
     $c = produce_contract({

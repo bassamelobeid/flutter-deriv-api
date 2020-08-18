@@ -52,8 +52,8 @@ test_with_feed(
         foreach my $barrier (sort { $a <=> $b } keys %barrier_win_map) {
             $bet_params->{barrier} = $barrier;
             my $bet = produce_contract($bet_params);
-            is($bet->is_expired, 1, 'Past end of bet, so it is expired.');
-            is($bet->value, $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
+            is($bet->is_expired, 1,                          'Past end of bet, so it is expired.');
+            is($bet->value,      $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
         }
 
         # On the nail.
@@ -93,8 +93,8 @@ test_with_feed(
         foreach my $barrier (keys %barrier_win_map) {
             $bet_params->{barrier} = $barrier;
             my $bet = produce_contract($bet_params);
-            is($bet->is_expired, 1, 'Past end of bet, so it is expired.');
-            is($bet->value, $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
+            is($bet->is_expired, 1,                          'Past end of bet, so it is expired.');
+            is($bet->value,      $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
         }
     });
 
@@ -122,8 +122,8 @@ test_with_feed(
         foreach my $barrier (keys %barrier_win_map) {
             $bet_params->{barrier} = $barrier;
             my $bet = produce_contract($bet_params);
-            is($bet->is_expired, 1, 'Past end of bet, so it is expired.');
-            is($bet->value, $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
+            is($bet->is_expired, 1,                          'Past end of bet, so it is expired.');
+            is($bet->value,      $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
         }
     });
 
@@ -151,8 +151,8 @@ test_with_feed(
         foreach my $barrier (keys %barrier_win_map) {
             $bet_params->{barrier} = $barrier;
             my $bet = produce_contract($bet_params);
-            is($bet->is_expired, 1, 'Past end of bet, so it is expired.');
-            is($bet->value, $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
+            is($bet->is_expired, 1,                          'Past end of bet, so it is expired.');
+            is($bet->value,      $barrier_win_map{$barrier}, 'Correct expiration for strike of ' . $barrier);
         }
     });
 
@@ -476,20 +476,20 @@ test_with_feed([
         $bet_params->{barrier} = 107.9;
         $bet = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won (high barrier breached)');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won (high barrier breached)');
 
         $bet_params->{barrier} = 107.89;
         $bet = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won (high barrier breached)');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won (high barrier breached)');
 
         $bet_params->{barrier} = 104.98;
         $bet = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won (low barrier breached)');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won (low barrier breached)');
     });
 
 test_with_feed([
@@ -609,22 +609,22 @@ test_with_feed([
         $bet = produce_contract($bet_params);
         # Create a new object for that
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{payout}, 'Bet outcome won (high barrier breached)');
+        is($bet->is_expired, 1,                     'Bet expired');
+        is($bet->value,      $bet_params->{payout}, 'Bet outcome won (high barrier breached)');
 
         # The high/low during this period is [63948.31, 64324.91]
         $bet_params->{barrier} = 64324.89;
         $bet = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{payout}, 'Bet outcome won (high barrier breached)');
+        is($bet->is_expired, 1,                     'Bet expired');
+        is($bet->value,      $bet_params->{payout}, 'Bet outcome won (high barrier breached)');
 
         # The high/low during this period is [63948.31, 64324.91]
         $bet_params->{barrier} = 63948.32;
         $bet = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{payout}, 'Bet outcome won (low barrier breached)');
+        is($bet->is_expired, 1,                     'Bet expired');
+        is($bet->value,      $bet_params->{payout}, 'Bet outcome won (low barrier breached)');
 
         $bet_params->{barrier} = 'S0P';
         $bet = produce_contract($bet_params);
@@ -665,8 +665,8 @@ test_with_feed([
         my $bet = produce_contract($bet_params);
 
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{payout}, 'Bet outcome lost (high barrier too high)');
+        is($bet->is_expired, 1,                     'Bet expired');
+        is($bet->value,      $bet_params->{payout}, 'Bet outcome lost (high barrier too high)');
 
         $bet_params->{barrier} = 107;
         $bet = produce_contract($bet_params);
@@ -677,8 +677,8 @@ test_with_feed([
         $bet_params->{barrier} = 104.9;
         $bet = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{payout}, 'Bet outcome lost (low barrier too low)');
+        is($bet->is_expired, 1,                     'Bet expired');
+        is($bet->value,      $bet_params->{payout}, 'Bet outcome lost (low barrier too low)');
 
         $bet_params->{barrier} = 104.98;
         $bet = produce_contract($bet_params);
@@ -781,8 +781,8 @@ test_with_feed([
         $bet_params->{barrier} = 64325;
         $bet = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{payout}, 'Bet outcome lost (high barrier too high)');
+        is($bet->is_expired, 1,                     'Bet expired');
+        is($bet->value,      $bet_params->{payout}, 'Bet outcome lost (high barrier too high)');
 
         # Lower the high barrier to win
         # The high/low during this period is [63948.31, 64324.91]
@@ -797,8 +797,8 @@ test_with_feed([
         $bet_params->{barrier} = 63947.31;
         $bet = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{payout}, 'Bet outcome lost (low barrier too low)');
+        is($bet->is_expired, 1,                     'Bet expired');
+        is($bet->value,      $bet_params->{payout}, 'Bet outcome lost (low barrier too low)');
 
         # The high/low during this period is [63948.31, 64324.91]
         $bet_params->{barrier} = 63949;
@@ -838,16 +838,16 @@ test_with_feed(
         # The price at expiry is 106.4
         $bet = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # The price at expiry is 106.4
         $bet_params->{'high_barrier'} = 107.00;                          # in range
         $bet_params->{'low_barrier'}  = 106.39;                          # in range
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # LOSE TEST
         # The price at expiry is 106.4
@@ -909,16 +909,16 @@ test_with_feed([
         $bet_params->{'low_barrier'}  = 63948.30;                        # in range
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # The price at expiry is 63948.31
         $bet_params->{'high_barrier'} = 63949;                           # in range
         $bet_params->{'low_barrier'}  = 63948;                           # in range
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # LOSE TEST
         # The price at expiry is 63948.31
@@ -994,16 +994,16 @@ test_with_feed(
         $bet_params->{'low_barrier'}  = 105.00;                          # in range
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # The price at expiry is 106.4
         $bet_params->{'high_barrier'} = 107.0;                           # in range
         $bet_params->{'low_barrier'}  = 106.5;                           # down
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
     });
 
 test_with_feed([
@@ -1041,16 +1041,16 @@ test_with_feed([
         $bet_params->{'low_barrier'}  = 63940;                           # in range
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # The price at expiry is 63948.31
         $bet_params->{'high_barrier'} = 63950;                           # in range
         $bet_params->{'low_barrier'}  = 63949;                           # down
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
     });
 
 test_with_feed([
@@ -1098,16 +1098,16 @@ test_with_feed([
         $bet_params->{'low_barrier'}  = 104.80;                          # in range
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # The range from 9 Jan 2008 to 6 Feb 2008 is [104.97,110.12]
         $bet_params->{'high_barrier'} = 110.13;                          # in range
         $bet_params->{'low_barrier'}  = 104.39;                          # in range
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # LOSE TEST
         # The range from 9 Jan 2008 to 6 Feb 2008 is [104.97,110.12]
@@ -1231,16 +1231,16 @@ test_with_feed([
         $bet_params->{'low_barrier'}  = 63940;                           # in range
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # The high/low during this period is [63948.31, 64324.91]
         $bet_params->{'high_barrier'} = 64324.92;                        # in range
         $bet_params->{'low_barrier'}  = 63948.30;                        # in range
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # LOSE TEST
         # The high/low during this period is [63948.31, 64324.91]
@@ -1330,24 +1330,24 @@ test_with_feed([
         $bet_params->{'low_barrier'}  = 102.00;                          # in range
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # The range from 9 Jan 2008 to 6 Feb 2008 is [104.97,110.12]
         $bet_params->{'high_barrier'} = 110.23;                          # in range
         $bet_params->{'low_barrier'}  = 104.98;                          # down
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # The range from 9 Jan 2008 to 6 Feb 2008 is [104.97,110.12]
         $bet_params->{'high_barrier'} = 110.10;                          # up
         $bet_params->{'low_barrier'}  = 104.9;                           # down
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
     });
 
 test_with_feed([
@@ -1463,24 +1463,24 @@ test_with_feed([
         $bet_params->{'low_barrier'}  = 63940;                           # in range
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # The high/low during this period is [63948.31, 64324.91]
         $bet_params->{'high_barrier'} = 64326;                           # in range
         $bet_params->{'low_barrier'}  = 63949;                           # down
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
 
         # The high/low during this period is [63948.31, 64324.91]
         $bet_params->{'high_barrier'} = 64320;                           # up
         $bet_params->{'low_barrier'}  = 63930;                           # down
         $bet                          = produce_contract($bet_params);
         lives_ok { $bet->is_expired } 'Expiry Check';
-        is($bet->is_expired, 1, 'Bet expired');
-        is($bet->value, $bet_params->{'payout'}, 'Bet outcome won');
+        is($bet->is_expired, 1,                       'Bet expired');
+        is($bet->value,      $bet_params->{'payout'}, 'Bet outcome won');
     });
 
 my $oft_used_date = Date::Utility->new('2013-03-29 15:00:34');
@@ -1639,7 +1639,7 @@ test_with_feed([
         );
         foreach my $bt (sort keys %expectations) {
             my %barrier = $bt =~ /DIGITEVEN|DIGITODD/ ? () : (barrier => 1);
-            my $bet = produce_contract({%shared_params, %barrier, bet_type => $bt});
+            my $bet     = produce_contract({%shared_params, %barrier, bet_type => $bt});
             ok($bet->is_expired, $bt . ' contract is expired');
             cmp_ok($bet->exit_tick->quote, '==', 1000.5,             'numeric comparison of the exit tick works without trailing 0');
             cmp_ok($bet->value,            '==', $expectations{$bt}, '...but we need the correct full-width to settle the ' . $bt);

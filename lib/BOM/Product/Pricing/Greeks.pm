@@ -153,6 +153,7 @@ sub get_greek {
     my $args = $bet->_pricing_args;
 
     return 0 if ($args->{t} <= 0);
+
     die 'Unknown greek[' . $greek . ']' if not $self->_available_greeks->{$greek};
 
     my @barrier_args = ($args->{barrier1});

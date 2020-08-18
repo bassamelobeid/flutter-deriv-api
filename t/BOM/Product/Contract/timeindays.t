@@ -180,7 +180,7 @@ TODO: subtest Forex => sub {
                     q_rate => $bet->q_rate,
                 },
             )
-            ) < 0.0001,
+        ) < 0.0001,
         'We select correct vol.'
     );
 
@@ -200,7 +200,7 @@ TODO: subtest Forex => sub {
                     q_rate => $bet->q_rate,
                 },
             )
-            ) < 0.0001,
+        ) < 0.0001,
         'We select correct vol.'
     );
 
@@ -262,7 +262,7 @@ subtest Equity => sub {
 sub _sample_bet {
     my %overrides = @_;
 
-    my $symbol = $overrides{underlying} || 'frxUSDJPY';
+    my $symbol     = $overrides{underlying} || 'frxUSDJPY';
     my $underlying = (ref $symbol eq 'Quant::Framework::Underlying') ? $symbol : create_underlying($symbol);
 
     $overrides{date_pricing} ||= $overrides{date_start};

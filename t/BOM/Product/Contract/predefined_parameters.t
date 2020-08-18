@@ -151,7 +151,7 @@ subtest 'predefined barriers' => sub {
                 duration          => '2h',
                 expiry_type       => 'intraday'
             },
-            ticks => [[$date->minus_time_interval('400d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]],
+            ticks              => [[$date->minus_time_interval('400d')], [$date, 1.1521], [$date->plus_time_interval('10m'), 1.15591]],
             available_barriers => [1.15441, 1.15491, 1.15541, 1.15591, 1.15641, 1.15691, 1.15741],
             expired_barriers   => [],
         },
@@ -187,7 +187,7 @@ subtest 'predefined barriers' => sub {
         });
 
     my $generation_date = $date->plus_time_interval('1h');
-    my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $generation_date);
+    my $tp              = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($symbol, $generation_date);
 
     foreach my $test (@inputs) {
 

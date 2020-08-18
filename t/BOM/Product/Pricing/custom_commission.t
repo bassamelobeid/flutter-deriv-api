@@ -120,7 +120,7 @@ subtest 'barrier tier' => sub {
             OTM_max         => 0.45,
             ITM_max         => 0.35
         });
-    $args->{date_start} = $args->{date_pricing} = $now;
+    $args->{date_start}           = $args->{date_pricing} = $now;
     $args->{trading_period_start} = $now->epoch;
 
     my @test_cases = (

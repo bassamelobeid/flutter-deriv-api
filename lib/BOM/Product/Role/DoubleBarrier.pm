@@ -176,7 +176,7 @@ sub _validate_barrier {
                 severity          => 100,
                 message           => ucfirst($label) . ' barrier decimal error',
                 message_to_client => [$ERROR_MAPPING->{IncorrectBarrierOffsetDecimals}, ucfirst($label), $self->underlying->display_decimals],
-                details => {field => 'barrier'},
+                details           => {field => 'barrier'},
             };
         }
     }

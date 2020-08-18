@@ -81,7 +81,7 @@ sub barrier_value {
     return undef unless $self->order_amount;
 
     my $sentiment_multiplier = $self->sentiment eq 'up' ? 1 : -1;
-    my $commission = $self->commission // 0;
+    my $commission           = $self->commission // 0;
     my $barrier_value =
         (($self->order_amount + $self->cancellation_price) / ($self->multiplier * $self->stake) + $commission) *
         $sentiment_multiplier *
@@ -133,7 +133,7 @@ sub _validate_stop_out {
         return {
             message           => 'stop out lower than pnl',
             message_to_client => [$ERROR_MAPPING->{InvalidStopOut}, financialrounding('price', $currency, abs($current_pnl))],
-            details => {feild => $self->order_type},
+            details           => {feild => $self->order_type},
         };
     }
 
@@ -202,7 +202,7 @@ sub _validate_take_profit {
         BOM::Product::Exception->throw(
             error_code => 'TakeProfitTooHigh',
             error_args => [financialrounding('price', $currency, $max_amount * $self->stake)],
-            details => {field => 'take_profit'},
+            details    => {field => 'take_profit'},
         );
     }
 

@@ -92,10 +92,10 @@ has [
         r_rate
         pricing_mu
         )
-    ] => (
+] => (
     is         => 'rw',
     lazy_build => 1,
-    );
+);
 
 =head2 ask_price
 =head2 bid_price
@@ -111,11 +111,11 @@ has [
     qw( bid_price
         theo_price
         )
-    ] => (
+] => (
     is         => 'ro',
     init_arg   => undef,
     lazy_build => 1,
-    );
+);
 
 has ask_price => (
     is         => 'ro',
@@ -164,11 +164,11 @@ has greek_engine => (
 has [qw(
         pricing_new
         )
-    ] => (
+] => (
     is         => 'ro',
     isa        => 'Bool',
     lazy_build => 1,
-    );
+);
 
 # Application developer's commission.
 # Defaults to 0%
@@ -333,10 +333,10 @@ sub spot_min_max {
     my ($high, $low);
     if ($self->date_pricing->epoch > $from->epoch) {
         #Let's be more defensive here and use date pricing as well to determine the backprice flag.
-        my $backprice = (defined $self->underlying->for_date or $self->date_pricing->is_after($self->date_expiry)) ? 1 : 0;
-        my $decimate = BOM::Market::DataDecimate->new({market => $self->market->name});
+        my $backprice    = (defined $self->underlying->for_date or $self->date_pricing->is_after($self->date_expiry)) ? 1 : 0;
+        my $decimate     = BOM::Market::DataDecimate->new({market => $self->market->name});
         my $use_decimate = $self->category_code eq 'lookback' ? 0 : $duration <= 900 ? 0 : 1;
-        my $ticks = $decimate->get({
+        my $ticks        = $decimate->get({
             underlying  => $self->underlying,
             start_epoch => $from_epoch,
             end_epoch   => $to_epoch,
@@ -367,7 +367,7 @@ sub _create_new_interface_engine {
 
     if ($self->pricing_engine_name eq 'Pricing::Engine::Digits') {
         %pricing_parameters = (
-            strike => $self->barrier ? $self->barrier->as_absolute : undef,
+            strike        => $self->barrier ? $self->barrier->as_absolute : undef,
             contract_type => $self->pricing_code,
         );
     } elsif ($self->pricing_engine_name eq 'Pricing::Engine::HighLow::Ticks' or $self->pricing_engine_name eq 'Pricing::Engine::HighLow::Runs') {
@@ -501,12 +501,12 @@ sub _generate_market_data {
     my $ee = Quant::Framework::EconomicEventCalendar->new({
             chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date),
         }
-        )->get_latest_events_for_period({
+    )->get_latest_events_for_period({
             from => $date_start->minus_time_interval('10m'),
             to   => $date_start->plus_time_interval('10m')
         },
         $for_date
-        );
+    );
 
     my @applicable_news =
         sort { $a->{release_date} <=> $b->{release_date} } grep { $applicable_symbols{$_->{symbol}} } @$ee;
@@ -563,12 +563,7 @@ sub is_in_quiet_period {
             # The yen is also heavily traded in
             # Australia, Singapore and Tokyo
             push @check_if_open, ('ASX', 'SES', 'TSE');
-        } elsif (
-            grep {
-                $_ eq 'AUD'
-            } @currencies
-            )
-        {
+        } elsif (grep { $_ eq 'AUD' } @currencies) {
 
             # The Aussie dollar is also heavily traded in
             # Australia and Singapore
@@ -885,19 +880,20 @@ sub _build_price_calculator {
     my $self = shift;
 
     return Price::Calculator->new({
-        currency              => $self->currency,
-        deep_otm_threshold    => $self->otm_threshold,
-        base_commission       => $self->base_commission,
-        app_markup_percentage => $self->app_markup_percentage,
-        min_commission_amount => $self->min_commission_amount,
-        # due to discount on end of hour, we just want to have a safety net to make sure we don't go below 0.45
-        ($self->priced_with_intraday_model and $self->is_atm_bet) ? (minimum_ask_probability => 0.45) : (),
-        ($self->has_commission_markup)     ? (commission_markup     => $self->commission_markup)     : (),
-        ($self->has_commission_from_stake) ? (commission_from_stake => $self->commission_from_stake) : (),
-        ($self->has_payout)                ? (payout                => $self->payout)                : (),
-        (defined $self->_user_input_stake) ? (ask_price             => $self->ask_price)             : (),
-        ($self->has_theo_probability)      ? (theo_probability      => $self->theo_probability)      : (),
-        ($self->has_ask_probability)       ? (ask_probability       => $self->ask_probability)       : (),
+            currency              => $self->currency,
+            deep_otm_threshold    => $self->otm_threshold,
+            base_commission       => $self->base_commission,
+            app_markup_percentage => $self->app_markup_percentage,
+            min_commission_amount => $self->min_commission_amount,
+            # due to discount on end of hour, we just want to have a safety net to make sure we don't go below 0.45
+            ($self->priced_with_intraday_model and $self->is_atm_bet) ? (minimum_ask_probability => 0.45) : (),
+
+            ($self->has_commission_markup)     ? (commission_markup     => $self->commission_markup)     : (),
+            ($self->has_commission_from_stake) ? (commission_from_stake => $self->commission_from_stake) : (),
+            ($self->has_payout)                ? (payout                => $self->payout)                : (),
+            (defined $self->_user_input_stake) ? (ask_price             => $self->ask_price)             : (),
+            ($self->has_theo_probability)      ? (theo_probability      => $self->theo_probability)      : (),
+            ($self->has_ask_probability)       ? (ask_probability       => $self->ask_probability)       : (),
     });
 }
 

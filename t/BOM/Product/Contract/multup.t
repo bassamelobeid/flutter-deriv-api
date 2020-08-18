@@ -160,7 +160,7 @@ subtest 'shortcode to parameters' => sub {
         cancellation => '1h',
         limit_order  => {take_profit => 25.5},
     };
-    my $c = produce_contract($args);
+    my $c      = produce_contract($args);
     my $params = shortcode_to_parameters($c->shortcode, $c->currency);
     $params->{date_pricing} = $c->date_start->plus_time_interval('1h1s');
     $params->{limit_order}  = {
@@ -292,7 +292,7 @@ subtest 'take profit cap and precision' => sub {
             take_profit => 10000 + 0.01,
         },
     };
-    my $c = produce_contract($args);
+    my $c     = produce_contract($args);
     my $error = exception { $c->is_valid_to_buy };
     is $error->message_to_client->[0], 'Please enter a take profit amount that\'s lower than [_1].';
     is $error->message_to_client->[1], '90.00', 'max at 90.00';
@@ -682,8 +682,8 @@ subtest 'commission multiplier' => sub {
     $args->{underlying} = 'R_100';
     note "symbol $args->{underlying}";
     $c = produce_contract($args);
-    is $c->commission, 0.000503664904346249, 'commission is at 0.000503664904346249';
-    is $c->commission_multiplier, 1, 'commission multiplier is 1';
+    is $c->commission,            0.000503664904346249, 'commission is at 0.000503664904346249';
+    is $c->commission_multiplier, 1,                    'commission multiplier is 1';
 
     note "AUD event does not affect frxUSDJPY";
     my $new_now = $now->plus_time_interval('1h');

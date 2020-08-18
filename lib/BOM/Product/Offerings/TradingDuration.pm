@@ -160,7 +160,7 @@ sub generate_trading_durations {
     foreach my $market (sort { $a->display_order <=> $b->display_order } map { $fm->get($_) } @markets) {
         foreach my $submarket (
             sort { $a->display_order <=> $b->display_order }
-            map { $sub->get($_) } $offerings->query({market => $market->name}, ['submarket']))
+            map  { $sub->get($_) } $offerings->query({market => $market->name}, ['submarket']))
         {
             my %data;
             foreach my $underlying_symbol (
@@ -180,9 +180,8 @@ sub generate_trading_durations {
                         $order{start_type}->{$_->[0]->{start_type}};
                     $_->[0]
                     }
-                    map {
-                    [$_, Finance::Contract::Category->new($_->{contract_category})]
-                    } $offerings->query({underlying_symbol => $underlying_symbol});
+                    map { [$_, Finance::Contract::Category->new($_->{contract_category})] }
+                    $offerings->query({underlying_symbol => $underlying_symbol});
                 my $id = _get_offerings_id(\@offerings_for_symbol);
                 if ($data{$id}) {
                     push @{$data{$id}{symbol}},
@@ -193,16 +192,16 @@ sub generate_trading_durations {
                 } else {
                     my (%duplicate, %trade_durations);
                     foreach my $offering (@offerings_for_symbol) {
-                        my $key = join '-', ($offering->{contract_category}, $offering->{barrier_category}, $offering->{start_type});
+                        my $key                = join '-', ($offering->{contract_category}, $offering->{barrier_category}, $offering->{start_type});
                         my $trade_display_name = $cc_display_name{$key}->{display_name} // $offering->{contract_category_display};
-                        my $trade_name         = $cc_display_name{$key}->{name}         // $offering->{contract_category};
+                        my $trade_name         = $cc_display_name{$key}->{name} // $offering->{contract_category};
 
                         my $dup_key = $key . "-$offering->{expiry_type}";
                         # skip the opposite contract
                         next if exists $duplicate{$dup_key};
                         $duplicate{$dup_key}++;
 
-                        $trade_durations{$trade_name}{order} //= $offering->{display_order};
+                        $trade_durations{$trade_name}{order}      //= $offering->{display_order};
                         $trade_durations{$trade_name}{trade_type} //= {
                             name         => $trade_name,
                             display_name => $trade_display_name

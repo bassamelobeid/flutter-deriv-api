@@ -49,9 +49,7 @@ sub decorate {
                             close => $_->{close},
                             @blackout_periods ? (blackouts => \@blackout_periods) : ()}
                         }
-                        map {
-                        @{$calendar->trading_period($exchange, $_)}
-                        } @trade_dates
+                        map { @{$calendar->trading_period($exchange, $_)} } @trade_dates
                 ];
                 $o->{forward_starting_options} = $forward_starting_options;
             }

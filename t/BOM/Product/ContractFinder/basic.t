@@ -9,7 +9,7 @@ use List::Util qw(all);
 use BOM::Product::ContractFinder;
 
 subtest 'contract finder basic' => sub {
-    my $contracts = BOM::Product::ContractFinder->new->basic_contracts_for({symbol => 'frxUSDJPY'});
+    my $contracts                        = BOM::Product::ContractFinder->new->basic_contracts_for({symbol => 'frxUSDJPY'});
     my %expected_forward_starting_params = (
         contract_category => 'callput',
         expiry_type       => 'intraday',

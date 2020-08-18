@@ -53,8 +53,7 @@ subtest 'shortcodes' => sub {
         current_tick => $tick_R_100,
     };
 
-    my @test_cases = (
-        [{
+    my @test_cases = ([{
                 %$sb_args,
                 duration => '5t',
             },

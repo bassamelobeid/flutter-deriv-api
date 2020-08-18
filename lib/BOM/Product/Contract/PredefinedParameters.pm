@@ -93,13 +93,13 @@ Daily contract:
 sub generate_trading_periods {
     my ($symbol, $date) = @_;
 
-    my $underlying = create_underlying($symbol, $date);
+    my $underlying       = create_underlying($symbol, $date);
     my $trading_calendar = _trading_calendar($date);
     $date //= Date::Utility->new;
 
     return [] unless $trading_calendar->trades_on($underlying->exchange, $date);
 
-    my @trading_periods = _get_daily_trading_window($underlying, $date);
+    my @trading_periods  = _get_daily_trading_window($underlying, $date);
     my @intraday_periods = _get_intraday_trading_window($underlying, $date);
     push @trading_periods, @intraday_periods if @intraday_periods;
 
@@ -126,7 +126,7 @@ sub _get_predefined_highlow {
     }
 
     my $highlow_key = join '_', ('highlow', $underlying->symbol, $period->{date_start}->{epoch}, $period->{date_expiry}->{epoch});
-    my $cache = BOM::Config::Redis::redis_replicated_read()->get($cache_namespace . '::' . $highlow_key);
+    my $cache       = BOM::Config::Redis::redis_replicated_read()->get($cache_namespace . '::' . $highlow_key);
 
     return @{$json->decode($cache)} if ($cache);
     return ();
@@ -178,7 +178,7 @@ sub get_expired_barriers {
     my @expired_barriers;
     foreach my $barrier (@$available_barriers) {
         my $ref_barrier = (ref $barrier ne 'ARRAY') ? [$barrier] : $barrier;
-        my @expired = grep { $_ <= $high && $_ >= $low } @$ref_barrier;
+        my @expired     = grep { $_ <= $high && $_ >= $low } @$ref_barrier;
         push @expired_barriers, $barrier if @expired;
     }
 
@@ -196,8 +196,8 @@ Returns an array reference
 sub get_available_barriers {
     my ($underlying, $offering, $trading_period) = @_;
 
-    my $date = $underlying->for_date // Date::Utility->new;
-    my $method = $underlying->for_date ? 'get_for' : 'get';
+    my $date               = $underlying->for_date // Date::Utility->new;
+    my $method             = $underlying->for_date ? 'get_for' : 'get';
     my $available_barriers = [];
     my ($namespace, $key) = predefined_barriers_key($underlying->symbol, $trading_period);
     my $barriers = BOM::Config::Chronicle::get_chronicle_reader($underlying->for_date)->$method($namespace, $key, $date);
@@ -277,7 +277,7 @@ sub generate_barriers_for_window {
         die 'Trading period is not in the correct format. date_start and date_expiry epochs are required';
     }
 
-    my $key = join '_', ('barriers', $symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
+    my $key   = join '_', ('barriers', $symbol, $trading_period->{date_start}->{epoch}, $trading_period->{date_expiry}->{epoch});
     my $cache = BOM::Config::Redis::redis_replicated_read()->get($cache_namespace . '::' . $key);
 
     # return if barriers are generated already

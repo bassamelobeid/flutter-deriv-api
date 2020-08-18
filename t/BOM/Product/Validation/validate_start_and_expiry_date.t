@@ -250,16 +250,16 @@ subtest 'date start blackouts' => sub {
         epoch      => $hsi_close->epoch - 900,
         quote      => 7195,
     });
-    $bet_params->{date_start} = $bet_params->{date_pricing} = $hsi_close->epoch - 900;
-    $bet_params->{duration} = '15m';
+    $bet_params->{date_start}   = $bet_params->{date_pricing} = $hsi_close->epoch - 900;
+    $bet_params->{duration}     = '15m';
     $bet_params->{current_tick} = $hsi_weekday_tick;
-    $c = produce_contract($bet_params);
+    $c                          = produce_contract($bet_params);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client}, ['Trading is not available from [_1] to [_2].', '07:45:00', '08:00:00']);
     is_deeply $c->primary_validation_error->{details}, {field => 'date_start'}, 'error detials is not correct';
 
     note('Multiday contract on OTC_HSI');
-    my $new_day = $weekday->plus_time_interval('1d');
+    my $new_day           = $weekday->plus_time_interval('1d');
     my $hour_before_close = $trading_calendar->closing_on($hsi->exchange, $new_day)->minus_time_interval('1h');
     $hsi_weekday_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'OTC_HSI',

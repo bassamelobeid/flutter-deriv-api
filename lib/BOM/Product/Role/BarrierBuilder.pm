@@ -96,7 +96,7 @@ sub _build_minimum_allowable_move {
         my $duration_in_minutes = $self->timeindays->amount * 24 * 60;
         my $min_delta           = max($min_delta_slope * $duration_in_minutes + $min_delta_intercept, 0.5);
         my $min_strike          = get_strike_for_spot_delta({
-            delta => ($min_delta >= 0.5) ? 1 - $min_delta : $min_delta,
+            delta            => ($min_delta >= 0.5) ? 1 - $min_delta : $min_delta,
             option_type      => 'VANILLA_CALL',
             atm_vol          => $atm_vol,
             t                => $self->timeinyears->amount,

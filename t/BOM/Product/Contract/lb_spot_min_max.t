@@ -55,7 +55,7 @@ my $bet_params = {
     date_pricing => $now,
     duration     => '1h',
     currency     => 'USD',
-    multiplier       => 1,
+    multiplier   => 1,
 };
 
 #setup raw cache for R_100

@@ -366,7 +366,7 @@ for (my $time = $start->epoch; $time <= $end->epoch; $time += 300) {
 
     foreach my $symbol (keys %current) {
         cmp_ok($current{$symbol}->{date}, 'ge', $previous{$symbol}->{date}, $symbol . ' data did not move backward while we were moving forward.');
-        cmp_ok($current{$symbol}->{date}, 'le', $price_date, $symbol . ' data is in the past from the pricing date.');
+        cmp_ok($current{$symbol}->{date}, 'le', $price_date,                $symbol . ' data is in the past from the pricing date.');
         foreach my $wha (qw(date value)) {
             $previous{$symbol}->{$wha} ||= $current{$symbol}->{$wha};
             if ($wha eq 'date' and $current{$symbol}->{$wha} ne $previous{$symbol}->{$wha}) {

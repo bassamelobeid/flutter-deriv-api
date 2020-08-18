@@ -264,8 +264,8 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'OTC_FCHI', 'OTC_GDAXI') {
         is($bet->pricing_engine_name,                         $expectations->{price_engine}, 'Contract selected ' . $expectations->{price_engine});
 
         if ($bet->two_barriers) {
-            is($bet->high_barrier->supplied_barrier, $expectations->{barrier}, 'Barrier is set as expected.');
-            is($bet->low_barrier->supplied_barrier, $expectations->{barrier2}, ' .. and so is barrier2.') if (defined $expectations->{barrier2});
+            is($bet->high_barrier->supplied_barrier, $expectations->{barrier},  'Barrier is set as expected.');
+            is($bet->low_barrier->supplied_barrier,  $expectations->{barrier2}, ' .. and so is barrier2.') if (defined $expectations->{barrier2});
         } else {
             is($bet->barrier->supplied_barrier, $expectations->{barrier}, 'Barrier is set as expected.');
         }
@@ -313,7 +313,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => Date::Utility->new('19-Nov-2015'),
     });
 
-my $GDAXI_intraday = produce_contract('CALL_OTC_GDAXI_10_1448013600F_1448020800_S0P_0', 'USD');
+my $GDAXI_intraday     = produce_contract('CALL_OTC_GDAXI_10_1448013600F_1448020800_S0P_0', 'USD');
 my $GDAXI_intraday_ask = $GDAXI_intraday->ask_probability;
 cmp_ok(roundcommon(1e-4, $GDAXI_intraday->commission_markup->amount), '==', 0.025, 'Commission markup for indices is 3%');
 

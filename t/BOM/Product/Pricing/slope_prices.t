@@ -63,7 +63,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
             });
             my @barriers = @{
                 Test::BOM::UnitTestPrice::get_barrier_range({
-                        type => ($category_obj->two_barriers ? 'double' : 'single'),
+                        type       => ($category_obj->two_barriers ? 'double' : 'single'),
                         underlying => $ul,
                         duration   => $duration,
                         spot       => $spot,
@@ -99,7 +99,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                     }
 
                     lives_ok {
-                        my $c = produce_contract($args);
+                        my $c     = produce_contract($args);
                         my @codes = ($c->code, $c->underlying->symbol, $c->date_start->epoch, $c->date_expiry->epoch);
                         if ($c->category->two_barriers) {
                             push @codes, ($c->high_barrier->as_absolute, $c->low_barrier->as_absolute);

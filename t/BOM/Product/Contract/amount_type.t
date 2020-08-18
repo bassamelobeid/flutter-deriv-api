@@ -33,7 +33,7 @@ subtest 'amount_type - generic' => sub {
 
     $args->{payout}     = 1;
     $args->{multiplier} = 1;
-    $error = exception { produce_contract($args) };
+    $error              = exception { produce_contract($args) };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], '[_1] is not a valid input for contract type [_2].', 'specify multiplier for CALL';
     is $error->message_to_client->[1], 'multiplier';
@@ -45,7 +45,7 @@ subtest 'amount_type - generic' => sub {
     delete $args->{barrier};
     $args->{high_barrier} = 'S10P';
     $args->{low_barrier}  = 'S-10P';
-    $error = exception { produce_contract($args) };
+    $error                = exception { produce_contract($args) };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'Basis must be [_1] for this contract.', 'specify stake for CALLSPREAD';
     is $error->message_to_client->[1], 'payout';

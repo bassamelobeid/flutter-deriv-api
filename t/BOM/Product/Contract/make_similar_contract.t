@@ -29,11 +29,16 @@ subtest 'make_similar_contract' => sub {
         'duration'    => '2t',
         current_tick  => $current_tick,
     };
-    my $c = produce_contract($args);
+    my $c   = produce_contract($args);
     my $new = make_similar_contract($c);
     is $c->ask_price, $new->ask_price, 'ask price is the same after make_similar_contract';
 
-    $new = make_similar_contract($c, {amount_type => 'payout', amount => $c->payout});
+    $new = make_similar_contract(
+        $c,
+        {
+            amount_type => 'payout',
+            amount      => $c->payout
+        });
     is $c->ask_price, $new->ask_price, 'ask price is the same after make_similar_contract';
 };
 

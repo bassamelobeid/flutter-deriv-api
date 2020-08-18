@@ -67,7 +67,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
             });
             my @barriers = @{
                 Test::BOM::UnitTestPrice::get_barrier_range({
-                        type => ($category_obj->two_barriers ? 'double' : 'single'),
+                        type       => ($category_obj->two_barriers ? 'double' : 'single'),
                         underlying => $ul,
                         duration   => $duration,
                         spot       => $spot,
@@ -100,7 +100,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                     isa_ok $c->pricing_engine_name, 'Pricing::Engine::Reset';
 
                     my @codes = ($c->code, $c->underlying->symbol, $c->date_start->epoch, $c->date_expiry->epoch, $c->barrier->as_absolute);
-                    my $code = join '_', @codes;
+                    my $code  = join '_', @codes;
 
                     is roundnear(0.00001, $c->theo_price), roundnear(0.00001, $expectation->{$code}), 'theo price matches [' . $code . ']';
                     $expectation->{$code} = $c->theo_price;

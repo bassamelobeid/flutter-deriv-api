@@ -182,7 +182,7 @@ sub _build_greek_market_prices {
     my $result = $A->transp->inv->mul($y);
 
     return {
-        vega => ($self->on_equities) ? 0 : $result->[0],
+        vega  => ($self->on_equities) ? 0 : $result->[0],
         vanna => $result->[1],
         volga => ($self->on_equities) ? 0 : $result->[2],
     };

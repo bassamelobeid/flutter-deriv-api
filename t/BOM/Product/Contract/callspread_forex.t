@@ -94,18 +94,18 @@ subtest 'config' => sub {
         payout       => 100,
         date_pricing => $now
     });
-           
+
     is $c->longcode->[0], 'Win up to [_7] [_6] if [_1]\'s exit tick is between [_5] and [_4] at [_3] after [_2].';
     is $c->longcode->[2][0], 'contract start time', 'contract start time';
     is $c->longcode->[3]->{value}, 7200, 'longcode value 7200';
     ok !$c->is_binary, 'non-binary';
-    ok $c->two_barriers,  'two barriers';
+    ok $c->two_barriers, 'two barriers';
 
-    is $c->pricing_code,  'CALLSPREAD', 'pricing code is CALLSPREAD';
-    is $c->display_name,  'Call Spread', 'display name is Call Spread';
+    is $c->pricing_code,  'CALLSPREAD',    'pricing code is CALLSPREAD';
+    is $c->display_name,  'Call Spread',   'display name is Call Spread';
     is $c->category_code, 'callputspread', 'category code is callputspread';
-    is $c->payout_type,   'non-binary', 'payout type is non-binary';
-    is $c->payouttime,    'end', 'payout time is end';
+    is $c->payout_type,   'non-binary',    'payout type is non-binary';
+    is $c->payouttime,    'end',           'payout time is end';
 
     isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
     isa_ok $c->high_barrier,   'BOM::Product::Contract::Strike';

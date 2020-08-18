@@ -483,17 +483,17 @@ sub test_flexible_commission {
 }
 
 subtest 'flexible commission check for different markets' => sub {
-    test_flexible_commission 'R_100',     'synthetic_index',      50;
-    test_flexible_commission 'frxEURUSD', 'forex',       30;
-    test_flexible_commission 'frxUSDJPY', 'forex',       70;
-    test_flexible_commission 'frxXAUUSD', 'commodities', 70;
-    test_flexible_commission 'OTC_FCHI',      'indices',     170;
+    test_flexible_commission 'R_100',     'synthetic_index', 50;
+    test_flexible_commission 'frxEURUSD', 'forex',           30;
+    test_flexible_commission 'frxUSDJPY', 'forex',           70;
+    test_flexible_commission 'frxXAUUSD', 'commodities',     70;
+    test_flexible_commission 'OTC_FCHI',  'indices',         170;
 
-    test_flexible_commission 'R_100',     'synthetic_index',      10000;
-    test_flexible_commission 'frxEURUSD', 'forex',       10000;
-    test_flexible_commission 'frxUSDJPY', 'forex',       10000;
-    test_flexible_commission 'frxXAUUSD', 'commodities', 10000;
-    test_flexible_commission 'OTC_FCHI',      'indices',     10000;
+    test_flexible_commission 'R_100',     'synthetic_index', 10000;
+    test_flexible_commission 'frxEURUSD', 'forex',           10000;
+    test_flexible_commission 'frxUSDJPY', 'forex',           10000;
+    test_flexible_commission 'frxXAUUSD', 'commodities',     10000;
+    test_flexible_commission 'OTC_FCHI',  'indices',         10000;
 };
 
 subtest 'Commission for Runs is 4.8%' => sub {

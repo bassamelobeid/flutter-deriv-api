@@ -69,7 +69,7 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
     my $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings($offerings_cfg);
     foreach my $contract_category (grep { not $skip_category{$_} } $offerings_obj->query({underlying_symbol => $ul->symbol}, ['contract_category'])) {
         my $category_obj = Finance::Contract::Category->new($contract_category);
-        my @duration = map { $_ * 86400 } (7, 14);
+        my @duration     = map { $_ * 86400 } (7, 14);
         foreach my $duration (@duration) {
             my @barriers = (
                 {barrier => 'S0P'},
@@ -106,7 +106,8 @@ foreach my $ul (map { create_underlying($_) } @underlying_symbols) {
                     next if $contract_type =~ /^(EXPIRY|RANGE|UPORDOWN)/ and not exists $barrier->{high_barrier};
                     next if $contract_type !~ /^(EXPIRY|RANGE|UPORDOWN)/ and exists $barrier->{high_barrier};
 
-                    next if $contract_type =~ /^(RESETCALL|RESETPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW|TICKHIGH|TICKLOW|RUNHIGH|RUNLOW|MULTUP|MULTDOWN)/;
+                    next
+                        if $contract_type =~ /^(RESETCALL|RESETPUT|LBFLOATCALL|LBFLOATPUT|LBHIGHLOW|TICKHIGH|TICKLOW|RUNHIGH|RUNLOW|MULTUP|MULTDOWN)/;
 
                     lives_ok {
                         my $c = produce_contract($args);

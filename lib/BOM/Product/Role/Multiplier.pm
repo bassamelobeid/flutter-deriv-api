@@ -66,7 +66,7 @@ sub BUILD {
     my $min_commission    = $self->_minimum_main_contract_commission;
 
     if ($commission_amount < $min_commission) {
-        $commission = $min_commission / ($self->_user_input_stake * $self->multiplier);
+        $commission        = $min_commission / ($self->_user_input_stake * $self->multiplier);
         $commission_amount = $min_commission;
     }
 
@@ -226,7 +226,7 @@ sub _build_stop_out {
     # If it is a new contract, construct stop_out using configs from backoffice
     if ($self->pricing_new) {
         my $stop_out_percentage = $self->_multiplier_config->{stop_out_level};
-        my $order_amount = financialrounding('price', $self->currency, (1 - $stop_out_percentage / 100) * $self->_user_input_stake);
+        my $order_amount        = financialrounding('price', $self->currency, (1 - $stop_out_percentage / 100) * $self->_user_input_stake);
 
         return $self->new_order({stop_out => $order_amount});
     }
@@ -396,7 +396,7 @@ sub _calculate_pnl_at_tick {
     my ($self, $args) = @_;
 
     # if there's a hit_tick, pnl is calculated with that tick
-    my $nth_tick = $args->{at_tick} or die 'calculating pnl without a reference tick';
+    my $nth_tick   = $args->{at_tick} or die 'calculating pnl without a reference tick';
     my $commission = $self->commission // 0;
 
     my $main_pnl =
@@ -837,7 +837,7 @@ sub _validate_cancellation {
 
     return unless $self->cancellation;
 
-    my $available_range = $self->_multiplier_config->{cancellation_duration_range};
+    my $available_range       = $self->_multiplier_config->{cancellation_duration_range};
     my $cancellation_interval = Time::Duration::Concise->new(interval => $self->cancellation);
 
     unless (grep { $cancellation_interval->seconds == Time::Duration::Concise->new(interval => $_)->seconds } @$available_range) {
@@ -935,7 +935,7 @@ sub _validate_multiplier_range {
         return {
             message           => 'multiplier out of range',
             message_to_client => [$ERROR_MAPPING->{MultiplierOutOfRange}, join(',', @$available_multiplier)],
-            details => {field => 'multiplier'},
+            details           => {field => 'multiplier'},
         };
     }
 
@@ -967,7 +967,7 @@ sub _validate_maximum_stake {
             message           => 'maximum stake limit',
             message_to_client => !$max_stake
             ? [$ERROR_MAPPING->{TradingMultiplierIsDisabled}, $display_name]
-            : [$ERROR_MAPPING->{StakeLimitExceeded}, financialrounding('price', $self->currency, $max_stake)],
+            : [$ERROR_MAPPING->{StakeLimitExceeded},          financialrounding('price', $self->currency, $max_stake)],
             details => {field => 'stake'},
         };
     }
@@ -1043,9 +1043,9 @@ sub _build_formula_args {
     my $self = shift;
 
     return {
-        t => ($self->cancellation_expiry->epoch - $self->date_start->epoch) / (86400 * 365),
-        r => 0,
-        q => 0,
+        t     => ($self->cancellation_expiry->epoch - $self->date_start->epoch) / (86400 * 365),
+        r     => 0,
+        q     => 0,
         mu    => 0,
         sigma => $self->pricing_vol,
     };
@@ -1116,7 +1116,7 @@ sub commission_multiplier {
     # we do apply specific adjustment to forex commission
     return 1 if $self->underlying->market->name ne 'forex';
 
-    my $for_date = $self->underlying->for_date;
+    my $for_date    = $self->underlying->for_date;
     my $ee_calendar = Quant::Framework::EconomicEventCalendar->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date));
     my @high_impact_events = grep { $_->{impact} == 5 } @{
         $ee_calendar->get_latest_events_for_period({

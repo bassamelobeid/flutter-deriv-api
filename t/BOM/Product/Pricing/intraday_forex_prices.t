@@ -24,7 +24,7 @@ use Test::BOM::UnitTestPrice;
 use Volatility::EconomicEvents;
 use Test::MockModule;
 my $module = Test::MockModule->new('Volatility::EconomicEvents');
-$module->mock('retrieve_vol', sub {return LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/economic_events_volatilities_config.yml')});
+$module->mock('retrieve_vol', sub { return LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/economic_events_volatilities_config.yml') });
 
 BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
     '{"yyy": {"market": "forex", "barrier_category": "euro_atm", "commission": "0.05", "name": "test commission", "updated_on": "xxx date", "updated_by": "xxyy"}}'
@@ -311,24 +311,25 @@ subtest 'atm prices with economic events' => sub {
 };
 
 #Comparing 20-minute pricing volatility to check the decay function
-subtest 'pricing volatility with economic events' => sub { 
-        foreach my $start_time (map { $_ * 60 } (-5, 0, 1, 2, 3, 4, 5, 10, 20)) {
-            lives_ok {
-                my $c = produce_contract({
-                    bet_type     => 'CALL',
-                    underlying   => $underlying,
-                    date_start   => Date::Utility->new(1352337900 + $start_time),
-                    date_pricing => Date::Utility->new(1352337900 + $start_time),
-                    duration     => 1200 . 's',
-                    currency     => $payout_currency,
-                    payout       => $payout,
-                    barrier      => 'S0P',
-                });
-                my $key = 'event_' . $c->shortcode;
-                my $exp = $expected->{$key};
-                isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex'; 
-                ok abs($c->pricing_vol - $exp->[0]) < 1e-9, 'correct pricing volatility [' . $key . '] exp [' . $exp->[0] . '] got [' . $c->pricing_vol . ']';
-                }
-            'survived';
+subtest 'pricing volatility with economic events' => sub {
+    foreach my $start_time (map { $_ * 60 } (-5, 0, 1, 2, 3, 4, 5, 10, 20)) {
+        lives_ok {
+            my $c = produce_contract({
+                bet_type     => 'CALL',
+                underlying   => $underlying,
+                date_start   => Date::Utility->new(1352337900 + $start_time),
+                date_pricing => Date::Utility->new(1352337900 + $start_time),
+                duration     => 1200 . 's',
+                currency     => $payout_currency,
+                payout       => $payout,
+                barrier      => 'S0P',
+            });
+            my $key = 'event_' . $c->shortcode;
+            my $exp = $expected->{$key};
+            isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
+            ok abs($c->pricing_vol - $exp->[0]) < 1e-9,
+                'correct pricing volatility [' . $key . '] exp [' . $exp->[0] . '] got [' . $c->pricing_vol . ']';
         }
+        'survived';
+    }
 };

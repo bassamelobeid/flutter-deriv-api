@@ -36,7 +36,7 @@ has barrier => (
 );
 
 sub _build_barrier {
-    my $self = shift;
+    my $self    = shift;
     my $barrier = $self->make_barrier($self->supplied_barrier, {barrier_kind => 'low'});
     return $barrier;
 }
@@ -105,7 +105,7 @@ sub _validate_barrier {
                 severity          => 100,
                 message           => 'Barrier decimal error',
                 message_to_client => [$ERROR_MAPPING->{IncorrectBarrierOffsetDecimals}, 'The', $self->underlying->display_decimals],
-                details => {field => 'barrier'},
+                details           => {field => 'barrier'},
             };
 
         }

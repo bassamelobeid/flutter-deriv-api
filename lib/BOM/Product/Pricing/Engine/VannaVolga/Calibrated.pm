@@ -109,7 +109,7 @@ sub _build_survival_weight {
 
         if ($self->calibration_model eq 'bloomberg') {
             $vanna_weight = $surv_prob;
-            $vega_weight = $volga_weight = 0.5 + 0.5 * $surv_prob;
+            $vega_weight  = $volga_weight = 0.5 + 0.5 * $surv_prob;
         } elsif ($self->calibration_model eq 'wystup') {
             if ($bet->two_barriers) {
                 $vega_weight = $vanna_weight = $volga_weight = .5;
@@ -119,11 +119,11 @@ sub _build_survival_weight {
             }
         } elsif ($self->calibration_model eq 'bom-surv') {
             $vanna_weight = $self->calibration_params->{a} * $surv_prob;
-            $vega_weight = $volga_weight = $self->calibration_params->{b} + $self->calibration_params->{c} * $surv_prob;
+            $vega_weight  = $volga_weight = $self->calibration_params->{b} + $self->calibration_params->{c} * $surv_prob;
         } elsif ($self->calibration_model eq 'bom-fet') {
             my $fet_factor = $bet->timeinyears->amount / $args->{t};
             $vanna_weight = $self->calibration_params->{a} * $fet_factor;
-            $vega_weight = $volga_weight = $self->calibration_params->{b} + $self->calibration_params->{c} * $fet_factor;
+            $vega_weight  = $volga_weight = $self->calibration_params->{b} + $self->calibration_params->{c} * $fet_factor;
         }
     }
 

@@ -38,7 +38,7 @@ sub check_expiry_conditions {
     if ($self->exit_tick) {
         # This is overly defensive, but people keep brekaing the pipsized, assumption
         my $last_digit = (split //, $self->underlying->pipsized_value($self->exit_tick->quote))[-1];
-        my $value = ($last_digit == $self->barrier->as_absolute) ? $self->payout : 0;
+        my $value      = ($last_digit == $self->barrier->as_absolute) ? $self->payout : 0;
         $self->value($value);
     }
 

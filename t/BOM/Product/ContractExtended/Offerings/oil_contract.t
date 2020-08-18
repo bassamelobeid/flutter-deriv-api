@@ -21,6 +21,7 @@ my @error      = (
 );
 my $u     = create_underlying('frxBROUSD');
 my $count = 0;
+
 foreach my $ds (@date_start) {
     $ds = Date::Utility->new($ds);
     my $tick = Postgres::FeedDB::Spot::Tick->new({

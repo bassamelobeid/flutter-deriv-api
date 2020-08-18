@@ -21,7 +21,7 @@ sub check_expiry_conditions {
 
     if ($self->exit_tick) {
         my $exit_spot = $self->exit_tick->quote;
-        my $value = ($exit_spot > $self->low_barrier->as_absolute and $exit_spot < $self->high_barrier->as_absolute) ? 0 : $self->payout;
+        my $value     = ($exit_spot > $self->low_barrier->as_absolute and $exit_spot < $self->high_barrier->as_absolute) ? 0 : $self->payout;
         $self->value($value);
     }
 

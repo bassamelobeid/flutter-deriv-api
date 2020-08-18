@@ -53,7 +53,7 @@ my $bet_params = {
     date_pricing => $now,
     duration     => '15m',
     currency     => 'USD',
-    multiplier       => 1,
+    multiplier   => 1,
 };
 
 subtest 'minimum lookback price and rounding strategy' => sub {

@@ -38,7 +38,7 @@ sub check_expiry_conditions {
     if ($self->exit_tick) {
         # This is overly defensive, but people keep brekaing the pipsized, assumption
         my $last_digit = (split //, $self->underlying->pipsized_value($self->exit_tick->quote))[-1];
-        my $value = ($last_digit > $self->barrier->as_absolute) ? $self->payout : 0;
+        my $value      = ($last_digit > $self->barrier->as_absolute) ? $self->payout : 0;
         $self->value($value);
     }
 
@@ -60,7 +60,7 @@ sub _validate_barrier {
             severity          => 100,
             message           => 'No winning digits ' . "[code: " . $self->code . "] " . "[selection: " . $barrier . "]",
             message_to_client => [BOM::Product::Static::get_error_mapping()->{DigitOutOfRange}, $barrier_range[0], $barrier_range[-1]],
-            details => {field => 'barrier'},
+            details           => {field => 'barrier'},
         };
     }
 

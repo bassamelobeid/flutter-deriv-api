@@ -36,7 +36,7 @@ subtest 'Proper form' => sub {
         my $exepcted_legacy_from   = qr/Legacy contract. No further information is available.$/;
         my $params;
         foreach my $shortcode (@shortcodes) {
-            my $c = produce_contract($shortcode, $currency);
+            my $c                 = produce_contract($shortcode, $currency);
             my $expected_longcode = $shortcode =~ /FLASH*|INTRA*|DOUBLE*/ ? $exepcted_legacy_from : $expected_standard_form;
             like($c->longcode->[0], $expected_longcode, $shortcode . ' => long code form appears ok');
         }
@@ -165,7 +165,7 @@ subtest 'longcode with \'difference\' as barrier' => sub {
         $c->longcode,
         [
             'Win payout if [_1] ends outside [_5] to [_4] at [_3].', ['Volatility 100 Index'],
-            [], ['2016-10-19 10:20:00 GMT'],
+            [],                                                      ['2016-10-19 10:20:00 GMT'],
             ['entry spot plus [_1]', 0.32], ['entry spot minus [_1]', 0.42],
         ]);
 };

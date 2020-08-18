@@ -118,13 +118,13 @@ subtest 'non dst' => sub {
         epoch      => $non_dst->epoch
     });
     $bet_params->{date_start} = $bet_params->{date_pricing} = $non_dst;
-    $bet_params->{duration} = '2m';
+    $bet_params->{duration}   = '2m';
     my $c = produce_contract($bet_params);
     ok !$c->date_pricing->is_dst_in_zone('America/New_York'), 'date pricing is at non dst';
     ok $c->is_valid_to_buy, 'valid to buy';
-    $bet_params->{date_start} = $bet_params->{date_pricing} = $non_dst->plus_time_interval('1s');
+    $bet_params->{date_start}                      = $bet_params->{date_pricing} = $non_dst->plus_time_interval('1s');
     $bet_params->{disable_trading_at_quiet_period} = 0;
-    $c = produce_contract($bet_params);
+    $c                                             = produce_contract($bet_params);
     ok $c->is_valid_to_buy,       'valid to buy';
     ok $c->market_is_inefficient, 'correctly triggered for non dst';
 };

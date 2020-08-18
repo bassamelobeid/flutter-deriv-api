@@ -25,7 +25,7 @@ extends 'BOM::MarketData::Types';
 use Moose::Util::TypeConstraints;
 
 subtype
-    'PositiveNum' => as 'Num',
+    'PositiveNum'       => as 'Num',
     => where { $_ > 0 } => message { 'Must be positive number: [' . $_ . ']' };
 
 =head1 AUTHOR

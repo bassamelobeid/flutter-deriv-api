@@ -47,7 +47,7 @@ delete $bet_params->{date_start};
 $bet_params->{bet_type} = 'ONETOUCH';
 $bet_params->{duration} = '1h';
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example ONETOUCH bet';
-lives_ok { $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $bet}) } 'Can create IH engine using ONETOUCH bet';
+lives_ok { $pe  = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $bet}) } 'Can create IH engine using ONETOUCH bet';
 
 SKIP: {
     skip("There aren't any underlyings with EXPIRYMISS enabled currently, although the engine should be able to support it.", 1);
@@ -55,7 +55,7 @@ SKIP: {
     $bet_params->{bet_type} = 'EXPIRYMISS';
 
     lives_ok { $bet = produce_contract($bet_params); } 'Can create example EXPIRYMISS bet';
-    lives_ok { $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $bet}) } 'Can create IH engine using EXPIRYMISS bet';
+    lives_ok { $pe  = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $bet}) } 'Can create IH engine using EXPIRYMISS bet';
 }
 delete $bet_params->{date_start};
 $bet_params->{bet_type} = 'PUT';

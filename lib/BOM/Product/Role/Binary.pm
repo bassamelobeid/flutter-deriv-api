@@ -19,11 +19,11 @@ has [qw(
         theo_probability
         bid_probability
         )
-    ] => (
+] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
     lazy_build => 1,
-    );
+);
 
 sub _build_ask_probability {
     my $self = shift;
@@ -70,8 +70,7 @@ sub _build_payout {
         $self->price_calculator->commission_from_stake($self->commission_from_stake);
         #return $self->price_calculator->payout;
         $payout = $self->price_calculator->payout;
-    }
-    catch {
+    } catch {
         if (
             $@ =~ /Illegal division by zero/
             and (
@@ -157,13 +156,13 @@ sub _build_staking_limits {
     my $market = $self->underlying->market->name;
 
     my $bet_limits = market_pricing_limits([$curr], $lc, [$market], [$self->category->code])->{$market}->{$curr};
-    my $static = BOM::Config::quants;
+    my $static     = BOM::Config::quants;
 
     my $bl_min = $bet_limits->{min_stake};
     my $bl_max = $bet_limits->{max_payout};
 
     my $per_contract_payout_limit = $static->{risk_profile}{$self->risk_profile->get_risk_profile}{payout}{$self->currency};
-    my @possible_payout_maxes = ($bl_max, $per_contract_payout_limit);
+    my @possible_payout_maxes     = ($bl_max, $per_contract_payout_limit);
     push @possible_payout_maxes, $static->{bet_limits}->{inefficient_period_payout_max}->{$self->currency} if $self->apply_market_inefficient_limit;
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);

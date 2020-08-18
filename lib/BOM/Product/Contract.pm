@@ -486,7 +486,7 @@ sub get_time_to_settlement {
 
     $attributes->{to} = $self->date_settlement;
 
-    my $time = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
+    my $time          = $self->_date_pricing_milliseconds // $self->date_pricing->epoch;
     my $zero_duration = Time::Duration::Concise->new(
         interval => 0,
     );
@@ -605,7 +605,7 @@ sub _build_basis_tick {
 
     # basis_tick is only set to entry_tick when the contract has started.
     if ($self->pricing_new) {
-        $basis_tick = $self->current_tick;
+        $basis_tick      = $self->current_tick;
         $potential_error = $self->starts_as_forward_starting ? $waiting_for_entry_tick : $missing_market_data;
         warn "No basis tick for " . $self->underlying->symbol if ($potential_error eq $missing_market_data && !$basis_tick);
     } else {
@@ -675,7 +675,7 @@ sub _build_opposite_contract_for_sale {
         # get_volatility was throwing error, since from and to are equal. Setting
         # date_start equal to date_start instead of date_pricing here for opposite contract
         # will solve this issue.
-        $opp_parameters{date_start} = ($self->date_pricing->epoch == $self->date_expiry->epoch) ? $self->date_start : $self->date_pricing;
+        $opp_parameters{date_start}  = ($self->date_pricing->epoch == $self->date_expiry->epoch) ? $self->date_start : $self->date_pricing;
         $opp_parameters{pricing_new} = 1;
         # This should be removed in our callput ATM and non ATM minimum allowed duration is identical.
         # Currently, 'sell at market' button will appear when current spot == barrier when the duration
@@ -753,12 +753,12 @@ sub _build_applicable_economic_events {
     my $events = Quant::Framework::EconomicEventCalendar->new({
             chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($self->underlying->for_date),
         }
-        )->get_latest_events_for_period({
+    )->get_latest_events_for_period({
             from => Date::Utility->new($start),
             to   => Date::Utility->new($end)
         },
         $self->underlying->for_date
-        );
+    );
     $events = Volatility::EconomicEvents::categorize_events($self->underlying->system_symbol, $events);
     return $events;
 }
@@ -953,7 +953,7 @@ sub pricing_details {
     return [] if $self->category_code eq 'multiplier';
 
     # IV is the pricing vol (high barrier vol if it is double barrier contract), iv_2 is the low barrier vol.
-    my $iv = $self->is_after_expiry ? 0 : $self->pricing_vol;
+    my $iv   = $self->is_after_expiry ? 0 : $self->pricing_vol;
     my $iv_2 = 0;
 
     if (not $self->is_after_expiry and $self->pricing_vol_for_two_barriers) {
@@ -1056,7 +1056,7 @@ sub audit_details {
 
     # only contract_start audit details if contract is sold early.
     # path dependent could hit early, we will check if it is sold early or hit in the next condition.
-    my $sell_date = $sell_time ? Date::Utility->new($sell_time) : undef;
+    my $sell_date       = $sell_time ? Date::Utility->new($sell_time) : undef;
     my $manual_sellback = 0;
     $manual_sellback = $sell_date->is_before($self->date_expiry) if $sell_date;
     return $details if $self->is_sold && $manual_sellback && !$self->is_path_dependent;
@@ -1424,8 +1424,7 @@ sub _publish {
         my $csv = join ',',
             ($self->shortcode, $self->currency, $self->date_pricing->epoch, ($price_ref->{ask_price} // 0), ($price_ref->{bid_price} // 0));
         $self->_socket->send($csv);
-    }
-    catch {
+    } catch {
         warn "Failed to publish price for " . $self->shortcode . ': ' . $@;
     }
 

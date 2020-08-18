@@ -129,7 +129,7 @@ sub ask_prices {
             : ($contract->barrier->as_absolute);
         my $contract_info = ($prices{$contract->code}{$barrier_key} //= {});
         if ($contract->is_valid_to_buy) {
-            $contract_info->{$_} = $contract->$_ for qw(ask_price longcode);
+            $contract_info->{$_}               = $contract->$_ for qw(ask_price longcode);
             $contract_info->{theo_probability} = $contract->theo_probability->amount;
             $contract_info->{display_value}    = $contract->ask_price;
             if ($contract->two_barriers) {

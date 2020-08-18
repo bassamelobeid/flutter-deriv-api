@@ -207,7 +207,7 @@ subtest 'take profit cap' => sub {
             take_profit => 10000 + 0.01,
         },
     };
-    my $c = produce_contract($args);
+    my $c     = produce_contract($args);
     my $error = exception { $c->is_valid_to_buy };
     is $error->message_to_client->[0], 'Please enter a take profit amount that\'s lower than [_1].';
     is $error->message_to_client->[1], '90.00', 'max at 90.00';
@@ -290,7 +290,7 @@ subtest 'deal cancellation with fx' => sub {
         cancellation => '1h',
     };
     my $c = produce_contract($args);
-    is $c->ask_price, 102.25, 'ask price is 102.25';
-    is $c->cancellation_price , 2.25, 'cost of cancellation is 2.25';
+    is $c->ask_price,          102.25, 'ask price is 102.25';
+    is $c->cancellation_price, 2.25,   'cost of cancellation is 2.25';
 };
 done_testing();

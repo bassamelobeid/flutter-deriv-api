@@ -36,7 +36,7 @@ subtest "basic_contracts_for" => sub {
     my %input = (
         random      => ['R_100',     'RDBEAR'],
         forex       => ['frxUSDJPY', 'frxAUDCAD', 'frxEURUSD', 'WLDUSD'],
-        indices     => ['OTC_AEX',       'SYNAEX'],
+        indices     => ['OTC_AEX',   'SYNAEX'],
         commodities => ['frxXAUUSD', 'frxXPDUSD'],
     );
     my %expected = (
@@ -117,7 +117,7 @@ subtest "basic_contracts_for" => sub {
 
 subtest 'default barrier(s)' => sub {
     note("barriers for OTC_AEX");
-    my $aex_contracts = $finder->basic_contracts_for({symbol => 'OTC_AEX'});
+    my $aex_contracts   = $finder->basic_contracts_for({symbol => 'OTC_AEX'});
     my @daily_contracts = grep { $_->{expiry_type} eq 'daily' } @{$aex_contracts->{available}};
     foreach my $data (@daily_contracts) {
         ok isint($data->{barrier}),      'barrier is integer'      if $data->{barrier};

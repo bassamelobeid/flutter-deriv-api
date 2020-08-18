@@ -15,7 +15,7 @@ subtest 'general' => sub {
     dies_ok {
         my $exp = BOM::Product::Exception->throw(error_code => 'AlreadyExpired');
         is $exp->message_to_client->[0], 'Missing required contract parameters. ([_1])', 'message to client is correct';
-        is $exp->message_to_client->[1], 'me', 'error_args is correct';
+        is $exp->message_to_client->[1], 'me',                                           'error_args is correct';
     }
     'dies with proper exception object';
 };

@@ -262,7 +262,7 @@ subtest 'longcode misbehaving for daily contracts' => sub {
 
 subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([166.26, 1463020000, 'frxGBPUSD'], [166.27, 1463087154, 'frxGBPUSD']);
-    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463087154_1463172900_S0P_0', 'USD');
+    my $c  = produce_contract('PUT_FRXGBPUSD_166.27_1463087154_1463172900_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'multiday contract';
     is_deeply(
@@ -287,7 +287,7 @@ subtest 'longcode of daily contracts crossing Thursday 21GMT expiring on Friday'
 };
 
 subtest 'longcode of daily contracts at 10 minutes before friday close' => sub {
-    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463172600_1463173200_S0P_0', 'USD');
+    my $c  = produce_contract('PUT_FRXGBPUSD_166.27_1463172600_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     is_deeply(
         $c2->longcode,
@@ -305,7 +305,7 @@ subtest 'longcode of daily contracts at 10 minutes before friday close' => sub {
 };
 
 subtest 'longcode of 22 hours contract from Thursday 3GMT' => sub {
-    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463022000_1463101200_S0P_0', 'USD');
+    my $c  = produce_contract('PUT_FRXGBPUSD_166.27_1463022000_1463101200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     is_deeply(
         $c2->longcode,
@@ -324,7 +324,7 @@ subtest 'longcode of 22 hours contract from Thursday 3GMT' => sub {
 
 subtest 'longcode of index daily contracts' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([166.27, 1469523600, 'OTC_GDAXI']);
-    my $c = produce_contract('PUT_OTC_GDAXI_166.27_1469523600_1469647800_S0P_0', 'USD');
+    my $c  = produce_contract('PUT_OTC_GDAXI_166.27_1469523600_1469647800_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is daily contract';
     is_deeply($c2->longcode,
@@ -343,7 +343,7 @@ subtest 'longcode of index daily contracts' => sub {
 
 subtest 'longcode of daily contract on early close day' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([166.27, 1482332400, 'frxGBPUSD'], [166.27, 1482429600, 'frxGBPUSD']);
-    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1482332400_1482429600_S0P_0', 'USD');
+    my $c  = produce_contract('PUT_FRXGBPUSD_166.27_1482332400_1482429600_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->expiry_daily, 'is a multiday contract';
     is_deeply($c2->longcode,
@@ -353,7 +353,7 @@ subtest 'longcode of daily contract on early close day' => sub {
 
 subtest 'longcode of intraday contracts' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([166.27, 1463126400, 'frxGBPUSD'], [166.27, 1463173200, 'frxGBPUSD']);
-    my $c = produce_contract('PUT_FRXGBPUSD_166.27_1463126400_1463173200_S0P_0', 'USD');
+    my $c  = produce_contract('PUT_FRXGBPUSD_166.27_1463126400_1463173200_S0P_0', 'USD');
     my $c2 = make_similar_contract($c, {date_pricing => $c->date_start});
     ok $c2->is_intraday, 'is an contract';
     is_deeply(

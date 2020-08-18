@@ -53,7 +53,7 @@ for my $expiry (@expiry_dates) {
 sub price_contracts {
     my ($date_start, $date_expiry, $expected) = @_;
 
-    return if ($date_expiry->epoch - $date_start->epoch < (12 * 60 * 60));
+    return                                                            if ($date_expiry->epoch - $date_start->epoch < (12 * 60 * 60));
     die "Could not load volatility surface for " . $date_start->epoch if not defined $surfaces->{$date_start->epoch};
 
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

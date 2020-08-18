@@ -141,7 +141,7 @@ sub is_cancelled {
     return 1 if ($self->is_sold and $self->_order->{cancellation}->{is_cancelled});
 
     # to maintain the cancellation status, if sell_time is present, we will use it.
-    my $cmp_date = $self->sell_time ? Date::Utility->new($self->sell_time) : $self->date_pricing;
+    my $cmp_date        = $self->sell_time ? Date::Utility->new($self->sell_time) : $self->date_pricing;
     my $is_deal_expired = $cmp_date->is_after($self->cancellation_expiry);
     return 1
         if (

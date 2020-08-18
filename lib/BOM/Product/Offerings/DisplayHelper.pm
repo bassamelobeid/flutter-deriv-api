@@ -123,7 +123,7 @@ my %known_decorations = (
         if (my $open = $trading_calendar->opening_on($exchange, $self->date)) {
             push @{$times->{open}}, $open->$display_method;
             my $close_of_the_day = $trading_calendar->closing_on($exchange, $self->date);
-            my @closes = ($close_of_the_day);
+            my @closes           = ($close_of_the_day);
             $times->{settlement} = $trading_calendar->get_exchange_open_times($exchange, $self->date, 'daily_settlement')->$display_method;
             if (my $breaks = $trading_calendar->trading_breaks($exchange, $self->date)) {
                 for my $break (@$breaks) {
@@ -241,7 +241,7 @@ sub _build_tree {
         };
         foreach my $submarket (
             sort { $a->display_order <=> $b->display_order }
-            map { Finance::Asset::SubMarket::Registry->instance->get($_) } $offerings_obj->query({market => $market->name}, ['submarket']))
+            map  { Finance::Asset::SubMarket::Registry->instance->get($_) } $offerings_obj->query({market => $market->name}, ['submarket']))
         {
             my $children       = [];
             my $submarket_info = {
@@ -269,7 +269,7 @@ sub _build_tree {
                 };
                 foreach my $bc (
                     sort { $a->display_order <=> $b->display_order }
-                    map { Finance::Contract::Category->new($_) } $offerings_obj->query({underlying_symbol => $ul->symbol}, ['contract_category']))
+                    map  { Finance::Contract::Category->new($_) } $offerings_obj->query({underlying_symbol => $ul->symbol}, ['contract_category']))
                 {
                     my $children      = [];
                     my $category_info = {
@@ -312,7 +312,7 @@ sub decorate_tree {
         foreach my $item (@{$self->get_items_on_level($level)}) {
             foreach my $as (keys %{$decorations{$level}}) {
                 my $func = $decorations{$level}->{$as};
-                my $sub = (ref $func ? $func : $known_decorations{$func}) || next;
+                my $sub  = (ref $func ? $func : $known_decorations{$func}) || next;
                 local $_ = $item->{obj};
                 $item->{$as} = $sub->($item->{parent_obj}, $self);
             }
@@ -324,7 +324,7 @@ sub decorate_tree {
 
 sub get_items_on_level {
     my ($self, $level) = @_;
-    my @levels = @{$self->levels};
+    my @levels       = @{$self->levels};
     my $chosen_level = first_index { $_ eq $level } @levels;
     die "Level $level must match one of those defined: " . join(', ', @levels)
         if ($chosen_level == -1);

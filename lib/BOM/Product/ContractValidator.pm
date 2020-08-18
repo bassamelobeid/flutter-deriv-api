@@ -13,7 +13,7 @@ use BOM::Config::Runtime;
 use BOM::Config;
 use BOM::Product::Static;
 
-my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+my $ERROR_MAPPING  = BOM::Product::Static::get_error_mapping();
 my %all_currencies = map { $_ => 1 } LandingCompany::Registry::all_currencies();
 
 # This value was previously set to 5. But, we are facing extremely high volatility due to covid-19 crisis
@@ -338,7 +338,7 @@ sub _validate_price {
                 return {
                     message => 'payout amount outside acceptable range ' . "[given: " . $details->[0] . "] " . "[max: " . $details->[1] . "]",
                     message_to_client => [$ERROR_MAPPING->{PayoutLimits}, @$params],
-                    details => {field => 'amount'},
+                    details           => {field => 'amount'},
                 };
             },
             payout_too_many_places => sub {
@@ -346,7 +346,7 @@ sub _validate_price {
                 return {
                     message => 'payout amount has too many decimal places ' . "[permitted: " . $details->[0] . "] [payout: " . $details->[1] . "]",
                     message_to_client => [$ERROR_MAPPING->{IncorrectPayoutDecimals}, $details->[0]],
-                    details => {field => 'amount'},
+                    details           => {field => 'amount'},
                 };
             },
             stake_too_many_places => sub {
@@ -354,7 +354,7 @@ sub _validate_price {
                 return {
                     message => 'stake amount has too many decimal places ' . "[permitted: " . $details->[0] . "] [payout: " . $details->[1] . "]",
                     message_to_client => [$ERROR_MAPPING->{IncorrectStakeDecimals}, $details->[0]],
-                    details => {field => 'amount'},
+                    details           => {field => 'amount'},
                 };
             },
             stake_same_as_payout => sub {
@@ -453,7 +453,7 @@ sub _validate_input_parameters {
         };
     } elsif ($self->expiry_daily) {
         my $date_expiry = $self->date_expiry;
-        my $closing = $self->trading_calendar->closing_on($self->underlying->exchange, $date_expiry);
+        my $closing     = $self->trading_calendar->closing_on($self->underlying->exchange, $date_expiry);
         if ($self->category->has_user_defined_expiry and $closing and not $date_expiry->is_same_as($closing) and not $self->for_sale) {
             return {
                 message => 'daily expiry must expire at close '
@@ -551,8 +551,8 @@ sub _validate_trading_times {
         }
     } elsif ($self->expiry_daily and not $self->is_atm_bet) {
         # For definite ATM contracts we do not have to check for upcoming holidays.
-        my $trading_days = $calendar->trading_days_between($exchange, $date_start, $date_expiry);
-        my $holiday_days = $calendar->holiday_days_between($exchange, $date_start, $date_expiry);
+        my $trading_days  = $calendar->trading_days_between($exchange, $date_start, $date_expiry);
+        my $holiday_days  = $calendar->holiday_days_between($exchange, $date_start, $date_expiry);
         my $calendar_days = $date_expiry->days_between($date_start);
 
         if ($underlying->market->equity and $trading_days <= 4 and $holiday_days >= 2) {
@@ -667,7 +667,7 @@ sub _validate_start_and_expiry_date {
     # disable contracts with duration < 5 hours at 21:00 to 24:00GMT due to quiet period.
     # did not inlcude this in date_start_blackouts because we want a different message to client.
     if ($self->disable_trading_at_quiet_period and ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities')) {
-        my $pricing_hour = $self->date_pricing->hour;
+        my $pricing_hour       = $self->date_pricing->hour;
         my $five_hour_in_years = 5 * 3600 / (86400 * 365);
         if ($self->timeinyears->amount < $five_hour_in_years && ($pricing_hour >= 21 && $pricing_hour < 24)) {
             my $pricing_date = $self->date_pricing->date;
@@ -708,7 +708,7 @@ sub _validate_start_and_expiry_date {
                         . $period->[0] . "] " . "[to: "
                         . $period->[1] . "]",
                     message_to_client => [$ERROR_MAPPING->{$error_code}, @args],
-                    details => {field => $field},
+                    details           => {field => $field},
                 };
             }
         }
@@ -870,7 +870,7 @@ sub _build_date_expiry_blackouts {
         my $start_of_period = BOM::Config::quants()->{bet_limits}->{holiday_blackout_start};
         my $end_of_period   = BOM::Config::quants()->{bet_limits}->{holiday_blackout_end};
         if ($self->date_start->day_of_year >= $start_of_period or $self->date_start->day_of_year <= $end_of_period) {
-            my $year = $self->date_start->day_of_year > $start_of_period ? $date_start->year : $date_start->year - 1;
+            my $year         = $self->date_start->day_of_year > $start_of_period ? $date_start->year : $date_start->year - 1;
             my $end_blackout = Date::Utility->new($year . '-12-31')->plus_time_interval($end_of_period . 'd23h59m59s');
             push @periods, [$self->date_start->epoch, $end_blackout->epoch];
         }

@@ -96,7 +96,7 @@ override '_build_pricing_engine' => sub {
     my $self = shift;
 
     my @strikes = ($self->high_barrier->as_absolute, $self->low_barrier->as_absolute);
-    my $pen = $self->pricing_engine_name;
+    my $pen     = $self->pricing_engine_name;
 
     my @vols = @{$self->pricing_vol_for_two_barriers}{'high_barrier_vol', 'low_barrier_vol'};
 

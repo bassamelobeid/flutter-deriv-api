@@ -103,9 +103,9 @@ subtest 'trading hours' => sub {
 
     my $c = produce_contract($args);
     ok $c->is_valid_to_buy, 'valid to buy';
-    $args->{date_start} = $args->{date_pricing} = $weekend;
+    $args->{date_start}   = $args->{date_pricing} = $weekend;
     $args->{current_tick} = $usdjpy_weekend_tick;
-    $c = produce_contract($args);
+    $c                    = produce_contract($args);
     ok !$c->is_valid_to_buy, 'not valid to buy';
     is_deeply(($c->primary_validation_error)[0]->{message_to_client},
         ['This market is presently closed. Try out the Synthetic Indices which are always open.']);

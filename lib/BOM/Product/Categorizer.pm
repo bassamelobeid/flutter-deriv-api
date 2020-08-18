@@ -305,7 +305,7 @@ sub _initialize_other_parameters {
     }
 
     #TODO: remove this
-    $params->{landing_company} //= 'virtual';
+    $params->{landing_company}      //= 'virtual';
     $params->{payout_currency_type} //= LandingCompany::Registry::get_currency_type($params->{currency});
 
     if (defined $params->{duration}) {
@@ -327,8 +327,7 @@ sub _initialize_other_parameters {
                 my $interval = $duration;
                 $interval = $duration_amount * $expected_feed_frequency if $duration_unit eq 't';
                 $params->{date_start}->plus_time_interval($interval);
-            }
-            catch {
+            } catch {
                 BOM::Product::Exception->throw(
                     error_code => 'TradingDurationNotAllowed',
                     details    => {field => 'duration'});
@@ -347,7 +346,7 @@ sub _initialize_other_parameters {
                     if (my $closing = $self->_trading_calendar->closing_on($underlying->exchange, $params->{date_expiry})) {
                         $params->{date_expiry} = $closing;
                     } else {
-                        my $regular_day = $self->_trading_calendar->regular_trading_day_after($underlying->exchange, $params->{date_expiry});
+                        my $regular_day   = $self->_trading_calendar->regular_trading_day_after($underlying->exchange, $params->{date_expiry});
                         my $regular_close = $self->_trading_calendar->closing_on($underlying->exchange, $regular_day);
                         $params->{date_expiry} = Date::Utility->new($params->{date_expiry}->date_yyyymmdd . ' ' . $regular_close->time_hhmmss);
                     }
@@ -432,7 +431,7 @@ sub _initialize_other_parameters {
         BOM::Product::Exception->throw(
             error_code => $params->{amount_type} eq 'stake' ? 'InvalidMinStake' : 'InvalidMinPayout',
             error_args => [financialrounding('price', $params->{currency}, $min_amount)],
-            details => {field => 'amount'})
+            details    => {field => 'amount'})
             if defined $min_amount
             and exists $params->{amount}
             and $params->{amount} < $min_amount;
@@ -445,7 +444,7 @@ sub _initialize_other_parameters {
             BOM::Product::Exception->throw(
                 error_code => 'StakeLimitExceeded',
                 error_args => [financialrounding('price', $params->{currency}, $max_stake)],
-                details => {field => 'amount'})
+                details    => {field => 'amount'})
                 if exists $params->{amount}
                 and $params->{amount} - $max_stake > $epsilon;
         }
@@ -477,7 +476,7 @@ sub _initialize_other_parameters {
                 BOM::Product::Exception->throw(
                     error_code => 'MinimumMultiplier',
                     error_args => [financialrounding('price', $params->{currency}, $minimum_multiplier)],
-                    details => {field => 'amount'},
+                    details    => {field => 'amount'},
                 );
             }
         }

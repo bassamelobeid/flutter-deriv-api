@@ -61,7 +61,7 @@ subtest 'single contract' => sub {
     delete $args->{low_barrier};
     $args->{barrier}  = 'S0P';
     $args->{bet_type} = 'RANGE';
-    $error = exception { produce_contract($args) };
+    $error            = exception { produce_contract($args) };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'Invalid barrier (Double barrier input is expected).', 'single barrier for RANGE';
 
@@ -108,7 +108,7 @@ subtest 'zero relative & absolute barriers' => sub {
     delete $args->{barrier};
     $args->{high_barrier} = 0;
     $args->{low_barrier}  = 100;
-    $error = exception { produce_contract($args) };
+    $error                = exception { produce_contract($args) };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'Barrier cannot be zero.', 'zero high_barrier for RANGE';
 
