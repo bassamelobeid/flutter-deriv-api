@@ -69,7 +69,7 @@ my %new_client_details = (
 
 sub new_client {
     my $currency = shift;
-    my $c = $user->create_client(%new_client_details, @_);
+    my $c        = $user->create_client(%new_client_details, @_);
     $c->set_default_account($currency);
     $c;
 }
@@ -175,7 +175,7 @@ subtest 'CR withdrawal' => sub {
     # CR withdrawals in EUR
     subtest 'in EUR, unauthenticated' => sub {
         my $client = new_client('EUR');
-        my $var = $client->smart_payment(%deposit_eur, amount => 10500);
+        my $var    = $client->smart_payment(%deposit_eur, amount => 10500);
         throws_ok { $client->validate_payment(%withdrawal_eur, amount => -10001) } qr/exceeds withdrawal limit/,
             'Non-Authed CR withdrawal greater than USD 10K';
         lives_ok { $client->validate_payment(%withdrawal_eur, amount => -8411.84) } 'Non-Authed CR withdrawal USD 10K';
@@ -190,7 +190,7 @@ subtest 'CR withdrawal' => sub {
     # CR withdrawals in BTC
     subtest 'in BTC, unauthenticated' => sub {
         my $client = new_client('BTC');
-        my $var = $client->smart_payment(%deposit_btc, amount => 3.00000000);
+        my $var    = $client->smart_payment(%deposit_btc, amount => 3.00000000);
         throws_ok { $client->validate_payment(%withdrawal_btc, amount => -2) } qr/exceeds withdrawal limit/,
             'Non-Authed CR withdrawal greater than USD 10K';
         lives_ok { $client->validate_payment(%withdrawal_btc, amount => -1.81818181) } 'Non-Authed CR withdrawal USD 10K';
@@ -298,7 +298,7 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     $client->save;
 
     $client->smart_payment(%wd2500);
-    my $payment = $client->db->dbic->run(fixup => sub { $_->selectrow_hashref("SELECT * FROM payment.payment ORDER BY id DESC LIMIT 1"); });
+    my $payment      = $client->db->dbic->run(fixup => sub { $_->selectrow_hashref("SELECT * FROM payment.payment ORDER BY id DESC LIMIT 1"); });
     my $payment_time = Date::Utility->new($payment->{payment_time})->epoch;
 
     throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit \[EUR/,

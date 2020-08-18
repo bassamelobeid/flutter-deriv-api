@@ -48,7 +48,7 @@ Test::Exception::lives_ok {
 my $pa2 = BOM::User::Client::PaymentAgent->new({loginid => $payment_agent->client_loginid});
 ok($pa2->summary, "new summary");
 my $expected_result_1 = ['id', 'in'];
-my $target_countries = $pa2->get_countries;
+my $target_countries  = $pa2->get_countries;
 is_deeply($target_countries, $expected_result_1, "returned correct countries");
 
 #################################

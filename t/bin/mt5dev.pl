@@ -94,7 +94,7 @@ sub create_client {
 (
     async sub {
         try {
-            my $user = BOM::User->new(email => 'mt5-setup@binary.com');
+            my $user   = BOM::User->new(email => 'mt5-setup@binary.com');
             my $client = $user ? $user->get_default_client() : create_client(
                 email => 'mt5-setup@binary.com',
             );
@@ -157,8 +157,7 @@ sub create_client {
             my $group_details = await BOM::MT5::User::Async::get_group('real\\svg');
             $log->infof('Group details for %s is %s', 'real\\svg', $group_details);
 
-        }
-        catch {
+        } catch {
             $log->errorf('Failed - %s', $@);
         }
     })->()->get;

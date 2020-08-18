@@ -169,8 +169,7 @@ subtest 'create client' => sub {
     is($client->email,                   'test@betonmarkets.com', '[save] client email is: shuwnyuan@betonmarkets.com');
     is($client->aml_risk_classification, 'low',                   'by default risk classification is low for new client');
     throws_ok { $client->aml_risk_classification('dummy') }
-    qr/Invalid aml_risk_classification/,
-        $client->aml_risk_classification('standard');
+    qr/Invalid aml_risk_classification/, $client->aml_risk_classification('standard');
     Test::Exception::lives_ok { $client->save(); } "[save] call client save OK";
     is($client->aml_risk_classification, 'standard', 'correct risk classification after update');
 
@@ -195,8 +194,8 @@ subtest 'Gender based on Salutation' => sub {
 
         $client = $user->create_client(%details);
 
-        is($client->salutation, $salutation, 'Salutation: ' . $client->salutation);
-        is($client->gender, $gender_map{$salutation}, 'gender: ' . $client->gender);
+        is($client->salutation, $salutation,              'Salutation: ' . $client->salutation);
+        is($client->gender,     $gender_map{$salutation}, 'gender: ' . $client->gender);
     }
 };
 

@@ -95,7 +95,7 @@ subtest 'advertiser Registration' => sub {
 };
 
 subtest 'Duplicate advertiser Registration' => sub {
-    my $name = 'ad man 2';
+    my $name       = 'ad man 2';
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser(name => $name);
 
     cmp_deeply(
@@ -465,7 +465,7 @@ subtest 'Deleting ads' => sub {
                 $advertiser->p2p_advert_update(
                     id     => $advert->{id},
                     delete => 1
-                    )
+                )
             },
             {error_code => 'OpenOrdersDeleteAdvert'},
             "cannot delete ad with $status order"
@@ -483,7 +483,7 @@ subtest 'Deleting ads' => sub {
             $client->p2p_order_create(
                 advert_id => $advert->{id},
                 amount    => 10
-                )
+            )
         },
         {error_code => 'AdvertNotFound'},
         'cannot create order for deleted ad'
@@ -494,7 +494,7 @@ subtest 'Deleting ads' => sub {
             $advertiser->p2p_advert_update(
                 id     => $advert->{id},
                 delete => 0,
-                )
+            )
         },
         {error_code => 'AdvertNotFound'},
         'cannot undelete ad'

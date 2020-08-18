@@ -28,7 +28,7 @@ subtest "Client load and saving." => sub {
         'Test $client->first_name'
     );
     is($client->last_name, '♀ﬁ�⑀₂ἠḂӥẄɐː⍎אԱა Καλημέρα κόσμε, コンニチハ', 'Test $client->last_name');
-    is($client->password, '48elKjgSSiaeD5v233716ab5', 'Test $client->password');
+    is($client->password,  '48elKjgSSiaeD5v233716ab5',                                                                'Test $client->password');
 
     $client->first_name('Eric');
     $client->last_name('Clapton');
@@ -178,7 +178,7 @@ subtest 'validate_dob' => sub {
     }
     foreach my $key (keys %data_dob_invalid) {
         my $dob_result_hash = $client->validate_common_account_details({date_of_birth => $key});
-        my $value_hash = $data_dob_invalid{$key};
+        my $value_hash      = $data_dob_invalid{$key};
         is($dob_result_hash->{error}, $value_hash->{error}, "validate_dob gets error $key");
     }
 };

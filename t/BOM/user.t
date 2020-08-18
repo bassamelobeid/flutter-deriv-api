@@ -189,7 +189,7 @@ subtest 'accounts_by_category' => sub {
     my (%expected_loginids, %categorised_loginids);
     for my $type (sort keys $accounts->%*) {
         $categorised_loginids{$type} = [map { $_->loginid } $accounts->{$type}->@*];
-        $expected_loginids{$type} = [
+        $expected_loginids{$type}    = [
             $type eq 'enabled'
             ? ($clients{fiat}->loginid, $clients{crypto}->loginid)
             : $clients{$type}->loginid
@@ -615,8 +615,8 @@ subtest 'test update totp' => sub {
     lives_ok { $user->update_totp_fields(is_totp_enabled => 1, secret_key => $new_secret_key) } 'do update';
     my $new_user = BOM::User->new(id => $user->id);
     is_deeply($new_user, $user, 'get same object after updated');
-    is($user->secret_key, $new_secret_key, 'secret_key updated');
-    is($user->is_totp_enabled, 1, 'is_totp_enabled was updated');
+    is($user->secret_key,      $new_secret_key, 'secret_key updated');
+    is($user->is_totp_enabled, 1,               'is_totp_enabled was updated');
     lives_ok { $new_user->update_totp_fields(secret_key => $old_secret_key, is_totp_enabled => 0) } 'update back to old email';
     lives_ok { $user = BOM::User->new(id => $user->id); } 'reload user ok';
     is($user->is_totp_enabled, 0, 'is_totp_enabled is false now');

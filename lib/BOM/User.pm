@@ -339,7 +339,7 @@ Returns a hashref of form { login => group }
 sub mt5_logins_with_group {
     my $self = shift;
 
-    my $filter = shift // 'real|demo';
+    my $filter                = shift // 'real|demo';
     my $mt5_logins_with_group = {};
 
     for my $login (sort $self->get_mt5_loginids()) {
@@ -392,8 +392,8 @@ Return an ARRAY reference that is a list of clients in following order
 sub get_clients_in_sorted_order {
     my ($self, %args) = @_;
     my $include_duplicated = $args{include_duplicated} // 0;
-    my $account_lists = $self->accounts_by_category([$self->bom_loginids], include_duplicated => $include_duplicated);
-    my @allowed_statuses = qw(enabled virtual self_excluded disabled);
+    my $account_lists      = $self->accounts_by_category([$self->bom_loginids], include_duplicated => $include_duplicated);
+    my @allowed_statuses   = qw(enabled virtual self_excluded disabled);
     push @allowed_statuses, 'duplicated' if ($include_duplicated);
 
     return [map { @$_ } @{$account_lists}{@allowed_statuses}];
@@ -423,8 +423,7 @@ sub accounts_by_category {
                 loginid      => $loginid,
                 db_operation => 'replica'
             });
-        }
-        catch {
+        } catch {
             # try master if replica is down
             $cl = BOM::User::Client->new({loginid => $loginid});
         }
@@ -504,7 +503,7 @@ sub get_default_client {
         $tmp{$k} = pop(@{$client_lists->{$k}});
     }
     $self->{_default_client_include_disabled} = $tmp{enabled} // $tmp{disabled} // $tmp{virtual} // $tmp{self_excluded} // $tmp{duplicated};
-    $self->{_default_client_without_disabled} = $tmp{enabled} // $tmp{virtual} // $tmp{self_excluded};
+    $self->{_default_client_without_disabled} = $tmp{enabled} // $tmp{virtual}  // $tmp{self_excluded};
     return $self->{_default_client_include_disabled} if $args{include_disabled};
     return $self->{_default_client_without_disabled};
 }
@@ -521,7 +520,7 @@ sub login_history {
     my ($self, %args) = @_;
     $args{order} //= 'desc';
     my $limit = looks_like_number($args{limit}) ? "limit $args{limit}" : '';
-    my $sql = "select * from users.get_login_history(?,?,?) $limit";
+    my $sql   = "select * from users.get_login_history(?,?,?) $limit";
     return $self->dbic->run(
         fixup => sub {
             $_->selectall_arrayref($sql, {Slice => {}}, $self->{id}, $args{order}, $args{show_impersonate_records} // 0);
@@ -556,7 +555,7 @@ sub add_login_history {
     my @new_values     = @args{@history_fields};
 
     my $placeholders = join ",", ('?') x @new_values;
-    my $sql = "select * from users.add_login_history($placeholders)";
+    my $sql          = "select * from users.add_login_history($placeholders)";
     $self->dbic->run(
         fixup => sub {
             $_->do($sql, undef, @new_values);
@@ -673,10 +672,9 @@ sub _save_login_detail_redis {
     my $auth_redis = BOM::Config::Redis::redis_auth_write();
     try {
         $auth_redis->hset($key, $entry, $entry_time);
-    }
-    catch {
+    } catch {
         $log->warnf("Failed to store user login entry in redis, error: %s", shift);
-    };
+    }
 }
 
 sub logged_in_before_from_same_location {
@@ -700,10 +698,9 @@ sub logged_in_before_from_same_location {
             my $last_attempt_entry = BOM::User::Utility::login_details_identifier($last_attempt_in_db->{environment});
             $attempt_known = 1 if $last_attempt_entry eq $entry;
         }
-    }
-    catch {
+    } catch {
         $log->warnf("Failed to get user login entry from redis, error: %s", shift);
-    };
+    }
 
     return $attempt_known;
 }
@@ -762,7 +759,7 @@ sub valid_to_anonymize {
             broker_code => 'FOG',
             operation   => 'collector',
         }
-        )->db->dbic->run(
+    )->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT users.ck_user_valid_to_anonymize(?)', undef, $self->id);
         });

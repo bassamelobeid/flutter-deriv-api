@@ -88,7 +88,7 @@ sub create_client {
 
 sub update_sequences {
 
-    my $broker_code = shift || 'CR';
+    my $broker_code        = shift || 'CR';
     my $connection_builder = BOM::Database::ClientDB->new({
         broker_code => $broker_code,
         operation   => 'write',
@@ -140,7 +140,7 @@ sub _update_sequence_of {
         SELECT MAX(id) FROM $table;
     };
     $query_result = $dbh->selectrow_hashref($statement);
-    $last_value = $query_result->{'max'} // $current_sequence_value;
+    $last_value   = $query_result->{'max'} // $current_sequence_value;
 
     while ($current_sequence_value <= $last_value) {
         $statement = qq{

@@ -53,8 +53,14 @@ subtest 'advertiser Registration' => sub {
     lives_ok { $advertiser = $client->p2p_advertiser_create(name => $advertiser_name) } 'create advertiser ok';
 
     cmp_deeply(
-       \%last_event,
-        { type => 'p2p_advertiser_created', data => { client_loginid => $client->loginid, %$advertiser } },
+        \%last_event,
+        {
+            type => 'p2p_advertiser_created',
+            data => {
+                client_loginid => $client->loginid,
+                %$advertiser
+            }
+        },
         'p2p_advertiser_created event emitted'
     );
 
@@ -64,7 +70,6 @@ subtest 'advertiser Registration' => sub {
     cmp_ok $advertiser_info->{name}, 'eq', $advertiser_name, "advertiser name";
 
     is $client->status->allow_document_upload->{reason}, 'P2P_ADVERTISER_CREATED', 'Can upload auth docs';
-    
 
 };
 
@@ -104,7 +109,7 @@ subtest 'Advertiser name already taken' => sub {
 
 subtest 'Updating advertiser fields' => sub {
     my $advertiser_name = 'test advertiser ' . int(rand(9999));
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(name => $advertiser_name);
+    my $advertiser      = BOM::Test::Helper::P2P::create_advertiser(name => $advertiser_name);
 
     my $advertiser_info = $advertiser->p2p_advertiser_info;
 
@@ -113,8 +118,11 @@ subtest 'Updating advertiser fields' => sub {
     ok $advertiser_info->{is_listed},   'advertiser is listed';
 
     cmp_deeply(
-       \%last_event,
-        { type => 'p2p_advertiser_updated', data => { client_loginid => $advertiser->loginid } },
+        \%last_event,
+        {
+            type => 'p2p_advertiser_updated',
+            data => {client_loginid => $advertiser->loginid}
+        },
         'p2p_advertiser_updated event emitted'
     );
 

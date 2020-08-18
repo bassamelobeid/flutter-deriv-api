@@ -22,7 +22,7 @@ is($withdrawal_limits->{'free_gift_turnover_limit'}, 500, 'USD free_gift_turnove
 subtest 'CR0027.' => sub {
     plan tests => 2;
 
-    my $client = BOM::User::Client->new({loginid => 'CR0027'});
+    my $client            = BOM::User::Client->new({loginid => 'CR0027'});
     my $withdrawal_limits = $client->get_withdrawal_limits();
 
     is($withdrawal_limits->{'frozen_free_gift'},         0,   'USD frozen_free_gift is 0');
@@ -32,7 +32,7 @@ subtest 'CR0027.' => sub {
 subtest 'CR0028.' => sub {
     plan tests => 2;
 
-    my $client = BOM::User::Client->new({loginid => 'CR0028'});
+    my $client            = BOM::User::Client->new({loginid => 'CR0028'});
     my $withdrawal_limits = $client->get_withdrawal_limits();
 
     cmp_ok($withdrawal_limits->{'frozen_free_gift'}, '==', 20, 'USD frozen_free_gift is 20');

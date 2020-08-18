@@ -83,8 +83,7 @@ SQL
             log_msg 0, "loginid $loginid has binary_user_id " . ($binary_user_id // "NULL") . " but does not exist in clientdb";
         }
         return 1;
-    }
-    catch {
+    } catch {
         # Certain loginids (like MT...) don't have a clientdb.
         if ($@ =~ /^No such domain with the broker code /) {
             return 1;
@@ -161,8 +160,7 @@ sub run {
                 run_once $dbh;
                 $sel->can_read(TMOUT);
             }
-        }
-        catch {
+        } catch {
             log_msg 0, "saw exception: $@";
             sleep TMOUT;
         }

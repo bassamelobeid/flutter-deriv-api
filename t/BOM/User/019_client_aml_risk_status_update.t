@@ -60,7 +60,7 @@ my $res;
 my $c_no_args = BOM::User::Script::AMLClientsUpdate->new();
 
 my %args = (landing_companies => ['CR']);
-my $c = BOM::User::Script::AMLClientsUpdate->new(%args);
+my $c    = BOM::User::Script::AMLClientsUpdate->new(%args);
 
 my @emitted_args;
 my $mocked_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -128,7 +128,7 @@ subtest 'aml risk becomes high CR landing company' => sub {
     $client_cr2->save;
 
     $expected_db_rows = [{login_ids => join(',', sort($client_cr->loginid, $client_cr2->loginid))}];
-    $result = $c->update_aml_high_risk_clients_status($landing_company);
+    $result           = $c->update_aml_high_risk_clients_status($landing_company);
     is @$result, @$expected_db_rows, 'Correct number of affected users';
     is_deeply $result, $expected_db_rows, 'Returned client ids are correct';
 

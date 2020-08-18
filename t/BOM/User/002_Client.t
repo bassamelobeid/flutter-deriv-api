@@ -79,7 +79,7 @@ subtest 'Almost all accessor/modifiers' => sub {
 
     $return = $client->status->disabled;
     is($return && $return->{reason}, "I don't like him", "the client is disabled and the reason is: I don not like him");
-    is($return->{staff_name}, 'fuguo wei', "The disabled operation clerk is fuguo wei");
+    is($return->{staff_name},        'fuguo wei',        "The disabled operation clerk is fuguo wei");
 
     $client->status->set('disabled', 'fuguo wei', "He is hacker");
 

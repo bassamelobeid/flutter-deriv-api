@@ -155,7 +155,7 @@ sub _is_suspended {
     my ($cmd, $param) = @_;
     my $app_config = BOM::Config::Runtime->instance->app_config->system->mt5->suspend;
     return 'MT5APISuspendedError' if $app_config->all;
-    return undef if $cmd ne 'UserDepositChange';
+    return undef                  if $cmd ne 'UserDepositChange';
     if ($param->{new_deposit} > 0) {
         return 'MT5DepositSuspended' if $app_config->deposits;
     } else {
@@ -232,8 +232,7 @@ sub _invoke_mt5 {
     try {
         $prefix   = _get_prefix($param);
         $srv_type = _get_server_type_by_prefix($prefix);
-    }
-    catch {
+    } catch {
         $log->infof('Error in proccessing mt5 request: %s', $@);
         return _future_error({code => 'General'});
     }
@@ -244,7 +243,7 @@ sub _invoke_mt5 {
         on_finish => sub {
             my (undef, $exitcode, $out, $err) = @_;
             warn "MT5 PHP call nonzero status: $exitcode\n" if $exitcode;
-            warn "MT5 PHP call error: $err from $in\n" if defined($err) && length($err);
+            warn "MT5 PHP call error: $err from $in\n"      if defined($err) && length($err);
 
             DataDog::DogStatsd::Helper::stats_timing('mt5.call.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => ["mt5:$cmd"]});
 
@@ -290,8 +289,7 @@ sub _invoke_mt5 {
                     $redis->set($LOCK_KEY, 0) if $lock;
                     $f->done($out);
                 }
-            }
-            catch {
+            } catch {
                 my $e = $@;
                 chomp $e;
                 $f->fail($e, mt5 => $cmd);
@@ -460,7 +458,7 @@ sub _future_error {
     my ($response) = @_;
 
     return {
-        code => $response->{ret_code} ? _get_error_mapping($response->{ret_code}) : $response->{code},
+        code  => $response->{ret_code} ? _get_error_mapping($response->{ret_code}) : $response->{code},
         error => $response->{error}};
 }
 

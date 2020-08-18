@@ -177,7 +177,7 @@ subtest 'payment transaction' => sub {
     };
 
     my $initial_balance = 0;
-    my $txn = $client->payment_legacy_payment(%$args, payment_type => 'ewallet');
+    my $txn             = $client->payment_legacy_payment(%$args, payment_type => 'ewallet');
     verify_txn($txn, $account, {%$args, payment_type => 'ewallet'}, $initial_balance, $payment_expected);
 
     $payment_expected->{payment_type_code}    = 'free_gift';

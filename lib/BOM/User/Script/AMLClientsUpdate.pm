@@ -104,8 +104,7 @@ sub emit_aml_status_change_event {
                     aml_updated_clients => $aml_updated_clients
                 }});
         return 1;
-    }
-    catch {
+    } catch {
         $log->errorf('Failed to emit event for emit_aml_status_change_event:  error : %s', $@);
         return undef;
     }

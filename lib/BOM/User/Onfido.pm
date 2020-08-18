@@ -31,15 +31,14 @@ sub store_onfido_applicant {
             fixup => sub {
                 $_->do(
                     'select users.add_onfido_applicant(?::TEXT,?::TIMESTAMP,?::TEXT,?::BIGINT)',
-                    undef, $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
+                    undef,            $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
                     $applicant->href, $user_id,
                 );
             });
-    }
-    catch {
+    } catch {
         my $e = $@;
         die "Fail to store Onfido applicant in DB: $e . Please check APPLICANT_ID: " . $applicant->id;
-    };
+    }
 
     return;
 }
@@ -60,11 +59,10 @@ sub get_user_onfido_applicant {
             fixup => sub {
                 $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $user_id,);
             });
-    }
-    catch {
+    } catch {
         my $e = $@;
         die "Fail to get Onfido applicant in DB: $e . Please check USER_ID: $user_id";
-    };
+    }
 
     return;
 }
@@ -85,11 +83,10 @@ sub get_all_user_onfido_applicant {
             fixup => sub {
                 $_->selectall_hashref('SELECT * FROM users.get_onfido_applicant(?::BIGINT)', 'id', {}, $user_id,);
             });
-    }
-    catch {
+    } catch {
         my $e = $@;
         die "Fail to get Onfido applicant in DB: $e . Please check USER_ID: $user_id";
-    };
+    }
 
     return;
 }
@@ -123,11 +120,10 @@ sub store_onfido_check {
                     $check->tags,
                 );
             });
-    }
-    catch {
+    } catch {
         my $e = $@;
         warn "Fail to store Onfido check in DB: $e . Please check CHECK_ID: " . $check->id;
-    };
+    }
 
     return;
 }
@@ -147,11 +143,10 @@ sub get_latest_onfido_check {
             fixup => sub {
                 $_->selectrow_hashref('SELECT * FROM users.get_onfido_checks(?::BIGINT)', undef, $user_id);
             });
-    }
-    catch {
+    } catch {
         my $e = $@;
         die "Fail to get Onfido checks in DB: $e . Please check USER_ID: $user_id";
-    };
+    }
 
     return;
 
@@ -174,11 +169,10 @@ sub update_onfido_check {
                 $_->do('select * from users.update_onfido_check_status(?::TEXT, ?::TEXT, ?::TEXT)',
                     undef, $check->id, $check->status, $check->result,);
             });
-    }
-    catch {
+    } catch {
         my $e = $@;
         warn "Fail to update Onfido check in DB: $e . Please check CHECK_ID: " . $check->id;
-    };
+    }
 
     return;
 }
@@ -212,11 +206,10 @@ sub store_onfido_report {
                     encode_json_utf8($report->properties),
                 );
             });
-    }
-    catch {
+    } catch {
         my $e = $@;
         warn "Fail to store Onfido report in DB: $e . Please check REPORT_ID: " . $report->id;
-    };
+    }
 
     return;
 }
@@ -235,11 +228,10 @@ sub get_all_onfido_reports {
             fixup => sub {
                 $_->selectall_hashref('SELECT * FROM users.get_onfido_reports(?::BIGINT, ?::TEXT)', 'id', undef, ($user_id, $check_id));
             });
-    }
-    catch {
+    } catch {
         my $e = $@;
         warn "Fail to get Onfido report from DB: $e . Please check USER_ID $user_id and CHECK_ID $check_id";
-    };
+    }
     return;
 }
 
@@ -263,11 +255,10 @@ sub store_onfido_live_photo {
                     $doc->href, $doc->download_href, $doc->file_name, $doc->file_type, $doc->file_size,
                 );
             });
-    }
-    catch {
+    } catch {
         my $e = $@;
         warn "Fail to store Onfido live_photo in DB: $e . Please check DOC_ID: " . $doc->id;
-    };
+    }
 
     return;
 }
@@ -302,11 +293,10 @@ sub store_onfido_document {
                     $doc->file_size,
                 );
             });
-    }
-    catch {
+    } catch {
         my $e = $@;
         warn "Fail to store Onfido document in DB: $e . Please check DOC_ID: " . $doc->id;
-    };
+    }
 
     return;
 }
@@ -328,11 +318,10 @@ sub get_onfido_document {
             fixup => sub {
                 $_->selectall_hashref('select * from users.get_onfido_documents(?::BIGINT, ?::TEXT)', 'id', {}, $user_id, $applicant_id,);
             });
-    }
-    catch {
+    } catch {
         my $e = $@;
         warn "Fail to retrieve Onfido document from db: $e . Please check USER_ID: $user_id ";
-    };
+    }
 
     return;
 }
@@ -354,11 +343,10 @@ sub get_onfido_live_photo {
             fixup => sub {
                 $_->selectall_hashref('select * from users.get_onfido_live_photos(?::BIGINT, ?::TEXT)', 'id', {}, $user_id, $applicant_id,);
             });
-    }
-    catch {
+    } catch {
         my $e = $@;
         warn "Fail to retrieve Onfido live_photos from db: $e . Please check USER_ID: $user_id ";
-    };
+    }
 
     return;
 }

@@ -426,18 +426,24 @@ for my $test_case (@test_cases) {
         is($order_data->{status}, $test_case->{status}, 'Status for new order is correct');
         cmp_ok($order_data->{amount}, '==', $amount, 'Amount for new order is correct');
         is($order_data->{advert_details}{type}, $test_case->{type}, 'advert type is correct');
-        
+
         if ($test_case->{error}) {
-            ok !%last_event, 'p2p_order_updated event not emitted'; 
-        }
-        else {
-             cmp_deeply(
-               \%last_event,
-                { type => 'p2p_order_updated', data => { client_loginid => $loginid, order_id => $order->{id}, order_event => 'confirmed' } },
+            ok !%last_event, 'p2p_order_updated event not emitted';
+        } else {
+            cmp_deeply(
+                \%last_event,
+                {
+                    type => 'p2p_order_updated',
+                    data => {
+                        client_loginid => $loginid,
+                        order_id       => $order->{id},
+                        order_event    => 'confirmed'
+                    }
+                },
                 'p2p_order_updated event is emitted'
-            );           
+            );
         }
-        
+
         BOM::Test::Helper::P2P::reset_escrow();
     };
 }

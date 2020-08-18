@@ -59,8 +59,7 @@ sub decrypt_secret_answer {
         } else {
             die "Invalid or outdated encrypted value.";
         }
-    }
-    catch {
+    } catch {
         die "Not able to decode secret answer! $@";
     }
 
@@ -107,8 +106,7 @@ sub set_gamstop_self_exclusion {
         );
 
         stats_inc('GAMSTOP_RESPONSE', {tags => ['EXCLUSION:' . ($gamstop_response->get_exclusion() // 'NA'), "landing_company:$lc"]});
-    }
-    catch {
+    } catch {
         stats_inc('GAMSTOP_CONNECT_FAILURE') if $@ =~ /^Error/;
     }
 
@@ -127,8 +125,7 @@ sub set_gamstop_self_exclusion {
         # also send email to compliance
         Email::Stuffer->from($brand->emails('compliance_alert'))->to($brand->emails('compliance_alert'))->subject($subject)->text_body($content)
             ->send_or_die;
-    }
-    catch {
+    } catch {
         warn "An error occurred while setting client exclusion: $@";
     }
 
@@ -167,7 +164,7 @@ sub login_details_identifier {
 
     my $browser_info = HTTP::BrowserDetect->new($user_agent);
 
-    my $device = $browser_info->device || $browser_info->os_string || 'unknown';
+    my $device  = $browser_info->device         || $browser_info->os_string || 'unknown';
     my $browser = $browser_info->browser_string || 'unknown';
 
     return ($country || 'unknown') . '::' . $device . '::' . $browser;

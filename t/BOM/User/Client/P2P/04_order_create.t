@@ -112,8 +112,13 @@ subtest 'Creating new buy order' => sub {
     ok($advertiser->account->balance == 0,         'Money is withdrawn from advertiser account');
 
     cmp_deeply(
-       \%last_event,
-        { type => 'p2p_order_created', data => { client_loginid => $client->loginid, order_id => $new_order->{id} } },
+        \%last_event,
+        {
+            type => 'p2p_order_created',
+            data => {
+                client_loginid => $client->loginid,
+                order_id       => $new_order->{id}}
+        },
         'p2p_order_created event emitted'
     );
 
@@ -556,7 +561,7 @@ subtest 'Buyer tries to place an order for an advert of a non-approved advertise
         $buyer->p2p_order_create(
             advert_id => $advert_info->{id},
             amount    => $order_amount
-            )
+        )
     };
 
     is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
@@ -585,7 +590,7 @@ subtest 'Buyer tries to place an order for an advert of a non-listed advertiser'
         $buyer->p2p_order_create(
             advert_id => $advert_info->{id},
             amount    => $order_amount
-            )
+        )
     };
 
     is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
@@ -613,7 +618,7 @@ subtest 'Buyer with empty balance tries to place an "sell" order' => sub {
             amount       => $ad_amount,
             payment_info => 'payment info',
             contact_info => 'contact info',
-            )
+        )
     };
 
     is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
@@ -644,7 +649,7 @@ subtest 'Buyer tries to place an order for an inactive ad' => sub {
         $buyer->p2p_order_create(
             advert_id => $advert_info->{id},
             amount    => $ad_amount,
-            )
+        )
     };
 
     is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
@@ -675,7 +680,7 @@ subtest 'Buyer tries to place a "buy" order with an amount that exceeds the adve
         $buyer->p2p_order_create(
             advert_id => $advert_info->{id},
             amount    => $order_amount
-            )
+        )
     };
 
     is $err->{error_code}, 'OrderMaximumExceeded', 'Could not create order, got error code OrderMaximumExceeded';
@@ -701,7 +706,7 @@ subtest 'Buyer tries to place an order bigger than the ad amount' => sub {
         $buyer->p2p_order_create(
             advert_id => $advert_info->{id},
             amount    => $advert_info->{amount} * 2
-            )
+        )
     };
 
     is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
@@ -769,7 +774,7 @@ subtest 'Order view permissions' => sub {
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
-    my ($client1, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    my ($client1,    $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
 
     my $client2 = BOM::Test::Helper::P2P::create_advertiser();
 
@@ -791,13 +796,14 @@ subtest 'payment validation' => sub {
     my $mock_client = Test::MockModule->new('BOM::User::Client');
 
     $mock_client->mock(
-        'validate_payment', sub {
+        'validate_payment',
+        sub {
             my ($self, %args) = @_;
             if ($self->loginid eq $client->loginid) {
-                 ok $args{amount} > 0, 'sell ad is validated as client deposit';
-                 die "fail client reason\n";
+                ok $args{amount} > 0, 'sell ad is validated as client deposit';
+                die "fail client reason\n";
             }
-    });
+        });
 
     my $err = exception {
         $client->p2p_order_create(
@@ -805,16 +811,24 @@ subtest 'payment validation' => sub {
             amount    => 10
         );
     };
-    cmp_deeply($err, {error_code => 'OrderCreateFailClient', message_params => ['fail client reason']}, 'Client validate_payment failed error has details');
+    cmp_deeply(
+        $err,
+        {
+            error_code     => 'OrderCreateFailClient',
+            message_params => ['fail client reason']
+        },
+        'Client validate_payment failed error has details'
+    );
 
     $mock_client->mock(
-        'validate_payment', sub {
+        'validate_payment',
+        sub {
             my ($self, %args) = @_;
             if ($self->loginid eq $advertiser->loginid) {
-                 ok $args{amount} < 0, 'sell ad is validated as advertiser withdrawal';
-                 die "fail advertiser reason\n";
+                ok $args{amount} < 0, 'sell ad is validated as advertiser withdrawal';
+                die "fail advertiser reason\n";
             }
-    });
+        });
 
     $err = exception {
         $client->p2p_order_create(
@@ -823,25 +837,25 @@ subtest 'payment validation' => sub {
         );
     };
     cmp_deeply($err, {error_code => 'OrderCreateFailAdvertiser'}, 'Advertiser validate_payment failed error has no details');
-    
-    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type=>'buy');
-    
+
+    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
+
     $mock_client->mock(
-        'validate_payment', sub {
+        'validate_payment',
+        sub {
             my ($self, %args) = @_;
             if ($self->loginid eq $client->loginid) {
-                 ok $args{amount} < 0, 'buy ad is validated as client withdrawal';
-            }
-            elsif ($self->loginid eq $advertiser->loginid) {
+                ok $args{amount} < 0, 'buy ad is validated as client withdrawal';
+            } elsif ($self->loginid eq $advertiser->loginid) {
                 ok $args{amount} > 0, 'buy ad is validated as advertiser deposit';
             }
             return $mock_client->original('validate_payment')->(@_);
-    });    
-    
+        });
+
     $err = exception {
         $client->p2p_order_create(
-            advert_id => $advert->{id},
-            amount    => 10,
+            advert_id    => $advert->{id},
+            amount       => 10,
             payment_info => 'x',
             contact_info => 'x',
         );

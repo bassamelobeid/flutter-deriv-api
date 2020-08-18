@@ -207,8 +207,8 @@ sub build_financial_assessment {
             $result->{$fa_information}->{$key}->{score}  = $score;
 
             $result->{scores}->{$fa_information} += $score;
-            $result->{scores}->{total_score} += $score;
-            $result->{scores}->{cfd_score} += $score if $key eq 'cfd_trading_frequency' or $key eq 'cfd_trading_experience';
+            $result->{scores}->{total_score}     += $score;
+            $result->{scores}->{cfd_score}       += $score if $key eq 'cfd_trading_frequency' or $key eq 'cfd_trading_experience';
         }
     }
 
@@ -255,7 +255,7 @@ sub should_warn {
     $fa = $fa->{scores} ? $fa : build_financial_assessment($fa);
     my $scores = $fa->{scores};
 
-    my $cfd_score_warn = $scores->{cfd_score} >= 4;
+    my $cfd_score_warn     = $scores->{cfd_score} >= 4;
     my $trading_score_warn = ($scores->{trading_experience} >= 8 && $scores->{trading_experience} <= 16);
 
     return 0 if $cfd_score_warn || $trading_score_warn;

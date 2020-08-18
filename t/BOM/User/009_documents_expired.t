@@ -40,7 +40,7 @@ subtest 'client documents expiry' => sub {
     foreach my $loginid (sort keys %clients_document_expiry) {
         my ($test, $SQL, $sth_doc_new, $id1, $id2, $sth_doc_info, $sth_doc_finish, $sth_doc_update, $actual, $expected);
 
-        my $client = BOM::User::Client->new({loginid => $loginid});
+        my $client          = BOM::User::Client->new({loginid => $loginid});
         my $document_expiry = $clients_document_expiry{$loginid};
 
         my $dbh = $client->db->dbic->dbh;

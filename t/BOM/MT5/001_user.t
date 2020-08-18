@@ -28,7 +28,7 @@ subtest 'MT5 Timeout logic handle' => sub {
     };
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
     my $details = {group => 'real//svg_financial'};
-    my $redis = BOM::Config::Redis::redis_mt5_user_write();
+    my $redis   = BOM::Config::Redis::redis_mt5_user_write();
     # reset all redis keys.
     $redis->del($FAILCOUNT_KEY);
     $redis->del($LOCK_KEY);
@@ -36,8 +36,7 @@ subtest 'MT5 Timeout logic handle' => sub {
         try {
             # this will produce a fialed response
             BOM::MT5::User::Async::create_user($details)->get;
-        }
-        catch {
+        } catch {
             my $result = $@;
             # We will keep trying to connect for the first 20 calls.
             if ($i <= 20) {
@@ -61,8 +60,7 @@ subtest 'MT5 Timeout logic handle' => sub {
         # This call will be blocked.
         BOM::MT5::User::Async::get_user('MTR1000')->get;
         is 1, 0, 'This wont be executed';
-    }
-    catch {
+    } catch {
         my $result = $@;
         cmp_deeply($result, $blocked_return, 'Call has been blocked.');
     }
@@ -74,8 +72,7 @@ subtest 'MT5 Timeout logic handle' => sub {
         # This call will be timedout.
         BOM::MT5::User::Async::create_user($details)->get;
         is 1, 0, 'This wont be executed';
-    }
-    catch {
+    } catch {
         my $result = $@;
         cmp_deeply($result, $timeout_return, 'Returned timedout connection');
     }

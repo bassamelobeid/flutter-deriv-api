@@ -67,8 +67,7 @@ sub add {
             }) or die 'client not found';
         my $user = $client->user or die 'user not found';
         $args{$_} = $user->{$_} for qw(utm_source utm_medium utm_campaign);
-    }
-    catch {
+    } catch {
         stats_inc('payment.' . $args{type} . '.user_lookup.failure', $tags);
     }
 
@@ -78,16 +77,14 @@ sub add {
     # If we don't have rates, that's not worth causing anything else to fail: just tell datadog and bail out.
     try {
         $args{amount_usd} //= $args{amount} ? in_usd($args{amount} => $args{currency}) : 0.0;
-    }
-    catch {
+    } catch {
         stats_inc('payment.' . $args{type} . '.usd_conversion.failure', $tags);
         return;
-    };
+    }
 
     try {
         $class->publish(\%args);
-    }
-    catch {
+    } catch {
         warn "Failed to publish - $@";
     }
 

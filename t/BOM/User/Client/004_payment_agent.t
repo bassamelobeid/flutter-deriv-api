@@ -42,7 +42,7 @@ my $object_pa = $pa_client->payment_agent({
 });
 $pa_client->save;
 $pa_client->get_payment_agent->set_countries(['id', 'pk']);
-my $target_countries = $pa_client->get_payment_agent->get_countries;
+my $target_countries  = $pa_client->get_payment_agent->get_countries;
 my $expected_result_1 = ['id', 'pk'];
 is_deeply($target_countries, $expected_result_1, "returned correct countries");
 $pa_client->payment_agent->information("The payment agent information is updated");

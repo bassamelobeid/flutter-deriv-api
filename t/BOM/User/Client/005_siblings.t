@@ -178,7 +178,7 @@ subtest 'get_sibling_loginids_without_status' => sub {
 };
 
 subtest 'siblings' => sub {
-    my $user = create_user();
+    my $user       = create_user();
     my $usd_client = create_client($user, 'USD');
 
     is ref($usd_client->siblings()), 'ARRAY', 'returns an array';
@@ -192,7 +192,7 @@ subtest 'siblings' => sub {
 };
 
 subtest 'has_siblings' => sub {
-    my $user = create_user();
+    my $user       = create_user();
     my $btc_client = create_client($user, 'BTC', broker_code => 'VRTC');
 
     ok !$btc_client->has_siblings(), 'USD client does not have siblings';
