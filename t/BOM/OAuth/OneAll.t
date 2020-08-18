@@ -163,7 +163,7 @@ subtest "User sing up with social login, app_id is saved" => sub {
 
     my %emitted;
     my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
-        $mock_events->mock(
+    $mock_events->mock(
         'emit',
         sub {
             my ($type, $data) = @_;

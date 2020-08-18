@@ -90,7 +90,7 @@ sub create {
 
     if ($app && $app->{name} eq $service) {
 
-        my $uri = Mojo::URL->new($app->{verification_uri});
+        my $uri    = Mojo::URL->new($app->{verification_uri});
         my %params = _sso_params($c, $app);
         $uri->query(%params);
 

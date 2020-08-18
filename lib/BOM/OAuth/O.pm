@@ -74,7 +74,7 @@ sub authorize {
         and defang($c->param('login')))
     {
         $filtered_clients = $c->_login($app) or return;
-        $client = $filtered_clients->[0];
+        $client           = $filtered_clients->[0];
         $c->session('_is_logined', 1);
         $c->session('_loginid',    $client->loginid);
     } elsif ($c->req->method eq 'POST' and $c->session('_is_logined')) {
@@ -85,7 +85,7 @@ sub authorize {
         # Get client from Oneall Social Login.
         my $oneall_user_id = $c->session('_oneall_user_id');
         $filtered_clients = $c->_login($app, $oneall_user_id) or return;
-        $client = $filtered_clients->[0];
+        $client           = $filtered_clients->[0];
         $c->session('_is_logined', 1);
         $c->session('_loginid',    $client->loginid);
     }
@@ -155,7 +155,7 @@ sub authorize {
     my $user = $client->user or die "no user for email " . $client->email;
 
     my $is_verified = $c->session('_otp_verified') // 0;
-    my $otp_error = '';
+    my $otp_error   = '';
     # If the User has provided OTP, verify it
     if (    $c->req->method eq 'POST'
         and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
@@ -429,7 +429,7 @@ sub _validate_login {
     my $email    = trim(lc defang($c->param('email')));
     my $password = $c->param('password');
 
-    my $r = $c->stash('request');
+    my $r  = $c->stash('request');
     my $ip = $r->client_ip || '';
 
     # Check for blocked IPs early in the process.
@@ -471,7 +471,7 @@ sub _validate_login {
     }
 
     # Get last login (this excludes impersonate) before current login to get last record
-    my $new_env = request()->login_env({user_agent => $c->req->headers->header('User-Agent')});
+    my $new_env          = request()->login_env({user_agent => $c->req->headers->header('User-Agent')});
     my $unknown_location = !$user->logged_in_before_from_same_location($new_env);
 
     my $result = $user->login(
@@ -510,8 +510,7 @@ sub _validate_login {
                     $redis->expire($k, BLOCK_TRIGGER_WINDOW);
                     stats_inc('login.authorizer.block.fail');
                 }
-            }
-            catch {
+            } catch {
                 $log->errorf('Failure encountered while handling Redis blocklists for failed login: %s', $@);
                 stats_inc('login.authorizer.block.error');
             }
@@ -529,7 +528,7 @@ sub _validate_login {
     my $client = $filtered_clients[0];
 
     return $err_var->("TEMP_DISABLED") if grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins};
-    return $err_var->("DISABLED") if ($client->status->is_login_disallowed or $client->status->disabled);
+    return $err_var->("DISABLED")      if ($client->status->is_login_disallowed or $client->status->disabled);
 
     my $bd           = HTTP::BrowserDetect->new($c->req->headers->header('User-Agent'));
     my $country_code = uc($c->stash('request')->country_code // '');
