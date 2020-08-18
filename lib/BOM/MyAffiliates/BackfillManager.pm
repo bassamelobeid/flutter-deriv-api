@@ -61,8 +61,7 @@ sub backfill_promo_codes {
         foreach my $client (@clients) {
             try {
                 push @report, $self->_process_client_with_promo_code($client);
-            }
-            catch {
+            } catch {
                 push @report, $client->loginid . ': Died when processing with error [' . $@ . ']';
             }
         }
@@ -84,7 +83,7 @@ sub is_backfill_pending {
         grep { $date->is_same_as(Date::Utility->new($_->date_joined)->truncate_to_day) } BOM::User::Client->by_promo_code(
             broker_code             => $_,
             checked_in_myaffiliates => 'f'
-            )
+        )
     } @{$self->_available_broker_codes};
 
     return scalar @pending;

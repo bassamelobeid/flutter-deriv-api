@@ -119,7 +119,7 @@ subtest 'binary' => sub {
         plan tests => 3;
 
         my $processing_date = Date::Utility->new(substr($day_one, 0, 10));
-        my $reporter = BOM::MyAffiliates::ActivityReporter->new(
+        my $reporter        = BOM::MyAffiliates::ActivityReporter->new(
             brand           => Brands->new(name => 'binary'),
             processing_date => $processing_date,
         );
@@ -177,7 +177,7 @@ subtest 'Not funded account with transaction (bonus?)' => sub {
     });
 
     my $reporter = BOM::MyAffiliates::ActivityReporter->new(
-        brand => Brands->new(name => 'binary'),
+        brand           => Brands->new(name => 'binary'),
         processing_date => Date::Utility->new(substr($day_one, 0, 10)));
 
     my @csv = $reporter->activity();
@@ -205,7 +205,7 @@ subtest 'Virtual clients are not reported' => sub {
     );
 
     my $reporter = BOM::MyAffiliates::ActivityReporter->new(
-        brand => Brands->new(name => 'binary'),
+        brand           => Brands->new(name => 'binary'),
         processing_date => Date::Utility->new(substr($day_one, 0, 10)));
 
     my @csv = $reporter->activity();
@@ -322,7 +322,7 @@ subtest 'deriv' => sub {
         plan tests => 3;
 
         my $processing_date = Date::Utility->new(substr($day_one, 0, 10));
-        my $reporter = BOM::MyAffiliates::ActivityReporter->new(
+        my $reporter        = BOM::MyAffiliates::ActivityReporter->new(
             brand           => Brands->new(name => 'deriv'),
             processing_date => $processing_date,
         );

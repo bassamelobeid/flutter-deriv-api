@@ -105,7 +105,7 @@ subtest 'client with no promocode - brands' => sub {
         my $mock_module = Test::MockModule->new('BOM::MyAffiliates::GenerateRegistrationDaily');
         $mock_module->mock('force_backfill', sub { 1 });
 
-        my @activity_data = $reporter->activity();
+        my @activity_data          = $reporter->activity();
         my $is_new_client_reported = grep { $_ =~ $client->loginid } @activity_data;
         ok $is_new_client_reported, "Created client is now on the new-registrations list to report to my affiliates";
     };
@@ -130,7 +130,7 @@ subtest 'client with no promocode - brands' => sub {
         my $mock_module = Test::MockModule->new('BOM::MyAffiliates::GenerateRegistrationDaily');
         $mock_module->mock('force_backfill', sub { 1 });
 
-        my @activity_data = $reporter->activity();
+        my @activity_data          = $reporter->activity();
         my $is_new_client_reported = grep { $_ =~ $client->loginid } @activity_data;
         ok $is_new_client_reported,
             "Created client is now on the new-registrations list to report to my affiliates for binary brand - any un-official app is included in binary brand";

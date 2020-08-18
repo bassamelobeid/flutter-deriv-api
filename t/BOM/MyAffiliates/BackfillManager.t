@@ -59,8 +59,8 @@ subtest 'backfill_promo_codes' => sub {
         $backfill_manager->backfill_promo_codes;
 
         $client = BOM::User::Client->new({loginid => $client->loginid});
-        is($client->promo_code_checked_in_myaffiliates, 1, "After backfilling promo codes, $client promo code has been checked.");
-        is($client->myaffiliates_token, $cookied_token, "$client MyAffiliates token has not changed.");
+        is($client->promo_code_checked_in_myaffiliates, 1,              "After backfilling promo codes, $client promo code has been checked.");
+        is($client->myaffiliates_token,                 $cookied_token, "$client MyAffiliates token has not changed.");
     }
 };
 

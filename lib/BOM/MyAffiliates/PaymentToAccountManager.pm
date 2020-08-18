@@ -140,8 +140,7 @@ sub _write_csv_files {
             foreach my $transaction (@{$transaction_set}) {
                 try {
                     print $fh _get_csv_line_from_txn($transaction);
-                }
-                catch {
+                } catch {
                     push @parse_errors, $@;
                 }
             }
@@ -198,7 +197,7 @@ sub _get_csv_line_from_txn {
         die 'Amount[' . $USD_amount . '] is invalid. Full transaction details: ' . Dumper($transaction);
     }
     $USD_amount = abs $USD_amount;
-    my $preferred_currency = $client->currency;
+    my $preferred_currency        = $client->currency;
     my $preferred_currency_amount = roundcommon(0.01, convert_currency($USD_amount, 'USD', $preferred_currency));
 
     my $month_str = _get_month_from_transaction($transaction);
@@ -218,7 +217,7 @@ sub _get_csv_line_from_txn {
 sub _get_month_from_transaction {
     my $transaction = shift;
 
-    my $occurred = $transaction->{'OCCURRED'} || '';
+    my $occurred  = $transaction->{'OCCURRED'} || '';
     my $month_str = '';
 
     if ($occurred =~ /^(\d{4}-\d{2}-\d{2})/) {

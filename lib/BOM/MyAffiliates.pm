@@ -13,7 +13,7 @@ use Carp;
 
 sub new {
     my $class = shift;
-    my %args = @_ % 2 ? %{$_[0]} : @_;
+    my %args  = @_ % 2 ? %{$_[0]} : @_;
 
     $args{user} = BOM::Config::third_party()->{myaffiliates}->{user};
     $args{pass} = BOM::Config::third_party()->{myaffiliates}->{pass};
@@ -124,7 +124,7 @@ sub get_token {
 
     my $affiliate_id = $args_ref->{affiliate_id} or croak 'Must pass affiliate_id to get_token';
 
-    my $plan = $args_ref->{plan} || $self->get_default_plan($affiliate_id) || '';
+    my $plan     = $args_ref->{plan} || $self->get_default_plan($affiliate_id) || '';
     my $setup_id = $plan ? $self->_get_setup_id($plan) : '';
     if (not $setup_id) {
         croak "Unable to get Setup ID for affiliate[$affiliate_id], plan[$plan]";
