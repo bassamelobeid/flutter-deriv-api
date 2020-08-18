@@ -158,7 +158,7 @@ subtest 'breaching_tick' => sub {
         [102.01, $now + 4, $symbol],
         [99.89,  $now + 5, $symbol]);
     my $accessor = BOM::Market::RedisTickAccessor->new(underlying => $underlying);
-    my %args = (
+    my %args     = (
         start_time => $now,
         end_time   => $now + 5,
         higher     => 102.02,

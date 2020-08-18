@@ -47,7 +47,7 @@ EOF
         my $decimate_key = $decimate_cache->_make_key($ul->symbol, 1);
 
         my $last_non_zero_decimated_tick = $decimate_cache->get_latest_tick_epoch($ul->symbol, 1, $start, $end);
-        my $last_decimate_epoch = max($start, $last_non_zero_decimated_tick + 1);
+        my $last_decimate_epoch          = max($start, $last_non_zero_decimated_tick + 1);
 
         # If we restart the service when this service is
         # already running the start date will be after the end date
@@ -60,7 +60,7 @@ EOF
             end_time   => $end,
         });
 
-        my @rev_ticks = reverse @$ticks;
+        my @rev_ticks     = reverse @$ticks;
         my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, \@rev_ticks);
 
         foreach my $single_data (@$decimate_data) {

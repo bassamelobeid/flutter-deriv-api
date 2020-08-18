@@ -131,7 +131,7 @@ subtest 'Consecutive saves.' => sub {
         unshift @creation_dates, $recorded_date;
     }
 
-    my $dm = BOM::MarketData::Fetcher::VolSurface->new;
+    my $dm      = BOM::MarketData::Fetcher::VolSurface->new;
     my $current = $dm->fetch_surface({underlying => $underlying});
     is($current->creation_date->datetime, $creation_dates[0]->datetime, 'Current surface has expected date.');
 

@@ -116,7 +116,7 @@ sub tick_cache_get_num_ticks {
                 end_time => $end_time,
                 limit    => $num,
             }
-            ) : $start_time ? $underlying->ticks_in_between_start_limit({
+        ) : $start_time ? $underlying->ticks_in_between_start_limit({
                 start_time => $start_time,
                 limit      => $num,
             }) : [];
@@ -175,7 +175,7 @@ has decimate_retention_interval => (
 );
 
 sub _build_decimate_retention_interval {
-    my $self = shift;
+    my $self     = shift;
     my $interval = int($self->decimate_cache_size / (60 / $self->sampling_frequency->seconds));
     return Time::Duration::Concise->new(interval => $interval . 'm');
 }
@@ -338,7 +338,7 @@ sub _get_num_data_from_cache {
     my $num    = $args->{num};
 
     my $ticks =
-          $end ? $self->redis_read->zrevrangebyscore($self->_make_key($symbol, 0), $end, 0, 'LIMIT', 0, $num)
+          $end   ? $self->redis_read->zrevrangebyscore($self->_make_key($symbol, 0), $end, 0, 'LIMIT', 0, $num)
         : $start ? $self->redis_read->zrangebyscore($self->_make_key($symbol, 0), $start, '+inf', 'LIMIT', 0, $num)
         :          [];
 
@@ -388,9 +388,9 @@ sub data_cache_insert_decimate {
             $self->_update($self->redis_write, $decimate_key, $tick->{decimate_epoch}, $self->encoder->encode($tick));
         }
     } elsif (
-        my @decimate_data = map {
-            $self->decoder->decode($_)
-        } reverse @{$self->redis_read->zrevrangebyscore($decimate_key, $boundary - $self->sampling_frequency->seconds, 0, 'LIMIT', 0, 1)})
+        my @decimate_data =
+        map { $self->decoder->decode($_) }
+        reverse @{$self->redis_read->zrevrangebyscore($decimate_key, $boundary - $self->sampling_frequency->seconds, 0, 'LIMIT', 0, 1)})
     {
         my $single_data = $decimate_data[0];
         $single_data->{decimate_epoch} = $boundary;
@@ -422,7 +422,7 @@ sub get_latest_tick_epoch {
         my $earlier_ticks = $redis->zcount($key, '-inf', $start);
 
         if ($earlier_ticks) {
-            my @ticks = map { $self->decoder->decode($_) } @{$redis->zrevrangebyscore($key, $end, $start, 'LIMIT', 0, 100)};
+            my @ticks         = map { $self->decoder->decode($_) } @{$redis->zrevrangebyscore($key, $end, $start, 'LIMIT', 0, 100)};
             my $non_zero_tick = first { $_->{count} > 0 } @ticks;
             if ($non_zero_tick) {
                 $timestamp = $decimated ? $non_zero_tick->{decimate_epoch} : $non_zero_tick->{epoch};

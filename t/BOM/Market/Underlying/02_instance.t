@@ -43,8 +43,8 @@ subtest 'what happens to an undefined symbol name' => sub {
     my $symbol_undefined = create_underlying('an_undefined_symbol');
     is($symbol_undefined->display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
 
-    is($symbol_undefined->instrument_type,  'config',   'an undefined symbol has correct instrument_type');
-    is($symbol_undefined->feed_license,     'realtime', 'an undefined symbol has correct feed_license');
+    is($symbol_undefined->instrument_type, 'config',   'an undefined symbol has correct instrument_type');
+    is($symbol_undefined->feed_license,    'realtime', 'an undefined symbol has correct feed_license');
     throws_ok { $symbol_undefined->display_decimals } qr/unknown underlying/, 'dies if unknown underlying calls display_decimals';
 
     throws_ok { $symbol_undefined->pipsized_value(100.1234567) } qr/unknown underlying/, 'dies if unknown underlying calls pipsize';

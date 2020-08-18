@@ -289,7 +289,7 @@ subtest 'next_tick_after' => sub {
 
             my $tick_date = Date::Utility->new({epoch => $tick->epoch});
             is $tick_date->datetime_yyyymmdd_hhmmss, '2012-01-12 03:23:06', 'Correct time';
-            is $tick->quote, 1.5062, 'Correct quote';
+            is $tick->quote,                         1.5062,                'Correct quote';
         };
 
         subtest 'Inverted' => sub {
@@ -312,7 +312,7 @@ subtest 'next_tick_after' => sub {
 
         my $tick_date = Date::Utility->new({epoch => $tick->epoch});
         is $tick_date->datetime_yyyymmdd_hhmmss, '2012-01-12 03:23:06', 'Correct time';
-        is $tick->quote, 1.5062, 'Correct quote';
+        is $tick->quote,                         1.5062,                'Correct quote';
     };
 };
 
@@ -389,7 +389,7 @@ subtest 'tick_at' => sub {
 };
 
 subtest 'tick_at scenarios' => sub {
-    my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxEURGBP'}]);
+    my $underlying      = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'frxEURGBP'}]);
     my $first_tick_date = Date::Utility->new('2012-09-28 07:55:00');
     subtest 'one more tick to succeed' => sub {
         lives_ok {
@@ -401,7 +401,7 @@ subtest 'tick_at scenarios' => sub {
                     underlying => $underlying->symbol,
                 }
 
-                )
+            )
         }
         'Added first tick';
 
@@ -445,7 +445,7 @@ subtest 'tick_at scenarios' => sub {
                     underlying => $underlying->symbol,
                 }
 
-                )
+            )
         }
         'Add tick at same time the next day';
 
@@ -471,7 +471,7 @@ subtest 'get_ohlc_data_for_period' => sub {
 
     subtest 'no data' => sub {
         my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'DJI'}]);
-        my @ohlc = $underlying->get_ohlc_data_for_period({
+        my @ohlc       = $underlying->get_ohlc_data_for_period({
             start => '2012-10-22',
             end   => '2012-10-24'
         });
@@ -514,7 +514,7 @@ subtest 'get_ohlc_data_for_period' => sub {
 
     subtest 'high, low calculation' => sub {
         my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'DJI'}]);
-        my $ohlc = $underlying->get_high_low_for_period({
+        my $ohlc       = $underlying->get_high_low_for_period({
             start => '2012-10-22',
             end   => '2012-10-25'
         });
@@ -535,7 +535,7 @@ subtest 'get_ohlc_data_for_period' => sub {
 
     subtest 'high, low calculation from ticks' => sub {
         my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'DJI'}]);
-        my $ohlc = $underlying->get_high_low_for_period({
+        my $ohlc       = $underlying->get_high_low_for_period({
             start => '2012-10-22',
             end   => '2012-10-23 22:00:00'
         });

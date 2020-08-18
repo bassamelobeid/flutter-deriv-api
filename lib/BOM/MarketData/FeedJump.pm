@@ -59,7 +59,7 @@ sub BUILD {
 
     # we are only concern about the 9 forex pairs where we offer multi-barrier trading on.
     my $offerings_obj = LandingCompany::Registry::get('svg')->multi_barrier_offerings(BOM::Config::Runtime->instance->get_offerings_config);
-    my %symbols = map { $_ => 1 } $offerings_obj->values_for_key('underlying_symbol');
+    my %symbols       = map { $_ => 1 } $offerings_obj->values_for_key('underlying_symbol');
     $self->_symbols_to_perform_check(\%symbols);
 
     return;
@@ -82,8 +82,7 @@ sub iterate {
             my ($redis, $channel, $pattern, $message) = @_;
             try {
                 $self->_perform_checks($json->decode($message));
-            }
-            catch {
+            } catch {
                 warn "exception caught while performing feed jump checks for $@";
                 stats_inc('bom.marketdata.feedjump.exception');
             }
@@ -148,7 +147,7 @@ sub _perform_checks {
             my $quotes = $self->_last_5_quotes->{$underlying_symbol} // [];
             # if we don't have 5 ticks, then look back 10 seconds
             my $from = @$quotes == 5 ? $quotes->[0]->{epoch} : $epoch - 10;
-            my $e = $self->_eec->get_latest_events_for_period({
+            my $e    = $self->_eec->get_latest_events_for_period({
                 from => $from,
                 to   => $epoch
             });
