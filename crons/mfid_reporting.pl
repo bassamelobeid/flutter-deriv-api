@@ -18,7 +18,7 @@ use Path::Tiny 'path';
 my $specified_rptDate = $ARGV[0];
 my $brand             = BOM::Config->brand();
 
-my $report_recipients = join(',', 'compliance-alerts@binary.com', 'bill@binary.com', 'x-acc@binary.com');
+my $report_recipients  = join(',', 'compliance-alerts@binary.com', 'bill@binary.com', 'x-acc@binary.com');
 my $failure_recipients = join(',', 'compliance-alerts@binary.com', 'sysadmin@binary.com');
 
 # If we pass in a date, then we presumably want to report on that date
@@ -61,7 +61,7 @@ SQL
 if ($rz !~ /psql:|ERROR:/s) {
 
     my $upload_status = BOM::MapFintech::upload("$reports_path", [$mt5_tradesFN, $mt5_usersFN]);
-    my $message = $upload_status ? "There was a problem uploading files: $upload_status" : 'Files uploaded successfully';
+    my $message       = $upload_status ? "There was a problem uploading files: $upload_status" : 'Files uploaded successfully';
     $message .= "\n\nSee attached.";
 
     # break this into two emails with a separate attachment each if necessary

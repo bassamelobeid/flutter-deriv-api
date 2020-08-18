@@ -29,7 +29,7 @@ foreach my $symbol (@markets) {
         underlying => $underlying,
     };
     my $existing_vol_surface = $dm->fetch_surface($args);
-    my $display = BOM::MarketData::Display::VolatilitySurface->new(surface => $existing_vol_surface);
+    my $display              = BOM::MarketData::Display::VolatilitySurface->new(surface => $existing_vol_surface);
     local $/ = "";
 
     print "<TABLE BORDER = 2 bgcolor = #00AAAAA width=99% >";

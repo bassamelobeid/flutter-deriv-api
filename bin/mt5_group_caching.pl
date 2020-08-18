@@ -58,19 +58,19 @@ my $connection_lost = 1;
                 }
                 return Future->fail('Connection refused', 'redis', 'connection');
             }
-            )->then(
+        )->then(
             sub {
                 $log->info('Redis connection established. Fetching requests.') if $connection_lost;
                 $connection_lost = 0;
                 $redis->brpop('MT5_USER_GROUP_PENDING', 60000);
             }
-            )->then(
+        )->then(
             sub {
                 unless ($_[0]) {
                     $log->info('There was not any requst pending request');
                     return Future->done;
                 }
-                my ($queue, $job) = @{$_[0]};
+                my ($queue,   $job)    = @{$_[0]};
                 my ($loginid, $queued) = split /:/, $job;
 
                 $log->debugf('Processing pending ID [%s]', $loginid);
@@ -100,7 +100,7 @@ my $connection_lost = 1;
                                 stats_inc('mt5.group_populator.item_failed', 1);
                                 Future->done({});
                             }
-                            )->then(
+                        )->then(
                             sub {
                                 my ($data) = @_;
                                 my $group  = $data->{'group'};
@@ -125,14 +125,14 @@ my $connection_lost = 1;
                                     sub {
                                         $redis->expire($cache_key, $ttl);
                                     }
-                                    )->on_done(
+                                )->on_done(
                                     sub {
                                         $log->debugf('Cached ID [%s] group [%s]', $loginid, $group);
                                     });
                             });
                     });
             }
-            )->else(
+        )->else(
             sub {
                 $log->errorf('Failure - %s', [@_]);
                 $connection_lost = 1;

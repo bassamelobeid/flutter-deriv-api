@@ -43,7 +43,7 @@ sub get_economic_events_for_date {
     my @uncategorized_events =
         map { get_info($_) } grep { !Volatility::EconomicEvents::is_defined($_->{symbol}, $_->{event_name}) } @$economic_events;
     my @deleted_events =
-        map { get_info($_) }
+        map  { get_info($_) }
         grep { Date::Utility->new($_->{release_date})->epoch >= $from->epoch && Date::Utility->new($_->{release_date})->epoch <= $to->epoch }
         (values %{$eec->_get_deleted()});
     my @l = _get_affected_underlying_symbols();
@@ -78,7 +78,7 @@ sub generate_economic_event_tool {
 sub get_info {
     my $event = shift;
 
-    $event->{release_date} = Date::Utility->new($event->{release_date})->datetime;
+    $event->{release_date}    = Date::Utility->new($event->{release_date})->datetime;
     $event->{not_categorized} = !Volatility::EconomicEvents::is_defined($event->{symbol}, $event->{event_name});
     foreach my $symbol (_get_affected_underlying_symbols()) {
         my ($ev) = @{Volatility::EconomicEvents::categorize_events($symbol, [$event])};
@@ -148,8 +148,7 @@ sub save_new_event {
     }
     try {
         $args->{release_date} = Date::Utility->new($args->{release_date})->epoch if $args->{release_date};
-    }
-    catch {
+    } catch {
         return _err(split "\n", $@);    #handle Date::Utility's confess() call
     }
 

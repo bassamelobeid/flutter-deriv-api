@@ -67,7 +67,7 @@ sub run {
         my $pm = Parallel::ForkManager->new(WORKERS);
         JOB:
         for my $job (@jobs) {
-            my $pid = $pm->start and next JOB;
+            my $pid        = $pm->start and next JOB;
             my $start_time = Time::HiRes::time;
             my ($symbol, $duration_step, $bet_type) = split "\0", $job;
             print "$$ working on " . ($job =~ s/\0/ /gr) . " from $start..$end\n";
@@ -126,8 +126,7 @@ sub run {
                             my $value     = $contract_expired->value;
                             $fh->print(join(",", (map { $tick->{$_} } qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
                         }
-                    }
-                    catch {
+                    } catch {
                         warn "Failed to price with parameters " . Dumper($args) . " - $@\n";
                     }
                     if ($step_unit eq 't') {
@@ -144,8 +143,7 @@ sub run {
             $pm->finish;
         }
         $pm->wait_all_children;
-    }
-    catch {
+    } catch {
         warn "Failed to run - $@";
     }
     alarm(0);

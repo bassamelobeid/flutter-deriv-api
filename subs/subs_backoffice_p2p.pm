@@ -18,8 +18,7 @@ sub p2p_advertiser_register {
             success => 1,
             message => $client->loginid . ' has been registered as P2P advertiser.'
         };
-    }
-    catch {
+    } catch {
         my ($error_code, $error_msg) = ($@, undef);
 
         if ($error_code =~ 'AdvertiserNameRequired') {
@@ -80,8 +79,7 @@ sub p2p_advertiser_update {
             success => 1,
             message => 'P2P advertiser for ' . $client->loginid . ' updated.'
         };
-    }
-    catch {
+    } catch {
         my $error = $@;
         return {
             success => 0,
@@ -102,7 +100,7 @@ sub p2p_process_action {
     }
 
     if ($response) {
-        my $color = $response->{success} ? 'green' : 'red';
+        my $color   = $response->{success} ? 'green' : 'red';
         my $message = $response->{message};
 
         return "<p style='color:$color; font-weight:bold;'>$message</p>";

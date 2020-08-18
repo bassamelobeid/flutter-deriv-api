@@ -38,7 +38,7 @@ $loginID =~ s/\s//g;
 
 my $encoded_loginID = encode_entities($loginID);
 
-my $dw_param = request()->param('depositswithdrawalsonly');
+my $dw_param                = request()->param('depositswithdrawalsonly');
 my $deposit_withdrawal_only = $dw_param && $dw_param eq 'yes' ? 1 : 0;
 
 my $from_date = trim(request()->param('startdate'));
@@ -57,8 +57,7 @@ try {
         request()->param('overview_fm_date') ? Date::Utility->new(request()->param('overview_fm_date')) : Date::Utility->new()->_minus_months(6);
     $overview_to_date =
         request()->param('overview_to_date') ? Date::Utility->new(request()->param('overview_to_date')) : Date::Utility->new();
-}
-catch {
+} catch {
     print 'Error : Wrong date entered';
     code_exit_BO();
 }
@@ -121,8 +120,7 @@ if (defined $action && $action eq "gross_transactions") {
                 });
             $total_deposits    = formatnumber('amount', $currency, $total_deposits);
             $total_withdrawals = formatnumber('amount', $currency, $total_withdrawals);
-        }
-        catch {
+        } catch {
             warn "Error caught : $@\n";
             print "<div style='color:red' class='center-aligned'>Error: Unable to fetch total deposits/withdrawals </div>";
         }
@@ -225,8 +223,7 @@ my $render_crypto_transactions = sub {
     my $exchange_rate;
     try {
         $exchange_rate = in_usd(1.0, $currency);
-    }
-    catch {
+    } catch {
         code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.");
     }
 
@@ -240,7 +237,7 @@ my $render_crypto_transactions = sub {
             loginID => $client->loginid
         });
 
-    my %fiat = get_fiat_login_id_for($client->loginid, $broker);
+    my %fiat           = get_fiat_login_id_for($client->loginid, $broker);
     my %client_details = (
         loginid      => $client->loginid,
         details_link => "$details_link",
@@ -268,7 +265,7 @@ my $render_crypto_transactions = sub {
                 $offset_param => max($offset_value, 0),
             })->fragment($trx_type);
     };
-    my $prev_url = $offset ? $make_pagination_url->($offset - $limit) : undef;
+    my $prev_url = $offset                 ? $make_pagination_url->($offset - $limit) : undef;
     my $next_url = $limit == scalar @trxns ? $make_pagination_url->($offset + $limit) : undef;
 
     Bar('CRYPTOCURRENCY ACTIVITY: ' . uc $trx_type);

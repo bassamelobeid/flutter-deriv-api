@@ -28,7 +28,7 @@ use Volatility::LinearCache;
 use f_brokerincludeall;
 BOM::Backoffice::Sysinit::init();
 
-my $loginID = uc(request()->param('loginID') // '');
+my $loginID         = uc(request()->param('loginID') // '');
 my $encoded_loginID = encode_entities($loginID);
 
 PrintContentType();
@@ -46,11 +46,11 @@ if (not $client) {
 }
 
 ### Sold Contracts ###
-my $page = trim(request()->param('page')) || 1;
+my $page            = trim(request()->param('page')) || 1;
 my $all_in_one_page = trim(request()->checkbox_param('all_in_one_page'));
 #$limit = 0 is treated as LIMIT ALL
 #default pagination limit is 50. 51 is for checking wether there is any need to paginate.
-my $limit = ($all_in_one_page) ? 0 : 51;
+my $limit  = ($all_in_one_page) ? 0 : 51;
 my $offset = ($all_in_one_page) ? 0 : ($limit - 1) * ($page - 1);
 
 ##Get instance of financial market bet data mapper
@@ -99,8 +99,7 @@ my $sold_contracts = [];
 );
 try {
     $sold_contracts = $financial_market_data_mapper->get_sold_contracts(%params)
-}
-catch {
+} catch {
     $error = $@;
 }
 

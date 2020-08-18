@@ -68,7 +68,7 @@ for my $affiliate (@affiliates) {
     my $loginid_variable = first { $_->{NAME} eq 'affiliates_client_loginid' } $affiliate->{USER_VARIABLES}->{VARIABLE}->@*;
     $affiliate->{loginid} = $loginid_variable->{VALUE};
     my $mt5_variable = first { $_->{NAME} eq 'mt5_account' } $affiliate->{USER_VARIABLES}->{VARIABLE}->@*;
-    my $mt5_loginid = $mt5_variable->{VALUE} ? $client->user->get_loginid_for_mt5_id($mt5_variable->{VALUE}) : undef;
+    my $mt5_loginid  = $mt5_variable->{VALUE} ? $client->user->get_loginid_for_mt5_id($mt5_variable->{VALUE}) : undef;
 
     if ($mt5_loginid) {
         my ($mt5_group, $mt5_status) = get_mt5_group_and_status($mt5_loginid);

@@ -53,8 +53,7 @@ sub run {
         try {
             BOM::RiskReporting::MarkedToModel->new->generate;
             $self->send_log('MTM');
-        }
-        catch {
+        } catch {
             warn "Failure in BOM::RiskReporting::MarkedToModel: $@\n";
         }
         $self->rest;
@@ -62,8 +61,7 @@ sub run {
         try {
             BOM::RiskReporting::Dashboard->new->generate;
             $self->send_log('Dashboard');
-        }
-        catch {
+        } catch {
             warn "Failure in BOM::RiskReporting::Dashboard: $@\n";
         }
 

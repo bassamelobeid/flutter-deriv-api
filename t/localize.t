@@ -74,7 +74,7 @@ subtest 'validate localize string structure' => sub {
         my $current_repo_directory = $directory . '/' . $repository;
 
         subtest "validating files for $current_repo_directory" => sub {
-            my $Ext = _get_locale_extract();
+            my $Ext     = _get_locale_extract();
             my @pmfiles = File::Find::Rule->file->name('*.pm', '*.cgi')->in($current_repo_directory);
             foreach my $sub_dir (@pmfiles) {
                 $Ext->extract_file(path($sub_dir)->realpath);

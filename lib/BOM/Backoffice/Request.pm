@@ -52,7 +52,7 @@ sub localize {
 
     return '' unless $content;
 
-    my $request = request();
+    my $request  = request();
     my $language = $request ? $request->language : 'EN';
 
     my $lh = BOM::Platform::Context::I18N::handle_for($language)
@@ -100,7 +100,7 @@ usage,
 
 sub template {
     my $what = shift || 'template';
-    $template_config->{stash} ||= _configure_template_stash_for(request());
+    $template_config->{stash}    ||= _configure_template_stash_for(request());
     $template_config->{template} ||= _configure_template_for($template_config->{stash});
     return $template_config->{$what};
 }

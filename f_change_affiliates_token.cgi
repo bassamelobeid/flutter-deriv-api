@@ -86,7 +86,7 @@ if ($input->{EditAffiliatesToken}) {
 
     # Get User clients to update them
     my @clients_to_update;
-    my $user = $client->user;
+    my $user         = $client->user;
     my @user_clients = $user->clients(include_disabled => 1);
     push @clients_to_update, grep { not $_->is_virtual } @user_clients;
 

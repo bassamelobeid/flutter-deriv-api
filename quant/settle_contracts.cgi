@@ -86,8 +86,7 @@ if (request()->param('perform_actions')) {
                 );
             }
         }
-    }
-    catch {
+    } catch {
         print '<h1>ERROR! Could not complete ' . encode_entities($@) . '</h1>';
     }
 }
@@ -103,7 +102,7 @@ code_exit_BO();
 sub current_unsaleable {
     my $broker_db = shift;
 
-    my $query = qq{ SELECT * FROM expired_unsold_bets() };
+    my $query     = qq{ SELECT * FROM expired_unsold_bets() };
     my %possibles = %{$broker_db->dbic->run(fixup => sub { $_->selectall_hashref($query, 'financial_market_bet_id') })};
 
     return [

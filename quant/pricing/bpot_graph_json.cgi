@@ -48,8 +48,8 @@ unless ($bet) {
 }
 
 my $timestep = Time::Duration::Concise::Localize->new(interval => request()->param('timestep') || '24s');
-my $start    = Date::Utility->new(request()->param('start')                                    || time());
-my $end      = Date::Utility->new(request()->param('end')                                      || time());
+my $start    = Date::Utility->new(request()->param('start') || time());
+my $end      = Date::Utility->new(request()->param('end') || time());
 
 my $data;
 if ($bet->category_code eq 'multiplier') {
@@ -123,7 +123,7 @@ sub get_graph_data_for_others {
         $barrier2 = $bet->low_barrier->as_absolute;
     } else {
         $barrier =
-              ($bet->category->code eq 'digits') ? $bet->current_spot
+              ($bet->category->code eq 'digits')               ? $bet->current_spot
             : ($bet->can('barrier') and defined $bet->barrier) ? $bet->barrier->as_absolute
             :                                                    undef;
         $barrier2 = $barrier;    # No idea how this might be changed by digit two barriers.
@@ -152,8 +152,8 @@ sub get_graph_data_for_others {
         } else {
             if ($bet->is_expired) {
                 $expired = 1;    # One we know we've expired once, we can presume it stays expired.
-                $value = $bet->is_binary ? $bet->value / $bet->payout : $bet->value;    # Should go to 0 or 1 probability
-                $graph_more = 0 if ($bet->tick_expiry);                                 # Don't know when it ends, so when it expires, stop.
+                $value      = $bet->is_binary ? $bet->value / $bet->payout : $bet->value;    # Should go to 0 or 1 probability
+                $graph_more = 0 if ($bet->tick_expiry);                                      # Don't know when it ends, so when it expires, stop.
             }
             my $date_string = $when->time_hhmmss;
             $date_string .= ' ' . $when->date_ddmmmyy if ($show_date);

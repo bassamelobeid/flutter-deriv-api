@@ -329,8 +329,7 @@ try {
         );
         $client_pa_exp = $toClient;
     }
-}
-catch {
+} catch {
     my $error = $@;
     # CGI::Compile will wrap the function 'exit' into a `die "EXIT\n" $errcode`
     # we should make it pass-through
@@ -346,8 +345,7 @@ if ($ttype eq 'CREDIT' and $is_internal_payment) {
     # unset pa_withdrawal_explicitly_allowed for bank_wire and doughflow mannual deposit
     try {
         $client->status->clear_pa_withdrawal_explicitly_allowed;
-    }
-    catch {
+    } catch {
         warn "Not able to unset payment agent explicity allowed flag for " . $client_pa_exp->loginid;
     }
 }
@@ -426,8 +424,7 @@ if ($informclient) {
             template_loginid      => $loginID,
             email_content_is_html => 1,
         });
-    }
-    catch {
+    } catch {
         code_exit_BO("Transaction was performed, please check client statement but an error occured while sending email. Error details $@");
     }
 }

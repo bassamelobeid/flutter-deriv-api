@@ -21,8 +21,8 @@ my $date_of_birth = request()->param('date_of_birth') // "";
 $partialfname =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
 $partiallname =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
 $partialemail =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
-$phone =~ s/[\/\\\"\$]//g;           #strip unwelcome characters
-$broker =~ s/[\/\\\"\$]//g;          #strip unwelcome characters
+$phone        =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
+$broker       =~ s/[\/\\\"\$]//g;    #strip unwelcome characters
 $date_of_birth = '' unless ($date_of_birth =~ /^\d{4,4}\-\d{1,2}\-\d{1,2}$/);
 my %fields = (
     first_name    => $partialfname,

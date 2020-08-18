@@ -43,7 +43,7 @@ if (request()->param('save_limit')) {
     }
 
     my %email_args = (%args, action => 'New');
-    my $output = BOM::Backoffice::QuantsConfigHelper::save_limit(\%args, $staff);
+    my $output     = BOM::Backoffice::QuantsConfigHelper::save_limit(\%args, $staff);
     print $json->encode($output);
 
     if (!$output->{error}) {
@@ -63,7 +63,7 @@ if (request()->param('delete_limit')) {
         qw(market expiry_type contract_group underlying_symbol landing_company barrier_type type limit_type start_time end_time);
 
     my %email_args = (%args, action => 'Deleted');
-    my $output = BOM::Backoffice::QuantsConfigHelper::delete_limit(\%args, $staff);
+    my $output     = BOM::Backoffice::QuantsConfigHelper::delete_limit(\%args, $staff);
     print $json->encode($output);
 
     if (!$output->{error} && $output->{deleted}) {
@@ -107,7 +107,7 @@ if (request()->param('save_ultra_short')) {
     $args{limit_type} = 'ultra_short_duration';
 
     my $prev_value = Time::Duration::Concise->new(interval => $app_config->quants->ultra_short_duration);
-    my $output = BOM::Backoffice::QuantsConfigHelper::update_ultra_short(\%args, $staff);
+    my $output     = BOM::Backoffice::QuantsConfigHelper::update_ultra_short(\%args, $staff);
     print $json->encode($output);
 
     if (!$output->{error}) {
@@ -208,7 +208,7 @@ sub _format_email_for_limit {
     }
 
     my $datetime = Date::Utility->new->datetime;
-    my $market = $args{market} eq '-' ? $args{new_market} : $args{market};
+    my $market   = $args{market} eq '-' ? $args{new_market} : $args{market};
     $market = '-' if !defined($market);
     my $between = ($args{start_time} ne '-') || ($args{end_time} ne '-') ? "between $args{start_time} to $args{end_time}" : '';
 
@@ -269,8 +269,7 @@ sub _is_valid_time {
     try {
         my $tim_obj = Date::Utility->new($time);
         return 1;
-    }
-    catch {
+    } catch {
         return 0;
     }
     return 0;

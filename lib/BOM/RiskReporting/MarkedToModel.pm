@@ -107,7 +107,7 @@ sub generate {
 
                         # $current_value is the value of the open contract if it is sold back to us. So, this should be bid price for all contract.
                         my $current_value = $bet->bid_price;
-                        my $value = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
+                        my $value         = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
                         $totals{value} += $value;
 
                         if ($bet->is_expired) {
@@ -178,8 +178,7 @@ sub generate {
                                 undef, $open_fmb_id, $value, @greeks
                             );
                         }
-                    }
-                    catch {
+                    } catch {
                         $error_count++;
                         push @mail_content, "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", $@ ]";
                     }
@@ -204,8 +203,7 @@ sub generate {
                 }
 
             });
-    }
-    catch {
+    } catch {
         my $errmsg = ref $@ ? $@->trace : $@;
         warn('Updating realtime book transaction aborted while processing bet [' . $last_fmb_id . '] because ' . $errmsg);
     }
@@ -238,7 +236,7 @@ sub sell_expired_contracts {
 
     for my $client_id (@client_loginids) {
         my $fmb_infos = $open_bets_ref->{$client_id};
-        my $client = BOM::User::Client::get_instance({'loginid' => $client_id});
+        my $client    = BOM::User::Client::get_instance({'loginid' => $client_id});
         my (@fmb_ids_to_be_sold, %bet_infos);
         for my $id (keys %$fmb_infos) {
             my $fmb_id         = $fmb_infos->{$id}->{id};
@@ -298,8 +296,7 @@ sub sell_expired_contracts {
                     $bet_info->{reason} = $failure->{reason};
                     push @error_lines, $bet_info;
                 }
-            }
-            catch {
+            } catch {
                 warn "Failed to sell expired contracts for "
                     . $client->loginid
                     . " - IDs were "

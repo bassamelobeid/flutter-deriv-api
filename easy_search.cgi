@@ -49,7 +49,7 @@ if (my $search = $params{search}) {
                 email      => $like
             ]);
     }
-    my $hits = @$clients;
+    my $hits   = @$clients;
     my $caveat = $hits >= $LIMIT ? 'limited to ' : '';
     Bar("Search Results '$search'.. $caveat $hits hits");
     $stash->{clients} = $clients;

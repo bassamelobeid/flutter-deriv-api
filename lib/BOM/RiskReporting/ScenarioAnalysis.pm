@@ -91,8 +91,7 @@ sub generate {
             $bet        = produce_contract($bet_params);
             $underlying = $bet->underlying;
             $bid_price  = $bet->bid_price;
-        }
-        catch {
+        } catch {
             my $err = $@;
             $err = $err->{error_code} if ref($err) eq 'HASH' and exists $err->{error_code};
 
@@ -103,7 +102,7 @@ sub generate {
         }
 
         my $underlying_symbol = $underlying->symbol;
-        my $bid_price_in_usd = $self->amount_in_usd($bid_price, $bet->currency);
+        my $bid_price_in_usd  = $self->amount_in_usd($bid_price, $bet->currency);
         if (   not $bet->underlying->spot
             or $bet->is_expired
             or $bet->date_start->is_after($pricing_date)
@@ -224,7 +223,7 @@ sub _calculate_grid_for_max_exposure {
                         pricing_vol  => $vol,
                         current_spot => $spot
                     }
-                    )->bid_price,
+                )->bid_price,
                 $bet->currency
                 );
         }

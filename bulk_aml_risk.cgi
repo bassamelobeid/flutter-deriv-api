@@ -16,7 +16,7 @@ BrokerPresentation("Bulk AML Risk Classification");
 my $broker = request()->broker_code;
 my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 
-my $loginids = uc(request()->param('risk_loginids') // '');
+my $loginids                = uc(request()->param('risk_loginids') // '');
 my $selected_aml_risk_level = request()->param('selected_aml_risk_level') // '';
 
 Bar("Bulk Aml Risk Classification");

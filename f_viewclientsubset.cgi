@@ -34,11 +34,11 @@ if (request()->param('action') ne 'DOWNLOAD CSV') {
 }
 
 my $broker = encode_entities(request()->broker_code // "");
-my $clerk = BOM::Backoffice::Auth0::get_staffname();
+my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 
 my $home_link = request()->url_for('backoffice/f_viewclientsubset.cgi');
 my @header    = (
-    'LOGINID', 'NAME', 'COUNTRY', 'EMAIL', 'AGG. DEPOSITS - WITHDRAWALS',
+    'LOGINID',      'NAME', 'COUNTRY', 'EMAIL', 'AGG. DEPOSITS - WITHDRAWALS',
     'CASH BALANCE', 'CASHIER',
     'TOTAL EQUITY & Expired contracts',
     'Last access (in days)', 'reason'
@@ -105,7 +105,7 @@ print '<br /><table border=1 cellpadding=0 cellspacing=0 width=95%>' . $table_he
 
 my $limit         = request()->param('limit') || 100;    # record to show per page
 my $page_selected = request()->param('page')  || 1;      # selected page number
-my $offsetfrom = $limit * ($page_selected - 1);
+my $offsetfrom    = $limit * ($page_selected - 1);
 
 my $results = get_client_by_status({
     broker => $broker,
@@ -288,7 +288,7 @@ sub get_client_by_status {
             delete $results->{$loginID};
             next;
         }
-        my $bal = $client->{balance_in_usd};
+        my $bal           = $client->{balance_in_usd};
         my $opencontracts = ($SUMMARYFILE{"$loginID-TOTALEQUITY"} > $bal) ? '$' . ($SUMMARYFILE{"$loginID-TOTALEQUITY"} - $bal) : '';
         $client->{equity} = $SUMMARYFILE{"$loginID-TOTALEQUITY"} . ' ' . $opencontracts;
     }
@@ -298,7 +298,7 @@ sub get_client_by_status {
 sub GetPagingParameter {
     my ($args) = @_;
 
-    my $page = $args->{'page'} || 1;
+    my $page   = $args->{'page'} || 1;
     my $remain = $args->{'total'} % $args->{'limit'};
     #my $total_page    = ($args->{'total'} - $remain)/$args->{'limit'} + 1;
     my $total_page = POSIX::ceil($args->{'total'} / $args->{'limit'});

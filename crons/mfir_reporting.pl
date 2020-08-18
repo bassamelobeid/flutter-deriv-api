@@ -59,7 +59,7 @@ if ($? or ($rz and $rz !~ /^"1","Transaction","new"/)) {
     close $fh;
 
     my $upload_status = BOM::Datatracks::upload("$reports_path", [$FN_mt5], $brand);
-    my $message = $upload_status ? "There was a problem uploading the file, $FN_mt5: $upload_status" : 'Files uploaded successfully';
+    my $message       = $upload_status ? "There was a problem uploading the file, $FN_mt5: $upload_status" : 'Files uploaded successfully';
     $message .= "\n\nSee attached.";
 
     send_email({

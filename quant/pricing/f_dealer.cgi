@@ -55,13 +55,12 @@ if (request()->param('whattodo') eq 'closeatzero') {
     if ($price !~ /^\d*\.?\d*$/)            { print "Error with price " . encode_entities($price); code_exit_BO(); }
     if ($price eq "")                       { print "Error : no price entered";                    code_exit_BO(); }
     if ($loginID !~ /^$broker\d+$/)         { print "Error with loginid " . $encoded_loginID;      code_exit_BO(); }
-    if ($qty !~ /^\d+$/ or $qty > 50) { print "Error with qty " . encode_entities($qty); code_exit_BO(); }
+    if ($qty !~ /^\d+$/ or $qty > 50)       { print "Error with qty " . encode_entities($qty);     code_exit_BO(); }
 
     my $client;
     try {
         $client = BOM::User::Client::get_instance({loginid => $loginID});
-    }
-    catch {
+    } catch {
         print "Cannot get client instance with loginid " . $encoded_loginID;
         code_exit_BO();
     }

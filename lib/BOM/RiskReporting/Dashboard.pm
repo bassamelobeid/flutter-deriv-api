@@ -95,7 +95,7 @@ sub _do_name_plus {
     }
 
     my $app_config = $self->custom_client_profiles;
-    my $reason = $app_config->{$href->{loginid}}->{reason} // '';
+    my $reason     = $app_config->{$href->{loginid}}->{reason} // '';
     $href->{being_watched_for} = $reason;
     return $href;
 }
@@ -200,7 +200,7 @@ sub _open_bets_report {
                 groupType    => 'none',
             },
         },
-        xfields   => ['market',  'underlying'],
+        xfields   => ['market', 'underlying'],
         yfields   => ['expiry_period'],
         zfields   => ['mtm_usd', 'mtm_profit'],
         copyright => $json->false,
@@ -209,7 +209,7 @@ sub _open_bets_report {
     };
 
     my @open_bets = sort { $b->{percentage_change} <=> $a->{percentage_change} } @{$self->_open_bets_at_end};
-    my @movers = grep { $self->amount_in_usd($_->{market_price}, $_->{currency_code}) >= $report->{mover_limit} } @open_bets;
+    my @movers    = grep { $self->amount_in_usd($_->{market_price}, $_->{currency_code}) >= $report->{mover_limit} } @open_bets;
 
 # Top ten moved open positions (% change from purchase price to current MtM value)
     $report->{top_ten_movers} =
@@ -227,7 +227,7 @@ sub _open_bets_report {
     my $total_open = 0;
 
     foreach my $bet_details (@open_bets) {
-        my $bet = produce_contract($bet_details->{short_code}, $bet_details->{currency_code});
+        my $bet            = produce_contract($bet_details->{short_code}, $bet_details->{currency_code});
         my $normalized_mtm = $self->amount_in_usd($bet_details->{market_price}, $bet_details->{currency_code});
 
         my $seconds_to_expiry = Date::Utility->new($bet_details->{expiry_time})->epoch - time;
@@ -238,8 +238,7 @@ sub _open_bets_report {
         );
         try {
             $bet_details->{longcode} = BOM::Backoffice::Request::localize($bet->longcode);
-        }
-        catch {
+        } catch {
             $bet_details->{longcode} = 'Description unavailable';
         }
         $bet_details->{expires_in} =
@@ -285,7 +284,7 @@ sub _open_bets_report {
         days => [],
     };
     for (my $days = 0; $days <= max(keys %$spark_info, 0); $days++) {
-        push @{$sparks->{mtm}}, roundcommon(1, $spark_info->{$days}->{mtm} // 0);
+        push @{$sparks->{mtm}},  roundcommon(1, $spark_info->{$days}->{mtm} // 0);
         push @{$sparks->{days}}, $days;
     }
 
@@ -335,7 +334,7 @@ sub _payment_and_profit_report {
         end_time   => $self->end
     });
 
-    my @deposits = sort { $b->{usd_payments} <=> $a->{usd_payments} } @movers;
+    my @deposits    = sort { $b->{usd_payments} <=> $a->{usd_payments} } @movers;
     my @withdrawals = reverse @deposits;
     my (@big_deposits, @big_withdrawals);
 
@@ -505,7 +504,7 @@ sub open_contract_exposures {
         }
     }
     my $report;
-    $report->{pl} = sorting_data($final, 'open_bet');
+    $report->{pl}             = sorting_data($final, 'open_bet');
     $report->{generated_time} = $self->_report_mapper->get_last_generated_historical_marked_to_market_time;
 
     return $report;
@@ -532,7 +531,7 @@ sub closed_contract_exposures {
         }
     }
     my $report;
-    $report->{pl} = sorting_data($summary, 'closed_pl');
+    $report->{pl}             = sorting_data($summary, 'closed_pl');
     $report->{generated_time} = Date::Utility->new->datetime;
     return $report;
 
@@ -567,7 +566,7 @@ sub sorting_data {
                         rev_nsort_by {
                         $final->{$broker}->{$market}->{$expiry}->{$atm}->{$_}->{total_payout}
                     }
-                    grep { $_ !~ /total/ } keys %{$final->{$broker}->{$market}->{$expiry}->{$atm}}
+                    grep      { $_ !~ /total/ } keys %{$final->{$broker}->{$market}->{$expiry}->{$atm}}
                         : map { [$_, $final->{$broker}->{$market}->{$expiry}->{$atm}->{$_}->{total_closed_pl}] }
                         rev_nsort_by {
                         $final->{$broker}->{$market}->{$expiry}->{$atm}->{$_}->{total_closed_pl}
@@ -593,7 +592,8 @@ sub sorting_data {
     my $report;
     foreach my $broker (keys %{$final}) {
         my @sorted_market =
-            map { [$_, $final->{$broker}->{$_}] } rev_nsort_by { $final->{$broker}->{$_}->{$sorting_arg} }
+            map { [$_, $final->{$broker}->{$_}] }
+            rev_nsort_by { $final->{$broker}->{$_}->{$sorting_arg} }
         grep { $_ !~ /total/ } keys %{$final->{$broker}};
         for (my $i = 0; $i < scalar @sorted_market; $i++) { $report->{$broker}->{$i} = {$sorted_market[$i][0] => $sorted_market[$i][1]}; }
         # this is to put the total of each broker
@@ -701,16 +701,14 @@ sub sorting_mutliplier_data {
                     $final->{$broker}->{$dc_status}->{$market}->{$_}->{open_pnl} =
                         financialrounding('price', 'USD', $final->{$broker}->{$dc_status}->{$market}->{$_}->{open_pnl})
                     }
-                    grep {
-                    $_ =~ /multiplier/
-                    } keys %{$final->{$broker}->{$dc_status}->{$market}};
+                    grep { $_ =~ /multiplier/ } keys %{$final->{$broker}->{$dc_status}->{$market}};
 
                 for (my $i = 0; $i < scalar @sorted_by_underlying; $i++) {
                     delete $final->{$broker}->{$dc_status}->{$market}->{$sorted_by_underlying[$i][0]};
                     $final->{$broker}->{$dc_status}->{$market}->{$i}->{$sorted_by_underlying[$i][0]}->{multiplier} = {
                         open_pnl           => financialrounding('price', 'USD', $sorted_by_underlying[$i][1]),
                         stake              => financialrounding('price', 'USD', $sorted_by_underlying[$i][2]),
-                        average_multiplier => roundcommon(0,             $sorted_by_underlying[$i][3]),
+                        average_multiplier => roundcommon(0, $sorted_by_underlying[$i][3]),
                         cancellation_price => financialrounding('price', 'USD', $sorted_by_underlying[$i][4])};
                 }
             }
@@ -732,9 +730,7 @@ sub sorting_mutliplier_data {
                     $temp->{$broker}->{$dc_status}->{$_}->{open_pnl} =
                         financialrounding('price', 'USD', $final->{$broker}->{$dc_status}->{$_}->{open_pnl})
                     }
-                    grep {
-                    $_ =~ /multiplier/
-                    } keys %{$final->{$broker}->{$dc_status}};
+                    grep { $_ =~ /multiplier/ } keys %{$final->{$broker}->{$dc_status}};
             }
 
         }
@@ -743,7 +739,8 @@ sub sorting_mutliplier_data {
     my $report;
     foreach my $broker (keys %{$temp}) {
         my @sorted_dc_status =
-            map { [$_, $temp->{$broker}->{$_}] } rev_nsort_by { $temp->{$broker}->{$_}->{multiplier}->{open_pnl} }
+            map { [$_, $temp->{$broker}->{$_}] }
+            rev_nsort_by { $temp->{$broker}->{$_}->{multiplier}->{open_pnl} }
         grep { $_ !~ /multiplier/ } keys %{$temp->{$broker}};
         for (my $i = 0; $i < scalar @sorted_dc_status; $i++) { $report->{$broker}->{$i} = {$sorted_dc_status[$i][0] => $sorted_dc_status[$i][1]}; }
 

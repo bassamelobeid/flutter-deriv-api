@@ -197,7 +197,7 @@ sub get_forward_vol {
     my $self = shift;
 
     my $volsurface = $self->surface;
-    my $atm_key = (grep { $volsurface->type =~ $_ } qw(delta flat )) ? 50 : 100;
+    my $atm_key    = (grep { $volsurface->type =~ $_ } qw(delta flat )) ? 50 : 100;
 
     my @days = @{$volsurface->original_term_for_smile};
 
@@ -293,7 +293,7 @@ sub rmg_text_format {
         my $smile = $volsurface->get_surface_smile($day);
 
         my $spread = $volsurface->get_smile_spread($day);
-        my $row = $self->_construct_smile_line($day, $smile);
+        my $row    = $self->_construct_smile_line($day, $smile);
 
         foreach my $spread_point (@surface_spread_point) {
             $row .= $self->_field_separator . roundcommon(0.0001, $spread->{$spread_point});
@@ -455,7 +455,7 @@ sub print_comparison_between_volsurface {
         push @output, "<TH>$days[$i]</TH>";
         foreach my $col_point (sort { $a <=> $b } @surface_vol_point) {
 
-            my $vol = roundcommon(0.0001, $surface->get_surface_volatility($days[$i], $col_point));
+            my $vol     = roundcommon(0.0001, $surface->get_surface_volatility($days[$i], $col_point));
             my $ref_vol = roundcommon(0.0001, $ref_surface->get_surface_volatility($days[$i], $col_point));
 
             if (defined $vol and defined $ref_vol) {

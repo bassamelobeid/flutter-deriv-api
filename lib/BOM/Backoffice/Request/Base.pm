@@ -192,7 +192,7 @@ sub _build_domain_name {
     my $self = shift;
 
     my @host_name = split(/\./, Sys::Hostname::hostname());
-    my $name = $host_name[0];
+    my $name      = $host_name[0];
 
     if ($name =~ /^qa\d+$/) {
         # TODO should change this ?

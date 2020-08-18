@@ -109,7 +109,7 @@ sub batch_anonymization_control_code {
 sub validate_client_control_code {
     my ($self, $incode, $email, $user_id) = @_;
 
-    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+    my $code         = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
     my $error_status = $self->_validate_empty_code($code);
     return $error_status if $error_status;
     $error_status = $self->_validate_code_element_count($code, 6);
@@ -183,7 +183,7 @@ sub validate_batch_payment_control_code {
 
 sub validate_client_anonymization_control_code {
     my ($self, $incode, $loginid) = @_;
-    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+    my $code         = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
     my $error_status = $self->_validate_empty_code($code);
     return $error_status if $error_status;
     $error_status = $self->_validate_code_element_count($code, 5);
@@ -204,7 +204,7 @@ sub validate_client_anonymization_control_code {
 sub validate_batch_anonymization_control_code {
     my ($self, $incode, $lines) = @_;
 
-    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+    my $code         = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
     my $error_status = $self->_validate_empty_code($code);
     return $error_status if $error_status;
     $error_status = $self->_validate_code_element_count($code, 5);

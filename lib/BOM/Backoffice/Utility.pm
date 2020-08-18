@@ -40,8 +40,7 @@ sub redirect_login {
     try {
         PrintContentType();
         BOM::StaffPages->instance->login();
-    }
-    catch {
+    } catch {
         my $login = request()->url_for("backoffice/f_broker_login.cgi", {_r => rand()});
         print <<EOF;
 <script>

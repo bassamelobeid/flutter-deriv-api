@@ -188,7 +188,7 @@ sub print_client_details {
     my $dob_day_options;
     $dob_day_options .= qq|<option value="$_->{value}">$_->{value}</option>| for @$dob_day_optionlist;
     $dob_day_options = set_selected_item($dob_day, $dob_day_options);
-    my @month_names = (undef, qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec));
+    my @month_names       = (undef, qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec));
     my $dob_month_options = set_selected_item($dob_month, join "",
         map { "<option value=\"" . ($_ ? sprintf("%02s", $_) : "") . "\">" . ($month_names[$_] || "") . "</option>" } (0 .. $#month_names));
     my $dob_year_optionlist = BOM::Backoffice::FormAccounts::DOB_YearList($dob_year);
@@ -276,8 +276,7 @@ sub print_client_details {
     try {
         $secret_answer            = BOM::User::Utility::decrypt_secret_answer($client->secret_answer);
         $can_decode_secret_answer = 1;
-    }
-    catch {
+    } catch {
         $can_decode_secret_answer = 0;
         warn "ERROR: Loginid: " . $client->loginid . " - $@";
     }
@@ -307,11 +306,11 @@ sub print_client_details {
     if ($client->tax_residence) {
         # In case of having more than a tax residence, client residence will replaced.
         my $selected_tax_residence = $client->tax_residence =~ /\,/g ? $client->residence : $client->tax_residence;
-        my $tin_format = $country->get_tin_format($selected_tax_residence);
+        my $tin_format             = $country->get_tin_format($selected_tax_residence);
         if ($tin_format) {
             $tin_format_description = $country->get_tin_format_description($selected_tax_residence) // 'Please check TIN documents';
             my $client_tin = $country->clean_tin_format($client->tax_identification_number, $selected_tax_residence) // '';
-            $is_valid_tin = any { $client_tin =~ m/$_/ } @$tin_format;
+            $is_valid_tin            = any { $client_tin =~ m/$_/ } @$tin_format;
             $tin_validation_required = 1;
         }
     }
@@ -392,7 +391,7 @@ sub print_client_details {
         text_validation_info               => client_text_field_validation_info($client, secret_answer => $secret_answer),
         aml_risk_levels                    => [get_aml_risk_classicications()],
         is_staff_compliance                => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
-        onfido_resubmission_counter => $onfido_resubmission_counter // 0,
+        onfido_resubmission_counter        => $onfido_resubmission_counter // 0,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
@@ -457,7 +456,7 @@ sub link_for_remove_status_from_all_siblings {
 
 sub link_for_copy_status_status_to_siblings {
     my ($loginid, $status_code, $messages) = @_;
-    my $client = BOM::User::Client->new({'loginid' => $loginid});
+    my $client                          = BOM::User::Client->new({'loginid' => $loginid});
     my $sibling_loginids_without_status = $client->get_sibling_loginids_without_status($status_code);
     $messages //= {};
 
@@ -482,7 +481,7 @@ sub link_for_copy_status_status_to_siblings {
 ######################################################################
 sub build_client_warning_message {
     my $login_id = shift;
-    my $client = BOM::User::Client->new({'loginid' => $login_id})
+    my $client   = BOM::User::Client->new({'loginid' => $login_id})
         || return "<p>The Client's details can not be found [$login_id]</p>";
     my $broker = $client->broker;
     my @output;
@@ -688,7 +687,7 @@ sub date_html {
 
     $required = $required ? 'required' : '';
     my $required_mark = $required ? '*' : ' ';
-    my $date = $value || '';
+    my $date          = $value || '';
     if ($date) {
         eval {
             my $formatted = Date::Utility->new($date)->date_yyyymmdd;
@@ -1067,7 +1066,7 @@ sub sync_to_doughflow {
     my $loginid = $client->loginid;
 
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $loginid});
-    my $currency = $df_client->doughflow_currency;
+    my $currency  = $df_client->doughflow_currency;
 
     return 'Sync not allowed as the client has never deposited using doughflow.'
         unless $currency;
@@ -1216,16 +1215,16 @@ sub get_client_details {
 
 # given a bad-enough loginID, BrokerPresentation can die, leaving an unformatted screen..
 # let the client-check offer a chance to retry.
-    try { BrokerPresentation("$encoded_loginid CLIENT DETAILS") } catch {}
+    try { BrokerPresentation("$encoded_loginid CLIENT DETAILS") } catch { }
 
-        my $well_formatted = $loginid =~ m/^[A-Z]{2,4}[\d]{4,10}$/;
+    my $well_formatted = $loginid =~ m/^[A-Z]{2,4}[\d]{4,10}$/;
     my $client;
     try {
         $client = BOM::User::Client->new({loginid => $loginid}) if $well_formatted;
+    } catch {
     }
-    catch {}
 
-        if (!$client) {
+    if (!$client) {
         my $message =
             $well_formatted
             ? "Client [$encoded_loginid] not found."

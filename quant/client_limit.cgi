@@ -89,8 +89,8 @@ if ($http_req->params->{filterclientlimit}) {
     $comment_input     = $http_req->params->{comment};
 
     @output = grep { $_->{market_type} =~ /$market_type_input/ } @output if defined $market_type_input and $market_type_input ne '';
-    @output = grep { $_->{limit_type} =~ /$limit_type_input/ } @output   if defined $limit_type_input  and $limit_type_input ne '';
-    @output = grep { $_->{comment} =~ /$comment_input/ } @output         if defined $comment_input     and $comment_input ne '';
+    @output = grep { $_->{limit_type}  =~ /$limit_type_input/ } @output  if defined $limit_type_input  and $limit_type_input ne '';
+    @output = grep { $_->{comment}     =~ /$comment_input/ } @output     if defined $comment_input     and $comment_input ne '';
 }
 
 BOM::Backoffice::Request::template()->process(
@@ -110,7 +110,7 @@ BOM::Backoffice::Request::template()->process(
 sub get_limited_client_list {
     my ($custom_client_limits, @users_limit) = @_;
 
-    my $limit_profile = BOM::Config::quants()->{risk_profile};
+    my $limit_profile  = BOM::Config::quants()->{risk_profile};
     my %known_profiles = map { $_ => 1 } keys %$limit_profile;
 
     my @client_output;
@@ -162,8 +162,8 @@ sub get_limited_client_list {
     my @old_user = grep { $_->{client_type} eq 'old' } @users_limit;
 
     foreach my $user (@old_user, @new_user) {
-        my $updated_by = $user->{client_type} eq 'new' ? 'system' : 'staff';
-        my $expiry = $user->{expiry} ? $user->{expiry} : 'N.A.';
+        my $updated_by = $user->{client_type} eq 'new' ? 'system'        : 'staff';
+        my $expiry     = $user->{expiry}               ? $user->{expiry} : 'N.A.';
         my $limit_type;
         if ($user->{client_type} eq 'new') {
             $limit_type = 'new_client_global_limit';

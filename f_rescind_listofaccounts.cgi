@@ -20,7 +20,7 @@ BrokerPresentation("RESCIND LIST OF ACCOUNTS");
 my $clerk = BOM::Backoffice::Auth0::get_staffname();
 
 my $listaccounts = request()->param('listaccounts');
-my $message = request()->param('message') || 'Account closed.';
+my $message      = request()->param('message') || 'Account closed.';
 $listaccounts =~ s/ //g;
 
 my $grandtotal = 0;
@@ -28,7 +28,7 @@ my $grandtotal = 0;
 CLIENT:
 foreach my $loginID (split(/,/, $listaccounts)) {
     my $encoded_loginID = encode_entities($loginID);
-    my $client = eval { BOM::User::Client->new({loginid => $loginID}) } || do {
+    my $client          = eval { BOM::User::Client->new({loginid => $loginID}) } || do {
         print "<br/>error: cannot find client '$encoded_loginID'";
         next CLIENT;
     };

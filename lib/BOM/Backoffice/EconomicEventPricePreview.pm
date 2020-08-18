@@ -105,8 +105,7 @@ sub update_economic_event_price_preview {
 
     try {
         ($prices, $news_info) = calculate_economic_event_prices($args)
-    }
-    catch {
+    } catch {
         $prices = {error => 'Exception thrown while calculating prices: ' . $@};
         warn $prices->{error};
     }
@@ -176,8 +175,8 @@ sub calculate_economic_event_prices {
 
     #Contracts during economic event
     my $contract_range;
-    my $start_time = [-5, 0, 1, 5, 10];
-    my $end_time = [1, 5, 10, 15, 20, 30, 60];
+    my $start_time = [-5, 0, 1,  5,  10];
+    my $end_time   = [1,  5, 10, 15, 20, 30, 60];
 
     foreach my $start (@$start_time) {
         foreach my $end (@$end_time) {
@@ -216,10 +215,10 @@ sub calculate_economic_event_prices {
                 to     => $range->{end_time}->epoch,
             });
 
-            my $tiy = ($range->{end_time}->epoch - $range->{start_time}->epoch) / (365 * 86400);
+            my $tiy    = ($range->{end_time}->epoch - $range->{start_time}->epoch) / (365 * 86400);
             my $v_call = Math::Business::BlackScholesMerton::NonBinaries::vanilla_call(1, 1, $tiy, 0, 0, $vol);
-            my $v_put = Math::Business::BlackScholesMerton::NonBinaries::vanilla_put(1, 1, $tiy, 0, 0, $vol);
-            $output->{$range->{start_time}->datetime}{$range->{end_time}->datetime}{vol} = roundcommon(0.00001, $vol);
+            my $v_put  = Math::Business::BlackScholesMerton::NonBinaries::vanilla_put(1, 1, $tiy, 0, 0, $vol);
+            $output->{$range->{start_time}->datetime}{$range->{end_time}->datetime}{vol}       = roundcommon(0.00001, $vol);
             $output->{$range->{start_time}->datetime}{$range->{end_time}->datetime}{mid_price} = roundcommon(0.00001, ($v_call + $v_put) / 2);
         }
     }

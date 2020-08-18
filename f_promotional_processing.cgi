@@ -40,8 +40,7 @@ if ($input{bonus_approve} or $input{bonus_reject}) {
 
     try {
         $client->promo_code($encoded_promo_code);
-    }
-    catch {
+    } catch {
         code_exit_BO(sprintf('<p style="color:red; font-weight:bold;">ERROR: %s</p>', $@));
     };
     $client->promo_code_status('APPROVAL');
@@ -114,7 +113,7 @@ sub process_bonus_claim {
 
         return "Failed to approve $loginid: bonus amount is $amount" if $amount <= 0;
         my $cpc = $client->client_promo_code || return "Failed to approve $loginid: no promocode for client";
-        my $pc = $cpc->promotion;
+        my $pc  = $cpc->promotion;
         $pc->{_json} = eval { $json->decode($pc->promo_code_config) } || {};
 
         my $currency = $pc->{_json}->{currency}

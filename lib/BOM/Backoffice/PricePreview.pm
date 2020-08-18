@@ -41,8 +41,7 @@ sub update_price_preview {
     my $prices;
     try {
         $prices = calculate_prices($args)
-    }
-    catch {
+    } catch {
         $prices = {error => 'Exception thrown while calculating prices: ' . $@};
     }
 
@@ -122,10 +121,10 @@ sub calculate_prices {
                     to     => $expiry->{close}->epoch,
                 });
 
-                my $tiy = ($expiry->{close}->epoch - $now->epoch) / (365 * 86400);
+                my $tiy    = ($expiry->{close}->epoch - $now->epoch) / (365 * 86400);
                 my $v_call = Math::Business::BlackScholesMerton::NonBinaries::vanilla_call($current_spot, $current_spot, $tiy, 0, 0, $vol);
-                my $v_put = Math::Business::BlackScholesMerton::NonBinaries::vanilla_put($current_spot, $current_spot, $tiy, 0, 0, $vol);
-                $preview_output->{$symbol}{$expiry->{close}->datetime}{vol} = roundcommon(0.0001, $vol);
+                my $v_put  = Math::Business::BlackScholesMerton::NonBinaries::vanilla_put($current_spot, $current_spot, $tiy, 0, 0, $vol);
+                $preview_output->{$symbol}{$expiry->{close}->datetime}{vol}       = roundcommon(0.0001, $vol);
                 $preview_output->{$symbol}{$expiry->{close}->datetime}{mid_price} = roundcommon(0.0001, ($v_call + $v_put) / 2);
             }
         }

@@ -92,8 +92,7 @@ if ($transaction_type eq 'Anonymize client') {
             $file  = $cgi->upload('bulk_anonymization');
             $csv   = Text::CSV->new({binary => 1});
             $lines = $csv->getline_all($file);
-        }
-        catch {
+        } catch {
             code_exit_BO(_get_display_message("ERROR: " . $@)) if $@;
         }
         my $dcc_error = BOM::DualControl->new({
@@ -130,8 +129,7 @@ if ($transaction_type eq 'Anonymize client') {
                 BOM::Platform::Event::Emitter::emit('bulk_anonymization', {data => $lines});
                 print '<p style="color:green; font-weight:bold;">'
                     . " $bulk_upload is being processed. An email will be sent to compliance when the job completes.</p>";
-            }
-            catch {
+            } catch {
                 print '<p style="color:red; font-weight:bold;">ERROR: ' . $@ . '</p>' if $@;
             }
         }

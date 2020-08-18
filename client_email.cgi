@@ -79,7 +79,7 @@ foreach my $lid (sort @bom_login_ids) {
         text     => encode_entities($lid),
         balance  => $formatted_balance,
         currency => ' (' . ($client->default_account ? $client->default_account->currency_code : 'No currency selected') . ')',
-        style => ($client->status->disabled ? ' style=color:red' : '')};
+        style    => ($client->status->disabled ? ' style=color:red' : '')};
 }
 
 if (not $input{email_edit}) {
@@ -135,8 +135,7 @@ if ($email ne $new_email) {
             $client_obj->email($new_email);
             $client_obj->save;
         }
-    }
-    catch {
+    } catch {
         print "Update email for user $encoded_email failed, reason: [" . encode_entities($@) . "]";
         code_exit_BO();
     }

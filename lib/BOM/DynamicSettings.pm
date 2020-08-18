@@ -83,14 +83,13 @@ sub save_settings {
 
                     if (not $compare->Cmp) {
                         my $extra_validation = get_extra_validation($s);
-                        $extra_validation->($new_value, $old_value, $s) if $extra_validation;
+                        $extra_validation->($new_value, $old_value, $s)     if $extra_validation;
                         send_email_notification($new_value, $old_value, $s) if ($s =~ /quants/ and ($s =~ /suspend/ or $s =~ /disabled/));
                         $values_to_set->{$s} = $new_value;
                         $message .= join('', '<div id="saved">Set ', encode_entities($s), ' to ', encode_entities($display_value), '</div>');
 
                     }
-                }
-                catch {
+                } catch {
                     $message .= join('',
                         '<div id="error">Invalid value, could not set ',
                         encode_entities($s), ' to ', $settings->{$s}, ' because ', encode_entities($@), '</div>');
@@ -115,8 +114,7 @@ sub save_settings {
                     BOM::Backoffice::QuantsAuditLog::log($staff, "updatedynamicsettingpage", $log_content);
                     $app_config->set($values_to_set);
                     $message .= '<div id="saved">Saved global settings to environment.</div>';
-                }
-                catch {
+                } catch {
                     $message .= "<div id=\"error\">Could not save global settings to environment: $@</div>";
                 }
             }
@@ -294,7 +292,7 @@ sub get_settings_by_group {
 
     if ($group eq 'others') {
         my @grouped_settings = map { @{$group_settings->{$_}} } keys %$group_settings;
-        my @all_settings = $app_config->all_keys();
+        my @all_settings     = $app_config->all_keys();
 
         my @filtered_settings;
         #find other settings that are not in groups
@@ -330,7 +328,7 @@ sub parse_and_refine_setting {
         }
     } elsif ($type eq 'ArrayRef') {
         if (ref($input_value) eq 'ARRAY') {
-            $input_value = [@{$input_value}];
+            $input_value   = [@{$input_value}];
             $display_value = join(',', @{$input_value});
         } elsif (not defined($input_value)) {
             $input_value   = [];
@@ -347,7 +345,7 @@ sub parse_and_refine_setting {
                 $display_value = $csv->string;
             }
         } else {
-            $input_value = [split(/\s+/, $input_value)];
+            $input_value   = [split(/\s+/, $input_value)];
             $display_value = join(', ', @$input_value);
         }
     } elsif ($type eq 'json_string') {
@@ -359,8 +357,7 @@ sub parse_and_refine_setting {
                     canonical => 1,
                 )->encode($decoded);
             }
-        }
-        catch {
+        } catch {
             die 'JSON string is not well-formatted.';
         }
     } elsif ($type eq 'Num') {
@@ -485,7 +482,7 @@ sub validate_tnc_string {
         unless my ($old_version, $old_date) = $old_string =~ $tnc_string_format;
 
     die 'New version is lower than previous' if $version < $old_version;
-    die 'New date is older than previous' if $new_date->is_before(Date::Utility->new($old_date));
+    die 'New date is older than previous'    if $new_date->is_before(Date::Utility->new($old_date));
 
     # No errors
     return;
@@ -513,7 +510,7 @@ sub send_email_notification {
     push @message, "$disable_type: " . join(",", @different);
     push @message, "By $staff on " . Date::Utility->new->datetime;
 
-    my $brand = request()->brand;
+    my $brand      = request()->brand;
     my $email_list = join ", ", map { $brand->emails($_) } qw(quants compliance cs marketing_x);
 
     send_email({

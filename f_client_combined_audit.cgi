@@ -41,8 +41,7 @@ if (not $client) {
 try {
     $startdate = Date::Utility->new($startdate)->date;
     $enddate   = Date::Utility->new($enddate)->date;
-}
-catch {
+} catch {
     code_exit_BO("Cannot parse dates: $startdate or $enddate: $@");
 }
 
@@ -101,7 +100,7 @@ foreach my $table (
     qw(client client_status client_promo_code client_authentication_method client_authentication_document self_exclusion financial_assessment))
 {
     my $column_name = ($table eq 'client') ? 'loginid' : 'client_loginid';
-    my $u_db = $dbic->run(
+    my $u_db        = $dbic->run(
         fixup => sub {
             $_->selectall_hashref("SELECT * from audit.get_client_audit_details(?::TEXT,?::TEXT,?::VARCHAR,?::DATE,?::DATE)",
                 'data', {}, $table, $column_name, $loginid, $startdate, $enddate);
@@ -136,8 +135,7 @@ foreach my $table (
             if ($key eq 'secret_answer') {
                 try {
                     $new->{secret_answer} = BOM::User::Utility::decrypt_secret_answer($new->{secret_answer});
-                }
-                catch {
+                } catch {
                     $new->{secret_answer} = 'Unable to extract secret answer. Client secret answer is outdated or invalid.';
                 }
             }

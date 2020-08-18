@@ -161,7 +161,7 @@ sub buy_one_bet {
     my $duration         = delete $args->{duration}         // '30d';
     my $relative_barrier = delete $args->{relative_barrier} // 'S0P';
     my $bet_class        = delete $args->{bet_class};
-    my $shortcode        = delete $args->{shortcode}        // $args->{bet_type}
+    my $shortcode = delete $args->{shortcode} // $args->{bet_type}
         . '_R_100_'
         . $payout_price . '_'
         . $now->epoch . '_'

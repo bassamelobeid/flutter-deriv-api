@@ -66,7 +66,7 @@ BOM::Backoffice::Request::template()->process(
     }) || die BOM::Backoffice::Request::template()->error;
 
 sub _get_existing_multiplier_config {
-    my $qc = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
+    my $qc        = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
     my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
 
     my @existing;
@@ -79,7 +79,7 @@ sub _get_existing_multiplier_config {
                 ['underlying_symbol']))
         {
             my $config = $qc->get_config('multiplier_config::' . $symbol);
-            $config->{multiplier_range_json} = encode_json_utf8($config->{multiplier_range}) unless $config->{multiplier_range_json};
+            $config->{multiplier_range_json}            = encode_json_utf8($config->{multiplier_range}) unless $config->{multiplier_range_json};
             $config->{cancellation_duration_range_json} = encode_json_utf8($config->{cancellation_duration_range})
                 unless $config->{cancellation_duration_range_json};
             $config->{symbol} = $symbol;
@@ -121,7 +121,7 @@ sub _get_existing_market_and_symbol_volume_limits {
         push @symbol_limits, {%{$symbols->{$symbol}}, symbol => $symbol};
     }
 
-    my $qc = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
+    my $qc        = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
     my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
 
     my @market_limits_default;

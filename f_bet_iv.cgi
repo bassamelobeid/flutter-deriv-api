@@ -31,7 +31,7 @@ BrokerPresentation('I.V. DATABASE');
 my $broker = request()->broker_code;
 
 my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
-my $disabled = $disabled_write ? "disabled title='no write access'" : "";
+my $disabled       = $disabled_write ? "disabled title='no write access'" : "";
 
 Bar("Update volatilities");
 my @all_markets = Finance::Asset::Market::Registry->instance->all_market_names;

@@ -29,8 +29,7 @@ for my $broker (qw(MX)) {
             BOM::Platform::Client::IDAuthentication->new(
                 client => $client,
             )->proveid;
-        }
-        catch {
+        } catch {
             stats_event('ProveID Failed', 'ProveID Failed, an email should have been sent', {alert_type => 'warning'});
             warn "ProveID failed, $@";
         }
@@ -74,8 +73,7 @@ sub get_client {
             loginid      => $loginid,
             db_operation => 'replica'
         });
-    }
-    catch {
+    } catch {
         die "Error: can't identify client $loginid: $@";
     }
 }

@@ -60,8 +60,7 @@ sub save_commission {
         $start = Date::Utility->new($args->{start_time});
         $end   = Date::Utility->new($args->{end_time});
         $error = _err("Start time and end time should not be in the past") if $start->is_before($now) or $end->is_before($now);
-    }
-    catch {
+    } catch {
         $error = _err("Invalid date format") unless $start and $end;
     }
 
@@ -75,8 +74,7 @@ sub save_commission {
 
     try {
         return _get_info(_qc()->save_config('commission', $args));
-    }
-    catch {
+    } catch {
         return _err($@);
     }
 }
@@ -86,8 +84,7 @@ sub delete_commission {
 
     try {
         return _qc()->delete_config('commission', $name);
-    }
-    catch {
+    } catch {
         return _err($@);
     }
 
@@ -115,7 +112,7 @@ sub _get_info {
         staff      => ($config->{staff} // 'unknown'),
         start_time => Date::Utility->new($config->{start_time})->datetime,
         end_time   => Date::Utility->new($config->{end_time})->datetime,
-        (bias => $config->{bias} ? $config->{bias} : 'none'),
+        (bias              => $config->{bias}                ? $config->{bias}                            : 'none'),
         (underlying_symbol => ($config->{underlying_symbol}) ? join(',', @{$config->{underlying_symbol}}) : 'none'),
         (currency_symbol   => ($config->{currency_symbol})   ? join(',', @{$config->{currency_symbol}})   : 'none'),
         config => \%combined_commission,

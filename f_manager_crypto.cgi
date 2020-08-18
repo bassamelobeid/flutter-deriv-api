@@ -74,7 +74,7 @@ sub notify_crypto_withdrawal_rejected {
     my $rejection_reason = REJECTION_REASONS->{$remark}->{email_text} // REJECTION_REASONS->{default}->{email_text};
 
     my $client = BOM::User::Client->new({loginid => $loginid});
-    my $brand = Brands->new_from_app_id($client->source);
+    my $brand  = Brands->new_from_app_id($client->source);
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => $brand->name,
@@ -83,7 +83,7 @@ sub notify_crypto_withdrawal_rejected {
     BOM::Platform::Context::request($req);
 
     my $email_subject = localize("Withdrawal request declined - [_1]", $client->loginid);
-    my $email_data = {
+    my $email_data    = {
         name           => $client->full_name,
         remark         => $rejection_reason,
         client_loginid => $client->loginid,
@@ -130,7 +130,7 @@ my $show_all_pendings = request()->param('show_all_pendings');
 my $show_one_authorised = request()->param('show_one_authorised');
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
-my $dbic = $clientdb->db->dbic;
+my $dbic     = $clientdb->db->dbic;
 
 code_exit_BO("Invalid currency.")
     if $currency !~ /^[a-zA-Z0-9]{2,20}$/;
@@ -191,8 +191,7 @@ try {
     } else {
         $end_date = Date::Utility->today();
     }
-}
-catch {
+} catch {
     code_exit_BO('Invalid dates, please check the dates and try again');
 }
 
@@ -235,7 +234,7 @@ my $display_transactions = sub {
 
     #sort rejection reasons & grep only required data for template
     my @rejection_reasons_tpl =
-        map { {index => $_, reason => REJECTION_REASONS->{$_}->{reason}} }
+        map  { {index => $_, reason => REJECTION_REASONS->{$_}->{reason}} }
         sort { REJECTION_REASONS->{$a}->{reason} cmp REJECTION_REASONS->{$b}->{reason} }
         keys REJECTION_REASONS->%*;
 
@@ -244,17 +243,17 @@ my $display_transactions = sub {
     $tt->process(
         'backoffice/crypto_cashier/manage_crypto_transactions.tt',
         {
-            transactions    => $trxns,
-            broker          => $broker,
-            currency        => $currency,
-            transaction_uri => $transaction_uri,
-            address_uri     => $address_uri,
-            view_action     => $view_action,
-            view_type       => $view_type,
-            controller_url  => request()->url_for('backoffice/f_manager_crypto.cgi'),
-            testnet         => BOM::Config::on_qa() ? 1 : 0,
-            staff           => $staff,
-            show_all_pendings   => $show_all_pendings   // '',
+            transactions        => $trxns,
+            broker              => $broker,
+            currency            => $currency,
+            transaction_uri     => $transaction_uri,
+            address_uri         => $address_uri,
+            view_action         => $view_action,
+            view_type           => $view_type,
+            controller_url      => request()->url_for('backoffice/f_manager_crypto.cgi'),
+            testnet             => BOM::Config::on_qa() ? 1 : 0,
+            staff               => $staff,
+            show_all_pendings   => $show_all_pendings // '',
             show_one_authorised => $show_one_authorised // '',
             fetch_url           => request()->url_for('backoffice/fetch_client_details.cgi'),
             rejection_reasons   => \@rejection_reasons_tpl,
@@ -300,8 +299,7 @@ if ($exchange_rate eq 'N.A.') {
 
 try {
     $currency_wrapper->get_info();
-}
-catch {
+} catch {
     warn "Failed to load $currency currency info: $@";
     print "<p style='color:red'><strong>ERROR: Failed to load $currency currency info. Please contact IT. </strong></p>";
     code_exit_BO();
@@ -396,8 +394,7 @@ if ($view_action eq 'withdrawals') {
         # just a safety net just in case there is some invalid data sent from BO
         try {
             $list_to_verified = decode_json(request()->param('checked_ids'));
-        }
-        catch {
+        } catch {
             print "<p style='color:red'>ERROR: Invalid JSON format for id and amount received. Please contact BE. </p>";
             code_exit_BO("");
         }
@@ -581,7 +578,7 @@ EOF
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ && $_ ne '' ? $_ : '' } @{$db_tran}{qw(account transaction_type)};
 
-        my $address = $db_tran->{to} || $db_tran->{from};
+        my $address         = $db_tran->{to} || $db_tran->{from};
         my $encoded_address = encode_entities($address);
         print '<td><a href="' . $address_uri . $encoded_address . '" target="_blank">' . $encoded_address . '</a></td>';
 

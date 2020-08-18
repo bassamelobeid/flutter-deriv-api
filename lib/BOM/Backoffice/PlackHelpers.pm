@@ -39,8 +39,7 @@ sub http_redirect {
             'Cache-Control' => 'private, no-cache, must-revalidate',
             'Location'      => $new_url,
         );
-    }
-    catch {
+    } catch {
         $@ =~ /too late to set a HTTP header/ and warn($@);
         die $@;
     }
@@ -150,8 +149,7 @@ sub PrintContentType_JSON {
     $http_handler->print_content_type($mime_type);
     try {
         $http_handler->print_header('Cache-control' => "private, no-cache, must-revalidate");
-    }
-    catch {
+    } catch {
         $@ =~ /too late to set a HTTP header/ and warn($@);
         die $@;
     }

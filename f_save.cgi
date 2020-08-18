@@ -46,7 +46,7 @@ my $overridefilename;
 my $file_broker_code;
 my @removed_lines = ();
 
-if ($filen eq 'editvol') { $ok = 1; }
+if ($filen eq 'editvol')                                                         { $ok = 1; }
 if ($filen =~ m!^vol/master[a-zA-Z0-9]{2,20}(?:-[a-zA-Z0-9]{2,20})?\.interest$!) { $ok = 1; }
 
 if ($ok == 0) {

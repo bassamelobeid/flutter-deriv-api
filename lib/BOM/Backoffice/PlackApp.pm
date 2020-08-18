@@ -48,7 +48,7 @@ sub app {
     }
 
     $options{preload} //= ["*.cgi"];
-    $options{root} //= "/home/git/regentmarkets/bom-app";
+    $options{root}    //= "/home/git/regentmarkets/bom-app";
 
     my $app = BOM::Backoffice::PlackApp::Streaming->new(
         %options,
@@ -90,8 +90,7 @@ sub mkapp {
     my $sub = sub {
         try {
             $real->();
-        }
-        catch {
+        } catch {
             my $error = $@;
             # CGI::Compile will wrap the function 'exit' into a `die "EXIT\n" $errcode`
             # we should make it pass-through

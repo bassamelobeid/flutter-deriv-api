@@ -39,7 +39,7 @@ unless ($default_account) {
 }
 
 my ($startdate) = request()->param('startdate') =~ /(\d{4}-\d{2}-\d{2})/;
-my ($enddate)   = request()->param('enddate') =~ /(\d{4}-\d{2}-\d{2})/;
+my ($enddate)   = request()->param('enddate')   =~ /(\d{4}-\d{2}-\d{2})/;
 
 unless ($startdate && $enddate) {
     print "Invalid date! Please enter date in yyyy-mm-dd format.";

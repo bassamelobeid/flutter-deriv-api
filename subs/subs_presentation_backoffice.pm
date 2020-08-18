@@ -134,7 +134,7 @@ sub ServerWarningBar {
     }
 
     my $topbarbackground = '#0000BB';
-    my $status_banner = sprintf('Site status: %s', uc $state->{site_status});
+    my $status_banner    = sprintf('Site status: %s', uc $state->{site_status});
     $status_banner .= sprintf(', %s', $reasons->{$state->{message}}) if defined $reasons->{$state->{message}};
 
     print qq~

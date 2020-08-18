@@ -55,8 +55,7 @@ for my $broker (@real_brokers) {
             try {
                 $csv->print_hr($fho, generate_data($loginid));
                 $ok_count++;
-            }
-            catch {
+            } catch {
                 my $error = $@;
                 $failed_ids{$loginid} = $error;
                 $fail_count++;
@@ -86,7 +85,7 @@ sub generate_data {
     my %data;
 
     my $client = BOM::User::Client->new({loginid => $loginid});
-    my $user = $client->user;
+    my $user   = $client->user;
 
     $data{id}              = $loginid;
     $data{email}           = $client->email;

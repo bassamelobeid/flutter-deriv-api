@@ -44,7 +44,7 @@ my $sanctions = Data::Validate::Sanctions->new(
 );
 
 my $file_flag = path('/tmp/last_cron_sanctions_check_run');
-my $last_run = $file_flag->exists ? $file_flag->stat->mtime : 0;
+my $last_run  = $file_flag->exists ? $file_flag->stat->mtime : 0;
 
 my %listdate;
 

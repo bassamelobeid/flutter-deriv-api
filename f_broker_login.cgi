@@ -208,7 +208,7 @@ print qq~
 				<td class="whitelabel"></td>
 			</tr>~;
 
-my $band_mgt = BOM::Backoffice::Auth0::has_authorisation(['QuantsWrite']);
+my $band_mgt     = BOM::Backoffice::Auth0::has_authorisation(['QuantsWrite']);
 my $p2p_settings = BOM::Backoffice::Auth0::has_authorisation(['Quants']) && BOM::Backoffice::Auth0::has_authorisation(['IT']);
 
 if ($band_mgt or $p2p_settings) {

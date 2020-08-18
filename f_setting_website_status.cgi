@@ -52,8 +52,7 @@ if (request()->http_method eq 'POST') {
 
         push @flash, "Status: $status";
         push @flash, "Message: " . $reasons{$reason} if defined $reasons{$reason};
-    }
-    catch {
+    } catch {
         $log->errorf('Cannot set site status: %s', $@);
         return_bo_error('Cannot set site status');
     }

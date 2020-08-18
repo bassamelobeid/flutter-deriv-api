@@ -103,7 +103,7 @@ foreach my $market (@markets) {
     my $args = {
         underlying => $underlying,
     };
-    my $volsurface = $dm->fetch_surface($args);
+    my $volsurface       = $dm->fetch_surface($args);
     my $existing_surface = eval { $volsurface->surface };
     $volsurface = undef unless $existing_surface;
 

@@ -34,8 +34,7 @@ sub get_info {
                     $info->{indicative_price} = $contract->bid_price;
                 }
             }
-        }
-        catch {
+        } catch {
             $info->{is_legacy} = 1;
         }
     }

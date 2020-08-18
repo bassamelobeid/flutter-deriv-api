@@ -37,11 +37,9 @@ sub save_limit {
     # clean up and restructure inputs
     my %new_args = map {
               ($_ =~ /new_market|limit_type|limit_amount|comment|start_time|end_time/) ? ($_ => $args->{$_})
-            : ($_ =~ /underlying_symbol/) ? ($_ => [split ',', $args->{$_}])
+            : ($_ =~ /underlying_symbol/)                                              ? ($_ => [split ',', $args->{$_}])
             : ($_ => [$args->{$_} =~ /$_=(\w+)/g])
-        } grep {
-        defined $args->{$_} and $args->{$_} ne ''
-        } keys %$args;
+    } grep { defined $args->{$_} and $args->{$_} ne '' } keys %$args;
 
     try {
         my $qc = BOM::Database::QuantsConfig->new();
@@ -74,8 +72,7 @@ sub save_limit {
             market_group => $pending_group,
         };
 
-    }
-    catch {
+    } catch {
         my $error = ref $@ eq 'Mojo::Exception' ? $@->message : $@;
         ## Postgres error messages are too verbose to show the whole thing:
         $error =~ s/(DETAIL|CONTEXT|HINT):.*//s;
@@ -105,8 +102,7 @@ sub delete_limit {
             data    => $decorated_data,
             deleted => $deleted
         };
-    }
-    catch {
+    } catch {
         $limits = {error => $@};
     }
 
@@ -140,8 +136,7 @@ sub update_contract_group {
             }
         }
         return {success => 1};
-    }
-    catch {
+    } catch {
         warn 'Exception thrown while updating contract group: ' . $@;
         return {error => 'Error while updating contract group'};
     }
@@ -164,8 +159,7 @@ sub rebuild_aggregate_tables {
             }
         }
         return {successful => 1};
-    }
-    catch {
+    } catch {
         warn 'Exception thrown while rebuilding aggregate tables: ' . $@;
         return {error => 'Error while rebuilding aggregate tables.'};
     }
@@ -177,7 +171,7 @@ sub decorate_for_display {
     # We could have custom defined market group that's not in our offerings.
     # Hence, we should be fetch the market group information from the database.
     # market group specification is applied to all databases, we're picking CR here.
-    my $db = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
+    my $db     = BOM::Database::ClientDB->new({broker_code => 'CR'})->db;
     my $output = $db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref("SELECT market from bet.limits_market_mapper group by market");
@@ -187,17 +181,17 @@ sub decorate_for_display {
             $_->selectall_arrayref("SELECT market from betonmarkets.quants_wishlist group by market");
         });
     my @market_order = uniq(qw(forex indices commodities synthetic_index default), (map { @$_ } (@$output, @$potentially_new_market)));
-    my @type_order = qw(market symbol_default symbol);
+    my @type_order   = qw(market symbol_default symbol);
 
     my @sorted_records = ();
     foreach my $market (@market_order) {
-        my $group = [grep { $_->{market} and $_->{market} eq $market } @$records];
+        my $group  = [grep { $_->{market} and $_->{market} eq $market } @$records];
         my @sorted = ();
         foreach my $type (@type_order) {
             ## This is to enforce a consistent but arbitrary ordering of things via createDisplayTable
             push @sorted, map { $_->[0] }
                 sort { $a->[1] cmp $b->[1] }
-                map { [$_, (join '.' => sort values %$_)] }
+                map  { [$_, (join '.' => sort values %$_)] }
                 grep { $_->{type} eq $type } @$group;
         }
 
@@ -297,8 +291,7 @@ sub update_ultra_short {
     $duration = Time::Duration::Concise->new(interval => $duration);
     try {
         return {error => 'Ultra short span should not be greater than 30 minutes.'} if ($duration->minutes() > 30)
-    }
-    catch {
+    } catch {
         return {error => 'Invalid format.'}
     }
 
@@ -308,8 +301,7 @@ sub update_ultra_short {
         $app_config->set({$key_name => $duration->seconds()});
         rebuild_aggregate_tables($duration->seconds());
         $output = {result => $duration->as_string()};
-    }
-    catch {
+    } catch {
         warn $@;
         $output = {error => 'Failed to set the duration. Please check log.'}
     }
@@ -341,10 +333,9 @@ sub save_threshold {
         $output = {
             id     => $args->{limit_type},
             amount => $amount,
-            }
+        }
 
-    }
-    catch {
+    } catch {
         warn $@;
         $output = {error => 'Failed setting threshold. Please check log.'}
     }
@@ -371,8 +362,7 @@ sub update_config_switch {
     try {
         $app_config->set({$key_name => $switch});
         $output = {status => $switch};
-    }
-    catch {
+    } catch {
         warn $@;
         $output = {error => 'Failed to update config status. Please check log.'}
     }
@@ -457,8 +447,7 @@ sub update_market_group {
     try {
         BOM::Database::QuantsConfig->new->update_market_group($args);
         return {success => 1};
-    }
-    catch {
+    } catch {
         warn 'Exception thrown while updating market group: ' . $@;
         return {error => 'Error while updating market group'};
     }
@@ -476,8 +465,7 @@ sub delete_market_group {
             limit        => $limit,
             market_group => $market_group
         };
-    }
-    catch {
+    } catch {
         return {error => $@};
     }
 }

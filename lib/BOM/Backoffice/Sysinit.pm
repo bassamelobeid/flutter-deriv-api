@@ -91,11 +91,11 @@ my $permissions = {
     'f_client_anonymization_dcc.cgi'         => ['Compliance'],
     'bulk_aml_risk.cgi'                      => ['Compliance'],
 
-    'download_document.cgi'       => ['CS', 'Compliance', 'Quants', 'IT'],
-    'f_client_combined_audit.cgi' => ['CS', 'Compliance'],
-    'f_dailyturnoverreport.cgi' => ['Accounts', 'Quants', 'IT'],
-    'f_quant_query.cgi'         => ['Quants',   'CS'],
-    'f_dynamic_settings.cgi'    => ['Quants',   'IT'],    # it has extra internal logic inside
+    'download_document.cgi'       => ['CS',       'Compliance', 'Quants', 'IT'],
+    'f_client_combined_audit.cgi' => ['CS',       'Compliance'],
+    'f_dailyturnoverreport.cgi'   => ['Accounts', 'Quants', 'IT'],
+    'f_quant_query.cgi'           => ['Quants',   'CS'],
+    'f_dynamic_settings.cgi'      => ['Quants',   'IT'],                           # it has extra internal logic inside
 
     'f_save.cgi'                                                              => ['QuantsWrite'],
     'f_upload_holidays.cgi'                                                   => ['QuantsWrite'],

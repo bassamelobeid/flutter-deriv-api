@@ -26,7 +26,7 @@ foreach my $rd ($now - 5 .. $now) {
 
 subtest '_fetch_historical_surface_date' => sub {
     my $bet = produce_contract('CALL_frxUSDJPY_100_' . $now . '_' . ($now + 3600) . '_S0P_0', 'USD');
-    my $pd = BOM::PricingDetails->new(bet => $bet);
+    my $pd  = BOM::PricingDetails->new(bet => $bet);
     throws_ok { $pd->_fetch_historical_surface_date() } qr/Must pass in symbol to fetch surface dates./, 'throws error if no symbol';
     lives_ok {
         my $dates = $pd->_fetch_historical_surface_date({symbol => 'frxUSDJPY'});

@@ -15,7 +15,7 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('INVESTIGATIVE TOOLS');
-my $broker = request()->broker_code;
+my $broker    = request()->broker_code;
 my $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Config::sanction_file);
 if (request()->param('whattodo') eq 'unsanctions') {
     Bar('UN Sanctions Query');

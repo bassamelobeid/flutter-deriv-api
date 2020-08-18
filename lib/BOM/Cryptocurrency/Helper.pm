@@ -109,7 +109,7 @@ sub get_crypto_withdrawal_pending_total {
     my ($broker, $currency) = @_;
 
     my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
-    my $dbic = $clientdb->db->dbic;
+    my $dbic     = $clientdb->db->dbic;
 
     my ($pending_withdrawal_amount, $pending_estimated_fee) = $dbic->run(
         fixup => sub {

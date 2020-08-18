@@ -157,8 +157,7 @@ sub _debug_content {
             ($self->bet->underlying->volatility_surface_type eq 'moneyness')
             ? $self->_get_moneyness_surface()
             : $self->_get_volsurface();
-    }
-    catch {
+    } catch {
         $volsurface = 'Surface display error:' . $@;
     }
     push @{$tabs_content},
@@ -255,15 +254,14 @@ sub _get_moneyness_surface {
             back_to => 20,
             symbol  => $bet->underlying->symbol
         });
-    }
-    catch {
+    } catch {
         warn("caught error in _get_moneyness_surface: $@");
     }
 
     my @unique_dates   = uniq(@$dates);
     my $master_vol_url = 'mv';
 
-    my $master_display = BOM::MarketData::Display::VolatilitySurface->new(surface => $self->master_surface);
+    my $master_display         = BOM::MarketData::Display::VolatilitySurface->new(surface => $self->master_surface);
     my $master_surface_content = $master_display->rmg_table_format({
         historical_dates => \@unique_dates,
         tab_id           => $bet->id . $master_vol_url,
@@ -277,7 +275,7 @@ sub _fetch_historical_surface_date {
     my ($self, $args) = @_;
 
     my $back_to = $args->{back_to} || 1;
-    my $symbol = $args->{symbol} or die "Must pass in symbol to fetch surface dates.";
+    my $symbol  = $args->{symbol} or die "Must pass in symbol to fetch surface dates.";
 
     my $reader       = BOM::Config::Chronicle::get_chronicle_reader(1);
     my $vdoc         = $reader->get('volatility_surfaces', $symbol);
@@ -307,8 +305,7 @@ sub _get_volsurface {
             back_to => 20,
             symbol  => $bet->underlying->symbol
         });
-    }
-    catch {
+    } catch {
         warn "Failed to fetch historical surface data (usually just a timeout): $@";
     }
 
@@ -415,10 +412,10 @@ sub _get_multiplier_overview {
     # We get audit details for limit order here.
     my $audit_params = BOM::Transaction::ContractUpdateHistory->new(
         client => BOM::User::Client->new({loginid => $self->client_loginid}),
-        )->get_history_by_transaction_id({
-            transaction_id => $self->transaction_id,
-            limit          => 4999,
-        });
+    )->get_history_by_transaction_id({
+        transaction_id => $self->transaction_id,
+        limit          => 4999,
+    });
 
     my @contract_update_history;
     foreach (@$audit_params) {
@@ -721,12 +718,12 @@ sub _debug_prob {
         my $min = '-inf';
         my $max = 'inf';
         if (defined $prob_obj->minimum) {
-            $min = sprintf($number_format, $prob_obj->minimum);
+            $min               = sprintf($number_format, $prob_obj->minimum);
             $num_display_class = 'price_moved_up'
                 if ($prob_obj->amount == $prob_obj->minimum);
         }
         if (defined $prob_obj->maximum) {
-            $max = sprintf($number_format, $prob_obj->maximum);
+            $max               = sprintf($number_format, $prob_obj->maximum);
             $num_display_class = 'price_moved_down'
                 if ($prob_obj->amount == $prob_obj->maximum);
         }
@@ -794,7 +791,7 @@ sub _get_cost_of_greeks {
                     %barriers
                 });
             }
-            my $pe = $new_bet->pricing_engine_name->new({bet => $new_bet});
+            my $pe                   = $new_bet->pricing_engine_name->new({bet => $new_bet});
             my $greeks_market_prices = $pe->greek_market_prices;
 
             $cost_greeks->{$days} = {

@@ -48,9 +48,9 @@ if ($whattodo eq 'create') {
 }
 
 if ($whattodo eq 'show') {
-    my $pa = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
+    my $pa                              = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
-    my $pa_countries = $pa->get_countries;
+    my $pa_countries                    = $pa->get_countries;
 
     my $input_fields = {
         pa_name            => $pa->payment_agent_name,
@@ -66,7 +66,7 @@ if ($whattodo eq 'show') {
         pa_auth            => ($pa->is_authenticated ? 'yes' : 'no'),
         pa_listed          => ($pa->is_listed ? 'yes' : 'no'),
         pa_supported_banks => $pa->supported_banks,
-        pa_countries => join(',', @$pa_countries),
+        pa_countries       => join(',', @$pa_countries),
     };
 
     $payment_agent_registration_form->set_input_fields($input_fields);
@@ -83,7 +83,7 @@ if ($whattodo eq 'show') {
     code_exit_BO("Error : must provide at least one country.") unless request()->param('pa_countries');
 
     my @countries = split(',', request()->param('pa_countries'));
-    my $pa = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
+    my $pa        = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
     unless ($pa) {
         # if its new so we need to set it
         $pa = $client->set_payment_agent;

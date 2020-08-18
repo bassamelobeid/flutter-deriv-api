@@ -62,7 +62,7 @@ BOM::Backoffice::Request::template()->process(
 Bar('Quants Config');
 
 my $existing_per_landing_company = BOM::Backoffice::QuantsConfigHelper::decorate_for_display($quants_config->get_all_global_limit(['default']));
-my %lc_limits = map { $_ => $json->encode($existing_per_landing_company->{$_}) } keys %$existing_per_landing_company;
+my %lc_limits                    = map { $_ => $json->encode($existing_per_landing_company->{$_}) } keys %$existing_per_landing_company;
 my $pending_market_group =
     BOM::Backoffice::QuantsConfigHelper::decorate_for_pending_market_group($quants_config->get_pending_market_group(['default']));
 my %lc_pending_market_group = map { $_ => $json->encode($pending_market_group->{$_}) } keys %$pending_market_group;
@@ -110,7 +110,7 @@ my %current_user_limits   = map {
     $_ => {
         display_key   => $available_user_limits->{$_},
         display_value => $app_config->quants->$limit_name
-        }
+    }
 } keys %$available_user_limits;
 
 Bar('Update ultra short duration');
@@ -146,7 +146,7 @@ my %current_global_limits   = map {
     $_ => {
         display_key   => $available_global_limits->{$_},
         display_value => $app_config->quants->$limit_name
-        }
+    }
 } keys %$available_global_limits;
 
 Bar('Update Global Limit Alert Threshold');

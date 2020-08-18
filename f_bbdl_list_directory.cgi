@@ -31,7 +31,7 @@ if (not BOM::Config::on_production()) {
 }
 
 my $sftp = $bbdl->login;
-my $ls = $sftp->ls('/') or die "unable to change cwd: " . $sftp->error;
+my $ls   = $sftp->ls('/') or die "unable to change cwd: " . $sftp->error;
 
 my @request_files  = grep { $_->{'filename'} =~ /\.req/ } @{$ls};
 my @response_files = grep { $_->{'filename'} =~ /\.csv\.enc/ } @{$ls};

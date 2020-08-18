@@ -70,8 +70,7 @@ for my $escrow ($settings->{'payments.p2p.escrow'}{value}->@*) {
         my $c = BOM::User::Client->new({loginid => $escrow});
         $escrow_currencies->{$escrow} = $c->broker_code . ' - ' . $c->account->currency_code;
 
-    }
-    catch {
+    } catch {
         $escrow_currencies->{$escrow} = 'invalid!';
     }
 }

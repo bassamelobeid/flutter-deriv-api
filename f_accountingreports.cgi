@@ -91,13 +91,12 @@ my $currency_pairs = BOM::Config::currency_pairs_backoffice()->{currency_pairs};
 
 foreach my $pair (@$currency_pairs) {
 
-    my $pair_name = join '/', @$pair;
+    my $pair_name       = join '/', @$pair;
     my $underlying_spot = convert_currency(1.00, @$pair);
 
     try {
         print "<li>" . $pair_name . " : " . $underlying_spot . "</li>";
-    }
-    catch {
+    } catch {
         warn "Failed to get exchange rate for $pair_name - $@\n";
         print '<li>' . $pair_name . ': <span style="color:red;">ERROR</span></li>';
     }
@@ -133,8 +132,7 @@ foreach my $currency_symbol (qw(AUD GBP EUR USD HKD)) {
             . '%</td><td>'
             . $currency->rate_for(30 / 365) * 100
             . '%</td></tr>';
-    }
-    catch {
+    } catch {
         warn "Failed to get currency interest rates for $currency_symbol - $@\n";
         print '<tr><td>' . $currency_symbol . '</td><td colspan="2" style="color:red;">ERROR</td></tr>';
     }

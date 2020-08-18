@@ -62,7 +62,7 @@ sub _generate_report {
             my $fileext = ($currency eq 'USD') ? "" : '.' . $currency;
 
             # Get all of the clients in the DB with this broker code/currency combo, their balance and their agg deposits and withdrawals
-            my $client_ref = $self->get_client_details($currency, $broker, $start_of_next_day);
+            my $client_ref             = $self->get_client_details($currency, $broker, $start_of_next_day);
             my $accounts_with_open_bet = $self->get_open_contracts($currency, $broker, $start_of_next_day);
             # LOOP THROUGH ALL THE CLIENTS
             my @sum_lines;
@@ -101,8 +101,7 @@ sub _generate_report {
                             $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($bet);
                             my $contract = produce_contract($contract_parameters);
                             $bid = $contract->bid_price;
-                        }
-                        catch {
+                        } catch {
                             warn("bid price error[$@], bet_id[" . $bet_id . "], account_id[$account_id], end_of_day_balance_id[" . $eod_id[0] . "]");
                             next;
                         }
@@ -180,11 +179,11 @@ sub get_client_details {
     return BOM::Database::DataMapper::Transaction->new({
             db => $db,
         }
-        )->get_daily_summary_report({
-            currency_code     => $currency,
-            broker_code       => $broker,
-            start_of_next_day => $date,
-        });
+    )->get_daily_summary_report({
+        currency_code     => $currency,
+        broker_code       => $broker,
+        start_of_next_day => $date,
+    });
 }
 
 sub get_open_contracts {
@@ -194,11 +193,11 @@ sub get_open_contracts {
     return BOM::Database::DataMapper::Transaction->new({
             db => $db,
         }
-        )->get_accounts_with_open_bets_at_end_of({
-            currency_code     => $currency,
-            broker_code       => $broker,
-            start_of_next_day => $date,
-        });
+    )->get_accounts_with_open_bets_at_end_of({
+        currency_code     => $currency,
+        broker_code       => $broker,
+        start_of_next_day => $date,
+    });
 
 }
 

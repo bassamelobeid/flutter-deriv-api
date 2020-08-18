@@ -36,7 +36,7 @@ if ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{
 }
 print "<center>";
 
-my @currency_options = qw/ BTC ETH UST /;
+my @currency_options  = qw/ BTC ETH UST /;
 my $currency_selected = $input{currency} // 'BTC';
 
 my $tt = BOM::Backoffice::Request::template;
@@ -81,12 +81,10 @@ if (%input && $input{req_type}) {
         $template_details->{response} = $response;
         try {
             $template_details->{response_json} = encode_json($response);
-        }
-        catch {
+        } catch {
             $template_details->{response_json} = $response;
         }
-    }
-    catch {
+    } catch {
         $template_details->{response} = +{error => $@};
     };
 
@@ -111,10 +109,10 @@ sub _get_function_map {
     code_exit_BO("<p style='color:red'><b>Invalid address</b></p>") if ($address && !$currency_wrapper->is_valid_address($address));
 
     return +{
-        list_unspent_utxo => sub { $currency_wrapper->get_unspent_transactions($address ? [$address] : [], $confirmations_req) },
-        get_transaction   => sub { $currency_wrapper->get_transaction_details($input->{txn_id}) },
-        get_balance       => sub { $currency_wrapper->get_balance() },
-        get_newaddress    => sub { $currency_wrapper->get_new_bo_address() },
+        list_unspent_utxo       => sub { $currency_wrapper->get_unspent_transactions($address ? [$address] : [], $confirmations_req) },
+        get_transaction         => sub { $currency_wrapper->get_transaction_details($input->{txn_id}) },
+        get_balance             => sub { $currency_wrapper->get_balance() },
+        get_newaddress          => sub { $currency_wrapper->get_new_bo_address() },
         get_estimate_smartfee   => sub { $currency_wrapper->get_estimated_fee() },
         list_receivedby_address => sub { $currency_wrapper->list_receivedby_address($receivedby_minconf, $input->{address_filter}) },
         get_blockcount          => sub { $currency_wrapper->last_block() },
@@ -123,7 +121,7 @@ sub _get_function_map {
         if $currency_selected eq 'BTC';
 
     return +{
-        get_balance => sub { $address ? $currency_wrapper->get_balance($address) : die "Please enter address"; },
+        get_balance      => sub { $address ? $currency_wrapper->get_balance($address) : die "Please enter address"; },
         get_accounts     => sub { $currency_wrapper->list_addresses() },
         get_gas_price    => sub { $currency_wrapper->get_info()->{gas_price} },
         get_block_number => sub { $currency_wrapper->get_info()->{last_block} },
@@ -147,7 +145,7 @@ sub _get_function_map {
     } if $currency_selected eq 'ETH';
 
     return +{
-        get_balance => sub { $address ? $currency_wrapper->get_balance($address) : die "Please enter address"; },
+        get_balance       => sub { $address ? $currency_wrapper->get_balance($address) : die "Please enter address"; },
         list_transactions => sub {
             die "Invalid address" if (length $input->{transaction_address} && !$currency_wrapper->is_valid_address($input->{transaction_address}));
             $listtransaction_limit

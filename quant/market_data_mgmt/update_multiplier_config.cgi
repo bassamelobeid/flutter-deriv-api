@@ -38,7 +38,7 @@ if ($r->param('save_multiplier_config')) {
         return;
     }
     try {
-        my $symbol = $r->param('symbol') // die 'symbol is undef';
+        my $symbol         = $r->param('symbol') // die 'symbol is undef';
         my $stop_out_level = $r->param('stop_out_level');
         if ($stop_out_level > 75 or $stop_out_level < 0) {
             die 'stop out level must be greater than or equal to 0 and less than or equal to 75';
@@ -54,8 +54,7 @@ if ($r->param('save_multiplier_config')) {
 
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeMultiplierConfig", $multiplier_config);
         $output = {success => 1};
-    }
-    catch {
+    } catch {
         $output = {error => "$@"};
     }
 
@@ -78,7 +77,7 @@ if ($r->param('save_multiplier_user_limit')) {
         die "loginid is required" if !$loginid;
 
         my $volume_limit = $r->param('volume_limit') // die 'volume_limit is undef';
-        die "volume limit is required" if !defined $volume_limit;
+        die "volume limit is required"     if !defined $volume_limit;
         die "volume limit must be numeric" if !looks_like_number($volume_limit);
 
         my $symbol = $r->param('symbol');
@@ -109,8 +108,7 @@ if ($r->param('save_multiplier_user_limit')) {
 
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeCustomVolumeLimits", $custom_volume_limits);
         $output = {success => 1};
-    }
-    catch {
+    } catch {
         $output = {error => "$@"};
     }
 
@@ -122,7 +120,7 @@ if ($r->param('delete_multiplier_user_limit')) {
     $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 
     my $custom_volume_limits = decode_json_utf8($app_config->get('quants.custom_volume_limits'));
-    my $client_limits = $custom_volume_limits->{clients} // {};
+    my $client_limits        = $custom_volume_limits->{clients} // {};
     my $output;
     try {
         my $loginid  = $r->param('loginid');
@@ -140,8 +138,7 @@ if ($r->param('delete_multiplier_user_limit')) {
 
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeCustomVolumeLimits", $custom_volume_limits);
         $output = {success => 1};
-    }
-    catch {
+    } catch {
         $output = {error => "$@"};
     }
 
@@ -197,8 +194,7 @@ if ($r->param('save_multiplier_market_or_underlying_limit')) {
 
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeCustomVolumeLimits", $custom_volume_limits);
         $output = {success => 1};
-    }
-    catch {
+    } catch {
         $output = {error => "$@"};
     }
 
@@ -232,8 +228,7 @@ if ($r->param('delete_multiplier_market_or_underlying_limit')) {
 
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeCustomVolumeLimits", $custom_volume_limits);
         $output = {success => 1};
-    }
-    catch {
+    } catch {
         $output = {error => "$@"};
     }
 

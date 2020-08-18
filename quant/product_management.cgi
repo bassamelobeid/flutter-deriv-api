@@ -44,7 +44,7 @@ my $app_config    = BOM::Config::Runtime->instance->app_config;
 
 # for write, we pass in the writer here
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
-my %known_profiles = map { $_ => 1 } keys %$limit_profile;
+my %known_profiles   = map { $_ => 1 } keys %$limit_profile;
 my %allowed_multiple = (
     market            => 1,
     submarket         => 1,
@@ -72,7 +72,7 @@ if ($r->param('update_limit')) {
     push @{$known_values{expiry_type}}, 'ultra_short';
     # landing company is not part of offerings object.
     $known_values{landing_company} = [map { $_->short } LandingCompany::Registry::all()];
-    $known_values{risk_profile} = [keys %known_profiles];
+    $known_values{risk_profile}    = [keys %known_profiles];
     my %ref;
 
     foreach my $key (@known_keys) {
@@ -275,7 +275,7 @@ sub send_notification_email {
         );
     push @message, ("By " . $limit->{updated_by} . " on " . $limit->{updated_on});
 
-    my $brand = request()->brand;
+    my $brand      = request()->brand;
     my $email_list = join ', ', map { $brand->emails($_) } qw(quants compliance cs marketing_x);
 
     send_email({

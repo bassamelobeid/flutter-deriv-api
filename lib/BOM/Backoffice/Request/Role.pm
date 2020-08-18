@@ -42,7 +42,7 @@ sub from_cgi {
 sub url_for {
     my ($self, @args) = @_;
 
-    my $url = Mojo::URL->new($args[0] || '');
+    my $url   = Mojo::URL->new($args[0] || '');
     my $query = $args[1] || {};
 
     if ($url->path =~ /.*\.cgi$/) {

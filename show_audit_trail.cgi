@@ -196,7 +196,7 @@ if ($loginid) {    # don't page for single login report
 } else {
 
     $rowcount = $hitcount || 0;
-    $pages = int($rowcount / $pagesize);
+    $pages    = int($rowcount / $pagesize);
     $pages += 1 if $rowcount % $pagesize;
 
 }
@@ -207,15 +207,15 @@ my @allhdrs = ('no data found');
 my $logs = [sort { $a->{data}->{stamp} cmp $b->{data}->{stamp} } @logs];
 
 my $stash = {
-    hdrs     => \@allhdrs,
-    logs     => $logs,
-    rowcount => $rowcount,
-    pages    => $pages,
-    next     => $page < $pages ? $page + 1 : $page,
-    prev     => $page > 0 ? $page - 1 : $page,
-    pagesize => $pagesize,
+    hdrs          => \@allhdrs,
+    logs          => $logs,
+    rowcount      => $rowcount,
+    pages         => $pages,
+    next          => $page < $pages ? $page + 1 : $page,
+    prev          => $page > 0 ? $page - 1 : $page,
+    pagesize      => $pagesize,
     url_to_myself => request()->url_for("backoffice/show_audit_trail.cgi", $myself_args),
-    url_to_client => request()->url_for("backoffice/$return_cgi",          $return_args)};
+    url_to_client => request()->url_for("backoffice/$return_cgi", $return_args)};
 
 # These hidden fields are not needed in audit trail
 unless ($myself_args->{category} eq 'payment_agent') {

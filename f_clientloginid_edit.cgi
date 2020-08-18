@@ -289,13 +289,8 @@ if ($input{whattodo} eq 'uploadID') {
         {
             print qq[<p style="color:red; font-weight:bold;">Expiration date "$expiration_date" is not a valid date.</p>];
             code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
-        } elsif (
-            $issue_date
-            && $issue_date ne (
-                eval {
-                    Date::Utility->new($issue_date)->date_yyyymmdd;
-                } // ''
-            ))
+        } elsif ($issue_date
+            && $issue_date ne (eval { Date::Utility->new($issue_date)->date_yyyymmdd; } // ''))
         {
             print qq[<p style="color:red; font-weight:bold;">Issue date "$issue_date" is not a valid date.</p>];
             code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
@@ -340,8 +335,7 @@ if ($input{whattodo} eq 'uploadID') {
                     );
                 });
             die 'Document already exists.' unless $upload_info;
-        }
-        catch {
+        } catch {
             $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error Uploading File $i: $@</p><br />";
             next;
         }
@@ -359,8 +353,7 @@ if ($input{whattodo} eq 'uploadID') {
                         });
                     $err = 'Db returned unexpected file id on finish'
                         unless $finish_upload_result == $file_id;
-                }
-                catch {
+                } catch {
                     $err = 'Document upload failed on finish';
                     warn $err . $@;
                 }
@@ -407,8 +400,7 @@ if ($input{whattodo} eq 'disable_2fa' and $user->is_totp_enabled) {
 if (my $check_str = $input{do_id_check}) {
     try {
         BOM::Platform::Client::IDAuthentication->new(client => $client)->proveid;
-    }
-    catch {
+    } catch {
         code_exit_BO(
             qq[<p><b>ProveID failed: $@</b></p>
                  <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
@@ -437,8 +429,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     my $secret_answer = '';
     try {
         $secret_answer = BOM::User::Utility::decrypt_secret_answer($client->secret_answer) // '';
-    }
-    catch {
+    } catch {
         print qq{<p style="color:red">ERROR: Unable to extract secret answer. Client secret answer is outdated or invalid.</p>};
     }
 
@@ -451,7 +442,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     # only validate non-empty values
     for my $key (keys %$text_validation_info) {
         if ($input{$key}) {
-            my $info = $text_validation_info->{$key};
+            my $info      = $text_validation_info->{$key};
             my $old_value = ($key eq 'secret_answer') ? $secret_answer : $client->$key;
 
             # if value is not changed, ignore validation result
@@ -546,8 +537,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                     reason     => 'Revoke professional status',
                 });
             }
-        }
-        catch {
+        } catch {
             # Print clients that were not updated
             print "<p>Failed to update professional status of client: $loginid</p>";
         }
@@ -584,8 +574,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 # add or update client promo code
                 try {
                     $client->promo_code($promo_code);
-                }
-                catch {
+                } catch {
                     code_exit_BO(sprintf('<p style="color:red; font-weight:bold;">ERROR: %s</p>', $_));
                 };
                 $client->promo_code_status($input{promo_code_status} || 'NOT_CLAIM');
@@ -746,8 +735,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 if ($document_field =~ /^(expiration_date|issue_date)$/) {
                     try {
                         $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
-                    }
-                    catch {
+                    } catch {
                         my $err = (split "\n", $@)[0];                                      #handle Date::Utility's confess() call
                         print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
                         next CLIENT_KEY;
@@ -766,8 +754,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 next CLIENT_KEY if $new_value && $new_value eq $doc->$document_field();
                 try {
                     $doc->$document_field($new_value);
-                }
-                catch {
+                } catch {
                     print qq{<p style="color:red">ERROR: Could not set $document_field for doc $id with $val: $@</p>};
                 }
                 next CLIENT_KEY;
@@ -781,9 +768,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
             } elsif ($key eq 'client_aml_risk_classification' && BOM::Backoffice::Auth0::has_authorisation(['Compliance'])) {
                 $cli->aml_risk_classification($input{$key});
-            }
 
-            elsif ( $key eq 'mifir_id'
+            } elsif ($key eq 'mifir_id'
                 and $cli->mifir_id eq ''
                 and $broker eq 'MF')
             {
@@ -954,7 +940,7 @@ if ($client->landing_company->allows_payment_agents) {
 }
 
 my $statuses = join '/', map { uc $_ } @{$client->status->all};
-my $name = $client->first_name;
+my $name     = $client->first_name;
 $name .= ' ' if $name;
 $name .= $client->last_name;
 my $client_info = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
@@ -1131,7 +1117,7 @@ sub update_fa {
     my ($client, $section_name) = @_;
     my $config = BOM::Config::financial_assessment_fields();
     my $args   = +{
-        map { $_ => request()->param($_) }
+        map  { $_ => request()->param($_) }
         grep { request()->param($_) } keys $config->{$section_name}->%*
     };
 
@@ -1179,7 +1165,7 @@ for my $section_name (qw(trading_experience financial_information)) {
 sub print_fa_table {
     my ($section_name, $self_href, $is_editable, %section) = @_;
 
-    my @hdr = ('Question', 'Answer', 'Score');
+    my @hdr    = ('Question', 'Answer', 'Score');
     my $config = BOM::Config::financial_assessment_fields();
 
     print "<form method='post' action='$self_href#$section_name'><input type='hidden' name='whattodo' value='$section_name'>"
@@ -1519,7 +1505,7 @@ sub _assemble_dob_input {
     return undef if $client->is_virtual;
 
     my @dob_fields = ('dob_year', 'dob_month', 'dob_day');
-    my @dob_keys = grep { /dob_/ } keys %$input;
+    my @dob_keys   = grep { /dob_/ } keys %$input;
 
     # splits the client's dob out into [0] - year, [1] - month, [2] - day
     my @dob_values = ($client->date_of_birth // '') =~ /([0-9]+)-([0-9]+)-([0-9]+)/;

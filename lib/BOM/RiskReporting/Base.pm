@@ -65,7 +65,7 @@ has _usd_rates => (
 
 sub _build__usd_rates {
     return {
-        map { $_ => in_usd(1, $_) }
+        map      { $_ => in_usd(1, $_) }
             grep { !(BOM::Config::CurrencyConfig::is_valid_crypto_currency($_) && BOM::Config::CurrencyConfig::is_crypto_currency_suspended($_)) }
             LandingCompany::Registry->new()->all_currencies
     };

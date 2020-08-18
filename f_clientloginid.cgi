@@ -93,7 +93,7 @@ print "<form id='clientdetailsDCC' action='"
     . "</form>";
 
 Bar("CLOSED/DISABLED ACCOUNTS");
-my $client_login = request()->param('login_id') // '';
+my $client_login      = request()->param('login_id') // '';
 my $show_notification = request()->param('editlink') and $client_login and request()->param('untrusted_action_type');
 
 BOM::Backoffice::Request::template()->process(

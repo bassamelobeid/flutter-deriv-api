@@ -81,7 +81,7 @@ sub DailyTurnOverReport {
     my $eod_market_values      = $cache_query->{eod_open_bets_value};
 
     # get end of previous month open bets value
-    my $prevaggbets = int($eod_market_values->{$currdate->epoch - 86400}->{market_value} // 0);
+    my $prevaggbets  = int($eod_market_values->{$currdate->epoch - 86400}->{market_value} // 0);
     my $firstaggbets = $prevaggbets;
 
     my $days_in_month = $currdate->days_in_month;

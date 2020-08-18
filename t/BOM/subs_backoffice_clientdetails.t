@@ -9,7 +9,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Test::More;
 
 my $countries_instance = Brands->new(name => 'Binary')->countries_instance->countries;
-my $email = 'test@binary.com';
+my $email              = 'test@binary.com';
 
 # Create VR client
 my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

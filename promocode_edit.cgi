@@ -50,7 +50,7 @@ if ($input{save}) {
 
             if ($input{country_type} eq 'not_offered') {
                 my $countries_not_offered = ref $input{country} ? $input{country} : [$input{country}];
-                my $rt_countries = $countries_instance->countries;
+                my $rt_countries          = $countries_instance->countries;
                 my @countries_offered;
                 foreach my $country (map { $rt_countries->code_from_country($_) } $rt_countries->all_country_names) {
                     push @countries_offered, $country unless (grep { $_ eq $country } @{$countries_not_offered});
@@ -117,8 +117,7 @@ sub _validation_errors {
         $end_date   = Date::Utility->new($end_date);
 
         push @errors, "Expiry date must be set after Start date." if ($start_date && $end_date && $start_date->is_after($end_date));
-    }
-    catch {
+    } catch {
         push @errors, "Start/Expiry date must be in the following format: YYYY-MM-DD";
     }
 

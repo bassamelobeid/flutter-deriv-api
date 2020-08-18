@@ -28,7 +28,7 @@ my $db = BOM::Database::ClientDB->new({
     })->db->dbic;
 
 my %countries_list = request()->brand->countries_instance->countries_list->%*;
-my @countries = map { {code => $_, name => $countries_list{$_}{name}} }
+my @countries      = map { {code => $_, name => $countries_list{$_}{name}} }
     sort { $countries_list{$a}{name} cmp $countries_list{$b}{name} } keys %countries_list;
 
 my @currencies = sort @{request()->available_currencies};
@@ -47,8 +47,7 @@ if ($input{edit}) {
                     undef, @input{qw/max_daily_buy max_daily_sell country trade_band currency/});
             });
         print '<p style="color:green; font-weight:bold;">Band configuration updated</p>';
-    }
-    catch {
+    } catch {
         print '<p style="color:red; font-weight:bold;">Failed to save band:' . $@ . '</p>';
     }
 }
@@ -62,8 +61,7 @@ if ($action eq 'delete') {
                     undef, @input{qw/country trade_band currency/});
             });
         print '<p style="color:green; font-weight:bold;">Band deleted</p>';
-    }
-    catch {
+    } catch {
         print '<p style="color:red; font-weight:bold;">Failed to delete band:' . $@ . '</p>';
     }
     delete @input{qw/country trade_band currency max_daily_buy max_daily_sell action/};
@@ -96,8 +94,7 @@ if ($input{save} or $input{copy}) {
                     undef, @input{@fields});
             });
         print '<p style="color:green; font-weight:bold;">New band configuration saved</p>';
-    }
-    catch {
+    } catch {
         print '<p style="color:red; font-weight:bold;">Failed to save band: ' . $@ . '</p>';
     }
     $action = 'new';

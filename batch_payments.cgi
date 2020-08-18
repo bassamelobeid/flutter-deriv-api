@@ -132,8 +132,8 @@ read_csv_row_and_callback(
             # TODO fix this critic
             ## no critic (ProhibitCommaSeparatedStatements, ProhibitMixedBooleanOperators)
             $cols_found == $cols_expected or $error = "Found $cols_found fields, needed $cols_expected for $format payments", last;
-            $action !~ /^(debit|credit)$/ and $error = "Invalid transaction type [$action]", last;
-            $amount !~ $curr_regex || $amount == 0 and $error = "Invalid amount [$amount]", last;
+            $action !~ /^(debit|credit)$/          and $error = "Invalid transaction type [$action]", last;
+            $amount !~ $curr_regex || $amount == 0 and $error = "Invalid amount [$amount]",           last;
             !$statement_comment and $error = 'Statement comment can not be empty', last;
             $client = eval { BOM::User::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
@@ -151,8 +151,7 @@ read_csv_row_and_callback(
                         currency => $currency,
                         amount   => $signed_amount
                     );
-                }
-                catch {
+                } catch {
                     $error = $@;
                 }
                 last if $error;
@@ -167,7 +166,7 @@ read_csv_row_and_callback(
             chomp($statement_comment);
             if (
                 my $duplicate_record = $payment_mapper->get_transaction_id_of_account_by_comment({
-                        amount => ($action eq 'debit' ? $amount * -1 : $amount),
+                        amount  => ($action eq 'debit' ? $amount * -1 : $amount),
                         comment => $statement_comment
                     }))
             {
@@ -224,8 +223,7 @@ read_csv_row_and_callback(
                     trace_id          => $trace_id,
                     ($skip_validation ? (skip_validation => 1) : ()),
                 );
-            }
-            catch {
+            } catch {
                 $client_account_table .= construct_row_line(%row, error => "Transaction Error: $@");
                 return;
             }
@@ -233,8 +231,7 @@ read_csv_row_and_callback(
             if ($action eq 'credit' and $payment_type =~ /^bank_money_transfer|external_cashier$/) {
                 try {
                     $client->status->clear_pa_withdrawal_explicitly_allowed;
-                }
-                catch {
+                } catch {
                     warn "Not able to unset payment agent explicity allowed flag for " . $client->loginid;
                 }
             }

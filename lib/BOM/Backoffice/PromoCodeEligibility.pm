@@ -308,8 +308,7 @@ sub active_promocodes {
         try {
             $config = $json->decode($code->{promo_code_config});
             $config->{country} = [split ',', $config->{country}];
-        }
-        catch {
+        } catch {
             warn 'Invalid config for promocode ' . $code->{code} . ': ' . $@;
             next;
         }
@@ -407,8 +406,7 @@ sub add_codes_to_clients {
                         loginid   => $client->loginid,
                         code      => $code->{code}};
                 }
-            }
-            catch {
+            } catch {
                 warn $@;
             }
         }
@@ -541,10 +539,10 @@ sub get_dynamic_bonus {
     my %args = @_;
 
     my @deposits = get_deposits($args{db}, $args{account_id}, $args{code}, $args{promo_config});
-    my $total = sum(@deposits) // 0;
-    my $bonus = $total * ($args{promo_config}{amount} / 100);
+    my $total    = sum(@deposits) // 0;
+    my $bonus    = $total * ($args{promo_config}{amount} / 100);
     $bonus = min($bonus, $args{promo_config}{max_amount}) if $args{promo_config}{max_amount};
-    $bonus = 0 if $args{promo_config}{min_amount} and $args{promo_config}{min_amount} > $bonus;
+    $bonus = 0                                            if $args{promo_config}{min_amount} and $args{promo_config}{min_amount} > $bonus;
     return ($bonus, $total);
 }
 

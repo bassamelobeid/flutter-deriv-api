@@ -28,8 +28,7 @@ try {
         $ua,
         BOM::Config::third_party()->{proveid}->{username},
         BOM::Config::third_party()->{proveid}->{password});
-}
-catch {
+} catch {
     warn "An error occurred: $@";
 }
 

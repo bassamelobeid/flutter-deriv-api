@@ -84,7 +84,7 @@ if (my $il = request()->param('investigate_list')) {
         );
     }
 
-    my $brand = request()->brand;
+    my $brand   = request()->brand;
     my @to_list = ($brand->emails('quants'), $brand->emails('cs'), $staff->{email});
     push @to_list, $brand->emails('triage') if (request()->param('inform_triage'));
 
@@ -97,7 +97,7 @@ if (my $il = request()->param('investigate_list')) {
                     'Reported by: ' . $staff->{nickname} . ' (' . $staff->{email} . ')',
                     $section_sep, (split /$bits_sep/, request()->param('details')),
                     $section_sep, $reason . ':',
-                    $desc, $section_sep,
+                    $desc,        $section_sep,
                 ],
                 @attach,
             }))

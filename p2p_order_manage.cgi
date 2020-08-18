@@ -39,7 +39,7 @@ my $db_collector = BOM::Database::ClientDB->new({
 
 my ($order, $escrow, $transactions, $chat_messages);
 my $chat_messages_limit = 20;
-my $chat_page = int($input{p} // 1);
+my $chat_page           = int($input{p} // 1);
 $chat_page = 1 unless $chat_page > 0;    # The default page is 1 so math is well adjusted
 
 Bar('P2P Order details/management');
@@ -72,8 +72,7 @@ if (my $action = $input{action} and $p2p_write) {
                     $_->do('SELECT p2p.order_complete(?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, $txn_time);
                 });
         }
-    }
-    catch {
+    } catch {
         my $error = ref $@ eq 'ARRAY' ? join ', ', $@->@* : $@;
         print '<p style="color:red; font-weight:bold;">' . $error . '</p>';
     }
@@ -133,8 +132,7 @@ if (my $id = $input{order_id}) {
                         $chat_messages_limit, $chat_messages_limit * ($chat_page - 1));
                 });
         }
-    }
-    catch {
+    } catch {
         print '<p style="color:red; font-weight:bold;">' . $@ . '</p>';
     }
 }

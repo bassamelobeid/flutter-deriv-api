@@ -31,8 +31,7 @@ my $start_date;
 try {
     $yyyymm =~ /^(\d{4})-(\d{2})$/;
     $start_date = Date::Utility->new("$1-$2-01");
-}
-catch {
+} catch {
     code_exit_BO("Date $yyyymm was not parsed as YYYY-MM, check it");
 }
 

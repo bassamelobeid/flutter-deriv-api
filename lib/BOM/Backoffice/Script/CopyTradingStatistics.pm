@@ -17,7 +17,7 @@ sub run {
             broker_code => 'CR',
             operation   => 'backoffice_replica',
         }
-        )->db->dbic->run(
+    )->db->dbic->run(
         fixup => sub {
             $_->selectcol_arrayref(
                 q{
@@ -33,7 +33,7 @@ sub run {
 
     for my $trader_id (@$trader_ids) {
         my $last_processed_id = BOM::Config::Redis::redis_replicated_read()->get("COPY_TRADING_LAST_PROCESSED_ID:$trader_id") || 0;
-        my $max_processed_id = $last_processed_id;
+        my $max_processed_id  = $last_processed_id;
 
         my $trader = BOM::User::Client->new({loginid => $trader_id});
         my $txn_dm = BOM::Database::DataMapper::Transaction->new({
@@ -42,7 +42,7 @@ sub run {
             broker_code    => 'CR',
             operation      => 'backoffice_replica'
         });
-        my $unsold_bets = BOM::Config::Redis::redis_replicated_read()->smembers("COPY_TRADING_UNSOLD_BETS:$trader_id");
+        my $unsold_bets      = BOM::Config::Redis::redis_replicated_read()->smembers("COPY_TRADING_UNSOLD_BETS:$trader_id");
         my $unprocessed_bets = $txn_dm->unprocessed_bets($last_processed_id, $unsold_bets);
 
         for my $bet (@$unprocessed_bets) {

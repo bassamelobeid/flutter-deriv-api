@@ -80,10 +80,10 @@ my $bet = do {
 my ($start, $end, $timestep, $debug_link);
 if ($bet) {
     $start =
-          (request()->param('start')) ? Date::Utility->new(request()->param('start'))
+          (request()->param('start'))                                              ? Date::Utility->new(request()->param('start'))
         : (request()->param('purchase_time') and $bet->starts_as_forward_starting) ? Date::Utility->new(request()->param('purchase_time'))
-        : ($bet->starts_as_forward_starting) ? $bet->date_start->minus_time_interval('1m')
-        :                                      $bet->date_start;
+        : ($bet->starts_as_forward_starting)                                       ? $bet->date_start->minus_time_interval('1m')
+        :                                                                            $bet->date_start;
     $end =
           (request()->param('end')) ? Date::Utility->new(request()->param('end'))
         : ($bet->tick_expiry)       ? $bet->date_start->plus_time_interval($bet->_max_tick_expiry_duration)
@@ -109,8 +109,7 @@ if ($bet) {
                 client_loginid => $loginid
             })->debug_link();
 
-    }
-    catch {
+    } catch {
         code_exit_BO("<pre>$@</pre>");
     }
 }
@@ -118,10 +117,10 @@ if ($bet) {
 BOM::Backoffice::Request::template()->process(
     'backoffice/bpot.html.tt',
     {
-        longcode => $bet      ? localize($bet->longcode)     : '',
+        longcode => $bet ? localize($bet->longcode) : '',
         bet      => $bet,
-        start    => $start    ? $start->datetime             : '',
-        end      => $end      ? $end->datetime               : '',
+        start    => $start ? $start->datetime : '',
+        end      => $end ? $end->datetime : '',
         timestep => $timestep ? $timestep->as_concise_string : '',
         defined $limit_order ? (limit_order => $limit_order) : (),
         debug_link => $debug_link,
