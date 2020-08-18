@@ -319,16 +319,15 @@ async sub document_upload {
                 document_entry             => $document_entry,
                 file_data                  => $file_data,
                 uploaded_manually_by_staff => $uploaded_manually_by_staff,
-                )
+            )
 
         );
-    }
-    catch {
+    } catch {
         my $e = $@;
         $log->errorf('Failed to process Onfido application for %s : %s', $args->{loginid}, $e);
         exception_logged();
         DataDog::DogStatsd::Helper::stats_inc("event.document_upload.failure",);
-    };
+    }
 
     return;
 }
@@ -449,12 +448,11 @@ async sub ready_for_authentication {
             $loop->timeout_future(after => VERIFICATION_TIMEOUT)->on_fail(sub { $log->errorf('Time out waiting for Onfido verfication.') }),
 
             _check_applicant($args, $onfido, $applicant_id, $broker, $loginid, $residence, $doc, $poa_doc, $redis_events_write, $client));
-    }
-    catch {
+    } catch {
         my $e = $@;
         $log->errorf('Failed to process Onfido verification for %s: %s', $args->{loginid}, $e);
         exception_logged();
-    };
+    }
 
     return;
 }
@@ -556,12 +554,11 @@ async sub client_verification {
                                 $current_client->date_of_birth($first_dob);
                                 $current_client->save;
                             }
-                        }
-                        catch {
+                        } catch {
                             my $e = $@;
                             $log->debugf('Error updating client date of birth: %s', $e);
                             exception_logged();
-                        };
+                        }
 
                         # Update applicant data
                         BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
@@ -641,24 +638,21 @@ async sub client_verification {
                     }
                 }
                 return;
-            }
-            catch {
+            } catch {
                 my $e = $@;
                 $log->errorf('An error occurred while retrieving reports for client %s check %s: %s', $loginid, $check->id, $e);
                 die $e;
             }
-        }
-        catch {
+        } catch {
             my $e = $@;
             $log->errorf('Failed to do verification callback - %s', $e);
             die $e;
-        };
-    }
-    catch {
+        }
+    } catch {
         my $e = $@;
         $log->errorf('Exception while handling client verification result: %s', $e);
         exception_logged();
-    };
+    }
 
     return;
 }
@@ -671,7 +665,7 @@ Gets the client's documents from Onfido and store in DB
 
 async sub _store_applicant_documents {
     my ($applicant_id, $client, $all_report) = @_;
-    my $onfido = _onfido();
+    my $onfido    = _onfido();
     my @documents = await $onfido->document_list(applicant_id => $applicant_id)->as_list;
 
     my $existing_onfido_docs = BOM::User::Onfido::get_onfido_document($client->binary_user_id);
@@ -698,15 +692,14 @@ async sub _store_applicant_documents {
                     onfido_result => $doc,
                     all_report    => $all_report
                 });
-            }
-            catch {
+            } catch {
                 $log->debugf("Error in downloading and sync document file : $@");
                 exception_logged();
             }
         }
     }
 
-    my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
+    my @live_photos            = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
     my $existing_onfido_photos = BOM::User::Onfido::get_onfido_live_photo($client->binary_user_id);
 
     foreach my $photo (@live_photos) {
@@ -723,8 +716,7 @@ async sub _store_applicant_documents {
                     onfido_result => $photo,
                     all_report    => $all_report
                 });
-            }
-            catch {
+            } catch {
                 $log->debugf("Error in downloading and sync photo file : $@");
                 exception_logged();
             }
@@ -761,7 +753,7 @@ async sub _sync_onfido_bo_document {
         for my $each_report (@{$all_report}) {
             if ($each_report->documents) {
                 @doc_ids = grep { $_ && $_->{id} } @{$each_report->documents};
-                %all_ids = map { $_->{id} => 1 } @doc_ids;
+                %all_ids = map  { $_->{id} => 1 } @doc_ids;
 
                 if (exists($all_ids{$doc_id})) {
                     ($expiration_date, $document_numbers) = @{$each_report->{properties}}{qw(date_of_expiry document_numbers)};
@@ -798,7 +790,7 @@ async sub _sync_onfido_bo_document {
         $log->warnf('Unexpected file type "%s"', $file_type);
     }
 
-    my $fh = File::Temp->new(DIR => '/var/lib/binary');
+    my $fh           = File::Temp->new(DIR => '/var/lib/binary');
     my $tmp_filename = $fh->filename;
     print $fh $image_blob;
     seek $fh, 0, 0;
@@ -839,8 +831,7 @@ async sub _sync_onfido_bo_document {
 
         $log->debugf("Starting to upload file_id: $file_id to S3 ");
         $s3_uploaded = await $s3_client->upload($new_file_name, $tmp_filename, $file_checksum);
-    }
-    catch {
+    } catch {
         my $error = $@;
         $log->errorf("Error in creating record in db and uploading Onfido document to S3 for %s : %s", $client->loginid, $error);
         exception_logged();
@@ -869,12 +860,11 @@ async sub _sync_onfido_bo_document {
                 loginid    => $client->loginid,
                 properties => $document_info
             });
-        }
-        catch {
+        } catch {
             my $error = $@;
             $log->errorf("Error in updating db for %s : %s", $client->loginid, $error);
             exception_logged();
-        };
+        }
     }
 
     return;
@@ -895,7 +885,7 @@ async sub sync_onfido_details {
     try {
 
         my $loginid = $data->{loginid} or die 'No loginid supplied';
-        my $client = BOM::User::Client->new({loginid => $loginid});
+        my $client  = BOM::User::Client->new({loginid => $loginid});
 
         my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
         my $applicant_id   = $applicant_data->{id};
@@ -912,12 +902,11 @@ async sub sync_onfido_details {
 
         return $response;
 
-    }
-    catch {
+    } catch {
         my $e = $@;
         $log->errorf('Failed to update details in Onfido for %s : %s', $data->{loginid}, $e);
         exception_logged();
-    };
+    }
 
     return;
 }
@@ -952,14 +941,13 @@ async sub verify_address {
         try {
             DataDog::DogStatsd::Helper::stats_inc('event.address_verification.triggered', {tags => \@dd_tags});
             return await _address_verification(client => $client);
-        }
-        catch {
+        } catch {
             my $e = $@;
             DataDog::DogStatsd::Helper::stats_inc('event.address_verification.exception', {tags => \@dd_tags});
             $log->errorf('Failed to verify applicants address for %s : %s', $loginid, $e);
             exception_logged();
-        };
-        } if (($has_deposits and push(@dd_tags, 'verify_address:deposits'))
+        }
+    } if (($has_deposits and push(@dd_tags, 'verify_address:deposits'))
         or ($is_fully_authenticated and push(@dd_tags, 'verify_address:authenticated')));
 
     return;
@@ -1009,7 +997,7 @@ async sub _address_verification {
             $log->errorf('Address lookup failed for %s - %s', $client->loginid, $_[0]);
             return;
         }
-        )->on_done(
+    )->on_done(
         sub {
             DataDog::DogStatsd::Helper::stats_inc('smartystreet.lookup.success');
         });
@@ -1079,12 +1067,11 @@ async sub _get_onfido_applicant {
             : DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.failed.elapsed", $elapsed);
 
         return $applicant;
-    }
-    catch {
+    } catch {
         my $e = $@;
         $log->warn($e);
         exception_logged();
-    };
+    }
 
     return undef;
 }
@@ -1121,11 +1108,10 @@ AND status != 'uploading'
 AND id = ?
 SQL
                 });
-        }
-        catch {
+        } catch {
             exception_logged();
             die "An error occurred while getting document details ($file_id) from database for login ID $loginid.";
-        };
+        }
         $doc;
     };
 }
@@ -1204,7 +1190,7 @@ sub _email_client_age_verified {
         website_name => $website_name,
     };
     my $email_subject = localize("Age and identity verification");
-    my $tt = Template->new(ABSOLUTE => 1);
+    my $tt            = Template->new(ABSOLUTE => 1);
 
     try {
         $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/age_verified.html.tt', $data_tt, \my $html);
@@ -1218,11 +1204,10 @@ sub _email_client_age_verified {
             email_content_is_html => 1,
             skip_text2html        => 1,
         });
-    }
-    catch {
+    } catch {
         $log->warn($@);
         exception_logged();
-    };
+    }
     return undef;
 }
 
@@ -1256,7 +1241,7 @@ sub email_client_account_verification {
     };
 
     my $email_subject = localize("Account verification");
-    my $tt = Template->new(ABSOLUTE => 1);
+    my $tt            = Template->new(ABSOLUTE => 1);
 
     try {
         $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/account_verification.html.tt', $data_tt, \my $html);
@@ -1270,11 +1255,10 @@ sub email_client_account_verification {
             email_content_is_html => 1,
             skip_text2html        => 1,
         });
-    }
-    catch {
+    } catch {
         $log->warn($@);
         exception_logged();
-    };
+    }
     return undef;
 }
 
@@ -1307,7 +1291,7 @@ sub _send_email_account_closure_client {
 sub _send_email_underage_disable_account {
     my ($client) = @_;
 
-    my $website_name = ucfirst BOM::Config::domain()->{default_domain};
+    my $website_name  = ucfirst BOM::Config::domain()->{default_domain};
     my $email_subject = localize('We closed your [_1] account', $website_name);
 
     send_email({
@@ -1590,12 +1574,11 @@ sub social_responsibility_check {
                     unless Email::Stuffer->from($system_email)->to($sr_email)->subject($email_subject)->html_body($html)->send();
 
                 return undef;
-            }
-            catch {
+            } catch {
                 $log->warn($@);
                 exception_logged();
                 return undef;
-            };
+            }
         }
     }
 
@@ -1746,8 +1729,7 @@ async sub _upload_documents {
 
         return 1;
 
-    }
-    catch {
+    } catch {
         my $e = $@;
         $log->errorf('An error occurred while uploading document to Onfido for %s : %s', $client->loginid, $e);
         exception_logged();
@@ -1800,7 +1782,7 @@ async sub _check_applicant {
             # The type is always "express" since we are sending data via API.
             # https://documentation.onfido.com/#check-types
             type => 'express',
-            )->on_fail(
+        )->on_fail(
             sub {
                 my (undef, undef, $response) = @_;
 
@@ -1814,7 +1796,7 @@ async sub _check_applicant {
                     $log->errorf('An error occurred while processing Onfido verification for %s : %s', $loginid, join(' ', @_));
                 }
             }
-            )->on_done(
+        )->on_done(
             sub {
                 my ($check) = @_;
 
@@ -1830,8 +1812,7 @@ async sub _check_applicant {
                 encode_json_utf8($args));
         }
 
-    }
-    catch {
+    } catch {
         my $e = $@;
         $log->errorf('An error occurred while processing Onfido verification for %s : %s', $client->loginid, $e);
         exception_logged();
@@ -1850,8 +1831,7 @@ async sub _update_onfido_check_count {
         try {
             my $redis_response = await $redis_events_write->expire(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_LIMIT_TIMEOUT);
             return $redis_response;
-        }
-        catch {
+        } catch {
             my $e = $@;
             $log->debugf("Failed in adding expire to ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY: %s", $e);
             exception_logged();
@@ -1872,8 +1852,7 @@ async sub _update_onfido_user_check_count {
             my $redis_response =
                 await $redis_events_write->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, ONFIDO_REQUEST_PER_USER_TIMEOUT);
             return $redis_response;
-        }
-        catch {
+        } catch {
             my $e = $@;
             $log->debugf("Failed in adding expire to ONFIDO_REQUEST_PER_USER_PREFIX: %s", $e);
             exception_logged();
@@ -1958,9 +1937,9 @@ sub qualifying_payment_check {
             });
 
         my $client_info_required = {
-            statuses => join(',', @{$status->all}),
-            age_verified => $status->age_verification ? 'Yes' : 'No',
-            authentication_status => $auth_status eq 'no' ? 'Not authenticated' : $auth_status,
+            statuses               => join(',', @{$status->all}),
+            age_verified           => $status->age_verification ? 'Yes' : 'No',
+            authentication_status  => $auth_status eq 'no' ? 'Not authenticated' : $auth_status,
             account_opening_reason => $client->account_opening_reason,
             currency               => $client_currency,
             balance                => $account->balance,
@@ -1991,12 +1970,11 @@ sub qualifying_payment_check {
                 unless Email::Stuffer->from($system_email)->to($compliance_email)->subject($email_subject)->html_body($html)->send();
 
             return undef;
-        }
-        catch {
+        } catch {
             $log->warn($@);
             exception_logged();
             return undef;
-        };
+        }
 
     }
 
@@ -2023,8 +2001,7 @@ async sub payment_deposit {
     if ($is_first_deposit) {
         try {
             await _address_verification(client => $client);
-        }
-        catch {
+        } catch {
             my $e = $@;
             $log->errorf('Failed to verify applicants address: %s', $e);
             exception_logged();
@@ -2093,7 +2070,7 @@ async sub check_or_store_onfido_applicant {
     return 0 if $user_applicant->{$applicant_id};
 
     # fetch and store the new applicantid for the user
-    my $onfido = _onfido();
+    my $onfido    = _onfido();
     my $applicant = await $onfido->applicant_get(applicant_id => $applicant_id);
 
     BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id);
@@ -2121,18 +2098,16 @@ sub client_promo_codes_upload {
             my $client;
             try {
                 $client = BOM::User::Client->new({loginid => $loginid});
-            }
-            catch {
+            } catch {
                 die "client not found\n";
             }
             die "client not found\n" unless $client;
-            die "client is virtual\n" if $client->is_virtual;
+            die "client is virtual\n"                                                                    if $client->is_virtual;
             die "client already has a promo code (" . $client->client_promo_code->promotion_code . ")\n" if $client->client_promo_code;
             $client->promo_code($code);
             $client->save;
             $success++;
-        }
-        catch {
+        } catch {
             push @errors, 'Error on line: ' . (join ', ', @$row) . ' - error: ' . $@;
         }
     }
@@ -2197,8 +2172,7 @@ sub signup {
             {
                 loginid => $data->{loginid},
             });
-    }
-    catch {
+    } catch {
         $error = $@;
     }
 
@@ -2277,7 +2251,7 @@ sub _set_all_sibling_status {
     my $loginid = $args->{loginid} or die 'No client login ID supplied';
     my $status  = $args->{status}  or die 'No status supplied';
 
-    my $client = BOM::User::Client->new({loginid => $loginid});
+    my $client       = BOM::User::Client->new({loginid => $loginid});
     my @all_loginids = $client->user->bom_real_loginids;
 
     for my $each_loginid (@all_loginids) {
@@ -2285,8 +2259,7 @@ sub _set_all_sibling_status {
 
         try {
             $c->status->set($status, 'system', $args->{message});
-        }
-        catch {
+        } catch {
             my $e = $@;
             $log->errorf('Failed to set %s as %s : %s', $each_loginid, $status, $e);
             exception_logged();
@@ -2347,8 +2320,7 @@ sub aml_client_status_update {
         }
 
         return undef;
-    }
-    catch {
+    } catch {
         $log->errorf("Failed to send AML Risk withdrawal_locked email to compliance %s on %s", $template_args, $@);
         exception_logged();
         return undef;
@@ -2403,8 +2375,7 @@ async sub _restore_request {
             my %req_args = map { $_ => $context->{$_} } grep { $context->{$_} } qw(brand_name language app_id);
             my $new_req  = BOM::Platform::Context::Request->new(%req_args);
             request($new_req);
-        }
-        catch {
+        } catch {
             my $e = $@;
             $log->debugf("Failed in restoring cached context ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY::%s: %s", $applicant_id, $e);
             exception_logged();

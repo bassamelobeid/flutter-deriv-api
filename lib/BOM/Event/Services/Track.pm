@@ -270,8 +270,8 @@ It can be called with the following parameters:
 =cut
 
 sub profile_change {
-    my ($args) = @_;
-    my $loginid = $args->{loginid};
+    my ($args)     = @_;
+    my $loginid    = $args->{loginid};
     my $properties = $args->{properties} // {};
 
     my $client = _validate_params($loginid, 'profile_change');
@@ -312,10 +312,10 @@ sub transfer_between_accounts {
     # Deref and ref, So we don't modify the main properties that is passed as an argument
     my $properties = {($args->{properties} // {})->%*};
 
-    $properties->{revenue} = -($properties->{from_amount} // die('required from_account'));
+    $properties->{revenue}  = -($properties->{from_amount} // die('required from_account'));
     $properties->{currency} = $properties->{from_currency} // die('required from_currency');
-    $properties->{value}    = $properties->{from_amount}   // die('required from_amount');
-    $properties->{time} = _time_to_iso_8601($properties->{time} // die('required time'));
+    $properties->{value}    = $properties->{from_amount} // die('required from_amount');
+    $properties->{time}     = _time_to_iso_8601($properties->{time} // die('required time'));
 
     $properties->{fees} = formatnumber('amount', $properties->{from_currency}, $properties->{fees} // 0);
 
@@ -732,9 +732,9 @@ sub _create_customer {
     my @siblings     = $client->user ? $client->user->clients(include_disabled => 1) : ($client);
     my @mt5_loginids = $client->user ? $client->user->get_mt5_loginids               : ();
     my $user_connect = BOM::Database::Model::UserConnect->new;
-    my $provider = $client->user ? $user_connect->get_connects_by_user_id($client->user->{id})->[0] // 'email' : 'email';
+    my $provider     = $client->user ? $user_connect->get_connects_by_user_id($client->user->{id})->[0] // 'email' : 'email';
 
-    my $country_config = $brand->countries_instance->countries_list->{$client->residence};
+    my $country_config              = $brand->countries_instance->countries_list->{$client->residence};
     my $available_landing_companies = join ',' => uniq sort grep { $_ ne 'none' } (
         $country_config->{gaming_company},
         $country_config->{financial_company},
@@ -817,9 +817,9 @@ sub _create_customer {
             provider                    => $provider,
         });
     # Will use this attributes as properties in some events like signup
-    $customer->{currency} = $client->account ? $client->account->currency_code : '';
+    $customer->{currency}        = $client->account ? $client->account->currency_code : '';
     $customer->{landing_company} = $client->landing_company->short // '';
-    $customer->{date_joined}     = $client->date_joined            // '';
+    $customer->{date_joined}     = $client->date_joined // '';
     $customer->{client_loginid}  = $client->loginid;
 
     return $customer;

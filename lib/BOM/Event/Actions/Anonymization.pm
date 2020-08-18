@@ -204,11 +204,10 @@ sub _anonymize {
 
             $client->anonymize_client();
         }
-    }
-    catch {
+    } catch {
         exception_logged();
         return "anonymizationFailed";
-    };
+    }
     return "successful";
 }
 1;

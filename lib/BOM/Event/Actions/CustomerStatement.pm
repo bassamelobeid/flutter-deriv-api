@@ -92,7 +92,7 @@ sub _send_email_statement {
     # gather template data
     my $account = $client->account;
     # result may not be available for clients with no currency
-    my $result = $account ? (values %$summary)[0] : {};
+    my $result          = $account ? (values %$summary)[0] : {};
     my $estimated_value = ($result->{ending_balance} // 0) + ($transactions->{estimated_profit} // 0);
 
     my $data = {
@@ -106,8 +106,8 @@ sub _send_email_statement {
             estimated_value => $account ? formatnumber('price', $account->currency_code, $estimated_value) : '',
             name            => $client->first_name . ' ' . $client->last_name,
             account_number  => $client->loginid,
-            classification => $client->status->professional ? 'Professional' : 'Retail',
-            currency => $account ? $account->currency_code : 'No Currency Selected',
+            classification  => $client->status->professional ? 'Professional' : 'Retail',
+            currency        => $account ? $account->currency_code : 'No Currency Selected',
         },
         date      => Date::Utility->today->date_yyyymmdd(),
         statement => {
@@ -152,8 +152,7 @@ sub _retrieve_transaction_history {
             client => $client,
             source => $params->{source},
         });
-    }
-    catch {
+    } catch {
         my $e = $@;
         $log->warn("error in selling expired contracts\ncaught error: $e");
         exception_logged();
@@ -191,8 +190,7 @@ sub _retrieve_transaction_history {
         if ($txn->{short_code}) {
             try {
                 $txn->{long_code} = localize(shortcode_to_longcode($txn->{short_code}, $client->{currency}));
-            }
-            catch {
+            } catch {
                 # we do not want to warn for known error like legacy underlying
                 if ($_ !~ /unknown underlying/) {
                     $log->warn("exception is thrown when executing shortcode_to_longcode, parameters: " . $txn->short_code . ' error: ' . $_);

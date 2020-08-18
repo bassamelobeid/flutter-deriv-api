@@ -95,7 +95,7 @@ BOM::Event::Actions::Client::email_client_account_verification({loginid => $test
 
 $msg = mailbox_search(subject => qr/Account verification/);
 
-like($msg->{body}, qr/verified your account/, "Correct message");
+like($msg->{body}, qr/verified your account/,                  "Correct message");
 like($msg->{body}, qr~https://www.binary.com/en/contact.html~, "Url Added");
 
 like($msg->{body}, qr/Binary.com/, "Website  Added");
@@ -338,7 +338,7 @@ subtest 'client_verification after upload document himself' => sub {
         fixup => sub {
             $_->do(
                 'select users.add_onfido_applicant(?::TEXT,?::TIMESTAMP,?::TEXT,?::BIGINT)',
-                undef, $applicant2->id, Date::Utility->new($applicant2->created_at)->datetime_yyyymmdd_hhmmss,
+                undef,             $applicant2->id, Date::Utility->new($applicant2->created_at)->datetime_yyyymmdd_hhmmss,
                 $applicant2->href, $test_client2->user_id
             );
         });
@@ -401,7 +401,7 @@ subtest 'client_verification after upload document himself' => sub {
             return $result->fetchall_hashref('id');
         });
 
-    my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
+    my $clientdb      = BOM::Database::ClientDB->new({broker_code => 'CR'});
     my $doc_file_name = $clientdb->db->dbic->run(
         fixup => sub {
             my $sth = $_->prepare('select file_name from betonmarkets.client_authentication_document where client_loginid=? and document_type=?');
@@ -1030,13 +1030,13 @@ subtest 'segment document upload' => sub {
     my ($customer, %args) = @track_args;
 
     is $args{event}, 'document_upload', 'track event is document_upload';
-    is $args{properties}->{document_type}, 'national_identity_card', 'document type is correct';
-    is $args{properties}->{uploaded_manually_by_staff}, 0, 'uploaded_manually_by_staff is correct';
+    is $args{properties}->{document_type},              'national_identity_card', 'document type is correct';
+    is $args{properties}->{uploaded_manually_by_staff}, 0,                        'uploaded_manually_by_staff is correct';
 };
 
 subtest 'aml risk becomes high withdrawal_locked email CR landing company' => sub {
     mailbox_clear();
-    my $landing_company = 'CR';
+    my $landing_company  = 'CR';
     my $aml_high_clients = [{login_ids => $test_client->loginid}];
     #send email
     BOM::Event::Actions::Client::aml_client_status_update({
@@ -1085,7 +1085,7 @@ subtest 'onfido resubmission' => sub {
 
     # First test, we expect counter to be +1
     $redis_write->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;
-    my $counter = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
+    my $counter   = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
     my $call_args = {
         loginid      => $test_client->loginid,
         applicant_id => $applicant_id

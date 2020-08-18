@@ -219,7 +219,7 @@ subtest 'login event' => sub {
             'App name matches request->app_id.';
 
         $mocked_oauth->unmock_all;
-        }
+    }
 };
 
 subtest 'user profile change event' => sub {

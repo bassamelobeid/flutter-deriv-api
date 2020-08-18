@@ -60,7 +60,7 @@ in the database.
 
 sub set_transaction_fee {
     my $transaction = shift;
-    my $currency = BOM::CTC::Currency->new(currency_code => $transaction->{currency});
+    my $currency    = BOM::CTC::Currency->new(currency_code => $transaction->{currency});
 
     # we are specifying the currency here just for performance purpose, since for the other currencies
     # this value is supposed to be correct, we check using the fee_currency because of the ERC20 contracts;
@@ -206,8 +206,7 @@ sub set_pending_transaction {
                     {
                         loginid => $client_loginid,
                     });
-            }
-            catch {
+            } catch {
                 $error = $@;
             }
 
@@ -226,8 +225,7 @@ sub set_pending_transaction {
             my $error = "No error returned";
             try {
                 $emit = BOM::Platform::Event::Emitter::emit('crypto_subscription', $transaction);
-            }
-            catch {
+            } catch {
                 $error = $@;
                 exception_logged();
             }
@@ -241,8 +239,7 @@ sub set_pending_transaction {
         $log->debugf("Transaction status changed to pending: %s", $transaction->{hash});
         stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:success']});
 
-    }
-    catch {
+    } catch {
         $log->errorf("Subscription error: %s", $@);
         exception_logged();
         stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
@@ -363,8 +360,7 @@ sub new_crypto_address {
         my $helper = BOM::CTC::Helper->new(client => $client);
         my ($id, $address) = $helper->get_deposit_id_and_address();
         return $address;
-    }
-    catch {
+    } catch {
         $log->errorf('Failed to generate address for new_crypto_address event. Details: loginid %s, currency: %s, and error: %s',
             $client->loginid, $currency, $@)
     }

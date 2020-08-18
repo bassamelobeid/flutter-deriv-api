@@ -328,8 +328,8 @@ for my $idx (0 .. $#expected) {
 }
 
 @expected = (
-    $date_format, '\d+', 'Win payout if Volatility 50 Index is strictly higher than entry spot at 10 hours after contract start time.',
-    '514.00', '1000.00', '\d+\.\d+',
+    $date_format, '\d+',     'Win payout if Volatility 50 Index is strictly higher than entry spot at 10 hours after contract start time.',
+    '514.00',     '1000.00', '\d+\.\d+',
     '\d+\-\w+\-\d+\s\d{2}:\d{2}:\d{2}',
     '\d+\-\w+\-\d+\s\d{2}:\d{2}:\d{2}',
     '[10|9] Hours'

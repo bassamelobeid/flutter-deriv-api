@@ -155,7 +155,7 @@ sub order_updated {
 
     my $client = BOM::User::Client->new({loginid => $loginid});
 
-    my $order = $client->_p2p_orders(id => $order_id)->[0];
+    my $order          = $client->_p2p_orders(id => $order_id)->[0];
     my $order_response = $client->_order_details([$order])->[0];
 
     my $redis     = BOM::Config::Redis->redis_p2p_write();
@@ -214,8 +214,7 @@ sub order_expired {
             source => $data->{source} // DEFAULT_SOURCE,
             staff  => $data->{staff} // DEFAULT_STAFF,
         );
-    }
-    catch {
+    } catch {
         my $err = $@;
         $log->info('Fail to process order_expired: ' . $err, $data);
         exception_logged();
@@ -263,8 +262,8 @@ sub _track_p2p_order_event {
 
     # set seller/buyer objects and nicknames based on order type
     my ($seller, $buyer) = ($order->{type} eq 'sell') ? qw(client advertiser) : qw(advertiser client);
-    @{$parties}{qw(seller buyer)} = @{$parties}{$seller, $buyer};
-    @{$parties}{qw(seller_nickname buyer_nickname)} = @{$order}{"${seller}_name", "${buyer}_name"};
+    @{$parties}{qw(seller buyer)}                        = @{$parties}{$seller, $buyer};
+    @{$parties}{qw(seller_nickname buyer_nickname)}      = @{$order}{"${seller}_name", "${buyer}_name"};
     @{$parties}{qw(advertiser_nickname client_nickname)} = @{$order}{qw(advertiser_name client_name)};
 
     # buyer and seller confirmations are two different events in event tracking

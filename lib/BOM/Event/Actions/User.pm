@@ -64,7 +64,7 @@ sub profile_change {
     # Apply sanctions on profile update
     if (any { exists $params->{properties}->{updated_fields}->{$_} } qw/first_name last_name date_of_birth/) {
         my $loginid = $params->{loginid};
-        my $client = BOM::User::Client->new({loginid => $loginid}) or die 'Could not instantiate client for login ID ' . $loginid;
+        my $client  = BOM::User::Client->new({loginid => $loginid}) or die 'Could not instantiate client for login ID ' . $loginid;
 
         # Grab MT5 accounts and craft a summary
         my $mt5_logins = $client->user->mt5_logins_with_group;
@@ -78,11 +78,11 @@ sub profile_change {
                 client => $client,
                 brand  => request()->brand,
             }
-            )->check((
-                triggered_by => 'Triggered by profile update',
-                comments     => join "\n",
-                @comments,
-            ));
+        )->check((
+            triggered_by => 'Triggered by profile update',
+            comments     => join "\n",
+            @comments,
+        ));
     }
 
     return BOM::Event::Services::Track::profile_change(@args);

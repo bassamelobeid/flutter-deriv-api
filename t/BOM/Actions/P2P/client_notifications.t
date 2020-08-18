@@ -32,7 +32,7 @@ my ($client, $order) = BOM::Test::Helper::P2P::create_order(
 
 my $expected_data = [
     {%{$advertiser->p2p_order_info(id => $order->{id})}, advertiser_loginid => $advertiser->loginid},
-    {%{$client->p2p_order_info(id => $order->{id})}, client_loginid => $client->loginid},
+    {%{$client->p2p_order_info(id => $order->{id})},     client_loginid     => $client->loginid},
 ];
 
 my @data_for_notification_tests = ({
@@ -59,7 +59,7 @@ my @data_for_notification_tests = ({
         data  => {
             client_loginid => $advertiser->loginid,
         },
-        channel => join(q{::} => ('P2P::ADVERTISER::NOTIFICATION', uc($client->broker))),
+        channel  => join(q{::} => ('P2P::ADVERTISER::NOTIFICATION', uc($client->broker))),
         expected => [+{$advertiser->p2p_advertiser_info->%*, client_loginid => $advertiser->loginid}],
     },
 );

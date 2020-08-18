@@ -53,7 +53,7 @@ subtest client_anonymization => sub {
 
     mailbox_clear();
     $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => 'MX009'});
-    $msg = mailbox_search(subject => qr/Anonymization report for/);
+    $msg    = mailbox_search(subject => qr/Anonymization report for/);
 
     # It should send an notification email to compliance
     like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance receive an report of anonymization./);
@@ -107,7 +107,7 @@ subtest bulk_anonymization => sub {
 
     foreach my $user (@users) {
         # Retrieve anonymized user from database by id
-        my $anonymized_user = BOM::User->new(id => $user->id);
+        my $anonymized_user    = BOM::User->new(id => $user->id);
         my @anonymized_clients = $anonymized_user->clients(include_disabled => 1);
 
         foreach my $anonymized_client (@anonymized_clients) {
@@ -173,7 +173,7 @@ subtest users_clients_will_set_to_disabled_after_anonymization => sub {
 
     ok($result, 'Returns 1 after user anonymized.');
     # Retrieve anonymized user from database by id
-    my $anonymized_user = BOM::User->new(id => $user_id);
+    my $anonymized_user    = BOM::User->new(id => $user_id);
     my @anonymized_clients = $anonymized_user->clients(include_disabled => 1);
 
     foreach my $anonymized_client (@anonymized_clients) {

@@ -60,7 +60,7 @@ my $currency = BOM::CTC::Currency->new(
 my $helper = BOM::CTC::Helper->new(client => $client);
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-my $dbic = $clientdb->db->dbic;
+my $dbic     = $clientdb->db->dbic;
 
 subtest "change_address_status" => sub {
 
@@ -139,7 +139,7 @@ subtest "change_address_status" => sub {
     is $response, 1, "Able to set pending two pending transactions to the same address with an different hash";
 
     my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-    my $dbic = $clientdb->db->dbic;
+    my $dbic     = $clientdb->db->dbic;
 
     my $start = Time::HiRes::time;
     my $rows  = $dbic->run(
@@ -292,7 +292,7 @@ subtest "change_address_status" => sub {
             return $sth->fetchall_arrayref({});
         });
 
-    my @rows = $rows->@*;
+    my @rows  = $rows->@*;
     my @newtx = grep { $_->{blockchain_txn} eq $transaction->{hash} } @rows;
     is @newtx, 1, "new transaction found in the database";
 

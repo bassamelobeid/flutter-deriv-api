@@ -136,16 +136,15 @@ sub process {
     }
 
     my $context_info = $event_to_be_processed->{context} // {};
-    my @req_args = map { $_ => $context_info->{$_} } grep { $context_info->{$_} } qw(brand_name language app_id);
-    my $req = BOM::Platform::Context::Request->new(@req_args);
+    my @req_args     = map { $_ => $context_info->{$_} } grep { $context_info->{$_} } qw(brand_name language app_id);
+    my $req          = BOM::Platform::Context::Request->new(@req_args);
     request($req);
 
     my $response = 0;
     try {
         $response = get_action_mappings()->{$event_type}->($event_to_be_processed->{details});
         $response->retain if blessed($response) and $response->isa('Future');
-    }
-    catch {
+    } catch {
         my $e = $@;
         $log->errorf("An error occurred processing %s: %s", $event_type, $e);
         exception_logged();

@@ -94,11 +94,11 @@ Returns array of tags which contains package and method name.
 =cut
 
 sub _convert_caller_to_array_of_tags {
-    my ($caller) = @_;
-    my @dd_tags = ();
+    my ($caller)      = @_;
+    my @dd_tags       = ();
     my @array_subname = split("::", $caller);
 
-    my $method = pop @array_subname;
+    my $method  = pop @array_subname;
     my $package = join("::", @array_subname);
 
     push @dd_tags, lc('package:' . $package) if ($package);

@@ -206,10 +206,10 @@ sub _get_details_structure {
         affiliate_token => $client->myaffiliates_token // '',
         unsubscribed    => $data->{email_consent} ? 'false' : 'true',
         account_type    => $client->is_virtual ? 'virtual' : 'real',
-        country_code => $client->residence // '',
-        country => $client->residence ? Locale::Country::code2country($client->residence) : '',
-        is_region_eu => $client->is_region_eu,
-        new_account  => $details{new_account} ? 1 : 0,
+        country_code    => $client->residence // '',
+        country         => $client->residence ? Locale::Country::code2country($client->residence) : '',
+        is_region_eu    => $client->is_region_eu,
+        new_account     => $details{new_account} ? 1 : 0,
 
         # remove these before passing
         loginid => $client->loginid,

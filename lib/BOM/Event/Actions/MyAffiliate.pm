@@ -34,14 +34,13 @@ async sub affiliate_sync_initiated {
         try {
             @{$result}{qw(mt5_logins error)} =
                 await _populate_mt5_affiliate_to_client($login_id, $affiliate_mt5_login);
-        }
-        catch {
+        } catch {
             $result->{error} = $@;
             exception_logged();
         }
     }
 
-    my @added = map { "For $_->{loginid} to logins " . ($_->{mt5_logins} || 'no mt5 logins') } @results;
+    my @added  = map { "For $_->{loginid} to logins " . ($_->{mt5_logins} || 'no mt5 logins') } @results;
     my @errors = map { $_->{error} || () } @results;
 
     send_email({
@@ -51,7 +50,7 @@ async sub affiliate_sync_initiated {
             message => [
                 "Synchronization to mt5 for Affiliate $affiliate_id is finished.",
                 "List of logins which were synchronized:",
-                (@added ? @added : ('The affiliate has no clients yet.')),
+                (@added  ? @added                                                       : ('The affiliate has no clients yet.')),
                 (@errors ? ('During synchronization there were these errors:', @errors) : (''))
             ],
         });
@@ -73,8 +72,7 @@ async sub _populate_mt5_affiliate_to_client {
                 my $is_success = await _set_affiliate_for_mt5($mt5_login, $affiliate_mt5_login);
                 return {login => $mt5_login} if $is_success;
                 return {};
-            }
-            catch {
+            } catch {
                 exception_logged();
                 return {err => $@};
             }
@@ -119,8 +117,8 @@ async sub _set_affiliate_for_mt5 {
 
 sub _get_clean_loginids {
     my ($affiliate_id) = @_;
-    my $my_affiliate = BOM::MyAffiliates->new();
-    my $customers = $my_affiliate->get_customers(AFFILIATE_ID => $affiliate_id);
+    my $my_affiliate   = BOM::MyAffiliates->new();
+    my $customers      = $my_affiliate->get_customers(AFFILIATE_ID => $affiliate_id);
 
     my @login_ids = map { $_->{CLIENT_ID} || () } @$customers;
     s/^deriv_//g for @login_ids;

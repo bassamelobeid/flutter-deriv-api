@@ -59,7 +59,7 @@ subtest 'test unrecoverable error' => sub {
 
 subtest 'test non unrecoverable  error', sub {
     $mocked_mt5->mock('get_user', sub { Future->done({error => 'fake error'}) });
-    my $count = 0;
+    my $count       = 0;
     my $cached_args = {loginid => $test_client->loginid};
     @datadog_args = ();
     # It is impossible to try 10+ times; It need only a number that big enough
@@ -292,7 +292,7 @@ subtest 'mt5 account opening mail' => sub {
                         request($branded_localized_request);
 
                         my $underscored_type = $type eq '' ? '' : sprintf('_%s', $type);
-                        my $args = {
+                        my $args             = {
                             loginid            => $mt5_client->loginid,
                             'account_type'     => 'gaming',
                             'mt5_group'        => sprintf('%s\\svg%s', $category, $underscored_type),
@@ -312,7 +312,7 @@ subtest 'mt5 account opening mail' => sub {
 
                         # Note subject is localized
                         my $subject = localize('MT5 [_1] Account Created.', ucfirst $category);
-                        my $email = mailbox_search(
+                        my $email   = mailbox_search(
                             email   => $mt5_client->email,
                             subject => qr/\Q$subject\E/
                         );

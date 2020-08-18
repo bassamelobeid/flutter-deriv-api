@@ -96,7 +96,7 @@ sub services {
     return $self->{services} //= do {
         $self->add_child(my $services = BOM::Event::Services->new);
         $services;
-        }
+    }
 }
 
 =head2 redis
@@ -198,7 +198,7 @@ sub process_loop {
                     # allowing ->configure to change name and wait time dynamically.
                     $self->queue_name,
                     $self->queue_wait_time
-                    )->then(
+                )->then(
                     sub {
                         my ($item) = @_;
                         # $item will be undef in case of timeout occurred
@@ -215,8 +215,7 @@ sub process_loop {
                             my $decoded_data = decode_json_utf8($event_data);
                             stats_inc(lc "$queue_name.read");
                             return Future->done($queue_name => $decoded_data);
-                        }
-                        catch {
+                        } catch {
                             my $err = $@;
                             stats_inc(lc "$queue_name.invalid_data");
                             # Invalid data indicates serious problems, we halt
@@ -227,7 +226,7 @@ sub process_loop {
                             return Future->fail("bad event data - $err");
                         }
                     }
-                    )->then(
+                )->then(
                     sub {
                         # redis message will be undef in case of timeout occurred
                         return Future->done() unless @_;
@@ -240,7 +239,7 @@ sub process_loop {
             # We keep going until something fails
             shift->is_done;
         }
-        )->on_ready(
+    )->on_ready(
         sub {
             # ... and allow restart if we're stopped or fail,
             # next caller to this method will start things up again
@@ -284,7 +283,7 @@ sub process_job {
         # is just the class name (the string 'Future') - this would likely need some quality time with gdb
         # to dissect fully.
         my $res = BOM::Event::Process::process($event_data, $queue_name);
-        my $f = Future->wrap($res);
+        my $f   = Future->wrap($res);
         return Future->wait_any($f, $self->loop->timeout_future(after => $self->maximum_job_time))->on_fail(
             sub {
                 my $cleaned_data = $self->clean_data_for_logging($event_data);
@@ -305,8 +304,7 @@ sub process_job {
                 }
                 stats_inc(lc "$queue_name.processed.failure");
             })->else_done();
-    }
-    catch {
+    } catch {
         $log->errorf('Failed to process %s (data %s) - %s', $queue_name, $self->cleaned_data($event_data), $@);
         exception_logged();
         # This one's less clear cut than other failure cases:
@@ -315,8 +313,7 @@ sub process_job {
         # However, continuous failures should perhaps be treated
         # more seriously?
         return Future->done;
-    }
-    finally {
+    } finally {
         alarm(0);
     }
 }
@@ -349,8 +346,7 @@ sub clean_data_for_logging {
     try {
         # decode_json only when need.
         $decoded_data = ref($event_data) ? $event_data : decode_json_utf8($event_data);
-    }
-    catch {
+    } catch {
         exception_logged();
         return "Invalid JSON format event data";
     }

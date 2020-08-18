@@ -35,7 +35,7 @@ sub segment {
         );
         $self->add_child(my $service = WebService::Async::Segment->new(%args));
         $service;
-        }
+    }
 }
 
 sub onfido {
@@ -46,7 +46,7 @@ sub onfido {
                 token => BOM::Config::third_party()->{onfido}->{authorization_token} // 'test',
                 $ENV{ONFIDO_URL} ? (base_uri => $ENV{ONFIDO_URL}) : ()));
         $service;
-        }
+    }
 }
 
 sub smartystreets {
@@ -59,7 +59,7 @@ sub smartystreets {
                 international_token   => BOM::Config::third_party()->{smartystreets}->{token},
             ));
         $service;
-        }
+    }
 }
 
 sub http {
@@ -75,7 +75,7 @@ sub http {
                 user_agent     => 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:66.0)',
             ));
         $service;
-        }
+    }
 }
 
 sub redis_mt5user {
@@ -84,7 +84,7 @@ sub redis_mt5user {
     return $self->{redis_mt5user} //= do {
         $self->add_child(my $service = Net::Async::Redis->new(uri => BOM::Config::Redis::redis_config('mt5_user', 'read')->{uri}));
         $service;
-        }
+    }
 }
 
 sub redis_events_write {
@@ -97,7 +97,7 @@ sub redis_events_write {
                 uri  => $redis_config->{uri},
                 auth => $redis_config->{password}));
         $service;
-        }
+    }
 }
 
 sub redis_events_read {
@@ -110,7 +110,7 @@ sub redis_events_read {
                 uri  => $redis_config->{uri},
                 auth => $redis_config->{password}));
         $service;
-        }
+    }
 }
 
 sub redis_replicated_write {
@@ -123,7 +123,7 @@ sub redis_replicated_write {
                 uri  => $redis_config->{uri},
                 auth => $redis_config->{password}));
         $service;
-        }
+    }
 }
 
 sub redis_replicated_read {
@@ -136,7 +136,7 @@ sub redis_replicated_read {
                 uri  => $redis_config->{uri},
                 auth => $redis_config->{password}));
         $service;
-        }
+    }
 }
 
 1;
