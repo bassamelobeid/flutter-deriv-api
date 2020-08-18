@@ -282,6 +282,7 @@ sub subscribe {
 
     while ( !$params || $retry_count < 5 ) {
         $symbol = $active_symbols->[ int( rand( $active_symbols->@* ) ) ];
+        $contract_type = $contract_types[ rand(@contract_types) ];
         $params = get_params( $contract_type, $symbol, $contracts_for );
         $retry_count++;
     }
