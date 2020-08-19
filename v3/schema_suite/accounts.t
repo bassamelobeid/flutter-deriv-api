@@ -40,7 +40,7 @@ test_sendrecv_params 'get_settings/test_send.json',      'get_settings/test_rece
 test_sendrecv 'get_account_status/test_send.json',       'get_account_status/test_receive.json';
 
 # TRADE SCOPE CALLS (VRTC)
-test_sendrecv 'topup_virtual/test_send.json',     'topup_virtual/test_receive_error.json';
+test_sendrecv 'topup_virtual/test_send.json',     'topup_virtual/test_receive.json';
 test_sendrecv 'balance/test_send_subscribe.json', 'balance/test_receive.json',
     template_values => ['10000', 'USD', $suite->get_stashed('authorize/authorize/loginid')],
     start_stream_id => 1;
