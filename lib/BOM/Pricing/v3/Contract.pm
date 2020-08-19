@@ -61,12 +61,7 @@ sub prepare_ask {
     } elsif (defined $p2{barrier} && defined $p2{barrier2}) {
         $p2{low_barrier}  = delete $p2{barrier2};
         $p2{high_barrier} = delete $p2{barrier};
-    } elsif (
-        grep {
-            /^(?:RUNHIGH|RUNLOW|RESETCALL|RESETPUT|(?:CALL|PUT)E?)$/
-        } @contract_types
-        )
-    {
+    } elsif (grep { /^(?:RUNHIGH|RUNLOW|RESETCALL|RESETPUT|(?:CALL|PUT)E?)$/ } @contract_types) {
         delete $p2{barrier2};
         # set to S0P if barrier is undef
         $p2{barrier} //= 'S0P';
@@ -113,8 +108,7 @@ sub _get_ask {
 
     try {
         $contract = $args_copy->{proposal_array} ? produce_batch_contract($args_copy) : produce_contract($args_copy);
-    }
-    catch {
+    } catch {
         my $e                 = $@;
         my $message_to_client = _get_error_message($e, $args_copy);
         my $details           = _get_error_details($e);
@@ -128,8 +122,7 @@ sub _get_ask {
     if ($contract->isa('BOM::Product::Contract::Batch')) {
         try {
             return handle_batch_contract($contract, $args_copy);
-        }
-        catch {
+        } catch {
             my $e                 = $@;
             my $message_to_client = _get_error_message($e, $args_copy);
             my $details           = _get_error_details($e);
@@ -188,7 +181,7 @@ sub _get_ask {
                 my $longcode =
                     eval { $contract->longcode } || '';    # if we can't get the longcode that's fine, we still want to return the original error
                 $response->{contract_parameters} = $contract_parameters;
-                $response->{longcode} = $longcode ? localize($longcode) : '';
+                $response->{longcode}            = $longcode ? localize($longcode) : '';
             }
         } else {
             # We think this contract is valid to buy
@@ -226,8 +219,8 @@ sub _get_ask {
             if ($contract->category_code eq 'multiplier') {
                 my $display = $contract->available_orders_for_display;
                 $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
-                $response->{limit_order} = $display;
-                $response->{commission} = $contract->commission_amount;    # commission in payout currency amount
+                $response->{limit_order}       = $display;
+                $response->{commission}        = $contract->commission_amount;                                  # commission in payout currency amount
 
                 if ($contract->cancellation) {
                     $response->{cancellation} = {
@@ -250,9 +243,8 @@ sub _get_ask {
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
         stats_timing('compute_price.buy.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
-    }
-    catch {
-        my $e = $@;
+    } catch {
+        my $e                 = $@;
         my $message_to_client = _get_error_message($e, $args_copy, 1);
 
         return BOM::Pricing::v3::Utility::create_error({
@@ -284,8 +276,7 @@ sub handle_batch_contract {
     my $ask_prices;
     try {
         $ask_prices = $batch_contract->ask_prices;
-    }
-    catch {
+    } catch {
         die $@ if !$offerings_error;
     }
     # I know here $offerings_error must be true when no ask_prices, but this format of condition should be more intuitive.
@@ -388,8 +379,7 @@ sub get_bid {
     try {
         $bet_params = shortcode_to_parameters($short_code, $currency);
         $bet_params->{limit_order} = $params->{limit_order} if $params->{limit_order};
-    }
-    catch {
+    } catch {
         warn __PACKAGE__ . " get_bid shortcode_to_parameters failed: $short_code, currency: $currency";
 
         return BOM::Pricing::v3::Utility::create_error({
@@ -404,8 +394,7 @@ sub get_bid {
         $bet_params->{sell_time}             = $sell_time if $is_sold;
         $bet_params->{sell_price}            = $sell_price if defined $sell_price;
         $contract                            = produce_contract($bet_params);
-    }
-    catch {
+    } catch {
         warn __PACKAGE__ . " get_bid produce_contract failed, parameters: " . $json->encode($bet_params);
 
         return BOM::Pricing::v3::Utility::create_error({
@@ -456,8 +445,7 @@ sub get_bid {
             $pen =~ s/::/_/g;
             stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
         }
-    }
-    catch {
+    } catch {
         my $e = $@;
         _log_exception(get_bid => $e);
 
@@ -488,8 +476,7 @@ sub send_bid {
 
     try {
         $response = get_bid($params);
-    }
-    catch {
+    } catch {
         # This should be impossible: get_bid() has an exception wrapper around
         # all the useful code, so unless the error creation or localize steps
         # fail, there's not much else that can go wrong. We therefore log and
@@ -536,8 +523,7 @@ sub send_ask {
     my $response;
     try {
         $response = _get_ask(prepare_ask($params->{args}), $params->{app_markup_percentage});
-    }
-    catch {
+    } catch {
         my $e = $@;
         _log_exception(send_ask => $e);
         $response = BOM::Pricing::v3::Utility::create_error({
@@ -567,8 +553,7 @@ sub get_contract_details {
             my $contract_params = BOM::Pricing::v3::Utility::get_contract_params($params->{contract_id}, $params->{landing_company});
             $bet_params->{limit_order} = $contract_params->{limit_order};
         }
-    }
-    catch {
+    } catch {
         warn __PACKAGE__ . " get_contract_details shortcode_to_parameters failed: $params->{short_code}, currency: $params->{currency}";
 
         return BOM::Pricing::v3::Utility::create_error({
@@ -581,8 +566,7 @@ sub get_contract_details {
         $bet_params->{landing_company}       = $params->{landing_company};
         $bet_params->{limit_order}           = $params->{limit_order} if $params->{limit_order};
         $contract                            = produce_contract($bet_params);
-    }
-    catch {
+    } catch {
         warn __PACKAGE__ . " get_contract_details produce_contract failed, parameters: " . $json->encode($bet_params);
 
         return BOM::Pricing::v3::Utility::create_error({
@@ -688,7 +672,7 @@ sub _log_exception {
 sub _get_error_details {
     my $reason = shift;
 
-    return $reason->details if (blessed($reason) && $reason->isa('BOM::Product::Exception'));
+    return $reason->details   if (blessed($reason) && $reason->isa('BOM::Product::Exception'));
     return $reason->{details} if ref($reason) eq 'HASH';
 
     return;
@@ -725,8 +709,8 @@ sub _validate_offerings {
 
     try {
         my $landing_company = LandingCompany::Registry::get($args_copy->{landing_company} // 'virtual');
-        my $method = $contract->is_parameters_predefined ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
-        my $offerings_obj = $landing_company->$method(delete $args_copy->{country_code} // '',
+        my $method          = $contract->is_parameters_predefined ? 'multi_barrier_offerings_for_country' : 'basic_offerings_for_country';
+        my $offerings_obj   = $landing_company->$method(delete $args_copy->{country_code} // '',
             BOM::Config::Runtime->instance->get_offerings_config($args_copy->{action}));
 
         die 'Could not find offerings for ' . $args_copy->{country_code} unless $offerings_obj;
@@ -739,8 +723,7 @@ sub _validate_offerings {
                 $details ? (details => $details) : (),
             });
         }
-    }
-    catch {
+    } catch {
         my $e                 = $@;
         my $message_to_client = _get_error_message($e, $args_copy);
         my $details           = _get_error_details($e);
@@ -867,11 +850,11 @@ sub _build_bid_response {
         $response->{barrier_count} = 0;
         $response->{barrier}       = undef;
     }
-    $response->{reset_time} = 0 + $contract->reset_spot->epoch if $contract->reset_spot;
-    $response->{multiplier} = $contract->multiplier unless ($contract->is_binary);
+    $response->{reset_time}       = 0 + $contract->reset_spot->epoch if $contract->reset_spot;
+    $response->{multiplier}       = $contract->multiplier unless ($contract->is_binary);
     $response->{validation_error} = localize($params->{validation_error}) unless $params->{is_valid_to_sell};
-    $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
-    $response->{tick_count}   = $contract->tick_count   if $contract->expiry_type eq 'tick';
+    $response->{current_spot}     = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
+    $response->{tick_count}       = $contract->tick_count if $contract->expiry_type eq 'tick';
 
     if ($contract->is_binary) {
         $response->{payout} = $contract->payout;
@@ -993,7 +976,7 @@ sub _build_bid_response {
     } elsif ($contract->is_expired) {
         # it could be that the contract is not sold until/after expiry for path dependent
         $contract_close_tick = $contract->close_tick if $contract->is_path_dependent;
-        $contract_close_tick = $contract->exit_tick if not $contract_close_tick and $contract->exit_tick and $contract->is_valid_exit_tick;
+        $contract_close_tick = $contract->exit_tick  if not $contract_close_tick and $contract->exit_tick and $contract->is_valid_exit_tick;
     }
 
     # if the contract is still open, $contract_close_tick will be undefined

@@ -40,7 +40,7 @@ require BOM::Pricing::Queue;
 my $redis        = RedisDB->new(YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write}->%*);
 my $redis_shared = RedisDB->new(YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer-shared.yml')->{write}->%*);
 
-my $loop = IO::Async::Loop->new;
+my $loop  = IO::Async::Loop->new;
 my $queue = new_ok('BOM::Pricing::Queue', [internal_ip => '1.2.3.4'], 'New BOM::Pricing::Queue processor');
 $loop->add($queue);
 
@@ -99,8 +99,8 @@ subtest 'pricing interval stability' => sub {
         my $start = Time::HiRes::time();
         $queue->next_tick->get;
         my $end = Time::HiRes::time();
-        cmp_ok($end - $start, '<=', 1.1 * $queue->pricing_interval, 'time taken to sleep is acceptably close to pricing interval');
-        cmp_ok($end - int($end), '<=', 0.05, 'next interval starts within 50ms of the start of the second');
+        cmp_ok($end - $start,    '<=', 1.1 * $queue->pricing_interval, 'time taken to sleep is acceptably close to pricing interval');
+        cmp_ok($end - int($end), '<=', 0.05,                           'next interval starts within 50ms of the start of the second');
     }
 };
 

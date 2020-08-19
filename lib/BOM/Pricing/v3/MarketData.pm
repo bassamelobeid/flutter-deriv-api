@@ -113,15 +113,14 @@ sub trading_times {
     } else {
         try {
             $date = Date::Utility->new($params->{args}->{trading_times});
-        }
-        catch {
+        } catch {
             return BOM::Pricing::v3::Utility::create_error({
                     code              => 'InvalidDateFormat',
                     message_to_client => localize('Invalid date format.')});
         }
     }
 
-    my $language = $params->{language} // 'en';
+    my $language  = $params->{language} // 'en';
     my $cache_key = 'trading_times_' . $language . '_' . $date->date_yyyymmdd;
 
     my $cached = _get_cache($cache_key);
@@ -289,7 +288,7 @@ sub generate_trading_times {
     my $tree      = BOM::Product::Offerings::DisplayHelper->new(
         date      => $date,
         offerings => $offerings
-        )->decorate_tree(
+    )->decorate_tree(
         markets     => {name => 'name'},
         submarkets  => {name => 'name'},
         underlyings => {
@@ -373,7 +372,7 @@ sub generate_asset_index {
     my ($country_code, $landing_company_name, $language) = @_;
 
     my $offerings = _get_offerings($country_code, $landing_company_name);
-    my $key = join '_', ($offerings->name, 'asset_index', $language);
+    my $key       = join '_', ($offerings->name, 'asset_index', $language);
 
     if (my $cache = _get_cache($key)) {
         return $cache;
@@ -474,7 +473,7 @@ sub generate_asset_index {
                     foreach my $barrier_category (sort keys %{$contract_category->{expiries}}) {
                         my ($name, $order) = ($contract_category->{name}, $contract_category->{obj}->display_order);
                         if ($contract_category->{code} eq 'callput') {
-                            $name = localize($barrier_category_mapper{$barrier_category}->[0]);
+                            $name  = localize($barrier_category_mapper{$barrier_category}->[0]);
                             $order = $barrier_category_mapper{$barrier_category}->[1] if $barrier_category_mapper{$barrier_category}->[1];
                         }
                         push @category_expiries,
@@ -488,7 +487,7 @@ sub generate_asset_index {
                     }
                 }
                 my @sorted = map { $_->[1] } sort { $a->[0] <=> $b->[0] } @category_expiries;
-                my $x = [$ul->{code}, $ul->{name}, \@sorted];
+                my $x      = [$ul->{code}, $ul->{name}, \@sorted];
                 push @data, $x;
             }
         }
@@ -517,14 +516,14 @@ sub _get_permitted_expiries {
                    $actual_et eq 'tick'
                 or $actual_et eq 'no_expiry'
             )
-            ? sort { $a <=> $b } map { $_->[1] } @remaining
+            ? sort { $a <=> $b } map                   { $_->[1] } @remaining
             : sort { $a->seconds <=> $b->seconds } map { Time::Duration::Concise::Localize->new(interval => $_->[1]) } @remaining;
         my @maxs =
             (
                    $actual_et eq 'tick'
                 or $actual_et eq 'no_expiry'
             )
-            ? sort { $b <=> $a } map { $_->[2] } @remaining
+            ? sort { $b <=> $a } map                   { $_->[2] } @remaining
             : sort { $b->seconds <=> $a->seconds } map { Time::Duration::Concise::Localize->new(interval => $_->[2]) } @remaining;
         $result->{$actual_et} = {
             min => $mins[0],

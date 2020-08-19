@@ -118,7 +118,7 @@ sub process_job {
                     # - for proposal open contract, don't use $current_time here since we are using this time to
                     #   check if we want to skip repricing contract with the same spot price.
                     # - for proposal, because $response doesn't have current_spot_time, we will resort to $current_time
-                    time => $response->{current_spot_time} // $current_time,
+                    time     => $response->{current_spot_time} // $current_time,
                     contract => $response,
                 }
             ),
@@ -133,7 +133,7 @@ sub process_job {
 
 sub run {
     my ($self, %args) = @_;
-    my $redis_pricer = BOM::Config::Redis::redis_pricer(timeout => 0);
+    my $redis_pricer              = BOM::Config::Redis::redis_pricer(timeout => 0);
     my $redis_pricer_subscription = BOM::Config::Redis::redis_pricer_subscription_write(timeout => 0);
 
     my $tv_appconfig          = [0, 0];
@@ -147,8 +147,7 @@ sub run {
         my $key;
         try {
             $key = $redis_pricer->brpop(@{$args{queues}}, 0)
-        }
-        catch {
+        } catch {
             my $err = $@;
             if (blessed($err) && $err->isa('RedisDB::Error::EAGAIN')) {
                 stats_inc("pricer_daemon.resource_unavailable_error");
@@ -208,8 +207,7 @@ sub run {
         try {
             # Possible transient failure/dupe spot time
             $response = $self->process_job($redis_pricer, $next, $params) // next LOOP;
-        }
-        catch {
+        } catch {
             my $err = $@;
             $log->warnf('process_job_exception: param_str[%s], exception[%s], params[%s]', $next, $err, $params);
             $redis_pricer->del($key->[1], $next);
@@ -226,7 +224,7 @@ sub run {
         }
 
         # On websocket clients are subscribing to proposal open contract with "CONTRACT_PRICE::123122__virtual" as the key
-        my $redis_channel = $params->{contract_id} ? 'CONTRACT_PRICE::' . $params->{contract_id} . '_' . $params->{landing_company} : $key->[1];
+        my $redis_channel     = $params->{contract_id} ? 'CONTRACT_PRICE::' . $params->{contract_id} . '_' . $params->{landing_company} : $key->[1];
         my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, encode_json_utf8($response));
         # if None was subscribed, so delete the job
         if ($subscribers_count == 0) {
@@ -329,7 +327,7 @@ sub _process_bid {
 sub _validate_params {
     my ($self, $next, $params) = @_;
 
-    my $cmd = $params->{price_daemon_cmd};
+    my $cmd   = $params->{price_daemon_cmd};
     my $pnext = $next // 'undefined';
     unless ($cmd) {
         $log->warnf('No Pricer command! Payload is: %s', $pnext);

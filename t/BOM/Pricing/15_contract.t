@@ -35,7 +35,6 @@ diag(Date::Utility->new->date);
 
 initialize_realtime_ticks_db();
 
-
 my $landing_company = 'svg';
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
@@ -179,7 +178,7 @@ subtest 'get_ask' => sub {
     $params->{symbol} = "invalid symbol";
     $result = BOM::Pricing::v3::Contract::_get_ask(BOM::Pricing::v3::Contract::prepare_ask($params));
     ok $result->{error}, 'error for invalid symbol';
-    is $result->{error}{code}, 'ContractCreationFailure', 'error code is ContractCreationFailure';
+    is $result->{error}{code},              'ContractCreationFailure',                'error code is ContractCreationFailure';
     is $result->{error}{message_to_client}, 'Trading is not offered for this asset.', 'correct message to client';
 
     cmp_deeply(
@@ -398,7 +397,7 @@ subtest 'get_bid' => sub {
         country_code    => 'cr',
         landing_company => $landing_company,
     };
-    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    my $result        = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(
             bid_price
             current_spot_time
@@ -490,7 +489,7 @@ subtest 'get_bid_skip_barrier_validation' => sub {
 
     $params->{sell_time} = $now->epoch;
     $params->{is_sold}   = 1;
-    $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    $result              = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     is($result->{status}, 'sold', 'contract sold');
     $params->{is_expired} = 1;
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
@@ -554,7 +553,7 @@ subtest $method => sub {
         country_code    => 'cr',
         landing_company => $landing_company,
     };
-    my $res = $c->call_ok('get_bid', $params)->result;
+    my $res             = $c->call_ok('get_bid', $params)->result;
     my $expected_result = {
         'barrier'                  => '0.99350',
         'contract_id'              => 10,
@@ -585,7 +584,6 @@ subtest $method => sub {
     }
     done_testing();
 };
-
 
 done_testing();
 

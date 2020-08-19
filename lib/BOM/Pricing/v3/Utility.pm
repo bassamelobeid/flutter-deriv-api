@@ -102,7 +102,7 @@ sub get_contract_params {
 
     my $redis_read = BOM::Config::Redis::redis_pricer_shared(timeout => 0);
     my $params_key = join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company);
-    my $params = $redis_read->get($params_key);
+    my $params     = $redis_read->get($params_key);
 
     # Returns empty hash reference if could not find contract parameters.
     # This will then fail in validation.

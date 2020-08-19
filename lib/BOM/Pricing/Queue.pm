@@ -81,8 +81,7 @@ sub redis_instance {
                 ),
             ));
         return $redis;
-    }
-    catch {
+    } catch {
         my $e = $@;
         # delay a bit so that process managers like supervisord can
         # restart this processor gracefully in case of connection issues
@@ -197,7 +196,7 @@ sub next_interval {
     my ($self, $t) = @_;
     die 'need to pass time' unless $t;
     my $scaled = int($t / $self->pricing_interval);
-    my $next = $self->pricing_interval * ($scaled + 1);
+    my $next   = $self->pricing_interval * ($scaled + 1);
     return $next;
 }
 
@@ -330,7 +329,7 @@ async sub process {
                     size     => 0 + @all_keys,
                     updated  => Time::HiRes::time(),
                 })
-            )->on_ready(
+        )->on_ready(
             sub {
                 delete $self->{queue_stats};
                 $log->debug('pricer_daemon_queue_stats updated.');
@@ -444,8 +443,7 @@ async sub send_stats {
 
                     my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode(\%params);
                     $queued{$relative_shortcode}++;
-                }
-                catch {
+                } catch {
                     $log->warnf('Failed to extract metrics for contract %s - %s', $key, $@);
                     stats_inc('pricing.queue.invalid_contract');
                 }

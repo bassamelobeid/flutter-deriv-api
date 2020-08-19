@@ -175,7 +175,7 @@ subtest 'get_bid' => sub {
         currency    => 'USD',
         is_sold     => 0,
     };
-    my $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
+    my $result        = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(
             bid_price
             current_spot_time
