@@ -60,7 +60,7 @@ test_sendrecv_params 'balance/test_send.json',   'balance/test_receive_error_una
 test_sendrecv_params 'balance/test_send.json',   'balance/test_receive.json',                _get_stashed('authorize/stash/token');
 
 # TRADE SCOPE CALLS (VRTC)
-test_sendrecv_params 'topup_virtual/test_send.json', 'topup_virtual/test_receive_error.json', _get_stashed('authorize/stash/token');
+test_sendrecv_params 'topup_virtual/test_send.json', 'topup_virtual/test_receive.json', _get_stashed('authorize/stash/token');
 test_sendrecv_params 'buy/test_send.json', 'buy/test_receive.json', _get_stashed('new_account_virtual/oauth_token'), '99\\\\d{2}\\\\.\\\\d{2}';
 
 # TESTS TO RETURN ERROR (VRTC)
@@ -89,6 +89,8 @@ test_sendrecv_params 'buy/test_send.json', 'buy/test_receive_nobalance.json', _g
 # TEMPORARY: Need to call this before sub account as sub account return all crypto currencies as well
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json',
     _get_stashed('authorize/stash/token'), $currencies, $length;
+test_sendrecv_params 'topup_virtual/test_send.json', 'topup_virtual/test_receive_error.json', _get_stashed('authorize/stash/token');
+
 # ADMIN SCOPE CALLS (CR)
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
     _get_stashed('new_account_real/oauth_token'), 'USD';

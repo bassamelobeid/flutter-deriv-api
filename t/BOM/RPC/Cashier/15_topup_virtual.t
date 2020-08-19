@@ -38,8 +38,7 @@ my $oauth = BOM::Database::Model::OAuth->new;
 my ($token)    = $oauth->store_access_token_only(1, $test_loginid);
 my ($token_vr) = $oauth->store_access_token_only(1, $test_client_vr->loginid);
 
-my $account     = $test_client_vr->default_account;
-my $old_balance = $account->balance;
+my $account = $test_client_vr->default_account;
 
 sub expected_result {
     return {
@@ -114,57 +113,37 @@ my $params = {
     token    => '12345'
 };
 
+is($account->balance + 0, 0, "init balance is 0");
+
 $c->call_ok($method, $params)->has_error->error_code_is('InvalidToken')->error_message_is('The token is invalid.', 'invalid token');
 $test_client->status->set('disabled', 1, 'test status');
 $params->{token} = $token;
-$c->call_ok($method, $params)->has_error->error_code_is('DisabledClient')->error_message_is('This account is unavailable.', 'invalid token');
+$c->call_ok($method, $params)->has_error->error_code_is('DisabledClient')->error_message_is('This account is unavailable.', 'account is unavailable');
 
 $test_client->status->clear_disabled;
 $c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
-    ->error_message_is('Sorry, this feature is available to virtual accounts only', 'topup virtual error');
+    ->error_message_is('Sorry, this feature is available to virtual accounts only', 'virtual accounts only');
 
 $params->{token} = $token_vr;
+
 $c->call_ok($method, $params)->has_no_error->result_is_deeply(expected_result($amount), 'topup account successfully');
-my $balance = $account->balance + 0;
-is($old_balance + $amount, $balance, 'balance is right');
-$old_balance = $balance;
-$c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
-    ->error_message_is('You can only request additional funds if your virtual account balance falls below USD 1000.00.', 'balance is higher');
-#withdraw some money to test critical limit value
-my $limit            = 1000;
-my $withdrawal_money = $balance - $limit - 1;
-$test_client_vr->payment_legacy_payment(
-    currency     => 'USD',
-    amount       => -$withdrawal_money,
-    payment_type => 'virtual_credit',
-    remark       => 'virtual money withdrawal'
-);
-$balance = $account->balance + 0;
-is($balance, $limit + 1, 'balance is a little less than the value of limit');
-$c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
-    ->error_message_is('You can only request additional funds if your virtual account balance falls below USD 1000.00.', 'balance is higher');
+is($account->balance + 0, $amount, "balance is $amount");
+
+$c->call_ok($method, $params)->has_no_error->result_is_deeply(expected_result(0), 'can topup when balance is default');
+is($account->balance + 0, $amount, "balance is default");
 
 $test_client_vr->payment_legacy_payment(
     currency     => 'USD',
-    amount       => -1,
+    amount       => 1000,
     payment_type => 'virtual_credit',
     remark       => 'virtual money withdrawal'
 );
-$balance = $account->balance + 0;
-is($balance, $limit, 'balance is equal to limit');
-$c->call_ok($method, $params)->has_no_error->result_is_deeply(expected_result($amount), 'topup account successfully');
-$balance = $account->balance + 0;
-is($balance, $limit + $amount, 'balance is topuped');
+
+is($account->balance + 0, 11000, 'balance is 11000');
+$c->call_ok($method, $params)->has_no_error('can topup when balance is 11000');
+is($account->balance + 0, $amount, "balance reset to $amount");
 
 # buy a contract to test the error of 'Please close out all open positions before requesting additional funds.'
-$test_client_vr->payment_legacy_payment(
-    currency     => 'USD',
-    amount       => -$amount,
-    payment_type => 'virtual_credit',
-    remark       => 'virtual money withdrawal'
-);
-$balance = $account->balance + 0;
-is($balance, $limit, 'balance is equal to limit');
 my $price         = 100;
 my $contract_data = {
     underlying   => $underlying,
@@ -187,10 +166,10 @@ my $txn_data = {
 };
 my $txn = BOM::Transaction->new($txn_data);
 is($txn->buy(skip_validation => 1), undef, 'buy contract without error');
-$balance = $account->balance + 0;
-is($balance, $limit - $price, 'balance is reduced for buying contract');
-$c->call_ok($method, $params)->has_no_error->result_is_deeply(expected_result($amount), 'topup account successfully');
-$balance = $account->balance + 0;
-is($balance, $limit + $amount - $price, 'balance was increased correctly');
+
+is($account->balance + 0, $amount - $price, 'balance is reduced for buying contract');
+$c->call_ok($method, $params)->has_no_error->result_is_deeply(expected_result($price), 'topup after buy contract successfully');
+
+is($account->balance + 0, $amount, "balance reset to $amount");
 
 done_testing();

@@ -1640,19 +1640,8 @@ rpc topup_virtual => sub {
         return $error_sub->(localize('Sorry, this feature is available to virtual accounts only'));
     }
 
-    my $currency              = $client->default_account->currency_code();
-    my $min_topup_bal         = BOM::Config::payment_agent()->{minimum_topup_balance};
-    my $minimum_topup_balance = $min_topup_bal->{$currency} // $min_topup_bal->{DEFAULT};
-
-    if ($client->default_account->balance > $minimum_topup_balance) {
-        return $error_sub->(
-            localize(
-                'You can only request additional funds if your virtual account balance falls below [_1] [_2].',
-                $currency, formatnumber('amount', $currency, $minimum_topup_balance)));
-    }
-
     # CREDIT HIM WITH THE MONEY
-    my ($curr, $amount) = $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
+    my ($curr, $amount) = $client->deposit_virtual_funds($source, localize('Reset to default virtual money account balance.'));
 
     return {
         amount   => $amount,
