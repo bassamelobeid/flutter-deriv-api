@@ -19,6 +19,8 @@ use JSON::MaybeXS;
 use BOM::User::Client;
 use BOM::Database::ClientDB;
 use BOM::Platform::Event::Emitter;
+use BOM::Platform::Context qw(request);
+use BOM::Platform::Context::Request;
 
 use Log::Any qw($log);
 use Log::Any::Adapter qw(Stdout), log_level => 'debug';
@@ -48,6 +50,9 @@ my $end               = $start->plus_time_interval($months_in_quarter . 'mo');
 $log->infof('Generating client quarterly statement emails for %s (%s - %s)', $quarter, $start->iso8601, $end->iso8601);
 
 my $tt = Template->new(ABSOLUTE => 1);
+
+# Force @deriv.com sender email address in statement email message (picked from brand config).
+request(BOM::Platform::Context::Request->new(brand_name => 'deriv'));
 
 # This is hardcoded to work on European clients only, since it's required for regulatory reasons there.
 my @brokers = qw/MF/;
