@@ -3225,17 +3225,23 @@ sub deposit_virtual_funds {
     my ($self, $source, $remark) = @_;
     $self->is_virtual || die "not a virtual client\n";
 
-    my $currency = 'USD';
-    my $amount   = 10000;
+    my $virtual_account_default_balance = $self->landing_company->virtual_account_default_balance;
 
-    my $trx = $self->payment_legacy_payment(
-        currency     => $currency,
-        amount       => $amount,
-        payment_type => 'virtual_credit',
-        remark       => $remark // 'Virtual money credit to account',
-        source       => $source,
-    );
-    return ($currency, $amount, $trx);
+    # default_account not exists when first time init virtual balance
+    my $amount   = $self->default_account ? $virtual_account_default_balance - $self->default_account->balance : $virtual_account_default_balance;
+    my $currency = 'USD';
+
+    # if amount is 0, means no need topup balance
+    if ($amount) {
+        $self->payment_legacy_payment(
+            currency     => $currency,
+            amount       => $amount,
+            payment_type => 'virtual_credit',
+            remark       => $remark // 'Reset to default virtual money account balance.',
+            source       => $source,
+        );
+    }
+    return ($currency, $amount);
 }
 
 #######################################
