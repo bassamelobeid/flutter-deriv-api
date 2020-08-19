@@ -5,7 +5,7 @@ use warnings;
 use BOM::Database::Rose::DB;
 
 sub rose_db {
-    my %overrides = @_;
+    my %overrides  = @_;
     my $db_postfix = $ENV{DB_POSTFIX} // '';
     BOM::Database::Rose::DB->register_db(
         connect_options => {

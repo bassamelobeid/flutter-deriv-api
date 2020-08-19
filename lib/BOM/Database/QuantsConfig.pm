@@ -267,8 +267,7 @@ sub set_global_limit {
                                             $market,               $contract_group, $expiry_type,        $barrier_type,
                                             $args->{limit_amount}, $comment,        $args->{start_time}, $args->{end_time}]);
                                 }
-                            }
-                            catch {
+                            } catch {
                                 #The $error should always has value, but just for safe use 'UNKNOW_ERROR' as default
                                 my $error = $@ || 'UNKNOW_ERROR';
                                 ## Catch known date/time errors
@@ -328,7 +327,7 @@ sub get_global_limit {
     }
 
     my $db_list = $self->_db_list($landing_company);
-    my $db = @$db_list ? $db_list->[0] : undef;
+    my $db      = @$db_list ? $db_list->[0] : undef;
 
     die 'cannot find database for landing company [' . $landing_company . ']' unless $db;
 
@@ -390,7 +389,7 @@ sub _get_unique_records {
         }
     }
 
-    my @records = values %$data;
+    my @records      = values %$data;
     my %uniq_records = map { %{$records[$_]} } (0 .. $#records);
 
     return [values %uniq_records];
@@ -416,7 +415,7 @@ sub _get_all {
             {
                 my ($table_name, $type) = @$data;
                 my $id_postfix = $type =~ /^symbol/ ? 'symbol' : 'market';
-                my $records = $db->dbic->run(
+                my $records    = $db->dbic->run(
                     fixup => sub {
                         $_->selectall_arrayref(qq{SELECT *, $time_status FROM betonmarkets.$table_name}, {Slice => {}});
                     });
@@ -446,7 +445,7 @@ sub _get_all {
 
                     # for market level, underlying symbol is '-'
                     $limits{$id}{underlying_symbol} //= ($type eq 'symbol_default' ? 'default' : '-');
-                    $limits{$id}{market} //= $self->_get_market_for_symbol($limits{$id}{underlying_symbol});
+                    $limits{$id}{market}            //= $self->_get_market_for_symbol($limits{$id}{underlying_symbol});
                     $limits{$id}{$limit_type} = $record->{limit_amount};
                     $limits{$id}{type} = $type;
                 }
@@ -534,7 +533,7 @@ sub delete_global_limit {
         my @execute_args;
         foreach my $key (@func_inputs) {
             my $val = $args->{$key};
-            $val = undef if $val and $val eq 'default';
+            $val = undef                 if $val                   and $val eq 'default';
             $val = $val eq 'atm' ? 1 : 0 if $key eq 'barrier_type' and defined $val;
             $val = undef if $key eq 'limit';    ## We delete by providing a null limit amount
             push @execute_args, $val;
@@ -695,7 +694,7 @@ sub _get_market_for_symbol {
 sub _db_list {
     my ($self, $landing_company) = @_;
 
-    my $mapper = $self->broker_code_mapper;
+    my $mapper       = $self->broker_code_mapper;
     my @broker_codes = $landing_company eq 'default' ? uniq(values %$mapper) : ($mapper->{$landing_company});
     return [map { BOM::Database::ClientDB->new({broker_code => $_,})->db } @broker_codes];
 }

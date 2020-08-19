@@ -47,7 +47,7 @@ sub get_sold_bets_of_account {
 
     my $limit = int($args->{limit} // 50);
     $limit = 50 unless $limit > 0 and $limit <= 50;
-    my $offset = int($args->{offset} // 0);
+    my $offset   = int($args->{offset} // 0);
     my $sort_dir = (($args->{sort} // '') eq 'ASC') ? 'ASC' : 'DESC';
     my $before   = $args->{before};
     my $after    = $args->{after};
@@ -101,7 +101,7 @@ Get bets by id (it can be an ARRAYREF of financial_market_bet_id)
 =cut
 
 sub get_fmb_by_id {
-    my $self = shift;
+    my $self    = shift;
     my $bet_ids = shift || Carp::croak('Invalid bet_ids reference');
     Carp::croak('Only array ref accepted as $bet_ids') if ref $bet_ids ne 'ARRAY';
     my $return_hash = shift || undef;
@@ -266,13 +266,12 @@ sub get_sold_contracts {
     try {
         return $dbic->run(
             fixup => sub {
-                my $statement = "SELECT * FROM betonmarkets.get_client_sold_contracts_v3(?, ?, ?, ?, ?, ?)";
+                my $statement   = "SELECT * FROM betonmarkets.get_client_sold_contracts_v3(?, ?, ?, ?, ?, ?)";
                 my @bind_values = ($self->account->id, $first_purchase_time, $last_purchase_time, $order_type, $limit, $offset);
 
                 return $_->selectall_arrayref($statement, {Slice => {}}, @bind_values);
             });
-    }
-    catch {
+    } catch {
         die "Database Error: Unable to fetch the sold contracts\n";
     }
 

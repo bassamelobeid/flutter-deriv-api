@@ -66,8 +66,7 @@ $init_info = {
 };
 
 throws_ok { $connection_builder = BOM::Database::ClientDB->new($init_info); $connection_builder->db; }
-qr/Invalid operation for DB/,
-    'Successfully caught invalid init params, operation [' . $init_info->{'operation'} . ']';
+qr/Invalid operation for DB/, 'Successfully caught invalid init params, operation [' . $init_info->{'operation'} . ']';
 
 $init_info = {
     broker_code => 'FOG',

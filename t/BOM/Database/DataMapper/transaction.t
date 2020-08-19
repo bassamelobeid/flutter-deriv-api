@@ -171,11 +171,11 @@ subtest get_daily_summary_report => sub {
     my $client_ref = BOM::Database::DataMapper::Transaction->new({
             broker_code => 'CR',
         }
-        )->get_daily_summary_report({
-            currency_code     => 'USD',
-            broker_code       => 'CR',
-            start_of_next_day => '2011-1-1',
-        });
+    )->get_daily_summary_report({
+        currency_code     => 'USD',
+        broker_code       => 'CR',
+        start_of_next_day => '2011-1-1',
+    });
 
     is_deeply(
         $client_ref->{'CR0012'},
@@ -246,11 +246,11 @@ subtest get_open_bets_at_end_of => sub {
     my $client_ref = BOM::Database::DataMapper::Transaction->new({
             broker_code => 'CR',
         }
-        )->get_accounts_with_open_bets_at_end_of({
-            currency_code     => 'USD',
-            broker_code       => 'CR',
-            start_of_next_day => '2011-1-1',
-        });
+    )->get_accounts_with_open_bets_at_end_of({
+        currency_code     => 'USD',
+        broker_code       => 'CR',
+        start_of_next_day => '2011-1-1',
+    });
 
     is_deeply([sort { $a <=> $b } keys %{$client_ref->{$account->id}}], [sort { $a <=> $b } @expect]);
 };

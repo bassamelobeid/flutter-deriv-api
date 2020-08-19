@@ -155,8 +155,7 @@ sub getall_arrayref {
     my @result;
     try {
         @result = map { $decoder->decode($_->[0]) } @$result;
-    }
-    catch {
+    } catch {
         die "Result must be always rows of JSON : $@";
     }
 
@@ -198,7 +197,7 @@ sub get_duplicate_client {
 }
 
 sub lock_client_loginid {
-    my $self = shift;
+    my $self           = shift;
     my $client_loginid = shift || $self->loginid;
 
     my $dbic   = $self->db->dbic;
@@ -223,7 +222,7 @@ BEGIN {
 }
 
 sub unlock_client_loginid {
-    my $self = shift;
+    my $self           = shift;
     my $client_loginid = shift || $self->loginid;
 
     my $dbic   = $self->db->dbic;

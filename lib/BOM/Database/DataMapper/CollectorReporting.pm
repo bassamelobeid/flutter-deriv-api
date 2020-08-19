@@ -32,7 +32,7 @@ sub get_open_bet_overviews {
     my $self        = shift;
     my $before_date = shift;
 
-    my $last_generated = $self->get_last_generated_historical_marked_to_market_time;
+    my $last_generated  = $self->get_last_generated_historical_marked_to_market_time;
     my $from_historical = ($last_generated and $before_date->is_before(Date::Utility->new($last_generated))) ? 1 : undef;
 
     my $sql;

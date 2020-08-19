@@ -20,7 +20,7 @@ sub __parse_array {
     return BOM::Database::AuthDB::rose_db()->parse_array($array_string);
 }
 
-my @token_scopes = ('read', 'trade', 'payments', 'admin');
+my @token_scopes     = ('read', 'trade', 'payments', 'admin');
 my %available_scopes = map { $_ => 1 } @token_scopes;
 
 sub __filter_valid_scopes {

@@ -29,8 +29,7 @@ subtest 'Writes to replica database should fail' => sub {
                 $dbh->do('insert into betonmarkets.broker_code values (\'BRU\');');
 
                 ok(0, 'Should not be able to write into a replica!');
-            }
-            catch {
+            } catch {
                 if ($dbh->state =~ /^25006$/) {
                     ok(1, 'read_only_sql_transaction error is thrown as expected.');
                 }

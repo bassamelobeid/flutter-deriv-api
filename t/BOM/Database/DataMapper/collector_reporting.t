@@ -8,7 +8,7 @@ use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init :disable_redis_cleanup);
 use Date::Utility;
 
-my $db = BOM::Test::Data::Utility::UnitTestCollectorDatabase::db();
+my $db            = BOM::Test::Data::Utility::UnitTestCollectorDatabase::db();
 my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({db => $db});
 
 my @payments = $report_mapper->get_active_accounts_payment_profit({

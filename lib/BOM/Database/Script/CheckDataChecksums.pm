@@ -103,7 +103,7 @@ EOF
                 my $l = $dbic->run(fixup => sub { $_->selectall_arrayref($sql_pages, undef, $oid, $fork, $curr_block, $chunk) });
                 if (@$l < $chunk) {
                     if ($verbose) {
-                        print "." unless @$l == 0;
+                        print "."  unless @$l == 0;
                         print "\n" unless $n == 0 and @$l == 0;
                     }
                     last;

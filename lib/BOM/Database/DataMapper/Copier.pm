@@ -67,7 +67,7 @@ sub get_copiers_tokens_all {
     };
 
     my @binds = ($args->{trader_id});
-    my $res = $self->db->dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef, @binds) });
+    my $res   = $self->db->dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef, @binds) });
     return $res;
 }
 
@@ -114,7 +114,7 @@ sub get_traders_tokens_all {
     };
 
     my @binds = ($args->{copier_id});
-    my $res = $self->db->dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef, @binds) });
+    my $res   = $self->db->dbic->run(fixup => sub { $_->selectall_arrayref($sql, undef, @binds) });
     return $res;
 }
 
@@ -225,7 +225,7 @@ sub get_traders_all {
     };
 
     my @binds = ($args->{copier_id});
-    my $res = $self->db->dbic->run(fixup => sub { $_->selectall_arrayref($sql, {Slice => {}}, @binds) });
+    my $res   = $self->db->dbic->run(fixup => sub { $_->selectall_arrayref($sql, {Slice => {}}, @binds) });
 
     return $res;
 }

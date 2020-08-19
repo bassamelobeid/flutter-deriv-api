@@ -68,7 +68,7 @@ sub get_clients_with_only_one_freegift_transaction_and_inactive {
         my @no_used_gift_clients;
         push @no_used_gift_clients, $dbic->run(
             fixup => sub {
-                my $sth = $_->prepare($sql);
+                my $sth        = $_->prepare($sql);
                 my @bind_value = ($before_than, $broker_code . "%");
                 $sth->execute(@bind_value);
                 # A new variable is created. We don't want to affect outer environment for we are using 'fixup' mode of DBIx::Connector
@@ -79,8 +79,7 @@ sub get_clients_with_only_one_freegift_transaction_and_inactive {
                 return @inner_no_used_gift_clients;
             });
         return \@no_used_gift_clients;
-    }
-    catch {
+    } catch {
         Carp::croak("BOM::Database::DataMapper::Payment::FreeGift -  [$@]");
     }
 

@@ -14,7 +14,7 @@ use BOM::User::Client;
 use constant COMPATIBLE_MODE => 0;
 
 sub get_audit {
-    my $loginid = shift;
+    my $loginid  = shift;
     my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
 
     return $clientdb->db->dbic->run(

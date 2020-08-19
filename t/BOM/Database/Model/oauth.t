@@ -38,7 +38,7 @@ is $app1->{verification_uri}, 'https://www.example.com/verify', 'verification_ur
 my $verification_uri = $m->get_verification_uri_by_app_id($test_appid);
 is $app1->{verification_uri}, $verification_uri, 'get_verification_uri_by_app_id';
 
-my $names = $m->get_names_by_app_id($app1->{app_id});
+my $names          = $m->get_names_by_app_id($app1->{app_id});
 my $expected_names = {$app1->{app_id} => $app1->{name}};
 is_deeply $names, $expected_names, "got correct name for single app";
 
@@ -106,7 +106,7 @@ is $get_apps, $app1->{app_id}, 'user_has_app_id yes';
 $get_apps = $m->user_has_app_id($test_user_id, -1);
 is $get_apps, undef, 'user_has_app_id no';
 
-$names = $m->get_names_by_app_id([$app1->{app_id}, $app2->{app_id}]);
+$names          = $m->get_names_by_app_id([$app1->{app_id}, $app2->{app_id}]);
 $expected_names = {
     $app1->{app_id} => $app1->{name},
     $app2->{app_id} => $app2->{name}};
@@ -150,8 +150,8 @@ subtest 'revoke tokens by loginid and app_id' => sub {
     my $get_apps = $m->get_apps_by_user_id($test_user_id);
     is_deeply($get_apps, [$app1, $app2, $app3], 'get_apps_by_user_id ok');
 
-    my @app_ids = ($app1->{app_id}, $app2->{app_id}, $app3->{app_id});
-    my @loginids = ('CR1234', 'VRTC1234');
+    my @app_ids  = ($app1->{app_id}, $app2->{app_id}, $app3->{app_id});
+    my @loginids = ('CR1234',        'VRTC1234');
 
     foreach my $loginid (@loginids) {
         foreach my $app_id (@app_ids) {
@@ -293,7 +293,7 @@ subtest 'get app by id' => sub {
         active       => 1
     });
 
-    my $get_app1 = $m->get_app($test_user_id, $app1->{app_id});
+    my $get_app1      = $m->get_app($test_user_id, $app1->{app_id});
     my $retrieved_app = $m->get_app_by_id($app1->{app_id});
     is $get_app1->{name}, $retrieved_app->{name}, 'app retrieved from DB and created app should be the same ';
 

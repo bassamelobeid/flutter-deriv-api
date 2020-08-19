@@ -63,7 +63,7 @@ sub broker {
             ($loginid =~ /^([A-Z]+)/) ? $broker = $1 : last;
         }
         $broker;
-        }
+    }
 }
 
 sub get_db { return shift->{_db_operation} || '' }
@@ -72,7 +72,7 @@ sub set_db {
     my ($self, $operation) = @_;
     my $db = BOM::Database::ClientDB->new({
             broker_code => ($self->broker || die "must know broker to set db"),
-            operation => $operation,
+            operation   => $operation,
         })->db;
     $self->{_db_operation} = $operation;
     return $self->db($db);

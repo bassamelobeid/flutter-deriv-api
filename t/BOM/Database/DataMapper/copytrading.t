@@ -63,7 +63,7 @@ sub subscribe {
                     broker_code => 'CR',
                     operation   => 'write',
                 }
-                )->db,
+            )->db,
             where => [
                 trader_id => $args->{trader_id},
                 copier_id => $args->{copier_id},

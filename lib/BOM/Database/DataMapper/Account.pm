@@ -61,7 +61,7 @@ get account's profit or loss earned from total trades
 =cut
 
 sub get_total_trades_income {
-    my ($self, $args) = @_;
+    my ($self,      $args)    = @_;
     my ($from_date, $to_date) = @{$args}{'from', 'to'};
 
     $from_date //= '1970-01-01 00:00:00';
