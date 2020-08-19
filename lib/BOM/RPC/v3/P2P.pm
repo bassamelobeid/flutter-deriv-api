@@ -106,18 +106,22 @@ our %ERROR_MAP = do {
         ClientDailyOrderLimitExceeded => localize("You may only place [_1] orders every 24 hours. Please try again later."),
         EscrowNotFound =>
             localize("Advertising for this currency is currently unavailable. Please contact our Customer Support team or try again later."),
-        InvalidAdvertOwn            => localize("You cannot place an order for your own ad."),
-        InvalidOrderCurrency        => localize("Please select an ad that matches your currency."),
-        InvalidStateForConfirmation => localize("Please wait for confirmation or contact the seller."),
-        OpenOrdersDeleteAdvert      => localize("You have open orders for this ad. Please wait until all orders are closed."),
-        OrderAlreadyCancelled       => localize("You've already cancelled this order."),
-        OrderAlreadyConfirmed       => localize("This order is already confirmed."),
-        OrderAlreadyExists          => localize("You have an active order for this ad. Please complete the order before making a new one."),
-        OrderMaximumExceeded        => localize("Maximum ad amount is [_1] [_2]. Please adjust the value."),
-        OrderMinimumNotMet          => localize("Minimum ad amount is [_1] [_2]. Please adjust the value."),
-        OrderNoEditExpired          => localize("This order has expired and cannot be changed."),
-        OrderNotFound               => localize("This order does not exist."),
-        AdvertiserNotFoundForOrder  => localize(
+        InvalidAdvertOwn              => localize("You cannot place an order for your own ad."),
+        InvalidOrderCurrency          => localize("Please select an ad that matches your currency."),
+        OpenOrdersDeleteAdvert        => localize("You have open orders for this ad. Please wait until all orders are closed."),
+        OrderAlreadyCancelled         => localize("You've already cancelled this order."),
+        OrderNotConfirmedPending      => localize("Please wait for the buyer to confirm the order."),
+        OrderAlreadyConfirmedBuyer    => localize("You've already confirmed this order. Please wait for the seller to confirm."),
+        OrderAlreadyConfirmedTimedout => localize(
+            "You've already confirmed this order, but the seller has not. Please contact them for more information. If you need help, contact our Customer Support team."
+        ),
+        OrderConfirmCompleted      => localize("This order has already been completed."),
+        OrderAlreadyExists         => localize("You have an active order for this ad. Please complete the order before making a new one."),
+        OrderMaximumExceeded       => localize("Maximum ad amount is [_1] [_2]. Please adjust the value."),
+        OrderMinimumNotMet         => localize("Minimum ad amount is [_1] [_2]. Please adjust the value."),
+        OrderNoEditExpired         => localize("This order has expired and cannot be changed."),
+        OrderNotFound              => localize("This order does not exist."),
+        AdvertiserNotFoundForOrder => localize(
             "You are using an old version of this app, which no longer supports placing orders. Please upgrade your app to place your order.")
         ,    # Temporary error message should be removed after releasing KYC for p2p and we sure that clients updated mobile app.
         AdvertiserNotApprovedForOrder =>
@@ -142,14 +146,14 @@ our %DB_ERRORS = (
     BI225 => 'AdvertNotFound',
     BI226 => 'InvalidAdvertOwn',
     BI228 => 'OrderNotFound',
-    BI229 => 'InvalidStateForConfirmation',
-    BI230 => 'InvalidStateForConfirmation',
+    BI229 => 'OrderConfirmCompleted',
+    BI230 => 'OrderNotConfirmedPending',
     BI231 => 'OrderNotFound',
     BI232 => 'AlreadyInProgress',
     BI233 => 'OrderNotFound',
-    BI234 => 'InvalidStateForConfirmation',
+    BI234 => 'OrderConfirmCompleted',
     BI235 => 'OrderNotFound',
-    BI236 => 'InvalidStateForConfirmation',
+    BI236 => 'OrderConfirmCompleted',
     BI237 => 'InvalidOrderCurrency',
     BI238 => 'ClientDailyOrderLimitExceeded',
     BI239 => 'OpenOrdersDeleteAdvert',
