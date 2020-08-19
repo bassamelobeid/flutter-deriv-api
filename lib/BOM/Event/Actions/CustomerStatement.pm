@@ -91,6 +91,7 @@ sub _send_email_statement {
 
     # gather template data
     my $account = $client->account;
+    my $company = $client->landing_company;
     # result may not be available for clients with no currency
     my $result          = $account ? (values %$summary)[0] : {};
     my $estimated_value = ($result->{ending_balance} // 0) + ($transactions->{estimated_profit} // 0);
@@ -102,7 +103,7 @@ sub _send_email_statement {
             closed_trades   => $transactions->{close_trade},
             payments        => $transactions->{payment},
             escrow          => $transactions->{escrow},
-            is_mf_client    => ($client->landing_company->short eq 'maltainvest') ? 1 : 0,
+            is_mf_client    => ($company->short eq 'maltainvest') ? 1 : 0,
             estimated_value => $account ? formatnumber('price', $account->currency_code, $estimated_value) : '',
             name            => $client->first_name . ' ' . $client->last_name,
             account_number  => $client->loginid,
@@ -113,7 +114,9 @@ sub _send_email_statement {
         statement => {
             start_date => $date_from->datetime_yyyymmdd_hhmmss(),
             end_date   => $date_to->datetime_yyyymmdd_hhmmss(),
-        }};
+        },
+        offerings_available => defined($company->default_product_type),
+    };
 
     my $tt = Template->new(ABSOLUTE => 1);
     $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/quarterly_statement.html.tt', $data, \my $html);

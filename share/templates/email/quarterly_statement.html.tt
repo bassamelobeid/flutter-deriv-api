@@ -34,10 +34,6 @@
        <td style="text-align:left">[% client.classification %]</td>
       </tr>
       <tr>
-       <th scope="row">Securities Held:</th>
-       <td style="text-align:left">Over-the-Counter Binary Options</td>
-      </tr>
-      <tr>
        <th scope="row">Statement Cover Period:</th>
        <td style="text-align:left">[% statement.start_date %] to [% statement.end_date %] (inclusive)</td>
       </tr>
@@ -46,17 +42,17 @@
    </td>
    [% IF client.is_mf_client -%]
     <td align="left" width="50%">
-     Binary Investments (Europe) Ltd
+     Deriv Investments (Europe) Limited
      <br> Private Limited Liability Company
      <br> Registered with the Registrar of Companies in Malta - Company No C70156
      <br> W Business Centre, Level 3, Triq Dun Karm, Birkirkara, BKR 9033, Malta
-     <br> Email: <a href="mailto:support@binary.com">support@binary.com</a>
     </td>
    [% END -%]
   </tr>
  </tbody>
 </table>
 
+[% IF offerings_available -%]
 <table>
  <tbody>
   <tr>
@@ -81,13 +77,25 @@
 </table>
 
 <p>
- <em>* The price of binary options is based on the performance of the market.  The absence of a market price likely indicates a lack of liquidity.   </em>
+ <em>* The prices shown here are based on the performance of the market. The absence of a market price likely indicates a lack of liquidity.</em>
 </p>
-
-[% IF missing_prices -%]
-<p>
- <em>* The price of binary options is based on the performance of the market.  The absence of a market price likely indicates a lack of liquidity.</em>
-</p>
+[% ELSE -%]
+<table>
+ <tbody>
+  <tr>
+   <th>Starting Balance</th>
+   <th>Total Deposits</th>
+   <th>Total Withdrawals</th>
+   <th>Ending Balance</th>
+  </tr>
+  <tr>
+   <td>[% client.starting_balance %]</td>
+   <td>[% client.deposits %]</td>
+   <td>[% client.withdrawals %]</td>
+   <td>[% client.ending_balance %]</td>
+  </tr>
+ </tbody>
+</table>
 [% END -%]
 
 <h2>Closed Trades</h2> 
@@ -208,19 +216,19 @@
 <p>
  Your funds are kept in segregated client money accounts with secure and licensed financial institutions.
  [% IF client.is_mf_client -%]
-  <br> For further information, please refer to the Supplementary Terms and Conditions for Financial Products offered by Binary Investments (Europe) Ltd.
+  <br> For further information, please refer to the Supplementary Terms and Conditions for Financial Products offered by Deriv Investments (Europe) Limited.
  [% END -%]
 </p>
 
 [% IF client.is_mf_client -%]
  <p>
-  <strong>Financial instruments offered to retail clients fall under the Investor Compensation Scheme as set out in the Supplementary Terms and Conditions for Financial Products offered by Binary Investments (Europe) Ltd.</strong>
+  <strong>Financial instruments offered to retail clients fall under the Investor Compensation Scheme as set out in the Supplementary Terms and Conditions for Financial Products offered by Deriv Investments (Europe) Limited.</strong>
   <br>
   <strong>Financial instruments offered to professional clients do not fall under the Investor Compensation Scheme.</strong>
  </p>
 
  <p>
-  <em>Binary Investments (Europe) Ltd is licensed and regulated in Malta as a Category 3 Investment Services provider by the Malta Financial Services Authority (licence no. IS/70156).</em>
+  <em>Deriv Investments (Europe) Limited is licensed and regulated in Malta as a Category 3 Investment Services provider by the Malta Financial Services Authority (licence no. IS/70156).</em>
  </p>
 
 [% END -%]
