@@ -42,6 +42,20 @@
         </tr>
     </table>
 <br><br>
+<!--calculate withdrawal fee-->
+    <table>
+        <th colspan=3>Calculate withdrawal fee</th>
+        <tr>
+            <th>Withdraw_to address</th>
+            <td><input type=text name='withdrawal_address'/></td>
+            <td rowspan=2><button type=submit name='req_type' value='calculate_withdrawal_fee'/>Calculate</button></td>
+        </tr>
+        <tr>
+            <th>Amount</th>
+            <td><input type=number step=any name='withdrawal_amount'/></td>
+        </tr>
+    </table>
+<br><br>
 <!--Wallet functions-->
     <table>
         <th colspan=3>Wallet functions</th>

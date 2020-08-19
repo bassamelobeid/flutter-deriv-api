@@ -138,6 +138,9 @@ table td{
                 
             [% CASE 'get_blockcount' %]
                 <p>[% currency %] Last Block: <b>[% response %]</b></p>
+                
+            [% CASE 'calculate_withdrawal_fee' %]
+                <p>Withdrawal fee: <b>[% response %] [% currency %]</b></p>
             
             [% CASE 'get_blockchain_info' %]
                 <table>

@@ -288,6 +288,10 @@ sub get_settings_by_group {
     my @safe_amount_list = keys $app_config->payments->crypto->minimum_safe_amount->{definition}->{contains}->%*;
     push $group_settings->{crypto}->@*, (map { "payments.crypto.minimum_safe_amount.$_" } @safe_amount_list);
 
+    # Add all `payments.crypto.fee_limit_usd.*` keys to `crypto`
+    my @fee_limit_usd_list = keys $app_config->payments->crypto->fee_limit_usd->{definition}->{contains}->%*;
+    push $group_settings->{crypto}->@*, (map { "payments.crypto.fee_limit_usd.$_" } @fee_limit_usd_list);
+
     my $settings;
 
     if ($group eq 'others') {
