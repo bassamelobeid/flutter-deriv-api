@@ -2,7 +2,6 @@ BTC:
     withdrawal:
         timeout: "3d"
         min_usd: 25
-        fee_limit_usd: 10
     subscription:
         rpc_timeout: 100
     protocol_cost: 0
@@ -15,7 +14,6 @@ LTC:
     withdrawal:
         timeout: "3d"
         min_usd: 5
-        fee_limit_usd: 2
     subscription:
         rpc_timeout: 100
     protocol_cost: 0
@@ -28,7 +26,6 @@ ETH:
     withdrawal:
         timeout: "5d"
         min_usd: 5
-        fee_limit_usd: 3
     subscription:
         rpc_timeout: 100
     protocol_cost: 0
@@ -51,49 +48,42 @@ BUSD:
     withdrawal:
         timeout: "3d"
         min_usd: 25
-        fee_limit_usd: 10
     protocol_cost: 0
     decimal_places: 18
 DAI:
     withdrawal:
         timeout: "3d"
         min_usd: 25
-        fee_limit_usd: 10
     protocol_cost: 0
     decimal_places: 18
 EURS:
     withdrawal:
         timeout: "3d"
         min_usd: 25
-        fee_limit_usd: 10
     protocol_cost: 0
     decimal_places: 2
 IDK:
     withdrawal:
         timeout: "3d"
         min_usd: 5
-        fee_limit_usd: 2
     protocol_cost: 0
     decimal_places: 8
 PAX:
     withdrawal:
         timeout: "3d"
         min_usd: 25
-        fee_limit_usd: 10
     protocol_cost: 0
     decimal_places: 18
 TUSD:
     withdrawal:
         timeout: "3d"
         min_usd: 25
-        fee_limit_usd: 10
     protocol_cost: 0
     decimal_places: 18
 USB:
     withdrawal:
         timeout: "3d"
         min_usd: 25
-        fee_limit_usd: 10
     subscription:
         rpc_timeout: 100
     protocol_cost: 0
@@ -102,21 +92,18 @@ USDC:
     withdrawal:
         timeout: "3d"
         min_usd: 25
-        fee_limit_usd: 10
     protocol_cost: 0
     decimal_places: 6
 USDK:
     withdrawal:
         timeout: "3d"
         min_usd: 25
-        fee_limit_usd: 10
     protocol_cost: 0
     decimal_places: 18
 UST:
     withdrawal:
         timeout: "3d"
         min_usd: 25
-        fee_limit_usd: 10
     subscription:
         rpc_timeout: 100
     protocol_cost: 0.00000546
@@ -125,6 +112,5 @@ eUSDT:
     withdrawal:
         timeout: "3d"
         min_usd: 25
-        fee_limit_usd: 10
     protocol_cost: 0
     decimal_places: 6

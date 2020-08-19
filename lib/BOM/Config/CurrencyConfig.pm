@@ -412,4 +412,24 @@ sub is_experimental_currency {
     return any { $currency eq $_ } app_config()->system->suspend->experimental_currencies->@*;
 }
 
+=head2 get_crypto_withdrawal_fee_limit
+
+To get the fee limit for the withdrawal.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns the fee_limit_usd for the withdrawal of the currency.
+
+=cut
+
+sub get_crypto_withdrawal_fee_limit {
+    my $currency = shift;
+
+    return app_config()->get('payments.crypto.fee_limit_usd.' . $currency);
+}
+
 1;
