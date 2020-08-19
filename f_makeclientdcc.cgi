@@ -44,7 +44,7 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
         print "Please provide email";
         code_exit_BO();
     }
-    $client_email = $input->{clientemail};
+    $client_email = lc $input->{clientemail};
 }
 
 if ($input->{'transtype'} =~ /^UPDATECLIENT|Edit affiliates token/) {
