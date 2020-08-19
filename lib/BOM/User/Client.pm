@@ -2322,7 +2322,7 @@ sub p2p_order_confirm {
 
     my $ownership_type = _order_ownership_type($client, $order_info);
 
-    my $method = $client->can('_' . $ownership_type . '_' . $order_info->{type} . '_confirm');
+    my $method = $client->can('_p2p_' . $ownership_type . '_' . $order_info->{type} . '_confirm');
     die +{error_code => 'PermissionDenied'} unless $method;
 
     my $update = $client->$method($order_info, $param{source});
@@ -2654,88 +2654,180 @@ sub _order_ownership_type {
     return '';
 }
 
-=head2 _client_buy_confirm
+=head2 _p2p_client_buy_confirm
 
 Sets order client confirmed = true and status = buyer-confirmed.
 
+Takes a single argument:
+
+=over 4
+
+=item * C<order> - an order as returned from L<_p2p_orders>
+
+=back 
+
+Returns a hashref of the row returned by the final db function.
+
 =cut
 
-sub _client_buy_confirm {
-    my ($client, $order_info) = @_;
+sub _p2p_client_buy_confirm {
+    my ($client, $order) = @_;
 
-    die +{error_code => 'OrderAlreadyConfirmed'} if $order_info->{status} =~ /^(buyer-confirmed|completed)$/;
-
-    die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} ne 'pending';
+    # $client is the buyer
+    $client->_p2p_validate_buyer_confirm($order);
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order_info->{id}, 1);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order->{id}, 1);
         });
 }
 
-=head2 _advertiser_buy_confirm
+=head2 _p2p_advertiser_buy_confirm
 
 Sets order advertiser_confirmed = true and completes the order in a single transaction.
-Completing the order moves funds from escrow to client.
+Completing the order moves funds from escrow to order client.
+
+Takes a single argument:
+
+=over 4
+
+=item * C<order> - an order as returned from L<_p2p_orders>
+
+=back 
+
+Returns a hashref of the row returned by the final db function.
 
 =cut
 
-sub _advertiser_buy_confirm {
-    my ($client, $order_info, $source) = @_;
+sub _p2p_advertiser_buy_confirm {
+    my ($client, $order, $source) = @_;
 
-    die +{error_code => 'OrderAlreadyConfirmed'}       if $order_info->{status} eq 'completed';
-    die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} !~ /^(buyer-confirmed|timed-out)$/;
+    # $client is the seller
+    $client->_p2p_validate_seller_confirm($order);
 
     my $escrow   = $client->p2p_escrow;
     my $txn_time = Date::Utility->new->datetime;
     return $client->db->dbic->txn(
         fixup => sub {
-            $_->do('SELECT * FROM p2p.order_confirm_advertiser(?, ?)', undef, $order_info->{id}, 1);
+            $_->do('SELECT * FROM p2p.order_confirm_advertiser(?, ?)', undef, $order->{id}, 1);
             return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?)',
-                undef, $order_info->{id}, $escrow->loginid, $source, $client->loginid, $txn_time);
+                undef, $order->{id}, $escrow->loginid, $source, $client->loginid, $txn_time);
         });
 }
 
-=head2 _client_sell_confirm
+=head2 _p2p_client_sell_confirm
 
 Sets order client_confirmed = true and completes the order in a single transaction.
 Completing the order moves funds from escrow to advertiser.
 
+Takes a single argument:
+
+=over 4
+
+=item * C<order> - an order as returned from L<_p2p_orders>
+
+=back 
+
+Returns a hashref of the row returned by the final db function.
+
 =cut
 
-sub _client_sell_confirm {
-    my ($client, $order_info, $source) = @_;
+sub _p2p_client_sell_confirm {
+    my ($client, $order, $source) = @_;
 
-    die +{error_code => 'OrderAlreadyConfirmed'}       if $order_info->{status} eq 'completed';
-    die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} !~ /^(buyer-confirmed|timed-out)$/;
+    # $client is the seller
+    $client->_p2p_validate_seller_confirm($order);
 
     my $escrow   = $client->p2p_escrow;
     my $txn_time = Date::Utility->new->datetime;
     return $client->db->dbic->txn(
         fixup => sub {
-            $_->do('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order_info->{id}, 1);
+            $_->do('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order->{id}, 1);
             return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?)',
-                undef, $order_info->{id}, $escrow->loginid, $source, $client->loginid, $txn_time);
+                undef, $order->{id}, $escrow->loginid, $source, $client->loginid, $txn_time);
         });
 }
 
-=head2 _advertiser_sell_confirm
+=head2 _p2p_advertiser_sell_confirm
 
-Sets order advertiser confirmed = true and status = buyer-confirmed
+Sets order advertiser confirmed = true and status = buyer-confirmed.
+
+Takes a single argument:
+
+=over 4
+
+=item * C<order> - an order as returned from L<_p2p_orders>
+
+=back 
+
+Returns a hashref of the row returned by the final db function.
 
 =cut
 
-sub _advertiser_sell_confirm {
-    my ($client, $order_info) = @_;
+sub _p2p_advertiser_sell_confirm {
+    my ($client, $order) = @_;
 
-    die +{error_code => 'OrderAlreadyConfirmed'}       if $order_info->{status} =~ /^(buyer-confirmed|completed)$/;
-    die +{error_code => 'InvalidStateForConfirmation'} if $order_info->{status} ne 'pending';
+    # $client is the buyer
+    $client->_p2p_validate_buyer_confirm($order);
 
     return $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_advertiser(?, ?)', undef, $order_info->{id}, 1);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_advertiser(?, ?)', undef, $order->{id}, 1);
         });
 
+}
+
+=head2 _p2p_validate_buyer_confirm
+
+Validates if order can be confirmed by client as a buyer.
+Throws an error hashref if cannot.
+
+Takes a single argument:
+
+=over 4
+
+=item * C<order> - an order as returned from L<_p2p_orders>
+
+=back 
+
+Returns nothing.
+
+=cut
+
+sub _p2p_validate_buyer_confirm {
+    my ($client, $order) = @_;
+
+    die +{error_code => 'OrderAlreadyConfirmedBuyer'}    if $order->{status} eq 'buyer-confirmed';
+    die +{error_code => 'OrderAlreadyConfirmedTimedout'} if $order->{status} eq 'timed-out';
+    die +{error_code => 'OrderConfirmCompleted'}         if $order->{status} ne 'pending';
+
+    return;
+}
+
+=head2 _p2p_validate_seller_confirm
+
+Validates if order can be confirmed by client as a seller.
+Throws an error hashref if cannot.
+
+Takes a single argument:
+
+=over 4
+
+=item * C<order> - an order as returned from L<_p2p_orders>
+
+=back 
+
+Returns nothing.
+
+=cut
+
+sub _p2p_validate_seller_confirm {
+    my ($client, $order) = @_;
+
+    die +{error_code => 'OrderNotConfirmedPending'} if $order->{status} eq 'pending';
+    die +{error_code => 'OrderConfirmCompleted'}    if $order->{status} !~ /^(buyer-confirmed|timed-out)$/;
+
+    return;
 }
 
 =head2 _advertiser_details

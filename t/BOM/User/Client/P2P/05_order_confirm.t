@@ -57,7 +57,7 @@ my @test_cases = (
         type               => 'sell',
         amount             => 100,
         who_confirm        => 'client',
-        error              => 'OrderAlreadyConfirmed',
+        error              => 'OrderAlreadyConfirmedBuyer',
         init_status        => 'buyer-confirmed',
         client_balance     => 0,
         advertiser_balance => 100,
@@ -80,7 +80,7 @@ my @test_cases = (
         type               => 'sell',
         amount             => 100,
         who_confirm        => 'client',
-        error              => 'InvalidStateForConfirmation',
+        error              => 'OrderAlreadyConfirmedTimedout',
         init_status        => 'timed-out',
         client_balance     => 0,
         advertiser_balance => 100,
@@ -104,7 +104,7 @@ my @test_cases = (
         type               => 'sell',
         amount             => 100,
         who_confirm        => 'advertiser',
-        error              => 'InvalidStateForConfirmation',
+        error              => 'OrderNotConfirmedPending',
         init_status        => 'pending',
         client_balance     => 0,
         advertiser_balance => 100,
@@ -175,7 +175,7 @@ my @test_cases = (
         type               => 'buy',
         amount             => 100,
         who_confirm        => 'client',
-        error              => 'InvalidStateForConfirmation',
+        error              => 'OrderNotConfirmedPending',
         init_status        => 'pending',
         client_balance     => 100,
         advertiser_balance => 0,
@@ -268,7 +268,7 @@ my @test_cases = (
         type               => 'buy',
         amount             => 100,
         who_confirm        => 'advertiser',
-        error              => 'OrderAlreadyConfirmed',
+        error              => 'OrderAlreadyConfirmedBuyer',
         init_status        => 'buyer-confirmed',
         client_balance     => 100,
         advertiser_balance => 0,
@@ -291,7 +291,7 @@ my @test_cases = (
         type               => 'buy',
         amount             => 100,
         who_confirm        => 'advertiser',
-        error              => 'InvalidStateForConfirmation',
+        error              => 'OrderAlreadyConfirmedTimedout',
         init_status        => 'timed-out',
         client_balance     => 100,
         advertiser_balance => 0,
@@ -322,7 +322,7 @@ for my $status (qw(completed)) {
                 type               => $type,
                 amount             => 100,
                 who_confirm        => $who_confirm,
-                error              => 'OrderAlreadyConfirmed',
+                error              => 'OrderConfirmCompleted',
                 init_status        => $status,
                 client_balance     => $type eq 'sell' ? 0 : 100,
                 advertiser_balance => $type eq 'sell' ? 100 : 0,
@@ -354,7 +354,7 @@ for my $status (qw(cancelled blocked refunded)) {
                 type               => $type,
                 amount             => 100,
                 who_confirm        => $who_confirm,
-                error              => 'InvalidStateForConfirmation',
+                error              => 'OrderConfirmCompleted',
                 init_status        => $status,
                 client_balance     => $type eq 'sell' ? 0 : 100,
                 advertiser_balance => $type eq 'sell' ? 100 : 0,
@@ -470,7 +470,7 @@ subtest 'Advertiser confirms pending buy order' => sub {
         $advertiser->p2p_order_confirm(id => $order->{id})
     };
 
-    is $err->{error_code}, 'InvalidStateForConfirmation', 'InvalidStateForConfirmation';
+    is $err->{error_code}, 'OrderNotConfirmedPending', 'OrderNotConfirmedPending';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -499,7 +499,7 @@ subtest 'Client confirms not pending (cancelled) buy order' => sub {
         $client->p2p_order_confirm(id => $order->{id})
     };
 
-    is $err->{error_code}, 'InvalidStateForConfirmation', 'InvalidStateForConfirmation';
+    is $err->{error_code}, 'OrderConfirmCompleted', 'OrderConfirmCompleted';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -528,7 +528,7 @@ subtest 'Client confirms pending sell order' => sub {
         $client->p2p_order_confirm(id => $order->{id})
     };
 
-    is $err->{error_code}, 'InvalidStateForConfirmation', 'InvalidStateForConfirmation';
+    is $err->{error_code}, 'OrderNotConfirmedPending', 'OrderNotConfirmedPending';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -559,7 +559,7 @@ subtest 'Advertiser confirms not pending (cancelled) sell order' => sub {
         $advertiser->p2p_order_confirm(id => $order->{id})
     };
 
-    is $err->{error_code}, 'InvalidStateForConfirmation', 'InvalidStateForConfirmation';
+    is $err->{error_code}, 'OrderConfirmCompleted', 'OrderConfirmCompleted';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
