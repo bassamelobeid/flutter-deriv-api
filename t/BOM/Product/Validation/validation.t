@@ -758,7 +758,7 @@ subtest 'invalid start times' => sub {
 };
 
 subtest 'invalid expiry times' => sub {
-    plan tests => 5;
+    plan tests => 7;
 
     my $underlying = create_underlying('frxAUDUSD');
     my $starting   = $oft_used_date->epoch;
@@ -785,6 +785,11 @@ subtest 'invalid expiry times' => sub {
     $bet_params->{duration} = '3d';
     $bet = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we are open at the end, validates just fine.');
+
+    $bet_params->{duration} = '9999999d';
+    my $error = exception { produce_contract($bet_params); };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Trading is not offered for this duration.';
 
     # Need a quotdian here.
     $underlying                 = create_underlying('RDBULL');

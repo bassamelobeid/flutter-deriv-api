@@ -326,7 +326,9 @@ sub _initialize_other_parameters {
                 my ($duration_amount, $duration_unit) = $duration =~ /([0-9]+)(t|m|d|s|h)/;
                 my $interval = $duration;
                 $interval = $duration_amount * $expected_feed_frequency if $duration_unit eq 't';
-                $params->{date_start}->plus_time_interval($interval);
+
+                my $duration_in_seconds = $params->{date_start}->plus_time_interval($interval)->epoch - $params->{date_start}->epoch;
+                die if ($params->{category}->has_user_defined_expiry) && ($duration_in_seconds > MAX_DURATION);
             } catch {
                 BOM::Product::Exception->throw(
                     error_code => 'TradingDurationNotAllowed',
