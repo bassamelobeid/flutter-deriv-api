@@ -40,7 +40,7 @@ for (my $i = 0; $i < @{RISK_PROFILES()}; $i++) {
 }
 
 has [
-    qw(contract_category expiry_type start_type currency barrier_category symbol market_name submarket_name underlying_risk_profile underlying_risk_profile_setter)
+    qw(contract_category landing_company expiry_type start_type currency barrier_category symbol market_name submarket_name underlying_risk_profile underlying_risk_profile_setter)
 ] => (
     is       => 'ro',
     required => 1,
@@ -62,6 +62,7 @@ sub _build_contract_info {
         expiry_type       => $self->expiry_type,
         start_type        => $self->start_type,
         barrier_category  => $self->barrier_category,
+        landing_company   => $self->landing_company
     };
 }
 

@@ -374,6 +374,7 @@ subtest 'Zero non-binary contract limit for lookbacks' => sub {
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{
     "limit_id_xxx" : {
+        "landing_company": "svg",
         "contract_category" : "lookback",
         "name" : "Block lookbacks",
         "non_binary_contract_limit" : "0",
@@ -387,6 +388,7 @@ subtest 'Zero non-binary contract limit for lookbacks' => sub {
         expiry_type                    => 'ultra_short',
         currency                       => 'USD',
         barrier_category               => 'lookback',
+        landing_company                => $landing_company,
         symbol                         => $ul->symbol,
         market_name                    => $ul->market->name,
         submarket_name                 => $ul->submarket->name,
@@ -397,7 +399,7 @@ subtest 'Zero non-binary contract limit for lookbacks' => sub {
     my $non_binary_limits_params = $rp->get_non_binary_limit_parameters;
     my $limit                    = $rp->custom_profiles;
     is scalar(@$limit), 2, 'Two riskd profile';
-    is $rp->get_risk_profile, 'no_business', 'ignore profile with no conditions';
+    is $rp->get_risk_profile, 'no_business', 'Lookback contracts risk profile is set to no_business';
     is_deeply $non_binary_limits_params,
         [{
             'non_binary_contract_limit' => '0',
@@ -406,6 +408,26 @@ subtest 'Zero non-binary contract limit for lookbacks' => sub {
         undef
         ],
         'Non-binary contract limit of zero must be set for lookbacks';
+};
+
+subtest 'Disable based on landing company' => sub {
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles('{
+    "limit_id_xxx" : {
+        "landing_company": "svg",
+        "contract_category" : "callput",
+        "name" : "Disable callput",
+        "risk_profile" : "no_business"
+    }}');
+
+    my $rp_svg = BOM::Platform::RiskProfile->new(%args);
+    is scalar($rp_svg->custom_profiles->@*), 2, 'Our riskd profile and base profile';
+    is $rp_svg->get_risk_profile, 'no_business', 'no_business for callput in svg';
+
+    my %iom_args = %args;
+    $iom_args{landing_company} = 'iom';
+    my $rp_iom = BOM::Platform::RiskProfile->new(%iom_args);
+    is scalar($rp_iom->custom_profiles->@*), 1, 'There is just one base risk profile';
+    is $rp_iom->get_risk_profile, 'low_risk', 'There is no risk profile defined for iom';
 };
 
 done_testing();
