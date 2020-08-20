@@ -28,7 +28,7 @@ my %file_details = (
     },
     endsbetweenout => {
         filename => module_path('BOM::Product::Contract::Expirymisse'),
-        hash     => '7db442786004654b27e8fa69a88e9f7a88987fc0'
+        hash     => '4971b4a1a9f6ce793fffd96f4685224d92b11bef'
     },
     asians => {
         filename => module_path('BOM::Product::Contract::Asianu'),
@@ -36,15 +36,15 @@ my %file_details = (
     },
     digitsmatchdiffers => {
         filename => module_path('BOM::Product::Contract::Digitmatch'),
-        hash     => 'f96de1a7db1c4b9f56fadac0b75b61ea97c9e31c'
+        hash     => 'b9db1f406c3d17e2b4bd2893f253053bd20a7396'
     },
     digitsevenodd => {
         filename => module_path('BOM::Product::Contract::Digiteven'),
-        hash     => 'c99dc348275f3cbee36089b153834e488b262bee'
+        hash     => '53f9b8eb33768e517a7ca097913430ea8b785631'
     },
     digitsoverunder => {
         filename => module_path('BOM::Product::Contract::Digitover'),
-        hash     => '79b75f97ca29499afe3eb84238bede377cd47b9d'
+        hash     => 'af5fe3eab60c5ae8c12bfd7c5377afc5e11690d1'
     },
     lookbacks => {
         filename => module_path('BOM::Product::Contract::Lbfloatcall'),
@@ -60,7 +60,7 @@ my %file_details = (
     },
     resetcallput => {
         filename => module_path('BOM::Product::Contract::Resetcall'),
-        hash     => 'b014732c10c1b467cca90ede6c02ae1952e8a9c1'
+        hash     => '2429f13d0284bd6eb84095c64965d42ce0965ad1'
     },
     calleputte => {
         filename => module_path('BOM::Product::Contract::Calle'),
