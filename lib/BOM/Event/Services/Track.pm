@@ -736,8 +736,8 @@ sub _create_customer {
 
     my $country_config              = $brand->countries_instance->countries_list->{$client->residence};
     my $available_landing_companies = join ',' => uniq sort grep { $_ ne 'none' } (
-        $country_config->{gaming_company},
-        $country_config->{financial_company},
+        $country_config->{gaming_company}                   // 'none',
+        $country_config->{financial_company}                // 'none',
         $country_config->{mt}->{financial}->{financial}     // 'none',
         $country_config->{mt}->{financial}->{financial_stp} // 'none',
         $country_config->{mt}->{gaming}->{financial}        // 'none',
