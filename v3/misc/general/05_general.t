@@ -88,6 +88,18 @@ my $t = build_wsapi_test();
     is $res->{req_id}, 123, 'Response contains matching req_id';
 }
 
+{
+
+    $t->finish_ok;
+    $system->mock('ping', sub { return {msg_type => 'ping', ping => 'Wrong_response'} });
+    my $t   = build_wsapi_test();
+    my $res = $t->await::ping({
+        ping   => 1,
+        req_id => 7
+    });
+    is $res->{error}->{code}, 'OutputValidationFailed', 'Correct error code when our own output fails schema  check';
+    is $res->{error}->{message}, 'An unexpected error occurred: Please refresh or try again in a few minutes.', 'Correct Error Message when our output fails schema check';
+}
 $t->finish_ok;
 
 done_testing();
