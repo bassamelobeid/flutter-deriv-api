@@ -19,7 +19,7 @@ subtest 'allowed_slippage' => sub {
         date_pricing => Date::Utility->new('2019-12-9 10:00:00'),
     };
     my $c = produce_contract($args);
-    is($c->allowed_slippage, 0.015, 'slippage is ' . 0.015);
+    is($c->allowed_slippage, 0.0175, 'slippage is ' . 0.0175);
     $args->{underlying} = 'R_10';
     $c = produce_contract($args);
     is $c->allowed_slippage, 0.006, 'slippage is 0.6%';

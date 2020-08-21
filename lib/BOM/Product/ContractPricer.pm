@@ -690,17 +690,6 @@ sub _build_base_commission {
         $underlying_base = $underlying_base + 0.02;
     }
 
-    # apply reduced commission for major_pairs on forex intraday ATM on european hours. Normal hours, base_commission is set to 0.035.
-    my $pricing_hour = $self->date_pricing->hour;
-    if (    $self->priced_with_intraday_model
-        and $self->underlying->submarket->name eq 'major_pairs'
-        and $self->is_atm_bet
-        and $pricing_hour >= 6
-        and $pricing_hour <= 16)
-    {
-        $underlying_base = 0.03;
-    }
-
     if (not $self->for_sale and $self->market->name eq 'synthetic_index' and $self->tick_expiry and $self->category_code eq 'runs') {
         # For Runs the theo probability decreases sharply with an increase in number of ticks,
         # hence a fixed % of payout as commission makes contracts fairly expensive.

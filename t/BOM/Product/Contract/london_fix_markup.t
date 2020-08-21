@@ -99,12 +99,12 @@ subtest 'london_fix_markup' => sub {
         $args->{date_start}   = Date::Utility->new('2018-10-16 14:58:00');
         $args->{date_pricing} = Date::Utility->new('2018-10-16 14:58:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 5.66, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 5.86, 'correct ask price';
         is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), 0.0366025403784438, 'correct london fix markup for CALL');
 
         $args->{bet_type} = 'PUT';
         $c = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 7.05, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 7.25, 'correct ask price';
         is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), 0.174536559755125, 'correct london fix markup for PUT');
 
         # Winter on EU
@@ -113,7 +113,7 @@ subtest 'london_fix_markup' => sub {
         $args->{date_start}   = Date::Utility->new('2018-11-16 16:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:01:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 6.25, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 6.45, 'correct ask price';
         cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_markup')), '==', 0.095, 'correct london fix markup';
         cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_x1')),     '==', 1,     'correct london fix markup';
 
@@ -124,7 +124,7 @@ subtest 'london_fix_markup' => sub {
         $args->{date_start}   = Date::Utility->new('2018-11-16 16:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:01:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 5.3, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 5.5, 'correct ask price';
         ok !$c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), 'no london fix markup for PUT';
 
         # Winter on EU, hour other than 16

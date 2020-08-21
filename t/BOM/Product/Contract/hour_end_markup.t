@@ -74,20 +74,20 @@ my $args = {
 subtest 'hour_end_markup_start_now_contract' => sub {
     lives_ok {
         my $c = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 5.7, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 5.9, 'correct ask price';
         ok !$c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), 'no end hour markup';
 
         $args->{date_start}   = Date::Utility->new('2018-09-18 15:57:00');
         $args->{date_pricing} = Date::Utility->new('2018-09-18 15:57:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 6.3, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 6.5, 'correct ask price';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'),     '==', 0.1, 'correct end hour markup';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('X1'),                  '==', 1,   'correct X1';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('eoh_base_adjustment'), '==', 0.1, 'correct adjustment multiplier';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_discount'),   '==', 0,   'no discount';
         $args->{bet_type} = 'PUT';
         $c = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 5.3, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 5.5, 'correct ask price';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.0, 'correct end hour markup';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('X1'),              '==', 1,   'correct X1';
         $args->{bet_type}     = 'CALL';
@@ -113,7 +113,7 @@ subtest 'hour_end_markup_start_now_contract' => sub {
         $args->{date_start}   = Date::Utility->new('2018-11-16 16:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:01:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 6.25, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 6.45, 'correct ask price';
         is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup');
 
     };
@@ -153,7 +153,7 @@ subtest 'hour_end_markup_extra_test_after_logic_change' => sub {
         $args->{date_start}   = Date::Utility->new('2018-11-16 16:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:01:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 6.25, 'correct ask price';
+        cmp_ok $c->ask_price, '==', 6.45, 'correct ask price';
         is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup');
 
         # Winter on EU, hour equal 8 or 20
