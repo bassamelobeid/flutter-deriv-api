@@ -369,6 +369,19 @@ p2p_rpc p2p_advertiser_adverts => sub {
     return {list => $client->p2p_advertiser_adverts($args{params}{args}->%*)};
 };
 
+=head2 p2p_advertiser_stats
+
+Returns historical statistics of an advertiser.
+
+=cut
+
+p2p_rpc p2p_advertiser_stats => sub {
+    my (%args) = @_;
+
+    my $client = $args{client};
+    return $client->p2p_advertiser_stats($args{params}{args}->%*);
+};
+
 =head2 p2p_method_list
 
 Returns a list of all available payment methods.

@@ -4,6 +4,7 @@ use BOM::Test::RPC::Client;
 use Log::Any::Test;
 use Test::More;
 use Test::Mojo;
+use Test::Deep;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
@@ -15,6 +16,7 @@ use BOM::Test::Helper::Client;
 
 cleanup_redis_tokens();
 BOM::Test::Helper::P2P::bypass_sendbird();
+BOM::Test::Helper::P2P::purge_redis();
 
 #Test endpoint for testing logic in function p2p_rpc
 my $dummy_method = 'test_p2p_controller';
@@ -586,6 +588,41 @@ subtest 'Sell orders' => sub {
     $res             = $c->call_ok(p2p_order_confirm => $params)->has_no_system_error->has_no_error->result;
     is $res->{status}, 'completed', 'Order is completed';
 
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Advertiser stats' => sub {
+     BOM::Test::Helper::P2P::create_escrow();
+
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        type   => 'sell'
+    );
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+    );
+    $client->p2p_order_confirm(id => $order->{id});
+    $advertiser->p2p_order_confirm(id => $order->{id});
+    
+    my $client_token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token');
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
+    
+    my $params = {
+        token => $advertiser_token,
+    };
+
+    my $res_adv = $c->call_ok(p2p_advertiser_stats => $params)->has_no_system_error->has_no_error->result;
+
+    is $res_adv->{sell_orders_count}, 1, 'sell_orders_created';
+    is $res_adv->{total_orders_count}, 1, 'total_orders_created';
+    
+    $params = {
+        token => $client_token,
+        args => { id => $advertiser->p2p_advertiser_info->{id} },
+    };    
+    my $res_cli = $c->call_ok(p2p_advertiser_stats => $params)->has_no_system_error->has_no_error->result;
+    
+    cmp_deeply($res_adv, $res_cli, 'stats match when requested in different ways');
+     
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
