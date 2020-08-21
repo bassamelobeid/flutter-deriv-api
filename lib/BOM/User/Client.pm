@@ -1820,6 +1820,8 @@ use constant {
         buy  => 'sell',
         sell => 'buy',
     },
+    P2P_STATS_REDIS_PREFIX => 'P2P::ADVERTISER_STATS',
+    P2P_STATS_TTL_IN_DAYS  => 120,                       # days after which to prune redis stats
 };
 
 =head2 p2p_advertiser_create
@@ -1963,6 +1965,42 @@ sub p2p_advertiser_adverts {
 
     my $list = $client->_p2p_adverts(%param, advertiser_id => $advertiser_info->{id});
     return $client->_advert_details($list);
+}
+
+=head2 p2p_advertiser_stats
+
+Returns statistics of a P2P user.
+
+Example usage:
+
+    $self->p2p_advertiser_stats(id=>1, days=>30);
+    
+Takes the following arguments as named parameters:
+
+=over 4
+
+=item * C<id> - advertiser id. Defaults to $self->p2p_advertiser_info->{id}.
+
+=item * C<days> - number of days to aggregrate statistics. Default: 30.
+
+Returns a hashref.
+
+=cut
+
+sub p2p_advertiser_stats {
+    my ($self, %param) = @_;
+
+    my $advertiser;
+    if (exists $param{id}) {
+        $advertiser = $self->_p2p_advertisers(id => $param{id})->[0];
+        die +{error_code => 'AdvertiserNotFound'} unless $advertiser;
+    } else {
+        $advertiser = $self->_p2p_advertisers(loginid => $self->loginid)->[0];
+        die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser;
+    }
+
+    $param{days} //= 30;
+    return $self->_p2p_advertiser_stats_get($advertiser->{client_loginid}, $param{days});
 }
 
 =head2 p2p_advert_create
@@ -2254,6 +2292,8 @@ sub p2p_order_create {
                 $limit_per_day_per_client, $txn_time);
         });
 
+    $client->_p2p_order_stats_record('ORDER_CREATED', $order);
+
     BOM::Platform::Event::Emitter::emit(
         p2p_order_created => {
             client_loginid => $client->loginid,
@@ -2367,11 +2407,14 @@ sub p2p_order_cancel {
     my $is_refunded = 0;                     # order will have cancelled status
 
     my $txn_time = Date::Utility->new->datetime;
-    my $update   = $client->db->dbic->run(
+
+    my $update = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_refund(?, ?, ?, ?, ?, ?)',
                 undef, $id, $escrow->loginid, $param{source}, $client->loginid, $is_refunded, $txn_time);
         });
+
+    $client->_p2p_order_stats_record('ORDER_REFUNDED', $update);
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {
@@ -2406,12 +2449,13 @@ sub p2p_expire_order {
         my $txn_time    = Date::Utility->new->datetime;
         my $is_refunded = 1;                              # order will have refunded status
 
-        return $client->db->dbic->txn(
+        my $result = $client->db->dbic->txn(
             fixup => sub {
-                $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?)',
+                $_->selectrow_hashref('SELECT * FROM p2p.order_refund(?, ?, ?, ?, ?, ?)',
                     undef, $order->{id}, $escrow->loginid, $param{source}, $param{staff}, $is_refunded, $txn_time);
-                return $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?, ?)', undef, $id, 'refunded', undef);
             });
+        $client->_p2p_order_stats_record('ORDER_REFUNDED', $result);
+        return $result;
     } elsif ($status eq 'buyer-confirmed') {
         return $client->db->dbic->run(
             fixup => sub {
@@ -2676,10 +2720,12 @@ sub _p2p_client_buy_confirm {
     # $client is the buyer
     $client->_p2p_validate_buyer_confirm($order);
 
-    return $client->db->dbic->run(
+    my $result = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order->{id}, 1);
         });
+    $client->_p2p_order_stats_record('BUY_CONFIRM', $result);
+    return $result;
 }
 
 =head2 _p2p_advertiser_buy_confirm
@@ -2707,12 +2753,14 @@ sub _p2p_advertiser_buy_confirm {
 
     my $escrow   = $client->p2p_escrow;
     my $txn_time = Date::Utility->new->datetime;
-    return $client->db->dbic->txn(
+    my $result   = $client->db->dbic->txn(
         fixup => sub {
             $_->do('SELECT * FROM p2p.order_confirm_advertiser(?, ?)', undef, $order->{id}, 1);
             return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?)',
                 undef, $order->{id}, $escrow->loginid, $source, $client->loginid, $txn_time);
         });
+    $client->_p2p_order_stats_record('ORDER_COMPLETED', $result);
+    return $result;
 }
 
 =head2 _p2p_client_sell_confirm
@@ -2740,12 +2788,14 @@ sub _p2p_client_sell_confirm {
 
     my $escrow   = $client->p2p_escrow;
     my $txn_time = Date::Utility->new->datetime;
-    return $client->db->dbic->txn(
+    my $result   = $client->db->dbic->txn(
         fixup => sub {
             $_->do('SELECT * FROM p2p.order_confirm_client(?, ?)', undef, $order->{id}, 1);
             return $_->selectrow_hashref('SELECT * FROM p2p.order_complete(?, ?, ?, ?, ?)',
                 undef, $order->{id}, $escrow->loginid, $source, $client->loginid, $txn_time);
         });
+    $client->_p2p_order_stats_record('ORDER_COMPLETED', $result);
+    return $result;
 }
 
 =head2 _p2p_advertiser_sell_confirm
@@ -2770,11 +2820,12 @@ sub _p2p_advertiser_sell_confirm {
     # $client is the buyer
     $client->_p2p_validate_buyer_confirm($order);
 
-    return $client->db->dbic->run(
+    my $result = $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_confirm_advertiser(?, ?)', undef, $order->{id}, 1);
         });
-
+    $client->_p2p_order_stats_record('BUY_CONFIRM', $result);
+    return $result;
 }
 
 =head2 _p2p_validate_buyer_confirm
@@ -2877,6 +2928,7 @@ Takes and returns an arrayref of advert.
 
 sub _advert_details {
     my ($client, $list, $amount, $show_limits) = @_;
+
     my @results;
 
     for my $advert (@$list) {
@@ -3032,6 +3084,144 @@ sub _validate_advert_amounts {
 sub _p2p_rate_format {
     # We take Precision from constant but cut off tailing zeros
     return sprintf('%0.0' . P2P_RATE_PRECISION . 'f', shift()) =~ s/(?<=\.\d{2})(\d*?)0*$/$1/r;
+}
+
+=head2 _p2p_order_stats_record
+
+Records P2P advertiser statistics from an order event.
+
+Example usage:
+
+    $self->_p2p_order_stats_record('ORDER_CREATED', $order);
+    
+Takes the following arguments as named parameters:
+
+=over 4
+
+=item * C<stat> - name of stat, one of ORDER_CREATED, BUY_CONFIRM, ORDER_COMPLETED or ORDER_REFUNDED
+
+=item * C<order> - hashref of order details as returned from db functions.
+
+No return value.
+
+=cut
+
+sub _p2p_order_stats_record {
+    my ($self, $stat, $order) = @_;
+
+    my $redis = BOM::Config::Redis->redis_p2p_write();
+
+    # save order creation time, needed to calculate cancel time
+    if ($stat eq 'ORDER_CREATED') {
+        $redis->hset(P2P_STATS_REDIS_PREFIX . '::ORDER_CREATION_TIMES', $order->{id}, time);
+        return;
+    }
+
+    # save confirm time only, needed used to calculate release time
+    if ($stat eq 'BUY_CONFIRM') {
+        $redis->hset(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES', $order->{id}, time);
+        return;
+    }
+
+    # at this point stat must be ORDER_COMPLETED or ORDER_REFUNDED
+    my $item        = $order->{id} . '|' . $order->{amount};
+    my $creation_ts = $redis->hget(P2P_STATS_REDIS_PREFIX . '::ORDER_CREATION_TIMES', $order->{id})
+        // Date::Utility->new($order->{created_time})->epoch;
+    my $prune_ts = Date::Utility->new->minus_time_interval(P2P_STATS_TTL_IN_DAYS . 'd')->epoch;
+    my $expiry   = P2P_STATS_TTL_IN_DAYS * 24 * 60 * 60;
+
+    my $advertiser_prefix = join '::', (P2P_STATS_REDIS_PREFIX, $order->{advertiser_loginid});
+    my $client_prefix     = join '::', (P2P_STATS_REDIS_PREFIX, $order->{client_loginid});
+
+    my $advertiser_key = join '::', ($advertiser_prefix, $stat, uc $order->{advert_type});
+    $redis->zadd($advertiser_key, $creation_ts, $item);
+    $redis->expire($advertiser_key, $expiry);
+    $redis->zremrangebyscore($advertiser_key, '-inf', '(' . $prune_ts);
+
+    my $client_key = join '::', ($client_prefix, $stat, uc $order->{type});
+    $redis->zadd($client_key, $creation_ts, $item);
+    $redis->expire($client_key, $expiry);
+    $redis->zremrangebyscore($client_key, '-inf', '(' . $prune_ts);
+
+    if ($stat eq 'ORDER_COMPLETED') {
+        # lifetime totals
+        $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::ORDER_COMPLETED_TOTAL', $order->{advertiser_loginid}, 1);
+        $redis->hincrby(P2P_STATS_REDIS_PREFIX . '::ORDER_COMPLETED_TOTAL', $order->{client_loginid},     1);
+
+        # average release time
+        if (my $buy_confirm_time = $redis->hget(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES', $order->{id})) {
+            my $elapsed      = time - $buy_confirm_time;
+            my $prefix       = $order->{type} eq 'sell' ? $client_prefix : $advertiser_prefix;
+            my $release_key  = $prefix . '::RELEASE_TIMES';
+            my $release_item = $order->{id} . '|' . $elapsed;
+
+            $redis->zadd($release_key, $creation_ts, $release_item);
+            $redis->expire($release_key, $expiry);
+            $redis->zremrangebyscore($release_key, '-inf', '(' . $prune_ts);
+        }
+    }
+
+    # average cancellation time
+    if ($stat eq 'ORDER_REFUNDED' && $order->{status} eq 'cancelled') {
+        my $prefix       = $order->{type} eq 'buy' ? $client_prefix : $advertiser_prefix;
+        my $elapsed      = time - $creation_ts;
+        my $release_key  = $prefix . '::CANCEL_TIMES';
+        my $release_item = $order->{id} . '|' . $elapsed;
+
+        $redis->zadd($release_key, $creation_ts, $release_item);
+        $redis->expire($release_key, $expiry);
+        $redis->zremrangebyscore($release_key, '-inf', '(' . $prune_ts);
+    }
+
+    # clean up time storage, they won't be needed again for this order because it's either compelete or cancelled
+    $redis->hdel(P2P_STATS_REDIS_PREFIX . '::ORDER_CREATION_TIMES', $order->{id});
+    $redis->hdel(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES',    $order->{id});
+
+    return;
+}
+
+=head2 _p2p_order_stats_get
+
+Returns P2P advertiser statistics
+
+Example usage:
+
+    $self->_p2p_order_stats_get('CR001', 30);
+    
+Takes the following arguments as named parameters:
+
+=over 4
+
+=item * C<$loginid> - loginid of advertiser
+
+=item * C<days> - period to generate stats in days
+
+Returns hashref.
+
+=cut
+
+sub _p2p_advertiser_stats_get {
+    my ($self, $loginid, $days) = @_;
+
+    my $start_ts   = Date::Utility->new->minus_time_interval($days . 'd')->epoch;
+    my $key_prefix = P2P_STATS_REDIS_PREFIX . '::' . $loginid;
+    my $redis      = BOM::Config::Redis->redis_p2p();
+
+    my @cancel_times  = map { my $s = $_; $s =~ s/^.*\|//g; $s; } $redis->zrangebyscore($key_prefix . '::CANCEL_TIMES',  $start_ts, '+inf')->@*;
+    my @release_times = map { my $s = $_; $s =~ s/^.*\|//g; $s; } $redis->zrangebyscore($key_prefix . '::RELEASE_TIMES', $start_ts, '+inf')->@*;
+
+    my $stats = {
+        total_orders_count => $redis->hget(P2P_STATS_REDIS_PREFIX . '::ORDER_COMPLETED_TOTAL', $loginid) // 0,
+        buy_orders_count   => $redis->zcount($key_prefix . '::ORDER_COMPLETED::BUY', $start_ts, '+inf'),
+        sell_orders_count  => $redis->zcount($key_prefix . '::ORDER_COMPLETED::SELL', $start_ts, '+inf'),
+        cancel_time_avg    => @cancel_times ? sprintf("%.0f", List::Util::sum(@cancel_times) / @cancel_times) : undef,
+        release_time_avg   => @release_times ? sprintf("%.0f", List::Util::sum(@release_times) / @release_times) : undef,
+    };
+
+    my $total = $stats->{buy_orders_count} + $redis->zcount($key_prefix . '::ORDER_REFUNDED::BUY', $start_ts, '+inf');
+    $stats->{completion_rate} = $total ? sprintf("%.2f", ($stats->{buy_orders_count} / $total) * 100) : undef;
+
+    return $stats;
 }
 
 =head1 METHODS - Payments
