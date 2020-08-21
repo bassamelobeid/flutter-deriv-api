@@ -5,6 +5,7 @@ use warnings;
 
 use BOM::Test::Helper::Client;
 use BOM::User;
+use BOM::Config;
 use Carp;
 use Test::More;
 use Test::MockModule;
@@ -79,7 +80,7 @@ sub create_advert {
     $param{payment_info} //= $param{type} eq 'sell' ? 'Bank: 123456' : undef;
     $param{contact_info} //= $param{type} eq 'sell' ? 'Tel: 123456'  : undef;
 
-    my $advertiser = create_advertiser(
+    my $advertiser = $param{client} // create_advertiser(
         balance        => $param{type} eq 'sell' ? $param{amount} : 0,
         client_details => $param{advertiser},
     );
@@ -162,6 +163,10 @@ sub bypass_sendbird {
                 'expires_at'    => (time + 7200) * 1000,
             };
         });
+}
+
+sub purge_redis {
+    BOM::Config::Redis->redis_p2p_write()->flushdb();
 }
 
 1;
