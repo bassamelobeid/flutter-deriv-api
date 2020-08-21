@@ -425,12 +425,15 @@ sub get_doc_auth_s3_conf {
 
 Validate api_response with json schema.
 Will store error into api_response if there is.
+This is called by the C<before_send_api_response> Hook in L<Binary::WebsocketAPI>
 
 =over 4
 
-=item * C<req_storage> hashref - request storage hashref
+=item * C<$c> a L<Mojo::WebSocketProxy::Dispatcher>  
 
-=item * C<api_response> hashref - api response hashref
+=item * C<$req_storage> hashref - request storage hashref
+
+=item * C<$api_response> hashref - api response hashref
 
 =back
 
@@ -446,18 +449,17 @@ sub output_validation {
         return if exists $api_response->{error}{code};
     }
 
-    my $error_msg;
-    local $log->context->{args}         = $req_storage->{origin_args} || $req_storage->{args};
+    my $args = $req_storage->{origin_args} || $req_storage->{args};
+    local $log->context->{args}         = $args;
     local $log->context->{api_response} = $api_response;
 
     if ($api_response->{msg_type}) {
         my $schema = _load_schema($api_response->{msg_type});
         my $error  = _validate_schema_error($schema, $api_response);
         return unless $error;
-        $error_msg = join("- ", (map { "$_:$error->{details}{$_}" } keys %{$error->{details}}), @{$error->{general}});
+        my $error_details = join("- ", (map { "$_:$error->{details}{$_}" } keys %{$error->{details}}), @{$error->{general}});
         $log->error("Schema validation failed for our own output [ "
-                . $json->encode($api_response)
-                . " error: $error_msg ], make sure backend are aware of this error!, schema may need adjusting");
+                . " error: $error_details ], make sure backend are aware of this error!, schema may need adjusting");
 
     } else {
         # For an unknown reason, bom-rpc will return empty result `{}` .
@@ -466,17 +468,14 @@ sub output_validation {
         # and the card https://trello.com/c/UTx5s4uM/10378-1-bugfix-debug-msg-type-1
         $log->error("Schema validation failed because msg_type is null");
         DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.validate_error.msg_type_null', {tags => [$req_storage->{name}]});
-        $error_msg = "An error occurred, please try again.";
     }
-
     %$api_response = %{
         $c->new_error(
-            $api_response->{msg_type} || $req_storage->{msg_type} || $req_storage->{name},
-            'OutputValidationFailed',
-            $c->l("Output validation failed: ") . $error_msg
-        )};
+            $api_response->{msg_type} || $req_storage->{msg_type} || $req_storage->{name}, 'OutputValidationFailed',
+            $c->l("An unexpected error occurred: Please refresh or try again in a few minutes."))};
 
-    return;
+    $api_response->{req_id} = $args->{req_id} if defined $args->{req_id};
+    return undef;
 }
 
 sub forget_all {

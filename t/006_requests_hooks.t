@@ -56,7 +56,7 @@ subtest 'output_validation with undefined msg_type' => sub {
     Binary::WebSocketAPI::Hooks::output_validation($c_mock, $req_storage, $api_response);
 
     $log->contains_ok(qr/Schema validation failed because msg_type is null/);
-    like($api_response->{error}, qr/validation failed: An error occurred/, 'api_response will have an error');
+    like($api_response->{error}, qr/An unexpected error occurred:/, 'api_response will have an error');
 };
 
 subtest 'get rpc url suffix' => sub {
