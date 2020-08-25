@@ -82,6 +82,7 @@ $r = update_payout(
     loginid  => $loginid,
     status   => 'rejected',
     trace_id => $trace_id,
+    fee      => '0.00',
 );
 
 is $r->code, 200, 'valid withdrawal reversal';

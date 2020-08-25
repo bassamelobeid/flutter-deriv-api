@@ -208,8 +208,8 @@ sub write_transaction_line {
         return $c->status_bad_request($rejection);
     }
 
-    my $bonus = $c->request_parameters->{bonus} || 0;
-    my $fee   = $c->request_parameters->{fee}   || 0;
+    my $bonus = $c->request_parameters->{bonus}                                    || 0;
+    my $fee   = $c->request_parameters->{fee} && $c->request_parameters->{fee} + 0 || 0;
 
     my $payment_processor = $c->request_parameters->{payment_processor};
     my $created_by        = $c->request_parameters->{created_by};

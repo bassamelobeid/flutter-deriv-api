@@ -19,7 +19,7 @@ my $user = BOM::User->create(
 $user->add_client($cli);
 my $r = deposit(
     loginid => $loginid,
-    amount  => 2
+    amount  => 3
 );
 is($r->code,    201,       'correct status code');
 is($r->message, 'Created', 'Correct message');
@@ -79,6 +79,16 @@ $r = update_payout(
     trace_id => ' 102 ',
     status   => 'inprogress',
     amount   => 1
+);
+is($r->code, 200, 'correct status code');
+is balance($loginid) + 0, 1, 'withdraw successful';
+
+$r = update_payout(
+    loginid  => $loginid,
+    trace_id => '103',
+    status   => 'inprogress',
+    amount   => 1,
+    fee      => '0.00',
 );
 is($r->code, 200, 'correct status code');
 is balance($loginid) + 0, 0, 'withdraw successful';

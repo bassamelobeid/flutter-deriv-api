@@ -227,6 +227,34 @@ sub record_failed_deposit_POST {
     };
 }
 
+=head2 record_failed_withdrawal_POST
+
+Implements the RecordFailedWithdrawal Doughflow request.
+DoughFlow has provision to notify our platform upon the failure
+of customer withdrawal.
+Currently we are just logging to evaluate the data we get, later
+we can extend this to notify client about failure.
+
+=cut
+
+sub record_failed_withdrawal_POST {
+    my $c = shift;
+
+    _log_new_api_request($c, 'record_failed_withdrawal');
+
+    unless (_is_authenticated($c)) {
+        $new_api_log->debugf('record_failed_deposit: Authorization required, please check if request has X-DoughFlow-Authorization-Passed header.');
+        return $c->throw(401, 'Authorization required');
+    }
+
+    # return success as of now, once we have evaluated all
+    # the error messages then we will update this accordingly
+    return {
+        status      => 0,
+        description => 'success',
+    };
+}
+
 =head1 INTERNAL METHODS
 
 =head2 _doughflow_backend
