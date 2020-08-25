@@ -169,7 +169,8 @@ sub startup {
             ) if exists $BLOCK_ORIGINS{$uri->host};
 
             my $client_ip = $c->client_ip;
-            #TODO is this brand that brand ? can be used to create a Brands object ?
+            #TODO is this brand that brand ? can be used to create a Brands object?
+            #brand should be validate rather than accepting any 10-character string
             my $brand_name   = defang($c->req->param('brand')) // 'binary';
             my $binary_brand = Brands->new(name => $brand_name);
 
@@ -201,10 +202,8 @@ sub startup {
                 brand => (($brand_name =~ /^\w{1,10}$/) ? $brand_name : $binary_brand->name),
             );
 
-            my $brand       = Brands->new(name => $c->stash('brand'));
-            my $source_type = $brand->is_app_whitelisted($c->stash('source') // '') ? 'official' : 'unofficial';
+            my $source_type = $binary_brand->is_app_whitelisted($app_id) ? 'official' : 'unofficial';
             $c->stash(
-                app_name    => ($brand // 'third-party'),
                 source_type => $source_type,
             );
         });

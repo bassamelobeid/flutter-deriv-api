@@ -119,7 +119,7 @@ sub log_call_timing_before_forward {
 
 sub log_call_timing {
     my ($c, $req_storage) = @_;
-    my $tags = ["rpc:$req_storage->{method}", "app_name:" . $c->stash('app_name'), "source:" . $c->stash('source_type'),];
+    my $tags = ["rpc:$req_storage->{method}", "brand:" . $c->stash('brand'), "source_type:" . $c->stash('source_type'),];
 
     # extra tagging for buy for better visualization
     push @$tags, 'market:' . $c->stash('market') if $req_storage->{method} eq 'buy' and $c->stash('market');
@@ -258,7 +258,7 @@ sub reached_limit_check {
         $f->on_fail(
             sub {
                 stats_inc("bom_websocket_api.v_3.call.ratelimit.hit.$limiting_service",
-                    {tags => ["source:" . ($c->stash('source_type') // ''), "app_name" . ($c->stash('app_name') // ''),]});
+                    {tags => ["source_type:" . ($c->stash('source_type') // ''), "brand:" . ($c->stash('brand') // ''),]});
             });
         return $f;
     }
@@ -531,7 +531,7 @@ sub add_brand {
 sub _on_sanity_failed {
     my ($c)       = @_;
     my $client_ip = $c->stash->{client_ip};
-    my $tags      = ["client_ip:$client_ip", "app_name:" . $c->stash('app_name'), "source:" . $c->stash('source_type'),];
+    my $tags      = ["client_ip:$client_ip", "brand:" . $c->stash('brand'), "source_type:" . $c->stash('source_type'),];
     DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.sanity_check_failed.count', {tags => $tags});
 
     return;
@@ -701,7 +701,7 @@ sub _handle_error {
 
     # 1007 means 'Invalid frame payload data'
     # reference: https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
-    my $tags = ['error_code:1007', "source:" . $c->stash('source_type'), "app_name" . $c->stash('app_name'),];
+    my $tags = ['error_code:1007', "source_type:" . $c->stash('source_type'), "brand:" . $c->stash('brand'),];
     stats_inc($error_mapping{$all_data->{details}->{error_code}}, {tags => $tags});
     $c->finish;
     return;

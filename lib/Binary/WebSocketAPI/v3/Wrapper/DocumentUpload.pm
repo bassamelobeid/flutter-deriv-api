@@ -93,7 +93,7 @@ sub get_upload_info {
     my ($c, $frame) = @_;
     if (length $frame < 12) {
         stats_inc('bom_websocket_api.v_3.document_upload_error',
-            {tags => ['source:' . $c->stash('source_type'), "app_name:" . $c->stash('app_name'),]});
+            {tags => ['source_type:' . $c->stash('source_type'), "brand:" . $c->stash('brand'),]});
         return;
     }
 
@@ -101,7 +101,7 @@ sub get_upload_info {
     my $upload_info = $c->stash->{document_upload}->{$upload_id};
     unless ($upload_info) {
         stats_inc('bom_websocket_api.v_3.document_upload_error',
-            {tags => ['source:' . $c->stash('source_type'), "app_name:" . $c->stash('app_name'),]});
+            {tags => ['source_type:' . $c->stash('source_type'), "brand:" . $c->stash('brand'),]});
         return;
     }
 
