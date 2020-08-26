@@ -75,7 +75,7 @@ subtest 'range' => sub {
         is $c->code,          'RANGE';
         is $c->pricing_code,  'RANGE';
         cmp_ok $c->ask_price, '==', 0.5;
-        is roundcommon(0.001, $c->pricing_vol), 0.184;
+        is roundcommon(0.001, $c->pricing_vol), 0.177;
         is $c->sentiment, 'low_vol';
         ok $c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];

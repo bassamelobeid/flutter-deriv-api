@@ -250,7 +250,7 @@ subtest 'barrier too close and too far to spot' => sub {
                 low_barrier  => 'S-1P',
             });
             isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
-            is $c->ask_price, 53.62, 'ask price for low => 1.18701, high => 1.18833';
+            is $c->ask_price, 53.67, 'ask price for low => 1.18701, high => 1.18833';
         }
         'survived';
 

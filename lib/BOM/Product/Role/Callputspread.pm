@@ -199,7 +199,7 @@ sub apply_mean_reversion_markup {
     # Maximum lookback period is 30 minutes
     my $lookback_duration = min(30, $bet_duration);
     #  We did not do any ajdusment if there is nothing to lookback ie either monday morning or the next day after early close
-    return $self->trading_calendar->is_open_at($self->underlying->exchange, $self->date_start->minus_time_interval($lookback_duration . 'm'));
+    return $self->trading_calendar->is_open_at($self->underlying->exchange, $self->date_start->minus_time_interval($lookback_duration . 'm')) ? 1 : 0;
 }
 
 sub apply_quiet_period_markup {
