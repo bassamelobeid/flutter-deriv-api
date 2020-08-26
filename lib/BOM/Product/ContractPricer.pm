@@ -274,21 +274,29 @@ sub _build_hour_end_markup_parameters {
     return {} if ($self->is_forward_starting && ($self->date_start->epoch - $self->date_pricing->epoch) > 15 * 60);
 
     my $adj_args = {
-        starting_minute     => 50,
-        end_minute          => 5,
-        max_starting_minute => 57,
-        max_end_minute      => 2
-
+        # Effective interval for Hour End Markup start time
+        hour_end_start => 50,
+        hour_end_end   => 5,
+        # Interval that charges the maximum Hour End Markup
+        hour_end_max_start => 57,
+        hour_end_max_end   => 2,
+        # Effective interval for London Fix Markup start time
+        london_fix_start => 50,
+        london_fix_end   => 5
     };
 
     my $start_minute = $self->date_start->minute;
     my $start_hour   = $self->date_start->hour;
-    # Do not apply markup if it is not between 50 minutes of the hour to 5 minutes of next hour
-    return {} if $start_minute > $adj_args->{end_minute} and $start_minute < $adj_args->{starting_minute};
+
+    my $refer_start = min($adj_args->{hour_end_start}, $adj_args->{london_fix_start});
+    my $refer_end   = max($adj_args->{hour_end_end}, $adj_args->{london_fix_end});
+
+    # Do not apply markup if it is not between Hour-End or London Fix interval
+    return {} if $start_minute > $refer_end and $start_minute < $refer_start;
 
     my $high_low_lookback_from;
 
-    if ($start_minute >= $adj_args->{starting_minute}) {
+    if ($start_minute >= $refer_start) {
         # For contract starts at 14:57GMT, we will get high low from 14GMT
         $high_low_lookback_from = $self->date_start->minus_time_interval($self->date_start->epoch % 3600);
     } else {

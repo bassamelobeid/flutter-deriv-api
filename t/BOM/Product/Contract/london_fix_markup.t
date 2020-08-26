@@ -104,8 +104,43 @@ subtest 'london_fix_markup' => sub {
 
         $args->{bet_type} = 'PUT';
         $c = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 7.25, 'correct ask price';
-        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), 0.174536559755125, 'correct london fix markup for PUT');
+        cmp_ok $c->ask_price, '==', 6.59, 'correct ask price';
+        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), 0.108771324027147, 'correct london fix markup for PUT');
+
+        $args->{bet_type}     = 'CALL';
+        $args->{duration}     = '10m';
+        $args->{date_start}   = Date::Utility->new('2018-10-16 15:05:00');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 15:05:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 6.56, 'correct ask price';
+        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), 0.106066017177982, 'correct london fix markup for CALL');
+
+        $args->{date_start}   = Date::Utility->new('2018-10-16 15:06:00');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 15:06:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 5.5, 'correct ask price';
+        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), undef, 'No london fix markup');
+
+        # Summer 16
+
+        $args->{bet_type}     = 'CALL';
+        $args->{duration}     = '10m';
+        $args->{date_start}   = Date::Utility->new('2018-10-16 16:01:00');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 16:01:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 6.5, 'correct ask price';
+        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), undef, 'No london fix markup');
+        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'),   0.1,   'correct hour end markup for CALL');
+
+        # Special case without London Fix markup
+        $args->{bet_type}     = 'PUT';
+        $args->{duration}     = '1m';
+        $args->{date_start}   = Date::Utility->new('2018-10-16 14:59:00');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 14:59:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 5.5, 'correct ask price';
+        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), undef, 'No london fix markup');
+        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'),   undef, 'No hour end markup');
 
         # Winter on EU
         $args->{bet_type}     = 'CALL';
@@ -113,9 +148,35 @@ subtest 'london_fix_markup' => sub {
         $args->{date_start}   = Date::Utility->new('2018-11-16 16:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:01:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 6.45, 'correct ask price';
-        cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_markup')), '==', 0.095, 'correct london fix markup';
+        cmp_ok $c->ask_price, '==', 6.92, 'correct ask price';
+        cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_markup')), '==', 0.142, 'correct london fix markup';
         cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_x1')),     '==', 1,     'correct london fix markup';
+
+        $args->{bet_type}     = 'CALL';
+        $args->{duration}     = '10m';
+        $args->{date_start}   = Date::Utility->new('2018-11-16 16:05:00');
+        $args->{date_pricing} = Date::Utility->new('2018-11-16 16:05:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 6.56, 'correct ask price';
+        cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_markup')), '==', 0.106, 'correct london fix markup';
+        cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_x1')),     '==', 1,     'correct london fix markup';
+
+        $args->{date_start}   = Date::Utility->new('2018-11-16 16:06:00');
+        $args->{date_pricing} = Date::Utility->new('2018-11-16 16:06:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 5.5, 'correct ask price';
+        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), undef, 'No london fix markup');
+
+        # Special case without London Fix markup
+
+        $args->{bet_type}     = 'CALL';
+        $args->{duration}     = '1m';
+        $args->{date_start}   = Date::Utility->new('2018-11-16 15:59:00');
+        $args->{date_pricing} = Date::Utility->new('2018-11-16 15:59:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 5.5, 'correct ask price';
+        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), undef, 'No london fix markup');
+        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'),   undef, 'No hour end markup');
 
         #  When $X1 > 0 which means current spot is at spot_min, so we expect upward movement.
         #  Hence, no markup for PUT.
@@ -134,6 +195,31 @@ subtest 'london_fix_markup' => sub {
         $c                    = produce_contract($args);
         cmp_ok $c->ask_price, '==', 7.5, 'correct ask price';
         is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), undef, 'No hour end markup');
+
+        # test for different contract interval, Winter EU
+
+        $args->{bet_type}     = 'CALL';
+        $args->{duration}     = '25m';
+        $args->{date_start}   = Date::Utility->new('2018-11-16 15:50:00');
+        $args->{date_pricing} = Date::Utility->new('2018-11-16 15:50:00');
+        $c                    = produce_contract($args);
+        cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_markup')), '==', 0.045, 'correct london fix markup';
+
+        $args->{bet_type}     = 'CALL';
+        $args->{duration}     = '25m';
+        $args->{date_start}   = Date::Utility->new('2018-11-16 16:06:00');
+        $args->{date_pricing} = Date::Utility->new('2018-11-16 16:06:00');
+        $c                    = produce_contract($args);
+        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), undef, 'No London Fix markup');
+        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'),   undef, 'No hour end markup');
+
+        $args->{bet_type}     = 'CALL';
+        $args->{duration}     = '3m';
+        $args->{date_start}   = Date::Utility->new('2018-11-16 15:50:00');
+        $args->{date_pricing} = Date::Utility->new('2018-11-16 15:50:00');
+        $c                    = produce_contract($args);
+        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), undef, 'No London Fix markup');
+        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'),   undef, 'No hour end markup');
 
         # testing edge case for x1
         my $mocked_c = Test::MockModule->new('BOM::Product::Contract');
