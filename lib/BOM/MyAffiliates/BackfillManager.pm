@@ -32,10 +32,7 @@ has '_available_broker_codes' => (
     is      => 'ro',
     isa     => 'ArrayRef',
     default => sub {
-        my @codes = LandingCompany::Registry::all_broker_codes;
-        # do not process FOG or any virtual broker code
-        @codes = grep { $_ !~ /^(?:FOG|VR)/ } @codes;
-
+        my @codes = LandingCompany::Registry::all_real_broker_codes;
         return \@codes;
     },
 );
