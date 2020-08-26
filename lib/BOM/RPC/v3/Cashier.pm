@@ -689,7 +689,7 @@ rpc paymentagent_transfer => sub {
     my ($lc_lifetime_limit, $lc_for_days, $lc_limit_for_days, $lc_currency) =
         @$lc_withdrawal_limits{qw/ lifetime_limit for_days limit_for_days currency/};
     ## For some landing companies, we only check the lifetime limits. Thus, we set limit_for_days to 0:
-    if ($lcshort =~ /^(?:svg|japan|champion)$/) {
+    if ($client_fm->landing_company->lifetime_withdrawal_limit_check) {
         $lc_limit_for_days = 0;
     }
     ## We also need to convert these from the landing companies currency to the current currency

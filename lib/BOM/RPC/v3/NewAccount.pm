@@ -113,7 +113,7 @@ rpc "new_account_virtual",
     BOM::User::AuditLog::log("successful login", "$email");
     BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'virtual',
-        currency      => 'USD',
+        currency      => $client->currency,
         loginid       => $client->loginid,
         type          => 'newaccount',
         amount        => 0,
