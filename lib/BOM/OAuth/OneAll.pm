@@ -84,7 +84,7 @@ sub callback {
         # by which s/he has created an account at the beginning.
         # Getting the first provider from $user_providers is based on the assumption that
         # there is exactly one provider for a social user.
-        if ($provider_name ne $user_providers->[0]) {
+        if (defined $user_providers->[0] and $provider_name ne $user_providers->[0]) {
             $c->session(social_error => localize(get_message_mapping()->{INVALID_PROVIDER}, ucfirst $user_providers->[0]));
             return $c->redirect_to($redirect_uri);
         }
