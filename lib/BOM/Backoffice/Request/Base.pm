@@ -72,7 +72,7 @@ has 'brand' => (
 );
 
 {
-    my %known_codes = map { ; $_ => 1 } qw(CR MLT MF MX VRTC FOG CH VRCH);
+    my %known_codes = map { ; $_ => 1 } (LandingCompany::Registry->all_broker_codes, 'FOG');
     has 'broker_code' => (
         is  => 'ro',
         isa => subtype(
@@ -108,11 +108,9 @@ sub _build_brand {
     my $self = shift;
 
     my $broker = $self->broker_code // '';
-    if ($broker =~ /^(?:CH|VRCH)/) {
-        return Brands->new(name => 'champion');
-    }
+    my $brands = LandingCompany::Registry->get_by_broker($broker)->allowed_for_brands;
 
-    return Brands->new(name => 'binary');
+    return Brands->new(name => $brands->[0]);
 }
 
 sub _build_available_currencies {

@@ -10,6 +10,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Request qw(request);
 use BOM::Database::AuthDB;
+use LandingCompany::Registry;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -70,11 +71,14 @@ if (my $search = $params{search}) {
     my $href_args = {loginID => $loginid};
     $stash->{client_href} = request()->url_for("backoffice/f_clientloginid_edit.cgi", $href_args);
 
-    Bar("Client " . $client);
+    Bar("Client " . $client->loginid);
+} else {
+    Bar('Search');
 }
+
+$stash->{broker_codes} = [sort LandingCompany::Registry->all_broker_codes];
 
 $tt->process('backoffice/easy_search.html.tt', $stash)
     || die "Template process failed: " . $tt->error() . "\n";
 
 code_exit_BO();
-

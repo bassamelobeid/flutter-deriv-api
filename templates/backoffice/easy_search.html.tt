@@ -1,11 +1,11 @@
-[% 
-    SET child_classes = [ 
-        'account', 
+[%
+    SET child_classes = [
+        'account',
         'attorneys', 'client_authentication_document', 'client_lock', 'affiliate', 'client_authorization_code',
         'client_affiliate_exposure', 'client_authentication_method', 'client_failed_logins',
         'client_status', 'attorney_granter', 'login_history',
     ];
-    SET one_to_one_classes = [ 
+    SET one_to_one_classes = [
         'client_promo_code', 'payment_agent', 'self_exclusion',
     ];
 %]
@@ -16,34 +16,43 @@
     table.grants td { border: 0px; padding: 0px 4px }
     table.grants td.token { font-family: monospace }
     div.brk { display: inline-block }
-    div.brk label { display: inline-block; width: 60px; background-color: #ddd }
+    div.brk label { display: inline-block; width: 60px; background-color: #ddd; padding: 3px 5px; }
 </style>
 
 <form method="POST" action="?">
-    [% FOR b IN ['CR', 'MX', 'MF', 'MLT', 'VRTC', 'CH', 'VRCH'] %]
+    [% FOR broker IN broker_codes %]
     <div class="brk">
-        <input name="broker" type="radio" id="[%b%]" value="[%b%]"></input>
-        <label for="[%b%]">[%b%]</label>
+        <input name="broker" type="radio" id="[% broker %]" value="[% broker %]"></input>
+        <label for="[% broker %]">[% broker %]</label>
     </div>
     [% END %]
-    <br/><br/><input name="search" placeholder="Search.."></input>
+    <br/><br/>
+    <input type="text" name="search" placeholder="LoginID" />
+    <input type="submit" value="Search" />
 </form>
 
 <div class="insider">
 
 [% IF clients %]
 
-    <table>[%
-        FOR client IN clients;
-            href = "?loginid=$client.loginid";
-            link = "<a href=$href>$client</a>";
-            "<tr><td>$link</td><td>$client.default_account</td><td>$client.email</td></tr>";
-        END;
-    %]</table>
+    <table class="collapsed hover" border="1" style="margin-top: 15px;">
+        <tr>
+            <th>LoginID</th>
+            <th>Default Account</th>
+            <th>Email</th>
+        </tr>
+        [% FOR client IN clients %]
+            <tr>
+                <td><a href=[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => client.loginid }) | none %]>[% client.loginid %]</a></td>
+                <td>[% client.default_account.loginid %]</td>
+                <td>[% client.email %]</td>
+            </tr>
+        [% END %]
+    </table>
 
 [% ELSIF client %]
 
-    <h2><a href=[%client_href | none %]>[%client%]</a></h2>
+    <h2><a href=[%client_href | none %]>[% client.loginid %]</a></h2>
 
     <table class="easy_search">
     <tr>
@@ -58,7 +67,7 @@
         </td>
         <td>
             <h3>User DB</h3>
-            [%binary_user || '(has no user-db entry)'%]
+            Binary User ID: [% client.binary_user_id || '(has no user-db entry)'%]
             <br/>
             [%binary_user.failed_login || '(no failed logins pending)'%]
             <ul>
@@ -73,7 +82,7 @@
             <h3>Auth DB</h3>
             [% IF auth_user %]
                 [% SET self_params = "?loginid=$client.loginid" %]
-                [% "id$auth_user.id: $auth_user.login" %] has [%auth_user.grants_count%] tokens.  
+                [% "id$auth_user.id: $auth_user.login" %] has [%auth_user.grants_count%] tokens.
                 <a href="[%"$self_params&revoke_all=1"%]">Expire all of them.</a>
             [% ELSE %]
                 (has no auth-db entry)
@@ -82,7 +91,7 @@
     </tr>
     </table>
 
-    [% 
+    [%
     FOR class IN one_to_one_classes;
         hit = client.$class;
         NEXT UNLESS hit; %]
