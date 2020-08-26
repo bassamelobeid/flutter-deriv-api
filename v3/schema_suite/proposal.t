@@ -79,7 +79,7 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'frxUSDJPY', '1', 'h', 'Win payout if USD/JPY is strictly higher than entry spot at 1 hour after contract start time.', '57.48',
     '57.48', '97.140';
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
-    '100', 'CALL', 'frxUSDJPY', '1', 'd', 'Win payout if USD/JPY is strictly higher than entry spot at close on 2016-08-10.', '56.62', '56.62',
+    '100', 'CALL', 'frxUSDJPY', '1', 'd', 'Win payout if USD/JPY is strictly higher than entry spot at close on 2016-08-10.', '56.61', '56.61',
     97.140;
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_validation_error.json',
     'CALL', 'frxUSDJPY', '15', 'm', '+0.01',
@@ -94,16 +94,16 @@ test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_re
     'CALL', 'frxUSDJPY', '2', 'h', '+0.01',
     'Win payout if USD/JPY is strictly higher than entry spot plus  10 pips at 2 hours after contract start time.', '50.88', '50.88', '97.140';
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
-    'CALL', 'frxUSDJPY', '1', 'd', '97.150', 'Win payout if USD/JPY is strictly higher than 97.150 at close on 2016-08-10.', '55.84', '55.84',
+    'CALL', 'frxUSDJPY', '1', 'd', '97.150', 'Win payout if USD/JPY is strictly higher than 97.150 at close on 2016-08-10.', '55.83', '55.83',
     97.140;
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
-    'ONETOUCH', 'frxUSDJPY', '1', 'd', '97.270', 'Win payout if USD/JPY touches 97.270 through close on 2016-08-10.', '86.98', '86.98', 97.140;
+    'ONETOUCH', 'frxUSDJPY', '1', 'd', '97.270', 'Win payout if USD/JPY touches 97.270 through close on 2016-08-10.', '86.76', '86.76', 97.140;
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
-    'EXPIRYMISS', 'frxUSDJPY', '1', 'd', '97.250', '97.100', 'Win payout if USD/JPY ends outside 97.100 to 97.250 at close on 2016-08-10.', '91.99',
-    '91.99', 97.140;
+    'EXPIRYMISS', 'frxUSDJPY', '1', 'd', '97.250', '97.100', 'Win payout if USD/JPY ends outside 97.100 to 97.250 at close on 2016-08-10.', '91.84',
+    '91.84', 97.140;
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
-    'RANGE', 'frxUSDJPY', '1', 'd', '98.350', '96.830', 'Win payout if USD/JPY stays between 96.830 to 98.350 through close on 2016-08-10.', '46.67',
-    '46.67', 97.140;
+    'RANGE', 'frxUSDJPY', '1', 'd', '98.350', '96.830', 'Win payout if USD/JPY stays between 96.830 to 98.350 through close on 2016-08-10.', '47.41',
+    '47.41', 97.140;
 
 # OTC_FCHI
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
@@ -130,20 +130,20 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
     '100', 'CALL', 'frxXAUUSD', '15', 'm', 'Win payout if Gold/USD is strictly higher than entry spot at 15 minutes after contract start time.',
     '56.49', '56.49', '111.00';
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
-    '100', 'CALL', 'frxXAUUSD', '1', 'd', 'Win payout if Gold/USD is strictly higher than entry spot at close on 2016-08-10.', '54.22', '54.22',
+    '100', 'CALL', 'frxXAUUSD', '1', 'd', 'Win payout if Gold/USD is strictly higher than entry spot at close on 2016-08-10.', '54.23', '54.23',
     111.00;
 test_sendrecv_params 'proposal/test_send_single_barrier.json', 'proposal/test_receive_single_barrier.json',
-    'ONETOUCH', 'frxXAUUSD', '7', 'd', '112', 'Win payout if Gold/USD touches 112.00 through close on 2016-08-16.', '76.42', '76.42', 111.00;
+    'ONETOUCH', 'frxXAUUSD', '7', 'd', '112', 'Win payout if Gold/USD touches 112.00 through close on 2016-08-16.', '76.29', '76.29', 111.00;
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
-    'EXPIRYMISS', 'frxXAUUSD', '7', 'd', '113', '108', 'Win payout if Gold/USD ends outside 108.00 to 113.00 at close on 2016-08-16.', '41.(92|93)',
-    '41.(92|93)', 111.00;
+    'EXPIRYMISS', 'frxXAUUSD', '7', 'd', '113', '108', 'Win payout if Gold/USD ends outside 108.00 to 113.00 at close on 2016-08-16.', '41.73',
+    '41.73', 111.00;
 test_sendrecv_params 'proposal/test_send_double_barrier.json', 'proposal/test_receive_double_barrier.json',
-    'RANGE', 'frxXAUUSD', '7', 'd', '113', '108', 'Win payout if Gold/USD stays between 108.00 to 113.00 through close on 2016-08-16.', 55.9,
-    '55.90', 111.00;
+    'RANGE', 'frxXAUUSD', '7', 'd', '113', '108', 'Win payout if Gold/USD stays between 108.00 to 113.00 through close on 2016-08-16.', 56.44,
+    '56.44', 111.00;
 
 # frxUSDJPY 7 day CALL
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_receive.json',
-    '100', 'CALL', 'frxUSDJPY', '7', 'd', 'Win payout if USD/JPY is strictly higher than entry spot at close on 2016-08-16.', '56.59', '56.59',
+    '100', 'CALL', 'frxUSDJPY', '7', 'd', 'Win payout if USD/JPY is strictly higher than entry spot at close on 2016-08-16.', '56.58', '56.58',
     97.14;
 
 # R_100 Lookbacks
