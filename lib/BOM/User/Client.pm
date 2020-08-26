@@ -3314,8 +3314,7 @@ sub validate_payment {
         die "Invalid landing company - $lc\n" unless $lc_limits;
         my $lc_currency = $lc_limits->{currency};
 
-        # for CR & CH only check for lifetime limits (in client's currency)
-        if ($lc =~ /^(?:svg|champion)$/) {
+        if ($self->landing_company->lifetime_withdrawal_limit_check) {
             # Withdrawals to date
             my $wd_epoch = $account->total_withdrawals();
 
@@ -3415,11 +3414,12 @@ sub deposit_virtual_funds {
     my ($self, $source, $remark) = @_;
     $self->is_virtual || die "not a virtual client\n";
 
-    my $virtual_account_default_balance = $self->landing_company->virtual_account_default_balance;
+    my $landing_company                 = $self->landing_company;
+    my $currency                        = $landing_company->legal_default_currency // 'USD';
+    my $virtual_account_default_balance = $landing_company->virtual_account_default_balance // 10000;
 
     # default_account not exists when first time init virtual balance
-    my $amount   = $self->default_account ? $virtual_account_default_balance - $self->default_account->balance : $virtual_account_default_balance;
-    my $currency = 'USD';
+    my $amount = $self->default_account ? $virtual_account_default_balance - $self->default_account->balance : $virtual_account_default_balance;
 
     # if amount is 0, means no need topup balance
     if ($amount) {
