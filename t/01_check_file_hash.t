@@ -66,7 +66,14 @@ my %file_details = (
         filename => module_path('BOM::Product::Contract::Calle'),
         hash     => 'b21689e81e8727649167e67c2ce3e06c111d3abf'
     },
-);
+    multup => {
+        filename => module_path('BOM::Product::Contract::Multup'),
+        hash     => '98305d6165103883412d2b920b3c1acf430b65c9'
+    },
+    multdown => {
+        filename => module_path('BOM::Product::Contract::Multdown'),
+        hash     => 'bd03929485d00041e936fd243daa471975f5a862'
+    });
 
 foreach my $entry (keys %file_details) {
     open(my $fh, "<", $file_details{$entry}{filename}) or die "File not found $_";
