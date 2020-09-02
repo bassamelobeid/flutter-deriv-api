@@ -179,7 +179,7 @@ sub wrap_rpc_sub {
                 }
                 warn $error_msg;
 
-                log_exception($def->caller);
+                log_exception(sprintf('%s::%s', $def->caller, $def->name));
 
                 $result = BOM::RPC::v3::Utility::create_error({
                         code              => 'InternalServerError' . $error,

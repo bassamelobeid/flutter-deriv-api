@@ -55,7 +55,6 @@ use constant MT5_VIRTUAL_MONEY_DEPOSIT_COMMENT => 'MT5 Virtual Money deposit';
 my $error_registry = BOM::RPC::v3::MT5::Errors->new();
 my $error_handler  = sub {
     my $err = shift;
-    log_exception();
 
     if (ref $err eq 'HASH' and $err->{code}) {
         create_error_future($err->{code}, {message => $err->{error}});
@@ -505,7 +504,6 @@ async_rpc "mt5_new_account",
                         });
                 });
         })->catch($error_handler);
-
     };
 
 =head2 _is_financial_assessment_complete
@@ -654,7 +652,6 @@ async_rpc "mt5_get_settings",
             $settings = _filter_settings($settings,
                 qw/address balance city company country currency email group leverage login name phone phonePassword state zipCode landing_company display_balance/
             );
-
             return Future->done($settings);
         })->catch($error_handler);
     };
@@ -1161,7 +1158,6 @@ async_rpc "mt5_deposit",
                 );
             } catch {
                 my $withdraw_error = $@;
-                log_exception();
                 return create_error_future(
                     $error_code,
                     {
@@ -1222,7 +1218,6 @@ async_rpc "mt5_deposit",
                             time               => $txn->{transaction_time}}});
             } catch {
                 my $error = BOM::Transaction->format_error(err => $@);
-                log_exception();
                 return create_error_future($error_code, {message => $error->{-message_to_client}});
             }
 
@@ -1243,6 +1238,7 @@ async_rpc "mt5_deposit",
                     my ($status) = @_;
 
                     if ($status->{error}) {
+                        log_exception('mt5_deposit');
                         _send_email(
                             loginid      => $fm_loginid,
                             mt5_id       => $to_mt5,
@@ -1391,7 +1387,7 @@ async_rpc "mt5_withdrawal",
                         });
                     } catch {
                         my $error = BOM::Transaction->format_error(err => $@);
-                        log_exception();
+                        log_exception('mt5_withdrawal');
                         _send_email(
                             loginid      => $to_loginid,
                             mt5_id       => $fm_mt5,
@@ -1901,7 +1897,13 @@ sub do_mt5_deposit {
             amount  => $amount,
             comment => $comment,
             txn_id  => $txn_id,
-        })->catch($error_handler);
+        }
+    )->catch(
+        sub {
+            my $e = shift;
+            log_exception('mt5_deposit') if $txn_id;
+            $error_handler->($e);
+        });
 }
 
 sub do_mt5_withdrawal {
