@@ -1660,7 +1660,9 @@ sub validate_common_account_details {
         die "InvalidCitizenship\n"
             if ($args->{'citizen'} && !defined $brand->countries_instance->countries->country_from_code($args->{'citizen'}));
 
-        die "invalid UK postcode\n" if ($residence eq 'gb' and not($args->{address_postcode} // $client->address_postcode));
+        ## If this is non-virtual United Kingdom account, it must have a postcode
+        die "invalid UK postcode\n"
+            if ($residence eq 'gb' and not $client->is_virtual and not($args->{address_postcode} // $client->address_postcode));
 
         die "invalid PO Box\n"
             if (($args->{address_line_1} || '') =~ /p[\.\s]+o[\.\s]+box/i
