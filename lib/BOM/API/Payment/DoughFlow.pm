@@ -119,29 +119,6 @@ sub withdrawal_validate_GET {
     return _process_doughflow_request($c, 'withdrawal_validate');
 }
 
-=head2 withdrawal_POST
-
-Receives a request for a DoughFlow withdrawal record, validates the request
-To be removed after new Doughflow version has been deployed, see https://trello.com/c/dHJd90uk
-
-=cut
-
-sub withdrawal_POST {
-    my $c = shift;
-    return _process_doughflow_request($c, 'withdrawal');
-}
-
-=head2 withdrawal_reversal_POST
-
-Receives a request for a DoughFlow withdrawal reversal record, validates the request, and then attempts to create the withdrawal reversal record
-
-=cut
-
-sub withdrawal_reversal_POST {
-    my $c = shift;
-    return _process_doughflow_request($c, 'withdrawal_reversal');
-}
-
 =head2 update_payout_POST
 
 Called by Doughflow when a payout is updated.

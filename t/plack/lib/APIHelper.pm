@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Exporter 'import';
-our @EXPORT_OK = qw( request auth_request decode_json deposit withdraw_validate withdraw update_payout balance new_client);
+our @EXPORT_OK = qw( request auth_request decode_json deposit withdrawal_validate update_payout balance new_client);
 
 use Encode;
 use FindBin qw/$Bin/;
@@ -127,11 +127,11 @@ sub deposit {
 
 =pod
 
-withdraw_validate request helper.
+withdrawal_validate request helper.
 
 =cut
 
-sub withdraw_validate {
+sub withdrawal_validate {
     my %override = @_;
     request(
         'GET',
@@ -178,32 +178,6 @@ sub update_payout {
     request(
         'POST',
         '/transaction/payment/doughflow/update_payout',
-        {
-            amount            => 1,
-            client_loginid    => delete $override{loginid},
-            siteid            => 1,
-            created_by        => 'derek',
-            currency_code     => 'USD',
-            trace_id          => 123,
-            ip_address        => '127.0.0.1',
-            payment_processor => 'WebMonkey',
-            %override,
-        },
-        {'Content-Type' => 'text/xml'});
-}
-
-=pod
-
-withdraw request helper.
-
-=cut
-
-# to be removed in https://trello.com/c/dHJd90uk
-sub withdraw {
-    my %override = @_;
-    request(
-        'POST',
-        '/transaction/payment/doughflow/withdrawal',
         {
             amount            => 1,
             client_loginid    => delete $override{loginid},

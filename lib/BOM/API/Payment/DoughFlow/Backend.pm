@@ -20,7 +20,6 @@ use BOM::Platform::Event::Emitter;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Context::Request;
 
-# one of deposit, withdrawal
 has 'type' => (
     is       => 'ro',
     required => 1
@@ -64,7 +63,7 @@ sub execute {
         $client->status->clear_pa_withdrawal_explicitly_allowed;
     }
 
-    if ($c->type =~ /^(withdrawal_reversal|payout_rejected)$/) {
+    if ($c->type eq 'payout_rejected') {
         if (my $err = $c->validate_params) {
             return $c->status_bad_request($err);
         }
@@ -146,9 +145,9 @@ sub validate_as_payment {
 
     my $client = $c->user;
     my $action =
-          ($c->type =~ /deposit/i)                        ? 'deposit'
-        : ($c->type =~ /(withdrawal|payout_inprogress)/i) ? 'withdraw'
-        :                                                   return 1;
+          $c->type =~ /^(deposit|deposit_validate)$/              ? 'deposit'
+        : $c->type =~ /^(payout_inprogress|withdrawal_validate)$/ ? 'withdraw'
+        :                                                           return 1;
 
     my $currency      = $c->request_parameters->{currency_code};
     my $signed_amount = $c->request_parameters->{amount};
@@ -251,7 +250,7 @@ sub write_transaction_line {
 
         _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
 
-    } elsif ($c->type eq 'withdrawal' or $c->type eq 'payout_inprogress') {
+    } elsif ($c->type eq 'payout_inprogress') {
 
         # Don't allow balances to ever go negative! Include any fee in this test.
         my $balance = $client->default_account->balance;
@@ -265,7 +264,7 @@ sub write_transaction_line {
 
         _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
 
-    } elsif ($c->type =~ /^(withdrawal_reversal|payout_rejected)$/) {
+    } elsif ($c->type eq 'payout_rejected') {
         if ($bonus or $fee) {
             return $c->status_bad_request('Bonuses and fees are not allowed for withdrawal reversals');
         }
@@ -298,7 +297,7 @@ sub check_predicates {
     });
 
     my $rejection;
-    if ($c->type =~ /^(withdrawal_reversal|payout_rejected)$/) {
+    if ($c->type eq 'payout_rejected') {
         # In order to process this withdrawal reversion, we must first find a currency
         # file entry that describes the withdrawal being reversed. That entry must be
         # be a 'DoughFlow withdrawal' and must have the same trace_id as the one sent

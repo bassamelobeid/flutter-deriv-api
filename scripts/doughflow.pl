@@ -12,7 +12,7 @@ use BOM::User::Client;
 binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
 
-my $usage = "Usage: $0 -e <URL> -s <secret_key> -c <client_loginid> -l <debug|info|error>\n";
+my $usage = "Usage: $0 -a <action> -e <URL> -s <secret_key> -c <client_loginid> -l <debug|info|error>\n";
 
 require Log::Any::Adapter;
 GetOptions(
@@ -24,45 +24,53 @@ GetOptions(
     't|trace_id=i'       => \my $trace_id,
 ) or die $usage;
 
-# Note: The 'withdrawal' endpoint will be removed soon,
-# 'update_payout' is the one which does real withdrawal.
+# endpoint for QA box is 127.0.0.1:8110
+# 'update_payout' does a withdrawal.
 my $actions = {
 	'deposit' => 'post',
 	'deposit_validate' => 'get',
-	'withdrawal' => 'post',
 	'withdrawal_validate' => 'get',
-	'withdrawal_reversal' => 'post',
 	'update_payout' => 'post',
+	'reject_payout' => '',
 };
 
 $log_level ||= 'info';
 Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
 
-die "ERROR: action must be one of the actions in the actions list. $usage" unless $action and exists($actions->{$action});
+die 'ERROR: action must be one of '.(join ', ', keys %$actions).". $usage" unless $action and exists($actions->{$action});
 die "ERROR: endpoint url must be specified. $usage"   unless $endpoint_url;
 die "ERROR: secret phrase must be specified. $usage"  unless $secret_key;
 die "ERROR: client loginid must be specified. $usage" unless $client_loginid;
-if ($action =~ /^withdrawal_reversal$/ and not $trace_id) {
-    die "ERROR: trace_id must be specified if action is withdrawal_reversal. $usage";
-}
 
 #die 'Invalid url' unless $endpoint_url =~ /^https:\/\/paymentapi.binary.com\/paymentapi$/;
 
 my $client = BOM::User::Client->new({loginid => $client_loginid}) or die "Invalid login ID: $client_loginid";
+$trace_id ||= do {
+    my $rnd = int(rand(999999));
+    $log->infof('Using random trace_id: %s', $rnd);
+    $rnd;
+};
+
 my $params = {
     client_loginid    => $client_loginid,
     amount            => 1,
     currency_code     => $client->account->currency_code,
     payment_processor => 'AirTM',
-    trace_id          => $trace_id ||int(rand(999999)),
+    trace_id          => $trace_id,
 };
 
-$log->debugf('Trying $s with %s', $action, $params);
-
-my $url = "$endpoint_url/transaction/payment/doughflow/$action";
+my $endpoint = $action;
+if ($action eq 'reject_payout') {
+    $endpoint = 'update_payout';
+    $params->{status} = 'rejected'
+}
 if ($action eq 'update_payout') {
 	$params->{status} = 'inprogress'
 }
+
+$log->debugf('Trying $s with %s', $endpoint, $params);
+
+my $url = "$endpoint_url/transaction/payment/doughflow/$endpoint";
 
 $log->debugf('Connecting to %s', $url);
 
@@ -78,14 +86,15 @@ my $tx = ($actions->{$action} eq 'get')
 	: $ua->post($url => {'X-BOM-DoughFlow-Authorization' => "$timestamp:$calc_hash"} => form => $params);
 
 my $result      = $tx->result;
-my $result_code = $result->code;    # 201 means success
+my $result_code = $result->code;    # 200 or 201 means success
+my $body        = $result->body || '<empty>';
 
 $log->debugf('Transaction result is %s', $result);
 
 if ($result_code =~ /^2/) {
-    $log->infof('%s successful. Status code: %s', $action, $result_code);
+    $log->infof('%s successful. Status code: %s, message: %s', $action, $result_code, $body);
 } else {
-    $log->errorf('%s failed. Status code: %s', $action, $result_code);
+    $log->errorf('%s failed. Status code: %s, message: %s', $action, $result_code, $body);
 }
 
 1;

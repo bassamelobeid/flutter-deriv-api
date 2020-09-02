@@ -69,16 +69,6 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                 BOM::API::Payment::DoughFlow->new(env => $_[0])->withdrawal_validate_GET;
             }
         };
-        resource '/transaction/payment/doughflow/withdrawal' => sub {
-            POST {
-                BOM::API::Payment::DoughFlow->new(env => $_[0])->withdrawal_POST;
-            }
-        };
-        resource '/transaction/payment/doughflow/withdrawal_reversal' => sub {
-            POST {
-                BOM::API::Payment::DoughFlow->new(env => $_[0])->withdrawal_reversal_POST;
-            }
-        };
         resource '/transaction/payment/doughflow/create_payout' => sub {
             POST {
                 BOM::API::Payment::DoughFlow->new(env => $_[0])->create_payout_POST;

@@ -4,7 +4,7 @@ use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use APIHelper qw(balance deposit withdraw_validate update_payout);
+use APIHelper qw(balance deposit withdrawal_validate update_payout);
 use JSON::MaybeUTF8 qw(:v1);
 use BOM::User::Client;
 use Test::MockModule;
@@ -31,7 +31,7 @@ is($r->code,    201,       'correct status code');
 is($r->message, 'Created', 'Correct message');
 my $starting_balance = balance($loginid);
 
-$r = withdraw_validate(
+$r = withdrawal_validate(
     loginid => $loginid,
 );
 is($r->code, 200, 'correct status code');
@@ -40,14 +40,14 @@ is $resp->{allowed}, 0, 'validate failed';
 like $resp->{message}, qr/reached the maximum withdrawal limit/;
 $mock_account->unmock('total_withdrawals');
 
-$r = withdraw_validate(
+$r = withdrawal_validate(
     loginid => $loginid,
 );
 is($r->code,                                 200,                   'correct status code');
 is(decode_json_utf8($r->content)->{allowed}, 1,                     'validate pass');
 is(0 + balance($loginid),                    $starting_balance + 0, 'Correct final balance');
 
-$r = withdraw_validate(
+$r = withdrawal_validate(
     loginid => $loginid,
     amount  => 'Zzz',
 );
@@ -56,7 +56,7 @@ is $resp->{allowed},   0,                                                       
 like $resp->{message}, qr[(Attribute \(amount\) does not pass the type constraint|Invalid money amount)], 'Correct error message';
 
 my $balance_now = balance($loginid);
-$r = withdraw_validate(
+$r = withdrawal_validate(
     loginid => $loginid,
     amount  => $balance_now + 1,
 );
@@ -65,7 +65,7 @@ is $resp->{allowed},   0,                          'validate failed';
 like $resp->{message}, qr/exceeds client balance/, "$balance_now plus 1 exceeds balance now";
 
 # < 0.01 or > 100000
-$r = withdraw_validate(
+$r = withdrawal_validate(
     loginid => $loginid,
     amount  => 0.009,
 );
@@ -73,7 +73,7 @@ $resp = decode_json_utf8($r->content);
 is $resp->{allowed},   0,                        'validate failed';
 like $resp->{message}, qr/Invalid money amount/, ".. bad little amount rejected helpfully";
 
-$r = withdraw_validate(
+$r = withdrawal_validate(
     loginid => $loginid,
     amount  => 100001,
 );
@@ -110,7 +110,7 @@ subtest 'free gift' => sub {
         remark   => 'Free gift',
     );
 
-    $r = withdraw_validate(
+    $r = withdrawal_validate(
         loginid => $client->loginid,
         amount  => 10,
     );

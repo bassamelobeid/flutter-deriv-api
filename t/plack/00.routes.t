@@ -19,9 +19,8 @@ my @GETs = (
     '/transaction/payment/doughflow/withdrawal_validate'
 );
 my @POSTs = (
-    '/transaction/payment/doughflow/deposit',             '/transaction/payment/doughflow/withdrawal',
-    '/transaction/payment/doughflow/withdrawal_reversal', '/transaction/payment/doughflow/create_payout',
-    '/transaction/payment/doughflow/update_payout',       '/transaction/payment/doughflow/record_failed_deposit',
+    '/transaction/payment/doughflow/deposit',       '/transaction/payment/doughflow/create_payout',
+    '/transaction/payment/doughflow/update_payout', '/transaction/payment/doughflow/record_failed_deposit',
     '/transaction/payment/doughflow/record_failed_withdrawal'
 );
 
@@ -36,9 +35,8 @@ foreach my $u (@POSTs) {
 
 # failed one
 @GETs = (
-    '/transaction/payment/doughflow/deposit',             '/transaction/payment/doughflow/withdrawal',
-    '/transaction/payment/doughflow/withdrawal_reversal', '/transaction/payment/doughflow/create_payout',
-    '/transaction/payment/doughflow/update_payout',       '/transaction/payment/doughflow/record_failed_deposit',
+    '/transaction/payment/doughflow/deposit',       '/transaction/payment/doughflow/create_payout',
+    '/transaction/payment/doughflow/update_payout', '/transaction/payment/doughflow/record_failed_deposit',
     '/transaction/payment/doughflow/record_failed_withdrawal'
 );
 foreach my $u (@GETs) {
