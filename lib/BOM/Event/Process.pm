@@ -55,6 +55,7 @@ my $action_mapping = {
     document_upload             => \&BOM::Event::Actions::Client::document_upload,
     ready_for_authentication    => \&BOM::Event::Actions::Client::ready_for_authentication,
     client_verification         => \&BOM::Event::Actions::Client::client_verification,
+    onfido_doc_ready_for_upload => \&BOM::Event::Actions::Client::onfido_doc_ready_for_upload,
     verify_address              => \&BOM::Event::Actions::Client::verify_address,
     profile_change              => \&BOM::Event::Actions::User::profile_change,
     login                       => \&BOM::Event::Actions::User::login,

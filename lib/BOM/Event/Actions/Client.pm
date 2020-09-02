@@ -670,99 +670,92 @@ async sub _store_applicant_documents {
 
     my $existing_onfido_docs = BOM::User::Onfido::get_onfido_document($client->binary_user_id);
 
-    foreach my $doc (@documents) {
+    # Build hash index for onfido document id to report.
+    my %report_for_doc_id;
+    for my $report (@{$all_report}) {
+        next unless $report->documents;
 
+        my @docs = grep { $_ && $_->{id} } @{$report->documents};
+        $report_for_doc_id{$_->{id}} = $report for @docs;
+    }
+
+    foreach my $doc (@documents) {
         my (undef, $type, $side) = split /\./, $doc->file_name;
         $type = $doc->type;
         $side = $doc->side;
         $side = $side && $ONFIDO_DOCUMENT_SIDE_MAPPING{$side} // 'front';
         $type = 'live_photo' if $side eq 'photo';
 
-        unless ($existing_onfido_docs && $existing_onfido_docs->{$doc->id}) {
-            $log->debugf('Insert document data for user %s and document id %s', $client->binary_user_id, $doc->id);
+        # Skip if document exist in our DB
+        next if $existing_onfido_docs && $existing_onfido_docs->{$doc->id};
 
-            BOM::User::Onfido::store_onfido_document($doc, $applicant_id, $client->place_of_birth, $type, $side);
+        $log->debugf('Insert document data for user %s and document id %s', $client->binary_user_id, $doc->id);
 
-            try {
-                await _sync_onfido_bo_document({
-                    type          => 'document',
-                    document_id   => $doc->id,
-                    client        => $client,
-                    applicant_id  => $applicant_id,
-                    onfido_result => $doc,
-                    all_report    => $all_report
-                });
-            } catch {
-                $log->debugf("Error in downloading and sync document file : $@");
-                exception_logged();
-            }
-        }
+        BOM::User::Onfido::store_onfido_document($doc, $applicant_id, $client->place_of_birth, $type, $side);
+
+        my ($expiration_date, $document_numbers) = @{$report_for_doc_id{$doc->id}{properties}}{qw(date_of_expiry document_numbers)};
+        my $doc_number = $document_numbers ? $document_numbers->[0]->{value} : undef;
+
+        BOM::Platform::Event::Emitter::emit(
+            onfido_doc_ready_for_upload => {
+                type           => 'document',
+                document_id    => $doc->id,
+                client_loginid => $client->loginid,
+                applicant_id   => $applicant_id,
+                file_type      => $doc->file_type,
+                document_info  => {
+                    type            => $type,
+                    side            => $side,
+                    expiration_date => $expiration_date,
+                    number          => $doc_number,
+                },
+            });
     }
 
     my @live_photos            = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
     my $existing_onfido_photos = BOM::User::Onfido::get_onfido_live_photo($client->binary_user_id);
 
     foreach my $photo (@live_photos) {
-        unless ($existing_onfido_photos && $existing_onfido_photos->{$photo->id}) {
-            $log->debugf('Insert live photo data for user %s and document id %s', $client->binary_user_id, $photo->id);
+        # Skip if document exist in our DB
+        next if $existing_onfido_photos && $existing_onfido_photos->{$photo->id};
 
-            BOM::User::Onfido::store_onfido_live_photo($photo, $applicant_id);
-            try {
-                await _sync_onfido_bo_document({
-                    type          => 'photo',
-                    document_id   => $photo->id,
-                    client        => $client,
-                    applicant_id  => $applicant_id,
-                    onfido_result => $photo,
-                    all_report    => $all_report
-                });
-            } catch {
-                $log->debugf("Error in downloading and sync photo file : $@");
-                exception_logged();
-            }
+        $log->debugf('Insert live photo data for user %s and document id %s', $client->binary_user_id, $photo->id);
 
-        }
+        BOM::User::Onfido::store_onfido_live_photo($photo, $applicant_id);
+
+        BOM::Platform::Event::Emitter::emit(
+            onfido_doc_ready_for_upload => {
+                type           => 'photo',
+                document_id    => $photo->id,
+                client_loginid => $client->loginid,
+                applicant_id   => $applicant_id,
+                file_type      => $photo->file_type,
+            });
+
     }
 
     return;
 }
 
-=head2 _sync_onfido_bo_document
+=head2 onfido_doc_ready_for_upload
 
 Gets the client's documents from Onfido and upload to S3
 
 =cut
 
-async sub _sync_onfido_bo_document {
-    my $args = shift;
-    my ($type, $doc_id, $client, $applicant_id, $onfido_res, $all_report) =
-        @{$args}{qw/type document_id client applicant_id onfido_result all_report/};
+async sub onfido_doc_ready_for_upload {
+    my $data = shift;
+    my ($type, $doc_id, $client_loginid, $applicant_id, $file_type, $document_info) =
+        @{$data}{qw/type document_id client_loginid applicant_id file_type document_info/};
+
+    my $client    = BOM::User::Client->new({loginid => $client_loginid});
     my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
     my $onfido    = _onfido();
-    my $doc_type;
-    my $page_type = '';
+    my $doc_type  = $document_info->{type};
+    my $page_type = $document_info->{side} // '';
+
     my $image_blob;
-    my $expiration_date;
-    my $document_numbers;
-    my @doc_ids;
-    my %all_ids;
-
     if ($type eq 'document') {
-        $doc_type  = $onfido_res->type;
-        $page_type = $onfido_res->side;
-        for my $each_report (@{$all_report}) {
-            if ($each_report->documents) {
-                @doc_ids = grep { $_ && $_->{id} } @{$each_report->documents};
-                %all_ids = map  { $_->{id} => 1 } @doc_ids;
-
-                if (exists($all_ids{$doc_id})) {
-                    ($expiration_date, $document_numbers) = @{$each_report->{properties}}{qw(date_of_expiry document_numbers)};
-                    last;
-                }
-            } else {
-                next;
-            }
-        }
         $image_blob = await $onfido->download_document(
             applicant_id => $applicant_id,
             document_id  => $doc_id
@@ -776,9 +769,12 @@ async sub _sync_onfido_bo_document {
     } else {
         die "Unsupported document type";
     }
+
+    my $expiration_date = $document_info->{expiration_date};
     die "Invalid expiration date" if ($expiration_date
         && $expiration_date ne (eval { Date::Utility->new($expiration_date)->date_yyyymmdd } // ''));
-    my $file_type = lc $onfido_res->file_type;
+
+    $file_type = lc $file_type;
     ## Convert to a better extension in case it comes back as image/*
     ## Media::Type::Simple is buggy, else we might have considered it here
     if ($file_type =~ m{/jpe?g}i) {
@@ -800,16 +796,15 @@ async sub _sync_onfido_bo_document {
     my $s3_uploaded;
     my $file_id;
     my $new_file_name;
-    my $doc_id_number;
-    $doc_id_number = $document_numbers->[0]->{value} if $document_numbers;
+
     try {
         $upload_info = $client->db->dbic->run(
             ping => sub {
                 $_->selectrow_hashref(
                     'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)',
-                    undef, $client->loginid, $doc_type, $file_type,
+                    undef, $client_loginid, $doc_type, $file_type,
                     $expiration_date || undef,
-                    $doc_id_number   || '',
+                    $document_info->{number} || '',
                     $file_checksum, '', $page_type,
                 );
             });
@@ -825,9 +820,7 @@ async sub _sync_onfido_bo_document {
         ($file_id, $new_file_name) = @{$upload_info}{qw/file_id file_name/};
 
         # This redis key allow further date/numbers update
-        foreach my $onfido_doc_id (keys %all_ids) {
-            await $redis_events_write->setex(ONFIDO_DOCUMENT_ID_PREFIX . $onfido_doc_id, ONFIDO_PENDING_REQUEST_TIMEOUT, $file_id);
-        }
+        await $redis_events_write->setex(ONFIDO_DOCUMENT_ID_PREFIX . $doc_id, ONFIDO_PENDING_REQUEST_TIMEOUT, $file_id);
 
         $log->debugf("Starting to upload file_id: $file_id to S3 ");
         $s3_uploaded = await $s3_client->upload($new_file_name, $tmp_filename, $file_checksum);

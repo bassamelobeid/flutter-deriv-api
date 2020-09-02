@@ -388,18 +388,15 @@ subtest 'client_verification after upload document himself' => sub {
     $log->clear();
 
     lives_ok {
-        BOM::Event::Actions::Client::client_verification({
-                check_url => $check2->{href},
+        BOM::Event::Actions::Client::onfido_doc_ready_for_upload({
+                type           => 'photo',
+                document_id    => $doc->id,
+                client_loginid => $test_client2->loginid,
+                applicant_id   => $applicant_id2,
+                file_type      => $doc->file_type,
             })->get;
     }
     "ready_for_authentication no exception";
-
-    $existing_onfido_docs = $dbic->run(
-        fixup => sub {
-            my $result = $_->prepare('select * from users.get_onfido_documents(?::BIGINT, ?::TEXT)');
-            $result->execute($test_client2->binary_user_id, $applicant_id2);
-            return $result->fetchall_hashref('id');
-        });
 
     my $clientdb      = BOM::Database::ClientDB->new({broker_code => 'CR'});
     my $doc_file_name = $clientdb->db->dbic->run(
@@ -409,9 +406,7 @@ subtest 'client_verification after upload document himself' => sub {
             return $sth->fetchall_arrayref({})->[0]{file_name};
         });
 
-    like($doc_file_name, qr{\.jpg$}, 'uploaded document has expected jpg extension');
-
-    is_deeply([keys %$existing_onfido_docs], [$doc->id], 'now the doc is stored in db');
+    like($doc_file_name, qr{\.png$}, 'uploaded document has expected png extension');
 
     my $mocked_user_onfido = Test::MockModule->new('BOM::User::Onfido');
     # simulate the case that 2 processes uploading same documents almost at same time.
@@ -422,13 +417,17 @@ subtest 'client_verification after upload document himself' => sub {
     $mocked_user_onfido->mock(store_onfido_live_photo => sub { diag "in mocked store"; return undef });
 
     lives_ok {
-        BOM::Event::Actions::Client::client_verification({
-                check_url => $check2->{href},
+        BOM::Event::Actions::Client::onfido_doc_ready_for_upload({
+                type           => 'photo',
+                document_id    => $doc->id,
+                client_loginid => $test_client2->loginid,
+                applicant_id   => $applicant_id2,
+                file_type      => $doc->file_type,
             })->get;
     }
     "ready_for_authentication no exception";
-    $log->contains_ok(qr/Document already exists/, 'warning string is ok');
 
+    $log->contains_ok(qr/Document already exists/, 'warning string is ok');
 };
 
 subtest 'sync_onfido_details' => sub {
