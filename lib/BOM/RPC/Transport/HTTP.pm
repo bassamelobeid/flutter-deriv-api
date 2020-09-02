@@ -11,7 +11,7 @@ use IO::Async::Loop::Mojo;
 
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use Path::Tiny;
-use Proc::CPUUsage;
+use BSD::Resource ();
 use Time::HiRes;
 
 use BOM::RPC ();
@@ -130,7 +130,7 @@ sub startup {
     my $request_start;
     my @recent;
     my $call;
-    my $cpu;
+    my $cpu_start;
     my $vsz_start;
     my $on_production     = $ENV{TEST_DATABASE} ? 0 : 1;
     my $service_base_name = $ENV{BASE_NAME} || 'bom-rpc';
@@ -138,9 +138,9 @@ sub startup {
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
-            $cpu  = Proc::CPUUsage->new();
-            $call = $c->req->url->path;
-            $0    = "$service_base_name: " . $call if $on_production;    ## no critic (RequireLocalizedPunctuationVars)
+            $cpu_start = current_cpu_usage();
+            $call      = $c->req->url->path;
+            $0         = "$service_base_name: " . $call if $on_production;    ## no critic (RequireLocalizedPunctuationVars)
             $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ["rpc:$call"]});
@@ -153,6 +153,8 @@ sub startup {
             BOM::Database::Rose::DB->db_cache->finish_request_cycle;
             $request_counter++;
             my $request_end = [Time::HiRes::gettimeofday];
+            my $cpu_end     = current_cpu_usage();
+            my $duration    = Time::HiRes::tv_interval($request_end, $request_start);
             my $end         = [gmtime $request_end->[0]];
             $end = sprintf(
                 '%04d-%02d-%02d %02d:%02d:%06.3f',
@@ -175,7 +177,13 @@ sub startup {
                 (1000 * Time::HiRes::tv_interval($request_start)),
                 {tags => ["rpc:$call"]});
 
-            push @recent, [$request_start, Time::HiRes::tv_interval($request_end, $request_start)];
+            # If we've used so little CPU time it doesn't show up in $duration,
+            # it's likely we were scheduled the entire time and didn't make any
+            # blocking calls. So avoid divide-by-zero and claim 100% usage
+            my $cpu_usage = $duration > 0 ? ($cpu_end - $cpu_start) / $duration : 1;
+            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.cpuusage', $cpu_usage, {tags => ["rpc:$call"]});
+
+            push @recent, [$request_start, $duration];
             shift @recent if @recent > 50;
 
             my $usage = 0;
@@ -207,6 +215,19 @@ sub current_vsz {
     # Process name is awkward and can contain (). We know that we're a running process.
     $stat =~ s/^.*\) R [0-9]+ //;
     return +(split " ", $stat)[18];
+}
+
+=head2 current_cpu_usage
+
+    $cpu_usage = current_cpu_usage
+
+Returns the total CPU usage (of both system and user time) for the current process, in seconds.
+
+=cut
+
+sub current_cpu_usage {
+    my ($usertime, $systime) = BSD::Resource::getrusage();
+    return $usertime + $systime;
 }
 
 1;
