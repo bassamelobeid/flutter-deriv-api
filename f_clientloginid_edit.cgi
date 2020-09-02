@@ -12,7 +12,7 @@ use Digest::MD5;
 use Media::Type::Simple;
 use Date::Utility;
 use List::UtilsBy qw(rev_sort_by);
-use List::Util qw(sum0);
+use List::Util qw(sum0 uniq);
 use LandingCompany::Registry;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 use Format::Util::Numbers qw(financialrounding);
@@ -591,11 +591,16 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     }
 
     # Prior to duplicate check and storing, strip off trailing and leading whitespace
-    $error = $client->format_input_details(\%input)
-        || $client->validate_common_account_details({
+    $error = $client->format_input_details(\%input);
+
+    # Perform additional checks, but only for non-virtual accounts
+    if (not $error and not $client->is_virtual) {
+        $error = $client->validate_common_account_details({
             secret_answer => $secret_answer // '',
             %input
         });
+    }
+
     if ($error) {
         my $message = $error->{error};
         code_exit_BO("<p style='color:red; font-weight:bold;'>ERROR: $message </p><p><a href='$self_href'>&laquo;Return to Client Details</a></p>");
