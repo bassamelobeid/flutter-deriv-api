@@ -239,17 +239,29 @@ print qq~
 			<tr>
 				<td align="center" width="50%">
 					 	<p><b>SEARCH ORDER</b></p>
-					<form action="~ . request()->url_for('backoffice/p2p_order_list.cgi') . qq~" method="get"><font size=2>
+					<form action="~ . request()->url_for('backoffice/p2p_order_list.cgi') . qq~" method="get"><font size="2">
 						<b>$brokerselection</b>
 						&nbsp;<input type="submit" value="GO">
 					</font></form>
 				</td>
 				<td align="center" width="50%">
 					 	<p><b>ORDER DETAILS/MANAGEMENT</b></p>
-					<form action="~ . request()->url_for('backoffice/p2p_order_manage.cgi') . qq~" method="get"><font size=2>
+					<form action="~ . request()->url_for('backoffice/p2p_order_manage.cgi') . qq~" method="get"><font size="2">
 						<b>$brokerselection</b>
 						&nbsp;<input type="submit" value="GO">
 					</font></form>
+				</td>
+			</tr>
+			<tr>
+				<td align="center" width="50%">
+					 	<p><b>ADVERTISER MANAGEMENT</b></p>
+					<form action="~ . request()->url_for('backoffice/p2p_advertiser_manage.cgi') . qq~" method="get"><font size="2">
+						<b>$brokerselection</b>
+						&nbsp;<input type="submit" value="GO">
+					</font></form>
+				</td>
+				<td align="center" width="50%">
+					<!-- for future use -->
 				</td>
 			</tr>			
 		</tbody>
@@ -265,7 +277,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
 			<tr>
 				<td align="center">
 					<p><b>RISK DASHBOARD test</b></p>
-					<form action="~ . request()->url_for('backoffice/quant/risk_dashboard.cgi') . qq~" method="post"><font size=2>
+					<form action="~ . request()->url_for('backoffice/quant/risk_dashboard.cgi') . qq~" method="post"><font size="2">
 						<input type="submit" value="RISK DASHBOARD">
 					</font></form>
                 </td>

@@ -3,8 +3,10 @@
         <input type="hidden" name="page" value="1" />
         <label>Order ID:</label>
         <input type="text" name="order_id" value="[% input.order_id %]" data-lpignore="true" />
+        <label>Advert ID:</label>
+        <input type="text" name="advert_id" value="[% input.advert_id %]" data-lpignore="true" />        
         <label>Client Login ID:</label>
-        <input type="text" name="loginid" size="15" value="[% input.loginid %]" data-lpignore="true" />
+        <input type="text" name="loginID" size="15" value="[% input.loginID %]" data-lpignore="true" />
         <label>Order Status:</label>
         <select name="status">
             <option value="">All</option>
@@ -28,11 +30,14 @@
 </table>
 </br>
 <table>
+[% IF orders.size %]
 <table class="collapsed hover alternate" border="1">
     <tbody><tr>
         <th>Order ID</th>
         <th>Created by</th>
         <th>Created at</th>
+        <th>Advert ID</th>
+        <th>Advertiser</th>        
         <th>Expire at</th>
         <th>Type</th>
         <th>Buyer</th>
@@ -46,8 +51,10 @@
     [% FOREACH order IN orders %]
         <tr>
             <td><a style="display:block;width:100%;" href="[% request.url_for('backoffice/p2p_order_manage.cgi', {order_id => order.id}) %]">[% order.id %]</a></td>
-            <td>[% order.client_loginid %]</td>
+            <td><a style="display:block;width:100%;" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', {loginID => order.client_loginid}) %]">[% order.client_loginid %]</a></td>
             <td>[% order.created_time %]</td>
+            <td>[% order.advert_id %]</td>
+            <td><a style="display:block;width:100%;" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', {loginID => order.advertiser_loginid}) %]">[% order.advertiser_loginid %]</a></td>
             <td [% order.is_expired ? 'style=color:red;' : 'style=color:green;' %]>[% order.expire_time %]</td>
             <td>[% order.type %]</td>
             <td>[% order.type == 'buy' ? order.client_loginid : order.advertiser_loginid %]</td>
@@ -61,15 +68,19 @@
     [% END %]
 </tbody></table>
 <table>
+[% ELSE %]
+<hr/>
+<p>No orders.</p>
+[% END %]
 <tr>
 [% IF input.page != 1 %]
 <td>
-<a href="[% request.url_for('backoffice/p2p_order_list.cgi', {page => input.page - 1, order_id => input.order_id, status => input.status, loginid => input.loginid}) %]">Prev</a>
+<a href="[% request.url_for('backoffice/p2p_order_list.cgi', {page => input.page - 1, order_id => input.order_id, status => input.status, loginID => input.loginID}) %]">Prev</a>
 </td>
 [% END %]
 [% IF orders.size >= input.limit %]
 <td>
-<a href="[% request.url_for('backoffice/p2p_order_list.cgi', {page => input.page + 1, order_id => input.order_id, status => input.status, loginid => input.loginid}) %]">Next</a>
+<a href="[% request.url_for('backoffice/p2p_order_list.cgi', {page => input.page + 1, order_id => input.order_id, status => input.status, loginID => input.loginID}) %]">Next</a>
 </td>
 [% END %]
 </tr>

@@ -21,17 +21,10 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
         <tr>
             <td>Client&nbsp;&nbsp;<span style="color:blue; font-weight:bold;">[% order.client_role %]</span></td>
             <td>[% order.client_loginid %]
-                <form action="[% request.url_for('backoffice/f_clientloginid_edit.cgi') %]" method="get" style="display:inline;margin:0px;padding:0px;">
-                    <input type="hidden" name="broker" value="[% broker %]"/>
-                    <input type="hidden" name="loginID" value="[% order.client_loginid %]"/>
-                    <button type="submit">Profile</button>
-                </form>
-                <form action="[% request.url_for('backoffice/f_manager_history.cgi') %]" method="post" style="display:inline;margin:0px;padding:0px;">
-                    <input type="hidden" name="broker" value="[% broker %]"/>
-                    <input type="hidden" name="loginID" value="[% order.client_loginid %]"/>
-                    <input type="hidden" name="startdate" value="[% order.created_time %]"/>
-                    <button type="submit">Statement</button>
-                </form>
+                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { loginID => order.client_loginid }) %]">Manage advertiser</a>
+                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => order.client_loginid }) %]">Client profile</a>
+                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => order.client_loginid }) %]">Client statement</a>
+                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/p2p_order_list.cgi', { loginID => order.client_loginid }) %]">All orders</a>
             </td>
         </tr>
         <tr>
@@ -49,17 +42,10 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
         <tr>
             <td>Advertiser&nbsp;&nbsp;<span style="color:blue; font-weight:bold;">[% order.advertiser_role %]</span></td>
                 <td>[% order.advertiser_loginid %]
-                <form action="[% request.url_for('backoffice/f_clientloginid_edit.cgi') %]" method="get" style="display:inline;margin:0px;padding:0px;">
-                    <input type="hidden" name="broker" value="[% broker %]"/>
-                    <input type="hidden" name="loginID" value="[% order.advertiser_loginid %]"/>
-                    <button type="submit">Profile</button>
-                </form>
-                <form action="[% request.url_for('backoffice/f_manager_history.cgi') %]" method="post" style="display:inline;margin:0px;padding:0px;">
-                    <input type="hidden" name="broker" value="[% broker %]"/>
-                    <input type="hidden" name="loginID" value="[% order.advertiser_loginid %]"/>
-                    <input type="hidden" name="startdate" value="[% order.created_time %]"/>
-                    <button type="submit">Statement</button>
-                </form>
+                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { loginID => order.advertiser_loginid }) %]">Manage advertiser</a>
+                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => order.advertiser_loginid }) %]">Client profile</a>
+                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => order.advertiser_loginid }) %]">Client statement</a>
+                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/p2p_order_list.cgi', { loginID => order.advertiser_loginid }) %]">All orders</a>
             </td>
         </tr>
         <tr>

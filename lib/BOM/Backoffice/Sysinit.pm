@@ -81,7 +81,8 @@ my $permissions = {
     'send_emails.cgi'                 => ['CS'],
     'fetch_client_details.cgi'        => ['CS'],
     'p2p_order_list.cgi'              => ['CS'],
-    'p2p_order_manage.cgi'            => ['CS'],
+    'p2p_order_manage.cgi'            => ['CS'],    # additional check in page for P2PWrite
+    'p2p_advertiser_manage.cgi'       => ['CS'],    # additional check in page for P2PWrite
     'p2p_dynamic_settings.cgi'        => ['IT'],    # additional check in page for Quants
 
     'f_setting_website_status.cgi' => ['CSWrite'],

@@ -32,7 +32,7 @@ $input{page}  = ($input{page}  && int($input{page}) > 0)  ? int($input{page})  :
 
 $input{offset} = ($input{page} - 1) * $input{limit};
 
-for my $field (qw(order_id advert_id loginid status limit offset)) {
+for my $field (qw(order_id advert_id loginID status limit offset)) {
     next if $input{$field};
     undef $input{$field};
 }
@@ -42,7 +42,7 @@ my $orders = $db->run(
         $_->selectall_arrayref(
             'SELECT * FROM p2p.order_list(?, ?, ?, ?, ?, ?)',
             {Slice => {}},
-            @input{qw/order_id advert_id loginid/},
+            @input{qw/order_id advert_id loginID/},
             $input{status} ? [$input{status}] : undef,
             @input{qw/limit offset/},
         );

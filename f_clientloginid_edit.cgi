@@ -90,7 +90,6 @@ my $clerk           = $details{clerk};
 my $self_post       = $details{self_post};
 my $self_href       = $details{self_href};
 my $loginid         = $client->loginid;
-my $p2p_advertiser  = $client->p2p_advertiser_info;
 
 # Enabling onfido resubmission
 my $redis = BOM::Config::Redis::redis_replicated_write();
@@ -159,13 +158,6 @@ if ($input{delete_checked_documents} and $input{del_document_list}) {
     }
 
     print $full_msg;
-    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
-}
-
-if (!$client->is_virtual && $input{whattodo} =~ 'p2p.') {
-    Bar('P2P Advertiser');
-    print p2p_process_action($client, $input{whattodo});
-    my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
     code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
 }
 
@@ -797,8 +789,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
     # Setting age_verification may change p2p advertiser approval via db trigger.
     # We need to fire an event if approval has changed.
-    $p2p_advertiser = $client->p2p_advertiser_info;
-    if ($input{p2p_approved} ne $p2p_advertiser->{is_approved}) {
+    my $p2p_advertiser = $client->p2p_advertiser_info;
+    if ($p2p_advertiser and $input{p2p_approved} ne $p2p_advertiser->{is_approved}) {
         BOM::Platform::Event::Emitter::emit('p2p_advertiser_updated', {client_loginid => $loginid});
     }
 
@@ -845,7 +837,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 }
 
 # for hidden form fields
-my $p2p_approved = $p2p_advertiser ? $p2p_advertiser->{is_approved} : '';
+my $p2p_advertiser = $client->p2p_advertiser_info;
+my $p2p_approved   = $p2p_advertiser ? $p2p_advertiser->{is_approved} : '';
 
 client_navigation($client, $self_post);
 
@@ -1322,27 +1315,19 @@ if (not $client->is_virtual) {
             expirable_doctypes => join('|', @expirable_doctypes),
             no_date_doctypes   => join('|', @no_date_doctypes),
         });
-}
 
-if (!$client->is_virtual) {
     Bar('P2P Advertiser');
 
-    if ($p2p_advertiser) {
-        for my $k (qw( daily_buy daily_sell daily_buy_limit daily_sell_limit )) {
-            $p2p_advertiser->{$k} = financialrounding('amount', $p2p_advertiser->{limit_currency}, $p2p_advertiser->{$k});
-        }
-
-        BOM::Backoffice::Request::template()->process(
-            'backoffice/p2p/p2p_advertiser_edit_form.tt',
-            {
-                advertiser_info => $p2p_advertiser,
-                loginid         => $client->loginid,
-                client_currency => $client->account->currency_code,
-                band_editable   => BOM::Backoffice::Auth0::has_authorisation(['QuantsWrite']),
-            });
-    } else {
-        BOM::Backoffice::Request::template()->process('backoffice/p2p/p2p_advertiser_register_form.tt', {loginid => $client->loginid});
-    }
+    print '<a href="'
+        . request()->url_for(
+        'backoffice/p2p_advertiser_manage.cgi',
+        {
+            broker  => $broker,
+            loginID => $loginid
+        })
+        . '">'
+        . $loginid
+        . ' P2P Advertiser details</a>';
 }
 
 Bar($user->{email} . " Login history");
