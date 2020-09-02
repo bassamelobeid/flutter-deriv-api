@@ -411,13 +411,15 @@ subtest 'Zero non-binary contract limit for lookbacks' => sub {
 };
 
 subtest 'Disable based on landing company' => sub {
-    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles('{
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{
     "limit_id_xxx" : {
         "landing_company": "svg",
         "contract_category" : "callput",
         "name" : "Disable callput",
         "risk_profile" : "no_business"
-    }}');
+    }}'
+    );
 
     my $rp_svg = BOM::Platform::RiskProfile->new(%args);
     is scalar($rp_svg->custom_profiles->@*), 2, 'Our riskd profile and base profile';
