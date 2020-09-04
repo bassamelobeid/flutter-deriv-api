@@ -32,6 +32,9 @@ unit_test_pricing:
 unit_test_intraday:
 	@$(PROVE) -r t/BOM/Product/Pricing/Engine/IntradayHistorical
 
+pod_test:
+	@$(PROVE) t/syntax/*pod*.t
+
 tidy:
 	find . -name '*.p?.bak' -delete
 	. /etc/profile.d/perl5.sh;find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
@@ -39,4 +42,3 @@ tidy:
 
 doc:
 	pod2markdown lib/BOM/Product/Contract.pm > README.md
-

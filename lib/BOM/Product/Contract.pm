@@ -368,7 +368,7 @@ sub apply_binary_limit {
 
 =head2 code
 
-Alias for L</bet_type>.
+Alias for B</bet_type>.
 
 TODO should be removed.
 
