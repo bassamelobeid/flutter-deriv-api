@@ -99,16 +99,17 @@ my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::
 
 subtest 'new account' => sub {
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email          => 'test1@binary.com',
         broker_code    => 'CR',
         citizen        => 'at',
-        place_of_birth => 'at'
+        place_of_birth => 'at',
     });
     $test_client->set_default_account('USD');
     $test_client->save();
 
     my $user = BOM::User->create(
         email    => 'test.account@binary.com',
-        password => 'jskjd8292922',
+        password => 'Abcd33@!',
     );
     $user->add_client($test_client);
 
@@ -120,8 +121,8 @@ subtest 'new account' => sub {
         language => 'EN',
         token    => 12345,
         args     => {
-            mainPassword   => 'Abc1234d',
-            investPassword => 'Abcd12345e',
+            mainPassword   => 'Abcd33@!',
+            investPassword => 'Abcd12656@!',
         },
     };
     $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'check invalid token');
@@ -179,12 +180,32 @@ subtest 'new account' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     $params->{args}->{account_type}   = 'demo';
-    $params->{args}->{mainPassword}   = 'Abcd1234';
-    $params->{args}->{investPassword} = 'Abcd1234';
+    $params->{args}->{mainPassword}   = 'Abcd33@!';
+    $params->{args}->{investPassword} = 'Abcd33@!';
     $c->call_ok($method, $params)->has_error->error_message_is('Please use different passwords for your investor and main accounts.',
         'Correct error message for same password');
 
-    $params->{args}->{investPassword}   = 'Abc12345';
+    $params->{args}->{mainPassword} = 'Test1@binary.com';
+    $c->call_ok($method, $params)->has_error->error_code_is('MT5PasswordEmailLikenessError')
+        ->error_message_is('You cannot use your email address as your password.', 'Correct error message for using email as mainPassword');
+    $params->{args}->{mainPassword} = 'Abcd33@!';
+
+    $params->{args}->{mainPassword} = '123sdadasd';
+    $c->call_ok($method, $params)->has_error->error_code_is('IncorrectMT5PasswordFormat')
+        ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
+        'Correct error message for using weak mainPassword');
+    $params->{args}->{mainPassword} = 'Abcd33@!';
+
+    $params->{args}->{investPassword} = '123sdadasd';
+    $c->call_ok($method, $params)->has_error->error_code_is('IncorrectMT5PasswordFormat')
+        ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
+        'Correct error message for using weak investPassword');
+
+    $params->{args}->{investPassword} = 'Test1@binary.com';
+    $c->call_ok($method, $params)->has_error->error_code_is('MT5PasswordEmailLikenessError')
+        ->error_message_is('You cannot use your email address as your password.', 'Correct error message for using email as investPassword');
+
+    $params->{args}->{investPassword}   = 'Abcd31231233@!';
     $params->{args}->{mt5_account_type} = 'dummy';
     $c->call_ok($method, $params)->has_error->error_code_is('InvalidSubAccountType', 'Invalid sub account type error message');
 
@@ -230,7 +251,7 @@ subtest 'new account' => sub {
         $test_client->save;
         my $user = BOM::User->create(
             email    => 'test.account@binary.com',
-            password => 'jskjd8292922',
+            password => 'Abcd33@!',
         );
         $user->add_client($test_client);
 
@@ -244,8 +265,8 @@ subtest 'new account' => sub {
         $params->{args}->{country}        = 'mt';
         $params->{args}->{email}          = 'test.account@binary.com';
         $params->{args}->{name}           = 'J\x{c3}\x{b2}s\x{c3}\x{a9}';
-        $params->{args}->{investPassword} = 'Abcd1234';
-        $params->{args}->{mainPassword}   = 'Efgh4567';
+        $params->{args}->{investPassword} = 'Abcd33@!';
+        $params->{args}->{mainPassword}   = 'Abcd82378@!';
         $params->{args}->{leverage}       = 100;
 
         # Throttle function limits requests to 1 per minute which may cause
@@ -266,7 +287,7 @@ subtest 'CR account types - low risk' => sub {
 
     my $user = BOM::User->create(
         email    => 'cr+low@binary.com',
-        password => 'jskjd8292922',
+        password => 'Abcd33@!',
     );
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
@@ -349,7 +370,7 @@ subtest 'CR account types - low risk' => sub {
 subtest 'CR account types - high risk' => sub {
     my $user = BOM::User->create(
         email    => 'cr+high@binary.com',
-        password => 'jskjd8292922',
+        password => 'Abcd33@!',
     );
 
     my $client = create_client('CR');
@@ -455,7 +476,7 @@ subtest 'MLT account types - low risk' => sub {
 
     my $user = BOM::User->create(
         email    => 'mlt+low@binary.com',
-        password => 'jskjd8292922',
+        password => 'Abcd33@!',
     );
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
@@ -519,7 +540,7 @@ subtest 'MLT account types - high risk' => sub {
 
     my $user = BOM::User->create(
         email    => 'mlt+high@binary.com',
-        password => 'jskjd8292922',
+        password => 'Abcd33@!',
     );
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
@@ -594,7 +615,7 @@ subtest 'MF accout types' => sub {
 
     my $user = BOM::User->create(
         email    => 'mf+low@binary.com',
-        password => 'jskjd8292922',
+        password => 'Abcd33@!',
     );
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
@@ -719,7 +740,7 @@ subtest 'MX account types' => sub {
 
     my $user = BOM::User->create(
         email    => 'mx+gb@binary.com',
-        password => 'jskjd8292922',
+        password => 'Abcd33@!',
     );
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
@@ -799,7 +820,7 @@ subtest 'VR account types - CR residence' => sub {
 
     my $user = BOM::User->create(
         email    => 'vrtc+cr@binary.com',
-        password => 'jskjd8292922',
+        password => 'Abcd33@!',
     );
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
@@ -866,7 +887,7 @@ subtest 'Virtual account types - EU residences' => sub {
 
     my $user = BOM::User->create(
         email    => 'vrtc+eu@binary.com',
-        password => 'jskjd8292922',
+        password => 'Abcd33@!',
     );
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
@@ -956,7 +977,7 @@ subtest 'Virtual account types - GB residence' => sub {
 
     my $user = BOM::User->create(
         email    => 'vrtc+gb@binary.com',
-        password => 'jskjd8292922',
+        password => 'Abcd33@!',
     );
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
@@ -1068,7 +1089,7 @@ foreach my $broker_code (keys %lc_company_specific_details) {
         $email        = $email_prefix . '@binary.com';
         $user         = BOM::User->create(
             email    => $email,
-            password => 'jskjd8292922',
+            password => 'Abcd33@!',
         );
         $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code    => 'VRTC',
@@ -1097,8 +1118,8 @@ foreach my $broker_code (keys %lc_company_specific_details) {
             language => 'EN',
             token    => $token_vr,
             args     => {
-                mainPassword   => 'Abc1234d',
-                investPassword => 'Abcd12345e',
+                mainPassword   => 'Abcd33@!',
+                investPassword => 'Abcd345435@!',
             },
         };
         my $error_code = 'RealAccountMissing';
@@ -1180,8 +1201,8 @@ sub create_mt5_account {
             country        => 'mt',
             email          => 'test.account@binary.com',
             name           => 'MT5 lover',
-            investPassword => 'Abcd1234',
-            mainPassword   => '1234Abcd',
+            investPassword => 'Abcd311233@!',
+            mainPassword   => 'Abcd33@!',
             leverage       => 100,
         },
     };

@@ -48,23 +48,23 @@ rpc "new_account_virtual",
     auth => 0,    # unauthenticated
     sub {
     my $params = shift;
-
-    my $args = $params->{args};
-    my $err_code;
-    if ($err_code = BOM::RPC::v3::Utility::_check_password({new_password => $args->{client_password}})) {
-        return $err_code;
-    }
+    my $args   = $params->{args};
 
     # non-PEP declaration is not made for virtual accounts.
     delete $args->{non_pep_declaration};
 
     my $email = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
 
-    if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'account_opening')->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $err->{code},
-                message_to_client => $err->{message_to_client}});
-    }
+    my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'account_opening')->{error};
+    return BOM::RPC::v3::Utility::create_error({
+            code              => $err->{code},
+            message_to_client => $err->{message_to_client}}) if $err;
+
+    $err = BOM::RPC::v3::Utility::check_password({
+            email        => $email,
+            new_password => $args->{client_password}});
+    return $err if $err;
+
     my $acc_args = {
         ip      => $params->{client_ip} // '',
         country => uc($params->{country_code} // ''),

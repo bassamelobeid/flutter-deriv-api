@@ -93,7 +93,8 @@ subtest 'new account with invalid main or investor password format' => sub {
 
     $c->call_ok($method, $params)->has_error('error code for mt5_new_account wrong password formatting')
         ->error_code_is('IncorrectMT5PasswordFormat', 'error code for mt5_new_account wrong password formatting')
-        ->error_message_like(qr/Your password must have/, 'error code for mt5_new_account wrong password formatting');
+        ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
+        'error code for mt5_new_account wrong password formatting');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
@@ -101,7 +102,8 @@ subtest 'new account with invalid main or investor password format' => sub {
     $params->{args}->{investPassword} = 'ABCDEFGE';
     $c->call_ok($method, $params)->has_error('error code for mt5_new_account wrong investor password formatting')
         ->error_code_is('IncorrectMT5PasswordFormat', 'error code for mt5_new_account wrong investor password formatting')
-        ->error_message_like(qr/Your password must have/, 'error code for mt5_new_account wrong investor password formatting');
+        ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
+        'error code for mt5_new_account wrong investor password formatting');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };

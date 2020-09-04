@@ -66,6 +66,13 @@ use constant CURRENCY_CONVERSION_MAX_AGE_FIAT   => 3600 * 24;             # 1 da
 use constant CURRENCY_CONVERSION_MAX_AGE_CRYPTO => 3600;
 use constant GENERIC_DD_STATS_KEY               => 'bom.rpc.exception';
 
+# A regular expression for validate all kind of passwords
+# the regex checks password is:
+# - between 8 and 25 characters
+# - includes at least 1 character of numbers and alphabet (both lower and uppercase)
+# - all characters ASCII index should be within ( )[space] to (~)[tilde] indexes range
+use constant REGEX_PASSWORD_VALIDATION => qr/^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$/;
+
 =head2 validation_checks
 
 Performs a list of given Transaction Validation checks for a given client.
@@ -251,10 +258,13 @@ sub is_verification_token_valid {
     return $response;
 }
 
-sub _check_password {
-    my $args         = shift;
+sub check_password {
+    my $args = shift;
+
+    my $email        = $args->{email};
     my $new_password = $args->{new_password};
-    if (keys %$args == 3) {
+
+    if (exists $args->{old_password} && exists $args->{user_pass}) {
         my $old_password = $args->{old_password};
         my $user_pass    = $args->{user_pass};
 
@@ -268,24 +278,43 @@ sub _check_password {
     }
 
     return BOM::RPC::v3::Utility::create_error({
-            code              => 'PasswordError',
-            message_to_client => localize('Password should be at least six characters, including lower and uppercase letters with numbers.')}
-    ) if (length($new_password) < 6 or $new_password !~ /[0-9]+/ or $new_password !~ /[a-z]+/ or $new_password !~ /[A-Z]+/);
+            code => 'PasswordError',
+            message_to_client =>
+                localize('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.')}
+    ) if $new_password !~ REGEX_PASSWORD_VALIDATION;
 
-    return;
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'PasswordError',
+            message_to_client => localize('You cannot use your email address as your password.')}) if lc $new_password eq lc $email;
+
+    return undef;
 }
 
-=head2 _validate_mt5_password
+=head2 validate_mt5_password
     Validates the mt5 password must be of 8-25 characters long.
-    It must also have at least 2 out of the following 3 types of characters: uppercase letters, lowercase letters, and numbers.
-    Returns true if a check fails else false.
+    It must also have at least 1 character of each uppercase letters, lowercase letters, and numbers.
+    Returns error message code if check fails else undef.
 =cut
 
-sub _validate_mt5_password {
-    my $args     = shift;
-    my $password = $args->{password};
+sub validate_mt5_password {
+    my $args       = shift;
+    my $email      = $args->{email};
+    my $invest_pwd = $args->{invest_password};
+    my $main_pwd   = $args->{main_password};
 
-    return $password !~ /^(?=.*[a-zA-Z])(?=.*[a-z0-9])(?=.*[A-Z0-9])[ -~]{8,25}$/;
+    if (defined $main_pwd) {
+        return 'IncorrectMT5PasswordFormat'    if $main_pwd !~ REGEX_PASSWORD_VALIDATION;
+        return 'MT5PasswordEmailLikenessError' if lc $main_pwd eq lc $email;
+    }
+
+    if (defined $invest_pwd) {
+        return 'IncorrectMT5PasswordFormat'    if $invest_pwd && $invest_pwd !~ REGEX_PASSWORD_VALIDATION;    # invest password can also be empty.
+        return 'MT5PasswordEmailLikenessError' if lc $invest_pwd eq lc $email;
+    }
+
+    return 'MT5SamePassword' if defined $main_pwd && defined $invest_pwd && $main_pwd eq $invest_pwd;
+
+    return undef;
 }
 
 sub mask_app_id {

@@ -1026,14 +1026,12 @@ rpc change_password => sub {
             message_to_client => localize("Sorry, your account does not allow passwords because you use social media to log in.")}
     ) if $user->{has_social_signup};
 
-    if (
-        my $pass_error = BOM::RPC::v3::Utility::_check_password({
-                old_password => $args->{old_password},
-                new_password => $args->{new_password},
-                user_pass    => $user->{password}}))
-    {
-        return $pass_error;
-    }
+    my $err = BOM::RPC::v3::Utility::check_password({
+            email        => $client->email,
+            old_password => $args->{old_password},
+            new_password => $args->{new_password},
+            user_pass    => $user->{password}});
+    return $err if $err;
 
     my $new_password = BOM::User::Password::hashpw($args->{new_password});
     $user->update_password($new_password);
@@ -1095,7 +1093,11 @@ rpc "reset_password",
         }
     }
 
-    if (my $pass_error = BOM::RPC::v3::Utility::_check_password({new_password => $args->{new_password}})) {
+    if (
+        my $pass_error = BOM::RPC::v3::Utility::check_password({
+                email        => $email,
+                new_password => $args->{new_password}}))
+    {
         return $pass_error;
     }
 

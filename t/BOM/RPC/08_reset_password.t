@@ -13,7 +13,7 @@ use BOM::Platform::Token;
 
 # init db
 my $email_vr = 'abv@binary.com';
-my $email_cr = 'abc@binary.com';
+my $email_cr = 'abc1@binary.com';
 my $password = 'jskjd8292922';
 my $hash_pwd = BOM::User::Password::hashpw($password);
 my $dob      = '1990-07-09';
@@ -127,8 +127,19 @@ subtest $method => sub {
 
     # reset password with weak password
     $c->call_ok($method, $params)
-        ->has_error->error_message_is('Password should be at least six characters, including lower and uppercase letters with numbers.',
+        ->has_error->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
         'PasswordError');
+
+    $code = BOM::Platform::Token->new({
+            email       => $email_cr,
+            expires_in  => 3600,
+            created_for => 'reset_password'
+        })->token;
+    $params->{args}->{verification_code} = $code;
+
+    # reset password with email as password
+    $params->{args}->{new_password} = 'Abc1@binary.com';
+    $c->call_ok($method, $params)->has_error->error_message_is('You cannot use your email address as your password.', 'PasswordError');
 
     $code = BOM::Platform::Token->new({
             email       => $email_cr,

@@ -260,26 +260,139 @@ subtest 'password change' => sub {
 
     $c->call_ok($method, $params)->has_no_system_error->has_error('error for mt5_password_change invalid password')
         ->error_code_is('IncorrectMT5PasswordFormat', 'error code is IncorrectMT5PasswordFormat')
-        ->error_message_like(qr/Your password must have/, 'error message is correct');
-    is(BOM::RPC::v3::Utility::_validate_mt5_password({password => '12345678bc'}),   '', 'validated correct password with atleast two combinations');
-    is(BOM::RPC::v3::Utility::_validate_mt5_password({password => '@12345678BCc'}), '', 'validated correct password with special characters');
-    is(BOM::RPC::v3::Utility::_validate_mt5_password({password => 'waterloo'}),     1,  'only alphabets',);
-    is(BOM::RPC::v3::Utility::_validate_mt5_password({password => '@@@###!!!'}),    1,  'only special characters',);
+        ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
+        'error message is correct');
+
+    my $test_email = 'Abc123@binary.com';
     is(
-        BOM::RPC::v3::Utility::_validate_mt5_password({
-                password => 'jkl6789Ijkl6789Ijkl678l673',
+        BOM::RPC::v3::Utility::validate_mt5_password({
+                email         => $test_email,
+                main_password => '12345678bc'
             }
         ),
-        1,
-        'too long.',
+        'IncorrectMT5PasswordFormat',
+        "Not valid main password [12345678bc] - IncorrectMT5PasswordFormat"
     );
+
     is(
-        BOM::RPC::v3::Utility::_validate_mt5_password({
-                password => 'pa$5A',
+        BOM::RPC::v3::Utility::validate_mt5_password({
+                email         => $test_email,
+                main_password => ""
             }
         ),
-        1,
-        'too short.',
+        'IncorrectMT5PasswordFormat',
+        'Empty main password is not valid - IncorrectMT5PasswordFormat'
+    );
+
+    is(
+        BOM::RPC::v3::Utility::validate_mt5_password({
+                email         => $test_email,
+                main_password => "aSd123"
+            }
+        ),
+        'IncorrectMT5PasswordFormat',
+        'Less than 8 characters is not valid main password - IncorrectMT5PasswordFormat'
+    );
+
+    is(
+        BOM::RPC::v3::Utility::validate_mt5_password({
+                email         => $test_email,
+                main_password => "asdvaasASDsdasd"
+            }
+        ),
+        'IncorrectMT5PasswordFormat',
+        'only alphabet characters is not valid main password - IncorrectMT5PasswordFormat'
+    );
+
+    is(
+        BOM::RPC::v3::Utility::validate_mt5_password({
+                email         => $test_email,
+                main_password => "asASD12312!4325#!!dvaasASDsdasd"
+            }
+        ),
+        'IncorrectMT5PasswordFormat',
+        'More than 25 characters is not valid main password - IncorrectMT5PasswordFormat'
+    );
+
+    is(
+        BOM::RPC::v3::Utility::validate_mt5_password({
+                email         => $test_email,
+                main_password => $test_email
+            }
+        ),
+        'MT5PasswordEmailLikenessError',
+        'Email as main password is not valid - MT5PasswordEmailLikenessError'
+    );
+
+    is(
+        BOM::RPC::v3::Utility::validate_mt5_password({
+                email         => $test_email,
+                main_password => "Abcd33!@"
+            }
+        ),
+        undef,
+        'Valid main password [Abcd33!@]'
+    );
+
+    is(
+        BOM::RPC::v3::Utility::validate_mt5_password({
+                email           => $test_email,
+                invest_password => '12345678bc'
+            }
+        ),
+        'IncorrectMT5PasswordFormat',
+        "Not valid invest password [12345678bc] - IncorrectMT5PasswordFormat"
+    );
+
+    is(
+        BOM::RPC::v3::Utility::validate_mt5_password({
+                email           => $test_email,
+                invest_password => "aSd123"
+            }
+        ),
+        'IncorrectMT5PasswordFormat',
+        'Below eight characters is not valid invest password - IncorrectMT5PasswordFormat'
+    );
+
+    is(
+        BOM::RPC::v3::Utility::validate_mt5_password({
+                email           => $test_email,
+                invest_password => $test_email
+            }
+        ),
+        'MT5PasswordEmailLikenessError',
+        'Email as invest password is not valid - MT5PasswordEmailLikenessError'
+    );
+
+    is(
+        BOM::RPC::v3::Utility::validate_mt5_password({
+                email           => $test_email,
+                invest_password => "Abcd33!@"
+            }
+        ),
+        undef,
+        'Valid invest password [Abcd33!@]'
+    );
+
+    is(
+        BOM::RPC::v3::Utility::validate_mt5_password({
+                email           => $test_email,
+                invest_password => ""
+            }
+        ),
+        undef,
+        'Empty invest password is valid'
+    );
+
+    is(
+        BOM::RPC::v3::Utility::validate_mt5_password({
+                email           => $test_email,
+                main_password   => "Abcd33!@",
+                invest_password => "Abcd33!@"
+            }
+        ),
+        'MT5SamePassword',
+        'Same invest and main password is not valid'
     );
 };
 
@@ -333,13 +446,12 @@ subtest 'password reset' => sub {
             created_for => 'mt5_password_reset'
         })->token;
     $params->{args}->{verification_code} = $code;
-    $params->{args}->{new_password}      = '12345678';
+    $params->{args}->{new_password}      = '2123123';
 
     $c->call_ok($method, $params)->has_no_system_error->has_error('error for mt5_password_reset invalid password')
-        ->error_code_is('IncorrectMT5PasswordFormat', 'error code is IncorrectMT5PasswordFormat')->error_message_is(
-        'Your password must have a minimum of 8 characters. It must also have at least 2 out of the following 3 types of characters: uppercase letters, lowercase letters, and numbers.',
-        'error message is correct'
-        );
+        ->error_code_is('IncorrectMT5PasswordFormat', 'error code is IncorrectMT5PasswordFormat')
+        ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
+        'error message is correct');
 
 };
 

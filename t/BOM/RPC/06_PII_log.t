@@ -8,7 +8,8 @@ use Test::MockModule;
 use Test::Warnings qw(warning);
 
 my $check_pass = Test::MockModule->new('BOM::RPC::v3::Utility');
-$check_pass->mock('_check_password', sub { die "in new account for test" });
+$check_pass->mock('check_password', sub { die "in new account for test" });
+$check_pass->mock('is_verification_token_valid', {});
 
 subtest 'log detailed error message' => sub {
     my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
@@ -19,11 +20,12 @@ subtest 'log detailed error message' => sub {
             $c->call_ok(
                 'new_account_virtual',
                 {
-                    new_account_virtual => 1,
-                    verification_code   => "uoJvVuQ6",
-                    client_password     => "Abc123de",
-                    residence           => "id"
-                })
+                    args => {
+                        new_account_virtual => 1,
+                        verification_code   => "uoJvVuQ6",
+                        client_password     => "Abc123de",
+                        residence           => "id"
+                    }})
         },
         qr/Exception when handling new_account_virtual. in new account for test at/,
         "exception test",
@@ -40,11 +42,12 @@ subtest 'log normal error message' => sub {
             $c->call_ok(
                 'new_account_virtual',
                 {
-                    new_account_virtual => 1,
-                    verification_code   => "uoJvVuQ6",
-                    client_password     => "Abc123de",
-                    residence           => "id"
-                })
+                    args => {
+                        new_account_virtual => 1,
+                        verification_code   => "uoJvVuQ6",
+                        client_password     => "Abc123de",
+                        residence           => "id"
+                    }})
         },
         qr/Exception when handling new_account_virtual. at/,
         "exception test",
@@ -52,5 +55,5 @@ subtest 'log normal error message' => sub {
 
 };
 
-$check_pass->unmock;
+$check_pass->unmock_all;
 done_testing();

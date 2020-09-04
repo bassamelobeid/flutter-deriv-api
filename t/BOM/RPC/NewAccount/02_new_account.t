@@ -57,7 +57,7 @@ $mock_datadog->mock(
         $datadog_args{$key} = $args;
     },
 );
-my $email = 'test' . rand(999) . '@binary.com';
+my $email = sprintf('Test%.5f@binary.com', rand(999));
 my ($t, $rpc_ct);
 my ($method, $params, $client_details);
 
@@ -98,17 +98,22 @@ subtest 'Initialization' => sub {
 $method = 'new_account_virtual';
 subtest $method => sub {
 
-    my @invalid_passwords = ('123456', '123abc', '123ABC', '123Ab', 'ABCdef');
+    my @invalid_passwords = ('82341231258', '123abcasdda', '123ABC!@ASD', '1@3Abad', 'ABCdefdd');
 
     for my $pw (@invalid_passwords) {
-        $params->{args}->{client_password} = $pw;
+        $params->{args}->{client_password}   = $pw;
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $email,
+            created_for => 'account_opening'
+        )->token;
+
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('PasswordError', 'If password is weak it should return error')
-            ->error_message_is('Password should be at least six characters, including lower and uppercase letters with numbers.',
-            'If password is weak it should return error_message');
+            ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
+            "If password ($pw) is weak it should return error_message");
     }
 
-    $params->{args}->{client_password}   = '123Ab!';
+    $params->{args}->{client_password}   = '123Abcd!';
     $params->{args}->{verification_code} = 'wrong token';
 
     $rpc_ct->call_ok($method, $params)
@@ -139,6 +144,18 @@ subtest $method => sub {
     };
     # $params->{args}->{utm_ad_id} = $expected_utm_data->{utm_ad_id};
     map { $params->{args}->{$_} = $expected_utm_data->{$_} } keys %$expected_utm_data;
+    $params->{args}->{verification_code} = BOM::Platform::Token->new(
+        email       => $email,
+        created_for => 'account_opening'
+    )->token;
+
+    $params->{args}->{client_password} = $email;
+    $rpc_ct->call_ok($method, $params)
+        ->has_no_system_error->has_error->error_code_is('PasswordError', 'If password is same as email, it should returns error')
+        ->error_message_is('You cannot use your email address as your password.', 'If password is the same as email it should returns error_message');
+
+    $email                               = lc $email;
+    $params->{args}->{client_password}   = '123Abas!';
     $params->{args}->{verification_code} = BOM::Platform::Token->new(
         email       => $email,
         created_for => 'account_opening'
@@ -265,7 +282,7 @@ subtest $method => sub {
             $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
             # Make virtual client with user
-            my $password = 'jskjd8292922';
+            my $password = 'Abcd33!@#';
             my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
@@ -384,7 +401,7 @@ subtest $method => sub {
     subtest 'Create multiple accounts in CR' => sub {
         $email = 'new_email' . rand(999) . '@binary.com';
 
-        $params->{args}->{client_password} = 'verylongandhardpasswordDDD1!';
+        $params->{args}->{client_password} = 'verylongDDD1!';
 
         $params->{args}->{residence}    = 'id';
         $params->{args}->{utm_source}   = 'google.com';
@@ -535,7 +552,7 @@ subtest $method => sub {
 
     subtest 'Initialization' => sub {
         lives_ok {
-            my $password = 'jskjd8292922';
+            my $password = 'Abcd3s3!@';
             my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
@@ -706,7 +723,7 @@ subtest $method => sub {
     my $client_mlt;
     subtest 'Init MLT MF' => sub {
         lives_ok {
-            my $password = 'jskjd8292922';
+            my $password = 'Abcd33!@';
             my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'new_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
@@ -804,7 +821,7 @@ subtest $method => sub {
     my $client_mx;
     subtest 'Init MX MF' => sub {
         lives_ok {
-            my $password = 'jskjd8292922';
+            my $password = 'Abcd33!@';
             my $hash_pwd = BOM::User::Password::hashpw($password);
             $email = 'mx_email' . rand(999) . '@binary.com';
             $user  = BOM::User->create(
@@ -878,7 +895,7 @@ subtest $method => sub {
 
     subtest 'Create a new account maltainvest from a virtual account' => sub {
         #create a virtual gb client
-        my $password = 'jskjd8292922';
+        my $password = 'Abcd33!@';
         my $hash_pwd = BOM::User::Password::hashpw($password);
         $email = 'virtual_email' . rand(999) . '@binary.com';
         $user  = BOM::User->create(
@@ -946,7 +963,7 @@ subtest $method => sub {
     };
 
     subtest 'Create new account maltainvest without MLT' => sub {
-        my $password = 'jskjd8292922';
+        my $password = 'Abcd33!@';
         my $hash_pwd = BOM::User::Password::hashpw($password);
         #create a virtual cz client
         $email = 'virtual_de_email' . rand(999) . '@binary.com';
@@ -1007,7 +1024,7 @@ $method = 'new_account_real';
 subtest 'Duplicate accounts are not created in race condition' => sub {
 
     $email                               = 'new_email' . rand(999) . '@binary.com';
-    $params->{args}->{client_password}   = 'verylongandhardpasswordDDD1!';
+    $params->{args}->{client_password}   = 'Abcd333@!';
     $params->{args}->{residence}         = 'id';
     $params->{args}->{verification_code} = BOM::Platform::Token->new(
         email       => $email,

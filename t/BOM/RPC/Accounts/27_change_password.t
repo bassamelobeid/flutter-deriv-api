@@ -16,7 +16,7 @@ BOM::Test::Helper::Token::cleanup_redis_tokens();
 
 # init db
 my $email       = 'abc@binary.com';
-my $password    = 'jskjd8292922';
+my $password    = 'Abcd33!@';
 my $hash_pwd    = BOM::User::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
@@ -48,7 +48,7 @@ my $method = 'change_password';
 subtest 'change password' => sub {
     my $oldpass = '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjNQ=';
     is(
-        BOM::RPC::v3::Utility::_check_password({
+        BOM::RPC::v3::Utility::check_password({
                 old_password => 'old_password',
                 new_password => 'new_password',
                 user_pass    => '1*VPB0k.BCrtHeWoH8*fdLuwvoqyqmjtDF2FfrUNO7A0MdyzKkelKhrc7MQjPQ='
@@ -58,7 +58,7 @@ subtest 'change password' => sub {
         'Provided password is incorrect.',
     );
     is(
-        BOM::RPC::v3::Utility::_check_password({
+        BOM::RPC::v3::Utility::check_password({
                 old_password => 'old_password',
                 new_password => 'old_password',
                 user_pass    => $oldpass
@@ -68,54 +68,65 @@ subtest 'change password' => sub {
         'Current password and new password cannot be the same.',
     );
     is(
-        BOM::RPC::v3::Utility::_check_password({
+        BOM::RPC::v3::Utility::check_password({
                 old_password => 'old_password',
                 new_password => 'water',
                 user_pass    => $oldpass
             }
         )->{error}->{message_to_client},
-        'Password should be at least six characters, including lower and uppercase letters with numbers.',
-        'Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
+        'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
     );
     is(
-        BOM::RPC::v3::Utility::_check_password({
+        BOM::RPC::v3::Utility::check_password({
                 old_password => 'old_password',
                 new_password => 'New#_p$ssword',
                 user_pass    => $oldpass
             }
         )->{error}->{message_to_client},
-        'Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
         'no number.',
     );
     is(
-        BOM::RPC::v3::Utility::_check_password({
+        BOM::RPC::v3::Utility::check_password({
                 old_password => 'old_password',
                 new_password => 'pa$5A',
                 user_pass    => $oldpass
             }
         )->{error}->{message_to_client},
-        'Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
         'too short.',
     );
     is(
-        BOM::RPC::v3::Utility::_check_password({
+        BOM::RPC::v3::Utility::check_password({
                 old_password => 'old_password',
                 new_password => 'pass$5ss',
                 user_pass    => $oldpass
             }
         )->{error}->{message_to_client},
-        'Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
         'no upper case.',
     );
     is(
-        BOM::RPC::v3::Utility::_check_password({
+        BOM::RPC::v3::Utility::check_password({
                 old_password => 'old_password',
                 new_password => 'PASS$5SS',
                 user_pass    => $oldpass
             }
         )->{error}->{message_to_client},
-        'Password should be at least six characters, including lower and uppercase letters with numbers.',
+        'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
         'no lower case.',
+    );
+    is(
+        BOM::RPC::v3::Utility::check_password({
+                email        => 'abc1@binary.com',
+                old_password => 'old_password',
+                new_password => 'ABC1@binary.com',
+                user_pass    => $oldpass
+            }
+        )->{error}->{message_to_client},
+        'You cannot use your email address as your password.',
+        'password must not be the same as email',
     );
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
     is(
@@ -176,7 +187,7 @@ subtest 'change password' => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Current password and new password cannot be the same.');
     $params->{args}{new_password} = '111111111';
     is($c->tcall($method, $params)->{error}{message_to_client},
-        'Password should be at least six characters, including lower and uppercase letters with numbers.');
+        'Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.');
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
     mailbox_clear();

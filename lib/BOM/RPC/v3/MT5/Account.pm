@@ -223,15 +223,14 @@ async_rpc "mt5_new_account",
 
     $mt5_account_type = '' if $account_type eq 'gaming';
 
-    if (BOM::RPC::v3::Utility::_validate_mt5_password({password => $args->{mainPassword}})) {
-        return create_error_future('IncorrectMT5PasswordFormat');
-    }
-    if ($args->{investPassword} && BOM::RPC::v3::Utility::_validate_mt5_password({password => $args->{investPassword}})) {
-        return create_error_future('IncorrectMT5PasswordFormat');
-    }
-    $args->{investPassword} = _generate_password($args->{mainPassword}) unless $args->{investPassword};
+    my $passwd_validation_err = BOM::RPC::v3::Utility::validate_mt5_password({
+        email           => $client->email,
+        main_password   => $args->{mainPassword} // '',
+        invest_password => $args->{investPassword} // '',
+    });
+    return create_error_future($passwd_validation_err) if $passwd_validation_err;
 
-    return create_error_future('MT5SamePassword') if (($args->{mainPassword} // '') eq ($args->{investPassword} // ''));
+    $args->{investPassword} = _generate_password($args->{mainPassword}) unless $args->{investPassword};
 
     return create_error_future('InvalidSubAccountType')
         if ($mt5_account_type and $mt5_account_type !~ /^financial|financial_stp/)
@@ -888,9 +887,10 @@ async_rpc "mt5_password_change",
         return create_error_future('Throttle', {override_code => 'MT5PasswordChangeError'});
     }
 
-    if (BOM::RPC::v3::Utility::_validate_mt5_password({password => $args->{new_password}})) {
-        return create_error_future('IncorrectMT5PasswordFormat');
-    }
+    my $passwd_validation_err = BOM::RPC::v3::Utility::validate_mt5_password({
+            email         => $client->email,
+            main_password => $args->{new_password}});
+    return create_error_future($passwd_validation_err) if $passwd_validation_err;
 
     return BOM::MT5::User::Async::password_check({
             login    => $login,
@@ -1024,9 +1024,10 @@ async_rpc "mt5_password_reset",
     return create_error_future('permission')
         unless _check_logins($client, [$login]);
 
-    if (BOM::RPC::v3::Utility::_validate_mt5_password({password => $args->{new_password}})) {
-        return create_error_future('IncorrectMT5PasswordFormat');
-    }
+    my $passwd_validation_err = BOM::RPC::v3::Utility::validate_mt5_password({
+            email         => $email,
+            main_password => $args->{new_password}});
+    return create_error_future($passwd_validation_err) if $passwd_validation_err;
 
     return BOM::MT5::User::Async::password_change({
             login        => $login,

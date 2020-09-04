@@ -69,7 +69,7 @@ subtest 'MX' => sub {
             created_for => 'account_opening'
         )->token;
 
-        $params->{args}->{client_password}   = 'Abc123';
+        $params->{args}->{client_password}   = 'Abcd33!@';
         $params->{args}->{verification_code} = $verification_token;
         $params->{args}->{residence}         = 'gb';
 
@@ -115,7 +115,7 @@ subtest 'MX' => sub {
             created_for => 'account_opening'
         )->token;
 
-        $params->{args}->{client_password}   = 'Abc123';
+        $params->{args}->{client_password}   = 'Abcd33!@';
         $params->{args}->{verification_code} = $verification_token;
         $params->{args}->{residence}         = 'gb';
 
@@ -162,7 +162,7 @@ subtest 'MF' => sub {
         created_for => 'account_opening'
     )->token;
 
-    $params->{args}->{client_password}   = 'Abc123';
+    $params->{args}->{client_password}   = 'Abcd33!@';
     $params->{args}->{verification_code} = $verification_token;
     $params->{args}->{residence}         = 'es';                  # es(Spain) only has MF as a landing company
 
@@ -207,7 +207,7 @@ subtest 'CR' => sub {
         created_for => 'account_opening'
     )->token;
 
-    $params->{args}->{client_password}   = 'Abc123';
+    $params->{args}->{client_password}   = 'Abcd33!@';
     $params->{args}->{verification_code} = $verification_token;
     $params->{args}->{residence}         = 'id';
 
@@ -243,7 +243,7 @@ subtest 'MLT' => sub {
         created_for => 'account_opening'
     )->token;
 
-    $params->{args}->{client_password}   = 'Abc123';
+    $params->{args}->{client_password}   = 'Abcd33!@';
     $params->{args}->{verification_code} = $verification_token;
     $params->{args}->{residence}         = 'be';
 
