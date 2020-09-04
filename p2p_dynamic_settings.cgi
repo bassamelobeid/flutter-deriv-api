@@ -12,8 +12,9 @@ BOM::Backoffice::Sysinit::init();
 use BOM::Backoffice::Utility qw(master_live_server_error);
 use BOM::DynamicSettings;
 use BOM::Config::Runtime;
-use List::Util qw(min);
 use BOM::User::Client;
+use LandingCompany::Registry;
+use List::Util qw(min);
 use Syntax::Keyword::Try;
 
 my $cgi = CGI->new;
@@ -36,6 +37,7 @@ my @setting_keys = qw(
     payments.p2p.limits.maximum_advert
     payments.p2p.limits.maximum_order
     payments.p2p.available_for_countries
+    payments.p2p.restricted_countries
     payments.p2p.available_for_currencies
 );
 
@@ -83,6 +85,8 @@ for my $country ($settings->{'payments.p2p.available_for_countries'}{value}->@*)
 
 Bar('P2P Dynamic Settings');
 
+my @enabled_lc = map { $_->{short} } grep { $_->{p2p_available} } values LandingCompany::Registry::get_loaded_landing_companies()->%*;
+
 BOM::Backoffice::Request::template()->process(
     'backoffice/p2p/p2p_dynamic_settings.tt',
     {
@@ -90,6 +94,7 @@ BOM::Backoffice::Request::template()->process(
         escrow_currencies => $escrow_currencies,
         country_names     => $country_names,
         revision          => $revision,
+        enabled_lc        => \@enabled_lc,
     });
 
 code_exit_BO();

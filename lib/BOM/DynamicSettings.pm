@@ -280,6 +280,7 @@ sub get_settings_by_group {
                 payments.p2p.limits.maximum_advert
                 payments.p2p.limits.maximum_order
                 payments.p2p.available_for_countries
+                payments.p2p.restricted_countries
                 payments.p2p.available_for_currencies
                 )]};
 

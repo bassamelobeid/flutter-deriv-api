@@ -14,6 +14,8 @@
     }
 </style>
 
+<p>P2P is enabled for these landing companies: [% enabled_lc.join(', ').upper %].</p>
+
 <form action="[% request.url_for('backoffice/p2p_dynamic_settings.cgi') %]" method="post">
     [% FOR setting IN settings.keys.sort %]
         <hr/>
@@ -26,17 +28,22 @@
         </select>
         &nbsp;&nbsp;current: [% IF settings.$setting.value %]Yes[% ELSE %]No[% END %]
         [% ELSIF settings.$setting.type == 'ArrayRef' %]
-        <table border="0"><tr>
-        <td><textarea name="$setting" rows="[% settings.$setting.value.size + 1 %]">[% settings.$setting.value.join("\n") %]</textarea></td>
-        <td valign="top">current:
-        [% FOREACH v IN settings.$setting.value %]
-           <br/>[% loop.count %]. [% v %]
-            [% IF setting == 'payments.p2p.escrow' %] ([% escrow_currencies.$v %])[% ELSIF setting == 'payments.p2p.available_for_countries' %] ([% country_names.$v %])[% END %]
-        [% END %]
+            <table border="0"><tr>
+            <!-- textarea min lines of 2, grows by number of lines + 1 -->
+            <td><textarea name="$setting" rows="[% lines = settings.$setting.value.size + 1; vals = [lines,2]; vals.nsort.-1 %]">[% settings.$setting.value.join("\n") %]</textarea></td>
+            <td valign="top">current:
+            [% IF settings.$setting.value.size %]
+                [% FOREACH v IN settings.$setting.value %]
+                   <br/>[% loop.count %]. [% v %]
+                    [% IF setting == 'payments.p2p.escrow' %] ([% escrow_currencies.$v %])[% ELSIF setting.match('(available_for_countries|restricted_countries)$') %] ([% country_names.$v %])[% END %]
+                [% END %]
+            [% ELSE %]
+                none
+            [% END %]
         </td></tr></table>
         [% ELSE %]
         <input name="$setting" style="width: [% IF settings.$setting.type == 'Num' %]70px;[% ELSE %]300px;[% END %]" value="[% settings.$setting.value %]">
-        &nbsp;&nbsp;current: [% settings.$setting.value %]
+        &nbsp;&nbsp;current: [% settings.$setting.value || 'none' %]
         [% END %]
     [% END %]
     <hr/>
