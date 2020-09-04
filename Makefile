@@ -1,5 +1,9 @@
 CURRENT_BRANCH_SAFE=$(shell git rev-parse --abbrev-ref HEAD | sed 's|/|_|g')
 
+M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
+P=/etc/rmg/bin/prove -v --timer -rl
+PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
+
 default:
 	@echo "You must specify target. The following targets available:"
 	@echo "  tidy         - Run perltidy"
@@ -10,13 +14,16 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 test:
-	/etc/rmg/bin/prove --timer -v -l -I./t -r --exec '/etc/rmg/bin/perl -I. -MTest::Warnings' t/BOM
+	@$(PROVE) -I./t --exec '/etc/rmg/bin/perl -I. -MTest::Warnings' t/BOM
 
 syntax:
-	/etc/rmg/bin/prove --timer -v -l -I./t -r --exec '/etc/rmg/bin/perl -I. -MTest::Warnings -MMojo::JSON::MaybeXS' $(wildcard t/0*.t)
+	@$(PROVE) -I./t --exec '/etc/rmg/bin/perl -I. -MTest::Warnings -MMojo::JSON::MaybeXS' $(wildcard t/0*.t)
 
 localize:
-	/etc/rmg/bin/prove --timer -v -l -I./t -r --exec '/etc/rmg/bin/perl -I. -MTest::Warnings' t/localize.t
+	@$(PROVE) -I./t --exec '/etc/rmg/bin/perl -I. -MTest::Warnings' t/localize.t
+
+pod_test:
+	@$(PROVE) t/*pod*.t
 
 i18n:
 	xgettext.pl \
