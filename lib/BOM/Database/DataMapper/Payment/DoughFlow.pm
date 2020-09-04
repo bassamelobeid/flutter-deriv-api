@@ -11,9 +11,7 @@ has '_mapper_required_objects' => (
     default  => sub { return ['doughflow'] },
 );
 
-=over 4
-
-=item get_doughflow_withdrawal_count_by_trace_id
+=head2 get_doughflow_withdrawal_count_by_trace_id
 
 Get the number of withdrawals by trace_id
 
@@ -35,11 +33,9 @@ sub get_doughflow_withdrawal_count_by_trace_id {
     return scalar @{$payment};
 }
 
-=item get_doughflow_withdrawal_amount_by_trace_id
+=head2 get_doughflow_withdrawal_amount_by_trace_id
 
 Get the amount of withdrawals by trace_id. It will assume there is only one payment
-
-=back
 
 =cut
 
@@ -74,7 +70,7 @@ sub delete_expired_tokens {
         });
 }
 
-=item is_duplicate_payment
+=head2 is_duplicate_payment
 
 Check the trace_id, transaction_id of payments to find duplicate, used during doughflow validation
 

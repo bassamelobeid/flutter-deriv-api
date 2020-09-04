@@ -88,9 +88,13 @@ __PACKAGE__->meta->make_immutable;
 1;
 
 =pod
+
 =head1 NAME
+
 BOM::Database::Model::FinancialMarketBet::Runs
+
 =head1 SYNOPSIS
+
  my $payment_fee = BOM::Database::Model::FinancialMarketBet::Runs->new(
     {
         'data_object_params'=>
@@ -102,10 +106,17 @@ BOM::Database::Model::FinancialMarketBet::Runs
         db=>$connection_builder->db
     },
  );
+
 =head1 DESCRIPTION
+
 This class will encapsulate common characteristics attributes.
+
 =head1 VERSION
+
 0.1
+
 =head1 AUTHOR
+
 RMG Company
+
 =cut

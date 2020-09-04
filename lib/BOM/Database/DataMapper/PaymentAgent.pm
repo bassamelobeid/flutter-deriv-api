@@ -44,13 +44,9 @@ sub get_authenticated_payment_agents {
         });
 }
 
-=head1 METHODS
+=head2 get_all_authenticated_payment_agent_countries
 
-=over
-
-=item get_all_authenticated_payment_agent_countries
-
-get all authenticated payment agent countries
+Get all authenticated payment agent countries
 
 =cut
 
@@ -70,9 +66,7 @@ sub get_all_authenticated_payment_agent_countries {
         });
 }
 
-=over
-
-=item get_payment_agents_linked_to_client
+=head2 get_payment_agents_linked_to_client
 
 Returns the loginids of payment agents with any transfer/deposit/withdrawal to/from the client represented by the input loginid.
 
@@ -89,8 +83,6 @@ sub get_payment_agents_linked_to_client {
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
-
-=back
 
 =head1 AUTHOR
 

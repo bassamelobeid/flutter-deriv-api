@@ -1,10 +1,10 @@
 package BOM::Database::QuantsConfig;
 
-=head NAME
+=head1 NAME
 
 BOM::Database::QuantsConfig - a class to get and set quants global limits
 
-=head DESCRIPTION
+=head2 DESCRIPTION
 
     use BOM::Database::QuantsConfig;
 

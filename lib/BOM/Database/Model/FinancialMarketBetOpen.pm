@@ -90,8 +90,6 @@ BOM::Database::Model::FinancialMarketBetOpen
 
 This class will encapsulate common characteristics attributes.
 
-=over 4
-
 =head1 VERSION
 
 0.1

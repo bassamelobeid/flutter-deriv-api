@@ -178,8 +178,18 @@ sub delete_copiers {
     return $rows_affected;
 }
 
-# Takes arrayref of [ item, login, token ]
-# Returns a unqiue list of items who had a login with a valid token.
+=head2 _filter_invalid_tokens
+
+=over 4
+
+=item * Arrayref of [item, login, token]
+
+=back
+
+Returns a unique list of items who had a login with a valid token.
+
+=cut
+
 sub _filter_invalid_tokens {
     my ($self, $list) = @_;
 

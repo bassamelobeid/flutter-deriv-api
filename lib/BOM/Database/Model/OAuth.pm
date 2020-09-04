@@ -46,7 +46,7 @@ sub verify_app {
     return $app;
 }
 
-=head2
+=head2 get_names_by_app_id($app_id)
 
 Get Names by App ID
 
