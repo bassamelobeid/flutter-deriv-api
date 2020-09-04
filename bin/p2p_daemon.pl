@@ -42,16 +42,12 @@ emits event for every order/advert, which state need to be updated.
 # Seconds between each attempt at checking the database entries.
 use constant POLLING_INTERVAL => 60;
 
-# For now keeping it here,
-# When decided to add new companies better to move it to dynamic configuration.
-use constant ACTIVE_LANDING_COMPANIES => ['svg'];
-
 # request brand name should be changed to 'deriv', otherwise the event will not be sent to Segment.
 request(BOM::Platform::Context::Request->new(
     brand_name => 'deriv'
 ));
 
-my @broker_codes = uniq map { LandingCompany::Registry::get($_)->broker_codes->@* } @{ACTIVE_LANDING_COMPANIES()};
+my @broker_codes = uniq map { $_->{broker_codes}->@* } grep { $_->{p2p_available} } values LandingCompany::Registry::get_loaded_landing_companies()->%*;
 my $app_config = BOM::Config::Runtime->instance->app_config;
 my $loop     = IO::Async::Loop->new;
 my $shutdown = $loop->new_future;
