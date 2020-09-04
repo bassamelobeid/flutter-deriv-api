@@ -12,7 +12,7 @@ use Digest::MD5;
 use Media::Type::Simple;
 use Date::Utility;
 use List::UtilsBy qw(rev_sort_by);
-use List::Util qw(sum0 uniq);
+use List::Util qw(none uniq);
 use LandingCompany::Registry;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 use Format::Util::Numbers qw(financialrounding);
@@ -71,8 +71,7 @@ if (open my $mime_defs, '<', '/etc/mime.types') {
 }
 my $dbloc = BOM::Config::Runtime->instance->app_config->system->directory->db;
 
-my %details = get_client_details(\%input, 'backoffice/f_clientloginid_edit.cgi');
-
+my %details              = get_client_details(\%input, 'backoffice/f_clientloginid_edit.cgi');
 my %doc_types_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
 my @expirable_doctypes   = @{$doc_types_categories{POI}{doc_types}};
 my @poi_doctypes         = @{$doc_types_categories{POI}{doc_types_appreciated}};
@@ -582,6 +581,14 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         $client->promo_code_status($input{promo_code_status});
     }
 
+    # account opening reason
+    if (my $reason = $input{account_opening_reason}) {
+        my $account_opening_reasons = ACCOUNT_OPENING_REASONS;
+        if (none { $reason eq $_ } @{$account_opening_reasons}) {
+            code_exit_BO('<p style="color:red; font-weight:bold;">ERROR: Not a valid account opening reason.</p>');
+        }
+    }
+
     # Prior to duplicate check and storing, strip off trailing and leading whitespace
     $error = $client->format_input_details(\%input);
 
@@ -693,6 +700,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             place_of_birth
             restricted_ip_address
             salutation
+            account_opening_reason
             /;
         exists $input{$_}
             && update_needed($client, $cli, $_, \%clients_updated)

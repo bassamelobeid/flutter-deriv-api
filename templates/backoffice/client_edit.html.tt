@@ -489,7 +489,15 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     <tr>
         <td class="label">Account Opening Reason</td>
         <td>:
-            [% client.account_opening_reason %]
+            [% IF client.is_virtual %]
+                [% client.account_opening_reason %]
+            [% ELSE %]
+                <select name="account_opening_reason">
+                    [% FOREACH reason IN account_opening_reasons %]
+                        <option value="[% reason %]" [% IF reason == client.account_opening_reason %]selected="selected"[% END %]>[% reason %]</option>
+                    [% END %]
+                </select>
+            [% END %]
         </td>
     </tr>
     <tr>

@@ -45,6 +45,7 @@ use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
 use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX   => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
 use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
 use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX      => 'POA::ALLOW_RESUBMISSION::ID::';
+use constant ACCOUNT_OPENING_REASONS                => ['Speculative', 'Income Earning', 'Hedging', 'Peer-to-peer exchange'];
 
 my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
 my @expirable_doctypes  = @{$doc_type_categories{POI}{doc_types}};
@@ -392,6 +393,7 @@ sub print_client_details {
         aml_risk_levels                    => [get_aml_risk_classicications()],
         is_staff_compliance                => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
         onfido_resubmission_counter        => $onfido_resubmission_counter // 0,
+        account_opening_reasons            => ACCOUNT_OPENING_REASONS,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
