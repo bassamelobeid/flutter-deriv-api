@@ -31,11 +31,11 @@
                      }
                   },
                   "legal_allowed_contract_categories" : {
-                     "minItems" : 4,
+                     "minItems" : 6,
                      "type" : "array",
                      "items" : {
                         "type" : "string",
-                        "pattern" : "^(callput|callputequal|digits|touchnotouch)$"
+                        "pattern" : "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|callputspread)$"
                      }
                   },
                   "address" : {
