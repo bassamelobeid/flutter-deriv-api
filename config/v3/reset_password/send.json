@@ -25,9 +25,9 @@
             "pattern": "^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$"
         },
         "new_password": {
-            "description": "New password for validation (length within 6-25 chars, accepts any printable ASCII characters, need to include capital and lowercase letters with numbers). Password strength is evaluated with: http://archive.geekwisdom.com/js/passwordmeter.js",
+            "description": "New password. For validation (Accepts any printable ASCII character. Must be within 8-25 characters, and include numbers, lowercase and uppercase letters. Must not be the same as the user's email address).",
             "type": "string",
-            "pattern": "^[ -~]{6,25}$",
+            "pattern": "^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$",
             "sensitive": 1
         },
         "verification_code": {
