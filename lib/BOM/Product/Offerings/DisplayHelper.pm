@@ -154,7 +154,7 @@ my %known_decorations = (
         } else {
             my $today               = Date::Utility->today;
             my $trading_day         = $trading_calendar->trading_date_for($exchange, $self->date);
-            my $how_long            = $today->days_in_month;
+            my $how_long            = 365;                                                           # days in a year
             my $date_display_method = 'date';
             my %seen_rules;
             foreach my $day (0 .. $how_long) {
@@ -216,7 +216,12 @@ my %known_decorations = (
         return \@events;
     },
 
-);
+    trading_days => sub {
+        my $exchange     = $_->exchange;
+        my $list         = $exchange->trading_days_list;
+        my @trading_days = qw/Sun Mon Tue Wed Thu Fri Sat/ [grep { $list->[$_] } 0 .. 6];
+        return \@trading_days;
+    });
 
 # This is not fully generalized enough to become its own object, yet.
 # The "tree" should be able produce different representations of itself, say HashRef or JSON and have
