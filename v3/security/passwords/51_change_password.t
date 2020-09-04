@@ -19,7 +19,7 @@ use await;
 
 my $t = build_wsapi_test();
 
-my $email    = 'abc@binary.com';
+my $email    = 'aBc1@binary.com';
 my $password = 'jskjP8292922';
 my $hash_pwd = BOM::User::Password::hashpw($password);
 
@@ -58,68 +58,80 @@ is $authorize->{authorize}->{loginid}, $vr_1;
 my $new_password = 'jskjD8292923';
 my $new_hash_pwd = BOM::User::Password::hashpw($new_password);
 
-# change password wrongly
-my $change_password = $t->await::change_password({
-    change_password => 1,
-    old_password    => 'mRX1E3Mi00oS8LG',
-    new_password    => $new_password
-});
-is $change_password->{error}->{code}, 'PasswordError';
-ok $change_password->{error}->{message} =~ /Provided password is incorrect/;
-test_schema('change_password', $change_password);
+subtest 'change password to wrong one' => sub {
+    my $change_password = $t->await::change_password({
+        change_password => 1,
+        old_password    => 'mRX1E3Mi00oS8LG',
+        new_password    => $new_password
+    });
+    is $change_password->{error}->{code}, 'PasswordError';
+    ok $change_password->{error}->{message} =~ /Provided password is incorrect/;
+    test_schema('change_password', $change_password);
 
-$change_password = $t->await::change_password({
-    change_password => 1,
-    old_password    => $password,
-    new_password    => 'a'
-});
-is $change_password->{error}->{code}, 'InputValidationFailed';
-test_schema('change_password', $change_password);
+    $change_password = $t->await::change_password({
+        change_password => 1,
+        old_password    => $password,
+        new_password    => 'a'
+    });
+    is $change_password->{error}->{code}, 'InputValidationFailed';
+    test_schema('change_password', $change_password);
 
-$change_password = $t->await::change_password({
-    change_password => 1,
-    old_password    => $password,
-    new_password    => $password
-});
-is $change_password->{error}->{code}, 'PasswordError';
-ok $change_password->{error}->{message} =~ /Current password and new password cannot be the same/;
-test_schema('change_password', $change_password);
+    $change_password = $t->await::change_password({
+        change_password => 1,
+        old_password    => $password,
+        new_password    => $password
+    });
+    is $change_password->{error}->{code}, 'PasswordError';
+    ok $change_password->{error}->{message} =~ /Current password and new password cannot be the same/;
+    test_schema('change_password', $change_password);
 
-# change password
-$change_password = $t->await::change_password({
-    change_password => 1,
-    old_password    => $password,
-    new_password    => $new_password
-});
-ok($change_password->{change_password});
-is($change_password->{change_password}, 1);
-test_schema('change_password', $change_password);
+    $change_password = $t->await::change_password({
+        change_password => 1,
+        old_password    => $password,
+        new_password    => $email
+    });
+    is $change_password->{error}->{code}, 'PasswordError';
+    ok $change_password->{error}->{message} =~ /You cannot use your email address as your password./;
+    test_schema('change_password', $change_password);
+};
+
+subtest 'change password correctly' => sub {
+    my $change_password = $t->await::change_password({
+        change_password => 1,
+        old_password    => $password,
+        new_password    => $new_password
+    });
+    ok($change_password->{change_password});
+    is($change_password->{change_password}, 1);
+    test_schema('change_password', $change_password);
 
 # refetch user
-$user = BOM::User->new(
-    email => $email,
-);
-$status = $user->login(password => $password);
-ok !$status->{success}, 'old password; cannot login';
-$status = $user->login(password => $new_password);
-is $status->{success}, 1, 'login with new password OK';
+    $user = BOM::User->new(
+        email => $email,
+    );
+    $status = $user->login(password => $password);
+    ok !$status->{success}, 'old password; cannot login';
+    $status = $user->login(password => $new_password);
+    is $status->{success}, 1, 'login with new password OK';
 
 ## client passwd should be changed as well
-foreach my $client ($user->clients) {
-    is $client->password, $user->{password};
-}
+    foreach my $client ($user->clients) {
+        is $client->password, $user->{password};
+    }
+};
 
-## for api token, it's not allowed to change password
-$token     = BOM::Platform::Token::API->new->create_token($vr_1, 'Test Token', ['read', 'admin']);
-$authorize = $t->await::authorize({authorize => $token});
-is $authorize->{authorize}->{email},   $email;
-is $authorize->{authorize}->{loginid}, $vr_1;
-my $res = $t->await::change_password({
-    change_password => 1,
-    old_password    => $new_password,
-    new_password    => 'abc123456'
-});
-is $res->{error}->{code}, 'PermissionDenied', 'got PermissionDenied for api token';
+subtest 'changing password via api token' => sub {
+    $token = BOM::Platform::Token::API->new->create_token($vr_1, 'Test Token', ['read', 'admin']);
+    $authorize = $t->await::authorize({authorize => $token});
+    is $authorize->{authorize}->{email},   $email;
+    is $authorize->{authorize}->{loginid}, $vr_1;
+    my $res = $t->await::change_password({
+        change_password => 1,
+        old_password    => $new_password,
+        new_password    => 'abV123456'
+    });
+    is $res->{error}->{code}, 'PermissionDenied', 'got PermissionDenied for api token';
+};
 
 $t->finish_ok;
 

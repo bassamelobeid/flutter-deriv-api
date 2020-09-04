@@ -44,7 +44,7 @@
                "pattern" : "^Pan$"
             },
             "email" : {
-               "pattern" : "test@binary.com",
+               "pattern" : "test1@binary.com",
                "type" : "string"
             },
             "address_postcode" : {

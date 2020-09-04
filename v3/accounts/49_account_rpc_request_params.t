@@ -361,7 +361,7 @@ is $call_params->{token}, $token;
 $res           = $t->await::change_password({
     change_password => 1,
     old_password    => '123456',
-    new_password    => '654321'
+    new_password    => 'Abcd33!@'
 });
 is($res->{change_password}, 1);
 is $call_params->{token}, $token;
@@ -374,7 +374,7 @@ ok $call_params->{client_ip};
 $res = $t->await::reset_password({
     reset_password    => 1,
     verification_code => '123456789012345',
-    new_password      => '123456'
+    new_password      => 'Abcd33!@'
 });
 is($res->{reset_password}, 1);
 $res = $t->await::set_settings({
@@ -442,12 +442,12 @@ $t->await::get_account_status({get_account_status => 1});
 $t->await::change_password({
     change_password => 1,
     old_password    => '123456',
-    new_password    => '654321'
+    new_password    => 'Abcd33!@'
 });
 $t->await::reset_password({
     reset_password    => 1,
     verification_code => '123456789012345',
-    new_password      => '123456'
+    new_password      => 'Abcd33!@'
 });
 $t->await::set_settings({
     set_settings     => 1,

@@ -25,13 +25,13 @@ my $currencies = sprintf("(%s)", join("|", @currencies));
 my $length     = scalar @currencies;
 
 # VIRTUAL ACCOUNT OPENING FOR (CR)
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test@binary.com', 'account_opening';
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test1@binary.com', 'account_opening';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
-    $suite->get_token('test@binary.com'), 'test@binary.com', 'id';
+    $suite->get_token('test1@binary.com'), 'test1@binary.com', 'id';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
-    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test@binary.com';
+    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test1@binary.com';
 fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
-    $suite->get_token('test@binary.com'), 'test@binary.com', 'id';
+    $suite->get_token('test1@binary.com'), 'test1@binary.com', 'id';
 # READ SCOPE CALLS (VRTC)
 test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '10000', 'USD', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', 'USD',       1;
@@ -94,7 +94,7 @@ fail_test_sendrecv 'login_history/test_send.json', 'login_history/test_receive_t
 fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_cr.json', 'Peter', 'zq', '+61234567000';
 test_sendrecv_params 'new_account_real/test_send.json',      'new_account_real/test_receive_cr.json', 'Peter', 'id', '+61234567001';
 test_sendrecv_params 'authorize/test_send.json',             'authorize/test_receive_cr.json',
-    $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'test@binary.com', 'Peter';
+    $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'test1@binary.com', 'Peter';
 test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', '', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', $currencies, $length;
 
@@ -123,21 +123,24 @@ test_sendrecv 'topup_virtual/test_send.json', 'topup_virtual/test_receive_error.
 
 # PAYMENT SCOPE CALLS (CR)
 test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_error.json';
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test@binary.com', 'payment_withdraw';
-test_sendrecv_params 'cashier/test_send_withdraw.json', 'cashier/test_receive_error.json', $suite->get_token('test@binary.com');
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test1@binary.com', 'payment_withdraw';
+test_sendrecv_params 'cashier/test_send_withdraw.json', 'cashier/test_receive_error.json', $suite->get_token('test1@binary.com');
 
-test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json', 'Abc123', 'Abc123';
-test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json', 'Abc123', 'abc123';
-test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json', 'abc123', 'Abcd123';
-test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive.json',       'Abc123', 'Abcd1234';
+test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json', 'Abcd123!', 'Abcd123!';
+test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json', 'Abcd123!', 'Test1@binary.com';
+test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json', '1231asda', 'Abcd33!@';
+test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive.json',       'Abcd123!', 'Abcd33!@#!@#';
 
 # as we created token for payment_withdraw which returned with error so token was not expired
 # so reset password is not allowed with that token
-fail_test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json', $suite->get_token('test@binary.com'), 'Abc123';
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test@binary.com', 'reset_password';
-test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json', $suite->get_token('test@binary.com'), 'Abc123';
+fail_test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json', $suite->get_token('test1@binary.com'), 'Abcd123!';
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test1@binary.com', 'reset_password';
+test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json', $suite->get_token('test1@binary.com'), 'Abcd123!';
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test1@binary.com', 'reset_password';
+fail_test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json', $suite->get_token('test1@binary.com'),
+    'Test1@binary.com';
 # same token cannot be used twice
-fail_test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json', $suite->get_token('test@binary.com'), 'Abc123';
+fail_test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json', $suite->get_token('test1@binary.com'), 'Abcd123!';
 
 # TESTS TO RETURN ERROR (LOGGED OUT)
 test_sendrecv 'logout/test_send.json',           'logout/test_receive.json';
@@ -234,7 +237,7 @@ test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.j
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
     $suite->get_token('test2@binary.com'), 'test2@binary.com', 'au';
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test2@binary.com', 'reset_password';
-test_sendrecv_params 'reset_password/test_send_vrt.json', 'reset_password/test_receive.json', $suite->get_token('test2@binary.com'), 'Abc123';
+test_sendrecv_params 'reset_password/test_send_vrt.json', 'reset_password/test_receive.json', $suite->get_token('test2@binary.com'), 'Abcd123!';
 
 # TWO Factor Authentication (Admin Scope)
 test_sendrecv_params 'account_security/test_send_status.json', 'account_security/test_receive_status.json';

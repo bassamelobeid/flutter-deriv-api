@@ -23,7 +23,7 @@ my $client_mocked = Test::MockModule->new('BOM::User::Client');
 $client_mocked->mock('add_note', sub { return 1 });
 
 my $t     = build_wsapi_test();
-my $email = 'test@binary.com';
+my $email = 'test1@binary.com';
 
 subtest 'verify_email' => sub {
     my $res = $t->await::verify_email({
@@ -83,6 +83,25 @@ my $create_vr = {
     client_password     => 'Ac0+-_:@.',
     residence           => 'au',
     verification_code   => 'laskdjfalsf12081231'
+};
+
+subtest 'email and password likeness' => sub {
+    my $res = $t->await::verify_email({
+        verify_email => $email,
+        type         => 'account_opening'
+    });
+    is($res->{verify_email}, 1, 'verify_email OK');
+
+    my %create_vr_clone = $create_vr->%*;
+
+    $create_vr_clone{verification_code} = _get_token();
+    $create_vr_clone{client_password}   = 'Test1@binary.com';
+
+    $res = $t->await::new_account_virtual(\%create_vr_clone);
+
+    is($res->{error}->{code},       'PasswordError',                                       'New password cannot be the same as your email.');
+    is($res->{error}->{message},    'You cannot use your email address as your password.', 'Message to client is correct');
+    is($res->{new_account_virtual}, undef,                                                 'NO account created');
 };
 
 subtest 'create Virtual account' => sub {

@@ -18,7 +18,7 @@ test_schema('reset_password', $reset_password);
 $res = $t->send_ok({
         json => {
             reset_password      => 1,
-            new_password        => 'dummy_password',
+            new_password        => 'Dummy_password1',
             'verification_code' => 'dummy_verification_code'
         }})->message_ok;
 $reset_password = JSON::MaybeXS->new->decode(Encode::decode_utf8($res->message->[1]));

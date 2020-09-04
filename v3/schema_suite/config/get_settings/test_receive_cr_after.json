@@ -39,7 +39,7 @@
                "type" : ["string", "null"] 
             },
             "email" : {
-               "pattern" : "test@binary.com",
+               "pattern" : "test1@binary.com",
                "type" : "string"
             },
             "tax_residence" : {
