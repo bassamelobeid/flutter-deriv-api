@@ -18,7 +18,7 @@ no indirect;
 use Syntax::Keyword::Try;
 use JSON::MaybeUTF8 qw(:v1);
 use DataDog::DogStatsd::Helper qw(stats_inc);
-use List::Util qw (any);
+use List::Util qw (any none);
 
 use BOM::User::Client;
 use BOM::Platform::Context qw (localize request);
@@ -749,8 +749,11 @@ sub _check_client_access {
     die +{error_code => 'P2PDisabled'}
         unless $app_config->payments->p2p->available || any { $_ eq $client->loginid } $app_config->payments->p2p->clients->@*;
 
-    die +{error_code => 'RestrictedCountry'}
-        unless any { $_ eq lc($client->residence // '') } $app_config->payments->p2p->available_for_countries->@*;
+    my @available_countries = $app_config->payments->p2p->available_for_countries->@*;
+    die +{error_code => 'RestrictedCountry'} if @available_countries and none { $_ eq lc($client->residence // '') } @available_countries;
+
+    my @restricted_countries = $app_config->payments->p2p->restricted_countries->@*;
+    die +{error_code => 'RestrictedCountry'} if any { $_ eq lc($client->residence // '') } @restricted_countries;
 
     die +{error_code => 'RestrictedCountry'} unless $client->landing_company->p2p_available;
 

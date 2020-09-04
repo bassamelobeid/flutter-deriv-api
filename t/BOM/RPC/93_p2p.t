@@ -25,13 +25,12 @@ BOM::RPC::v3::P2P::p2p_rpc $dummy_method => sub { return {success => 1} };
 my $app_config = BOM::Config::Runtime->instance->app_config;
 my ($p2p_suspend, $p2p_enable) = ($app_config->system->suspend->p2p, $app_config->payments->p2p->enabled);
 
-my $P2P_AVAILABLE_COUNTRIES  = ['id'];
 my $P2P_AVAILABLE_CURRENCIES = ['usd'];
 
 $app_config->system->suspend->p2p(0);
 $app_config->payments->p2p->enabled(1);
 $app_config->payments->p2p->available(1);
-$app_config->payments->p2p->available_for_countries($P2P_AVAILABLE_COUNTRIES);
+$app_config->payments->p2p->available_for_countries([]);
 $app_config->payments->p2p->available_for_currencies($P2P_AVAILABLE_CURRENCIES);
 
 my $email_advertiser = 'p2p_advertiser@test.com';
@@ -44,7 +43,8 @@ my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 
 my $client_advertiser = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
-    email       => $email_advertiser
+    email       => $email_advertiser,
+    residence   => 'za'
 });
 
 my $user_advertiser = BOM::User->create(
@@ -91,16 +91,6 @@ subtest 'VR not allowed' => sub {
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('UnavailableOnVirtual', 'error code is UnavailableOnVirtual');
 };
 
-subtest 'Allowed countries' => sub {
-    my $client_ru = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-        email       => 'country-test' . $email_client,
-        residence   => 'ru',
-    });
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_ru->loginid, 'test vr token');
-    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('RestrictedCountry', 'error code is RestrictedCountry');
-};
-
 subtest 'P2P suspended' => sub {
     $app_config->system->suspend->p2p(1);
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('P2PDisabled', 'error code is P2PDisabled');
@@ -131,12 +121,29 @@ subtest 'Currency not enabled' => sub {
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('No errors when the currency is allowed');
 };
 
-subtest 'Country not enabled' => sub {
+# client residence is za
+subtest 'Available countries' => sub {
+    $app_config->payments->p2p->available_for_countries(['ag', 'us']);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error('Access denied when residence not in list')
+        ->error_code_is('RestrictedCountry', 'correct error code');
+
+    $app_config->payments->p2p->available_for_countries(['ag', 'za']);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('Access allowed when residence in list');
+
     $app_config->payments->p2p->available_for_countries([]);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('Access allowed when setting is empty');
+};
 
-    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('RestrictedCountry', 'error code is RestrictedCountry');
+subtest 'Restricted countries' => sub {
+    $app_config->payments->p2p->restricted_countries(['za']);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error('Access denied when residence in list')
+        ->error_code_is('RestrictedCountry', 'correct error code');
 
-    $app_config->payments->p2p->available_for_countries($P2P_AVAILABLE_COUNTRIES);
+    $app_config->payments->p2p->restricted_countries(['ag', 'us']);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('Access allowed when residence not in list');
+
+    $app_config->payments->p2p->restricted_countries([]);
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error('Access allowed when setting is empty');
 };
 
 subtest 'Landing company does not allow p2p' => sub {
