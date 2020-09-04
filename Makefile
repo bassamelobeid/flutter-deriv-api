@@ -1,6 +1,7 @@
 TESTS=unit_test_platform_client \
       unit_test_platform_all \
       unit_test_system
+
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 export SKIP_EMAIL=1
 P=/etc/rmg/bin/prove -v --timer -rl
@@ -21,6 +22,9 @@ unit_test_system:
 
 leaktest:
 	$(PROVE) -r t/BOM/leaks
+
+pod_test:
+	$(PROVE) t/BOM/*pod*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete

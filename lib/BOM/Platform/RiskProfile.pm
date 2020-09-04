@@ -1,10 +1,10 @@
 package BOM::Platform::RiskProfile;
 
-=head NAME
+=head1 NAME
 
 BOM::Platform::RiskProfile - a class to get custom risk and/or commission profile.
 
-=head DESCRIPTION
+=head1 DESCRIPTION
 
 There are 5 risk profiles: no_business extreme_risk high_risk medium_risk low_risk
 

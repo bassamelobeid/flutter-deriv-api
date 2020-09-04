@@ -19,8 +19,6 @@ Onfido webhook Entrypoint for checks
 Validates the C<X-Signature> from the request
 Compares the $check's payload{action} to be check.completed & emit client_verification event otherwise returns ok
 
-=back
-
 Returns Mojolicious http response to onfido with `failed` or `ok`.
 
 =cut

@@ -52,9 +52,7 @@ Sends the email according to the given args.
 
 =back
 
-=head3
-
-Main arguments:
+=head3 Main arguments:
 
 =over 4
 
@@ -66,9 +64,7 @@ Main arguments:
 
 =back
 
-=head3
-
-Optional arguments:
+=head3 Optional arguments:
 
 =over 4
 

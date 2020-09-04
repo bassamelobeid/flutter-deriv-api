@@ -84,6 +84,8 @@ Checks the proveid results of the client from Experian
 
 =item * C<should_die> - Boolean, if set, the proveid will die on failure
 
+=back
+
 =cut
 
 sub proveid {
@@ -308,7 +310,7 @@ EOM
         });
 }
 
-=head _notify_cs($subject, $body)
+=head2 _notify_cs
 
 Adds an entry in the helpdesk system for the client with $subject and $body
 
@@ -325,7 +327,7 @@ sub _notify_cs {
     return undef;
 }
 
-=head _process_not_found
+=head2 _process_not_found
 
 Handles client which has no entry found in Experian's database
 

@@ -186,8 +186,6 @@ Bind event name to its queue
 
 =head3 Return function name
 
-=over 4
-
 =cut
 
 sub _queue_name {

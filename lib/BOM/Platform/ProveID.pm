@@ -91,7 +91,7 @@ has folder => (
 
 =head2 xml_folder
 
-Path to where the XML result will be stored. Defaults to C<folder . "/xml"`.
+Path to where the XML result will be stored. Defaults to C<folder . "/xml">.
 
 =cut
 
@@ -469,7 +469,7 @@ sub get_pdf_result {
     return 1;
 }
 
-=head2
+=head2 _build_xml_request
 
 The request structure is built based on Section 6 of L<Experian's API|https://github.com/regentmarkets/third_party_API_docs/blob/master/AML/20160520%20Experian%20ID%20Search%20XML%20API%20v1.22.pdf>
 

@@ -27,10 +27,12 @@ use warnings;
 =head1 CONSTRUCTOR
 
 =head2 new({token => $token})
- Retrieves a token state structure from redis.
 
-=head2 new({key1 => $value1, ...,)
- Creates a new token and stores it in redis.
+Retrieves a token state structure from redis.
+
+=head2 new({key1 => $value1, ...,})
+
+Creates a new token and stores it in redis.
 
 =cut
 

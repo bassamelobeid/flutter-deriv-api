@@ -126,7 +126,7 @@ Generate standard error parameters if currency is invalid.
 
 =over 4
 
-=item * C<currency> - The currency code to check the validity of. (case-sensitive)
+=item * C<currency> - The currency code to check the validity of. B<case-sensitive>
 
 =back
 
@@ -181,7 +181,7 @@ sub pre_withdrawal_validation {
     return;
 }
 
-=head2
+=head2 calculate_to_amount_with_fees
 
 Calculates transfer amount and fees
 
@@ -195,10 +195,10 @@ Args
 
 =item * The currency of the receiving account
 
-=item * A BOM::User::Client instance of the sending client
+=item * A L<BOM::User::Client> instance of the sending client
 Optional: only required to ascertain if client qualifies for PA fee exemption
 
-=item * A BOM::User::Client instance of the receiving client
+=item * A L<BOM::User::Client> instance of the receiving client
 Optional: only required to ascertain if client qualifies for PA fee exemption
 
 =back
@@ -212,11 +212,12 @@ Returns
 =item * The fee charged to the sender (in the currency of the sending account). It is maximum of minimum fee and calculated fee.
 
 =item * The fee percentage applied for transfers between these currencies
-Note: If a minimum fee was enforced then this will not reflect the actual fee charged.
 
--item * Minimum fee amount allowed for the sending account's currency (minimum currency unit).
+B<Note>: If a minimum fee was enforced then this will not reflect the actual fee charged.
 
--item * The fee amount calculated by the fee percent alone (before comparing to the minimum fee).
+=item * Minimum fee amount allowed for the sending account's currency (minimum currency unit).
+
+=item * The fee amount calculated by the fee percent alone (before comparing to the minimum fee).
 
 =back
 
