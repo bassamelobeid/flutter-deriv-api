@@ -613,11 +613,15 @@ command block_origin => sub {
 
 To start/stop logging of certain RPC calls.
 
+=over 4
+
 =item * C<type> - Either of these: C<all>, C<method>, C<app_id> or C<loginid>
 
 =item * C<value> - Value to check against the type (omitted if type is C<all>).
 
 =item * C<action> - on/off
+
+=back
 
 Returns the logging configuration.
 

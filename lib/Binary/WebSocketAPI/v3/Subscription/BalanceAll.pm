@@ -1,6 +1,8 @@
 package Binary::WebSocketAPI::v3::Subscription::BalanceAll;
+
 use strict;
 use warnings;
+
 no indirect;
 use Moo;
 use Scalar::Util qw(weaken);

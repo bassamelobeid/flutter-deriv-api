@@ -156,9 +156,9 @@ sub abbrev_class {
     return $class;
 }
 
-=head2
+=head2 stats_name
 
-the name that will be used in stats_* function
+The name that will be used in stats_* function
 
 =cut
 
