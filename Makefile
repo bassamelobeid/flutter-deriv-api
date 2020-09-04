@@ -12,3 +12,6 @@ test:
 
 syntax:
 	SYNTAX_CHUNK_NAME=lib /etc/rmg/bin/prove -I./lib -I/home/git/regentmarkets/bom-postgres/lib t/001_structure.t t/003_autosyntax.t
+
+pod_test:
+	@$(PROVE) t/*pod*.t

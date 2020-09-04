@@ -36,7 +36,7 @@ use constant DEFAULT_QUEUE_WAIT_TIME => 10;
 =head2 MAXIMUM_PROCESSING_TIME
 
 How long (in seconds) to allow for the process
-call to wait for L</process_event>.
+call to wait for L<BOM::Event::QueueHandler::process_job>.
 Note: MAXIMUM_JOB_TIME can be greater than this if the job is 
 Async. 
 

@@ -28,8 +28,6 @@ Use inside a C<catch> block like this:
 
 and it will automatically increment the exception count in Datadog if any exception occurs.
 
-=back
-
 Returns undef
 
 =cut

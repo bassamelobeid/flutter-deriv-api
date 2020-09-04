@@ -237,14 +237,14 @@ sub order_expired {
 =head2 _track_p2p_order_event
 
 Emits p2p order events to Segment for tracking. It takes the following list of named arguments:
-    
-=over
+
+=over 4
 
 =item * C<loginid> - required. representing the client who has fired the event.
 
 =item * C<order> - required. A hashref containing order raw data.
 
-=item *C<order_details> - required. A hashref containing processed order details.
+=item * C<order_details> - required. A hashref containing processed order details.
 
 =item * C<order_event> - required. Order event name (like B<created>, B<buyer-confirmed>, etc).
 

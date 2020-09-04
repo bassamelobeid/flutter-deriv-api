@@ -138,7 +138,7 @@ sub _send_anonymization_report {
     return undef;
 }
 
-=head2
+=head2 _anonymize
 
 removal of a client's personally identifiable information from Binary's systems.
 Skip C<MT5> account untouched because we dont want to anonymize third parties yet.
@@ -155,14 +155,28 @@ This module will anonymize below information :
 - payment remarks for bank wires transactions available on the client's account statement in BO should be `deleted wire payment`
 - documents (delete)
 
-=over 1
+=over 4
 
 =item * C<loginid> - login id of client to trigger anonymization on
 
 =back
 
-Returns **1** on success.
-Returns **error_code** on failure and sends an email which contains error message to the compliance team.
+Returns the string B<successful> on success.
+Returns error_code on failure.
+
+Possible error_codes for now are:
+
+=over 4
+
+=item * clientNotFound
+
+=item * userAlreadyAnonymized
+
+=item * userNotFound
+
+=item * anonymizationFailed
+
+=back
 
 =cut
 
@@ -210,4 +224,5 @@ sub _anonymize {
     }
     return "successful";
 }
+
 1;

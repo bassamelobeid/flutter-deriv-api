@@ -199,7 +199,7 @@ sub account_closure {
 
 It is triggered for each B<new mt5 signup> event emitted, delivering it to Segment.
 It can be called with the following parameters:
-    
+
 =over
 
 =item * C<loginid> - required. Login Id of the user.
@@ -639,7 +639,7 @@ It is called with the following parameters:
 
 =item * C<customer> - required. Customer object included traits.
 
-=item *C<brand> - (optional) The request brand as a <Brands> object.
+=item * C<brand> - (optional) The request brand as a <Brands> object.
 
 =back
 
@@ -666,7 +666,7 @@ It is called with the following parameters:
 
 =item * C<event> - The event name that will be sent to the Segment.
 
-=item *C<brand> - (optional) The request brand as a <Brands> object.
+=item * C<brand> - (optional) The request brand as a <Brands> object.
 
 =back
 
@@ -719,7 +719,7 @@ Arguments:
 
 =item * C<client> - required. A L<BOM::User::Client> object representing a client.
 
-=item *C<brand> - (optional) The request brand as a <Brands> object.
+=item * C<brand> - (optional) The request brand as a <Brands> object.
 
 =back
 
