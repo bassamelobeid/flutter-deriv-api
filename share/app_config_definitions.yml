@@ -151,6 +151,11 @@ payments:
           isa: json_string
           default: '{"0":1,"10":2,"100":3}'
           global: 1
+        withdrawal_processing_max_duration:
+          description: "Maximum duration for a withdrawal transaction to stay in processing state. After this duration, we will pay the fee regardless of how high it is. Note: the duration is in hours unit"
+          isa: Num
+          default: 12
+          global: 1
         sweep_reserve_balance:
           description: "Reserve Balance of Sweep"
           isa: section
