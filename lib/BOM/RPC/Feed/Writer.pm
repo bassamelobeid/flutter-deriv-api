@@ -108,8 +108,6 @@ async sub subscribe_to_redis {
 
 The main sub, its called to start creating binary feed files to all symbols.
 
-=back
-
 Waits for all Futures to be completed.
 
 =cut

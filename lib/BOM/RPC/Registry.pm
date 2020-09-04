@@ -136,6 +136,8 @@ application.
 
 TODO(leonerd): discover this interface more and document it better
 
+=over 4
+
 =item async => BOOL
 
 Optional boolean. If true, the code is expected to return a L<Future>

@@ -24,7 +24,7 @@ use BOM::Config;
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
 
-=head2
+=head2 notification_event
 
 notification_events enables the system to have the information of event happening in 
 
@@ -74,7 +74,7 @@ rpc notification_event => sub {
 
 };
 
-=head2
+=head2 _trigger_poi_check($client)
 
 _trigger_poi_check triggers the event to request for Onfido check on the client
 
