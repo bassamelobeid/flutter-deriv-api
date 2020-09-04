@@ -13,10 +13,9 @@ sub decorate {
     my ($underlying, $offerings, $calendar, $date) = @{$args}{'underlying', 'offerings', 'calendar', 'date'};
 
     my $trading_periods = get_trading_periods($underlying->symbol, $underlying->for_date);
-
-    return [] unless @$trading_periods;
-
-    my $close_epoch = $calendar->closing_on($underlying->exchange, $date)->epoch;
+    my $closing         = $calendar->closing_on($underlying->exchange, $date);
+    return [] unless @$trading_periods and $closing;
+    my $close_epoch = $closing->epoch;
     # full trading seconds
     my $trading_seconds = $close_epoch - $date->truncate_to_day->epoch;
 

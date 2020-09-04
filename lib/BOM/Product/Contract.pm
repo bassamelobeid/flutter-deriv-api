@@ -831,9 +831,11 @@ sub _build_exit_tick {
     } elsif ($self->is_after_expiry) {
         # For a daily contract or a contract expired at the close of trading, the valid exit tick should be the daily close else should be the tick at expiry date
         # IMPORTANT NOTE: $self->_tick_accessor does not support ->closing_tick_on();
+        my $closing = $self->trading_calendar->closing_on($underlying->exchange, $self->date_expiry);
+
         my $valid_exit_tick_at_expiry = (
-                   $self->expiry_daily
-                or $self->date_expiry->is_same_as($self->trading_calendar->closing_on($underlying->exchange, $self->date_expiry))
+            $self->expiry_daily
+                or ($closing and $self->date_expiry->is_same_as($closing))
         ) ? $underlying->closing_tick_on($self->date_expiry->date) : $self->_tick_accessor->tick_at($self->date_expiry->epoch);
 
         # There are few scenarios where we still do not have valid exit tick as follow. In those case, we will use last available tick at the expiry time to determine the pre-settlement value but will not be settle based on that tick
@@ -1064,7 +1066,7 @@ sub audit_details {
     # no contract_end audit details if settlement conditions is not fulfilled.
     return $details unless $self->is_expired;
     return $details if $self->waiting_for_settlement_tick;
-
+    my $closing = $self->trading_calendar->closing_on($self->underlying->exchange, $self->date_expiry);
     if ($self->is_path_dependent && $self->close_tick) {
         my $hit_tick = $self->close_tick;
         $details->{contract_end} = [{
@@ -1076,7 +1078,7 @@ sub audit_details {
                 flag               => 'highlight_tick',
             }];
     } elsif ($self->expiry_daily
-        or $self->date_expiry->is_same_as($self->trading_calendar->closing_on($self->underlying->exchange, $self->date_expiry)))
+        or ($closing and $self->date_expiry->is_same_as($closing)))
     {
         my $closing_tick = $self->underlying->closing_tick_on($self->date_expiry->date);
         return $details unless $closing_tick;
