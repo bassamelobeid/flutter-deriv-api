@@ -119,10 +119,15 @@ payments:
           global: 1
           default: []
         available_for_countries:
-          description: 'List of countries for which P2P is available, country code should be lower case'
+          description: 'List of countries for which P2P is available, 2 letter lower case country codes. If empty, all countries are allowed except those in restricted_countries.'
           isa: ArrayRef
           global: 1
           default: []
+        restricted_countries:
+          description: 'List of countries for which P2P is not available, 2 letter lower case country codes.'
+          isa: ArrayRef
+          global: 1
+          default: []          
         limits:
           description: 'Peer-to-peer payment system and client limits'
           isa: section
