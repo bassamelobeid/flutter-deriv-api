@@ -65,7 +65,8 @@ sub _handle_errors {
         (my $clean_message = $dbh->errstr) =~ s/\nCONTEXT:.+//s;
         die [$state, $clean_message];
     }
-
+    # format the error message in one line
+    $error_message =~ s/\n|\r/ | /g;
     warn "DB Error Severity: $severity, $error_message. SQLSTATE=$state. Error=$err";
 
     die Mojo::Exception->new($dbh->errstr || $error_message);
