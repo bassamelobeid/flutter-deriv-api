@@ -295,6 +295,7 @@ sub generate_trading_times {
             name         => 'name',
             times        => 'times',
             events       => 'events',
+            trading_days => 'trading_days',
             symbol       => sub { $_->symbol },
             feed_license => sub { $_->feed_license },
             delay_amount => sub { $_->delay_amount },
@@ -311,10 +312,11 @@ sub generate_trading_times {
             for my $ul (@{$sbm->{underlyings}}) {
                 push @{$submarket->{symbols}},
                     {
-                    name   => localize($ul->{name}),
-                    symbol => $ul->{symbol},
-                    events => $ul->{events},
-                    times  => $ul->{times},
+                    name         => localize($ul->{name}),
+                    symbol       => $ul->{symbol},
+                    events       => $ul->{events},
+                    times        => $ul->{times},
+                    trading_days => $ul->{trading_days},
                     ($ul->{feed_license} ne 'realtime') ? (feed_license => $ul->{feed_license}) : (),
                     ($ul->{delay_amount} > 0)           ? (delay_amount => $ul->{delay_amount}) : (),
                     };

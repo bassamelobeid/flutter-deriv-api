@@ -30,7 +30,8 @@ subtest $method => sub {
                 'open'       => ['00:00:00'],
                 'close'      => ['23:59:59'],
                 'settlement' => '23:59:59'
-            }
+            },
+            'trading_days' => [qw/Mon Tue Wed Thu Fri/]
         },
         'a instance of symbol'
     );
