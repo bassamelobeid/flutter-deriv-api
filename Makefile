@@ -1,6 +1,9 @@
 test:
 	/etc/rmg/bin/prove -lvr t/BOM/
 
+pod_test:
+	/etc/rmg/bin/prove -vlr t/BOM/*pod*.t
+
 tidy:
 	find . -name '*.p?.bak' -delete
 	find bin lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
