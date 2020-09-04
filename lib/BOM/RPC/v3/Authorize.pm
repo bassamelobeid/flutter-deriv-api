@@ -5,7 +5,7 @@ use warnings;
 
 use Syntax::Keyword::Try;
 use Date::Utility;
-use List::MoreUtils qw(any);
+use List::Util qw(uniq any);
 use Convert::Base32;
 use Format::Util::Numbers qw/formatnumber/;
 
@@ -48,7 +48,7 @@ sub _get_upgradeable_landing_companies {
         push @upgradeable_landing_companies, 'svg'
             if BOM::RPC::v3::Utility::get_available_currencies($siblings, $client->landing_company->short);
     } else {
-        for my $lc ($gaming_company, $financial_company) {
+        for my $lc (uniq($gaming_company, $financial_company)) {
             next unless $lc;
             next if any { $_->landing_company->short eq $lc } @$client_list;
             push @upgradeable_landing_companies, $lc;
