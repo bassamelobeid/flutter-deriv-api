@@ -43,7 +43,7 @@ scope_guard {
 $app_config->set({'payments.p2p.enabled'                  => 1});
 $app_config->set({'system.suspend.p2p'                    => 0});
 $app_config->set({'payments.p2p.available'                => 1});
-$app_config->set({'payments.p2p.available_for_countries'  => ['id']});
+$app_config->set({'payments.p2p.available_for_countries'  => []});
 $app_config->set({'payments.p2p.available_for_currencies' => ['usd']});
 $app_config->set({'payments.p2p.limits.maximum_order'     => 10});
 
