@@ -237,7 +237,7 @@ $app_config->set({'system.suspend.p2p'                   => 0});
 $app_config->set({'payments.p2p.clients'                 => $reset_clients ? $new_clients : $all_clients});
 $app_config->set({'payments.p2p.escrow'                  => \@escrow_ids});
 $app_config->set({'payments.p2p.limits.maximum_advert'   => 3000});
-$app_config->set({'payments.p2p.available_for_countries' => [qw(za ng)]});
+$app_config->set({'payments.p2p.available_for_countries' => []});
 
 $log->infof('App config applied');
 $log->infof('P2P devops status originally:  %s', $app_config->system->suspend->p2p   ? 'off' : 'on');
