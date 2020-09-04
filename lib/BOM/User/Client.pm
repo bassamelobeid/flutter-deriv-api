@@ -1976,7 +1976,7 @@ Returns statistics of a P2P user.
 Example usage:
 
     $self->p2p_advertiser_stats(id=>1, days=>30);
-    
+
 Takes the following arguments as named parameters:
 
 =over 4
@@ -2710,7 +2710,7 @@ Takes a single argument:
 
 =item * C<order> - an order as returned from L<_p2p_orders>
 
-=back 
+=back
 
 Returns a hashref of the row returned by the final db function.
 
@@ -2741,7 +2741,7 @@ Takes a single argument:
 
 =item * C<order> - an order as returned from L<_p2p_orders>
 
-=back 
+=back
 
 Returns a hashref of the row returned by the final db function.
 
@@ -2776,7 +2776,7 @@ Takes a single argument:
 
 =item * C<order> - an order as returned from L<_p2p_orders>
 
-=back 
+=back
 
 Returns a hashref of the row returned by the final db function.
 
@@ -2810,7 +2810,7 @@ Takes a single argument:
 
 =item * C<order> - an order as returned from L<_p2p_orders>
 
-=back 
+=back
 
 Returns a hashref of the row returned by the final db function.
 
@@ -2841,7 +2841,7 @@ Takes a single argument:
 
 =item * C<order> - an order as returned from L<_p2p_orders>
 
-=back 
+=back
 
 Returns nothing.
 
@@ -2868,7 +2868,7 @@ Takes a single argument:
 
 =item * C<order> - an order as returned from L<_p2p_orders>
 
-=back 
+=back
 
 Returns nothing.
 
@@ -3095,7 +3095,7 @@ Records P2P advertiser statistics from an order event.
 Example usage:
 
     $self->_p2p_order_stats_record('ORDER_CREATED', $order);
-    
+
 Takes the following arguments as named parameters:
 
 =over 4
@@ -3189,7 +3189,7 @@ Returns P2P advertiser statistics
 Example usage:
 
     $self->_p2p_order_stats_get('CR001', 30);
-    
+
 Takes the following arguments as named parameters:
 
 =over 4
@@ -3422,16 +3422,21 @@ sub deposit_virtual_funds {
 
     # default_account not exists when first time init virtual balance
     my $amount = $self->default_account ? $virtual_account_default_balance - $self->default_account->balance : $virtual_account_default_balance;
-
     # if amount is 0, means no need topup balance
     if ($amount) {
-        $self->payment_legacy_payment(
-            currency     => $currency,
-            amount       => $amount,
-            payment_type => 'virtual_credit',
-            remark       => $remark // 'Reset to default virtual money account balance.',
-            source       => $source,
-        );
+        try {
+            $self->payment_legacy_payment(
+                currency     => $currency,
+                amount       => $amount,
+                payment_type => 'virtual_credit',
+                remark       => $remark // 'Reset to default virtual money account balance.',
+                source       => $source,
+            );
+        } catch ($e) {
+            # ignore know error violates check constraint "check_no_negative_balance"
+            die $e unless $e =~ /check_no_negative_balance/;
+            $amount = 0;
+        };
     }
     return ($currency, $amount);
 }
