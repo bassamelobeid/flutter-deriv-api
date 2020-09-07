@@ -92,10 +92,12 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
     };
 
     my $trace_log = $ENV{PAYMENTAPI_LOG_FILE} || '/var/log/httpd/paymentapi_trace.log';
-    my $trace_lvl = 'warn';
-    my $syslg_lvl = 'warn';
+    my $trace_lvl = $ENV{BOM_TRACE_LEVEL}     || 'warn';
+    my $syslg_lvl = $ENV{BOM_TRACE_LEVEL}     || 'warn';
+    my $plack_env = $ENV{PLACK_ENV}           || 'deployment';
     my $logformat = sub { my %msg = @_; my $lvl = sprintf '%-7s', uc $msg{level}; "$lvl $msg{message}" };
     my $log       = Log::Dispatch->new;
+
     $log->add(
         Log::Dispatch::File->new(
             newline   => 1,
@@ -109,7 +111,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
             newline   => 1,
             callbacks => $logformat,
             min_level => $syslg_lvl
-        )) unless $ENV{PLACK_TEST_IMPL};
+        )) if not $ENV{PLACK_TEST_IMPL} and $plack_env eq 'development';
     $log->info(sprintf "PaymentAPI Server Starting at %s. PID $$. Tracing to $trace_log. Environment: %s", scalar(localtime), Dumper(\%ENV));
 
     builder {
@@ -138,6 +140,8 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                 # run the app, but trap breakages here so we can trace.
                 my $ref = eval { $app->($env) } || do {
                     my $error = $@;
+                    # database errors are arrays
+                    $error = join ', ', @$error if ref $error eq 'ARRAY';
                     $log->error($error);
                     [500, [], ['Server Error']];
                 };
@@ -145,7 +149,7 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                 # post-processing: log this response
                 if ($log->is_debug) {
                     my $res = Plack::Response->new(@$ref);
-                    my $msg = sprintf "\n%s\n%s\n%s\n%s\n%s", '_' x 80, $res->status, Dumper($res->headers), join('', @{$res->body}), '_' x 80;
+                    my $msg = sprintf "status: %s    headers: %s    body: %s", $res->status, $res->headers->as_string, join('', @{$res->body});
                     $log->debug($msg);
                 }
 

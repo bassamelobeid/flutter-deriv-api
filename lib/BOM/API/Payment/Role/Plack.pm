@@ -59,7 +59,7 @@ sub throw {
         return {status_code => $status};
     };
     chomp($message);
-    $log->error(sprintf '%s: %s', ($c->user && $c->user->loginid) || '(no-user)', $message);
+    $log->info(sprintf '%s: %s', ($c->user && $c->user->loginid) || '(no-user)', $message);
     return {
         status_code => $status,
         error       => $message
@@ -73,10 +73,9 @@ sub status_bad_request {
     my $log_message = sprintf '%s: %s', ($c->user && $c->user->loginid) || '(no-user)', $message;
     if ($datadog_metric) {
         DataDog::DogStatsd::Helper::stats_inc($datadog_metric);
-        $log->info($log_message);
-    } else {
-        $log->warn($log_message);
     }
+    $log->info($log_message);
+
     return {
         status_code => 400,
         error       => $message
