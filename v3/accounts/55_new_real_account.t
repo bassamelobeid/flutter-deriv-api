@@ -50,7 +50,8 @@ subtest 'new CR real account' => sub {
     $t->await::authorize({authorize => $token});
 
     subtest 'create CR account' => sub {
-        my ($res, $call_params) = call_mocked_client($t, \%client_details);
+        # Note the p.o. box address should not fail the call for CR accounts
+        my ($res, $call_params) = call_mocked_client($t, {%client_details, address_line_1 => 'p.o. box 25325'});
         is $call_params->{token}, $token;
         ok($res->{msg_type}, 'new_account_real');
         ok($res->{new_account_real});
@@ -85,6 +86,13 @@ subtest 'new MX real account' => sub {
         is($res->{error}->{code}, 'InsufficientAccountDetails', 'UK client must have postcode');
         is_deeply($res->{error}->{details}, {missing => ['address_postcode']});
         is($res->{new_account_real}, undef, 'NO account created');
+    };
+
+    subtest 'UK client - invalid p.o. box' => sub {
+        my $res = $t->await::new_account_real({%details, address_line_1 => 'p.o. box 25325'}, {timeout => 10});
+
+        is($res->{error}->{code},    'invalid PO Box', 'Invalid p.o. box');
+        is($res->{new_account_real}, undef,            'NO account created');
     };
 
     subtest 'new MX account' => sub {
@@ -162,16 +170,6 @@ subtest 'create account failed' => sub {
 
         is($res->{error}->{code},    'InvalidResidence', 'cannot create real account');
         is($res->{new_account_real}, undef,              'NO account created');
-    };
-
-    subtest 'no POBox for address' => sub {
-        my %details = %client_details;
-        $details{residence} = 'id';
-
-        my $res = $t->await::new_account_real({%details, address_line_1 => 'address 1 P.O.Box 1234'});
-
-        is($res->{error}->{code},    'invalid PO Box', 'address cannot contain P.O.Box');
-        is($res->{new_account_real}, undef,            'NO account created');
     };
 
     subtest 'min age check' => sub {
