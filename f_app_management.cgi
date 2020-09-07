@@ -100,51 +100,41 @@ if ($action and $action eq 'BLOCK APP') {
 }
 
 BrokerPresentation('App management');
-print "<center>";
 
-# deactive app
+# deactivate app
 if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
+    Bar(
+        'Deactivate app',
+        {
+            container_class     => 'GreenDarkCandy',
+            title_class         => 'GreenLabel',
+            is_content_centered => 1,
+        });
     print qq~
-	<table class="GreenDarkCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
-		<tbody>
-			<tr class="GreenLabel">
-				<td class="whitelabel" colspan="2">Deactive app</td>
-			</tr>
-			<tr>
-				 <td align="center" width="50%">
-                    <p><b>REVOKING APP ID</b></p>
-                    <form action="~ . request()->url_for('backoffice/f_app_management.cgi') . qq~" method="post"><font size=2>
-                        <label for="app_id"><b>APP ID: </b></label>
-                        <input type="number" id="app_id" name="app_id"></input>
-                        <input type="submit" name="action" value="BLOCK APP" onclick="return confirm('Are you sure you want to revoke the app?')">
-                    </form>
-                </td>
-			</tr>
-		</tbody>
-	</table>~;
+        <div class="section-title">REVOKING APP ID</div>
+        <form action="~ . request()->url_for('backoffice/f_app_management.cgi') . qq~" method="post">
+            <label for="app_id_revoke"><b>APP ID: </b></label>
+            <input type="number" id="app_id_revoke" name="app_id" />
+            <input type="submit" name="action" value="BLOCK APP" onclick="return confirm('Are you sure you want to revoke the app?')">
+        </form>~;
 }
 
 # activate app
 if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
+    Bar(
+        'Activate app',
+        {
+            container_class     => 'GreenDarkCandy',
+            title_class         => 'GreenLabel',
+            is_content_centered => 1,
+        });
     print qq~
-	<table class="GreenDarkCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
-		<tbody>
-			<tr class="GreenLabel">
-				<td class="whitelabel" colspan="2">Activate app</td>
-			</tr>
-			<tr>
-				 <td align="center" width="50%">
-                    <p><b>Activate APP ID</b></p>
-                    <form action="~ . request()->url_for('backoffice/f_app_management.cgi') . qq~" method="get"><font size=2>
-                        <label for="app_id"><b>APP ID: </b></label>
-                        <input type="number" id="app_id" name="app_id"></input>
-                        <input type="submit" name="action" value="UNBLOCK APP" onclick="return confirm('Are you sure you want to activate the app?')">
-                    </form>
-                </td>
-			</tr>
-		</tbody>
-	</table>~;
+        <div class="section-title">Activate APP ID</div>
+        <form action="~ . request()->url_for('backoffice/f_app_management.cgi') . qq~" method="get">
+            <label for="app_id_activate"><b>APP ID: </b></label>
+            <input type="number" id="app_id_activate" name="app_id" />
+            <input type="submit" name="action" value="UNBLOCK APP" onclick="return confirm('Are you sure you want to activate the app?')">
+        </form>~;
 }
 
 code_exit_BO();
-

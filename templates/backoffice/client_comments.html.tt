@@ -86,7 +86,7 @@
 
 
 [% BLOCK layout %]
-    <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="97%">
+    <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
         <tbody>
            <tr class="Blacklabel">
                 <td class="whitelabel" colspan="2">[% title %]</td>

@@ -73,7 +73,7 @@
 <button type="submit" name="[% item.action %]" value="1">Save</button>
 <button type="submit" name="cancel" value="1">Cancel</button>
 [% ELSE %]
-<button type="submit" name="save" value="1">Submit</button></td>
+<button type="submit" name="save" value="1">Submit</button>
 [% END %]
 
 </form>

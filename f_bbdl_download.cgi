@@ -23,12 +23,11 @@ my $cgi              = CGI->new;
 my $filename         = $cgi->param('filename');
 my $encoded_filename = encode_entities($filename);
 
-Bar("Download a file from BBDL");
+my $title = 'Download a file from BBDL';
 
 #don't allow from devserver, to avoid uploading wrong files
 if (not BOM::Config::on_production()) {
-    print "<font color=red>Sorry, you cannot upload files from a development server. Please use a live server.</font>";
-    code_exit_BO();
+    code_exit_BO('Sorry, you cannot download files from a development server. Please use a live server.', $title);
 }
 
 my $bbdl = Bloomberg::FileDownloader->new();
@@ -56,7 +55,7 @@ if ($sftp->error) {
         copy($temp_dir . '/' . $filename, $temp_dir . '/' . $filename . '.txt');
     } else {
         if ($filename =~ /\.gz/) {    # it's gzipped
-            print "<p>Sorry, Decrytion Error</p>" and code_exit_BO()
+            code_exit_BO('Sorry, Decryption Error', $title)
                 if (not $bbdl->des_decrypt("$temp_dir/$filename", "$temp_dir/$filename.gz"));
             system("gunzip -c $temp_dir/$filename.gz > $temp_dir/$filename.txt");
         } else {
@@ -74,6 +73,7 @@ if ($sftp->error) {
     }
 }
 
+Bar($title);
 print $message;
 
 $sftp->disconnect;

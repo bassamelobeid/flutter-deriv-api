@@ -22,12 +22,12 @@ PrintContentType();
 
 BrokerPresentation('DYNAMIC SETTINGS MANAGEMENT');
 
-my @all_settings = BOM::Config::Runtime->instance->app_config->all_keys();
+my @all_settings     = BOM::Config::Runtime->instance->app_config->all_keys();
+my $settings_list    = [];
+my $group_to_display = request()->param('group');
 
-my $settings_list = [];
 if (request()->param('page') eq 'global') {
-    my $group_to_display = request()->param('group');
-    my $authorisations   = {
+    my $authorisations = {
         shutdown_suspend => ['IT'],
         quant            => ['Quants'],
         it               => ['IT'],
@@ -36,26 +36,28 @@ if (request()->param('page') eq 'global') {
         crypto           => ['IT'],
     };
 
+    unless (exists $authorisations->{$group_to_display}) {
+        code_exit_BO("The group '$group_to_display' not found.");
+    }
+
     if ($authorisations->{$group_to_display} && BOM::Backoffice::Auth0::has_authorisation($authorisations->{$group_to_display})) {
         push @{$settings_list}, @{BOM::DynamicSettings::get_settings_by_group($group_to_display)};
     } else {
-        print "Access restricted.";
-        code_exit_BO();
+        code_exit_BO('Access restricted.');
     }
 }
 
 if (scalar @{$settings_list;} == 0) {
-    print "<b>There is no setting in this Group!</b><br />Go to <a style=\"color:white\" href=\""
+    my $error_message =
+          "<b>There is no setting in this Group!</b><br />Go to <a href=\""
         . request()->url_for('backoffice/f_broker_login.cgi', {})
         . "#dynamic_settings\">Login Page</a> and try again";
-    if (request()->param('group') eq 'others') {
-        print
-            "<br /><br /><b>We keep \"others\" group to show uncategorized settings, the reason that you can't see any settings in this page is beacuse there is no uncategorized setting left.</b>";
+    if ($group_to_display eq 'others') {
+        $error_message .=
+            "<p><b>We keep \"others\" group to show uncategorized settings, the reason that you can't see any settings in this page is because there is no uncategorized setting left.</b></p>";
     }
-    code_exit_BO();
+    code_exit_BO($error_message);
 }
-
-my $submitted = request()->param('submitted');
 
 if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}})) {
     print '<div id="message"><div id="error">' . master_live_server_error() . '</div></div><br />';
@@ -71,7 +73,7 @@ my @send_to_template = ();
 my ($all_settings, $title);
 if (request()->param('page') eq 'global') {
     $all_settings = \@all_settings;
-    my $sub_title = request()->param('group');
+    my $sub_title = $group_to_display;
     $sub_title =~ s/\_/\ /g;
     $title = "GLOBAL DYNAMIC SETTINGS - " . $sub_title;
 }
@@ -80,7 +82,7 @@ push @send_to_template,
     BOM::DynamicSettings::generate_settings_branch({
         settings          => $all_settings,
         settings_in_group => $settings_list,
-        group             => request()->param('group'),
+        group             => $group_to_display,
         title             => $title,
         submitted         => request()->param('page'),
     });
@@ -88,6 +90,13 @@ push @send_to_template,
 BOM::Backoffice::Request::template()->process(
     'backoffice/dynamic_settings.html.tt',
     {
-        'settings' => \@send_to_template,
+        settings     => \@send_to_template,
+        group_select => create_dropdown(
+            name          => 'group',
+            items         => get_dynamic_settings_list(),
+            selected_item => $group_to_display,
+            only_options  => 1,
+        ),
     });
+
 code_exit_BO();

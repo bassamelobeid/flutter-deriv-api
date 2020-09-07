@@ -4,7 +4,7 @@
         <label>Order ID:</label>
         <input type="text" name="order_id" value="[% input.order_id %]" data-lpignore="true" />
         <label>Advert ID:</label>
-        <input type="text" name="advert_id" value="[% input.advert_id %]" data-lpignore="true" />        
+        <input type="text" name="advert_id" value="[% input.advert_id %]" data-lpignore="true" />
         <label>Client Login ID:</label>
         <input type="text" name="loginID" size="15" value="[% input.loginID %]" data-lpignore="true" />
         <label>Order Status:</label>
@@ -28,8 +28,9 @@
     <tr><td>refunded</td><td>Order timed out while in pending status, or CS resolved timed-out order in favour of seller</td><td>Seller</td></tr>
     <tr><td>cancelled</td><td>Order cancelled by buyer while in pending status</td><td>Seller</td></tr>
 </table>
-</br>
-<table>
+
+<br />
+
 [% IF orders.size %]
 <table class="collapsed hover alternate" border="1">
     <tbody><tr>
@@ -37,7 +38,7 @@
         <th>Created by</th>
         <th>Created at</th>
         <th>Advert ID</th>
-        <th>Advertiser</th>        
+        <th>Advertiser</th>
         <th>Expire at</th>
         <th>Type</th>
         <th>Buyer</th>
@@ -66,7 +67,9 @@
             <td>[% order.local_currency %]</td>
         </tr>
     [% END %]
-</tbody></table>
+    </tbody>
+</table>
+
 <table>
 [% ELSE %]
 <hr/>
@@ -88,7 +91,7 @@
 [% END %]
 
 [% BLOCK layout %]
-    <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="97%">
+    <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
         <tbody>
            <tr class="Blacklabel">
                 <td class="whitelabel" colspan="2">[% title %]</td>

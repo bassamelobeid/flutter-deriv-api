@@ -23,17 +23,16 @@ our ($vk_BarIsDoneOnce, $vk_didBOtopPRES,);
 
 # "Header" of the backoffice pages
 sub BrokerPresentation {
-    my ($Title, $title_description, $noDisplayOfTopMenu, $outputtype) = @_;
+    my ($title, $title_description, $is_menu_hidden, $output_type) = @_;
 
-    if ($outputtype =~ /csv/ or request()->param('printable')) {
+    if ($output_type =~ /csv/ or request()->param('printable')) {
         return;
     }
 
     print '<html>';
     print '<head>';
-    print "<title>$Title-$ENV{REMOTE_ADDR}</title>";
+    print "<title>$title-$ENV{REMOTE_ADDR}</title>";
     print '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
-    print '<link rel="SHORTCUT ICON" href="' . request()->url_for('images/common/favicon_1.ico') . '" />';
 
     my $base_dir = Mojo::URL->new(BOM::Config::Runtime->instance->app_config->cgi->backoffice->static_url);
     $base_dir->path('css/');
@@ -45,61 +44,75 @@ sub BrokerPresentation {
     }
 
     print '</head>';
-    print '<div class="EN" id="language_select" style="display:none"><span class="langsel">English</span></div>';
-    print
-        '<body class="BlueTopBack" marginheight="0" marginwidth="0" topmargin="0" bottommargin="0" leftmargin="0" rightmargin="0" style="margin:0px;">';
+    print '<body class="BlueTopBack">';
 
-    my $staff = BOM::Backoffice::Auth0::check_staff() ? BOM::Backoffice::Auth0::check_staff()->{nickname} : '';
-
-    print "
-
-        <script>
-            dataLayer = [{
-                'staff': '$staff'
-          }];
-        </script>
-
-        <!-- Google Tag Manager -->
-        <noscript><iframe src=\"//www.googletagmanager.com/ns.html?id=GTM-N4HNTG\"
-        height=\"0\" width=\"0\" style=\"display:none;visibility:hidden\"></iframe></noscript>
-        <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-        '//www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-        })(window,document,'script','dataLayer','GTM-N4HNTG');</script>
-        <!-- End Google Tag Manager -->
-    ";
-
-    if (not $noDisplayOfTopMenu) {
+    if (not $is_menu_hidden) {
         vk_BOtopPRES();
     }
 
-    if ($Title) {
-        print "<br><center><font class=\"whitetop\"><b>$Title $title_description</b></font></center><br>";
+    if ($title) {
+        print "
+            <div id='main_title'>
+                $title $title_description
+                <a class='scroll-top' title='Scroll to top' href='javascript:;' onclick='smoothScroll()'></a>
+            </div>";
     }
+
     return;
 }
 
-#
-# Make a sub-section
-# Note : this code doesn't close the table it creates
-# If you are re-writing this code, make sure the table opening/closing tags remain the same as they are now
-#
-sub Bar {
-    my ($bartext) = @_;
+=head2 Bar
 
-    $bartext = uc($bartext);
+Prints opening tags of a sub-section.
+
+B<Note:> For historical reasons, this code does not close some of the tags it opens,
+it just implicitly sets a value for C<vk_BarIsDoneOnce> to close the tags in the
+next call by C<BarEnd()> sub. Hence, be careful with the contents you render
+afterwards, as an extra closing tag might break the UI.
+
+Changing this behaviour would need a huge refactoring everywhere. That's why we're
+keeping it as is, for now. Might need the change if we don't plan for a modern
+BackOffice in the near future.
+
+If you are re-writing this code, make sure the opening/closing tags remain
+the same as they are now.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<title> - The panel's title, would change to uppercase for display
+
+=item * C<options> - (optional) A hashref containing following parameters to change the display:
+
+=over 4
+
+=item * C<container_class> - (optional) The CSS class name of the section's container
+
+=item * C<title_class> - (optional) The CSS class name of the section's title
+
+=item * C<is_content_centered> - (optional) A boolean value, set to 1 for aligning contents to center
+
+=back
+
+=back
+
+=cut
+
+sub Bar {
+    my ($title, $options) = @_;
+
+    $title = uc($title // '');
+    my $container_class = $options->{container_class} // 'BlackCandy';
+    my $title_class     = $options->{title_class}     // 'Blacklabel';
+    my $content_align = $options->{is_content_centered} ? 'center' : '';
 
     BarEnd();    #see sub below
 
     print qq~
- <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="97%">
-  <tbody>
-   <tr class="Blacklabel">
-    <td class="whitelabel" colspan="2">$bartext</td>
-   </tr>
-   <tr>
-    <td align="left" style="padding: 10px;">~;
+        <div class="container $container_class">
+            <div class="$title_class whitelabel">$title</div>
+            <div class="contents $content_align">~;
 
     $vk_BarIsDoneOnce = 'yes';
     return;
@@ -107,49 +120,45 @@ sub Bar {
 
 sub BarEnd {
     if (not $vk_BarIsDoneOnce) { return; }
-    print '</td></tr></table>';
+    print '</div></div>';
     return;
 }
 
 sub ServerWarningBar {
-    my $state_key = BOM::Backoffice::CGI::SettingWebsiteStatus::get_redis_keys()->{state};
-    my $reasons   = BOM::Backoffice::CGI::SettingWebsiteStatus::get_messages();
-    my $redis     = BOM::Config::Redis->redis_ws();
-    my $ipmessage = "Your IP: $ENV{'REMOTE_ADDR'}";
-    my $state     = eval { decode_json_utf8($redis->get($state_key) // '{}') };
+    my $location = shift // '';
+
+    my $state_key  = BOM::Backoffice::CGI::SettingWebsiteStatus::get_redis_keys()->{state};
+    my $reasons    = BOM::Backoffice::CGI::SettingWebsiteStatus::get_messages();
+    my $redis      = BOM::Config::Redis->redis_ws();
+    my $ip_message = "Your IP: $ENV{'REMOTE_ADDR'}";
+    my $state      = eval { decode_json_utf8($redis->get($state_key) // '{}') };
     $state->{site_status} //= 'up';
     $state->{message}     //= '';
-
-    #log out
-    print qq~
- <table width=100\% cellpadding="0" cellspacing="0">
- <tr><td>
- </td><td>~;
 
     if (BOM::Config::on_qa()) {
         my $url = request()->url_for('backoffice/login.cgi?backprice=');
         my ($c, $h) = BOM::Backoffice::Cookie::get_cookie('backprice') ? ('YES', $url . '0') : ('NO', $url . '1');
 
-        $ipmessage .= qq{, backprice config: <a href="$h">$c</a>};
+        $ip_message .= ", backprice config: <a href='$h'>$c</a>";
     }
 
-    my $topbarbackground = '#0000BB';
-    my $status_banner    = sprintf('Site status: %s', uc $state->{site_status});
-    $status_banner .= sprintf(', %s', $reasons->{$state->{message}}) if defined $reasons->{$state->{message}};
+    my $status_message = sprintf('Site status: %s', uc $state->{site_status});
+    $status_message .= sprintf(', %s', $reasons->{$state->{message}}) if defined $reasons->{$state->{message}};
+
+    my $scroll_link =
+        $location eq 'bottom'
+        ? "<a class='scroll-top' title='Scroll to top' href='javascript:;' style='margin-left: 25px;' onclick='smoothScroll()'></a>"
+        : '';
 
     print qq~
- <table width="100%" cellpadding="4" cellspacing="0" border="0">
- <tr><td width="50%" bgcolor="$topbarbackground" align="left"><font class="whitetop">
- <b>$ipmessage</b></font>
- </td><td width="50%" bgcolor="$topbarbackground" align="right"><font class="whitetop">
- <b>$status_banner</b></font>
- </td></tr>
- </table>
- </td></tr><tr>
- <td colspan="2" style="background-repeat: repeat-x;" background="~
-        . request()->url_for('images/topborder.gif', undef, undef, {internal_static => 1}) . qq~">
- <img src="~ . request()->url_for('images/blank.gif', undef, undef, {internal_static => 1}) . qq~" height="16" width="1"></td>
- </tr></table>~;
+        <div class="info-bar">
+            <div>$ip_message</div>
+            <div>
+                $status_message
+                $scroll_link
+            </div>
+        </div>~;
+
     return;
 }
 
@@ -159,9 +168,8 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
 {
     my $broker = request()->broker_code;
 
-    my $rand           = '?' . rand(9999);                                                   #to avoid caching on these fast navigation links
-    my $vk_BOurl       = request()->url_for("backoffice/f_broker_login.cgi", {_r => $rand});
-    my $vk_BOmenuWidth = 100;                                                                #width of the left menu (change if some urls doesn't fit)
+    my $rand     = '?' . rand(9999);                                                     # to avoid caching on these fast navigation links
+    my $vk_BOurl = request()->url_for("backoffice/f_broker_login.cgi", {_r => $rand});
 
     print qq~
  <table border="0" width="100%" cellspacing="0" cellpadding="0">
@@ -178,152 +186,113 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
 
     ServerWarningBar();
 
-    my $vk_BOmenuWidth2 = $vk_BOmenuWidth + 55;
     print qq~
+    <div id="top_bar" class="blue-bar"></div>
 	<table border="0" width="100%" cellspacing="0" cellpadding="0">
 	<tr>
-	<td valign="top" height="100%" class="BlueMenuBack">
-		<table border="0" cellpadding="1" cellspacing="0" width="$vk_BOmenuWidth2">
-			<tr>
-				<td valign="top" class="BlueMenuBack" height="100%">
-					<table align="center" border="0" cellpadding="0" cellspacing="0" width="$vk_BOmenuWidth">
-						<tbody>
-							<tr>
-								<td><img src="~ . request()->url_for('images/xpicon1.gif', undef, undef, {internal_static => 1}) . qq~" height="32" width="31"></td>
-								<td valign="bottom"><img src="~
-        . request()->url_for('images/xptitle.gif', undef, undef, {internal_static => 1}) . qq~" height="25" width="110"></td>
-								<td valign="bottom"><img src="~
-        . request()->url_for('images/xpexpand1.gif', undef, undef, {internal_static => 1}) . qq~" height="25" width="25"></td>
-							</tr>
-							<tr>
-								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
-									<a href="~
-        . request()->url_for(
-        'backoffice/f_broker_login.cgi',
-        {
-            _r     => $rand,
-            broker => $broker
-        })
-        . qq~" class="Blue" style="margin-left: 10px;">Login Page</a>
-								</td>
-							</tr>
-							<tr>
-								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
-									<a href="~
-        . request()->url_for(
-        'backoffice/f_bo_enquiry.cgi',
-        {
-            _r     => $rand,
-            broker => $broker
-        })
-        . qq~" class="Blue" style="margin-left: 10px;">Transaction Reports</a>
-								</td>
-							</tr>
-							<tr>
-								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
-									<a href="~
-        . request()->url_for(
-        'backoffice/f_accountingreports.cgi',
-        {
-            _r     => $rand,
-            broker => $broker
-        })
-        . qq~" class="Blue" style="margin-left: 10px;">Accounting Reports</a>
-								</td>
-							</tr>
-							<tr>
-								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
-									<a href="~
-        . request()->url_for(
-        'backoffice/f_manager.cgi',
-        {
-            _r     => $rand,
-            broker => $broker
-        })
-        . qq~" class="Blue" style="margin-left: 10px;">Deposits & Withdrawals</a>
-								</td>
-							</tr>
-							<tr>
-								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
-									<a href="~
-        . request()->url_for(
-        'backoffice/f_clientloginid.cgi',
-        {
-            _r     => $rand,
-            broker => $broker
-        })
-        . qq~" class="Blue" style="margin-left: 10px;">Client Management</a>
-								</td>
-							</tr>
-							<tr>
-								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
-									<a href="~
-        . request()->url_for(
-        'backoffice/login.cgi',
-        {
-            _r       => $rand,
-            whattodo => 'logout'
-        })
-        . qq~" class="Blue" style="margin-left: 10px;">Log Out</a>
-								</td>
-							</tr>
-							<tr>
-								<td colspan="3" class="StyleNameV" style="padding-left: 5px;" bgcolor="#6375d6" width="$vk_BOmenuWidth">MISC. TOOLS</td>
-							</tr>
-							<tr>
-								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
-									<a href="~
-        . request()->url_for(
-        'backoffice/f_investigative.cgi',
-        {
-            _r     => $rand,
-            broker => $broker
-        })
-        . qq~" class="Blue" style="margin-left: 10px;">Investigative Tools</a>
-								</td>
-							</tr>
+	<td valign="top" height="100%" class="main-menu-back">
+		<table border="0" cellpadding="0" cellspacing="0" class="main-menu">
+            <tbody>
+                <tr>
+                    <td>
+                        <img src="~ . request()->url_for('images/xpicon1.gif', undef, undef, {internal_static => 1}) . qq~" height="32" width="31">
+                    </td>
+                    <td valign="bottom">
+                        <img src="~ . request()->url_for('images/xptitle.gif', undef, undef, {internal_static => 1}) . qq~" height="25" width="110">
+                    </td>
+                    <td valign="bottom">
+                        <img src="~ . request()->url_for('images/xpexpand1.gif', undef, undef, {internal_static => 1}) . qq~" height="25" width="25">
+                    </td>
+                </tr>~;
 
-							<tr>
-								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
-									<a href="~
-        . request()->url_for(
-        'backoffice/f_client_anonymization.cgi',
+    my @menu_items = (
+        {text => 'Main Sections'},
         {
-            _r     => $rand,
-            broker => $broker
-        })
-        . qq~" class="Blue" style="margin-left: 10px;">Client Anonymization</a>
-								</td>
-							</tr>
-							
-							<tr>
-								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
-									<a href="~
-        . request()->url_for(
-        'backoffice/crypto_admin.cgi',
+            link => 'f_broker_login',
+            text => 'Login Page'
+        },
         {
-            _r => $rand,
-        })
-        . qq~" class="Blue" style="margin-left: 10px;">Crypto Tools</a>
-								</td>
-							</tr>
-      </tbody>
-     </table>
+            link => 'f_bo_enquiry',
+            text => 'Transaction Reports'
+        },
+        {
+            link => 'f_accountingreports',
+            text => 'Accounting Reports'
+        },
+        {
+            link => 'f_manager',
+            text => 'Deposits & Withdrawals'
+        },
+        {
+            link => 'f_clientloginid',
+            text => 'Client Management'
+        },
+        {
+            link    => 'login',
+            text    => 'Log Out',
+            options => {whattodo => 'logout'}
+        },
+        {text => 'Misc. Tools'},
+        {
+            link => 'f_investigative',
+            text => 'Investigative Tools'
+        },
+        {
+            link => 'f_client_anonymization',
+            text => 'Client Anonymization'
+        },
+        {
+            link => 'crypto_admin',
+            text => 'Crypto Tools'
+        },
+    );
+    my $current_script = request()->http_handler->script_name;
+
+    for my $item (@menu_items) {
+        if ($item->{link}) {
+            my $current_class = $current_script =~ /^\/$item->{link}\.cgi$/ ? 'class="current"' : '';
+            my $url           = request()->url_for(
+                "backoffice/$item->{link}.cgi",
+                {
+                    _r     => $rand,
+                    broker => $broker,
+                    ($item->{options} // {})->%*,
+                });
+            print qq~
+            <tr>
+                <td colspan="3">
+                    <a href="$url" $current_class>$item->{text}</a>
+                </td>
+            </tr>~;
+        } else {
+            print qq~
+            <tr>
+                <td colspan="3" class="menu-section-title">$item->{text}</td>
+            </tr>~;
+        }
+    }
+
+    print qq~
+            </tbody>
+        </table>
     </td>
-   </tr>
-  </table>
- </td>
- <td width="100%" valign="top" align="center">~;
+    <td width="100%" valign="top" align="center">
+        <div style="margin: 10px;">~;
+
     $vk_didBOtopPRES = 'yes';
+
     return;
 }
 
 sub vk_BObottomPRES {
     if (not $vk_didBOtopPRES) { return; }
 
-    print "<br><br></td></tr></table>";    #Eventually can be more different stuff here
+    print '</div></td></tr></table>';    # Eventually can be more different stuff here
 
-    ServerWarningBar();
+    ServerWarningBar('bottom');
+
+    print '</body></html>';
+
     return;
 }
 
@@ -333,8 +302,17 @@ sub vk_BObottomPRES {
 # please refer to perldoc of CGI::Compile and Try::Tiny::Except
 
 sub code_exit_BO {
-    my ($message) = @_;
-    print $message if $message;
+    my ($message, $title, $is_success) = @_;
+    if ($message) {
+        Bar(
+            $title,
+            {
+                container_class => $is_success ? 'GreenDarkCandy' : 'RedCandy',
+                title_class     => $is_success ? 'GreenLabel'     : 'RedLabel',
+                is_content_centered => 1,
+            });
+        print $message;
+    }
     if ($vk_BarIsDoneOnce) { BarEnd(); }             #backoffice closing bar output (must be before vk_BObottomPRES)
     if ($vk_didBOtopPRES)  { vk_BObottomPRES(); }    #backoffice closing presentation
     no strict "refs";                                ## no critic (ProhibitNoStrict, ProhibitProlongedStrictureOverride)
@@ -343,4 +321,5 @@ sub code_exit_BO {
     BOM::Backoffice::Request::request_completed();
     exit 0;
 }
+
 1;

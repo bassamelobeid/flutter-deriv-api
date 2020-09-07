@@ -43,15 +43,12 @@ my $can_delete;
 # Check file name
 my $ok = 0;
 my $overridefilename;
-my $file_broker_code;
-my @removed_lines = ();
 
 if ($filen eq 'editvol')                                                         { $ok = 1; }
 if ($filen =~ m!^vol/master[a-zA-Z0-9]{2,20}(?:-[a-zA-Z0-9]{2,20})?\.interest$!) { $ok = 1; }
 
 if ($ok == 0) {
-    print "Wrong file<P>";
-    code_exit_BO();
+    code_exit_BO('Wrong file.');
 }
 
 master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}));
@@ -66,7 +63,6 @@ my @lines = split(/\n/, $text);
 
 if ($filen eq 'editvol') {
     my $underlying = create_underlying($vol_update_symbol);
-    my $market     = $underlying->market->name;
     my $model =
         ($underlying->volatility_surface_type eq 'moneyness')
         ? 'Quant::Framework::VolSurface::Moneyness'

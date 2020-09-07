@@ -44,14 +44,14 @@
     Pending Client Payouts : <strong> [% pending_withdrawal_amount %] [% currency %] </strong>
     <br><br>
 <!-- Tools -->
-        <button type="submit" name="view_action" value="run">Run</button>
-        <select name="command">
+    <button type="submit" name="view_action" value="run">Run</button>
+    <select name="command">
         <option value="getbalance" [% IF cmd == "getbalance" %] selected="selected" [% END %]>Get Balance</option>
         <option value="getwallet" [% IF cmd == "getwallet" %] selected="selected" [% END %]>Get Wallet Balance</option>
         <option value="getinfo" [% IF cmd == "getinfo" %] selected="selected" [% END %]>Get Info</option>
-        </select>
-    <br>
+    </select>
 </form>
+<br>
 
 <style type="text/css">
     #ddl_crypto_currencies option {

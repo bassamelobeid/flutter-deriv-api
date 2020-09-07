@@ -22,14 +22,13 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Myaffiliate Payment');
 
-Bar('Myaffiliate Payment Info');
+my $title = 'Myaffiliate Payment Info';
 
 my $from = eval { Date::Utility->new(request()->param('from')) };
 my $to   = eval { Date::Utility->new(request()->param('to')) };
 
 unless (request()->param('from') and request()->param('to') and $from and $to) {
-    print "Invalid FROM / TO date";
-    code_exit_BO();
+    code_exit_BO('Invalid FROM / TO date');
 }
 
 my $expiry  = 3600;                    # 1 hour
@@ -38,14 +37,14 @@ my $tmp_dir = get_tmp_path_or_die();
 my $lf = '/var/run/bom-daemon/fetch_myaffiliate_payment.lock';
 
 sysopen my $lock, $lf, O_RDWR | O_CREAT or do {
-    print "Cannot open $lf: $!\n";
-    code_exit_BO();
+    code_exit_BO("Cannot open $lf: $!", $title);
 };
 
 flock $lock, LOCK_EX | LOCK_NB or do {
-    print "Cannot lock $lf. There is probably another process still doing pretty much the same thing.\n";
-    code_exit_BO();
+    code_exit_BO("Cannot lock $lf. There is probably another process still doing pretty much the same thing.", $title);
 };
+
+Bar($title);
 
 try {
     my $zip = path(

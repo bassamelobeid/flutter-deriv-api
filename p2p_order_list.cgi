@@ -55,3 +55,4 @@ BOM::Backoffice::Request::template()->process(
         orders => $orders,
     });
 
+code_exit_BO();

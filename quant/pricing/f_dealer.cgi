@@ -28,8 +28,8 @@ use BOM::Backoffice::QuantsAuditLog;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
-
 BrokerPresentation('DEALER/LARGE BETS');
+
 my $broker = request()->broker_code;
 my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 my $now    = Date::Utility->new;
@@ -51,27 +51,25 @@ my $encoded_broker   = encode_entities($broker);
 # Make transaction on client account
 if (request()->param('whattodo') eq 'closeatzero') {
 
-    if ($currency !~ /^[a-zA-Z0-9]{2,20}$/) { print "Error with curr " . $encoded_currency;        code_exit_BO(); }
-    if ($price !~ /^\d*\.?\d*$/)            { print "Error with price " . encode_entities($price); code_exit_BO(); }
-    if ($price eq "")                       { print "Error : no price entered";                    code_exit_BO(); }
-    if ($loginID !~ /^$broker\d+$/)         { print "Error with loginid " . $encoded_loginID;      code_exit_BO(); }
-    if ($qty !~ /^\d+$/ or $qty > 50)       { print "Error with qty " . encode_entities($qty);     code_exit_BO(); }
+    if ($currency !~ /^[a-zA-Z0-9]{2,20}$/) { code_exit_BO("Error with curr " . $encoded_currency); }
+    if ($price !~ /^\d*\.?\d*$/)            { code_exit_BO("Error with price " . encode_entities($price)); }
+    if ($price eq "")                       { code_exit_BO('Error : no price entered'); }
+    if ($loginID !~ /^$broker\d+$/)         { code_exit_BO("Error with loginid " . $encoded_loginID); }
+    if ($qty !~ /^\d+$/ or $qty > 50)       { code_exit_BO("Error with qty " . encode_entities($qty)); }
 
     my $client;
     try {
         $client = BOM::User::Client::get_instance({loginid => $loginID});
     } catch {
-        print "Cannot get client instance with loginid " . $encoded_loginID;
-        code_exit_BO();
+        code_exit_BO("Cannot get client instance with loginid $encoded_loginID");
     }
 
     my $ttype = 'CREDIT';
 
     if (request()->param('buysell') ne 'SELL') {
-        print "You can only sell the contract. You had choosen " . encode_entities(request()->param('buysell'));
-        code_exit_BO();
+        code_exit_BO('You can only sell the contract. You had choosen ' . encode_entities(request()->param('buysell')));
     }
-    if ($price != 0) { print "You can only close position at zero price"; code_exit_BO(); }
+    if ($price != 0) { code_exit_BO('You can only close position at zero price.'); }
 
     # Further error checks
     my $fmb_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
@@ -171,4 +169,3 @@ print qq~
 ~;
 
 code_exit_BO();
-

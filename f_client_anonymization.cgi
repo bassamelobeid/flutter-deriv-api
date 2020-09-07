@@ -69,7 +69,7 @@ print "<form id='clientAnonymization' action='"
     . "<br><br><input type='checkbox' name='verification' id='chk_verify' value='true'> <label for='chk_verify'>I understand this action is irreversible ("
     . encode_entities($clerk)
     . ")</label><br><br><input type='submit' name='transtype' value='Anonymize client'/>"
-    . "<br><br><input type='submit' name='transtype' value='Delete customerio record'/>"
+    . " <input type='submit' name='transtype' value='Delete customerio record'/>"
     . "</form>";
 
 if ($transaction_type eq 'Anonymize client') {
@@ -119,7 +119,7 @@ if ($transaction_type eq 'Anonymize client') {
             BOM::User::AuditLog::log($msg, '', $clerk);
 
             $msg = 'Client anonymization ' . ($success ? 'was started successfully.' : 'failed to start.');
-            code_exit_BO(_get_display_message($msg));
+            code_exit_BO(_get_display_message($msg), undef, $success);
         }
         # Start anonymization for a list of client
         if ($bulk_upload) {

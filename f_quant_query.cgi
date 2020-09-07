@@ -21,14 +21,12 @@ BrokerPresentation('Quant Query', '', '');
 my $staff = BOM::Backoffice::Auth0::get_staff();
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
-    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
-    code_exit_BO();
+    code_exit_BO("Error : wrong loginID ($encoded_loginID).");
 }
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginID}) };
 if (not $client) {
-    print "Error : wrong loginID ($encoded_loginID) could not get client instance";
-    code_exit_BO();
+    code_exit_BO("Error : wrong loginID ($encoded_loginID) could not get client instance.");
 }
 
 my $section_sep = '---';
@@ -108,6 +106,4 @@ if (my $il = request()->param('investigate_list')) {
 }
 # Not supposed to make it here.
 
-print "Something went wrong, try again.";
-
-code_exit_BO();
+code_exit_BO('Something went wrong, try again.');

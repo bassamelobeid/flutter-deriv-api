@@ -62,10 +62,10 @@ BOM::User::AuditLog::log($message, '', $clerk);
 # Display
 
 print '<p>'
-    . 'DCC: <br>'
-    . '<textarea rows="5" cols="100" readonly="readonly">'
+    . 'DCC: (single click to copy)<br>'
+    . '<div class="dcc-code copy-on-click">'
     . encode_entities($code)
-    . '</textarea><br>'
+    . '</div><script>initCopyText()</script><br>'
     . 'This code is valid for 1 hour from now: UTC '
     . Date::Utility->new->datetime_ddmmmyy_hhmmss . '<br>'
     . 'Creator: '

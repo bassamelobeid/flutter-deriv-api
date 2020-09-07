@@ -13,24 +13,19 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("Bulk AML Risk Classification");
 
-my $broker = request()->broker_code;
-my $clerk  = BOM::Backoffice::Auth0::get_staffname();
-
 my $loginids                = uc(request()->param('risk_loginids') // '');
 my $selected_aml_risk_level = request()->param('selected_aml_risk_level') // '';
 
-Bar("Bulk Aml Risk Classification");
-
 # check invalid action
 if (not any { $selected_aml_risk_level eq $_->{value} } get_aml_risk_classicications()) {
-    print "<br /><font color=red><b>ERROR : Aml risk classification is not specified.</b></font><br /><br />";
-    code_exit_BO();
+    code_exit_BO('ERROR : AML risk classification is not specified.');
 }
 
 unless ($loginids) {
-    print "<br /><font color=red><b>ERROR : No loginid is specified.</b></font><br /><br />";
-    code_exit_BO();
+    code_exit_BO('ERROR : No loginid is specified.');
 }
+
+Bar("Bulk AML Risk Classification");
 
 my $error_msg = '';
 my @processed_ids;

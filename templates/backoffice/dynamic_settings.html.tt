@@ -1,17 +1,37 @@
 <!DOCTYPE html>
 <style>
-    #message div {
+    #message {
         background-color:white;
-        width: 40%;
-        font-weight: bold;
         padding: 10px;
         word-break: break-word;
+        line-height: 1.5em;
     }
-    #saved {
+    #message > div {
+        margin: 5px auto;
+    }
+    .status {
+        text-align: center;
+        font-size: 13px;
+    }
+    .key-name, .value {
+        font-family: monospace;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    .key-name {
+        color: darkblue;
+        white-space: nowrap;
+    }
+    .saved, .value {
         color:green;
-        }
-    #error {
+        font-weight: bold;
+    }
+    .error {
         color: red;
+        font-weight: bold;
+    }
+    #settings_summary th {
+        white-space: nowrap;
     }
 
     .settings_form td div span { font-style: italic }
@@ -104,13 +124,20 @@
 
     .submit_container {
         text-align: center;
-        margin-top: 10px;
     }
     input[type="submit"] {
         text-transform: uppercase;
     }
     input[disabled] {
         background: #eee;
+    }
+    .filter {
+        position: absolute;
+        left: 15px;
+    }
+    .switch-group {
+        position: absolute;
+        right: 15px;
     }
 </style>
 
@@ -132,6 +159,22 @@
         \$(this).next().toggle();
         \$(this).children('a').children('span').toggle();
     });
+
+    function switchGroup(group) {
+        var search_params = new URLSearchParams(window.location.search);
+        search_params.set('group', group);
+        window.location.search = search_params.toString();
+    }
+
+    function filterList(name) {
+        const ids = (name || '').trim().replace(/\s+/, '|');
+        let reg;
+        try { reg = new RegExp(`(\${ids})`, 'i'); } catch { return }
+        \$('li.leaf').each(function() {
+            const is_match = ids ? reg.test(\$(this).find('label').attr('for')) : true;
+            \$(this)[is_match ? 'show' : 'hide']();
+        });
+    }
 </script>
 
 [% BLOCK leaf %]
@@ -165,7 +208,7 @@
 [% END %]
 
 [% BLOCK branch %]
-    <fieldset [% IF NOT config.key %] style="border: 0px" [% END %]>
+    <fieldset [% IF NOT config.key %] style="border: 0; margin-bottom: 0;" [% END %]>
         [% IF config.key %]
             <legend>
                 <a href=""><span class="close">&#10145;</span><span>&#11015;</span> [% config.key %]</a>
@@ -184,6 +227,16 @@
 [% END %]
 
 [% BLOCK submit_button %]
+    <div class="filter">
+        <b>Filter (regex): </b>
+        <input type="text" autocomplete="off" oninput="filterList(this.value)" data-lpignore="true" />
+    </div>
+    <div class="switch-group">
+        <b>Switch to: </b>
+        <select class="switch_group" name="group" onchange="switchGroup(this.value)">
+            [% group_select | none %]
+        </select>
+    </div>
     <div class="submit_container">
         <input type="submit" value="UPDATE [% s.title %]">
     </div>
@@ -191,13 +244,13 @@
 
 [% BLOCK settings_form %]
     [% FOREACH s IN settings %]
-        <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="97%">
+        <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
             <tbody>
                 <tr class="Blacklabel">
                     <td class="whitelabel" colspan="2">[% s.title %]</td>
                 </tr>
                 <tr>
-                    <td align="left" style="padding-left: 10px;">
+                    <td align="left" style="padding: 10px; position: relative;">
                         <form method="POST" id="global" action="?page=[% s.submitted %]&group=[% s.group %]">
                             <input type="hidden" name="submitted" value="[% s.submitted %]">
                             <input type="hidden" name="page" value="[% s.submitted %]">

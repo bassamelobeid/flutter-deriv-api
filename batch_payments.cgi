@@ -31,8 +31,7 @@ PrintContentType();
 BrokerPresentation('Batch Credit/Debit to Clients Accounts');
 
 if (BOM::Config::Runtime->instance->app_config->system->suspend->payments) {
-    print "ERROR: Payments are suspended";
-    code_exit_BO();
+    code_exit_BO('ERROR: Payments are suspended.');
 }
 
 my $cgi               = CGI->new;

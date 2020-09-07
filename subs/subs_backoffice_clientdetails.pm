@@ -549,7 +549,7 @@ sub build_client_warning_message {
 
     # build the table
     my $output =
-          '<br/><table border="1" class="collapsed hover alternate"><thead>' . '<tr>'
+          '<table border="1" class="collapsed hover alternate"><thead><tr>'
         . '<th>STATUS</th>'
         . '<th>REASON/INFO</th>'
         . '<th>STAFF</th>'
@@ -608,7 +608,7 @@ sub build_client_warning_message {
             . '</b></td>'
             . '<td colspan="4">&nbsp;</td>' . '</tr>';
     }
-    $output .= '</tbody></table><br>';
+    $output .= '</tbody></table>';
 
     $output .= qq~
     <script type="text/javascript" language="javascript">
@@ -1235,7 +1235,8 @@ sub get_client_details {
         code_exit_BO(
             qq[<p>ERROR: $message </p>
             <form action="$self_post" method="get">
-            Try Again: <input type="text" name="loginID" size="15" value="$encoded_loginid" data-lpignore="true" />
+                Try Again: <input type="text" name="loginID" size="15" value="$encoded_loginid" data-lpignore="true" />
+                <input type="submit" value="Search" />
             </form>]
         );
     }
@@ -1671,6 +1672,60 @@ sub get_limit_expiration_date {
         });
     return undef if !defined $latest_modified_date;
     return Date::Utility->new($latest_modified_date)->plus_time_interval(($added_day // 0) . 'd')->date;
+}
+
+=head2 get_dynamic_settings_list
+
+Returns a hashref containing the list of Dynamic Settings.
+
+=cut
+
+sub get_dynamic_settings_list {
+    return +{
+        shutdown_suspend => 'Shutdown/Suspend',
+        quant            => 'Quant',
+        it               => 'IT',
+        others           => 'Others',
+        payments         => 'Payments',
+        crypto           => 'Cryptocurrency',
+    };
+}
+
+=head2 create_dropdown
+
+Creates a dropdown (HTML C<select>) using the given items.
+
+Takes a hash containing the list of following arguments:
+
+=over 4
+
+=item * C<name> - Name of dropdown
+
+=item * C<items> - A hashref or arrayref containing the list of items. In case of hashref its structure is { value => text }, and when an arrayref the value and text would be the same
+
+=item * C<selected_item> - An optional string represents the initially selected item
+
+=item * C<only_options> - A boolean value, if 1 returns only the C<option> tags, otherwise wrapped in C<select>
+
+=back
+
+Returns a string containing the result HTML tags.
+
+=cut
+
+sub create_dropdown {
+    my (%args) = @_;
+
+    my $selected = $args{selected_item} // '';
+
+    my %items = ref $args{items} eq 'HASH' ? $args{items}->%* : map { $_ => $_ } $args{items}->@*;
+
+    my $options = join '', map { "<option value='$_'@{[$_ eq $selected ? ' selected=\"selected\"' : '']}>@{[$items{$_}]}</option>" }
+        sort { $items{$a} cmp $items{$b} } keys %items;
+
+    return $options if $args{only_options};
+
+    return "<select name='$args{name}'>$options</select>";
 }
 
 1;

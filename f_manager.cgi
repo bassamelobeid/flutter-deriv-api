@@ -13,16 +13,18 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('BACKOFFICE ACCOUNTS');
+
 my $broker           = request()->broker_code;
 my $encoded_broker   = encode_entities($broker);
 my $clerk            = BOM::Backoffice::Auth0::get_staffname();
 my $currency_options = get_currency_options();
 
 if (length($broker) < 2) {
-    print
-        "We cannot process your request because it would seem that your browser is not configured to accept cookies.  Please check that the 'enable cookies' function is set if your browser, then please try again.";
-    code_exit_BO();
+    code_exit_BO(
+        "We cannot process your request because it would seem that your browser is not configured to accept cookies. Please check that the 'enable cookies' function is set if your browser, then please try again."
+    );
 }
+
 my $today = Date::Utility->new->date_ddmmmyy;
 
 Bar("QUICK CHECK OF A CLIENT ACCOUNT");

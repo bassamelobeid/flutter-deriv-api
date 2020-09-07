@@ -41,14 +41,12 @@ my $broker         = request()->broker_code;
 my $encoded_broker = encode_entities($broker);
 
 if ($loginID !~ /^$broker/) {
-    print "Error : wrong loginID $encoded_loginID";
-    code_exit_BO();
+    code_exit_BO("Error : wrong loginID $encoded_loginID");
 }
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginID, db_operation => 'replica'}) };
 if (not $client) {
-    print "<B><font color=red>ERROR : No such client $encoded_loginID.<P>";
-    code_exit_BO();
+    code_exit_BO('ERROR : No such client $encoded_loginID.');
 }
 
 my $client_email = $client->email;

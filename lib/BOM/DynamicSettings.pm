@@ -54,7 +54,7 @@ sub save_settings {
         my $submitted_revision = $settings->{'revision'};
         if ($setting_revision ne $submitted_revision) {
             $message .=
-                  '<div id="error">FAILED to save global'
+                  '<div class="error">FAILED to save global'
                 . '<br />Setting has been changed after you loaded dynamic settings page<br />'
                 . 'Old Revision '
                 . encode_entities($setting_revision) . '=='
@@ -67,6 +67,10 @@ sub save_settings {
 
             my $has_errors    = 0;
             my $values_to_set = {};
+
+            $message .= qq~
+                <table id="settings_summary" class="collapsed hover" border="1">
+                    <tr><th>Validation</th><th>Key Name</th><th>New Value</th><th>Remark</th></tr>~;
 
             SAVESETTING:
             foreach my $s (@settings) {
@@ -86,19 +90,26 @@ sub save_settings {
                         $extra_validation->($new_value, $old_value, $s)     if $extra_validation;
                         send_email_notification($new_value, $old_value, $s) if ($s =~ /quants/ and ($s =~ /suspend/ or $s =~ /disabled/));
                         $values_to_set->{$s} = $new_value;
-                        $message .= join('', '<div id="saved">Set ', encode_entities($s), ' to ', encode_entities($display_value), '</div>');
-
+                        $message .= join('',
+                            '<tr class="saved"><td class="status">&#10004;</td><td class="key-name">',
+                            encode_entities($s),
+                            '</td><td class="value">',
+                            encode_entities($display_value),
+                            '</td><td>-</td></tr>');
                     }
                 } catch {
                     $message .= join('',
-                        '<div id="error">Invalid value, could not set ',
-                        encode_entities($s), ' to ', $settings->{$s}, ' because ', encode_entities($@), '</div>');
+                        '<tr class="error"><td class="status">&#10005;</td><td class="key-name">',
+                        encode_entities($s), '</td><td class="value">',
+                        $settings->{$s},     '</td><td>Invalid value, could not set because <b>',
+                        encode_entities($@), '</b></td></tr>');
                     $has_errors = 1;
                 }
             }
+            $message .= '</table>';
 
             if ($has_errors) {
-                $message .= '<div id="error">NOT saving global settings due to data problems.</div>';
+                $message .= '<div class="error">NOT saving global settings due to data problems.</div>';
             } else {
                 try {
                     my $log_content = "";
@@ -113,13 +124,13 @@ sub save_settings {
                     my $staff = BOM::Backoffice::Auth0::get_staffname();
                     BOM::Backoffice::QuantsAuditLog::log($staff, "updatedynamicsettingpage", $log_content);
                     $app_config->set($values_to_set);
-                    $message .= '<div id="saved">Saved global settings to environment.</div>';
+                    $message .= '<div class="saved">Saved global settings to environment.</div>';
                 } catch {
-                    $message .= "<div id=\"error\">Could not save global settings to environment: $@</div>";
+                    $message .= "<div class='error'>Could not save global settings to environment: $@</div>";
                 }
             }
         } else {
-            $message .= "<div id=\"error\">Invalid 'submitted' value " . encode_entities($submitted) . "</div>";
+            $message .= "<div class='error'>Invalid 'submitted' value <span class='value'>" . encode_entities($submitted) . "</span></div>";
         }
 
         print '<div id="message">' . $message . '</div>';

@@ -16,19 +16,18 @@ use BOM::User::Client;
 
 my $clerk = BOM::Backoffice::Auth0::get_staffname();
 
-Bar("Make dual control code");
+my $title = 'Make dual control code';
 
 my $now   = Date::Utility->new;
 my $input = request()->params;
+
 unless ($input->{clientloginid}) {
-    print "Please provide client loginid";
-    code_exit_BO();
+    code_exit_BO('Please provide client loginid.', $title);
 }
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => uc($input->{'clientloginid'}), db_operation => 'replica'}) };
 if (not $client) {
-    print "ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist! Perhaps you made a typo?";
-    code_exit_BO();
+    code_exit_BO("ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist! Perhaps you made a typo?", $title);
 }
 my $client_email = $client->email;
 
@@ -36,16 +35,16 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
     $input->{'reminder'} = defang($input->{'reminder'});
 
     if (length $input->{'reminder'} < 4) {
-        print "ERROR: your comment/reminder field is too short! (need 4 or more chars)";
-        code_exit_BO();
+        code_exit_BO('ERROR: your comment/reminder field is too short! (need 4 or more chars).', $title);
     }
 
     unless ($input->{clientemail}) {
-        print "Please provide email";
-        code_exit_BO();
+        code_exit_BO('Please provide email.', $title);
     }
     $client_email = lc $input->{clientemail};
 }
+
+Bar($title);
 
 if ($input->{'transtype'} =~ /^UPDATECLIENT|Edit affiliates token/) {
     my $code = BOM::DualControl->new({
@@ -65,10 +64,10 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT|Edit affiliates token/) {
     BOM::User::AuditLog::log($message, '', $clerk);
 
     print '<p>'
-        . 'DCC: <br>'
-        . '<textarea rows="5" cols="100" readonly="readonly">'
+        . 'DCC: (single click to copy)<br>'
+        . '<div class="dcc-code copy-on-click">'
         . encode_entities($code)
-        . '</textarea><br>'
+        . '</div><script>initCopyText()</script><br>'
         . 'This code is valid for 1 hour from now: UTC '
         . Date::Utility->new->datetime_ddmmmyy_hhmmss . '<br>'
         . 'Creator: '

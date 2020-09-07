@@ -20,7 +20,7 @@
     <tr>
         [% FOR t IN ['deposits', 'withdrawals'] %]
         <td>
-            <table class="sortable">
+            <table class="sortable collapsed hover alternate" border="1">
                 <tr>
                     <th style="border-bottom: 1px solid #888888;">[% t %] [% currency %]</th>
                     <th style="border-bottom: 1px solid #888888;"><b>TOTAL:</b> [% summary.$t.total %]</th>

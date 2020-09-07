@@ -135,11 +135,7 @@
                     [% END %]
                     [% IF prioritize and prioritize.trx_id == trx.id %]
                         [% prioritize.result | none %]
-                        <script>
-                            \$([document.documentElement, document.body]).animate({
-                                scrollTop: \$('#trx_[% trx.id %]').offset().top,
-                            }, 700);
-                        </script>
+                        <script>smoothScroll('#trx_[% trx.id %]', 700);</script>
                     [% END %]
                 </td>
             </tr>

@@ -23,8 +23,7 @@ my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 if ($broker eq 'FOG') {
     $broker = request()->broker_code;
     if ($broker eq 'FOG') {
-        print "NOT RELEVANT FOR BROKER CODE FOG";
-        code_exit_BO();
+        code_exit_BO('NOT RELEVANT FOR BROKER CODE FOG');
     }
 }
 

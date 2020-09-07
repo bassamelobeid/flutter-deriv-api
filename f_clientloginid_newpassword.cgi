@@ -20,18 +20,15 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
 my $loginID = encode_entities(request()->param('show'));
-BrokerPresentation('ISSUE NEW PASSWORD TO ' . $loginID);
 
 # Issue new password to client
 if (not $loginID) {
-    print 'Invalid loginID: please set loginID';
-    code_exit_BO();
+    code_exit_BO('Invalid loginID: please set loginID');
 }
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => uc $loginID, db_operation => 'replica'}) };
 if (not $client) {
-    print "[f_clientloginid_newpassword cgi] bad client $loginID";
-    code_exit_BO();
+    code_exit_BO("[f_clientloginid_newpassword cgi] bad client $loginID");
 }
 
 my $email            = $client->email;
@@ -39,8 +36,7 @@ my $client_name      = $client->salutation . ' ' . $client->first_name . ' ' . $
 my $has_social_login = $client->user->{has_social_signup};
 
 if (not $email) {
-    print 'Invalid account: email address not set';
-    code_exit_BO();
+    code_exit_BO('Invalid account: email address not set');
 }
 
 my $token = BOM::Platform::Token->new({

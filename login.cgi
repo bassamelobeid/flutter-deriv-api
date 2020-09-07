@@ -25,7 +25,6 @@ if (not $ENV{'HTTP_USER_AGENT'} =~ /Chrome\/(\d+\.\d+\.\d+)\./ or $1 lt '55.0.28
 }
 
 my $try_to_login;
-my $passwd = request()->param('pass');
 
 if (request()->param('sig_response')) {
     my $email = Auth::DuoWeb::verify_response(

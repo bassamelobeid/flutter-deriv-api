@@ -53,7 +53,6 @@ my $permissions = {
     'c_listclientlimits.cgi'          => ['CS'],
     'client_email.cgi'                => ['CS'],
     'client_impersonate.cgi'          => ['CS'],
-    'easy_search.cgi'                 => ['CS'],
     'f_bo_enquiry.cgi'                => ['CS'],
     'f_clientloginid.cgi'             => ['CS'],
     'f_clientloginid_edit.cgi'        => ['CS'],

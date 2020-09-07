@@ -30,7 +30,8 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("Client's Email Details");
-Bar("View / Edit Client's Email");
+
+my $title = "View / Edit Client's Email";
 
 my $clerk = BOM::Backoffice::Auth0::get_staffname();
 my $now   = Date::Utility->new;
@@ -45,16 +46,16 @@ if ($input{new_email}) {
     $new_email         = trim(lc defang($input{new_email}));
     $encoded_new_email = encode_entities($new_email);
     if (not Email::Valid->address($new_email)) {
-        print "invalid email format [$encoded_new_email]";
-        code_exit_BO();
+        code_exit_BO("invalid email format [$encoded_new_email]", $title);
     }
 }
 
 my $user = BOM::User->new(email => $email);
 if (not $user) {
-    print "<p>ERROR: Clients with email <b>$encoded_email</b> not found.</p>";
-    code_exit_BO();
+    code_exit_BO("ERROR: Clients with email <b>$encoded_email</b> not found.", $title);
 }
+
+Bar($title);
 
 my @mt_logins_ids = $user->get_mt5_loginids;
 my @bom_login_ids = $user->bom_loginids();

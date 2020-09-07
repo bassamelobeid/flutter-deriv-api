@@ -98,7 +98,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     <tr>
         <td class="label">Email</td>
-        <td>: <b>[% client.email %]</b> (To edit client's email, <a href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) | none %]">click here</a>) </td>
+        <td>: <b class="copy-on-click">[% client.email %]</b> (To edit client's email, <a href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) | none %]">click here</a>) </td>
     </tr>
     <tr>
         <td class="label">Social Signup</td>
@@ -390,15 +390,15 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td class="label"></td>
         <td><button name="run_onfido_check" type="submit" value="1">Run Onfido Check</button></td>
     </tr>
-    [% END %]    
-    <tr>                                                                         
+    [% END %]
+    <tr>
         <td class="label">Allow POI Resubmission : </td>
         <td> <input type="checkbox" style="vertical-align:middle" name="allow_onfido_resubmission" value="1" [% IF onfido_resubmission %] checked="checked" [% END %]> </td>
-    </tr>                                                                          
-    <tr>                                                                         
-        <td class="label">Resubmission Counter: </td>                            
-        <td> [% onfido_resubmission_counter %]</td>                              
-    </tr>                                                                        
+    </tr>
+    <tr>
+        <td class="label">Resubmission Counter: </td>
+        <td> [% onfido_resubmission_counter %]</td>
+    </tr>
     <tr>
         <td class="label">ID Authentication : </td>
         [%

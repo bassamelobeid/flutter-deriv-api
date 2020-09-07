@@ -22,7 +22,7 @@ BOM::Backoffice::Sysinit::init();
 
 my $staff = BOM::Backoffice::Auth0::get_staffname();
 
-Bar("Make dual control code");
+my $title = 'Make dual control code';
 
 my $now               = Date::Utility->new;
 my $current_timestamp = $now->datetime_ddmmmyy_hhmmss;
@@ -32,13 +32,11 @@ my ($client, $message);
 if ($input->{'dcctype'} ne 'file_content') {
 
     unless ($input->{'amount'}) {
-        print "ERROR: No amount was specified";
-        code_exit_BO();
+        code_exit_BO('ERROR: No amount was specified.', $title);
     }
 
     unless ($input->{'clientloginid'}) {
-        print "ERROR: No LoginID for the client was specified";
-        code_exit_BO();
+        code_exit_BO('ERROR: No LoginID for the client was specified.', $title);
     }
 
     # Regular expression for checking valid currency format depending on the type of currency.
@@ -47,15 +45,13 @@ if ($input->{'dcctype'} ne 'file_content') {
         LandingCompany::Registry::get_currency_type($input->{'currency'}) eq 'fiat' ? qr/^(?:\d*\.\d{1,2}|\d+\.?)$/ : qr/^(?:\d*\.\d{1,8}|\d+\.?)$/;
 
     if ($input->{'amount'} !~ $currency_regex) {
-        print "ERROR: Invalid amount: " . $input->{'amount'};
-        code_exit_BO();
+        code_exit_BO('ERROR: Invalid amount: ' . $input->{'amount'}, $title);
     }
 
     $client = eval { BOM::User::Client::get_instance({'loginid' => uc($input->{'clientloginid'}), db_operation => 'replica'}) };
 
     if (not $client) {
-        print "ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist! Perhaps you made a typo?";
-        code_exit_BO();
+        code_exit_BO('ERROR: ' . encode_entities($input->{'clientloginid'}) . ' does not exist! Perhaps you made a typo?', $title);
     }
 }
 
@@ -63,19 +59,18 @@ my $code;
 $input->{'reminder'} = defang($input->{'reminder'});
 
 if (length $input->{'reminder'} < 4) {
-    print "ERROR: your comment/reminder field is too short! (need 4 or more chars)";
-    code_exit_BO();
+    code_exit_BO('ERROR: your comment/reminder field is too short! (need 4 or more chars).', $title);
 }
 
 if ($input->{'dcctype'} eq 'file_content') {
     if (not -s $input->{'file_location'}) {
-        print "ERROR: invalid file location or empty file!";
-        code_exit_BO();
+        code_exit_BO('ERROR: invalid file location or empty file!', $title);
     }
+
+    Bar($title);
 
     my $file_location = $input->{'file_location'};
     my @lines         = Path::Tiny::path($file_location)->lines;
-    my $lines         = join("\n", @lines);
 
     $code = BOM::DualControl->new({
             staff           => $staff,
@@ -84,9 +79,13 @@ if ($input->{'dcctype'} eq 'file_content') {
     $message =
           "<b>The dual control code created by $staff for "
         . $input->{'purpose'}
-        . " is:</b><p style='word-break: break-all;'>$code</p>This code is valid for 1 hour (from $current_timestamp) only.";
+        . " is: (single click to copy)</b>"
+        . '<div class="dcc-code copy-on-click">'
+        . encode_entities($code)
+        . '</div><br>'
+        . "This code is valid for 1 hour (from $current_timestamp) only.";
 
-    print $message;
+    print $message . '<script>initCopyText()</script>';
 
     $message =~ s/<[^>]*>/ /gs;
     BOM::User::AuditLog::log($message);
@@ -120,11 +119,13 @@ if ($input->{'dcctype'} eq 'file_content') {
 
     BOM::User::AuditLog::log($message, '', $staff);
 
+    Bar($title);
+
     print '<p>'
-        . 'DCC: <br>'
-        . '<textarea rows="5" cols="100" readonly="readonly">'
+        . 'DCC: (single click to copy)<br>'
+        . '<div class="dcc-code copy-on-click">'
         . encode_entities($code)
-        . '</textarea><br>'
+        . '</div><script>initCopyText()</script><br>'
         . 'This code is valid for 1 hour from now: UTC '
         . Date::Utility->new->datetime_ddmmmyy_hhmmss . '<br>'
         . 'Creator: '

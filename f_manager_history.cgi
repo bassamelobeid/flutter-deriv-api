@@ -58,8 +58,7 @@ try {
     $overview_to_date =
         request()->param('overview_to_date') ? Date::Utility->new(request()->param('overview_to_date')) : Date::Utility->new();
 } catch {
-    print 'Error : Wrong date entered';
-    code_exit_BO();
+    code_exit_BO('Error: Wrong date entered.');
 }
 
 $overview_from_date = Date::Utility->new($overview_from_date->date_yyyymmdd() . " 00:00:00");
@@ -72,16 +71,13 @@ if ($loginID =~ /^([A-Z]+)/) {
 
 BrokerPresentation($encoded_loginID . ' HISTORY', '', '');
 unless ($broker) {
-    print 'Error : wrong loginID ' . $encoded_loginID;
-    code_exit_BO();
+    code_exit_BO("Error: wrong loginID $encoded_loginID");
 }
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginID, db_operation => 'replica'}) };
 
 if (not $client) {
-    Bar($loginID);
-    print "<div style='color:red' class='center-aligned'>Error : wrong loginID ($encoded_loginID) could not get client instance</div>";
-    code_exit_BO();
+    code_exit_BO("Error: wrong loginID ($encoded_loginID) could not get client instance.", $loginID);
 }
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
@@ -185,12 +181,27 @@ BOM::Backoffice::Request::template()->process(
         broker                  => $broker,
         depositswithdrawalsonly => $deposit_withdrawal_only ? 'yes' : 'no',
         contract_details        => \&BOM::ContractInfo::get_info,
-        clientedit_url          => request()->url_for('backoffice/f_clientloginid_edit.cgi'),
         self_post               => request()->url_for('backoffice/f_manager_history.cgi'),
-        summary                 => $summary,
-        total_deposits          => $total_deposits,
-        total_withdrawals       => $total_withdrawals,
-        client                  => {
+        clientedit_url          => request()->url_for(
+            'backoffice/f_clientloginid_edit.cgi',
+            {
+                loginID => $client->loginid,
+                broker  => $broker
+            }
+        ),
+        profit_url => request()->url_for(
+            'backoffice/f_profit_check.cgi',
+            {
+                broker    => $broker,
+                loginID   => $client->loginid,
+                startdate => Date::Utility->today()->_minus_months(1)->date,
+                enddate   => Date::Utility->today()->date,
+            }
+        ),
+        summary           => $summary,
+        total_deposits    => $total_deposits,
+        total_withdrawals => $total_withdrawals,
+        client            => {
             name        => $client_name,
             email       => $client_email,
             country     => $citizen,
@@ -224,7 +235,7 @@ my $render_crypto_transactions = sub {
     try {
         $exchange_rate = in_usd(1.0, $currency);
     } catch {
-        code_exit_BO("no exchange rate found for currency " . $currency . ". Please contact IT.");
+        code_exit_BO("No exchange rate found for currency $currency. Please contact IT.");
     }
 
     my $transaction_uri = URI->new($currency_wrapper->get_transaction_blockchain_url);

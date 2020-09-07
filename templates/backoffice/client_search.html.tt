@@ -1,7 +1,6 @@
 <body>
-<center><font size="2" face="verdana">
-<strong>Client Search</strong>
-<br>
+<div style="text-align: center;">
+<br><br>
 <form action="[% url %]" method="post">
         <input type="text" size="14" name="partialfname" placeholder="First Name" onfocus="this.select()" value="[% params.first_name %]" data-lpignore="true" />
         <input type="text" size="14" name="partiallname" placeholder="Last Name" onfocus="this.select()" value="[% params.last_name %]" data-lpignore="true" />
@@ -15,7 +14,7 @@
 
 
 [% IF results.size %]
-<table border="0" cellpadding="1" cellspacing="1" width="90%" style="text-align:left; padding:0.5em 0;">
+<table border="0" cellpadding="1" cellspacing="1" width="90%" style="text-align:left; padding:0.5em 0; margin: 0 auto;">
     <tr style="background-color:#ffffce";>
         <th align="left" >Login ID</th>
         <th>Salutation</th>
@@ -58,7 +57,7 @@
 <p>No match</p>
 [% END %]
 
-</center>
+</div>
 
 <script type="text/javascript" language="javascript">
 \$(document).ready(function() {

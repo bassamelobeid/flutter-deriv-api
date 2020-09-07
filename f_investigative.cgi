@@ -15,20 +15,22 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('INVESTIGATIVE TOOLS');
-my $broker    = request()->broker_code;
+
 my $sanctions = Data::Validate::Sanctions->new(sanction_file => BOM::Config::sanction_file);
+
 if (request()->param('whattodo') eq 'unsanctions') {
-    Bar('UN Sanctions Query');
+    my $error_message;
     if ($sanctions->is_sanctioned(request()->param('fname'), request()->param('lname'))) {
-        print "<b>"
+        $error_message = "<b>"
             . encode_entities(request()->param('fname')) . " "
             . encode_entities(request()->param('lname'))
             . " IS IN THE UN SANCTIONS LIST!!</b>";
     } else {
-        print encode_entities(request()->param('fname')) . " " . encode_entities(request()->param('lname')) . " is not in the sanctions list.";
+        $error_message =
+            encode_entities(request()->param('fname')) . " " . encode_entities(request()->param('lname')) . " is not in the sanctions list.";
     }
 
-    code_exit_BO();
+    code_exit_BO($error_message, 'UN Sanctions Query');
 }
 
 Bar("ANTI FRAUD TOOLS");
@@ -58,4 +60,3 @@ BOM::Backoffice::Request::template()->process(
     }) || die BOM::Backoffice::Request::template()->error();
 
 code_exit_BO();
-

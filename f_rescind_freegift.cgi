@@ -12,6 +12,7 @@ BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('RESCIND FREE GIFTS');
+
 my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 my $broker = request()->broker_code;
 
@@ -20,9 +21,10 @@ my $whattodo     = request()->param('whattodo');
 my $message      = request()->param('message');
 
 if ($inactivedays < 90) {
-    print 'Must enter at least 90 days';
-    code_exit_BO();
+    code_exit_BO('Must enter at least 90 days.');
 }
+
+Bar('Rescind Free Gifts');
 
 print '<p>Starting...</p><pre>';
 print encode_entities($_) . "<br/>" for Rescind_FreeGifts($broker, $inactivedays, $whattodo, $message, $clerk);

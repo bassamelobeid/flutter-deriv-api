@@ -37,9 +37,7 @@ BrokerPresentation("AFFILIATE TOKEN DCC");
 
 # Not available for Virtual Accounts
 if (($loginid =~ BOM::User->VIRTUAL_REGEX) || ($loginid =~ BOM::User->MT5_REGEX)) {
-    Bar("CHANGE Client AFFILIATE TOKEN DCC");
-    print '<p class="aligncenter">We\'re sorry but the Affiliate Token is not available for this type of Accounts.</p>';
-    code_exit_BO();
+    code_exit_BO("We're sorry but the Affiliate Token is not available for this type of Accounts.", 'CHANGE Client AFFILIATE TOKEN DCC');
 }
 
 BOM::Backoffice::Request::template()->process(
@@ -73,9 +71,10 @@ if ($input->{EditAffiliatesToken}) {
     my $client = eval { BOM::User::Client->new({loginid => $ClientLoginid}) };
     code_exit_BO(
         qq[<p>ERROR: Client [$ClientLoginid] not found. </p>
-                  <form action="$self_post" method="get">
-                  Try Again: <input type="text" name="loginID" size="15" value="$ClientLoginid" data-lpignore="true" />
-                  </form>]
+            <form action="$self_post" method="get">
+                Try Again: <input type="text" name="loginID" size="15" value="$ClientLoginid" data-lpignore="true" />
+                <input type="submit" value="Search" />
+            </form>]
     ) unless $client;
 
     my $dcc_error = BOM::DualControl->new({

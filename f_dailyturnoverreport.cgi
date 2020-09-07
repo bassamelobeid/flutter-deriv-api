@@ -20,8 +20,10 @@ $args->{month}    ||= $today->year . '-' . sprintf("%02d", $today->month);
 $args->{whattodo} ||= 'TURNOVER';
 
 $args->{month} = encode_entities($args->{month});
-Bar("DAILY TURNOVER REPORT for " . $args->{month});
+
 BrokerPresentation("DAILY TURNOVER REPORT FOR " . $args->{month});
+
+Bar("DAILY TURNOVER REPORT for " . $args->{month});
 
 my %template = DailyTurnOverReport($args);
 BOM::Backoffice::Request::template()->process(

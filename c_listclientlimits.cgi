@@ -19,14 +19,11 @@ my $encoded_login = encode_entities($login);
 
 BrokerPresentation('CLIENT LIMITS FOR ' . $encoded_login);
 
-my $broker = request()->broker_code;
-
 # Withdrawal limits
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $login, db_operation => 'replica'}) };
 
 if (!$client) {
-    print 'ERROR : Wrong loginID ' . $encoded_login;
-    code_exit_BO();
+    code_exit_BO("ERROR: Wrong loginID $encoded_login");
 }
 
 my $curr = $client->currency;

@@ -19,8 +19,9 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation("Setting Client Self Exclusion");
 
+my $title = 'Setting Client Self Exclusion - restricted fields';
+
 my $loginid = uc(request()->param('loginid'));
-Bar("Setting Client Self Exclusion - restricted fields");
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginid}) };
 if (not $client) {
@@ -30,9 +31,7 @@ if (not $client) {
 
 # Not available for Virtual Accounts
 if ($client->is_virtual) {
-    print '<h1>Self-Exclusion Facilities</h1>';
-    print '<p class="aligncenter">We\'re sorry but the Self Exclusion facility is not available for Virtual Accounts.</p>';
-    code_exit_BO();
+    code_exit_BO("We're sorry but the Self Exclusion facility is not available for Virtual Accounts.", $title);
 }
 
 my $self_exclusion = $client->get_self_exclusion;
@@ -44,10 +43,13 @@ if (request()->param('fix_begin_date') && $self_exclusion && $self_exclusion->ma
     $client->save;
 
     my $self_exclusion_link = request()->url_for('backoffice/f_setting_selfexclusion_restricted.cgi', {loginid => $loginid});
-    print '<p>Maximum deposit begin date was successfully set to ' . $last_update_date . " for $loginid </p>";
-    print "<p><a href = '$self_exclusion_link'>Back to self exclusion settings </a></p>";
-    code_exit_BO();
+    code_exit_BO('<p>Maximum deposit begin date was successfully set to '
+            . $last_update_date
+            . " for $loginid </p>"
+            . "<p><a href = '$self_exclusion_link'>Back to self exclusion settings </a></p>");
 }
+
+Bar($title);
 
 my $broker = $client->broker;
 

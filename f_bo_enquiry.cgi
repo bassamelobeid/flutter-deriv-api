@@ -25,7 +25,7 @@ if ($broker ne 'FOG') {
 
     # Client Portfolio
     print
-        "<hr>Note : This function shows the client portfolio in exactly the same way as the client sees them on the client Website.  Therefore, in the Portfolio, 'Sale Prices' of contracts include the Company markup fee.<p>";
+        "<p>Note : This function shows the client portfolio in exactly the same way as the client sees them on the client Website. Therefore, in the Portfolio, 'Sale Prices' of contracts include the Company markup fee.</p>";
     print "<FORM ACTION=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" METHOD=\"POST\">";
     print "Check Portfolio of LoginID: <input id='portfolio_loginID' name=loginID type=text size=15 value='$encoded_broker' data-lpignore='true' /> ";
     print "<input type=hidden name=outputtype value=table>";

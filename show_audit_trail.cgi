@@ -18,8 +18,7 @@ BrokerPresentation("SHOW AUDIT TRAIL");
 my $broker = request()->broker_code;
 
 if ($broker eq 'FOG') {
-    print "NOT RELEVANT FOR BROKER CODE FOG";
-    code_exit_BO();
+    code_exit_BO('NOT RELEVANT FOR BROKER CODE FOG');
 }
 
 my $db = BOM::Database::ClientDB->new({
@@ -121,8 +120,7 @@ for ($category) {
 }
 
 unless (@tables) {
-    print "Unsupported audit-trail category [" . $category . "]";
-    code_exit_BO();
+    code_exit_BO("Unsupported audit-trail category [" . $category . "]");
 }
 
 my (@logs, %hdrs, $hitcount);

@@ -1,4 +1,4 @@
-<table style="width:100%">
+<table class="collapsed hover alternate" border="1" style="width:100%">
     <tr>
         <th>profile /<br/>max stake</th>
         [% FOREACH header IN currencies %]

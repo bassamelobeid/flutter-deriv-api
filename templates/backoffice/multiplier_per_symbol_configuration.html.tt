@@ -4,7 +4,7 @@
 
 <form id='multiplier_config'>
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
-<table>
+<table class="collapsed hover alternate" border="1">
     <tr>
         <th>Underlying symbol</th>
         <th>Commission</th>
@@ -12,6 +12,8 @@
         <th>Deal cancellation commission</th>
         <th>Deal cancellation duration range</th>
         <th>Stop out level</th>
+        <th></th>
+        <th></th>
     </tr>
     [% FOREACH data IN existing_config %]
     <tr id="[% data.symbol %]-multiplier_config">

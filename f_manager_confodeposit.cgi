@@ -64,13 +64,11 @@ my %params = %{request()->params};
 
 for (qw/account amount currency ttype range/) {
     next if $params{$_};
-    print "ERROR: $_ cannot be empty. Please try again";
-    code_exit_BO();
+    code_exit_BO("ERROR: $_ cannot be empty. Please try again.");
 }
 
 if (BOM::Config::Runtime->instance->app_config->system->suspend->payments) {
-    print "ERROR: Payments are suspended";
-    code_exit_BO();
+    code_exit_BO('ERROR: Payments are suspended');
 }
 
 # Why all the delete-params?  Because any remaining form params just get passed directly
@@ -97,34 +95,28 @@ my $is_internal_payment = any { $payment_type eq $_ } qw( bank_money_transfer ex
 my $clerk = BOM::Backoffice::Auth0::get_staffname();
 
 unless ($curr =~ /^[a-zA-Z0-9]{2,20}$/ && LandingCompany::Registry::get_currency_type($curr)) {
-    print "Invalid currency, please check: " . encode_entities($curr);
-    code_exit_BO();
+    code_exit_BO('Invalid currency, please check: ' . encode_entities($curr));
 }
 my $client = eval { BOM::User::Client->new({loginid => $loginID}) } || do {
-    print "Error: no such client $encoded_loginID";
-    code_exit_BO();
+    code_exit_BO("Error: no such client $encoded_loginID");
 };
 my $broker = $client->broker;
 
 my $toClient;
 if ($ttype eq 'TRANSFER') {
     unless ($toLoginID) {
-        print "ERROR: transfer-to LoginID missing";
-        code_exit_BO();
+        code_exit_BO('ERROR: transfer-to LoginID missing.');
     }
     $toClient = eval { BOM::User::Client->new({loginid => $toLoginID}) } || do {
-        print "Error: no such transfer-to client $encoded_toLoginID";
-        code_exit_BO();
+        code_exit_BO("Error: no such transfer-to client $encoded_toLoginID");
     };
     if ($broker ne $toClient->broker) {
-        printf "ERROR: $toClient broker is %s not %s", encode_entities($toClient->broker), encode_entities($broker);
-        code_exit_BO();
+        code_exit_BO(sprintf("ERROR: $toClient broker is %s not %s", encode_entities($toClient->broker), encode_entities($broker)));
     }
 }
 
 if ($client->is_same_user_as($toClient)) {
-    print "ERROR: you cannot perform internal transfer between accounts under the same user!";
-    code_exit_BO();
+    code_exit_BO('ERROR: you cannot perform internal transfer between accounts under the same user!');
 }
 
 for my $c ($client, $toClient) {
