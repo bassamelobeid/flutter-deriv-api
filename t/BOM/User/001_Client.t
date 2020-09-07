@@ -254,6 +254,54 @@ subtest "format and validate" => sub {
         non_pep_declaration_time => Date::Utility->today->_plus_years(-1)->date_yyyymmdd,
     };
     is $client->validate_common_account_details($args), undef, 'Validation is passed with non-pep declaration time set to an earlier time';
+
+    subtest 'P.O. Box' => sub {
+        subtest 'Regulated accounts' => sub {
+            my $client_details = {
+                'loginid'         => 'MX5090',
+                'email'           => 'Calum@regentmarkets.com',
+                'client_password' => '960f984285701c6d8dba5dc71c35c55c0397ff276b06423146dde88741ddf1af',
+                'broker_code'     => 'MX',
+                'allow_login'     => 1,
+                'last_name'       => 'test initialize client obj by hash ref',
+                'first_name'      => 'MX client',
+                'residence'       => 'de',
+            };
+
+            my $client = BOM::User::Client->rnew(%$client_details);
+            $client_details->{address_line_1} = 'p o box 1234';
+            my $result = $client->validate_common_account_details($client_details);
+            is $result->{error}, 'invalid PO Box', 'Invalid PO BOX at address line 1';
+
+            $client_details->{address_line_1} = 'somewhere';
+            $client_details->{address_line_2} = 'P.O. box 2357111317';
+            $result                           = $client->validate_common_account_details($client_details);
+            is $result->{error}, 'invalid PO Box', 'Invalid PO BOX at address line 2';
+        };
+
+        subtest 'Unregulated accounts' => sub {
+            my $client_details = {
+                'loginid'         => 'CR110101',
+                'email'           => 'test@email.com',
+                'client_password' => '960f984285701c6d8dba5dc71c35c55c0397ff276b06423146dde88741ddf1af',
+                'broker_code'     => 'CR',
+                'allow_login'     => 1,
+                'last_name'       => 'TEST',
+                'first_name'      => 'CR client',
+                'residence'       => 'br',
+            };
+
+            my $client = BOM::User::Client->rnew(%$client_details);
+            $client_details->{address_line_1} = 'p o box 1234';
+            my $result = $client->validate_common_account_details($client_details);
+            is $result->{error}, undef, 'PO BOX not checked at address line 1';
+
+            $client_details->{address_line_1} = 'somewhere';
+            $client_details->{address_line_2} = 'P.O. box 2357111317';
+            $result                           = $client->validate_common_account_details($client_details);
+            is $result->{error}, undef, 'PO BOX not checked at address line 2';
+        };
+    };
 };
 
 subtest "check duplicate accounts" => sub {

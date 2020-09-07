@@ -1664,9 +1664,18 @@ sub validate_common_account_details {
         die "invalid UK postcode\n"
             if ($residence eq 'gb' and not $self->is_virtual and not($args->{address_postcode} // $self->address_postcode));
 
-        die "invalid PO Box\n"
-            if (($args->{address_line_1} || '') =~ /p[\.\s]+o[\.\s]+box/i
-            or ($args->{address_line_2} || '') =~ /p[\.\s]+o[\.\s]+box/i);
+        # If not broker code is passed rely on current client landing company.
+        # This is remarkably useful for new account calls.
+        my $lc =
+            (defined $args->{broker_code})
+            ? LandingCompany::Registry->get_by_broker($args->{broker_code})
+            : $self->landing_company;
+
+        if ($lc->short =~ /^(?:iom|malta|maltainvest)$/) {
+            die "invalid PO Box\n"
+                if (($args->{address_line_1} || '') =~ /p[\.\s]+o[\.\s]+box/i
+                or ($args->{address_line_2} || '') =~ /p[\.\s]+o[\.\s]+box/i);
+        }
 
         die "No promotion code was provided\n" if (trim($args->{promo_code_status}) and not(trim($args->{promo_code}) // $self->promo_code));
 
