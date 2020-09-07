@@ -36,7 +36,7 @@ while (1) {
             SELECT f.id, f.short_code, f.is_expired, f.is_sold,
                    f.expiry_time, f.sell_price, a.currency_code
              FROM bet.financial_market_bet f JOIN transaction.account a ON a.id = f.account_id
-             WHERE (f.is_expired)
+             WHERE (f.is_expired) AND (f.bet_class <> 'multiplier')
                AND ($1 is null or f.id > $1)
              ORDER BY f.id desc
              LIMIT 300
