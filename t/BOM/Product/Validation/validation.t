@@ -1296,12 +1296,69 @@ subtest 'In protfolio for manullay settled contracts, market disruption message 
         date_start   => $now->minus_time_interval('1h'),
         date_pricing => $now,
         duration     => '1m',
-        barrier      => 'S0P'
+        barrier      => 'S0P',
+        is_sold      => 1
     });
     ok(!$c->is_valid_to_sell,   'Contract is not valid for sale');
     ok($c->is_after_settlement, 'Pricing time for contract is after settlment');
     is($c->primary_validation_error->message, 'entry tick is undefined', 'Error message of undefined entry tick');
     like($c->primary_validation_error->message_to_client->[0], qr/There was a market data disruption/, 'Client error message of market disruption');
+};
+
+subtest 'Forward starting contract with old entry tick' => sub {
+    my $date_start             = Date::Utility->new('2020-07-30 20:00:00');
+    my $ul                     = create_underlying('R_100');
+    my $last_tick_before_start = ($ul->max_suspend_trading_feed_delay->seconds + 1) . 's';
+
+    # Simulate lack of proper entry tick
+    # When contracts starts, it will be more than `max_suspend_trading_feed_delay` seconds
+    # that we haven't received any ticks
+    my @ticks =
+        map { [100, $_, $ul->symbol] }
+        ($date_start->minus_time_interval($last_tick_before_start)->epoch, $date_start->epoch + 1, $date_start->epoch + 2);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@ticks);
+
+    my $args = {
+        bet_type                   => 'CALL',
+        duration                   => '1m',
+        barrier                    => 'S0P',
+        currency                   => 'USD',
+        amount_type                => 'payout',
+        amount                     => 10,
+        underlying                 => $ul,
+        date_start                 => $date_start,
+        starts_as_forward_starting => 1,
+    };
+
+    subtest 'Show market disruption when contract is open', sub {
+        my $params = {%$args, date_pricing => $date_start->plus_time_interval('5s')};
+        my $c      = produce_contract($params);
+        ok(!$c->is_valid_to_sell,    'Contract is not valid for sale');
+        ok(!$c->is_after_settlement, 'Pricing time for contract is before settlment');
+        is($c->primary_validation_error->message, 'entry tick is too old', 'Entry tick for forward starting contract is too old');
+        like(
+            $c->primary_validation_error->message_to_client->[0],
+            qr/There was a market data disruption/,
+            'Client error message of market disruption'
+        );
+    };
+
+    subtest 'Show market disruption after contract is sold' => sub {
+        my $params = {
+            %$args,
+            date_pricing => $date_start->plus_time_interval('1h'),
+            is_sold      => 1
+        };
+        my $c = produce_contract($params);
+        ok(!$c->is_valid_to_sell,   'Contract is not valid for sale');
+        ok($c->is_after_settlement, 'Pricing time for contract is after settlment');
+        is($c->primary_validation_error->message, 'entry tick is too old', 'Entry tick for forward starting contract is too old');
+        like(
+            $c->primary_validation_error->message_to_client->[0],
+            qr/There was a market data disruption/,
+            'Client error message of market disruption'
+        );
+    };
 };
 
 my $counter = 0;

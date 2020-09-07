@@ -49,9 +49,10 @@ sub is_valid_to_sell {
     my $self = shift;
     my $args = shift;
 
+    my $valid = $self->_confirm_sell_validity($args);
     # if the contract is sold (early close by client), then is_valid_to_sell is false
     if ($self->is_sold) {
-        my $manually_settled = $self->is_after_settlement && !($self->_is_valid_to_settle);
+        my $manually_settled = $self->is_after_settlement && !$valid;
         return 0 if $manually_settled;
 
         $self->_add_error({
@@ -61,7 +62,7 @@ sub is_valid_to_sell {
         return 0;
     }
 
-    return $self->_confirm_sell_validity($args);
+    return $valid;
 }
 
 sub _is_valid_to_settle {
