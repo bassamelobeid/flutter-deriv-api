@@ -630,6 +630,37 @@ subtest 'set settings' => sub {
 
             }
         };
+        subtest 'po box' => sub {
+            subtest 'regulated account' => sub {
+                $test_client_mx->citizen('gb');
+                $test_client_mx->save;
+
+                my $params = {
+                    token      => $token_mx,
+                    language   => 'EN',
+                    client_ip  => '127.0.0.1',
+                    user_agent => 'agent',
+                    args       => {address_line_1 => 'P.O. box 25243'}};
+
+                my $response = $c->tcall($method, $params);
+                is $response->{error}->{message_to_client}, 'P.O. Box is not accepted in address.', 'Invalid P.O. Box in address';
+            };
+
+            subtest 'unregulated account' => sub {
+                $test_client_cr->citizen('br');
+                $test_client_cr->save;
+
+                my $params = {
+                    token      => $token_cr,
+                    language   => 'EN',
+                    client_ip  => '127.0.0.1',
+                    user_agent => 'agent',
+                    args       => {address_line_1 => 'P.O. box 25243'}};
+
+                my $response = $c->tcall($method, $params);
+                is $response->{status}, 1, 'P.O. box not checked for unregulated account';
+            };
+        };
     };
     subtest 'non-pep declaration' => sub {
         is $test_client_vr->non_pep_declaration_time, undef, 'non-pep declaration time is undefined for virtual accounts';
