@@ -2,7 +2,8 @@ use Test::More tests => 2;
 use strict;
 use warnings;
 
-if (my $r = `git grep BOM:: | grep -v -e BOM::Config`) {
+my $cmd = q{git grep BOM:: | grep -v -P -e '^[^:]*:\s*#' | grep -v -e BOM::Config};
+if (my $r = `$cmd`) {
     print $r;
     ok 0, "Wrong structure dependency $r";
 } else {

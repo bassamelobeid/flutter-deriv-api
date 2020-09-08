@@ -52,10 +52,7 @@ sub _redis {
         $timeout ? (timeout => $timeout) : (),
         host => $connection_config->{host},
         port => $connection_config->{port},
-        ($connection_config->{password} ? ('password' => $connection_config->{password}) : ()),
-        # This will issue a select on the desired index, maybe we can agree on a specific index to be the test database
-        # on each redis instance and perform extra initialization if required for tests.
-        (defined $connection_config->{select} ? ('database' => $connection_config->{select}) : ()));
+        ($connection_config->{password} ? ('password' => $connection_config->{password}) : ()));
 
     return $connections->{$key};
 }
@@ -83,17 +80,15 @@ sub redis_config {
     $config->{$redis_type} //= BOM::Config->can("redis_${redis_type}_config")->();
 
     my $redis = $config->{$redis_type}->{$access_type};
-    my $uri   = "redis://$redis->{host}:$redis->{port}";
-    # Take into account database select
-    $uri .= "?db=$redis->{select}" if defined $redis->{select};
+
+    my $uri = "redis://$redis->{host}:$redis->{port}";
 
     return {
         uri  => $uri,
         host => $redis->{host},
         port => $redis->{port},
-        ($redis->{password} ? ('password' => $redis->{password}) : ()),
-        # Take into account database select
-        (defined $redis->{select} ? ('database' => $redis->{select}) : ())};
+        ($redis->{password} ? ('password' => $redis->{password}) : ())};
+
 }
 
 =head2 redis_replicated_write
@@ -479,6 +474,20 @@ This should be a redis v6 instance.
 sub redis_rpc_write {
     $config->{rpc} //= BOM::Config::redis_rpc_config();
     return _redis('rpc', 'write', 10);
+}
+
+=head2 redis_rpc
+
+    my $redis = BOM::Config::Redis::redis_rpc();
+
+Returns a read-only L<RedisDB> handle to our RPC Redis service.
+This should be a redis v6 instance.
+
+=cut
+
+sub redis_rpc {
+    $config->{rpc} //= BOM::Config::redis_rpc_config();
+    return _redis('rpc', 'read', 10);
 }
 
 1;

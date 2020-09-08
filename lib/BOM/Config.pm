@@ -133,78 +133,79 @@ sub on_development {
     return env() =~ /^development/;
 }
 
+# WARNING If you want to add one more redis configure file, please don't forget to add it into BOM::Test::purge_redis also.
 sub redis_replicated_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-replicated.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-replicated.yml');
     return $config;
 }
 
 sub redis_pricer_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-pricer.yml');
     return $config;
 }
 
 sub redis_pricer_subscription_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer-subscription.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-pricer-subscription.yml');
     return $config;
 }
 
 sub redis_pricer_shared_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer-shared.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-pricer-shared.yml');
     return $config;
 }
 
 sub redis_exchangerates_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-exchangerates.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-exchangerates.yml');
     return $config;
 }
 
 sub redis_feed_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_FEED} // '/etc/rmg/redis-feed.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-feed.yml');
     return $config;
 }
 
 sub redis_mt5_user_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_MT5_USER} // '/etc/rmg/redis-mt5user.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-mt5user.yml');
     return $config;
 }
 
 sub redis_events_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_EVENTS} // '/etc/rmg/redis-events.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-events.yml');
     return $config;
 }
 
 sub redis_rpc_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_RPC} // '/etc/rmg/redis-rpc.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-rpc.yml');
     return $config;
 }
 
 sub redis_transaction_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_TRANSACTION} // '/etc/rmg/redis-transaction.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-transaction.yml');
     return $config;
 }
 
 sub redis_queue_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_QUEUE} // '/etc/rmg/redis-queue.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-queue.yml');
     return $config;
 }
 
 sub redis_limit_settings {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_TRANSACTION_LIMITS} // '/etc/rmg/redis-transaction-limits.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-transaction-limits.yml');
     return $config;
 }
 
 sub redis_auth_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_AUTH} // '/etc/rmg/redis-auth.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-auth.yml');
     return $config;
 }
 
 sub redis_p2p_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_P2P} // '/etc/rmg/redis-p2p.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-p2p.yml');
     return $config;
 }
 
 sub redis_ws_config {
-    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_WS_REDIS} // '/etc/rmg/ws-redis.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/ws-redis.yml');
     return $config;
 }
 
