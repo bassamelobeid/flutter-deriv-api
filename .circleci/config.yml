@@ -30,15 +30,25 @@ alias:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
     RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
     WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
-default: &6
-  docker:
-  - auth:
+
+- &redis6
+  image: redis:6
+  name: "redis-v6"
+
+- &debian-ci
+  auth:
       password: $DOCKERHUB_PASSWORD
       username: circle4regentmarkets
-    image: regentmarkets/debian-ci:stable
-    user: nobody
+  image: regentmarkets/debian-ci:stable
+  user: nobody
+
+default: &6
+  docker:
+  - *debian-ci
+  - *redis6
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/binary-websocket-api
+
 jobs:
   accounts:
     <<: *6

@@ -26,34 +26,32 @@ use List::Util qw(any);
 # via a function of the same name.
 my $servers = {
     redis_feed_master => {
-        config   => '/etc/rmg/redis-feed.yml',
-        user     => 'master-read',
-        override => 'BOM_TEST_REDIS_FEED'
+        config => '/etc/rmg/redis-feed.yml',
+        user   => 'master-read',
     },
     redis_transaction => {
-        config   => '/etc/rmg/redis-transaction.yml',
-        user     => 'read',
-        override => 'BOM_TEST_REDIS_TRANSACTION'
+        config => '/etc/rmg/redis-transaction.yml',
+        user   => 'read',
     },
     redis_pricer => {
-        config   => '/etc/rmg/redis-pricer.yml',
-        user     => 'write',
-        override => 'BOM_TEST_REDIS_REPLICATED'
+        config => '/etc/rmg/redis-pricer.yml',
+        user   => 'write',
     },
     redis_pricer_subscription => {
-        config   => '/etc/rmg/redis-pricer-subscription.yml',
-        user     => 'write',
-        override => 'BOM_TEST_REDIS_REPLICATED'
+        config => '/etc/rmg/redis-pricer-subscription.yml',
+        user   => 'write',
     },
     ws_redis_master => {
-        config   => '/etc/rmg/ws-redis.yml',
-        user     => 'write',
-        override => 'BOM_TEST_WS_REDIS'
+        config => '/etc/rmg/ws-redis.yml',
+        user   => 'write',
+    },
+    redis_rpc => {
+        config => '/etc/rmg/redis-rpc.yml',
+        user   => 'write',
     },
     redis_p2p => {
-        config   => '/etc/rmg/redis-p2p.yml',
-        user     => 'read',
-        override => 'BOM_TEST_REDIS_P2P',
+        config => '/etc/rmg/redis-p2p.yml',
+        user   => 'read',
     }};
 
 # We export (on demand) all Redis names and a helper function.
@@ -166,7 +164,7 @@ sub check_connections {
 for my $name (sort keys %$servers) {
     my $code = sub {
         my $server      = $servers->{$name};
-        my $config_file = $ENV{$server->{override}} // $server->{config};
+        my $config_file = $server->{config};
         # Reload server if config file location has changed
         if (($server->{current_config} // '') ne $config_file) {
             $server->{current_config} = $config_file;

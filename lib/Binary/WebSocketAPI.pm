@@ -10,13 +10,14 @@ use Binary::WebSocketAPI::BalanceConnections ();
 use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
 use Mojo::IOLoop;
+use Mojo::WebSocketProxy::Backend::ConsumerGroups;
 use IO::Async::Loop::Mojo;
 
 use Binary::WebSocketAPI::Actions;
 use Binary::WebSocketAPI::Hooks;
 
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
-use Binary::WebSocketAPI::v3::Instance::Redis qw(check_connections ws_redis_master);
+use Binary::WebSocketAPI::v3::Instance::Redis qw( check_connections ws_redis_master redis_rpc );
 
 use Brands;
 use Encode;
@@ -217,6 +218,15 @@ sub startup {
 
     my $actions = Binary::WebSocketAPI::Actions::actions_config();
 
+    my $backend_rpc_redis = redis_rpc();
+    $WS_BACKENDS = {
+        rpc_redis => {
+            type      => 'consumer_groups',
+            redis_uri => $backend_rpc_redis->url->to_string,
+            timeout   => 5,
+        },
+    };
+
     my $json = JSON::MaybeXS->new;
 
     for my $action (@$actions) {
@@ -301,11 +311,12 @@ sub startup {
             finish_connection => \&Binary::WebSocketAPI::Hooks::on_client_disconnect,
 
             # helper config
-            url     => \&Binary::WebSocketAPI::Hooks::assign_rpc_url,                   # make url for manually called actions
-            actions => $actions,
+            url             => \&Binary::WebSocketAPI::Hooks::assign_rpc_url,           # make url for manually called actions
+            actions         => $actions,
+            backends        => $WS_BACKENDS,
+            default_backend => $app->config->{default_backend},
             # Skip check sanity to password fields
             skip_check_sanity => qr/password/,
-            backends          => $WS_BACKENDS,
             rpc_failure_cb    => sub {
                 my ($c, $res, $req_storage, $error) = @_;
                 my $details = 'URL: ' . ($req_storage->{req_url} // 'n/a');

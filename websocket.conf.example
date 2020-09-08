@@ -8,7 +8,7 @@ app->renderer->default_format('json');
 {
     hypnotoad => {
         listen   => ["http://*:5004"],
-        workers  => 1,          # Number of worker processes
+        workers  => 1,            # Number of worker processes
         clients  => 2,            # Maximum number of concurrent connections each worker process is allowed to handle
         pid_file => '/var/run/bom-daemon/binary-websocket-api.pid',
         user     => 'nobody',
@@ -19,4 +19,6 @@ app->renderer->default_format('json');
         accepts => 3600,          # Maximum number of connections a worker is allowed to accept before stopping gracefully, 0 - indefinitely
     },
     rpc_url => "http://127.0.0.1:5005/",
+
+    default_backend => "http",
 };
