@@ -9,6 +9,7 @@ use Parallel::ForkManager;
 use Pod::Usage;
 use Log::Any::Adapter qw( Stderr ), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
 use Log::Any qw( $log );
+use Path::Tiny qw( path );
 
 use BOM::RPC::Transport::Redis;
 use BOM::Config::Redis;
@@ -63,12 +64,17 @@ GetOptions(
     'redis|r=s'    => \(my $redis_uri  = $redis_config->{uri}),
     'workers|w=i'  => \(my $workers_no = 1),
     'help|h'       => \my $more_info,
+
+    # test-compatible parameters
+    'pid-file=s' => \my $pid_file,
 ) or pod2usage({-verbose => 1});
 
 pod2usage({
         -verbose  => 99,
         -sections => "NAME|SYNOPSIS|DESCRIPTION|OPTIONS"
     }) if $more_info;
+
+path($pid_file)->spew("$$") if $pid_file;
 
 $log->infof('Start consuming from `%s` stream using `%d` workers.', $category, $workers_no);
 
