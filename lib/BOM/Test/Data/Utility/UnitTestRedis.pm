@@ -38,8 +38,7 @@ sub initialize_realtime_ticks_db {
 
 =head2 initialize_events_redis
 
-Empties all queues in the test bom-events redis instance (using config at $ENV{BOM_TEST_REDIS_REPLICATED}
-because BOM::Test is included above). This sub needs to be updated if new queues are added.
+Empties all queues in the test bom-events redis instance. This sub needs to be updated if new queues are added.
 
 =cut
 

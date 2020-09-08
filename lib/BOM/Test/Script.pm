@@ -1,6 +1,11 @@
 package BOM::Test::Script;
+use strict;
+use warnings;
 
-use BOM::Test;
+BEGIN {
+    local $ENV{NO_PURGE_REDIS} = 1;
+    require BOM::Test;
+}
 use Mojo::Base -base;
 use Path::Tiny;
 use File::Basename;
@@ -48,13 +53,21 @@ sub start_script {
     return 0 unless $script;
     my $pid_file = $self->pid_file;
     $pid_file->remove;
-    my $args = $self->args // '';
-    system("$script --pid-file $pid_file $args &");
+
+    my $args = $self->args // [];
+    my $pid  = fork();
+    die "Cannot fork to run script $script" unless defined($pid);
+
+    unless ($pid) {
+        local $ENV{NO_PURGE_REDIS} = 1;
+        exec($^X, qw(-MBOM::Test), $script, '--pid-file', $pid_file, @$args) or die "Couldn't execute $script: $!";
+    }
 
     for (1 .. 10) {
         return 1 if $pid_file->exists;
         sleep 1;
     }
+
     return 0;
 }
 
@@ -69,6 +82,15 @@ sub stop_script {
 
 sub wait_till_exit {
     my ($self, $pid, $timeout) = @_;
+    # if the subprocess is the child, we reap it
+    my $waitpid = waitpid($pid, 0);
+    #reset $? to avoid affecting exit code in the END block
+    ## no critic (RequireLocalizedPunctuationVars)
+    $? = 0;
+
+    return if $pid == $waitpid;
+
+    # else test it with kill ZERO
     my $start = time;
     while (time - $start < $timeout and kill ZERO => $pid) {
         print "wait $pid...\n";

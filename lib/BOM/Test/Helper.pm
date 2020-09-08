@@ -42,10 +42,13 @@ use Net::Async::Redis;
 
 use RedisDB;
 use YAML::XS qw/LoadFile DumpFile/;
+# build_wsapi_test is always used with `await` module. So let's load it here.
+#e.g. my $t = build_wsapi_test(); my $balance = $t->await::balance({balance => 1});
+use await;
 
 use Exporter qw/import/;
 our @EXPORT_OK =
-    qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect launch_redis call_instrospection/;
+    qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect call_instrospection/;
 
 my $version = 'v3';
 die 'unknown version' unless $version;
@@ -68,56 +71,6 @@ sub build_mojo_test {
     return Test::Mojo->new($app);
 }
 
-sub launch_redis {
-    $redis_test_done = 0;
-    my $redis_port = empty_port;
-
-    my $redis_server = Mojo::Redis2::Server->new;
-    $redis_server->start(
-        port    => $redis_port,
-        logfile => '/tmp/redis.log'
-    );
-    my $tmp_dir         = tempdir(CLEANUP => 1);
-    my $ws_redis_path   = path($tmp_dir, "ws-redis.yml");
-    my $ws_redis_config = {
-        write => {
-            host => '127.0.0.1',
-            port => $redis_port,
-        },
-        read => {
-            host => '127.0.0.1',
-            port => $redis_port,
-        },
-    };
-    DumpFile($ws_redis_path, $ws_redis_config);
-
-    $ENV{BOM_TEST_WS_REDIS} = "$ws_redis_path";    ## no critic (RequireLocalizedPunctuationVars)
-
-    if (Binary::WebSocketAPI::v3::Instance::Redis->can('ws_redis_master')) {
-        no strict 'refs';                          ## no critic (ProhibitProlongedStrictureOverride)
-        my $orig    = Test::Builder->can('done_testing');
-        my $builder = Test::More->builder;
-        no warnings 'redefine';                    ## no critic (ProhibitNoWarnings)
-        *{'Test::Builder::done_testing'} = sub {
-            my $in_subtest_sub = $builder->can('in_subtest');
-            if (    not $redis_test_done
-                and not($in_subtest_sub ? $builder->$in_subtest_sub : $builder->parent))
-            {
-                try {
-                    my $redis = Binary::WebSocketAPI::v3::Instance::Redis::ws_redis_master();
-                    is_within_threshold 'ws_redis_master', $redis->backend->info('keyspace');
-                    $redis_test_done = 1;
-                } catch {
-                    diag "Could not run ws_redis_master keys test: $@\n";
-                }
-            }
-            $orig->(@_);
-        };
-    }
-
-    return ($tmp_dir, $redis_server);
-}
-
 sub build_wsapi_test {
     my $args    = shift || {};
     my $headers = shift || {};
@@ -129,8 +82,8 @@ sub build_wsapi_test {
     # as now app id is mandatory so assign it if not present
     $args->{app_id} = 1 unless exists $args->{app_id};
 
-    my ($tmp_dir, $redis_server) = launch_redis;
     my $t = build_mojo_test('Binary::WebSocketAPI', $args);
+
     $t->app->log(Mojo::Log->new(level => 'debug'));
 
     my @query_params;
@@ -147,11 +100,6 @@ sub build_wsapi_test {
     $t->websocket_ok($url => $headers);
     $t->tx->on(json => $callback) if $callback;
 
-    # keep them until $t be destroyed
-    $t->{_bom} = {
-        tmp_dir      => $tmp_dir,
-        redis_server => $redis_server
-    };
     return $t;
 }
 

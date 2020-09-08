@@ -63,7 +63,6 @@ BEGIN {
 }
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper qw/launch_redis/;
 use BOM::Test::WebsocketAPI::Contexts;
 use BOM::Test::WebsocketAPI::SanityChecker;
 use BOM::Test::WebsocketAPI::Publisher;
@@ -143,27 +142,6 @@ sub ws_log_level { return shift->{ws_log_level} //= 'error' }
 
 =head2 port
 
-Launches master websocket redis server and keeps it object in a state variable.
-
-=cut
-
-sub load_ws_redis_server {
-    # A cache that keeps the test ws redis server instance.
-    state $ws_redis_server;
-
-    unless ($ws_redis_server) {
-        my ($path, $server) = launch_redis();
-        $ws_redis_server = {
-            path   => $path,
-            server => $server
-        };
-    }
-
-    return;
-}
-
-=head2 port
-
 Creates the Binary WebsocketAPI instance on demand and returns the used C<port>.
 
 =cut
@@ -175,8 +153,6 @@ sub port {
 
     ## no critic (RequireLocalizedPunctuationVars)
     $ENV{BOM_TEST_RATE_LIMITATIONS} = '/home/git/regentmarkets/bom-test/lib/BOM/Test/WebsocketAPI/' . 'rate_limitations.yml';
-
-    load_ws_redis_server();
 
     my $binary = Binary::WebSocketAPI->new();
     $binary->log->level($self->ws_log_level);

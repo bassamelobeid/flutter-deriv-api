@@ -25,7 +25,7 @@ A class repsenting clients to the pricer redis server (B<redis_pricer>). It is a
 =cut
 
 sub _build_config {
-    return YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml');
+    return YAML::XS::LoadFile('/etc/rmg/redis-pricer.yml');
 }
 
 1;

@@ -25,7 +25,7 @@ A class repsenting clients to the shared redis server (B<reds_feed_master>). It 
 =cut
 
 sub _build_config {
-    return YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_FEED} // '/etc/rmg/redis-feed.yml');
+    return YAML::XS::LoadFile('/etc/rmg/redis-feed.yml');
 }
 
 1;

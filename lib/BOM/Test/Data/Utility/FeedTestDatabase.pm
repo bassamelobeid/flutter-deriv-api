@@ -190,7 +190,7 @@ Flush feed database and create ticks
 sub flush_and_create_ticks {
     my @ticks = @_;
 
-    Cache::RedisDB->flushall;
+    Cache::RedisDB->redis->flushdb;
     my $redis = BOM::Config::Redis::redis_replicated_write();
     $redis->del($_) for @{$redis->keys('*DEC*')};
     BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;

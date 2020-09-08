@@ -62,7 +62,7 @@ sub _initialize_symbol_dividend {
 sub _init {
     my $writer = BOM::Config::Chronicle::get_chronicle_writer();
     #delete chronicle data too (Redis and Pg)
-    $writer->cache_writer->flushall;
+    $writer->cache_writer->flushdb;
     BOM::Config::Chronicle::dbic()->run(fixup => sub { $_->do('delete from chronicle;') }) if BOM::Config::Chronicle::dbic();
     $writer->set(
         'app_settings',

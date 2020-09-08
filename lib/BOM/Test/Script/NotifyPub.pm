@@ -2,7 +2,10 @@ package BOM::Test::Script::NotifyPub;
 use strict;
 use warnings;
 
-use BOM::Test;
+BEGIN {
+    local $ENV{NO_PURGE_REDIS} = 1;
+    require BOM::Test;
+}
 use BOM::Test::Script;
 
 my $script;

@@ -1,19 +1,20 @@
 package BOM::Test::RPC::BomRpc;
 use strict;
 use warnings;
-
 use Mojo::Server::Daemon;
 use Path::Tiny;
-use BOM::RPC::Transport::HTTP;
-use BOM::Test::Helper::P2P;
 
 my $pid;
 
 BEGIN {
-    if (my $rpc_url = $ENV{RPC_URL}) {
-        my $config_file = '/tmp/rpc_test.cfg';
-        $ENV{RPC_CONFIG} = $config_file;    ## no critic (Variables::RequireLocalizedPunctuationVars)
-        path($config_file)->spew(<<EOC);
+    # BOM::Test is needed to load $ENV{RPC_URL}
+    local $ENV{NO_PURGE_REDIS} = 1;
+    require BOM::Test;
+    my $rpc_url = $ENV{RPC_URL};
+
+    my $config_file = '/tmp/rpc_test.cfg';
+    $ENV{RPC_CONFIG} = $config_file;    ## no critic (Variables::RequireLocalizedPunctuationVars)
+    path($config_file)->spew(<<EOC);
     app->log(Mojo::Log->new(level => 'debug'));
     app->renderer->default_format('json');
     {
@@ -27,21 +28,22 @@ BEGIN {
         }
     };
 EOC
-        $pid = fork;
-        if (not defined $pid) {
-            die 'Could not fork process to start RPC: ' . $!;
-        } elsif ($pid == 0) {
 
-            my $rpc    = BOM::RPC::Transport::HTTP->new();
-            my $daemon = Mojo::Server::Daemon->new(
-                app    => $rpc,
-                listen => [$rpc_url],
-            );
-            BOM::Test::Helper::P2P::bypass_sendbird();
-            local $SIG{HUP} = sub { $daemon->stop; exit; };
-            $daemon->run;
-        }
+    $pid = fork;
+    if (not defined $pid) {
+        die 'Could not fork process to start RPC: ' . $!;
+    } elsif ($pid == 0) {
+        local $ENV{NO_PURGE_REDIS} = 1;
+        # TODO run /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl directly
+        my $script = '/home/git/regentmarkets/bom-test/bin/bom_rpc_for_test.pl';
+
+        exec($^X, qw(-MBOM::Test), $script) or die "Couldn't $script: $!";
     }
+    # it will cause the test bom-websocket-tests/v3/misc/02_website_status.t to fail if it is not ready before starting test.
+    # so let's waiting bom-rpc ready
+    # TODO find a better way to check its status
+    sleep 5;
+
 }
 
 END {

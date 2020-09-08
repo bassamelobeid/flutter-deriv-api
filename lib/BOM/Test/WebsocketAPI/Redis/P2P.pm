@@ -25,7 +25,7 @@ A class repsenting clients to the p2p redis server (B<redis_p2p>). It is a subcl
 =cut
 
 sub _build_config {
-    return YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_P2P} // '/etc/rmg/redis-p2p.yml');
+    return YAML::XS::LoadFile('/etc/rmg/redis-p2p.yml');
 }
 
 1;

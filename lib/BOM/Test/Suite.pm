@@ -2,6 +2,11 @@ package BOM::Test::Suite;
 use strict;
 use warnings;
 use Test::Most;
+
+BEGIN {
+    local $ENV{NO_PURGE_REDIS} = 1;
+    require BOM::Test;
+}
 use JSON::MaybeXS;
 use Data::Dumper;
 use BOM::Test::Time qw(set_date);    # should be on top

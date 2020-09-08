@@ -4,6 +4,7 @@ use BOM::Test;
 
 use Test::More;
 use List::MoreUtils qw(uniq);
+
 use File::Basename;
 
 if (BOM::Test::on_qa) {

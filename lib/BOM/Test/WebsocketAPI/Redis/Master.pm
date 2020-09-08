@@ -24,7 +24,7 @@ A class repsenting clients to the websocket master redis server (B<ws_redis_mast
 =cut
 
 sub _build_config {
-    return YAML::XS::LoadFile($ENV{BOM_TEST_WS_REDIS});
+    return YAML::XS::LoadFile('/etc/rmg/ws-redis.yml');
 }
 
 1;

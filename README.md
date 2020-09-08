@@ -6,22 +6,20 @@ BOM::Test - Do things before test
 
 This module is used to prepare test environment. It should be used before any other bom modules in the test file.
 
+# Environment Variables
+
 - $ENV{DB\_POSTFIX}
 
     This variable will be set if test is running on qa devbox. If it is set the system will use test database instead of development database.
 
-- $ENV{REDIS\_CACHE\_SERVER}
+# Functions
 
-    This variable will be set if test is running on qa devbox. If it is set the Cache::RedisDB will use test redis instance instead of development.
+## purge\_redis
 
-- $ENV{BOM\_TEST\_REDIS\_RAND}
+Purge Redis database before running a test script. Give it a clear environment.
 
-    This variable will be set if test is running on qa devbox. If it is set the BOM::Platform::Config::randsrv will use test redis instance instead of development.
-
-- $ENV{BOM\_TEST\_REDIS\_REPLICATED}
-
-    This variable will be set if test is running on qa devbox. If it is set the BOM::Platform::Redis and other bom services
-    will use test redis instance instead of development.
+Parameters: none
+Return: 1
 
 # TEST
 

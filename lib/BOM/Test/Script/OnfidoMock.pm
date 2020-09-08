@@ -2,7 +2,10 @@ package BOM::Test::Script::OnfidoMock;
 use strict;
 use warnings;
 
-use BOM::Test;
+BEGIN {
+    local $ENV{NO_PURGE_REDIS} = 1;
+    require BOM::Test;
+}
 
 my $pid;
 
@@ -12,7 +15,8 @@ BEGIN {
     $pid = fork();
     die "fork error " unless defined($pid);
     unless ($pid) {
-        exec('/home/git/regentmarkets/cpan/local/bin/morbo',
+        local $ENV{NO_PURGE_REDIS} = 1;
+        exec($^X, '-MBOM::Test', '/home/git/regentmarkets/cpan/local/bin/morbo',
             '-l', $ENV{ONFIDO_URL}, '-m', 'production', '/home/git/regentmarkets/cpan/local/bin/mock_onfido.pl');
     }
 

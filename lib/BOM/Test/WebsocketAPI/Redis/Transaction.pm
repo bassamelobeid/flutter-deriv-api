@@ -25,7 +25,7 @@ A class repsenting clients to the transaction redis server (B<redis_transaction>
 =cut
 
 sub _build_config {
-    return YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_TRANSACTION} // '/etc/rmg/redis-transaction.yml');
+    return YAML::XS::LoadFile('/etc/rmg/redis-transaction.yml');
 }
 
 1;
