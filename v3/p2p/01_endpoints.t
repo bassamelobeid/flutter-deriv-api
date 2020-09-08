@@ -162,8 +162,10 @@ subtest 'create advertiser' => sub {
 
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
     test_schema('p2p_advertiser_info', $resp);
-    delete $resp->{p2p_advertiser_info}->@{qw( daily_buy daily_sell daily_buy_limit daily_sell_limit 
-        buy_trades_completed_30d buy_trades_refunded_30d release_time_avg_30d sell_trades_completed_30d total_orders )};
+    delete $resp->{p2p_advertiser_info}->@{
+        qw( daily_buy daily_sell daily_buy_limit daily_sell_limit
+            buy_trades_completed_30d buy_trades_refunded_30d release_time_avg_30d sell_trades_completed_30d total_orders )
+    };
 
     cmp_deeply($resp->{p2p_advertiser_info}, $advertiser, 'advertiser info is correct');
 
@@ -178,21 +180,22 @@ subtest 'create advertiser' => sub {
             %advert_params
         })->{error};
     is $resp->{code}, 'AdvertiserNotApproved', 'Unapproved advertiser cannot create ad';
-    
+
     subtest 'p2p_advertiser_stats' => sub {
-    
+
         $resp = $t->await::p2p_advertiser_stats({
-                p2p_advertiser_stats => 1,
-            });
+            p2p_advertiser_stats => 1,
+        });
         test_schema('p2p_advertiser_stats', $resp);
-        
+
         cmp_deeply(
             $resp->{p2p_advertiser_stats},
             $t->await::p2p_advertiser_stats({
-                p2p_advertiser_stats => 1,
-                id => $client_advertiser->p2p_advertiser_info->{id},
-                days => 30,
-            })->{p2p_advertiser_stats},
+                    p2p_advertiser_stats => 1,
+                    id                   => $client_advertiser->p2p_advertiser_info->{id},
+                    days                 => 30,
+                }
+            )->{p2p_advertiser_stats},
             'call params'
         );
     };
@@ -307,7 +310,7 @@ subtest 'create advert (sell)' => sub {
     is $advert->{type},         $advert_params{type},         'type';
     is $advert->{payment_info}, $advert_params{payment_info}, 'payment_info';
     is $advert->{contact_info}, $advert_params{contact_info}, 'contact_info';
-    
+
     $resp = $t->await::p2p_advertiser_adverts({p2p_advertiser_adverts => 1});
     test_schema('p2p_advertiser_adverts', $resp);
     cmp_deeply($resp->{p2p_advertiser_adverts}{list}[0], $advert, 'Advertiser adverts item matches advert create');
@@ -483,21 +486,21 @@ subtest 'p2p_advert_update' => sub {
     $t->await::authorize({authorize => $token_advertiser});
 
     my $advert = $t->await::p2p_advert_create({
-        p2p_advert_create => 1,
-        %advert_params
-    })->{p2p_advert_create};    
-    
+            p2p_advert_create => 1,
+            %advert_params
+        })->{p2p_advert_create};
+
     $resp = $t->await::p2p_advert_update({
-            p2p_advert_update => 1,
-            id => $advert->{id},
-        });
+        p2p_advert_update => 1,
+        id                => $advert->{id},
+    });
     test_schema('p2p_advert_update', $resp, 'empty update');
 
     $resp = $t->await::p2p_advert_update({
-            p2p_advert_update => 1,
-            id => $advert->{id},
-            is_active => 0,
-        });
+        p2p_advert_update => 1,
+        id                => $advert->{id},
+        is_active         => 0,
+    });
     test_schema('p2p_advert_update', $resp, 'actual update');
 };
 

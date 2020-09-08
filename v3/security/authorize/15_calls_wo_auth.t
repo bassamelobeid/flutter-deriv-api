@@ -8,6 +8,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
 use Test::MockModule;
 use BOM::Config::Runtime;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 use await;
 
@@ -76,6 +77,8 @@ populate_exchange_rates();
 ## website_status
 my (undef, $call_params) = call_mocked_client($t, {website_status => 1});
 ok $call_params->{country_code};
+
+BOM::Config::Runtime->instance->app_config->check_for_update(1);
 
 $res = $t->await::website_status({website_status => 1});
 is $res->{msg_type}, 'website_status';

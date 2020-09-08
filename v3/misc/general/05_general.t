@@ -98,7 +98,8 @@ my $t = build_wsapi_test();
         req_id => 7
     });
     is $res->{error}->{code}, 'OutputValidationFailed', 'Correct error code when our own output fails schema  check';
-    is $res->{error}->{message}, 'An unexpected error occurred: Please refresh or try again in a few minutes.', 'Correct Error Message when our output fails schema check';
+    is $res->{error}->{message}, 'An unexpected error occurred: Please refresh or try again in a few minutes.',
+        'Correct Error Message when our output fails schema check';
 }
 $t->finish_ok;
 

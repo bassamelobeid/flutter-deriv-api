@@ -11,9 +11,11 @@ use Mojo::Redis2;
 use Clone;
 use BOM::Config::Chronicle;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 #we need this because of calculating max exchange rates on currency config
 populate_exchange_rates();
+print STDERR "pid of script is $$\n";
 
 my $t = build_wsapi_test();
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
@@ -161,7 +163,7 @@ unless ($pid) {
 
     sleep 1;
     for (1 .. 2) {
-        $redis->publish($channel_name => '{"site_status": "up", "message": "Unit test ' . $_ . '"}');
+        $redis->publish($channel_name => '{"site_status": "up", "message": "release_due"}');
         sleep 1;
     }
     exit;
