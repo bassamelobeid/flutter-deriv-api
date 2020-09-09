@@ -10,7 +10,7 @@ __PACKAGE__->meta->setup(
 
     columns => [
         payment_id        => { type => 'bigint', not_null => 1 },
-        transaction_type  => { type => 'varchar', length => 15, not_null => 1 },
+        transaction_type  => { type => 'text', not_null => 1 },
         trace_id          => { type => 'bigint', not_null => 1 },
         created_by        => { type => 'varchar', length => 50 },
         payment_processor => { type => 'varchar', length => 50, not_null => 1 },
