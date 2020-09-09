@@ -26,7 +26,7 @@ A factory class for creating C<Future>-based async clients to the test redis ser
 =cut
 
 use Exporter qw/import/;
-our @EXPORT_OK = qw/redis_feed_master ws_redis_master redis_pricer redis_transaction redis_queue redis_p2p redis_rpc/;
+our @EXPORT_OK = qw/redis_feed_master ws_redis_master redis_pricer redis_transaction redis_p2p redis_rpc/;
 
 =head2 redis_feed_master
 
