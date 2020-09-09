@@ -139,8 +139,9 @@ sub _currencies_config {
     # if there were no amount entered by client), we get max out of two minimal possible stakes.
     # Logic is copied from _build_staking_limits
 
-    my $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
-    my $transfer_fees   = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
+    my $transfer_limits     = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+    my $transfer_limits_mt5 = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1, 'mt5');
+    my $transfer_fees       = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
 
     # Get available currencies
     my @all_currencies = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
@@ -157,8 +158,9 @@ sub _currencies_config {
             is_withdrawal_suspended   => BOM::RPC::v3::Utility::verify_cashier_suspended($_, 'withdrawal'),
             name                      => LandingCompany::Registry::get_currency_definition($_)->{name},
             transfer_between_accounts => {
-                limits => $transfer_limits->{$_},
-                fees   => $transfer_fees->{$_},
+                limits     => $transfer_limits->{$_},
+                limits_mt5 => $transfer_limits_mt5->{$_},
+                fees       => $transfer_fees->{$_},
             }}
     } @all_currencies;
 

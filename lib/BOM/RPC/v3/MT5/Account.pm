@@ -1698,7 +1698,8 @@ sub _mt5_validate_and_get_amount {
                     'AmountNotAllowed',
                     {
                         override_code => $error_code,
-                        params => [BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{$source_currency}->{min}, $source_currency]}
+                        params =>
+                            [BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1, 'mt5')->{$source_currency}->{min}, $source_currency]}
                 ) if ($err =~ /The amount .* is below the minimum allowed amount/);
 
                 #default error:
@@ -1708,7 +1709,7 @@ sub _mt5_validate_and_get_amount {
             $err = BOM::RPC::v3::Cashier::validate_amount($amount, $source_currency);
             return create_error_future($error_code, {message => $err}) if $err;
 
-            my $min = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$source_currency}->{min};
+            my $min = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(0, 'mt5')->{$source_currency}->{min};
 
             return create_error_future(
                 'InvalidMinAmount',
@@ -1717,7 +1718,7 @@ sub _mt5_validate_and_get_amount {
                     params        => [$source_currency, formatnumber('amount', $source_currency, $min)]}
             ) if $amount < financialrounding('amount', $source_currency, $min);
 
-            my $max = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{$source_currency}->{max};
+            my $max = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(0, 'mt5')->{$source_currency}->{max};
 
             return create_error_future(
                 'InvalidMaxAmount',

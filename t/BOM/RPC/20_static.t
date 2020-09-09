@@ -52,9 +52,10 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
             language => 'EN',
             args     => {website_status => 1}})->has_no_system_error->has_no_error->result;
 
-    my @all_currencies  = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
-    my $currency_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
-    my $currency_fees   = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
+    my @all_currencies      = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
+    my $currency_limits     = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+    my $currency_limits_mt5 = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1, 'mt5');
+    my $currency_fees       = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
 
     is(
         $currency_limits->{$_}->{min},
@@ -66,6 +67,18 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
         $currency_limits->{$_}->{max},
         $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits}->{max},
         "Transfer between account maximum is correct for $_"
+    ) for @all_currencies;
+
+    is(
+        $currency_limits_mt5->{$_}->{min},
+        $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits_mt5}->{min},
+        "MT5 transfer between account minimum is correct for $_"
+    ) for @all_currencies;
+
+    is(
+        $currency_limits_mt5->{$_}->{max},
+        $result->{currencies_config}->{$_}->{transfer_between_accounts}->{limits_mt5}->{max},
+        "Mt5 transfer between account maximum is correct for $_"
     ) for @all_currencies;
 
     for my $currency (@all_currencies) {

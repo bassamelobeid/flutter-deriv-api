@@ -472,7 +472,8 @@ subtest 'Transfers Limits' => sub {
         ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
         ->error_message_like(qr/minimum amount for transfers is EUR $expected_eur_min/, 'Transfers minimum - correct error message');
 
-    my $expected_usd_min = BOM::Config::CurrencyConfig::transfer_between_accounts_limits()->{USD}->{min};
+    my $expected_usd_min = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1, 'mt5')->{USD}->{min};
+    my $expected_usd_max = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1, 'mt5')->{USD}->{max};
 
     my $withdraw_params = {
         language => 'EN',
@@ -488,6 +489,11 @@ subtest 'Transfers Limits' => sub {
         ->error_code_is('MT5WithdrawalError', 'Less than minimum amount - correct error code')
         ->error_message_like(qr/minimum amount for transfers is USD $expected_usd_min/, 'InvalidMinAmount - correct error message');
 
+    $withdraw_params->{args}->{amount} = $expected_usd_max + 1;
+
+    $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('Transfers should have been stopped')
+        ->error_code_is('MT5WithdrawalError', 'More than maximum amount - correct error code')
+        ->error_message_like(qr/maximum amount .* is USD $expected_usd_max/, 'InvalidMaxAmount - correct error message');
     $demo_account_mock->unmock;
 };
 
