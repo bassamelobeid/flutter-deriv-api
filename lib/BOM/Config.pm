@@ -184,11 +184,6 @@ sub redis_transaction_config {
     return $config;
 }
 
-sub redis_queue_config {
-    state $config = YAML::XS::LoadFile('/etc/rmg/redis-queue.yml');
-    return $config;
-}
-
 sub redis_limit_settings {
     state $config = YAML::XS::LoadFile('/etc/rmg/redis-transaction-limits.yml');
     return $config;

@@ -61,7 +61,7 @@ sub _redis {
 
 =head2 redis_config
 
-    my $redis_queue_config = BOM::Config::Redis::redis_config(queue => 'write');
+    my $redis_rpc_config = BOM::Config::Redis::redis_config(rpc => 'write');
 
 Returns a hashref of C<uri>, C<host>, C<port>, and C<password> (if any)
 of the Redis server for a specific type and access level, for supplying
@@ -356,32 +356,6 @@ Returns a read-only L<RedisDB> handle to our transaction Redis service.
 sub redis_transaction {
     $config->{transaction} //= BOM::Config::redis_transaction_config();
     return _redis('transaction', 'read', 10);
-}
-
-=head2 redis_queue_write
-
-    my $redis = BOM::Config::Redis::redis_queue_write();
-
-Returns a writable L<RedisDB> handle to our RPC queue Redis service.
-
-=cut
-
-sub redis_queue_write {
-    $config->{queue} //= BOM::Config::redis_queue_config();
-    return _redis('queue', 'write', 10);
-}
-
-=head2 redis_queue
-
-    my $redis = BOM::Config::Redis::redis_queue();
-
-Returns a read-only L<RedisDB> handle to our RPC queue Redis service.
-
-=cut
-
-sub redis_queue {
-    $config->{queue} //= BOM::Config::redis_queue_config();
-    return _redis('queue', 'read', 10);
 }
 
 =head2 redis_auth_write
