@@ -114,8 +114,8 @@ At this point, client must email Customer Support/Compliance team for their excl
 to be uplifted (exclude_until date removed).
 
 United Kingdom Gambling Commission licence conditions and codes of practice is
-applicable to clients under Binary (Europe) Ltd & Binary (IOM) Ltd only. Change is also
-applicable to clients under Binary Investments (Europe) Ltd for standardisation.
+applicable to clients under Deriv (Europe) Limited & Deriv (MX) Ltd only. Change is also
+applicable to clients under Deriv Investments (Europe) Limited for standardisation.
 (http://www.gamblingcommission.gov.uk/PDF/LCCP/Licence-conditions-and-codes-of-practice.pdf)
 
 =cut
@@ -137,12 +137,12 @@ sub allow_uplift_self_exclusion {
 # If exclude_until date has expired, Customer Support and Compliance team can remove the exclude_until date
     return 1 if ($after_exclusion_date and not $form_exclude_until_date);
 
-# If exclude_until date has not expired and client is under Binary (SVG) Ltd.,
+# If exclude_until date has not expired and client is under Deriv (SVG) LLC,
 # then Customer Support and Compliance team can amend or remove the exclude_until date
     return 1 if ($client->landing_company->short eq 'svg');
 
-# If exclude_until date has not expired and client is under Binary (Europe) Ltd, Binary (IOM) Ltd,
-# or Binary Investments (Europe) Ltd, then only Compliance team can amend or remove the exclude_until date
+# If exclude_until date has not expired and client is under Deriv (Europe) Limited, Deriv (MX) Ltd,
+# or Deriv Investments (Europe) Limited, then only Compliance team can amend or remove the exclude_until date
     return 1 if (BOM::Backoffice::Auth0::has_authorisation(['Compliance']));
 
     # Default value (no uplifting allowed)
@@ -225,8 +225,8 @@ sub print_client_details {
             search_option => 'ProveID_KYC'
         );
 
-# If client is under Binary Investments (Europe) Ltd and there is no ProveID_KYC,
-# check whether there is ProveID_KYC under Binary (IOM) Ltd.
+# If client is under Deriv Investments (Europe) Limited and there is no ProveID_KYC,
+# check whether there is ProveID_KYC under Deriv (MX) Ltd
         if ($client->landing_company->short eq 'maltainvest'
             && !$client->status->proveid_requested)
         {
