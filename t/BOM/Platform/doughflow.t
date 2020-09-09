@@ -8,10 +8,10 @@ use BOM::Platform::Doughflow qw(get_sportsbook);
 use LandingCompany::Registry;
 
 my @doughflow_sportsbooks_mock = (
-    'Binary (CR) SA USD',
-    'Binary (CR) SA EUR',
-    'Binary (CR) SA AUD',
-    'Binary (CR) SA GBP',
+    'Binary (SVG) LLC USD',
+    'Binary (SVG) LLC EUR',
+    'Binary (SVG) LLC AUD',
+    'Binary (SVG) LLC GBP',
     'Binary (Europe) Ltd GBP',
     'Binary (Europe) Ltd EUR',
     'Binary (Europe) Ltd USD',

@@ -32,18 +32,21 @@ sub get_sportsbook {
         return 'test';
     }
 
-    my $landing_company = LandingCompany::Registry->get_by_broker($broker)->name;
+    my $landing_company = LandingCompany::Registry->get_by_broker($broker)->short;
 
     # remove full-stops, to make sportsbook name short enough for DF (30 chars Max)
     $landing_company =~ s/\.//g;
 
-    $landing_company = 'Binary (CR) SA' if $landing_company =~ /SVG/;
-    $sportsbook      = $landing_company . ' ' . $currency;
+    # for backward compatibility, we keep sportsbook prefixes as 'Binary'
+    my %mapping = (
+        svg         => 'Binary (SVG) LLC',
+        malta       => 'Binary (Europe) Ltd',
+        iom         => 'Binary (IOM) Ltd',
+        maltainvest => 'Binary Investments Ltd',
+    );
+    $landing_company = $mapping{$landing_company};
 
-    # Because if length restriction in DF part and time limit in our part, we are shortening our name dirty like this.
-    if ($broker eq 'MF') {
-        $sportsbook =~ s/\s\(Europe\)//g;
-    }
+    $sportsbook = $landing_company . ' ' . $currency;
 
     return $sportsbook;
 }
