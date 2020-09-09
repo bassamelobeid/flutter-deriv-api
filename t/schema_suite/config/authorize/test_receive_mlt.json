@@ -130,7 +130,7 @@
          "pattern" : "^[_3]$"
       },
       "landing_company_fullname" : {
-         "pattern" : "^Binary \\(Europe\\) Ltd$",
+         "pattern" : "^Deriv \\(Europe\\) Limited$",
          "type" : "string"
       },
       "balance" : {

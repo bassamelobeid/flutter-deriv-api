@@ -108,7 +108,7 @@
          "type" : "string"
       },
       "landing_company_fullname" : {
-         "pattern" : "^Binary Ltd$",
+         "pattern" : "^Deriv Limited$",
          "type" : "string"
       },
       "upgradeable_landing_companies" : {

@@ -1,6 +1,6 @@
 {
-   "$schema" : "http://json-schema.org/draft-04/schema#",
-   "required" : [
+   "$schema": "http://json-schema.org/draft-04/schema#",
+   "required": [
       "stash",
       "name",
       "virtual_company",
@@ -9,143 +9,143 @@
       "financial_company",
       "config"
    ],
-   "description" : null,
-   "type" : "object",
-   "title" : null,
-   "additionalProperties" : false,
-   "properties" : {
-      "minimum_age" : {
-         "type" : "integer"
+   "description": null,
+   "type": "object",
+   "title": null,
+   "additionalProperties": false,
+   "properties": {
+      "minimum_age": {
+         "type": "integer"
       },
-      "id" : {
-         "pattern" : "^de$",
-         "type" : "string"
+      "id": {
+         "pattern": "^de$",
+         "type": "string"
       },
-      "stash" : {
-         "type" : "object"
+      "stash": {
+         "type": "object"
       },
-      "virtual_company" : {
-         "type" : "string",
-         "pattern" : "^virtual$"
+      "virtual_company": {
+         "type": "string",
+         "pattern": "^virtual$"
       },
-      "name" : {
-         "type" : "string",
-         "pattern" : "^Germany"
+      "name": {
+         "type": "string",
+         "pattern": "^Germany"
       },
-      "config" : {
-         "required" : [
+      "config": {
+         "required": [
             "tin_format",
-            	"tin_format_description"
+            "tin_format_description"
          ],
-         "properties" : {
-            "tin_format" : {
-                "type" : "array"
+         "properties": {
+            "tin_format": {
+               "type": "array"
             },
-            "tin_format_description" : {
-                "type" : "string"
+            "tin_format_description": {
+               "type": "string"
             }
          },
-         "type" : "object",
-         "additionalProperties" : false
+         "type": "object",
+         "additionalProperties": false
       },
-      "mt_financial_company" : {
-          "financial" : {
-              "name" : "Binary Investments (Europe) Ltd",
-              "shortcode" : "maltainvest",
-              "changeable_fields" : {},
-              "legal_allowed_currencies" : [
-                  "EUR",
-                  "GBP",
-                  "USD"
-              ],
-              "legal_default_currency" : "EUR",
-              "country" : "Malta",
-              "requirements" : {
-                  "signup" : [
-                      "salutation",
-                      "citizen",
-                      "tax_residence",
-                      "tax_identification_number",
-                      "first_name",
-                      "last_name",
-                      "date_of_birth",
-                      "residence",
-                      "address_line_1",
-                      "address_city",
-                      "account_opening_reason"
-              ]
-              },
-              "legal_allowed_contract_categories" : [
-                  "asian",
-                  "callput",
-                  "callputequal",
-                  "digits",
-                  "endsinout",
-                  "staysinout",
-                  "touchnotouch"
-              ],
-              "has_reality_check" : 0,
-              "legal_allowed_markets" : [
-                  "commodities",
-                  "forex",
-                  "indices"
-              ],
-              "address" : [
-                  "W Business Centre",
-                  "Level 3",
-                  "Triq Dun Karm",
-                  "Birkirkara",
-                  "BKR 9033",
-                  "Malta"
-              ],
-              "currency_config" : {
-                  "indices" : {
-                  "EUR" : {
-                      "max_payout" : 50000,
-                      "min_stake" : 5
+      "mt_financial_company": {
+         "financial": {
+            "name": "Deriv Investments (Europe) Limited",
+            "shortcode": "maltainvest",
+            "changeable_fields": {},
+            "legal_allowed_currencies": [
+               "EUR",
+               "GBP",
+               "USD"
+            ],
+            "legal_default_currency": "EUR",
+            "country": "Malta",
+            "requirements": {
+               "signup": [
+                  "salutation",
+                  "citizen",
+                  "tax_residence",
+                  "tax_identification_number",
+                  "first_name",
+                  "last_name",
+                  "date_of_birth",
+                  "residence",
+                  "address_line_1",
+                  "address_city",
+                  "account_opening_reason"
+               ]
+            },
+            "legal_allowed_contract_categories": [
+               "asian",
+               "callput",
+               "callputequal",
+               "digits",
+               "endsinout",
+               "staysinout",
+               "touchnotouch"
+            ],
+            "has_reality_check": 0,
+            "legal_allowed_markets": [
+               "commodities",
+               "forex",
+               "indices"
+            ],
+            "address": [
+               "W Business Centre",
+               "Level 3",
+               "Triq Dun Karm",
+               "Birkirkara",
+               "BKR 9033",
+               "Malta"
+            ],
+            "currency_config": {
+               "indices": {
+                  "EUR": {
+                     "max_payout": 50000,
+                     "min_stake": 5
                   },
-                  "GBP" : {
-                      "min_stake" : 5,
-                      "max_payout" : 50000
+                  "GBP": {
+                     "min_stake": 5,
+                     "max_payout": 50000
                   },
-                  "USD" : {
-                      "min_stake" : 5,
-                      "max_payout" : 50000
+                  "USD": {
+                     "min_stake": 5,
+                     "max_payout": 50000
                   }
-              },
-                  "commodities" : {
-                  "USD" : {
-                      "max_payout" : 50000,
-                      "min_stake" : 5
+               },
+               "commodities": {
+                  "USD": {
+                     "max_payout": 50000,
+                     "min_stake": 5
                   },
-                  "EUR" : {
-                      "max_payout" : 50000,
-                      "min_stake" : 5
+                  "EUR": {
+                     "max_payout": 50000,
+                     "min_stake": 5
                   },
-                  "GBP" : {
-                      "max_payout" : 50000,
-                      "min_stake" : 5
+                  "GBP": {
+                     "max_payout": 50000,
+                     "min_stake": 5
                   }
-              },
-                  "forex" : {
-                  "USD" : {
-                      "min_stake" : 5,
-                      "max_payout" : 50000
+               },
+               "forex": {
+                  "USD": {
+                     "min_stake": 5,
+                     "max_payout": 50000
                   },
-                  "GBP" : {
-                      "min_stake" : 5,
-                      "max_payout" : 50000
+                  "GBP": {
+                     "min_stake": 5,
+                     "max_payout": 50000
                   },
-                  "EUR" : {
-                      "min_stake" : 5,
-                      "max_payout" : 50000
+                  "EUR": {
+                     "min_stake": 5,
+                     "max_payout": 50000
                   }
-              }
-          }
-          }
+               }
+            }
+         }
       },
-      "financial_company" : {
-         "required" : [
+      "financial_company": {
+         "required": [
             "address",
             "shortcode",
             "legal_default_currency",
@@ -159,163 +159,163 @@
             "legal_allowed_currencies",
             "currency_config"
          ],
-         "properties" : {
-            "requirements" : {
-               "patternProperties" : {
-                  "^.+$" : {
-                     "type" : "array",
-                     "items" : {
-                        "type" : "string"
+         "properties": {
+            "requirements": {
+               "patternProperties": {
+                  "^.+$": {
+                     "type": "array",
+                     "items": {
+                        "type": "string"
                      }
                   }
                },
-               "properties" : {},
-               "additionalProperties" : false,
-               "type" : "object"
+               "properties": {},
+               "additionalProperties": false,
+               "type": "object"
             },
-            "legal_allowed_contract_categories" : {
-               "type" : "array",
-               "items" : {
-                  "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal)$",
-                  "type" : "string"
+            "legal_allowed_contract_categories": {
+               "type": "array",
+               "items": {
+                  "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal)$",
+                  "type": "string"
                },
-               "minItems" : 6
+               "minItems": 6
             },
-            "has_reality_check" : {
-               "type" : "integer",
-               "enum" : [
+            "has_reality_check": {
+               "type": "integer",
+               "enum": [
                   0
                ]
             },
-            "changeable_fields" : {
-               "properties" : {},
-               "patternProperties" : {
-                  "^.+$" : {
-                     "items" : {
-                        "type" : "string"
+            "changeable_fields": {
+               "properties": {},
+               "patternProperties": {
+                  "^.+$": {
+                     "items": {
+                        "type": "string"
                      },
-                     "type" : "array"
+                     "type": "array"
                   }
                },
-               "type" : "object",
-               "additionalProperties" : false
+               "type": "object",
+               "additionalProperties": false
             },
-            "legal_allowed_markets" : {
-               "minItems" : 3,
-               "items" : {
-                  "type" : "string",
-                  "pattern" : "^(commodities|forex|indices)$"
+            "legal_allowed_markets": {
+               "minItems": 3,
+               "items": {
+                  "type": "string",
+                  "pattern": "^(commodities|forex|indices)$"
                },
-               "type" : "array"
+               "type": "array"
             },
-            "legal_allowed_currencies" : {
-               "items" : {
-                  "pattern" : "^(USD|EUR|GBP)$",
-                  "type" : "string"
+            "legal_allowed_currencies": {
+               "items": {
+                  "pattern": "^(USD|EUR|GBP)$",
+                  "type": "string"
                },
-               "type" : "array",
-               "minItems" : 3
+               "type": "array",
+               "minItems": 3
             },
-            "currency_config" : {
-               "properties" : {
-                  "forex" : {
-                     "additionalProperties" : false,
-                     "type" : "object",
-                     "patternProperties" : {
-                        "^[a-zA-Z0-9]{2,20}$" : {
-                           "type" : "object",
-                           "additionalProperties" : false,
-                           "properties" : {
-                              "min_stake" : {
-                                 "maximum" : 10,
-                                 "type" : "number",
-                                 "minimum" : 0
+            "currency_config": {
+               "properties": {
+                  "forex": {
+                     "additionalProperties": false,
+                     "type": "object",
+                     "patternProperties": {
+                        "^[a-zA-Z0-9]{2,20}$": {
+                           "type": "object",
+                           "additionalProperties": false,
+                           "properties": {
+                              "min_stake": {
+                                 "maximum": 10,
+                                 "type": "number",
+                                 "minimum": 0
                               },
-                              "max_payout" : {
-                                 "type" : "number",
-                                 "minimum" : 0
+                              "max_payout": {
+                                 "type": "number",
+                                 "minimum": 0
                               }
                            },
-                           "required" : [
+                           "required": [
                               "max_payout",
                               "min_stake"
                            ]
                         }
                      },
-                     "properties" : {}
+                     "properties": {}
                   },
-                  "synthetic_index" : {
-                     "type" : "object",
-                     "additionalProperties" : false,
-                     "properties" : {},
-                     "patternProperties" : {
-                        "^[A-Z]{3,4}$" : {
-                           "properties" : {
-                              "max_payout" : {
-                                 "minimum" : 0,
-                                 "type" : "number"
+                  "synthetic_index": {
+                     "type": "object",
+                     "additionalProperties": false,
+                     "properties": {},
+                     "patternProperties": {
+                        "^[A-Z]{3,4}$": {
+                           "properties": {
+                              "max_payout": {
+                                 "minimum": 0,
+                                 "type": "number"
                               },
-                              "min_stake" : {
-                                 "maximum" : 10,
-                                 "type" : "number",
-                                 "minimum" : 0
+                              "min_stake": {
+                                 "maximum": 10,
+                                 "type": "number",
+                                 "minimum": 0
                               }
                            },
-                           "required" : [
+                           "required": [
                               "max_payout",
                               "min_stake"
                            ],
-                           "additionalProperties" : false,
-                           "type" : "object"
+                           "additionalProperties": false,
+                           "type": "object"
                         }
                      }
                   },
-                  "commodities" : {
-                     "type" : "object",
-                     "additionalProperties" : false,
-                     "properties" : {},
-                     "patternProperties" : {
-                        "^[A-Z]{3,4}$" : {
-                           "type" : "object",
-                           "additionalProperties" : false,
-                           "properties" : {
-                              "max_payout" : {
-                                 "type" : "number",
-                                 "minimum" : 0
+                  "commodities": {
+                     "type": "object",
+                     "additionalProperties": false,
+                     "properties": {},
+                     "patternProperties": {
+                        "^[A-Z]{3,4}$": {
+                           "type": "object",
+                           "additionalProperties": false,
+                           "properties": {
+                              "max_payout": {
+                                 "type": "number",
+                                 "minimum": 0
                               },
-                              "min_stake" : {
-                                 "minimum" : 0,
-                                 "type" : "number",
-                                 "maximum" : 10
+                              "min_stake": {
+                                 "minimum": 0,
+                                 "type": "number",
+                                 "maximum": 10
                               }
                            },
-                           "required" : [
+                           "required": [
                               "max_payout",
                               "min_stake"
                            ]
                         }
                      }
                   },
-                  "indices" : {
-                     "type" : "object",
-                     "additionalProperties" : false,
-                     "properties" : {},
-                     "patternProperties" : {
-                        "^[A-Z]{3,4}$" : {
-                           "type" : "object",
-                           "additionalProperties" : false,
-                           "properties" : {
-                              "min_stake" : {
-                                 "maximum" : 10,
-                                 "minimum" : 0,
-                                 "type" : "number"
+                  "indices": {
+                     "type": "object",
+                     "additionalProperties": false,
+                     "properties": {},
+                     "patternProperties": {
+                        "^[A-Z]{3,4}$": {
+                           "type": "object",
+                           "additionalProperties": false,
+                           "properties": {
+                              "min_stake": {
+                                 "maximum": 10,
+                                 "minimum": 0,
+                                 "type": "number"
                               },
-                              "max_payout" : {
-                                 "type" : "number",
-                                 "minimum" : 0
+                              "max_payout": {
+                                 "type": "number",
+                                 "minimum": 0
                               }
                            },
-                           "required" : [
+                           "required": [
                               "max_payout",
                               "min_stake"
                            ]
@@ -324,32 +324,31 @@
                   }
                }
             },
-            "country" : {
-               "pattern" : "^Malta$",
-               "type" : "string"
+            "country": {
+               "pattern": "^Malta$",
+               "type": "string"
             },
-
-            "address" : {
-               "items" : {
-                  "type" : "string"
+            "address": {
+               "items": {
+                  "type": "string"
                },
-               "type" : "array"
+               "type": "array"
             },
-            "name" : {
-               "pattern" : "^Binary Investments \\(Europe\\) Ltd$",
-               "type" : "string"
+            "name": {
+               "pattern": "^Deriv Investments \\(Europe\\) Limited$",
+               "type": "string"
             },
-            "shortcode" : {
-               "type" : "string",
-               "pattern" : "^maltainvest$"
+            "shortcode": {
+               "type": "string",
+               "pattern": "^maltainvest$"
             },
-            "legal_default_currency" : {
-               "pattern" : "^EUR$",
-               "type" : "string"
+            "legal_default_currency": {
+               "pattern": "^EUR$",
+               "type": "string"
             }
          },
-         "type" : "object",
-         "additionalProperties" : false
+         "type": "object",
+         "additionalProperties": false
       }
    }
 }

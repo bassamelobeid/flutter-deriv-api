@@ -35,7 +35,7 @@
          "pattern" : "^0.00$"
       },
       "landing_company_fullname" : {
-         "pattern" : "^Binary \\(SVG\\) Ltd\\.$",
+         "pattern" : "^Deriv \\(SVG\\) LLC$",
          "type" : "string"
       },
       "upgradeable_landing_companies" : {

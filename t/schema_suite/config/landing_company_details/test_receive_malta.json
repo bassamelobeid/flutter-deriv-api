@@ -59,7 +59,7 @@
       },
       "name" : {
          "type" : "string",
-         "pattern" : "^Binary \\(Europe\\) Ltd$"
+         "pattern" : "^Deriv \\(Europe\\) Limited$"
       },
       "address" : {
          "items" : {

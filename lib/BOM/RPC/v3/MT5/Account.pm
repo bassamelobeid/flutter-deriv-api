@@ -445,12 +445,12 @@ async_rpc "mt5_new_account",
                             cs_email         => $brand->emails('support'),
                             language         => $params->{language}});
 
-                    # Compliance team must be notified if a client under Binary (Europe) Limited
+                    # Compliance team must be notified if a client under Deriv (Europe) Limited
                     #   opens an MT5 account while having limitations on their account.
                     if ($client->landing_company->short eq 'malta' && $account_type ne 'demo') {
                         my $self_exclusion = BOM::RPC::v3::Accounts::get_self_exclusion({client => $client});
                         if (keys %$self_exclusion) {
-                            warn 'Compliance email regarding Binary (Europe) Limited user with MT5 account(s) failed to send.'
+                            warn 'Compliance email regarding Deriv (Europe) Limited user with MT5 account(s) failed to send.'
                                 unless BOM::RPC::v3::Accounts::send_self_exclusion_notification($client, 'malta_with_mt5', $self_exclusion);
                         }
                     }

@@ -352,7 +352,7 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
-            'Binary (SVG) Ltd.',
+            'Deriv (SVG) LLC',
             'It should return new account data'
         )->result_value_is(sub { shift->{landing_company_shortcode} }, 'svg', 'It should return new account data');
 
@@ -374,7 +374,7 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
-            'Binary (SVG) Ltd.',
+            'Deriv (SVG) LLC',
             'It should return new account data'
         )->result_value_is(sub { shift->{landing_company_shortcode} },
             'svg', 'It should return new account data if one of the account is marked as duplicate');
@@ -386,7 +386,7 @@ subtest $method => sub {
         $new_client->status->set('disabled', 'system', 'reason');
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
-            'Binary (SVG) Ltd.',
+            'Deriv (SVG) LLC',
             'It should return new account data'
         )->result_value_is(sub { shift->{landing_company_shortcode} },
             'svg', 'It should return new account data if one of the account is marked as disabled & account currency is not selected.');
@@ -678,7 +678,7 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
-            'Binary Investments (Europe) Ltd',
+            'Deriv Investments (Europe) Limited',
             'It should return new account data'
         )->result_value_is(sub { shift->{landing_company_shortcode} }, 'maltainvest', 'It should return new account data');
 
@@ -708,7 +708,7 @@ subtest $method => sub {
         $new_client->status->set('disabled', 'system', 'reason');
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
-            'Binary Investments (Europe) Ltd',
+            'Deriv Investments (Europe) Limited',
             'It should return new account data'
         )->result_value_is(sub { shift->{landing_company_shortcode} },
             'maltainvest', 'It should return new account data if one of the account is marked as disabled & account currency is not selected.');

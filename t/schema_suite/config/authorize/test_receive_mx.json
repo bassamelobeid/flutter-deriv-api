@@ -31,7 +31,7 @@
          "type" : "string"
       },
       "landing_company_fullname" : {
-         "pattern" : "^Binary \\(IOM\\) Ltd$",
+         "pattern" : "^Deriv \\(MX\\) Ltd$",
          "type" : "string"
       },
       "balance" : {

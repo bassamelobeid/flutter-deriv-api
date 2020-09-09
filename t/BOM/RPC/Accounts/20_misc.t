@@ -188,7 +188,7 @@ subtest 'landing company details' => sub {
         "no such landing company"
     );
     my $result = $c->tcall($method, {args => {landing_company_details => 'svg'}});
-    is($result->{name}, 'Binary (SVG) Ltd.', "details result ok");
+    is($result->{name}, 'Deriv (SVG) LLC', "details result ok");
     cmp_bag([keys %{$result->{currency_config}->{synthetic_index}}], [LandingCompany::Registry->new()->all_currencies()], "currency config ok");
     ok(!(grep { !looks_like_number($_) } get_values($result->{currency_config})), 'limits for svg are all numeric');
 

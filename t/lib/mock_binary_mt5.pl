@@ -26,7 +26,7 @@ my %GROUP_DETAILS = (
     currency => 'USD',
     group    => 'real\svg',
     leverage => 300,
-    company  => 'Binary (SVG) Ltd.'
+    company  => 'Deriv (SVG) LLC'
 );
 
 my $json = JSON::MaybeXS->new;

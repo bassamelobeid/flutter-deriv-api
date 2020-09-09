@@ -130,7 +130,7 @@
          "minItems" : 3
       },
       "name" : {
-         "pattern" : "^Binary Investments \\(Europe\\) Ltd$",
+         "pattern" : "^Deriv Investments \\(Europe\\) Limited$",
          "type" : "string"
       },
       "address" : {

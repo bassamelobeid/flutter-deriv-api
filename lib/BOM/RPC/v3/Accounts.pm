@@ -1912,10 +1912,10 @@ rpc set_self_exclusion => sub {
 
 # Need to send email in 2 circumstances:
 #   - Any client sets a self exclusion period
-#   - Client under Binary (Europe) Limited with MT5 account(s) sets any of these settings
+#   - Client under Deriv (Europe) Limited with MT5 account(s) sets any of these settings
     my @mt5_logins = $client->user->mt5_logins('real');
     if ($client->landing_company->short eq 'malta' && @mt5_logins) {
-        warn 'Compliance email regarding Binary (Europe) Limited user with MT5 account(s) failed to send.'
+        warn 'Compliance email regarding Deriv (Europe) Limited user with MT5 account(s) failed to send.'
             unless send_self_exclusion_notification($client, 'malta_with_mt5', \%args);
     } elsif ($args{exclude_until}) {
         warn 'Compliance email regarding self exclusion from the website failed to send.'
@@ -1933,7 +1933,7 @@ sub send_self_exclusion_notification {
     my @fields_to_email;
     my $message;
     if ($type eq 'malta_with_mt5') {
-        $message = "An MT5 account holder under the Binary (Europe) Limited landing company has set account limits.\n";
+        $message = "An MT5 account holder under the Deriv (Europe) Limited landing company has set account limits.\n";
         @fields_to_email =
             qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until max_deposit max_deposit_end_date/;
     } elsif ($type eq 'self_exclusion') {

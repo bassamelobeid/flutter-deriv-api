@@ -329,13 +329,13 @@ subtest 'get and set self_exclusion' => sub {
     is $self_excl->session_duration_limit, 1440, 'all good';
 
     ## Section: Check self-exclusion notification emails for compliance, related to
-    ##  clients under Binary (Europe) Limited, are sent under correct circumstances.
+    ##  clients under Deriv (Europe) Limited, are sent under correct circumstances.
     mailbox_clear();
 
     ## Set some limits, and no email should be sent, because no MT5 account has
     ##   been opened yet.
     $params->{token} = $token_mlt;
-    ##  clients under Binary (Europe) Limited, are sent under correct circumstances.
+    ##  clients under Deriv (Europe) Limited, are sent under correct circumstances.
 
     ## Set some limits, and no email should be sent, because no MT5 account has
     ##   been opened yet.

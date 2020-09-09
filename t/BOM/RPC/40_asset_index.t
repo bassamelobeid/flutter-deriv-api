@@ -86,7 +86,7 @@ sub _test_asset_index {
     };
 }
 
-# Result should be for Binary (Europe) Ltd
+# Result should be for Deriv (Europe) Limited
 # Only trades volatilities, so should be 7 entries and first entry should
 #   be R_10 with all contract categories except lookbacks.
 subtest "asset_index logged in - with arg" => _test_asset_index({
@@ -98,12 +98,12 @@ subtest "asset_index logged in - with arg" => _test_asset_index({
     $first_entry_mlt,
 );
 
-# Result should be Binary (SVG) Ltd.
+# Result should be Deriv (SVG) LLC
 # Trades everything except, so should be 113 entries and first entry should
 #   be frxAUDJPY with 5 contract types.
 subtest "asset_index logged out - no arg" => _test_asset_index({language => 'EN'}, $entry_count_cr, $first_entry_cr_mf_test2);
 
-# Result should be for Binary (Europe) Ltd
+# Result should be for Deriv (Europe) Limited
 # Only trades volatilities, so should be 7 entries and first entry should
 #   be R_10 with all contract categories except lookbacks.
 subtest "asset_index logged out - with arg" => _test_asset_index({

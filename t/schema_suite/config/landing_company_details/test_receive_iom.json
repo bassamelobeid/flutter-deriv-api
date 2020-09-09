@@ -28,7 +28,7 @@
       },
       "name" : {
          "type" : "string",
-         "pattern" : "^Binary \\(IOM\\) Ltd$"
+         "pattern" : "^Deriv \\(MX\\) Ltd$"
       },
       "shortcode" : {
          "pattern" : "^[_1]$",

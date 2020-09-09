@@ -22,7 +22,7 @@
    "properties" : {
       "name" : {
          "type" : "string",
-         "pattern" : "^Binary \\(SVG\\) Ltd\\.$"
+         "pattern" : "^Deriv \\(SVG\\) LLC$"
       },
       "address" : {
          "type" : "null"

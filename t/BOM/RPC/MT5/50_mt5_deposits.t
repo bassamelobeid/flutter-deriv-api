@@ -629,7 +629,7 @@ subtest 'labuan deposit' => sub {
                 'leverage' => 300,
                 'currency' => 'USD',
                 'group'    => 'real\labuan_financial_stp',
-                'company'  => 'Binary (SVG) Ltd.'
+                'company'  => 'Deriv (SVG) LLC'
             });
         });
     # Returning invalid rights will block deposit.

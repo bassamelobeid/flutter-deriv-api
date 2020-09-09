@@ -462,11 +462,11 @@ rpc new_account_maltainvest => sub {
                 message_to_client => $error_map->{$details_ref->{error}},
                 details           => $details_ref->{details}});
     }
-    # When a Binary (Europe) Ltd/Binary (IOM) Ltd account is created,
+    # When a Deriv (Europe) Limited/Deriv (MX) Ltd account is created,
     # the 'place of birth' field is not present.
-    # After creating Binary (Europe) Ltd/Binary (IOM) Ltd account, client can select
+    # After creating Deriv (Europe) Limited/Deriv (MX) Ltd account, client can select
     # their place of birth in their profile settings.
-    # However, when a Binary Investments (Europe) Ltd account account is created,
+    # However, when a Deriv Investments (Europe) Limited account account is created,
     # the 'place of birth' field is mandatory.
     # Hence, this check is added for backward compatibility (assuming no place of birth is selected)
     if (!$client->place_of_birth && $args->{place_of_birth} && !$client->is_virtual) {
@@ -502,7 +502,7 @@ rpc new_account_maltainvest => sub {
     my $landing_company = $new_client->landing_company;
 
     # Client's citizenship can only be set from backoffice.
-    # However, when a Binary Investments (Europe) Ltd account is created, the citizenship
+    # However, when a Deriv Investments (Europe) Limited account is created, the citizenship
     # is not updated in the new account.
     # Hence, the following check is necessary
     $new_client->citizen($client->citizen) if ($client->citizen && !$client->is_virtual);

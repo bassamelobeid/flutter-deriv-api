@@ -14,7 +14,7 @@
    "properties" : {
       "landing_company" : {
          "type" : "string",
-         "pattern" : "^Binary \\(IOM\\) Ltd$"
+         "pattern" : "^Deriv \\(MX\\) Ltd$"
       },
       "oauth_token" : {
          "type" : "string",

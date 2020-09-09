@@ -45,7 +45,7 @@
          "type" : "string"
       },
       "landing_company_fullname" : {
-         "pattern" : "^Binary Investments \\(Europe\\) Ltd$",
+         "pattern" : "^Deriv Investments \\(Europe\\) Limited$",
          "type" : "string"
       },
       "balance" : {
