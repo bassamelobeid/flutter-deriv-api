@@ -114,18 +114,22 @@ These values are extracted from app_config->payment.transfer_between_accounts.mi
 =over 4
 
 =item * C<force_refresh> - if true, transfer between accounts will be recalculated (a little expensive); otherwise, use the cached values.
+=item * C<config_for> - the intended subcategory. 'default' (or empty): internal transfer limits, 'MT5': mt5 transfer limits
 
 =back
 
 =cut
 
 sub transfer_between_accounts_limits {
-    my ($force_refresh) = @_;
+    my ($force_refresh, $config_for) = @_;
+
+    my $max_config = uc($config_for // '') eq 'MT5' ? 'MT5' : 'default';
 
     state $currency_limits_cache = {};
     my $loaded_revision = BOM::Config::Runtime->instance->app_config()->loaded_revision // '';
     return $currency_limits_cache
         if (not $force_refresh)
+        and (not $config_for)
         and $currency_limits_cache->{revision}
         and ($currency_limits_cache->{revision} eq $loaded_revision);
 
@@ -133,7 +137,7 @@ sub transfer_between_accounts_limits {
 
     my $configs = app_config()->get([
         'payments.transfer_between_accounts.minimum.default', 'payments.transfer_between_accounts.minimum.by_currency',
-        'payments.transfer_between_accounts.maximum.default'
+        'payments.transfer_between_accounts.maximum.default', 'payments.transfer_between_accounts.maximum.MT5'
     ]);
 
     my $configs_json = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.minimum.by_currency'});
@@ -142,11 +146,11 @@ sub transfer_between_accounts_limits {
     foreach my $currency (@all_currencies) {
         my $min = $configs_json->{$currency} // $configs->{"payments.transfer_between_accounts.minimum.default"};
 
-        $min = eval { financialrounding('amount', $currency, convert_currency($min, 'USD', $currency)); };
+        $min = eval { 0 + financialrounding('amount', $currency, convert_currency($min, 'USD', $currency)); };
 
         my $max = eval {
             0 + financialrounding('amount', $currency,
-                convert_currency($configs->{'payments.transfer_between_accounts.maximum.default'}, 'USD', $currency));
+                convert_currency($configs->{'payments.transfer_between_accounts.maximum.' . $max_config}, 'USD', $currency));
         };
 
         if (is_valid_crypto_currency($currency) && is_crypto_currency_suspended($currency)) {
@@ -154,12 +158,12 @@ sub transfer_between_accounts_limits {
             $max = 0 unless $max;
         }
 
-        $currency_limits->{$currency}->{min} = financialrounding('amount', $currency, $min);
+        $currency_limits->{$currency}->{min} = $min if $min;
         $currency_limits->{$currency}->{max} = $max if $max;
     }
 
     $currency_limits->{revision} = $loaded_revision;
-    $currency_limits_cache = $currency_limits;
+    $currency_limits_cache = $currency_limits if not $config_for;
 
     return $currency_limits;
 }

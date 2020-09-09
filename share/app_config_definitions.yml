@@ -432,8 +432,13 @@ payments:
           description: 'Transfer maximum amount'
           contains:
             default:
-              description: 'Maximum amount for transferring in USD'
               isa: Num
+              description: 'Maximum amount for transferring between accounts in USD'
+              default: 2500
+              global: 1
+            MT5:
+              isa: Num
+              description: 'Maximum amount for transferring between binary accounts and MT5 accounts in USD'
               default: 2500
               global: 1
     experimental_currencies_allowed:

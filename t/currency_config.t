@@ -72,12 +72,12 @@ subtest 'transfer_between_accounts_limits' => sub {
         'payments.transfer_between_accounts.minimum.by_currency' => JSON::MaybeUTF8::encode_json_utf8($minimum),
         'payments.transfer_between_accounts.minimum.default'     => 1,
         'payments.transfer_between_accounts.maximum.default'     => 2500,
+        'payments.transfer_between_accounts.maximum.MT5'         => 2500,
     });
 
     my @all_currencies  = LandingCompany::Registry::all_currencies();
     my $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1);
     my $min_default     = 1;
-
     for my $currency_code (@all_currencies) {
         my $currency_min_default = convert_currency($minimum->{$currency_code} // $min_default, 'USD', $currency_code);
 
