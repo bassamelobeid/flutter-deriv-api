@@ -23,7 +23,7 @@
          ],
          "properties" : {
             "name" : {
-               "pattern" : "^Binary \\(IOM\\) Ltd$",
+               "pattern" : "^Deriv \\(MX\\) Ltd$",
                "type" : "string"
             },
             "address" : {

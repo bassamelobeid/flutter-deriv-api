@@ -46,7 +46,7 @@
             },
             "name" : {
                "type" : "string",
-               "pattern" : "^Binary Ltd$"
+               "pattern" : "^Deriv Limited$"
             },
             "legal_default_currency" : {
                "type" : "string",

@@ -21,7 +21,7 @@
             },
             "landing_company_fullname" : {
                "type" : "string",
-               "pattern" : "^Binary \\(IOM\\) Ltd$"
+               "pattern" : "^Deriv \\(MX\\) Ltd$"
             },
             "loginid" : {
                "type" : "string",

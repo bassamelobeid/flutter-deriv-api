@@ -33,7 +33,7 @@
             },
             "landing_company_fullname" : {
                "type" : "string",
-               "pattern" : "^Binary Ltd$"
+               "pattern" : "^Deriv Limited$"
             },
             "loginid" : {
                "pattern" : "^VRTC\\d+$",

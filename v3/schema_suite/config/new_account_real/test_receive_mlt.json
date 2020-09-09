@@ -30,7 +30,7 @@
                "type" : "string"
             },
             "landing_company" : {
-               "pattern" : "^Binary \\(Europe\\) Ltd$",
+               "pattern" : "^Deriv \\(Europe\\) Limited$",
                "type" : "string"
             }
          },

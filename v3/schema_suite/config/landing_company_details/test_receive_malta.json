@@ -77,7 +77,7 @@
                "type" : "array"
             },
             "name" : {
-               "pattern" : "^Binary \\(Europe\\) Ltd$",
+               "pattern" : "^Deriv \\(Europe\\) Limited$",
                "type" : "string"
             }
          },

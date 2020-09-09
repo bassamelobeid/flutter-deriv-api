@@ -45,7 +45,7 @@
                      "type" : "array"
                   },
                   "name" : {
-                     "pattern" : "^Binary Investments \\(Europe\\) Ltd$",
+                     "pattern" : "^Deriv Investments \\(Europe\\) Limited$",
                      "type" : "string"
                   },
                   "has_reality_check" : {

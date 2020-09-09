@@ -84,7 +84,7 @@
             },
             "landing_company_fullname" : {
                "type" : "string",
-               "pattern" : "^Binary \\(Europe\\) Ltd$"
+               "pattern" : "^Deriv \\(Europe\\) Limited$"
             },
             "balance" : {
                "type" : "number",

@@ -51,7 +51,7 @@
             },
             "name" : {
                "type" : "string",
-               "pattern" : "^Binary Investments \\(Europe\\) Ltd$"
+               "pattern" : "^Deriv Investments \\(Europe\\) Limited$"
             },
             "legal_allowed_contract_categories" : {
                "type" : "array",

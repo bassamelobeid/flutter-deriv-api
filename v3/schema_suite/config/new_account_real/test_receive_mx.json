@@ -24,7 +24,7 @@
          "properties" : {
             "landing_company" : {
                "type" : "string",
-               "pattern" : "^Binary \\(IOM\\) Ltd$"
+               "pattern" : "^Deriv \\(MX\\) Ltd$"
             },
             "landing_company_shortcode" : {
                "pattern" : "^iom$",

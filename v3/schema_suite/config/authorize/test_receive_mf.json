@@ -64,7 +64,7 @@
             },
             "landing_company_fullname" : {
                "type" : "string",
-               "pattern" : "^Binary Investments \\(Europe\\) Ltd$"
+               "pattern" : "^Deriv Investments \\(Europe\\) Limited$"
             },
             "loginid" : {
                "type" : "string",
