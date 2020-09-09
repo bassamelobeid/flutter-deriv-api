@@ -225,6 +225,7 @@ sub write_transaction_line {
         transaction_id    => $transaction_id,
         ip_address        => $ip_address,
         payment_fee       => $fee,
+        transaction_type  => $type_mapping{$c->type} // $c->type,
     );
 
     # Write the payment transaction
@@ -265,9 +266,10 @@ sub write_transaction_line {
         _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
 
     } elsif ($c->type eq 'payout_rejected') {
-        if ($bonus or $fee) {
-            return $c->status_bad_request('Bonuses and fees are not allowed for withdrawal reversals');
+        if ($bonus) {
+            return $c->status_bad_request('Bonuses are not allowed for withdrawal reversals');
         }
+        $payment_args{payment_fee} = -$fee;
         $trx = $client->payment_doughflow(%payment_args);
     }
 

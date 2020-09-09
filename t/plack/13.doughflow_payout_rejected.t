@@ -69,17 +69,6 @@ is 0 + balance($loginid), 1, 'balance unchanged';
 $r = update_payout(
     amount   => 1,
     loginid  => $loginid,
-    fee      => 1,
-    status   => 'rejected',
-    trace_id => $trace_id,
-);
-is $r->code,              400,                                                           'error code for fee not allowed';
-like $r->decoded_content, qr/Bonuses and fees are not allowed for withdrawal reversals/, 'erorr message';
-is 0 + balance($loginid), 1, 'balance unchanged';
-
-$r = update_payout(
-    amount   => 1,
-    loginid  => $loginid,
     status   => 'rejected',
     trace_id => $trace_id,
     fee      => '0.00',
@@ -98,5 +87,27 @@ $r = update_payout(
 is $r->code,              400,                                                        'error code for duplicate request';
 like $r->decoded_content, qr/multiple corresponding original withdrawals were found/, 'error message';
 is(0 + balance($loginid), 2, 'balance unchanged');
+
+$trace_id++;
+
+$r = update_payout(
+    status   => 'inprogress',
+    loginid  => $loginid,
+    trace_id => $trace_id,
+    amount   => 1,
+    fee      => 1,
+);
+is($r->code,              200, 'withdrawal with fee ok');
+is(0 + balance($loginid), 0,   'balance decreased');
+
+$r = update_payout(
+    status   => 'rejected',
+    loginid  => $loginid,
+    trace_id => $trace_id,
+    amount   => 1,
+    fee      => 1,
+);
+is $r->code, 200, 'reversal with fee ok';
+is(0 + balance($loginid), 2, 'balance increased');
 
 done_testing();
