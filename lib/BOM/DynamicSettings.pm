@@ -253,6 +253,7 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.minimum.default
                 payments.transfer_between_accounts.minimum.by_currency
                 payments.transfer_between_accounts.maximum.default
+                payments.transfer_between_accounts.maximum.MT5
                 payments.experimental_currencies_allowed
                 )
         ],
