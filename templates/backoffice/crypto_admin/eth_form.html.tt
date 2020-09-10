@@ -36,6 +36,17 @@
         </tr>
     </table>
 <br><br>
+    <table>
+        <tr>
+            <th colspan=3>Get transaction receipt</th>
+        </tr>
+        <tr>
+            <th>Transaction hash:</th>
+            <td><input type=text name='gtr_transaction_hash'/></td>
+            <td><button type=submit name='req_type' value='get_transaction_receipt'>Get Transaction Receipt</button></td>
+        </tr>
+    </table>
+<br><br>
 <!--Wallet functions-->
     <table>
         <th colspan=3>Wallet functions</th>

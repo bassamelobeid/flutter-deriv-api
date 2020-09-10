@@ -40,6 +40,7 @@ table td{
             [% CASE 'get_accounts' %]
                 <p><b>[% currency %] addresses:</b></p>
                 <div id="list_address">
+                    <p>Total number of response: [% response.size %]</p>
                     [% FOREACH each_address IN response %]
                         <p>[% each_address %]</p>
                     [% END %]
@@ -50,6 +51,99 @@ table td{
                 
             [% CASE 'get_estimatedgas' %]
                 <p>Estimated gas: [% response %]</p>
+                
+            [% CASE 'get_transaction_receipt' %]
+                <table>
+                    <tr>
+                        <th>transactionHash</th>
+                        <td>[% response.transactionHash %]</td>
+                    </tr>
+                    <tr>
+                        <th>from</th>
+                        <td>[% response.from %]</td>
+                    </tr>
+                    <tr>
+                        <th>to</th>
+                        <td>[% response.to %]</td>
+                    </tr>
+                    <tr>
+                        <th>contract_address</th>
+                        <td>[% response.contractAddress %]</td>
+                    </tr>
+                    <tr>
+                        <th>blockNumber</th>
+                        <td>[% response.blockNumber %]</td>
+                    </tr>
+                    <tr>
+                        <th>gasUsed</th>
+                        <td>[% response.gasUsed %]</td>
+                    </tr>
+                    <tr>
+                        <th>transactionIndex</th>
+                        <td>[% response.transactionIndex %]</td>
+                    </tr>
+                    <tr>
+                        <th>logs</th>
+                        <td>
+                            [% FOREACH log in response.logs %]
+                                <table>
+                                    <tr>
+                                        <th>address</th>
+                                        <td>[% log.address %]</td>
+                                    </tr>
+                                    <tr>
+                                        <th>transactionHash</th>
+                                        <td>[% log.transactionHash %]</td>
+                                    </tr>
+                                    <tr>
+                                        <th>topics</th>
+                                        <td>[% log.topics.join('<br>') %]</td>
+                                    </tr>
+                                    <tr>
+                                        <th>blockNumber</th>
+                                        <td>[% log.blockNumber %]</td>
+                                    </tr>
+                                    <tr>
+                                        <th>transactionIndex</th>
+                                        <td>[% log.transactionIndex %]</td>
+                                    </tr>
+                                    <tr>
+                                        <th>removed</th>
+                                        <td>[% log.removed %]</td>
+                                    </tr>
+                                    <tr>
+                                        <th>address</th>
+                                        <td>[% log.address %]</td>
+                                    </tr>
+                                    <tr>
+                                        <th>data</th>
+                                        <td>[% log.data %]</td>
+                                    </tr>
+                                    <tr>
+                                        <th>logIndex</th>
+                                        <td>[% log.logIndex %]</td>
+                                    </tr>
+                                </table><br>
+                            [% END %]
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>status</th>
+                        <td>[% response.status%]</td>
+                    </tr>
+                    <tr>
+                        <th>cumulativeGasUsed</th>
+                        <td>[% response.cumulativeGasUsed%]</td>
+                    </tr>
+                    <tr>
+                        <th>logsBloom</th>
+                        <td style="max-width: 500px; overflow: scroll; word-wrap: break-word;">[% response.logsBloom%]</td>
+                    </tr>
+                    <tr>
+                        <th>blockHash</th>
+                        <td>[% response.blockHash%]</td>
+                    </tr>
+                </table>
             
             [% CASE 'get_transactionbyhash' %]
                 <table>

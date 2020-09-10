@@ -26,10 +26,58 @@ table td{
     <br>
     <div id='fomatted_response'>
 [% SWITCH req_type %]
+    [% CASE 'list_unspent_utxo' %]
+        <p>Total number of response: [% response.size %]</p>
+        [% FOREACH unspent_utxo IN response %]
+        <table>
+            <tr>
+                <th>Address</th>
+                <td><b>$unspent_utxo.address</b></td>
+            </tr>
+            <tr>
+                <th>Amount</th>
+                <td>$unspent_utxo.amount</td>
+            </tr>
+            <tr>
+                <th>vout</th>
+                <td>$unspent_utxo.vout</td>
+            </tr>
+            <tr>
+                <th>txid</th>
+                <td>$unspent_utxo.txid</td>
+            </tr>
+            <tr>
+                <th>scriptPubKey</th>
+                <td>$unspent_utxo.scriptPubKey</td>
+            </tr>
+            <tr>
+                <th>solvable</th>
+                <td>$unspent_utxo.solvable</td>
+            </tr>
+            <tr>
+                <th>confirmations</th>
+                <td>$unspent_utxo.confirmations</td>
+            </tr>
+            <tr>
+                <th>label</th>
+                <td>$unspent_utxo.label</td>
+            </tr>
+            <tr>
+                <th>spendable</th>
+                <td>$unspent_utxo.spendable</td>
+            </tr>
+            <tr>
+                <th>safe</th>
+                <td>$unspent_utxo.safe</td>
+            </tr>
+        </table>
+        <hr>
+        [% END %]
     [% CASE 'get_balance' %]
         <p>[% currency %] Address Balance: <b>[% response %]</b></p>
     
     [% CASE 'list_transactions' %]
+        <p>Total number of response: [% response.size %]</p>
         [% FOREACH transaction IN response %]
             <table>
                 <tr>
@@ -104,6 +152,7 @@ table td{
             <hr style="height:2px;">
         [% END %]
     [% CASE 'get_transaction' %]
+        <p>Total number of response: [% response.size %]</p>
         [% FOREACH transaction IN response %]
             <table>
                 <tr>
@@ -124,12 +173,142 @@ table td{
                 </tr>
             </table>
         [% END %]
-        
-    [% CASE 'get_block_number' %]
-        <p>[% currency %] Last Block: <b>[% response %]</b></p>
     
-    [% CASE 'get_syncing' %]
-        <p>Result: [% response %]</p>
+    [% CASE 'get_wallet_balance' %]
+        <p>Total number of response: [% response.keys.size %]</p>
+        <table>
+            [% FOREACH wallet_currency IN response.keys %]
+                <tr>
+                    <th>[% wallet_currency %]</th>
+                    <td>[% response.$wallet_currency %]</td>
+                </tr>
+            [% END %]
+        </table>
+
+    [% CASE 'get_newaddress' %]
+        <p>[% currency %] New Address: <b>[% response %]</b></p>
+        
+    [% CASE 'get_estimate_smartfee' %]
+        <p>[% currency %] Estimated Smart Fee: <b>[% response %]</b></p>
+        
+    [% CASE 'get_blockcount' %]
+        <p>[% currency %] Last Block: <b>[% response %]</b></p>
+        
+    [% CASE 'list_receivedby_address' %]
+        <div id='list_receivedby_address'>
+            <p>Total number of response: [% response.size %]</p>
+            [% FOREACH record IN response %]
+                <table>
+                    <tr>
+                        <th>Address</th>
+                        <td><b>[% record.address %]</b></td>
+                    </tr>
+                    <tr>
+                        <th>Amount</th>
+                        <td>[% record.amount %]</td>
+                    </tr>
+                    <tr>
+                        <th>Confirmations</th>
+                        <td>[% record.confirmations %]</td>
+                    </tr>
+                    <tr>
+                        <th>txids</th>
+                        <td>
+                            [% FOREACH txid IN record.txids %]
+                                [% txid %]<br>
+                            [% END %]
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Label</th>
+                        <td>[% record.label %]</td>
+                    </tr>
+                </table>
+            <hr>
+            [% END %]
+        </div>
+            
+    [% CASE 'get_blockchain_info' %]
+        <table>
+            <tr>
+                <th>size_on_disk</th>
+                <td>[% response.size_on_disk %]</td>
+            </tr>
+            <tr>
+                <th>mediantime</th>
+                <td>[% response.mediantime %]</td>
+            </tr>
+            <tr>
+                <th>chainwork</th>
+                <td>[% response.chainwork %]</td>
+            </tr>
+            <tr>
+                <th>blocks</th>
+                <td>[% response.blocks %]</td>
+            </tr>
+            <tr>
+                <th>difficulty</th>
+                <td>[% response.difficulty %]</td>
+            </tr>
+            <tr>
+                <th>chain</th>
+                <td>[% response.chain %]</td>
+            </tr>
+            <tr>
+                <th>warnings</th>
+                <td>[% response.warnings %]</td>
+            </tr>
+            <tr>
+                <th>bestblockhash</th>
+                <td>[% response.bestblockhash %]</td>
+            </tr>
+            <tr>
+                <th>automatic_pruning</th>
+                <td>[% response.automatic_pruning %]</td>
+            </tr>
+            <tr>
+                <th>prune_target_size</th>
+                <td>[% response.prune_target_size %]</td>
+            </tr>
+            <tr>
+                <th>pruneheight</th>
+                <td>[% response.pruneheight %]</td>
+            </tr>
+            <tr>
+                <th>pruned</th>
+                <td>[% response.pruned %]</td>
+            </tr>
+            <tr>
+                <th>headers</th>
+                <td>[% response.headers %]</td>
+            </tr>
+            <tr>
+                <th>verificationprogress</th>
+                <td>[% response.verificationprogress %]</td>
+            </tr>
+            <tr>
+                <th>softforks</th>
+                <td>
+                    <table>
+                    [% FOREACH softfork IN response.softforks.keys %]
+                        <th rowspan=3>[% softfork %]</th>
+                        <th>height</th>
+                            <td>[% response.softforks.$softfork.height %]</td>
+                        <tr>
+                            <th>active</th>
+                            <td>[% response.softforks.$softfork.active %]</td>
+                        </tr>
+                        <tr>
+                            <th>type</th>
+                            <td>[% response.softforks.$softfork.type %]</td>
+                        </tr>
+                        </td>
+                    [% END %]
+                    </table>
+                </td>
+            </tr>
+            
+        </table>
     
 [% END %]
 </div>

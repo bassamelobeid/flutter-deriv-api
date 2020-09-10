@@ -27,6 +27,7 @@ table td{
     <div id='fomatted_response'>
         [% SWITCH req_type %]
             [% CASE 'list_unspent_utxo' %]
+                <p>Total number of response: [% response.size %]</p>
                 [% FOREACH unspent_utxo IN response %]
                 <table>
                     <tr>
@@ -74,6 +75,7 @@ table td{
                 [% END %]
             
             [% CASE 'get_transaction' %]
+                <p>Total number of response: [% response.keys.size %]</p>
                 <table id='transaction'>
                   <tr>
                     <th>Address</th>
@@ -82,7 +84,6 @@ table td{
                     <th>Block</th>
                     <th>Type</th>
                   </tr>
-                  
                   [% FOREACH address IN response.keys %]
                       <tr>
                         <td><b>[%address%]</b></td>
@@ -96,6 +97,7 @@ table td{
                 
             [% CASE 'list_receivedby_address' %]
                 <div id='list_receivedby_address'>
+                    <p>Total number of response: [% response.size %]</p>
                     [% FOREACH record IN response %]
                         <table>
                             <tr>

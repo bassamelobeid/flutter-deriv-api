@@ -1,5 +1,5 @@
 <form action="[% controller_url %]" method="POST">
-    <INPUT type=hidden name='currency' value='BTC'/>
+    <INPUT type=hidden name='currency' value='[% currency %]'/>
 <!--List Unspent UTXO-->
     <table>
         <tr>
@@ -7,7 +7,7 @@
         </tr>
         <tr>
             <th>Address:</th>
-            <td><input type=text name='address'/></td>
+            <td><input type=text name='lu_utxo_address'/></td>
             <td rowspan=2><button type=submit name='req_type' value='list_unspent_utxo'>Get Unspent UTXO</button></td>
         </tr>
         <tr>
@@ -22,7 +22,7 @@
     <table>
         <th colspan=3>Get transaction info</th>
         <tr>
-            <th>Transaction code</th>
+            <th>Transaction hash</th>
             <td><input type=text name='txn_id'/></td>
             <td><button type=submit name='req_type' value='get_transaction'/>Get transaction info</button></td>
         </tr>
@@ -30,11 +30,11 @@
 <br><br>
 <!--list_receivedby_address-->
     <table>
-        <th colspan=3>List receivedby address</th>
+        <th colspan=3>List receivedbyaddress</th>
         <tr>
             <th>Address</th>
             <td><input type=text name='address_filter'/></td>
-            <td rowspan=2><button type=submit name='req_type' value='list_receivedby_address'/>List receivedby address</button></td>
+            <td rowspan=2><button type=submit name='req_type' value='list_receivedby_address'/>listreceivedbyaddress</button></td>
         </tr>
         <tr>
             <th>Min confirmation</th>
@@ -42,6 +42,27 @@
         </tr>
     </table>
 <br><br>
+<!--get_estimate_smartfee-->
+    <table>
+        <th colspan=3>Estimate smart fee</th>
+        <tr>
+            <th>Number of Confirmation</th>
+            <td><input type=text name='esf_confirmation'/></td>
+            <td rowspan=2><button type=submit name='req_type' value='get_estimate_smartfee'/>Get</button></td>
+        </tr>
+        <tr>
+            <th>Estimate mode</th>
+            <td>
+                <select name="esf_estimate_mode">
+                  <option value="CONSERVATIVE">CONSERVATIVE</option>
+                  <option value="UNSET">UNSET</option>
+                  <option value="ECONOMICAL">ECONOMICAL</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+    <p><b>*Defaults to 3 confirmations if no confirmation is specified</b></p>
+<br>
 <!--calculate withdrawal fee-->
     <table>
         <th colspan=3>Calculate withdrawal fee</th>
@@ -65,7 +86,6 @@
                   <option disabled selected value> -- select an option -- </option>
                   <option value="get_balance">Wallet balance</option>
                   <option value="get_newaddress">Get new address</option>
-                  <option value="get_estimate_smartfee">Estimate smart fee</option>
                   <option value="get_blockcount">Block count</option>
                   <option value="get_blockchain_info">Blockchain info</option>
                 </select>
