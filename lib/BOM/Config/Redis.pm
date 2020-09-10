@@ -384,6 +384,32 @@ sub redis_auth {
     return _redis('auth', 'read', 10);
 }
 
+=head2 redis_expiryq_write
+
+    my $redis = BOM::Config::Redis::redis_expiryq_write();
+
+Returns a writable L<RedisDB> handle to our expiryq Redis service.
+
+=cut
+
+sub redis_expiryq_write {
+    $config->{expiryq} //= BOM::Config::redis_expiryq_config();
+    return _redis('expiryq', 'write', 10);
+}
+
+=head2 redis_expiryq
+
+    my $redis = BOM::Config::Redis::redis_expiryq();
+
+Returns a readable L<RedisDB> handle to our expiryq Redis service.
+
+=cut
+
+sub redis_expiryq {
+    $config->{expiryq} //= BOM::Config::redis_expiryq_config();
+    return _redis('expiryq', 'read', 10);
+}
+
 =head2 redis_p2p_write
 
     my $redis = BOM::Config::Redis::redis_p2p_write();

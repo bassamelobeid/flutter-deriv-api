@@ -194,6 +194,11 @@ sub redis_auth_config {
     return $config;
 }
 
+sub redis_expiryq_config {
+    state $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_AUTH} // '/etc/rmg/redis-expiryq.yml');
+    return $config;
+}
+
 sub redis_p2p_config {
     state $config = YAML::XS::LoadFile('/etc/rmg/redis-p2p.yml');
     return $config;
