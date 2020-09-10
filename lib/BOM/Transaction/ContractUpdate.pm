@@ -7,12 +7,13 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Helper::FinancialMarketBet;
 
 use BOM::Config::Runtime;
+use BOM::Config::Redis;
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
 use BOM::Transaction::Utility;
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::Product::ContractFactory qw(produce_contract);
-use ExpiryQueue qw(enqueue_open_contract dequeue_open_contract);
+use ExpiryQueue;
 
 =head1 NAME
 
@@ -331,23 +332,25 @@ sub _requeue_transaction {
         held_by               => $self->client->loginid,
     };
 
+    my $redis   = BOM::Config::Redis::redis_expiryq_write;
+    my $expiryq = ExpiryQueue->new(redis => $redis);
     my ($in, $out);
     foreach my $order_type (keys %{$self->update_params}) {
         my $which_side = $order_type . '_side';
         my $key        = $contract->$which_side eq 'lower' ? 'down_level' : 'up_level';
 
         $expiry_queue_params->{$key} = $contract->$order_type->barrier_value if $contract->$order_type;
-        $out = dequeue_open_contract($expiry_queue_params) // 0;
+        $out = $expiryq->dequeue_open_contract($expiry_queue_params) // 0;
         delete $expiry_queue_params->{$key};
         $expiry_queue_params->{$key} = $self->$order_type->barrier_value if $self->$order_type;
-        $in = enqueue_open_contract($expiry_queue_params) // 0;
+        $in = $expiryq->enqueue_open_contract($expiry_queue_params) // 0;
     }
 
     # when stop loss is cancelled, we need to requeue stop out
     if ($self->requeue_stop_out) {
         my $key = $contract->stop_out_side eq 'lower' ? 'down_level' : 'up_level';
         $expiry_queue_params->{$key} = $contract->stop_out->barrier_value;
-        enqueue_open_contract($expiry_queue_params);
+        $expiryq->enqueue_open_contract($expiry_queue_params);
     }
 
     return {

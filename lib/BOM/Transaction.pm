@@ -11,7 +11,7 @@ use Scalar::Util qw(blessed);
 use Time::HiRes qw(tv_interval gettimeofday time);
 use JSON::MaybeXS;
 use Date::Utility;
-use ExpiryQueue qw( enqueue_new_transaction enqueue_multiple_new_transactions );
+use ExpiryQueue;
 use Syntax::Keyword::Try;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
 
@@ -25,6 +25,7 @@ use List::Util qw(min);
 use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
+use BOM::Config::Redis;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Platform::Context qw(localize request);
@@ -69,6 +70,16 @@ has request_type => (
     is         => 'ro',
     lazy_build => 1,
 );
+
+has expiryq => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_expiryq {
+    my $redis = BOM::Config::Redis::redis_expiryq_write();
+    return ExpiryQueue->new(redis => $redis);
+}
 
 sub _build_request_type {
     my $self = shift;
@@ -852,7 +863,8 @@ sub buy {
             num_contract => 1
         }) if $client->landing_company->social_responsibility_check_required;
 
-    enqueue_new_transaction(_get_params_for_expiryqueue($self));    # For soft realtime expiration notification.
+    # For soft realtime expiration notification.
+    $self->expiryq->enqueue_new_transaction(_get_params_for_expiryqueue($self));
 
     return;
 }
@@ -1005,7 +1017,7 @@ sub batch_buy {
             $company_limits->reverse_buys(map { $_->{client} } grep { defined $_->{error} } @$list);
 
             $stat{$broker}->{success} = $success;
-            enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
+            $self->expiryq->enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
         } catch {
             warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $@;    # log it
 

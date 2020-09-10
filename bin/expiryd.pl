@@ -2,8 +2,8 @@
 use strict;
 use warnings;
 
-use Cache::RedisDB;
-use ExpiryQueue qw( dequeue_expired_contract get_queue_id);
+use BOM::Config::Redis;
+use ExpiryQueue;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 
 use List::Util qw(max);
@@ -42,11 +42,12 @@ $SIG{INT} = $SIG{TERM} = sub {
 
 sub _daemon_run {
     print("Starting as PID $$\n");
-    my $redis = Cache::RedisDB->redis;
+    my $redis = BOM::Config::Redis::redis_expiryq_write;
+    my $expiryq = ExpiryQueue->new(redis => $redis);
     while (1) {
         my $now       = time;
         my $next_time = $now + 1;                     # we want this to execute every second
-        my $iterator  = dequeue_expired_contract();
+        my $iterator  = $expiryq->dequeue_expired_contract();
         # Outer `while` to live through possible redis disconnects/restarts
         while (my $info = $iterator->()) {            # Blocking for next available.
            eval {
@@ -77,7 +78,7 @@ sub _daemon_run {
 
                 if (not $is_sold or $is_sold->{number_of_sold_bets} == 0) {
                     $info->{sell_failure}++;
-                    my $cid = get_queue_id($info);
+                    my $cid = $expiryq->get_queue_id($info);
                     if ($info->{sell_failure} <= 5) {
                         my $future_epoch = $now + 2;
                         $redis->rpush('EXPIRYQUEUE::SELL_FAILURE_' . $future_epoch, $cid);

@@ -17,15 +17,17 @@ use Moose;
 use BOM::Config::Runtime;
 with 'App::Base::Script';
 use BOM::Config;
+use BOM::Config::Redis;
 
 use DataDog::DogStatsd::Helper qw(stats_gauge);
-use ExpiryQueue qw( queue_status );
+use ExpiryQueue;
 
 sub script_run {
     my $self = shift;
 
     my $tags = {tags => ['rmgenv:' . BOM::Config::env,]};
-    my $status = queue_status();
+    my $expiryq = ExpiryQueue->new(redis => BOM::Config::Redis::redis_expiryq_write);
+    my $status = $expiryq->queue_status();
     foreach my $which (keys %$status) {
         stats_gauge('expiryqueue.' . $which, $status->{$which}, $tags);
     }

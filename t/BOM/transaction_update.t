@@ -12,7 +12,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Client qw(top_up);
-use ExpiryQueue qw(queue_flush);
+use ExpiryQueue;
 
 use Guard;
 use Crypt::NamedKeys;
@@ -29,6 +29,7 @@ use BOM::Transaction::ContractUpdateHistory;
 use BOM::Transaction::Validation;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Platform::Client::IDAuthentication;
+use BOM::Config::Redis;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
@@ -42,7 +43,8 @@ my $user = BOM::User->create(
     password => $hash_pwd
 );
 
-queue_flush();
+my $expiryq = ExpiryQueue->new(redis => BOM::Config::Redis::redis_expiryq_write);
+$expiryq->queue_flush();
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');

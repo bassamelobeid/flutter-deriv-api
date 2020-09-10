@@ -13,7 +13,7 @@ use List::Util qw(min);
 
 use BOM::User::Client;
 use Date::Utility;
-use ExpiryQueue ();
+use ExpiryQueue;
 use Guard;
 
 use BOM::MarketData qw(create_underlying);
@@ -30,6 +30,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Helper::Client qw( create_client top_up );
+
+my $expiryq = ExpiryQueue->new(redis => BOM::Config::Redis::redis_expiryq_write);
 
 my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
 $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
@@ -253,8 +255,8 @@ subtest 'batch-buy success + multisell', sub {
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            ExpiryQueue::queue_flush;
-            note explain +ExpiryQueue::queue_status;
+            $expiryq->queue_flush;
+            note explain + $expiryq->queue_status;
             $txn->batch_buy;
         };
 
@@ -269,7 +271,7 @@ subtest 'batch-buy success + multisell', sub {
             open_contracts => 3,    # the ones just bought
             ready_to_sell  => 0,    # obviously
         };
-        is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
+        is_deeply $expiryq->queue_status, $expected_status, 'ExpiryQueue';
         sleep 1;
         subtest "sell_by_shortcode", sub {
             plan tests => 11;
@@ -489,8 +491,8 @@ subtest 'single contract fails in database', sub {
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
-            ExpiryQueue::queue_flush;
-            note explain +ExpiryQueue::queue_status;
+            $expiryq->queue_flush;
+            note explain + $expiryq->queue_status;
             $txn->batch_buy;
         };
 
@@ -510,7 +512,7 @@ subtest 'single contract fails in database', sub {
             open_contracts => 2,    # the ones just bought
             ready_to_sell  => 0,    # obviously
         };
-        is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
+        is_deeply $expiryq->queue_status, $expected_status, 'ExpiryQueue';
     }
     'survived';
 };
@@ -571,7 +573,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
             $mock_validation->mock(
                 check_tax_information => sub { note "mocked Transaction::Validation->check_tax_information returning nothing"; undef });
 
-            ExpiryQueue::queue_flush;
+            $expiryq->queue_flush;
             # note explain +ExpiryQueue::queue_status;
             reset_datadog;
 
@@ -589,7 +591,7 @@ subtest 'batch-buy multiple databases and datadog', sub {
             open_contracts => 3,    # the ones just bought
             ready_to_sell  => 0,    # obviously
         };
-        is_deeply ExpiryQueue::queue_status, $expected_status, 'ExpiryQueue';
+        is_deeply $expiryq->queue_status, $expected_status, 'ExpiryQueue';
         check_datadog
             action_name => 'increment',
             data        => [
