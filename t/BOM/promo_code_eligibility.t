@@ -262,14 +262,22 @@ subtest 'GET_X_OF_DEPOSITS promo approval' => sub {
     BOM::Backoffice::PromoCodeEligibility::approve_all();
     is client_promo('generic3')->{status}, 'APPROVAL', 'Approved after mixed deposits';
 
-    my ($bonus, $deposit) = BOM::Backoffice::PromoCodeEligibility::get_dynamic_bonus(
+    my %params = (
         db           => $clients{generic3}->db->dbic,
         account_id   => $clients{generic3}->account->id,
         code         => 'PROMO8',
         promo_config => decode_json_utf8($clients{generic3}->client_promo_code->promotion->promo_code_config),
     );
+
+    my ($bonus, $deposit) = BOM::Backoffice::PromoCodeEligibility::get_dynamic_bonus(%params);
     is $deposit, 100, 'correct deposit amount';
     is $bonus,   10,  'bonus is 10% of deposit';
+
+    deposit($clients{generic3}, 50,  'Skrill');
+    deposit($clients{generic3}, -50, 'Skrill');
+    ($bonus, $deposit) = BOM::Backoffice::PromoCodeEligibility::get_dynamic_bonus(%params);
+    is $deposit, 150, 'withdrawals not discounted from deposit amount';
+    is $bonus,   15,  'bonus is 10% of deposits, withdrawals not included';
 
     # Skrill only promo
     $clients{generic4}->promo_code('PROMO9');

@@ -477,7 +477,8 @@ sub get_deposits {
                 "SELECT p.amount FROM transaction.transaction t 
                 JOIN payment.payment p ON p.id = t.payment_id AND p.payment_gateway_code IN ('payment_agent_transfer', 'doughflow', 'bank_wire', 'p2p')
                 JOIN betonmarkets.promo_code pc ON pc.code = ?
-                WHERE (pc.start_date IS NULL OR p.payment_time >= pc.start_date)
+                WHERE t.action_type = 'deposit'
+                AND (pc.start_date IS NULL OR p.payment_time >= pc.start_date)
                 AND (pc.expiry_date IS NULL OR p.payment_time <= pc.expiry_date)
                 AND t.account_id = ?
                 AND (? = 'ALL' or ( ? = REGEXP_REPLACE(p.remark,'(.+payment_processor=)(\\w+)(.*)', '\\2') AND p.payment_gateway_code = 'doughflow' ) )"
