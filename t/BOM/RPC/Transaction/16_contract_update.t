@@ -18,11 +18,13 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use ExpiryQueue qw(queue_flush);
+use BOM::Config::Redis;
+use ExpiryQueue;
 use BOM::Config::Chronicle;
 use Quant::Framework;
 
-queue_flush();
+my $expiryq = ExpiryQueue->new(redis => BOM::Config::Redis::redis_expiryq_write);
+$expiryq->queue_flush();
 
 my $now = Date::Utility->new();
 
