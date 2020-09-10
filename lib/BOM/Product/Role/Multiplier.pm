@@ -15,7 +15,7 @@ use Machine::Epsilon;
 use Scalar::Util qw(looks_like_number);
 use Math::Util::CalculatedValue::Validatable;
 use Time::Duration::Concise;
-use BOM::Config::Quants qw(minimum_stake_limit);
+use BOM::Config::Quants qw(minimum_stake_limit maximum_stake_limit);
 use Quant::Framework::Spread::Seasonality;
 use Quant::Framework::EconomicEventCalendar;
 
@@ -955,10 +955,11 @@ sub _validate_maximum_stake {
         push @risk_profiles, $self->market->{risk_profile};
     }
 
+    my $default_max_stake = maximum_stake_limit($self->currency, 'default_landing_company', $self->underlying->market->name, $self->category->code);
     my $limit_definitions = BOM::Config::quants()->{risk_profile};
     my $max_stake         = min(
-        map  { $limit_definitions->{$_}{multiplier}{$self->currency} }
-        grep { defined $_ } @risk_profiles
+        $default_max_stake, map { $limit_definitions->{$_}{multiplier}{$self->currency} }
+            grep { defined $_ } @risk_profiles
     );
 
     if ($self->_user_input_stake > $max_stake) {

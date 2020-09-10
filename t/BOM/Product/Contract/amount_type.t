@@ -140,10 +140,10 @@ subtest 'max amount' => sub {
     delete $args->{barrier};
     $args->{bet_type}   = 'MULTUP';
     $args->{multiplier} = 100;
-    my $error = exception { produce_contract({%$args}) };
-    isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'Maximum stake allowed is [_1].', 'stake too big';
-    is $error->message_to_client->[1], '2000.00';
+    my $c = produce_contract({%$args});
+    ok !$c->is_valid_to_buy;
+    is $c->primary_validation_error->message_to_client->[0], 'Maximum stake allowed is [_1].', 'stake too big';
+    is $c->primary_validation_error->message_to_client->[1], '2000.00';
 
 };
 
