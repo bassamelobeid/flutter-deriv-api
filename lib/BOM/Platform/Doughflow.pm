@@ -39,7 +39,7 @@ sub get_sportsbook {
 
     # for backward compatibility, we keep sportsbook prefixes as 'Binary'
     my %mapping = (
-        svg         => 'Binary (SVG) LLC',
+        svg         => 'Binary (CR) SA',
         malta       => 'Binary (Europe) Ltd',
         iom         => 'Binary (IOM) Ltd',
         maltainvest => 'Binary Investments Ltd',
