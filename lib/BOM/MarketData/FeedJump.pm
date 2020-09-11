@@ -74,10 +74,10 @@ sub run {
 
 sub iterate {
     my $self  = shift;
-    my $redis = BOM::Config::Redis::redis_feed();
+    my $redis = BOM::Config::Redis::redis_feed_master();
 
     $redis->subscription_loop(
-        psubscribe       => ['FEED_LATEST_TICK::*'],
+        psubscribe       => ['DISTRIBUTOR_FEED::*'],
         default_callback => sub {
             my ($redis, $channel, $pattern, $message) = @_;
             try {
